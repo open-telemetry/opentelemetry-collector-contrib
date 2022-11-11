@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoints"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlscope"
@@ -61,7 +61,7 @@ func (m metricStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metrics
 
 var _ consumer.Metrics = &dataPointStatements{}
 
-type dataPointStatements []*ottl.Statement[ottldatapoints.TransformContext]
+type dataPointStatements []*ottl.Statement[ottldatapoint.TransformContext]
 
 func (d dataPointStatements) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{
@@ -101,7 +101,7 @@ func (d dataPointStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metr
 
 func (d dataPointStatements) handleNumberDataPoints(ctx context.Context, dps pmetric.NumberDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource) error {
 	for i := 0; i < dps.Len(); i++ {
-		tCtx := ottldatapoints.NewTransformContext(dps.At(i), metric, metrics, is, resource)
+		tCtx := ottldatapoint.NewTransformContext(dps.At(i), metric, metrics, is, resource)
 		err := d.callFunctions(ctx, tCtx)
 		if err != nil {
 			return err
@@ -112,7 +112,7 @@ func (d dataPointStatements) handleNumberDataPoints(ctx context.Context, dps pme
 
 func (d dataPointStatements) handleHistogramDataPoints(ctx context.Context, dps pmetric.HistogramDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource) error {
 	for i := 0; i < dps.Len(); i++ {
-		tCtx := ottldatapoints.NewTransformContext(dps.At(i), metric, metrics, is, resource)
+		tCtx := ottldatapoint.NewTransformContext(dps.At(i), metric, metrics, is, resource)
 		err := d.callFunctions(ctx, tCtx)
 		if err != nil {
 			return err
@@ -123,7 +123,7 @@ func (d dataPointStatements) handleHistogramDataPoints(ctx context.Context, dps 
 
 func (d dataPointStatements) handleExponetialHistogramDataPoints(ctx context.Context, dps pmetric.ExponentialHistogramDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource) error {
 	for i := 0; i < dps.Len(); i++ {
-		tCtx := ottldatapoints.NewTransformContext(dps.At(i), metric, metrics, is, resource)
+		tCtx := ottldatapoint.NewTransformContext(dps.At(i), metric, metrics, is, resource)
 		err := d.callFunctions(ctx, tCtx)
 		if err != nil {
 			return err
@@ -134,7 +134,7 @@ func (d dataPointStatements) handleExponetialHistogramDataPoints(ctx context.Con
 
 func (d dataPointStatements) handleSummaryDataPoints(ctx context.Context, dps pmetric.SummaryDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource) error {
 	for i := 0; i < dps.Len(); i++ {
-		tCtx := ottldatapoints.NewTransformContext(dps.At(i), metric, metrics, is, resource)
+		tCtx := ottldatapoint.NewTransformContext(dps.At(i), metric, metrics, is, resource)
 		err := d.callFunctions(ctx, tCtx)
 		if err != nil {
 			return err
@@ -143,7 +143,7 @@ func (d dataPointStatements) handleSummaryDataPoints(ctx context.Context, dps pm
 	return nil
 }
 
-func (d dataPointStatements) callFunctions(ctx context.Context, tCtx ottldatapoints.TransformContext) error {
+func (d dataPointStatements) callFunctions(ctx context.Context, tCtx ottldatapoint.TransformContext) error {
 	for _, statement := range d {
 		_, _, err := statement.Execute(ctx, tCtx)
 		if err != nil {
@@ -156,7 +156,7 @@ func (d dataPointStatements) callFunctions(ctx context.Context, tCtx ottldatapoi
 type MetricParserCollection struct {
 	parserCollection
 	metricParser    ottl.Parser[ottlmetric.TransformContext]
-	dataPointParser ottl.Parser[ottldatapoints.TransformContext]
+	dataPointParser ottl.Parser[ottldatapoint.TransformContext]
 }
 
 type MetricParserCollectionOption func(*MetricParserCollection) error
@@ -169,7 +169,7 @@ func NewMetricParserCollection(functions map[string]interface{}, settings compon
 			scopeParser:    ottlscope.NewParser(ScopeFunctions(), settings),
 		},
 		metricParser:    ottlmetric.NewParser(functions, settings),
-		dataPointParser: ottldatapoints.NewParser(functions, settings),
+		dataPointParser: ottldatapoint.NewParser(functions, settings),
 	}
 
 	for _, op := range options {

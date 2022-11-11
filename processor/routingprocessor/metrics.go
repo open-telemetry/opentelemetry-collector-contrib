@@ -24,7 +24,7 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoints"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor/internal/common"
 )
 
@@ -35,7 +35,7 @@ type metricsProcessor struct {
 	config *Config
 
 	extractor extractor
-	router    router[component.MetricsExporter, ottldatapoints.TransformContext]
+	router    router[component.MetricsExporter, ottldatapoint.TransformContext]
 }
 
 func newMetricProcessor(settings component.TelemetrySettings, config component.ProcessorConfig) *metricsProcessor {
@@ -48,7 +48,7 @@ func newMetricProcessor(settings component.TelemetrySettings, config component.P
 			cfg.Table,
 			cfg.DefaultExporters,
 			settings,
-			ottldatapoints.NewParser(common.Functions[ottldatapoints.TransformContext](), settings),
+			ottldatapoint.NewParser(common.Functions[ottldatapoint.TransformContext](), settings),
 		),
 		extractor: newExtractor(cfg.FromAttribute, settings.Logger),
 	}
@@ -92,7 +92,7 @@ func (p *metricsProcessor) route(ctx context.Context, tm pmetric.Metrics) error 
 
 	for i := 0; i < tm.ResourceMetrics().Len(); i++ {
 		rmetrics := tm.ResourceMetrics().At(i)
-		mtx := ottldatapoints.NewTransformContext(
+		mtx := ottldatapoint.NewTransformContext(
 			nil,
 			pmetric.Metric{},
 			pmetric.MetricSlice{},
