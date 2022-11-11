@@ -106,6 +106,14 @@ func newMetricsReceiver(
 		transport = "https"
 	}
 
+	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+		ReceiverID:             config.ID(),
+		Transport:              transport,
+		ReceiverCreateSettings: settings,
+	})
+	if err != nil {
+		return nil, err
+	}
 	r := &splunkReceiver{
 		settings:        settings,
 		config:          &config,
@@ -117,11 +125,7 @@ func newMetricsReceiver(
 			ReadHeaderTimeout: defaultServerTimeout,
 			WriteTimeout:      defaultServerTimeout,
 		},
-		obsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
-			ReceiverID:             config.ID(),
-			Transport:              transport,
-			ReceiverCreateSettings: settings,
-		}),
+		obsrecv:        obsrecv,
 		gzipReaderPool: &sync.Pool{New: func() interface{} { return new(gzip.Reader) }},
 	}
 
@@ -146,6 +150,15 @@ func newLogsReceiver(
 		transport = "https"
 	}
 
+	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+		ReceiverID:             config.ID(),
+		Transport:              transport,
+		ReceiverCreateSettings: settings,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	r := &splunkReceiver{
 		settings:     settings,
 		config:       &config,
@@ -158,11 +171,7 @@ func newLogsReceiver(
 			WriteTimeout:      defaultServerTimeout,
 		},
 		gzipReaderPool: &sync.Pool{New: func() interface{} { return new(gzip.Reader) }},
-		obsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
-			ReceiverID:             config.ID(),
-			Transport:              transport,
-			ReceiverCreateSettings: settings,
-		}),
+		obsrecv:        obsrecv,
 	}
 
 	return r, nil

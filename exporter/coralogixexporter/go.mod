@@ -7,8 +7,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.64.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.64.0
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.64.0
-	go.opentelemetry.io/collector/pdata v0.64.0
+	go.opentelemetry.io/collector v0.64.2-0.20221110222631-20e3aac00413
+	go.opentelemetry.io/collector/pdata v0.64.2-0.20221110222631-20e3aac00413
 	go.uber.org/zap v1.23.0
 	google.golang.org/genproto v0.0.0-20220822174746-9e6da59bd2fc
 	google.golang.org/grpc v1.50.1
@@ -40,7 +40,7 @@ require (
 	github.com/uber/jaeger-client-go v2.30.0+incompatible // indirect
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/semconv v0.64.0 // indirect
+	go.opentelemetry.io/collector/semconv v0.64.2-0.20221110222631-20e3aac00413 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.36.4 // indirect
 	go.opentelemetry.io/otel v1.11.1 // indirect
 	go.opentelemetry.io/otel/metric v0.33.0 // indirect
