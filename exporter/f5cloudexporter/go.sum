@@ -305,7 +305,7 @@ go.opentelemetry.io/collector/exporter/otlphttpexporter v0.64.0 h1:FlBNipMdi3Ygy
 go.opentelemetry.io/collector/exporter/otlphttpexporter v0.64.0/go.mod h1:H4FkbD4NkkrPLoi9t4O3KFhJ4zfUDS6fIgwjVXsOIc0=
 go.opentelemetry.io/collector/pdata v0.64.0 h1:Mx0ZawbR5F0WyUPCGB1EYsCJYsEj0iJBqX+hm3CFH40=
 go.opentelemetry.io/collector/pdata v0.64.0/go.mod h1:IzvXUGQml2mrnvdb8zIlEW3qQs9oFLdD2hLwJdZ+pek=
-go.opentelemetry.io/collector/receiver/otlpreceiver v0.0.0-20221108014805-0b08d5316426 h1:6cosCaS91068I8El0q8TJkv3V5lRzAfH2Wuja/5ydIo=
+go.opentelemetry.io/collector/receiver/otlpreceiver v0.64.0 h1:z4kTdkSCzsbi9iH2jZ0twJrRkmfYqC8PfZ2vAIUclQk=
 go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.36.4 h1:PRXhsszxTt5bbPriTjmaweWUsAnJYeWBhUMLRetUgBU=
 go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.36.4 h1:aUEBEdCa6iamGzg6fuYxDA8ThxvOG240mAvWDU+XLio=
 go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.36.4/go.mod h1:l2MdsbKTocpPS5nQZscqTR9jd8u96VYZdcpF8Sye7mA=

@@ -303,5 +303,3 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../internal/coreinternal
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry => ../pkg/resourcetotelemetry
-
-replace go.opentelemetry.io/collector/receiver/otlpreceiver => go.opentelemetry.io/collector/receiver/otlpreceiver v0.0.0-20221108014805-0b08d5316426
