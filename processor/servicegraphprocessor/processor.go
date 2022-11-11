@@ -58,7 +58,7 @@ type processor struct {
 	nextConsumer    consumer.Traces
 	metricsExporter consumer.Metrics
 
-	store store.Store
+	store *store.Store
 
 	startTime time.Time
 
@@ -196,7 +196,7 @@ func (p *processor) aggregateMetrics(ctx context.Context, td ptrace.Traces) (err
 					fallthrough
 				case ptrace.SpanKindClient:
 					traceID := span.TraceID()
-					key := buildEdgeKey(traceID.HexString(), span.SpanID().HexString())
+					key := store.NewKey(traceID, span.SpanID())
 					isNew, err = p.store.UpsertEdge(key, func(e *store.Edge) {
 						e.TraceID = traceID
 						e.ConnectionType = connectionType
@@ -219,7 +219,7 @@ func (p *processor) aggregateMetrics(ctx context.Context, td ptrace.Traces) (err
 					fallthrough
 				case ptrace.SpanKindServer:
 					traceID := span.TraceID()
-					key := buildEdgeKey(traceID.HexString(), span.ParentSpanID().HexString())
+					key := store.NewKey(traceID, span.ParentSpanID())
 					isNew, err = p.store.UpsertEdge(key, func(e *store.Edge) {
 						e.TraceID = traceID
 						e.ConnectionType = connectionType
@@ -489,14 +489,6 @@ func (p *processor) cleanCache() {
 	for _, key := range staleSeries {
 		delete(p.keyToMetric, key)
 	}
-}
-
-func buildEdgeKey(k1, k2 string) string {
-	var b strings.Builder
-	b.WriteString(k1)
-	b.WriteString("-")
-	b.WriteString(k2)
-	return b.String()
 }
 
 // durationToMillis converts the given duration to the number of milliseconds it represents.
