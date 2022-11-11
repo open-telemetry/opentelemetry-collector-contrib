@@ -24,6 +24,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/docker/docker/api/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	testcontainers "github.com/testcontainers/testcontainers-go"
@@ -220,6 +221,8 @@ func TestRemovedContainerRemovesRecordsIntegration(t *testing.T) {
 	require.NoError(t, client.LoadContainerList(context.Background()))
 	go client.ContainerEventLoop(context.Background())
 
+	initialCount := len(client.Containers())
+
 	ctx := context.Background()
 	req := testcontainers.ContainerRequest{
 		Image:        "docker.io/library/nginx:1.17",
@@ -241,17 +244,23 @@ func TestRemovedContainerRemovesRecordsIntegration(t *testing.T) {
 		}
 	}
 
-	require.Eventuallyf(t, desiredAmount(1), 5*time.Second, 1*time.Millisecond, "failed to load container stores")
-	containers := client.Containers()
+	require.Eventuallyf(t, desiredAmount(initialCount+1), 5*time.Second, 1*time.Millisecond, "failed to load container stores")
 
 	err = nginx.Terminate(ctx)
 	require.Nil(t, err)
 
-	require.Eventuallyf(t, desiredAmount(0), 5*time.Second, 1*time.Millisecond, "failed to clear container stores")
+	require.Eventuallyf(t, desiredAmount(initialCount), 5*time.Second, 1*time.Millisecond, "failed to clear container stores")
 
 	// Confirm missing container paths
-	statsJSON, err := client.FetchContainerStatsAsJSON(context.Background(), containers[0])
+	dc := docker.Container{
+		ContainerJSON: &types.ContainerJSON{
+			ContainerJSONBase: &types.ContainerJSONBase{
+				ID: nginx.GetContainerID(),
+			},
+		},
+	}
+	statsJSON, err := client.FetchContainerStatsAsJSON(context.Background(), dc)
 	assert.Nil(t, statsJSON)
 	require.Error(t, err)
-	assert.Equal(t, fmt.Sprintf("Error response from daemon: No such container: %s", containers[0].ID), err.Error())
+	assert.Equal(t, fmt.Sprintf("Error response from daemon: No such container: %s", nginx.GetContainerID()), err.Error())
 }
