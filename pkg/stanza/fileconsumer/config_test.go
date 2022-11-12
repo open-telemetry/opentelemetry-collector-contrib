@@ -574,6 +574,7 @@ func TestBuildWithSplitFunc(t *testing.T) {
 				}
 				return len(data), data, nil
 			}
+
 			input, err := cfg.BuildWithSplitFunc(testutil.Logger(t), nopEmit, splitNone)
 			tc.errorRequirement(t, err)
 			if err != nil {
