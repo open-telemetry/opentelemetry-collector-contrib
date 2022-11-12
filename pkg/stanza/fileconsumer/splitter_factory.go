@@ -57,3 +57,29 @@ func (factory *multilineSplitterFactory) Build(maxLogSize int) (bufio.SplitFunc,
 	}
 	return splitter, nil
 }
+
+type customizeSplitterFactory struct {
+	EncodingConfig helper.EncodingConfig
+	Flusher        helper.FlusherConfig
+	Splitter       bufio.SplitFunc
+}
+
+var _ splitterFactory = (*customizeSplitterFactory)(nil)
+
+func newCustomizeSplitterFactory(
+	flusher helper.FlusherConfig,
+	splitter bufio.SplitFunc) *customizeSplitterFactory {
+	return &customizeSplitterFactory{
+		Flusher:  flusher,
+		Splitter: splitter,
+	}
+}
+
+// Build builds Multiline Splitter struct
+func (factory *customizeSplitterFactory) Build(maxLogSize int) (bufio.SplitFunc, error) {
+	flusher := factory.Flusher.Build()
+	if flusher != nil {
+		return flusher.SplitFunc(factory.Splitter), nil
+	}
+	return factory.Splitter, nil
+}

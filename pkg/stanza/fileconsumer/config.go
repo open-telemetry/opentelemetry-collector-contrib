@@ -15,6 +15,7 @@
 package fileconsumer // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
 
 import (
+	"bufio"
 	"fmt"
 	"time"
 
@@ -103,6 +104,95 @@ func (c Config) Build(logger *zap.SugaredLogger, emit EmitFunc) (*Manager, error
 	// Ensure that splitter is buildable
 	factory := newMultilineSplitterFactory(c.Splitter.EncodingConfig, c.Splitter.Flusher, c.Splitter.Multiline)
 	_, err := factory.Build(int(c.MaxLogSize))
+	if err != nil {
+		return nil, err
+	}
+
+	var startAtBeginning bool
+	switch c.StartAt {
+	case "beginning":
+		startAtBeginning = true
+	case "end":
+		startAtBeginning = false
+	default:
+		return nil, fmt.Errorf("invalid start_at location '%s'", c.StartAt)
+	}
+
+	return &Manager{
+		SugaredLogger: logger.With("component", "fileconsumer"),
+		cancel:        func() {},
+		readerFactory: readerFactory{
+			SugaredLogger: logger.With("component", "fileconsumer"),
+			readerConfig: &readerConfig{
+				fingerprintSize: int(c.FingerprintSize),
+				maxLogSize:      int(c.MaxLogSize),
+				emit:            emit,
+			},
+			fromBeginning:   startAtBeginning,
+			splitterFactory: factory,
+			encodingConfig:  c.Splitter.EncodingConfig,
+		},
+		finder:        c.Finder,
+		roller:        newRoller(),
+		pollInterval:  c.PollInterval,
+		maxBatchFiles: c.MaxConcurrentFiles / 2,
+		knownFiles:    make([]*Reader, 0, 10),
+		seenPaths:     make(map[string]struct{}, 100),
+	}, nil
+}
+
+// BuildWithSplitFunc will build a file input operator with customized splitFunc function
+func (c Config) BuildWithSplitFunc(
+	logger *zap.SugaredLogger, emit EmitFunc, splitFunc bufio.SplitFunc) (*Manager, error) {
+	if emit == nil {
+		return nil, fmt.Errorf("must provide emit function")
+	}
+	if splitFunc == nil {
+		return nil, fmt.Errorf("must provide split function")
+	}
+
+	if len(c.Include) == 0 {
+		return nil, fmt.Errorf("required argument `include` is empty")
+	}
+
+	// Ensure includes can be parsed as globs
+	for _, include := range c.Include {
+		_, err := doublestar.PathMatch(include, "matchstring")
+		if err != nil {
+			return nil, fmt.Errorf("parse include glob: %w", err)
+		}
+	}
+
+	// Ensure excludes can be parsed as globs
+	for _, exclude := range c.Exclude {
+		_, err := doublestar.PathMatch(exclude, "matchstring")
+		if err != nil {
+			return nil, fmt.Errorf("parse exclude glob: %w", err)
+		}
+	}
+
+	if c.MaxLogSize <= 0 {
+		return nil, fmt.Errorf("`max_log_size` must be positive")
+	}
+
+	if c.MaxConcurrentFiles <= 1 {
+		return nil, fmt.Errorf("`max_concurrent_files` must be greater than 1")
+	}
+
+	if c.FingerprintSize == 0 {
+		c.FingerprintSize = DefaultFingerprintSize
+	} else if c.FingerprintSize < MinFingerprintSize {
+		return nil, fmt.Errorf("`fingerprint_size` must be at least %d bytes", MinFingerprintSize)
+	}
+
+	_, err := c.Splitter.EncodingConfig.Build()
+	if err != nil {
+		return nil, err
+	}
+
+	// Ensure that splitter is buildable
+	factory := newCustomizeSplitterFactory(c.Splitter.Flusher, splitFunc)
+	_, err = factory.Build(int(c.MaxLogSize))
 	if err != nil {
 		return nil, err
 	}
