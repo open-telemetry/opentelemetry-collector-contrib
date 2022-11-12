@@ -106,9 +106,8 @@ func Test_newMultilineSplitterFactory(t *testing.T) {
 
 func Test_customizeSplitterFactory_Build(t *testing.T) {
 	type fields struct {
-		EncodingConfig helper.EncodingConfig
-		Flusher        helper.FlusherConfig
-		Splitter       bufio.SplitFunc
+		Flusher  helper.FlusherConfig
+		Splitter bufio.SplitFunc
 	}
 	type args struct {
 		maxLogSize int
@@ -122,8 +121,7 @@ func Test_customizeSplitterFactory_Build(t *testing.T) {
 		{
 			name: "default configuration",
 			fields: fields{
-				EncodingConfig: helper.NewEncodingConfig(),
-				Flusher:        helper.NewFlusherConfig(),
+				Flusher: helper.NewFlusherConfig(),
 				Splitter: func(data []byte, atEOF bool) (advance int, token []byte, err error) {
 					return len(data), data, nil
 				},
@@ -137,9 +135,8 @@ func Test_customizeSplitterFactory_Build(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			factory := &customizeSplitterFactory{
-				EncodingConfig: tt.fields.EncodingConfig,
-				Flusher:        tt.fields.Flusher,
-				Splitter:       tt.fields.Splitter,
+				Flusher:  tt.fields.Flusher,
+				Splitter: tt.fields.Splitter,
 			}
 			got, err := factory.Build(tt.args.maxLogSize)
 			if (err != nil) != tt.wantErr {

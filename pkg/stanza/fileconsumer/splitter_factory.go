@@ -59,9 +59,8 @@ func (factory *multilineSplitterFactory) Build(maxLogSize int) (bufio.SplitFunc,
 }
 
 type customizeSplitterFactory struct {
-	EncodingConfig helper.EncodingConfig
-	Flusher        helper.FlusherConfig
-	Splitter       bufio.SplitFunc
+	Flusher  helper.FlusherConfig
+	Splitter bufio.SplitFunc
 }
 
 var _ splitterFactory = (*customizeSplitterFactory)(nil)
