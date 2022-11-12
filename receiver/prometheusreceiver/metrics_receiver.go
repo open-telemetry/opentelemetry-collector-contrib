@@ -314,7 +314,7 @@ func gcInterval(cfg *config.Config) time.Duration {
 func (r *pReceiver) Shutdown(context.Context) error {
 	select {
 	case <-r.configLoaded:
-		// recevier has been correctly started
+		// receiver has been correctly started
 		// so it is safe to continue shutdown.
 	default:
 		return nil
