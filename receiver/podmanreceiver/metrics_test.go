@@ -15,6 +15,7 @@
 //go:build !windows
 // +build !windows
 
+// nolint:exhaustive
 package podmanreceiver
 
 import (
