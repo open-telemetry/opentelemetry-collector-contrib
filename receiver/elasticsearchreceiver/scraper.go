@@ -43,20 +43,16 @@ var (
 )
 
 const (
-	readmeURL                             = "https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/elasticsearchreceiver/README.md"
-	EmitClusterHealthDetailedShardMetrics = "receiver.elasticsearch.emitClusterHealthDetailedShardMetrics"
-)
-
-var (
-	emitClusterHealthDetailedShardMetrics = featuregate.Gate{
-		ID:          EmitClusterHealthDetailedShardMetrics,
-		Enabled:     false,
-		Description: "When enabled, the elasticsearch.cluster.shards metric will be emitted with two more datapoints.",
-	}
+	readmeURL                               = "https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/elasticsearchreceiver/README.md"
+	emitClusterHealthDetailedShardMetricsID = "receiver.elasticsearch.emitClusterHealthDetailedShardMetrics"
 )
 
 func init() {
-	featuregate.GetRegistry().MustRegister(emitClusterHealthDetailedShardMetrics)
+	featuregate.GetRegistry().MustRegisterID(
+		emitClusterHealthDetailedShardMetricsID,
+		featuregate.StageAlpha,
+		featuregate.WithRegisterDescription("When enabled, the elasticsearch.cluster.shards metric will be emitted with two more datapoints."),
+	)
 }
 
 var errUnknownClusterStatus = errors.New("unknown cluster status")
@@ -81,12 +77,12 @@ func newElasticSearchScraper(
 		settings:                              settings.TelemetrySettings,
 		cfg:                                   cfg,
 		mb:                                    metadata.NewMetricsBuilder(cfg.Metrics, settings.BuildInfo),
-		emitClusterHealthDetailedShardMetrics: featuregate.GetRegistry().IsEnabled(EmitClusterHealthDetailedShardMetrics),
+		emitClusterHealthDetailedShardMetrics: featuregate.GetRegistry().IsEnabled(emitClusterHealthDetailedShardMetricsID),
 	}
 
 	if !e.emitClusterHealthDetailedShardMetrics {
 		settings.Logger.Warn(
-			fmt.Sprintf("Feature gate %s is not enabled. Please see the README for more information: %s", EmitClusterHealthDetailedShardMetrics, readmeURL),
+			fmt.Sprintf("Feature gate %s is not enabled. Please see the README for more information: %s", emitClusterHealthDetailedShardMetricsID, readmeURL),
 		)
 	}
 
