@@ -269,6 +269,9 @@ func (v *vcenterMetricScraper) collectVMs(
 			continue
 		}
 
+		if moVM.Config == nil {
+			continue
+		}
 		vmUUID := moVM.Config.InstanceUuid
 
 		if string(moVM.Runtime.PowerState) == "poweredOff" {
