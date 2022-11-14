@@ -99,6 +99,7 @@ func TestFailOnMissingStorageExtension(t *testing.T) {
 	err := r.Start(context.Background(), storagetest.NewStorageHost())
 	require.Error(t, err)
 	require.Equal(t, "storage client: storage extension 'test/missing' not found", err.Error())
+	require.NoError(t, r.Shutdown(context.Background()))
 }
 
 func TestFailOnNonStorageExtension(t *testing.T) {
