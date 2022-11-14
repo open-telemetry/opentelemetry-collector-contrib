@@ -37,6 +37,8 @@ import (
 
 const (
 	metricKeySeparator = string(byte(0))
+	clientKind         = "client"
+	serverKind         = "server"
 )
 
 var (
@@ -203,7 +205,7 @@ func (p *processor) aggregateMetrics(ctx context.Context, td ptrace.Traces) (err
 						e.ClientService = serviceName
 						e.ClientLatencySec = float64(span.EndTimestamp()-span.StartTimestamp()) / float64(time.Millisecond.Nanoseconds())
 						e.Failed = e.Failed || span.Status().Code() == ptrace.StatusCodeError
-						p.upsertDimensions(e.Dimensions, rAttributes, span.Attributes())
+						p.upsertDimensions(clientKind, e.Dimensions, rAttributes, span.Attributes())
 
 						// A database request will only have one span, we don't wait for the server
 						// span but just copy details from the client span
@@ -226,7 +228,7 @@ func (p *processor) aggregateMetrics(ctx context.Context, td ptrace.Traces) (err
 						e.ServerService = serviceName
 						e.ServerLatencySec = float64(span.EndTimestamp()-span.StartTimestamp()) / float64(time.Millisecond.Nanoseconds())
 						e.Failed = e.Failed || span.Status().Code() == ptrace.StatusCodeError
-						p.upsertDimensions(e.Dimensions, rAttributes, span.Attributes())
+						p.upsertDimensions(serverKind, e.Dimensions, rAttributes, span.Attributes())
 					})
 				default:
 					// this span is not part of an edge
@@ -253,10 +255,10 @@ func (p *processor) aggregateMetrics(ctx context.Context, td ptrace.Traces) (err
 	return nil
 }
 
-func (p *processor) upsertDimensions(m map[string]string, resourceAttr pcommon.Map, spanAttr pcommon.Map) {
+func (p *processor) upsertDimensions(kind string, m map[string]string, resourceAttr pcommon.Map, spanAttr pcommon.Map) {
 	for _, dim := range p.config.Dimensions {
 		if v, ok := findAttributeValue(dim, resourceAttr, spanAttr); ok {
-			m[dim] = v
+			m[kind+"_"+dim] = v
 		}
 	}
 }
@@ -372,8 +374,8 @@ func (p *processor) collectCountMetrics(ilm pmetric.ScopeMetrics) error {
 		dpCalls.SetIntValue(value)
 		series.dimensions.CopyTo(dpCalls.Attributes())
 
-		value, ok = p.reqFailedTotal[key]
-		if ok {
+		if v, _ := series.dimensions.Get("failed"); v.Equal(pcommon.NewValueBool(true)) {
+			value, _ = p.reqFailedTotal[key]
 			mCount = ilm.Metrics().AppendEmpty()
 			mCount.SetName("traces_service_graph_request_failed_total")
 			mCount.SetEmptySum().SetIsMonotonic(true)
