@@ -769,11 +769,16 @@ func TestScrapeMetrics_MuteProcessNameError(t *testing.T) {
 	type testCase struct {
 		name                 string
 		muteProcessNameError bool
+		muteProcessErrors    bool
 		omitConfigField      bool
 		expectedError        string
 	}
 
 	testCases := []testCase{
+		{
+			name:              "Process Name Error Muted",
+			muteProcessErrors: true,
+		},
 		{
 			name:                 "Process Name Error Muted",
 			muteProcessNameError: true,
@@ -794,6 +799,7 @@ func TestScrapeMetrics_MuteProcessNameError(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			config := &Config{Metrics: metadata.DefaultMetricsSettings()}
 			if !test.omitConfigField {
+				config.MuteProcessErrors = test.muteProcessErrors
 				config.MuteProcessNameError = test.muteProcessNameError
 			}
 			scraper, err := newProcessScraper(componenttest.NewNopReceiverCreateSettings(), config)
@@ -811,7 +817,135 @@ func TestScrapeMetrics_MuteProcessNameError(t *testing.T) {
 			md, err := scraper.scrape(context.Background())
 
 			assert.Zero(t, md.MetricCount())
-			if config.MuteProcessNameError {
+			if config.MuteProcessErrors || config.MuteProcessNameError {
+				assert.Nil(t, err)
+			} else {
+				assert.EqualError(t, err, test.expectedError)
+			}
+		})
+	}
+}
+
+func TestScrapeMetrics_MuteProcessParentError(t *testing.T) {
+	skipTestOnUnsupportedOS(t)
+
+	processParentError := errors.New("invalid pid 0 err1")
+
+	type testCase struct {
+		name              string
+		muteProcessErrors bool
+		omitConfigField   bool
+		expectedError     string
+	}
+	testCases := []testCase{
+		{
+			name:              "Process Parent Error Muted",
+			muteProcessErrors: true,
+		},
+		{
+			name:              "Process Parent Error Enabled",
+			muteProcessErrors: false,
+			expectedError:     fmt.Sprintf("error reading parent pid for process \"test\" (pid 1): %v", processParentError),
+		},
+		{
+			name:            "Process Parent Error Default (Enabled)",
+			omitConfigField: true,
+			expectedError:   fmt.Sprintf("error reading parent pid for process \"test\" (pid 1): %v", processParentError),
+		},
+	}
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			config := &Config{Metrics: metadata.DefaultMetricsSettings()}
+			if !test.omitConfigField {
+				config.MuteProcessErrors = test.muteProcessErrors
+			}
+			scraper, err := newProcessScraper(componenttest.NewNopReceiverCreateSettings(), config)
+			require.NoError(t, err, "Failed to create process scraper: %v", err)
+			err = scraper.start(context.Background(), componenttest.NewNopHost())
+			require.NoError(t, err, "Failed to initialize process scraper: %v", err)
+
+			handleMock := &processHandleMock{}
+			handleMock.On("Name").Return("test", nil)
+			handleMock.On("Exe").Return("test", nil)
+			handleMock.On("Username").Return("test", nil)
+			handleMock.On("CreateTime").Return(int64(11111111111), nil)
+			handleMock.On("CmdlineSlice").Return([]string{"test", "test", "test"}, nil)
+			handleMock.On("Times").Return(&cpu.TimesStat{}, nil)
+			handleMock.On("MemoryInfo").Return(&process.MemoryInfoStat{}, nil)
+			handleMock.On("IOCounters").Return(&process.IOCountersStat{}, nil)
+			handleMock.On("Parent").Return(&process.Process{Pid: 0}, processParentError)
+
+			scraper.getProcessHandles = func() (processHandles, error) {
+				return &processHandlesMock{handles: []*processHandleMock{handleMock}}, nil
+			}
+			md, err := scraper.scrape(context.Background())
+
+			assert.Equal(t, md.MetricCount(), 4)
+			if config.MuteProcessErrors {
+				assert.Nil(t, err)
+			} else {
+				assert.EqualError(t, err, test.expectedError)
+			}
+		})
+	}
+}
+
+func TestScrapeMetrics_MuteProcessUsernameError(t *testing.T) {
+	skipTestOnUnsupportedOS(t)
+
+	processUsernameError := errors.New("invalid user 0 err3")
+
+	type testCase struct {
+		name              string
+		muteProcessErrors bool
+		omitConfigField   bool
+		expectedError     string
+	}
+	testCases := []testCase{
+		{
+			name:              "Process Username Error Muted",
+			muteProcessErrors: true,
+		},
+		{
+			name:              "Process Username Error Enabled",
+			muteProcessErrors: false,
+			expectedError:     fmt.Sprintf("error reading username for process \"test\" (pid 1): %v", processUsernameError),
+		},
+		{
+			name:            "Process Parent Error Default (Enabled)",
+			omitConfigField: true,
+			expectedError:   fmt.Sprintf("error reading username for process \"test\" (pid 1): %v", processUsernameError),
+		},
+	}
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			config := &Config{Metrics: metadata.DefaultMetricsSettings()}
+			if !test.omitConfigField {
+				config.MuteProcessErrors = test.muteProcessErrors
+			}
+			scraper, err := newProcessScraper(componenttest.NewNopReceiverCreateSettings(), config)
+			require.NoError(t, err, "Failed to create process scraper: %v", err)
+			err = scraper.start(context.Background(), componenttest.NewNopHost())
+			require.NoError(t, err, "Failed to initialize process scraper: %v", err)
+
+			handleMock := &processHandleMock{}
+			handleMock.On("Name").Return("test", nil)
+			handleMock.On("Exe").Return("test", nil)
+			handleMock.On("CmdlineSlice").Return([]string{"test", "test", "test"}, nil)
+			handleMock.On("Username").Return("test", processUsernameError)
+			handleMock.On("CreateTime").Return(int64(11111111111), nil)
+			handleMock.On("Parent").Return(&process.Process{Pid: 0}, nil)
+			handleMock.On("Times").Return(&cpu.TimesStat{}, nil)
+			handleMock.On("MemoryInfo").Return(&process.MemoryInfoStat{}, nil)
+			handleMock.On("IOCounters").Return(&process.IOCountersStat{}, nil)
+
+			scraper.getProcessHandles = func() (processHandles, error) {
+				return &processHandlesMock{handles: []*processHandleMock{handleMock}}, nil
+			}
+			md, err := scraper.scrape(context.Background())
+
+			assert.Equal(t, md.MetricCount(), 4)
+			if config.MuteProcessErrors {
 				assert.Nil(t, err)
 			} else {
 				assert.EqualError(t, err, test.expectedError)

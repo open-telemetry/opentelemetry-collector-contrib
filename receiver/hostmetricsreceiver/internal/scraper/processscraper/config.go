@@ -36,7 +36,13 @@ type Config struct {
 	// MuteProcessNameError is a flag that will mute the error encountered when trying to read a process the
 	// collector does not have permission for.
 	// See https://github.com/open-telemetry/opentelemetry-collector/issues/3004 for more information.
+	// Deprecated: use MuteProcessErrors instead
 	MuteProcessNameError bool `mapstructure:"mute_process_name_error,omitempty"`
+
+	// MuteProcessErrors is a flag that will mute the errors encountered when the collector is trying to read
+	// a process details that it does not have access to.
+	// See https://github.com/open-telemetry/opentelemetry-collector/issues/3004 for more information.
+	MuteProcessErrors bool `mapstructure:"mute_process_errors,omitempty"`
 
 	// ScrapeProcessDelay is used to indicate the minimum amount of time a process must be running
 	// before metrics are scraped for it.  The default value is 0 seconds (0s)

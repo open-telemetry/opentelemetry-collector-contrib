@@ -80,6 +80,10 @@ func newProcessScraper(settings component.ReceiverCreateSettings, cfg *Config) (
 		}
 	}
 
+	if cfg.MuteProcessNameError {
+		fmt.Println("deprecated option MuteProcessNameError used")
+	}
+
 	return scraper, nil
 }
 
@@ -158,7 +162,7 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 
 		executable, err := getProcessExecutable(handle)
 		if err != nil {
-			if !s.config.MuteProcessNameError {
+			if !(s.config.MuteProcessErrors || s.config.MuteProcessNameError) {
 				errs.AddPartial(1, fmt.Errorf("error reading process name for pid %v: %w", pid, err))
 			}
 			continue
@@ -177,7 +181,9 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 
 		username, err := handle.Username()
 		if err != nil {
-			errs.AddPartial(0, fmt.Errorf("error reading username for process %q (pid %v): %w", executable.name, pid, err))
+			if !s.config.MuteProcessErrors {
+				errs.AddPartial(0, fmt.Errorf("error reading username for process %q (pid %v): %w", executable.name, pid, err))
+			}
 		}
 
 		createTime, err := s.getProcessCreateTime(handle)
@@ -192,7 +198,9 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 
 		parentPid, err := parentPid(handle, pid)
 		if err != nil {
-			errs.AddPartial(0, fmt.Errorf("error reading parent pid for process %q (pid %v): %w", executable.name, pid, err))
+			if !s.config.MuteProcessErrors {
+				errs.AddPartial(0, fmt.Errorf("error reading parent pid for process %q (pid %v): %w", executable.name, pid, err))
+			}
 		}
 
 		md := &processMetadata{
