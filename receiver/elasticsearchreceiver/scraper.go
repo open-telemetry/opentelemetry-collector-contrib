@@ -466,10 +466,10 @@ func (r *elasticsearchScraper) scrapeOneIndexMetrics(now pcommon.Timestamp, name
 	)
 
 	r.mb.RecordElasticsearchIndexCacheSizeDataPoint(
-		now, stats.Primaries.QueryCache.CacheSize, metadata.AttributeCacheNameQuery, metadata.AttributeIndexAggregationTypePrimaryShards,
+		now, stats.Primaries.QueryCache.CacheSize, metadata.AttributeIndexAggregationTypePrimaryShards,
 	)
 	r.mb.RecordElasticsearchIndexCacheSizeDataPoint(
-		now, stats.Total.QueryCache.CacheSize, metadata.AttributeCacheNameQuery, metadata.AttributeIndexAggregationTypeTotal,
+		now, stats.Total.QueryCache.CacheSize, metadata.AttributeIndexAggregationTypeTotal,
 	)
 
 	r.mb.RecordElasticsearchIndexCacheEvictionsDataPoint(

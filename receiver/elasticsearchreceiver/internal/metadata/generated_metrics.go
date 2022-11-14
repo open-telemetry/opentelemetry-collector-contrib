@@ -1794,7 +1794,7 @@ type metricElasticsearchIndexCacheSize struct {
 // init fills elasticsearch.index.cache.size metric with initial data.
 func (m *metricElasticsearchIndexCacheSize) init() {
 	m.data.SetName("elasticsearch.index.cache.size")
-	m.data.SetDescription("The number of elements of the cache for an index.")
+	m.data.SetDescription("The number of elements of the query cache for an index.")
 	m.data.SetUnit("1")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
@@ -1802,7 +1802,7 @@ func (m *metricElasticsearchIndexCacheSize) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricElasticsearchIndexCacheSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, cacheNameAttributeValue string, indexAggregationTypeAttributeValue string) {
+func (m *metricElasticsearchIndexCacheSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, indexAggregationTypeAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1810,7 +1810,6 @@ func (m *metricElasticsearchIndexCacheSize) recordDataPoint(start pcommon.Timest
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("cache_name", cacheNameAttributeValue)
 	dp.Attributes().PutStr("aggregation", indexAggregationTypeAttributeValue)
 }
 
@@ -5687,8 +5686,8 @@ func (mb *MetricsBuilder) RecordElasticsearchIndexCacheMemoryUsageDataPoint(ts p
 }
 
 // RecordElasticsearchIndexCacheSizeDataPoint adds a data point to elasticsearch.index.cache.size metric.
-func (mb *MetricsBuilder) RecordElasticsearchIndexCacheSizeDataPoint(ts pcommon.Timestamp, val int64, cacheNameAttributeValue AttributeCacheName, indexAggregationTypeAttributeValue AttributeIndexAggregationType) {
-	mb.metricElasticsearchIndexCacheSize.recordDataPoint(mb.startTime, ts, val, cacheNameAttributeValue.String(), indexAggregationTypeAttributeValue.String())
+func (mb *MetricsBuilder) RecordElasticsearchIndexCacheSizeDataPoint(ts pcommon.Timestamp, val int64, indexAggregationTypeAttributeValue AttributeIndexAggregationType) {
+	mb.metricElasticsearchIndexCacheSize.recordDataPoint(mb.startTime, ts, val, indexAggregationTypeAttributeValue.String())
 }
 
 // RecordElasticsearchIndexOperationsCompletedDataPoint adds a data point to elasticsearch.index.operations.completed metric.

@@ -879,13 +879,13 @@ metrics:
     attributes: [cache_name, index_aggregation_type]
     enabled: false
   elasticsearch.index.cache.size:
-    description: The number of elements of the cache for an index.
+    description: The number of elements of the query cache for an index.
     unit: 1
     sum:
       monotonic: false
       aggregation: cumulative
       value_type: int
-    attributes: [cache_name, index_aggregation_type]
+    attributes: [index_aggregation_type]
     enabled: false
   elasticsearch.index.cache.evictions:
     description: The number of evictions from the cache for an index.

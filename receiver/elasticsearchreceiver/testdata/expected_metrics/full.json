@@ -3047,7 +3047,7 @@
                      "unit": "By"
                   },
                   {
-                     "description": "The number of elements of the cache for an index.",
+                     "description": "The number of elements of the query cache for an index.",
                      "name": "elasticsearch.index.cache.size",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -3056,12 +3056,6 @@
                            {
                               "asInt": "3",
                               "attributes": [
-                                 {
-                                    "key": "cache_name",
-                                    "value": {
-                                       "stringValue": "query"
-                                    }
-                                 },
                                  {
                                     "key": "aggregation",
                                     "value": {
@@ -3075,12 +3069,6 @@
                            {
                               "asInt": "3",
                               "attributes": [
-                                 {
-                                    "key": "cache_name",
-                                    "value": {
-                                       "stringValue": "query"
-                                    }
-                                 },
                                  {
                                     "key": "aggregation",
                                     "value": {
@@ -3734,7 +3722,7 @@
                      "unit": "By"
                   },
                   {
-                     "description": "The number of elements of the cache for an index.",
+                     "description": "The number of elements of the query cache for an index.",
                      "name": "elasticsearch.index.cache.size",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -3743,12 +3731,6 @@
                            {
                               "asInt": "3",
                               "attributes": [
-                                 {
-                                    "key": "cache_name",
-                                    "value": {
-                                       "stringValue": "query"
-                                    }
-                                 },
                                  {
                                     "key": "aggregation",
                                     "value": {
@@ -3762,12 +3744,6 @@
                            {
                               "asInt": "3",
                               "attributes": [
-                                 {
-                                    "key": "cache_name",
-                                    "value": {
-                                       "stringValue": "query"
-                                    }
-                                 },
                                  {
                                     "key": "aggregation",
                                     "value": {
