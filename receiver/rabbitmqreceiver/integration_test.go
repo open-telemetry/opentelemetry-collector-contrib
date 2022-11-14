@@ -19,10 +19,14 @@ package rabbitmqreceiver
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
+	"unicode"
 
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
@@ -42,8 +46,7 @@ var (
 		},
 		ExposedPorts: []string{"15672:15672"},
 		Hostname:     "localhost",
-		WaitingFor: wait.ForListeningPort("15672").
-			WithStartupTimeout(2 * time.Minute),
+		WaitingFor:   waitStrategy{},
 	}
 )
 
@@ -54,6 +57,8 @@ func TestRabbitmqIntegration(t *testing.T) {
 		defer func() {
 			require.NoError(t, container.Terminate(context.Background()))
 		}()
+		require.NoError(t, container.Start(context.Background()))
+
 		hostname, err := container.Host(context.Background())
 		require.NoError(t, err)
 
@@ -93,12 +98,36 @@ func getContainer(t *testing.T, req testcontainers.ContainerRequest) testcontain
 			Started:          true,
 		})
 	require.NoError(t, err)
-
-	code, _, err := container.Exec(context.Background(), []string{"./setup.sh"})
-	require.NoError(t, err)
-	require.Equal(t, 0, code)
-
-	err = container.Start(context.Background())
-	require.NoError(t, err)
 	return container
+}
+
+type waitStrategy struct{}
+
+func (ws waitStrategy) WaitUntilReady(ctx context.Context, st wait.StrategyTarget) error {
+	if err := wait.ForListeningPort("15672").
+		WithStartupTimeout(2*time.Minute).
+		WaitUntilReady(ctx, st); err != nil {
+		return err
+	}
+
+	code, r, err := st.Exec(context.Background(), []string{"./setup.sh"})
+	if err != nil {
+		return err
+	}
+	if code == 0 {
+		return nil
+	}
+
+	// Try to read the error message for the sake of debugging
+	if errBytes, readerErr := io.ReadAll(r); readerErr == nil {
+		// Error message may have non-printable chars, so clean it up
+		errStr := strings.Map(func(r rune) rune {
+			if unicode.IsPrint(r) {
+				return r
+			}
+			return -1
+		}, string(errBytes))
+		return errors.New(strings.TrimSpace(errStr))
+	}
+	return errors.New("setup script returned non-zero exit code")
 }
