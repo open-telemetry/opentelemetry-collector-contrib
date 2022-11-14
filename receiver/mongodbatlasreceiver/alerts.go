@@ -411,6 +411,11 @@ func (a *alertsReceiver) convertAlerts(now pcommon.Timestamp, alerts []mongodbat
 			attrs.PutStr("metric.units", alert.CurrentValue.Units)
 		}
 
+		// Only present for HOST, HOST_METRIC, and REPLICA_SET alerts
+		if alert.HostnameAndPort == "" {
+			continue
+		}
+
 		host, portStr, err := net.SplitHostPort(alert.HostnameAndPort)
 		if err != nil {
 			errs = multierr.Append(errs, fmt.Errorf("failed to split host:port %s: %w", alert.HostnameAndPort, err))
