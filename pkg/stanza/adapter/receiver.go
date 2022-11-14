@@ -148,6 +148,9 @@ func (r *receiver) Shutdown(ctx context.Context) error {
 	r.cancel()
 	r.wg.Wait()
 
-	clientErr := r.storageClient.Close(ctx)
-	return multierr.Combine(pipelineErr, clientErr)
+	if r.storageClient != nil {
+		clientErr := r.storageClient.Close(ctx)
+		return multierr.Combine(pipelineErr, clientErr)
+	}
+	return pipelineErr
 }
