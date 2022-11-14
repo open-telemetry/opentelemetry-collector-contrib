@@ -5,8 +5,8 @@ go 1.18
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza => ../../pkg/stanza
 
 require (
-	github.com/grafana/loki v1.6.2-0.20221109162728-4064ccba6e73
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.62.0
+	github.com/grafana/loki v1.6.2-0.20221112094039-1f7fabfbb986
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.64.0
 	github.com/stretchr/testify v1.8.1
 	go.opentelemetry.io/collector v0.64.2-0.20221115155901-1550938c18fd
 )
@@ -179,7 +179,7 @@ require (
 	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/sony/gobreaker v0.5.0 // indirect
 	github.com/spf13/afero v1.9.2 // indirect
-	github.com/spf13/cast v1.5.0 // indirect
+	github.com/spf13/cast v1.3.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
 	github.com/thanos-io/thanos v0.28.0 // indirect
@@ -206,7 +206,7 @@ require (
 	go4.org/unsafe/assume-no-moving-gc v0.0.0-20220617031537-928513b29760 // indirect
 	golang.org/x/crypto v0.0.0-20220722155217-630584e8d5aa // indirect
 	golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4 // indirect
-	golang.org/x/net v0.1.0 // indirect
+	golang.org/x/net v0.0.0-20220920203100-d0c6ba3f52d9 // indirect
 	golang.org/x/oauth2 v0.0.0-20220909003341-f21342109be1 // indirect
 	golang.org/x/sync v0.0.0-20220907140024-f12130a52804 // indirect
 	golang.org/x/sys v0.2.0 // indirect

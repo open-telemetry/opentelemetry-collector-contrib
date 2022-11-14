@@ -1395,8 +1395,8 @@ github.com/grafana/go-gelf/v2 v2.0.1 h1:BOChP0h/jLeD+7F9mL7tq10xVkDG15he3T1zHuQa
 github.com/grafana/go-gelf/v2 v2.0.1/go.mod h1:lexHie0xzYGwCgiRGcvZ723bSNyNI8ZRD4s0CLobh90=
 github.com/grafana/gomemcache v0.0.0-20220812141859-1e3ae89e91a7 h1:EKJ/x3CNzKFtppRriAk0PlWD513f+5YOx4aHSbWm1Y8=
 github.com/grafana/gomemcache v0.0.0-20220812141859-1e3ae89e91a7/go.mod h1:H0wQNHz2YrLsuXOZozoeDmnHXkNCRmMW0gwFWDfEZDA=
-github.com/grafana/loki v1.6.2-0.20221109162728-4064ccba6e73 h1:SdWsh5BwB2Nv0ru86UL0gltPaIARS0Turqu8CtsE1gw=
-github.com/grafana/loki v1.6.2-0.20221109162728-4064ccba6e73/go.mod h1:T3S3iVrS2YbV1g8eGY64VFcFVcMuM/YUXZUGXsA9xuY=
+github.com/grafana/loki v1.6.2-0.20221112094039-1f7fabfbb986 h1:V7D0wH6wUpokQu2Ylf5EUPTs2RZ9sfFDJcmqVW1NKAY=
+github.com/grafana/loki v1.6.2-0.20221112094039-1f7fabfbb986/go.mod h1:T3S3iVrS2YbV1g8eGY64VFcFVcMuM/YUXZUGXsA9xuY=
 github.com/grafana/regexp v0.0.0-20221005093135-b4c2bcb0a4b6 h1:A3dhViTeFDSQcGOXuUi6ukCQSMyDtDISBp2z6OOo2YM=
 github.com/grafana/regexp v0.0.0-20221005093135-b4c2bcb0a4b6/go.mod h1:M5qHK+eWfAv8VR/265dIuEpL3fNfeC21tXXp9itM24A=
 github.com/grafana/tail v0.0.0-20220426200921-98e8eb28ea4c h1:qIsCzNln5YzuXfXbJgXhpfM+4gY7qi3mED3eYQS4Fls=

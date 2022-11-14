@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib
 go 1.18
 
 require (
-	github.com/grafana/loki v1.6.2-0.20221109162728-4064ccba6e73
+	github.com/grafana/loki v1.6.2-0.20221112094039-1f7fabfbb986
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.66.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter v0.66.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter v0.66.0
