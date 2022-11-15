@@ -144,8 +144,7 @@ func TestConsumeMetricsData(t *testing.T) {
 				assert.Equal(t, "gzip", r.Header.Get("Content-Encoding"))
 				zipReader, err := gzip.NewReader(bytes.NewReader(body))
 				assert.NoError(t, err)
-				bodyBytes, err := io.ReadAll(zipReader)
-				assert.NoError(t, err)
+				bodyBytes, _ := io.ReadAll(zipReader)
 				firstPayload := strings.Split(string(bodyBytes), "}{")[0]
 				var metric splunk.Event
 				err = json.Unmarshal([]byte(firstPayload+"}"), &metric)
