@@ -24,9 +24,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
-func Test_DefaultFunctions(t *testing.T) {
+func Test_LogFunctions(t *testing.T) {
 	expected := common.Functions[ottllog.TransformContext]()
-	actual := Functions()
+	actual := LogFunctions()
 	require.Equal(t, len(expected), len(actual))
 	for k := range actual {
 		assert.Contains(t, expected, k)
