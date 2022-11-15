@@ -19,7 +19,7 @@ package mongodbreceiver
 
 import (
 	"context"
-	"net"
+	"fmt"
 	"path/filepath"
 	"testing"
 	"time"
@@ -35,6 +35,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
 )
 
+const (
+	mongoDBPort = "27017/tcp"
+)
+
 var (
 	LPUSetupScript      = []string{"/lpu.sh"}
 	setupScript         = []string{"/setup.sh"}
@@ -43,51 +47,49 @@ var (
 			Context:    filepath.Join("testdata", "integration"),
 			Dockerfile: "Dockerfile.mongodb.4_0",
 		},
-		ExposedPorts: []string{"27217:27017"},
-		WaitingFor:   wait.ForListeningPort("27017").WithStartupTimeout(2 * time.Minute),
+		ExposedPorts: []string{mongoDBPort},
+		WaitingFor:   wait.ForListeningPort(mongoDBPort).WithStartupTimeout(2 * time.Minute),
 	}
 	containerRequest4_2 = testcontainers.ContainerRequest{
 		FromDockerfile: testcontainers.FromDockerfile{
 			Context:    filepath.Join("testdata", "integration"),
 			Dockerfile: "Dockerfile.mongodb.4_2",
 		},
-		ExposedPorts: []string{"27217:27017"},
-		WaitingFor:   wait.ForListeningPort("27017").WithStartupTimeout(2 * time.Minute),
+		ExposedPorts: []string{mongoDBPort},
+		WaitingFor:   wait.ForListeningPort(mongoDBPort).WithStartupTimeout(2 * time.Minute),
 	}
 	containerRequest4_4LPU = testcontainers.ContainerRequest{
 		FromDockerfile: testcontainers.FromDockerfile{
 			Context:    filepath.Join("testdata", "integration"),
 			Dockerfile: "Dockerfile.mongodb.4_4.lpu",
 		},
-		ExposedPorts: []string{"27317:27017"},
-		WaitingFor:   wait.ForListeningPort("27017").WithStartupTimeout(2 * time.Minute),
+		ExposedPorts: []string{mongoDBPort},
+		WaitingFor:   wait.ForListeningPort(mongoDBPort).WithStartupTimeout(2 * time.Minute),
 	}
 	containerRequest5_0 = testcontainers.ContainerRequest{
 		FromDockerfile: testcontainers.FromDockerfile{
 			Context:    filepath.Join("testdata", "integration"),
 			Dockerfile: "Dockerfile.mongodb.5_0",
 		},
-		ExposedPorts: []string{"27417:27017"},
-		WaitingFor:   wait.ForListeningPort("27017").WithStartupTimeout(2 * time.Minute),
+		ExposedPorts: []string{mongoDBPort},
+		WaitingFor:   wait.ForListeningPort(mongoDBPort).WithStartupTimeout(2 * time.Minute),
 	}
 )
 
 func TestMongodbIntegration(t *testing.T) {
 	t.Run("Running mongodb 4.0", func(t *testing.T) {
 		t.Parallel()
-		container := getContainer(t, containerRequest4_0, setupScript)
+		container, endpoint := getContainer(t, containerRequest4_0, setupScript)
 		defer func() {
 			require.NoError(t, container.Terminate(context.Background()))
 		}()
-		hostname, err := container.Host(context.Background())
-		require.NoError(t, err)
 
 		f := NewFactory()
 		cfg := f.CreateDefaultConfig().(*Config)
 		cfg.Metrics.MongodbLockAcquireTime.Enabled = false
 		cfg.Hosts = []confignet.NetAddr{
 			{
-				Endpoint: net.JoinHostPort(hostname, "27217"),
+				Endpoint: endpoint,
 			},
 		}
 		cfg.Insecure = true
@@ -116,18 +118,16 @@ func TestMongodbIntegration(t *testing.T) {
 	})
 	t.Run("Running mongodb 4.2", func(t *testing.T) {
 		t.Parallel()
-		container := getContainer(t, containerRequest4_2, setupScript)
+		container, endpoint := getContainer(t, containerRequest4_2, setupScript)
 		defer func() {
 			require.NoError(t, container.Terminate(context.Background()))
 		}()
-		hostname, err := container.Host(context.Background())
-		require.NoError(t, err)
 
 		f := NewFactory()
 		cfg := f.CreateDefaultConfig().(*Config)
 		cfg.Hosts = []confignet.NetAddr{
 			{
-				Endpoint: net.JoinHostPort(hostname, "27217"),
+				Endpoint: endpoint,
 			},
 		}
 		cfg.Insecure = true
@@ -154,12 +154,10 @@ func TestMongodbIntegration(t *testing.T) {
 	})
 	t.Run("Running mongodb 4.4 as LPU", func(t *testing.T) {
 		t.Parallel()
-		container := getContainer(t, containerRequest4_4LPU, LPUSetupScript)
+		container, endpoint := getContainer(t, containerRequest4_4LPU, LPUSetupScript)
 		defer func() {
 			require.NoError(t, container.Terminate(context.Background()))
 		}()
-		hostname, err := container.Host(context.Background())
-		require.NoError(t, err)
 
 		f := NewFactory()
 		cfg := f.CreateDefaultConfig().(*Config)
@@ -167,7 +165,7 @@ func TestMongodbIntegration(t *testing.T) {
 		cfg.Password = "otelp"
 		cfg.Hosts = []confignet.NetAddr{
 			{
-				Endpoint: net.JoinHostPort(hostname, "27317"),
+				Endpoint: endpoint,
 			},
 		}
 		cfg.Insecure = true
@@ -194,18 +192,16 @@ func TestMongodbIntegration(t *testing.T) {
 	})
 	t.Run("Running mongodb 5.0", func(t *testing.T) {
 		t.Parallel()
-		container := getContainer(t, containerRequest5_0, setupScript)
+		container, endpoint := getContainer(t, containerRequest5_0, setupScript)
 		defer func() {
 			require.NoError(t, container.Terminate(context.Background()))
 		}()
-		hostname, err := container.Host(context.Background())
-		require.NoError(t, err)
 
 		f := NewFactory()
 		cfg := f.CreateDefaultConfig().(*Config)
 		cfg.Hosts = []confignet.NetAddr{
 			{
-				Endpoint: net.JoinHostPort(hostname, "27417"),
+				Endpoint: endpoint,
 			},
 		}
 		cfg.Insecure = true
@@ -231,10 +227,13 @@ func TestMongodbIntegration(t *testing.T) {
 	})
 }
 
-func getContainer(t *testing.T, req testcontainers.ContainerRequest, script []string) testcontainers.Container {
+func getContainer(t *testing.T, req testcontainers.ContainerRequest, script []string) (testcontainers.Container, string) {
 	require.NoError(t, req.Validate())
+
+	ctx := context.Background()
+
 	container, err := testcontainers.GenericContainer(
-		context.Background(),
+		ctx,
 		testcontainers.GenericContainerRequest{
 			ContainerRequest: req,
 			Started:          true,
@@ -247,5 +246,14 @@ func getContainer(t *testing.T, req testcontainers.ContainerRequest, script []st
 
 	err = container.Start(context.Background())
 	require.NoError(t, err)
-	return container
+
+	mappedPort, err := container.MappedPort(ctx, mongoDBPort)
+	require.Nil(t, err)
+
+	hostIP, err := container.Host(ctx)
+	require.Nil(t, err)
+
+	mongoDBEndpoint := fmt.Sprintf("%s:%s", hostIP, mappedPort.Port())
+
+	return container, mongoDBEndpoint
 }
