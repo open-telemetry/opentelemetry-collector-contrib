@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#1403](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1403))
 - `opentelemetry-instrumentation-botocore` add support for `messaging.*` in the sqs extension.
   ([#1350](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1350))
+- `opentelemetry-instrumentation-starlette` Add support for regular expression matching and sanitization of HTTP headers.
+  ([#1404](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1404))
 
 ### Fixed
 
