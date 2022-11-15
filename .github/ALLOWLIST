@@ -13,13 +13,12 @@
 #  https://help.github.com/en/articles/about-code-owners
 #
 
-## 
+##
 # NOTE: New components MUST have a codeowner. Add new components to the CODEOWNERS file instead of here.
 ##
 
 ## COMMON & SHARED components
 internal/common
-internal/containertest
 
 ## DEPRECATED components
 extension/fluentbitextension
