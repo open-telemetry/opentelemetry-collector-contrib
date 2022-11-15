@@ -159,7 +159,7 @@ receiver/chronyreceiver/                             @open-telemetry/collector-c
 receiver/cloudfoundryreceiver/                       @open-telemetry/collector-contrib-approvers @agoallikmaa @pellared @crobert-1
 receiver/collectdreceiver/                           @open-telemetry/collector-contrib-approvers @owais
 receiver/couchdbreceiver/                            @open-telemetry/collector-contrib-approvers @djaglowski
-receiver/dockerstatsreceiver/                        @open-telemetry/collector-contrib-approvers @rmfitzpatrick
+receiver/dockerstatsreceiver/                        @open-telemetry/collector-contrib-approvers @rmfitzpatrick @jamesmoessis
 receiver/elasticsearchreceiver/                      @open-telemetry/collector-contrib-approvers @djaglowski @binaryfissiongames
 receiver/expvarreceiver/                             @open-telemetry/collector-contrib-approvers @jamesmoessis @MovieStoreGuy
 receiver/filelogreceiver/                            @open-telemetry/collector-contrib-approvers @djaglowski

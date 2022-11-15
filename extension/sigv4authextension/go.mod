@@ -4,9 +4,9 @@ go 1.18
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.17.1
-	github.com/aws/aws-sdk-go-v2/config v1.17.10
-	github.com/aws/aws-sdk-go-v2/credentials v1.12.23
-	github.com/aws/aws-sdk-go-v2/service/sts v1.17.1
+	github.com/aws/aws-sdk-go-v2/config v1.18.0
+	github.com/aws/aws-sdk-go-v2/credentials v1.13.0
+	github.com/aws/aws-sdk-go-v2/service/sts v1.17.2
 	github.com/stretchr/testify v1.8.1
 	go.opentelemetry.io/collector v0.64.2-0.20221110222631-20e3aac00413
 	go.uber.org/zap v1.23.0

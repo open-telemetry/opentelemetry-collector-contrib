@@ -24,7 +24,7 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllogs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor/internal/common"
 )
 
@@ -35,7 +35,7 @@ type logProcessor struct {
 	config *Config
 
 	extractor extractor
-	router    router[component.LogsExporter, ottllogs.TransformContext]
+	router    router[component.LogsExporter, ottllog.TransformContext]
 }
 
 func newLogProcessor(settings component.TelemetrySettings, config component.ProcessorConfig) *logProcessor {
@@ -44,11 +44,11 @@ func newLogProcessor(settings component.TelemetrySettings, config component.Proc
 	return &logProcessor{
 		logger: settings.Logger,
 		config: cfg,
-		router: newRouter[component.LogsExporter, ottllogs.TransformContext](
+		router: newRouter[component.LogsExporter, ottllog.TransformContext](
 			cfg.Table,
 			cfg.DefaultExporters,
 			settings,
-			ottllogs.NewParser(common.Functions[ottllogs.TransformContext](), settings),
+			ottllog.NewParser(common.Functions[ottllog.TransformContext](), settings),
 		),
 		extractor: newExtractor(cfg.FromAttribute, settings.Logger),
 	}
@@ -92,7 +92,7 @@ func (p *logProcessor) route(ctx context.Context, l plog.Logs) error {
 
 	for i := 0; i < l.ResourceLogs().Len(); i++ {
 		rlogs := l.ResourceLogs().At(i)
-		ltx := ottllogs.NewTransformContext(
+		ltx := ottllog.NewTransformContext(
 			plog.LogRecord{},
 			pcommon.InstrumentationScope{},
 			rlogs.Resource(),
