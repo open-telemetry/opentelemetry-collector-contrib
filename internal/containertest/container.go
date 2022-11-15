@@ -178,10 +178,6 @@ func (c *Containers) waitForPorts(con Container) {
 
 }
 
-func (c *Containers) RenameContainer(container Container, name string) error {
-	return c.cli.ContainerRename(context.Background(), string(container.ID), name)
-}
-
 // StartImage starts a container with the given image and zero or more ContainerOptions.
 func (c *Containers) StartImage(image string, opts ...Option) Container {
 	return c.StartImageWithEnv(image, nil, opts...)
