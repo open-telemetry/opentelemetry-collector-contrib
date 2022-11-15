@@ -23,6 +23,8 @@ import (
 	"github.com/go-logfmt/logfmt"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
 // JSON representation of the LogRecord as described by https://developers.google.com/protocol-buffers/docs/proto3#json
@@ -51,8 +53,8 @@ func Encode(lr plog.LogRecord, res pcommon.Resource) (string, error) {
 	}
 	logRecord = lokiEntry{
 		Body:       body,
-		TraceID:    lr.TraceID().HexString(),
-		SpanID:     lr.SpanID().HexString(),
+		TraceID:    traceutil.TraceIDToHexOrEmptyString(lr.TraceID()),
+		SpanID:     traceutil.SpanIDToHexOrEmptyString(lr.SpanID()),
 		Severity:   lr.SeverityText(),
 		Attributes: lr.Attributes().AsRaw(),
 		Resources:  res.Attributes().AsRaw(),

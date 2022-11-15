@@ -29,6 +29,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
 func TestLogsExporter(t *testing.T) {
@@ -61,8 +62,8 @@ func TestLogsExporter(t *testing.T) {
 					"ddtags":               "otel_source:datadog_exporter",
 					"otel.severity_text":   "Info",
 					"otel.severity_number": "9",
-					"otel.span_id":         ld.SpanID().HexString(),
-					"otel.trace_id":        ld.TraceID().HexString(),
+					"otel.span_id":         traceutil.SpanIDToHexOrEmptyString(ld.SpanID()),
+					"otel.trace_id":        traceutil.TraceIDToHexOrEmptyString(ld.TraceID()),
 					"otel.timestamp":       fmt.Sprintf("%d", testdata.TestLogTime.UnixNano()),
 				},
 			},
@@ -90,8 +91,8 @@ func TestLogsExporter(t *testing.T) {
 					"ddtags":               "otel_source:datadog_exporter",
 					"otel.severity_text":   "Info",
 					"otel.severity_number": "9",
-					"otel.span_id":         ld.SpanID().HexString(),
-					"otel.trace_id":        ld.TraceID().HexString(),
+					"otel.span_id":         traceutil.SpanIDToHexOrEmptyString(ld.SpanID()),
+					"otel.trace_id":        traceutil.TraceIDToHexOrEmptyString(ld.TraceID()),
 					"otel.timestamp":       fmt.Sprintf("%d", testdata.TestLogTime.UnixNano()),
 				},
 			},
