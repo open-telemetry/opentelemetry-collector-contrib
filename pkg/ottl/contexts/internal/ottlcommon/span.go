@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel/trace"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
@@ -147,7 +148,7 @@ func accessTraceID[K SpanContext]() ottl.StandardGetSetter[K] {
 func accessStringTraceID[K SpanContext]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(ctx context.Context, tCtx K) (interface{}, error) {
-			return tCtx.GetSpan().TraceID().HexString(), nil
+			return traceutil.TraceIDToHexOrEmptyString(tCtx.GetSpan().TraceID()), nil
 		},
 		Setter: func(ctx context.Context, tCtx K, val interface{}) error {
 			if str, ok := val.(string); ok {
@@ -177,7 +178,7 @@ func accessSpanID[K SpanContext]() ottl.StandardGetSetter[K] {
 func accessStringSpanID[K SpanContext]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(ctx context.Context, tCtx K) (interface{}, error) {
-			return tCtx.GetSpan().SpanID().HexString(), nil
+			return traceutil.SpanIDToHexOrEmptyString(tCtx.GetSpan().SpanID()), nil
 		},
 		Setter: func(ctx context.Context, tCtx K, val interface{}) error {
 			if str, ok := val.(string); ok {
@@ -242,7 +243,7 @@ func accessParentSpanID[K SpanContext]() ottl.StandardGetSetter[K] {
 func accessStringParentSpanID[K SpanContext]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(ctx context.Context, tCtx K) (interface{}, error) {
-			return tCtx.GetSpan().ParentSpanID().HexString(), nil
+			return traceutil.SpanIDToHexOrEmptyString(tCtx.GetSpan().ParentSpanID()), nil
 		},
 		Setter: func(ctx context.Context, tCtx K, val interface{}) error {
 			if str, ok := val.(string); ok {

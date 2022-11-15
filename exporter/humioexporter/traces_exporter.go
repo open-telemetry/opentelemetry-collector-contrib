@@ -183,9 +183,9 @@ func (e *humioTracesExporter) spanToHumioEvent(span ptrace.Span, inst pcommon.In
 		Timestamp: span.StartTimestamp().AsTime(),
 		AsUnix:    e.cfg.Traces.UnixTimestamps,
 		Attributes: &HumioSpan{
-			TraceID:           span.TraceID().HexString(),
-			SpanID:            span.SpanID().HexString(),
-			ParentSpanID:      span.ParentSpanID().HexString(),
+			TraceID:           traceutil.TraceIDToHexOrEmptyString(span.TraceID()),
+			SpanID:            traceutil.SpanIDToHexOrEmptyString(span.SpanID()),
+			ParentSpanID:      traceutil.SpanIDToHexOrEmptyString(span.ParentSpanID()),
 			Name:              span.Name(),
 			Kind:              traceutil.SpanKindStr(span.Kind()),
 			Start:             span.StartTimestamp().AsTime().UnixNano(),
@@ -204,8 +204,8 @@ func toHumioLinks(pLinks ptrace.SpanLinkSlice) []*HumioLink {
 	for i := 0; i < pLinks.Len(); i++ {
 		link := pLinks.At(i)
 		links = append(links, &HumioLink{
-			TraceID:    link.TraceID().HexString(),
-			SpanID:     link.SpanID().HexString(),
+			TraceID:    traceutil.TraceIDToHexOrEmptyString(link.TraceID()),
+			SpanID:     traceutil.SpanIDToHexOrEmptyString(link.SpanID()),
 			TraceState: link.TraceState().AsRaw(),
 		})
 	}

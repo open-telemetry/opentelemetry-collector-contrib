@@ -96,9 +96,9 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 					linksTraceIDs, linksSpanIDs, linksTraceStates, linksAttrs := convertLinks(r.Links())
 					_, err = statement.ExecContext(ctx,
 						r.StartTimestamp().AsTime(),
-						r.TraceID().HexString(),
-						r.SpanID().HexString(),
-						r.ParentSpanID().HexString(),
+						traceutil.TraceIDToHexOrEmptyString(r.TraceID()),
+						traceutil.SpanIDToHexOrEmptyString(r.SpanID()),
+						traceutil.SpanIDToHexOrEmptyString(r.ParentSpanID()),
 						r.TraceState().AsRaw(),
 						r.Name(),
 						traceutil.SpanKindStr(r.Kind()),
@@ -154,8 +154,8 @@ func convertLinks(links ptrace.SpanLinkSlice) ([]string, []string, []string, []m
 	)
 	for i := 0; i < links.Len(); i++ {
 		link := links.At(i)
-		traceIDs = append(traceIDs, link.TraceID().HexString())
-		spanIDs = append(spanIDs, link.SpanID().HexString())
+		traceIDs = append(traceIDs, traceutil.TraceIDToHexOrEmptyString(link.TraceID()))
+		spanIDs = append(spanIDs, traceutil.SpanIDToHexOrEmptyString(link.SpanID()))
 		states = append(states, link.TraceState().AsRaw())
 		attrs = append(attrs, attributesToMap(link.Attributes()))
 	}
