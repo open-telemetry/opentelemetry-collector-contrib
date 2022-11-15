@@ -63,61 +63,50 @@ type Config struct {
 
 // Build will build a file input operator from the supplied configuration
 func (c Config) Build(logger *zap.SugaredLogger, emit EmitFunc) (*Manager, error) {
-	if emit == nil {
-		return nil, fmt.Errorf("must provide emit function")
-	}
-
-	if len(c.Include) == 0 {
-		return nil, fmt.Errorf("required argument `include` is empty")
-	}
-
-	// Ensure includes can be parsed as globs
-	for _, include := range c.Include {
-		_, err := doublestar.PathMatch(include, "matchstring")
-		if err != nil {
-			return nil, fmt.Errorf("parse include glob: %w", err)
-		}
-	}
-
-	// Ensure excludes can be parsed as globs
-	for _, exclude := range c.Exclude {
-		_, err := doublestar.PathMatch(exclude, "matchstring")
-		if err != nil {
-			return nil, fmt.Errorf("parse exclude glob: %w", err)
-		}
-	}
-
-	if c.MaxLogSize <= 0 {
-		return nil, fmt.Errorf("`max_log_size` must be positive")
-	}
-
-	if c.MaxConcurrentFiles <= 1 {
-		return nil, fmt.Errorf("`max_concurrent_files` must be greater than 1")
-	}
-
-	if c.FingerprintSize == 0 {
-		c.FingerprintSize = DefaultFingerprintSize
-	} else if c.FingerprintSize < MinFingerprintSize {
-		return nil, fmt.Errorf("`fingerprint_size` must be at least %d bytes", MinFingerprintSize)
+	if err := c.validate(); err != nil {
+		return nil, err
 	}
 
 	// Ensure that splitter is buildable
 	factory := newMultilineSplitterFactory(c.Splitter.EncodingConfig, c.Splitter.Flusher, c.Splitter.Multiline)
-	_, err := factory.Build(int(c.MaxLogSize))
-	if err != nil {
+	if _, err := factory.Build(int(c.MaxLogSize)); err != nil {
 		return nil, err
 	}
 
-	var startAtBeginning bool
-	switch c.StartAt {
-	case "beginning":
-		startAtBeginning = true
-	case "end":
-		startAtBeginning = false
-	default:
-		return nil, fmt.Errorf("invalid start_at location '%s'", c.StartAt)
+	return c.buildManager(logger, emit, factory)
+}
+
+// BuildWithSplitFunc will build a file input operator with customized splitFunc function
+func (c Config) BuildWithSplitFunc(
+	logger *zap.SugaredLogger, emit EmitFunc, splitFunc bufio.SplitFunc) (*Manager, error) {
+	if err := c.validate(); err != nil {
+		return nil, err
 	}
 
+	if splitFunc == nil {
+		return nil, fmt.Errorf("must provide split function")
+	}
+
+	// Ensure that splitter is buildable
+	factory := newCustomizeSplitterFactory(c.Splitter.Flusher, splitFunc)
+	if _, err := factory.Build(int(c.MaxLogSize)); err != nil {
+		return nil, err
+	}
+
+	return c.buildManager(logger, emit, factory)
+}
+
+func (c Config) buildManager(logger *zap.SugaredLogger, emit EmitFunc, factory splitterFactory) (*Manager, error) {
+	if emit == nil {
+		return nil, fmt.Errorf("must provide emit function")
+	}
+	startAtBeginning, err := judgeStartAtBeginning(c.StartAt)
+	if err != nil {
+		return nil, err
+	}
+	if c.FingerprintSize == 0 {
+		c.FingerprintSize = DefaultFingerprintSize
+	}
 	return &Manager{
 		SugaredLogger: logger.With("component", "fileconsumer"),
 		cancel:        func() {},
@@ -141,25 +130,16 @@ func (c Config) Build(logger *zap.SugaredLogger, emit EmitFunc) (*Manager, error
 	}, nil
 }
 
-// BuildWithSplitFunc will build a file input operator with customized splitFunc function
-func (c Config) BuildWithSplitFunc(
-	logger *zap.SugaredLogger, emit EmitFunc, splitFunc bufio.SplitFunc) (*Manager, error) {
-	if emit == nil {
-		return nil, fmt.Errorf("must provide emit function")
-	}
-	if splitFunc == nil {
-		return nil, fmt.Errorf("must provide split function")
-	}
-
+func (c Config) validate() error {
 	if len(c.Include) == 0 {
-		return nil, fmt.Errorf("required argument `include` is empty")
+		return fmt.Errorf("required argument `include` is empty")
 	}
 
 	// Ensure includes can be parsed as globs
 	for _, include := range c.Include {
 		_, err := doublestar.PathMatch(include, "matchstring")
 		if err != nil {
-			return nil, fmt.Errorf("parse include glob: %w", err)
+			return fmt.Errorf("parse include glob: %w", err)
 		}
 	}
 
@@ -167,65 +147,36 @@ func (c Config) BuildWithSplitFunc(
 	for _, exclude := range c.Exclude {
 		_, err := doublestar.PathMatch(exclude, "matchstring")
 		if err != nil {
-			return nil, fmt.Errorf("parse exclude glob: %w", err)
+			return fmt.Errorf("parse exclude glob: %w", err)
 		}
 	}
 
 	if c.MaxLogSize <= 0 {
-		return nil, fmt.Errorf("`max_log_size` must be positive")
+		return fmt.Errorf("`max_log_size` must be positive")
 	}
 
 	if c.MaxConcurrentFiles <= 1 {
-		return nil, fmt.Errorf("`max_concurrent_files` must be greater than 1")
+		return fmt.Errorf("`max_concurrent_files` must be greater than 1")
 	}
 
-	if c.FingerprintSize == 0 {
-		c.FingerprintSize = DefaultFingerprintSize
-	} else if c.FingerprintSize < MinFingerprintSize {
-		return nil, fmt.Errorf("`fingerprint_size` must be at least %d bytes", MinFingerprintSize)
+	if c.FingerprintSize < MinFingerprintSize {
+		return fmt.Errorf("`fingerprint_size` must be at least %d bytes", MinFingerprintSize)
 	}
 
 	_, err := c.Splitter.EncodingConfig.Build()
 	if err != nil {
-		return nil, err
+		return err
 	}
+	return nil
+}
 
-	// Ensure that splitter is buildable
-	factory := newCustomizeSplitterFactory(c.Splitter.Flusher, splitFunc)
-	_, err = factory.Build(int(c.MaxLogSize))
-	if err != nil {
-		return nil, err
-	}
-
-	var startAtBeginning bool
-	switch c.StartAt {
+func judgeStartAtBeginning(startAt string) (bool, error) {
+	switch startAt {
 	case "beginning":
-		startAtBeginning = true
+		return true, nil
 	case "end":
-		startAtBeginning = false
+		return false, nil
 	default:
-		return nil, fmt.Errorf("invalid start_at location '%s'", c.StartAt)
+		return false, fmt.Errorf("invalid start_at location '%s'", startAt)
 	}
-
-	return &Manager{
-		SugaredLogger: logger.With("component", "fileconsumer"),
-		cancel:        func() {},
-		readerFactory: readerFactory{
-			SugaredLogger: logger.With("component", "fileconsumer"),
-			readerConfig: &readerConfig{
-				fingerprintSize: int(c.FingerprintSize),
-				maxLogSize:      int(c.MaxLogSize),
-				emit:            emit,
-			},
-			fromBeginning:   startAtBeginning,
-			splitterFactory: factory,
-			encodingConfig:  c.Splitter.EncodingConfig,
-		},
-		finder:        c.Finder,
-		roller:        newRoller(),
-		pollInterval:  c.PollInterval,
-		maxBatchFiles: c.MaxConcurrentFiles / 2,
-		knownFiles:    make([]*Reader, 0, 10),
-		seenPaths:     make(map[string]struct{}, 100),
-	}, nil
 }
