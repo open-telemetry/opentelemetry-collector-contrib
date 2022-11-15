@@ -15,6 +15,7 @@
 package filterexpr
 
 import (
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -223,4 +224,32 @@ func matchHistogram(t *testing.T, metricName string) bool {
 	matched, err := matcher.MatchMetric(m)
 	assert.NoError(t, err)
 	return matched
+}
+
+func TestParallel(t *testing.T) {
+	matcher, err := NewMatcher(`MetricName == 'my.metric' && MetricType == 'Sum'`)
+	require.NoError(t, err)
+
+	wg := &sync.WaitGroup{}
+	start := make(chan struct{})
+	testMetric := func(t *testing.T, count int) {
+		defer wg.Done()
+		<-start
+		for i := 0; i < count; i++ {
+			m := pmetric.NewMetric()
+			m.SetName("my.metric")
+			m.SetEmptySum().DataPoints().AppendEmpty()
+			matched, err := matcher.MatchMetric(m)
+			assert.NoError(t, err)
+			assert.True(t, matched)
+		}
+	}
+
+	for i := 0; i < 20; i++ {
+		wg.Add(1)
+		go testMetric(t, 20)
+	}
+
+	close(start)
+	wg.Wait()
 }
