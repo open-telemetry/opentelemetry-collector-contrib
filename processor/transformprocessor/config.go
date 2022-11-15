@@ -60,7 +60,7 @@ func (c *Config) Validate() error {
 	}
 
 	if len(c.Traces.Statements) > 0 {
-		ottlspanp := ottlspan.NewParser(traces.Functions(), component.TelemetrySettings{Logger: zap.NewNop()})
+		ottlspanp := ottlspan.NewParser(traces.SpanFunctions(), component.TelemetrySettings{Logger: zap.NewNop()})
 		_, err := ottlspanp.ParseStatements(c.Traces.Statements)
 		if err != nil {
 			return err
@@ -68,7 +68,7 @@ func (c *Config) Validate() error {
 	}
 
 	if len(c.TraceStatements) > 0 {
-		pc, err := common.NewTraceParserCollection(traces.Functions(), component.TelemetrySettings{Logger: zap.NewNop()})
+		pc, err := common.NewTraceParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithSpanParser(traces.SpanFunctions()), common.WithSpanEventParser(traces.SpanEventFunctions()))
 		if err != nil {
 			return err
 		}
@@ -81,15 +81,15 @@ func (c *Config) Validate() error {
 	}
 
 	if len(c.Metrics.Statements) > 0 {
-		ottldatapointp := ottldatapoint.NewParser(metrics.Functions(), component.TelemetrySettings{Logger: zap.NewNop()})
-		_, err := ottldatapointp.ParseStatements(c.Metrics.Statements)
+		ottlmetricsp := ottldatapoint.NewParser(metrics.DataPointFunctions(), component.TelemetrySettings{Logger: zap.NewNop()})
+		_, err := ottlmetricsp.ParseStatements(c.Metrics.Statements)
 		if err != nil {
 			return err
 		}
 	}
 
 	if len(c.MetricStatements) > 0 {
-		pc, err := common.NewMetricParserCollection(metrics.Functions(), component.TelemetrySettings{Logger: zap.NewNop()})
+		pc, err := common.NewMetricParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithMetricParser(metrics.MetricFunctions()), common.WithDataPointParser(metrics.DataPointFunctions()))
 		if err != nil {
 			return err
 		}
@@ -102,7 +102,7 @@ func (c *Config) Validate() error {
 	}
 
 	if len(c.Logs.Statements) > 0 {
-		ottllogsp := ottllog.NewParser(logs.Functions(), component.TelemetrySettings{Logger: zap.NewNop()})
+		ottllogsp := ottllog.NewParser(logs.LogFunctions(), component.TelemetrySettings{Logger: zap.NewNop()})
 		_, err := ottllogsp.ParseStatements(c.Logs.Statements)
 		if err != nil {
 			return err
@@ -110,7 +110,7 @@ func (c *Config) Validate() error {
 	}
 
 	if len(c.LogStatements) > 0 {
-		pc, err := common.NewLogParserCollection(logs.Functions(), component.TelemetrySettings{Logger: zap.NewNop()})
+		pc, err := common.NewLogParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithLogParser(logs.LogFunctions()))
 		if err != nil {
 			return err
 		}

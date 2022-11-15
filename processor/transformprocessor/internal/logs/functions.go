@@ -19,7 +19,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
-func Functions() map[string]interface{} {
+func LogFunctions() map[string]interface{} {
 	// No logs-only functions yet.
 	return common.Functions[ottllog.TransformContext]()
 }
