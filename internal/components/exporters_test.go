@@ -385,7 +385,7 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "logicmonitor",
-			getConfigFn: func() config.Exporter {
+			getConfigFn: func() component.ExporterConfig {
 				cfg := expFactories["logicmonitor"].CreateDefaultConfig().(*logicmonitorexporter.Config)
 				return cfg
 			},
