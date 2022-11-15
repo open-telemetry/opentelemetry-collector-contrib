@@ -214,7 +214,6 @@ type rotationTest struct {
 	maxBackupFiles  int
 	writeInterval   time.Duration
 	pollInterval    time.Duration
-	ephemeralLines  bool
 }
 
 /*
@@ -292,15 +291,11 @@ func (rt rotationTest) run(tc rotationTest, copyTruncate, sequential bool) func(
 			}
 		}
 
-		if tc.ephemeralLines {
-			if !tc.expectEphemeralLines() {
-				// This is helpful for test development, and ensures the sample computation is used
-				t.Logf("Potentially unstable ephemerality expectation for test: %s", tc.name)
-			}
-			require.Subset(t, expected, received)
-		} else {
-			require.ElementsMatch(t, expected, received)
+		if tc.expectEphemeralLines() {
+			// This is helpful for test development, and ensures the sample computation is used
+			t.Logf("Potentially unstable ephemerality expectation for test: %s", tc.name)
 		}
+		require.ElementsMatch(t, expected, received)
 	}
 }
 
@@ -329,7 +324,6 @@ func TestRotation(t *testing.T) {
 			maxBackupFiles:  1,
 			writeInterval:   time.Millisecond,
 			pollInterval:    10 * time.Millisecond,
-			ephemeralLines:  true,
 		},
 		{
 			name:            "Deletion/ExceedFingerprint",
@@ -338,18 +332,19 @@ func TestRotation(t *testing.T) {
 			maxBackupFiles:  1,
 			writeInterval:   time.Millisecond,
 			pollInterval:    10 * time.Millisecond,
-			ephemeralLines:  true,
 		},
 	}
 
-	for _, tc := range cases {
-		if runtime.GOOS != windowsOS {
-			// Windows has very poor support for moving active files, so rotation is less commonly used
-			t.Run(fmt.Sprintf("%s/MoveCreateTimestamped", tc.name), tc.run(tc, false, false))
-			t.Run(fmt.Sprintf("%s/MoveCreateSequential", tc.name), tc.run(tc, false, true))
+	for i := 0; i < 100; i++ {
+		for _, tc := range cases {
+			if runtime.GOOS != windowsOS {
+				// Windows has very poor support for moving active files, so rotation is less commonly used
+				t.Run(fmt.Sprintf("%s/MoveCreateTimestamped/%d", tc.name, i), tc.run(tc, false, false))
+				t.Run(fmt.Sprintf("%s/MoveCreateSequential/%d", tc.name, i), tc.run(tc, false, true))
+			}
+			t.Run(fmt.Sprintf("%s/CopyTruncateTimestamped/%d", tc.name, i), tc.run(tc, true, false))
+			t.Run(fmt.Sprintf("%s/CopyTruncateSequential/%d", tc.name, i), tc.run(tc, true, true))
 		}
-		t.Run(fmt.Sprintf("%s/CopyTruncateTimestamped", tc.name), tc.run(tc, true, false))
-		t.Run(fmt.Sprintf("%s/CopyTruncateSequential", tc.name), tc.run(tc, true, true))
 	}
 }
 
