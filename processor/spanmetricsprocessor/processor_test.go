@@ -311,6 +311,97 @@ func TestProcessorConsumeTraces(t *testing.T) {
 		})
 	}
 }
+func TestConsumeTracesEvictedCacheKey(t *testing.T) {
+	t.Parallel()
+
+	traces0 := ptrace.NewTraces()
+
+	initServiceSpans(
+		serviceSpans{
+			// This should be moved to the evicted list of the LRU cache once service-c is added
+			// since the cache size is configured to 2.
+			serviceName: "service-a",
+			spans: []span{
+				{
+					operation:  "/ping",
+					kind:       ptrace.SpanKindServer,
+					statusCode: ptrace.StatusCodeOk,
+				},
+			},
+		}, traces0.ResourceSpans().AppendEmpty())
+	initServiceSpans(
+		serviceSpans{
+			serviceName: "service-b",
+			spans: []span{
+				{
+					operation:  "/ping",
+					kind:       ptrace.SpanKindServer,
+					statusCode: ptrace.StatusCodeError,
+				},
+			},
+		}, traces0.ResourceSpans().AppendEmpty())
+	initServiceSpans(
+		serviceSpans{
+			serviceName: "service-c",
+			spans: []span{
+				{
+					operation:  "/ping",
+					kind:       ptrace.SpanKindServer,
+					statusCode: ptrace.StatusCodeError,
+				},
+			},
+		}, traces0.ResourceSpans().AppendEmpty())
+
+	// This trace does not have service-a, and should not result in an attempt to publish metrics for service-a.
+	traces1 := ptrace.NewTraces()
+
+	initServiceSpans(
+		serviceSpans{
+			serviceName: "service-b",
+			spans: []span{
+				{
+					operation:  "/ping",
+					kind:       ptrace.SpanKindServer,
+					statusCode: ptrace.StatusCodeError,
+				},
+			},
+		}, traces1.ResourceSpans().AppendEmpty())
+	initServiceSpans(
+		serviceSpans{
+			serviceName: "service-c",
+			spans: []span{
+				{
+					operation:  "/ping",
+					kind:       ptrace.SpanKindServer,
+					statusCode: ptrace.StatusCodeError,
+				},
+			},
+		}, traces1.ResourceSpans().AppendEmpty())
+
+	// Prepare
+	mexp := &mocks.MetricsExporter{}
+	tcon := &mocks.TracesConsumer{}
+
+	// Mocked metric exporter will perform validation on metrics, during p.ConsumeTraces()
+	mexp.On("ConsumeMetrics", mock.Anything, mock.MatchedBy(func(input pmetric.Metrics) bool {
+		return assert.Eventually(t, func() bool {
+			return verifyConsumeMetricsInputCumulative(t, input)
+		}, 10*time.Second, time.Millisecond*100)
+	})).Return(nil)
+	tcon.On("ConsumeTraces", mock.Anything, mock.Anything).Return(nil)
+
+	defaultNullValue := pcommon.NewValueStr("defaultNullValue")
+	p := newProcessorImp(mexp, tcon, &defaultNullValue, cumulative, zaptest.NewLogger(t))
+
+	for _, traces := range []ptrace.Traces{traces0, traces1} {
+		// Test
+		ctx := metadata.NewIncomingContext(context.Background(), nil)
+		err := p.ConsumeTraces(ctx, traces)
+
+		// Verify
+		assert.NoError(t, err)
+	}
+}
 
 func TestMetricKeyCache(t *testing.T) {
 	mexp := &mocks.MetricsExporter{}
