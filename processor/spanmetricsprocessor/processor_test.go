@@ -392,6 +392,7 @@ func TestConsumeTracesEvictedCacheKey(t *testing.T) {
 	// Mocked metric exporter will perform validation on metrics, during p.ConsumeTraces()
 	mexp.On("ConsumeMetrics", mock.Anything, mock.MatchedBy(func(input pmetric.Metrics) bool {
 		return assert.Eventually(t, func() bool {
+			// Verify
 			require.NotEmpty(t, wantDataPointCounts)
 			require.Equal(t, wantDataPointCounts[0], input.DataPointCount())
 			wantDataPointCounts = wantDataPointCounts[1:] // Dequeue
