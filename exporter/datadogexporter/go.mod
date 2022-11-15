@@ -23,11 +23,11 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.64.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.64.2-0.20221110222631-20e3aac00413
-	go.opentelemetry.io/collector/pdata v0.64.2-0.20221110222631-20e3aac00413
-	go.opentelemetry.io/collector/processor/batchprocessor v0.64.2-0.20221110222631-20e3aac00413
-	go.opentelemetry.io/collector/receiver/otlpreceiver v0.64.2-0.20221110222631-20e3aac00413
-	go.opentelemetry.io/collector/semconv v0.64.2-0.20221110222631-20e3aac00413
+	go.opentelemetry.io/collector v0.64.2-0.20221115155901-1550938c18fd
+	go.opentelemetry.io/collector/pdata v0.64.2-0.20221115155901-1550938c18fd
+	go.opentelemetry.io/collector/processor/batchprocessor v0.64.2-0.20221115155901-1550938c18fd
+	go.opentelemetry.io/collector/receiver/otlpreceiver v0.64.2-0.20221115155901-1550938c18fd
+	go.opentelemetry.io/collector/semconv v0.64.2-0.20221115155901-1550938c18fd
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.23.0
 	gopkg.in/yaml.v2 v2.4.0
@@ -132,7 +132,7 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20220216144756-c35f1ee13d7c // indirect
-	github.com/prometheus/client_golang v1.13.1 // indirect
+	github.com/prometheus/client_golang v1.14.0 // indirect
 	github.com/prometheus/client_model v0.3.0 // indirect
 	github.com/prometheus/common v0.37.0 // indirect
 	github.com/prometheus/procfs v0.8.0 // indirect
@@ -163,7 +163,7 @@ require (
 	go.uber.org/atomic v1.10.0 // indirect
 	golang.org/x/net v0.1.0 // indirect
 	golang.org/x/oauth2 v0.0.0-20220909003341-f21342109be1 // indirect
-	golang.org/x/sys v0.1.0 // indirect
+	golang.org/x/sys v0.2.0 // indirect
 	golang.org/x/term v0.1.0 // indirect
 	golang.org/x/text v0.4.0 // indirect
 	golang.org/x/time v0.0.0-20220411224347-583f2d630306 // indirect

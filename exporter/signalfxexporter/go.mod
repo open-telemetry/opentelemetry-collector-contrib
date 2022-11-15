@@ -15,13 +15,13 @@ require (
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3
 	github.com/signalfx/signalfx-agent/pkg/apm v0.0.0-20220920175102-539ae8d8ba8e
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.64.2-0.20221110222631-20e3aac00413
-	go.opentelemetry.io/collector/pdata v0.64.2-0.20221110222631-20e3aac00413
-	go.opentelemetry.io/collector/semconv v0.64.2-0.20221110222631-20e3aac00413
+	go.opentelemetry.io/collector v0.64.2-0.20221115155901-1550938c18fd
+	go.opentelemetry.io/collector/pdata v0.64.2-0.20221115155901-1550938c18fd
+	go.opentelemetry.io/collector/semconv v0.64.2-0.20221115155901-1550938c18fd
 	go.uber.org/atomic v1.10.0
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.23.0
-	golang.org/x/sys v0.0.0-20221010170243-090e33056c14
+	golang.org/x/sys v0.2.0
 	gopkg.in/yaml.v2 v2.4.0
 )
 
