@@ -137,7 +137,13 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 						String: ottltest.Strp("test"),
 					},
 					{
-						String: ottltest.Strp("test"),
+						List: &list{
+							Values: []value{
+								{
+									String: ottltest.Strp("test"),
+								},
+							},
+						},
 					},
 				},
 			},
@@ -151,7 +157,13 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 						String: ottltest.Strp("test"),
 					},
 					{
-						String: ottltest.Strp("test"),
+						List: &list{
+							Values: []value{
+								{
+									String: ottltest.Strp("test"),
+								},
+							},
+						},
 					},
 					{
 						Literal: &mathExprLiteral{
@@ -621,7 +633,13 @@ func Test_NewFunctionCall(t *testing.T) {
 						String: ottltest.Strp("test0"),
 					},
 					{
-						String: ottltest.Strp("test1"),
+						List: &list{
+							Values: []value{
+								{
+									String: ottltest.Strp("test"),
+								},
+							},
+						},
 					},
 					{
 						Literal: &mathExprLiteral{
@@ -641,7 +659,13 @@ func Test_NewFunctionCall(t *testing.T) {
 						String: ottltest.Strp("test0"),
 					},
 					{
-						String: ottltest.Strp("test1"),
+						List: &list{
+							Values: []value{
+								{
+									String: ottltest.Strp("test"),
+								},
+							},
+						},
 					},
 					{
 						Literal: &mathExprLiteral{
@@ -661,7 +685,13 @@ func Test_NewFunctionCall(t *testing.T) {
 						String: ottltest.Strp("test0"),
 					},
 					{
-						String: ottltest.Strp("test1"),
+						List: &list{
+							Values: []value{
+								{
+									String: ottltest.Strp("test"),
+								},
+							},
+						},
 					},
 					{
 						Literal: &mathExprLiteral{
@@ -777,19 +807,19 @@ func functionWithEnum(Enum) (ExprFunc[interface{}], error) {
 	}, nil
 }
 
-func functionWithTelemetrySettingsFirst(component.TelemetrySettings, string, string, int64) (ExprFunc[interface{}], error) {
+func functionWithTelemetrySettingsFirst(component.TelemetrySettings, string, []string, int64) (ExprFunc[interface{}], error) {
 	return func(context.Context, interface{}) (interface{}, error) {
 		return "anything", nil
 	}, nil
 }
 
-func functionWithTelemetrySettingsMiddle(string, string, component.TelemetrySettings, int64) (ExprFunc[interface{}], error) {
+func functionWithTelemetrySettingsMiddle(string, []string, component.TelemetrySettings, int64) (ExprFunc[interface{}], error) {
 	return func(context.Context, interface{}) (interface{}, error) {
 		return "anything", nil
 	}, nil
 }
 
-func functionWithTelemetrySettingsLast(string, string, int64, component.TelemetrySettings) (ExprFunc[interface{}], error) {
+func functionWithTelemetrySettingsLast(string, []string, int64, component.TelemetrySettings) (ExprFunc[interface{}], error) {
 	return func(context.Context, interface{}) (interface{}, error) {
 		return "anything", nil
 	}, nil
