@@ -161,15 +161,27 @@ type MetricParserCollection struct {
 
 type MetricParserCollectionOption func(*MetricParserCollection) error
 
-func NewMetricParserCollection(functions map[string]interface{}, settings component.TelemetrySettings, options ...MetricParserCollectionOption) (*MetricParserCollection, error) {
+func WithMetricParser(functions map[string]interface{}) MetricParserCollectionOption {
+	return func(mp *MetricParserCollection) error {
+		mp.metricParser = ottlmetric.NewParser(functions, mp.settings)
+		return nil
+	}
+}
+
+func WithDataPointParser(functions map[string]interface{}) MetricParserCollectionOption {
+	return func(mp *MetricParserCollection) error {
+		mp.dataPointParser = ottldatapoint.NewParser(functions, mp.settings)
+		return nil
+	}
+}
+
+func NewMetricParserCollection(settings component.TelemetrySettings, options ...MetricParserCollectionOption) (*MetricParserCollection, error) {
 	mpc := &MetricParserCollection{
 		parserCollection: parserCollection{
 			settings:       settings,
 			resourceParser: ottlresource.NewParser(ResourceFunctions(), settings),
 			scopeParser:    ottlscope.NewParser(ScopeFunctions(), settings),
 		},
-		metricParser:    ottlmetric.NewParser(functions, settings),
-		dataPointParser: ottldatapoint.NewParser(functions, settings),
 	}
 
 	for _, op := range options {
