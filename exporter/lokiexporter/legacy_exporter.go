@@ -40,6 +40,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter/internal/tenant"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki"
 )
 
@@ -307,11 +308,11 @@ func (l *lokiExporter) convertRecordAttributesToLabels(log plog.LogRecord) model
 	ls := model.LabelSet{}
 
 	if val, ok := l.config.Labels.RecordAttributes["traceID"]; ok {
-		ls[model.LabelName(val)] = model.LabelValue(log.TraceID().HexString())
+		ls[model.LabelName(val)] = model.LabelValue(traceutil.TraceIDToHexOrEmptyString(log.TraceID()))
 	}
 
 	if val, ok := l.config.Labels.RecordAttributes["spanID"]; ok {
-		ls[model.LabelName(val)] = model.LabelValue(log.SpanID().HexString())
+		ls[model.LabelName(val)] = model.LabelValue(traceutil.SpanIDToHexOrEmptyString(log.SpanID()))
 	}
 
 	if val, ok := l.config.Labels.RecordAttributes["severity"]; ok {

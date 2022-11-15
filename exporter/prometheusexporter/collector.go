@@ -15,6 +15,7 @@
 package prometheusexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter"
 
 import (
+	"encoding/hex"
 	"fmt"
 	"sort"
 
@@ -218,12 +219,12 @@ func (c *collector) convertDoubleHistogram(metric pmetric.Metric, resourceAttrs 
 		e := ip.Exemplars().At(i)
 		exemplarLabels := make(prometheus.Labels, 0)
 
-		if !e.TraceID().IsEmpty() {
-			exemplarLabels["trace_id"] = e.TraceID().HexString()
+		if traceID := e.TraceID(); !traceID.IsEmpty() {
+			exemplarLabels["trace_id"] = hex.EncodeToString(traceID[:])
 		}
 
-		if !e.SpanID().IsEmpty() {
-			exemplarLabels["span_id"] = e.SpanID().HexString()
+		if spanID := e.SpanID(); !spanID.IsEmpty() {
+			exemplarLabels["span_id"] = hex.EncodeToString(spanID[:])
 		}
 
 		exemplars[i] = prometheus.Exemplar{
