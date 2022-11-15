@@ -2263,6 +2263,69 @@
                      },
                      "name": "jvm.memory.heap.utilization",
                      "unit": "1"
+                  },
+                  {
+                     "description": "Size of memory for segment object of a node.",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "100",
+                              "attributes": [
+                                 {
+                                    "key": "object",
+                                    "value": {
+                                       "stringValue": "doc_value"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
+                           },
+                           {
+                              "asInt": "200",
+                              "attributes": [
+                                 {
+                                    "key": "object",
+                                    "value": {
+                                       "stringValue": "fixed_bit_set"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
+                           },
+                           {
+                              "asInt": "300",
+                              "attributes": [
+                                 {
+                                    "key": "object",
+                                    "value": {
+                                       "stringValue": "index_writer"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
+                           },
+                           {
+                              "asInt": "400",
+                              "attributes": [
+                                 {
+                                    "key": "object",
+                                    "value": {
+                                       "stringValue": "term"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
+                           }
+                        ],
+                        "isMonotonic": false
+                     },
+                     "name": "elasticsearch.node.segments.memory",
+                     "unit": "By"
                   }
                ],
                "scope": {
