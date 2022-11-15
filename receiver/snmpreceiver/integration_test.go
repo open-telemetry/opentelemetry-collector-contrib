@@ -25,8 +25,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/service/servicetest"
 
@@ -68,7 +68,7 @@ func TestSnmpReceiverIntegration(t *testing.T) {
 			factories.Receivers[typeStr] = factory
 			configFile := filepath.Join("testdata", "integration", testCase.configFilename)
 			cfg, err := servicetest.LoadConfigAndValidate(configFile, factories)
-			snmpConfig := cfg.Receivers[config.NewComponentID(typeStr)].(*Config)
+			snmpConfig := cfg.Receivers[component.NewID(typeStr)].(*Config)
 
 			consumer := new(consumertest.MetricsSink)
 			settings := componenttest.NewNopReceiverCreateSettings()

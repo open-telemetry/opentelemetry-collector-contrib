@@ -10,7 +10,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.64.0
 	github.com/stretchr/testify v1.8.1
 	github.com/testcontainers/testcontainers-go v0.15.0
-	go.opentelemetry.io/collector v0.64.2-0.20221110222631-20e3aac00413
+	go.opentelemetry.io/collector v0.64.2-0.20221115155901-1550938c18fd
 	go.uber.org/zap v1.23.0
 )
 
@@ -51,14 +51,14 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/pdata v0.64.2-0.20221110222631-20e3aac00413 // indirect
+	go.opentelemetry.io/collector/pdata v0.64.2-0.20221115155901-1550938c18fd // indirect
 	go.opentelemetry.io/otel v1.11.1 // indirect
 	go.opentelemetry.io/otel/metric v0.33.0 // indirect
 	go.opentelemetry.io/otel/trace v1.11.1 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
 	golang.org/x/net v0.0.0-20220617184016-355a448f1bc9 // indirect
-	golang.org/x/sys v0.0.0-20220919091848-fb04ddd9f9c8 // indirect
+	golang.org/x/sys v0.2.0 // indirect
 	golang.org/x/text v0.4.0 // indirect
 	golang.org/x/time v0.0.0-20220210224613-90d013bbcef8 // indirect
 	google.golang.org/genproto v0.0.0-20220617124728-180714bec0ad // indirect

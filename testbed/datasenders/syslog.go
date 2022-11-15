@@ -102,8 +102,8 @@ func (f *SyslogWriter) GenConfigYAMLStr() string {
 func (f *SyslogWriter) Send(lr plog.LogRecord) error {
 	ts := time.Unix(int64(lr.Timestamp()/1000000000), int64(lr.Timestamp()%100000000)).Format(time.RFC3339Nano)
 	sdid := strings.Builder{}
-	sdid.WriteString(fmt.Sprintf("%s=\"%s\" ", "trace_id", lr.TraceID().HexString()))
-	sdid.WriteString(fmt.Sprintf("%s=\"%s\" ", "span_id", lr.SpanID().HexString()))
+	sdid.WriteString(fmt.Sprintf("%s=\"%s\" ", "trace_id", lr.TraceID()))
+	sdid.WriteString(fmt.Sprintf("%s=\"%s\" ", "span_id", lr.SpanID()))
 	sdid.WriteString(fmt.Sprintf("%s=\"%d\" ", "trace_flags", lr.Flags()))
 	lr.Attributes().Range(func(k string, v pcommon.Value) bool {
 		sdid.WriteString(fmt.Sprintf("%s=\"%s\" ", k, v.Str()))

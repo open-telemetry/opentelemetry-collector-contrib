@@ -14,9 +14,9 @@ require (
 	github.com/openzipkin/zipkin-go v0.4.1
 	github.com/stretchr/testify v1.8.1
 	go.opencensus.io v0.24.0
-	go.opentelemetry.io/collector v0.64.2-0.20221110222631-20e3aac00413
-	go.opentelemetry.io/collector/pdata v0.64.2-0.20221110222631-20e3aac00413
-	go.opentelemetry.io/collector/semconv v0.64.2-0.20221110222631-20e3aac00413
+	go.opentelemetry.io/collector v0.64.2-0.20221115155901-1550938c18fd
+	go.opentelemetry.io/collector/pdata v0.64.2-0.20221115155901-1550938c18fd
+	go.opentelemetry.io/collector/semconv v0.64.2-0.20221115155901-1550938c18fd
 	go.uber.org/zap v1.23.0
 )
 
@@ -62,7 +62,7 @@ require (
 	go.uber.org/multierr v1.8.0 // indirect
 	golang.org/x/crypto v0.0.0-20221010152910-d6f0a8c073c2 // indirect
 	golang.org/x/net v0.1.0 // indirect
-	golang.org/x/sys v0.1.0 // indirect
+	golang.org/x/sys v0.2.0 // indirect
 	golang.org/x/text v0.4.0 // indirect
 	google.golang.org/genproto v0.0.0-20221027153422-115e99e71e1c // indirect
 	google.golang.org/grpc v1.50.1 // indirect

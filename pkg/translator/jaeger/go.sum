@@ -48,10 +48,10 @@ github.com/uber/jaeger-lib v2.4.1+incompatible h1:td4jdvLcExb4cBISKIpHuGoVXh+dVK
 github.com/uber/jaeger-lib v2.4.1+incompatible/go.mod h1:ComeNDZlWwrWnDv8aPp0Ba6+uUTzImX/AauajbLI56U=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
-go.opentelemetry.io/collector/pdata v0.64.2-0.20221110222631-20e3aac00413 h1:Ql3wWb5euyeB8/N6FGVZR2paZCi5Hy9uQTbC1Zg++h0=
-go.opentelemetry.io/collector/pdata v0.64.2-0.20221110222631-20e3aac00413/go.mod h1:IzvXUGQml2mrnvdb8zIlEW3qQs9oFLdD2hLwJdZ+pek=
-go.opentelemetry.io/collector/semconv v0.64.2-0.20221110222631-20e3aac00413 h1:5ou7Ur/2u1Kbn2XVVMsCxZMZqBOjsHTvkMIx6VII53s=
-go.opentelemetry.io/collector/semconv v0.64.2-0.20221110222631-20e3aac00413/go.mod h1:5o9yhOa+ABt7g2E5JABDxGZ1PQPbtfxrKNbYn+LOTXU=
+go.opentelemetry.io/collector/pdata v0.64.2-0.20221115155901-1550938c18fd h1:GdVAbRiae5VDZe3Mn3FqzMxO/aI5UbJ4+dcviqClHy8=
+go.opentelemetry.io/collector/pdata v0.64.2-0.20221115155901-1550938c18fd/go.mod h1:0vynPfW2ZN7DltpcCFgCmTtWMQkCjp2a3TNt82YTCLQ=
+go.opentelemetry.io/collector/semconv v0.64.2-0.20221115155901-1550938c18fd h1:rMqcl2pwi8YtVrtOPK8tVh87W0bFBge4yqB9ypSsAJ4=
+go.opentelemetry.io/collector/semconv v0.64.2-0.20221115155901-1550938c18fd/go.mod h1:5o9yhOa+ABt7g2E5JABDxGZ1PQPbtfxrKNbYn+LOTXU=
 go.uber.org/atomic v1.7.0/go.mod h1:fEN4uk6kAWBTFdckzkM89CLk9XfWZrxpCo0nPH17wJc=
 go.uber.org/atomic v1.10.0 h1:9qC72Qh0+3MqyJbAn8YU5xVq1frD8bn3JtD2oXtafVQ=
 go.uber.org/atomic v1.10.0/go.mod h1:LUxbIzbOniOlMKjJjyPfpl4v+PKK2cNJn91OQbhoJI0=
@@ -77,8 +77,8 @@ golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9/go.mod h1:RxMgew5VJxzue5/jJ
 golang.org/x/sys v0.0.0-20190215142949-d0b11bdaac8a/go.mod h1:STP8DvDyc/dI5b8T5hshtkjS+E42TnysNCUPdjciGhY=
 golang.org/x/sys v0.0.0-20190412213103-97732733099d/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20200930185726-fdedc70b468f/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
-golang.org/x/sys v0.0.0-20221010170243-090e33056c14 h1:k5II8e6QD8mITdi+okbbmR/cIyEbeXLBhy5Ha4nevyc=
-golang.org/x/sys v0.0.0-20221010170243-090e33056c14/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
+golang.org/x/sys v0.2.0 h1:ljd4t30dBnAvMZaQCevtY0xLLD0A+bRZXbgLMLU1F/A=
+golang.org/x/sys v0.2.0/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/text v0.3.0/go.mod h1:NqM8EUOU14njkJ3fqMW+pc6Ldnwhi/IjpwHt7yyuwOQ=
 golang.org/x/text v0.3.3/go.mod h1:5Zoc/QRtKVWzQhOtBMvqHzDpF6irO9z98xDceosuGiQ=
 golang.org/x/text v0.4.0 h1:BrVqGRd7+k1DiOgtnFvAkoQEWQvBc25ouMJM6429SFg=
