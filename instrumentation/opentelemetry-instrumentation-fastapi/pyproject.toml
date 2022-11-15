@@ -39,7 +39,8 @@ instruments = [
 test = [
   "opentelemetry-instrumentation-fastapi[instruments]",
   "opentelemetry-test-utils == 0.36b0.dev",
-  "requests ~= 2.23.0", # needed for testclient
+  "requests ~= 2.23", # needed for testclient
+  "httpx ~= 0.22", # needed for testclient
 ]
 
 [project.entry-points.opentelemetry_instrumentor]
