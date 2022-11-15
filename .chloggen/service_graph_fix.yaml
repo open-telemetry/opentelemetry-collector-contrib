@@ -5,7 +5,7 @@ change_type:
 component: servicegraphprocessor
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: fix servicegraph failed to find dimensions.
+note: Fix servicegraph failed to find dimensions.
 
 # One or more tracking issues related to the change
 issues: []
