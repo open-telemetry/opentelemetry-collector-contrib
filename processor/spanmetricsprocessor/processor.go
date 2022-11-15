@@ -252,8 +252,6 @@ func (p *processorImp) tracesToMetrics(ctx context.Context, traces ptrace.Traces
 	// store metricKeys that relate to the current batch of spans received.
 	metricKeys := p.aggregateMetrics(traces)
 	m, err := p.buildMetrics(metricKeys)
-	// p.aggregateMetrics(traces)
-	// m, err := p.buildMetrics()
 
 	// Exemplars are only relevant to this batch of traces, so must be cleared within the lock,
 	// regardless of error while building metrics, before the next batch of spans is received.
