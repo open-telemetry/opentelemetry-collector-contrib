@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ottlcommon"
 )
@@ -291,7 +292,7 @@ func accessTraceID() ottl.StandardGetSetter[TransformContext] {
 func accessStringTraceID() ottl.StandardGetSetter[TransformContext] {
 	return ottl.StandardGetSetter[TransformContext]{
 		Getter: func(ctx context.Context, tCtx TransformContext) (interface{}, error) {
-			return tCtx.GetLogRecord().TraceID().HexString(), nil
+			return traceutil.TraceIDToHexOrEmptyString(tCtx.GetLogRecord().TraceID()), nil
 		},
 		Setter: func(ctx context.Context, tCtx TransformContext, val interface{}) error {
 			if str, ok := val.(string); ok {
@@ -321,7 +322,7 @@ func accessSpanID() ottl.StandardGetSetter[TransformContext] {
 func accessStringSpanID() ottl.StandardGetSetter[TransformContext] {
 	return ottl.StandardGetSetter[TransformContext]{
 		Getter: func(ctx context.Context, tCtx TransformContext) (interface{}, error) {
-			return tCtx.GetLogRecord().SpanID().HexString(), nil
+			return traceutil.SpanIDToHexOrEmptyString(tCtx.GetLogRecord().SpanID()), nil
 		},
 		Setter: func(ctx context.Context, tCtx TransformContext, val interface{}) error {
 			if str, ok := val.(string); ok {
