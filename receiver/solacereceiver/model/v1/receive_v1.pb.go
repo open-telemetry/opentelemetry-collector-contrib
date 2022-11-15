@@ -223,12 +223,13 @@ func (SpanData_TransactionEvent_Initiator) EnumDescriptor() ([]byte, []int) {
 // nanoseconds, since midnight, Jan. 1, 1970 UTC.
 //
 // Notes on the field numbers used:
-//   - Field numbers 1-15 are used for attributes that are expected to be present
-//     on the wire with every single message not containing an error_description.
-//     Special priority is given to fields that can be repeated.
-//   - Field numbers 16+ are used for other attributes.
+// - Field numbers 1-15 are used for attributes that are expected to be present
+//   on the wire with every single message not containing an error_description.
+//   Special priority is given to fields that can be repeated.
+// - Field numbers 16+ are used for other attributes.
 //
 // Next available field ID: 39
+//
 type SpanData struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
