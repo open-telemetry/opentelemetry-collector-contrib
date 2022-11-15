@@ -18,6 +18,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/antonmedv/expr/vm"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -31,7 +32,7 @@ func TestCompileExprError(t *testing.T) {
 func TestRunExprError(t *testing.T) {
 	matcher, err := NewMatcher("foo")
 	require.NoError(t, err)
-	matched, _ := matcher.match(env{})
+	matched, _ := matcher.match(env{}, &vm.VM{})
 	require.False(t, matched)
 }
 
