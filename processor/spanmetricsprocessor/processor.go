@@ -249,8 +249,11 @@ func (p *processorImp) ConsumeTraces(ctx context.Context, traces ptrace.Traces) 
 func (p *processorImp) tracesToMetrics(ctx context.Context, traces ptrace.Traces) error {
 	p.lock.Lock()
 
-	p.aggregateMetrics(traces)
-	m, err := p.buildMetrics()
+	// store metricKeys that relate to the current batch of spans received.
+	metricKeys := p.aggregateMetrics(traces)
+	m, err := p.buildMetrics(metricKeys)
+	// p.aggregateMetrics(traces)
+	// m, err := p.buildMetrics()
 
 	// Exemplars are only relevant to this batch of traces, so must be cleared within the lock,
 	// regardless of error while building metrics, before the next batch of spans is received.
@@ -272,16 +275,16 @@ func (p *processorImp) tracesToMetrics(ctx context.Context, traces ptrace.Traces
 
 // buildMetrics collects the computed raw metrics data, builds the metrics object and
 // writes the raw metrics data into the metrics object.
-func (p *processorImp) buildMetrics() (pmetric.Metrics, error) {
+func (p *processorImp) buildMetrics(metricKeys []metricKey) (pmetric.Metrics, error) {
 	m := pmetric.NewMetrics()
 	ilm := m.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 	ilm.Scope().SetName("spanmetricsprocessor")
 
-	if err := p.collectCallMetrics(ilm); err != nil {
+	if err := p.collectCallMetrics(ilm, metricKeys); err != nil {
 		return pmetric.Metrics{}, err
 	}
 
-	if err := p.collectLatencyMetrics(ilm); err != nil {
+	if err := p.collectLatencyMetrics(ilm, metricKeys); err != nil {
 		return pmetric.Metrics{}, err
 	}
 
@@ -298,7 +301,7 @@ func (p *processorImp) buildMetrics() (pmetric.Metrics, error) {
 
 // collectLatencyMetrics collects the raw latency metrics, writing the data
 // into the given instrumentation library metrics.
-func (p *processorImp) collectLatencyMetrics(ilm pmetric.ScopeMetrics) error {
+func (p *processorImp) collectLatencyMetrics(ilm pmetric.ScopeMetrics, metricKeys []metricKey) error {
 	mLatency := ilm.Metrics().AppendEmpty()
 	mLatency.SetName("latency")
 	mLatency.SetUnit("ms")
@@ -306,7 +309,11 @@ func (p *processorImp) collectLatencyMetrics(ilm pmetric.ScopeMetrics) error {
 	dps := mLatency.Histogram().DataPoints()
 	dps.EnsureCapacity(len(p.histograms))
 	timestamp := pcommon.NewTimestampFromTime(time.Now())
-	for key, hist := range p.histograms {
+	for _, key := range metricKeys {
+		hist, ok := p.histograms[key]
+		if !ok {
+			return fmt.Errorf("histogramData not found in histograms by key %q", key)
+		}
 		dpLatency := dps.AppendEmpty()
 		dpLatency.SetStartTimestamp(p.startTimestamp)
 		dpLatency.SetTimestamp(timestamp)
@@ -329,7 +336,7 @@ func (p *processorImp) collectLatencyMetrics(ilm pmetric.ScopeMetrics) error {
 
 // collectCallMetrics collects the raw call count metrics, writing the data
 // into the given instrumentation library metrics.
-func (p *processorImp) collectCallMetrics(ilm pmetric.ScopeMetrics) error {
+func (p *processorImp) collectCallMetrics(ilm pmetric.ScopeMetrics, metricKeys []metricKey) error {
 	mCalls := ilm.Metrics().AppendEmpty()
 	mCalls.SetName("calls_total")
 	mCalls.SetEmptySum().SetIsMonotonic(true)
@@ -337,7 +344,11 @@ func (p *processorImp) collectCallMetrics(ilm pmetric.ScopeMetrics) error {
 	dps := mCalls.Sum().DataPoints()
 	dps.EnsureCapacity(len(p.histograms))
 	timestamp := pcommon.NewTimestampFromTime(time.Now())
-	for key, hist := range p.histograms {
+	for _, key := range metricKeys {
+		hist, ok := p.histograms[key]
+		if !ok {
+			return fmt.Errorf("histogramData not found in histograms by key %q", key)
+		}
 		dpCalls := dps.AppendEmpty()
 		dpCalls.SetStartTimestamp(p.startTimestamp)
 		dpCalls.SetTimestamp(timestamp)
@@ -365,7 +376,8 @@ func (p *processorImp) getDimensionsByMetricKey(k metricKey) (pcommon.Map, error
 // Each metric is identified by a key that is built from the service name
 // and span metadata such as operation, kind, status_code and any additional
 // dimensions the user has configured.
-func (p *processorImp) aggregateMetrics(traces ptrace.Traces) {
+func (p *processorImp) aggregateMetrics(traces ptrace.Traces) []metricKey {
+	var metricKeys []metricKey
 	for i := 0; i < traces.ResourceSpans().Len(); i++ {
 		rspans := traces.ResourceSpans().At(i)
 		resourceAttr := rspans.Resource().Attributes()
@@ -391,11 +403,13 @@ func (p *processorImp) aggregateMetrics(traces ptrace.Traces) {
 				p.keyBuf.Reset()
 				buildKey(p.keyBuf, serviceName, span, p.dimensions, resourceAttr)
 				key := metricKey(p.keyBuf.String())
+				metricKeys = append(metricKeys, key)
 				p.cache(serviceName, span, key, resourceAttr)
 				p.updateHistogram(key, latencyInMilliseconds, span.TraceID(), span.SpanID())
 			}
 		}
 	}
+	return metricKeys
 }
 
 // resetAccumulatedMetrics resets the internal maps used to store created metric data. Also purge the cache for

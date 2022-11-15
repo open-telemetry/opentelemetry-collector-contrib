@@ -311,9 +311,11 @@ func TestProcessorConsumeTraces(t *testing.T) {
 		})
 	}
 }
+
 func TestConsumeTracesEvictedCacheKey(t *testing.T) {
 	t.Parallel()
 
+	// Prepare
 	traces0 := ptrace.NewTraces()
 
 	initServiceSpans(
@@ -353,6 +355,7 @@ func TestConsumeTracesEvictedCacheKey(t *testing.T) {
 		}, traces0.ResourceSpans().AppendEmpty())
 
 	// This trace does not have service-a, and should not result in an attempt to publish metrics for service-a.
+	// service-a should be removed from the metricsKeyCache's evicted list.
 	traces1 := ptrace.NewTraces()
 
 	initServiceSpans(
@@ -378,14 +381,21 @@ func TestConsumeTracesEvictedCacheKey(t *testing.T) {
 			},
 		}, traces1.ResourceSpans().AppendEmpty())
 
-	// Prepare
 	mexp := &mocks.MetricsExporter{}
 	tcon := &mocks.TracesConsumer{}
+
+	wantDataPointCounts := []int{
+		6, // (calls_total + latency) * (service-a + service-b + service-c)
+		4, // (calls_total + latency) * (service-b + service-c)
+	}
 
 	// Mocked metric exporter will perform validation on metrics, during p.ConsumeTraces()
 	mexp.On("ConsumeMetrics", mock.Anything, mock.MatchedBy(func(input pmetric.Metrics) bool {
 		return assert.Eventually(t, func() bool {
-			return verifyConsumeMetricsInputCumulative(t, input)
+			require.NotEmpty(t, wantDataPointCounts)
+			require.Equal(t, wantDataPointCounts[0], input.DataPointCount())
+			wantDataPointCounts = wantDataPointCounts[1:] // Dequeue
+			return true
 		}, 10*time.Second, time.Millisecond*100)
 	})).Return(nil)
 	tcon.On("ConsumeTraces", mock.Anything, mock.Anything).Return(nil)
