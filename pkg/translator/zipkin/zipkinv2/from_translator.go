@@ -244,8 +244,8 @@ func spanLinksToZipkinTags(links ptrace.SpanLinkSlice, zTags map[string]string) 
 		if err != nil {
 			return err
 		}
-		zTags[key] = fmt.Sprintf(spanLinkDataFormat, link.TraceID().HexString(),
-			link.SpanID().HexString(), link.TraceState().AsRaw(), jsonStr, link.DroppedAttributesCount())
+		zTags[key] = fmt.Sprintf(spanLinkDataFormat, traceutil.TraceIDToHexOrEmptyString(link.TraceID()),
+			traceutil.SpanIDToHexOrEmptyString(link.SpanID()), link.TraceState().AsRaw(), jsonStr, link.DroppedAttributesCount())
 	}
 	return nil
 }

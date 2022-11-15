@@ -78,8 +78,8 @@ func spanToEnvelope(
 	envelope := contracts.NewEnvelope()
 	envelope.Tags = make(map[string]string)
 	envelope.Time = toTime(span.StartTimestamp()).Format(time.RFC3339Nano)
-	envelope.Tags[contracts.OperationId] = span.TraceID().HexString()
-	envelope.Tags[contracts.OperationParentId] = span.ParentSpanID().HexString()
+	envelope.Tags[contracts.OperationId] = traceutil.TraceIDToHexOrEmptyString(span.TraceID())
+	envelope.Tags[contracts.OperationParentId] = traceutil.SpanIDToHexOrEmptyString(span.ParentSpanID())
 
 	data := contracts.NewData()
 	var dataSanitizeFunc func() []string
@@ -162,7 +162,7 @@ func spanToRequestData(span ptrace.Span, incomingSpanType spanType) *contracts.R
 	// See https://github.com/microsoft/ApplicationInsights-Go/blob/master/appinsights/contracts/requestdata.go
 	// Start with some reasonable default for server spans.
 	data := contracts.NewRequestData()
-	data.Id = span.SpanID().HexString()
+	data.Id = traceutil.SpanIDToHexOrEmptyString(span.SpanID())
 	data.Name = span.Name()
 	data.Duration = formatSpanDuration(span)
 	data.Properties = make(map[string]string)
@@ -188,7 +188,7 @@ func spanToRemoteDependencyData(span ptrace.Span, incomingSpanType spanType) *co
 	// https://github.com/microsoft/ApplicationInsights-Go/blob/master/appinsights/contracts/remotedependencydata.go
 	// Start with some reasonable default for dependent spans.
 	data := contracts.NewRemoteDependencyData()
-	data.Id = span.SpanID().HexString()
+	data.Id = traceutil.SpanIDToHexOrEmptyString(span.SpanID())
 	data.Name = span.Name()
 	data.ResultCode, data.Success = getDefaultFormattedSpanStatus(span.Status())
 	data.Duration = formatSpanDuration(span)

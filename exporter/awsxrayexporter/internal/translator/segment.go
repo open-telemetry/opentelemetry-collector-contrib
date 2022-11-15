@@ -30,6 +30,7 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.8.0"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
 // AWS X-Ray acceptable values for origin field.
@@ -189,12 +190,12 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 	}
 
 	return &awsxray.Segment{
-		ID:          awsxray.String(span.SpanID().HexString()),
+		ID:          awsxray.String(traceutil.SpanIDToHexOrEmptyString(span.SpanID())),
 		TraceID:     awsxray.String(traceID),
 		Name:        awsxray.String(name),
 		StartTime:   awsP.Float64(startTime),
 		EndTime:     awsP.Float64(endTime),
-		ParentID:    awsxray.String(span.ParentSpanID().HexString()),
+		ParentID:    awsxray.String(traceutil.SpanIDToHexOrEmptyString(span.ParentSpanID())),
 		Fault:       awsP.Bool(isFault),
 		Error:       awsP.Bool(isError),
 		Throttle:    awsP.Bool(isThrottle),
