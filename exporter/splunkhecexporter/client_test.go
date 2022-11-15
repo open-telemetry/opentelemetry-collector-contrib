@@ -216,8 +216,11 @@ func runMetricsExport(cfg *Config, metrics pmetric.Metrics, expectedBatchesNum i
 	s := &http.Server{
 		Handler: &capture,
 	}
+	defer s.Close()
 	go func() {
-		panic(s.Serve(listener))
+		if e := s.Serve(listener); e != http.ErrServerClosed {
+			require.NoError(t, e)
+		}
 	}()
 
 	params := componenttest.NewNopExporterCreateSettings()
@@ -265,8 +268,11 @@ func runTraceExport(testConfig *Config, traces ptrace.Traces, expectedBatchesNum
 	s := &http.Server{
 		Handler: &capture,
 	}
+	defer s.Close()
 	go func() {
-		panic(s.Serve(listener))
+		if e := s.Serve(listener); e != http.ErrServerClosed {
+			require.NoError(t, e)
+		}
 	}()
 
 	params := componenttest.NewNopExporterCreateSettings()
@@ -321,8 +327,11 @@ func runLogExport(cfg *Config, ld plog.Logs, expectedBatchesNum int, t *testing.
 	s := &http.Server{
 		Handler: &capture,
 	}
+	defer s.Close()
 	go func() {
-		panic(s.Serve(listener))
+		if e := s.Serve(listener); e != http.ErrServerClosed {
+			require.NoError(t, e)
+		}
 	}()
 
 	params := componenttest.NewNopExporterCreateSettings()
@@ -826,8 +835,11 @@ func TestErrorReceived(t *testing.T) {
 	s := &http.Server{
 		Handler: &capture,
 	}
+	defer s.Close()
 	go func() {
-		panic(s.Serve(listener))
+		if e := s.Serve(listener); e != http.ErrServerClosed {
+			require.NoError(t, e)
+		}
 	}()
 
 	factory := NewFactory()
