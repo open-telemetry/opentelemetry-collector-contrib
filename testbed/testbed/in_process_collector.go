@@ -103,9 +103,9 @@ func (ipp *inProcessCollector) Start(args StartParams) error {
 
 	for {
 		switch state := ipp.svc.GetState(); state {
-		case service.Starting:
+		case service.StateStarting:
 			time.Sleep(time.Second)
-		case service.Running:
+		case service.StateRunning:
 			return nil
 		default:
 			return fmt.Errorf("unable to start, otelcol state is %d", state)
