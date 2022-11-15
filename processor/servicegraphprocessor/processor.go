@@ -416,13 +416,6 @@ func (p *processor) collectLatencyMetrics(ilm pmetric.ScopeMetrics) error {
 		// TODO: Support exemplars
 
 		series.dimensions.CopyTo(dpDuration.Attributes())
-
-		// TODO
-		/*
-			batch [keyToMetric1-de1 failed true]=1   sum{failed=true} 1
-			batch [keyToMetric1-de2 failed false]=2  sum{failed=flase} 2   (sum{failed=flase} 1)
-		*/
-
 	}
 
 	return nil
