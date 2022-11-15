@@ -778,6 +778,15 @@ metrics:
       value_type: int
     attributes: [ ]
     enabled: true
+  elasticsearch.node.segments.memory:
+    description: Size of memory for segment object of a node.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [segments_memory_object_type]
+    enabled: false
   # these metrics are from /*/_stats and are index level metrics
   elasticsearch.index.operations.completed:
     description: The number of operations completed for an index.
