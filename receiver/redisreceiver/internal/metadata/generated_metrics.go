@@ -202,6 +202,48 @@ var MapAttributeRole = map[string]AttributeRole{
 	"primary": AttributeRolePrimary,
 }
 
+// AttributeState specifies the a value state attribute.
+type AttributeState int
+
+const (
+	_ AttributeState = iota
+	AttributeStateSys
+	AttributeStateSysChildren
+	AttributeStateSysMainThread
+	AttributeStateUser
+	AttributeStateUserChildren
+	AttributeStateUserMainThread
+)
+
+// String returns the string representation of the AttributeState.
+func (av AttributeState) String() string {
+	switch av {
+	case AttributeStateSys:
+		return "sys"
+	case AttributeStateSysChildren:
+		return "sys_children"
+	case AttributeStateSysMainThread:
+		return "sys_main_thread"
+	case AttributeStateUser:
+		return "user"
+	case AttributeStateUserChildren:
+		return "user_children"
+	case AttributeStateUserMainThread:
+		return "user_main_thread"
+	}
+	return ""
+}
+
+// MapAttributeState is a helper map of string to AttributeState attribute value.
+var MapAttributeState = map[string]AttributeState{
+	"sys":              AttributeStateSys,
+	"sys_children":     AttributeStateSysChildren,
+	"sys_main_thread":  AttributeStateSysMainThread,
+	"user":             AttributeStateUser,
+	"user_children":    AttributeStateUserChildren,
+	"user_main_thread": AttributeStateUserMainThread,
+}
+
 type metricRedisClientsBlocked struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -2122,8 +2164,8 @@ func (mb *MetricsBuilder) RecordRedisConnectionsRejectedDataPoint(ts pcommon.Tim
 }
 
 // RecordRedisCPUTimeDataPoint adds a data point to redis.cpu.time metric.
-func (mb *MetricsBuilder) RecordRedisCPUTimeDataPoint(ts pcommon.Timestamp, val float64, stateAttributeValue string) {
-	mb.metricRedisCPUTime.recordDataPoint(mb.startTime, ts, val, stateAttributeValue)
+func (mb *MetricsBuilder) RecordRedisCPUTimeDataPoint(ts pcommon.Timestamp, val float64, stateAttributeValue AttributeState) {
+	mb.metricRedisCPUTime.recordDataPoint(mb.startTime, ts, val, stateAttributeValue.String())
 }
 
 // RecordRedisDbAvgTTLDataPoint adds a data point to redis.db.avg_ttl metric.
