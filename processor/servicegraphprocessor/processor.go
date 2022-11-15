@@ -329,7 +329,7 @@ func buildDimensions(e *store.Edge) pcommon.Map {
 	dims.PutStr("client", e.ClientService)
 	dims.PutStr("server", e.ServerService)
 	dims.PutStr("connection_type", string(e.ConnectionType))
-	dims.PutBool("failed", e.Failed)
+	//dims.PutBool("failed", e.Failed)
 	for k, v := range e.Dimensions {
 		dims.PutStr(k, v)
 	}
@@ -374,8 +374,7 @@ func (p *processor) collectCountMetrics(ilm pmetric.ScopeMetrics) error {
 		dpCalls.SetIntValue(value)
 		series.dimensions.CopyTo(dpCalls.Attributes())
 
-		if v, _ := series.dimensions.Get("failed"); v.Equal(pcommon.NewValueBool(true)) {
-			value, _ = p.reqFailedTotal[key]
+		if value, ok = p.reqFailedTotal[key]; ok {
 			mCount = ilm.Metrics().AppendEmpty()
 			mCount.SetName("traces_service_graph_request_failed_total")
 			mCount.SetEmptySum().SetIsMonotonic(true)
@@ -417,6 +416,12 @@ func (p *processor) collectLatencyMetrics(ilm pmetric.ScopeMetrics) error {
 		// TODO: Support exemplars
 
 		series.dimensions.CopyTo(dpDuration.Attributes())
+
+		// TODO
+		/*
+			batch [keyToMetric1-de1 failed true]=1   sum{failed=true} 1
+			batch [keyToMetric1-de2 failed false]=2  sum{failed=flase} 2   (sum{failed=flase} 1)
+		*/
 
 	}
 
