@@ -1,6 +1,7 @@
 from unittest import TestCase, mock
 
 from opentelemetry.instrumentation.kafka.utils import (
+    KafkaPropertiesExtractor,
     _create_consumer_span,
     _get_span_name,
     _kafka_getter,
@@ -208,3 +209,28 @@ class TestUtils(TestCase):
             span, record, self.args, self.kwargs
         )
         detach.assert_called_once_with(attach.return_value)
+
+    @mock.patch(
+        "opentelemetry.instrumentation.kafka.utils.KafkaPropertiesExtractor"
+    )
+    def test_kafka_properties_extractor(
+        self,
+        kafka_properties_extractor: mock.MagicMock,
+    ):
+        kafka_properties_extractor._serialize.return_value = None
+        kafka_properties_extractor._partition.return_value = "partition"
+        assert (
+            KafkaPropertiesExtractor.extract_send_partition(
+                kafka_properties_extractor, self.args, self.kwargs
+            )
+            == "partition"
+        )
+        kafka_properties_extractor._wait_on_metadata.side_effect = Exception(
+            "mocked error"
+        )
+        assert (
+            KafkaPropertiesExtractor.extract_send_partition(
+                kafka_properties_extractor, self.args, self.kwargs
+            )
+            is None
+        )

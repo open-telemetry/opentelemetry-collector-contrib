@@ -75,9 +75,9 @@ class KafkaPropertiesExtractor:
             ):
                 return None
 
-            all_partitions = instance._metadata.partitions_for_topic(topic)
-            if all_partitions is None or len(all_partitions) == 0:
-                return None
+            instance._wait_on_metadata(
+                topic, instance.config["max_block_ms"] / 1000.0
+            )
 
             return instance._partition(
                 topic, partition, key, value, key_bytes, value_bytes
