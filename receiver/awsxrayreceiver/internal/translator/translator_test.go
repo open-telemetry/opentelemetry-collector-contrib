@@ -1021,7 +1021,7 @@ func compare2ResourceSpans(t *testing.T, testCase string, exp, act ptrace.Resour
 		assert.Equal(t,
 			expS.Attributes().Sort(),
 			actS.Attributes().Sort(),
-			fmt.Sprintf("%s: span[%s].Attributes() differ", testCase, expS.SpanID().HexString()),
+			fmt.Sprintf("%s: span[%s].Attributes() differ", testCase, expS.SpanID()),
 		)
 		expS.Attributes().Clear()
 		actS.Attributes().Clear()
@@ -1031,8 +1031,7 @@ func compare2ResourceSpans(t *testing.T, testCase string, exp, act ptrace.Resour
 		assert.Equal(t,
 			expEvts.Len(),
 			actEvts.Len(),
-			fmt.Sprintf("%s: span[%s].Events().Len() differ",
-				testCase, expS.SpanID().HexString()),
+			fmt.Sprintf("%s: span[%s].Events().Len() differ", testCase, expS.SpanID()),
 		)
 
 		for j := 0; j < expEvts.Len(); j++ {
@@ -1042,8 +1041,7 @@ func compare2ResourceSpans(t *testing.T, testCase string, exp, act ptrace.Resour
 			assert.Equal(t,
 				expEvt.Attributes().Sort(),
 				actEvt.Attributes().Sort(),
-				fmt.Sprintf("%s: span[%s], event[%d].Attributes() differ",
-					testCase, expS.SpanID().HexString(), j),
+				fmt.Sprintf("%s: span[%s], event[%d].Attributes() differ", testCase, expS.SpanID(), j),
 			)
 			expEvt.Attributes().Clear()
 			actEvt.Attributes().Clear()

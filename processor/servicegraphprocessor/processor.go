@@ -269,7 +269,7 @@ func (p *processor) onComplete(e *store.Edge) {
 		zap.String("client_service", e.ClientService),
 		zap.String("server_service", e.ServerService),
 		zap.String("connection_type", string(e.ConnectionType)),
-		zap.String("trace_id", e.TraceID.HexString()),
+		zap.Stringer("trace_id", e.TraceID),
 	)
 	p.aggregateMetricsForEdge(e)
 }
@@ -280,7 +280,7 @@ func (p *processor) onExpire(e *store.Edge) {
 		zap.String("client_service", e.ClientService),
 		zap.String("server_service", e.ServerService),
 		zap.String("connection_type", string(e.ConnectionType)),
-		zap.String("trace_id", e.TraceID.HexString()),
+		zap.Stringer("trace_id", e.TraceID),
 	)
 	stats.Record(context.Background(), statExpiredEdges.M(1))
 }
