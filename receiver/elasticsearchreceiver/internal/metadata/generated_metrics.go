@@ -92,6 +92,7 @@ type MetricsSettings struct {
 	ElasticsearchNodeScriptCacheEvictions                     MetricSettings `mapstructure:"elasticsearch.node.script.cache_evictions"`
 	ElasticsearchNodeScriptCompilationLimitTriggered          MetricSettings `mapstructure:"elasticsearch.node.script.compilation_limit_triggered"`
 	ElasticsearchNodeScriptCompilations                       MetricSettings `mapstructure:"elasticsearch.node.script.compilations"`
+	ElasticsearchNodeSegmentsMemory                           MetricSettings `mapstructure:"elasticsearch.node.segments.memory"`
 	ElasticsearchNodeShardsDataSetSize                        MetricSettings `mapstructure:"elasticsearch.node.shards.data_set.size"`
 	ElasticsearchNodeShardsReservedSize                       MetricSettings `mapstructure:"elasticsearch.node.shards.reserved.size"`
 	ElasticsearchNodeShardsSize                               MetricSettings `mapstructure:"elasticsearch.node.shards.size"`
@@ -286,6 +287,9 @@ func DefaultMetricsSettings() MetricsSettings {
 		},
 		ElasticsearchNodeScriptCompilations: MetricSettings{
 			Enabled: true,
+		},
+		ElasticsearchNodeSegmentsMemory: MetricSettings{
+			Enabled: false,
 		},
 		ElasticsearchNodeShardsDataSetSize: MetricSettings{
 			Enabled: true,
@@ -3810,6 +3814,59 @@ func newMetricElasticsearchNodeScriptCompilations(settings MetricSettings) metri
 	return m
 }
 
+type metricElasticsearchNodeSegmentsMemory struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills elasticsearch.node.segments.memory metric with initial data.
+func (m *metricElasticsearchNodeSegmentsMemory) init() {
+	m.data.SetName("elasticsearch.node.segments.memory")
+	m.data.SetDescription("Size of memory for segment object of a node.")
+	m.data.SetUnit("By")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricElasticsearchNodeSegmentsMemory) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, segmentsMemoryObjectTypeAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("object", segmentsMemoryObjectTypeAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricElasticsearchNodeSegmentsMemory) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricElasticsearchNodeSegmentsMemory) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricElasticsearchNodeSegmentsMemory(settings MetricSettings) metricElasticsearchNodeSegmentsMemory {
+	m := metricElasticsearchNodeSegmentsMemory{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricElasticsearchNodeShardsDataSetSize struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -5187,6 +5244,7 @@ type MetricsBuilder struct {
 	metricElasticsearchNodeScriptCacheEvictions                     metricElasticsearchNodeScriptCacheEvictions
 	metricElasticsearchNodeScriptCompilationLimitTriggered          metricElasticsearchNodeScriptCompilationLimitTriggered
 	metricElasticsearchNodeScriptCompilations                       metricElasticsearchNodeScriptCompilations
+	metricElasticsearchNodeSegmentsMemory                           metricElasticsearchNodeSegmentsMemory
 	metricElasticsearchNodeShardsDataSetSize                        metricElasticsearchNodeShardsDataSetSize
 	metricElasticsearchNodeShardsReservedSize                       metricElasticsearchNodeShardsReservedSize
 	metricElasticsearchNodeShardsSize                               metricElasticsearchNodeShardsSize
@@ -5285,6 +5343,7 @@ func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, 
 		metricElasticsearchNodeScriptCacheEvictions:                     newMetricElasticsearchNodeScriptCacheEvictions(settings.ElasticsearchNodeScriptCacheEvictions),
 		metricElasticsearchNodeScriptCompilationLimitTriggered:          newMetricElasticsearchNodeScriptCompilationLimitTriggered(settings.ElasticsearchNodeScriptCompilationLimitTriggered),
 		metricElasticsearchNodeScriptCompilations:                       newMetricElasticsearchNodeScriptCompilations(settings.ElasticsearchNodeScriptCompilations),
+		metricElasticsearchNodeSegmentsMemory:                           newMetricElasticsearchNodeSegmentsMemory(settings.ElasticsearchNodeSegmentsMemory),
 		metricElasticsearchNodeShardsDataSetSize:                        newMetricElasticsearchNodeShardsDataSetSize(settings.ElasticsearchNodeShardsDataSetSize),
 		metricElasticsearchNodeShardsReservedSize:                       newMetricElasticsearchNodeShardsReservedSize(settings.ElasticsearchNodeShardsReservedSize),
 		metricElasticsearchNodeShardsSize:                               newMetricElasticsearchNodeShardsSize(settings.ElasticsearchNodeShardsSize),
@@ -5439,6 +5498,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricElasticsearchNodeScriptCacheEvictions.emit(ils.Metrics())
 	mb.metricElasticsearchNodeScriptCompilationLimitTriggered.emit(ils.Metrics())
 	mb.metricElasticsearchNodeScriptCompilations.emit(ils.Metrics())
+	mb.metricElasticsearchNodeSegmentsMemory.emit(ils.Metrics())
 	mb.metricElasticsearchNodeShardsDataSetSize.emit(ils.Metrics())
 	mb.metricElasticsearchNodeShardsReservedSize.emit(ils.Metrics())
 	mb.metricElasticsearchNodeShardsSize.emit(ils.Metrics())
@@ -5757,6 +5817,11 @@ func (mb *MetricsBuilder) RecordElasticsearchNodeScriptCompilationLimitTriggered
 // RecordElasticsearchNodeScriptCompilationsDataPoint adds a data point to elasticsearch.node.script.compilations metric.
 func (mb *MetricsBuilder) RecordElasticsearchNodeScriptCompilationsDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricElasticsearchNodeScriptCompilations.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordElasticsearchNodeSegmentsMemoryDataPoint adds a data point to elasticsearch.node.segments.memory metric.
+func (mb *MetricsBuilder) RecordElasticsearchNodeSegmentsMemoryDataPoint(ts pcommon.Timestamp, val int64, segmentsMemoryObjectTypeAttributeValue AttributeSegmentsMemoryObjectType) {
+	mb.metricElasticsearchNodeSegmentsMemory.recordDataPoint(mb.startTime, ts, val, segmentsMemoryObjectTypeAttributeValue.String())
 }
 
 // RecordElasticsearchNodeShardsDataSetSizeDataPoint adds a data point to elasticsearch.node.shards.data_set.size metric.
