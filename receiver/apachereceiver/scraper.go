@@ -49,7 +49,7 @@ func init() {
 	featuregate.GetRegistry().MustRegisterID(
 		EmitPortAsResourceAttribute,
 		featuregate.StageAlpha,
-		featuregate.WithRegisterDescription("When enabled, the port of the server will be sent as an apache.server.name resource attribute."),
+		featuregate.WithRegisterDescription("When enabled, the port of the server will be sent as an apache.server.port resource attribute."),
 	)
 }
 
