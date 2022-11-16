@@ -213,7 +213,7 @@ func mapMetricToSplunkEvent(res pcommon.Resource, m pmetric.Metric, config *Conf
 		}
 		return splunkMetrics
 	case pmetric.MetricTypeEmpty:
-		fallthrough
+		return nil
 	default:
 		logger.Warn(
 			"Point with unsupported type",
