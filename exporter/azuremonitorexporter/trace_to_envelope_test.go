@@ -495,6 +495,42 @@ func TestSanitize(t *testing.T) {
 	assert.Equal(t, 4, warningCounter)
 }
 
+// Tests that not exception event doesn't generate an exception
+func TestNotExceptionSpanEvent(t *testing.T) {
+	span := getDefaultHTTPServerSpan()
+
+	event := span.Events().AppendEmpty()
+	event.SetName("NotExceptionEvent")
+
+	envelopes, _ := spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, zap.NewNop())
+	commonEnvelopeValidations(t, span, &envelopes[0], defaultRequestDataEnvelopeName)
+
+	assert.Equal(t, 1, len(envelopes))
+}
+
+func TestExceptionSpanEvent(t *testing.T) {
+	span := getDefaultHTTPServerSpan()
+
+	event := span.Events().AppendEmpty()
+	event.SetName(attributeExceptionEventName)
+	event.Attributes().PutStr(attributeExceptionEventType, "System.Exception")
+	event.Attributes().PutStr(attributeExceptionEventMessage, "error on code")
+	event.Attributes().PutStr(attributeExceptionEventStackTrace, "/test/test.go")
+
+	envelopes, _ := spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, zap.NewNop())
+
+	assert.Equal(t, 2, len(envelopes))
+	assert.NotNil(t, envelopes[0])
+	assert.Equal(t, "Microsoft.ApplicationInsights.Exception", envelopes[0].Name)
+	assert.Equal(t, toTime(span.StartTimestamp()).Format(time.RFC3339Nano), envelopes[0].Time)
+	assert.Equal(t, defaultTraceIDAsHex, envelopes[0].Tags[contracts.OperationId])
+	assert.Equal(t, defaultParentSpanIDAsHex, envelopes[0].Tags[contracts.OperationParentId])
+	assert.Equal(t, defaultServiceNamespace+"."+defaultServiceName, envelopes[0].Tags[contracts.CloudRole])
+	assert.Equal(t, defaultServiceInstance, envelopes[0].Tags[contracts.CloudRoleInstance])
+	assert.NotNil(t, envelopes[0].Data)
+	commonEnvelopeValidations(t, span, &envelopes[1], defaultRequestDataEnvelopeName)
+}
+
 /*
 These methods are for handling some common validations
 */
