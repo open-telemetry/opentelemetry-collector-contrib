@@ -91,8 +91,8 @@ func spanEventExceptionsToEnvelopes(
 		envelope := contracts.NewEnvelope()
 		envelope.Tags = make(map[string]string)
 		envelope.Time = toTime(span.StartTimestamp()).Format(time.RFC3339Nano)
-		envelope.Tags[contracts.OperationId] = span.TraceID().HexString()
-		envelope.Tags[contracts.OperationParentId] = span.ParentSpanID().HexString()
+		envelope.Tags[contracts.OperationId] = traceutil.TraceIDToHexOrEmptyString(span.TraceID())
+		envelope.Tags[contracts.OperationParentId] = traceutil.SpanIDToHexOrEmptyString(span.ParentSpanID())
 
 		var dataSanitizeFunc func() []string
 		var dataProperties map[string]string
@@ -255,7 +255,7 @@ func spanToEnvelope(
 	return envelope, nil
 }
 
-// TODO: Addd the comment
+// Maps Exception Span Events to AppInsights Exception
 func eventToException(event ptrace.SpanEvent) *contracts.ExceptionData {
 	// See https://github.com/microsoft/ApplicationInsights-Go/blob/master/appinsights/contracts/exceptiondata.go
 	data := contracts.NewExceptionData()
@@ -289,22 +289,6 @@ func eventToException(event ptrace.SpanEvent) *contracts.ExceptionData {
 	data.Exceptions = []*contracts.ExceptionDetails{details}
 	data.ProblemId = truncateString(fmt.Sprintf("%s%s", details.TypeName, details.Stack), exceptionDataProblemIdMaxLength)
 	data.SeverityLevel = contracts.Error
-	return data
-}
-
-// TODO: Addd the comment
-func eventToCustomEvent(event ptrace.SpanEvent) *contracts.EventData {
-	// See https://github.com/microsoft/ApplicationInsights-Go/blob/master/appinsights/contracts/eventdata.go
-	data := contracts.NewEventData()
-	data.Properties = make(map[string]string)
-	data.Measurements = make(map[string]float64)
-
-	event.Attributes().Range(func(key string, value pcommon.Value) bool {
-		setAttributeValueAsPropertyOrMeasurement(key, value, data.Properties, data.Measurements)
-		return true
-	})
-
-	data.Name = event.Name()
 	return data
 }
 
