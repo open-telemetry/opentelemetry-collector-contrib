@@ -17,6 +17,7 @@ package azuremonitorexporter // import "github.com/open-telemetry/opentelemetry-
 // Contains code common to both trace and metrics exporters
 import (
 	"errors"
+	"fmt"
 	"net/url"
 	"strconv"
 	"strings"
@@ -51,8 +52,105 @@ var (
 // Used to identify the type of a received Span
 type spanType int8
 
-// Transforms a tuple of pcommon.Resource, pcommon.InstrumentationScope, ptrace.Span into an AppInsights contracts.Envelope
+// Transforms a tuple of pcommon.Resource, pcommon.InstrumentationScope, ptrace.Span into one or more AppInsights contracts.Envelope
 // This is the only method that should be targeted in the unit tests
+func spanToEnvelopes(
+	resource pcommon.Resource,
+	instrumentationScope pcommon.InstrumentationScope,
+	span ptrace.Span,
+	logger *zap.Logger) ([]contracts.Envelope, error) {
+
+	envelopes, err := spanEventExceptionsToEnvelopes(resource, instrumentationScope, span, logger)
+	if err != nil {
+		return nil, err
+	}
+
+	spanEnvelop, err := spanToEnvelope(resource, instrumentationScope, span, logger)
+	if err != nil {
+		return nil, err
+	}
+	envelopes = append(envelopes, *spanEnvelop)
+	return envelopes, nil
+}
+
+func spanEventExceptionsToEnvelopes(
+	resource pcommon.Resource,
+	instrumentationScope pcommon.InstrumentationScope,
+	span ptrace.Span,
+	logger *zap.Logger) ([]contracts.Envelope, error) {
+
+	envelopes := []contracts.Envelope{}
+	events := span.Events()
+
+	for i := 0; i < events.Len(); i++ {
+		event := events.At(i)
+		if event.Name() != attributeExceptionEventName {
+			continue
+		}
+
+		envelope := contracts.NewEnvelope()
+		envelope.Tags = make(map[string]string)
+		envelope.Time = toTime(span.StartTimestamp()).Format(time.RFC3339Nano)
+		envelope.Tags[contracts.OperationId] = span.TraceID().HexString()
+		envelope.Tags[contracts.OperationParentId] = span.ParentSpanID().HexString()
+
+		var dataSanitizeFunc func() []string
+		var dataProperties map[string]string
+		data := contracts.NewData()
+
+		exception := eventToException(event)
+		if exception == nil {
+			continue
+		}
+		dataProperties = exception.Properties
+		dataSanitizeFunc = exception.Sanitize
+		envelope.Name = exception.EnvelopeName("")
+		data.BaseData = exception
+		data.BaseType = exception.BaseType()
+
+		envelope.Data = data
+		resourceAttributes := resource.Attributes()
+		// Copy all the resource labels into the base data properties. Resource values are always strings
+		resourceAttributes.Range(func(k string, v pcommon.Value) bool {
+			dataProperties[k] = v.Str()
+			return true
+		})
+
+		// Copy the instrumentation properties
+		if instrumentationScope.Name() != "" {
+			dataProperties[instrumentationLibraryName] = instrumentationScope.Name()
+		}
+
+		if instrumentationScope.Version() != "" {
+			dataProperties[instrumentationLibraryVersion] = instrumentationScope.Version()
+		}
+
+		// Extract key service.* labels from the Resource labels and construct CloudRole and CloudRoleInstance envelope tags
+		// https://github.com/open-telemetry/opentelemetry-specification/tree/main/specification/resource/semantic_conventions
+		if serviceName, serviceNameExists := resourceAttributes.Get(conventions.AttributeServiceName); serviceNameExists {
+			cloudRole := serviceName.Str()
+
+			if serviceNamespace, serviceNamespaceExists := resourceAttributes.Get(conventions.AttributeServiceNamespace); serviceNamespaceExists {
+				cloudRole = serviceNamespace.Str() + "." + cloudRole
+			}
+
+			envelope.Tags[contracts.CloudRole] = cloudRole
+		}
+
+		if serviceInstance, exists := resourceAttributes.Get(conventions.AttributeServiceInstanceID); exists {
+			envelope.Tags[contracts.CloudRoleInstance] = serviceInstance.Str()
+		}
+
+		// Sanitize the base data, the envelope and envelope tags
+		sanitize(dataSanitizeFunc, logger)
+		sanitize(func() []string { return envelope.Sanitize() }, logger)
+		sanitize(func() []string { return contracts.SanitizeTags(envelope.Tags) }, logger)
+		envelopes = append(envelopes, *envelope)
+	}
+
+	return envelopes, nil
+}
+
 func spanToEnvelope(
 	resource pcommon.Resource,
 	instrumentationScope pcommon.InstrumentationScope,
@@ -155,6 +253,59 @@ func spanToEnvelope(
 	sanitize(func() []string { return contracts.SanitizeTags(envelope.Tags) }, logger)
 
 	return envelope, nil
+}
+
+// TODO: Addd the comment
+func eventToException(event ptrace.SpanEvent) *contracts.ExceptionData {
+	// See https://github.com/microsoft/ApplicationInsights-Go/blob/master/appinsights/contracts/exceptiondata.go
+	data := contracts.NewExceptionData()
+	data.Properties = make(map[string]string)
+	data.Measurements = make(map[string]float64)
+
+	details := contracts.NewExceptionDetails()
+
+	event.Attributes().Range(func(key string, value pcommon.Value) bool {
+
+		switch key {
+		case attributeExceptionEventType:
+			details.TypeName = truncateString(value.AsString(), exceptionDetailsTypeMaxLength)
+		case attributeExceptionEventMessage:
+			details.Message = truncateString(value.AsString(), exceptionDetailsMessageMaxLength)
+		case attributeExceptionEventStackTrace:
+			stackStr := value.AsString()
+			details.Stack = truncateString(stackStr, exceptionDetailsStackMaxLength)
+			details.HasFullStack = len(stackStr) <= exceptionDetailsStackMaxLength
+			details.ParsedStack = []*contracts.StackFrame{}
+		default:
+			setAttributeValueAsPropertyOrMeasurement(key, value, data.Properties, data.Measurements)
+		}
+		return true
+	})
+
+	if details.Message == "" || details.TypeName == "" {
+		return nil
+	}
+
+	data.Exceptions = []*contracts.ExceptionDetails{details}
+	data.ProblemId = truncateString(fmt.Sprintf("%s%s", details.TypeName, details.Stack), exceptionDataProblemIdMaxLength)
+	data.SeverityLevel = contracts.Error
+	return data
+}
+
+// TODO: Addd the comment
+func eventToCustomEvent(event ptrace.SpanEvent) *contracts.EventData {
+	// See https://github.com/microsoft/ApplicationInsights-Go/blob/master/appinsights/contracts/eventdata.go
+	data := contracts.NewEventData()
+	data.Properties = make(map[string]string)
+	data.Measurements = make(map[string]float64)
+
+	event.Attributes().Range(func(key string, value pcommon.Value) bool {
+		setAttributeValueAsPropertyOrMeasurement(key, value, data.Properties, data.Measurements)
+		return true
+	})
+
+	data.Name = event.Name()
+	return data
 }
 
 // Maps Server/Consumer Span to AppInsights RequestData

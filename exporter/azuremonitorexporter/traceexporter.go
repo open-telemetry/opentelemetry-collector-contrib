@@ -42,18 +42,22 @@ func (v *traceVisitor) visit(
 	resource pcommon.Resource,
 	scope pcommon.InstrumentationScope, span ptrace.Span) (ok bool) {
 
-	envelope, err := spanToEnvelope(resource, scope, span, v.exporter.logger)
+	envelopes, err := spanToEnvelopes(resource, scope, span, v.exporter.logger)
 	if err != nil {
 		// record the error and short-circuit
 		v.err = consumererror.NewPermanent(err)
 		return false
 	}
 
-	// apply the instrumentation key to the envelope
-	envelope.IKey = v.exporter.config.InstrumentationKey
+	for _, item := range envelopes {
+		envelope := item
+		// apply the instrumentation key to the envelope
+		envelope.IKey = v.exporter.config.InstrumentationKey
 
-	// This is a fire and forget operation
-	v.exporter.transportChannel.Send(envelope)
+		// This is a fire and forget operation
+		v.exporter.transportChannel.Send(&envelope)
+	}
+
 	v.processed++
 
 	return true
