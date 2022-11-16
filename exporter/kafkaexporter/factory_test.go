@@ -28,7 +28,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-// Data is a simple means of allowing
+// data is a simple means of allowing
 // interchangeability between the
 // different marshaller types
 type data interface {
