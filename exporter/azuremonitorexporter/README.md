@@ -60,6 +60,7 @@ The exporter follows the semantic conventions to fill the Application Insights s
 The exact mapping can be found [here](trace_to_envelope.go).
 
 All attributes are also mapped to custom properties if they are booleans or strings and to custom measurements if they are ints or doubles.
+[SpanEvents with name `exception`](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/exceptions.md) are mapped to Application Insights Exception type.
 
 ### Logs
 This exporter saves log records to Application Insights `traces` table.
