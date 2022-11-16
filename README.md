@@ -90,6 +90,7 @@ Approvers ([@open-telemetry/collector-contrib-approvers](https://github.com/orgs
 - [Anthony Mirabella](https://github.com/Aneurysm9), AWS
 - [David Ashpole](https://github.com/dashpole), Google
 - [Evan Bradley](https://github.com/evan-bradley), Dynatrace
+- [Sean Marciniak](https://github.com/MovieStoreGuy), Atlassian
 - [Tyler Helmuth](https://github.com/TylerHelmuth), Honeycomb
 
 Emeritus Approvers:
