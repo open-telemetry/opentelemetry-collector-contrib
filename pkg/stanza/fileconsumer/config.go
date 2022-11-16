@@ -109,9 +109,6 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit EmitFunc, factory s
 	default:
 		return nil, fmt.Errorf("invalid start_at location '%s'", c.StartAt)
 	}
-	if c.FingerprintSize == 0 {
-		c.FingerprintSize = DefaultFingerprintSize
-	}
 	return &Manager{
 		SugaredLogger: logger.With("component", "fileconsumer"),
 		cancel:        func() {},
@@ -164,7 +161,7 @@ func (c Config) validate() error {
 		return fmt.Errorf("`max_concurrent_files` must be greater than 1")
 	}
 
-	if c.FingerprintSize != 0 && c.FingerprintSize < MinFingerprintSize {
+	if c.FingerprintSize < MinFingerprintSize {
 		return fmt.Errorf("`fingerprint_size` must be at least %d bytes", MinFingerprintSize)
 	}
 
