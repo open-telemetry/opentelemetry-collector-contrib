@@ -89,6 +89,7 @@ Approvers ([@open-telemetry/collector-contrib-approvers](https://github.com/orgs
 
 - [Anthony Mirabella](https://github.com/Aneurysm9), AWS
 - [David Ashpole](https://github.com/dashpole), Google
+- [Sean Marciniak](https://github.com/MovieStoreGuy), Atlassian
 - [Tyler Helmuth](https://github.com/TylerHelmuth), Honeycomb
 
 Emeritus Approvers:
