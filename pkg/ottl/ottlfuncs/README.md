@@ -221,14 +221,6 @@ Examples:
 
 - `limit(resource.attributes, 50, ["http.host", "http.method"])`
 
-
-
-
-
-
-
-
-
 ## parse_json_into_map
 
 `parse_json_into_map(target, value)`
@@ -257,17 +249,6 @@ Examples:
 - `parse_json_to_map(attributes, attributes["kubernetes"])`
 - `parse_json_to_map(attributes, body)`
 - `parse_json_to_map(attributes, SomeFunctionThatReturnsJSON())`
-
-
-
-
-
-
-
-
-
-
-
 
 ## replace_all_matches
 
