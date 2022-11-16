@@ -189,7 +189,7 @@ metrics:
     attributes: [circuit_breaker_name]
     enabled: true
   elasticsearch.node.cache.memory.usage:
-    description: The size in bytes of the cache.
+    description: The size in bytes of the cache on a node.
     unit: By
     sum:
       monotonic: false
@@ -198,7 +198,7 @@ metrics:
     attributes: [cache_name]
     enabled: true
   elasticsearch.node.cache.evictions:
-    description: The number of evictions from the cache.
+    description: The number of evictions from the cache on a node.
     unit: "{evictions}"
     sum:
       monotonic: true
@@ -883,6 +883,24 @@ metrics:
     unit: By
     sum:
       monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [cache_name, index_aggregation_type]
+    enabled: false
+  elasticsearch.index.cache.size:
+    description: The number of elements of the query cache for an index.
+    unit: 1
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [index_aggregation_type]
+    enabled: false
+  elasticsearch.index.cache.evictions:
+    description: The number of evictions from the cache for an index.
+    unit: "{evictions}"
+    sum:
+      monotonic: true
       aggregation: cumulative
       value_type: int
     attributes: [cache_name, index_aggregation_type]
