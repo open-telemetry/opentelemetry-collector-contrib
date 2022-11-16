@@ -16,6 +16,7 @@ Functions
 - [delete_matching_keys](#delete_matching_keys)
 - [keep_keys](#keep_keys)
 - [limit](#limit)
+- [parse_json_into_map](#parse_json_into_map)
 - [replace_all_matches](#replace_all_matches)
 - [replace_all_patterns](#replace_all_patterns)
 - [replace_match](#replace_match)
@@ -219,6 +220,54 @@ Examples:
 
 
 - `limit(resource.attributes, 50, ["http.host", "http.method"])`
+
+
+
+
+
+
+
+
+
+## parse_json_into_map
+
+`parse_json_into_map(target, value)`
+
+The `parse_json_into_map` function unmarshals the value string as json and updates/inserts the json object's root fields into the target map.
+
+`target` is a path expression to a `pdata.Map` type field. `value` is a string or a path expression or function that returns a string.
+
+`value` is unmarshalled using [jsoniter](https://github.com/json-iterator/go).   Each JSON type is converted into a `pdata.Value` using the following map:
+
+```
+JSON boolean -> bool
+JSON number  -> float64
+JSON string  -> string
+JSON null    -> nil
+JSON arrays  -> pdata.SliceValue
+JSON objects -> string
+```
+
+The OTTL contexts don't know how to set maps, so string is used for JSON objects instead of map [#16337](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16337).
+Using strings for now allows follow-up statements to parse any nested objects.
+
+Examples:
+
+- `parse_json_to_map(attributes, "{\"attr\":true}")`
+- `parse_json_to_map(attributes, attributes["kubernetes"])`
+- `parse_json_to_map(attributes, body)`
+- `parse_json_to_map(attributes, SomeFunctionThatReturnsJSON())`
+
+
+
+
+
+
+
+
+
+
+
 
 ## replace_all_matches
 
