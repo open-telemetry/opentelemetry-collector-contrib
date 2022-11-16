@@ -1,10 +1,10 @@
 # Metrics Generation Processor
 
-| Status                   |                  |
-|--------------------------|------------------|
-| Stability                | [in development] |
-| Supported pipeline types | metrics          |
-| Distributions            | [contrib]        |
+| Status                   |               |
+|--------------------------|---------------|
+| Stability                | [development] |
+| Supported pipeline types | metrics       |
+| Distributions            | [contrib]     |
 
 **Status: under development; Not recommended for production usage.**
 
@@ -72,5 +72,5 @@ rules:
       scale_by: 1048576
 ```
 
-[in development]: https://github.com/open-telemetry/opentelemetry-collector#in-development
+[development]: https://github.com/open-telemetry/opentelemetry-collector#development
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
