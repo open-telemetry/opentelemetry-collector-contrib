@@ -118,6 +118,7 @@ _ResponseHookT = typing.Optional[
 _URL_OPEN_ARG_TO_INDEX_MAPPING = {
     "method": 0,
     "url": 1,
+    "body": 2,
 }
 
 

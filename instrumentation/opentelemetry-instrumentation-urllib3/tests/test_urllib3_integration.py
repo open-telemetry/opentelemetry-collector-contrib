@@ -309,3 +309,24 @@ class TestURLLib3Instrumentor(TestBase):
         )
         self.assertIn("request_hook_body", span.attributes)
         self.assertEqual(span.attributes["request_hook_body"], body)
+
+    def test_request_positional_body(self):
+        def request_hook(span, request, headers, body):
+            span.set_attribute("request_hook_body", body)
+
+        URLLib3Instrumentor().uninstrument()
+        URLLib3Instrumentor().instrument(
+            request_hook=request_hook,
+        )
+
+        body = "param1=1&param2=2"
+
+        pool = urllib3.HTTPConnectionPool("httpbin.org")
+        response = pool.urlopen("POST", "/status/200", body)
+
+        self.assertEqual(b"Hello!", response.data)
+
+        span = self.assert_span()
+
+        self.assertIn("request_hook_body", span.attributes)
+        self.assertEqual(span.attributes["request_hook_body"], body)

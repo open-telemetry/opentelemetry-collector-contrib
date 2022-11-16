@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+- Add metric instrumentation for tornado
+  ([#1252](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1252))
+
 ### Added
 
 - `opentelemetry-instrumentation-pymysql` Add tests for commit() and rollback().
@@ -20,9 +23,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Fix bug in Urllib instrumentation - add status code to span attributes only if the status code is not None. 
+- Fix bug in Urllib instrumentation - add status code to span attributes only if the status code is not None.
   ([#1430](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1430))
-- `opentelemetry-instrumentation-aiohttp-client` Allow overriding of status in response hook. 
+- `opentelemetry-instrumentation-aiohttp-client` Allow overriding of status in response hook.
   ([#1394](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1394))
 - `opentelemetry-instrumentation-pymysql` Fix dbapi connection instrument wrapper has no _sock member.
   ([#1424](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1424))
@@ -88,7 +91,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- `opentelemetry-instrumentation-grpc` add supports to filter requests to instrument. 
+- `opentelemetry-instrumentation-grpc` add supports to filter requests to instrument.
   ([#1241](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1241))
 - Flask sqlalchemy psycopg2 integration
   ([#1224](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1224))
