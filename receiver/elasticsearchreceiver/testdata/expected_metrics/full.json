@@ -830,7 +830,7 @@
                      "unit": "{count}"
                   },
                   {
-                     "description": "The number of evictions from the cache.",
+                     "description": "The number of evictions from the cache on a node.",
                      "name": "elasticsearch.node.cache.evictions",
                      "sum": {
                         "aggregationTemporality": 2,
@@ -867,7 +867,7 @@
                      "unit": "{evictions}"
                   },
                   {
-                     "description": "The size in bytes of the cache.",
+                     "description": "The size in bytes of the cache on a node.",
                      "name": "elasticsearch.node.cache.memory.usage",
                      "sum": {
                         "aggregationTemporality": 2,
@@ -3066,10 +3066,134 @@
                               ],
                               "startTimeUnixNano": "1661811689941624000",
                               "timeUnixNano": "1661811689943245000"
+                           },
+                           {
+                              "asInt": "12",
+                              "attributes": [
+                                 {
+                                    "key": "cache_name",
+                                    "value": {
+                                       "stringValue": "query"
+                                    }
+                                 },
+                                 {
+                                    "key": "aggregation",
+                                    "value": {
+                                       "stringValue": "primary_shards"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
+                           },
+                           {
+                              "asInt": "12",
+                              "attributes": [
+                                 {
+                                    "key": "cache_name",
+                                    "value": {
+                                       "stringValue": "query"
+                                    }
+                                 },
+                                 {
+                                    "key": "aggregation",
+                                    "value": {
+                                       "stringValue": "total"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
                            }
                         ]
                      },
                      "unit": "By"
+                  },
+                  {
+                     "description": "The number of elements of the query cache for an index.",
+                     "name": "elasticsearch.index.cache.size",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "isMonotonic": false,
+                        "dataPoints": [
+                           {
+                              "asInt": "3",
+                              "attributes": [
+                                 {
+                                    "key": "aggregation",
+                                    "value": {
+                                       "stringValue": "primary_shards"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
+                           },
+                           {
+                              "asInt": "3",
+                              "attributes": [
+                                 {
+                                    "key": "aggregation",
+                                    "value": {
+                                       "stringValue": "total"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
+                           }
+                        ]
+                     },
+                     "unit": "1"
+                  },
+                  {
+                     "description": "The number of evictions from the cache for an index.",
+                     "name": "elasticsearch.index.cache.evictions",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "isMonotonic": true,
+                        "dataPoints": [
+                           {
+                              "asInt": "2",
+                              "attributes": [
+                                 {
+                                    "key": "cache_name",
+                                    "value": {
+                                       "stringValue": "query"
+                                    }
+                                 },
+                                 {
+                                    "key": "aggregation",
+                                    "value": {
+                                       "stringValue": "primary_shards"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
+                           },
+                           {
+                              "asInt": "2",
+                              "attributes": [
+                                 {
+                                    "key": "cache_name",
+                                    "value": {
+                                       "stringValue": "query"
+                                    }
+                                 },
+                                 {
+                                    "key": "aggregation",
+                                    "value": {
+                                       "stringValue": "total"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
+                           }
+                        ]
+                     },
+                     "unit": "{evictions}"
                   }
                ],
                "scope": {
@@ -3617,10 +3741,134 @@
                               ],
                               "startTimeUnixNano": "1661811689941624000",
                               "timeUnixNano": "1661811689943245000"
+                           },
+                           {
+                              "asInt": "12",
+                              "attributes": [
+                                 {
+                                    "key": "cache_name",
+                                    "value": {
+                                       "stringValue": "query"
+                                    }
+                                 },
+                                 {
+                                    "key": "aggregation",
+                                    "value": {
+                                       "stringValue": "primary_shards"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
+                           },
+                           {
+                              "asInt": "12",
+                              "attributes": [
+                                 {
+                                    "key": "cache_name",
+                                    "value": {
+                                       "stringValue": "query"
+                                    }
+                                 },
+                                 {
+                                    "key": "aggregation",
+                                    "value": {
+                                       "stringValue": "total"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
                            }
                         ]
                      },
                      "unit": "By"
+                  },
+                  {
+                     "description": "The number of elements of the query cache for an index.",
+                     "name": "elasticsearch.index.cache.size",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "isMonotonic": false,
+                        "dataPoints": [
+                           {
+                              "asInt": "3",
+                              "attributes": [
+                                 {
+                                    "key": "aggregation",
+                                    "value": {
+                                       "stringValue": "primary_shards"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
+                           },
+                           {
+                              "asInt": "3",
+                              "attributes": [
+                                 {
+                                    "key": "aggregation",
+                                    "value": {
+                                       "stringValue": "total"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
+                           }
+                        ]
+                     },
+                     "unit": "1"
+                  },
+                  {
+                     "description": "The number of evictions from the cache for an index.",
+                     "name": "elasticsearch.index.cache.evictions",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "isMonotonic": true,
+                        "dataPoints": [
+                           {
+                              "asInt": "2",
+                              "attributes": [
+                                 {
+                                    "key": "cache_name",
+                                    "value": {
+                                       "stringValue": "query"
+                                    }
+                                 },
+                                 {
+                                    "key": "aggregation",
+                                    "value": {
+                                       "stringValue": "primary_shards"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
+                           },
+                           {
+                              "asInt": "2",
+                              "attributes": [
+                                 {
+                                    "key": "cache_name",
+                                    "value": {
+                                       "stringValue": "query"
+                                    }
+                                 },
+                                 {
+                                    "key": "aggregation",
+                                    "value": {
+                                       "stringValue": "total"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
+                           }
+                        ]
+                     },
+                     "unit": "{evictions}"
                   }
                ],
                "scope": {
