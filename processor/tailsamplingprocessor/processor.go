@@ -367,7 +367,9 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans ptrace.Resourc
 			actualData.Unlock()
 		} else {
 			actualData.Unlock()
-			if finalDecision == sampling.Sampled {
+
+			switch finalDecision {
+			case sampling.Sampled:
 				// Forward the spans to the policy destinations
 				traceTd := ptrace.NewTraces()
 				appendToTraces(traceTd, resourceSpans, spans)
@@ -376,9 +378,9 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans ptrace.Resourc
 						"Error sending late arrived spans to destination",
 						zap.Error(err))
 				}
-			} else if finalDecision == sampling.NotSampled {
+			case sampling.NotSampled:
 				stats.Record(tsp.ctx, statLateSpanArrivalAfterDecision.M(int64(time.Since(actualData.DecisionTime)/time.Second)))
-			} else {
+			default:
 				tsp.logger.Warn("Encountered unexpected sampling decision",
 					zap.Int("decision", int(finalDecision)))
 			}
