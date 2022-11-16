@@ -84,13 +84,13 @@
           "total_time_in_millis" : 0
         },
         "query_cache" : {
-          "memory_size_in_bytes" : 0,
+          "memory_size_in_bytes" : 12,
           "total_count" : 0,
           "hit_count" : 0,
           "miss_count" : 0,
-          "cache_size" : 0,
+          "cache_size" : 3,
           "cache_count" : 0,
-          "evictions" : 0
+          "evictions" : 2
         },
         "fielddata" : {
           "memory_size_in_bytes" : 3,
@@ -212,13 +212,13 @@
           "total_time_in_millis" : 0
         },
         "query_cache" : {
-          "memory_size_in_bytes" : 0,
+          "memory_size_in_bytes" : 12,
           "total_count" : 0,
           "hit_count" : 0,
           "miss_count" : 0,
-          "cache_size" : 0,
+          "cache_size" : 3,
           "cache_count" : 0,
-          "evictions" : 0
+          "evictions" : 2
         },
         "fielddata" : {
           "memory_size_in_bytes" : 3,
@@ -344,13 +344,13 @@
             "total_time_in_millis" : 0
           },
           "query_cache" : {
-            "memory_size_in_bytes" : 0,
+            "memory_size_in_bytes" : 12,
             "total_count" : 0,
             "hit_count" : 0,
             "miss_count" : 0,
-            "cache_size" : 0,
+            "cache_size" : 3,
             "cache_count" : 0,
-            "evictions" : 0
+            "evictions" : 2
           },
           "fielddata" : {
             "memory_size_in_bytes" : 3,
@@ -472,13 +472,13 @@
             "total_time_in_millis" : 0
           },
           "query_cache" : {
-            "memory_size_in_bytes" : 0,
+            "memory_size_in_bytes" : 12,
             "total_count" : 0,
             "hit_count" : 0,
             "miss_count" : 0,
-            "cache_size" : 0,
+            "cache_size" : 3,
             "cache_count" : 0,
-            "evictions" : 0
+            "evictions" : 2
           },
           "fielddata" : {
             "memory_size_in_bytes" : 3,
