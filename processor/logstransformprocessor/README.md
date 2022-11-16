@@ -1,10 +1,10 @@
 # Logs Transform Processor
 
-| Status                   |                  |
-|--------------------------|------------------|
-| Stability                | [in development] |
-| Supported pipeline types | logs             |
-| Distributions            | none             |
+| Status                   |               |
+|--------------------------|---------------|
+| Stability                | [development] |
+| Supported pipeline types | logs          |
+| Distributions            | none          |
 
 NOTE - This processor is experimental, with the intention that its functionality will be reimplemented in the [transform processor](../transformprocessor/README.md) in the future.
 
@@ -29,4 +29,4 @@ processors:
 Refer to [config.yaml](./testdata/config.yaml) for detailed
 examples on using the processor.
 
-[in development]: https://github.com/open-telemetry/opentelemetry-collector#in-development
+[development]: https://github.com/open-telemetry/opentelemetry-collector#development
