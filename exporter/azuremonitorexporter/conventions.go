@@ -37,7 +37,7 @@ const (
 	exceptionDetailsMessageMaxLength  int    = 32768
 	exceptionDetailsTypeMaxLength     int    = 1024
 	exceptionDetailsStackMaxLength    int    = 32768
-	exceptionDataProblemIdMaxLength   int    = 1024
+	exceptionDataProblemIDMaxLength   int    = 1024
 )
 
 // NetworkAttributes is the set of known network attributes

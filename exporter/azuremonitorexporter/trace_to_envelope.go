@@ -60,10 +60,7 @@ func spanToEnvelopes(
 	span ptrace.Span,
 	logger *zap.Logger) ([]contracts.Envelope, error) {
 
-	envelopes, err := spanEventExceptionsToEnvelopes(resource, instrumentationScope, span, logger)
-	if err != nil {
-		return nil, err
-	}
+	envelopes := spanEventExceptionsToEnvelopes(resource, instrumentationScope, span, logger)
 
 	spanEnvelop, err := spanToEnvelope(resource, instrumentationScope, span, logger)
 	if err != nil {
@@ -77,7 +74,7 @@ func spanEventExceptionsToEnvelopes(
 	resource pcommon.Resource,
 	instrumentationScope pcommon.InstrumentationScope,
 	span ptrace.Span,
-	logger *zap.Logger) ([]contracts.Envelope, error) {
+	logger *zap.Logger) []contracts.Envelope {
 
 	envelopes := []contracts.Envelope{}
 	events := span.Events()
@@ -287,7 +284,7 @@ func eventToException(event ptrace.SpanEvent) *contracts.ExceptionData {
 	}
 
 	data.Exceptions = []*contracts.ExceptionDetails{details}
-	data.ProblemId = truncateString(fmt.Sprintf("%s%s", details.TypeName, details.Stack), exceptionDataProblemIdMaxLength)
+	data.ProblemId = truncateString(fmt.Sprintf("%s%s", details.TypeName, details.Stack), exceptionDataProblemIDMaxLength)
 	data.SeverityLevel = contracts.Error
 	return data
 }
