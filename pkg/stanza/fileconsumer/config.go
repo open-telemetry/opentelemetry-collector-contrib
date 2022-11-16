@@ -100,9 +100,14 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit EmitFunc, factory s
 	if emit == nil {
 		return nil, fmt.Errorf("must provide emit function")
 	}
-	startAtBeginning, err := judgeStartAtBeginning(c.StartAt)
-	if err != nil {
-		return nil, err
+	var startAtBeginning bool
+	switch c.StartAt {
+	case "beginning":
+		startAtBeginning = true
+	case "end":
+		startAtBeginning = false
+	default:
+		return nil, fmt.Errorf("invalid start_at location '%s'", c.StartAt)
 	}
 	if c.FingerprintSize == 0 {
 		c.FingerprintSize = DefaultFingerprintSize
@@ -159,7 +164,7 @@ func (c Config) validate() error {
 		return fmt.Errorf("`max_concurrent_files` must be greater than 1")
 	}
 
-	if c.FingerprintSize < MinFingerprintSize {
+	if c.FingerprintSize != 0 && c.FingerprintSize < MinFingerprintSize {
 		return fmt.Errorf("`fingerprint_size` must be at least %d bytes", MinFingerprintSize)
 	}
 
@@ -168,15 +173,4 @@ func (c Config) validate() error {
 		return err
 	}
 	return nil
-}
-
-func judgeStartAtBeginning(startAt string) (bool, error) {
-	switch startAt {
-	case "beginning":
-		return true, nil
-	case "end":
-		return false, nil
-	default:
-		return false, fmt.Errorf("invalid start_at location '%s'", startAt)
-	}
 }
