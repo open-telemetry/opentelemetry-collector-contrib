@@ -169,6 +169,23 @@ func TestScopePathGetSetter(t *testing.T) {
 			},
 		},
 		{
+			name: "attributes array empty",
+			path: []ottl.Field{
+				{
+					Name:   "attributes",
+					MapKey: ottltest.Strp("arr_empty"),
+				},
+			},
+			orig: func() pcommon.Slice {
+				val, _ := refIS.Attributes().Get("arr_empty")
+				return val.Slice()
+			}(),
+			newVal: []any{},
+			modified: func(is pcommon.InstrumentationScope) {
+				// no-op
+			},
+		},
+		{
 			name: "attributes array string",
 			path: []ottl.Field{
 				{
@@ -292,6 +309,8 @@ func createInstrumentationScope() pcommon.InstrumentationScope {
 	is.Attributes().PutInt("int", 10)
 	is.Attributes().PutDouble("double", 1.2)
 	is.Attributes().PutEmptyBytes("bytes").FromRaw([]byte{1, 3, 2})
+
+	is.Attributes().PutEmptySlice("arr_empty")
 
 	arrStr := is.Attributes().PutEmptySlice("arr_str")
 	arrStr.AppendEmpty().SetStr("one")
