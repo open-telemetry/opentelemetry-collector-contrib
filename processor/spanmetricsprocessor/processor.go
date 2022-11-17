@@ -25,7 +25,6 @@ import (
 	"unicode"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -114,7 +113,7 @@ type histogramData struct {
 	exemplarsData []exemplarData
 }
 
-func newProcessor(logger *zap.Logger, config config.Processor, nextConsumer consumer.Traces) (*processorImp, error) {
+func newProcessor(logger *zap.Logger, config component.ProcessorConfig, nextConsumer consumer.Traces) (*processorImp, error) {
 	logger.Info("Building spanmetricsprocessor")
 	pConfig := config.(*Config)
 
@@ -202,7 +201,7 @@ func (p *processorImp) Start(ctx context.Context, host component.Host) error {
 	var availableMetricsExporters []string
 
 	// The available list of exporters come from any configured metrics pipelines' exporters.
-	for k, exp := range exporters[config.MetricsDataType] {
+	for k, exp := range exporters[component.DataTypeMetrics] {
 		metricsExp, ok := exp.(component.MetricsExporter)
 		if !ok {
 			return fmt.Errorf("the exporter %q isn't a metrics exporter", k.String())
@@ -300,15 +299,15 @@ func (p *processorImp) buildMetrics() (pmetric.Metrics, error) {
 // collectLatencyMetrics collects the raw latency metrics, writing the data
 // into the given instrumentation library metrics.
 func (p *processorImp) collectLatencyMetrics(ilm pmetric.ScopeMetrics) error {
+	mLatency := ilm.Metrics().AppendEmpty()
+	mLatency.SetName("latency")
+	mLatency.SetUnit("ms")
+	mLatency.SetEmptyHistogram().SetAggregationTemporality(p.config.GetAggregationTemporality())
+	dps := mLatency.Histogram().DataPoints()
+	dps.EnsureCapacity(len(p.histograms))
+	timestamp := pcommon.NewTimestampFromTime(time.Now())
 	for key, hist := range p.histograms {
-		mLatency := ilm.Metrics().AppendEmpty()
-		mLatency.SetName("latency")
-		mLatency.SetUnit("ms")
-		mLatency.SetEmptyHistogram().SetAggregationTemporality(p.config.GetAggregationTemporality())
-
-		timestamp := pcommon.NewTimestampFromTime(time.Now())
-
-		dpLatency := mLatency.Histogram().DataPoints().AppendEmpty()
+		dpLatency := dps.AppendEmpty()
 		dpLatency.SetStartTimestamp(p.startTimestamp)
 		dpLatency.SetTimestamp(timestamp)
 		dpLatency.ExplicitBounds().FromRaw(p.latencyBounds)
@@ -331,15 +330,17 @@ func (p *processorImp) collectLatencyMetrics(ilm pmetric.ScopeMetrics) error {
 // collectCallMetrics collects the raw call count metrics, writing the data
 // into the given instrumentation library metrics.
 func (p *processorImp) collectCallMetrics(ilm pmetric.ScopeMetrics) error {
+	mCalls := ilm.Metrics().AppendEmpty()
+	mCalls.SetName("calls_total")
+	mCalls.SetEmptySum().SetIsMonotonic(true)
+	mCalls.Sum().SetAggregationTemporality(p.config.GetAggregationTemporality())
+	dps := mCalls.Sum().DataPoints()
+	dps.EnsureCapacity(len(p.histograms))
+	timestamp := pcommon.NewTimestampFromTime(time.Now())
 	for key, hist := range p.histograms {
-		mCalls := ilm.Metrics().AppendEmpty()
-		mCalls.SetName("calls_total")
-		mCalls.SetEmptySum().SetIsMonotonic(true)
-		mCalls.Sum().SetAggregationTemporality(p.config.GetAggregationTemporality())
-
-		dpCalls := mCalls.Sum().DataPoints().AppendEmpty()
+		dpCalls := dps.AppendEmpty()
 		dpCalls.SetStartTimestamp(p.startTimestamp)
-		dpCalls.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+		dpCalls.SetTimestamp(timestamp)
 		dpCalls.SetIntValue(int64(hist.count))
 
 		dimensions, err := p.getDimensionsByMetricKey(key)

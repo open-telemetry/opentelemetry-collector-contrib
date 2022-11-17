@@ -22,7 +22,6 @@ import (
 
 	"github.com/apache/pulsar-client-go/pulsar"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.uber.org/zap"
 )
@@ -32,7 +31,7 @@ var errUnrecognizedEncoding = errors.New("unrecognized encoding")
 const alreadyClosedError = "AlreadyClosedError"
 
 type pulsarTracesConsumer struct {
-	id              config.ComponentID
+	id              component.ID
 	tracesConsumer  consumer.Traces
 	topic           string
 	client          pulsar.Client
@@ -129,7 +128,7 @@ func (c *pulsarTracesConsumer) Shutdown(context.Context) error {
 }
 
 type pulsarMetricsConsumer struct {
-	id              config.ComponentID
+	id              component.ID
 	metricsConsumer consumer.Metrics
 	unmarshaler     MetricsUnmarshaler
 	topic           string
@@ -229,7 +228,7 @@ func (c *pulsarMetricsConsumer) Shutdown(context.Context) error {
 }
 
 type pulsarLogsConsumer struct {
-	id              config.ComponentID
+	id              component.ID
 	logsConsumer    consumer.Logs
 	unmarshaler     LogsUnmarshaler
 	topic           string

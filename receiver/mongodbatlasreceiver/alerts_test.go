@@ -661,10 +661,75 @@ func TestAlertsRetrieval(t *testing.T) {
 				require.Equal(t, logs.LogRecordCount(), 1)
 			},
 		},
+		{
+			name: "hostname and port missing",
+			config: func() *Config {
+				return &Config{
+					ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(typeStr),
+					Granularity:               defaultGranularity,
+					RetrySettings:             exporterhelper.NewDefaultRetrySettings(),
+					Alerts: AlertConfig{
+						Mode: alertModePoll,
+						Projects: []*ProjectConfig{
+							{
+								Name: testProjectName,
+							},
+						},
+						PageSize:     defaultAlertsPageSize,
+						MaxPages:     defaultAlertsMaxPages,
+						PollInterval: 1 * time.Second,
+					},
+				}
+			},
+			client: func() alertsClient {
+				tc := &mockAlertsClient{}
+				tc.On("GetProject", mock.Anything, mock.Anything).Return(&mongodbatlas.Project{
+					ID:    testProjectID,
+					OrgID: "test-org-id",
+					Name:  testProjectName,
+					Links: []*mongodbatlas.Link{},
+				}, nil)
+				tc.On("GetAlerts", mock.Anything, testProjectID, mock.Anything).Return(
+					[]mongodbatlas.Alert{
+						{
+							ID:            testAlertID,
+							GroupID:       testGroupID,
+							AlertConfigID: "",
+							EventTypeName: testTypeName,
+							Created:       time.Now().Format(time.RFC3339),
+							Updated:       time.Now().Format(time.RFC3339),
+							Enabled:       new(bool),
+							Status:        "TRACKING",
+							MetricName:    testMetricName,
+							CurrentValue: &mongodbatlas.CurrentValue{
+								Number: new(float64),
+								Units:  "By",
+							},
+							ClusterName:     testClusterName,
+							HostnameAndPort: "",
+							Matchers:        []mongodbatlas.Matcher{},
+							MetricThreshold: &mongodbatlas.MetricThreshold{},
+							Notifications:   []mongodbatlas.Notification{},
+						},
+					}, false, nil)
+				return tc
+			},
+			validateEntries: func(t *testing.T, l plog.Logs) {
+				require.Equal(t, l.LogRecordCount(), 1)
+				rl := l.ResourceLogs().At(0)
+				sl := rl.ScopeLogs().At(0)
+				lr := sl.LogRecords().At(0)
+				_, hasHostname := lr.Attributes().Get("net.peer.name")
+				require.False(t, hasHostname)
+				_, hasPort := lr.Attributes().Get("net.peer.port")
+				require.False(t, hasPort)
+			},
+		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			logSink := &consumertest.LogsSink{}
 			alertsRcvr, err := newAlertsReceiver(zap.NewNop(), tc.config(), logSink)
 			require.NoError(t, err)

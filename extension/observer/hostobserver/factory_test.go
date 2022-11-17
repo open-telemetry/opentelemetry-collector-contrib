@@ -19,13 +19,13 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
 )
 
 func TestValidConfig(t *testing.T) {
-	err := configtest.CheckConfigStruct(createDefaultConfig())
+	err := componenttest.CheckConfigStruct(createDefaultConfig())
 	require.NoError(t, err)
 }
 
@@ -34,7 +34,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 		context.Background(),
 		componenttest.NewNopExtensionCreateSettings(),
 		&Config{
-			ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
+			ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
 		},
 	)
 	require.NoError(t, err)

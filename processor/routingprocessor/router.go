@@ -19,7 +19,6 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -65,7 +64,7 @@ type routingItem[E component.Exporter, K any] struct {
 	statement *ottl.Statement[K]
 }
 
-func (r *router[E, K]) registerExporters(available map[config.ComponentID]component.Exporter) error {
+func (r *router[E, K]) registerExporters(available map[component.ID]component.Exporter) error {
 	// register default exporters
 	err := r.registerDefaultExporters(available)
 	if err != nil {
@@ -83,7 +82,7 @@ func (r *router[E, K]) registerExporters(available map[config.ComponentID]compon
 
 // registerDefaultExporters registers the configured default exporters
 // using the provided available exporters map.
-func (r *router[E, K]) registerDefaultExporters(available map[config.ComponentID]component.Exporter) error {
+func (r *router[E, K]) registerDefaultExporters(available map[component.ID]component.Exporter) error {
 	for _, name := range r.defaultExporterIDs {
 		e, err := r.extractExporter(name, available)
 		if errors.Is(err, errExporterNotFound) {
@@ -100,7 +99,7 @@ func (r *router[E, K]) registerDefaultExporters(available map[config.ComponentID
 
 // registerRouteExporters registers route exporters using the provided
 // available exporters map to check if they were available.
-func (r *router[E, K]) registerRouteExporters(available map[config.ComponentID]component.Exporter) error {
+func (r *router[E, K]) registerRouteExporters(available map[component.ID]component.Exporter) error {
 	for _, item := range r.table {
 		statement, err := r.getStatementFrom(item)
 		if err != nil {
@@ -154,11 +153,11 @@ func key(entry RoutingTableItem) string {
 
 // extractExporter returns an exporter for the given name (type/name) and type
 // argument if it exists in the list of available exporters.
-func (r *router[E, K]) extractExporter(name string, available map[config.ComponentID]component.Exporter) (E, error) {
+func (r *router[E, K]) extractExporter(name string, available map[component.ID]component.Exporter) (E, error) {
 	var exporter E
 
-	id, err := config.NewComponentIDFromString(name)
-	if err != nil {
+	id := component.ID{}
+	if err := id.UnmarshalText([]byte(name)); err != nil {
 		return exporter, err
 	}
 	v, ok := available[id]

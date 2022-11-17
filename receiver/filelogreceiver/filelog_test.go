@@ -28,12 +28,13 @@ import (
 	"github.com/observiq/nanojack"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -47,7 +48,7 @@ func TestDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	require.NotNil(t, cfg, "failed to create default config")
-	require.NoError(t, configtest.CheckConfigStruct(cfg))
+	require.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
 func TestLoadConfig(t *testing.T) {
@@ -57,9 +58,9 @@ func TestLoadConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(config.NewComponentID("filelog").String())
+	sub, err := cm.Sub(component.NewID("filelog").String())
 	require.NoError(t, err)
-	require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
 
 	assert.NoError(t, cfg.Validate())
 	assert.Equal(t, testdataConfigYaml(), cfg)
@@ -87,12 +88,9 @@ func TestReadStaticFile(t *testing.T) {
 
 	f := NewFactory()
 	sink := new(consumertest.LogsSink)
-
 	cfg := testdataConfigYaml()
-	cfg.Converter.MaxFlushCount = 10
-	cfg.Converter.FlushInterval = time.Millisecond
 
-	converter := adapter.NewConverter()
+	converter := adapter.NewConverter(zap.NewNop())
 	converter.Start()
 	defer converter.Stop()
 
@@ -183,8 +181,6 @@ func (rt *rotationTest) Run(t *testing.T) {
 	sink := new(consumertest.LogsSink)
 
 	cfg := rotationTestConfig(tempDir)
-	cfg.Converter.MaxFlushCount = 1
-	cfg.Converter.FlushInterval = time.Millisecond
 
 	// With a max of 100 logs per file and 1 backup file, rotation will occur
 	// when more than 100 logs are written, and deletion when more than 200 are written.
@@ -194,7 +190,7 @@ func (rt *rotationTest) Run(t *testing.T) {
 
 	// Build expected outputs
 	expectedTimestamp, _ := time.ParseInLocation("2006-01-02", "2020-08-25", time.Local)
-	converter := adapter.NewConverter()
+	converter := adapter.NewConverter(zap.NewNop())
 	converter.Start()
 
 	var wg sync.WaitGroup
@@ -265,7 +261,7 @@ func expectNLogs(sink *consumertest.LogsSink, expected int) func() bool {
 func testdataConfigYaml() *FileLogConfig {
 	return &FileLogConfig{
 		BaseConfig: adapter.BaseConfig{
-			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+			ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 			Operators: []operator.Config{
 				{
 					Builder: func() *regex.Config {
@@ -284,10 +280,6 @@ func testdataConfigYaml() *FileLogConfig {
 					}(),
 				},
 			},
-			Converter: adapter.ConverterConfig{
-				MaxFlushCount: 100,
-				FlushInterval: 100 * time.Millisecond,
-			},
 		},
 		InputConfig: func() file.Config {
 			c := file.NewConfig()
@@ -301,7 +293,7 @@ func testdataConfigYaml() *FileLogConfig {
 func rotationTestConfig(tempDir string) *FileLogConfig {
 	return &FileLogConfig{
 		BaseConfig: adapter.BaseConfig{
-			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+			ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 			Operators: []operator.Config{
 				{
 					Builder: func() *regex.Config {
@@ -316,7 +308,6 @@ func rotationTestConfig(tempDir string) *FileLogConfig {
 					}(),
 				},
 			},
-			Converter: adapter.ConverterConfig{},
 		},
 		InputConfig: func() file.Config {
 			c := file.NewConfig()

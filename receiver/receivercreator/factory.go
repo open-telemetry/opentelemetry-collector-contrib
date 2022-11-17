@@ -40,9 +40,9 @@ func NewFactory() component.ReceiverFactory {
 		component.WithMetricsReceiver(createMetricsReceiver, stability))
 }
 
-func createDefaultConfig() config.Receiver {
+func createDefaultConfig() component.ReceiverConfig {
 	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+		ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 		ResourceAttributes: resourceAttributes{
 			observer.PodType: map[string]string{
 				conventions.AttributeK8SPodName:       "`name`",
@@ -70,7 +70,7 @@ func createDefaultConfig() config.Receiver {
 func createMetricsReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateSettings,
-	cfg config.Receiver,
+	cfg component.ReceiverConfig,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	return newReceiverCreator(params, cfg.(*Config), consumer)

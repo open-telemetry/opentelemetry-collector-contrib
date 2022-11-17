@@ -26,7 +26,6 @@ import (
 
 	"github.com/gorilla/mux"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
@@ -53,7 +52,7 @@ type configuration struct {
 // This receiver is basically a Skywalking collector.
 type swReceiver struct {
 	nextConsumer consumer.Traces
-	id           config.ComponentID
+	id           component.ID
 
 	config *configuration
 
@@ -78,27 +77,37 @@ const (
 
 // newSkywalkingReceiver creates a TracesReceiver that receives traffic as a Skywalking collector
 func newSkywalkingReceiver(
-	id config.ComponentID,
+	id component.ID,
 	config *configuration,
 	nextConsumer consumer.Traces,
 	set component.ReceiverCreateSettings,
-) *swReceiver {
+) (*swReceiver, error) {
+
+	grpcObsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+		ReceiverID:             id,
+		Transport:              grpcTransport,
+		ReceiverCreateSettings: set,
+	})
+	if err != nil {
+		return nil, err
+	}
+	httpObsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+		ReceiverID:             id,
+		Transport:              collectorHTTPTransport,
+		ReceiverCreateSettings: set,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	return &swReceiver{
 		config:       config,
 		nextConsumer: nextConsumer,
 		id:           id,
 		settings:     set,
-		grpcObsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
-			ReceiverID:             id,
-			Transport:              grpcTransport,
-			ReceiverCreateSettings: set,
-		}),
-		httpObsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
-			ReceiverID:             id,
-			Transport:              collectorHTTPTransport,
-			ReceiverCreateSettings: set,
-		}),
-	}
+		grpcObsrecv:  grpcObsrecv,
+		httpObsrecv:  httpObsrecv,
+	}, nil
 }
 
 func (sr *swReceiver) collectorGRPCAddr() string {

@@ -21,8 +21,9 @@ import (
 
 	"cloud.google.com/go/pubsub/pstest"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/obsreport"
@@ -85,14 +86,18 @@ func TestReceiver(t *testing.T) {
 	traceSink := new(consumertest.TracesSink)
 	metricSink := new(consumertest.MetricsSink)
 	logSink := new(consumertest.LogsSink)
+
+	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+		ReceiverID:             component.NewID(typeStr),
+		Transport:              reportTransport,
+		LongLivedCtx:           false,
+		ReceiverCreateSettings: params,
+	})
+	require.NoError(t, err)
+
 	receiver := &pubsubReceiver{
-		logger: zap.New(core),
-		obsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
-			ReceiverID:             config.NewComponentID(typeStr),
-			Transport:              reportTransport,
-			LongLivedCtx:           false,
-			ReceiverCreateSettings: params,
-		}),
+		logger:    zap.New(core),
+		obsrecv:   obsrecv,
 		userAgent: "test-user-agent",
 
 		config: &Config{

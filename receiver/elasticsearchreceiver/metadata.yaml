@@ -189,7 +189,7 @@ metrics:
     attributes: [circuit_breaker_name]
     enabled: true
   elasticsearch.node.cache.memory.usage:
-    description: The size in bytes of the cache.
+    description: The size in bytes of the cache on a node.
     unit: By
     sum:
       monotonic: false
@@ -198,7 +198,7 @@ metrics:
     attributes: [cache_name]
     enabled: true
   elasticsearch.node.cache.evictions:
-    description: The number of evictions from the cache.
+    description: The number of evictions from the cache on a node.
     unit: "{evictions}"
     sum:
       monotonic: true
@@ -473,6 +473,13 @@ metrics:
       value_type: int
     attributes: []
     enabled: true
+  jvm.memory.heap.utilization:
+    description: Fraction of heap memory usage
+    unit: 1
+    gauge:
+      value_type: double
+    attributes: []
+    enabled: false
   jvm.memory.heap.committed:
     description: The amount of memory that is guaranteed to be available for the heap
     unit: By
@@ -771,6 +778,15 @@ metrics:
       value_type: int
     attributes: [ ]
     enabled: true
+  elasticsearch.node.segments.memory:
+    description: Size of memory for segment object of a node.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [segments_memory_object_type]
+    enabled: false
   # these metrics are from /*/_stats and are index level metrics
   elasticsearch.index.operations.completed:
     description: The number of operations completed for an index.
@@ -861,4 +877,31 @@ metrics:
       aggregation: cumulative
       value_type: int
     attributes: [index_aggregation_type]
+    enabled: false
+  elasticsearch.index.cache.memory.usage:
+    description: The size in bytes of the cache for an index.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [cache_name, index_aggregation_type]
+    enabled: false
+  elasticsearch.index.cache.size:
+    description: The number of elements of the query cache for an index.
+    unit: 1
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [index_aggregation_type]
+    enabled: false
+  elasticsearch.index.cache.evictions:
+    description: The number of evictions from the cache for an index.
+    unit: "{evictions}"
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    attributes: [cache_name, index_aggregation_type]
     enabled: false

@@ -1,5 +1,0 @@
-change_type: enhancement
-component: elasticsearchreceiver
-note: Add metrics related to GET operations
-issues: [14635]
-

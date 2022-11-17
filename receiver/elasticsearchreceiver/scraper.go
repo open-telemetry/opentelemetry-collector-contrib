@@ -220,6 +220,8 @@ func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pcommo
 		r.mb.RecordJvmMemoryHeapMaxDataPoint(now, info.JVMInfo.JVMMemoryInfo.MaxHeapInBy)
 		r.mb.RecordJvmMemoryHeapUsedDataPoint(now, info.JVMInfo.JVMMemoryInfo.HeapUsedInBy)
 		r.mb.RecordJvmMemoryHeapCommittedDataPoint(now, info.JVMInfo.JVMMemoryInfo.HeapCommittedInBy)
+		// Elasticsearch sends this data in percent, but we want to represent it as a number between 0 and 1, so we need to divide.
+		r.mb.RecordJvmMemoryHeapUtilizationDataPoint(now, float64(info.JVMInfo.JVMMemoryInfo.HeapUsedPercent)/100)
 
 		r.mb.RecordJvmMemoryNonheapUsedDataPoint(now, info.JVMInfo.JVMMemoryInfo.NonHeapUsedInBy)
 		r.mb.RecordJvmMemoryNonheapCommittedDataPoint(now, info.JVMInfo.JVMMemoryInfo.NonHeapComittedInBy)
@@ -283,6 +285,19 @@ func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pcommo
 		r.mb.RecordElasticsearchNodeScriptCompilationsDataPoint(now, info.Script.Compilations)
 		r.mb.RecordElasticsearchNodeScriptCompilationLimitTriggeredDataPoint(now, info.Script.CompilationLimitTriggered)
 
+		r.mb.RecordElasticsearchNodeSegmentsMemoryDataPoint(
+			now, info.Indices.SegmentsStats.DocumentValuesMemoryInBy, metadata.AttributeSegmentsMemoryObjectTypeDocValue,
+		)
+		r.mb.RecordElasticsearchNodeSegmentsMemoryDataPoint(
+			now, info.Indices.SegmentsStats.FixedBitSetMemoryInBy, metadata.AttributeSegmentsMemoryObjectTypeFixedBitSet,
+		)
+		r.mb.RecordElasticsearchNodeSegmentsMemoryDataPoint(
+			now, info.Indices.SegmentsStats.IndexWriterMemoryInBy, metadata.AttributeSegmentsMemoryObjectTypeIndexWriter,
+		)
+		r.mb.RecordElasticsearchNodeSegmentsMemoryDataPoint(
+			now, info.Indices.SegmentsStats.TermsMemoryInBy, metadata.AttributeSegmentsMemoryObjectTypeTerm,
+		)
+
 		r.mb.EmitForResource(metadata.WithElasticsearchClusterName(nodeStats.ClusterName),
 			metadata.WithElasticsearchNodeName(info.Name))
 	}
@@ -339,7 +354,7 @@ func (r *elasticsearchScraper) scrapeIndicesMetrics(ctx context.Context, now pco
 	indexStats, err := r.client.IndexStats(ctx, r.cfg.Indices)
 
 	if err != nil {
-		errs.AddPartial(16, err)
+		errs.AddPartial(22, err)
 		return
 	}
 
@@ -448,6 +463,33 @@ func (r *elasticsearchScraper) scrapeOneIndexMetrics(now pcommon.Timestamp, name
 	)
 	r.mb.RecordElasticsearchIndexTranslogSizeDataPoint(
 		now, stats.Total.TranslogStats.SizeInBy, metadata.AttributeIndexAggregationTypeTotal,
+	)
+
+	r.mb.RecordElasticsearchIndexCacheMemoryUsageDataPoint(
+		now, stats.Primaries.FieldDataCache.MemorySizeInBy, metadata.AttributeCacheNameFielddata, metadata.AttributeIndexAggregationTypePrimaryShards,
+	)
+	r.mb.RecordElasticsearchIndexCacheMemoryUsageDataPoint(
+		now, stats.Total.FieldDataCache.MemorySizeInBy, metadata.AttributeCacheNameFielddata, metadata.AttributeIndexAggregationTypeTotal,
+	)
+	r.mb.RecordElasticsearchIndexCacheMemoryUsageDataPoint(
+		now, stats.Total.QueryCache.MemorySizeInBy, metadata.AttributeCacheNameQuery, metadata.AttributeIndexAggregationTypeTotal,
+	)
+	r.mb.RecordElasticsearchIndexCacheMemoryUsageDataPoint(
+		now, stats.Primaries.QueryCache.MemorySizeInBy, metadata.AttributeCacheNameQuery, metadata.AttributeIndexAggregationTypePrimaryShards,
+	)
+
+	r.mb.RecordElasticsearchIndexCacheSizeDataPoint(
+		now, stats.Primaries.QueryCache.CacheSize, metadata.AttributeIndexAggregationTypePrimaryShards,
+	)
+	r.mb.RecordElasticsearchIndexCacheSizeDataPoint(
+		now, stats.Total.QueryCache.CacheSize, metadata.AttributeIndexAggregationTypeTotal,
+	)
+
+	r.mb.RecordElasticsearchIndexCacheEvictionsDataPoint(
+		now, stats.Primaries.QueryCache.Evictions, metadata.AttributeCacheNameQuery, metadata.AttributeIndexAggregationTypePrimaryShards,
+	)
+	r.mb.RecordElasticsearchIndexCacheEvictionsDataPoint(
+		now, stats.Total.QueryCache.Evictions, metadata.AttributeCacheNameQuery, metadata.AttributeIndexAggregationTypeTotal,
 	)
 
 	r.mb.EmitForResource(metadata.WithElasticsearchIndexName(name), metadata.WithElasticsearchClusterName(r.clusterName))

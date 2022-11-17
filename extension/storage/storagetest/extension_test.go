@@ -21,7 +21,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 )
 
@@ -33,14 +32,14 @@ func TestID(t *testing.T) {
 
 func TestInMemoryLifecycle(t *testing.T) {
 	ext := NewInMemoryStorageExtension("test")
-	require.Equal(t, config.NewComponentIDWithName(testStorageType, "test"), ext.ID())
+	require.Equal(t, component.NewIDWithName(testStorageType, "test"), ext.ID())
 	runExtensionLifecycle(t, ext, false)
 }
 
 func TestFileBackedLifecycle(t *testing.T) {
 	dir := t.TempDir()
 	ext := NewFileBackedStorageExtension("test", dir)
-	require.Equal(t, config.NewComponentIDWithName(testStorageType, "test"), ext.ID())
+	require.Equal(t, component.NewIDWithName(testStorageType, "test"), ext.ID())
 	runExtensionLifecycle(t, ext, true)
 }
 
@@ -48,7 +47,7 @@ func runExtensionLifecycle(t *testing.T, ext *TestStorage, expectPersistence boo
 	ctx := context.Background()
 	require.NoError(t, ext.Start(ctx, componenttest.NewNopHost()))
 
-	clientOne, err := ext.GetClient(ctx, component.KindProcessor, config.NewComponentID("foo"), "client_one")
+	clientOne, err := ext.GetClient(ctx, component.KindProcessor, component.NewID("foo"), "client_one")
 	require.NoError(t, err)
 
 	creatorID, err := CreatorID(ctx, clientOne)
@@ -77,7 +76,7 @@ func runExtensionLifecycle(t *testing.T, ext *TestStorage, expectPersistence boo
 	require.NoError(t, clientOne.Close(ctx))
 
 	// Create new client to test persistence
-	clientTwo, err := ext.GetClient(ctx, component.KindProcessor, config.NewComponentID("foo"), "client_one")
+	clientTwo, err := ext.GetClient(ctx, component.KindProcessor, component.NewID("foo"), "client_one")
 	require.NoError(t, err)
 
 	creatorID, err = CreatorID(ctx, clientTwo)

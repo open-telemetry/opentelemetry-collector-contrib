@@ -99,8 +99,8 @@ func TestProcessorStart(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			// Prepare
-			exporters := map[config.DataType]map[config.ComponentID]component.Exporter{
-				config.MetricsDataType: {
+			exporters := map[component.DataType]map[component.ID]component.Exporter{
+				component.DataTypeMetrics: {
 					otlpConfig.ID(): tc.exporter,
 				},
 			}
@@ -327,14 +327,14 @@ func TestMetricKeyCache(t *testing.T) {
 	ctx := metadata.NewIncomingContext(context.Background(), nil)
 
 	// 0 key was cached at beginning
-	assert.Empty(t, p.metricKeyToDimensions.Keys())
+	assert.Zero(t, p.metricKeyToDimensions.Len())
 
 	err := p.ConsumeTraces(ctx, traces)
 	// Validate
 	require.NoError(t, err)
 	// 2 key was cached, 1 key was evicted and cleaned after the processing
 	assert.Eventually(t, func() bool {
-		return assert.Len(t, p.metricKeyToDimensions.Keys(), DimensionsCacheSize)
+		return assert.Equal(t, DimensionsCacheSize, p.metricKeyToDimensions.Len())
 	}, 10*time.Second, time.Millisecond*100)
 
 	// consume another batch of traces
@@ -343,7 +343,7 @@ func TestMetricKeyCache(t *testing.T) {
 
 	// 2 key was cached, other keys were evicted and cleaned after the processing
 	assert.Eventually(t, func() bool {
-		return assert.Len(t, p.metricKeyToDimensions.Keys(), DimensionsCacheSize)
+		return assert.Equal(t, DimensionsCacheSize, p.metricKeyToDimensions.Len())
 	}, 10*time.Second, time.Millisecond*100)
 }
 
@@ -431,8 +431,8 @@ func verifyMultipleCumulativeConsumptions() func(t testing.TB, input pmetric.Met
 // verifyConsumeMetricsInput verifies the input of the ConsumeMetrics call from this processor.
 // This is the best point to verify the computed metrics from spans are as expected.
 func verifyConsumeMetricsInput(t testing.TB, input pmetric.Metrics, expectedTemporality pmetric.AggregationTemporality, numCumulativeConsumptions int) bool {
-	require.Equal(t, 6, input.MetricCount(),
-		"Should be 3 for each of call count and latency. Each group of 3 metrics is made of: "+
+	require.Equal(t, 6, input.DataPointCount(),
+		"Should be 3 for each of call count and latency. Each group of 3 data points is made of: "+
 			"service-a (server kind) -> service-a (client kind) -> service-b (service kind)",
 	)
 
@@ -444,44 +444,32 @@ func verifyConsumeMetricsInput(t testing.TB, input pmetric.Metrics, expectedTemp
 	assert.Equal(t, "spanmetricsprocessor", ilm.At(0).Scope().Name())
 
 	m := ilm.At(0).Metrics()
-	require.Equal(t, 6, m.Len())
+	require.Equal(t, 2, m.Len())
 
 	seenMetricIDs := make(map[metricID]bool)
-	mi := 0
-	// The first 3 metrics are for call counts.
-	for ; mi < 3; mi++ {
-		assert.Equal(t, "calls_total", m.At(mi).Name())
-
-		data := m.At(mi).Sum()
-		assert.Equal(t, expectedTemporality, data.AggregationTemporality())
-		assert.True(t, data.IsMonotonic())
-
-		dps := data.DataPoints()
-		require.Equal(t, 1, dps.Len())
-
-		dp := dps.At(0)
+	// The first 3 data points are for call counts.
+	assert.Equal(t, "calls_total", m.At(0).Name())
+	assert.Equal(t, expectedTemporality, m.At(0).Sum().AggregationTemporality())
+	assert.True(t, m.At(0).Sum().IsMonotonic())
+	callsDps := m.At(0).Sum().DataPoints()
+	require.Equal(t, 3, callsDps.Len())
+	for dpi := 0; dpi < 3; dpi++ {
+		dp := callsDps.At(dpi)
 		assert.Equal(t, int64(numCumulativeConsumptions), dp.IntValue(), "There should only be one metric per Service/operation/kind combination")
 		assert.NotZero(t, dp.StartTimestamp(), "StartTimestamp should be set")
 		assert.NotZero(t, dp.Timestamp(), "Timestamp should be set")
-
 		verifyMetricLabels(dp, t, seenMetricIDs)
 	}
 
 	seenMetricIDs = make(map[metricID]bool)
-	// The remaining metrics are for latency.
-	for ; mi < m.Len(); mi++ {
-		metric := m.At(mi)
-
-		assert.Equal(t, "latency", metric.Name())
-		assert.Equal(t, "ms", metric.Unit())
-
-		data := metric.Histogram()
-		assert.Equal(t, expectedTemporality, data.AggregationTemporality())
-
-		dps := data.DataPoints()
-		require.Equal(t, 1, dps.Len())
-
-		dp := dps.At(0)
+	// The remaining 3 data points are for latency.
+	assert.Equal(t, "latency", m.At(1).Name())
+	assert.Equal(t, "ms", m.At(1).Unit())
+	assert.Equal(t, expectedTemporality, m.At(1).Histogram().AggregationTemporality())
+	latencyDps := m.At(1).Histogram().DataPoints()
+	require.Equal(t, 3, latencyDps.Len())
+	for dpi := 0; dpi < 3; dpi++ {
+		dp := latencyDps.At(dpi)
 		assert.Equal(t, sampleLatency*float64(numCumulativeConsumptions), dp.Sum(), "Should be a 11ms latency measurement, multiplied by the number of stateful accumulations.")
 		assert.NotZero(t, dp.Timestamp(), "Timestamp should be set")
 
@@ -635,7 +623,7 @@ func initSpan(span span, s ptrace.Span) {
 func newOTLPExporters(t *testing.T) (*otlpexporter.Config, component.MetricsExporter, component.TracesExporter) {
 	otlpExpFactory := otlpexporter.NewFactory()
 	otlpConfig := &otlpexporter.Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID("otlp")),
+		ExporterSettings: config.NewExporterSettings(component.NewID("otlp")),
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: "example.com:1234",
 		},

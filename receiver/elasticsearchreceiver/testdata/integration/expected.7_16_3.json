@@ -833,7 +833,7 @@
                      "unit": "By"
                   },
                   {
-                     "description": "The number of evictions from the cache.",
+                     "description": "The number of evictions from the cache on a node.",
                      "name": "elasticsearch.node.cache.evictions",
                      "sum": {
                         "aggregationTemporality": 2,
@@ -870,7 +870,7 @@
                      "unit": "{evictions}"
                   },
                   {
-                     "description": "The size in bytes of the cache.",
+                     "description": "The size in bytes of the cache on a node.",
                      "name": "elasticsearch.node.cache.memory.usage",
                      "sum": {
                         "aggregationTemporality": 2,

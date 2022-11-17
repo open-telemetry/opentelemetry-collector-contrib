@@ -23,24 +23,22 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 )
 
 func TestFactory_Type(t *testing.T) {
 	factory := NewFactory()
-	assert.Equal(t, factory.Type(), config.Type(typeStr))
+	assert.Equal(t, factory.Type(), component.Type(typeStr))
 }
 
 func TestFactory_CreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.NoError(t, configtest.CheckConfigStruct(cfg))
+	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 
 	// Check the values of the default configuration.
 	assert.NotNil(t, cfg)
-	assert.Equal(t, config.NewComponentID(typeStr), cfg.ID())
+	assert.Equal(t, component.NewID(typeStr), cfg.ID())
 }
 
 func TestFactory_CreateTracesProcessor(t *testing.T) {

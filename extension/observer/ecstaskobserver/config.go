@@ -19,6 +19,7 @@ import (
 	"net/url"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 )
@@ -53,7 +54,7 @@ func (c Config) Validate() error {
 
 func defaultConfig() Config {
 	return Config{
-		ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
+		ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
 		RefreshInterval:   defaultRefreshInterval,
 		PortLabels:        []string{defaultPortLabel},
 	}

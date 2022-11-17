@@ -264,7 +264,7 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, host component
 		}
 	}
 
-	store := internal.NewAppendable(
+	store, err := internal.NewAppendable(
 		r.consumer,
 		r.settings,
 		gcInterval(r.cfg.PrometheusConfig),
@@ -273,6 +273,9 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, host component
 		r.cfg.ID(),
 		r.cfg.PrometheusConfig.GlobalConfig.ExternalLabels,
 	)
+	if err != nil {
+		return err
+	}
 	r.scrapeManager = scrape.NewManager(&scrape.Options{PassMetadataInContext: true}, logger, store)
 
 	go func() {

@@ -20,11 +20,11 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoints"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 )
 
-func convertSumToGauge() (ottl.ExprFunc[ottldatapoints.TransformContext], error) {
-	return func(_ context.Context, tCtx ottldatapoints.TransformContext) (interface{}, error) {
+func convertSumToGauge() (ottl.ExprFunc[ottldatapoint.TransformContext], error) {
+	return func(_ context.Context, tCtx ottldatapoint.TransformContext) (interface{}, error) {
 		metric := tCtx.GetMetric()
 		if metric.Type() != pmetric.MetricTypeSum {
 			return nil, nil

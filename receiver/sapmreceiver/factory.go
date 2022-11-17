@@ -46,9 +46,9 @@ func NewFactory() component.ReceiverFactory {
 		component.WithTracesReceiver(createTracesReceiver, stability))
 }
 
-func createDefaultConfig() config.Receiver {
+func createDefaultConfig() component.ReceiverConfig {
 	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+		ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: defaultEndpoint,
 		},
@@ -86,7 +86,7 @@ func (rCfg *Config) validate() error {
 func createTracesReceiver(
 	_ context.Context,
 	params component.ReceiverCreateSettings,
-	cfg config.Receiver,
+	cfg component.ReceiverConfig,
 	nextConsumer consumer.Traces,
 ) (component.TracesReceiver, error) {
 	// assert config is SAPM config

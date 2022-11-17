@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 FROM golang:1.18 as build
-COPY . /usr/src/client/
-WORKDIR /usr/src/client/
+WORKDIR /app/
+COPY . .
 RUN go env -w GOPROXY=direct
-RUN go install ./main.go
+RUN CGO_ENABLED=0 go build -o main main.go
 FROM alpine:3.15
-COPY --from=build /go/bin/main  /go/bin/main
-CMD ["/go/bin/main"]
+COPY --from=build /app/main  /app/main
+CMD ["/app/main"]

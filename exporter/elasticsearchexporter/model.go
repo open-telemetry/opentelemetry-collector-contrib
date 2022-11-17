@@ -51,8 +51,8 @@ const (
 func (m *encodeModel) encodeLog(resource pcommon.Resource, record plog.LogRecord) ([]byte, error) {
 	var document objmodel.Document
 	document.AddTimestamp("@timestamp", record.Timestamp()) // We use @timestamp in order to ensure that we can index if the default data stream logs template is used.
-	document.AddID("TraceId", record.TraceID())
-	document.AddID("SpanId", record.SpanID())
+	document.AddTraceID("TraceId", record.TraceID())
+	document.AddSpanID("SpanId", record.SpanID())
 	document.AddInt("TraceFlags", int64(record.Flags()))
 	document.AddString("SeverityText", record.SeverityText())
 	document.AddInt("SeverityNumber", int64(record.SeverityNumber()))
@@ -75,9 +75,9 @@ func (m *encodeModel) encodeSpan(resource pcommon.Resource, span ptrace.Span) ([
 	var document objmodel.Document
 	document.AddTimestamp("@timestamp", span.StartTimestamp()) // We use @timestamp in order to ensure that we can index if the default data stream logs template is used.
 	document.AddTimestamp("EndTimestamp", span.EndTimestamp())
-	document.AddID("TraceId", span.TraceID())
-	document.AddID("SpanId", span.SpanID())
-	document.AddID("ParentSpanId", span.ParentSpanID())
+	document.AddTraceID("TraceId", span.TraceID())
+	document.AddSpanID("SpanId", span.SpanID())
+	document.AddSpanID("ParentSpanId", span.ParentSpanID())
 	document.AddString("Name", span.Name())
 	document.AddString("Kind", traceutil.SpanKindStr(span.Kind()))
 	document.AddInt("TraceStatus", int64(span.Status().Code()))
@@ -101,8 +101,8 @@ func spanLinksToString(spanLinkSlice ptrace.SpanLinkSlice) string {
 	for i := 0; i < spanLinkSlice.Len(); i++ {
 		spanLink := spanLinkSlice.At(i)
 		link := map[string]interface{}{}
-		link[spanIDField] = spanLink.SpanID().HexString()
-		link[traceIDField] = spanLink.TraceID().HexString()
+		link[spanIDField] = traceutil.SpanIDToHexOrEmptyString(spanLink.SpanID())
+		link[traceIDField] = traceutil.TraceIDToHexOrEmptyString(spanLink.TraceID())
 		link[attributeField] = spanLink.Attributes().AsRaw()
 		linkArray = append(linkArray, link)
 	}

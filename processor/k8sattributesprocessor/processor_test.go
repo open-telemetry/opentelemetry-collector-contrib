@@ -26,7 +26,6 @@ import (
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -52,7 +51,7 @@ func newPodIdentifier(from string, name string, value string) kube.PodIdentifier
 	}
 }
 
-func newTracesProcessor(cfg config.Processor, next consumer.Traces, options ...option) (component.TracesProcessor, error) {
+func newTracesProcessor(cfg component.ProcessorConfig, next consumer.Traces, options ...option) (component.TracesProcessor, error) {
 	opts := options
 	opts = append(opts, withKubeClientProvider(newFakeClient))
 	return createTracesProcessorWithOptions(
@@ -64,7 +63,7 @@ func newTracesProcessor(cfg config.Processor, next consumer.Traces, options ...o
 	)
 }
 
-func newMetricsProcessor(cfg config.Processor, nextMetricsConsumer consumer.Metrics, options ...option) (component.MetricsProcessor, error) {
+func newMetricsProcessor(cfg component.ProcessorConfig, nextMetricsConsumer consumer.Metrics, options ...option) (component.MetricsProcessor, error) {
 	opts := options
 	opts = append(opts, withKubeClientProvider(newFakeClient))
 	return createMetricsProcessorWithOptions(
@@ -76,7 +75,7 @@ func newMetricsProcessor(cfg config.Processor, nextMetricsConsumer consumer.Metr
 	)
 }
 
-func newLogsProcessor(cfg config.Processor, nextLogsConsumer consumer.Logs, options ...option) (component.LogsProcessor, error) {
+func newLogsProcessor(cfg component.ProcessorConfig, nextLogsConsumer consumer.Logs, options ...option) (component.LogsProcessor, error) {
 	opts := options
 	opts = append(opts, withKubeClientProvider(newFakeClient))
 	return createLogsProcessorWithOptions(
@@ -121,7 +120,7 @@ type multiTest struct {
 
 func newMultiTest(
 	t *testing.T,
-	cfg config.Processor,
+	cfg component.ProcessorConfig,
 	errFunc func(err error),
 	options ...option,
 ) *multiTest {

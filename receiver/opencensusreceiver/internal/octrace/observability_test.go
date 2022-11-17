@@ -24,7 +24,7 @@ import (
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.opentelemetry.io/otel"
@@ -60,7 +60,7 @@ func TestEnsureRecordedMetrics(t *testing.T) {
 	}
 	flush(traceSvcDoneFn)
 
-	require.NoError(t, obsreporttest.CheckReceiverTraces(tt, config.NewComponentID("opencensus"), "grpc", int64(n), 0))
+	require.NoError(t, obsreporttest.CheckReceiverTraces(tt, component.NewID("opencensus"), "grpc", int64(n), 0))
 }
 
 func TestEnsureRecordedMetrics_zeroLengthSpansSender(t *testing.T) {
@@ -83,7 +83,7 @@ func TestEnsureRecordedMetrics_zeroLengthSpansSender(t *testing.T) {
 	}
 	flush(traceSvcDoneFn)
 
-	require.NoError(t, obsreporttest.CheckReceiverTraces(tt, config.NewComponentID("opencensus"), "grpc", 0, 0))
+	require.NoError(t, obsreporttest.CheckReceiverTraces(tt, component.NewID("opencensus"), "grpc", 0, 0))
 }
 
 func TestExportSpanLinkingMaintainsParentLink(t *testing.T) {

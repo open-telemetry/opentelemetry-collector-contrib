@@ -118,6 +118,7 @@ pkg/translator/signalfx/                             @open-telemetry/collector-c
 pkg/translator/zipkin/                               @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 pkg/winperfcounters/                                 @open-telemetry/collector-contrib-approvers @dashpole @mrod1598 @binaryfissiongames
 pkg/batchperresourceattr/                            @open-telemetry/collector-contrib-approvers @atoulme @dmitryax
+pkg/experimentalmetricmetadata/                      @open-telemetry/collector-contrib-approvers @rmfitzpatrick
 
 processor/attributesprocessor/                       @open-telemetry/collector-contrib-approvers @boostchicken
 processor/cumulativetodeltaprocessor/                @open-telemetry/collector-contrib-approvers @TylerHelmuth
@@ -158,7 +159,7 @@ receiver/chronyreceiver/                             @open-telemetry/collector-c
 receiver/cloudfoundryreceiver/                       @open-telemetry/collector-contrib-approvers @agoallikmaa @pellared @crobert-1
 receiver/collectdreceiver/                           @open-telemetry/collector-contrib-approvers @owais
 receiver/couchdbreceiver/                            @open-telemetry/collector-contrib-approvers @djaglowski
-receiver/dockerstatsreceiver/                        @open-telemetry/collector-contrib-approvers @rmfitzpatrick
+receiver/dockerstatsreceiver/                        @open-telemetry/collector-contrib-approvers @rmfitzpatrick @jamesmoessis
 receiver/elasticsearchreceiver/                      @open-telemetry/collector-contrib-approvers @djaglowski @binaryfissiongames
 receiver/expvarreceiver/                             @open-telemetry/collector-contrib-approvers @jamesmoessis @MovieStoreGuy
 receiver/filelogreceiver/                            @open-telemetry/collector-contrib-approvers @djaglowski

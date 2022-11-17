@@ -45,6 +45,9 @@ func TestScraper(t *testing.T) {
 
 	config.Metrics.ElasticsearchNodeOperationsGetCompleted.Enabled = true
 	config.Metrics.ElasticsearchNodeOperationsGetTime.Enabled = true
+	config.Metrics.ElasticsearchNodeSegmentsMemory.Enabled = true
+
+	config.Metrics.JvmMemoryHeapUtilization.Enabled = true
 
 	config.Metrics.ElasticsearchIndexOperationsMergeSize.Enabled = true
 	config.Metrics.ElasticsearchIndexOperationsMergeDocsCount.Enabled = true
@@ -53,6 +56,9 @@ func TestScraper(t *testing.T) {
 	config.Metrics.ElasticsearchIndexSegmentsMemory.Enabled = true
 	config.Metrics.ElasticsearchIndexTranslogOperations.Enabled = true
 	config.Metrics.ElasticsearchIndexTranslogSize.Enabled = true
+	config.Metrics.ElasticsearchIndexCacheMemoryUsage.Enabled = true
+	config.Metrics.ElasticsearchIndexCacheSize.Enabled = true
+	config.Metrics.ElasticsearchIndexCacheEvictions.Enabled = true
 
 	sc := newElasticSearchScraper(componenttest.NewNopReceiverCreateSettings(), config)
 

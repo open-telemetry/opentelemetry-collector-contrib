@@ -69,7 +69,7 @@ func TestStart(t *testing.T) {
 	for name, testCase := range testCases {
 		t.Run(name, func(t *testing.T) {
 			cfg := &Config{
-				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 				RecordType:       defaultRecordType,
 			}
 			ctx := context.TODO()
@@ -88,7 +88,7 @@ func TestStart(t *testing.T) {
 			require.NoError(t, listener.Close())
 		})
 		cfg := &Config{
-			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+			ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 			RecordType:       defaultRecordType,
 			HTTPServerSettings: confighttp.HTTPServerSettings{
 				Endpoint: listener.Addr().String(),
@@ -108,7 +108,7 @@ func TestFirehoseRequest(t *testing.T) {
 	defaultConsumer := newNopFirehoseConsumer(http.StatusOK, nil)
 	firehoseConsumerErr := errors.New("firehose consumer error")
 	cfg := &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+		ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 		RecordType:       defaultRecordType,
 		AccessKey:        testFirehoseAccessKey,
 	}

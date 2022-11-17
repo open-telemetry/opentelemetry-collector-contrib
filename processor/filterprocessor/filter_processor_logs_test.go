@@ -20,6 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -580,7 +581,7 @@ func TestFilterLogProcessor(t *testing.T) {
 			// next stores the results of the filter log processor
 			next := new(consumertest.LogsSink)
 			cfg := &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
+				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 				Logs: LogFilters{
 					Include: test.inc,
 					Exclude: test.exc,

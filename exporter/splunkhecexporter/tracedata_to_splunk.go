@@ -118,8 +118,8 @@ func toHecSpan(logger *zap.Logger, span ptrace.Span) hecSpan {
 		})
 		links[i] = hecLink{
 			Attributes: linkAttributes,
-			TraceID:    link.TraceID().HexString(),
-			SpanID:     link.SpanID().HexString(),
+			TraceID:    traceutil.TraceIDToHexOrEmptyString(link.TraceID()),
+			SpanID:     traceutil.SpanIDToHexOrEmptyString(link.SpanID()),
 			TraceState: link.TraceState().AsRaw(),
 		}
 	}
@@ -142,9 +142,9 @@ func toHecSpan(logger *zap.Logger, span ptrace.Span) hecSpan {
 		Code:    traceutil.StatusCodeStr(span.Status().Code()),
 	}
 	return hecSpan{
-		TraceID:    span.TraceID().HexString(),
-		SpanID:     span.SpanID().HexString(),
-		ParentSpan: span.ParentSpanID().HexString(),
+		TraceID:    traceutil.TraceIDToHexOrEmptyString(span.TraceID()),
+		SpanID:     traceutil.SpanIDToHexOrEmptyString(span.SpanID()),
+		ParentSpan: traceutil.SpanIDToHexOrEmptyString(span.ParentSpanID()),
 		Name:       span.Name(),
 		Attributes: attributes,
 		StartTime:  span.StartTimestamp(),

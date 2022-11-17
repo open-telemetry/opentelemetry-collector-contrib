@@ -63,12 +63,17 @@ func New(
 		return nil, err
 	}
 
+	rep, err := newReporter(config.ID(), set)
+	if err != nil {
+		return nil, err
+	}
+
 	r := &statsdReceiver{
 		settings:     set,
 		config:       &config,
 		nextConsumer: nextConsumer,
 		server:       server,
-		reporter:     newReporter(config.ID(), set),
+		reporter:     rep,
 		parser:       &protocol.StatsDParser{},
 	}
 	return r, nil

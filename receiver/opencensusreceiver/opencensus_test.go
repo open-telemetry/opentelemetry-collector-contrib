@@ -38,6 +38,7 @@ import (
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
@@ -58,7 +59,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
 
-var ocReceiverID = config.NewComponentIDWithName(typeStr, "receiver_test")
+var ocReceiverID = component.NewIDWithName(typeStr, "receiver_test")
 
 func TestGrpcGateway_endToEnd(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
@@ -399,14 +400,14 @@ func TestOCReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 	}
 
 	exporters := []struct {
-		receiverID config.ComponentID
+		receiverID component.ID
 		exportFn   func(
 			t *testing.T,
 			cc *grpc.ClientConn,
 			msg *agenttracepb.ExportTraceServiceRequest) error
 	}{
 		{
-			receiverID: config.NewComponentIDWithName(typeStr, "traces"),
+			receiverID: component.NewIDWithName(typeStr, "traces"),
 			exportFn:   exportBidiFn,
 		},
 	}
@@ -550,14 +551,14 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 	}
 
 	exporters := []struct {
-		receiverID config.ComponentID
+		receiverID component.ID
 		exportFn   func(
 			t *testing.T,
 			cc *grpc.ClientConn,
 			msg *agentmetricspb.ExportMetricsServiceRequest) error
 	}{
 		{
-			receiverID: config.NewComponentIDWithName(typeStr, "metrics"),
+			receiverID: component.NewIDWithName(typeStr, "metrics"),
 			exportFn:   exportBidiFn,
 		},
 	}
@@ -610,7 +611,7 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 
 func TestInvalidTLSCredentials(t *testing.T) {
 	cfg := Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+		ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 		GRPCServerSettings: configgrpc.GRPCServerSettings{
 			TLSSetting: &configtls.TLSServerSetting{
 				TLSSetting: configtls.TLSSetting{
@@ -623,7 +624,7 @@ func TestInvalidTLSCredentials(t *testing.T) {
 	assert.NotNil(t, opt)
 
 	addr := testutil.GetAvailableLocalAddress(t)
-	ocr, err := newOpenCensusReceiver(config.NewComponentIDWithName(typeStr, "invalidtls"), "tcp", addr, nil, nil, componenttest.NewNopReceiverCreateSettings(), opt...)
+	ocr, err := newOpenCensusReceiver(component.NewIDWithName(typeStr, "invalidtls"), "tcp", addr, nil, nil, componenttest.NewNopReceiverCreateSettings(), opt...)
 	assert.NoError(t, err)
 	assert.NotNil(t, ocr)
 

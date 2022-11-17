@@ -24,8 +24,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 )
 
 func TestFactory(t *testing.T) {
@@ -33,7 +33,7 @@ func TestFactory(t *testing.T) {
 	require.Equal(t, typeStr, f.Type())
 
 	cfg := f.CreateDefaultConfig().(*Config)
-	require.Equal(t, config.NewComponentID(typeStr), cfg.ID())
+	require.Equal(t, component.NewID(typeStr), cfg.ID())
 
 	if runtime.GOOS != "windows" {
 		require.Equal(t, "/var/lib/otelcol/file_storage", cfg.Directory)

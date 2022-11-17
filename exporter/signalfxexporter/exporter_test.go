@@ -33,6 +33,7 @@ import (
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -64,7 +65,7 @@ func TestNew(t *testing.T) {
 		{
 			name: "bad config fails",
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				APIURL:           "abc",
 			},
 			wantErr: true,
@@ -72,7 +73,7 @@ func TestNew(t *testing.T) {
 		{
 			name: "fails to create metrics converter",
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				AccessToken:      "test",
 				Realm:            "realm",
 				ExcludeMetrics:   []dpfilters.MetricFilter{{}},
@@ -82,7 +83,7 @@ func TestNew(t *testing.T) {
 		{
 			name: "successfully create exporter",
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				AccessToken:      "someToken",
 				Realm:            "xyz",
 				TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: 1 * time.Second},
@@ -92,7 +93,7 @@ func TestNew(t *testing.T) {
 		{
 			name: "create exporter with host metadata syncer",
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				AccessToken:      "someToken",
 				Realm:            "xyz",
 				TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: 1 * time.Second},
@@ -449,7 +450,7 @@ func TestNewEventExporter(t *testing.T) {
 	assert.Nil(t, got)
 
 	cfg := &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		AccessToken:      "someToken",
 		IngestURL:        "asdf://:%",
 		TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: 1 * time.Second},

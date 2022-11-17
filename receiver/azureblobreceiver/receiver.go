@@ -105,16 +105,21 @@ func (b *blobReceiver) consumeTracesJSON(ctx context.Context, json []byte) error
 
 // Returns a new instance of the log receiver
 func newReceiver(config Config, set component.ReceiverCreateSettings, blobEventHandler blobEventHandler) (component.Receiver, error) {
+	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+		ReceiverID:             config.ID(),
+		Transport:              "event",
+		ReceiverCreateSettings: set,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	blobReceiver := &blobReceiver{
 		blobEventHandler:  blobEventHandler,
 		logger:            set.Logger,
 		logsUnmarshaler:   &plog.JSONUnmarshaler{},
 		tracesUnmarshaler: &ptrace.JSONUnmarshaler{},
-		obsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
-			ReceiverID:             config.ID(),
-			Transport:              "event",
-			ReceiverCreateSettings: set,
-		}),
+		obsrecv:           obsrecv,
 	}
 
 	blobEventHandler.setLogsDataConsumer(blobReceiver)

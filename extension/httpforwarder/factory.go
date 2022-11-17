@@ -25,7 +25,7 @@ import (
 
 const (
 	// The value of extension "type" in configuration.
-	typeStr config.Type = "http_forwarder"
+	typeStr component.Type = "http_forwarder"
 
 	// Default endpoints to bind to.
 	defaultEndpoint = ":6060"
@@ -40,9 +40,9 @@ func NewFactory() component.ExtensionFactory {
 		component.StabilityLevelUnmaintained)
 }
 
-func createDefaultConfig() config.Extension {
+func createDefaultConfig() component.ExtensionConfig {
 	return &Config{
-		ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
+		ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
 		Ingress: confighttp.HTTPServerSettings{
 			Endpoint: defaultEndpoint,
 		},
@@ -55,7 +55,7 @@ func createDefaultConfig() config.Extension {
 func createExtension(
 	_ context.Context,
 	params component.ExtensionCreateSettings,
-	cfg config.Extension,
+	cfg component.ExtensionConfig,
 ) (component.Extension, error) {
 	return newHTTPForwarder(cfg.(*Config), params.TelemetrySettings)
 }

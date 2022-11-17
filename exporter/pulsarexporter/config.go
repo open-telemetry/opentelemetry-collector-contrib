@@ -16,6 +16,7 @@ package pulsarexporter // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"github.com/apache/pulsar-client-go/pulsar"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
@@ -73,7 +74,7 @@ type OAuth2 struct {
 	Audience  string `mapstructure:"audience"`
 }
 
-var _ config.Exporter = (*Config)(nil)
+var _ component.ExporterConfig = (*Config)(nil)
 
 // Validate checks if the exporter configuration is valid
 func (cfg *Config) Validate() error {

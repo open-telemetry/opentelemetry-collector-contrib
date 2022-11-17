@@ -19,7 +19,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
@@ -41,7 +40,7 @@ func NewFactory() component.ReceiverFactory {
 		component.WithMetricsReceiver(createMetricsReceiver, stability))
 }
 
-func createDefaultConfig() config.Receiver {
+func createDefaultConfig() component.ReceiverConfig {
 	scs := scraperhelper.NewDefaultScraperControllerSettings(typeStr)
 	scs.CollectionInterval = 10 * time.Second
 	return &Config{
@@ -59,7 +58,7 @@ func createDefaultConfig() config.Receiver {
 func createMetricsReceiver(
 	ctx context.Context,
 	set component.ReceiverCreateSettings,
-	cfg config.Receiver,
+	cfg component.ReceiverConfig,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	oCfg := cfg.(*Config)

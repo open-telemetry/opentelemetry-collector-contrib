@@ -21,7 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -258,11 +258,11 @@ func TestLoadConfigConnectionConfigs(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, test.nameVal).String())
+			sub, err := cm.Sub(component.NewIDWithName(typeStr, test.nameVal).String())
 			require.NoError(t, err)
 
 			cfg := factory.CreateDefaultConfig()
-			require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+			require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
 			if test.expectedErr == "" {
 				require.NoError(t, cfg.Validate())
 			} else {
@@ -842,11 +842,11 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, test.nameVal).String())
+			sub, err := cm.Sub(component.NewIDWithName(typeStr, test.nameVal).String())
 			require.NoError(t, err)
 
 			cfg := factory.CreateDefaultConfig()
-			require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+			require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
 			if test.expectedErr == "" {
 				require.NoError(t, cfg.Validate())
 			} else {

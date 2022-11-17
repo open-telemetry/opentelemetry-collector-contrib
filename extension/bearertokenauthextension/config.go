@@ -17,6 +17,7 @@ package bearertokenauthextension // import "github.com/open-telemetry/openteleme
 import (
 	"errors"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 )
 
@@ -34,7 +35,7 @@ type Config struct {
 	Filename string `mapstructure:"filename,omitempty"`
 }
 
-var _ config.Extension = (*Config)(nil)
+var _ component.ExtensionConfig = (*Config)(nil)
 var errNoTokenProvided = errors.New("no bearer token provided")
 
 // Validate checks if the extension configuration is valid

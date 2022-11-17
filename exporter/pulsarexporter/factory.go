@@ -66,9 +66,9 @@ func NewFactory(options ...FactoryOption) component.ExporterFactory {
 	)
 }
 
-func createDefaultConfig() config.Exporter {
+func createDefaultConfig() component.ExporterConfig {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),
 		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
 		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
@@ -89,7 +89,7 @@ type pulsarExporterFactory struct {
 func (f *pulsarExporterFactory) createTracesExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
-	cfg config.Exporter,
+	cfg component.ExporterConfig,
 ) (component.TracesExporter, error) {
 	oCfg := *(cfg.(*Config))
 	if oCfg.Topic == "" {
@@ -119,7 +119,7 @@ func (f *pulsarExporterFactory) createTracesExporter(
 func (f *pulsarExporterFactory) createMetricsExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
-	cfg config.Exporter,
+	cfg component.ExporterConfig,
 ) (component.MetricsExporter, error) {
 	oCfg := *(cfg.(*Config))
 	if oCfg.Topic == "" {
@@ -149,7 +149,7 @@ func (f *pulsarExporterFactory) createMetricsExporter(
 func (f *pulsarExporterFactory) createLogsExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
-	cfg config.Exporter,
+	cfg component.ExporterConfig,
 ) (component.LogsExporter, error) {
 	oCfg := *(cfg.(*Config))
 	if oCfg.Topic == "" {
