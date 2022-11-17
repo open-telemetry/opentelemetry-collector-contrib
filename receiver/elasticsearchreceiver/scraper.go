@@ -361,11 +361,20 @@ func (r *elasticsearchScraper) scrapeClusterStatsMetrics(ctx context.Context, no
 		return
 	}
 
-	_, err := r.client.ClusterStats(ctx, r.cfg.ClusterMetricsNodes)
+	clusterStats, err := r.client.ClusterStats(ctx, r.cfg.ClusterMetricsNodes)
 	if err != nil {
-		errs.AddPartial(0, err)
+		errs.AddPartial(3, err)
 		return
 	}
+
+	r.mb.RecordJvmMemoryHeapUsedDataPoint(now, clusterStats.NodesStats.JVMInfo.JVMMemoryInfo.HeapUsedInBy)
+
+	r.mb.RecordElasticsearchClusterIndicesCacheEvictionsDataPoint(
+		now, clusterStats.IndicesStats.FieldDataCache.Evictions, metadata.AttributeCacheNameFielddata,
+	)
+	r.mb.RecordElasticsearchClusterIndicesCacheEvictionsDataPoint(
+		now, clusterStats.IndicesStats.QueryCache.Evictions, metadata.AttributeCacheNameQuery,
+	)
 }
 
 func (r *elasticsearchScraper) scrapeClusterHealthMetrics(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
