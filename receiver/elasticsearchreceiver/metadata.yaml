@@ -45,9 +45,11 @@ attributes:
     description: The state of the shard.
     enum:
     - active
+    - active_primary
     - relocating
     - initializing
     - unassigned
+    - unassigned_delayed
   operation:
     value: operation
     description: The type of operation.
