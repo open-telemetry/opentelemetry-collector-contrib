@@ -16,7 +16,6 @@ package azureeventhubreceiver // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
@@ -53,10 +52,19 @@ func createLogsReceiver(_ context.Context, settings component.ReceiverCreateSett
 		return nil, err
 	}
 
+	var converter eventConverter
+	switch receiver.(*Config).Encoding {
+	case "data":
+		converter = &DataConverter{}
+	default:
+		converter = &RawConverter{}
+	}
+
 	return &client{
 		logger:   settings.Logger,
 		consumer: logs,
 		config:   receiver.(*Config),
 		obsrecv:  obsrecv,
+		convert:  converter,
 	}, nil
 }

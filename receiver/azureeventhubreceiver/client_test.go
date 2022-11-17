@@ -70,6 +70,7 @@ func TestClient_Start(t *testing.T) {
 		logger:   zap.NewNop(),
 		consumer: consumertest.NewNop(),
 		config:   config.(*Config),
+		convert:  &RawConverter{},
 	}
 	c.hub = &mockHubWrapper{}
 	err := c.Start(context.Background(), componenttest.NewNopHost())
@@ -95,6 +96,7 @@ func TestClient_handle(t *testing.T) {
 		consumer: sink,
 		config:   config.(*Config),
 		obsrecv:  obsrecv,
+		convert:  &RawConverter{},
 	}
 	c.hub = &mockHubWrapper{}
 	err = c.Start(context.Background(), componenttest.NewNopHost())

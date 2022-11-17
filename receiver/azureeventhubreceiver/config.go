@@ -31,6 +31,7 @@ type Config struct {
 	Partition               string        `mapstructure:"partition"`
 	Offset                  string        `mapstructure:"offset"`
 	StorageID               *component.ID `mapstructure:"storage"`
+	Encoding                string        `mapstructure:"encoding"`
 }
 
 // Validate config
