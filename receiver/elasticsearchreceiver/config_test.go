@@ -169,9 +169,10 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, ""),
 			expected: &Config{
-				SkipClusterMetrics: true,
-				Nodes:              []string{"_local"},
-				Indices:            []string{".geoip_databases"},
+				SkipClusterMetrics:  true,
+				Nodes:               []string{"_local"},
+				ClusterMetricsNodes: []string{"_local2"},
+				Indices:             []string{".geoip_databases"},
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 					ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 					CollectionInterval: 2 * time.Minute,
