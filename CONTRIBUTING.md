@@ -27,27 +27,32 @@ context, reviewing PRs, and helping those get merged. Buddies will not be availa
 
 ## Development
 
-To quickly get up and running, you can use the `scripts/eachdist.py` tool that
-ships with this project. First create a virtualenv and activate it.
-Then run `python scripts/eachdist.py develop` to install all required packages
-as well as the project's packages themselves (in `--editable` mode).
-You can then run `scripts/eachdist.py test` to test everything or
-`scripts/eachdist.py lint` to lint everything (fixing anything that is auto-fixable).
+This project uses [tox](https://tox.readthedocs.io) to automate
+some aspects of development, including testing against multiple Python versions.
+To install `tox`, run:
 
-Additionally, this project uses [`tox`](https://tox.readthedocs.io) to automate some aspects
-of development, including testing against multiple Python versions.
+```console
+$ pip install tox
+```
 
-You can run:
+You can run `tox` with the following arguments:
 
 - `tox` to run all existing tox commands, including unit tests for all packages
   under multiple Python versions
-- `tox -e py37-test-flask` to e.g. run the Flask tests under a specific
+- `tox -e docs` to regenerate the API docs
+- `tox -e py37-test-instrumentation-aiopg` to e.g. run the aiopg instrumentation unit tests under a specific
   Python version
+- `tox -e spellcheck` to run a spellcheck on all the code
 - `tox -e lint` to run lint checks on all code
-- `tox -e spellcheck` to run spell check on the code
+
+`black` and `isort` are executed when `tox -e lint` is run. The reported errors can be tedious to fix manually.
+An easier way to do so is:
+
+1. Run `.tox/lint/bin/black .`
+2. Run `.tox/lint/bin/isort .`
 
 See
-[`tox.ini`](https://github.com/open-telemetry/opentelemetry-python-contrib/blob/main/tox.ini)
+[`tox.ini`](https://github.com/open-telemetry/opentelemetry-python/blob/main/tox.ini)
 for more detail on available tox commands.
 
 ### Benchmarks
