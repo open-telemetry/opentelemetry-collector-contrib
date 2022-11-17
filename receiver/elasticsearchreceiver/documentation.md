@@ -25,6 +25,7 @@ These are the metrics available for this scraper.
 | elasticsearch.index.cache.evictions | The number of evictions from the cache for an index. | {evictions} | Sum(Int) | <ul> <li>cache_name</li> <li>index_aggregation_type</li> </ul> |
 | elasticsearch.index.cache.memory.usage | The size in bytes of the cache for an index. | By | Sum(Int) | <ul> <li>cache_name</li> <li>index_aggregation_type</li> </ul> |
 | elasticsearch.index.cache.size | The number of elements of the query cache for an index. | 1 | Sum(Int) | <ul> <li>index_aggregation_type</li> </ul> |
+| elasticsearch.index.documents | The number of documents for an index. | {documents} | Sum(Int) | <ul> <li>document_state</li> <li>index_aggregation_type</li> </ul> |
 | **elasticsearch.index.operations.completed** | The number of operations completed for an index. | {operations} | Sum(Int) | <ul> <li>operation</li> <li>index_aggregation_type</li> </ul> |
 | elasticsearch.index.operations.merge.docs_count | The total number of documents in merge operations for an index. | {documents} | Sum(Int) | <ul> <li>index_aggregation_type</li> </ul> |
 | elasticsearch.index.operations.merge.size | The total size of merged segments for an index. | By | Sum(Int) | <ul> <li>index_aggregation_type</li> </ul> |
