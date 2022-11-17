@@ -120,7 +120,7 @@ func (mdp *MetricsDataPoint) toDataForHashing() dataForHashing {
 func parseAndHashRowrangestartkey(key string) string {
 	builderHashedKey := strings.Builder{}
 	startIndexKeys := strings.Index(key, "(")
-	if startIndexKeys == -1 { // if "(" does not exist, then label is of incorrect format
+	if startIndexKeys == -1 || startIndexKeys == len(key)-1 { // if "(" does not exist or is the last character of the string, then label is of incorrect format
 		return ""
 	}
 	substring := key[startIndexKeys+1 : len(key)-1]

@@ -148,8 +148,9 @@ func TestMetricsDataPoint_HideLockStatsRowrangestartkeyPIIWithInvalidLabelValue(
 	labelValue1 := byteSliceLabelValue{metadata: btSliceLabelValueMetadata, value: ""}
 	labelValue2 := byteSliceLabelValue{metadata: btSliceLabelValueMetadata, value: "table22(hello"}
 	labelValue3 := byteSliceLabelValue{metadata: btSliceLabelValueMetadata, value: "table22,hello"}
+	labelValue4 := byteSliceLabelValue{metadata: btSliceLabelValueMetadata, value: "("}
 	metricValues := allPossibleMetricValues(metricDataType)
-	labelValues := []LabelValue{labelValue1, labelValue2, labelValue3}
+	labelValues := []LabelValue{labelValue1, labelValue2, labelValue3, labelValue4}
 	timestamp := time.Now().UTC()
 	metricsDataPoint := &MetricsDataPoint{
 		metricName:  metricName,
@@ -159,7 +160,7 @@ func TestMetricsDataPoint_HideLockStatsRowrangestartkeyPIIWithInvalidLabelValue(
 		metricValue: metricValues[0],
 	}
 	metricsDataPoint.HideLockStatsRowrangestartkeyPII()
-	assert.Equal(t, len(metricsDataPoint.labelValues), 3)
+	assert.Equal(t, len(metricsDataPoint.labelValues), 4)
 }
 
 func allPossibleLabelValues() []LabelValue {
