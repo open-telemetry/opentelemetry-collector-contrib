@@ -59,6 +59,7 @@ func TestScraper(t *testing.T) {
 	config.Metrics.ElasticsearchIndexCacheMemoryUsage.Enabled = true
 	config.Metrics.ElasticsearchIndexCacheSize.Enabled = true
 	config.Metrics.ElasticsearchIndexCacheEvictions.Enabled = true
+	config.Metrics.ElasticsearchIndexDocuments.Enabled = true
 
 	sc := newElasticSearchScraper(componenttest.NewNopReceiverCreateSettings(), config)
 
