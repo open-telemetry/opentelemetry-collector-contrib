@@ -489,11 +489,51 @@ func Test_ProcessMetrics_DataPointContext(t *testing.T) {
 		},
 		{
 			statements: []string{
+				`drop() where metric.type == METRIC_DATA_TYPE_SUM`,
+			},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().RemoveIf(func(metric pmetric.Metric) bool {
+					return metric.Type() == pmetric.MetricTypeSum
+				})
+			},
+		},
+		{
+			statements: []string{
+				`drop() where metric.type == METRIC_DATA_TYPE_GAUGE`,
+			},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().RemoveIf(func(metric pmetric.Metric) bool {
+					return metric.Type() == pmetric.MetricTypeGauge
+				})
+			},
+		},
+		{
+			statements: []string{
+				`drop() where metric.type == METRIC_DATA_TYPE_HISTOGRAM`,
+			},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().RemoveIf(func(metric pmetric.Metric) bool {
+					return metric.Type() == pmetric.MetricTypeHistogram
+				})
+			},
+		},
+		{
+			statements: []string{
 				`drop() where metric.type == METRIC_DATA_TYPE_EXPONENTIAL_HISTOGRAM`,
 			},
 			want: func(td pmetric.Metrics) {
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().RemoveIf(func(metric pmetric.Metric) bool {
 					return metric.Type() == pmetric.MetricTypeExponentialHistogram
+				})
+			},
+		},
+		{
+			statements: []string{
+				`drop() where metric.type == METRIC_DATA_TYPE_SUMMARY`,
+			},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().RemoveIf(func(metric pmetric.Metric) bool {
+					return metric.Type() == pmetric.MetricTypeSummary
 				})
 			},
 		},
