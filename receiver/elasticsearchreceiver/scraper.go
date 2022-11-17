@@ -351,8 +351,21 @@ func (r *elasticsearchScraper) scrapeClusterMetrics(ctx context.Context, now pco
 	}
 
 	r.scrapeClusterHealthMetrics(ctx, now, errs)
+	r.scrapeClusterStatsMetrics(ctx, now, errs)
 
 	r.mb.EmitForResource(metadata.WithElasticsearchClusterName(r.clusterName))
+}
+
+func (r *elasticsearchScraper) scrapeClusterStatsMetrics(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	if len(r.cfg.ClusterMetricsNodes) == 0 {
+		return
+	}
+
+	_, err := r.client.ClusterStats(ctx, r.cfg.ClusterMetricsNodes)
+	if err != nil {
+		errs.AddPartial(0, err)
+		return
+	}
 }
 
 func (r *elasticsearchScraper) scrapeClusterHealthMetrics(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
