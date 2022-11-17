@@ -874,9 +874,11 @@ type AttributeShardState int
 const (
 	_ AttributeShardState = iota
 	AttributeShardStateActive
+	AttributeShardStateActivePrimary
 	AttributeShardStateRelocating
 	AttributeShardStateInitializing
 	AttributeShardStateUnassigned
+	AttributeShardStateUnassignedDelayed
 )
 
 // String returns the string representation of the AttributeShardState.
@@ -884,22 +886,28 @@ func (av AttributeShardState) String() string {
 	switch av {
 	case AttributeShardStateActive:
 		return "active"
+	case AttributeShardStateActivePrimary:
+		return "active_primary"
 	case AttributeShardStateRelocating:
 		return "relocating"
 	case AttributeShardStateInitializing:
 		return "initializing"
 	case AttributeShardStateUnassigned:
 		return "unassigned"
+	case AttributeShardStateUnassignedDelayed:
+		return "unassigned_delayed"
 	}
 	return ""
 }
 
 // MapAttributeShardState is a helper map of string to AttributeShardState attribute value.
 var MapAttributeShardState = map[string]AttributeShardState{
-	"active":       AttributeShardStateActive,
-	"relocating":   AttributeShardStateRelocating,
-	"initializing": AttributeShardStateInitializing,
-	"unassigned":   AttributeShardStateUnassigned,
+	"active":             AttributeShardStateActive,
+	"active_primary":     AttributeShardStateActivePrimary,
+	"relocating":         AttributeShardStateRelocating,
+	"initializing":       AttributeShardStateInitializing,
+	"unassigned":         AttributeShardStateUnassigned,
+	"unassigned_delayed": AttributeShardStateUnassignedDelayed,
 }
 
 // AttributeTaskState specifies the a value task_state attribute.

@@ -136,7 +136,7 @@ metrics:
 | operation (operation) | The type of operation. | index, delete, get, query, fetch, scroll, suggest, merge, refresh, flush, warmer |
 | query_cache_count_type (type) | Type of query cache count | hit, miss |
 | segments_memory_object_type (object) | Type of object in segment | term, doc_value, index_writer, fixed_bit_set |
-| shard_state (state) | The state of the shard. | active, relocating, initializing, unassigned |
+| shard_state (state) | The state of the shard. | active, active_primary, relocating, initializing, unassigned, unassigned_delayed |
 | task_state (state) | The state of the task. | rejected, completed |
 | thread_pool_name | The name of the thread pool. |  |
 | thread_state (state) | The state of the thread. | active, idle |
