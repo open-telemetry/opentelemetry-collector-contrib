@@ -179,7 +179,7 @@ In addition to OTTL functions, the processor defines its own functions to help w
 
 `drop()`
 
-Drops the specified [Context's](#contexts) telemetry from the collector.  Best used with a condition, otherwise all the Context's telemetry would be dropped.
+Drops the specified [Context's](#contexts) telemetry from the pipeline.  Best used with a condition, otherwise all the Context's telemetry would be dropped.
 
 If a Metric ever has an empty DataPoints slice, the metric will also be dropped. 
 If a Scope ever has an empty Span/Metric/Log slice the scope will also be dropped. 
