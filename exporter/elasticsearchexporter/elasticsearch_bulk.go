@@ -20,10 +20,8 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
-	"errors"
 	"fmt"
 	"io"
-	"net"
 	"net/http"
 	"time"
 
@@ -102,11 +100,9 @@ func newElasticsearchClient(logger *zap.Logger, config *Config) (*esClientCurren
 
 	maxRetries := config.Retry.MaxRequests - 1
 	retryDisabled := !config.Retry.Enabled || maxRetries <= 0
-	//retryOnError := newRetryOnErrorFunc(retryDisabled)
 
 	if retryDisabled {
 		maxRetries = 0
-		//retryOnError = nil
 	}
 
 	return elasticsearch7.NewClient(esConfigCurrent{
@@ -137,27 +133,6 @@ func newElasticsearchClient(logger *zap.Logger, config *Config) (*esClientCurren
 		EnableDebugLogger: false, // TODO
 		Logger:            (*clientLogger)(logger),
 	})
-}
-func newRetryOnErrorFunc(retryDisabled bool) func(_ *http.Request, err error) bool {
-	if retryDisabled {
-		return func(_ *http.Request, err error) bool {
-			return false
-		}
-	}
-
-	return func(_ *http.Request, err error) bool {
-		var netError net.Error
-		shouldRetry := false
-
-		if isNetError := errors.As(err, &netError); isNetError && netError != nil {
-			// on Timeout (Proposal: predefined configuratble rules)
-			if !netError.Timeout() {
-				shouldRetry = true
-			}
-		}
-
-		return shouldRetry
-	}
 }
 
 func newTransport(config *Config, tlsCfg *tls.Config) *http.Transport {
