@@ -55,5 +55,21 @@ The following metric are available with versions:
 - `elasticsearch.cluster.state_update.time` >= [7.16.0](https://www.elastic.co/guide/en/elasticsearch/reference/7.16/release-notes-7.16.0.html)
 
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml)
+
+## Feature gate configurations
+
+See the [Collector feature gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) for an overview of feature gates in the collector.
+
+**ALPHA**: `receiver.elasticsearch.emitClusterHealthDetailedShardMetrics`
+
+The feature gate `receiver.elasticsearch.emitClusterHealthDetailedShardMetrics` once enabled starts emitting the metric `elasticsearch.cluster.shards`
+with two additional data points - one with `state` equal to `active_primary` and one with `state` equal to `unassigned_delayed`.
+
+This is considered a breaking change for existing users of this receiver, and it is recommended to migrate to the new implementation when possible. Any new users planning to adopt this receiver should enable this feature gate to avoid having to migrate any visualisations or alerts.
+
+This feature gate will eventually be enabled by default, and eventually the old implementation will be removed. It aims
+to give users time to migrate to the new implementation. The target release for this featuregate to be enabled by default
+is 0.68.0.
+
 [beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
