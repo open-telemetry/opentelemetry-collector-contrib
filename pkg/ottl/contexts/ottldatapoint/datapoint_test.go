@@ -33,14 +33,12 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 	newExemplars, newAttrs := createNewTelemetry()
 
 	newPMap := pcommon.NewMap()
-	newPMap.PutStr("k1", "string")
 	pMap2 := newPMap.PutEmptyMap("k2")
 	pMap2.PutStr("k1", "string")
 
 	newMap := make(map[string]interface{})
 	newMap2 := make(map[string]interface{})
 	newMap2["k1"] = "string"
-	newMap["k1"] = "string"
 	newMap["k2"] = newMap2
 
 	tests := []struct {
@@ -313,7 +311,6 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			newVal: newPMap,
 			modified: func(datapoint pmetric.NumberDataPoint) {
 				m := datapoint.Attributes().PutEmptyMap("pMap")
-				m.PutStr("k1", "string")
 				m2 := m.PutEmptyMap("k2")
 				m2.PutStr("k1", "string")
 			},
@@ -333,7 +330,6 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			newVal: newMap,
 			modified: func(datapoint pmetric.NumberDataPoint) {
 				m := datapoint.Attributes().PutEmptyMap("map")
-				m.PutStr("k1", "string")
 				m2 := m.PutEmptyMap("k2")
 				m2.PutStr("k1", "string")
 			},
@@ -387,14 +383,12 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 	newExemplars, newAttrs := createNewTelemetry()
 
 	newPMap := pcommon.NewMap()
-	newPMap.PutStr("k1", "string")
 	pMap2 := newPMap.PutEmptyMap("k2")
 	pMap2.PutStr("k1", "string")
 
 	newMap := make(map[string]interface{})
 	newMap2 := make(map[string]interface{})
 	newMap2["k1"] = "string"
-	newMap["k1"] = "string"
 	newMap["k2"] = newMap2
 
 	tests := []struct {
@@ -691,7 +685,6 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			newVal: newPMap,
 			modified: func(datapoint pmetric.HistogramDataPoint) {
 				m := datapoint.Attributes().PutEmptyMap("pMap")
-				m.PutStr("k1", "string")
 				m2 := m.PutEmptyMap("k2")
 				m2.PutStr("k1", "string")
 			},
@@ -711,7 +704,6 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			newVal: newMap,
 			modified: func(datapoint pmetric.HistogramDataPoint) {
 				m := datapoint.Attributes().PutEmptyMap("map")
-				m.PutStr("k1", "string")
 				m2 := m.PutEmptyMap("k2")
 				m2.PutStr("k1", "string")
 			},
@@ -771,14 +763,12 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 	newNegative.BucketCounts().FromRaw([]uint64{4, 5})
 
 	newPMap := pcommon.NewMap()
-	newPMap.PutStr("k1", "string")
 	pMap2 := newPMap.PutEmptyMap("k2")
 	pMap2.PutStr("k1", "string")
 
 	newMap := make(map[string]interface{})
 	newMap2 := make(map[string]interface{})
 	newMap2["k1"] = "string"
-	newMap["k1"] = "string"
 	newMap["k2"] = newMap2
 
 	tests := []struct {
@@ -1165,7 +1155,6 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			newVal: newPMap,
 			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
 				m := datapoint.Attributes().PutEmptyMap("pMap")
-				m.PutStr("k1", "string")
 				m2 := m.PutEmptyMap("k2")
 				m2.PutStr("k1", "string")
 			},
@@ -1185,7 +1174,6 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			newVal: newMap,
 			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
 				m := datapoint.Attributes().PutEmptyMap("map")
-				m.PutStr("k1", "string")
 				m2 := m.PutEmptyMap("k2")
 				m2.PutStr("k1", "string")
 			},
@@ -1246,14 +1234,12 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 	newQuartileValues.AppendEmpty().SetValue(100)
 
 	newPMap := pcommon.NewMap()
-	newPMap.PutStr("k1", "string")
 	pMap2 := newPMap.PutEmptyMap("k2")
 	pMap2.PutStr("k1", "string")
 
 	newMap := make(map[string]interface{})
 	newMap2 := make(map[string]interface{})
 	newMap2["k1"] = "string"
-	newMap["k1"] = "string"
 	newMap["k2"] = newMap2
 
 	tests := []struct {
@@ -1524,7 +1510,6 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			newVal: newPMap,
 			modified: func(datapoint pmetric.SummaryDataPoint) {
 				m := datapoint.Attributes().PutEmptyMap("pMap")
-				m.PutStr("k1", "string")
 				m2 := m.PutEmptyMap("k2")
 				m2.PutStr("k1", "string")
 			},
@@ -1544,7 +1529,6 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			newVal: newMap,
 			modified: func(datapoint pmetric.SummaryDataPoint) {
 				m := datapoint.Attributes().PutEmptyMap("map")
-				m.PutStr("k1", "string")
 				m2 := m.PutEmptyMap("k2")
 				m2.PutStr("k1", "string")
 			},

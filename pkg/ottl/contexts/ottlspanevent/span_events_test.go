@@ -50,14 +50,12 @@ func Test_newPathGetSetter(t *testing.T) {
 	newStatus.SetMessage("new status")
 
 	newPMap := pcommon.NewMap()
-	newPMap.PutStr("k1", "string")
 	pMap2 := newPMap.PutEmptyMap("k2")
 	pMap2.PutStr("k1", "string")
 
 	newMap := make(map[string]interface{})
 	newMap2 := make(map[string]interface{})
 	newMap2["k1"] = "string"
-	newMap["k1"] = "string"
 	newMap["k2"] = newMap2
 
 	tests := []struct {
@@ -276,7 +274,6 @@ func Test_newPathGetSetter(t *testing.T) {
 			newVal: newPMap,
 			modified: func(spanEvent ptrace.SpanEvent, span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				m := spanEvent.Attributes().PutEmptyMap("pMap")
-				m.PutStr("k1", "string")
 				m2 := m.PutEmptyMap("k2")
 				m2.PutStr("k1", "string")
 			},
@@ -296,7 +293,6 @@ func Test_newPathGetSetter(t *testing.T) {
 			newVal: newMap,
 			modified: func(spanEvent ptrace.SpanEvent, span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				m := spanEvent.Attributes().PutEmptyMap("map")
-				m.PutStr("k1", "string")
 				m2 := m.PutEmptyMap("k2")
 				m2.PutStr("k1", "string")
 			},
