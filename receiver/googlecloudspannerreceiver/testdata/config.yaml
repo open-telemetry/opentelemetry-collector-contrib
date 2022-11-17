@@ -27,4 +27,3 @@ googlecloudspanner:
           databases:
             - "db41"
             - "db42"
-
