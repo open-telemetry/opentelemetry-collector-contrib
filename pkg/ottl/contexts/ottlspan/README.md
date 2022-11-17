@@ -32,6 +32,13 @@ The following fields are the exception.
 | trace_state\[""\]                              | an individual entry in the trace state                                                | string                                                                  |
 | status.code                                    | the status code of the span being processed                                           | int64                                                                   |
 | status.message                                 | the status message of the span being processed                                        | string                                                                  |
+| start_time_unix_micro                          | start_time_unix_nano, but converted to/from microseconds                              | int64                                                                   |
+| start_time_unix_milli                          | start_time_unix_nano, but converted to/from milliseconds                              | int64                                                                   |
+| start_time_unix_sec                            | start_time_unix_nano, but converted to/from seconds                                   | int64                                                                   |
+| end_time_unix_micro                            | end_time_unix_nano, but converted to/from microseconds                                | int64                                                                   |
+| end_time_unix_milli                            | end_time_unix_nano, but converted to/from milliseconds                                | int64                                                                   |
+| end_time_unix_sec                              | end_time_unix_nano, but converted to/from seconds                                     | int64                                                                   |
+
 
 ## Enums
 

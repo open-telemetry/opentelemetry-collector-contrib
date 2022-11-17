@@ -204,10 +204,49 @@ func TestSpanPathGetSetter(t *testing.T) {
 					Name: "start_time_unix_nano",
 				},
 			},
-			orig:   int64(100_000_000),
-			newVal: int64(200_000_000),
+			orig:   int64(1_000_000_000),
+			newVal: int64(2_000_000_000),
 			modified: func(span ptrace.Span) {
-				span.SetStartTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
+				span.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, 2_000_000_000)))
+			},
+		},
+		{
+			name: "start_time_unix_micro",
+			path: []ottl.Field{
+				{
+					Name: "start_time_unix_micro",
+				},
+			},
+			orig:   int64(1_000_000),
+			newVal: int64(2_000_000),
+			modified: func(span ptrace.Span) {
+				span.SetStartTimestamp(pcommon.NewTimestampFromTime(time.UnixMicro(2_000_000)))
+			},
+		},
+		{
+			name: "start_time_unix_milli",
+			path: []ottl.Field{
+				{
+					Name: "start_time_unix_milli",
+				},
+			},
+			orig:   int64(1_000),
+			newVal: int64(2_000),
+			modified: func(span ptrace.Span) {
+				span.SetStartTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(2_000)))
+			},
+		},
+		{
+			name: "start_time_unix_sec",
+			path: []ottl.Field{
+				{
+					Name: "start_time_unix_sec",
+				},
+			},
+			orig:   int64(1),
+			newVal: int64(2),
+			modified: func(span ptrace.Span) {
+				span.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(2, 0)))
 			},
 		},
 		{
@@ -217,10 +256,49 @@ func TestSpanPathGetSetter(t *testing.T) {
 					Name: "end_time_unix_nano",
 				},
 			},
-			orig:   int64(500_000_000),
-			newVal: int64(200_000_000),
+			orig:   int64(5_000_000_000),
+			newVal: int64(2_000_000_000),
 			modified: func(span ptrace.Span) {
-				span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
+				span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, 2_000_000_000)))
+			},
+		},
+		{
+			name: "end_time_unix_micro",
+			path: []ottl.Field{
+				{
+					Name: "end_time_unix_micro",
+				},
+			},
+			orig:   int64(5_000_000),
+			newVal: int64(2_000_000),
+			modified: func(span ptrace.Span) {
+				span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.UnixMicro(2_000_000)))
+			},
+		},
+		{
+			name: "end_time_unix_milli",
+			path: []ottl.Field{
+				{
+					Name: "end_time_unix_milli",
+				},
+			},
+			orig:   int64(5_000),
+			newVal: int64(2_000),
+			modified: func(span ptrace.Span) {
+				span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(2_000)))
+			},
+		},
+		{
+			name: "end_time_unix_sec",
+			path: []ottl.Field{
+				{
+					Name: "end_time_unix_sec",
+				},
+			},
+			orig:   int64(5),
+			newVal: int64(2),
+			modified: func(span ptrace.Span) {
+				span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Unix(2, 0)))
 			},
 		},
 		{
@@ -538,8 +616,8 @@ func createSpan() ptrace.Span {
 	span.SetParentSpanID(spanID2)
 	span.SetName("bear")
 	span.SetKind(ptrace.SpanKindServer)
-	span.SetStartTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(100)))
-	span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(500)))
+	span.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, 1_000_000_000)))
+	span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, 5_000_000_000)))
 	span.Attributes().PutStr("str", "val")
 	span.Attributes().PutBool("bool", true)
 	span.Attributes().PutInt("int", 10)

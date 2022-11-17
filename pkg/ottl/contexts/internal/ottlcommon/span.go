@@ -84,8 +84,20 @@ func SpanPathGetSetter[K SpanContext](path []ottl.Field) (ottl.GetSetter[K], err
 		return accessKind[K](), nil
 	case "start_time_unix_nano":
 		return accessStartTimeUnixNano[K](), nil
+	case "start_time_unix_milli":
+		return accessStartTimeUnixMilli[K](), nil
+	case "start_time_unix_micro":
+		return accessStartTimeUnixMicro[K](), nil
+	case "start_time_unix_sec":
+		return accessStartTimeUnixSec[K](), nil
 	case "end_time_unix_nano":
 		return accessEndTimeUnixNano[K](), nil
+	case "end_time_unix_milli":
+		return accessEndTimeUnixMilli[K](), nil
+	case "end_time_unix_micro":
+		return accessEndTimeUnixMicro[K](), nil
+	case "end_time_unix_sec":
+		return accessEndTimeUnixSec[K](), nil
 	case "attributes":
 		mapKey := path[0].MapKey
 		if mapKey == nil {
@@ -298,6 +310,48 @@ func accessStartTimeUnixNano[K SpanContext]() ottl.StandardGetSetter[K] {
 	}
 }
 
+func accessStartTimeUnixMicro[K SpanContext]() ottl.StandardGetSetter[K] {
+	return ottl.StandardGetSetter[K]{
+		Getter: func(ctx context.Context, tCtx K) (interface{}, error) {
+			return tCtx.GetSpan().StartTimestamp().AsTime().UnixMicro(), nil
+		},
+		Setter: func(ctx context.Context, tCtx K, val interface{}) error {
+			if i, ok := val.(int64); ok {
+				tCtx.GetSpan().SetStartTimestamp(pcommon.NewTimestampFromTime(time.UnixMicro(i)))
+			}
+			return nil
+		},
+	}
+}
+
+func accessStartTimeUnixMilli[K SpanContext]() ottl.StandardGetSetter[K] {
+	return ottl.StandardGetSetter[K]{
+		Getter: func(ctx context.Context, tCtx K) (interface{}, error) {
+			return tCtx.GetSpan().StartTimestamp().AsTime().UnixMilli(), nil
+		},
+		Setter: func(ctx context.Context, tCtx K, val interface{}) error {
+			if i, ok := val.(int64); ok {
+				tCtx.GetSpan().SetStartTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(i)))
+			}
+			return nil
+		},
+	}
+}
+
+func accessStartTimeUnixSec[K SpanContext]() ottl.StandardGetSetter[K] {
+	return ottl.StandardGetSetter[K]{
+		Getter: func(ctx context.Context, tCtx K) (interface{}, error) {
+			return tCtx.GetSpan().StartTimestamp().AsTime().Unix(), nil
+		},
+		Setter: func(ctx context.Context, tCtx K, val interface{}) error {
+			if i, ok := val.(int64); ok {
+				tCtx.GetSpan().SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(i, 0)))
+			}
+			return nil
+		},
+	}
+}
+
 func accessEndTimeUnixNano[K SpanContext]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(ctx context.Context, tCtx K) (interface{}, error) {
@@ -306,6 +360,48 @@ func accessEndTimeUnixNano[K SpanContext]() ottl.StandardGetSetter[K] {
 		Setter: func(ctx context.Context, tCtx K, val interface{}) error {
 			if i, ok := val.(int64); ok {
 				tCtx.GetSpan().SetEndTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, i)))
+			}
+			return nil
+		},
+	}
+}
+
+func accessEndTimeUnixMicro[K SpanContext]() ottl.StandardGetSetter[K] {
+	return ottl.StandardGetSetter[K]{
+		Getter: func(ctx context.Context, tCtx K) (interface{}, error) {
+			return tCtx.GetSpan().EndTimestamp().AsTime().UnixMicro(), nil
+		},
+		Setter: func(ctx context.Context, tCtx K, val interface{}) error {
+			if i, ok := val.(int64); ok {
+				tCtx.GetSpan().SetEndTimestamp(pcommon.NewTimestampFromTime(time.UnixMicro(i)))
+			}
+			return nil
+		},
+	}
+}
+
+func accessEndTimeUnixMilli[K SpanContext]() ottl.StandardGetSetter[K] {
+	return ottl.StandardGetSetter[K]{
+		Getter: func(ctx context.Context, tCtx K) (interface{}, error) {
+			return tCtx.GetSpan().EndTimestamp().AsTime().UnixMilli(), nil
+		},
+		Setter: func(ctx context.Context, tCtx K, val interface{}) error {
+			if i, ok := val.(int64); ok {
+				tCtx.GetSpan().SetEndTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(i)))
+			}
+			return nil
+		},
+	}
+}
+
+func accessEndTimeUnixSec[K SpanContext]() ottl.StandardGetSetter[K] {
+	return ottl.StandardGetSetter[K]{
+		Getter: func(ctx context.Context, tCtx K) (interface{}, error) {
+			return tCtx.GetSpan().EndTimestamp().AsTime().Unix(), nil
+		},
+		Setter: func(ctx context.Context, tCtx K, val interface{}) error {
+			if i, ok := val.(int64); ok {
+				tCtx.GetSpan().SetEndTimestamp(pcommon.NewTimestampFromTime(time.Unix(i, 0)))
 			}
 			return nil
 		},
