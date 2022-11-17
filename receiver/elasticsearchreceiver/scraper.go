@@ -350,6 +350,12 @@ func (r *elasticsearchScraper) scrapeClusterMetrics(ctx context.Context, now pco
 		return
 	}
 
+	r.scrapeClusterHealthMetrics(ctx, now, errs)
+
+	r.mb.EmitForResource(metadata.WithElasticsearchClusterName(r.clusterName))
+}
+
+func (r *elasticsearchScraper) scrapeClusterHealthMetrics(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
 	clusterHealth, err := r.client.ClusterHealth(ctx)
 	if err != nil {
 		errs.AddPartial(4, err)
@@ -389,8 +395,6 @@ func (r *elasticsearchScraper) scrapeClusterMetrics(ctx context.Context, now pco
 	default:
 		errs.AddPartial(1, fmt.Errorf("health status %s: %w", clusterHealth.Status, errUnknownClusterStatus))
 	}
-
-	r.mb.EmitForResource(metadata.WithElasticsearchClusterName(clusterHealth.ClusterName))
 }
 
 func (r *elasticsearchScraper) scrapeIndicesMetrics(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
