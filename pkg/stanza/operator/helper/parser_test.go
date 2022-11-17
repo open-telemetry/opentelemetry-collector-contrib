@@ -658,7 +658,7 @@ func NewTestParserConfig() ParserConfig {
 	expect.TimeParser = &tp
 
 	sp := NewSeverityConfig()
-	sp.Mapping = map[interface{}]interface{}{
+	sp.Mapping = map[string]interface{}{
 		"info": "3xx",
 		"warn": "4xx",
 	}
