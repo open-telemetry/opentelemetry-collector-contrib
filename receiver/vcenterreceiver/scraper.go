@@ -285,7 +285,7 @@ func (v *vcenterMetricScraper) collectVMs(
 			errs.AddPartial(1, err)
 			return
 		}
-		
+
 		if moVM.Config == nil {
 			errs.AddPartial(1, fmt.Errorf("vm config empty for %s", hostname))
 			continue
