@@ -49,7 +49,7 @@ func TestLoadConfig(t *testing.T) {
 				InstrumentationKey: "abcdefg",
 				MaxBatchSize:       100,
 				MaxBatchInterval:   10 * time.Second,
-				SpanEventsEnabled:  true,
+				SpanEventsEnabled:  false,
 			},
 		},
 	}

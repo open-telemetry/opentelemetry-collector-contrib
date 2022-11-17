@@ -19,7 +19,7 @@ The following settings can be optionally configured:
 - `endpoint` (default = `https://dc.services.visualstudio.com/v2/track`): The endpoint URL where data will be submitted.
 - `maxbatchsize` (default = 1024): The maximum number of telemetry items that can be submitted in each request. If this many items are buffered, the buffer will be flushed before `maxbatchinterval` expires.
 - `maxbatchinterval` (default = 10s): The maximum time to wait before sending a batch of telemetry.
-- `spaneventsenabled` (default = true): Enables export of span events.
+- `spaneventsenabled` (default = false): Enables export of span events.
 
 Example:
 
@@ -72,5 +72,5 @@ This exporter saves log records to Application Insights `traces` table.
 
 ### Span Events
 
-This exporter saves span events to Application Insights `traces` table.
-Exception events are saved tot he Application Insights `exception` table.
+Span events are optionally saved to the Application Insights `traces` table.
+Exception events are saved to the Application Insights `exception` table.

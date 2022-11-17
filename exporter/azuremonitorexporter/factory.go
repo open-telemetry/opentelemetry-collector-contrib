@@ -58,7 +58,7 @@ func createDefaultConfig() component.ExporterConfig {
 		Endpoint:          defaultEndpoint,
 		MaxBatchSize:      1024,
 		MaxBatchInterval:  10 * time.Second,
-		SpanEventsEnabled: true,
+		SpanEventsEnabled: false,
 	}
 }
 

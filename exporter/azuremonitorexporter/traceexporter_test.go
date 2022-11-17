@@ -68,7 +68,9 @@ func TestExporterTraceDataCallbackSingleSpan(t *testing.T) {
 // Tests the export onTraceData callback with a single Span with SpanEvents
 func TestExporterTraceDataCallbackSingleSpanWithSpanEvents(t *testing.T) {
 	mockTransportChannel := getMockTransportChannel()
-	exporter := getExporter(defaultConfig, mockTransportChannel)
+	config := createDefaultConfig().(*Config)
+	config.SpanEventsEnabled = true
+	exporter := getExporter(config, mockTransportChannel)
 
 	// re-use some test generation method(s) from trace_to_envelope_test
 	resource := getResource()
