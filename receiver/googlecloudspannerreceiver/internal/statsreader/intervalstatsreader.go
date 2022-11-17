@@ -30,6 +30,7 @@ const (
 	// Since, the initial intent was to work mainly with Prometheus backend,
 	// this constant was set to 1 hour - max allowed interval by Prometheus.
 	backfillIntervalDuration = time.Hour
+	topLockStatsMetricName   = "top minute lock stats"
 )
 
 type intervalStatsReader struct {
@@ -84,7 +85,8 @@ func (reader *intervalStatsReader) Read(ctx context.Context) ([]*metadata.Metric
 		if err != nil {
 			return nil, err
 		}
-		if reader.hideTopnLockstatsRowrangestartkey && stmt.statement.SQL == "SELECT * FROM SPANNER_SYS.LOCK_STATS_TOP_MINUTE WHERE INTERVAL_END = @pullTimestamp ORDER BY INTERVAL_END DESC, LOCK_WAIT_SECONDS DESC LIMIT @topMetricsQueryMaxRows" {
+		metricMetadata := reader.currentStatsReader.metricsMetadata
+		if reader.hideTopnLockstatsRowrangestartkey && metricMetadata != nil && metricMetadata.Name == topLockStatsMetricName {
 			for _, dataPoint := range dataPoints {
 				dataPoint.HideLockStatsRowrangestartkeyPII()
 			}

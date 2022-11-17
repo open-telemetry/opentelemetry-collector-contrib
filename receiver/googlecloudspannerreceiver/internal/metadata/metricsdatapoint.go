@@ -120,6 +120,9 @@ func (mdp *MetricsDataPoint) toDataForHashing() dataForHashing {
 func parseAndHashRowrangestartkey(key string) string {
 	builderHashedKey := strings.Builder{}
 	startIndexKeys := strings.Index(key, "(")
+	if startIndexKeys == -1 { // if "(" does not exist, then label is of incorrect format
+		return ""
+	}
 	substring := key[startIndexKeys+1 : len(key)-1]
 	builderHashedKey.WriteString(key[:startIndexKeys+1])
 	plusPresent := false
