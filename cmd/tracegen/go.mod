@@ -1,3 +1,4 @@
+// Deprecated: use github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen instead
 module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/tracegen
 
 go 1.18

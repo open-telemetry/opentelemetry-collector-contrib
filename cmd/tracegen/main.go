@@ -50,6 +50,9 @@ func main() {
 		zap.AddCallerSkip(3),
 	))
 
+	// Deprecation warning
+	logger.Warn("tracegen has been deprecated, use github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen instead")
+
 	grpcExpOpt := []otlptracegrpc.Option{
 		otlptracegrpc.WithEndpoint(cfg.Endpoint),
 		otlptracegrpc.WithDialOption(
