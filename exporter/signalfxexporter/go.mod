@@ -87,3 +87,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperre
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata => ../../pkg/experimentalmetricmetadata
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx => ../../pkg/translator/signalfx
+
+// https://github.com/go-openapi/spec/issues/156
+replace github.com/go-openapi/spec v0.20.5 => github.com/go-openapi/spec v0.20.6
