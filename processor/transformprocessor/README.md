@@ -12,7 +12,7 @@ The transform processor modifies telemetry based on configuration using the [Ope
 For each signal type, the processor takes a list of statements associated to a [Context type](#contexts) and executes the statements against the incoming telemetry in the order specified in the config.
 Each statement can access and transform telemetry using functions and allow the use of a condition to help decide whether the function should be executed.
 
-**Tables of Contents**
+**Table of Contents**
 - [Config](#config)
 - [Example](#example)
 - [Grammar](#grammar)
