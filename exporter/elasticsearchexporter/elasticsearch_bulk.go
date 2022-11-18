@@ -26,11 +26,8 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
-
 	elasticsearch7 "github.com/elastic/go-elasticsearch/v7"
-
 	esutil7 "github.com/elastic/go-elasticsearch/v7/esutil"
-
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sanitize"
