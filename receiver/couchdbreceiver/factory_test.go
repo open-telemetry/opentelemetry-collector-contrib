@@ -37,7 +37,7 @@ func TestValidConfig(t *testing.T) {
 	cfg.Password = "otel"
 
 	require.EqualValues(t, defaultEndpoint, cfg.Endpoint)
-	require.NoError(t, cfg.Validate())
+	require.NoError(t, component.ValidateConfig(cfg))
 }
 
 func TestCreateMetricsReceiver(t *testing.T) {

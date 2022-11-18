@@ -95,6 +95,6 @@ func TestConfigurationValidation(t *testing.T) {
 			Targets: tc.target,
 		}
 
-		assert.ErrorIs(t, cfg.Validate(), tc.expectError, tc.scenario)
+		assert.ErrorIs(t, component.ValidateConfig(cfg), tc.expectError, tc.scenario)
 	}
 }

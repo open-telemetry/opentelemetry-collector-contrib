@@ -29,7 +29,7 @@ import (
 
 const (
 	typeStr   = "snmp"
-	stability = component.StabilityLevelInDevelopment
+	stability = component.StabilityLevelDevelopment
 )
 
 var errConfigNotSNMP = errors.New("config was not a SNMP receiver config")
@@ -118,5 +118,5 @@ func addMissingConfigDefaults(cfg *Config) error {
 		}
 	}
 
-	return cfg.Validate()
+	return component.ValidateConfig(cfg)
 }

@@ -23,11 +23,14 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.64.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.64.2-0.20221115155901-1550938c18fd
-	go.opentelemetry.io/collector/pdata v0.64.2-0.20221115155901-1550938c18fd
-	go.opentelemetry.io/collector/processor/batchprocessor v0.64.2-0.20221115155901-1550938c18fd
-	go.opentelemetry.io/collector/receiver/otlpreceiver v0.64.2-0.20221115155901-1550938c18fd
-	go.opentelemetry.io/collector/semconv v0.64.2-0.20221115155901-1550938c18fd
+	go.opentelemetry.io/collector v0.64.2-0.20221117234814-4565692c50a7
+	go.opentelemetry.io/collector/component v0.0.0-20221117234814-4565692c50a7
+	go.opentelemetry.io/collector/consumer v0.0.0-20221117234814-4565692c50a7
+	go.opentelemetry.io/collector/featuregate v0.0.0-20221117214536-6a117bfc3737
+	go.opentelemetry.io/collector/pdata v0.64.2-0.20221117234814-4565692c50a7
+	go.opentelemetry.io/collector/processor/batchprocessor v0.64.2-0.20221117234814-4565692c50a7
+	go.opentelemetry.io/collector/receiver/otlpreceiver v0.64.2-0.20221117234814-4565692c50a7
+	go.opentelemetry.io/collector/semconv v0.64.2-0.20221117234814-4565692c50a7
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.23.0
 	gopkg.in/yaml.v2 v2.4.0

@@ -277,7 +277,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, component.UnmarshalReceiverConfig(loaded, cfg))
 			require.Equal(t, cfg, tc.expectedConfig)
-			require.NoError(t, cfg.Validate())
+			require.NoError(t, component.ValidateConfig(cfg))
 		})
 	}
 }
