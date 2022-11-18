@@ -192,6 +192,80 @@ func normalizeName(metric pmetric.Metric, namespace string) string {
 	return normalizedName
 }
 
+type Normalizer struct {
+	registry *featuregate.Registry
+}
+
+func NewNormalizer(registry *featuregate.Registry) *Normalizer {
+	return &Normalizer{
+		registry: registry,
+	}
+}
+
+// TrimPromSuffixes trims type and unit prometheus suffixes from a metric name.
+// Following the [OpenTelemetry specs] for converting Prometheus Metric points to OTLP.
+//
+// [OpenTelemetry specs]: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md#metric-metadata
+func (n *Normalizer) TrimPromSuffixes(promName string, metricType pmetric.MetricType, unit string) string {
+	if !n.registry.IsEnabled(normalizeNameGateID) {
+		return promName
+	}
+
+	nameTokens := strings.Split(promName, "_")
+	if len(nameTokens) == 1 {
+		return promName
+	}
+
+	nameTokens = removeTypeSuffixes(nameTokens, metricType)
+	nameTokens = removeUnitSuffixes(nameTokens, unit)
+
+	return strings.Join(nameTokens, "_")
+}
+
+func removeTypeSuffixes(tokens []string, metricType pmetric.MetricType) []string {
+	switch metricType {
+	case pmetric.MetricTypeSum:
+		// Only counters are expected to have a type suffix at this point.
+		// for other types, suffixes are removed during scrape.
+		return removeSuffix(tokens, "total")
+	default:
+		return tokens
+	}
+}
+
+func removeUnitSuffixes(nameTokens []string, unit string) []string {
+	l := len(nameTokens)
+	unitTokens := strings.Split(unit, "_")
+	lu := len(unitTokens)
+
+	if lu == 0 || l <= lu {
+		return nameTokens
+	}
+
+	suffixed := true
+	for i := range unitTokens {
+		if nameTokens[l-i-1] != unitTokens[lu-i-1] {
+			suffixed = false
+			break
+		}
+	}
+
+	if suffixed {
+		return nameTokens[:l-lu]
+	}
+
+	return nameTokens
+}
+
+func removeSuffix(tokens []string, suffix string) []string {
+	l := len(tokens)
+	if tokens[l-1] == suffix {
+		return tokens[:l-1]
+	}
+
+	return tokens
+}
+
 // Clean up specified string so it's Prometheus compliant
 func CleanUpString(s string) string {
 	return strings.Join(strings.FieldsFunc(s, func(r rune) bool { return !unicode.IsLetter(r) && !unicode.IsDigit(r) }), "_")
