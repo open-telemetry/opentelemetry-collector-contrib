@@ -15,6 +15,7 @@ require (
 	go.opentelemetry.io/collector v0.64.2-0.20221117234814-4565692c50a7
 	go.opentelemetry.io/collector/component v0.0.0-20221117234814-4565692c50a7
 	go.opentelemetry.io/collector/consumer v0.0.0-20221117234814-4565692c50a7
+	go.opentelemetry.io/collector/featuregate v0.0.0-20221117214536-6a117bfc3737
 	go.opentelemetry.io/collector/pdata v0.64.2-0.20221117234814-4565692c50a7
 	go.opentelemetry.io/collector/processor/batchprocessor v0.64.2-0.20221117234814-4565692c50a7
 	go.opentelemetry.io/collector/semconv v0.64.2-0.20221117234814-4565692c50a7
@@ -148,7 +149,6 @@ require (
 	github.com/vultr/govultr/v2 v2.17.2 // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/featuregate v0.0.0-20221117214536-6a117bfc3737 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.36.4 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.11.1 // indirect
 	go.opentelemetry.io/otel v1.11.1 // indirect
