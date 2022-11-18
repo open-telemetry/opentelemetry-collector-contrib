@@ -74,7 +74,6 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 Triagers ([@open-telemetry/collector-contrib-triagers](https://github.com/orgs/open-telemetry/teams/collector-contrib-triagers))
 
-- [Evan Bradley](https://github.com/evan-bradley), Dynatrace
 - [Goutham Veeramachaneni](https://github.com/gouthamve), Grafana
 - [Ziqi Zhao](https://github.com/fatsheep9146), Alibaba
 - Actively seeking contributors to triage issues
