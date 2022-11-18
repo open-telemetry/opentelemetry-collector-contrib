@@ -17,11 +17,11 @@ package traces
 
 import (
 	"fmt"
-	"github.com/spf13/pflag"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/spf13/pflag"
 	"go.uber.org/atomic"
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
