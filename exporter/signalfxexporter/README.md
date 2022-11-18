@@ -99,8 +99,7 @@ will be replaced with a `_`.
   ingest_tls:
       ca_file: "/etc/opt/certs/ca.pem"
   ```
-- `api_tls`: (no default) exposes a list of TLS settings that user can adjust.
-  Needed when secure connection is required between agent and gateway.  
+- `api_tls`: (no default) exposes a list of TLS settings to establish a secure connection with http_forwarder extension configured on another collector instance.
   - `ca_file` needs to be set if the exporter's `api_url` is pointing to a http_forwarder extension
   with TLS enabled and using a self-signed certificate where its CA is not loaded in the system cert pool.
   Full list of TLS options can be found in the configtls [README](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/configtls#client-configuration)
