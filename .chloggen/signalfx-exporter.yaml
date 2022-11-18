@@ -1,0 +1,19 @@
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: enhancement
+
+# The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
+component: exporter/signalfxexporter
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: Allow user to add a custom CA so the ingest and api clients can verify and communicate with custom TLS servers.
+
+# One or more tracking issues related to the change
+issues: [16250]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+# These lines will be padded with 2 spaces and then inserted directly into the document.
+# Use pipe (|) for multiline entries.
+subtext: |
+  "`ingest_tls`" and "`api_tls`" can be used to set the absolute path to the CA file "`ca_file`".
+  This is needed when the exporter is pointing to a TLS enabled signalfx receiver or/and TLS enabled http_forwarder 
+  and the CA is not in the system cert pool

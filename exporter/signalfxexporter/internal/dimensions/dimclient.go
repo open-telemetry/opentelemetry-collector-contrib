@@ -17,6 +17,7 @@ package dimensions // import "github.com/open-telemetry/opentelemetry-collector-
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -73,6 +74,7 @@ type queuedDimension struct {
 type DimensionClientOptions struct {
 	Token                 string
 	APIURL                *url.URL
+	APITLSConfig          *tls.Config
 	LogUpdates            bool
 	Logger                *zap.Logger
 	SendDelay             int
@@ -95,6 +97,7 @@ func NewDimensionClient(ctx context.Context, options DimensionClientOptions) *Di
 			MaxIdleConnsPerHost: 20,
 			IdleConnTimeout:     30 * time.Second,
 			TLSHandshakeTimeout: 10 * time.Second,
+			TLSClientConfig:     options.APITLSConfig,
 		},
 	}
 	sender := NewReqSender(ctx, client, 20, map[string]string{"client": "dimension"})
