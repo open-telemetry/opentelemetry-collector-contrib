@@ -46,16 +46,16 @@ func NewFactory() component.ProcessorFactory {
 }
 
 // Note: This isn't a valid configuration because the processor would do no work.
-func createDefaultConfig() config.Processor {
+func createDefaultConfig() component.ProcessorConfig {
 	return &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
+		ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 	}
 }
 
 func createTracesProcessor(
 	ctx context.Context,
 	set component.ProcessorCreateSettings,
-	cfg config.Processor,
+	cfg component.ProcessorConfig,
 	nextConsumer consumer.Traces) (component.TracesProcessor, error) {
 	attrProc, err := createAttrProcessor(cfg.(*Config))
 	if err != nil {
@@ -74,7 +74,7 @@ func createTracesProcessor(
 func createMetricsProcessor(
 	ctx context.Context,
 	set component.ProcessorCreateSettings,
-	cfg config.Processor,
+	cfg component.ProcessorConfig,
 	nextConsumer consumer.Metrics) (component.MetricsProcessor, error) {
 	attrProc, err := createAttrProcessor(cfg.(*Config))
 	if err != nil {
@@ -93,7 +93,7 @@ func createMetricsProcessor(
 func createLogsProcessor(
 	ctx context.Context,
 	set component.ProcessorCreateSettings,
-	cfg config.Processor,
+	cfg component.ProcessorConfig,
 	nextConsumer consumer.Logs) (component.LogsProcessor, error) {
 	attrProc, err := createAttrProcessor(cfg.(*Config))
 	if err != nil {

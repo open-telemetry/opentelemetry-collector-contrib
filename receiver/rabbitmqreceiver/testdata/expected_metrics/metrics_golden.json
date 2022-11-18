@@ -30,7 +30,7 @@
                      "description": "The number of consumers currently reading from the queue.",
                      "name": "rabbitmq.consumer.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -45,7 +45,7 @@
                      "description": "The total number of messages currently in the queue.",
                      "name": "rabbitmq.message.current",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -115,7 +115,7 @@
                      "description": "The number of consumers currently reading from the queue.",
                      "name": "rabbitmq.consumer.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "1",
@@ -130,7 +130,7 @@
                      "description": "The number of messages acknowledged by consumers.",
                      "name": "rabbitmq.message.acknowledged",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "7827",
@@ -146,7 +146,7 @@
                      "description": "The total number of messages currently in the queue.",
                      "name": "rabbitmq.message.current",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "1",
@@ -182,7 +182,7 @@
                      "description": "The number of messages delivered to consumers.",
                      "name": "rabbitmq.message.delivered",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "7828",
@@ -198,7 +198,7 @@
                      "description": "The number of messages dropped as unroutable.",
                      "name": "rabbitmq.message.dropped",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -214,7 +214,7 @@
                      "description": "The number of messages published to a queue.",
                      "name": "rabbitmq.message.published",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "7830",

@@ -24,6 +24,8 @@ import (
 const (
 	// The value of extension "type" in configuration.
 	typeStr = "bearertokenauth"
+
+	defaultScheme = "Bearer"
 )
 
 // NewFactory creates a factory for the static bearer token Authenticator extension.
@@ -36,12 +38,13 @@ func NewFactory() component.ExtensionFactory {
 	)
 }
 
-func createDefaultConfig() config.Extension {
+func createDefaultConfig() component.ExtensionConfig {
 	return &Config{
-		ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
+		ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
+		Scheme:            defaultScheme,
 	}
 }
 
-func createExtension(_ context.Context, set component.ExtensionCreateSettings, cfg config.Extension) (component.Extension, error) {
+func createExtension(_ context.Context, set component.ExtensionCreateSettings, cfg component.ExtensionConfig) (component.Extension, error) {
 	return newBearerTokenAuth(cfg.(*Config), set.Logger), nil
 }

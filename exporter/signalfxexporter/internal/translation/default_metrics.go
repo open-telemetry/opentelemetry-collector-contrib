@@ -118,7 +118,10 @@ exclude_metrics:
   - '!k8s.container.memory_limit'
   - '!k8s.container.cpu_limit'
 
+  # matches all container request metrics but k8s.container.cpu_request and k8s.container.memory_request
   - /^k8s\.container\..+_request$/
+  - '!k8s.container.memory_request'
+  - '!k8s.container.cpu_request'
 
   # matches any node condition but k8s.node.condition_ready
   - /^k8s\.node\.condition_.+$/

@@ -28,7 +28,7 @@ const (
 	// The value of "type" key in configuration.
 	typeStr = "servicegraph"
 	// The stability level of the processor.
-	stability = component.StabilityLevelInDevelopment
+	stability = component.StabilityLevelAlpha
 )
 
 // NewFactory creates a factory for the servicegraph processor.
@@ -43,9 +43,9 @@ func NewFactory() component.ProcessorFactory {
 	)
 }
 
-func createDefaultConfig() config.Processor {
+func createDefaultConfig() component.ProcessorConfig {
 	return &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
+		ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 		Store: StoreConfig{
 			TTL:      2 * time.Second,
 			MaxItems: 1000,
@@ -53,6 +53,6 @@ func createDefaultConfig() config.Processor {
 	}
 }
 
-func createTracesProcessor(_ context.Context, params component.ProcessorCreateSettings, cfg config.Processor, nextConsumer consumer.Traces) (component.TracesProcessor, error) {
+func createTracesProcessor(_ context.Context, params component.ProcessorCreateSettings, cfg component.ProcessorConfig, nextConsumer consumer.Traces) (component.TracesProcessor, error) {
 	return newProcessor(params.Logger, cfg, nextConsumer), nil
 }

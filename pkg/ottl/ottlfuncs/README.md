@@ -6,10 +6,10 @@ Factory Functions
 - [Concat](#concat)
 - [Int](#int)
 - [IsMatch](#ismatch)
-- [Join](#join)
 - [SpanID](#spanid)
 - [Split](#split)
 - [TraceID](#traceid)
+- [ConvertCase](#convertcase)
 
 Functions
 - [delete_key](#delete_key)
@@ -25,23 +25,23 @@ Functions
 
 ## Concat
 
-`Concat(delimiter, ...values)`
+`Concat(values[], delimiter)`
 
 The `Concat` factory function takes a delimiter and a sequence of values and concatenates their string representation. Unsupported values, such as lists or maps that may substantially increase payload size, are not added to the resulting string.
 
-`delimiter` is a string value that is placed between strings during concatenation. If no delimiter is desired, then simply pass an empty string.
+`values` is a list of values passed as arguments. It supports paths, primitive values, and byte slices (such as trace IDs or span IDs).
 
-`values` is a series of values passed as arguments. It supports paths, primitive values, and byte slices (such as trace IDs or span IDs).
+`delimiter` is a string value that is placed between strings during concatenation. If no delimiter is desired, then simply pass an empty string.
 
 Examples:
 
-- `Concat(": ", attributes["http.method"], attributes["http.path"])`
+- `Concat([attributes["http.method"], attributes["http.path"]], ": ")`
 
 
-- `Concat(" ", name, 1)`
+- `Concat([name, 1], " ")`
 
 
-- `Concat("", "HTTP method is: ", attributes["http.method"])`
+- `Concat(["HTTP method is: ", attributes["http.method"]], "")`
 
 ## Int
 
@@ -123,6 +123,29 @@ Examples:
 
 - `TraceID(0x00000000000000000000000000000000)`
 
+## ConvertCase
+
+`ConvertCase(target, toCase)`
+
+The `ConvertCase` factory function converts the `target` string into the desired case `toCase`.
+
+`target` is a string. `toCase` is a string.
+
+If the `target` is not a string or does not exist, the `ConvertCase` factory function will return `nil`.
+
+`toCase` can be:
+
+- `lower`: Converts the `target` string to lowercase (e.g. `MY_METRIC` to `my_metric`)
+- `upper`: Converts the `target` string to uppercase (e.g. `my_metric` to `MY_METRIC`)
+- `snake`: Converts the `target` string to snakecase (e.g. `myMetric` to `my_metric`)
+- `camel`: Converts the `target` string to camelcase (e.g. `my_metric` to `MyMetric`)
+
+If `toCase` is any value other than the options above, the `ConvertCase` factory function will return an error during collector startup.
+
+Examples:
+
+- `ConvertCase(metric.name, "snake")`
+
 ## delete_key
 
 `delete_key(target, key)`
@@ -159,7 +182,7 @@ Examples:
 
 ## keep_keys
 
-`keep_keys(target, keys...)`
+`keep_keys(target, keys[])`
 
 The `keep_keys` function removes all keys from the `pdata.Map` that do not match one of the supplied keys.
 
@@ -169,14 +192,14 @@ The map will be changed to only contain the keys specified by the list of string
 
 Examples:
 
-- `keep_keys(attributes, "http.method")`
+- `keep_keys(attributes, ["http.method"])`
 
 
-- `keep_keys(resource.attributes, "http.method", "http.route", "http.url")`
+- `keep_keys(resource.attributes, ["http.method", "http.route", "http.url"])`
 
 ## limit
 
-`limit(target, limit, priority_keys)`
+`limit(target, limit, priority_keys[])`
 
 The `limit` function reduces the number of elements in a `pdata.Map` to be no greater than the limit.
 
@@ -188,14 +211,14 @@ The number of priority keys must be less than the supplied `limit`.
 The map will be mutated such that the number of items does not exceed the limit.
 The map is not copied or reallocated.
 
-Which items are dropped is random, provide `priority_keys` to preserve required keys.
+Which items are dropped is random, provide keys in `priority_keys` to preserve required keys.
 
 Examples:
 
-- `limit(attributes, 100)`
+- `limit(attributes, 100, [])`
 
 
-- `limit(resource.attributes, 50, "http.host", "http.method")`
+- `limit(resource.attributes, 50, ["http.host", "http.method"])`
 
 ## replace_all_matches
 

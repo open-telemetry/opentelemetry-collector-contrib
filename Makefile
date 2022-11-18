@@ -15,7 +15,7 @@ GROUP ?= all
 FOR_GROUP_TARGET=for-$(GROUP)-target
 
 FIND_MOD_ARGS=-type f -name "go.mod"
-TO_MOD_DIR=dirname {} \; | sort | egrep  '^./'
+TO_MOD_DIR=dirname {} \; | sort | grep -E '^./'
 EX_COMPONENTS=-not -path "./receiver/*" -not -path "./processor/*" -not -path "./exporter/*" -not -path "./extension/*"
 EX_INTERNAL=-not -path "./internal/*"
 
@@ -56,7 +56,7 @@ all-groups:
 	@echo "\nother: $(OTHER_MODS)"
 
 .PHONY: all
-all: install-tools all-common gotest otelcontribcol otelcontribcol-unstable
+all: install-tools all-common goporto multimod-verify gotest otelcontribcol otelcontribcol-unstable
 
 .PHONY: all-common
 all-common:
@@ -103,11 +103,11 @@ golint:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="lint"
 
 .PHONY: goimpi
-goimpi:
+goimpi: install-tools
 	@$(MAKE) $(FOR_GROUP_TARGET) TARGET="impi"
 
 .PHONY: goporto
-goporto:
+goporto: install-tools
 	porto -w --include-internal --skip-dirs "^cmd$$" ./
 
 .PHONY: for-all
@@ -375,7 +375,8 @@ multimod-verify: install-tools
 
 .PHONY: multimod-prerelease
 multimod-prerelease: install-tools
-	multimod prerelease -v ./versions.yaml -m contrib-base
+	multimod prerelease -s=true -b=false -v ./versions.yaml -m contrib-base
+	$(MAKE) gotidy
 
 .PHONY: crosslink
 crosslink: install-tools
@@ -394,25 +395,12 @@ clean:
 genconfigdocs:
 	cd cmd/configschema && $(GOCMD) run ./docsgen all
 
-.PHONY: generate-all-labels
-generate-all-labels:
-	$(MAKE) generate-labels TYPE="cmd" COLOR="#483C32"
-	$(MAKE) generate-labels TYPE="pkg" COLOR="#F9DE22"
-	$(MAKE) generate-labels TYPE="extension" COLOR="#FF794D"
-	$(MAKE) generate-labels TYPE="receiver" COLOR="#E91B7B"
-	$(MAKE) generate-labels TYPE="processor" COLOR="#800080"
-	$(MAKE) generate-labels TYPE="exporter" COLOR="#50C878"
-
-.PHONY: generate-labels
-generate-labels:
-	if [ -z $${TYPE+x} ] || [ -z $${COLOR+x} ]; then \
-		echo "Must provide a TYPE and COLOR"; \
-		exit 1; \
-	fi; \
-	echo "Generating labels for $${TYPE}" ; \
-	COMPONENTS=$$(find ./$${TYPE} -type d -maxdepth 1 -mindepth 1 -exec basename \{\} \;); \
-	for comp in $${COMPONENTS}; do \
-		NAME=$${comp//"$${TYPE}"}; \
-		gh label create "$${TYPE}/$${NAME}" -c "$${COLOR}"; \
-	done; \
-	exit 0
+.PHONY: generate-gh-issue-templates
+generate-gh-issue-templates:
+	for FILE in bug_report feature_request other; do \
+		YAML_FILE=".github/ISSUE_TEMPLATE/$${FILE}.yaml"; \
+		TMP_FILE=".github/ISSUE_TEMPLATE/$${FILE}.yaml.tmp"; \
+		cat "$${YAML_FILE}" > "$${TMP_FILE}"; \
+	 	FILE="$${TMP_FILE}" ./.github/workflows/scripts/add-component-options.sh > "$${YAML_FILE}"; \
+		rm "$${TMP_FILE}"; \
+	done

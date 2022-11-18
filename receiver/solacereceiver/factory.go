@@ -24,9 +24,9 @@ import (
 )
 
 const (
-	componentType config.Type = "solace"
+	componentType component.Type = "solace"
 	// The stability level of the receiver.
-	stability = component.StabilityLevelInDevelopment
+	stability = component.StabilityLevelDevelopment
 
 	// default value for max unaked messages
 	defaultMaxUnaked uint32 = 1000
@@ -44,9 +44,9 @@ func NewFactory() component.ReceiverFactory {
 }
 
 // createDefaultConfig creates the default configuration for receiver.
-func createDefaultConfig() config.Receiver {
+func createDefaultConfig() component.ReceiverConfig {
 	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(componentType)),
+		ReceiverSettings: config.NewReceiverSettings(component.NewID(componentType)),
 		Broker:           []string{defaultHost},
 		MaxUnacked:       defaultMaxUnaked,
 		Auth:             Authentication{},
@@ -61,7 +61,7 @@ func createDefaultConfig() config.Receiver {
 func createTracesReceiver(
 	_ context.Context,
 	params component.ReceiverCreateSettings,
-	receiverConfig config.Receiver,
+	receiverConfig component.ReceiverConfig,
 	nextConsumer consumer.Traces,
 ) (component.TracesReceiver, error) {
 	cfg, ok := receiverConfig.(*Config)

@@ -3,12 +3,13 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/common
 go 1.18
 
 require (
-	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.61.1-0.20221006231412-05d1c5f5572d
+	github.com/stretchr/testify v1.8.1
+	go.opentelemetry.io/collector/featuregate v0.0.0-20221117214536-6a117bfc3737
 	go.uber.org/zap v1.23.0
 )
 
 require (
+	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect

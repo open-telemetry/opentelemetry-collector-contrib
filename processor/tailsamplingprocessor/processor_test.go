@@ -595,7 +595,7 @@ func findTrace(t *testing.T, a []ptrace.Traces, traceID pcommon.TraceID) ptrace.
 			return batch
 		}
 	}
-	t.Fatalf("Trace was not received. TraceId %s", traceID.HexString())
+	t.Fatalf("Trace was not received. TraceId %s", traceID)
 	return ptrace.Traces{}
 }
 

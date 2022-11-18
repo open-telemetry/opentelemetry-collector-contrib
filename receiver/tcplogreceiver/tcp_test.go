@@ -24,6 +24,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -48,7 +49,7 @@ func testTCP(t *testing.T, cfg *TCPLogConfig) {
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 
 	var conn net.Conn
-	conn, err = net.Dial("tcp", "0.0.0.0:29018")
+	conn, err = net.Dial("tcp", "127.0.0.1:29018")
 	require.NoError(t, err)
 
 	for i := 0; i < numLogs; i++ {
@@ -81,24 +82,21 @@ func TestLoadConfig(t *testing.T) {
 
 	sub, err := cm.Sub("tcplog")
 	require.NoError(t, err)
-	require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
 
-	assert.NoError(t, cfg.Validate())
+	assert.NoError(t, component.ValidateConfig(cfg))
 	assert.Equal(t, testdataConfigYaml(), cfg)
 }
 
 func testdataConfigYaml() *TCPLogConfig {
 	return &TCPLogConfig{
 		BaseConfig: adapter.BaseConfig{
-			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+			ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 			Operators:        []operator.Config{},
-			Converter: adapter.ConverterConfig{
-				WorkerCount: 1,
-			},
 		},
 		InputConfig: func() tcp.Config {
 			c := tcp.NewConfig()
-			c.ListenAddress = "0.0.0.0:29018"
+			c.ListenAddress = "127.0.0.1:29018"
 			return *c
 		}(),
 	}
@@ -108,7 +106,7 @@ func TestDecodeInputConfigFailure(t *testing.T) {
 	factory := NewFactory()
 	badCfg := &TCPLogConfig{
 		BaseConfig: adapter.BaseConfig{
-			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+			ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 			Operators:        []operator.Config{},
 		},
 		InputConfig: func() tcp.Config {

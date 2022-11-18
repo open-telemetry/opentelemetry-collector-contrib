@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package oracledbreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver"
+
 import "go.opentelemetry.io/collector/config"
 
 type Config struct {

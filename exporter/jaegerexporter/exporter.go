@@ -126,16 +126,11 @@ func (s *protoGRPCSender) shutdown(context.Context) error {
 	return nil
 }
 
-func (s *protoGRPCSender) start(_ context.Context, host component.Host) error {
+func (s *protoGRPCSender) start(ctx context.Context, host component.Host) error {
 	if s.clientSettings == nil {
 		return fmt.Errorf("client settings not found")
 	}
-	opts, err := s.clientSettings.ToDialOptions(host, s.settings)
-	if err != nil {
-		return err
-	}
-
-	conn, err := grpc.Dial(s.clientSettings.Endpoint, opts...)
+	conn, err := s.clientSettings.ToClientConn(ctx, host, s.settings)
 	if err != nil {
 		return err
 	}

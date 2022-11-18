@@ -9,7 +9,7 @@ A scraper test typically looks something like this:
 ```go
 func TestScraper(t *testing.T) {
   cfg := createDefaultConfig().(*Config)
-  require.NoError(t, cfg.Validate())
+  require.NoError(t, component.ValidateConfig(cfg))
 
   scraper := newScraper(componenttest.NewNopReceiverCreateSettings(), cfg)
 
@@ -43,7 +43,7 @@ When updating an existing test:
 ```go
 func TestScraper(t *testing.T) {
   cfg := createDefaultConfig().(*Config)
-  require.NoError(t, cfg.Validate())
+  require.NoError(t, component.ValidateConfig(cfg))
 
   scraper := newScraper(componenttest.NewNopReceiverCreateSettings(), cfg)
 

@@ -20,13 +20,16 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
@@ -37,11 +40,17 @@ func TestScraper(t *testing.T) {
 	apacheMock := newMockServer(t)
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = fmt.Sprintf("%s%s", apacheMock.URL, "/server-status?auto")
-	require.NoError(t, cfg.Validate())
+	require.NoError(t, component.ValidateConfig(cfg))
 
-	scraper := newApacheScraper(componenttest.NewNopReceiverCreateSettings(), cfg)
+	// Let this test check if it works with the feature enabled and the integration test will test the feature disabled.
+	err := featuregate.GetRegistry().Apply(map[string]bool{EmitServerNameAsResourceAttribute: true, EmitPortAsResourceAttribute: true})
+	require.NoError(t, err)
 
-	err := scraper.start(context.Background(), componenttest.NewNopHost())
+	serverName, port, err := parseResourseAttributes(cfg.Endpoint)
+	require.NoError(t, err)
+	scraper := newApacheScraper(componenttest.NewNopReceiverCreateSettings(), cfg, serverName, port)
+
+	err = scraper.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	actualMetrics, err := scraper.scrape(context.Background())
@@ -50,7 +59,12 @@ func TestScraper(t *testing.T) {
 	expectedFile := filepath.Join("testdata", "scraper", "expected.json")
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
+	url, err := url.Parse(apacheMock.URL)
+	require.NoError(t, err)
 
+	expectedMetrics.ResourceMetrics().At(0).Resource().Attributes().PutStr("apache.server.port", url.Port())
+
+	// The port is random, so we shouldn't check if this value matches.
 	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
 }
 
@@ -64,7 +78,9 @@ func TestScraperFailedStart(t *testing.T) {
 				},
 			},
 		},
-	})
+	},
+		"localhost",
+		"8080")
 	err := sc.start(context.Background(), componenttest.NewNopHost())
 	require.Error(t, err)
 }
@@ -155,7 +171,7 @@ BytesPerSec: 73.12
 
 func TestScraperError(t *testing.T) {
 	t.Run("no client", func(t *testing.T) {
-		sc := newApacheScraper(componenttest.NewNopReceiverCreateSettings(), &Config{})
+		sc := newApacheScraper(componenttest.NewNopReceiverCreateSettings(), &Config{}, "", "")
 		sc.httpClient = nil
 
 		_, err := sc.scrape(context.Background())

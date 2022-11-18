@@ -15,6 +15,7 @@
 package ottl
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -24,8 +25,8 @@ import (
 )
 
 func hello[K any]() (ExprFunc[K], error) {
-	return func(ctx K) interface{} {
-		return "world"
+	return func(ctx context.Context, tCtx K) (interface{}, error) {
+		return "world", nil
 	}, nil
 }
 
@@ -45,14 +46,18 @@ func Test_newGetter(t *testing.T) {
 		{
 			name: "float literal",
 			val: value{
-				Float: ottltest.Floatp(1.2),
+				Literal: &mathExprLiteral{
+					Float: ottltest.Floatp(1.2),
+				},
 			},
 			want: 1.2,
 		},
 		{
 			name: "int literal",
 			val: value{
-				Int: ottltest.Intp(12),
+				Literal: &mathExprLiteral{
+					Int: ottltest.Intp(12),
+				},
 			},
 			want: int64(12),
 		},
@@ -78,12 +83,14 @@ func Test_newGetter(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "path expression",
+			name: "path mathExpression",
 			val: value{
-				Path: &Path{
-					Fields: []Field{
-						{
-							Name: "name",
+				Literal: &mathExprLiteral{
+					Path: &Path{
+						Fields: []Field{
+							{
+								Name: "name",
+							},
 						},
 					},
 				},
@@ -93,8 +100,10 @@ func Test_newGetter(t *testing.T) {
 		{
 			name: "function call",
 			val: value{
-				Invocation: &invocation{
-					Function: "hello",
+				Literal: &mathExprLiteral{
+					Invocation: &invocation{
+						Function: "hello",
+					},
 				},
 			},
 			want: "world",
@@ -121,7 +130,7 @@ func Test_newGetter(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			reader, err := p.newGetter(tt.val)
 			assert.NoError(t, err)
-			val := reader.Get(tt.want)
+			val, _ := reader.Get(context.Background(), tt.want)
 			assert.Equal(t, tt.want, val)
 		})
 	}

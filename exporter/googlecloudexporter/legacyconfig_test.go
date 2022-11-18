@@ -20,6 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -36,12 +37,12 @@ func TestLoadLegacyConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 	assert.Equal(t, len(cfg.Exporters), 2)
-	r0 := cfg.Exporters[config.NewComponentID(typeStr)]
+	r0 := cfg.Exporters[component.NewID(typeStr)]
 	assert.Equal(t, r0, factory.CreateDefaultConfig())
-	r1 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "customname")].(*LegacyConfig)
+	r1 := cfg.Exporters[component.NewIDWithName(typeStr, "customname")].(*LegacyConfig)
 	assert.Equal(t, r1,
 		&LegacyConfig{
-			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "customname")),
+			ExporterSettings: config.NewExporterSettings(component.NewIDWithName(typeStr, "customname")),
 			ProjectID:        "my-project",
 			UserAgent:        "opentelemetry-collector-contrib {{version}}",
 			Endpoint:         "test-endpoint",

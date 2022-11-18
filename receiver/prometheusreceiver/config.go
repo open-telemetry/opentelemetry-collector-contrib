@@ -31,6 +31,7 @@ import (
 	promHTTP "github.com/prometheus/prometheus/discovery/http"
 	"github.com/prometheus/prometheus/discovery/kubernetes"
 	"github.com/prometheus/prometheus/discovery/targetgroup"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap"
 	"gopkg.in/yaml.v2"
@@ -79,7 +80,7 @@ type targetAllocator struct {
 	HTTPSDConfig      *promHTTP.SDConfig `mapstructure:"-"`
 }
 
-var _ config.Receiver = (*Config)(nil)
+var _ component.ReceiverConfig = (*Config)(nil)
 var _ confmap.Unmarshaler = (*Config)(nil)
 
 func checkFile(fn string) error {
@@ -261,7 +262,7 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 	// We need custom unmarshaling because prometheus "config" subkey defines its own
 	// YAML unmarshaling routines so we need to do it explicitly.
 
-	err := componentParser.UnmarshalExact(cfg)
+	err := componentParser.Unmarshal(cfg, confmap.WithErrorUnused())
 	if err != nil {
 		return fmt.Errorf("prometheus receiver failed to parse config: %w", err)
 	}

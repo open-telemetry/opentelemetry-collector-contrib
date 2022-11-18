@@ -21,30 +21,27 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/service/servicetest"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.Nil(t, err)
-
-	factory := NewFactory()
-	factories.Exporters[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
 
-	assert.Equal(t, 2, len(cfg.Exporters))
+	sub, err := cm.Sub(component.NewIDWithName(typeStr, "2").String())
+	require.NoError(t, err)
+	require.NoError(t, component.UnmarshalExporterConfig(sub, cfg))
 
-	actualCfg := cfg.Exporters[config.NewComponentIDWithName(typeStr, "2")]
 	expected := &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "2")),
+		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		Token:            "token",
 		Region:           "eu",
 	}
@@ -61,25 +58,21 @@ func TestLoadConfig(t *testing.T) {
 		// We almost read 0 bytes, so no need to tune ReadBufferSize.
 		WriteBufferSize: 512 * 1024,
 	}
-	assert.Equal(t, expected, actualCfg)
+	assert.Equal(t, expected, cfg)
 }
 
 func TestDefaultLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.Nil(t, err)
-
-	factory := NewFactory()
-	factories.Exporters[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "configd.yaml"), factories)
-
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "configd.yaml"))
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
 
-	assert.Equal(t, 2, len(cfg.Exporters))
+	sub, err := cm.Sub(component.NewIDWithName(typeStr, "2").String())
+	require.NoError(t, err)
+	require.NoError(t, component.UnmarshalExporterConfig(sub, cfg))
 
-	actualCfg := cfg.Exporters[config.NewComponentIDWithName(typeStr, "2")]
 	expected := &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "2")),
+		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		Token:            "logzioTESTtoken",
 	}
 	expected.RetrySettings = exporterhelper.NewDefaultRetrySettings()
@@ -93,13 +86,13 @@ func TestDefaultLoadConfig(t *testing.T) {
 		// We almost read 0 bytes, so no need to tune ReadBufferSize.
 		WriteBufferSize: 512 * 1024,
 	}
-	assert.Equal(t, expected, actualCfg)
+	assert.Equal(t, expected, cfg)
 }
 
 func TestCheckAndWarnDeprecatedOptions(t *testing.T) {
 	// Config with legacy options
 	actualCfg := &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "2")),
+		ExporterSettings: config.NewExporterSettings(component.NewIDWithName(typeStr, "2")),
 		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
 		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
 		Token:            "logzioTESTtoken",
@@ -124,7 +117,7 @@ func TestCheckAndWarnDeprecatedOptions(t *testing.T) {
 	actualCfg.checkAndWarnDeprecatedOptions(&logger)
 
 	expected := &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "2")),
+		ExporterSettings: config.NewExporterSettings(component.NewIDWithName(typeStr, "2")),
 		Token:            "logzioTESTtoken",
 		CustomEndpoint:   "https://api.example.com",
 		QueueMaxLength:   10,

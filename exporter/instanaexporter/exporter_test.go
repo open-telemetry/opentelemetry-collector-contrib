@@ -24,6 +24,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -41,7 +42,7 @@ func TestPushConvertedTraces(t *testing.T) {
 		AgentKey:           "key11",
 		HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: traceServer.URL},
 		Endpoint:           traceServer.URL,
-		ExporterSettings:   config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "valid")),
+		ExporterSettings:   config.NewExporterSettings(component.NewIDWithName(typeStr, "valid")),
 	}
 
 	instanaExporter := newInstanaExporter(&cfg, componenttest.NewNopExporterCreateSettings())

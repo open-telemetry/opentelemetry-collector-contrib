@@ -25,7 +25,6 @@ import (
 
 	"go.opencensus.io/stats"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -59,7 +58,7 @@ type processor struct {
 	nextConsumer    consumer.Traces
 	metricsExporter consumer.Metrics
 
-	store store.Store
+	store *store.Store
 
 	startTime time.Time
 
@@ -76,7 +75,7 @@ type processor struct {
 	shutdownCh chan interface{}
 }
 
-func newProcessor(logger *zap.Logger, config config.Processor, nextConsumer consumer.Traces) *processor {
+func newProcessor(logger *zap.Logger, config component.ProcessorConfig, nextConsumer consumer.Traces) *processor {
 	pConfig := config.(*Config)
 
 	bounds := defaultLatencyHistogramBucketsMs
@@ -108,7 +107,7 @@ func (p *processor) Start(_ context.Context, host component.Host) error {
 	exporters := host.GetExporters()
 
 	// The available list of exporters come from any configured metrics pipelines' exporters.
-	for k, exp := range exporters[config.MetricsDataType] {
+	for k, exp := range exporters[component.DataTypeMetrics] {
 		metricsExp, ok := exp.(component.MetricsExporter)
 		if k.String() == p.config.MetricsExporter && ok {
 			p.metricsExporter = metricsExp
@@ -197,7 +196,7 @@ func (p *processor) aggregateMetrics(ctx context.Context, td ptrace.Traces) (err
 					fallthrough
 				case ptrace.SpanKindClient:
 					traceID := span.TraceID()
-					key := buildEdgeKey(traceID.HexString(), span.SpanID().HexString())
+					key := store.NewKey(traceID, span.SpanID())
 					isNew, err = p.store.UpsertEdge(key, func(e *store.Edge) {
 						e.TraceID = traceID
 						e.ConnectionType = connectionType
@@ -220,7 +219,7 @@ func (p *processor) aggregateMetrics(ctx context.Context, td ptrace.Traces) (err
 					fallthrough
 				case ptrace.SpanKindServer:
 					traceID := span.TraceID()
-					key := buildEdgeKey(traceID.HexString(), span.ParentSpanID().HexString())
+					key := store.NewKey(traceID, span.ParentSpanID())
 					isNew, err = p.store.UpsertEdge(key, func(e *store.Edge) {
 						e.TraceID = traceID
 						e.ConnectionType = connectionType
@@ -268,7 +267,7 @@ func (p *processor) onComplete(e *store.Edge) {
 		zap.String("client_service", e.ClientService),
 		zap.String("server_service", e.ServerService),
 		zap.String("connection_type", string(e.ConnectionType)),
-		zap.String("trace_id", e.TraceID.HexString()),
+		zap.Stringer("trace_id", e.TraceID),
 	)
 	p.aggregateMetricsForEdge(e)
 }
@@ -279,7 +278,7 @@ func (p *processor) onExpire(e *store.Edge) {
 		zap.String("client_service", e.ClientService),
 		zap.String("server_service", e.ServerService),
 		zap.String("connection_type", string(e.ConnectionType)),
-		zap.String("trace_id", e.TraceID.HexString()),
+		zap.Stringer("trace_id", e.TraceID),
 	)
 	stats.Record(context.Background(), statExpiredEdges.M(1))
 }
@@ -369,7 +368,7 @@ func (p *processor) collectCountMetrics(ilm pmetric.ScopeMetrics) error {
 		mCount.SetName("traces_service_graph_request_total")
 		mCount.SetEmptySum().SetIsMonotonic(true)
 		// TODO: Support other aggregation temporalities
-		mCount.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+		mCount.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 
 		dpCalls := mCount.Sum().DataPoints().AppendEmpty()
 		dpCalls.SetStartTimestamp(pcommon.NewTimestampFromTime(p.startTime))
@@ -389,7 +388,7 @@ func (p *processor) collectCountMetrics(ilm pmetric.ScopeMetrics) error {
 		mCount.SetName("traces_service_graph_request_failed_total")
 		mCount.SetEmptySum().SetIsMonotonic(true)
 		// TODO: Support other aggregation temporalities
-		mCount.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+		mCount.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 
 		dpCalls := mCount.Sum().DataPoints().AppendEmpty()
 		dpCalls.SetStartTimestamp(pcommon.NewTimestampFromTime(p.startTime))
@@ -412,7 +411,7 @@ func (p *processor) collectLatencyMetrics(ilm pmetric.ScopeMetrics) error {
 		mDuration := ilm.Metrics().AppendEmpty()
 		mDuration.SetName("traces_service_graph_request_duration_seconds")
 		// TODO: Support other aggregation temporalities
-		mDuration.SetEmptyHistogram().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+		mDuration.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 
 		timestamp := pcommon.NewTimestampFromTime(time.Now())
 
@@ -490,14 +489,6 @@ func (p *processor) cleanCache() {
 	for _, key := range staleSeries {
 		delete(p.keyToMetric, key)
 	}
-}
-
-func buildEdgeKey(k1, k2 string) string {
-	var b strings.Builder
-	b.WriteString(k1)
-	b.WriteString("-")
-	b.WriteString(k2)
-	return b.String()
 }
 
 // durationToMillis converts the given duration to the number of milliseconds it represents.

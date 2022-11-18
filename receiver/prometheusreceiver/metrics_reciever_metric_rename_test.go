@@ -415,7 +415,7 @@ func verifyRenameLabelKeepAction(t *testing.T, td *testData, resourceMetrics []p
 					},
 				},
 			}),
-		assertMetricPresent(" Redis connected clients",
+		assertMetricPresent("redis_http_requests_total",
 			compareMetricType(pmetric.MetricTypeSum),
 			[]dataPointExpectation{
 				{
@@ -433,7 +433,7 @@ func verifyRenameLabelKeepAction(t *testing.T, td *testData, resourceMetrics []p
 					},
 				},
 			}),
-		assertMetricPresent("RPC clients",
+		assertMetricPresent("rpc_duration_total",
 			compareMetricType(pmetric.MetricTypeSum),
 			[]dataPointExpectation{
 				{

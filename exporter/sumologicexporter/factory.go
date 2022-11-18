@@ -40,12 +40,12 @@ func NewFactory() component.ExporterFactory {
 	)
 }
 
-func createDefaultConfig() config.Exporter {
+func createDefaultConfig() component.ExporterConfig {
 	qs := exporterhelper.NewDefaultQueueSettings()
 	qs.Enabled = false
 
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 
 		CompressEncoding:   DefaultCompressEncoding,
 		MaxRequestBodySize: DefaultMaxRequestBodySize,
@@ -66,7 +66,7 @@ func createDefaultConfig() config.Exporter {
 func createLogsExporter(
 	_ context.Context,
 	params component.ExporterCreateSettings,
-	cfg config.Exporter,
+	cfg component.ExporterConfig,
 ) (component.LogsExporter, error) {
 	exp, err := newLogsExporter(cfg.(*Config), params)
 	if err != nil {
@@ -79,7 +79,7 @@ func createLogsExporter(
 func createMetricsExporter(
 	_ context.Context,
 	params component.ExporterCreateSettings,
-	cfg config.Exporter,
+	cfg component.ExporterConfig,
 ) (component.MetricsExporter, error) {
 	exp, err := newMetricsExporter(cfg.(*Config), params)
 	if err != nil {

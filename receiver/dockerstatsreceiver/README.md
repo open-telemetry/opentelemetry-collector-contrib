@@ -78,5 +78,15 @@ The feature gate `receiver.dockerstatsd.useScraperV2` once enabled allows collec
 This is considered a breaking change for existing users of this receiver, and it is recommended to migrate to the new implementation when possible. Any new users planning to adopt this receiver should enable this feature gate to avoid having to migrate any visualisations or alerts.
 
 This feature gate will eventually be enabled by default, and eventually the old implementation will be removed. It aims 
-to give users time to migrate to the new implementation. The target release for this featuregate to be enabled by default 
-is 0.60.0.
+to give users time to migrate to the new implementation.
+
+### Migrating from ScraperV1 to ScraperV2
+
+There are some breaking changes from ScraperV1 to ScraperV2. The work done for these changes is tracked in [#9794](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9794).
+
+| Breaking Change                     | Action                                                                  |
+|-------------------------------------|-------------------------------------------------------------------------|
+| Many metrics are no longer emitted by default. | See [documentation.md](./documentation.md) to see which metrics are enabled by default. Enable/disable as desired. |
+| BlockIO metrics names changed. The type of operation is no longer in the metric name suffix, and is now in an attribute. For example `container.blockio.io_merged_recursive.read` becomes `container.blockio.io_merged_recursive` with an `operation:read` attribute. | Be aware of the metric name changes and make any adjustments to what your downstream expects from BlockIO metrics. |
+| Memory metrics measured in Bytes are now [non-monotonic sums](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md#opentelemetry-protocol-data-model-consumer-recommendations) instead of gauges. | Most likely there is no action. The aggregation type is different but the values are the same. Be aware of how your downstream handles gauges vs non-monotonic sums. |
+| Config option `provide_per_core_cpu_metrics` will be deprecated and removed. | Enable the `container.cpu.usage.percpu` metric as per [documentation.md](./documentation.md). |

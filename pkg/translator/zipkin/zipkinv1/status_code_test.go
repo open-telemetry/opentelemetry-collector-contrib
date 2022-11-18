@@ -86,12 +86,12 @@ func TestAttribToStatusCode(t *testing.T) {
 func TestStatusCodeMapperCases(t *testing.T) {
 	tests := []struct {
 		name       string
-		expected   ptrace.SpanStatus
+		expected   ptrace.Status
 		attributes map[string]string
 	}{
 		{
 			name:     "no relevant attributes",
-			expected: ptrace.NewSpanStatus(),
+			expected: ptrace.NewStatus(),
 			attributes: map[string]string{
 				"not.relevant": "data",
 			},
@@ -99,8 +99,8 @@ func TestStatusCodeMapperCases(t *testing.T) {
 
 		{
 			name: "http: 500",
-			expected: func() ptrace.SpanStatus {
-				ret := ptrace.NewSpanStatus()
+			expected: func() ptrace.Status {
+				ret := ptrace.NewStatus()
 				ret.SetCode(ptrace.StatusCodeError)
 				return ret
 			}(),
@@ -111,7 +111,7 @@ func TestStatusCodeMapperCases(t *testing.T) {
 
 		{
 			name:     "http: message only, nil",
-			expected: ptrace.NewSpanStatus(),
+			expected: ptrace.NewStatus(),
 			attributes: map[string]string{
 				"http.status_message": "something",
 			},
@@ -119,8 +119,8 @@ func TestStatusCodeMapperCases(t *testing.T) {
 
 		{
 			name: "http: 500",
-			expected: func() ptrace.SpanStatus {
-				ret := ptrace.NewSpanStatus()
+			expected: func() ptrace.Status {
+				ret := ptrace.NewStatus()
 				ret.SetCode(ptrace.StatusCodeError)
 				ret.SetMessage("a message")
 				return ret
@@ -133,8 +133,8 @@ func TestStatusCodeMapperCases(t *testing.T) {
 
 		{
 			name: "http: 500, with error attribute",
-			expected: func() ptrace.SpanStatus {
-				ret := ptrace.NewSpanStatus()
+			expected: func() ptrace.Status {
+				ret := ptrace.NewStatus()
 				ret.SetCode(ptrace.StatusCodeError)
 				return ret
 			}(),
@@ -146,8 +146,8 @@ func TestStatusCodeMapperCases(t *testing.T) {
 
 		{
 			name: "oc: internal",
-			expected: func() ptrace.SpanStatus {
-				ret := ptrace.NewSpanStatus()
+			expected: func() ptrace.Status {
+				ret := ptrace.NewStatus()
 				ret.SetCode(ptrace.StatusCodeError)
 				ret.SetMessage("a description")
 				return ret
@@ -160,8 +160,8 @@ func TestStatusCodeMapperCases(t *testing.T) {
 
 		{
 			name: "oc: description and error",
-			expected: func() ptrace.SpanStatus {
-				ret := ptrace.NewSpanStatus()
+			expected: func() ptrace.Status {
+				ret := ptrace.NewStatus()
 				ret.SetCode(ptrace.StatusCodeError)
 				ret.SetMessage("a description")
 				return ret
@@ -174,8 +174,8 @@ func TestStatusCodeMapperCases(t *testing.T) {
 
 		{
 			name: "oc: error only",
-			expected: func() ptrace.SpanStatus {
-				ret := ptrace.NewSpanStatus()
+			expected: func() ptrace.Status {
+				ret := ptrace.NewStatus()
 				ret.SetCode(ptrace.StatusCodeError)
 				return ret
 			}(),
@@ -186,8 +186,8 @@ func TestStatusCodeMapperCases(t *testing.T) {
 
 		{
 			name: "oc: empty error tag",
-			expected: func() ptrace.SpanStatus {
-				ret := ptrace.NewSpanStatus()
+			expected: func() ptrace.Status {
+				ret := ptrace.NewStatus()
 				ret.SetCode(ptrace.StatusCodeError)
 				return ret
 			}(),
@@ -198,7 +198,7 @@ func TestStatusCodeMapperCases(t *testing.T) {
 
 		{
 			name:     "oc: description only, no status",
-			expected: ptrace.NewSpanStatus(),
+			expected: ptrace.NewStatus(),
 			attributes: map[string]string{
 				"opencensus.status_description": "a description",
 			},
@@ -206,8 +206,8 @@ func TestStatusCodeMapperCases(t *testing.T) {
 
 		{
 			name: "oc: priority over http",
-			expected: func() ptrace.SpanStatus {
-				ret := ptrace.NewSpanStatus()
+			expected: func() ptrace.Status {
+				ret := ptrace.NewStatus()
 				ret.SetCode(ptrace.StatusCodeError)
 				ret.SetMessage("deadline expired")
 				return ret
@@ -223,8 +223,8 @@ func TestStatusCodeMapperCases(t *testing.T) {
 
 		{
 			name: "error: valid oc status priority over http",
-			expected: func() ptrace.SpanStatus {
-				ret := ptrace.NewSpanStatus()
+			expected: func() ptrace.Status {
+				ret := ptrace.NewStatus()
 				ret.SetCode(ptrace.StatusCodeError)
 				return ret
 			}(),
@@ -238,8 +238,8 @@ func TestStatusCodeMapperCases(t *testing.T) {
 
 		{
 			name: "error: invalid oc status uses http",
-			expected: func() ptrace.SpanStatus {
-				ret := ptrace.NewSpanStatus()
+			expected: func() ptrace.Status {
+				ret := ptrace.NewStatus()
 				ret.SetCode(ptrace.StatusCodeError)
 				return ret
 			}(),
@@ -253,8 +253,8 @@ func TestStatusCodeMapperCases(t *testing.T) {
 
 		{
 			name: "error only: string description",
-			expected: func() ptrace.SpanStatus {
-				ret := ptrace.NewSpanStatus()
+			expected: func() ptrace.Status {
+				ret := ptrace.NewStatus()
 				ret.SetCode(ptrace.StatusCodeError)
 				return ret
 			}(),
@@ -265,8 +265,8 @@ func TestStatusCodeMapperCases(t *testing.T) {
 
 		{
 			name: "error only: true",
-			expected: func() ptrace.SpanStatus {
-				ret := ptrace.NewSpanStatus()
+			expected: func() ptrace.Status {
+				ret := ptrace.NewStatus()
 				ret.SetCode(ptrace.StatusCodeError)
 				return ret
 			}(),
@@ -277,8 +277,8 @@ func TestStatusCodeMapperCases(t *testing.T) {
 
 		{
 			name: "error only: false",
-			expected: func() ptrace.SpanStatus {
-				ret := ptrace.NewSpanStatus()
+			expected: func() ptrace.Status {
+				ret := ptrace.NewStatus()
 				ret.SetCode(ptrace.StatusCodeError)
 				return ret
 			}(),
@@ -289,8 +289,8 @@ func TestStatusCodeMapperCases(t *testing.T) {
 
 		{
 			name: "error only: 1",
-			expected: func() ptrace.SpanStatus {
-				ret := ptrace.NewSpanStatus()
+			expected: func() ptrace.Status {
+				ret := ptrace.NewStatus()
 				ret.SetCode(ptrace.StatusCodeError)
 				return ret
 			}(),
@@ -307,7 +307,7 @@ func TestStatusCodeMapperCases(t *testing.T) {
 				sMapper.fromAttribute(k, pcommon.NewValueStr(v))
 			}
 
-			spanStatus := ptrace.NewSpanStatus()
+			spanStatus := ptrace.NewStatus()
 			sMapper.status(spanStatus)
 			assert.EqualValues(t, test.expected, spanStatus)
 		})

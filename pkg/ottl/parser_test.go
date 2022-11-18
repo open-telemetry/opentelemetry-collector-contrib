@@ -15,6 +15,7 @@
 package ottl
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"regexp"
@@ -59,7 +60,9 @@ func Test_parse(t *testing.T) {
 					Function: "met",
 					Arguments: []value{
 						{
-							Float: ottltest.Floatp(1.2),
+							Literal: &mathExprLiteral{
+								Float: ottltest.Floatp(1.2),
+							},
 						},
 					},
 				},
@@ -74,7 +77,9 @@ func Test_parse(t *testing.T) {
 					Function: "fff",
 					Arguments: []value{
 						{
-							Int: ottltest.Intp(12),
+							Literal: &mathExprLiteral{
+								Int: ottltest.Intp(12),
+							},
 						},
 					},
 				},
@@ -92,17 +97,21 @@ func Test_parse(t *testing.T) {
 							String: ottltest.Strp("foo"),
 						},
 						{
-							Invocation: &invocation{
-								Function: "getSomething",
-								Arguments: []value{
-									{
-										Path: &Path{
-											Fields: []Field{
-												{
-													Name: "bear",
-												},
-												{
-													Name: "honey",
+							Literal: &mathExprLiteral{
+								Invocation: &invocation{
+									Function: "getSomething",
+									Arguments: []value{
+										{
+											Literal: &mathExprLiteral{
+												Path: &Path{
+													Fields: []Field{
+														{
+															Name: "bear",
+														},
+														{
+															Name: "honey",
+														},
+													},
 												},
 											},
 										},
@@ -123,17 +132,19 @@ func Test_parse(t *testing.T) {
 					Function: "set",
 					Arguments: []value{
 						{
-							Path: &Path{
-								Fields: []Field{
-									{
-										Name: "foo",
-									},
-									{
-										Name:   "attributes",
-										MapKey: ottltest.Strp("bar"),
-									},
-									{
-										Name: "cat",
+							Literal: &mathExprLiteral{
+								Path: &Path{
+									Fields: []Field{
+										{
+											Name: "foo",
+										},
+										{
+											Name:   "attributes",
+											MapKey: ottltest.Strp("bar"),
+										},
+										{
+											Name: "cat",
+										},
 									},
 								},
 							},
@@ -154,17 +165,19 @@ func Test_parse(t *testing.T) {
 					Function: "set",
 					Arguments: []value{
 						{
-							Path: &Path{
-								Fields: []Field{
-									{
-										Name: "foo",
-									},
-									{
-										Name:   "attributes",
-										MapKey: ottltest.Strp("bar"),
-									},
-									{
-										Name: "cat",
+							Literal: &mathExprLiteral{
+								Path: &Path{
+									Fields: []Field{
+										{
+											Name: "foo",
+										},
+										{
+											Name:   "attributes",
+											MapKey: ottltest.Strp("bar"),
+										},
+										{
+											Name: "cat",
+										},
 									},
 								},
 							},
@@ -179,10 +192,12 @@ func Test_parse(t *testing.T) {
 						Left: &booleanValue{
 							Comparison: &comparison{
 								Left: value{
-									Path: &Path{
-										Fields: []Field{
-											{
-												Name: "name",
+									Literal: &mathExprLiteral{
+										Path: &Path{
+											Fields: []Field{
+												{
+													Name: "name",
+												},
 											},
 										},
 									},
@@ -205,17 +220,19 @@ func Test_parse(t *testing.T) {
 					Function: "set",
 					Arguments: []value{
 						{
-							Path: &Path{
-								Fields: []Field{
-									{
-										Name: "foo",
-									},
-									{
-										Name:   "attributes",
-										MapKey: ottltest.Strp("bar"),
-									},
-									{
-										Name: "cat",
+							Literal: &mathExprLiteral{
+								Path: &Path{
+									Fields: []Field{
+										{
+											Name: "foo",
+										},
+										{
+											Name:   "attributes",
+											MapKey: ottltest.Strp("bar"),
+										},
+										{
+											Name: "cat",
+										},
 									},
 								},
 							},
@@ -230,10 +247,12 @@ func Test_parse(t *testing.T) {
 						Left: &booleanValue{
 							Comparison: &comparison{
 								Left: value{
-									Path: &Path{
-										Fields: []Field{
-											{
-												Name: "name",
+									Literal: &mathExprLiteral{
+										Path: &Path{
+											Fields: []Field{
+												{
+													Name: "name",
+												},
 											},
 										},
 									},
@@ -256,17 +275,19 @@ func Test_parse(t *testing.T) {
 					Function: "set",
 					Arguments: []value{
 						{
-							Path: &Path{
-								Fields: []Field{
-									{
-										Name: "foo",
-									},
-									{
-										Name:   "attributes",
-										MapKey: ottltest.Strp("bar"),
-									},
-									{
-										Name: "cat",
+							Literal: &mathExprLiteral{
+								Path: &Path{
+									Fields: []Field{
+										{
+											Name: "foo",
+										},
+										{
+											Name:   "attributes",
+											MapKey: ottltest.Strp("bar"),
+										},
+										{
+											Name: "cat",
+										},
 									},
 								},
 							},
@@ -281,10 +302,12 @@ func Test_parse(t *testing.T) {
 						Left: &booleanValue{
 							Comparison: &comparison{
 								Left: value{
-									Path: &Path{
-										Fields: []Field{
-											{
-												Name: "name",
+									Literal: &mathExprLiteral{
+										Path: &Path{
+											Fields: []Field{
+												{
+													Name: "name",
+												},
 											},
 										},
 									},
@@ -358,11 +381,13 @@ func Test_parse(t *testing.T) {
 					Function: "set",
 					Arguments: []value{
 						{
-							Path: &Path{
-								Fields: []Field{
-									{
-										Name:   "attributes",
-										MapKey: ottltest.Strp("bytes"),
+							Literal: &mathExprLiteral{
+								Path: &Path{
+									Fields: []Field{
+										{
+											Name:   "attributes",
+											MapKey: ottltest.Strp("bytes"),
+										},
 									},
 								},
 							},
@@ -383,11 +408,13 @@ func Test_parse(t *testing.T) {
 					Function: "set",
 					Arguments: []value{
 						{
-							Path: &Path{
-								Fields: []Field{
-									{
-										Name:   "attributes",
-										MapKey: ottltest.Strp("test"),
+							Literal: &mathExprLiteral{
+								Path: &Path{
+									Fields: []Field{
+										{
+											Name:   "attributes",
+											MapKey: ottltest.Strp("test"),
+										},
 									},
 								},
 							},
@@ -408,11 +435,13 @@ func Test_parse(t *testing.T) {
 					Function: "set",
 					Arguments: []value{
 						{
-							Path: &Path{
-								Fields: []Field{
-									{
-										Name:   "attributes",
-										MapKey: ottltest.Strp("test"),
+							Literal: &mathExprLiteral{
+								Path: &Path{
+									Fields: []Field{
+										{
+											Name:   "attributes",
+											MapKey: ottltest.Strp("test"),
+										},
 									},
 								},
 							},
@@ -423,6 +452,309 @@ func Test_parse(t *testing.T) {
 					},
 				},
 				WhereClause: nil,
+			},
+		},
+		{
+			name:      "Invocation with empty list",
+			statement: `set(attributes["test"], [])`,
+			expected: &parsedStatement{
+				Invocation: invocation{
+					Function: "set",
+					Arguments: []value{
+						{
+							Literal: &mathExprLiteral{
+								Path: &Path{
+									Fields: []Field{
+										{
+											Name:   "attributes",
+											MapKey: ottltest.Strp("test"),
+										},
+									},
+								},
+							},
+						},
+						{
+							List: &list{
+								Values: nil,
+							},
+						},
+					},
+				},
+				WhereClause: nil,
+			},
+		},
+		{
+			name:      "Invocation with single-value list",
+			statement: `set(attributes["test"], ["value0"])`,
+			expected: &parsedStatement{
+				Invocation: invocation{
+					Function: "set",
+					Arguments: []value{
+						{
+							Literal: &mathExprLiteral{
+								Path: &Path{
+									Fields: []Field{
+										{
+											Name:   "attributes",
+											MapKey: ottltest.Strp("test"),
+										},
+									},
+								},
+							},
+						},
+						{
+							List: &list{
+								Values: []value{
+									{
+										String: ottltest.Strp("value0"),
+									},
+								},
+							},
+						},
+					},
+				},
+				WhereClause: nil,
+			},
+		},
+		{
+			name:      "Invocation with multi-value list",
+			statement: `set(attributes["test"], ["value1", "value2"])`,
+			expected: &parsedStatement{
+				Invocation: invocation{
+					Function: "set",
+					Arguments: []value{
+						{
+							Literal: &mathExprLiteral{
+								Path: &Path{
+									Fields: []Field{
+										{
+											Name:   "attributes",
+											MapKey: ottltest.Strp("test"),
+										},
+									},
+								},
+							},
+						},
+						{
+							List: &list{
+								Values: []value{
+									{
+										String: ottltest.Strp("value1"),
+									},
+									{
+										String: ottltest.Strp("value2"),
+									},
+								},
+							},
+						},
+					},
+				},
+				WhereClause: nil,
+			},
+		},
+		{
+			name:      "Invocation with nested heterogeneous types",
+			statement: `set(attributes["test"], [Concat(["a", "b"], "+"), ["1", 2, 3.0], nil, attributes["test"]])`,
+			expected: &parsedStatement{
+				Invocation: invocation{
+					Function: "set",
+					Arguments: []value{
+						{
+							Literal: &mathExprLiteral{
+								Path: &Path{
+									Fields: []Field{
+										{
+											Name:   "attributes",
+											MapKey: ottltest.Strp("test"),
+										},
+									},
+								},
+							},
+						},
+						{
+							List: &list{
+								Values: []value{
+									{
+										Literal: &mathExprLiteral{
+											Invocation: &invocation{
+												Function: "Concat",
+												Arguments: []value{
+													{
+														List: &list{
+															Values: []value{
+																{
+																	String: ottltest.Strp("a"),
+																},
+																{
+																	String: ottltest.Strp("b"),
+																},
+															},
+														},
+													},
+													{
+														String: ottltest.Strp("+"),
+													},
+												},
+											},
+										},
+									},
+									{
+										List: &list{
+											Values: []value{
+												{
+													String: ottltest.Strp("1"),
+												},
+												{
+													Literal: &mathExprLiteral{
+														Int: ottltest.Intp(2),
+													},
+												},
+												{
+													Literal: &mathExprLiteral{
+														Float: ottltest.Floatp(3.0),
+													},
+												},
+											},
+										},
+									},
+									{
+										IsNil: (*isNil)(ottltest.Boolp(true)),
+									},
+									{
+										Literal: &mathExprLiteral{
+											Path: &Path{
+												Fields: []Field{
+													{
+														Name:   "attributes",
+														MapKey: ottltest.Strp("test"),
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				WhereClause: nil,
+			},
+		},
+		{
+			name:      "Invocation math mathExpression",
+			statement: `set(attributes["test"], 1000 - 600) where 1 + 1 * 2 == three / one()`,
+			expected: &parsedStatement{
+				Invocation: invocation{
+					Function: "set",
+					Arguments: []value{
+						{
+							Literal: &mathExprLiteral{
+								Path: &Path{
+									Fields: []Field{
+										{
+											Name:   "attributes",
+											MapKey: ottltest.Strp("test"),
+										},
+									},
+								},
+							},
+						},
+						{
+							MathExpression: &mathExpression{
+								Left: &addSubTerm{
+									Left: &mathValue{
+										Literal: &mathExprLiteral{
+											Int: ottltest.Intp(1000),
+										},
+									},
+								},
+								Right: []*opAddSubTerm{
+									{
+										Operator: SUB,
+										Term: &addSubTerm{
+											Left: &mathValue{
+												Literal: &mathExprLiteral{
+													Int: ottltest.Intp(600),
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				WhereClause: &booleanExpression{
+					Left: &term{
+						Left: &booleanValue{
+							Comparison: &comparison{
+								Left: value{
+									MathExpression: &mathExpression{
+										Left: &addSubTerm{
+											Left: &mathValue{
+												Literal: &mathExprLiteral{
+													Int: ottltest.Intp(1),
+												},
+											},
+										},
+										Right: []*opAddSubTerm{
+											{
+												Operator: ADD,
+												Term: &addSubTerm{
+													Left: &mathValue{
+														Literal: &mathExprLiteral{
+															Int: ottltest.Intp(1),
+														},
+													},
+													Right: []*opMultDivValue{
+														{
+															Operator: MULT,
+															Value: &mathValue{
+																Literal: &mathExprLiteral{
+																	Int: ottltest.Intp(2),
+																},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+								Op: EQ,
+								Right: value{
+									MathExpression: &mathExpression{
+										Left: &addSubTerm{
+											Left: &mathValue{
+												Literal: &mathExprLiteral{
+													Path: &Path{
+														Fields: []Field{
+															{
+																Name: "three",
+															},
+														},
+													},
+												},
+											},
+											Right: []*opMultDivValue{
+												{
+													Operator: DIV,
+													Value: &mathValue{
+														Literal: &mathExprLiteral{
+															Invocation: &invocation{
+																Function: "one",
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
 			},
 		},
 	}
@@ -470,11 +802,12 @@ func Test_parse_failure(t *testing.T) {
 func testParsePath(val *Path) (GetSetter[interface{}], error) {
 	if val != nil && len(val.Fields) > 0 && val.Fields[0].Name == "name" {
 		return &StandardGetSetter[interface{}]{
-			Getter: func(ctx interface{}) interface{} {
-				return ctx
+			Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+				return tCtx, nil
 			},
-			Setter: func(ctx interface{}, val interface{}) {
-				reflect.DeepEqual(ctx, val)
+			Setter: func(ctx context.Context, tCtx interface{}, val interface{}) error {
+				reflect.DeepEqual(tCtx, val)
+				return nil
 			},
 		}, nil
 	}
@@ -489,10 +822,12 @@ func setNameTest(b *booleanExpression) *parsedStatement {
 			Function: "set",
 			Arguments: []value{
 				{
-					Path: &Path{
-						Fields: []Field{
-							{
-								Name: "name",
+					Literal: &mathExprLiteral{
+						Path: &Path{
+							Fields: []Field{
+								{
+									Name: "name",
+								},
 							},
 						},
 					},
@@ -686,10 +1021,12 @@ func Test_parseWhere(t *testing.T) {
 					Left: &booleanValue{
 						Comparison: &comparison{
 							Left: value{
-								Path: &Path{
-									Fields: []Field{
-										{
-											Name: "name",
+								Literal: &mathExprLiteral{
+									Path: &Path{
+										Fields: []Field{
+											{
+												Name: "name",
+											},
 										},
 									},
 								},
@@ -706,10 +1043,12 @@ func Test_parseWhere(t *testing.T) {
 							Value: &booleanValue{
 								Comparison: &comparison{
 									Left: value{
-										Path: &Path{
-											Fields: []Field{
-												{
-													Name: "name",
+										Literal: &mathExprLiteral{
+											Path: &Path{
+												Fields: []Field{
+													{
+														Name: "name",
+													},
 												},
 											},
 										},
@@ -732,10 +1071,12 @@ func Test_parseWhere(t *testing.T) {
 					Left: &booleanValue{
 						Comparison: &comparison{
 							Left: value{
-								Path: &Path{
-									Fields: []Field{
-										{
-											Name: "name",
+								Literal: &mathExprLiteral{
+									Path: &Path{
+										Fields: []Field{
+											{
+												Name: "name",
+											},
 										},
 									},
 								},
@@ -754,10 +1095,12 @@ func Test_parseWhere(t *testing.T) {
 							Left: &booleanValue{
 								Comparison: &comparison{
 									Left: value{
-										Path: &Path{
-											Fields: []Field{
-												{
-													Name: "name",
+										Literal: &mathExprLiteral{
+											Path: &Path{
+												Fields: []Field{
+													{
+														Name: "name",
+													},
 												},
 											},
 										},
@@ -838,6 +1181,57 @@ func Test_parseStatement(t *testing.T) {
 				t.Errorf("parseStatement(%s) error = %v, wantErr %v", tt.statement, err, tt.wantErr)
 				return
 			}
+		})
+	}
+}
+
+func Test_Execute(t *testing.T) {
+	tests := []struct {
+		name              string
+		condition         boolExpressionEvaluator[interface{}]
+		function          ExprFunc[interface{}]
+		expectedCondition bool
+		expectedResult    interface{}
+	}{
+		{
+			name:      "Condition matched",
+			condition: alwaysTrue[interface{}],
+			function: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+				return 1, nil
+			},
+			expectedCondition: true,
+			expectedResult:    1,
+		},
+		{
+			name:      "Condition not matched",
+			condition: alwaysFalse[interface{}],
+			function: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+				return 1, nil
+			},
+			expectedCondition: false,
+			expectedResult:    nil,
+		},
+		{
+			name:      "No result",
+			condition: alwaysTrue[interface{}],
+			function: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+				return nil, nil
+			},
+			expectedCondition: true,
+			expectedResult:    nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			statement := Statement[interface{}]{
+				condition: BoolExpr[any]{tt.condition},
+				function:  Expr[any]{exprFunc: tt.function},
+			}
+
+			result, condition, err := statement.Execute(context.Background(), nil)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expectedCondition, condition)
+			assert.Equal(t, tt.expectedResult, result)
 		})
 	}
 }

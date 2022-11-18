@@ -24,6 +24,7 @@ import (
 	promModel "github.com/prometheus/common/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -34,19 +35,19 @@ func TestLoadConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "").String())
+	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
 	require.NoError(t, err)
-	require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
 
 	r0 := cfg.(*Config)
 	assert.Equal(t, r0, factory.CreateDefaultConfig())
 
-	sub, err = cm.Sub(config.NewComponentIDWithName(typeStr, "customname").String())
+	sub, err = cm.Sub(component.NewIDWithName(typeStr, "customname").String())
 	require.NoError(t, err)
-	require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
 
 	r1 := cfg.(*Config)
-	assert.Equal(t, r1.ReceiverSettings, config.NewReceiverSettings(config.NewComponentID(typeStr)))
+	assert.Equal(t, r1.ReceiverSettings, config.NewReceiverSettings(component.NewID(typeStr)))
 	assert.Equal(t, r1.PrometheusConfig.ScrapeConfigs[0].JobName, "demo")
 	assert.Equal(t, time.Duration(r1.PrometheusConfig.ScrapeConfigs[0].ScrapeInterval), 5*time.Second)
 	assert.Equal(t, r1.UseStartTimeMetric, true)
@@ -66,9 +67,9 @@ func TestLoadTargetAllocatorConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "").String())
+	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
 	require.NoError(t, err)
-	require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
 
 	r0 := cfg.(*Config)
 	assert.Nil(t, r0.PrometheusConfig)
@@ -76,10 +77,10 @@ func TestLoadTargetAllocatorConfig(t *testing.T) {
 	assert.Equal(t, 30*time.Second, r0.TargetAllocator.Interval)
 	assert.Equal(t, "collector-1", r0.TargetAllocator.CollectorID)
 
-	sub, err = cm.Sub(config.NewComponentIDWithName(typeStr, "withScrape").String())
+	sub, err = cm.Sub(component.NewIDWithName(typeStr, "withScrape").String())
 	require.NoError(t, err)
 	cfg = factory.CreateDefaultConfig()
-	require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
 
 	r1 := cfg.(*Config)
 	assert.Nil(t, r0.PrometheusConfig)
@@ -91,10 +92,10 @@ func TestLoadTargetAllocatorConfig(t *testing.T) {
 	assert.Equal(t, "demo", r1.PrometheusConfig.ScrapeConfigs[0].JobName)
 	assert.Equal(t, promModel.Duration(5*time.Second), r1.PrometheusConfig.ScrapeConfigs[0].ScrapeInterval)
 
-	sub, err = cm.Sub(config.NewComponentIDWithName(typeStr, "withOnlyScrape").String())
+	sub, err = cm.Sub(component.NewIDWithName(typeStr, "withOnlyScrape").String())
 	require.NoError(t, err)
 	cfg = factory.CreateDefaultConfig()
-	require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
 
 	r2 := cfg.(*Config)
 	assert.Equal(t, 1, len(r2.PrometheusConfig.ScrapeConfigs))
@@ -108,9 +109,9 @@ func TestLoadConfigFailsOnUnknownSection(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "").String())
+	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
 	require.NoError(t, err)
-	require.Error(t, config.UnmarshalReceiver(sub, cfg))
+	require.Error(t, component.UnmarshalReceiverConfig(sub, cfg))
 }
 
 // As one of the config parameters is consuming prometheus
@@ -122,9 +123,9 @@ func TestLoadConfigFailsOnUnknownPrometheusSection(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "").String())
+	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
 	require.NoError(t, err)
-	require.Error(t, config.UnmarshalReceiver(sub, cfg))
+	require.Error(t, component.UnmarshalReceiverConfig(sub, cfg))
 }
 
 // Renaming is not allowed
@@ -134,10 +135,10 @@ func TestLoadConfigFailsOnRenameDisallowed(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "").String())
+	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
 	require.NoError(t, err)
-	require.NoError(t, config.UnmarshalReceiver(sub, cfg))
-	assert.Error(t, cfg.Validate())
+	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
+	assert.Error(t, component.ValidateConfig(cfg))
 
 }
 
@@ -147,11 +148,11 @@ func TestRejectUnsupportedPrometheusFeatures(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "").String())
+	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
 	require.NoError(t, err)
-	require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
 
-	err = cfg.Validate()
+	err = component.ValidateConfig(cfg)
 	require.NotNil(t, err, "Expected a non-nil error")
 
 	wantErrMsg := `unsupported features:
@@ -172,11 +173,11 @@ func TestNonExistentAuthCredentialsFile(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "").String())
+	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
 	require.NoError(t, err)
-	require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
 
-	err = cfg.Validate()
+	err = component.ValidateConfig(cfg)
 	require.NotNil(t, err, "Expected a non-nil error")
 
 	wantErrMsg := `error checking authorization credentials file "/nonexistentauthcredentialsfile"`
@@ -191,11 +192,11 @@ func TestTLSConfigNonExistentCertFile(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "").String())
+	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
 	require.NoError(t, err)
-	require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
 
-	err = cfg.Validate()
+	err = component.ValidateConfig(cfg)
 	require.NotNil(t, err, "Expected a non-nil error")
 
 	wantErrMsg := `error checking client cert file "/nonexistentcertfile"`
@@ -210,11 +211,11 @@ func TestTLSConfigNonExistentKeyFile(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "").String())
+	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
 	require.NoError(t, err)
-	require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
 
-	err = cfg.Validate()
+	err = component.ValidateConfig(cfg)
 	require.NotNil(t, err, "Expected a non-nil error")
 
 	wantErrMsg := `error checking client key file "/nonexistentkeyfile"`
@@ -229,11 +230,11 @@ func TestTLSConfigCertFileWithoutKeyFile(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "").String())
+	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
 	require.NoError(t, err)
-	require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
 
-	err = cfg.Validate()
+	err = component.ValidateConfig(cfg)
 	require.NotNil(t, err, "Expected a non-nil error")
 
 	wantErrMsg := `client cert file "./testdata/dummy-tls-cert-file" specified without client key file`
@@ -248,11 +249,11 @@ func TestTLSConfigKeyFileWithoutCertFile(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "").String())
+	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
 	require.NoError(t, err)
-	require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
 
-	err = cfg.Validate()
+	err = component.ValidateConfig(cfg)
 	require.NotNil(t, err, "Expected a non-nil error")
 
 	wantErrMsg := `client key file "./testdata/dummy-tls-key-file" specified without client cert file`
@@ -267,11 +268,11 @@ func TestKubernetesSDConfigWithoutKeyFile(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "").String())
+	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
 	require.NoError(t, err)
-	require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
 
-	err = cfg.Validate()
+	err = component.ValidateConfig(cfg)
 	require.NotNil(t, err, "Expected a non-nil error")
 
 	wantErrMsg := `client cert file "./testdata/dummy-tls-cert-file" specified without client key file`
@@ -286,11 +287,11 @@ func TestFileSDConfigJsonNilTargetGroup(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "").String())
+	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
 	require.NoError(t, err)
-	require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
 
-	err = cfg.Validate()
+	err = component.ValidateConfig(cfg)
 	require.NotNil(t, err, "Expected a non-nil error")
 
 	wantErrMsg := `checking SD file "./testdata/sd-config-with-null-target-group.json": nil target group item found (index 1)`
@@ -305,11 +306,11 @@ func TestFileSDConfigYamlNilTargetGroup(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "").String())
+	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
 	require.NoError(t, err)
-	require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
 
-	err = cfg.Validate()
+	err = component.ValidateConfig(cfg)
 	require.NotNil(t, err, "Expected a non-nil error")
 
 	wantErrMsg := `checking SD file "./testdata/sd-config-with-null-target-group.yaml": nil target group item found (index 1)`

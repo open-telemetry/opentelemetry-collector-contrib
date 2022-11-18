@@ -19,6 +19,8 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
 type AdxTrace struct {
@@ -56,12 +58,12 @@ func mapToAdxTrace(resource pcommon.Resource, scope pcommon.InstrumentationScope
 	copyMap(clonedTraceAttrib, getScopeMap(scope))
 
 	return &AdxTrace{
-		TraceID:            spanData.TraceID().HexString(),
-		SpanID:             spanData.SpanID().HexString(),
-		ParentID:           spanData.ParentSpanID().HexString(),
+		TraceID:            traceutil.TraceIDToHexOrEmptyString(spanData.TraceID()),
+		SpanID:             traceutil.SpanIDToHexOrEmptyString(spanData.SpanID()),
+		ParentID:           traceutil.SpanIDToHexOrEmptyString(spanData.ParentSpanID()),
 		SpanName:           spanData.Name(),
-		SpanStatus:         spanData.Status().Code().String(),
-		SpanKind:           spanData.Kind().String(),
+		SpanStatus:         traceutil.StatusCodeStr(spanData.Status().Code()),
+		SpanKind:           traceutil.SpanKindStr(spanData.Kind()),
 		StartTime:          spanData.StartTimestamp().AsTime().Format(time.RFC3339),
 		EndTime:            spanData.EndTimestamp().AsTime().Format(time.RFC3339),
 		ResourceAttributes: resource.Attributes().AsRaw(),
@@ -89,8 +91,8 @@ func getLinksData(sd ptrace.Span) []*Link {
 	links := make([]*Link, sd.Links().Len())
 	for i := 0; i < sd.Links().Len(); i++ {
 		link := &Link{
-			TraceID:            sd.Links().At(i).TraceID().HexString(),
-			SpanID:             sd.Links().At(i).SpanID().HexString(),
+			TraceID:            traceutil.TraceIDToHexOrEmptyString(sd.Links().At(i).TraceID()),
+			SpanID:             traceutil.SpanIDToHexOrEmptyString(sd.Links().At(i).SpanID()),
 			TraceState:         sd.Links().At(i).TraceState().AsRaw(),
 			SpanLinkAttributes: sd.Links().At(i).Attributes().AsRaw(),
 		}

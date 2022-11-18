@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoints"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 )
 
 func Test_convertGaugeToSum(t *testing.T) {
@@ -62,7 +62,7 @@ func Test_convertGaugeToSum(t *testing.T) {
 
 				dps := gaugeInput.Gauge().DataPoints()
 
-				metric.SetEmptySum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+				metric.SetEmptySum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 				metric.Sum().SetIsMonotonic(false)
 
 				dps.CopyTo(metric.Sum().DataPoints())
@@ -78,7 +78,7 @@ func Test_convertGaugeToSum(t *testing.T) {
 
 				dps := gaugeInput.Gauge().DataPoints()
 
-				metric.SetEmptySum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+				metric.SetEmptySum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 				metric.Sum().SetIsMonotonic(true)
 
 				dps.CopyTo(metric.Sum().DataPoints())
@@ -126,10 +126,12 @@ func Test_convertGaugeToSum(t *testing.T) {
 			metric := pmetric.NewMetric()
 			tt.input.CopyTo(metric)
 
-			ctx := ottldatapoints.NewTransformContext(pmetric.NewNumberDataPoint(), metric, pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource())
+			ctx := ottldatapoint.NewTransformContext(pmetric.NewNumberDataPoint(), metric, pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource())
 
 			exprFunc, _ := convertGaugeToSum(tt.stringAggTemp, tt.monotonic)
-			exprFunc(ctx)
+
+			_, err := exprFunc(nil, ctx)
+			assert.Nil(t, err)
 
 			expected := pmetric.NewMetric()
 			tt.want(expected)

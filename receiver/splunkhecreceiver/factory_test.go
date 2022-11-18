@@ -19,16 +19,15 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
-	assert.NoError(t, configtest.CheckConfigStruct(cfg))
+	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
 func TestCreateReceiver(t *testing.T) {
@@ -47,7 +46,7 @@ func TestCreateReceiver(t *testing.T) {
 }
 
 func TestFactoryType(t *testing.T) {
-	assert.Equal(t, config.Type("splunk_hec"), NewFactory().Type())
+	assert.Equal(t, component.Type("splunk_hec"), NewFactory().Type())
 }
 
 func TestCreateNilNextConsumerMetrics(t *testing.T) {

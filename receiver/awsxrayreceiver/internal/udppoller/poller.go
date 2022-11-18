@@ -22,7 +22,6 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/zap"
 
@@ -66,14 +65,14 @@ type RawSegment struct {
 // Config represents the configurations needed to
 // start the UDP poller
 type Config struct {
-	ReceiverID         config.ComponentID
+	ReceiverID         component.ID
 	Transport          string
 	Endpoint           string
 	NumOfPollerToStart int
 }
 
 type poller struct {
-	receiverID           config.ComponentID
+	receiverID           component.ID
 	udpSock              socketconn.SocketConn
 	logger               *zap.Logger
 	wg                   sync.WaitGroup
@@ -109,6 +108,16 @@ func New(cfg *Config, set component.ReceiverCreateSettings) (Poller, error) {
 	set.Logger.Info("Listening on endpoint for X-Ray segments",
 		zap.String(Transport, addr.String()))
 
+	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+		ReceiverID:             cfg.ReceiverID,
+		Transport:              cfg.Transport,
+		LongLivedCtx:           true,
+		ReceiverCreateSettings: set,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	return &poller{
 		receiverID:     cfg.ReceiverID,
 		udpSock:        sock,
@@ -116,12 +125,7 @@ func New(cfg *Config, set component.ReceiverCreateSettings) (Poller, error) {
 		maxPollerCount: cfg.NumOfPollerToStart,
 		shutDown:       make(chan struct{}),
 		segChan:        make(chan RawSegment, segChanSize),
-		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
-			ReceiverID:             cfg.ReceiverID,
-			Transport:              cfg.Transport,
-			LongLivedCtx:           true,
-			ReceiverCreateSettings: set,
-		}),
+		obsrecv:        obsrecv,
 	}, nil
 }
 

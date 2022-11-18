@@ -15,17 +15,26 @@
 package ottl // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 
 import (
+	"context"
 	"fmt"
 )
 
-type ExprFunc[K any] func(ctx K) interface{}
+type ExprFunc[K any] func(ctx context.Context, tCtx K) (interface{}, error)
+
+type Expr[K any] struct {
+	exprFunc ExprFunc[K]
+}
+
+func (e Expr[K]) Eval(ctx context.Context, tCtx K) (interface{}, error) {
+	return e.exprFunc(ctx, tCtx)
+}
 
 type Getter[K any] interface {
-	Get(ctx K) interface{}
+	Get(ctx context.Context, tCtx K) (interface{}, error)
 }
 
 type Setter[K any] interface {
-	Set(ctx K, val interface{})
+	Set(ctx context.Context, tCtx K, val interface{}) error
 }
 
 type GetSetter[K any] interface {
@@ -34,32 +43,32 @@ type GetSetter[K any] interface {
 }
 
 type StandardGetSetter[K any] struct {
-	Getter func(ctx K) interface{}
-	Setter func(ctx K, val interface{})
+	Getter func(ctx context.Context, tCx K) (interface{}, error)
+	Setter func(ctx context.Context, tCx K, val interface{}) error
 }
 
-func (path StandardGetSetter[K]) Get(ctx K) interface{} {
-	return path.Getter(ctx)
+func (path StandardGetSetter[K]) Get(ctx context.Context, tCx K) (interface{}, error) {
+	return path.Getter(ctx, tCx)
 }
 
-func (path StandardGetSetter[K]) Set(ctx K, val interface{}) {
-	path.Setter(ctx, val)
+func (path StandardGetSetter[K]) Set(ctx context.Context, tCx K, val interface{}) error {
+	return path.Setter(ctx, tCx, val)
 }
 
 type literal[K any] struct {
 	value interface{}
 }
 
-func (l literal[K]) Get(K) interface{} {
-	return l.value
+func (l literal[K]) Get(context.Context, K) (interface{}, error) {
+	return l.value, nil
 }
 
 type exprGetter[K any] struct {
-	expr ExprFunc[K]
+	expr Expr[K]
 }
 
-func (g exprGetter[K]) Get(ctx K) interface{} {
-	return g.expr(ctx)
+func (g exprGetter[K]) Get(ctx context.Context, tCtx K) (interface{}, error) {
+	return g.expr.Eval(ctx, tCtx)
 }
 
 func (p *Parser[K]) newGetter(val value) (Getter[K], error) {
@@ -69,12 +78,6 @@ func (p *Parser[K]) newGetter(val value) (Getter[K], error) {
 
 	if s := val.String; s != nil {
 		return &literal[K]{value: *s}, nil
-	}
-	if f := val.Float; f != nil {
-		return &literal[K]{value: *f}, nil
-	}
-	if i := val.Int; i != nil {
-		return &literal[K]{value: *i}, nil
 	}
 	if b := val.Bool; b != nil {
 		return &literal[K]{value: bool(*b)}, nil
@@ -91,19 +94,30 @@ func (p *Parser[K]) newGetter(val value) (Getter[K], error) {
 		return &literal[K]{value: int64(*enum)}, nil
 	}
 
-	if val.Path != nil {
-		return p.pathParser(val.Path)
+	if eL := val.Literal; eL != nil {
+		if f := eL.Float; f != nil {
+			return &literal[K]{value: *f}, nil
+		}
+		if i := eL.Int; i != nil {
+			return &literal[K]{value: *i}, nil
+		}
+		if eL.Path != nil {
+			return p.pathParser(eL.Path)
+		}
+		if eL.Invocation != nil {
+			call, err := p.newFunctionCall(*eL.Invocation)
+			if err != nil {
+				return nil, err
+			}
+			return &exprGetter[K]{
+				expr: call,
+			}, nil
+		}
 	}
 
-	if val.Invocation == nil {
+	if val.MathExpression == nil {
 		// In practice, can't happen since the DSL grammar guarantees one is set
 		return nil, fmt.Errorf("no value field set. This is a bug in the OpenTelemetry Transformation Language")
 	}
-	call, err := p.newFunctionCall(*val.Invocation)
-	if err != nil {
-		return nil, err
-	}
-	return &exprGetter[K]{
-		expr: call,
-	}, nil
+	return p.evaluateMathExpression(val.MathExpression)
 }

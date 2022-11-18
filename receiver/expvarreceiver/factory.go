@@ -19,7 +19,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
@@ -45,7 +44,7 @@ func NewFactory() component.ReceiverFactory {
 func newMetricsReceiver(
 	_ context.Context,
 	set component.ReceiverCreateSettings,
-	rCfg config.Receiver,
+	rCfg component.ReceiverConfig,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	cfg := rCfg.(*Config)
@@ -68,7 +67,7 @@ func newMetricsReceiver(
 	)
 }
 
-func newDefaultConfig() config.Receiver {
+func newDefaultConfig() component.ReceiverConfig {
 	return &Config{
 		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(typeStr),
 		HTTPClientSettings: confighttp.HTTPClientSettings{

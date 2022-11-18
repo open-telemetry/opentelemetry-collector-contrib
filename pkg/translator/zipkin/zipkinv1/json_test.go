@@ -205,7 +205,7 @@ func TestZipkinAnnotationsToSpanStatus(t *testing.T) {
 		name           string
 		haveTags       []*binaryAnnotation
 		wantAttributes pcommon.Map
-		wantStatus     ptrace.SpanStatus
+		wantStatus     ptrace.Status
 	}
 
 	cases := []test{
@@ -216,8 +216,8 @@ func TestZipkinAnnotationsToSpanStatus(t *testing.T) {
 				Value: "2",
 			}},
 			wantAttributes: pcommon.NewMap(),
-			wantStatus: func() ptrace.SpanStatus {
-				ret := ptrace.NewSpanStatus()
+			wantStatus: func() ptrace.Status {
+				ret := ptrace.NewStatus()
 				ret.SetCode(ptrace.StatusCodeError)
 				return ret
 			}(),
@@ -230,7 +230,7 @@ func TestZipkinAnnotationsToSpanStatus(t *testing.T) {
 				Value: "Forbidden",
 			}},
 			wantAttributes: pcommon.NewMap(),
-			wantStatus:     ptrace.NewSpanStatus(),
+			wantStatus:     ptrace.NewStatus(),
 		},
 
 		{
@@ -246,8 +246,8 @@ func TestZipkinAnnotationsToSpanStatus(t *testing.T) {
 				},
 			},
 			wantAttributes: pcommon.NewMap(),
-			wantStatus: func() ptrace.SpanStatus {
-				ret := ptrace.NewSpanStatus()
+			wantStatus: func() ptrace.Status {
+				ret := ptrace.NewStatus()
 				ret.SetCode(ptrace.StatusCodeError)
 				ret.SetMessage("Forbidden")
 				return ret
@@ -272,8 +272,8 @@ func TestZipkinAnnotationsToSpanStatus(t *testing.T) {
 				ret.PutStr(tracetranslator.TagHTTPStatusMsg, "NotFound")
 				return ret
 			}(),
-			wantStatus: func() ptrace.SpanStatus {
-				ret := ptrace.NewSpanStatus()
+			wantStatus: func() ptrace.Status {
+				ret := ptrace.NewStatus()
 				ret.SetCode(ptrace.StatusCodeError)
 				ret.SetMessage("NotFound")
 				return ret
@@ -306,8 +306,8 @@ func TestZipkinAnnotationsToSpanStatus(t *testing.T) {
 				ret.PutStr(tracetranslator.TagHTTPStatusMsg, "NotFound")
 				return ret
 			}(),
-			wantStatus: func() ptrace.SpanStatus {
-				ret := ptrace.NewSpanStatus()
+			wantStatus: func() ptrace.Status {
+				ret := ptrace.NewStatus()
 				ret.SetCode(ptrace.StatusCodeError)
 				ret.SetMessage("Forbidden")
 				return ret
@@ -336,8 +336,8 @@ func TestZipkinAnnotationsToSpanStatus(t *testing.T) {
 				ret.PutStr(tracetranslator.TagHTTPStatusMsg, "NotFound")
 				return ret
 			}(),
-			wantStatus: func() ptrace.SpanStatus {
-				ret := ptrace.NewSpanStatus()
+			wantStatus: func() ptrace.Status {
+				ret := ptrace.NewStatus()
 				ret.SetCode(ptrace.StatusCodeError)
 				return ret
 			}(),
@@ -365,8 +365,8 @@ func TestZipkinAnnotationsToSpanStatus(t *testing.T) {
 				ret.PutStr(tracetranslator.TagHTTPStatusMsg, "NotFound")
 				return ret
 			}(),
-			wantStatus: func() ptrace.SpanStatus {
-				ret := ptrace.NewSpanStatus()
+			wantStatus: func() ptrace.Status {
+				ret := ptrace.NewStatus()
 				ret.SetCode(ptrace.StatusCodeError)
 				ret.SetMessage("NotFound")
 				return ret
@@ -386,8 +386,8 @@ func TestZipkinAnnotationsToSpanStatus(t *testing.T) {
 				},
 			},
 			wantAttributes: pcommon.NewMap(),
-			wantStatus: func() ptrace.SpanStatus {
-				ret := ptrace.NewSpanStatus()
+			wantStatus: func() ptrace.Status {
+				ret := ptrace.NewStatus()
 				ret.SetCode(ptrace.StatusCodeError)
 				ret.SetMessage("RPCError")
 				return ret
@@ -428,8 +428,8 @@ func TestZipkinAnnotationsToSpanStatus(t *testing.T) {
 				ret.PutStr(tracetranslator.TagHTTPStatusMsg, "NotFound")
 				return ret
 			}(),
-			wantStatus: func() ptrace.SpanStatus {
-				ret := ptrace.NewSpanStatus()
+			wantStatus: func() ptrace.Status {
+				ret := ptrace.NewStatus()
 				ret.SetCode(ptrace.StatusCodeError)
 				ret.SetMessage("RPCError")
 				return ret
@@ -488,6 +488,29 @@ func TestSpanWithoutTimestampGetsTag(t *testing.T) {
 	wantAttributes := pcommon.NewMap()
 	wantAttributes.PutBool(zipkin.StartTimeAbsent, true)
 	assert.EqualValues(t, wantAttributes, gs.Attributes())
+}
+
+func TestSpanWithTimestamp(t *testing.T) {
+	timestampMicroseconds := int64(1667492727795000)
+	timestamp := pcommon.NewTimestampFromTime(time.UnixMicro(timestampMicroseconds))
+
+	fakeTraceID := "00000000000000010000000000000002"
+	fakeSpanID := "0000000000000001"
+	zSpans := []*jsonSpan{
+		{
+			ID:        fakeSpanID,
+			TraceID:   fakeTraceID,
+			Timestamp: timestampMicroseconds,
+		},
+	}
+	zBytes, err := json.Marshal(zSpans)
+	require.NoError(t, err)
+
+	td, err := jsonBatchToTraces(zBytes, false)
+	require.NoError(t, err)
+
+	gs := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+	assert.Equal(t, timestamp, gs.StartTimestamp())
 }
 
 func TestJSONHTTPToStatusCode(t *testing.T) {

@@ -20,7 +20,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.uber.org/multierr"
@@ -74,7 +77,7 @@ func TestValidate(t *testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig().(*Config)
 			tC.defaultConfigModifier(cfg)
-			actual := cfg.Validate()
+			actual := component.ValidateConfig(cfg)
 			require.Equal(t, tC.expected, actual)
 		})
 	}
@@ -87,9 +90,9 @@ func TestLoadConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "").String())
+	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
 	require.NoError(t, err)
-	require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
 
 	expected := factory.CreateDefaultConfig().(*Config)
 	expected.Metrics = metadata.DefaultMetricsSettings()
@@ -99,5 +102,8 @@ func TestLoadConfig(t *testing.T) {
 	expected.Password = "password"
 	expected.CollectionInterval = 2 * time.Minute
 
-	require.Equal(t, expected, cfg)
+	if diff := cmp.Diff(expected, cfg, cmpopts.IgnoreUnexported(config.ReceiverSettings{}, metadata.MetricSettings{})); diff != "" {
+		t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
+	}
+
 }

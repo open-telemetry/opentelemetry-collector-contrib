@@ -18,7 +18,7 @@ import (
 	"errors"
 	"fmt"
 
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
@@ -30,7 +30,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
-var _ config.Receiver = (*Config)(nil)
+var _ component.ReceiverConfig = (*Config)(nil)
 
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
@@ -56,9 +56,6 @@ type Config struct {
 }
 
 func (cfg *Config) Validate() error {
-	if err := cfg.ReceiverSettings.Validate(); err != nil {
-		return err
-	}
 	if cfg.K8sAPIConfig != nil {
 		if err := cfg.K8sAPIConfig.Validate(); err != nil {
 			return err
@@ -117,7 +114,7 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 		return nil
 	}
 
-	if err := componentParser.UnmarshalExact(cfg); err != nil {
+	if err := componentParser.Unmarshal(cfg, confmap.WithErrorUnused()); err != nil {
 		return err
 	}
 

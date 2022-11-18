@@ -24,7 +24,7 @@
                      "description": "The number of services in a given status.",
                      "name": "saphana.service.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "1",
@@ -60,7 +60,7 @@
                      "description": "The number of service threads in a given status.",
                      "name": "saphana.service.thread.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "101",
@@ -124,7 +124,7 @@
                      "description": "The number of services in a given status.",
                      "name": "saphana.service.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "4",
@@ -160,7 +160,7 @@
                      "description": "The number of service threads in a given status.",
                      "name": "saphana.service.thread.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "12",

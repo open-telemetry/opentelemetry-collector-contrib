@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoints"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 )
 
 func getTestSummaryMetric() pmetric.Metric {
@@ -89,7 +89,7 @@ func Test_ConvertSummarySumValToSum(t *testing.T) {
 				summaryMetric.CopyTo(metrics.AppendEmpty())
 				sumMetric := metrics.AppendEmpty()
 				sumMetric.SetEmptySum()
-				sumMetric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+				sumMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 				sumMetric.Sum().SetIsMonotonic(false)
 
 				sumMetric.SetName("summary_metric_sum")
@@ -110,7 +110,7 @@ func Test_ConvertSummarySumValToSum(t *testing.T) {
 				summaryMetric.CopyTo(metrics.AppendEmpty())
 				sumMetric := metrics.AppendEmpty()
 				sumMetric.SetEmptySum()
-				sumMetric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+				sumMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 				sumMetric.Sum().SetIsMonotonic(true)
 
 				sumMetric.SetName("summary_metric_sum")
@@ -131,7 +131,7 @@ func Test_ConvertSummarySumValToSum(t *testing.T) {
 				summaryMetric.CopyTo(metrics.AppendEmpty())
 				sumMetric := metrics.AppendEmpty()
 				sumMetric.SetEmptySum()
-				sumMetric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+				sumMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 				sumMetric.Sum().SetIsMonotonic(false)
 
 				sumMetric.SetName("summary_metric_sum")
@@ -161,7 +161,8 @@ func Test_ConvertSummarySumValToSum(t *testing.T) {
 			evaluate, err := convertSummarySumValToSum(tt.temporality, tt.monotonicity)
 			assert.NoError(t, err)
 
-			evaluate(ottldatapoints.NewTransformContext(pmetric.NewNumberDataPoint(), tt.input, actualMetrics, pcommon.NewInstrumentationScope(), pcommon.NewResource()))
+			_, err = evaluate(nil, ottldatapoint.NewTransformContext(pmetric.NewNumberDataPoint(), tt.input, actualMetrics, pcommon.NewInstrumentationScope(), pcommon.NewResource()))
+			assert.Nil(t, err)
 
 			expected := pmetric.NewMetricSlice()
 			tt.want(expected)

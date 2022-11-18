@@ -282,7 +282,7 @@ func doubleSummaryMetricsToLogs(name string, data pmetric.SummaryDataPointSlice,
 
 func metricDataToLogServiceData(md pmetric.Metric, defaultLabels KeyValues) (logs []*sls.Log) {
 	switch md.Type() {
-	case pmetric.MetricTypeNone:
+	case pmetric.MetricTypeEmpty:
 		break
 	case pmetric.MetricTypeGauge:
 		return numberMetricsToLogs(md.Name(), md.Gauge().DataPoints(), defaultLabels)

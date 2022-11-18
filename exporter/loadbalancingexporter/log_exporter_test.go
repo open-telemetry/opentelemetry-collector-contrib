@@ -50,7 +50,7 @@ func TestNewLogsExporter(t *testing.T) {
 		{
 			"empty",
 			&Config{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 			},
 			errNoResolver,
 		},
@@ -352,7 +352,7 @@ func TestRollingUpdatesWhenConsumeLogs(t *testing.T) {
 	res.resInterval = 10 * time.Millisecond
 
 	cfg := &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		Resolver: ResolverSettings{
 			DNS: &DNSResolver{Hostname: "service-1", Port: ""},
 		},
