@@ -181,7 +181,9 @@ func (t *transaction) AppendExemplar(ref storage.SeriesRef, l labels.Labels, e e
 }
 
 func (t *transaction) AppendHistogram(ref storage.SeriesRef, l labels.Labels, ts int64, h *histogram.Histogram) (storage.SeriesRef, error) {
-	return 0, fmt.Errorf("Not Implemented")
+	//TODO: implement this func
+	t.logger.Debug("scraper attempted to call AppendHistogram(), which is not yet implemented", zap.Any("labels", l))
+	return 0, nil
 }
 
 func (t *transaction) getSeriesRef(ls labels.Labels, mtype pmetric.MetricType) uint64 {
