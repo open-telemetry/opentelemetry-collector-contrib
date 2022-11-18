@@ -102,11 +102,11 @@ func TestLoadConfig(t *testing.T) {
 			err = component.UnmarshalExporterConfig(sub, cfg)
 
 			if tt.expected == nil {
-				err = multierr.Append(err, cfg.Validate())
+				err = multierr.Append(err, component.ValidateConfig(cfg))
 				assert.ErrorContains(t, err, tt.errorMessage)
 				return
 			}
-			assert.NoError(t, cfg.Validate())
+			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -126,7 +126,7 @@ func TestRetentionValidateCorrect(t *testing.T) {
 			QueueSize: exporterhelper.NewDefaultQueueSettings().QueueSize,
 		},
 	}
-	assert.NoError(t, cfg.Validate())
+	assert.NoError(t, component.ValidateConfig(cfg))
 
 }
 

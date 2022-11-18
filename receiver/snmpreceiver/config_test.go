@@ -264,9 +264,9 @@ func TestLoadConfigConnectionConfigs(t *testing.T) {
 			cfg := factory.CreateDefaultConfig()
 			require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
 			if test.expectedErr == "" {
-				require.NoError(t, cfg.Validate())
+				require.NoError(t, component.ValidateConfig(cfg))
 			} else {
-				require.ErrorContains(t, cfg.Validate(), test.expectedErr)
+				require.ErrorContains(t, component.ValidateConfig(cfg), test.expectedErr)
 			}
 
 			require.Equal(t, test.expectedCfg, cfg)
@@ -848,9 +848,9 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 			cfg := factory.CreateDefaultConfig()
 			require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
 			if test.expectedErr == "" {
-				require.NoError(t, cfg.Validate())
+				require.NoError(t, component.ValidateConfig(cfg))
 			} else {
-				require.ErrorContains(t, cfg.Validate(), test.expectedErr)
+				require.ErrorContains(t, component.ValidateConfig(cfg), test.expectedErr)
 			}
 
 			require.Equal(t, test.expectedCfg, cfg)

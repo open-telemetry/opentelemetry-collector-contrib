@@ -29,7 +29,7 @@ import (
 
 const (
 	typeStr   = "zookeeper"
-	stability = component.StabilityLevelInDevelopment
+	stability = component.StabilityLevelDevelopment
 
 	defaultCollectionInterval = 10 * time.Second
 	defaultTimeout            = 10 * time.Second
