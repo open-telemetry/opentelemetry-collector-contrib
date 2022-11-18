@@ -1,0 +1,55 @@
+filter/ottl:
+  spans:
+    span: 'attributes["test"] == "pass"'
+    spanevent: 'attributes["test"] == "pass"'
+  metrics:
+    metric: 'name == "pass"'
+    datapoint: 'attributes["test"] == "pass"'
+  logs:
+    log: 'attributes["test"] == "pass"'
+filter/multiline:
+  spans:
+    span: 'attributes["test"] == "pass" or 
+    attributes["test"] == "also pass"'
+filter/spans_mix_config:
+  spans:
+    include:
+      match_type: strict
+      services:
+        - test
+        - test2
+      attributes:
+        - key: should_include
+          value: "(true|probably_true)"
+    span: 'attributes["test"] == "pass"'
+filter/metrics_mix_config:
+  metrics:
+    include:
+      match_type: expr
+      expressions:
+        - Label("foo") == "bar"
+        - HasLabel("baz")
+    metric: 'attributes["test"] == "pass"'
+filter/logs_mix_config:
+  logs:
+    include:
+      match_type: strict
+      resource_attributes:
+        - key: should_include
+          value: "true"
+    log: 'attributes["test"] == "pass"'
+filter/bad_syntax_span:
+  spans:
+    span: 'attributes[test] == "pass"'
+filter/bad_syntax_spanevent:
+  spans:
+    spanevent: 'attributes[test] == "pass"'
+filter/bad_syntax_metric:
+  metrics:
+    metric: 'resource.attributes[test] == "pass"'
+filter/bad_syntax_datapoint:
+  metrics:
+    datapoint: 'attributes[test] == "pass"'
+filter/bad_syntax_log:
+  logs:
+    log: 'attributes[test] == "pass"'

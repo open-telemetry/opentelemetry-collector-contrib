@@ -23,11 +23,18 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filtermetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset/regexp"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/common"
 )
 
 // Config defines configuration for Resource processor.
@@ -55,6 +62,16 @@ type MetricFilters struct {
 
 	// RegexpConfig specifies options for the Regexp match type
 	RegexpConfig *regexp.Config `mapstructure:"regexp"`
+
+	// Metric is an OTTL condition for an ottlmetric context.
+	// If the condition resolves to true, the metric will be dropped.
+	// Supports `and`, `or`, and `()`
+	Metric string `mapstructure:"metric"`
+
+	// DataPoint is an OTTL condition for an ottldatapoint context.
+	// If the condition resolves to true, the datapoint will be dropped.
+	// Supports `and`, `or`, and `()`
+	DataPoint string `mapstructure:"datapoint"`
 }
 
 // SpanFilters filters by Span attributes and various other fields, Regexp config is per matcher
@@ -68,6 +85,16 @@ type SpanFilters struct {
 	// all other spans should be included.
 	// If both Include and Exclude are specified, Include filtering occurs first.
 	Exclude *filterconfig.MatchProperties `mapstructure:"exclude"`
+
+	// Span is an OTTL condition for an ottlspan context.
+	// If the condition resolves to true, the span will be dropped.
+	// Supports `and`, `or`, and `()`
+	Span string `mapstructure:"span"`
+
+	// SpanEvent is an OTTL condition for an ottlspanevent context.
+	// If the condition resolves to true, the span event will be dropped.
+	// Supports `and`, `or`, and `()`
+	SpanEvent string `mapstructure:"spanevent"`
 }
 
 // LogFilters filters by Log properties.
@@ -80,6 +107,11 @@ type LogFilters struct {
 	// all other logs should be included.
 	// If both Include and Exclude are specified, Include filtering occurs first.
 	Exclude *LogMatchProperties `mapstructure:"exclude"`
+
+	// Log is an OTTL condition for an ottllog context.
+	// If the condition resolves to true, the log event will be dropped.
+	// Supports `and`, `or`, and `()`
+	Log string `mapstructure:"log"`
 }
 
 // LogMatchType specifies the strategy for matching against `plog.Log`s.
@@ -254,15 +286,55 @@ var _ component.ProcessorConfig = (*Config)(nil)
 
 // Validate checks if the processor configuration is valid
 func (cfg *Config) Validate() error {
-	var err error
-
-	if cfg.Logs.Include != nil {
-		err = multierr.Append(err, cfg.Logs.Include.validate())
+	if (cfg.Spans.Span != "" || cfg.Spans.SpanEvent != "") && (cfg.Spans.Include != nil || cfg.Spans.Exclude != nil) {
+		return fmt.Errorf("cannot use ottl conditions and include/exclude for spans at the same time")
+	}
+	if (cfg.Metrics.Metric != "" || cfg.Metrics.DataPoint != "") && (cfg.Metrics.Include != nil || cfg.Metrics.Exclude != nil) {
+		return fmt.Errorf("cannot use ottl conditions and include/exclude for metrics at the same time")
+	}
+	if cfg.Logs.Log != "" && (cfg.Logs.Include != nil || cfg.Logs.Exclude != nil) {
+		return fmt.Errorf("cannot use ottl conditions and include/exclude for logs at the same time")
 	}
 
-	if cfg.Logs.Exclude != nil {
-		err = multierr.Append(err, cfg.Logs.Exclude.validate())
+	var errors error
+
+	if cfg.Spans.Span != "" {
+		spanp := ottlspan.NewParser(common.Functions[ottlspan.TransformContext](), component.TelemetrySettings{Logger: zap.NewNop()})
+		_, err := spanp.ParseStatements(common.PrepareConditionForParsing(cfg.Spans.Span))
+		errors = multierr.Append(errors, err)
 	}
 
-	return err
+	if cfg.Spans.SpanEvent != "" {
+		spaneventp := ottlspanevent.NewParser(common.Functions[ottlspanevent.TransformContext](), component.TelemetrySettings{Logger: zap.NewNop()})
+		_, err := spaneventp.ParseStatements(common.PrepareConditionForParsing(cfg.Spans.SpanEvent))
+		errors = multierr.Append(errors, err)
+	}
+
+	if cfg.Metrics.Metric != "" {
+		metricp := ottlmetric.NewParser(common.Functions[ottlmetric.TransformContext](), component.TelemetrySettings{Logger: zap.NewNop()})
+		_, err := metricp.ParseStatements(common.PrepareConditionForParsing(cfg.Metrics.Metric))
+		errors = multierr.Append(errors, err)
+	}
+
+	if cfg.Metrics.DataPoint != "" {
+		datapointp := ottldatapoint.NewParser(common.Functions[ottldatapoint.TransformContext](), component.TelemetrySettings{Logger: zap.NewNop()})
+		_, err := datapointp.ParseStatements(common.PrepareConditionForParsing(cfg.Metrics.DataPoint))
+		errors = multierr.Append(errors, err)
+	}
+
+	if cfg.Logs.Log != "" {
+		logp := ottllog.NewParser(common.Functions[ottllog.TransformContext](), component.TelemetrySettings{Logger: zap.NewNop()})
+		_, err := logp.ParseStatements(common.PrepareConditionForParsing(cfg.Logs.Log))
+		errors = multierr.Append(errors, err)
+	}
+
+	if cfg.Logs.Log != "" && cfg.Logs.Include != nil {
+		errors = multierr.Append(errors, cfg.Logs.Include.validate())
+	}
+
+	if cfg.Logs.Log != "" && cfg.Logs.Exclude != nil {
+		errors = multierr.Append(errors, cfg.Logs.Exclude.validate())
+	}
+
+	return errors
 }
