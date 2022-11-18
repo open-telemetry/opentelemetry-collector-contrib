@@ -32,6 +32,15 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 
 	newExemplars, newAttrs := createNewTelemetry()
 
+	newPMap := pcommon.NewMap()
+	pMap2 := newPMap.PutEmptyMap("k2")
+	pMap2.PutStr("k1", "string")
+
+	newMap := make(map[string]interface{})
+	newMap2 := make(map[string]interface{})
+	newMap2["k1"] = "string"
+	newMap["k2"] = newMap2
+
 	tests := []struct {
 		name      string
 		path      []ottl.Field
@@ -287,6 +296,44 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 				datapoint.Attributes().PutEmptySlice("arr_bytes").AppendEmpty().SetEmptyBytes().FromRaw([]byte{9, 6, 4})
 			},
 		},
+		{
+			name: "attributes pcommon.Map",
+			path: []ottl.Field{
+				{
+					Name:   "attributes",
+					MapKey: ottltest.Strp("pMap"),
+				},
+			},
+			orig: func() pcommon.Map {
+				val, _ := refNumberDataPoint.Attributes().Get("pMap")
+				return val.Map()
+			}(),
+			newVal: newPMap,
+			modified: func(datapoint pmetric.NumberDataPoint) {
+				m := datapoint.Attributes().PutEmptyMap("pMap")
+				m2 := m.PutEmptyMap("k2")
+				m2.PutStr("k1", "string")
+			},
+		},
+		{
+			name: "attributes map[string]interface{}",
+			path: []ottl.Field{
+				{
+					Name:   "attributes",
+					MapKey: ottltest.Strp("map"),
+				},
+			},
+			orig: func() pcommon.Map {
+				val, _ := refNumberDataPoint.Attributes().Get("map")
+				return val.Map()
+			}(),
+			newVal: newMap,
+			modified: func(datapoint pmetric.NumberDataPoint) {
+				m := datapoint.Attributes().PutEmptyMap("map")
+				m2 := m.PutEmptyMap("k2")
+				m2.PutStr("k1", "string")
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -334,6 +381,15 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 	refHistogramDataPoint := createHistogramDataPointTelemetry()
 
 	newExemplars, newAttrs := createNewTelemetry()
+
+	newPMap := pcommon.NewMap()
+	pMap2 := newPMap.PutEmptyMap("k2")
+	pMap2.PutStr("k1", "string")
+
+	newMap := make(map[string]interface{})
+	newMap2 := make(map[string]interface{})
+	newMap2["k1"] = "string"
+	newMap["k2"] = newMap2
 
 	tests := []struct {
 		name     string
@@ -614,6 +670,44 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 				datapoint.Attributes().PutEmptySlice("arr_bytes").AppendEmpty().SetEmptyBytes().FromRaw([]byte{9, 6, 4})
 			},
 		},
+		{
+			name: "attributes pcommon.Map",
+			path: []ottl.Field{
+				{
+					Name:   "attributes",
+					MapKey: ottltest.Strp("pMap"),
+				},
+			},
+			orig: func() pcommon.Map {
+				val, _ := refHistogramDataPoint.Attributes().Get("pMap")
+				return val.Map()
+			}(),
+			newVal: newPMap,
+			modified: func(datapoint pmetric.HistogramDataPoint) {
+				m := datapoint.Attributes().PutEmptyMap("pMap")
+				m2 := m.PutEmptyMap("k2")
+				m2.PutStr("k1", "string")
+			},
+		},
+		{
+			name: "attributes map[string]interface{}",
+			path: []ottl.Field{
+				{
+					Name:   "attributes",
+					MapKey: ottltest.Strp("map"),
+				},
+			},
+			orig: func() pcommon.Map {
+				val, _ := refHistogramDataPoint.Attributes().Get("map")
+				return val.Map()
+			}(),
+			newVal: newMap,
+			modified: func(datapoint pmetric.HistogramDataPoint) {
+				m := datapoint.Attributes().PutEmptyMap("map")
+				m2 := m.PutEmptyMap("k2")
+				m2.PutStr("k1", "string")
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -667,6 +761,15 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 	newNegative := pmetric.NewExponentialHistogramDataPointBuckets()
 	newNegative.SetOffset(10)
 	newNegative.BucketCounts().FromRaw([]uint64{4, 5})
+
+	newPMap := pcommon.NewMap()
+	pMap2 := newPMap.PutEmptyMap("k2")
+	pMap2.PutStr("k1", "string")
+
+	newMap := make(map[string]interface{})
+	newMap2 := make(map[string]interface{})
+	newMap2["k1"] = "string"
+	newMap["k2"] = newMap2
 
 	tests := []struct {
 		name     string
@@ -1037,6 +1140,44 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 				datapoint.Attributes().PutEmptySlice("arr_bytes").AppendEmpty().SetEmptyBytes().FromRaw([]byte{9, 6, 4})
 			},
 		},
+		{
+			name: "attributes pcommon.Map",
+			path: []ottl.Field{
+				{
+					Name:   "attributes",
+					MapKey: ottltest.Strp("pMap"),
+				},
+			},
+			orig: func() pcommon.Map {
+				val, _ := refExpoHistogramDataPoint.Attributes().Get("pMap")
+				return val.Map()
+			}(),
+			newVal: newPMap,
+			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
+				m := datapoint.Attributes().PutEmptyMap("pMap")
+				m2 := m.PutEmptyMap("k2")
+				m2.PutStr("k1", "string")
+			},
+		},
+		{
+			name: "attributes map[string]interface{}",
+			path: []ottl.Field{
+				{
+					Name:   "attributes",
+					MapKey: ottltest.Strp("map"),
+				},
+			},
+			orig: func() pcommon.Map {
+				val, _ := refExpoHistogramDataPoint.Attributes().Get("map")
+				return val.Map()
+			}(),
+			newVal: newMap,
+			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
+				m := datapoint.Attributes().PutEmptyMap("map")
+				m2 := m.PutEmptyMap("k2")
+				m2.PutStr("k1", "string")
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -1085,12 +1226,21 @@ func createExpoHistogramDataPointTelemetry() pmetric.ExponentialHistogramDataPoi
 }
 
 func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
-	refExpoHistogramDataPoint := createSummaryDataPointTelemetry()
+	refSummaryDataPoint := createSummaryDataPointTelemetry()
 
 	_, newAttrs := createNewTelemetry()
 
 	newQuartileValues := pmetric.NewSummaryDataPointValueAtQuantileSlice()
 	newQuartileValues.AppendEmpty().SetValue(100)
+
+	newPMap := pcommon.NewMap()
+	pMap2 := newPMap.PutEmptyMap("k2")
+	pMap2.PutStr("k1", "string")
+
+	newMap := make(map[string]interface{})
+	newMap2 := make(map[string]interface{})
+	newMap2["k1"] = "string"
+	newMap["k2"] = newMap2
 
 	tests := []struct {
 		name     string
@@ -1171,7 +1321,7 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 					Name: "quantile_values",
 				},
 			},
-			orig:   refExpoHistogramDataPoint.QuantileValues(),
+			orig:   refSummaryDataPoint.QuantileValues(),
 			newVal: newQuartileValues,
 			modified: func(datapoint pmetric.SummaryDataPoint) {
 				newQuartileValues.CopyTo(datapoint.QuantileValues())
@@ -1184,7 +1334,7 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 					Name: "attributes",
 				},
 			},
-			orig:   refExpoHistogramDataPoint.Attributes(),
+			orig:   refSummaryDataPoint.Attributes(),
 			newVal: newAttrs,
 			modified: func(datapoint pmetric.SummaryDataPoint) {
 				newAttrs.CopyTo(datapoint.Attributes())
@@ -1269,7 +1419,7 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 				},
 			},
 			orig: func() pcommon.Slice {
-				val, _ := refExpoHistogramDataPoint.Attributes().Get("arr_str")
+				val, _ := refSummaryDataPoint.Attributes().Get("arr_str")
 				return val.Slice()
 			}(),
 			newVal: []string{"new"},
@@ -1286,7 +1436,7 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 				},
 			},
 			orig: func() pcommon.Slice {
-				val, _ := refExpoHistogramDataPoint.Attributes().Get("arr_bool")
+				val, _ := refSummaryDataPoint.Attributes().Get("arr_bool")
 				return val.Slice()
 			}(),
 			newVal: []bool{false},
@@ -1303,7 +1453,7 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 				},
 			},
 			orig: func() pcommon.Slice {
-				val, _ := refExpoHistogramDataPoint.Attributes().Get("arr_int")
+				val, _ := refSummaryDataPoint.Attributes().Get("arr_int")
 				return val.Slice()
 			}(),
 			newVal: []int64{20},
@@ -1320,7 +1470,7 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 				},
 			},
 			orig: func() pcommon.Slice {
-				val, _ := refExpoHistogramDataPoint.Attributes().Get("arr_float")
+				val, _ := refSummaryDataPoint.Attributes().Get("arr_float")
 				return val.Slice()
 			}(),
 			newVal: []float64{2.0},
@@ -1337,12 +1487,50 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 				},
 			},
 			orig: func() pcommon.Slice {
-				val, _ := refExpoHistogramDataPoint.Attributes().Get("arr_bytes")
+				val, _ := refSummaryDataPoint.Attributes().Get("arr_bytes")
 				return val.Slice()
 			}(),
 			newVal: [][]byte{{9, 6, 4}},
 			modified: func(datapoint pmetric.SummaryDataPoint) {
 				datapoint.Attributes().PutEmptySlice("arr_bytes").AppendEmpty().SetEmptyBytes().FromRaw([]byte{9, 6, 4})
+			},
+		},
+		{
+			name: "attributes pcommon.Map",
+			path: []ottl.Field{
+				{
+					Name:   "attributes",
+					MapKey: ottltest.Strp("pMap"),
+				},
+			},
+			orig: func() pcommon.Map {
+				val, _ := refSummaryDataPoint.Attributes().Get("pMap")
+				return val.Map()
+			}(),
+			newVal: newPMap,
+			modified: func(datapoint pmetric.SummaryDataPoint) {
+				m := datapoint.Attributes().PutEmptyMap("pMap")
+				m2 := m.PutEmptyMap("k2")
+				m2.PutStr("k1", "string")
+			},
+		},
+		{
+			name: "attributes map[string]interface{}",
+			path: []ottl.Field{
+				{
+					Name:   "attributes",
+					MapKey: ottltest.Strp("map"),
+				},
+			},
+			orig: func() pcommon.Map {
+				val, _ := refSummaryDataPoint.Attributes().Get("map")
+				return val.Map()
+			}(),
+			newVal: newMap,
+			modified: func(datapoint pmetric.SummaryDataPoint) {
+				m := datapoint.Attributes().PutEmptyMap("map")
+				m2 := m.PutEmptyMap("k2")
+				m2.PutStr("k1", "string")
 			},
 		},
 	}
@@ -1409,6 +1597,12 @@ func createAttributeTelemetry(attributes pcommon.Map) {
 	arrBytes := attributes.PutEmptySlice("arr_bytes")
 	arrBytes.AppendEmpty().SetEmptyBytes().FromRaw([]byte{1, 2, 3})
 	arrBytes.AppendEmpty().SetEmptyBytes().FromRaw([]byte{2, 3, 4})
+
+	pMap := attributes.PutEmptyMap("pMap")
+	pMap.PutStr("original", "map")
+
+	m := attributes.PutEmptyMap("map")
+	m.PutStr("original", "map")
 }
 
 func Test_newPathGetSetter_Metric(t *testing.T) {
