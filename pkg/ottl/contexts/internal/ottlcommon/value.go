@@ -85,7 +85,12 @@ func SetValue(value pcommon.Value, val interface{}) {
 		for _, b := range v {
 			value.Slice().AppendEmpty().SetEmptyBytes().FromRaw(b)
 		}
-	default:
-		// TODO(anuraaga): Support set of map type.
+	case pcommon.Map:
+		v.CopyTo(value.SetEmptyMap())
+	case map[string]interface{}:
+		value.SetEmptyMap()
+		for mk, mv := range v {
+			SetMapValue(value.Map(), mk, mv)
+		}
 	}
 }
