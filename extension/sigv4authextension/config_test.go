@@ -41,7 +41,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalExtensionConfig(sub, cfg))
 
-	assert.NoError(t, cfg.Validate())
+	assert.NoError(t, component.ValidateConfig(cfg))
 	assert.Equal(t, &Config{
 		ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
 		Region:            "region",
@@ -63,5 +63,5 @@ func TestLoadConfigError(t *testing.T) {
 	sub, err := cm.Sub(component.NewIDWithName(typeStr, "missing_credentials").String())
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalExtensionConfig(sub, cfg))
-	assert.Error(t, cfg.Validate())
+	assert.Error(t, component.ValidateConfig(cfg))
 }

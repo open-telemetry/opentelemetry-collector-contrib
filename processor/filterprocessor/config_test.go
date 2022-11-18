@@ -100,7 +100,7 @@ func TestLoadingConfigStrict(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, component.UnmarshalProcessorConfig(sub, cfg))
 
-			assert.NoError(t, cfg.Validate())
+			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -183,7 +183,7 @@ func TestLoadingConfigStrictLogs(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, component.UnmarshalProcessorConfig(sub, cfg))
 
-			assert.NoError(t, cfg.Validate())
+			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -246,7 +246,7 @@ func TestLoadingConfigSeverityLogsStrict(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, component.UnmarshalProcessorConfig(sub, cfg))
 
-			assert.NoError(t, cfg.Validate())
+			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -308,7 +308,7 @@ func TestLoadingConfigSeverityLogsRegexp(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, component.UnmarshalProcessorConfig(sub, cfg))
 
-			assert.NoError(t, cfg.Validate())
+			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -371,7 +371,7 @@ func TestLoadingConfigBodyLogsStrict(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, component.UnmarshalProcessorConfig(sub, cfg))
 
-			assert.NoError(t, cfg.Validate())
+			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -434,7 +434,7 @@ func TestLoadingConfigBodyLogsRegexp(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, component.UnmarshalProcessorConfig(sub, cfg))
 
-			assert.NoError(t, cfg.Validate())
+			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -499,7 +499,7 @@ func TestLoadingConfigMinSeverityNumberLogs(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, component.UnmarshalProcessorConfig(sub, cfg))
 
-			assert.NoError(t, cfg.Validate())
+			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -588,7 +588,7 @@ func TestLoadingConfigRegexp(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, component.UnmarshalProcessorConfig(sub, cfg))
 
-			assert.NoError(t, cfg.Validate())
+			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -638,7 +638,7 @@ func TestLoadingSpans(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, component.UnmarshalProcessorConfig(sub, cfg))
 
-			assert.NoError(t, cfg.Validate())
+			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -723,7 +723,7 @@ func TestLoadingConfigExpr(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, component.UnmarshalProcessorConfig(sub, cfg))
 
-			assert.NoError(t, cfg.Validate())
+			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

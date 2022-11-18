@@ -194,7 +194,7 @@ func TestValidateConfig(t *testing.T) {
 				Projects:               testCase.projects,
 			}
 
-			err := cfg.Validate()
+			err := component.ValidateConfig(cfg)
 
 			if testCase.requireError {
 				require.Error(t, err)

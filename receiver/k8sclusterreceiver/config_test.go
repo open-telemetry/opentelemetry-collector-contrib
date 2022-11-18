@@ -80,7 +80,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
 
-			assert.NoError(t, cfg.Validate())
+			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -93,7 +93,7 @@ func TestInvalidConfig(t *testing.T) {
 		Distribution:       distributionKubernetes,
 		CollectionInterval: 30 * time.Second,
 	}
-	err := cfg.Validate()
+	err := component.ValidateConfig(cfg)
 	assert.NotNil(t, err)
 	assert.Equal(t, "invalid authType for kubernetes: ", err.Error())
 
@@ -103,7 +103,7 @@ func TestInvalidConfig(t *testing.T) {
 		Distribution:       "wrong",
 		CollectionInterval: 30 * time.Second,
 	}
-	err = cfg.Validate()
+	err = component.ValidateConfig(cfg)
 	assert.NotNil(t, err)
 	assert.Equal(t, "\"wrong\" is not a supported distribution. Must be one of: \"openshift\", \"kubernetes\"", err.Error())
 }
