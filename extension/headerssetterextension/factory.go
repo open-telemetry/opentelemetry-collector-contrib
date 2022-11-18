@@ -31,20 +31,20 @@ func NewFactory() component.ExtensionFactory {
 		typeStr,
 		createDefaultConfig,
 		createExtension,
-		component.StabilityLevelInDevelopment,
+		component.StabilityLevelDevelopment,
 	)
 }
 
-func createDefaultConfig() config.Extension {
+func createDefaultConfig() component.ExtensionConfig {
 	return &Config{
-		ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
+		ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
 	}
 }
 
 func createExtension(
 	_ context.Context,
 	_ component.ExtensionCreateSettings,
-	cfg config.Extension,
+	cfg component.ExtensionConfig,
 ) (component.Extension, error) {
 	return newHeadersSetterExtension(cfg.(*Config))
 }

@@ -22,7 +22,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -44,7 +43,7 @@ func TestExprError(t *testing.T) {
 	testMatchError(t, pmetric.MetricTypeGauge, pmetric.NumberDataPointValueTypeDouble)
 	testMatchError(t, pmetric.MetricTypeSum, pmetric.NumberDataPointValueTypeInt)
 	testMatchError(t, pmetric.MetricTypeSum, pmetric.NumberDataPointValueTypeDouble)
-	testMatchError(t, pmetric.MetricTypeHistogram, pmetric.NumberDataPointValueTypeNone)
+	testMatchError(t, pmetric.MetricTypeHistogram, pmetric.NumberDataPointValueTypeEmpty)
 }
 
 func testMatchError(t *testing.T, mdType pmetric.MetricType, mvType pmetric.NumberDataPointValueType) {
@@ -64,7 +63,7 @@ func TestExprProcessor(t *testing.T) {
 	testFilter(t, pmetric.MetricTypeGauge, pmetric.NumberDataPointValueTypeDouble)
 	testFilter(t, pmetric.MetricTypeSum, pmetric.NumberDataPointValueTypeInt)
 	testFilter(t, pmetric.MetricTypeSum, pmetric.NumberDataPointValueTypeDouble)
-	testFilter(t, pmetric.MetricTypeHistogram, pmetric.NumberDataPointValueTypeNone)
+	testFilter(t, pmetric.MetricTypeHistogram, pmetric.NumberDataPointValueTypeEmpty)
 }
 
 func testFilter(t *testing.T, mdType pmetric.MetricType, mvType pmetric.NumberDataPointValueType) {
@@ -157,7 +156,7 @@ func testProcessor(t *testing.T, include []string, exclude []string) (component.
 	return proc, next, logs
 }
 
-func exprConfig(factory component.ProcessorFactory, include []string, exclude []string) config.Processor {
+func exprConfig(factory component.ProcessorFactory, include []string, exclude []string) component.ProcessorConfig {
 	cfg := factory.CreateDefaultConfig()
 	pCfg := cfg.(*Config)
 	pCfg.Metrics = MetricFilters{}

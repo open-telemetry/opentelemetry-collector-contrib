@@ -15,10 +15,10 @@
 package ottlfuncs
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -31,11 +31,12 @@ func Test_limit(t *testing.T) {
 	input.PutBool("test3", true)
 
 	target := &ottl.StandardGetSetter[pcommon.Map]{
-		Getter: func(ctx pcommon.Map) interface{} {
-			return ctx
+		Getter: func(ctx context.Context, tCtx pcommon.Map) (interface{}, error) {
+			return tCtx, nil
 		},
-		Setter: func(ctx pcommon.Map, val interface{}) {
-			val.(pcommon.Map).CopyTo(ctx)
+		Setter: func(ctx context.Context, tCtx pcommon.Map, val interface{}) error {
+			val.(pcommon.Map).CopyTo(tCtx)
+			return nil
 		},
 	}
 
@@ -128,8 +129,11 @@ func Test_limit(t *testing.T) {
 			input.CopyTo(scenarioMap)
 
 			exprFunc, err := Limit(tt.target, tt.limit, tt.keep)
-			require.NoError(t, err)
-			assert.Nil(t, exprFunc(scenarioMap))
+			assert.NoError(t, err)
+
+			result, err := exprFunc(nil, scenarioMap)
+			assert.NoError(t, err)
+			assert.Nil(t, result)
 
 			expected := pcommon.NewMap()
 			tt.want(expected)
@@ -169,31 +173,38 @@ func Test_limit_validation(t *testing.T) {
 func Test_limit_bad_input(t *testing.T) {
 	input := pcommon.NewValueStr("not a map")
 	target := &ottl.StandardGetSetter[interface{}]{
-		Getter: func(ctx interface{}) interface{} {
-			return ctx
+		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			return tCtx, nil
 		},
-		Setter: func(ctx interface{}, val interface{}) {
+		Setter: func(ctx context.Context, tCtx interface{}, val interface{}) error {
 			t.Errorf("nothing should be set in this scenario")
+			return nil
 		},
 	}
 
 	exprFunc, err := Limit[interface{}](target, 1, []string{})
-	require.NoError(t, err)
-	assert.Nil(t, exprFunc(input))
+	assert.NoError(t, err)
+	result, err := exprFunc(nil, input)
+	assert.NoError(t, err)
+	assert.Nil(t, result)
 	assert.Equal(t, pcommon.NewValueStr("not a map"), input)
 }
 
 func Test_limit_get_nil(t *testing.T) {
 	target := &ottl.StandardGetSetter[interface{}]{
-		Getter: func(ctx interface{}) interface{} {
-			return ctx
+		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			return tCtx, nil
 		},
-		Setter: func(ctx interface{}, val interface{}) {
+		Setter: func(ctx context.Context, tCtx interface{}, val interface{}) error {
 			t.Errorf("nothing should be set in this scenario")
+			return nil
 		},
 	}
 
 	exprFunc, err := Limit[interface{}](target, 1, []string{})
-	require.NoError(t, err)
-	assert.Nil(t, exprFunc(nil))
+	assert.NoError(t, err)
+	result, err := exprFunc(nil, nil)
+	assert.NoError(t, err)
+	assert.Nil(t, result)
+	assert.Nil(t, result)
 }

@@ -70,10 +70,11 @@ func (s *mongodbScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 
 	if s.mongoVersion == nil {
 		version, err := s.client.GetVersion(ctx)
-		if err != nil {
-			return pmetric.NewMetrics(), fmt.Errorf("unable to determine version of mongo scraping against: %w", err)
+		if err == nil {
+			s.mongoVersion = version
+		} else {
+			s.logger.Warn("determine mongo version", zap.Error(err))
 		}
-		s.mongoVersion = version
 	}
 
 	errs := &scrapererror.ScrapeErrors{}
@@ -102,13 +103,8 @@ func (s *mongodbScraper) collectMetrics(ctx context.Context, errs *scrapererror.
 			return
 		}
 
-		// Mongo version 4.0+ is required to have authorized access to list collection names
-		// reference: https://www.mongodb.com/docs/manual/reference/method/db.getCollectionNames/
-		mongo40, _ := version.NewVersion("4.0")
-		if s.mongoVersion.GreaterThanOrEqual(mongo40) {
-			for _, collectionName := range collectionNames {
-				s.collectIndexStats(ctx, now, dbName, collectionName, errs)
-			}
+		for _, collectionName := range collectionNames {
+			s.collectIndexStats(ctx, now, dbName, collectionName, errs)
 		}
 	}
 }
@@ -175,6 +171,10 @@ func (s *mongodbScraper) recordNormalServerStats(now pcommon.Timestamp, doc bson
 	s.recordConnections(now, doc, dbName, errs)
 	s.recordDocumentOperations(now, doc, dbName, errs)
 	s.recordMemoryUsage(now, doc, dbName, errs)
+	s.recordLockAcquireCounts(now, doc, dbName, errs)
+	s.recordLockAcquireWaitCounts(now, doc, dbName, errs)
+	s.recordLockTimeAcquiringMicros(now, doc, dbName, errs)
+	s.recordLockDeadlockCount(now, doc, dbName, errs)
 }
 
 func (s *mongodbScraper) recordAdminStats(now pcommon.Timestamp, document bson.M, errs *scrapererror.ScrapeErrors) {

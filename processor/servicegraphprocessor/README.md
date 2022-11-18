@@ -1,10 +1,10 @@
 # Service graph processor
 
-| Status                   |                     |
-| ------------------------ |---------------------|
-| Stability                | [in development]    |
-| Supported pipeline types | traces              |
-| Distributions            | [contrib]           |
+| Status                   |           |
+| ------------------------ |-----------|
+| Stability                | [alpha]   |
+| Supported pipeline types | traces    |
+| Distributions            | [contrib] |
 
 The service graphs processor is a traces processor that builds a map representing the interrelationships between various services in a system.
 The processor will analyse trace data and generate metrics describing the relationship between the services.
@@ -113,7 +113,7 @@ processors:
     latency_histogram_buckets: [100us, 1ms, 2ms, 6ms, 10ms, 100ms, 250ms] # Buckets for latency histogram
     dimensions: [cluster, namespace] # Additional dimensions (labels) to be added to the metrics extracted from the resource and span attributes
     store: # Configuration for the in-memory store
-      wait: 2s # Value to wait for an edge to be completed
+      ttl: 2s # Value to wait for an edge to be completed
       max_items: 200 # Amount of edges that will be stored in the storeMap      
 
 exporters:
@@ -135,3 +135,5 @@ service:
       exporters: [prometheus/servicegraph]
 ```
 
+[alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

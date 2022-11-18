@@ -21,7 +21,6 @@ import (
 	"runtime"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 	"google.golang.org/grpc"
@@ -42,7 +41,7 @@ type tracesExporter struct {
 	userAgent string
 }
 
-func newTracesExporter(cfg config.Exporter, set component.ExporterCreateSettings) (*tracesExporter, error) {
+func newTracesExporter(cfg component.ExporterConfig, set component.ExporterCreateSettings) (*tracesExporter, error) {
 	oCfg, ok := cfg.(*Config)
 	if !ok {
 		return nil, fmt.Errorf("invalid config exporter, expect type: %T, got: %T", &Config{}, cfg)
@@ -57,18 +56,12 @@ func newTracesExporter(cfg config.Exporter, set component.ExporterCreateSettings
 	return &tracesExporter{config: oCfg, settings: set.TelemetrySettings, userAgent: userAgent}, nil
 }
 
-func (e *tracesExporter) start(_ context.Context, host component.Host) error {
-	dialOpts, err := e.config.Traces.ToDialOptions(host, e.settings)
-	if err != nil {
-		return err
-	}
-	dialOpts = append(dialOpts, grpc.WithUserAgent(e.userAgent))
-
-	if e.clientConn, err = grpc.Dial(e.config.Traces.SanitizedEndpoint(), dialOpts...); err != nil {
+func (e *tracesExporter) start(ctx context.Context, host component.Host) (err error) {
+	if e.clientConn, err = e.config.Traces.ToClientConn(ctx, host, e.settings, grpc.WithUserAgent(e.userAgent)); err != nil {
 		return err
 	}
 
-	e.traceExporter = ptraceotlp.NewClient(e.clientConn)
+	e.traceExporter = ptraceotlp.NewGRPCClient(e.clientConn)
 	if e.config.Traces.Headers == nil {
 		e.config.Traces.Headers = make(map[string]string)
 	}
@@ -91,7 +84,7 @@ func (e *tracesExporter) pushTraces(ctx context.Context, td ptrace.Traces) error
 		tr := ptrace.NewTraces()
 		newRss := tr.ResourceSpans().AppendEmpty()
 		resourceSpan.CopyTo(newRss)
-		req := ptraceotlp.NewRequestFromTraces(tr)
+		req := ptraceotlp.NewExportRequestFromTraces(tr)
 
 		_, err := e.traceExporter.Export(e.enhanceContext(ctx, appName, subsystem), req, e.callOptions...)
 		if err != nil {

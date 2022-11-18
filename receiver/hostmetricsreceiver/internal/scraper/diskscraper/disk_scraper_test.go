@@ -17,7 +17,6 @@ package diskscraper
 import (
 	"context"
 	"errors"
-	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -43,25 +42,11 @@ func TestScrape(t *testing.T) {
 		mutateScraper     func(*scraper)
 	}
 
-	metricsWithDirection := 3
-	if runtime.GOOS == "linux" {
-		metricsWithDirection++
-	}
-
 	testCases := []testCase{
 		{
 			name:          "Standard",
 			config:        Config{Metrics: metadata.DefaultMetricsSettings()},
 			expectMetrics: metricsLen,
-		},
-		{
-			name:          "With direction removed",
-			config:        Config{Metrics: metadata.DefaultMetricsSettings()},
-			expectMetrics: metricsLen + metricsWithDirection,
-			mutateScraper: func(s *scraper) {
-				s.emitMetricsWithDirectionAttribute = false
-				s.emitMetricsWithoutDirectionAttribute = true
-			},
 		},
 		{
 			name:              "Validate Start Time",
@@ -154,32 +139,16 @@ func TestScrape(t *testing.T) {
 				switch metric.Name() {
 				case "system.disk.io":
 					assertInt64DiskMetricValid(t, metric, true, test.expectedStartTime)
-				case "system.disk.io.read":
-					assertInt64DiskMetricValid(t, metric, false, test.expectedStartTime)
-				case "system.disk.io.write":
-					assertInt64DiskMetricValid(t, metric, false, test.expectedStartTime)
 				case "system.disk.io_time":
 					assertDoubleDiskMetricValid(t, metric, false, test.expectedStartTime)
 				case "system.disk.operation_time":
 					assertDoubleDiskMetricValid(t, metric, true, test.expectedStartTime)
-				case "system.disk.operation_time.read":
-					assertDoubleDiskMetricValid(t, metric, false, test.expectedStartTime)
-				case "system.disk.operation_time.write":
-					assertDoubleDiskMetricValid(t, metric, false, test.expectedStartTime)
 				case "system.disk.operations":
 					assertInt64DiskMetricValid(t, metric, true, test.expectedStartTime)
-				case "system.disk.operations.read":
-					assertInt64DiskMetricValid(t, metric, false, test.expectedStartTime)
-				case "system.disk.operations.write":
-					assertInt64DiskMetricValid(t, metric, false, test.expectedStartTime)
 				case "system.disk.weighted.io.time":
 					assertDoubleDiskMetricValid(t, metric, false, test.expectedStartTime)
 				case "system.disk.merged":
 					assertInt64DiskMetricValid(t, metric, true, test.expectedStartTime)
-				case "system.disk.merged.read":
-					assertInt64DiskMetricValid(t, metric, false, test.expectedStartTime)
-				case "system.disk.merged.write":
-					assertInt64DiskMetricValid(t, metric, false, test.expectedStartTime)
 				case "system.disk.pending_operations":
 					assertDiskPendingOperationsMetricValid(t, metric)
 				case "system.disk.weighted_io_time":

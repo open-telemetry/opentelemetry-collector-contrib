@@ -9,7 +9,7 @@
                      "description": "The number of existing databases.",
                      "name": "mongodb.database.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "1",

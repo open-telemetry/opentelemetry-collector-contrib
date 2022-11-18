@@ -29,6 +29,7 @@ import (
 	tracelog "github.com/DataDog/datadog-agent/pkg/trace/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -38,7 +39,7 @@ import (
 	semconv "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutils"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
 )
 
 func TestMain(m *testing.M) {
@@ -131,7 +132,7 @@ func TestTracesSource(t *testing.T) {
 	defer tracesServer.Close()
 
 	cfg := Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		API: APIConfig{
 			Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 		},
@@ -150,7 +151,7 @@ func TestTracesSource(t *testing.T) {
 	assert := assert.New(t)
 	params := componenttest.NewNopExporterCreateSettings()
 	reg := featuregate.NewRegistry()
-	reg.MustRegister(metadata.HostnamePreviewGate)
+	reg.MustRegisterID(metadata.HostnamePreviewFeatureGate, featuregate.StageBeta)
 	assert.NoError(reg.Apply(map[string]bool{
 		metadata.HostnamePreviewFeatureGate: true,
 	}))
@@ -221,7 +222,7 @@ func TestTracesSource(t *testing.T) {
 }
 
 func TestTraceExporter(t *testing.T) {
-	metricsServer := testutils.DatadogServerMock()
+	metricsServer := testutil.DatadogServerMock()
 	defer metricsServer.Close()
 
 	got := make(chan string, 1)
@@ -233,7 +234,7 @@ func TestTraceExporter(t *testing.T) {
 
 	defer server.Close()
 	cfg := Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		API: APIConfig{
 			Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 		},
@@ -273,7 +274,7 @@ func TestTraceExporter(t *testing.T) {
 }
 
 func TestNewTracesExporter(t *testing.T) {
-	metricsServer := testutils.DatadogServerMock()
+	metricsServer := testutil.DatadogServerMock()
 	defer metricsServer.Close()
 
 	cfg := &Config{}
@@ -289,7 +290,7 @@ func TestNewTracesExporter(t *testing.T) {
 }
 
 func TestPushTraceData(t *testing.T) {
-	server := testutils.DatadogServerMock()
+	server := testutil.DatadogServerMock()
 	defer server.Close()
 	cfg := &Config{
 		API: APIConfig{
@@ -317,7 +318,7 @@ func TestPushTraceData(t *testing.T) {
 	assert.NoError(t, err)
 
 	testTraces := ptrace.NewTraces()
-	testutils.TestTraces.CopyTo(testTraces)
+	testutil.TestTraces.CopyTo(testTraces)
 	err = exp.ConsumeTraces(context.Background(), testTraces)
 	assert.NoError(t, err)
 

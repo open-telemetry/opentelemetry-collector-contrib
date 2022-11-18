@@ -122,7 +122,7 @@ func convToMetricType(metricType textparse.MetricType) (pmetric.MetricType, bool
 		return pmetric.MetricTypeSum, false
 	default:
 		// including: textparse.MetricTypeGaugeHistogram
-		return pmetric.MetricTypeNone, false
+		return pmetric.MetricTypeEmpty, false
 	}
 }
 

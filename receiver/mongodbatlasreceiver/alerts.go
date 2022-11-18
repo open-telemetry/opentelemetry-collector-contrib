@@ -33,7 +33,6 @@ import (
 
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -91,8 +90,8 @@ type alertsReceiver struct {
 	pageSize      int64
 	maxPages      int64
 	doneChan      chan bool
-	id            config.ComponentID  // ID of the receiver component
-	storageID     *config.ComponentID // ID of the storage extension component
+	id            component.ID  // ID of the receiver component
+	storageID     *component.ID // ID of the storage extension component
 	storageClient storage.Client
 }
 
@@ -412,6 +411,11 @@ func (a *alertsReceiver) convertAlerts(now pcommon.Timestamp, alerts []mongodbat
 			attrs.PutStr("metric.units", alert.CurrentValue.Units)
 		}
 
+		// Only present for HOST, HOST_METRIC, and REPLICA_SET alerts
+		if alert.HostnameAndPort == "" {
+			continue
+		}
+
 		host, portStr, err := net.SplitHostPort(alert.HostnameAndPort)
 		if err != nil {
 			errs = multierr.Append(errs, fmt.Errorf("failed to split host:port %s: %w", alert.HostnameAndPort, err))
@@ -566,7 +570,7 @@ func (a *alertsReceiver) applyFilters(pConf *ProjectConfig, alerts []mongodbatla
 		lastRecordedTime = *a.record.LastRecordedTime
 	}
 	// we need to maintain two timestamps in order to not conflict while iterating
-	var latestInPayload time.Time = pcommon.Timestamp(0).AsTime()
+	var latestInPayload = pcommon.Timestamp(0).AsTime()
 
 	for _, alert := range alerts {
 		updatedTime, err := time.Parse(time.RFC3339, alert.Updated)

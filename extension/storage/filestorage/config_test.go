@@ -23,6 +23,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -31,21 +32,21 @@ func TestLoadConfig(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		id       config.ComponentID
-		expected config.Extension
+		id       component.ID
+		expected component.ExtensionConfig
 	}{
 		{
-			id: config.NewComponentID(typeStr),
-			expected: func() config.Extension {
+			id: component.NewID(typeStr),
+			expected: func() component.ExtensionConfig {
 				ret := NewFactory().CreateDefaultConfig()
 				ret.(*Config).Directory = "."
 				return ret
 			}(),
 		},
 		{
-			id: config.NewComponentIDWithName(typeStr, "all_settings"),
+			id: component.NewIDWithName(typeStr, "all_settings"),
 			expected: &Config{
-				ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
+				ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
 				Directory:         ".",
 				Compaction: &CompactionConfig{
 					Directory:                  ".",
@@ -68,9 +69,9 @@ func TestLoadConfig(t *testing.T) {
 			cfg := factory.CreateDefaultConfig()
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, config.UnmarshalExtension(sub, cfg))
+			require.NoError(t, component.UnmarshalExtensionConfig(sub, cfg))
 
-			assert.NoError(t, cfg.Validate())
+			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -81,7 +82,7 @@ func TestHandleNonExistingDirectoryWithAnError(t *testing.T) {
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Directory = "/not/a/dir"
 
-	err := cfg.Validate()
+	err := component.ValidateConfig(cfg)
 	require.Error(t, err)
 	require.True(t, strings.HasPrefix(err.Error(), "directory must exist: "))
 }
@@ -99,7 +100,7 @@ func TestHandleProvidingFilePathAsDirWithAnError(t *testing.T) {
 
 	cfg.Directory = file.Name()
 
-	err = cfg.Validate()
+	err = component.ValidateConfig(cfg)
 	require.Error(t, err)
 	require.EqualError(t, err, file.Name()+" is not a directory")
 }

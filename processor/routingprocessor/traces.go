@@ -18,14 +18,13 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottltraces"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor/internal/common"
 )
 
@@ -36,27 +35,27 @@ type tracesProcessor struct {
 	config *Config
 
 	extractor extractor
-	router    router[component.TracesExporter, ottltraces.TransformContext]
+	router    router[component.TracesExporter, ottlspan.TransformContext]
 }
 
-func newTracesProcessor(settings component.TelemetrySettings, config config.Processor) *tracesProcessor {
+func newTracesProcessor(settings component.TelemetrySettings, config component.ProcessorConfig) *tracesProcessor {
 	cfg := rewriteRoutingEntriesToOTTL(config.(*Config))
 
 	return &tracesProcessor{
 		logger: settings.Logger,
 		config: cfg,
-		router: newRouter[component.TracesExporter, ottltraces.TransformContext](
+		router: newRouter[component.TracesExporter, ottlspan.TransformContext](
 			cfg.Table,
 			cfg.DefaultExporters,
 			settings,
-			ottltraces.NewParser(common.Functions[ottltraces.TransformContext](), settings),
+			ottlspan.NewParser(common.Functions[ottlspan.TransformContext](), settings),
 		),
 		extractor: newExtractor(cfg.FromAttribute, settings.Logger),
 	}
 }
 
 func (p *tracesProcessor) Start(_ context.Context, host component.Host) error {
-	err := p.router.registerExporters(host.GetExporters()[config.TracesDataType])
+	err := p.router.registerExporters(host.GetExporters()[component.DataTypeTraces])
 	if err != nil {
 		return err
 	}
@@ -93,7 +92,7 @@ func (p *tracesProcessor) route(ctx context.Context, t ptrace.Traces) error {
 	var errs error
 	for i := 0; i < t.ResourceSpans().Len(); i++ {
 		rspans := t.ResourceSpans().At(i)
-		stx := ottltraces.NewTransformContext(
+		stx := ottlspan.NewTransformContext(
 			ptrace.Span{},
 			pcommon.InstrumentationScope{},
 			rspans.Resource(),
@@ -101,11 +100,14 @@ func (p *tracesProcessor) route(ctx context.Context, t ptrace.Traces) error {
 
 		matchCount := len(p.router.routes)
 		for key, route := range p.router.routes {
-			if !route.expression.Condition(stx) {
+			_, isMatch, err := route.statement.Execute(ctx, stx)
+			if err != nil {
+				return err
+			}
+			if !isMatch {
 				matchCount--
 				continue
 			}
-			route.expression.Function(stx)
 			p.group(key, groups, route.exporters, rspans)
 		}
 

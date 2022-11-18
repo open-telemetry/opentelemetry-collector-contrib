@@ -27,6 +27,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
 const (
@@ -76,8 +78,8 @@ func spanToEnvelope(
 	envelope := contracts.NewEnvelope()
 	envelope.Tags = make(map[string]string)
 	envelope.Time = toTime(span.StartTimestamp()).Format(time.RFC3339Nano)
-	envelope.Tags[contracts.OperationId] = span.TraceID().HexString()
-	envelope.Tags[contracts.OperationParentId] = span.ParentSpanID().HexString()
+	envelope.Tags[contracts.OperationId] = traceutil.TraceIDToHexOrEmptyString(span.TraceID())
+	envelope.Tags[contracts.OperationParentId] = traceutil.SpanIDToHexOrEmptyString(span.ParentSpanID())
 
 	data := contracts.NewData()
 	var dataSanitizeFunc func() []string
@@ -107,7 +109,7 @@ func spanToEnvelope(
 	}
 
 	// Record the raw Span status values as properties
-	dataProperties[attributeOtelStatusCode] = span.Status().Code().String()
+	dataProperties[attributeOtelStatusCode] = traceutil.StatusCodeStr(span.Status().Code())
 	statusMessage := span.Status().Message()
 	if len(statusMessage) > 0 {
 		dataProperties[attributeOtelStatusDescription] = statusMessage
@@ -160,7 +162,7 @@ func spanToRequestData(span ptrace.Span, incomingSpanType spanType) *contracts.R
 	// See https://github.com/microsoft/ApplicationInsights-Go/blob/master/appinsights/contracts/requestdata.go
 	// Start with some reasonable default for server spans.
 	data := contracts.NewRequestData()
-	data.Id = span.SpanID().HexString()
+	data.Id = traceutil.SpanIDToHexOrEmptyString(span.SpanID())
 	data.Name = span.Name()
 	data.Duration = formatSpanDuration(span)
 	data.Properties = make(map[string]string)
@@ -186,7 +188,7 @@ func spanToRemoteDependencyData(span ptrace.Span, incomingSpanType spanType) *co
 	// https://github.com/microsoft/ApplicationInsights-Go/blob/master/appinsights/contracts/remotedependencydata.go
 	// Start with some reasonable default for dependent spans.
 	data := contracts.NewRemoteDependencyData()
-	data.Id = span.SpanID().HexString()
+	data.Id = traceutil.SpanIDToHexOrEmptyString(span.SpanID())
 	data.Name = span.Name()
 	data.ResultCode, data.Success = getDefaultFormattedSpanStatus(span.Status())
 	data.Duration = formatSpanDuration(span)
@@ -622,7 +624,7 @@ func mapIncomingSpanToType(attributeMap pcommon.Map) spanType {
 }
 
 // https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/api.md#set-status
-func getDefaultFormattedSpanStatus(spanStatus ptrace.SpanStatus) (statusCodeAsString string, success bool) {
+func getDefaultFormattedSpanStatus(spanStatus ptrace.Status) (statusCodeAsString string, success bool) {
 	code := spanStatus.Code()
 
 	return strconv.FormatInt(int64(code), 10), code != ptrace.StatusCodeError

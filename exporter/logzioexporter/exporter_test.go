@@ -29,6 +29,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcompression"
@@ -203,7 +204,7 @@ func TestExportErrors(tester *testing.T) {
 		cfg := &Config{
 			Region:           "",
 			Token:            "token",
-			ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+			ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 			HTTPClientSettings: confighttp.HTTPClientSettings{
 				Endpoint: server.URL,
 			},
@@ -267,7 +268,7 @@ func TestPushTraceData(tester *testing.T) {
 		rw.WriteHeader(http.StatusOK)
 	}))
 	cfg := Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		Token:            "token",
 		Region:           "",
 		HTTPClientSettings: confighttp.HTTPClientSettings{
@@ -301,7 +302,7 @@ func TestPushLogsData(tester *testing.T) {
 		rw.WriteHeader(http.StatusOK)
 	}))
 	cfg := Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		Token:            "token",
 		Region:           "",
 		HTTPClientSettings: confighttp.HTTPClientSettings{

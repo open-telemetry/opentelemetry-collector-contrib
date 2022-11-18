@@ -23,7 +23,7 @@ import (
 )
 
 // The value of extension "type" in configuration.
-const typeStr config.Type = "file_storage"
+const typeStr component.Type = "file_storage"
 
 const (
 	// use default bbolt value
@@ -44,9 +44,9 @@ func NewFactory() component.ExtensionFactory {
 	)
 }
 
-func createDefaultConfig() config.Extension {
+func createDefaultConfig() component.ExtensionConfig {
 	return &Config{
-		ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
+		ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
 		Directory:         getDefaultDirectory(),
 		Compaction: &CompactionConfig{
 			Directory:                  getDefaultDirectory(),
@@ -64,7 +64,7 @@ func createDefaultConfig() config.Extension {
 func createExtension(
 	_ context.Context,
 	params component.ExtensionCreateSettings,
-	cfg config.Extension,
+	cfg component.ExtensionConfig,
 ) (component.Extension, error) {
 	return newLocalFileStorage(params.Logger, cfg.(*Config))
 }

@@ -39,43 +39,19 @@ type LogEmitter struct {
 	flushInterval time.Duration
 }
 
-type LogEmitterOption func(*LogEmitter)
-
 var (
 	defaultFlushInterval      = 100 * time.Millisecond
 	defaultMaxBatchSize  uint = 100
 )
 
-// LogEmitterWithMaxBatchSize returns an option that makes the LogEmitter use the specified max batch size
-func LogEmitterWithMaxBatchSize(maxBatchSize uint) LogEmitterOption {
-	return LogEmitterOption(func(le *LogEmitter) {
-		le.maxBatchSize = maxBatchSize
-		le.batch = make([]*entry.Entry, 0, maxBatchSize)
-	})
-}
-
-// LogEmitterWithFlushInterval returns an option that makes the LogEmitter use the specified flush interval
-func LogEmitterWithFlushInterval(flushInterval time.Duration) LogEmitterOption {
-	return LogEmitterOption(func(le *LogEmitter) {
-		le.flushInterval = flushInterval
-	})
-}
-
-// LogEmitterWithLogger returns an option that makes the LogEmitter use the specified logger
-func LogEmitterWithLogger(logger *zap.SugaredLogger) LogEmitterOption {
-	return LogEmitterOption(func(le *LogEmitter) {
-		le.OutputOperator.BasicOperator.SugaredLogger = logger
-	})
-}
-
 // NewLogEmitter creates a new receiver output
-func NewLogEmitter(opts ...LogEmitterOption) *LogEmitter {
-	le := &LogEmitter{
+func NewLogEmitter(logger *zap.SugaredLogger) *LogEmitter {
+	return &LogEmitter{
 		OutputOperator: helper.OutputOperator{
 			BasicOperator: helper.BasicOperator{
 				OperatorID:    "log_emitter",
 				OperatorType:  "log_emitter",
-				SugaredLogger: zap.NewNop().Sugar(),
+				SugaredLogger: logger,
 			},
 		},
 		logChan:       make(chan []*entry.Entry),
@@ -84,12 +60,6 @@ func NewLogEmitter(opts ...LogEmitterOption) *LogEmitter {
 		flushInterval: defaultFlushInterval,
 		cancel:        func() {},
 	}
-
-	for _, opt := range opts {
-		opt(le)
-	}
-
-	return le
 }
 
 // Start starts the goroutine(s) required for this operator

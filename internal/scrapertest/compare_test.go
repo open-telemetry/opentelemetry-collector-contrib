@@ -335,6 +335,46 @@ func TestCompareMetrics(t *testing.T) {
 			},
 		},
 		{
+			name: "ignore-subsequent-data-points-all",
+			compareOptions: []CompareOption{
+				IgnoreSubsequentDataPoints(),
+			},
+			withoutOptions: expectation{
+				err: multierr.Combine(
+					errors.New("datapoints for metric: `sum.one`, do not match expected"),
+					errors.New("number of datapoints does not match expected: 1, actual: 2"),
+				),
+				reason: "An unpredictable data point value will cause failures if not ignored.",
+			},
+		},
+		{
+			name: "ignore-subsequent-data-points-one",
+			compareOptions: []CompareOption{
+				IgnoreSubsequentDataPoints("sum.one"),
+			},
+			withoutOptions: expectation{
+				err: multierr.Combine(
+					errors.New("datapoints for metric: `sum.one`, do not match expected"),
+					errors.New("number of datapoints does not match expected: 1, actual: 2"),
+				),
+				reason: "An unpredictable data point value will cause failures if not ignored.",
+			},
+		},
+		{
+			name: "ignore-single-metric",
+			compareOptions: []CompareOption{
+				IgnoreMetricValues("sum.two"),
+			},
+			withoutOptions: expectation{
+				err: multierr.Combine(
+					errors.New("datapoints for metric: `sum.two`, do not match expected"),
+					errors.New("datapoint with attributes: map[], does not match expected"),
+					errors.New("metric datapoint IntVal doesn't match expected: 123, actual: 654"),
+				),
+				reason: "An unpredictable data point value will cause failures if not ignored.",
+			},
+		},
+		{
 			name: "ignore-global-attribute-value",
 			compareOptions: []CompareOption{
 				IgnoreMetricAttributeValue("hostname"),

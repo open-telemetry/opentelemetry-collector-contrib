@@ -28,6 +28,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
 /*
@@ -196,7 +198,7 @@ func TestSpanEventToSentryEvent(t *testing.T) {
 			"library_version": "1.4.3",
 			"aws_instance":    "ap-south-1",
 			"unique_id":       "abcd1234",
-			"span_kind":       ptrace.SpanKindClient.String(),
+			"span_kind":       traceutil.SpanKindStr(ptrace.SpanKindClient),
 			"status_message":  "message",
 		},
 		StartTime: unixNanoToTime(123),
@@ -212,7 +214,7 @@ func TestSpanEventToSentryEvent(t *testing.T) {
 		Tags:        sampleSentrySpanForEvent.Tags,
 		Timestamp:   sampleSentrySpanForEvent.EndTime,
 		Transaction: sampleSentrySpanForEvent.Description,
-		Contexts:    map[string]interface{}{},
+		Contexts:    map[string]sentry.Context{},
 		Extra:       map[string]interface{}{},
 		Modules:     map[string]string{},
 		StartTime:   unixNanoToTime(123),
@@ -224,7 +226,8 @@ func TestSpanEventToSentryEvent(t *testing.T) {
 		Op:           sampleSentrySpanForEvent.Op,
 		Description:  sampleSentrySpanForEvent.Description,
 		Status:       sampleSentrySpanForEvent.Status,
-	}
+	}.Map()
+
 	errorType := "mySampleType"
 	errorMessage := "Kernel Panic"
 	testCases := []SpanEventToSentryEventCases{
@@ -345,7 +348,7 @@ func TestSpanToSentrySpan(t *testing.T) {
 				"library_version": "1.4.3",
 				"aws_instance":    "ca-central-1",
 				"unique_id":       "abcd1234",
-				"span_kind":       ptrace.SpanKindClient.String(),
+				"span_kind":       traceutil.SpanKindStr(ptrace.SpanKindClient),
 				"status_message":  statusMessage,
 			},
 			StartTime: unixNanoToTime(startTime),
@@ -480,7 +483,7 @@ func TestGenerateTagsFromAttributes(t *testing.T) {
 type SpanStatusCase struct {
 	testName string
 	// input
-	spanStatus ptrace.SpanStatus
+	spanStatus ptrace.Status
 	// output
 	status  sentry.SpanStatus
 	message string
@@ -491,15 +494,15 @@ func TestStatusFromSpanStatus(t *testing.T) {
 	testCases := []SpanStatusCase{
 		{
 			testName:   "with empty status",
-			spanStatus: ptrace.NewSpanStatus(),
+			spanStatus: ptrace.NewStatus(),
 			status:     sentry.SpanStatusOK,
 			message:    "",
 			tags:       map[string]string{},
 		},
 		{
 			testName: "with status code",
-			spanStatus: func() ptrace.SpanStatus {
-				spanStatus := ptrace.NewSpanStatus()
+			spanStatus: func() ptrace.Status {
+				spanStatus := ptrace.NewStatus()
 				spanStatus.SetMessage("message")
 				spanStatus.SetCode(ptrace.StatusCodeError)
 
@@ -511,8 +514,8 @@ func TestStatusFromSpanStatus(t *testing.T) {
 		},
 		{
 			testName: "with unimplemented status code",
-			spanStatus: func() ptrace.SpanStatus {
-				spanStatus := ptrace.NewSpanStatus()
+			spanStatus: func() ptrace.Status {
+				spanStatus := ptrace.NewStatus()
 				spanStatus.SetMessage("message")
 				spanStatus.SetCode(ptrace.StatusCode(1337))
 
@@ -524,8 +527,8 @@ func TestStatusFromSpanStatus(t *testing.T) {
 		},
 		{
 			testName: "with ok status code",
-			spanStatus: func() ptrace.SpanStatus {
-				spanStatus := ptrace.NewSpanStatus()
+			spanStatus: func() ptrace.Status {
+				spanStatus := ptrace.NewStatus()
 				spanStatus.SetMessage("message")
 				spanStatus.SetCode(ptrace.StatusCodeOk)
 
@@ -537,8 +540,8 @@ func TestStatusFromSpanStatus(t *testing.T) {
 		},
 		{
 			testName: "with 400 http status code",
-			spanStatus: func() ptrace.SpanStatus {
-				spanStatus := ptrace.NewSpanStatus()
+			spanStatus: func() ptrace.Status {
+				spanStatus := ptrace.NewStatus()
 				spanStatus.SetMessage("message")
 				spanStatus.SetCode(ptrace.StatusCodeError)
 
@@ -552,8 +555,8 @@ func TestStatusFromSpanStatus(t *testing.T) {
 		},
 		{
 			testName: "with canceled grpc status code",
-			spanStatus: func() ptrace.SpanStatus {
-				spanStatus := ptrace.NewSpanStatus()
+			spanStatus: func() ptrace.Status {
+				spanStatus := ptrace.NewStatus()
 				spanStatus.SetMessage("message")
 				spanStatus.SetCode(ptrace.StatusCodeError)
 
@@ -744,7 +747,9 @@ type TransactionFromSpanMarshalEventTestCase struct {
 	wantContains string
 }
 
-func TestTransactionFromSpanMarshalEvent(t *testing.T) {
+// This is a regression test for https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/13415
+// to make sure that `parent_span_id` is not included in the serialized context if it is not defined
+func TestTransactionContextFromSpanMarshalEvent(t *testing.T) {
 	testCases := []TransactionFromSpanMarshalEventTestCase{
 		{
 			testName: "with parent span id",
@@ -753,7 +758,7 @@ func TestTransactionFromSpanMarshalEvent(t *testing.T) {
 				SpanID:       SpanIDFromHex("ea4864700408805c"),
 				ParentSpanID: SpanIDFromHex("4c577fe4aec9523b"),
 			},
-			wantContains: `"contexts":{"trace":{"trace_id":"1915f8aa35ff8fbebbfeedb9d7e07216","span_id":"ea4864700408805c","parent_span_id":"4c577fe4aec9523b"}}`,
+			wantContains: `{"trace":{"parent_span_id":"4c577fe4aec9523b","span_id":"ea4864700408805c","trace_id":"1915f8aa35ff8fbebbfeedb9d7e07216"}}`,
 		},
 		{
 			testName: "without parent span id",
@@ -761,7 +766,7 @@ func TestTransactionFromSpanMarshalEvent(t *testing.T) {
 				TraceID: TraceIDFromHex("11ab4adc8ac6ed96f245cd96b5b6d141"),
 				SpanID:  SpanIDFromHex("cc55ac735f0170ac"),
 			},
-			wantContains: `"contexts":{"trace":{"trace_id":"11ab4adc8ac6ed96f245cd96b5b6d141","span_id":"cc55ac735f0170ac"}}`,
+			wantContains: `{"trace":{"span_id":"cc55ac735f0170ac","trace_id":"11ab4adc8ac6ed96f245cd96b5b6d141"}}`,
 		},
 	}
 
@@ -770,7 +775,7 @@ func TestTransactionFromSpanMarshalEvent(t *testing.T) {
 			event := transactionFromSpan(test.span)
 			// mimic what sentry is doing internally
 			// see: https://github.com/getsentry/sentry-go/blob/v0.13.0/transport.go#L66-L70
-			d, err := json.Marshal(event)
+			d, err := json.Marshal(event.Contexts)
 			assert.NoError(t, err)
 			assert.Contains(t, string(d), test.wantContains)
 		})

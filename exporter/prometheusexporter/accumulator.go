@@ -23,7 +23,6 @@ import (
 	"github.com/prometheus/common/model"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 )
 
@@ -175,12 +174,12 @@ func (a *lastValueAccumulator) accumulateSum(metric pmetric.Metric, il pcommon.I
 	doubleSum := metric.Sum()
 
 	// Drop metrics with unspecified aggregations
-	if doubleSum.AggregationTemporality() == pmetric.MetricAggregationTemporalityUnspecified {
+	if doubleSum.AggregationTemporality() == pmetric.AggregationTemporalityUnspecified {
 		return
 	}
 
 	// Drop non-monotonic and non-cumulative metrics
-	if doubleSum.AggregationTemporality() == pmetric.MetricAggregationTemporalityDelta && !doubleSum.IsMonotonic() {
+	if doubleSum.AggregationTemporality() == pmetric.AggregationTemporalityDelta && !doubleSum.IsMonotonic() {
 		return
 	}
 
@@ -198,7 +197,7 @@ func (a *lastValueAccumulator) accumulateSum(metric pmetric.Metric, il pcommon.I
 		if !ok {
 			m := copyMetricMetadata(metric)
 			m.SetEmptySum().SetIsMonotonic(metric.Sum().IsMonotonic())
-			m.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+			m.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 			ip.CopyTo(m.Sum().DataPoints().AppendEmpty())
 			a.registeredMetrics.Store(signature, &accumulatedValue{value: m, resourceAttrs: resourceAttrs, scope: il, updated: now})
 			n++
@@ -212,7 +211,7 @@ func (a *lastValueAccumulator) accumulateSum(metric pmetric.Metric, il pcommon.I
 		}
 
 		// Delta-to-Cumulative
-		if doubleSum.AggregationTemporality() == pmetric.MetricAggregationTemporalityDelta && ip.StartTimestamp() == mv.value.Sum().DataPoints().At(0).Timestamp() {
+		if doubleSum.AggregationTemporality() == pmetric.AggregationTemporalityDelta && ip.StartTimestamp() == mv.value.Sum().DataPoints().At(0).Timestamp() {
 			ip.SetStartTimestamp(mv.value.Sum().DataPoints().At(0).StartTimestamp())
 			switch ip.ValueType() {
 			case pmetric.NumberDataPointValueTypeInt:
@@ -224,7 +223,7 @@ func (a *lastValueAccumulator) accumulateSum(metric pmetric.Metric, il pcommon.I
 
 		m := copyMetricMetadata(metric)
 		m.SetEmptySum().SetIsMonotonic(metric.Sum().IsMonotonic())
-		m.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+		m.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 		ip.CopyTo(m.Sum().DataPoints().AppendEmpty())
 		a.registeredMetrics.Store(signature, &accumulatedValue{value: m, resourceAttrs: resourceAttrs, scope: il, updated: now})
 		n++
@@ -236,7 +235,7 @@ func (a *lastValueAccumulator) accumulateDoubleHistogram(metric pmetric.Metric, 
 	doubleHistogram := metric.Histogram()
 
 	// Drop metrics with non-cumulative aggregations
-	if doubleHistogram.AggregationTemporality() != pmetric.MetricAggregationTemporalityCumulative {
+	if doubleHistogram.AggregationTemporality() != pmetric.AggregationTemporalityCumulative {
 		return
 	}
 
@@ -267,7 +266,7 @@ func (a *lastValueAccumulator) accumulateDoubleHistogram(metric pmetric.Metric, 
 
 		m := copyMetricMetadata(metric)
 		ip.CopyTo(m.SetEmptyHistogram().DataPoints().AppendEmpty())
-		m.Histogram().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+		m.Histogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 		a.registeredMetrics.Store(signature, &accumulatedValue{value: m, resourceAttrs: resourceAttrs, scope: il, updated: now})
 		n++
 	}
@@ -308,18 +307,12 @@ func timeseriesSignature(ilmName string, metric pmetric.Metric, attributes pcomm
 		return true
 	})
 
-	// We only include the job and instance labels in the final output. So we should only construct the signature based on those.
-	if serviceName, ok := resourceAttrs.Get(conventions.AttributeServiceName); ok {
-		val := serviceName.AsString()
-		if serviceNamespace, ok := resourceAttrs.Get(conventions.AttributeServiceNamespace); ok {
-			val = fmt.Sprintf("%s/%s", serviceNamespace.AsString(), val)
-		}
-		b.WriteString("*" + model.JobLabel + "*" + val)
+	if job, ok := extractJob(resourceAttrs); ok {
+		b.WriteString("*" + model.JobLabel + "*" + job)
 	}
-	if instance, ok := resourceAttrs.Get(conventions.AttributeServiceInstanceID); ok {
-		b.WriteString("*" + model.InstanceLabel + "*" + instance.AsString())
+	if instance, ok := extractInstance(resourceAttrs); ok {
+		b.WriteString("*" + model.InstanceLabel + "*" + instance)
 	}
-
 	return b.String()
 }
 

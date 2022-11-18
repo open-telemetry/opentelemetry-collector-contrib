@@ -38,9 +38,9 @@ func NewFactory() component.ExporterFactory {
 		component.WithTracesExporter(createTracesExporter, stability))
 }
 
-func createDefaultConfig() config.Exporter {
+func createDefaultConfig() component.ExporterConfig {
 	return &Config{
-		ExporterSettings:   config.NewExporterSettings(config.NewComponentID(typeStr)),
+		ExporterSettings:   config.NewExporterSettings(component.NewID(typeStr)),
 		AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
 	}
 }
@@ -48,7 +48,7 @@ func createDefaultConfig() config.Exporter {
 func createTracesExporter(
 	_ context.Context,
 	params component.ExporterCreateSettings,
-	cfg config.Exporter,
+	cfg component.ExporterConfig,
 ) (component.TracesExporter, error) {
 	eCfg := cfg.(*Config)
 	return newTracesExporter(eCfg, params, &awsutil.Conn{})

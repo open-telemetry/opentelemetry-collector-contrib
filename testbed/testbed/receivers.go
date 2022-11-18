@@ -69,10 +69,10 @@ func (bor *BaseOTLPDataReceiver) Start(tc consumer.Traces, mc consumer.Metrics, 
 	factory := otlpreceiver.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*otlpreceiver.Config)
 	if bor.exporterType == "otlp" {
-		cfg.GRPC.NetAddr = confignet.NetAddr{Endpoint: fmt.Sprintf("localhost:%d", bor.Port), Transport: "tcp"}
+		cfg.GRPC.NetAddr = confignet.NetAddr{Endpoint: fmt.Sprintf("127.0.0.1:%d", bor.Port), Transport: "tcp"}
 		cfg.HTTP = nil
 	} else {
-		cfg.HTTP.Endpoint = fmt.Sprintf("localhost:%d", bor.Port)
+		cfg.HTTP.Endpoint = fmt.Sprintf("127.0.0.1:%d", bor.Port)
 		cfg.GRPC = nil
 	}
 	var err error
@@ -116,7 +116,7 @@ func (bor *BaseOTLPDataReceiver) ProtocolName() string {
 }
 
 func (bor *BaseOTLPDataReceiver) GenConfigYAMLStr() string {
-	addr := fmt.Sprintf("localhost:%d", bor.Port)
+	addr := fmt.Sprintf("127.0.0.1:%d", bor.Port)
 	if bor.exporterType == "otlphttp" {
 		addr = "http://" + addr
 	}

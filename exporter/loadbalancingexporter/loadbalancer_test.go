@@ -23,7 +23,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 )
 
@@ -234,15 +233,15 @@ func TestRemoveExtraExporters(t *testing.T) {
 func TestAddMissingExporters(t *testing.T) {
 	// prepare
 	cfg := simpleConfig()
-	exporterFactory := component.NewExporterFactory("otlp", func() config.Exporter {
+	exporterFactory := component.NewExporterFactory("otlp", func() component.ExporterConfig {
 		return &otlpexporter.Config{}
 	}, component.WithTracesExporter(func(
 		_ context.Context,
 		_ component.ExporterCreateSettings,
-		_ config.Exporter,
+		_ component.ExporterConfig,
 	) (component.TracesExporter, error) {
 		return newNopMockTracesExporter(), nil
-	}, component.StabilityLevelInDevelopment))
+	}, component.StabilityLevelDevelopment))
 	fn := func(ctx context.Context, endpoint string) (component.Exporter, error) {
 		oCfg := cfg.Protocol.OTLP
 		oCfg.Endpoint = endpoint
@@ -268,15 +267,15 @@ func TestFailedToAddMissingExporters(t *testing.T) {
 	// prepare
 	cfg := simpleConfig()
 	expectedErr := errors.New("some expected error")
-	exporterFactory := component.NewExporterFactory("otlp", func() config.Exporter {
+	exporterFactory := component.NewExporterFactory("otlp", func() component.ExporterConfig {
 		return &otlpexporter.Config{}
 	}, component.WithTracesExporter(func(
 		_ context.Context,
 		_ component.ExporterCreateSettings,
-		_ config.Exporter,
+		_ component.ExporterConfig,
 	) (component.TracesExporter, error) {
 		return nil, expectedErr
-	}, component.StabilityLevelInDevelopment))
+	}, component.StabilityLevelDevelopment))
 	fn := func(ctx context.Context, endpoint string) (component.Exporter, error) {
 		oCfg := cfg.Protocol.OTLP
 		oCfg.Endpoint = endpoint

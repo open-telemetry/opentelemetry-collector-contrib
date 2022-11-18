@@ -168,7 +168,7 @@ func (f *FluentLogsForwarder) Flush() {
 func (f *FluentLogsForwarder) GenConfigYAMLStr() string {
 	return fmt.Sprintf(`
   fluentforward:
-    endpoint: localhost:%d`, f.Port)
+    endpoint: 127.0.0.1:%d`, f.Port)
 }
 
 func (f *FluentLogsForwarder) ProtocolName() string {

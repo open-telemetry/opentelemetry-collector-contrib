@@ -32,7 +32,7 @@ import (
 
 func TestScrape(t *testing.T) {
 	ctx := context.Background()
-	mockServer := mock.MockServer(t)
+	mockServer := mock.MockServer(t, false)
 
 	cfg := &Config{
 		Metrics:  metadata.DefaultMetricsSettings(),
@@ -40,6 +40,28 @@ func TestScrape(t *testing.T) {
 		Username: mock.MockUsername,
 		Password: mock.MockPassword,
 	}
+
+	testScrape(ctx, t, cfg)
+}
+
+func TestScrape_TLS(t *testing.T) {
+	ctx := context.Background()
+	mockServer := mock.MockServer(t, true)
+
+	cfg := &Config{
+		Metrics:  metadata.DefaultMetricsSettings(),
+		Endpoint: mockServer.URL,
+		Username: mock.MockUsername,
+		Password: mock.MockPassword,
+	}
+
+	cfg.Insecure = true
+	cfg.InsecureSkipVerify = true
+
+	testScrape(ctx, t, cfg)
+}
+
+func testScrape(ctx context.Context, t *testing.T, cfg *Config) {
 	scraper := newVmwareVcenterScraper(zap.NewNop(), cfg, componenttest.NewNopReceiverCreateSettings())
 
 	metrics, err := scraper.scrape(ctx)
@@ -47,33 +69,6 @@ func TestScrape(t *testing.T) {
 	require.NotEqual(t, metrics.MetricCount(), 0)
 
 	goldenPath := filepath.Join("testdata", "metrics", "expected.json")
-	expectedMetrics, err := golden.ReadMetrics(goldenPath)
-	require.NoError(t, err)
-
-	err = scrapertest.CompareMetrics(expectedMetrics, metrics)
-	require.NoError(t, err)
-	require.NoError(t, scraper.Shutdown(ctx))
-}
-
-func TestScrapeWithoutDirectionAttribute(t *testing.T) {
-	ctx := context.Background()
-	mockServer := mock.MockServer(t)
-
-	cfg := &Config{
-		Metrics:  metadata.DefaultMetricsSettings(),
-		Endpoint: mockServer.URL,
-		Username: mock.MockUsername,
-		Password: mock.MockPassword,
-	}
-	scraper := newVmwareVcenterScraper(zap.NewNop(), cfg, componenttest.NewNopReceiverCreateSettings())
-	scraper.emitMetricsWithDirectionAttribute = false
-	scraper.emitMetricsWithoutDirectionAttribute = true
-
-	metrics, err := scraper.scrape(ctx)
-	require.NoError(t, err)
-	require.NotEqual(t, metrics.MetricCount(), 0)
-
-	goldenPath := filepath.Join("testdata", "metrics", "expected_without_direction.json")
 	expectedMetrics, err := golden.ReadMetrics(goldenPath)
 	require.NoError(t, err)
 

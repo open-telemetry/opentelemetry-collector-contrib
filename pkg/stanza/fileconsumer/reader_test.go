@@ -21,6 +21,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
@@ -104,11 +105,12 @@ func testReaderFactory(t *testing.T) (*readerFactory, chan *emitParams) {
 		readerConfig: &readerConfig{
 			fingerprintSize: DefaultFingerprintSize,
 			maxLogSize:      defaultMaxLogSize,
-			emit: func(_ context.Context, attrs *FileAttributes, token []byte) {
-				emitChan <- &emitParams{attrs, token}
-			},
+			emit:            testEmitFunc(emitChan),
 		},
 		fromBeginning: true,
+		splitterFactory: newMultilineSplitterFactory(
+			helper.NewEncodingConfig(), helper.NewFlusherConfig(), helper.NewMultilineConfig()),
+		encodingConfig: helper.NewEncodingConfig(),
 	}, emitChan
 }
 

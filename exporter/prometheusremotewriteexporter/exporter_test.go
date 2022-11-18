@@ -44,7 +44,7 @@ import (
 // Test_NewPRWExporter checks that a new exporter instance with non-nil fields is initialized
 func Test_NewPRWExporter(t *testing.T) {
 	cfg := &Config{
-		ExporterSettings:   config.NewExporterSettings(config.NewComponentID(typeStr)),
+		ExporterSettings:   config.NewExporterSettings(component.NewID(typeStr)),
 		TimeoutSettings:    exporterhelper.TimeoutSettings{},
 		RetrySettings:      exporterhelper.RetrySettings{},
 		Namespace:          "",
@@ -139,7 +139,7 @@ func Test_NewPRWExporter(t *testing.T) {
 // Test_Start checks if the client is properly created as expected.
 func Test_Start(t *testing.T) {
 	cfg := &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		TimeoutSettings:  exporterhelper.TimeoutSettings{},
 		RetrySettings:    exporterhelper.RetrySettings{},
 		Namespace:        "",
@@ -642,7 +642,7 @@ func Test_PushMetrics(t *testing.T) {
 					defer server.Close()
 
 					cfg := &Config{
-						ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+						ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 						Namespace:        "",
 						HTTPClientSettings: confighttp.HTTPClientSettings{
 							Endpoint: server.URL,
@@ -826,7 +826,7 @@ func TestWALOnExporterRoundTrip(t *testing.T) {
 	// exporter and export some time series!
 	tempDir := t.TempDir()
 	cfg := &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		Namespace:        "test_ns",
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: prweServer.URL,

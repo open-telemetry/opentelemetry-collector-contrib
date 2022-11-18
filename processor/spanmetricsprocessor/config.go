@@ -23,9 +23,18 @@ import (
 )
 
 const (
-	delta      = "AGGREGATION_TEMPORALITY_DELTA"
-	cumulative = "AGGREGATION_TEMPORALITY_CUMULATIVE"
+	delta                  = "AGGREGATION_TEMPORALITY_DELTA"
+	cumulative             = "AGGREGATION_TEMPORALITY_CUMULATIVE"
+	dropSanitizationGateID = "processor.spanmetrics.PermissiveLabelSanitization"
 )
+
+func init() {
+	featuregate.GetRegistry().MustRegisterID(
+		dropSanitizationGateID,
+		featuregate.StageAlpha,
+		featuregate.WithRegisterDescription("Controls whether to change labels starting with '_' to 'key_'"),
+	)
+}
 
 // Dimension defines the dimension name and optional default value if the Dimension is missing from a span attribute.
 type Dimension struct {
@@ -64,17 +73,11 @@ type Config struct {
 	skipSanitizeLabel bool
 }
 
-var dropSanitizationGate = featuregate.Gate{
-	ID:          "processor.spanmetrics.PermissiveLabelSanitization",
-	Enabled:     false,
-	Description: "Controls whether to change labels starting with '_' to 'key_'",
-}
-
-// GetAggregationTemporality converts the string value given in the config into a MetricAggregationTemporality.
+// GetAggregationTemporality converts the string value given in the config into a AggregationTemporality.
 // Returns cumulative, unless delta is correctly specified.
-func (c Config) GetAggregationTemporality() pmetric.MetricAggregationTemporality {
+func (c Config) GetAggregationTemporality() pmetric.AggregationTemporality {
 	if c.AggregationTemporality == delta {
-		return pmetric.MetricAggregationTemporalityDelta
+		return pmetric.AggregationTemporalityDelta
 	}
-	return pmetric.MetricAggregationTemporalityCumulative
+	return pmetric.AggregationTemporalityCumulative
 }

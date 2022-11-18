@@ -15,12 +15,13 @@
 package metrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics"
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoints"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
 // registry is a map of names to functions for metrics pipelines
-var registry = map[string]interface{}{
+var datapointRegistry = map[string]interface{}{
 	"convert_sum_to_gauge":             convertSumToGauge,
 	"convert_gauge_to_sum":             convertGaugeToSum,
 	"convert_summary_sum_val_to_sum":   convertSummarySumValToSum,
@@ -29,11 +30,15 @@ var registry = map[string]interface{}{
 
 func init() {
 	// Init metrics registry with default functions common to all signals
-	for k, v := range common.Functions[ottldatapoints.TransformContext]() {
-		registry[k] = v
+	for k, v := range common.Functions[ottldatapoint.TransformContext]() {
+		datapointRegistry[k] = v
 	}
 }
 
-func Functions() map[string]interface{} {
-	return registry
+func DataPointFunctions() map[string]interface{} {
+	return datapointRegistry
+}
+
+func MetricFunctions() map[string]interface{} {
+	return common.Functions[ottlmetric.TransformContext]()
 }

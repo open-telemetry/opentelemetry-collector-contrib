@@ -23,6 +23,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
 var (
@@ -37,7 +39,77 @@ var (
 	spanID2 = [8]byte{8, 7, 6, 5, 4, 3, 2, 1}
 )
 
-func TestProcess(t *testing.T) {
+func Test_ProcessTraces_ResourceContext(t *testing.T) {
+	tests := []struct {
+		statement string
+		want      func(td ptrace.Traces)
+	}{
+		{
+			statement: `set(attributes["test"], "pass")`,
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).Resource().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			statement: `set(attributes["test"], "pass") where attributes["host.name"] == "wrong"`,
+			want: func(td ptrace.Traces) {
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.statement, func(t *testing.T) {
+			td := constructTraces()
+			processor, err := NewProcessor(nil, []common.ContextStatements{{Context: "resource", Statements: []string{tt.statement}}}, componenttest.NewNopTelemetrySettings())
+			assert.NoError(t, err)
+
+			_, err = processor.ProcessTraces(context.Background(), td)
+			assert.NoError(t, err)
+
+			exTd := constructTraces()
+			tt.want(exTd)
+
+			assert.Equal(t, exTd, td)
+		})
+	}
+}
+
+func Test_ProcessTraces_ScopeContext(t *testing.T) {
+	tests := []struct {
+		statement string
+		want      func(td ptrace.Traces)
+	}{
+		{
+			statement: `set(attributes["test"], "pass") where name == "scope"`,
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Scope().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			statement: `set(attributes["test"], "pass") where version == 2`,
+			want: func(td ptrace.Traces) {
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.statement, func(t *testing.T) {
+			td := constructTraces()
+			processor, err := NewProcessor(nil, []common.ContextStatements{{Context: "scope", Statements: []string{tt.statement}}}, componenttest.NewNopTelemetrySettings())
+			assert.NoError(t, err)
+
+			_, err = processor.ProcessTraces(context.Background(), td)
+			assert.NoError(t, err)
+
+			exTd := constructTraces()
+			tt.want(exTd)
+
+			assert.Equal(t, exTd, td)
+		})
+	}
+}
+
+func Test_ProcessTraces_TraceContext(t *testing.T) {
 	tests := []struct {
 		statement string
 		want      func(td ptrace.Traces)
@@ -56,7 +128,7 @@ func TestProcess(t *testing.T) {
 			},
 		},
 		{
-			statement: `keep_keys(attributes, "http.method") where name == "operationA"`,
+			statement: `keep_keys(attributes, ["http.method"]) where name == "operationA"`,
 			want: func(td ptrace.Traces) {
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().Clear()
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("http.method", "get")
@@ -129,16 +201,16 @@ func TestProcess(t *testing.T) {
 			statement: `replace_all_patterns(attributes, "key", "http.url", "url")`,
 			want: func(td ptrace.Traces) {
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().Clear()
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutString("http.method", "get")
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutString("http.path", "/health")
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutString("url", "http://localhost/health")
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutString("flags", "A|B|C")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("http.method", "get")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("http.path", "/health")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("url", "http://localhost/health")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("flags", "A|B|C")
 
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().Clear()
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutString("http.method", "get")
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutString("http.path", "/health")
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutString("url", "http://localhost/health")
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutString("flags", "C|D")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutStr("http.method", "get")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutStr("http.path", "/health")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutStr("url", "http://localhost/health")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutStr("flags", "C|D")
 			},
 		},
 		{
@@ -184,27 +256,27 @@ func TestProcess(t *testing.T) {
 			},
 		},
 		{
-			statement: `set(attributes["test"], Concat(": ", attributes["http.method"], attributes["http.url"]))`,
+			statement: `set(attributes["test"], Concat([attributes["http.method"], attributes["http.url"]], ": "))`,
 			want: func(td ptrace.Traces) {
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("test", "get: http://localhost/health")
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutStr("test", "get: http://localhost/health")
 			},
 		},
 		{
-			statement: `set(attributes["test"], Concat("", attributes["http.method"], ": ", attributes["http.url"]))`,
+			statement: `set(attributes["test"], Concat([attributes["http.method"], ": ", attributes["http.url"]], ""))`,
 			want: func(td ptrace.Traces) {
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("test", "get: http://localhost/health")
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutStr("test", "get: http://localhost/health")
 			},
 		},
 		{
-			statement: `set(attributes["test"], Concat(": ", attributes["http.method"], attributes["http.url"])) where name == Concat("", "operation", "A")`,
+			statement: `set(attributes["test"], Concat([attributes["http.method"], attributes["http.url"]], ": ")) where name == Concat(["operation", "A"], "")`,
 			want: func(td ptrace.Traces) {
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("test", "get: http://localhost/health")
 			},
 		},
 		{
-			statement: `set(attributes["kind"], Concat("", "kind", ": ", kind)) where kind == 1`,
+			statement: `set(attributes["kind"], Concat(["kind", ": ", kind], "")) where kind == 1`,
 			want: func(td ptrace.Traces) {
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("kind", "kind: 1")
 			},
@@ -234,12 +306,156 @@ func TestProcess(t *testing.T) {
 			statement: `set(attributes["test"], Split(attributes["not_exist"], "|"))`,
 			want:      func(td ptrace.Traces) {},
 		},
+		{
+			statement: `set(attributes["entrypoint"], name) where parent_span_id == SpanID(0x0000000000000000)`,
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutStr("entrypoint", "operationB")
+			},
+		},
+		{
+			statement: `set(attributes["test"], ConvertCase(name, "lower")) where name == "operationA"`,
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("test", "operationa")
+			},
+		}, {
+			statement: `set(attributes["test"], ConvertCase(name, "upper")) where name == "operationA"`,
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("test", "OPERATIONA")
+			},
+		}, {
+			statement: `set(attributes["test"], ConvertCase(name, "snake")) where name == "operationA"`,
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("test", "operation_a")
+			},
+		}, {
+			statement: `set(attributes["test"], ConvertCase(name, "camel")) where name == "operationA"`,
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("test", "OperationA")
+			},
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructTraces()
-			processor, err := NewProcessor([]string{tt.statement}, Functions(), componenttest.NewNopTelemetrySettings())
+			processor, err := NewProcessor(nil, []common.ContextStatements{{Context: "span", Statements: []string{tt.statement}}}, componenttest.NewNopTelemetrySettings())
+			assert.NoError(t, err)
+
+			_, err = processor.ProcessTraces(context.Background(), td)
+			assert.NoError(t, err)
+
+			exTd := constructTraces()
+			tt.want(exTd)
+
+			assert.Equal(t, exTd, td)
+		})
+	}
+}
+
+func Test_ProcessTraces_MixContext(t *testing.T) {
+	tests := []struct {
+		name             string
+		contextStatments []common.ContextStatements
+		want             func(td ptrace.Traces)
+	}{
+		{
+			name: "set resource and then use",
+			contextStatments: []common.ContextStatements{
+				{
+					Context: "resource",
+					Statements: []string{
+						`set(attributes["test"], "pass")`,
+					},
+				},
+				{
+					Context: "span",
+					Statements: []string{
+						`set(attributes["test"], "pass") where resource.attributes["test"] == "pass"`,
+					},
+				},
+			},
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).Resource().Attributes().PutStr("test", "pass")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("test", "pass")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name: "set scope and then use",
+			contextStatments: []common.ContextStatements{
+				{
+					Context: "scope",
+					Statements: []string{
+						`set(attributes["test"], "pass")`,
+					},
+				},
+				{
+					Context: "span",
+					Statements: []string{
+						`set(attributes["test"], "pass") where instrumentation_scope.attributes["test"] == "pass"`,
+					},
+				},
+			},
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Scope().Attributes().PutStr("test", "pass")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("test", "pass")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name: "order matters",
+			contextStatments: []common.ContextStatements{
+				{
+					Context: "span",
+					Statements: []string{
+						`set(attributes["test"], "pass") where instrumentation_scope.attributes["test"] == "pass"`,
+					},
+				},
+				{
+					Context: "scope",
+					Statements: []string{
+						`set(attributes["test"], "pass")`,
+					},
+				},
+			},
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Scope().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name: "reuse context",
+			contextStatments: []common.ContextStatements{
+				{
+					Context: "scope",
+					Statements: []string{
+						`set(attributes["test"], "pass")`,
+					},
+				},
+				{
+					Context: "span",
+					Statements: []string{
+						`set(attributes["test"], "pass") where instrumentation_scope.attributes["test"] == "pass"`,
+					},
+				},
+				{
+					Context: "scope",
+					Statements: []string{
+						`set(attributes["test"], "fail")`,
+					},
+				},
+			},
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Scope().Attributes().PutStr("test", "fail")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("test", "pass")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutStr("test", "pass")
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			td := constructTraces()
+			processor, err := NewProcessor(nil, tt.contextStatments, componenttest.NewNopTelemetrySettings())
 			assert.NoError(t, err)
 
 			_, err = processor.ProcessTraces(context.Background(), td)
@@ -268,11 +484,11 @@ func BenchmarkTwoSpans(b *testing.B) {
 		},
 		{
 			name:       "keep_keys attribute",
-			statements: []string{`keep_keys(attributes, "http.method") where name == "operationA"`},
+			statements: []string{`keep_keys(attributes, ["http.method"]) where name == "operationA"`},
 		},
 		{
 			name:       "no match",
-			statements: []string{`keep_keys(attributes, "http.method") where name == "unknownOperation"`},
+			statements: []string{`keep_keys(attributes, ["http.method"]) where name == "unknownOperation"`},
 		},
 		{
 			name:       "inner field",
@@ -289,7 +505,7 @@ func BenchmarkTwoSpans(b *testing.B) {
 
 	for _, tt := range tests {
 		b.Run(tt.name, func(b *testing.B) {
-			processor, err := NewProcessor(tt.statements, Functions(), componenttest.NewNopTelemetrySettings())
+			processor, err := NewProcessor(tt.statements, nil, componenttest.NewNopTelemetrySettings())
 			assert.NoError(b, err)
 			b.ResetTimer()
 			for n := 0; n < b.N; n++ {
@@ -323,7 +539,7 @@ func BenchmarkHundredSpans(b *testing.B) {
 				var statements []string
 				statements = append(statements, `set(status.code, 1) where name == "operationA"`)
 				for i := 0; i < 99; i++ {
-					statements = append(statements, `keep_keys(attributes, "http.method") where name == "unknownOperation"`)
+					statements = append(statements, `keep_keys(attributes, ["http.method"]) where name == "unknownOperation"`)
 				}
 				return statements
 			}(),
@@ -331,7 +547,7 @@ func BenchmarkHundredSpans(b *testing.B) {
 	}
 	for _, tt := range tests {
 		b.Run(tt.name, func(b *testing.B) {
-			processor, err := NewProcessor(tt.statements, Functions(), componenttest.NewNopTelemetrySettings())
+			processor, err := NewProcessor(tt.statements, nil, componenttest.NewNopTelemetrySettings())
 			assert.NoError(b, err)
 			b.ResetTimer()
 			for n := 0; n < b.N; n++ {
@@ -348,6 +564,7 @@ func constructTraces() ptrace.Traces {
 	rs0 := td.ResourceSpans().AppendEmpty()
 	rs0.Resource().Attributes().PutStr("host.name", "localhost")
 	rs0ils0 := rs0.ScopeSpans().AppendEmpty()
+	rs0ils0.Scope().SetName("scope")
 	fillSpanOne(rs0ils0.Spans().AppendEmpty())
 	fillSpanTwo(rs0ils0.Spans().AppendEmpty())
 	return td

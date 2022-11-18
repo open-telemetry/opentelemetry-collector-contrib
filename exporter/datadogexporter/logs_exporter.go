@@ -25,10 +25,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/clientutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/logs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/scrub"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils"
 )
 
 type logsExporter struct {
@@ -45,9 +45,9 @@ type logsExporter struct {
 func newLogsExporter(ctx context.Context, params component.ExporterCreateSettings, cfg *Config, onceMetadata *sync.Once, sourceProvider source.Provider) (*logsExporter, error) {
 	// create Datadog client
 	// validation endpoint is provided by Metrics
-	client := utils.CreateClient(cfg.API.Key, cfg.Metrics.TCPAddr.Endpoint)
+	client := clientutil.CreateClient(cfg.API.Key, cfg.Metrics.TCPAddr.Endpoint)
 	// validate the apiKey
-	if err := utils.ValidateAPIKey(params.Logger, client); err != nil && cfg.API.FailOnInvalidKey {
+	if err := clientutil.ValidateAPIKey(params.Logger, client); err != nil && cfg.API.FailOnInvalidKey {
 		return nil, err
 	}
 
@@ -94,7 +94,7 @@ func (exp *logsExporter) consumeLogs(ctx context.Context, ld plog.Logs) (err err
 			// iterate over Logs
 			for k := 0; k < lsl.Len(); k++ {
 				log := lsl.At(k)
-				payload = append(payload, logs.Transform(log, res))
+				payload = append(payload, logs.Transform(log, res, exp.params.Logger))
 			}
 		}
 	}

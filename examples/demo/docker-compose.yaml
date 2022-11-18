@@ -4,6 +4,7 @@ services:
   # Jaeger
   jaeger-all-in-one:
     image: jaegertracing/all-in-one:latest
+    restart: always
     ports:
       - "16686:16686"
       - "14268"
@@ -12,12 +13,14 @@ services:
   # Zipkin
   zipkin-all-in-one:
     image: openzipkin/zipkin:latest
+    restart: always
     ports:
       - "9411:9411"
 
   # Collector
   otel-collector:
     image: ${OTELCOL_IMG}
+    restart: always
     command: ["--config=/etc/otel-collector-config.yaml", "${OTELCOL_ARGS}"]
     volumes:
       - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
@@ -36,6 +39,7 @@ services:
     build:
       dockerfile: Dockerfile
       context: ./client
+    restart: always
     environment:
       - OTEL_EXPORTER_OTLP_ENDPOINT=otel-collector:4317
       - DEMO_SERVER_ENDPOINT=http://demo-server:7080/hello
@@ -46,6 +50,7 @@ services:
     build:
       dockerfile: Dockerfile
       context: ./server
+    restart: always
     environment:
       - OTEL_EXPORTER_OTLP_ENDPOINT=otel-collector:4317
     ports:
@@ -56,6 +61,7 @@ services:
   prometheus:
     container_name: prometheus
     image: prom/prometheus:latest
+    restart: always
     volumes:
       - ./prometheus.yaml:/etc/prometheus/prometheus.yml
     ports:

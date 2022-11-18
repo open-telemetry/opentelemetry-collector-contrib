@@ -22,19 +22,29 @@ These are the metrics available for this scraper.
 | **elasticsearch.cluster.state_queue** | Number of cluster states in queue. | 1 | Sum(Int) | <ul> <li>cluster_state_queue_state</li> </ul> |
 | **elasticsearch.cluster.state_update.count** | The number of cluster state update attempts that changed the cluster state since the node started. | 1 | Sum(Int) | <ul> <li>cluster_state_update_state</li> </ul> |
 | **elasticsearch.cluster.state_update.time** | The cumulative amount of time updating the cluster state since the node started. | ms | Sum(Int) | <ul> <li>cluster_state_update_state</li> <li>cluster_state_update_type</li> </ul> |
+| elasticsearch.index.cache.evictions | The number of evictions from the cache for an index. | {evictions} | Sum(Int) | <ul> <li>cache_name</li> <li>index_aggregation_type</li> </ul> |
+| elasticsearch.index.cache.memory.usage | The size in bytes of the cache for an index. | By | Sum(Int) | <ul> <li>cache_name</li> <li>index_aggregation_type</li> </ul> |
+| elasticsearch.index.cache.size | The number of elements of the query cache for an index. | 1 | Sum(Int) | <ul> <li>index_aggregation_type</li> </ul> |
+| elasticsearch.index.documents | The number of documents for an index. | {documents} | Sum(Int) | <ul> <li>document_state</li> <li>index_aggregation_type</li> </ul> |
 | **elasticsearch.index.operations.completed** | The number of operations completed for an index. | {operations} | Sum(Int) | <ul> <li>operation</li> <li>index_aggregation_type</li> </ul> |
+| elasticsearch.index.operations.merge.docs_count | The total number of documents in merge operations for an index. | {documents} | Sum(Int) | <ul> <li>index_aggregation_type</li> </ul> |
+| elasticsearch.index.operations.merge.size | The total size of merged segments for an index. | By | Sum(Int) | <ul> <li>index_aggregation_type</li> </ul> |
 | **elasticsearch.index.operations.time** | Time spent on operations for an index. | ms | Sum(Int) | <ul> <li>operation</li> <li>index_aggregation_type</li> </ul> |
+| elasticsearch.index.segments.count | Number of segments of an index. | {segments} | Sum(Int) | <ul> <li>index_aggregation_type</li> </ul> |
+| elasticsearch.index.segments.memory | Size of memory for segment object of an index. | By | Sum(Int) | <ul> <li>index_aggregation_type</li> <li>segments_memory_object_type</li> </ul> |
+| elasticsearch.index.segments.size | Size of segments of an index. | By | Sum(Int) | <ul> <li>index_aggregation_type</li> </ul> |
+| **elasticsearch.index.shards.size** | The size of the shards assigned to this index. | By | Sum(Int) | <ul> <li>index_aggregation_type</li> </ul> |
+| elasticsearch.index.translog.operations | Number of transaction log operations for an index. | {operations} | Sum(Int) | <ul> <li>index_aggregation_type</li> </ul> |
+| elasticsearch.index.translog.size | Size of the transaction log for an index. | By | Sum(Int) | <ul> <li>index_aggregation_type</li> </ul> |
 | **elasticsearch.indexing_pressure.memory.limit** | Configured memory limit, in bytes, for the indexing requests. | By | Gauge(Int) | <ul> </ul> |
 | **elasticsearch.indexing_pressure.memory.total.primary_rejections** | Cumulative number of indexing requests rejected in the primary stage. | 1 | Sum(Int) | <ul> </ul> |
 | **elasticsearch.indexing_pressure.memory.total.replica_rejections** | Number of indexing requests rejected in the replica stage. | 1 | Sum(Int) | <ul> </ul> |
 | **elasticsearch.memory.indexing_pressure** | Memory consumed, in bytes, by indexing requests in the specified stage. | By | Sum(Int) | <ul> <li>indexing_pressure_stage</li> </ul> |
 | **elasticsearch.node.cache.count** | Total count of query cache misses across all shards assigned to selected nodes. | {count} | Sum(Int) | <ul> <li>query_cache_count_type</li> </ul> |
-| **elasticsearch.node.cache.evictions** | The number of evictions from the cache. | {evictions} | Sum(Int) | <ul> <li>cache_name</li> </ul> |
-| **elasticsearch.node.cache.memory.usage** | The size in bytes of the cache. | By | Sum(Int) | <ul> <li>cache_name</li> </ul> |
+| **elasticsearch.node.cache.evictions** | The number of evictions from the cache on a node. | {evictions} | Sum(Int) | <ul> <li>cache_name</li> </ul> |
+| **elasticsearch.node.cache.memory.usage** | The size in bytes of the cache on a node. | By | Sum(Int) | <ul> <li>cache_name</li> </ul> |
 | **elasticsearch.node.cluster.connections** | The number of open tcp connections for internal cluster communication. | {connections} | Sum(Int) | <ul> </ul> |
 | **elasticsearch.node.cluster.io** | The number of bytes sent and received on the network for internal cluster communication. | By | Sum(Int) | <ul> <li>direction</li> </ul> |
-| **elasticsearch.node.cluster.io.received** | The number of bytes received on the network for internal cluster communication. | By | Sum(Int) | <ul> </ul> |
-| **elasticsearch.node.cluster.io.sent** | The number of bytes sent on the network for internal cluster communication. | By | Sum(Int) | <ul> </ul> |
 | **elasticsearch.node.disk.io.read** | The total number of kilobytes read across all file stores for this node. | KiBy | Sum(Int) | <ul> </ul> |
 | **elasticsearch.node.disk.io.write** | The total number of kilobytes written across all file stores for this node. | KiBy | Sum(Int) | <ul> </ul> |
 | **elasticsearch.node.documents** | The number of documents on the node. | {documents} | Sum(Int) | <ul> <li>document_state</li> </ul> |
@@ -47,6 +57,8 @@ These are the metrics available for this scraper.
 | **elasticsearch.node.ingest.operations.failed** | Total number of failed ingest operations during the lifetime of this node. | {operation} | Sum(Int) | <ul> </ul> |
 | **elasticsearch.node.open_files** | The number of open file descriptors held by the node. | {files} | Sum(Int) | <ul> </ul> |
 | **elasticsearch.node.operations.completed** | The number of operations completed by a node. | {operations} | Sum(Int) | <ul> <li>operation</li> </ul> |
+| elasticsearch.node.operations.get.completed | The number of hits and misses resulting from GET operations. | {operations} | Sum(Int) | <ul> <li>get_result</li> </ul> |
+| elasticsearch.node.operations.get.time | The time spent on hits and misses resulting from GET operations. | ms | Sum(Int) | <ul> <li>get_result</li> </ul> |
 | **elasticsearch.node.operations.time** | Time spent on operations by a node. | ms | Sum(Int) | <ul> <li>operation</li> </ul> |
 | **elasticsearch.node.pipeline.ingest.documents.current** | Total number of documents currently being ingested by a pipeline. | {documents} | Sum(Int) | <ul> <li>ingest_pipeline_name</li> </ul> |
 | **elasticsearch.node.pipeline.ingest.documents.preprocessed** | Number of documents preprocessed by the ingest pipeline. | {documents} | Sum(Int) | <ul> <li>ingest_pipeline_name</li> </ul> |
@@ -54,6 +66,7 @@ These are the metrics available for this scraper.
 | **elasticsearch.node.script.cache_evictions** | Total number of times the script cache has evicted old data. | 1 | Sum(Int) | <ul> </ul> |
 | **elasticsearch.node.script.compilation_limit_triggered** | Total number of times the script compilation circuit breaker has limited inline script compilations. | 1 | Sum(Int) | <ul> </ul> |
 | **elasticsearch.node.script.compilations** | Total number of inline script compilations performed by the node. | {compilations} | Sum(Int) | <ul> </ul> |
+| elasticsearch.node.segments.memory | Size of memory for segment object of a node. | By | Sum(Int) | <ul> <li>segments_memory_object_type</li> </ul> |
 | **elasticsearch.node.shards.data_set.size** | Total data set size of all shards assigned to the node. This includes the size of shards not stored fully on the node, such as the cache for partially mounted indices. | By | Sum(Int) | <ul> </ul> |
 | **elasticsearch.node.shards.reserved.size** | A prediction of how much larger the shard stores on this node will eventually grow due to ongoing peer recoveries, restoring snapshots, and similar activities. A value of -1 indicates that this is not available. | By | Sum(Int) | <ul> </ul> |
 | **elasticsearch.node.shards.size** | The size of the shards assigned to this node. | By | Sum(Int) | <ul> </ul> |
@@ -74,6 +87,7 @@ These are the metrics available for this scraper.
 | **jvm.memory.heap.committed** | The amount of memory that is guaranteed to be available for the heap | By | Gauge(Int) | <ul> </ul> |
 | **jvm.memory.heap.max** | The maximum amount of memory can be used for the heap | By | Gauge(Int) | <ul> </ul> |
 | **jvm.memory.heap.used** | The current heap memory usage | By | Gauge(Int) | <ul> </ul> |
+| jvm.memory.heap.utilization | Fraction of heap memory usage | 1 | Gauge(Double) | <ul> </ul> |
 | **jvm.memory.nonheap.committed** | The amount of memory that is guaranteed to be available for non-heap purposes | By | Gauge(Int) | <ul> </ul> |
 | **jvm.memory.nonheap.used** | The current non-heap memory usage | By | Gauge(Int) | <ul> </ul> |
 | **jvm.memory.pool.max** | The maximum amount of memory can be used for the memory pool | By | Gauge(Int) | <ul> <li>memory_pool_name</li> </ul> |
@@ -111,6 +125,7 @@ metrics:
 | direction | The direction of network data. | received, sent |
 | document_state (state) | The state of the document. | active, deleted |
 | fs_direction (direction) | The direction of filesystem IO. | read, write |
+| get_result (result) | Result of get operation | hit, miss |
 | health_status (status) | The health status of the cluster. | green, yellow, red |
 | index_aggregation_type (aggregation) | Type of shard aggregation for index statistics | primary_shards, total |
 | indexing_memory_state (state) | State of the indexing memory | current, total |
@@ -120,7 +135,8 @@ metrics:
 | memory_state (state) | State of the memory | free, used |
 | operation (operation) | The type of operation. | index, delete, get, query, fetch, scroll, suggest, merge, refresh, flush, warmer |
 | query_cache_count_type (type) | Type of query cache count | hit, miss |
-| shard_state (state) | The state of the shard. | active, relocating, initializing, unassigned |
+| segments_memory_object_type (object) | Type of object in segment | term, doc_value, index_writer, fixed_bit_set |
+| shard_state (state) | The state of the shard. | active, active_primary, relocating, initializing, unassigned, unassigned_delayed |
 | task_state (state) | The state of the task. | rejected, completed |
 | thread_pool_name | The name of the thread pool. |  |
 | thread_state (state) | The state of the thread. | active, idle |

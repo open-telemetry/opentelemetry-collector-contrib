@@ -21,6 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
@@ -100,14 +101,14 @@ func TestLoadConfig(t *testing.T) {
 			require.NotNil(t, cfg)
 			assert.Equal(t,
 				&Config{
-					ProcessorSettings:       config.NewProcessorSettings(config.NewComponentID(typeStr)),
+					ProcessorSettings:       config.NewProcessorSettings(component.NewID(typeStr)),
 					MetricsExporter:         tc.wantMetricsExporter,
 					LatencyHistogramBuckets: tc.wantLatencyHistogramBuckets,
 					Dimensions:              tc.wantDimensions,
 					DimensionsCacheSize:     tc.wantDimensionsCacheSize,
 					AggregationTemporality:  tc.wantAggregationTemporality,
 				},
-				cfg.Processors[config.NewComponentID(typeStr)],
+				cfg.Processors[component.NewID(typeStr)],
 			)
 		})
 	}
@@ -115,11 +116,11 @@ func TestLoadConfig(t *testing.T) {
 
 func TestGetAggregationTemporality(t *testing.T) {
 	cfg := &Config{AggregationTemporality: delta}
-	assert.Equal(t, pmetric.MetricAggregationTemporalityDelta, cfg.GetAggregationTemporality())
+	assert.Equal(t, pmetric.AggregationTemporalityDelta, cfg.GetAggregationTemporality())
 
 	cfg = &Config{AggregationTemporality: cumulative}
-	assert.Equal(t, pmetric.MetricAggregationTemporalityCumulative, cfg.GetAggregationTemporality())
+	assert.Equal(t, pmetric.AggregationTemporalityCumulative, cfg.GetAggregationTemporality())
 
 	cfg = &Config{}
-	assert.Equal(t, pmetric.MetricAggregationTemporalityCumulative, cfg.GetAggregationTemporality())
+	assert.Equal(t, pmetric.AggregationTemporalityCumulative, cfg.GetAggregationTemporality())
 }

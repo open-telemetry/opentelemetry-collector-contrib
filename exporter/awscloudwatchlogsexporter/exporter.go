@@ -16,6 +16,7 @@ package awscloudwatchlogsexporter // import "github.com/open-telemetry/opentelem
 
 import (
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"time"
@@ -24,7 +25,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -58,7 +58,7 @@ func newCwLogsPusher(expConfig *Config, params component.ExporterCreateSettings)
 	}
 
 	// create CWLogs client with aws session config
-	svcStructuredLog := cwlogs.NewClient(params.Logger, awsConfig, params.BuildInfo, expConfig.LogGroupName, session)
+	svcStructuredLog := cwlogs.NewClient(params.Logger, awsConfig, params.BuildInfo, expConfig.LogGroupName, expConfig.LogRetention, session)
 	collectorIdentifier, err := uuid.NewRandom()
 
 	if err != nil {
@@ -78,7 +78,7 @@ func newCwLogsPusher(expConfig *Config, params component.ExporterCreateSettings)
 	return logsExporter, nil
 }
 
-func newCwLogsExporter(config config.Exporter, params component.ExporterCreateSettings) (component.LogsExporter, error) {
+func newCwLogsExporter(config component.ExporterConfig, params component.ExporterCreateSettings) (component.LogsExporter, error) {
 	expConfig := config.(*Config)
 	logsExporter, err := newCwLogsPusher(expConfig, params)
 	if err != nil {
@@ -193,10 +193,10 @@ func logToCWLog(resourceAttrs map[string]interface{}, log plog.LogRecord) (*clou
 		Flags:                  uint32(log.Flags()),
 	}
 	if traceID := log.TraceID(); !traceID.IsEmpty() {
-		body.TraceID = traceID.HexString()
+		body.TraceID = hex.EncodeToString(traceID[:])
 	}
 	if spanID := log.SpanID(); !spanID.IsEmpty() {
-		body.SpanID = spanID.HexString()
+		body.SpanID = hex.EncodeToString(spanID[:])
 	}
 	body.Attributes = attrsValue(log.Attributes())
 	body.Resource = resourceAttrs

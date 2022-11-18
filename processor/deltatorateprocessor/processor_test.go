@@ -21,6 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -128,7 +129,7 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 			// next stores the results of the filter metric processor
 			next := new(consumertest.MetricsSink)
 			cfg := &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
+				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 				Metrics:           test.metrics,
 			}
 			factory := NewFactory()
@@ -207,9 +208,9 @@ func generateSumMetrics(tm testMetric) pmetric.Metrics {
 		sum.SetIsMonotonic(true)
 
 		if tm.isDelta[i] {
-			sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+			sum.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 		} else {
-			sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+			sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 		}
 
 		if i < len(tm.metricValues) {

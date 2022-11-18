@@ -29,6 +29,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver"
 )
 
@@ -49,6 +50,7 @@ func TestExamples(t *testing.T) {
 			continue
 		}
 		t.Run(filepath.Base(f.Name()), func(t *testing.T) {
+			t.Setenv("DD_API_KEY", "testvalue")
 			name := filepath.Join(folder, f.Name())
 			_, err := servicetest.LoadConfigAndValidate(name, factories)
 			require.NoError(t, err, "All yaml config must validate. Please ensure that all necessary component factories are added in newTestComponents()")
@@ -95,6 +97,7 @@ func newTestComponents(t *testing.T) component.Factories {
 		[]component.ReceiverFactory{
 			otlpreceiver.NewFactory(),
 			hostmetricsreceiver.NewFactory(),
+			filelogreceiver.NewFactory(),
 		}...,
 	)
 	require.NoError(t, err)

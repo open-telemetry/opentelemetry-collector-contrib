@@ -8,6 +8,7 @@ import (
 	"errors"
 	"syscall"
 	"time"
+	"unicode/utf16"
 	"unsafe"
 )
 
@@ -168,7 +169,7 @@ func (m *PerformanceQueryImpl) GetFormattedCounterArrayDouble(hCounter PDH_HCOUN
 		buff := make([]byte, buffSize)
 
 		if ret = PdhGetFormattedCounterArrayDouble(hCounter, &buffSize, &itemCount, &buff[0]); ret == ERROR_SUCCESS {
-			items := (*[1 << 20]PDH_FMT_COUNTERVALUE_ITEM_DOUBLE)(unsafe.Pointer(&buff[0]))[:itemCount]
+			items := unsafe.Slice((*PDH_FMT_COUNTERVALUE_ITEM_DOUBLE)(unsafe.Pointer(&buff[0])), itemCount)
 			values := make([]CounterValue, 0, itemCount)
 			for _, item := range items {
 				if item.FmtValue.CStatus == PDH_CSTATUS_VALID_DATA || item.FmtValue.CStatus == PDH_CSTATUS_NEW_DATA {
@@ -214,19 +215,28 @@ func UTF16PtrToString(s *uint16) string {
 	if s == nil {
 		return ""
 	}
-	return syscall.UTF16ToString((*[1 << 29]uint16)(unsafe.Pointer(s))[0:])
+
+	len := 0
+	curPtr := unsafe.Pointer(s)
+	for *(*uint16)(curPtr) != 0 {
+		curPtr = unsafe.Pointer(uintptr(curPtr) + unsafe.Sizeof(*s))
+		len++
+	}
+
+	slice := unsafe.Slice(s, len)
+	return string(utf16.Decode(slice))
 }
 
 // UTF16ToStringArray converts list of Windows API NULL terminated strings  to go string array
 func UTF16ToStringArray(buf []uint16) []string {
 	var strings []string
 	nextLineStart := 0
-	stringLine := UTF16PtrToString(&buf[0])
+	stringLine := syscall.UTF16ToString(buf)
 	for stringLine != "" {
 		strings = append(strings, stringLine)
 		nextLineStart += len([]rune(stringLine)) + 1
 		remainingBuf := buf[nextLineStart:]
-		stringLine = UTF16PtrToString(&remainingBuf[0])
+		stringLine = syscall.UTF16ToString(remainingBuf)
 	}
 	return strings
 }

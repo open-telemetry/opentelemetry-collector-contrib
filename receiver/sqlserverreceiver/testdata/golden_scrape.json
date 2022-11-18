@@ -263,7 +263,7 @@
                      "description": "Total number of transaction log expansions for a database.",
                      "name": "sqlserver.transaction_log.growth.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "5",
@@ -279,7 +279,7 @@
                      "description": "Total number of transaction log shrinks for a database.",
                      "name": "sqlserver.transaction_log.shrink.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "5",

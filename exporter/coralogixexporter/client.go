@@ -47,13 +47,9 @@ func newCoralogixClient(cfg *Config, set component.ExporterCreateSettings) *cora
 	return c
 }
 func (c *coralogixClient) startConnection(ctx context.Context, host component.Host) error {
-	dialOpts, err := c.cfg.ToDialOptions(host, c.telemetrySettings)
+	clientConn, err := c.cfg.ToClientConn(ctx, host, c.telemetrySettings)
 	if err != nil {
 		return fmt.Errorf("error with dial connection to Coralogix endpoint %w", err)
-	}
-	var clientConn *grpc.ClientConn
-	if clientConn, err = grpc.DialContext(ctx, c.cfg.GRPCClientSettings.Endpoint, dialOpts...); err != nil {
-		return err
 	}
 	c.conn = clientConn
 	c.client = cxpb.NewCollectorServiceClient(c.conn)

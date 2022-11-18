@@ -18,6 +18,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -39,6 +40,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter/internal/tenant"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki"
 )
 
@@ -306,11 +308,11 @@ func (l *lokiExporter) convertRecordAttributesToLabels(log plog.LogRecord) model
 	ls := model.LabelSet{}
 
 	if val, ok := l.config.Labels.RecordAttributes["traceID"]; ok {
-		ls[model.LabelName(val)] = model.LabelValue(log.TraceID().HexString())
+		ls[model.LabelName(val)] = model.LabelValue(traceutil.TraceIDToHexOrEmptyString(log.TraceID()))
 	}
 
 	if val, ok := l.config.Labels.RecordAttributes["spanID"]; ok {
-		ls[model.LabelName(val)] = model.LabelValue(log.SpanID().HexString())
+		ls[model.LabelName(val)] = model.LabelValue(traceutil.SpanIDToHexOrEmptyString(log.SpanID()))
 	}
 
 	if val, ok := l.config.Labels.RecordAttributes["severity"]; ok {
@@ -337,14 +339,16 @@ func (l *lokiExporter) convertLogBodyToEntry(lr plog.LogRecord, res pcommon.Reso
 		b.WriteString(strconv.Itoa(int(lr.SeverityNumber())))
 		b.WriteRune(' ')
 	}
-	if _, ok := l.config.Labels.RecordAttributes["traceID"]; !ok && !lr.TraceID().IsEmpty() {
+	traceID := lr.TraceID()
+	if _, ok := l.config.Labels.RecordAttributes["traceID"]; !ok && !traceID.IsEmpty() {
 		b.WriteString("traceID=")
-		b.WriteString(lr.TraceID().HexString())
+		b.WriteString(hex.EncodeToString(traceID[:]))
 		b.WriteRune(' ')
 	}
-	if _, ok := l.config.Labels.RecordAttributes["spanID"]; !ok && !lr.SpanID().IsEmpty() {
+	spanID := lr.SpanID()
+	if _, ok := l.config.Labels.RecordAttributes["spanID"]; !ok && !spanID.IsEmpty() {
 		b.WriteString("spanID=")
-		b.WriteString(lr.SpanID().HexString())
+		b.WriteString(hex.EncodeToString(spanID[:]))
 		b.WriteRune(' ')
 	}
 

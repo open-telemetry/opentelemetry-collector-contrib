@@ -144,7 +144,7 @@ func ocMetricToMetrics(ocMetric *ocmetrics.Metric, metric pmetric.Metric) {
 	}
 
 	dataType, valType := descriptorTypeToMetrics(ocDescriptor.Type, metric)
-	if dataType == pmetric.MetricTypeNone {
+	if dataType == pmetric.MetricTypeEmpty {
 		pmetric.NewMetric().CopyTo(metric)
 		return
 	}
@@ -167,23 +167,23 @@ func descriptorTypeToMetrics(t ocmetrics.MetricDescriptor_Type, metric pmetric.M
 	case ocmetrics.MetricDescriptor_CUMULATIVE_INT64:
 		sum := metric.SetEmptySum()
 		sum.SetIsMonotonic(true)
-		sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+		sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 		return pmetric.MetricTypeSum, pmetric.NumberDataPointValueTypeInt
 	case ocmetrics.MetricDescriptor_CUMULATIVE_DOUBLE:
 		sum := metric.SetEmptySum()
 		sum.SetIsMonotonic(true)
-		sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+		sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 		return pmetric.MetricTypeSum, pmetric.NumberDataPointValueTypeDouble
 	case ocmetrics.MetricDescriptor_CUMULATIVE_DISTRIBUTION:
 		histo := metric.SetEmptyHistogram()
-		histo.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-		return pmetric.MetricTypeHistogram, pmetric.NumberDataPointValueTypeNone
+		histo.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+		return pmetric.MetricTypeHistogram, pmetric.NumberDataPointValueTypeEmpty
 	case ocmetrics.MetricDescriptor_SUMMARY:
 		metric.SetEmptySummary()
 		// no temporality specified for summary metric
-		return pmetric.MetricTypeSummary, pmetric.NumberDataPointValueTypeNone
+		return pmetric.MetricTypeSummary, pmetric.NumberDataPointValueTypeEmpty
 	}
-	return pmetric.MetricTypeNone, pmetric.NumberDataPointValueTypeNone
+	return pmetric.MetricTypeEmpty, pmetric.NumberDataPointValueTypeEmpty
 }
 
 // setDataPoints converts OC timeseries to internal datapoints based on metric type
@@ -325,7 +325,7 @@ func ocSummaryPercentilesToMetrics(ocPercentiles []*ocmetrics.SummaryValue_Snaps
 		return
 	}
 
-	quantiles := pmetric.NewValueAtQuantileSlice()
+	quantiles := pmetric.NewSummaryDataPointValueAtQuantileSlice()
 	quantiles.EnsureCapacity(len(ocPercentiles))
 
 	for _, percentile := range ocPercentiles {

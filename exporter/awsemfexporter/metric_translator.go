@@ -42,7 +42,7 @@ const (
 )
 
 var fieldPrometheusTypes = map[pmetric.MetricType]string{
-	pmetric.MetricTypeNone:      "",
+	pmetric.MetricTypeEmpty:     "",
 	pmetric.MetricTypeGauge:     "gauge",
 	pmetric.MetricTypeSum:       "counter",
 	pmetric.MetricTypeHistogram: "histogram",

@@ -12,12 +12,13 @@ deployed as an agent.
 
 ## Getting Started
 
-The collection interval and the categories of metrics to be scraped can be
+The collection interval, root path, and the categories of metrics to be scraped can be
 configured:
 
 ```yaml
 hostmetrics:
   collection_interval: <duration> # default = 1m
+  root_path: <string>
   scrapers:
     <scraper1>:
     <scraper2>:
@@ -141,24 +142,88 @@ service:
       receivers: [hostmetrics, hostmetrics/disk]
 ```
 
-### Feature gate configurations
+### Collecting host metrics from inside a container (Linux only)
 
-#### Transition from metrics with "direction" attribute
+Host metrics are collected from the Linux system directories on the filesystem.
+You likely want to collect metrics about the host system and not the container.
+This is achievable by following these steps: 
 
-The proposal to change metrics from being reported with a `direction` attribute has been reverted in the specification. As a result, the
-following feature gates will be removed in v0.62.0:
+#### 1. Bind mount the host filesystem
 
-- **receiver.hostmetricsreceiver.emitMetricsWithoutDirectionAttribute**
-- **receiver.hostmetricsreceiver.emitMetricsWithDirectionAttribute**
+The simplest configuration is to mount the entire host filesystem when running 
+the container. e.g. `docker run -v /:/hostfs ...`.
 
-For additional information, see https://github.com/open-telemetry/opentelemetry-specification/issues/2726.
+You can also choose which parts of the host filesystem to mount, if you know 
+exactly what you'll need. e.g. `docker run -v /proc:/hostfs/proc`.
 
-##### More information:
+#### 2. Configure `root_path`
 
-- https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11815
-- https://github.com/open-telemetry/opentelemetry-specification/pull/2617
+Configure `root_path` so the hostmetrics receiver knows where the root filesystem is.
+Note: if running multiple instances of the host metrics receiver, they must all have
+the same `root_path`.
+
+Example:
+```yaml
+receivers:
+  hostmetrics:
+    root_path: /hostfs
+```
+
+## Resource attributes
+
+Currently, the hostmetrics receiver does not set any Resource attributes on the exported metrics. However, if you want to set Resource attributes, you can provide them via environment variables via the [resourcedetection](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/resourcedetectionprocessor#environment-variable) processor. For example, you can add the following resource attributes to adhere to [Resource Semantic Conventions](https://opentelemetry.io/docs/reference/specification/resource/semantic_conventions/):
+
+```
+export OTEL_RESOURCE_ATTRIBUTES="service.name=<the name of your service>,service.namespace=<the namespace of your service>,service.instance.id=<uuid of the instance>"
+```
+
+## Deprecations
+
+### Transition to process memory metric names aligned with OpenTelemetry specification
+
+The Host Metrics receiver has been emitting the following process memory metrics:
+
+- [process.memory.physical_usage] for the amount of physical memory used by the process,
+- [process.memory.virtual_usage] for the amount of virtual memory used by the process.
+
+This is in conflict with the OpenTelemetry specification,
+which defines [process.memory.usage] and [process.memory.virtual] as the names for these metrics.
+
+To align the emitted metric names with the OpenTelemetry specification,
+the following process will be followed to phase out the old metrics:
+
+- Until and including `v0.63.0`, only the old metrics `process.memory.physical_usage` and `process.memory.virtual_usage` are emitted.
+  You can use the [Metrics Transform processor][metricstransformprocessor_docs] to rename them.
+- Between `v0.64.0` and `v0.66.0`, the new metrics are introduced as optional (disabled by default) and the old metrics are marked as deprecated.
+  Only the old metrics are emitted by default.
+- Between `v0.67.0` and `v0.69.0`, the new metrics are enabled and the old metrics are disabled by default.
+- In `v0.70.0` and up, the old metrics are removed.
+
+To change the enabled state for the specific metrics, use the standard configuration options that are available for all metrics.
+
+Here's an example configuration to disable the old metrics and enable the new metrics:
+
+```yaml
+receivers:
+  hostmetrics:
+    scrapers:
+      process:
+        metrics:
+          process.memory.physical_usage:
+            enabled: false
+          process.memory.virtual_usage:
+            enabled: false
+          process.memory.usage:
+            enabled: true
+          process.memory.virtual:
+            enabled: true
+```
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
 [core]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol
-
+[process.memory.physical_usage]: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.63.0/receiver/hostmetricsreceiver/internal/scraper/processscraper/metadata.yaml#L61
+[process.memory.virtual_usage]: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.63.0/receiver/hostmetricsreceiver/internal/scraper/processscraper/metadata.yaml#L70
+[process.memory.usage]: https://github.com/open-telemetry/opentelemetry-specification/blob/v1.14.0/specification/metrics/semantic_conventions/process-metrics.md?plain=1#L38
+[process.memory.virtual]: https://github.com/open-telemetry/opentelemetry-specification/blob/v1.14.0/specification/metrics/semantic_conventions/process-metrics.md?plain=1#L39
+[metricstransformprocessor_docs]: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.63.0/processor/metricstransformprocessor/README.md

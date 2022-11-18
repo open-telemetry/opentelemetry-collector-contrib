@@ -17,6 +17,9 @@ package snmpreceiver // import "github.com/open-telemetry/opentelemetry-collecto
 import (
 	"context"
 	"errors"
+	"fmt"
+	"net/url"
+	"strings"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
@@ -26,7 +29,7 @@ import (
 
 const (
 	typeStr   = "snmp"
-	stability = component.StabilityLevelInDevelopment
+	stability = component.StabilityLevelDevelopment
 )
 
 var errConfigNotSNMP = errors.New("config was not a SNMP receiver config")
@@ -40,12 +43,18 @@ func NewFactory() component.ReceiverFactory {
 }
 
 // createDefaultConfig creates a config for SNMP with as many default values as possible
-func createDefaultConfig() config.Receiver {
+func createDefaultConfig() component.ReceiverConfig {
 	return &Config{
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
+			ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 			CollectionInterval: defaultCollectionInterval,
 		},
+		Endpoint:      defaultEndpoint,
+		Version:       defaultVersion,
+		Community:     defaultCommunity,
+		SecurityLevel: defaultSecurityLevel,
+		AuthType:      defaultAuthType,
+		PrivacyType:   defaultPrivacyType,
 	}
 }
 
@@ -53,12 +62,16 @@ func createDefaultConfig() config.Receiver {
 func createMetricsReceiver(
 	_ context.Context,
 	params component.ReceiverCreateSettings,
-	config config.Receiver,
+	config component.ReceiverConfig,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	snmpConfig, ok := config.(*Config)
 	if !ok {
 		return nil, errConfigNotSNMP
+	}
+
+	if err := addMissingConfigDefaults(snmpConfig); err != nil {
+		return nil, fmt.Errorf("failed to validate added config defaults: %w", err)
 	}
 
 	snmpScraper := newScraper(params.Logger, snmpConfig, params)
@@ -68,4 +81,42 @@ func createMetricsReceiver(
 	}
 
 	return scraperhelper.NewScraperControllerReceiver(&snmpConfig.ScraperControllerSettings, params, consumer, scraperhelper.AddScraper(scraper))
+}
+
+// addMissingConfigDefaults adds any missing comfig parameters that have defaults
+func addMissingConfigDefaults(cfg *Config) error {
+	// Add the schema prefix to the endpoint if it doesn't contain one
+	if !strings.Contains(cfg.Endpoint, "://") {
+		cfg.Endpoint = "udp://" + cfg.Endpoint
+	}
+
+	// Add default port to endpoint if it doesn't contain one
+	u, err := url.Parse(cfg.Endpoint)
+	if err == nil && u.Port() == "" {
+		portSuffix := "161"
+		if cfg.Endpoint[len(cfg.Endpoint)-1:] != ":" {
+			portSuffix = ":" + portSuffix
+		}
+		cfg.Endpoint += portSuffix
+	}
+
+	// Set defaults for metric configs
+	for _, metricCfg := range cfg.Metrics {
+		if metricCfg.Unit == "" {
+			metricCfg.Unit = "1"
+		}
+		if metricCfg.Gauge != nil && metricCfg.Gauge.ValueType == "" {
+			metricCfg.Gauge.ValueType = "double"
+		}
+		if metricCfg.Sum != nil {
+			if metricCfg.Sum.ValueType == "" {
+				metricCfg.Sum.ValueType = "double"
+			}
+			if metricCfg.Sum.Aggregation == "" {
+				metricCfg.Sum.Aggregation = "cumulative"
+			}
+		}
+	}
+
+	return component.ValidateConfig(cfg)
 }
