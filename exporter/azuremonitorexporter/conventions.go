@@ -27,7 +27,6 @@ import (
 
 const (
 	// TODO replace with convention.* values once/if available
-	attributeRPCGRPCStatusCode     string = "rpc.grpc.status_code"
 	attributeOtelStatusCode        string = "otel.status_code"
 	attributeOtelStatusDescription string = "otel.status_description"
 )
@@ -169,7 +168,7 @@ func (attrs *RPCAttributes) MapAttribute(k string, v pcommon.Value) bool {
 		attrs.RPCService = v.Str()
 	case conventions.AttributeRPCMethod:
 		attrs.RPCMethod = v.Str()
-	case attributeRPCGRPCStatusCode:
+	case conventions.AttributeRPCGRPCStatusCode:
 		attrs.RPCGRPCStatusCode = v.Int()
 
 	default:
@@ -278,6 +277,29 @@ func (attrs *MessagingAttributes) MapAttribute(k string, v pcommon.Value) bool {
 
 	default:
 		attrs.NetworkAttributes.MapAttribute(k, v)
+	}
+	return true
+}
+
+// ExceptionAttributes is the set of known attributes for Exception events
+type ExceptionAttributes struct {
+	ExceptionEscaped    string
+	ExceptionMessage    string
+	ExceptionStackTrace string
+	ExceptionType       string
+}
+
+// MapAttribute attempts to map a SpanEvent attribute to one of the known types
+func (attrs *ExceptionAttributes) MapAttribute(k string, v pcommon.Value) bool {
+	switch k {
+	case conventions.AttributeExceptionEscaped:
+		attrs.ExceptionEscaped = v.Str()
+	case conventions.AttributeExceptionMessage:
+		attrs.ExceptionMessage = v.Str()
+	case conventions.AttributeExceptionStacktrace:
+		attrs.ExceptionStackTrace = v.Str()
+	case conventions.AttributeExceptionType:
+		attrs.ExceptionType = v.Str()
 	}
 	return true
 }
