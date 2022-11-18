@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver
+module github.com/loomis-relativity/opentelemetry-collector-contrib/receiver/azureeventhubreceiver
 
 go 1.18
 

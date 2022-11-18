@@ -13,4 +13,4 @@
 // limitations under the License.
 
 // Package azureeventhubreceiver listens to logs emitted by Azure Event hubs.
-package azureeventhubreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver"
+package azureeventhubreceiver // import "github.com/loomis-relativity/opentelemetry-collector-contrib/receiver/azureeventhubreceiver"

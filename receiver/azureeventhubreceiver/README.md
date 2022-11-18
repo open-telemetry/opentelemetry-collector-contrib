@@ -82,6 +82,10 @@ and the OpenTelemetry attributes.
 | —                                | cloud.provider (attribute)             | 
 | properties (optional)            | azure.properties (attribute, nested)   | 
 
+Note: The Go JSON decoder converts all numbers to doubles by default. This is
+unnatural in many cases, e.g. HTTP status codes. This encoding will first try to 
+parse the number as an integer, if that works, then an integer is used. In all
+other cases, a double is used.
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

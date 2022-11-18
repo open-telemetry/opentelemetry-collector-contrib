@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package azureeventhubreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver"
+package azureeventhubreceiver // import "github.com/loomis-relativity/opentelemetry-collector-contrib/receiver/azureeventhubreceiver"
 
 import (
 	eventhub "github.com/Azure/azure-event-hubs-go/v3"
