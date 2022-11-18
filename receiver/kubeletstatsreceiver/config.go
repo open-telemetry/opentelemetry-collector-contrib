@@ -56,9 +56,6 @@ type Config struct {
 }
 
 func (cfg *Config) Validate() error {
-	if err := cfg.ReceiverSettings.Validate(); err != nil {
-		return err
-	}
 	if cfg.K8sAPIConfig != nil {
 		if err := cfg.K8sAPIConfig.Validate(); err != nil {
 			return err

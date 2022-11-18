@@ -73,7 +73,7 @@ func TestProcessorGetsCreatedWithValidConfiguration(t *testing.T) {
 
 func TestFailOnEmptyConfiguration(t *testing.T) {
 	cfg := NewFactory().CreateDefaultConfig()
-	assert.ErrorIs(t, cfg.Validate(), errNoTableItems)
+	assert.ErrorIs(t, component.ValidateConfig(cfg), errNoTableItems)
 }
 
 func TestProcessorFailsToBeCreatedWhenRouteHasNoExporters(t *testing.T) {
@@ -88,7 +88,7 @@ func TestProcessorFailsToBeCreatedWhenRouteHasNoExporters(t *testing.T) {
 			},
 		},
 	}
-	assert.ErrorIs(t, cfg.Validate(), errNoExporters)
+	assert.ErrorIs(t, component.ValidateConfig(cfg), errNoExporters)
 }
 
 func TestProcessorFailsToBeCreatedWhenNoRoutesExist(t *testing.T) {
@@ -98,7 +98,7 @@ func TestProcessorFailsToBeCreatedWhenNoRoutesExist(t *testing.T) {
 		FromAttribute:     "X-Tenant",
 		Table:             []RoutingTableItem{},
 	}
-	assert.ErrorIs(t, cfg.Validate(), errNoTableItems)
+	assert.ErrorIs(t, component.ValidateConfig(cfg), errNoTableItems)
 }
 
 func TestProcessorFailsWithNoFromAttribute(t *testing.T) {
@@ -112,7 +112,7 @@ func TestProcessorFailsWithNoFromAttribute(t *testing.T) {
 			},
 		},
 	}
-	assert.ErrorIs(t, cfg.Validate(), errNoMissingFromAttribute)
+	assert.ErrorIs(t, component.ValidateConfig(cfg), errNoMissingFromAttribute)
 }
 
 func TestShouldNotFailWhenNextIsProcessor(t *testing.T) {

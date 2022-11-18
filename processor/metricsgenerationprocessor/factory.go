@@ -28,7 +28,7 @@ const (
 	// The value of "type" key in configuration.
 	typeStr = "experimental_metricsgeneration"
 	// The stability level of the processor.
-	stability = component.StabilityLevelInDevelopment
+	stability = component.StabilityLevelDevelopment
 )
 
 var processorCapabilities = consumer.Capabilities{MutatesData: true}

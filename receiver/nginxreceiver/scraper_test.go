@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -35,7 +36,7 @@ func TestScraper(t *testing.T) {
 	nginxMock := newMockServer(t)
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = nginxMock.URL + "/status"
-	require.NoError(t, cfg.Validate())
+	require.NoError(t, component.ValidateConfig(cfg))
 
 	scraper := newNginxScraper(componenttest.NewNopReceiverCreateSettings(), cfg)
 

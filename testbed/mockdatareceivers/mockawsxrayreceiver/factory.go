@@ -28,7 +28,7 @@ const (
 	// The value of "type" key in configuration.
 	typeStr = "mock_receiver"
 	// stability level of test component
-	stability = component.StabilityLevelInDevelopment
+	stability = component.StabilityLevelDevelopment
 
 	// Default endpoints to bind to.
 	defaultEndpoint = ":7276"

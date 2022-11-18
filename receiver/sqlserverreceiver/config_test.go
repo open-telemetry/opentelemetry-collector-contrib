@@ -48,8 +48,7 @@ func TestValidate(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			actualErr := tc.cfg.Validate()
-			require.NoError(t, actualErr)
+			require.NoError(t, component.ValidateConfig(tc.cfg))
 		})
 	}
 }
@@ -64,6 +63,6 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
 
-	assert.NoError(t, cfg.Validate())
+	assert.NoError(t, component.ValidateConfig(cfg))
 	assert.Equal(t, factory.CreateDefaultConfig(), cfg)
 }

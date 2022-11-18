@@ -26,7 +26,7 @@ import (
 const (
 	componentType component.Type = "solace"
 	// The stability level of the receiver.
-	stability = component.StabilityLevelInDevelopment
+	stability = component.StabilityLevelDevelopment
 
 	// default value for max unaked messages
 	defaultMaxUnaked uint32 = 1000

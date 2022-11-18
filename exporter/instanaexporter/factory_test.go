@@ -58,7 +58,7 @@ func TestLoadConfig(t *testing.T) {
 		require.NoError(t, err)
 		require.NoError(t, component.UnmarshalExporterConfig(sub, cfg))
 
-		err = cfg.Validate()
+		err = component.ValidateConfig(cfg)
 
 		require.NoError(t, err)
 		assert.Equal(t, &Config{
@@ -80,7 +80,7 @@ func TestLoadConfig(t *testing.T) {
 		require.NoError(t, err)
 		require.NoError(t, component.UnmarshalExporterConfig(sub, cfg))
 
-		err = cfg.Validate()
+		err = component.ValidateConfig(cfg)
 		require.Error(t, err)
 	})
 
@@ -90,7 +90,7 @@ func TestLoadConfig(t *testing.T) {
 		require.NoError(t, err)
 		require.NoError(t, component.UnmarshalExporterConfig(sub, cfg))
 
-		err = cfg.Validate()
+		err = component.ValidateConfig(cfg)
 		require.Error(t, err)
 	})
 }
