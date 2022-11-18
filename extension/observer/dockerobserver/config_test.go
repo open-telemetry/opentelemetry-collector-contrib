@@ -55,7 +55,7 @@ func TestLoadConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.id.String(), func(t *testing.T) {
 			cfg := loadConfig(t, tt.id)
-			assert.NoError(t, cfg.Validate())
+			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -63,19 +63,19 @@ func TestLoadConfig(t *testing.T) {
 
 func TestValidateConfig(t *testing.T) {
 	cfg := &Config{}
-	assert.Equal(t, "endpoint must be specified", cfg.Validate().Error())
+	assert.Equal(t, "endpoint must be specified", component.ValidateConfig(cfg).Error())
 
 	cfg = &Config{Endpoint: "someEndpoint"}
-	assert.Equal(t, "api_version must be at least 1.22", cfg.Validate().Error())
+	assert.Equal(t, "api_version must be at least 1.22", component.ValidateConfig(cfg).Error())
 
 	cfg = &Config{Endpoint: "someEndpoint", DockerAPIVersion: 1.22}
-	assert.Equal(t, "timeout must be specified", cfg.Validate().Error())
+	assert.Equal(t, "timeout must be specified", component.ValidateConfig(cfg).Error())
 
 	cfg = &Config{Endpoint: "someEndpoint", DockerAPIVersion: 1.22, Timeout: 5 * time.Minute}
-	assert.Equal(t, "cache_sync_interval must be specified", cfg.Validate().Error())
+	assert.Equal(t, "cache_sync_interval must be specified", component.ValidateConfig(cfg).Error())
 
 	cfg = &Config{Endpoint: "someEndpoint", DockerAPIVersion: 1.22, Timeout: 5 * time.Minute, CacheSyncInterval: 5 * time.Minute}
-	assert.Nil(t, cfg.Validate())
+	assert.Nil(t, component.ValidateConfig(cfg))
 }
 
 func loadConfig(t testing.TB, id component.ID) *Config {

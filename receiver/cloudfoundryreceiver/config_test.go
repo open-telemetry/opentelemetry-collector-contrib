@@ -85,10 +85,10 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
 
 			if tt.expected == nil {
-				assert.EqualError(t, cfg.Validate(), tt.errorMessage)
+				assert.EqualError(t, component.ValidateConfig(cfg), tt.errorMessage)
 				return
 			}
-			assert.NoError(t, cfg.Validate())
+			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

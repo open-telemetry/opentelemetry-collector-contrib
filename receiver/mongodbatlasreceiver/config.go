@@ -107,7 +107,6 @@ var (
 func (c *Config) Validate() error {
 	var errs error
 
-	errs = multierr.Append(errs, c.ScraperControllerSettings.Validate())
 	errs = multierr.Append(errs, c.Alerts.validate())
 	errs = multierr.Append(errs, c.Logs.validate())
 

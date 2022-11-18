@@ -101,7 +101,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, component.UnmarshalProcessorConfig(sub, cfg))
 
-			assert.NoError(t, cfg.Validate())
+			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -160,7 +160,7 @@ func TestValidateConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.EqualError(t, tt.config.Validate(), tt.error)
+			assert.EqualError(t, component.ValidateConfig(tt.config), tt.error)
 		})
 	}
 }

@@ -26,7 +26,7 @@ const (
 	// The value of "type" key in configuration.
 	typeStr = "parquet"
 	// The stability level of the exporter.
-	stability = component.StabilityLevelInDevelopment
+	stability = component.StabilityLevelDevelopment
 )
 
 type Config struct {

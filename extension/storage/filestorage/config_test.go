@@ -71,7 +71,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, component.UnmarshalExtensionConfig(sub, cfg))
 
-			assert.NoError(t, cfg.Validate())
+			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -82,7 +82,7 @@ func TestHandleNonExistingDirectoryWithAnError(t *testing.T) {
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Directory = "/not/a/dir"
 
-	err := cfg.Validate()
+	err := component.ValidateConfig(cfg)
 	require.Error(t, err)
 	require.True(t, strings.HasPrefix(err.Error(), "directory must exist: "))
 }
@@ -100,7 +100,7 @@ func TestHandleProvidingFilePathAsDirWithAnError(t *testing.T) {
 
 	cfg.Directory = file.Name()
 
-	err = cfg.Validate()
+	err = component.ValidateConfig(cfg)
 	require.Error(t, err)
 	require.EqualError(t, err, file.Name()+" is not a directory")
 }

@@ -40,7 +40,7 @@ func TestValidConfig(t *testing.T) {
 	cfg.Username = "otel"
 	cfg.Password = "otel"
 	cfg.Endpoint = "localhost:3306"
-	require.NoError(t, cfg.Validate())
+	require.NoError(t, component.ValidateConfig(cfg))
 }
 
 func TestCreateMetricsReceiver(t *testing.T) {
