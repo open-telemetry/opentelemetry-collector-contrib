@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
+import re
 
 from sqlalchemy.event import listen  # pylint: disable=no-name-in-module
 
@@ -100,6 +101,7 @@ class EngineTracer:
         self.vendor = _normalize_vendor(engine.name)
         self.enable_commenter = enable_commenter
         self.commenter_options = commenter_options if commenter_options else {}
+        self._leading_comment_remover = re.compile(r"^/\*.*?\*/")
 
         listen(
             engine, "before_cursor_execute", self._before_cur_exec, retval=True
@@ -115,7 +117,10 @@ class EngineTracer:
             # use cases and uses the SQL statement in span name correctly as per the spec.
             # For some very special cases it might not record the correct statement if the SQL
             # dialect is too weird but in any case it shouldn't break anything.
-            parts.append(statement.split()[0])
+            # Strip leading comments so we get the operation name.
+            parts.append(
+                self._leading_comment_remover.sub("", statement).split()[0]
+            )
         if db_name:
             parts.append(db_name)
         if not parts:

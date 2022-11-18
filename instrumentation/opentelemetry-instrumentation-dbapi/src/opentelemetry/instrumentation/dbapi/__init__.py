@@ -39,6 +39,7 @@ API
 
 import functools
 import logging
+import re
 import typing
 
 import wrapt
@@ -368,6 +369,7 @@ class CursorTracer:
             else {}
         )
         self._connect_module = self._db_api_integration.connect_module
+        self._leading_comment_remover = re.compile(r"^/\*.*?\*/")
 
     def _populate_span(
         self,
@@ -397,7 +399,8 @@ class CursorTracer:
 
     def get_operation_name(self, cursor, args):  # pylint: disable=no-self-use
         if args and isinstance(args[0], str):
-            return args[0].split()[0]
+            # Strip leading comments so we get the operation name.
+            return self._leading_comment_remover.sub("", args[0]).split()[0]
         return ""
 
     def get_statement(self, cursor, args):  # pylint: disable=no-self-use

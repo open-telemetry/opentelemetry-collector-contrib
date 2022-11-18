@@ -20,6 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#1350](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1350))
 - `opentelemetry-instrumentation-starlette` Add support for regular expression matching and sanitization of HTTP headers.
   ([#1404](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1404))
+- Strip leading comments from SQL queries when generating the span name.
+  ([#1434](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1434))
 
 ### Fixed
 

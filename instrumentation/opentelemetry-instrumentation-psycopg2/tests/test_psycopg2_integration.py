@@ -116,6 +116,32 @@ class TestPostgresqlIntegration(TestBase):
         spans_list = self.memory_exporter.get_finished_spans()
         self.assertEqual(len(spans_list), 1)
 
+    def test_span_name(self):
+        Psycopg2Instrumentor().instrument()
+
+        cnx = psycopg2.connect(database="test")
+
+        cursor = cnx.cursor()
+
+        cursor.execute("Test query", ("param1Value", False))
+        cursor.execute(
+            """multi
+        line
+        query"""
+        )
+        cursor.execute("tab\tseparated query")
+        cursor.execute("/* leading comment */ query")
+        cursor.execute("/* leading comment */ query /* trailing comment */")
+        cursor.execute("query /* trailing comment */")
+        spans_list = self.memory_exporter.get_finished_spans()
+        self.assertEqual(len(spans_list), 6)
+        self.assertEqual(spans_list[0].name, "Test")
+        self.assertEqual(spans_list[1].name, "multi")
+        self.assertEqual(spans_list[2].name, "tab")
+        self.assertEqual(spans_list[3].name, "query")
+        self.assertEqual(spans_list[4].name, "query")
+        self.assertEqual(spans_list[5].name, "query")
+
     # pylint: disable=unused-argument
     def test_not_recording(self):
         mock_tracer = mock.Mock()
