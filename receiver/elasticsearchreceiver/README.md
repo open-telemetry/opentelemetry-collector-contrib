@@ -71,5 +71,18 @@ This feature gate will eventually be enabled by default, and eventually the old 
 to give users time to migrate to the new implementation. The target release for this featuregate to be enabled by default
 is 0.68.0.
 
+**ALPHA**: `receiver.elasticsearch.emitAllIndexOperationMetrics`
+
+The feature gate `receiver.elasticsearch.emitAllIndexOperationMetrics` once enabled starts emitting metrics `elasticsearch.index.operation.count`
+and `elasticsearch.index.operation.time` with all possible data points - for every possible operation type and both shard aggregation types.
+
+Because of the amount of added data points, this change might affect performance for existing users of this receiver.
+It is recommended to migrate to the new implementation when possible.
+Any new users planning to adopt this receiver should enable this feature gate to avoid risking unexpected slowdowns.
+
+This feature gate will eventually be enabled by default, and eventually the old implementation will be removed. It aims
+to give users time to migrate to the new implementation. The target release for this featuregate to be enabled by default
+is 0.68.0.
+
 [beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
