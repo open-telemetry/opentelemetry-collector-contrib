@@ -135,6 +135,8 @@ The following GitHub users are the currently available sponsors, either by being
 * [@mx-psi](https://github.com/mx-psi)
 * [@jpkrohling](https://github.com/jpkrohling)
 * [@dmitryax](https://github.com/dmitryax)
+* [@evan-bradley](https://github.com/evan-bradley)
+* [@MovieStoreGuy](https://github.com/MovieStoreGuy)
 
 Whenever a sponsor is picked from the top of this list, please move them to the bottom.
 

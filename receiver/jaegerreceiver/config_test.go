@@ -160,7 +160,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
 
-			assert.NoError(t, cfg.Validate())
+			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -297,7 +297,7 @@ func TestInvalidConfig(t *testing.T) {
 
 			tC.apply(cfg)
 
-			err := cfg.Validate()
+			err := component.ValidateConfig(cfg)
 			assert.Error(t, err, tC.err)
 
 		})

@@ -52,7 +52,7 @@ func TestLoadConfig(t *testing.T) {
 func TestMissingConnection(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	err := cfg.Validate()
+	err := component.ValidateConfig(cfg)
 	assert.EqualError(t, err, "missing connection")
 }
 
@@ -60,6 +60,6 @@ func TestInvalidConnectionString(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	cfg.(*Config).Connection = "foo"
-	err := cfg.Validate()
+	err := component.ValidateConfig(cfg)
 	assert.EqualError(t, err, "failed parsing connection string due to unmatched key value separated by '='")
 }

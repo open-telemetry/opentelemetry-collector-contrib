@@ -45,9 +45,11 @@ attributes:
     description: The state of the shard.
     enum:
     - active
+    - active_primary
     - relocating
     - initializing
     - unassigned
+    - unassigned_delayed
   operation:
     value: operation
     description: The type of operation.
@@ -904,4 +906,13 @@ metrics:
       aggregation: cumulative
       value_type: int
     attributes: [cache_name, index_aggregation_type]
+    enabled: false
+  elasticsearch.index.documents:
+    description: The number of documents for an index.
+    unit: "{documents}"
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [document_state, index_aggregation_type]
     enabled: false

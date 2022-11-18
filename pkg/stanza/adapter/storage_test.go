@@ -119,7 +119,7 @@ func createReceiver(t *testing.T, storageID component.ID) *receiver {
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 	}
 
-	factory := NewFactory(TestReceiverType{}, component.StabilityLevelInDevelopment)
+	factory := NewFactory(TestReceiverType{}, component.StabilityLevelDevelopment)
 
 	logsReceiver, err := factory.CreateLogsReceiver(
 		context.Background(),

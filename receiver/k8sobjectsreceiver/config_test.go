@@ -40,12 +40,12 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
 	require.NotNil(t, cfg)
 
-	err = cfg.Validate()
+	err = component.ValidateConfig(cfg)
 	require.Error(t, err)
 
 	cfg.makeDiscoveryClient = getMockDiscoveryClient
 
-	err = cfg.Validate()
+	err = component.ValidateConfig(cfg)
 	require.NoError(t, err)
 
 	expected := []*K8sObjectsConfig{
@@ -92,7 +92,7 @@ func TestValidConfigs(t *testing.T) {
 
 	cfg.makeDiscoveryClient = getMockDiscoveryClient
 
-	err = cfg.Validate()
+	err = component.ValidateConfig(cfg)
 	assert.ErrorContains(t, err, "resource fake_resource not found")
 
 }

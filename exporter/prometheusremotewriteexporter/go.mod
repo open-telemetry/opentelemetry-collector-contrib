@@ -13,8 +13,10 @@ require (
 	github.com/prometheus/prometheus v0.38.0
 	github.com/stretchr/testify v1.8.1
 	github.com/tidwall/wal v1.1.7
-	go.opentelemetry.io/collector v0.64.2-0.20221115155901-1550938c18fd
-	go.opentelemetry.io/collector/pdata v0.64.2-0.20221115155901-1550938c18fd
+	go.opentelemetry.io/collector v0.64.2-0.20221117234814-4565692c50a7
+	go.opentelemetry.io/collector/component v0.0.0-20221117234814-4565692c50a7
+	go.opentelemetry.io/collector/consumer v0.0.0-20221117234814-4565692c50a7
+	go.opentelemetry.io/collector/pdata v0.64.2-0.20221117234814-4565692c50a7
 	go.uber.org/atomic v1.10.0
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.23.0
@@ -44,7 +46,8 @@ require (
 	github.com/tidwall/pretty v1.2.0 // indirect
 	github.com/tidwall/tinylru v1.1.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/semconv v0.64.2-0.20221115155901-1550938c18fd // indirect
+	go.opentelemetry.io/collector/featuregate v0.0.0-20221117214536-6a117bfc3737 // indirect
+	go.opentelemetry.io/collector/semconv v0.64.2-0.20221117234814-4565692c50a7 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.36.4 // indirect
 	go.opentelemetry.io/otel v1.11.1 // indirect
 	go.opentelemetry.io/otel/metric v0.33.0 // indirect

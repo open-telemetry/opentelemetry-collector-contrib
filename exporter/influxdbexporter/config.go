@@ -15,8 +15,6 @@
 package influxdbexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter"
 
 import (
-	"fmt"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -52,8 +50,5 @@ type Config struct {
 }
 
 func (cfg *Config) Validate() error {
-	if err := cfg.ExporterSettings.Validate(); err != nil {
-		return fmt.Errorf("exporter settings are invalid :%w", err)
-	}
 	return nil
 }

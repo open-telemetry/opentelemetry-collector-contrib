@@ -270,6 +270,53 @@ var (
 			}),
 			histogramSupportEnabled: false,
 		},
+		{
+			name: "cumulative_to_delta_all",
+			include: MatchMetrics{
+				Metrics: []string{".*"},
+				Config: filterset.Config{
+					MatchType:    "regexp",
+					RegexpConfig: nil,
+				},
+			},
+			inMetrics: generateTestSumMetrics(testSumMetric{
+				metricNames:  []string{"metric_1", "metric_2"},
+				metricValues: [][]float64{{100, 200, 500}, {4, 5}},
+				isCumulative: []bool{true, true},
+			}),
+			outMetrics: generateTestSumMetrics(testSumMetric{
+				metricNames:  []string{"metric_1", "metric_2"},
+				metricValues: [][]float64{{100, 100, 300}, {4, 1}},
+				isCumulative: []bool{false, false},
+			}),
+		},
+		{
+			name: "cumulative_to_delta_remove_metric_1",
+			include: MatchMetrics{
+				Metrics: []string{".*"},
+				Config: filterset.Config{
+					MatchType:    "regexp",
+					RegexpConfig: nil,
+				},
+			},
+			exclude: MatchMetrics{
+				Metrics: []string{"metric_1"},
+				Config: filterset.Config{
+					MatchType:    "strict",
+					RegexpConfig: nil,
+				},
+			},
+			inMetrics: generateTestSumMetrics(testSumMetric{
+				metricNames:  []string{"metric_1", "metric_2"},
+				metricValues: [][]float64{{100, 200, 500}, {4, 5}},
+				isCumulative: []bool{true, true},
+			}),
+			outMetrics: generateTestSumMetrics(testSumMetric{
+				metricNames:  []string{"metric_1", "metric_2"},
+				metricValues: [][]float64{{100, 200, 500}, {4, 1}},
+				isCumulative: []bool{true, false},
+			}),
+		},
 	}
 )
 

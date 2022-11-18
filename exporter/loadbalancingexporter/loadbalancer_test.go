@@ -241,7 +241,7 @@ func TestAddMissingExporters(t *testing.T) {
 		_ component.ExporterConfig,
 	) (component.TracesExporter, error) {
 		return newNopMockTracesExporter(), nil
-	}, component.StabilityLevelInDevelopment))
+	}, component.StabilityLevelDevelopment))
 	fn := func(ctx context.Context, endpoint string) (component.Exporter, error) {
 		oCfg := cfg.Protocol.OTLP
 		oCfg.Endpoint = endpoint
@@ -275,7 +275,7 @@ func TestFailedToAddMissingExporters(t *testing.T) {
 		_ component.ExporterConfig,
 	) (component.TracesExporter, error) {
 		return nil, expectedErr
-	}, component.StabilityLevelInDevelopment))
+	}, component.StabilityLevelDevelopment))
 	fn := func(ctx context.Context, endpoint string) (component.Exporter, error) {
 		oCfg := cfg.Protocol.OTLP
 		oCfg.Endpoint = endpoint
