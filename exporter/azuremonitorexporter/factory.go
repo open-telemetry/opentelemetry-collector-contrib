@@ -54,10 +54,11 @@ type factory struct {
 
 func createDefaultConfig() component.ExporterConfig {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		Endpoint:         defaultEndpoint,
-		MaxBatchSize:     1024,
-		MaxBatchInterval: 10 * time.Second,
+		ExporterSettings:  config.NewExporterSettings(component.NewID(typeStr)),
+		Endpoint:          defaultEndpoint,
+		MaxBatchSize:      1024,
+		MaxBatchInterval:  10 * time.Second,
+		SpanEventsEnabled: false,
 	}
 }
 
