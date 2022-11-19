@@ -55,6 +55,7 @@ func generateLogData(resourceName string, attrs map[string]interface{}) plog.Log
 	res.Resource().Attributes().PutStr("name", resourceName)
 	sl := res.ScopeLogs().AppendEmpty()
 	lr := sl.LogRecords().AppendEmpty()
+	//nolint:errcheck
 	lr.Attributes().FromRaw(attrs)
 	lr.Attributes().Sort()
 	return td

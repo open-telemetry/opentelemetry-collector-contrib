@@ -492,7 +492,7 @@ func verifyExporterLifecycle(t *testing.T, factory component.ExporterFactory, ge
 	}
 
 	for i := 0; i < 2; i++ {
-		var exps []component.Exporter
+		var exps []component.Component
 		for _, createFn := range createFns {
 			exp, err := createFn(ctx, expCreateSettings, cfg)
 			if errors.Is(err, component.ErrDataTypeIsNotSupported) {
@@ -512,22 +512,22 @@ type createExporterFn func(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
 	cfg component.ExporterConfig,
-) (component.Exporter, error)
+) (component.Component, error)
 
 func wrapCreateLogsExp(factory component.ExporterFactory) createExporterFn {
-	return func(ctx context.Context, set component.ExporterCreateSettings, cfg component.ExporterConfig) (component.Exporter, error) {
+	return func(ctx context.Context, set component.ExporterCreateSettings, cfg component.ExporterConfig) (component.Component, error) {
 		return factory.CreateLogsExporter(ctx, set, cfg)
 	}
 }
 
 func wrapCreateTracesExp(factory component.ExporterFactory) createExporterFn {
-	return func(ctx context.Context, set component.ExporterCreateSettings, cfg component.ExporterConfig) (component.Exporter, error) {
+	return func(ctx context.Context, set component.ExporterCreateSettings, cfg component.ExporterConfig) (component.Component, error) {
 		return factory.CreateTracesExporter(ctx, set, cfg)
 	}
 }
 
 func wrapCreateMetricsExp(factory component.ExporterFactory) createExporterFn {
-	return func(ctx context.Context, set component.ExporterCreateSettings, cfg component.ExporterConfig) (component.Exporter, error) {
+	return func(ctx context.Context, set component.ExporterCreateSettings, cfg component.ExporterConfig) (component.Component, error) {
 		return factory.CreateMetricsExporter(ctx, set, cfg)
 	}
 }

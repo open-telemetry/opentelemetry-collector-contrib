@@ -126,7 +126,7 @@ func TestLogExporterShutdown(t *testing.T) {
 }
 
 func TestConsumeLogs(t *testing.T) {
-	componentFactory := func(ctx context.Context, endpoint string) (component.Exporter, error) {
+	componentFactory := func(ctx context.Context, endpoint string) (component.Component, error) {
 		return newNopMockLogsExporter(), nil
 	}
 	lb, err := newLoadBalancer(componenttest.NewNopExporterCreateSettings(), simpleConfig(), componentFactory)
@@ -161,7 +161,7 @@ func TestConsumeLogs(t *testing.T) {
 }
 
 func TestConsumeLogsUnexpectedExporterType(t *testing.T) {
-	componentFactory := func(ctx context.Context, endpoint string) (component.Exporter, error) {
+	componentFactory := func(ctx context.Context, endpoint string) (component.Component, error) {
 		return newNopMockExporter(), nil
 	}
 	lb, err := newLoadBalancer(componenttest.NewNopExporterCreateSettings(), simpleConfig(), componentFactory)
@@ -198,7 +198,7 @@ func TestConsumeLogsUnexpectedExporterType(t *testing.T) {
 
 func TestLogBatchWithTwoTraces(t *testing.T) {
 	sink := new(consumertest.LogsSink)
-	componentFactory := func(ctx context.Context, endpoint string) (component.Exporter, error) {
+	componentFactory := func(ctx context.Context, endpoint string) (component.Component, error) {
 		return newMockLogsExporter(sink.ConsumeLogs), nil
 	}
 	lb, err := newLoadBalancer(componenttest.NewNopExporterCreateSettings(), simpleConfig(), componentFactory)
@@ -270,7 +270,7 @@ func TestNoLogsInBatch(t *testing.T) {
 
 func TestLogsWithoutTraceID(t *testing.T) {
 	sink := new(consumertest.LogsSink)
-	componentFactory := func(ctx context.Context, endpoint string) (component.Exporter, error) {
+	componentFactory := func(ctx context.Context, endpoint string) (component.Component, error) {
 		return newMockLogsExporter(sink.ConsumeLogs), nil
 	}
 	lb, err := newLoadBalancer(componenttest.NewNopExporterCreateSettings(), simpleConfig(), componentFactory)
@@ -357,7 +357,7 @@ func TestRollingUpdatesWhenConsumeLogs(t *testing.T) {
 			DNS: &DNSResolver{Hostname: "service-1", Port: ""},
 		},
 	}
-	componentFactory := func(ctx context.Context, endpoint string) (component.Exporter, error) {
+	componentFactory := func(ctx context.Context, endpoint string) (component.Component, error) {
 		return newNopMockLogsExporter(), nil
 	}
 	lb, err := newLoadBalancer(componenttest.NewNopExporterCreateSettings(), cfg, componentFactory)
@@ -373,7 +373,7 @@ func TestRollingUpdatesWhenConsumeLogs(t *testing.T) {
 
 	counter1 := atomic.NewInt64(0)
 	counter2 := atomic.NewInt64(0)
-	defaultExporters := map[string]component.Exporter{
+	defaultExporters := map[string]component.Component{
 		"127.0.0.1:4317": newMockLogsExporter(func(ctx context.Context, ld plog.Logs) error {
 			counter1.Inc()
 			// simulate an unreachable backend

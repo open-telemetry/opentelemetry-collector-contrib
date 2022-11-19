@@ -167,19 +167,14 @@ func TestProcessorDoesNotFailToBuildExportersWithMultiplePipelines(t *testing.T)
 	otlpMetricsExporter, err := otlpExporterFactory.CreateMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), otlpConfig)
 	require.NoError(t, err)
 
-	host := &mockHost{
-		Host: componenttest.NewNopHost(),
-		GetExportersFunc: func() map[component.DataType]map[component.ID]component.Exporter {
-			return map[component.DataType]map[component.ID]component.Exporter{
-				component.DataTypeTraces: {
-					component.NewID("otlp/traces"): otlpTracesExporter,
-				},
-				component.DataTypeMetrics: {
-					component.NewID("otlp/metrics"): otlpMetricsExporter,
-				},
-			}
+	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
+		component.DataTypeTraces: {
+			component.NewID("otlp/traces"): otlpTracesExporter,
 		},
-	}
+		component.DataTypeMetrics: {
+			component.NewID("otlp/metrics"): otlpMetricsExporter,
+		},
+	})
 
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
@@ -237,14 +232,18 @@ func (mp *mockProcessor) processTraces(context.Context, ptrace.Traces) (ptrace.T
 
 type mockHost struct {
 	component.Host
-	GetExportersFunc func() map[component.DataType]map[component.ID]component.Exporter
+	exps map[component.DataType]map[component.ID]component.Component
 }
 
-func (m *mockHost) GetExporters() map[component.DataType]map[component.ID]component.Exporter {
-	if m.GetExportersFunc != nil {
-		return m.GetExportersFunc()
+func newMockHost(exps map[component.DataType]map[component.ID]component.Component) component.Host {
+	return &mockHost{
+		Host: componenttest.NewNopHost(),
+		exps: exps,
 	}
-	return m.Host.GetExporters()
+}
+
+func (m *mockHost) GetExporters() map[component.DataType]map[component.ID]component.Component {
+	return m.exps
 }
 
 type mockComponent struct {

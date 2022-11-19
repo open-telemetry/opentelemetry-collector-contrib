@@ -47,7 +47,7 @@ type traceExporterImp struct {
 func newTracesExporter(params component.ExporterCreateSettings, cfg component.ExporterConfig) (*traceExporterImp, error) {
 	exporterFactory := otlpexporter.NewFactory()
 
-	lb, err := newLoadBalancer(params, cfg, func(ctx context.Context, endpoint string) (component.Exporter, error) {
+	lb, err := newLoadBalancer(params, cfg, func(ctx context.Context, endpoint string) (component.Component, error) {
 		oCfg := buildExporterConfig(cfg.(*Config), endpoint)
 		return exporterFactory.CreateTracesExporter(ctx, params, &oCfg)
 	})
@@ -99,7 +99,7 @@ func (e *traceExporterImp) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 }
 
 func (e *traceExporterImp) consumeTrace(ctx context.Context, td ptrace.Traces) error {
-	var exp component.Exporter
+	var exp component.Component
 	routingIds, err := routingIdentifiersFromTraces(td, e.routingKey)
 	if err != nil {
 		return err

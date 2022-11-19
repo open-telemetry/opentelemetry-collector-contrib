@@ -128,6 +128,7 @@ func (c *client) handle(ctx context.Context, event *eventhub.Event) error {
 	lr := l.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 	slice := lr.Body().SetEmptyBytes()
 	slice.Append(event.Data...)
+	//nolint:errcheck
 	lr.Attributes().FromRaw(event.Properties)
 	if event.SystemProperties.EnqueuedTime != nil {
 		lr.SetTimestamp(pcommon.NewTimestampFromTime(*event.SystemProperties.EnqueuedTime))

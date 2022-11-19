@@ -29,7 +29,7 @@ var errExporterNotFound = errors.New("exporter not found")
 // router registers exporters and default exporters for an exporter. router can
 // be instantiated with component.TracesExporter, component.MetricsExporter, and
 // component.LogsExporter type arguments.
-type router[E component.Exporter, K any] struct {
+type router[E component.Component, K any] struct {
 	logger *zap.Logger
 	parser ottl.Parser[K]
 
@@ -42,7 +42,7 @@ type router[E component.Exporter, K any] struct {
 
 // newRouter creates a new router instance with its type parameter constrained
 // to component.Exporter.
-func newRouter[E component.Exporter, K any](
+func newRouter[E component.Component, K any](
 	table []RoutingTableItem,
 	defaultExporterIDs []string,
 	settings component.TelemetrySettings,
@@ -59,12 +59,12 @@ func newRouter[E component.Exporter, K any](
 	}
 }
 
-type routingItem[E component.Exporter, K any] struct {
+type routingItem[E component.Component, K any] struct {
 	exporters []E
 	statement *ottl.Statement[K]
 }
 
-func (r *router[E, K]) registerExporters(available map[component.ID]component.Exporter) error {
+func (r *router[E, K]) registerExporters(available map[component.ID]component.Component) error {
 	// register default exporters
 	err := r.registerDefaultExporters(available)
 	if err != nil {
@@ -82,7 +82,7 @@ func (r *router[E, K]) registerExporters(available map[component.ID]component.Ex
 
 // registerDefaultExporters registers the configured default exporters
 // using the provided available exporters map.
-func (r *router[E, K]) registerDefaultExporters(available map[component.ID]component.Exporter) error {
+func (r *router[E, K]) registerDefaultExporters(available map[component.ID]component.Component) error {
 	for _, name := range r.defaultExporterIDs {
 		e, err := r.extractExporter(name, available)
 		if errors.Is(err, errExporterNotFound) {
@@ -99,7 +99,7 @@ func (r *router[E, K]) registerDefaultExporters(available map[component.ID]compo
 
 // registerRouteExporters registers route exporters using the provided
 // available exporters map to check if they were available.
-func (r *router[E, K]) registerRouteExporters(available map[component.ID]component.Exporter) error {
+func (r *router[E, K]) registerRouteExporters(available map[component.ID]component.Component) error {
 	for _, item := range r.table {
 		statement, err := r.getStatementFrom(item)
 		if err != nil {
@@ -153,7 +153,7 @@ func key(entry RoutingTableItem) string {
 
 // extractExporter returns an exporter for the given name (type/name) and type
 // argument if it exists in the list of available exporters.
-func (r *router[E, K]) extractExporter(name string, available map[component.ID]component.Exporter) (E, error) {
+func (r *router[E, K]) extractExporter(name string, available map[component.ID]component.Component) (E, error) {
 	var exporter E
 
 	id := component.ID{}

@@ -28,9 +28,9 @@ import (
 // runner starts and stops receiver instances.
 type runner interface {
 	// start a receiver instance from its static config and discovered config.
-	start(receiver receiverConfig, discoveredConfig userConfigMap, nextConsumer consumer.Metrics) (component.Receiver, error)
+	start(receiver receiverConfig, discoveredConfig userConfigMap, nextConsumer consumer.Metrics) (component.Component, error)
 	// shutdown a receiver.
-	shutdown(rcvr component.Receiver) error
+	shutdown(rcvr component.Component) error
 }
 
 // receiverRunner handles starting/stopping of a concrete subreceiver instance.
@@ -47,7 +47,7 @@ func (run *receiverRunner) start(
 	receiver receiverConfig,
 	discoveredConfig userConfigMap,
 	nextConsumer consumer.Metrics,
-) (component.Receiver, error) {
+) (component.Component, error) {
 	factory := run.host.GetFactory(component.KindReceiver, receiver.id.Type())
 
 	if factory == nil {
@@ -73,7 +73,7 @@ func (run *receiverRunner) start(
 }
 
 // shutdown the given receiver.
-func (run *receiverRunner) shutdown(rcvr component.Receiver) error {
+func (run *receiverRunner) shutdown(rcvr component.Component) error {
 	return rcvr.Shutdown(context.Background())
 }
 

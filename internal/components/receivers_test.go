@@ -457,22 +457,22 @@ type createReceiverFn func(
 	ctx context.Context,
 	set component.ReceiverCreateSettings,
 	cfg component.ReceiverConfig,
-) (component.Receiver, error)
+) (component.Component, error)
 
 func wrapCreateLogsRcvr(factory component.ReceiverFactory) createReceiverFn {
-	return func(ctx context.Context, set component.ReceiverCreateSettings, cfg component.ReceiverConfig) (component.Receiver, error) {
+	return func(ctx context.Context, set component.ReceiverCreateSettings, cfg component.ReceiverConfig) (component.Component, error) {
 		return factory.CreateLogsReceiver(ctx, set, cfg, consumertest.NewNop())
 	}
 }
 
 func wrapCreateMetricsRcvr(factory component.ReceiverFactory) createReceiverFn {
-	return func(ctx context.Context, set component.ReceiverCreateSettings, cfg component.ReceiverConfig) (component.Receiver, error) {
+	return func(ctx context.Context, set component.ReceiverCreateSettings, cfg component.ReceiverConfig) (component.Component, error) {
 		return factory.CreateMetricsReceiver(ctx, set, cfg, consumertest.NewNop())
 	}
 }
 
 func wrapCreateTracesRcvr(factory component.ReceiverFactory) createReceiverFn {
-	return func(ctx context.Context, set component.ReceiverCreateSettings, cfg component.ReceiverConfig) (component.Receiver, error) {
+	return func(ctx context.Context, set component.ReceiverCreateSettings, cfg component.ReceiverConfig) (component.Component, error) {
 		return factory.CreateTracesReceiver(ctx, set, cfg, consumertest.NewNop())
 	}
 }

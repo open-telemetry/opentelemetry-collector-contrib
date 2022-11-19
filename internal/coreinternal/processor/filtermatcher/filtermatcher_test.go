@@ -57,7 +57,7 @@ func Test_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 					{Key: "key", Value: []string{}},
 				},
 			},
-			errorString: `error creating attribute filters: error unsupported value type "[]string"`,
+			errorString: `error creating attribute filters: <Invalid value type []string>`,
 		},
 		{
 			name: "invalid_regexp_pattern_attribute",
@@ -205,10 +205,10 @@ func Test_Matching_False(t *testing.T) {
 	}
 
 	attrs := pcommon.NewMap()
-	attrs.FromRaw(map[string]interface{}{
+	assert.NoError(t, attrs.FromRaw(map[string]interface{}{
 		"keyInt": 123,
 		"keyMap": map[string]interface{}{},
-	})
+	}))
 
 	library := pcommon.NewInstrumentationScope()
 	library.SetName("lib")
@@ -360,13 +360,13 @@ func Test_Matching_True(t *testing.T) {
 	}
 
 	attrs := pcommon.NewMap()
-	attrs.FromRaw(map[string]interface{}{
+	assert.NoError(t, attrs.FromRaw(map[string]interface{}{
 		"keyString": "arithmetic",
 		"keyInt":    123,
 		"keyDouble": 3245.6,
 		"keyBool":   true,
 		"keyExists": "present",
-	})
+	}))
 
 	resource := pcommon.NewResource()
 	resource.Attributes().PutStr(conventions.AttributeServiceName, "svcA")
