@@ -5,7 +5,7 @@ change_type: bug_fix
 component: elasticsearchexporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: roll back elasticsearch client to v7.17.7 due to incompatibility with older versions
+note: roll back elasticsearch client to v7.17.7 due to incompatibility with older elasticsearch versions
 
 # One or more tracking issues related to the change
 issues: [16310]
