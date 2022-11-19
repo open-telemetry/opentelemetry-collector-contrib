@@ -37,7 +37,7 @@ func TestStartAndStopGRPC(t *testing.T) {
 	// prepare
 	srvSettings := configgrpc.GRPCServerSettings{
 		NetAddr: confignet.NetAddr{
-			Endpoint:  ":0",
+			Endpoint:  "127.0.0.1:0",
 			Transport: "tcp",
 		},
 	}
