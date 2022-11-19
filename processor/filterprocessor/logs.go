@@ -60,51 +60,37 @@ func newFilterLogsProcessor(logger *zap.Logger, cfg *Config) (*filterLogProcesso
 	}, nil
 }
 
-func (flp *filterLogProcessor) ProcessLogs(ctx context.Context, logs plog.Logs) (plog.Logs, error) {
+func (flp *filterLogProcessor) ProcessLogs(_ context.Context, logs plog.Logs) (plog.Logs, error) {
 	rLogs := logs.ResourceLogs()
 
 	// Filter out logs
-	flp.filterLogRecords(rLogs)
-
-	if rLogs.Len() == 0 {
-		return logs, processorhelper.ErrSkipProcessingData
-	}
-
-	return logs, nil
-}
-
-func (flp *filterLogProcessor) filterLogRecords(rLogs plog.ResourceLogsSlice) {
-	for i := 0; i < rLogs.Len(); i++ {
-		rLog := rLogs.At(i)
-		resource := rLog.Resource()
-		scopes := rLog.ScopeLogs()
-
-		for j := 0; j < scopes.Len(); j++ {
-			scope := scopes.At(j)
-			instrumentationScope := scope.Scope()
-			lrs := scope.LogRecords()
+	rLogs.RemoveIf(func(rl plog.ResourceLogs) bool {
+		resource := rl.Resource()
+		rl.ScopeLogs().RemoveIf(func(sl plog.ScopeLogs) bool {
+			scope := sl.Scope()
+			lrs := sl.LogRecords()
 
 			if flp.includeMatcher != nil {
 				// If includeMatcher exists, remove all records that do not match the filter.
 				lrs.RemoveIf(func(lr plog.LogRecord) bool {
-					return !flp.includeMatcher.MatchLogRecord(lr, resource, instrumentationScope)
+					return !flp.includeMatcher.MatchLogRecord(lr, resource, scope)
 				})
 			}
 
 			if flp.excludeMatcher != nil {
 				// If excludeMatcher exists, remove all records that match the filter.
 				lrs.RemoveIf(func(lr plog.LogRecord) bool {
-					return flp.excludeMatcher.MatchLogRecord(lr, resource, instrumentationScope)
+					return flp.excludeMatcher.MatchLogRecord(lr, resource, scope)
 				})
 			}
-		}
-
-		scopes.RemoveIf(func(sl plog.ScopeLogs) bool {
 			return sl.LogRecords().Len() == 0
 		})
-	}
-
-	rLogs.RemoveIf(func(rl plog.ResourceLogs) bool {
 		return rl.ScopeLogs().Len() == 0
 	})
+
+	if rLogs.Len() == 0 {
+		return logs, processorhelper.ErrSkipProcessingData
+	}
+
+	return logs, nil
 }
