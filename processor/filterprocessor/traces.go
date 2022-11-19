@@ -17,7 +17,6 @@ package filterprocessor // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.uber.org/zap"
@@ -87,41 +86,31 @@ func createSpanMatcher(cfg *Config) (filterspan.Matcher, filterspan.Matcher, err
 
 // processTraces filters the given spans of a traces based off the filterSpanProcessor's filters.
 func (fsp *filterSpanProcessor) processTraces(_ context.Context, pdt ptrace.Traces) (ptrace.Traces, error) {
-	for i := 0; i < pdt.ResourceSpans().Len(); i++ {
-		resSpan := pdt.ResourceSpans().At(i)
-		for x := 0; x < resSpan.ScopeSpans().Len(); x++ {
-			ils := resSpan.ScopeSpans().At(x)
-			ils.Spans().RemoveIf(func(span ptrace.Span) bool {
-				return fsp.shouldRemoveSpan(span, resSpan.Resource(), ils.Scope())
+	pdt.ResourceSpans().RemoveIf(func(rs ptrace.ResourceSpans) bool {
+		resource := rs.Resource()
+		rs.ScopeSpans().RemoveIf(func(ss ptrace.ScopeSpans) bool {
+			scope := ss.Scope()
+			ss.Spans().RemoveIf(func(span ptrace.Span) bool {
+				if fsp.include != nil {
+					if !fsp.include.MatchSpan(span, resource, scope) {
+						return true
+					}
+				}
+
+				if fsp.exclude != nil {
+					if fsp.exclude.MatchSpan(span, resource, scope) {
+						return true
+					}
+				}
+
+				return false
 			})
-		}
-		// Remove empty elements, that way if we delete everything we can tell
-		// the pipeline to stop processing completely (ErrSkipProcessingData)
-		resSpan.ScopeSpans().RemoveIf(func(ilsSpans ptrace.ScopeSpans) bool {
-			return ilsSpans.Spans().Len() == 0
+			return ss.Spans().Len() == 0
 		})
-	}
-	pdt.ResourceSpans().RemoveIf(func(res ptrace.ResourceSpans) bool {
-		return res.ScopeSpans().Len() == 0
+		return rs.ScopeSpans().Len() == 0
 	})
 	if pdt.ResourceSpans().Len() == 0 {
 		return pdt, processorhelper.ErrSkipProcessingData
 	}
 	return pdt, nil
-}
-
-func (fsp *filterSpanProcessor) shouldRemoveSpan(span ptrace.Span, resource pcommon.Resource, library pcommon.InstrumentationScope) bool {
-	if fsp.include != nil {
-		if !fsp.include.MatchSpan(span, resource, library) {
-			return true
-		}
-	}
-
-	if fsp.exclude != nil {
-		if fsp.exclude.MatchSpan(span, resource, library) {
-			return true
-		}
-	}
-
-	return false
 }
