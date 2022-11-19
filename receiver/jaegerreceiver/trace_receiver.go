@@ -328,7 +328,10 @@ func (jr *jReceiver) decodeThriftHTTPBody(r *http.Request) (*jaeger.Batch, *http
 	bodyBytes, err := io.ReadAll(r.Body)
 	r.Body.Close()
 	if err != nil {
-		return nil, &httpError{"Unable to process request body: %v", http.StatusInternalServerError}
+		return nil, &httpError{
+			fmt.Sprintf("Unable to process request body: %v", err),
+			http.StatusInternalServerError,
+		}
 	}
 
 	contentType, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
