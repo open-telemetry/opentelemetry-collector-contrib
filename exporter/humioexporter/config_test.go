@@ -61,7 +61,7 @@ func TestLoadWithDefaults(t *testing.T) {
 func TestLoadInvalidCompression(t *testing.T) {
 	// Act
 	cfg, _ := loadExporterConfig(t, "invalid-compression.yaml", component.NewIDWithName(typeStr, ""))
-	err := cfg.Validate()
+	err := component.ValidateConfig(cfg)
 	// Assert
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "the Content-Encoding header must")
@@ -70,7 +70,7 @@ func TestLoadInvalidCompression(t *testing.T) {
 func TestLoadInvalidTagStrategy(t *testing.T) {
 	// Act
 	cfg, _ := loadExporterConfig(t, "invalid-tag.yaml", component.NewIDWithName(typeStr, ""))
-	err := cfg.Validate()
+	err := component.ValidateConfig(cfg)
 
 	// Assert
 	require.Error(t, err)

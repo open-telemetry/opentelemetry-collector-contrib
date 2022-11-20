@@ -25,6 +25,7 @@ These are the metrics available for this scraper.
 | elasticsearch.index.cache.evictions | The number of evictions from the cache for an index. | {evictions} | Sum(Int) | <ul> <li>cache_name</li> <li>index_aggregation_type</li> </ul> |
 | elasticsearch.index.cache.memory.usage | The size in bytes of the cache for an index. | By | Sum(Int) | <ul> <li>cache_name</li> <li>index_aggregation_type</li> </ul> |
 | elasticsearch.index.cache.size | The number of elements of the query cache for an index. | 1 | Sum(Int) | <ul> <li>index_aggregation_type</li> </ul> |
+| elasticsearch.index.documents | The number of documents for an index. | {documents} | Sum(Int) | <ul> <li>document_state</li> <li>index_aggregation_type</li> </ul> |
 | **elasticsearch.index.operations.completed** | The number of operations completed for an index. | {operations} | Sum(Int) | <ul> <li>operation</li> <li>index_aggregation_type</li> </ul> |
 | elasticsearch.index.operations.merge.docs_count | The total number of documents in merge operations for an index. | {documents} | Sum(Int) | <ul> <li>index_aggregation_type</li> </ul> |
 | elasticsearch.index.operations.merge.size | The total size of merged segments for an index. | By | Sum(Int) | <ul> <li>index_aggregation_type</li> </ul> |
@@ -135,7 +136,7 @@ metrics:
 | operation (operation) | The type of operation. | index, delete, get, query, fetch, scroll, suggest, merge, refresh, flush, warmer |
 | query_cache_count_type (type) | Type of query cache count | hit, miss |
 | segments_memory_object_type (object) | Type of object in segment | term, doc_value, index_writer, fixed_bit_set |
-| shard_state (state) | The state of the shard. | active, relocating, initializing, unassigned |
+| shard_state (state) | The state of the shard. | active, active_primary, relocating, initializing, unassigned, unassigned_delayed |
 | task_state (state) | The state of the task. | rejected, completed |
 | thread_pool_name | The name of the thread pool. |  |
 | thread_state (state) | The state of the thread. | active, idle |

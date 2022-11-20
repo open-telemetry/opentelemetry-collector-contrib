@@ -1,10 +1,10 @@
 # Azure Blob Receiver
 
-| Status                   |             |
-| ------------------------ | ----------- |
-| Stability                |[development]|
-| Supported pipeline types | logs,traces |
-| Distributions            | [contrib]   |
+| Status                   |               |
+| ------------------------ |---------------|
+| Stability                | [development] |
+| Supported pipeline types | logs,traces   |
+| Distributions            | [contrib]     |
 
 
 This receiver reads logs and trace data from [Azure Blob Storage](https://azure.microsoft.com/services/storage/blobs/).
@@ -35,3 +35,5 @@ receivers:
 ```
 
 The receiver subscribes [on the events](https://docs.microsoft.com/en-us/azure/storage/blobs/storage-blob-event-overview) published by Azure Blob Storage and handled by Azure Event Hub. When it receives `Blob Create` event, it reads the logs or traces from a corresponding blob and deletes it after processing.
+
+[development]: https://github.com/open-telemetry/opentelemetry-collector#development

@@ -44,7 +44,7 @@ func TestValidateCredentials(t *testing.T) {
 
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
 				cfg.Username = "user"
-				require.ErrorIs(t, cfg.Validate(), errPasswordNotSpecified)
+				require.ErrorIs(t, component.ValidateConfig(cfg), errPasswordNotSpecified)
 			},
 		},
 		{
@@ -54,7 +54,7 @@ func TestValidateCredentials(t *testing.T) {
 
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
 				cfg.Password = "pass"
-				require.ErrorIs(t, cfg.Validate(), errUsernameNotSpecified)
+				require.ErrorIs(t, component.ValidateConfig(cfg), errUsernameNotSpecified)
 			},
 		},
 		{
@@ -65,7 +65,7 @@ func TestValidateCredentials(t *testing.T) {
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
 				cfg.Username = "user"
 				cfg.Password = "pass"
-				require.NoError(t, cfg.Validate())
+				require.NoError(t, component.ValidateConfig(cfg))
 			},
 		},
 		{
@@ -74,7 +74,7 @@ func TestValidateCredentials(t *testing.T) {
 				t.Parallel()
 
 				cfg := NewFactory().CreateDefaultConfig().(*Config)
-				require.NoError(t, cfg.Validate())
+				require.NoError(t, component.ValidateConfig(cfg))
 			},
 		},
 	}
@@ -135,7 +135,7 @@ func TestValidateEndpoint(t *testing.T) {
 			cfg := NewFactory().CreateDefaultConfig().(*Config)
 			cfg.Endpoint = testCase.rawURL
 
-			err := cfg.Validate()
+			err := component.ValidateConfig(cfg)
 
 			switch {
 			case testCase.expectedErr != nil:
@@ -196,7 +196,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
 
-			assert.NoError(t, cfg.Validate())
+			assert.NoError(t, component.ValidateConfig(cfg))
 			if diff := cmp.Diff(tt.expected, cfg, cmpopts.IgnoreUnexported(config.ReceiverSettings{}, metadata.MetricSettings{})); diff != "" {
 				t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
 			}

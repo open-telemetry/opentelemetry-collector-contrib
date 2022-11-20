@@ -49,6 +49,7 @@ func TestLoadConfig(t *testing.T) {
 				InstrumentationKey: "abcdefg",
 				MaxBatchSize:       100,
 				MaxBatchInterval:   10 * time.Second,
+				SpanEventsEnabled:  false,
 			},
 		},
 	}
@@ -62,7 +63,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, component.UnmarshalExporterConfig(sub, cfg))
 
-			assert.NoError(t, cfg.Validate())
+			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

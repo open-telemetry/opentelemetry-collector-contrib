@@ -8,13 +8,17 @@ require (
 	github.com/golang/snappy v0.0.4
 	github.com/mitchellh/hashstructure/v2 v2.0.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter v0.64.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.64.0
 	github.com/prometheus/common v0.37.0
 	github.com/prometheus/prometheus v0.38.0
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.64.2-0.20221115155901-1550938c18fd
-	go.opentelemetry.io/collector/pdata v0.64.2-0.20221115155901-1550938c18fd
-	go.opentelemetry.io/collector/processor/batchprocessor v0.64.2-0.20221115155901-1550938c18fd
-	go.opentelemetry.io/collector/semconv v0.64.2-0.20221115155901-1550938c18fd
+	go.opentelemetry.io/collector v0.64.2-0.20221117234814-4565692c50a7
+	go.opentelemetry.io/collector/component v0.0.0-20221117234814-4565692c50a7
+	go.opentelemetry.io/collector/consumer v0.0.0-20221117234814-4565692c50a7
+	go.opentelemetry.io/collector/featuregate v0.0.0-20221117214536-6a117bfc3737
+	go.opentelemetry.io/collector/pdata v0.64.2-0.20221117234814-4565692c50a7
+	go.opentelemetry.io/collector/processor/batchprocessor v0.64.2-0.20221117234814-4565692c50a7
+	go.opentelemetry.io/collector/semconv v0.64.2-0.20221117234814-4565692c50a7
 	go.uber.org/atomic v1.10.0
 	go.uber.org/zap v1.23.0
 	google.golang.org/protobuf v1.28.1
@@ -117,7 +121,6 @@ require (
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.64.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.64.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite v0.64.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.2 // indirect

@@ -30,7 +30,7 @@ import (
 
 const (
 	typeStr   = "httpcheck"
-	stability = component.StabilityLevelInDevelopment
+	stability = component.StabilityLevelDevelopment
 )
 
 var errConfigNotHTTPCheck = errors.New("config was not a HTTP check receiver config")

@@ -17,6 +17,7 @@ package signalfxexporter
 import (
 	"compress/gzip"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -36,12 +37,14 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/dimensions"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
@@ -1047,4 +1050,277 @@ func TestSignalFxExporterConsumeMetadata(t *testing.T) {
 	kme, ok := exp.(metadata.MetadataExporter)
 	require.True(t, ok, "SignalFx exporter does not implement metadata.MetadataExporter")
 	require.NotNil(t, kme)
+}
+
+func TestTLSExporterInit(t *testing.T) {
+	tests := []struct {
+		name           string
+		config         *Config
+		wantErr        bool
+		wantErrMessage string
+	}{
+		{
+			name: "valid CA",
+			config: &Config{
+				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
+				APIURL:           "https://test",
+				IngestURL:        "https://test",
+				IngestTLSSettings: configtls.TLSClientSetting{
+					TLSSetting: configtls.TLSSetting{
+						CAFile: "./testdata/certs/ca.pem",
+					},
+				},
+				APITLSSettings: configtls.TLSClientSetting{
+					TLSSetting: configtls.TLSSetting{
+						CAFile: "./testdata/certs/ca.pem",
+					},
+				},
+				AccessToken:      "random",
+				SyncHostMetadata: true,
+			},
+			wantErr: false,
+		},
+		{
+			name: "missing CA",
+			config: &Config{
+				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
+				APIURL:           "https://test",
+				IngestURL:        "https://test",
+				IngestTLSSettings: configtls.TLSClientSetting{
+					TLSSetting: configtls.TLSSetting{
+						CAFile: "./testdata/certs/missingfile",
+					},
+				},
+				AccessToken:      "random",
+				SyncHostMetadata: true,
+			},
+			wantErr:        true,
+			wantErrMessage: "failed to load CA CertPool",
+		},
+		{
+			name: "invalid CA",
+			config: &Config{
+				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
+				APIURL:           "https://test",
+				IngestURL:        "https://test",
+				IngestTLSSettings: configtls.TLSClientSetting{
+					TLSSetting: configtls.TLSSetting{
+						CAFile: "./testdata/certs/invalid-ca.pem",
+					},
+				},
+				AccessToken:      "random",
+				SyncHostMetadata: true,
+			},
+			wantErr:        true,
+			wantErrMessage: "failed to load CA CertPool",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sfx, err := newSignalFxExporter(tt.config, zap.NewNop())
+			if tt.wantErr {
+				require.Error(t, err)
+				if tt.wantErrMessage != "" {
+					require.ErrorContains(t, err, tt.wantErrMessage)
+				}
+			} else {
+				require.NotNil(t, sfx)
+			}
+		})
+	}
+}
+
+func TestTLSIngestConnection(t *testing.T) {
+	metricsPayload := pmetric.NewMetrics()
+	rm := metricsPayload.ResourceMetrics().AppendEmpty()
+	ilm := rm.ScopeMetrics().AppendEmpty()
+	m := ilm.Metrics().AppendEmpty()
+	m.SetName("test_gauge")
+	dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
+	dp.Attributes().PutStr("k0", "v0")
+	dp.Attributes().PutStr("k1", "v1")
+	dp.SetDoubleValue(123)
+
+	server, err := newLocalHTTPSTestServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, "connection is successful")
+	}))
+	require.NoError(t, err)
+	defer server.Close()
+
+	serverURL := server.URL
+
+	tests := []struct {
+		name           string
+		config         *Config
+		wantErr        bool
+		wantErrMessage string
+	}{
+		{
+			name: "Ingest CA not set",
+			config: &Config{
+				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
+				APIURL:           serverURL,
+				IngestURL:        serverURL,
+				AccessToken:      "random",
+				SyncHostMetadata: true,
+			},
+			wantErr:        true,
+			wantErrMessage: "x509.*certificate",
+		},
+		{
+			name: "Ingest CA set",
+			config: &Config{
+				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
+				APIURL:           serverURL,
+				IngestURL:        serverURL,
+				IngestTLSSettings: configtls.TLSClientSetting{
+					TLSSetting: configtls.TLSSetting{
+						CAFile: "./testdata/certs/ca.pem",
+					},
+				},
+				AccessToken:      "random",
+				SyncHostMetadata: true,
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sfx, err := newSignalFxExporter(tt.config, zap.NewNop())
+			assert.NoError(t, err)
+
+			_, err = sfx.pushMetricsData(context.Background(), metricsPayload)
+			if tt.wantErr {
+				require.Error(t, err)
+				if tt.wantErrMessage != "" {
+					assert.Regexp(t, tt.wantErrMessage, err)
+				}
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestTLSAPIConnection(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	converter, err := translation.NewMetricsConverter(
+		zap.NewNop(),
+		nil,
+		cfg.ExcludeMetrics,
+		cfg.IncludeMetrics,
+		cfg.NonAlphanumericDimensionChars,
+	)
+	require.NoError(t, err)
+
+	metadata := []*metadata.MetadataUpdate{
+		{
+			ResourceIDKey: "key",
+			ResourceID:    "id",
+			MetadataDelta: metadata.MetadataDelta{
+				MetadataToAdd: map[string]string{
+					"prop.erty1": "val1",
+				},
+			},
+		},
+	}
+
+	server, err := newLocalHTTPSTestServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, "connection is successful")
+	}))
+	require.NoError(t, err)
+	defer server.Close()
+
+	tests := []struct {
+		name           string
+		config         *Config
+		wantErr        bool
+		wantErrMessage string
+	}{
+		{
+			name: "API CA set",
+			config: &Config{
+				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
+				APIURL:           server.URL,
+				IngestURL:        server.URL,
+				AccessToken:      "random",
+				SyncHostMetadata: true,
+				APITLSSettings: configtls.TLSClientSetting{
+					TLSSetting: configtls.TLSSetting{
+						CAFile: "./testdata/certs/ca.pem",
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "API CA set",
+			config: &Config{
+				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
+				APIURL:           server.URL,
+				IngestURL:        server.URL,
+				AccessToken:      "random",
+				SyncHostMetadata: true,
+			},
+			wantErr:        true,
+			wantErrMessage: "error making HTTP request.*x509",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			observedZapCore, observedLogs := observer.New(zap.DebugLevel)
+			logger := zap.New(observedZapCore)
+			apiTLSCfg, err := tt.config.APITLSSettings.LoadTLSConfig()
+			require.NoError(t, err)
+			serverURL, err := url.Parse(tt.config.APIURL)
+			assert.NoError(t, err)
+			dimClient := dimensions.NewDimensionClient(
+				context.Background(),
+				dimensions.DimensionClientOptions{
+					Token:                 "",
+					APIURL:                serverURL,
+					LogUpdates:            true,
+					Logger:                logger,
+					SendDelay:             1,
+					PropertiesMaxBuffered: 10,
+					MetricsConverter:      *converter,
+					APITLSConfig:          apiTLSCfg,
+				})
+			dimClient.Start()
+
+			se := signalfxExporter{
+				pushMetadata: dimClient.PushMetadata,
+			}
+			sme := signalfMetadataExporter{
+				pushMetadata: se.pushMetadata,
+			}
+
+			err = sme.ConsumeMetadata(metadata)
+			time.Sleep(3 * time.Second)
+			require.NoError(t, err)
+
+			if tt.wantErr {
+				if tt.wantErrMessage != "" {
+					assert.Regexp(t, tt.wantErrMessage, observedLogs.All()[0].Context[0].Interface.(error).Error())
+				}
+			} else {
+				require.Equal(t, 1, observedLogs.Len())
+				require.Nil(t, observedLogs.All()[0].Context[0].Interface)
+			}
+		})
+	}
+}
+
+func newLocalHTTPSTestServer(handler http.Handler) (*httptest.Server, error) {
+	ts := httptest.NewUnstartedServer(handler)
+	cert, err := tls.LoadX509KeyPair("./testdata/certs/cert.pem", "./testdata/certs/cert-key.pem")
+	if err != nil {
+		return nil, err
+	}
+	ts.TLS = &tls.Config{Certificates: []tls.Certificate{cert}}
+	ts.StartTLS()
+	return ts, nil
 }

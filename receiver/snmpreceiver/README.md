@@ -1,10 +1,10 @@
 # SNMP Receiver
 
-| Status                   |           |
-| ------------------------ |-----------|
-| Stability                | [in development] |
-| Supported pipeline types | metrics   |
-| Distributions            | [contrib] |
+| Status                   |               |
+| ------------------------ |---------------|
+| Stability                | [development] |
+| Supported pipeline types | metrics       |
+| Distributions            | [contrib]     |
 
 This receiver fetches stats from a SNMP enabled host using a [golang
 snmp client](https://github.com/gosnmp/gosnmp). Metrics are collected
@@ -241,5 +241,5 @@ receivers:
 
 The full list of settings exposed for this receiver are documented [here](./config.go) with detailed sample configurations [here](./testdata/config.yaml).
 
-[in development]:https://github.com/open-telemetry/opentelemetry-collector#in-development
+[development]: https://github.com/open-telemetry/opentelemetry-collector#development
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

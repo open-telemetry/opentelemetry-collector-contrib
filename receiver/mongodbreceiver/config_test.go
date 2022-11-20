@@ -91,12 +91,12 @@ func TestValidate(t *testing.T) {
 				})
 			}
 
-			cfg := Config{
+			cfg := &Config{
 				Username: tc.username,
 				Password: tc.password,
 				Hosts:    hosts,
 			}
-			err := cfg.Validate()
+			err := component.ValidateConfig(cfg)
 			if tc.expected == nil {
 				require.Nil(t, err)
 			} else {
@@ -137,7 +137,7 @@ func TestBadTLSConfigs(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			cfg := Config{
+			cfg := &Config{
 				Username: "otel",
 				Password: "pword",
 				Hosts: []confignet.NetAddr{
@@ -147,7 +147,7 @@ func TestBadTLSConfigs(t *testing.T) {
 				},
 				TLSClientSetting: tc.tlsConfig,
 			}
-			err := cfg.Validate()
+			err := component.ValidateConfig(cfg)
 			if tc.expectError {
 				require.Error(t, err)
 			} else {
