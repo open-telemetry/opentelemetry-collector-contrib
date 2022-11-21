@@ -20,6 +20,7 @@ import (
 
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 
@@ -73,10 +74,16 @@ func (s *Sender) SubmitLogs(ctx context.Context, payload []datadogV2.HTTPLogItem
 	}
 	_, r, err := s.api.SubmitLog(ctx, payload, s.opts)
 	if err != nil {
-		b := make([]byte, 1024) // 1KB message max
-		n, _ := r.Body.Read(b)  // ignore any error
-		s.logger.Error("Failed to send logs", zap.Error(err), zap.String("msg", string(b[:n])), zap.String("status_code", r.Status))
-		return err
+		if r != nil {
+			b := make([]byte, 1024) // 1KB message max
+			n, _ := r.Body.Read(b)  // ignore any error
+			s.logger.Error("Failed to send logs", zap.Error(err), zap.String("msg", string(b[:n])), zap.String("status_code", r.Status))
+			return err
+		}
+
+		// If response is nil assume permanent error.
+		// The error will be logged by the exporter helper.
+		return consumererror.NewPermanent(err)
 	}
 	return nil
 }
