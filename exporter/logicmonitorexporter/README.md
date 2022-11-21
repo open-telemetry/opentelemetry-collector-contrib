@@ -1,4 +1,13 @@
 # LogicMonitor Exporter
+
+| Status                   |                         |
+| ------                   | ------                  |
+| Stablilty                | traces [development](https://github.com/open-telemetry/opentelemetry-collector#development)  |
+|                          | logs [development](https://github.com/open-telemetry/opentelemetry-collector#development)                 |
+| Supported pipeline types | traces,logs             |
+| Distributions            | [contrib](https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib)                                     |
+
+
 This exporter supports sending logs and traces data to [Logicmonitor](https://www.logicmonitor.com/).
 
 ## Configuration Options
@@ -12,8 +21,8 @@ The following configuration options are supported:
 ## Prerequisite:
 Below environment variable must be provided
 
-| Key | Value |
-| ------ | ------ |
+| Key                  | Value        |
+| ------               | ------       |
 | LOGICMONITOR_ACCOUNT | Company name |
 
 ## Example
