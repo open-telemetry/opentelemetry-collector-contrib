@@ -47,6 +47,8 @@ func NewFactory() component.ExporterFactory {
 func createDefaultConfig() component.ExporterConfig {
 	return &Config{
 		ExporterSettings:    config.NewExporterSettings(component.NewID(typeStr)),
+		RetrySettings:       exporterhelper.NewDefaultRetrySettings(),
+		QueueSettings:       exporterhelper.NewDefaultQueueSettings(),
 		LogBatchingEnabled:  defaultLogBatchingEnabled,
 		LogBatchingInterval: defaultLogBatchingInterval,
 	}

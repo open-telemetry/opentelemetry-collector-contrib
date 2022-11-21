@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 // Test that the factory creates the default configuration
@@ -31,6 +32,8 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 	assert.Equal(t, &Config{
 		ExporterSettings:    config.NewExporterSettings(component.NewID(typeStr)),
+		RetrySettings:       exporterhelper.NewDefaultRetrySettings(),
+		QueueSettings:       exporterhelper.NewDefaultQueueSettings(),
 		LogBatchingEnabled:  true,
 		LogBatchingInterval: 10 * time.Second,
 	}, cfg, "failed to create default config")
