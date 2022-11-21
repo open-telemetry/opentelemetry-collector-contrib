@@ -204,13 +204,13 @@ var (
 func TestFilterTraceProcessorWithOTTL(t *testing.T) {
 	tests := []struct {
 		name             string
-		conditions       SpanFilters
+		conditions       TraceFilters
 		filterEverything bool
 		want             func(td ptrace.Traces)
 	}{
 		{
 			name: "drop spans",
-			conditions: SpanFilters{
+			conditions: TraceFilters{
 				SpanConditions: []string{
 					`name == "operationA"`,
 				},
@@ -226,7 +226,7 @@ func TestFilterTraceProcessorWithOTTL(t *testing.T) {
 		},
 		{
 			name: "drop everything by dropping all spans",
-			conditions: SpanFilters{
+			conditions: TraceFilters{
 				SpanConditions: []string{
 					`IsMatch(name, "operation.*") == true`,
 				},
@@ -235,7 +235,7 @@ func TestFilterTraceProcessorWithOTTL(t *testing.T) {
 		},
 		{
 			name: "drop span events",
-			conditions: SpanFilters{
+			conditions: TraceFilters{
 				SpanEventConditions: []string{
 					`name == "spanEventA"`,
 				},
@@ -251,7 +251,7 @@ func TestFilterTraceProcessorWithOTTL(t *testing.T) {
 		},
 		{
 			name: "multiple conditions",
-			conditions: SpanFilters{
+			conditions: TraceFilters{
 				SpanConditions: []string{
 					`name == "operationZ"`,
 					`span_id != nil`,
@@ -262,7 +262,7 @@ func TestFilterTraceProcessorWithOTTL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			processor, err := newFilterSpansProcessor(zap.NewNop(), &Config{Spans: tt.conditions})
+			processor, err := newFilterSpansProcessor(zap.NewNop(), &Config{Traces: tt.conditions})
 			assert.NoError(t, err)
 
 			got, err := processor.processTraces(context.Background(), constructTraces())

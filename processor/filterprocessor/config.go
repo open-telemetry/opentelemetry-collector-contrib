@@ -46,6 +46,8 @@ type Config struct {
 	Logs LogFilters `mapstructure:"logs"`
 
 	Spans SpanFilters `mapstructure:"spans"`
+
+	Traces TraceFilters `mapstructure:"traces"`
 }
 
 // MetricFilters filters by Metric properties.
@@ -85,7 +87,10 @@ type SpanFilters struct {
 	// all other spans should be included.
 	// If both Include and Exclude are specified, Include filtering occurs first.
 	Exclude *filterconfig.MatchProperties `mapstructure:"exclude"`
+}
 
+// TraceFilters filters by OTTL conditions
+type TraceFilters struct {
 	// SpanConditions is a list of OTTL conditions for an ottlspan context.
 	// If any condition resolves to true, the span will be dropped.
 	// Supports `and`, `or`, and `()`
@@ -286,7 +291,7 @@ var _ component.ProcessorConfig = (*Config)(nil)
 
 // Validate checks if the processor configuration is valid
 func (cfg *Config) Validate() error {
-	if (cfg.Spans.SpanConditions != nil || cfg.Spans.SpanEventConditions != nil) && (cfg.Spans.Include != nil || cfg.Spans.Exclude != nil) {
+	if (cfg.Traces.SpanConditions != nil || cfg.Traces.SpanEventConditions != nil) && (cfg.Spans.Include != nil || cfg.Spans.Exclude != nil) {
 		return fmt.Errorf("cannot use ottl conditions and include/exclude for spans at the same time")
 	}
 	if (cfg.Metrics.MetricConditions != nil || cfg.Metrics.DataPointConditions != nil) && (cfg.Metrics.Include != nil || cfg.Metrics.Exclude != nil) {
@@ -298,15 +303,15 @@ func (cfg *Config) Validate() error {
 
 	var errors error
 
-	if cfg.Spans.SpanConditions != nil {
+	if cfg.Traces.SpanConditions != nil {
 		spanp := ottlspan.NewParser(common.Functions[ottlspan.TransformContext](), component.TelemetrySettings{Logger: zap.NewNop()})
-		_, err := spanp.ParseStatements(common.PrepareConditionForParsing(cfg.Spans.SpanConditions))
+		_, err := spanp.ParseStatements(common.PrepareConditionForParsing(cfg.Traces.SpanConditions))
 		errors = multierr.Append(errors, err)
 	}
 
-	if cfg.Spans.SpanEventConditions != nil {
+	if cfg.Traces.SpanEventConditions != nil {
 		spaneventp := ottlspanevent.NewParser(common.Functions[ottlspanevent.TransformContext](), component.TelemetrySettings{Logger: zap.NewNop()})
-		_, err := spaneventp.ParseStatements(common.PrepareConditionForParsing(cfg.Spans.SpanEventConditions))
+		_, err := spaneventp.ParseStatements(common.PrepareConditionForParsing(cfg.Traces.SpanEventConditions))
 		errors = multierr.Append(errors, err)
 	}
 

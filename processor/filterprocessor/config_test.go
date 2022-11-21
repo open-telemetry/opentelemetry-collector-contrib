@@ -856,7 +856,7 @@ func TestLoadingConfigOTTL(t *testing.T) {
 			id: component.NewIDWithName("filter", "ottl"),
 			expected: &Config{
 				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
-				Spans: SpanFilters{
+				Traces: TraceFilters{
 					SpanConditions: []string{
 						`attributes["test"] == "pass"`,
 					},
@@ -883,7 +883,7 @@ func TestLoadingConfigOTTL(t *testing.T) {
 			id: component.NewIDWithName("filter", "multiline"),
 			expected: &Config{
 				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
-				Spans: SpanFilters{
+				Traces: TraceFilters{
 					SpanConditions: []string{
 						`attributes["test"] == "pass"`,
 						`attributes["test"] == "also pass"`,

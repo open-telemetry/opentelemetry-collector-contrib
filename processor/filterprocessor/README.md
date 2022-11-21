@@ -317,7 +317,7 @@ If all datapoints for a metric are dropped, the metric will also be dropped.
 ```yaml
 processors:
   filter/spans-and-spanevents:
-    spans:
+    traces:
       span_conditions:
         - 'attributes["container.name"] == "app_container_1"'
         - 'resource.attributes["host.name"] == "localhost"'

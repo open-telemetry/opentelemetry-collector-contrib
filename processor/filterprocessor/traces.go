@@ -40,24 +40,24 @@ type filterSpanProcessor struct {
 }
 
 func newFilterSpansProcessor(logger *zap.Logger, cfg *Config) (*filterSpanProcessor, error) {
-	if cfg.Spans.SpanConditions != nil || cfg.Spans.SpanEventConditions != nil {
+	if cfg.Traces.SpanConditions != nil || cfg.Traces.SpanEventConditions != nil {
 		fsp := &filterSpanProcessor{
 			cfg:    cfg,
 			logger: logger,
 		}
 
-		if cfg.Spans.SpanConditions != nil {
+		if cfg.Traces.SpanConditions != nil {
 			spanp := ottlspan.NewParser(common.Functions[ottlspan.TransformContext](), component.TelemetrySettings{Logger: zap.NewNop()})
-			statements, err := spanp.ParseStatements(common.PrepareConditionForParsing(cfg.Spans.SpanConditions))
+			statements, err := spanp.ParseStatements(common.PrepareConditionForParsing(cfg.Traces.SpanConditions))
 			if err != nil {
 				return nil, err
 			}
 			fsp.spanConditions = statements
 		}
 
-		if cfg.Spans.SpanEventConditions != nil {
+		if cfg.Traces.SpanEventConditions != nil {
 			spaneventp := ottlspanevent.NewParser(common.Functions[ottlspanevent.TransformContext](), component.TelemetrySettings{Logger: zap.NewNop()})
-			statements, err := spaneventp.ParseStatements(common.PrepareConditionForParsing(cfg.Spans.SpanEventConditions))
+			statements, err := spaneventp.ParseStatements(common.PrepareConditionForParsing(cfg.Traces.SpanEventConditions))
 			if err != nil {
 				return nil, err
 			}

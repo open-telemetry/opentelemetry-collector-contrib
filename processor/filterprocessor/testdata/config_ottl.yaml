@@ -1,5 +1,5 @@
 filter/ottl:
-  spans:
+  traces:
     span_conditions:
       - 'attributes["test"] == "pass"'
     spanevent_conditions:
@@ -13,7 +13,7 @@ filter/ottl:
     log_conditions:
       - 'attributes["test"] == "pass"'
 filter/multiline:
-  spans:
+  traces:
     span_conditions:
       - 'attributes["test"] == "pass"'
       - 'attributes["test"] == "also pass"'
@@ -27,6 +27,7 @@ filter/spans_mix_config:
       attributes:
         - key: should_include
           value: "(true|probably_true)"
+  traces:
     span_conditions:
       - 'attributes["test"] == "pass"'
 filter/metrics_mix_config:
@@ -48,11 +49,11 @@ filter/logs_mix_config:
     log_conditions:
       - 'attributes["test"] == "pass"'
 filter/bad_syntax_span:
-  spans:
+  traces:
     span_conditions:
       - 'attributes[test] == "pass"'
 filter/bad_syntax_spanevent:
-  spans:
+  traces:
     spanevent_conditions:
       - 'attributes[test] == "pass"'
 filter/bad_syntax_metric:
