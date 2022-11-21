@@ -346,6 +346,7 @@ func genTraces(traceID pcommon.TraceID, attrs map[string]interface{}) ptrace.Tra
 	if attrs == nil {
 		return traces
 	}
+	//nolint:errcheck
 	rspans.Resource().Attributes().FromRaw(attrs)
 	return traces
 }

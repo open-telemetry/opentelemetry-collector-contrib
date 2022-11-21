@@ -178,7 +178,7 @@ func testMatchGauge(t *testing.T, metricName, expression string, lbls map[string
 	dps := m.SetEmptyGauge().DataPoints()
 	pt := dps.AppendEmpty()
 	if lbls != nil {
-		pt.Attributes().FromRaw(lbls)
+		assert.NoError(t, pt.Attributes().FromRaw(lbls))
 	}
 	match, err := matcher.MatchMetric(m)
 	assert.NoError(t, err)

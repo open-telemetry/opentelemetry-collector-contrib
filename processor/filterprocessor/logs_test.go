@@ -631,11 +631,13 @@ func testResourceLogs(lwrs []logWithResource) plog.Logs {
 		rl := ld.ResourceLogs().AppendEmpty()
 
 		// Add resource level attributes
+		//nolint:errcheck
 		rl.Resource().Attributes().FromRaw(lwr.resourceAttributes)
 		ls := rl.ScopeLogs().AppendEmpty().LogRecords()
 		for _, name := range lwr.logNames {
 			l := ls.AppendEmpty()
 			// Add record level attributes
+			//nolint:errcheck
 			l.Attributes().FromRaw(lwrs[i].recordAttributes)
 			l.Attributes().PutStr("name", name)
 			// Set body & severity fields

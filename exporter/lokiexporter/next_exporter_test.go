@@ -104,10 +104,10 @@ func TestPushLogData(t *testing.T) {
 
 			// copy the attributes from the test case to the log entry
 			if len(tC.attrs) > 0 {
-				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().FromRaw(tC.attrs)
+				assert.NoError(t, ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().FromRaw(tC.attrs))
 			}
 			if len(tC.res) > 0 {
-				ld.ResourceLogs().At(0).Resource().Attributes().FromRaw(tC.res)
+				assert.NoError(t, ld.ResourceLogs().At(0).Resource().Attributes().FromRaw(tC.res))
 			}
 
 			// we can't use copy here, as the value (Value) will be used as string lookup later, so, we need to convert it to string now

@@ -60,30 +60,35 @@ func generateMetricData(resourceName string, attrs map[string]interface{}) pmetr
 	case pmetric.MetricTypeGauge:
 		dps := m.Gauge().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
+			//nolint:errcheck
 			dps.At(i).Attributes().FromRaw(attrs)
 			dps.At(i).Attributes().Sort()
 		}
 	case pmetric.MetricTypeSum:
 		dps := m.Sum().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
+			//nolint:errcheck
 			dps.At(i).Attributes().FromRaw(attrs)
 			dps.At(i).Attributes().Sort()
 		}
 	case pmetric.MetricTypeHistogram:
 		dps := m.Histogram().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
+			//nolint:errcheck
 			dps.At(i).Attributes().FromRaw(attrs)
 			dps.At(i).Attributes().Sort()
 		}
 	case pmetric.MetricTypeExponentialHistogram:
 		dps := m.ExponentialHistogram().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
+			//nolint:errcheck
 			dps.At(i).Attributes().FromRaw(attrs)
 			dps.At(i).Attributes().Sort()
 		}
 	case pmetric.MetricTypeSummary:
 		dps := m.Summary().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
+			//nolint:errcheck
 			dps.At(i).Attributes().FromRaw(attrs)
 			dps.At(i).Attributes().Sort()
 		}
