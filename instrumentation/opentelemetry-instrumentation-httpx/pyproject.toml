@@ -32,7 +32,7 @@ dependencies = [
 
 [project.optional-dependencies]
 instruments = [
-  "httpx >= 0.18.0",
+  "httpx >= 0.18.0, <= 0.23.0",
 ]
 test = [
   "opentelemetry-instrumentation-httpx[instruments]",

@@ -81,7 +81,7 @@ libraries = {
         "instrumentation": "opentelemetry-instrumentation-grpc==0.36b0.dev",
     },
     "httpx": {
-        "library": "httpx >= 0.18.0",
+        "library": "httpx >= 0.18.0, <= 0.23.0",
         "instrumentation": "opentelemetry-instrumentation-httpx==0.36b0.dev",
     },
     "jinja2": {
