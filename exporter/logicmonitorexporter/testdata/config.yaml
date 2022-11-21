@@ -1,0 +1,23 @@
+receivers:
+  nop:
+
+processors:
+  nop:
+
+exporters:
+  logicmonitor:
+    endpoint: https://${LOGICMONITOR_ACCOUNT}.logicmonitor.com/rest
+    apitoken:
+      access_id: "accessid"
+      access_key: "accesskey"
+
+service:
+  pipelines:
+    traces:
+      receivers : [ nop ]
+      processors: [ nop ]
+      exporters : [ logicmonitor ]
+    logs:
+      receivers : [ nop ]
+      processors: [ nop ]
+      exporters : [ logicmonitor ]
