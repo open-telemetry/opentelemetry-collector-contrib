@@ -83,7 +83,7 @@ func createLogsProcessor(
 		set,
 		cfg,
 		nextConsumer,
-		fp.ProcessLogs,
+		fp.processLogs,
 		processorhelper.WithCapabilities(processorCapabilities))
 }
 

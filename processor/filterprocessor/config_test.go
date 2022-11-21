@@ -841,3 +841,105 @@ func TestLogSeverity_severityValidate(t *testing.T) {
 		})
 	}
 }
+
+func TestLoadingConfigOTTL(t *testing.T) {
+
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_ottl.yaml"))
+	require.NoError(t, err)
+
+	tests := []struct {
+		id           component.ID
+		expected     *Config
+		errorMessage string
+	}{
+		{
+			id: component.NewIDWithName("filter", "ottl"),
+			expected: &Config{
+				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
+				Traces: TraceFilters{
+					SpanConditions: []string{
+						`attributes["test"] == "pass"`,
+					},
+					SpanEventConditions: []string{
+						`attributes["test"] == "pass"`,
+					},
+				},
+				Metrics: MetricFilters{
+					MetricConditions: []string{
+						`name == "pass"`,
+					},
+					DataPointConditions: []string{
+						`attributes["test"] == "pass"`,
+					},
+				},
+				Logs: LogFilters{
+					LogConditions: []string{
+						`attributes["test"] == "pass"`,
+					},
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName("filter", "multiline"),
+			expected: &Config{
+				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
+				Traces: TraceFilters{
+					SpanConditions: []string{
+						`attributes["test"] == "pass"`,
+						`attributes["test"] == "also pass"`,
+					},
+				},
+			},
+		},
+		{
+			id:           component.NewIDWithName(typeStr, "spans_mix_config"),
+			errorMessage: "cannot use ottl conditions and include/exclude for spans at the same time",
+		},
+		{
+			id:           component.NewIDWithName(typeStr, "metrics_mix_config"),
+			errorMessage: "cannot use ottl conditions and include/exclude for metrics at the same time",
+		},
+		{
+			id:           component.NewIDWithName(typeStr, "logs_mix_config"),
+			errorMessage: "cannot use ottl conditions and include/exclude for logs at the same time",
+		},
+		{
+			id:           component.NewIDWithName(typeStr, "bad_syntax_span"),
+			errorMessage: "1:24: unexpected token \"[\" (expected <opcomparison> Value)",
+		},
+		{
+			id:           component.NewIDWithName(typeStr, "bad_syntax_spanevent"),
+			errorMessage: "1:24: unexpected token \"[\" (expected <opcomparison> Value)",
+		},
+		{
+			id:           component.NewIDWithName(typeStr, "bad_syntax_metric"),
+			errorMessage: "1:33: unexpected token \"[\" (expected <opcomparison> Value)",
+		},
+		{
+			id:           component.NewIDWithName(typeStr, "bad_syntax_datapoint"),
+			errorMessage: "1:24: unexpected token \"[\" (expected <opcomparison> Value)",
+		},
+		{
+			id:           component.NewIDWithName(typeStr, "bad_syntax_log"),
+			errorMessage: "1:24: unexpected token \"[\" (expected <opcomparison> Value)",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, component.UnmarshalProcessorConfig(sub, cfg))
+
+			if tt.expected == nil {
+				assert.EqualError(t, component.ValidateConfig(cfg), tt.errorMessage)
+			} else {
+				assert.NoError(t, component.ValidateConfig(cfg))
+				assert.Equal(t, tt.expected, cfg)
+			}
+		})
+	}
+}
