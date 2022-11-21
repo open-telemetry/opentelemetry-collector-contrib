@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/processor/processorhelper"
+	"go.uber.org/zap"
 )
 
 type logSamplerProcessor struct {
@@ -31,6 +32,7 @@ type logSamplerProcessor struct {
 	traceIDEnabled     bool
 	samplingSource     string
 	samplingPriority   string
+	logger             *zap.Logger
 }
 
 // newLogsProcessor returns a processor.LogsProcessor that will perform head sampling according to the given
@@ -43,6 +45,7 @@ func newLogsProcessor(ctx context.Context, set component.ProcessorCreateSettings
 		traceIDEnabled:     cfg.AttributeSource == traceIDAttributeSource,
 		samplingPriority:   cfg.SamplingPriority,
 		samplingSource:     cfg.FromAttribute,
+		logger:             set.Logger,
 	}
 
 	return processorhelper.NewLogsProcessor(
@@ -76,24 +79,29 @@ func (lsp *logSamplerProcessor) processLogs(ctx context.Context, ld plog.Logs) (
 				priority := lsp.scaledSamplingRate
 				if lsp.samplingPriority != "" {
 					if localPriority, ok := l.Attributes().Get(lsp.samplingPriority); ok {
-						priority = uint32(localPriority.Double() * percentageScaleFactor)
+						if val, ok := localPriority.AsRaw().(float64); ok {
+							priority = uint32(val * percentageScaleFactor)
+						}
 					}
 				}
 
 				sampled := hash(lidBytes, lsp.hashSeed)&bitMaskHashBuckets < priority
-
+				var err error
 				if sampled {
-					_ = stats.RecordWithTags(
+					err = stats.RecordWithTags(
 						ctx,
 						[]tag.Mutator{tag.Upsert(tagPolicyKey, tagPolicyValue), tag.Upsert(tagSampledKey, "true")},
 						statCountLogsSampled.M(int64(1)),
 					)
 				} else {
-					_ = stats.RecordWithTags(
+					err = stats.RecordWithTags(
 						ctx,
 						[]tag.Mutator{tag.Upsert(tagPolicyKey, tagPolicyValue), tag.Upsert(tagSampledKey, "false")},
 						statCountLogsSampled.M(int64(1)),
 					)
+				}
+				if err != nil {
+					lsp.logger.Error(err.Error())
 				}
 
 				return !sampled

@@ -30,6 +30,11 @@ const (
 	defaultAttributeSource = traceIDAttributeSource
 )
 
+var validAttributeSource = map[AttributeSource]bool{
+	traceIDAttributeSource: true,
+	recordAttributeSource:  true,
+}
+
 // Config has the configuration guiding the sampler processor.
 type Config struct {
 	config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
@@ -62,6 +67,9 @@ var _ component.Config = (*Config)(nil)
 func (cfg *Config) Validate() error {
 	if cfg.SamplingPercentage < 0 {
 		return fmt.Errorf("negative sampling rate: %.2f", cfg.SamplingPercentage)
+	}
+	if cfg.AttributeSource != "" && !validAttributeSource[cfg.AttributeSource] {
+		return fmt.Errorf("invalid attribute source: %v. Expected: %v or %v", cfg.AttributeSource, traceIDAttributeSource, recordAttributeSource)
 	}
 	return nil
 }
