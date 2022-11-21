@@ -291,7 +291,7 @@ func TestDefaultExporters(t *testing.T) {
 			exporter: "clickhouse",
 			getConfigFn: func() component.ExporterConfig {
 				cfg := expFactories["clickhouse"].CreateDefaultConfig().(*clickhouseexporter.Config)
-				cfg.DSN = "clickhouse://" + endpoint
+				cfg.Endpoint = "tcp://" + endpoint
 				return cfg
 			},
 		},
