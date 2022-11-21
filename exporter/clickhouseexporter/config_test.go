@@ -50,7 +50,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "full"),
 			expected: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				Endpoint:         defaultEndpoint,
 				Database:         "otel",
 				Username:         "foo",
