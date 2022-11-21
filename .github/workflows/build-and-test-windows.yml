@@ -50,9 +50,6 @@ jobs:
             ~\go\pkg\mod
             ~\AppData\Local\go-build
           key: go-build-cache-${{ runner.os }}-${{ matrix.group }}-go-${{ hashFiles('**/go.sum') }}
-      - name: Install dependencies
-        if: steps.go-mod-cache.outputs.cache-hit != 'true'
-        run: make -j2 gomoddownload GROUP=${{ matrix.group }}
       - name: Run Unit tests
         run: make -j2 gotest GROUP=${{ matrix.group }}
   windows-unittest:
