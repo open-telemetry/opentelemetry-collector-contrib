@@ -211,7 +211,9 @@ func TestFilterTraceProcessorWithOTTL(t *testing.T) {
 		{
 			name: "drop spans",
 			conditions: SpanFilters{
-				Span: `name == "operationA"`,
+				SpanConditions: []string{
+					`name == "operationA"`,
+				},
 			},
 			want: func(td ptrace.Traces) {
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().RemoveIf(func(span ptrace.Span) bool {
@@ -225,14 +227,18 @@ func TestFilterTraceProcessorWithOTTL(t *testing.T) {
 		{
 			name: "drop everything by dropping all spans",
 			conditions: SpanFilters{
-				Span: `IsMatch(name, "operation.*") == true`,
+				SpanConditions: []string{
+					`IsMatch(name, "operation.*") == true`,
+				},
 			},
 			filterEverything: true,
 		},
 		{
 			name: "drop span events",
 			conditions: SpanFilters{
-				SpanEvent: `name == "spanEventA"`,
+				SpanEventConditions: []string{
+					`name == "spanEventA"`,
+				},
 			},
 			want: func(td ptrace.Traces) {
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Events().RemoveIf(func(event ptrace.SpanEvent) bool {
@@ -242,6 +248,16 @@ func TestFilterTraceProcessorWithOTTL(t *testing.T) {
 					return event.Name() == "spanEventA"
 				})
 			},
+		},
+		{
+			name: "multiple conditions",
+			conditions: SpanFilters{
+				SpanConditions: []string{
+					`name == "operationZ"`,
+					`span_id != nil`,
+				},
+			},
+			filterEverything: true,
 		},
 	}
 	for _, tt := range tests {

@@ -31,37 +31,37 @@ import (
 )
 
 type filterSpanProcessor struct {
-	cfg                *Config
-	include            filterspan.Matcher
-	exclude            filterspan.Matcher
-	logger             *zap.Logger
-	spanCondition      *ottl.Statement[ottlspan.TransformContext]
-	spanEventCondition *ottl.Statement[ottlspanevent.TransformContext]
+	cfg                 *Config
+	include             filterspan.Matcher
+	exclude             filterspan.Matcher
+	logger              *zap.Logger
+	spanConditions      []*ottl.Statement[ottlspan.TransformContext]
+	spanEventConditions []*ottl.Statement[ottlspanevent.TransformContext]
 }
 
 func newFilterSpansProcessor(logger *zap.Logger, cfg *Config) (*filterSpanProcessor, error) {
-	if cfg.Spans.Span != "" || cfg.Spans.SpanEvent != "" {
+	if cfg.Spans.SpanConditions != nil || cfg.Spans.SpanEventConditions != nil {
 		fsp := &filterSpanProcessor{
 			cfg:    cfg,
 			logger: logger,
 		}
 
-		if cfg.Spans.Span != "" {
+		if cfg.Spans.SpanConditions != nil {
 			spanp := ottlspan.NewParser(common.Functions[ottlspan.TransformContext](), component.TelemetrySettings{Logger: zap.NewNop()})
-			statements, err := spanp.ParseStatements(common.PrepareConditionForParsing(cfg.Spans.Span))
+			statements, err := spanp.ParseStatements(common.PrepareConditionForParsing(cfg.Spans.SpanConditions))
 			if err != nil {
 				return nil, err
 			}
-			fsp.spanCondition = statements[0]
+			fsp.spanConditions = statements
 		}
 
-		if cfg.Spans.SpanEvent != "" {
+		if cfg.Spans.SpanEventConditions != nil {
 			spaneventp := ottlspanevent.NewParser(common.Functions[ottlspanevent.TransformContext](), component.TelemetrySettings{Logger: zap.NewNop()})
-			statements, err := spaneventp.ParseStatements(common.PrepareConditionForParsing(cfg.Spans.SpanEvent))
+			statements, err := spaneventp.ParseStatements(common.PrepareConditionForParsing(cfg.Spans.SpanEventConditions))
 			if err != nil {
 				return nil, err
 			}
-			fsp.spanEventCondition = statements[0]
+			fsp.spanEventConditions = statements
 		}
 		return fsp, nil
 	}
@@ -120,8 +120,8 @@ func createSpanMatcher(cfg *Config) (filterspan.Matcher, filterspan.Matcher, err
 
 // processTraces filters the given spans of a traces based off the filterSpanProcessor's filters.
 func (fsp *filterSpanProcessor) processTraces(ctx context.Context, pdt ptrace.Traces) (ptrace.Traces, error) {
-	filteringSpans := fsp.spanCondition != nil
-	filteringSpanEvents := fsp.spanEventCondition != nil
+	filteringSpans := fsp.spanConditions != nil
+	filteringSpanEvents := fsp.spanEventConditions != nil
 
 	if filteringSpans || filteringSpanEvents {
 		var errors error
@@ -130,23 +130,24 @@ func (fsp *filterSpanProcessor) processTraces(ctx context.Context, pdt ptrace.Tr
 				sspans.Spans().RemoveIf(func(span ptrace.Span) bool {
 					if filteringSpans {
 						tCtx := ottlspan.NewTransformContext(span, sspans.Scope(), rspans.Resource())
-						_, conditionMet, err := fsp.spanCondition.Execute(ctx, tCtx)
+						metCondition, err := common.CheckConditions(ctx, tCtx, fsp.spanConditions)
 						if err != nil {
 							errors = multierr.Append(errors, err)
+							return false
 						}
-						if conditionMet {
+						if metCondition {
 							return true
 						}
 					}
 					if filteringSpanEvents {
 						span.Events().RemoveIf(func(spanEvent ptrace.SpanEvent) bool {
 							tCtx := ottlspanevent.NewTransformContext(spanEvent, span, sspans.Scope(), rspans.Resource())
-							_, conditionMet, err := fsp.spanEventCondition.Execute(ctx, tCtx)
+							metCondition, err := common.CheckConditions(ctx, tCtx, fsp.spanEventConditions)
 							if err != nil {
 								errors = multierr.Append(errors, err)
 								return false
 							}
-							return conditionMet
+							return metCondition
 						})
 					}
 					return false

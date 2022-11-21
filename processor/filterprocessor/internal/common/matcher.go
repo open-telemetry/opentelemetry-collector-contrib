@@ -14,14 +14,21 @@
 
 package common // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/common"
 
-import "fmt"
+import (
+	"context"
 
-const functionWithCondition = "drop() where %v"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+)
 
-func PrepareConditionForParsing(conditions []string) []string {
-	validStatements := make([]string, len(conditions))
-	for i, condition := range conditions {
-		validStatements[i] = fmt.Sprintf(functionWithCondition, condition)
+func CheckConditions[K any](ctx context.Context, tCtx K, statements []*ottl.Statement[K]) (bool, error) {
+	for _, statement := range statements {
+		_, metCondition, err := statement.Execute(ctx, tCtx)
+		if err != nil {
+			return false, err
+		}
+		if metCondition {
+			return true, nil
+		}
 	}
-	return validStatements
+	return false, nil
 }

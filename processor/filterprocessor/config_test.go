@@ -857,15 +857,25 @@ func TestLoadingConfigOTTL(t *testing.T) {
 			expected: &Config{
 				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 				Spans: SpanFilters{
-					Span:      `attributes["test"] == "pass"`,
-					SpanEvent: `attributes["test"] == "pass"`,
+					SpanConditions: []string{
+						`attributes["test"] == "pass"`,
+					},
+					SpanEventConditions: []string{
+						`attributes["test"] == "pass"`,
+					},
 				},
 				Metrics: MetricFilters{
-					Metric:    `name == "pass"`,
-					DataPoint: `attributes["test"] == "pass"`,
+					MetricConditions: []string{
+						`name == "pass"`,
+					},
+					DataPointConditions: []string{
+						`attributes["test"] == "pass"`,
+					},
 				},
 				Logs: LogFilters{
-					Log: `attributes["test"] == "pass"`,
+					LogConditions: []string{
+						`attributes["test"] == "pass"`,
+					},
 				},
 			},
 		},
@@ -874,7 +884,10 @@ func TestLoadingConfigOTTL(t *testing.T) {
 			expected: &Config{
 				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 				Spans: SpanFilters{
-					Span: ` attributes["test"] == "pass" or attributes["test"] == "also pass"`,
+					SpanConditions: []string{
+						`attributes["test"] == "pass"`,
+						`attributes["test"] == "also pass"`,
+					},
 				},
 			},
 		},

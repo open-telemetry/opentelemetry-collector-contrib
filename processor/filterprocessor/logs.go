@@ -35,21 +35,21 @@ type filterLogProcessor struct {
 	excludeMatcher filterlog.Matcher
 	includeMatcher filterlog.Matcher
 	logger         *zap.Logger
-	logCondition   *ottl.Statement[ottllog.TransformContext]
+	logConditions  []*ottl.Statement[ottllog.TransformContext]
 }
 
 func newFilterLogsProcessor(logger *zap.Logger, cfg *Config) (*filterLogProcessor, error) {
-	if cfg.Logs.Log != "" {
+	if cfg.Logs.LogConditions != nil {
 		logp := ottllog.NewParser(common.Functions[ottllog.TransformContext](), component.TelemetrySettings{Logger: zap.NewNop()})
-		statements, err := logp.ParseStatements(common.PrepareConditionForParsing(cfg.Logs.Log))
+		statements, err := logp.ParseStatements(common.PrepareConditionForParsing(cfg.Logs.LogConditions))
 		if err != nil {
 			return nil, err
 		}
 
 		return &filterLogProcessor{
-			cfg:          cfg,
-			logger:       logger,
-			logCondition: statements[0],
+			cfg:           cfg,
+			logger:        logger,
+			logConditions: statements,
 		}, nil
 	}
 
@@ -81,7 +81,7 @@ func newFilterLogsProcessor(logger *zap.Logger, cfg *Config) (*filterLogProcesso
 }
 
 func (flp *filterLogProcessor) processLogs(ctx context.Context, logs plog.Logs) (plog.Logs, error) {
-	filteringLogs := flp.logCondition != nil
+	filteringLogs := flp.logConditions != nil
 
 	if filteringLogs {
 		var errors error
@@ -89,11 +89,11 @@ func (flp *filterLogProcessor) processLogs(ctx context.Context, logs plog.Logs) 
 			rlogs.ScopeLogs().RemoveIf(func(slogs plog.ScopeLogs) bool {
 				slogs.LogRecords().RemoveIf(func(log plog.LogRecord) bool {
 					tCtx := ottllog.NewTransformContext(log, slogs.Scope(), rlogs.Resource())
-					_, conditionMet, err := flp.logCondition.Execute(ctx, tCtx)
+					metCondition, err := common.CheckConditions(ctx, tCtx, flp.logConditions)
 					if err != nil {
 						errors = multierr.Append(errors, err)
 					}
-					return conditionMet
+					return metCondition
 				})
 				return slogs.LogRecords().Len() == 0
 			})

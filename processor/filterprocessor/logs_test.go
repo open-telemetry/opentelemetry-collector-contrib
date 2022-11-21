@@ -713,13 +713,15 @@ var (
 func TestFilterLogProcessorWithOTTL(t *testing.T) {
 	tests := []struct {
 		name             string
-		conditions       string
+		conditions       []string
 		filterEverything bool
 		want             func(ld plog.Logs)
 	}{
 		{
-			name:       "drop logs",
-			conditions: `body == "operationA"`,
+			name: "drop logs",
+			conditions: []string{
+				`body == "operationA"`,
+			},
 			want: func(ld plog.Logs) {
 				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().RemoveIf(func(log plog.LogRecord) bool {
 					return log.Body().AsString() == "operationA"
@@ -730,14 +732,24 @@ func TestFilterLogProcessorWithOTTL(t *testing.T) {
 			},
 		},
 		{
-			name:             "drop everything by dropping all logs",
-			conditions:       `IsMatch(body, "operation.*") == true`,
+			name: "drop everything by dropping all logs",
+			conditions: []string{
+				`IsMatch(body, "operation.*") == true`,
+			},
+			filterEverything: true,
+		},
+		{
+			name: "multiple conditions",
+			conditions: []string{
+				`IsMatch(body, "wrong name") == true`,
+				`IsMatch(body, "operation.*") == true`,
+			},
 			filterEverything: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			processor, err := newFilterLogsProcessor(zap.NewNop(), &Config{Logs: LogFilters{Log: tt.conditions}})
+			processor, err := newFilterLogsProcessor(zap.NewNop(), &Config{Logs: LogFilters{LogConditions: tt.conditions}})
 			assert.NoError(t, err)
 
 			got, err := processor.processLogs(context.Background(), constructLogs())

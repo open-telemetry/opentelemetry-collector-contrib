@@ -290,6 +290,7 @@ processors:
 ## OTTL
 The [OpenTelemetry Transformation Language](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/README.md) is a language for interacting with telemetry within the collector in generic ways.
 The filterprocessor can be configured to use OTTL conditions to determine when to drop telemetry.
+If any condition is met, the telemetry is dropped.
 Each configuration option corresponds with a different type of telemetry and OTTL Context.
 See the table below for details on each context and the fields it exposes.
 
@@ -317,24 +318,24 @@ If all datapoints for a metric are dropped, the metric will also be dropped.
 processors:
   filter/spans-and-spanevents:
     spans:
-      span: '
-      attributes["container.name"] == "app_container_1" or
-      resource.attributes["host.name"] == "localhost" or
-      name == "app_3'
-      spanevent: '
-      attributes["grpc"] == true or
-      IsMatch(name, ".*grpc.*") == true'
+      span_conditions:
+        - 'attributes["container.name"] == "app_container_1"'
+        - 'resource.attributes["host.name"] == "localhost"'
+        - 'name == "app_3"'
+      spanevent_conditions:
+        - 'attributes["grpc"] == true'
+        - 'IsMatch(name, ".*grpc.*") == true'
     metrics:
-      metric: '
-      (name == "my.metric" and attributes["my_label"] == "abc123") or
-      (type == METRIC_DATA_TYPE_HISTOGRAM)'
-      datapoint: '
-      metric.type == METRIC_DATA_TYPE_SUMMARY and
-      resource.attributes["service.name"] == "my_service_name"'
+      metric_conditions:
+          - 'name == "my.metric" and attributes["my_label"] == "abc123"'
+          - 'type == METRIC_DATA_TYPE_HISTOGRAM'
+      datapoint_conditions:
+          - 'metric.type == METRIC_DATA_TYPE_SUMMARY'
+          - 'resource.attributes["service.name"] == "my_service_name"'
     logs:
-      log: '
-      IsMatch(body, ".*password.*") == true or
-      severity_number < SEVERITY_NUMBER_WARN'
+      log_conditions:
+        - 'IsMatch(body, ".*password.*") == true'
+        - 'severity_number < SEVERITY_NUMBER_WARN'
 ```
 
 [alpha]:https://github.com/open-telemetry/opentelemetry-collector#alpha

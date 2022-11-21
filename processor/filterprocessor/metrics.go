@@ -35,41 +35,41 @@ import (
 )
 
 type filterMetricProcessor struct {
-	cfg                *Config
-	include            filtermetric.Matcher
-	includeAttribute   filtermatcher.AttributesMatcher
-	exclude            filtermetric.Matcher
-	excludeAttribute   filtermatcher.AttributesMatcher
-	logger             *zap.Logger
-	checksMetrics      bool
-	checksResouces     bool
-	metricCondition    *ottl.Statement[ottlmetric.TransformContext]
-	dataPointCondition *ottl.Statement[ottldatapoint.TransformContext]
+	cfg                 *Config
+	include             filtermetric.Matcher
+	includeAttribute    filtermatcher.AttributesMatcher
+	exclude             filtermetric.Matcher
+	excludeAttribute    filtermatcher.AttributesMatcher
+	logger              *zap.Logger
+	checksMetrics       bool
+	checksResouces      bool
+	metricConditions    []*ottl.Statement[ottlmetric.TransformContext]
+	dataPointConditions []*ottl.Statement[ottldatapoint.TransformContext]
 }
 
 func newFilterMetricProcessor(logger *zap.Logger, cfg *Config) (*filterMetricProcessor, error) {
-	if cfg.Metrics.Metric != "" || cfg.Metrics.DataPoint != "" {
+	if cfg.Metrics.MetricConditions != nil || cfg.Metrics.DataPointConditions != nil {
 		fsp := &filterMetricProcessor{
 			cfg:    cfg,
 			logger: logger,
 		}
 
-		if cfg.Metrics.Metric != "" {
+		if cfg.Metrics.MetricConditions != nil {
 			metricp := ottlmetric.NewParser(common.Functions[ottlmetric.TransformContext](), component.TelemetrySettings{Logger: zap.NewNop()})
-			statements, err := metricp.ParseStatements(common.PrepareConditionForParsing(cfg.Metrics.Metric))
+			statements, err := metricp.ParseStatements(common.PrepareConditionForParsing(cfg.Metrics.MetricConditions))
 			if err != nil {
 				return nil, err
 			}
-			fsp.metricCondition = statements[0]
+			fsp.metricConditions = statements
 		}
 
-		if cfg.Metrics.DataPoint != "" {
+		if cfg.Metrics.DataPointConditions != nil {
 			datapointp := ottldatapoint.NewParser(common.Functions[ottldatapoint.TransformContext](), component.TelemetrySettings{Logger: zap.NewNop()})
-			statements, err := datapointp.ParseStatements(common.PrepareConditionForParsing(cfg.Metrics.DataPoint))
+			statements, err := datapointp.ParseStatements(common.PrepareConditionForParsing(cfg.Metrics.DataPointConditions))
 			if err != nil {
 				return nil, err
 			}
-			fsp.dataPointCondition = statements[0]
+			fsp.dataPointConditions = statements
 		}
 
 		return fsp, nil
@@ -159,8 +159,8 @@ func createMatcher(mp *filtermetric.MatchProperties) (filtermetric.Matcher, filt
 
 // processMetrics filters the given metrics based off the filterMetricProcessor's filters.
 func (fmp *filterMetricProcessor) processMetrics(ctx context.Context, pdm pmetric.Metrics) (pmetric.Metrics, error) {
-	filteringMetrics := fmp.metricCondition != nil
-	filteringDataPoints := fmp.dataPointCondition != nil
+	filteringMetrics := fmp.metricConditions != nil
+	filteringDataPoints := fmp.dataPointConditions != nil
 
 	if filteringMetrics || filteringDataPoints {
 		var errors error
@@ -169,11 +169,11 @@ func (fmp *filterMetricProcessor) processMetrics(ctx context.Context, pdm pmetri
 				smetrics.Metrics().RemoveIf(func(metric pmetric.Metric) bool {
 					if filteringMetrics {
 						tCtx := ottlmetric.NewTransformContext(metric, smetrics.Scope(), rmetrics.Resource())
-						_, conditionMet, err := fmp.metricCondition.Execute(ctx, tCtx)
+						metCondition, err := common.CheckConditions(ctx, tCtx, fmp.metricConditions)
 						if err != nil {
 							errors = multierr.Append(errors, err)
 						}
-						if conditionMet {
+						if metCondition {
 							return true
 						}
 					}
@@ -309,12 +309,12 @@ func (fmp *filterMetricProcessor) handleNumberDataPoints(ctx context.Context, dp
 	var errors error
 	dps.RemoveIf(func(datapoint pmetric.NumberDataPoint) bool {
 		tCtx := ottldatapoint.NewTransformContext(datapoint, metric, metrics, is, resource)
-		_, conditionMet, err := fmp.dataPointCondition.Execute(ctx, tCtx)
+		metCondition, err := common.CheckConditions(ctx, tCtx, fmp.dataPointConditions)
 		if err != nil {
 			errors = multierr.Append(errors, err)
 			return false
 		}
-		return conditionMet
+		return metCondition
 	})
 	return errors
 }
@@ -323,12 +323,12 @@ func (fmp *filterMetricProcessor) handleHistogramDataPoints(ctx context.Context,
 	var errors error
 	dps.RemoveIf(func(datapoint pmetric.HistogramDataPoint) bool {
 		tCtx := ottldatapoint.NewTransformContext(datapoint, metric, metrics, is, resource)
-		_, conditionMet, err := fmp.dataPointCondition.Execute(ctx, tCtx)
+		metCondition, err := common.CheckConditions(ctx, tCtx, fmp.dataPointConditions)
 		if err != nil {
 			errors = multierr.Append(errors, err)
 			return false
 		}
-		return conditionMet
+		return metCondition
 	})
 	return errors
 }
@@ -337,12 +337,12 @@ func (fmp *filterMetricProcessor) handleExponetialHistogramDataPoints(ctx contex
 	var errors error
 	dps.RemoveIf(func(datapoint pmetric.ExponentialHistogramDataPoint) bool {
 		tCtx := ottldatapoint.NewTransformContext(datapoint, metric, metrics, is, resource)
-		_, conditionMet, err := fmp.dataPointCondition.Execute(ctx, tCtx)
+		metCondition, err := common.CheckConditions(ctx, tCtx, fmp.dataPointConditions)
 		if err != nil {
 			errors = multierr.Append(errors, err)
 			return false
 		}
-		return conditionMet
+		return metCondition
 	})
 	return errors
 }
@@ -351,12 +351,12 @@ func (fmp *filterMetricProcessor) handleSummaryDataPoints(ctx context.Context, d
 	var errors error
 	dps.RemoveIf(func(datapoint pmetric.SummaryDataPoint) bool {
 		tCtx := ottldatapoint.NewTransformContext(datapoint, metric, metrics, is, resource)
-		_, conditionMet, err := fmp.dataPointCondition.Execute(ctx, tCtx)
+		metCondition, err := common.CheckConditions(ctx, tCtx, fmp.dataPointConditions)
 		if err != nil {
 			errors = multierr.Append(errors, err)
 			return false
 		}
-		return conditionMet
+		return metCondition
 	})
 	return errors
 }
