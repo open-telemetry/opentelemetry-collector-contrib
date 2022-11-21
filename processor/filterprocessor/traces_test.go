@@ -17,13 +17,18 @@ package filterprocessor
 import (
 	"context"
 	"testing"
+	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/processor/processorhelper"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
@@ -165,6 +170,7 @@ func TestFilterTraceProcessor(t *testing.T) {
 		})
 	}
 }
+
 func generateTraces(traces []testTrace) ptrace.Traces {
 	td := ptrace.NewTraces()
 
@@ -181,4 +187,150 @@ func generateTraces(traces []testTrace) ptrace.Traces {
 		span.SetName(trace.spanName)
 	}
 	return td
+}
+
+var (
+	TestSpanStartTime      = time.Date(2020, 2, 11, 20, 26, 12, 321, time.UTC)
+	TestSpanStartTimestamp = pcommon.NewTimestampFromTime(TestSpanStartTime)
+
+	TestSpanEndTime      = time.Date(2020, 2, 11, 20, 26, 13, 789, time.UTC)
+	TestSpanEndTimestamp = pcommon.NewTimestampFromTime(TestSpanEndTime)
+
+	traceID = [16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}
+	spanID  = [8]byte{1, 2, 3, 4, 5, 6, 7, 8}
+	spanID2 = [8]byte{8, 7, 6, 5, 4, 3, 2, 1}
+)
+
+func TestFilterTraceProcessorWithOTTL(t *testing.T) {
+	tests := []struct {
+		name             string
+		conditions       TraceFilters
+		filterEverything bool
+		want             func(td ptrace.Traces)
+	}{
+		{
+			name: "drop spans",
+			conditions: TraceFilters{
+				SpanConditions: []string{
+					`name == "operationA"`,
+				},
+			},
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().RemoveIf(func(span ptrace.Span) bool {
+					return span.Name() == "operationA"
+				})
+				td.ResourceSpans().At(0).ScopeSpans().At(1).Spans().RemoveIf(func(span ptrace.Span) bool {
+					return span.Name() == "operationA"
+				})
+			},
+		},
+		{
+			name: "drop everything by dropping all spans",
+			conditions: TraceFilters{
+				SpanConditions: []string{
+					`IsMatch(name, "operation.*") == true`,
+				},
+			},
+			filterEverything: true,
+		},
+		{
+			name: "drop span events",
+			conditions: TraceFilters{
+				SpanEventConditions: []string{
+					`name == "spanEventA"`,
+				},
+			},
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Events().RemoveIf(func(event ptrace.SpanEvent) bool {
+					return event.Name() == "spanEventA"
+				})
+				td.ResourceSpans().At(0).ScopeSpans().At(1).Spans().At(1).Events().RemoveIf(func(event ptrace.SpanEvent) bool {
+					return event.Name() == "spanEventA"
+				})
+			},
+		},
+		{
+			name: "multiple conditions",
+			conditions: TraceFilters{
+				SpanConditions: []string{
+					`name == "operationZ"`,
+					`span_id != nil`,
+				},
+			},
+			filterEverything: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			processor, err := newFilterSpansProcessor(zap.NewNop(), &Config{Traces: tt.conditions})
+			assert.NoError(t, err)
+
+			got, err := processor.processTraces(context.Background(), constructTraces())
+
+			if tt.filterEverything {
+				assert.Equal(t, processorhelper.ErrSkipProcessingData, err)
+			} else {
+
+				exTd := constructTraces()
+				tt.want(exTd)
+				assert.Equal(t, exTd, got)
+			}
+		})
+	}
+}
+
+func constructTraces() ptrace.Traces {
+	td := ptrace.NewTraces()
+	rs0 := td.ResourceSpans().AppendEmpty()
+	rs0.Resource().Attributes().PutStr("host.name", "localhost")
+	rs0ils0 := rs0.ScopeSpans().AppendEmpty()
+	rs0ils0.Scope().SetName("scope1")
+	fillSpanOne(rs0ils0.Spans().AppendEmpty())
+	fillSpanTwo(rs0ils0.Spans().AppendEmpty())
+	rs0ils1 := rs0.ScopeSpans().AppendEmpty()
+	rs0ils1.Scope().SetName("scope2")
+	fillSpanOne(rs0ils1.Spans().AppendEmpty())
+	fillSpanTwo(rs0ils1.Spans().AppendEmpty())
+	return td
+}
+
+func fillSpanOne(span ptrace.Span) {
+	span.SetName("operationA")
+	span.SetSpanID(spanID)
+	span.SetParentSpanID(spanID2)
+	span.SetTraceID(traceID)
+	span.SetStartTimestamp(TestSpanStartTimestamp)
+	span.SetEndTimestamp(TestSpanEndTimestamp)
+	span.SetDroppedAttributesCount(1)
+	span.SetDroppedLinksCount(1)
+	span.SetDroppedEventsCount(1)
+	span.SetKind(1)
+	span.TraceState().FromRaw("new")
+	span.Attributes().PutStr("http.method", "get")
+	span.Attributes().PutStr("http.path", "/health")
+	span.Attributes().PutStr("http.url", "http://localhost/health")
+	span.Attributes().PutStr("flags", "A|B|C")
+	status := span.Status()
+	status.SetCode(ptrace.StatusCodeError)
+	status.SetMessage("status-cancelled")
+}
+
+func fillSpanTwo(span ptrace.Span) {
+	span.SetName("operationB")
+	span.SetStartTimestamp(TestSpanStartTimestamp)
+	span.SetEndTimestamp(TestSpanEndTimestamp)
+	span.Attributes().PutStr("http.method", "get")
+	span.Attributes().PutStr("http.path", "/health")
+	span.Attributes().PutStr("http.url", "http://localhost/health")
+	span.Attributes().PutStr("flags", "C|D")
+	link0 := span.Links().AppendEmpty()
+	link0.SetDroppedAttributesCount(4)
+	link1 := span.Links().AppendEmpty()
+	link1.SetDroppedAttributesCount(4)
+	span.SetDroppedLinksCount(3)
+	status := span.Status()
+	status.SetCode(ptrace.StatusCodeError)
+	status.SetMessage("status-cancelled")
+	spanEvent := span.Events().AppendEmpty()
+	spanEvent.SetName("spanEventA")
 }

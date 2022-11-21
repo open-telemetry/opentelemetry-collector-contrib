@@ -17,6 +17,7 @@ package filterprocessor
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -24,7 +25,10 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/processor/processorhelper"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
 )
@@ -693,4 +697,112 @@ func requireNotPanicsLogs(t *testing.T, logs plog.Logs) {
 	require.NotPanics(t, func() {
 		_ = proc.ConsumeLogs(ctx, logs)
 	})
+}
+
+var (
+	TestLogTime      = time.Date(2020, 2, 11, 20, 26, 12, 321, time.UTC)
+	TestLogTimestamp = pcommon.NewTimestampFromTime(TestLogTime)
+
+	TestObservedTime      = time.Date(2020, 2, 11, 20, 26, 13, 789, time.UTC)
+	TestObservedTimestamp = pcommon.NewTimestampFromTime(TestObservedTime)
+
+	logTraceID = [16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}
+	logSpanID  = [8]byte{1, 2, 3, 4, 5, 6, 7, 8}
+)
+
+func TestFilterLogProcessorWithOTTL(t *testing.T) {
+	tests := []struct {
+		name             string
+		conditions       []string
+		filterEverything bool
+		want             func(ld plog.Logs)
+	}{
+		{
+			name: "drop logs",
+			conditions: []string{
+				`body == "operationA"`,
+			},
+			want: func(ld plog.Logs) {
+				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().RemoveIf(func(log plog.LogRecord) bool {
+					return log.Body().AsString() == "operationA"
+				})
+				ld.ResourceLogs().At(0).ScopeLogs().At(1).LogRecords().RemoveIf(func(log plog.LogRecord) bool {
+					return log.Body().AsString() == "operationA"
+				})
+			},
+		},
+		{
+			name: "drop everything by dropping all logs",
+			conditions: []string{
+				`IsMatch(body, "operation.*") == true`,
+			},
+			filterEverything: true,
+		},
+		{
+			name: "multiple conditions",
+			conditions: []string{
+				`IsMatch(body, "wrong name") == true`,
+				`IsMatch(body, "operation.*") == true`,
+			},
+			filterEverything: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			processor, err := newFilterLogsProcessor(zap.NewNop(), &Config{Logs: LogFilters{LogConditions: tt.conditions}})
+			assert.NoError(t, err)
+
+			got, err := processor.processLogs(context.Background(), constructLogs())
+
+			if tt.filterEverything {
+				assert.Equal(t, processorhelper.ErrSkipProcessingData, err)
+			} else {
+				exTd := constructLogs()
+				tt.want(exTd)
+				assert.Equal(t, exTd, got)
+			}
+		})
+	}
+}
+
+func constructLogs() plog.Logs {
+	td := plog.NewLogs()
+	rs0 := td.ResourceLogs().AppendEmpty()
+	rs0.Resource().Attributes().PutStr("host.name", "localhost")
+	rs0ils0 := rs0.ScopeLogs().AppendEmpty()
+	rs0ils0.Scope().SetName("scope1")
+	fillLogOne(rs0ils0.LogRecords().AppendEmpty())
+	fillLogTwo(rs0ils0.LogRecords().AppendEmpty())
+	rs0ils1 := rs0.ScopeLogs().AppendEmpty()
+	rs0ils1.Scope().SetName("scope2")
+	fillLogOne(rs0ils1.LogRecords().AppendEmpty())
+	fillLogTwo(rs0ils1.LogRecords().AppendEmpty())
+	return td
+}
+
+func fillLogOne(log plog.LogRecord) {
+	log.Body().SetStr("operationA")
+	log.SetTimestamp(TestLogTimestamp)
+	log.SetObservedTimestamp(TestObservedTimestamp)
+	log.SetDroppedAttributesCount(1)
+	log.SetFlags(plog.DefaultLogRecordFlags.WithIsSampled(true))
+	log.SetSeverityNumber(1)
+	log.SetTraceID(logTraceID)
+	log.SetSpanID(logSpanID)
+	log.Attributes().PutStr("http.method", "get")
+	log.Attributes().PutStr("http.path", "/health")
+	log.Attributes().PutStr("http.url", "http://localhost/health")
+	log.Attributes().PutStr("flags", "A|B|C")
+
+}
+
+func fillLogTwo(log plog.LogRecord) {
+	log.Body().SetStr("operationB")
+	log.SetTimestamp(TestLogTimestamp)
+	log.SetObservedTimestamp(TestObservedTimestamp)
+	log.Attributes().PutStr("http.method", "get")
+	log.Attributes().PutStr("http.path", "/health")
+	log.Attributes().PutStr("http.url", "http://localhost/health")
+	log.Attributes().PutStr("flags", "C|D")
+
 }
