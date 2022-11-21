@@ -72,12 +72,12 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 
 	initDoublePtWithLabels := func(doublePtWithLabels pmetric.NumberDataPoint) {
 		initDoublePt(doublePtWithLabels)
-		doublePtWithLabels.Attributes().FromRaw(labelMap)
+		assert.NoError(t, doublePtWithLabels.Attributes().FromRaw(labelMap))
 	}
 
 	initDoublePtWithLongLabels := func(doublePtWithLabels pmetric.NumberDataPoint) {
 		initDoublePt(doublePtWithLabels)
-		doublePtWithLabels.Attributes().FromRaw(longLabelMap)
+		assert.NoError(t, doublePtWithLabels.Attributes().FromRaw(longLabelMap))
 	}
 
 	differentLabelMap := map[string]interface{}{
@@ -86,7 +86,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 	}
 	initDoublePtWithDifferentLabels := func(doublePtWithDifferentLabels pmetric.NumberDataPoint) {
 		initDoublePt(doublePtWithDifferentLabels)
-		doublePtWithDifferentLabels.Attributes().FromRaw(differentLabelMap)
+		assert.NoError(t, doublePtWithDifferentLabels.Attributes().FromRaw(differentLabelMap))
 	}
 
 	initInt64Pt := func(int64Pt pmetric.NumberDataPoint) {
@@ -96,7 +96,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 
 	initInt64PtWithLabels := func(int64PtWithLabels pmetric.NumberDataPoint) {
 		initInt64Pt(int64PtWithLabels)
-		int64PtWithLabels.Attributes().FromRaw(labelMap)
+		assert.NoError(t, int64PtWithLabels.Attributes().FromRaw(labelMap))
 	}
 
 	initHistDP := func(histDP pmetric.HistogramDataPoint) {
@@ -105,7 +105,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 		histDP.SetSum(100.0)
 		histDP.ExplicitBounds().FromRaw([]float64{1, 2, 4})
 		histDP.BucketCounts().FromRaw([]uint64{4, 2, 3, 7})
-		histDP.Attributes().FromRaw(labelMap)
+		assert.NoError(t, histDP.Attributes().FromRaw(labelMap))
 	}
 	histDP := pmetric.NewHistogramDataPoint()
 	initHistDP(histDP)
@@ -114,7 +114,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 		histDP.SetCount(2)
 		histDP.SetSum(10)
 		histDP.SetTimestamp(ts)
-		histDP.Attributes().FromRaw(labelMap)
+		assert.NoError(t, histDP.Attributes().FromRaw(labelMap))
 	}
 	histDPNoBuckets := pmetric.NewHistogramDataPoint()
 	initHistDPNoBuckets(histDPNoBuckets)

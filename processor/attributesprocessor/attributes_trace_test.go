@@ -59,6 +59,7 @@ func generateTraceData(serviceName, spanName string, attrs map[string]interface{
 	}
 	span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetName(spanName)
+	//nolint:errcheck
 	span.Attributes().FromRaw(attrs)
 	span.Attributes().Sort()
 	return td

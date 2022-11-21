@@ -461,7 +461,7 @@ func TestSetInternalSpanStatus(t *testing.T) {
 			span.SetKind(test.kind)
 			status := span.Status()
 			attrs := pcommon.NewMap()
-			attrs.FromRaw(test.attrs)
+			assert.NoError(t, attrs.FromRaw(test.attrs))
 			setInternalSpanStatus(attrs, span)
 			assert.EqualValues(t, test.status, status)
 			assert.Equal(t, test.attrsModifiedLen, attrs.Len())

@@ -21,13 +21,13 @@ import (
 
 type StorageHost struct {
 	component.Host
-	extensions map[component.ID]component.Extension
+	extensions map[component.ID]component.Component
 }
 
 func NewStorageHost() *StorageHost {
 	return &StorageHost{
 		Host:       componenttest.NewNopHost(),
-		extensions: make(map[component.ID]component.Extension),
+		extensions: make(map[component.ID]component.Component),
 	}
 }
 
@@ -54,6 +54,6 @@ func (h *StorageHost) WithNonStorageExtension(name string) *StorageHost {
 	return h
 }
 
-func (h *StorageHost) GetExtensions() map[component.ID]component.Extension {
+func (h *StorageHost) GetExtensions() map[component.ID]component.Component {
 	return h.extensions
 }

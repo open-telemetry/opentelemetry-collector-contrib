@@ -89,9 +89,9 @@ func TestConvertAttributesAndMerge(t *testing.T) {
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
 			logAttrs := pcommon.NewMap()
-			logAttrs.FromRaw(tC.logAttrs)
+			assert.NoError(t, logAttrs.FromRaw(tC.logAttrs))
 			resAttrs := pcommon.NewMap()
-			resAttrs.FromRaw(tC.resAttrs)
+			assert.NoError(t, resAttrs.FromRaw(tC.resAttrs))
 			out := convertAttributesAndMerge(logAttrs, resAttrs)
 			assert.Equal(t, tC.expected, out)
 		})
@@ -149,7 +149,7 @@ func TestConvertAttributesToLabels(t *testing.T) {
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
 			attrsAvailable := pcommon.NewMap()
-			attrsAvailable.FromRaw(tC.attrsAvailable)
+			assert.NoError(t, attrsAvailable.FromRaw(tC.attrsAvailable))
 			out := convertAttributesToLabels(attrsAvailable, tC.attrsToSelect)
 			assert.Equal(t, tC.expected, out)
 		})
@@ -194,7 +194,7 @@ func TestRemoveAttributes(t *testing.T) {
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
 			attrs := pcommon.NewMap()
-			attrs.FromRaw(tC.attrs)
+			assert.NoError(t, attrs.FromRaw(tC.attrs))
 			removeAttributes(attrs, tC.labels)
 			assert.Equal(t, tC.expected, attrs.AsRaw())
 		})

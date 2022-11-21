@@ -170,11 +170,13 @@ func generateTraces(traces []testTrace) ptrace.Traces {
 
 	for _, trace := range traces {
 		rs := td.ResourceSpans().AppendEmpty()
+		//nolint:errcheck
 		rs.Resource().Attributes().FromRaw(trace.resourceAttributes)
 		ils := rs.ScopeSpans().AppendEmpty()
 		ils.Scope().SetName(trace.libraryName)
 		ils.Scope().SetVersion(trace.libraryVersion)
 		span := ils.Spans().AppendEmpty()
+		//nolint:errcheck
 		span.Attributes().FromRaw(trace.tags)
 		span.SetName(trace.spanName)
 	}

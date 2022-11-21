@@ -6,10 +6,10 @@ require (
 	cloud.google.com/go/pubsub v1.26.0
 	github.com/google/uuid v1.3.0
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.64.2-0.20221117234814-4565692c50a7
-	go.opentelemetry.io/collector/component v0.0.0-20221117234814-4565692c50a7
-	go.opentelemetry.io/collector/consumer v0.0.0-20221117234814-4565692c50a7
-	go.opentelemetry.io/collector/pdata v0.64.2-0.20221117234814-4565692c50a7
+	go.opentelemetry.io/collector v0.64.2-0.20221119033128-e3509cd9f772
+	go.opentelemetry.io/collector/component v0.0.0-20221119033128-e3509cd9f772
+	go.opentelemetry.io/collector/consumer v0.0.0-20221119033128-e3509cd9f772
+	go.opentelemetry.io/collector/pdata v0.64.2-0.20221119033128-e3509cd9f772
 	go.uber.org/zap v1.23.0
 	google.golang.org/api v0.103.0
 	google.golang.org/genproto v0.0.0-20221027153422-115e99e71e1c
@@ -41,7 +41,7 @@ require (
 	github.com/pelletier/go-toml v1.9.4 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/featuregate v0.0.0-20221117214536-6a117bfc3737 // indirect
+	go.opentelemetry.io/collector/featuregate v0.0.0-20221119033128-e3509cd9f772 // indirect
 	go.opentelemetry.io/otel v1.11.1 // indirect
 	go.opentelemetry.io/otel/metric v0.33.0 // indirect
 	go.opentelemetry.io/otel/trace v1.11.1 // indirect

@@ -22,7 +22,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterhelper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
 )
 
@@ -52,7 +51,8 @@ func NewAttributesMatcher(config filterset.Config, attributes []filterconfig.Att
 			Key: attribute.Key,
 		}
 		if attribute.Value != nil {
-			val, err := filterhelper.NewAttributeValueRaw(attribute.Value)
+			val := pcommon.NewValueEmpty()
+			err := val.FromRaw(attribute.Value)
 			if err != nil {
 				return nil, err
 			}
