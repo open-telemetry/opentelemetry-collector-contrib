@@ -68,12 +68,12 @@ type MetricFilters struct {
 	// MetricConditions is a list of OTTL conditions for an ottlmetric context.
 	// If any condition resolves to true, the metric will be dropped.
 	// Supports `and`, `or`, and `()`
-	MetricConditions []string `mapstructure:"metric_conditions"`
+	MetricConditions []string `mapstructure:"metric"`
 
 	// DataPointConditions is a list of OTTL conditions for an ottldatapoint context.
 	// If any condition resolves to true, the datapoint will be dropped.
 	// Supports `and`, `or`, and `()`
-	DataPointConditions []string `mapstructure:"datapoint_conditions"`
+	DataPointConditions []string `mapstructure:"datapoint"`
 }
 
 // SpanFilters filters by Span attributes and various other fields, Regexp config is per matcher
@@ -94,12 +94,12 @@ type TraceFilters struct {
 	// SpanConditions is a list of OTTL conditions for an ottlspan context.
 	// If any condition resolves to true, the span will be dropped.
 	// Supports `and`, `or`, and `()`
-	SpanConditions []string `mapstructure:"span_conditions"`
+	SpanConditions []string `mapstructure:"span"`
 
 	// SpanEventConditions is a list of OTTL conditions for an ottlspanevent context.
 	// If any condition resolves to true, the span event will be dropped.
 	// Supports `and`, `or`, and `()`
-	SpanEventConditions []string `mapstructure:"spanevent_conditions"`
+	SpanEventConditions []string `mapstructure:"spanevent"`
 }
 
 // LogFilters filters by Log properties.
@@ -116,7 +116,7 @@ type LogFilters struct {
 	// LogConditions is a list of OTTL conditions for an ottllog context.
 	// If any condition resolves to true, the log event will be dropped.
 	// Supports `and`, `or`, and `()`
-	LogConditions []string `mapstructure:"log_conditions"`
+	LogConditions []string `mapstructure:"log_record"`
 }
 
 // LogMatchType specifies the strategy for matching against `plog.Log`s.

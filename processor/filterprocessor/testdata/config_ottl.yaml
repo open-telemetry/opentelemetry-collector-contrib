@@ -1,20 +1,20 @@
 filter/ottl:
   traces:
-    span_conditions:
+    span:
       - 'attributes["test"] == "pass"'
-    spanevent_conditions:
+    spanevent:
       - 'attributes["test"] == "pass"'
   metrics:
-    metric_conditions:
+    metric:
       - 'name == "pass"'
-    datapoint_conditions:
+    datapoint:
       - 'attributes["test"] == "pass"'
   logs:
-    log_conditions:
+    log_record:
       - 'attributes["test"] == "pass"'
 filter/multiline:
   traces:
-    span_conditions:
+    span:
       - 'attributes["test"] == "pass"'
       - 'attributes["test"] == "also pass"'
 filter/spans_mix_config:
@@ -28,7 +28,7 @@ filter/spans_mix_config:
         - key: should_include
           value: "(true|probably_true)"
   traces:
-    span_conditions:
+    span:
       - 'attributes["test"] == "pass"'
 filter/metrics_mix_config:
   metrics:
@@ -37,7 +37,7 @@ filter/metrics_mix_config:
       expressions:
         - Label("foo") == "bar"
         - HasLabel("baz")
-    metric_conditions:
+    metric:
       - 'attributes["test"] == "pass"'
 filter/logs_mix_config:
   logs:
@@ -46,25 +46,25 @@ filter/logs_mix_config:
       resource_attributes:
         - key: should_include
           value: "true"
-    log_conditions:
+    log_record:
       - 'attributes["test"] == "pass"'
 filter/bad_syntax_span:
   traces:
-    span_conditions:
+    span:
       - 'attributes[test] == "pass"'
 filter/bad_syntax_spanevent:
   traces:
-    spanevent_conditions:
+    spanevent:
       - 'attributes[test] == "pass"'
 filter/bad_syntax_metric:
   metrics:
-    metric_conditions:
+    metric:
       - 'resource.attributes[test] == "pass"'
 filter/bad_syntax_datapoint:
   metrics:
-    datapoint_conditions:
+    datapoint:
       - 'attributes[test] == "pass"'
 filter/bad_syntax_log:
   logs:
-    log_conditions:
+    log_record:
       - 'attributes[test] == "pass"'

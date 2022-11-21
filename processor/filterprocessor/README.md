@@ -316,24 +316,24 @@ If all datapoints for a metric are dropped, the metric will also be dropped.
 
 ```yaml
 processors:
-  filter/spans-and-spanevents:
+  filter:
     traces:
-      span_conditions:
+      span:
         - 'attributes["container.name"] == "app_container_1"'
         - 'resource.attributes["host.name"] == "localhost"'
         - 'name == "app_3"'
-      spanevent_conditions:
+      spanevent:
         - 'attributes["grpc"] == true'
         - 'IsMatch(name, ".*grpc.*") == true'
     metrics:
-      metric_conditions:
+      metric:
           - 'name == "my.metric" and attributes["my_label"] == "abc123"'
           - 'type == METRIC_DATA_TYPE_HISTOGRAM'
-      datapoint_conditions:
+      datapoint:
           - 'metric.type == METRIC_DATA_TYPE_SUMMARY'
           - 'resource.attributes["service.name"] == "my_service_name"'
     logs:
-      log_conditions:
+      log_record:
         - 'IsMatch(body, ".*password.*") == true'
         - 'severity_number < SEVERITY_NUMBER_WARN'
 ```
