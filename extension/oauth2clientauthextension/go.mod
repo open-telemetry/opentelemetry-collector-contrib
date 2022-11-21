@@ -4,8 +4,8 @@ go 1.18
 
 require (
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.64.2-0.20221117234814-4565692c50a7
-	go.opentelemetry.io/collector/component v0.0.0-20221117234814-4565692c50a7
+	go.opentelemetry.io/collector v0.64.2-0.20221119033128-e3509cd9f772
+	go.opentelemetry.io/collector/component v0.0.0-20221119033128-e3509cd9f772
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.23.0
 	golang.org/x/oauth2 v0.0.0-20220909003341-f21342109be1
@@ -34,9 +34,9 @@ require (
 	github.com/pelletier/go-toml v1.9.4 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/cors v1.8.2 // indirect
-	go.opentelemetry.io/collector/consumer v0.0.0-20221117234814-4565692c50a7 // indirect
-	go.opentelemetry.io/collector/featuregate v0.0.0-20221117214536-6a117bfc3737 // indirect
-	go.opentelemetry.io/collector/pdata v0.64.2-0.20221117234814-4565692c50a7 // indirect
+	go.opentelemetry.io/collector/consumer v0.0.0-20221119033128-e3509cd9f772 // indirect
+	go.opentelemetry.io/collector/featuregate v0.0.0-20221119033128-e3509cd9f772 // indirect
+	go.opentelemetry.io/collector/pdata v0.64.2-0.20221119033128-e3509cd9f772 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.36.4 // indirect
 	go.opentelemetry.io/otel v1.11.1 // indirect
 	go.opentelemetry.io/otel/metric v0.33.0 // indirect

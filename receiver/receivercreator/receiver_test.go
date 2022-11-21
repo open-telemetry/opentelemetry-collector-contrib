@@ -76,7 +76,7 @@ func TestMockedEndToEnd(t *testing.T) {
 	factories.Receivers[typeStr] = factory
 
 	host := &mockHostFactories{Host: componenttest.NewNopHost(), factories: factories}
-	host.extensions = map[component.ID]component.Extension{
+	host.extensions = map[component.ID]component.Component{
 		component.NewID("mock_observer"):                      &mockObserver{},
 		component.NewIDWithName("mock_observer", "with_name"): &mockObserver{},
 	}

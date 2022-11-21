@@ -763,6 +763,7 @@ func getSpan(spanName string, spanKind ptrace.SpanKind, initialAttributes map[st
 	span.SetKind(spanKind)
 	span.SetStartTimestamp(defaultSpanStartTime)
 	span.SetEndTimestamp(defaultSpanEndTme)
+	//nolint:errcheck
 	span.Attributes().FromRaw(initialAttributes)
 	return span
 }
@@ -772,6 +773,7 @@ func getSpanEvent(name string, initialAttributes map[string]interface{}) ptrace.
 	spanEvent := ptrace.NewSpanEvent()
 	spanEvent.SetName(name)
 	spanEvent.SetTimestamp(defaultSpanEventTime)
+	//nolint:errcheck
 	spanEvent.Attributes().FromRaw(initialAttributes)
 	return spanEvent
 }

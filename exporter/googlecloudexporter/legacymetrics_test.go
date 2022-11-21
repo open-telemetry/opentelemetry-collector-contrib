@@ -115,34 +115,34 @@ func TestGoogleCloudMetricExport(t *testing.T) {
 
 	md := pmetric.NewMetrics()
 	rm1 := md.ResourceMetrics().AppendEmpty()
-	rm1.Resource().Attributes().FromRaw(map[string]interface{}{
+	assert.NoError(t, rm1.Resource().Attributes().FromRaw(map[string]interface{}{
 		occonventions.AttributeResourceType: "host",
 		"cloud.availability_zone":           "us-central1",
 		"host.name":                         "foo",
 		"k8s.cluster.name":                  "test",
 		"contrib.opencensus.io/exporter/stackdriver/project_id": "1234567",
-	})
+	}))
 	initGaugeMetric0(rm1.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty())
 	initGaugeMetric1(rm1.ScopeMetrics().At(0).Metrics().AppendEmpty())
 	rm2 := md.ResourceMetrics().AppendEmpty()
-	rm2.Resource().Attributes().FromRaw(map[string]interface{}{
+	assert.NoError(t, rm2.Resource().Attributes().FromRaw(map[string]interface{}{
 		occonventions.AttributeResourceType: "host",
 		"cloud.availability_zone":           "us-central1",
 		"host.name":                         "bar",
 		"k8s.cluster.name":                  "test",
 		"contrib.opencensus.io/exporter/stackdriver/project_id": "1234567",
-	})
+	}))
 	initGaugeMetric2(rm2.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty())
 	rm3 := md.ResourceMetrics().AppendEmpty()
-	rm3.Resource().Attributes().FromRaw(map[string]interface{}{
+	assert.NoError(t, rm3.Resource().Attributes().FromRaw(map[string]interface{}{
 		occonventions.AttributeResourceType:                     "host",
 		"contrib.opencensus.io/exporter/stackdriver/project_id": "1234567",
-	})
+	}))
 	initGaugeMetric3(rm3.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty())
 	rm4 := md.ResourceMetrics().AppendEmpty()
-	rm4.Resource().Attributes().FromRaw(map[string]interface{}{
+	assert.NoError(t, rm4.Resource().Attributes().FromRaw(map[string]interface{}{
 		occonventions.AttributeResourceType: "test",
-	})
+	}))
 	initGaugeMetric4(rm4.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty())
 	assert.NoError(t, sde.ConsumeMetrics(context.Background(), md))
 

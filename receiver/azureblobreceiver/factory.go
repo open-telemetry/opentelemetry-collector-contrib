@@ -101,7 +101,7 @@ func (f *blobReceiverFactory) createTracesReceiver(
 
 func (f *blobReceiverFactory) getReceiver(
 	set component.ReceiverCreateSettings,
-	cfg component.ReceiverConfig) (component.Receiver, error) {
+	cfg component.ReceiverConfig) (component.Component, error) {
 
 	var err error
 	r := f.receivers.GetOrAdd(cfg, func() component.Component {

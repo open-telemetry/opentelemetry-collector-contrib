@@ -9,8 +9,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.64.0
 	github.com/stretchr/testify v1.8.1
 	go.opencensus.io v0.24.0
-	go.opentelemetry.io/collector/pdata v0.64.2-0.20221117234814-4565692c50a7
-	go.opentelemetry.io/collector/semconv v0.64.2-0.20221117234814-4565692c50a7
+	go.opentelemetry.io/collector/pdata v0.64.2-0.20221119033128-e3509cd9f772
+	go.opentelemetry.io/collector/semconv v0.64.2-0.20221119033128-e3509cd9f772
 	google.golang.org/protobuf v1.28.1
 )
 
@@ -24,6 +24,9 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/rogpeppe/go-internal v1.9.0 // indirect
+	go.uber.org/atomic v1.10.0 // indirect
+	go.uber.org/multierr v1.8.0 // indirect
 	golang.org/x/net v0.1.0 // indirect
 	golang.org/x/sys v0.2.0 // indirect
 	golang.org/x/text v0.4.0 // indirect

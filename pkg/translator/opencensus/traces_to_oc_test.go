@@ -83,12 +83,12 @@ func TestAttributesMapToOC(t *testing.T) {
 	ocAttrs.AttributeMap["doubleval"] = &octrace.AttributeValue{
 		Value: &octrace.AttributeValue_DoubleValue{DoubleValue: 4.5},
 	}
-	attrs.FromRaw(map[string]interface{}{
+	assert.NoError(t, attrs.FromRaw(map[string]interface{}{
 		"abc":       "def",
 		"intval":    345,
 		"boolval":   true,
 		"doubleval": 4.5,
-	})
+	}))
 	assert.EqualValues(t, ocAttrs, attributesMapToOCSpanAttributes(attrs, 234))
 }
 

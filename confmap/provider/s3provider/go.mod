@@ -7,7 +7,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.18.0
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.19.0
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.64.2-0.20221117234814-4565692c50a7
+	go.opentelemetry.io/collector v0.64.2-0.20221119033128-e3509cd9f772
 	gopkg.in/yaml.v2 v2.4.0
 )
 
@@ -31,7 +31,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	go.opentelemetry.io/collector/featuregate v0.0.0-20221117214536-6a117bfc3737 // indirect
+	go.opentelemetry.io/collector/featuregate v0.0.0-20221119033128-e3509cd9f772 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect

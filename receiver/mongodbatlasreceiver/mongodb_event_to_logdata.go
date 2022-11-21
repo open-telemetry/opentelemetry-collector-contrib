@@ -128,6 +128,7 @@ func mongodbAuditEventToLogData(logger *zap.Logger, logs []model.AuditLog, pc Pr
 
 		attrs.PutInt("result", int64(log.Result))
 
+		//nolint:errcheck
 		attrs.PutEmptyMap("param").FromRaw(log.Param)
 
 		usersSlice := attrs.PutEmptySlice("users")
@@ -187,6 +188,7 @@ func mongodbEventToLogData(logger *zap.Logger, logs []model.LogEntry, pc Project
 		}
 		attrs := lr.Attributes()
 		attrs.EnsureCapacity(totalLogAttributes)
+		//nolint:errcheck
 		attrs.FromRaw(log.Attributes)
 		attrs.PutStr("message", log.Message)
 		attrs.PutStr("component", log.Component)
