@@ -83,8 +83,8 @@ github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9de
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 go.opentelemetry.io/collector/featuregate v0.0.0-20221119033128-e3509cd9f772 h1:47zUvX8JiR/88xthJKqDNBTz2o9FHIYzEZC51Rr33D8=
 go.opentelemetry.io/collector/featuregate v0.0.0-20221119033128-e3509cd9f772/go.mod h1:tewuFKJYalWBU0bmNKg++MC1ipINXUr6szYzOw2p1GI=
-go.opentelemetry.io/collector/pdata v0.64.2-0.20221119033128-e3509cd9f772 h1:EQqX3zOy4+cvZMbcRvl494iRjCpbKRScIrahDx9pMWU=
-go.opentelemetry.io/collector/pdata v0.64.2-0.20221119033128-e3509cd9f772/go.mod h1:/uPDO6SVi3bdqsgK2W1Qgi6GOOON5uw+nIPLjtGErAs=
+go.opentelemetry.io/collector/pdata v0.64.2-0.20221121163440-8eb426dfee00 h1:zttZsRKyPe7Ctj63qDSjkwqwY8jTVEnIWmkHQRcMLfo=
+go.opentelemetry.io/collector/pdata v0.64.2-0.20221121163440-8eb426dfee00/go.mod h1:/uPDO6SVi3bdqsgK2W1Qgi6GOOON5uw+nIPLjtGErAs=
 go.opentelemetry.io/proto/otlp v0.7.0/go.mod h1:PqfVotwruBrMGOCsRd/89rSnXhoiJIqeYNgFYFoEGnI=
 go.uber.org/atomic v1.7.0/go.mod h1:fEN4uk6kAWBTFdckzkM89CLk9XfWZrxpCo0nPH17wJc=
 go.uber.org/atomic v1.10.0 h1:9qC72Qh0+3MqyJbAn8YU5xVq1frD8bn3JtD2oXtafVQ=

@@ -9,11 +9,11 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.64.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.64.0
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.64.2-0.20221119033128-e3509cd9f772
+	go.opentelemetry.io/collector v0.64.2-0.20221121163440-8eb426dfee00
 	go.opentelemetry.io/collector/component v0.0.0-20221119033128-e3509cd9f772
 	go.opentelemetry.io/collector/consumer v0.0.0-20221119033128-e3509cd9f772
-	go.opentelemetry.io/collector/pdata v0.64.2-0.20221119033128-e3509cd9f772
-	go.opentelemetry.io/collector/semconv v0.64.2-0.20221119033128-e3509cd9f772
+	go.opentelemetry.io/collector/pdata v0.64.2-0.20221121163440-8eb426dfee00
+	go.opentelemetry.io/collector/semconv v0.64.2-0.20221121163440-8eb426dfee00
 	go.uber.org/zap v1.23.0
 )
 

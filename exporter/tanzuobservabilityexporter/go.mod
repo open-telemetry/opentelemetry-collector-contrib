@@ -7,10 +7,10 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.64.0
 	github.com/stretchr/testify v1.8.1
 	github.com/wavefronthq/wavefront-sdk-go v0.10.4
-	go.opentelemetry.io/collector v0.64.2-0.20221119033128-e3509cd9f772
+	go.opentelemetry.io/collector v0.64.2-0.20221121163440-8eb426dfee00
 	go.opentelemetry.io/collector/component v0.0.0-20221119033128-e3509cd9f772
-	go.opentelemetry.io/collector/pdata v0.64.2-0.20221119033128-e3509cd9f772
-	go.opentelemetry.io/collector/semconv v0.64.2-0.20221119033128-e3509cd9f772
+	go.opentelemetry.io/collector/pdata v0.64.2-0.20221121163440-8eb426dfee00
+	go.opentelemetry.io/collector/semconv v0.64.2-0.20221121163440-8eb426dfee00
 	go.uber.org/atomic v1.10.0
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.23.0
@@ -63,7 +63,7 @@ require (
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/collector/consumer v0.0.0-20221119033128-e3509cd9f772 // indirect
 	go.opentelemetry.io/collector/featuregate v0.0.0-20221119033128-e3509cd9f772 // indirect
-	go.opentelemetry.io/collector/processor/batchprocessor v0.64.2-0.20221119033128-e3509cd9f772 // indirect
+	go.opentelemetry.io/collector/processor/batchprocessor v0.64.2-0.20221121163440-8eb426dfee00 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.36.4 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.11.1 // indirect
 	go.opentelemetry.io/otel v1.11.1 // indirect

@@ -7,10 +7,10 @@ require (
 	github.com/ReneKroon/ttlcache/v2 v2.11.0
 	github.com/mitchellh/hashstructure v1.1.0
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.64.2-0.20221119033128-e3509cd9f772
+	go.opentelemetry.io/collector v0.64.2-0.20221121163440-8eb426dfee00
 	go.opentelemetry.io/collector/component v0.0.0-20221119033128-e3509cd9f772
 	go.opentelemetry.io/collector/consumer v0.0.0-20221119033128-e3509cd9f772
-	go.opentelemetry.io/collector/pdata v0.64.2-0.20221119033128-e3509cd9f772
+	go.opentelemetry.io/collector/pdata v0.64.2-0.20221121163440-8eb426dfee00
 	go.uber.org/zap v1.23.0
 	google.golang.org/api v0.103.0
 	google.golang.org/genproto v0.0.0-20221027153422-115e99e71e1c
