@@ -75,6 +75,7 @@
 - `snmpreceiver`: adds scraper for SNMP metric receiver (#13409)
 - `spanmetricsprocessor`: Improve spanmetricsprocessor performance, reuse buffer to calculate key (#16033)
 - `global`: Update gopsutil to 3.22.10 to return Windows partitions, regardless of errors (#14315)
+- `hostmetricsreceiver/filesystem`: Add configuration option to track virtual partitions (#15680)
 
 ### 🧰 Bug fixes 🧰
 
