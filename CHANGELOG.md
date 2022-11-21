@@ -4,6 +4,76 @@
 
 <!-- next version -->
 
+## v0.65.0
+
+### 🛑 Breaking changes 🛑
+
+- `mongodbreceiver`: Drop support for versions of MongoDB prior to 4.0 (#16182)
+- `pkg/ottl`: Rename `ottldatapoints` to `ottldatapoint` (#16245)
+- `pkg/ottl`: Rename `ottllogs` to `ottllog` (#16242)
+- `pkg/ottl`: Renames `ottltraces` to `ottlspan` (#16241)
+- `redisreceiver`: Support more metric label values for redis.cpu.time (#14943)
+
+### 💡 Enhancements 💡
+
+- `exporter/loki`: Automatic mapping beetwen `LogRecord.SeverityNumber` to `LogRecord.Attributes["level"]` (#14313)
+- `jmxreceiver`: Add the JMX metrics gatherer version 1.20.0-alpha to the supported jars hash list (#16356)
+- `mongodbreceiver`: Add additional metrics for mongodb locks (#13661)
+  Add additional metrics for locks.acquire_count, locks.acquire_wait_count, locks.deadlock_count, locks.time_acquiring_micros
+  
+- `elasticsearchreceiver`: add jvm heap percentage usage metric (#14635)
+- `elasticsearchreceiver`: add missing data points for operation count and operation time (#14635)
+- `elasticsearchreceiver`: add segment memory metric on node level (#14635)
+- `elasticsearchreceiver`: Add cluster health metrics for two more shards types (#14635)
+- `elasticsearchreceiver`: add document count metrics on index level (#14635)
+- `elasticsearchreceiver`: add fielddata memory size metrics on index level (#14635)
+- `elasticsearchreceiver`: Add query cache metrics on index level (#14635)
+- `exporter/awsxrayexporter`: Favour semantic convention attributes for DynamoDB table name and messaging url when translating OTel data into X-Ray AWS data. (#16075)
+- `azuremonitorexporter`: Support span and exception events (#16260)
+- `datadogexporter`: Change log level for host metadata (#14186)
+- `azureeventhubreceiver`: Mark the Azure Event Hub receiver as alpha. (#12786)
+- `pkg/ottl`: Add ability to perform basic (+, -, *, and /) arithmetic operations on ints and floats.  Paths and Functions that return ints/floats are allowed. (#15711)
+  Affected components
+  - routingprocessor
+  - transformprocessor
+  
+- `pkg/ottl`: Add support for setting Maps in Values.  This enables Contexts to set map values for attributes. (#16352)
+- `prometheusreceiver`: Trim type's and unit's suffixes from metric name as per otel specs. (#8950)
+  Can be enabled by the featuregate `pkg.translator.prometheus.NormalizeName`
+- `pkg/ottl`: Remove duplicate parse IDs code, avoid coreinternal dependency (#16393)
+  The "[trace|span]_id_string" func returns "000..000" string for invalid ids.
+- `exporter/signalfxexporter`: Allow user to add a custom CA so the ingest and api clients can verify and communicate with custom TLS servers. (#16250)
+  "`ingest_tls`" and "`api_tls`" can be used to set the absolute path to the CA file "`ca_file`".
+  This is needed when the exporter is pointing to a TLS enabled signalfx receiver or/and TLS enabled http_forwarder 
+  and the CA is not in the system cert pool
+  
+- `pkg/stanza`: Support to Customize bufio.SplitFunc (#14593)
+- `processor/transform`: Adds new configuration options that allow specifying the OTTL context to use when executing statements. See [Transform Processor README](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor#config) for more details. (#15381)
+  The existing configuration options will be deprecated in a future release.
+  
+- `transformprocessor`: Added OTTL function ConvertCase into the Transform Processor (#16083)
+
+### 🧰 Bug fixes 🧰
+
+- `receiver/jaeger`: Fix an error message in thrift HTTP message decoder (#16372)
+- `spanmetricsprocessor`: Register `processor.spanmetrics.PermissiveLabelSanitization` featuregate, which was only defined but not registered. (#16269)
+- `splunkhecexporter`: Apply max content length to compressed HEC content (#13995)
+  The Splunk HEC exporter uses the unzipped content to check the size of the payload to send, instead of the compressed content.
+  The max content length configuration should apply to the zipped content when compression is enabled.
+  
+- `receiver/hostmetrics`: Remove "Deprecated" label from network metrics (#16227)
+  Replacement of the metrics was rejected some time ago, but the labels were not updated.
+  
+- `mongodbatlasreceiver`: Checks host and port before assigning attributes in `poll` mode (#16284)
+- `datadogexporter`: Fixes crash when logging error on logs exporter (#16077)
+- `pkg/ottl`: Fix list argument parsing when using internal arguments (#16298)
+- `pkg/stanza, filelog, journald, windowseventlog`: Fix issue where specifying a non-existent storage extension caused panic during shutdown. (#16212)
+- `pkg/stanza`: Fix severity range unmarshaling (#16339)
+- `splunkhecexporter`: Do not log a warning on mapping empty metrics. (#3549)
+- `exporter/datadog`: Fixes bug to append tags in attributes instead of replacing them, simplifies filelog receiver setup, and adds `otel_source` tag. (#15387)
+- `processor/transform`: Fix issue where the metric context was using datapoint functions. (#16251)
+- `vcenterreceiver`: collect VM may be panic nil pointer. (#16277)
+
 ## v0.64.0
 
 ### 🛑 Breaking changes 🛑
