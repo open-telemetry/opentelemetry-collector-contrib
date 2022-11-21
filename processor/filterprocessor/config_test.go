@@ -874,7 +874,7 @@ func TestLoadingConfigOTTL(t *testing.T) {
 			expected: &Config{
 				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 				Spans: SpanFilters{
-					Span: `attributes["test"] == "pass" or attributes["test"] == "also pass"`,
+					Span: ` attributes["test"] == "pass" or attributes["test"] == "also pass"`,
 				},
 			},
 		},
