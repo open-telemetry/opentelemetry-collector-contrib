@@ -28,6 +28,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/processor/processorhelper"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
@@ -519,4 +521,324 @@ func requireNotPanics(t *testing.T, metrics pmetric.Metrics) {
 	require.NotPanics(t, func() {
 		_ = proc.ConsumeMetrics(ctx, metrics)
 	})
+}
+
+var (
+	dataPointStartTimestamp = pcommon.NewTimestampFromTime(time.Date(2020, 2, 11, 20, 26, 12, 321, time.UTC))
+	dataPointTestTimeStamp  = pcommon.NewTimestampFromTime(time.Date(2021, 3, 12, 21, 27, 13, 322, time.UTC))
+)
+
+func TestFilterMetricProcessorWithOTTL(t *testing.T) {
+	tests := []struct {
+		name             string
+		conditions       MetricFilters
+		filterEverything bool
+		want             func(md pmetric.Metrics)
+	}{
+		{
+			name: "drop metrics",
+			conditions: MetricFilters{
+				MetricConditions: []string{
+					`name == "operationA"`,
+				},
+			},
+			want: func(md pmetric.Metrics) {
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().RemoveIf(func(metric pmetric.Metric) bool {
+					return metric.Name() == "operationA"
+				})
+			},
+		},
+		{
+			name: "drop everything by dropping all metrics",
+			conditions: MetricFilters{
+				MetricConditions: []string{
+					`IsMatch(name, "operation.*") == true`,
+				},
+			},
+			filterEverything: true,
+		},
+		{
+			name: "drop sum data point",
+			conditions: MetricFilters{
+				DataPointConditions: []string{
+					`metric.type == METRIC_DATA_TYPE_SUM and value_double == 1.0`,
+				},
+			},
+			want: func(md pmetric.Metrics) {
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().RemoveIf(func(point pmetric.NumberDataPoint) bool {
+					return point.DoubleValue() == 1.0
+				})
+			},
+		},
+		{
+			name: "drop all sum data points",
+			conditions: MetricFilters{
+				DataPointConditions: []string{
+					`metric.type == METRIC_DATA_TYPE_SUM`,
+				},
+			},
+			want: func(md pmetric.Metrics) {
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().RemoveIf(func(metric pmetric.Metric) bool {
+					return metric.Type() == pmetric.MetricTypeSum
+				})
+			},
+		},
+		{
+			name: "drop gauge data point",
+			conditions: MetricFilters{
+				DataPointConditions: []string{
+					`metric.type == METRIC_DATA_TYPE_GAUGE and value_double == 1.0`,
+				},
+			},
+			want: func(md pmetric.Metrics) {
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(4).Gauge().DataPoints().RemoveIf(func(point pmetric.NumberDataPoint) bool {
+					return point.DoubleValue() == 1.0
+				})
+			},
+		},
+		{
+			name: "drop all gauge data points",
+			conditions: MetricFilters{
+				DataPointConditions: []string{
+					`metric.type == METRIC_DATA_TYPE_GAUGE`,
+				},
+			},
+			want: func(md pmetric.Metrics) {
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().RemoveIf(func(metric pmetric.Metric) bool {
+					return metric.Type() == pmetric.MetricTypeGauge
+				})
+			},
+		},
+		{
+			name: "drop histogram data point",
+			conditions: MetricFilters{
+				DataPointConditions: []string{
+					`metric.type == METRIC_DATA_TYPE_HISTOGRAM and count == 1`,
+				},
+			},
+			want: func(md pmetric.Metrics) {
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Histogram().DataPoints().RemoveIf(func(point pmetric.HistogramDataPoint) bool {
+					return point.Count() == 1
+				})
+			},
+		},
+		{
+			name: "drop all histogram data points",
+			conditions: MetricFilters{
+				DataPointConditions: []string{
+					`metric.type == METRIC_DATA_TYPE_HISTOGRAM`,
+				},
+			},
+			want: func(md pmetric.Metrics) {
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().RemoveIf(func(metric pmetric.Metric) bool {
+					return metric.Type() == pmetric.MetricTypeHistogram
+				})
+			},
+		},
+		{
+			name: "drop exponential histogram data point",
+			conditions: MetricFilters{
+				DataPointConditions: []string{
+					`metric.type == METRIC_DATA_TYPE_EXPONENTIAL_HISTOGRAM and count == 1`,
+				},
+			},
+			want: func(md pmetric.Metrics) {
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).ExponentialHistogram().DataPoints().RemoveIf(func(point pmetric.ExponentialHistogramDataPoint) bool {
+					return point.Count() == 1
+				})
+			},
+		},
+		{
+			name: "drop all exponential histogram data points",
+			conditions: MetricFilters{
+				DataPointConditions: []string{
+					`metric.type == METRIC_DATA_TYPE_EXPONENTIAL_HISTOGRAM`,
+				},
+			},
+			want: func(md pmetric.Metrics) {
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().RemoveIf(func(metric pmetric.Metric) bool {
+					return metric.Type() == pmetric.MetricTypeExponentialHistogram
+				})
+			},
+		},
+		{
+			name: "drop summary data point",
+			conditions: MetricFilters{
+				DataPointConditions: []string{
+					`metric.type == METRIC_DATA_TYPE_SUMMARY and sum == 43.21`,
+				},
+			},
+			want: func(md pmetric.Metrics) {
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(3).Summary().DataPoints().RemoveIf(func(point pmetric.SummaryDataPoint) bool {
+					return point.Sum() == 43.21
+				})
+			},
+		},
+		{
+			name: "drop all summary data points",
+			conditions: MetricFilters{
+				DataPointConditions: []string{
+					`metric.type == METRIC_DATA_TYPE_SUMMARY`,
+				},
+			},
+			want: func(md pmetric.Metrics) {
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().RemoveIf(func(metric pmetric.Metric) bool {
+					return metric.Type() == pmetric.MetricTypeSummary
+				})
+			},
+		},
+		{
+			name: "multiple conditions",
+			conditions: MetricFilters{
+				MetricConditions: []string{
+					`resource.attributes["not real"] == "unknown"`,
+					`type != nil`,
+				},
+			},
+			filterEverything: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			processor, err := newFilterMetricProcessor(zap.NewNop(), &Config{Metrics: tt.conditions})
+			assert.NoError(t, err)
+
+			got, err := processor.processMetrics(context.Background(), constructMetrics())
+
+			if tt.filterEverything {
+				assert.Equal(t, processorhelper.ErrSkipProcessingData, err)
+			} else {
+
+				exTd := constructMetrics()
+				tt.want(exTd)
+				assert.Equal(t, exTd, got)
+			}
+		})
+	}
+}
+
+func constructMetrics() pmetric.Metrics {
+	td := pmetric.NewMetrics()
+	rm0 := td.ResourceMetrics().AppendEmpty()
+	rm0.Resource().Attributes().PutStr("host.name", "myhost")
+	rm0ils0 := rm0.ScopeMetrics().AppendEmpty()
+	rm0ils0.Scope().SetName("scope")
+	fillMetricOne(rm0ils0.Metrics().AppendEmpty())
+	fillMetricTwo(rm0ils0.Metrics().AppendEmpty())
+	fillMetricThree(rm0ils0.Metrics().AppendEmpty())
+	fillMetricFour(rm0ils0.Metrics().AppendEmpty())
+	fillMetricFive(rm0ils0.Metrics().AppendEmpty())
+	return td
+}
+
+func fillMetricOne(m pmetric.Metric) {
+	m.SetName("operationA")
+	m.SetDescription("operationA description")
+	m.SetUnit("operationA unit")
+
+	dataPoint0 := m.SetEmptySum().DataPoints().AppendEmpty()
+	dataPoint0.SetStartTimestamp(dataPointStartTimestamp)
+	dataPoint0.SetDoubleValue(1.0)
+	dataPoint0.Attributes().PutStr("attr1", "test1")
+	dataPoint0.Attributes().PutStr("attr2", "test2")
+	dataPoint0.Attributes().PutStr("attr3", "test3")
+	dataPoint0.Attributes().PutStr("flags", "A|B|C")
+
+	dataPoint1 := m.Sum().DataPoints().AppendEmpty()
+	dataPoint1.SetStartTimestamp(dataPointStartTimestamp)
+	dataPoint1.SetDoubleValue(3.7)
+	dataPoint1.Attributes().PutStr("attr1", "test1")
+	dataPoint1.Attributes().PutStr("attr2", "test2")
+	dataPoint1.Attributes().PutStr("attr3", "test3")
+	dataPoint1.Attributes().PutStr("flags", "A|B|C")
+}
+
+func fillMetricTwo(m pmetric.Metric) {
+	m.SetName("operationB")
+	m.SetDescription("operationB description")
+	m.SetUnit("operationB unit")
+
+	dataPoint0 := m.SetEmptyHistogram().DataPoints().AppendEmpty()
+	dataPoint0.SetStartTimestamp(dataPointStartTimestamp)
+	dataPoint0.Attributes().PutStr("attr1", "test1")
+	dataPoint0.Attributes().PutStr("attr2", "test2")
+	dataPoint0.Attributes().PutStr("attr3", "test3")
+	dataPoint0.Attributes().PutStr("flags", "C|D")
+	dataPoint0.SetCount(1)
+
+	dataPoint1 := m.Histogram().DataPoints().AppendEmpty()
+	dataPoint1.SetStartTimestamp(dataPointStartTimestamp)
+	dataPoint1.Attributes().PutStr("attr1", "test1")
+	dataPoint1.Attributes().PutStr("attr2", "test2")
+	dataPoint1.Attributes().PutStr("attr3", "test3")
+	dataPoint1.Attributes().PutStr("flags", "C|D")
+}
+
+func fillMetricThree(m pmetric.Metric) {
+	m.SetName("operationC")
+	m.SetDescription("operationC description")
+	m.SetUnit("operationC unit")
+
+	dataPoint0 := m.SetEmptyExponentialHistogram().DataPoints().AppendEmpty()
+	dataPoint0.SetStartTimestamp(dataPointStartTimestamp)
+	dataPoint0.Attributes().PutStr("attr1", "test1")
+	dataPoint0.Attributes().PutStr("attr2", "test2")
+	dataPoint0.Attributes().PutStr("attr3", "test3")
+	dataPoint0.SetCount(1)
+	dataPoint0.SetScale(1)
+	dataPoint0.SetZeroCount(1)
+	dataPoint0.Positive().SetOffset(1)
+	dataPoint0.Negative().SetOffset(1)
+
+	dataPoint1 := m.ExponentialHistogram().DataPoints().AppendEmpty()
+	dataPoint1.SetStartTimestamp(dataPointStartTimestamp)
+	dataPoint1.Attributes().PutStr("attr1", "test1")
+	dataPoint1.Attributes().PutStr("attr2", "test2")
+	dataPoint1.Attributes().PutStr("attr3", "test3")
+}
+
+func fillMetricFour(m pmetric.Metric) {
+	m.SetName("operationD")
+	m.SetDescription("operationD description")
+	m.SetUnit("operationD unit")
+
+	dataPoint0 := m.SetEmptySummary().DataPoints().AppendEmpty()
+	dataPoint0.SetStartTimestamp(dataPointStartTimestamp)
+	dataPoint0.SetTimestamp(dataPointTestTimeStamp)
+	dataPoint0.Attributes().PutStr("attr1", "test1")
+	dataPoint0.Attributes().PutStr("attr2", "test2")
+	dataPoint0.Attributes().PutStr("attr3", "test3")
+	dataPoint0.SetCount(1234)
+	dataPoint0.SetSum(12.34)
+
+	quantileDataPoint0 := dataPoint0.QuantileValues().AppendEmpty()
+	quantileDataPoint0.SetQuantile(.99)
+	quantileDataPoint0.SetValue(123)
+
+	quantileDataPoint1 := dataPoint0.QuantileValues().AppendEmpty()
+	quantileDataPoint1.SetQuantile(.95)
+	quantileDataPoint1.SetValue(321)
+
+	dataPoint1 := m.Summary().DataPoints().AppendEmpty()
+	dataPoint1.SetSum(43.21)
+}
+
+func fillMetricFive(m pmetric.Metric) {
+	m.SetName("operationE")
+	m.SetDescription("operationE description")
+	m.SetUnit("operationE unit")
+
+	dataPoint0 := m.SetEmptyGauge().DataPoints().AppendEmpty()
+	dataPoint0.SetStartTimestamp(dataPointStartTimestamp)
+	dataPoint0.SetDoubleValue(1.0)
+	dataPoint0.Attributes().PutStr("attr1", "test1")
+	dataPoint0.Attributes().PutStr("attr2", "test2")
+	dataPoint0.Attributes().PutStr("attr3", "test3")
+
+	dataPoint1 := m.SetEmptyGauge().DataPoints().AppendEmpty()
+	dataPoint1.SetStartTimestamp(dataPointStartTimestamp)
+	dataPoint1.SetDoubleValue(2.0)
+	dataPoint1.Attributes().PutStr("attr1", "test1")
+	dataPoint1.Attributes().PutStr("attr2", "test2")
+	dataPoint1.Attributes().PutStr("attr3", "test3")
 }
