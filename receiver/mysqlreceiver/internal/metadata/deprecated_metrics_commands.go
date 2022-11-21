@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package metadata
+package metadata // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver/internal/metadata"
 
 // deprecateDescription add [DEPRECATED] prefix to description.
 func (m *metricMysqlCommands) deprecateDescription() {
