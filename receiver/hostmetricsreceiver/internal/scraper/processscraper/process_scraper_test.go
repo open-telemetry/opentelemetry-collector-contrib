@@ -52,6 +52,7 @@ func enableLinuxOnlyMetrics(ms *metadata.MetricsSettings) {
 	ms.ProcessPagingFaults.Enabled = true
 	ms.ProcessContextSwitches.Enabled = true
 	ms.ProcessOpenFileDescriptors.Enabled = true
+	ms.ProcessSignalsPending.Enabled = true
 }
 
 func TestScrape(t *testing.T) {
@@ -119,6 +120,9 @@ func TestScrape(t *testing.T) {
 			assertOldDiskIOMetricValid(t, md.ResourceMetrics(), expectedStartTime)
 			if metricsSettings.ProcessPagingFaults.Enabled {
 				assertPagingMetricValid(t, md.ResourceMetrics(), expectedStartTime)
+			}
+			if metricsSettings.ProcessSignalsPending.Enabled {
+				assertSignalsPendingMetricValid(t, md.ResourceMetrics(), expectedStartTime)
 			}
 			if metricsSettings.ProcessThreads.Enabled {
 				assertThreadsCountValid(t, md.ResourceMetrics(), expectedStartTime)
@@ -188,6 +192,13 @@ func assertPagingMetricValid(t *testing.T, resourceMetrics pmetric.ResourceMetri
 
 	if startTime != 0 {
 		internal.AssertSumMetricStartTimeEquals(t, pagingFaultsMetric, startTime)
+	}
+}
+
+func assertSignalsPendingMetricValid(t *testing.T, resourceMetrics pmetric.ResourceMetricsSlice, startTime pcommon.Timestamp) {
+	signalsPendingMetric := getMetric(t, "process.signals_pending", resourceMetrics)
+	if startTime != 0 {
+		internal.AssertSumMetricStartTimeEquals(t, signalsPendingMetric, startTime)
 	}
 }
 
@@ -396,6 +407,11 @@ func (p *processHandleMock) NumFDs() (int32, error) {
 	return args.Get(0).(int32), args.Error(1)
 }
 
+func (p *processHandleMock) RlimitUsage(gatherUsed bool) ([]process.RlimitStat, error) {
+	args := p.MethodCalled("RlimitUsage")
+	return args.Get(0).([]process.RlimitStat), args.Error(1)
+}
+
 func newDefaultHandleMock() *processHandleMock {
 	handleMock := &processHandleMock{}
 	handleMock.On("Username").Return("username", nil)
@@ -409,6 +425,7 @@ func newDefaultHandleMock() *processHandleMock {
 	handleMock.On("PageFaults").Return(&process.PageFaultsStat{}, nil)
 	handleMock.On("NumCtxSwitches").Return(&process.NumCtxSwitchesStat{}, nil)
 	handleMock.On("NumFDs").Return(int32(0), nil)
+	handleMock.On("RlimitUsage").Return([]process.RlimitStat{}, nil)
 	return handleMock
 }
 
@@ -545,6 +562,7 @@ func enableOptionalMetrics(ms *metadata.MetricsSettings) {
 	ms.ProcessPagingFaults.Enabled = true
 	ms.ProcessContextSwitches.Enabled = true
 	ms.ProcessOpenFileDescriptors.Enabled = true
+	ms.ProcessSignalsPending.Enabled = true
 }
 
 func TestScrapeMetrics_ProcessErrors(t *testing.T) {
@@ -566,6 +584,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 		numThreadsError     error
 		numCtxSwitchesError error
 		numFDsError         error
+		rlimitError         error
 		expectedError       string
 	}
 
@@ -637,6 +656,11 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			expectedError: `error reading open file descriptor count for process "test" (pid 1): err10`,
 		},
 		{
+			name:          "Signals Pending Error",
+			rlimitError:   errors.New("err-rlimit"),
+			expectedError: `error reading pending signals for process "test" (pid 1): err-rlimit`,
+		},
+		{
 			name:                "Multiple Errors",
 			cmdlineError:        errors.New("err2"),
 			usernameError:       errors.New("err3"),
@@ -648,6 +672,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			numThreadsError:     errors.New("err8"),
 			numCtxSwitchesError: errors.New("err9"),
 			numFDsError:         errors.New("err10"),
+			rlimitError:         errors.New("err-rlimit"),
 			expectedError: `error reading command for process "test" (pid 1): err2; ` +
 				`error reading username for process "test" (pid 1): err3; ` +
 				`error reading create time for process "test" (pid 1): err4; ` +
@@ -657,7 +682,8 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 				`error reading memory paging info for process "test" (pid 1): err-paging; ` +
 				`error reading thread info for process "test" (pid 1): err8; ` +
 				`error reading context switch counts for process "test" (pid 1): err9; ` +
-				`error reading open file descriptor count for process "test" (pid 1): err10`,
+				`error reading open file descriptor count for process "test" (pid 1): err10; ` +
+				`error reading pending signals for process "test" (pid 1): err-rlimit`,
 		},
 	}
 
@@ -695,6 +721,12 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			handleMock.On("PageFaults").Return(&process.PageFaultsStat{}, test.pageFaultsError)
 			handleMock.On("NumCtxSwitches").Return(&process.NumCtxSwitchesStat{}, test.numCtxSwitchesError)
 			handleMock.On("NumFDs").Return(int32(0), test.numFDsError)
+			handleMock.On("RlimitUsage").Return([]process.RlimitStat{
+				{
+					Resource: process.RLIMIT_SIGPENDING,
+					Used:     0,
+				},
+			}, test.rlimitError)
 
 			scraper.getProcessHandles = func() (processHandles, error) {
 				return &processHandlesMock{handles: []*processHandleMock{handleMock}}, nil
@@ -702,7 +734,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 
 			md, err := scraper.scrape(context.Background())
 
-			expectedResourceMetricsLen, expectedMetricsLen := getExpectedLengthOfReturnedMetrics(test.nameError, test.exeError, test.timesError, test.memoryInfoError, test.ioCountersError, test.pageFaultsError, test.numThreadsError, test.numCtxSwitchesError, test.numFDsError)
+			expectedResourceMetricsLen, expectedMetricsLen := getExpectedLengthOfReturnedMetrics(test.nameError, test.exeError, test.timesError, test.memoryInfoError, test.ioCountersError, test.pageFaultsError, test.numThreadsError, test.numCtxSwitchesError, test.numFDsError, test.rlimitError)
 			assert.Equal(t, expectedResourceMetricsLen, md.ResourceMetrics().Len())
 			assert.Equal(t, expectedMetricsLen, md.MetricCount())
 
@@ -710,7 +742,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			isPartial := scrapererror.IsPartialScrapeError(err)
 			assert.True(t, isPartial)
 			if isPartial {
-				expectedFailures := getExpectedScrapeFailures(test.nameError, test.exeError, test.timesError, test.memoryInfoError, test.ioCountersError, test.pageFaultsError, test.numThreadsError, test.numCtxSwitchesError, test.numFDsError)
+				expectedFailures := getExpectedScrapeFailures(test.nameError, test.exeError, test.timesError, test.memoryInfoError, test.ioCountersError, test.pageFaultsError, test.numThreadsError, test.numCtxSwitchesError, test.numFDsError, test.rlimitError)
 				var scraperErr scrapererror.PartialScrapeError
 				require.ErrorAs(t, err, &scraperErr)
 				assert.Equal(t, expectedFailures, scraperErr.Failed)
@@ -719,7 +751,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 	}
 }
 
-func getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError, diskError, pageFaultsError, threadError, contextSwitchError, fileDescriptorError error) (int, int) {
+func getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError, diskError, pageFaultsError, threadError, contextSwitchError, fileDescriptorError error, rlimitError error) (int, int) {
 	if nameError != nil || exeError != nil {
 		return 0, 0
 	}
@@ -737,6 +769,9 @@ func getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError
 	if pageFaultsError == nil {
 		expectedLen += pagingMetricsLen
 	}
+	if rlimitError == nil {
+		expectedLen += signalMetricsLen
+	}
 	if threadError == nil {
 		expectedLen += threadMetricsLen
 	}
@@ -753,11 +788,11 @@ func getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError
 	return 1, expectedLen
 }
 
-func getExpectedScrapeFailures(nameError, exeError, timeError, memError, diskError, pageFaultsError, threadError, contextSwitchError, fileDescriptorError error) int {
+func getExpectedScrapeFailures(nameError, exeError, timeError, memError, diskError, pageFaultsError, threadError, contextSwitchError, fileDescriptorError error, rlimitError error) int {
 	if nameError != nil || exeError != nil {
 		return 1
 	}
-	_, expectedMetricsLen := getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError, diskError, pageFaultsError, threadError, contextSwitchError, fileDescriptorError)
+	_, expectedMetricsLen := getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError, diskError, pageFaultsError, threadError, contextSwitchError, fileDescriptorError, rlimitError)
 	return metricsLen - expectedMetricsLen
 }
 
