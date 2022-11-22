@@ -81,9 +81,9 @@ type kafkaLogsConsumer struct {
 	messageMarking    MessageMarking
 }
 
-var _ component.Receiver = (*kafkaTracesConsumer)(nil)
-var _ component.Receiver = (*kafkaMetricsConsumer)(nil)
-var _ component.Receiver = (*kafkaLogsConsumer)(nil)
+var _ component.TracesReceiver = (*kafkaTracesConsumer)(nil)
+var _ component.MetricsReceiver = (*kafkaMetricsConsumer)(nil)
+var _ component.LogsReceiver = (*kafkaLogsConsumer)(nil)
 
 func newTracesReceiver(config Config, set component.ReceiverCreateSettings, unmarshalers map[string]TracesUnmarshaler, nextConsumer consumer.Traces) (*kafkaTracesConsumer, error) {
 	unmarshaler := unmarshalers[config.Encoding]
