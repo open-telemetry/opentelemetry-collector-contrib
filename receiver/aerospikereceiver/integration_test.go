@@ -15,7 +15,7 @@
 //go:build integration
 // +build integration
 
-package aerospikereceiver_test
+package aerospikereceiver
 
 import (
 	"context"
@@ -36,7 +36,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver"
 )
 
 type doneCheckable interface {
@@ -266,7 +265,7 @@ func TestAerospikeIntegration(t *testing.T) {
 
 	ctx := context.Background()
 	req := testcontainers.ContainerRequest{
-		Image:        "aerospike:ce-6.1.0.1",
+		Image:        "aerospike/aerospike-server:6.2.0.0",
 		ExposedPorts: []string{"3000/tcp"},
 		WaitingFor:   wait.ForListeningPort("3000/tcp"),
 	}
@@ -295,8 +294,8 @@ func TestAerospikeIntegration(t *testing.T) {
 	asHost := as.NewHost(ip, port)
 	populateMetrics(t, asHost)
 
-	f := aerospikereceiver.NewFactory()
-	cfg := f.CreateDefaultConfig().(*aerospikereceiver.Config)
+	f := NewFactory()
+	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Endpoint = host
 	cfg.ScraperControllerSettings.CollectionInterval = 100 * time.Millisecond
 
