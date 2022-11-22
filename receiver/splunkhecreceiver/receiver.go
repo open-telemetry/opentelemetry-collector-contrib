@@ -194,6 +194,7 @@ func (r *splunkReceiver) Start(_ context.Context, host component.Host) error {
 	}
 
 	mx := mux.NewRouter()
+	mx.NewRoute().Path(r.config.HealthPath).HandlerFunc(r.handleHealthReq)
 	if r.logsConsumer != nil {
 		mx.NewRoute().Path(r.config.RawPath).HandlerFunc(r.handleRawReq)
 	}
@@ -442,6 +443,10 @@ func (r *splunkReceiver) failRequest(
 			zap.Error(err), // It handles nil error
 		)
 	}
+}
+
+func (r *splunkReceiver) handleHealthReq(writer http.ResponseWriter, _ *http.Request) {
+	writer.WriteHeader(200)
 }
 
 func initJSONResponse(s string) []byte {

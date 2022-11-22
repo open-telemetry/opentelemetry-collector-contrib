@@ -53,7 +53,8 @@ func TestLoadConfig(t *testing.T) {
 				AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
 					AccessTokenPassthrough: true,
 				},
-				RawPath: "/foo",
+				RawPath:    "/foo",
+				HealthPath: "/bar",
 				HecToOtelAttrs: splunk.HecToOtelAttrs{
 					Source:     "file.name",
 					SourceType: "foobar",
@@ -78,7 +79,8 @@ func TestLoadConfig(t *testing.T) {
 				AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
 					AccessTokenPassthrough: false,
 				},
-				RawPath: "/services/collector/raw",
+				RawPath:    "/services/collector/raw",
+				HealthPath: "/services/collector/health",
 				HecToOtelAttrs: splunk.HecToOtelAttrs{
 					Source:     "com.splunk.source",
 					SourceType: "com.splunk.sourcetype",
