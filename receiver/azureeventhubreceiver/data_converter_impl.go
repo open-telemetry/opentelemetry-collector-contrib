@@ -30,7 +30,7 @@ var notHexDigit = regexp.MustCompile(`[^a-fA-F0-9]+`)
 
 // AzureRecords represents an array of Azure log records
 // as exported via an Azure Event Hub
-type AzureRecords struct {
+type azureRecords struct {
 	Records []AzureLogRecord `json:"records"`
 }
 
