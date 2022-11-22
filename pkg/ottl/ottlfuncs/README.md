@@ -4,12 +4,13 @@ The following functions are intended to be used in implementations of the OpenTe
 
 Factory Functions
 - [Concat](#concat)
+- [ConvertCase](#convertcase)
 - [Int](#int)
 - [IsMatch](#ismatch)
+- [ParseToMap](#ParseToMap)
 - [SpanID](#spanid)
 - [Split](#split)
 - [TraceID](#traceid)
-- [ConvertCase](#convertcase)
 
 Functions
 - [delete_key](#delete_key)
@@ -42,6 +43,29 @@ Examples:
 
 
 - `Concat(["HTTP method is: ", attributes["http.method"]], "")`
+
+## ConvertCase
+
+`ConvertCase(target, toCase)`
+
+The `ConvertCase` factory function converts the `target` string into the desired case `toCase`.
+
+`target` is a string. `toCase` is a string.
+
+If the `target` is not a string or does not exist, the `ConvertCase` factory function will return `nil`.
+
+`toCase` can be:
+
+- `lower`: Converts the `target` string to lowercase (e.g. `MY_METRIC` to `my_metric`)
+- `upper`: Converts the `target` string to uppercase (e.g. `my_metric` to `MY_METRIC`)
+- `snake`: Converts the `target` string to snakecase (e.g. `myMetric` to `my_metric`)
+- `camel`: Converts the `target` string to camelcase (e.g. `my_metric` to `MyMetric`)
+
+If `toCase` is any value other than the options above, the `ConvertCase` factory function will return an error during collector startup.
+
+Examples:
+
+- `ConvertCase(metric.name, "snake")`
 
 ## Int
 
@@ -85,6 +109,31 @@ Examples:
 
 - `IsMatch("string", ".*ring")`
 
+## ParseToMap
+
+`ParseToMap(target, inputFormat)`
+
+The `ParseToMap` factory function returns a `pcommon.Map` struct that is a result of parsing the target string using the specified format.
+
+`target` is a Getter that returns a string.  `inputFormat` is a string that specifies what format to use when parsing. Valid values for `inputFormat` are: `json`.
+
+If `json` is used the target is unmarshalled using [jsoniter](https://github.com/json-iterator/go).   Each JSON type is converted into a `pdata.Value` using the following map:
+
+```
+JSON boolean -> bool
+JSON number  -> float64
+JSON string  -> string
+JSON null    -> nil
+JSON arrays  -> pdata.SliceValue
+JSON objects -> map[string]any
+```
+
+Examples:
+
+- `ParseToMap("{\"attr\":true}", "json")`
+- `ParseToMap(attributes["kubernetes"], "json")`
+- `ParseToMap(body, "json")`
+
 ## SpanID
 
 `SpanID(bytes)`
@@ -122,29 +171,6 @@ The `TraceID` factory function returns a `pdata.TraceID` struct from the given b
 Examples:
 
 - `TraceID(0x00000000000000000000000000000000)`
-
-## ConvertCase
-
-`ConvertCase(target, toCase)`
-
-The `ConvertCase` factory function converts the `target` string into the desired case `toCase`.
-
-`target` is a string. `toCase` is a string.
-
-If the `target` is not a string or does not exist, the `ConvertCase` factory function will return `nil`.
-
-`toCase` can be:
-
-- `lower`: Converts the `target` string to lowercase (e.g. `MY_METRIC` to `my_metric`)
-- `upper`: Converts the `target` string to uppercase (e.g. `my_metric` to `MY_METRIC`)
-- `snake`: Converts the `target` string to snakecase (e.g. `myMetric` to `my_metric`)
-- `camel`: Converts the `target` string to camelcase (e.g. `my_metric` to `MyMetric`)
-
-If `toCase` is any value other than the options above, the `ConvertCase` factory function will return an error during collector startup.
-
-Examples:
-
-- `ConvertCase(metric.name, "snake")`
 
 ## delete_key
 
