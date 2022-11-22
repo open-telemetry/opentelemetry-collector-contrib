@@ -22,24 +22,28 @@ attributes:
   direction:
     value: direction
     description: The direction of network flow.
+    type: string
     enum:
       - received
       - transmitted
   disk_state:
     value: state
     description: The state of storage space.
+    type: string
     enum:
       - used
       - available
   packet.type:
     value: type
     description: The type of packet counter.
+    type: string
     enum:
       - dropped
       - errored
       - success
   class:
     description: The CPU usage of the architecture allocated for either DPDK (datapath) or non-DPDK (services) processes.
+    type: string
     enum:
       - datapath
       - services

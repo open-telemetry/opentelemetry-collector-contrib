@@ -14,35 +14,42 @@ resource_attributes:
 attributes:
   cache_name:
     description: The name of cache.
+    type: string
     enum:
     - fielddata
     - query
   fs_direction:
     value: direction
     description: The direction of filesystem IO.
+    type: string
     enum:
     - read
     - write
   collector_name:
     value: name
     description: The name of the garbage collector.
+    type: string
   memory_pool_name:
     value: name
     description: The name of the JVM memory pool.
+    type: string
   direction:
     description: The direction of network data.
+    type: string
     enum:
     - received
     - sent
   document_state:
     value: state
     description: The state of the document.
+    type: string
     enum:
     - active
     - deleted
   shard_state:
     value: state
     description: The state of the shard.
+    type: string
     enum:
     - active
     - active_primary
@@ -53,6 +60,7 @@ attributes:
   operation:
     value: operation
     description: The type of operation.
+    type: string
     enum:
     - index
     - delete
@@ -67,21 +75,25 @@ attributes:
     - warmer
   thread_pool_name:
     description: The name of the thread pool.
+    type: string
   thread_state:
     value: state
     description: The state of the thread.
+    type: string
     enum:
     - active
     - idle
   task_state:
     value: state
     description: The state of the task.
+    type: string
     enum:
     - rejected
     - completed
   health_status:
     value: status
     description: The health status of the cluster.
+    type: string
     enum:
     - green
     - yellow
@@ -89,33 +101,39 @@ attributes:
   circuit_breaker_name:
     value: name
     description: The name of circuit breaker.
+    type: string
   memory_state:
     value: state
     description: State of the memory
+    type: string
     enum:
       - free
       - used
   indexing_memory_state:
     value: state
     description: State of the indexing memory
+    type: string
     enum:
       - current
       - total
   cluster_published_difference_state:
     value: state
     description: State of the published differences
+    type: string
     enum:
       - incompatible
       - compatible
   cluster_state_queue_state:
     value: state
     description: State of the published differences
+    type: string
     enum:
       - pending
       - committed
   indexing_pressure_stage:
     value: stage
     description: Stage of the indexing pressure
+    type: string
     enum:
       - coordinating
       - primary
@@ -123,9 +141,11 @@ attributes:
   cluster_state_update_state:
     value: state
     description: State of cluster state update
+    type: string
   cluster_state_update_type:
     value: type
     description: Type of cluster state update
+    type: string
     enum:
       - computation
       - context_construction
@@ -136,21 +156,25 @@ attributes:
   ingest_pipeline_name:
     value: name
     description: Name of the ingest pipeline.
+    type: string
   query_cache_count_type:
     value: type
     description: Type of query cache count
+    type: string
     enum:
       - hit
       - miss
   index_aggregation_type:
     value: aggregation
     description: Type of shard aggregation for index statistics
+    type: string
     enum:
       - primary_shards
       - total
   segments_memory_object_type:
     value: object
     description: Type of object in segment
+    type: string
     enum:
       - term
       - doc_value
@@ -159,6 +183,7 @@ attributes:
   get_result:
     value: result
     description: Result of get operation
+    type: string
     enum:
       - hit
       - miss
