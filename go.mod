@@ -1034,4 +1034,7 @@ exclude github.com/docker/distribution v2.8.0+incompatible
 // at the time of this inclusion, v0.38.0 was the latest version available (also tagged as v2.38.0)
 replace github.com/prometheus/prometheus => github.com/prometheus/prometheus v0.38.0
 
+// see https://github.com/mattn/go-ieproxy/issues/45
+replace github.com/mattn/go-ieproxy => github.com/mattn/go-ieproxy v0.0.1
+
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter => ./internal/filter

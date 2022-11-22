@@ -1015,6 +1015,9 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipki
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver => ../../receiver/zookeeperreceiver
 
+// see https://github.com/mattn/go-ieproxy/issues/45
+replace github.com/mattn/go-ieproxy => github.com/mattn/go-ieproxy v0.0.1
+
 // see https://github.com/google/gnostic/issues/262
 replace github.com/googleapis/gnostic v0.5.6 => github.com/googleapis/gnostic v0.5.5
 
