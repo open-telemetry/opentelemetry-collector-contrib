@@ -115,7 +115,7 @@ func TraceIDFromGUID(s *string) pcommon.TraceID {
 // as an integer, then the integer is returned, otherwise
 // a double is returned. Nil may be returned if the
 // json.Number instance is not valid.
-func JsonNumberToRaw(n json.Number) interface{} {
+func jsonNumberToRaw(n json.Number) interface{} {
 	if i, err := n.Int64(); err == nil {
 		return i
 	}
