@@ -73,7 +73,7 @@ See the [Collector feature gates](https://github.com/open-telemetry/opentelemetr
 
 **BETA**: `receiver.dockerstats.useScraperV2`
 
-The feature gate `receiver.dockerstatsd.useScraperV2` allows collection of selective metrics that is described in [documentation.md](./documentation.md). When the feature gate is disabled, the metrics settings are mostly ignored and not configurable with minor variation in metric name and attributes.
+The feature gate `receiver.dockerstats.useScraperV2` allows collection of selective metrics that is described in [documentation.md](./documentation.md). When the feature gate is disabled, the metrics settings are mostly ignored and not configurable with minor variation in metric name and attributes.
 
 This is considered a breaking change for existing users of this receiver, and it is recommended to migrate to the new implementation when possible. Leave this feature gate enabled to avoid having to migrate any visualisations or alerts.
 
