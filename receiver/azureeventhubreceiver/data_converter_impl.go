@@ -129,7 +129,7 @@ func jsonNumberToRaw(n json.Number) interface{} {
 // given interface to find and replace json.Number
 // instances with a raw int or double. This function
 // returns the possibly mutated interface.
-func ReplaceJsonNumber(i interface{}) interface{} {
+func replaceJsonNumber(i interface{}) interface{} {
 	switch t := i.(type) {
 	case map[string]interface{}:
 		for k, v := range t {
