@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/shirou/gopsutil/v3/process"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -37,8 +38,9 @@ const (
 	threadMetricsLen         = 1
 	contextSwitchMetricsLen  = 1
 	fileDescriptorMetricsLen = 1
+	signalMetricsLen         = 1
 
-	metricsLen = cpuMetricsLen + memoryMetricsLen + diskMetricsLen + pagingMetricsLen + threadMetricsLen + contextSwitchMetricsLen + fileDescriptorMetricsLen
+	metricsLen = cpuMetricsLen + memoryMetricsLen + diskMetricsLen + pagingMetricsLen + threadMetricsLen + contextSwitchMetricsLen + fileDescriptorMetricsLen + signalMetricsLen
 )
 
 // scraper for Process Metrics
@@ -130,6 +132,10 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 
 		if err = s.scrapeAndAppendOpenFileDescriptorsMetric(now, md.handle); err != nil {
 			errs.AddPartial(fileDescriptorMetricsLen, fmt.Errorf("error reading open file descriptor count for process %q (pid %v): %w", md.executable.name, md.pid, err))
+		}
+
+		if err = s.scrapeAndAppendSignalsPendingMetric(now, md.handle); err != nil {
+			errs.AddPartial(signalMetricsLen, fmt.Errorf("error reading pending signals for process %q (pid %v): %w", md.executable.name, md.pid, err))
 		}
 
 		options := append(md.resourceOptions(), metadata.WithStartTimeOverride(pcommon.Timestamp(md.createTime*1e6)))
@@ -270,6 +276,7 @@ func (s *scraper) scrapeAndAppendPagingMetric(now pcommon.Timestamp, handle proc
 
 	s.mb.RecordProcessPagingFaultsDataPoint(now, int64(pageFaultsStat.MajorFaults), metadata.AttributePagingFaultTypeMajor)
 	s.mb.RecordProcessPagingFaultsDataPoint(now, int64(pageFaultsStat.MinorFaults), metadata.AttributePagingFaultTypeMinor)
+
 	return nil
 }
 
@@ -315,6 +322,26 @@ func (s *scraper) scrapeAndAppendOpenFileDescriptorsMetric(now pcommon.Timestamp
 	}
 
 	s.mb.RecordProcessOpenFileDescriptorsDataPoint(now, int64(fds))
+
+	return nil
+}
+
+func (s *scraper) scrapeAndAppendSignalsPendingMetric(now pcommon.Timestamp, handle processHandle) error {
+	if !s.config.Metrics.ProcessSignalsPending.Enabled {
+		return nil
+	}
+
+	rlimitStats, err := handle.RlimitUsage(true)
+	if err != nil {
+		return err
+	}
+
+	for _, rlimitStat := range rlimitStats {
+		if rlimitStat.Resource == process.RLIMIT_SIGPENDING {
+			s.mb.RecordProcessSignalsPendingDataPoint(now, int64(rlimitStat.Used))
+			break
+		}
+	}
 
 	return nil
 }

@@ -124,6 +124,15 @@ metrics:
       monotonic: true
     attributes: [paging_fault_type]
 
+  process.signals_pending:
+    enabled: false
+    description: Number of pending signals for the process. This metric is only available on Linux.
+    unit: "{signals}"
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: false
+
   process.threads:
     enabled: false
     description: Process threads count.
