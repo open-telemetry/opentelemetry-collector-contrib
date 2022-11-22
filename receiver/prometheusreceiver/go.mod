@@ -12,13 +12,13 @@ require (
 	github.com/prometheus/common v0.37.0
 	github.com/prometheus/prometheus v0.38.0
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.64.2-0.20221119033128-e3509cd9f772
-	go.opentelemetry.io/collector/component v0.0.0-20221119033128-e3509cd9f772
-	go.opentelemetry.io/collector/consumer v0.0.0-20221119033128-e3509cd9f772
-	go.opentelemetry.io/collector/featuregate v0.0.0-20221119033128-e3509cd9f772
-	go.opentelemetry.io/collector/pdata v0.64.2-0.20221119033128-e3509cd9f772
-	go.opentelemetry.io/collector/processor/batchprocessor v0.64.2-0.20221119033128-e3509cd9f772
-	go.opentelemetry.io/collector/semconv v0.64.2-0.20221119033128-e3509cd9f772
+	go.opentelemetry.io/collector v0.65.0
+	go.opentelemetry.io/collector/component v0.65.0
+	go.opentelemetry.io/collector/consumer v0.65.0
+	go.opentelemetry.io/collector/featuregate v0.65.0
+	go.opentelemetry.io/collector/pdata v0.65.0
+	go.opentelemetry.io/collector/processor/batchprocessor v0.65.0
+	go.opentelemetry.io/collector/semconv v0.65.0
 	go.uber.org/atomic v1.10.0
 	go.uber.org/zap v1.23.0
 	google.golang.org/protobuf v1.28.1
@@ -46,7 +46,7 @@ require (
 	github.com/armon/go-metrics v0.3.10 // indirect
 	github.com/aws/aws-sdk-go v1.44.133 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
-	github.com/cenkalti/backoff/v4 v4.1.3 // indirect
+	github.com/cenkalti/backoff/v4 v4.2.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/cncf/xds/go v0.0.0-20220314180256-7f1daf1720fc // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
@@ -171,7 +171,7 @@ require (
 	google.golang.org/api v0.103.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20221027153422-115e99e71e1c // indirect
-	google.golang.org/grpc v1.50.1 // indirect
+	google.golang.org/grpc v1.51.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.66.6 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
