@@ -27,6 +27,20 @@ type EnumParser func(*EnumSymbol) (*Enum, error)
 
 type Enum int64
 
+type FunctionMap map[string]interface{}
+
+type Option func(FunctionMap)
+
+func NewFunctionMap(options ...Option) FunctionMap {
+	functions := make(FunctionMap, len(options))
+
+	for _, op := range options {
+		op(functions)
+	}
+
+	return functions
+}
+
 func (p *Parser[K]) newFunctionCall(inv invocation) (Expr[K], error) {
 	f, ok := p.functions[inv.Function]
 	if !ok {

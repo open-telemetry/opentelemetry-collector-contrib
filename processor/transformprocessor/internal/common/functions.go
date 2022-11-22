@@ -15,39 +15,22 @@
 package common // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 
 import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlscope"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 )
 
 func Functions[K any]() map[string]interface{} {
-	return map[string]interface{}{
-		"TraceID":              ottlfuncs.TraceID[K],
-		"SpanID":               ottlfuncs.SpanID[K],
-		"IsMatch":              ottlfuncs.IsMatch[K],
-		"Concat":               ottlfuncs.Concat[K],
-		"Split":                ottlfuncs.Split[K],
-		"Int":                  ottlfuncs.Int[K],
-		"ConvertCase":          ottlfuncs.ConvertCase[K],
-		"ParseJSON":            ottlfuncs.ParseJSON[K],
-		"keep_keys":            ottlfuncs.KeepKeys[K],
-		"set":                  ottlfuncs.Set[K],
-		"truncate_all":         ottlfuncs.TruncateAll[K],
-		"limit":                ottlfuncs.Limit[K],
-		"replace_match":        ottlfuncs.ReplaceMatch[K],
-		"replace_all_matches":  ottlfuncs.ReplaceAllMatches[K],
-		"replace_pattern":      ottlfuncs.ReplacePattern[K],
-		"replace_all_patterns": ottlfuncs.ReplaceAllPatterns[K],
-		"delete_key":           ottlfuncs.DeleteKey[K],
-		"delete_matching_keys": ottlfuncs.DeleteMatchingKeys[K],
-		"merge_maps":           ottlfuncs.MergeMaps[K],
-	}
+	return ottl.NewFunctionMap(ottlfuncs.WithStandardFunctions[K](), ottlfuncs.WithFactoryFunctions[K]())
 }
 
 func ResourceFunctions() map[string]interface{} {
+	// No resource-only functions yet.
 	return Functions[ottlresource.TransformContext]()
 }
 
 func ScopeFunctions() map[string]interface{} {
+	// No scope-only functions yet.
 	return Functions[ottlscope.TransformContext]()
 }

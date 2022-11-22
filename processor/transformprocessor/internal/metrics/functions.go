@@ -40,5 +40,6 @@ func DataPointFunctions() map[string]interface{} {
 }
 
 func MetricFunctions() map[string]interface{} {
+	// No metric-only functions yet.
 	return common.Functions[ottlmetric.TransformContext]()
 }

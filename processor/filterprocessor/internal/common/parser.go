@@ -105,18 +105,11 @@ func statementsToExpr[K any](statements []*ottl.Statement[K]) expr.BoolExpr[K] {
 }
 
 func functions[K any]() map[string]interface{} {
-	return map[string]interface{}{
-		"TraceID":     ottlfuncs.TraceID[K],
-		"SpanID":      ottlfuncs.SpanID[K],
-		"IsMatch":     ottlfuncs.IsMatch[K],
-		"Concat":      ottlfuncs.Concat[K],
-		"Split":       ottlfuncs.Split[K],
-		"Int":         ottlfuncs.Int[K],
-		"ConvertCase": ottlfuncs.ConvertCase[K],
-		"drop": func() (ottl.ExprFunc[K], error) {
-			return func(context.Context, K) (interface{}, error) {
-				return true, nil
-			}, nil
-		},
+	fs := ottl.NewFunctionMap(ottlfuncs.WithFactoryFunctions[K]())
+	fs["drop"] = func() (ottl.ExprFunc[K], error) {
+		return func(context.Context, K) (interface{}, error) {
+			return true, nil
+		}, nil
 	}
+	return fs
 }

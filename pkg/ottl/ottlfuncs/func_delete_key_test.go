@@ -76,7 +76,7 @@ func Test_deleteKey(t *testing.T) {
 			scenarioMap := pcommon.NewMap()
 			input.CopyTo(scenarioMap)
 
-			exprFunc, err := DeleteKey(tt.target, tt.key)
+			exprFunc, err := deleteKey(tt.target, tt.key)
 			assert.NoError(t, err)
 
 			_, err = exprFunc(nil, scenarioMap)
@@ -104,7 +104,7 @@ func Test_deleteKey_bad_input(t *testing.T) {
 
 	key := "anything"
 
-	exprFunc, err := DeleteKey[interface{}](target, key)
+	exprFunc, err := deleteKey[interface{}](target, key)
 	assert.NoError(t, err)
 	result, err := exprFunc(nil, input)
 	assert.NoError(t, err)
@@ -125,7 +125,7 @@ func Test_deleteKey_get_nil(t *testing.T) {
 
 	key := "anything"
 
-	exprFunc, err := DeleteKey[interface{}](target, key)
+	exprFunc, err := deleteKey[interface{}](target, key)
 	assert.NoError(t, err)
 	result, err := exprFunc(nil, nil)
 	assert.NoError(t, err)

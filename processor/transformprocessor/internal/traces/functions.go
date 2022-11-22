@@ -21,11 +21,11 @@ import (
 )
 
 func SpanFunctions() map[string]interface{} {
-	// No trace-only functions yet.
+	// No span-only functions yet.
 	return common.Functions[ottlspan.TransformContext]()
 }
 
 func SpanEventFunctions() map[string]interface{} {
-	// No trace-only functions yet.
+	// No spanevent-only functions yet.
 	return common.Functions[ottlspanevent.TransformContext]()
 }

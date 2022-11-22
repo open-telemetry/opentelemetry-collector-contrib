@@ -24,7 +24,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-func DeleteMatchingKeys[K any](target ottl.Getter[K], pattern string) (ottl.ExprFunc[K], error) {
+func WithDeleteMatchingKeys[K any]() ottl.Option {
+	return func(fm ottl.FunctionMap) {
+		fm["delete_matching_keys"] = deleteMatchingKeys[K]
+	}
+}
+
+func deleteMatchingKeys[K any](target ottl.Getter[K], pattern string) (ottl.ExprFunc[K], error) {
 	compiledPattern, err := regexp.Compile(pattern)
 	if err != nil {
 		return nil, fmt.Errorf("the regex pattern supplied to delete_matching_keys is not a valid pattern: %w", err)

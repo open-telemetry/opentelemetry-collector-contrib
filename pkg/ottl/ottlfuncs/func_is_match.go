@@ -28,7 +28,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-func IsMatch[K any](target ottl.Getter[K], pattern string) (ottl.ExprFunc[K], error) {
+func WithIsMatch[K any]() ottl.Option {
+	return func(fm ottl.FunctionMap) {
+		fm["IsMatch"] = isMatch[K]
+	}
+}
+
+func isMatch[K any](target ottl.Getter[K], pattern string) (ottl.ExprFunc[K], error) {
 	compiledPattern, err := regexp.Compile(pattern)
 	if err != nil {
 		return nil, fmt.Errorf("the pattern supplied to IsMatch is not a valid regexp pattern: %w", err)

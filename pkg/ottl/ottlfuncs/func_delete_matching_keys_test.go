@@ -75,7 +75,7 @@ func Test_deleteMatchingKeys(t *testing.T) {
 			scenarioMap := pcommon.NewMap()
 			input.CopyTo(scenarioMap)
 
-			exprFunc, err := DeleteMatchingKeys(tt.target, tt.pattern)
+			exprFunc, err := deleteMatchingKeys(tt.target, tt.pattern)
 			assert.NoError(t, err)
 
 			_, err = exprFunc(nil, scenarioMap)
@@ -97,7 +97,7 @@ func Test_deleteMatchingKeys_bad_input(t *testing.T) {
 		},
 	}
 
-	exprFunc, err := DeleteMatchingKeys[interface{}](target, "anything")
+	exprFunc, err := deleteMatchingKeys[interface{}](target, "anything")
 	assert.NoError(t, err)
 
 	_, err = exprFunc(nil, input)
@@ -113,7 +113,7 @@ func Test_deleteMatchingKeys_get_nil(t *testing.T) {
 		},
 	}
 
-	exprFunc, err := DeleteMatchingKeys[interface{}](target, "anything")
+	exprFunc, err := deleteMatchingKeys[interface{}](target, "anything")
 	assert.NoError(t, err)
 	result, err := exprFunc(nil, nil)
 	assert.NoError(t, err)
@@ -129,7 +129,7 @@ func Test_deleteMatchingKeys_invalid_pattern(t *testing.T) {
 	}
 
 	invalidRegexPattern := "*"
-	_, err := DeleteMatchingKeys[interface{}](target, invalidRegexPattern)
+	_, err := deleteMatchingKeys[interface{}](target, invalidRegexPattern)
 	require.Error(t, err)
 	assert.ErrorContains(t, err, "error parsing regexp:")
 }
