@@ -106,3 +106,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/corei
 // some dependencies attempt to bring something like v1.8.2-0.20220303173753-edfe657b5405, which is older than v0.38.0
 // at the time of this inclusion, v0.38.0 was the latest version available (also tagged as v2.38.0)
 replace github.com/prometheus/prometheus => github.com/prometheus/prometheus v0.38.0
+
+retract v0.65.0 // Broken release that did not correctly update components to v0.65.0

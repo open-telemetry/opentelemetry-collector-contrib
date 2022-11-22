@@ -51,3 +51,5 @@ require (
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage => ../../extension/storage
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza => ../../pkg/stanza
+
+retract v0.65.0 // Broken release that did not correctly update components to v0.65.0

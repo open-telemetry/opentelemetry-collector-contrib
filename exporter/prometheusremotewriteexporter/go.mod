@@ -69,3 +69,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourceto
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus => ../../pkg/translator/prometheus
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite => ../../pkg/translator/prometheusremotewrite
+
+retract v0.65.0 // Broken release that did not correctly update components to v0.65.0

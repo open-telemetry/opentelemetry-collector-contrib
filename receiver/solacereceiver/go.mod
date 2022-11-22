@@ -55,3 +55,5 @@ require (
 	google.golang.org/grpc v1.51.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+retract v0.65.0 // Broken release that did not correctly update components to v0.65.0

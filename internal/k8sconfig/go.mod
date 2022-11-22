@@ -50,3 +50,5 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
 	sigs.k8s.io/yaml v1.2.0 // indirect
 )
+
+retract v0.65.0 // Broken release that did not correctly update components to v0.65.0

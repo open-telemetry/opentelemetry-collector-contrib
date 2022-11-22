@@ -51,3 +51,5 @@ require (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
+
+retract v0.65.0 // Broken release that did not correctly update components to v0.65.0

@@ -65,3 +65,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/commo
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr => ../../pkg/batchperresourceattr
+
+retract v0.65.0 // Broken release that did not correctly update components to v0.65.0

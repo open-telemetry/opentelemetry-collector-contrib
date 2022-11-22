@@ -62,3 +62,5 @@ require (
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig => ../../internal/k8sconfig
+
+retract v0.65.0 // Broken release that did not correctly update components to v0.65.0

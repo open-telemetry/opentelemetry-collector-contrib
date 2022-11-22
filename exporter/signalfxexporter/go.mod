@@ -90,3 +90,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperre
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata => ../../pkg/experimentalmetricmetadata
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx => ../../pkg/translator/signalfx
+
+retract v0.65.0 // Broken release that did not correctly update components to v0.65.0
