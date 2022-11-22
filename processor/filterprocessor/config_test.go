@@ -606,7 +606,7 @@ func TestLoadingSpans(t *testing.T) {
 			id: component.NewIDWithName("filter", "spans"),
 			expected: &Config{
 				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
-				Spans: SpanFilters{
+				Spans: filterconfig.MatchConfig{
 					Include: &filterconfig.MatchProperties{
 						Config: filterset.Config{
 							MatchType: filterset.Strict,

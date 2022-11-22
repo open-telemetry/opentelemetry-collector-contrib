@@ -24,6 +24,8 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/expr"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterlog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
@@ -31,11 +33,10 @@ import (
 )
 
 type filterLogProcessor struct {
-	cfg            *Config
-	excludeMatcher filterlog.Matcher
-	includeMatcher filterlog.Matcher
-	logger         *zap.Logger
-	logConditions  []*ottl.Statement[ottllog.TransformContext]
+	cfg           *Config
+	skipExpr      expr.BoolExpr[ottllog.TransformContext]
+	logger        *zap.Logger
+	logConditions []*ottl.Statement[ottllog.TransformContext]
 }
 
 func newFilterLogsProcessor(logger *zap.Logger, cfg *Config) (*filterLogProcessor, error) {
@@ -53,30 +54,24 @@ func newFilterLogsProcessor(logger *zap.Logger, cfg *Config) (*filterLogProcesso
 		}, nil
 	}
 
-	var includeMatcher filterlog.Matcher
-	var excludeMatcher filterlog.Matcher
-
+	cfgMatch := filterconfig.MatchConfig{}
 	if cfg.Logs.Include != nil && !cfg.Logs.Include.isEmpty() {
-		var err error
-		includeMatcher, err = filterlog.NewMatcher(cfg.Logs.Include.matchProperties())
-		if err != nil {
-			return nil, fmt.Errorf("failed to build include matcher: %w", err)
-		}
+		cfgMatch.Include = cfg.Logs.Include.matchProperties()
 	}
 
 	if cfg.Logs.Exclude != nil && !cfg.Logs.Exclude.isEmpty() {
-		var err error
-		excludeMatcher, err = filterlog.NewMatcher(cfg.Logs.Exclude.matchProperties())
-		if err != nil {
-			return nil, fmt.Errorf("failed to build exclude matcher: %w", err)
-		}
+		cfgMatch.Exclude = cfg.Logs.Exclude.matchProperties()
+	}
+
+	skipExpr, err := filterlog.NewSkipExpr(&cfgMatch)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build skip matcher: %w", err)
 	}
 
 	return &filterLogProcessor{
-		cfg:            cfg,
-		excludeMatcher: excludeMatcher,
-		includeMatcher: includeMatcher,
-		logger:         logger,
+		cfg:      cfg,
+		skipExpr: skipExpr,
+		logger:   logger,
 	}, nil
 }
 
@@ -111,31 +106,30 @@ func (flp *filterLogProcessor) processLogs(ctx context.Context, logs plog.Logs) 
 
 	rLogs := logs.ResourceLogs()
 
-	// Filter out logs
+	var errors error
 	rLogs.RemoveIf(func(rl plog.ResourceLogs) bool {
 		resource := rl.Resource()
 		rl.ScopeLogs().RemoveIf(func(sl plog.ScopeLogs) bool {
 			scope := sl.Scope()
 			lrs := sl.LogRecords()
 
-			if flp.includeMatcher != nil {
-				// If includeMatcher exists, remove all records that do not match the filter.
-				lrs.RemoveIf(func(lr plog.LogRecord) bool {
-					return !flp.includeMatcher.MatchLogRecord(lr, resource, scope)
-				})
-			}
+			lrs.RemoveIf(func(lr plog.LogRecord) bool {
+				skip, err := flp.skipExpr.Eval(ctx, ottllog.NewTransformContext(lr, scope, resource))
+				if err != nil {
+					errors = multierr.Append(errors, err)
+					return false
+				}
+				return skip
+			})
 
-			if flp.excludeMatcher != nil {
-				// If excludeMatcher exists, remove all records that match the filter.
-				lrs.RemoveIf(func(lr plog.LogRecord) bool {
-					return flp.excludeMatcher.MatchLogRecord(lr, resource, scope)
-				})
-			}
 			return sl.LogRecords().Len() == 0
 		})
 		return rl.ScopeLogs().Len() == 0
 	})
 
+	if errors != nil {
+		return logs, errors
+	}
 	if rLogs.Len() == 0 {
 		return logs, processorhelper.ErrSkipProcessingData
 	}
