@@ -108,4 +108,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
+// see https://github.com/mattn/go-ieproxy/issues/45
+replace github.com/mattn/go-ieproxy => github.com/mattn/go-ieproxy v0.0.1
+
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest => ../../internal/scrapertest
