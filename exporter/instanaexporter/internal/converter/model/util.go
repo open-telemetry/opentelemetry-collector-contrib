@@ -16,10 +16,27 @@ package model // import "github.com/open-telemetry/opentelemetry-collector-contr
 
 import (
 	"encoding/hex"
+	"fmt"
+	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
+
+func metricNameToCompact(metricName string, attributes pcommon.Map) string {
+	if attributes.Len() == 0 {
+		return metricName + "{}"
+	}
+
+	var labels = []string{}
+	attributes.Sort().Range(func(key string, value pcommon.Value) bool {
+		labels = append(labels, fmt.Sprintf("%s=\"%s\"", key, value.AsString()))
+
+		return true
+	})
+
+	return fmt.Sprintf("%s{%s}", metricName, strings.Join(labels, ","))
+}
 
 func convertTraceID(traceID pcommon.TraceID) string {
 	return hex.EncodeToString(traceID[:])

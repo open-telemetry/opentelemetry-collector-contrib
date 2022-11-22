@@ -17,7 +17,9 @@ package converter // import "github.com/open-telemetry/opentelemetry-collector-c
 import (
 	"fmt"
 
+	instanaacceptor "github.com/instana/go-sensor/acceptor"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.8.0"
 	"go.uber.org/zap"
@@ -32,8 +34,15 @@ type SpanConverter struct {
 	logger *zap.Logger
 }
 
-func (c *SpanConverter) AcceptsSpans(attributes pcommon.Map, spanSlice ptrace.SpanSlice) bool {
+func (c *SpanConverter) AcceptsMetrics(attributes pcommon.Map, metricSlice pmetric.MetricSlice) bool {
+	return false
+}
 
+func (c *SpanConverter) ConvertMetrics(attributes pcommon.Map, metricSlice pmetric.MetricSlice) []instanaacceptor.PluginPayload {
+	return make([]instanaacceptor.PluginPayload, 0)
+}
+
+func (c *SpanConverter) AcceptsSpans(attributes pcommon.Map, spanSlice ptrace.SpanSlice) bool {
 	return true
 }
 

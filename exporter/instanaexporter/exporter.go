@@ -22,8 +22,10 @@ import (
 	"runtime"
 	"strings"
 
+	instanaacceptor "github.com/instana/go-sensor/acceptor"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
@@ -77,6 +79,54 @@ func (e *instanaExporter) pushConvertedTraces(ctx context.Context, td ptrace.Tra
 		// skip exporting, nothing to do
 		return nil
 	}
+
+	req, err := bundle.Marshal()
+	if err != nil {
+		return consumererror.NewPermanent(err)
+	}
+
+	headers := map[string]string{
+		backend.HeaderKey:  e.config.AgentKey,
+		backend.HeaderHost: hostID,
+		// Used only by the Instana agent and can be set to "0" for the exporter
+		backend.HeaderTime: "0",
+	}
+
+	return e.export(ctx, e.config.Endpoint, headers, req)
+}
+
+func (e *instanaExporter) pushConvertedMetrics(ctx context.Context, md pmetric.Metrics) error {
+	plugins := make([]instanaacceptor.PluginPayload, 0)
+
+	hostID := ""
+	resourceMetrics := md.ResourceMetrics()
+	for i := 0; i < resourceMetrics.Len(); i++ {
+		resSpan := resourceMetrics.At(i)
+
+		resource := resSpan.Resource()
+
+		hostIDAttr, ok := resource.Attributes().Get(backend.AttributeInstanaHostID)
+		if ok {
+			hostID = hostIDAttr.Str()
+		}
+
+		ilMetrics := resSpan.ScopeMetrics()
+		for j := 0; j < ilMetrics.Len(); j++ {
+			converter := converter.NewConvertAllConverter(e.settings.Logger)
+
+			plugins = append(plugins,
+				converter.ConvertMetrics(resource.Attributes(), ilMetrics.At(j).Metrics())...)
+		}
+	}
+
+	bundle := model.Bundle{Metrics: model.PluginContainer{Plugins: plugins}}
+	if len(bundle.Metrics.Plugins) == 0 {
+		// skip exporting, nothing to do
+		return nil
+	}
+
+	// Wrap payload with Zone
+	bundle.Metrics.Plugins = append(bundle.Metrics.Plugins, model.NewGenericZone(e.config.CustomZone))
 
 	req, err := bundle.Marshal()
 	if err != nil {

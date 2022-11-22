@@ -38,6 +38,7 @@ func NewFactory() component.ExporterFactory {
 		typeStr,
 		createDefaultConfig,
 		component.WithTracesExporter(createTracesExporter, stability),
+		component.WithMetricsExporter(createMetricsExporter, stability),
 	)
 }
 
@@ -67,6 +68,32 @@ func createTracesExporter(ctx context.Context, set component.ExporterCreateSetti
 		set,
 		config,
 		instanaExporter.pushConvertedTraces,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
+		exporterhelper.WithStart(instanaExporter.start),
+		// Disable Timeout/RetryOnFailure and SendingQueue
+		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
+		exporterhelper.WithRetry(exporterhelper.RetrySettings{Enabled: false}),
+		exporterhelper.WithQueue(exporterhelper.QueueSettings{Enabled: false}),
+		exporterhelper.WithShutdown(func(context.Context) error {
+			cancel()
+			return nil
+		}),
+	)
+}
+
+// createMetricsExporter creates a metrics exporter based on this configuration
+func createMetricsExporter(ctx context.Context, set component.ExporterCreateSettings, config component.ExporterConfig) (component.MetricsExporter, error) {
+	cfg := config.(*Config)
+
+	ctx, cancel := context.WithCancel(ctx)
+
+	instanaExporter := newInstanaExporter(cfg, set)
+
+	return exporterhelper.NewMetricsExporter(
+		ctx,
+		set,
+		config,
+		instanaExporter.pushConvertedMetrics,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithStart(instanaExporter.start),
 		// Disable Timeout/RetryOnFailure and SendingQueue

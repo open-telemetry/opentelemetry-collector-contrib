@@ -32,6 +32,8 @@ type Config struct {
 
 	AgentKey string `mapstructure:"agent_key"`
 
+	CustomZone string `mapstructure:"zone"`
+
 	confighttp.HTTPClientSettings `mapstructure:",squash"`
 }
 
