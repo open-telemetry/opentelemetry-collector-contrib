@@ -108,7 +108,7 @@ jobs:
           TEST_ARGS: "-test.run=${{ matrix.test }}"
       - name: Set results filename
         id: filename
-        run: echo "::set-output name=name::$(echo '${{ matrix.test }}' | sed -e 's/|/_/g')"
+        run: echo "name=$(echo '${{ matrix.test }}' | sed -e 's/|/_/g')" >> $GITHUB_OUTPUT
       - name: Create Test Result Archive
         if: ${{ failure() || success() }}
         continue-on-error: true
