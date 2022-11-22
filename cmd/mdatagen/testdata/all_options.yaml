@@ -1,15 +1,20 @@
 name: metricreceiver
+
 sem_conv_version: 1.9.0
+
 attributes:
   freeFormAttribute:
     description: Attribute that can take on any value.
+    type: string
 
   freeFormAttributeWithValue:
     value: state
     description: Attribute that has alternate value set.
+    type: string
 
   enumAttribute:
     description: Attribute with a known set of values.
+    type: string
     enum: [red, green, blue]
 
   booleanValueType:

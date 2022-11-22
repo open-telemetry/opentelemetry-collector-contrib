@@ -29,12 +29,14 @@ attributes:
   cpu_type:
     value: type
     description: The type of CPU consumption
+    type: string
     enum:
     - user
     - io_wait
     - system
   host:
     description: The type of CPU consumption
+    type: string
 metrics:
   system.cpu.time:
     enabled: true

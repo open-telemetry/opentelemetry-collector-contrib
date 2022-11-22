@@ -1,8 +1,10 @@
 name: oracledbreceiver
+
 resource_attributes:
   oracledb.instance.name:
     description: The name of the instance that data is coming from.
     type: string
+
 attributes:
   session_status:
     description: Session status
@@ -12,6 +14,8 @@ attributes:
     type: string
   tablespace_name:
     description: Tablespace name
+    type: string
+
 metrics:
   oracledb.cpu_time:
     description: Cumulative CPU time, in seconds

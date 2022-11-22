@@ -12,6 +12,7 @@ attributes:
   namespace_component:
     value: component
     description: Individual component of a namespace
+    type: string
     enum:
       - data
       - index
@@ -20,6 +21,7 @@ attributes:
   scan_type:
     value: type
     description: Type of scan operation performed on a namespace
+    type: string
     enum:
       - aggregation
       - basic
@@ -28,6 +30,7 @@ attributes:
   scan_result:
     value: result
     description: Result of a scan operation performed on a namespace
+    type: string
     enum:
       - abort
       - complete
@@ -35,12 +38,14 @@ attributes:
   index_type:
     value: index
     description: Type of index the operation was performed on
+    type: string
     enum:
       - primary
       - secondary
   query_type:
     value: type
     description: Type of query operation performed on a namespace
+    type: string
     enum:
       - aggregation
       - basic
@@ -52,6 +57,7 @@ attributes:
   query_result:
     value: result
     description: Result of a query operation performed on a namespace
+    type: string
     enum:
       - abort
       - complete
@@ -60,6 +66,7 @@ attributes:
   transaction_type:
     value: type
     description: Type of transaction performed on a namespace
+    type: string
     enum:
       - delete
       - read
@@ -68,6 +75,7 @@ attributes:
   transaction_result:
     value: result
     description: Result of a transaction performed on a namespace
+    type: string
     enum:
       - error
       - filtered_out
@@ -77,6 +85,7 @@ attributes:
   connection_type:
     value: type
     description: Type of connection to an Aerospike node
+    type: string
     enum:
       - client
       - fabric
@@ -84,6 +93,7 @@ attributes:
   connection_op:
     value: operation
     description: Operation performed with a connection (open or close)
+    type: string
     enum:
       - close
       - open
