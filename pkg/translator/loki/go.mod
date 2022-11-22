@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/go-logfmt/logfmt v0.5.1
 	github.com/grafana/loki v1.6.2-0.20220718071907-6bd05c9a4399
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.64.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.65.1
 	github.com/prometheus/common v0.37.0
 	github.com/stretchr/testify v1.8.1
 	go.opentelemetry.io/collector/pdata v0.65.0

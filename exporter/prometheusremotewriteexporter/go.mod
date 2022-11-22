@@ -6,10 +6,10 @@ require (
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/snappy v0.0.4
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.64.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.64.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.64.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite v0.64.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.65.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.65.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.65.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite v0.65.1
 	github.com/prometheus/prometheus v0.38.0
 	github.com/stretchr/testify v1.8.1
 	github.com/tidwall/wal v1.1.7

@@ -7,8 +7,8 @@ require (
 	contrib.go.opencensus.io/exporter/stackdriver v0.13.14
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector v0.34.1
 	github.com/census-instrumentation/opencensus-proto v0.4.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.64.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.64.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.65.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.65.1
 	github.com/stretchr/testify v1.8.1
 	go.opencensus.io v0.24.0
 	go.opentelemetry.io/collector v0.65.0

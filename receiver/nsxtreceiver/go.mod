@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtre
 go 1.18
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.64.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.65.1
 	github.com/stretchr/testify v1.8.1
 	github.com/vmware/go-vmware-nsxt v0.0.0-20220328155605-f49a14c1ef5f
 	go.opentelemetry.io/collector v0.65.0

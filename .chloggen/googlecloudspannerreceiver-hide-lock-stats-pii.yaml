@@ -1,5 +1,0 @@
-change_type: enhancement
-component: googlecloudspannerreceiver
-note: Configurably mask the PII in lock stats metrics.
-issues: [16343]
-subtext:

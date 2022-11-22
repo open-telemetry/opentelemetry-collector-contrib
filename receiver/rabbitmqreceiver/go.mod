@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbit
 go 1.18
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.64.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.65.1
 	github.com/stretchr/testify v1.8.1
 	github.com/testcontainers/testcontainers-go v0.15.0
 	go.opentelemetry.io/collector v0.65.0
