@@ -34,12 +34,12 @@ Factory Functions:
 
 List of available Factory Functions:
 - [Concat](#concat)
+- [ConvertCase](#convertcase)
 - [Int](#int)
 - [IsMatch](#ismatch)
 - [SpanID](#spanid)
 - [Split](#split)
 - [TraceID](#traceid)
-- [ConvertCase](#convertcase)
 
 ### Concat
 
