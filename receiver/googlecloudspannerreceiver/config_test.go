@@ -47,9 +47,10 @@ func TestLoadConfig(t *testing.T) {
 				ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 				CollectionInterval: 120 * time.Second,
 			},
-			TopMetricsQueryMaxRows: 10,
-			BackfillEnabled:        true,
-			CardinalityTotalLimit:  200000,
+			TopMetricsQueryMaxRows:            10,
+			BackfillEnabled:                   true,
+			CardinalityTotalLimit:             200000,
+			HideTopnLockstatsRowrangestartkey: true,
 			Projects: []Project{
 				{
 					ID:                "spanner project 1",
