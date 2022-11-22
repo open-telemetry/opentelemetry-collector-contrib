@@ -20,7 +20,8 @@ resource_attributes:
   flink.resource.type:
     description: The flink scope type in which a metric belongs to.
     type: string
-    enum: [ jobmanager, taskmanager ]
+    # TODO: Add enum support to resource attributes
+    # enum: [ jobmanager, taskmanager ]
 
 attributes:
   operator_name:
