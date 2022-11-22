@@ -158,7 +158,7 @@ func ReplaceJsonNumber(i interface{}) interface{} {
 // attributes are only inserted if they are defined. The
 // `azure.duration` value is only set if the value in the
 // Azure log record can be parsed as an integer.
-func ExtractRawAttributes(log AzureLogRecord) map[string]interface{} {
+func extractRawAttributes(log AzureLogRecord) map[string]interface{} {
 	var attrs = map[string]interface{}{}
 
 	attrs["azure.resource.id"] = log.ResourceID
