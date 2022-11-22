@@ -41,20 +41,24 @@ resource_attributes:
 attributes:
   direction:
     description: Direction of flow of bytes (read or write).
+    type: string
     enum: [read, write]
 
   state:
     description: Breakdown of CPU usage by type.
+    type: string
     enum: [system, user, wait]
 
   paging_fault_type:
     value: type
     description: Type of memory paging fault.
+    type: string
     enum: [major, minor]
 
   context_switch_type:
     value: type
     description: Type of context switched.
+    type: string
     enum: [involuntary, voluntary]
 
 metrics:

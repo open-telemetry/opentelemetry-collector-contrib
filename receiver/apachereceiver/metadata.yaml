@@ -12,24 +12,28 @@ attributes:
   workers_state:
     value: state
     description: The state of workers.
+    type: string
     enum:
       - busy
       - idle
   cpu_level:
     value: level
     description: Level of processes.
+    type: string
     enum:
       - self
       - children
   cpu_mode:
     value: mode
     description: Mode of processes.
+    type: string
     enum:
     - system
     - user
   scoreboard_state:
     value: state
     description: The state of a connection.
+    type: string
     enum:
       - open
       - waiting

@@ -8,16 +8,20 @@ resource_attributes:
 attributes:
   database:
     description: The name of a database.
+    type: string
   collection:
     description: The name of a collection.
+    type: string
   memory_type:
     value: type
     description: The type of memory used.
+    type: string
     enum:
       - resident
       - virtual
   operation:
     description: The MongoDB operation being counted.
+    type: string
     enum:
       - insert
       - query
@@ -28,17 +32,20 @@ attributes:
   connection_type:
     value: type
     description: The status of the connection.
+    type: string
     enum:
       - active
       - available
       - current
   type:
     description: The result of a cache request.
+    type: string
     enum:
       - hit
       - miss
   lock_type:
     description: The Resource over which the Lock controls access
+    type: string
     enum:
       - parallel_batch_write_mode
       - replication_state_transition
@@ -50,6 +57,7 @@ attributes:
       - oplog
   lock_mode:
     description: The mode of Lock which denotes the degree of access
+    type: string
     enum:
       - shared
       - exclusive
