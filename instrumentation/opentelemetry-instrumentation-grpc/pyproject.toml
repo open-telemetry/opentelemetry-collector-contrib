@@ -46,6 +46,8 @@ test = [
 [project.entry-points.opentelemetry_instrumentor]
 grpc_client = "opentelemetry.instrumentation.grpc:GrpcInstrumentorClient"
 grpc_server = "opentelemetry.instrumentation.grpc:GrpcInstrumentorServer"
+grpc_aio_client = "opentelemetry.instrumentation.grpc:GrpcAioInstrumentorClient"
+grpc_aio_server = "opentelemetry.instrumentation.grpc:GrpcAioInstrumentorServer"
 
 [project.urls]
 Homepage = "https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-grpc"
