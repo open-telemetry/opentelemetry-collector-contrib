@@ -50,9 +50,11 @@ resource_attributes:
 attributes:
   interface:
     description: Name of the network interface.
+    type: string
 
   direction:
     description: Direction of flow of bytes/operations (receive or transmit).
+    type: string
     enum: [receive, transmit]
 
 metrics:

@@ -14,6 +14,7 @@ resource_attributes:
 attributes:
   bg_buffer_source:
     description: The source of a buffer write.
+    type: string
     enum:
       - backend
       - backend_fsync
@@ -22,12 +23,14 @@ attributes:
     value: source
   bg_checkpoint_type:
     description: The type of checkpoint state.
+    type: string
     enum:
       - requested
       - scheduled
     value: type
   bg_duration_type:
     description: The type of time spent during the checkpoint.
+    type: string
     enum:
       - sync
       - write
@@ -40,6 +43,7 @@ attributes:
     type: string
   source:
     description: The block read source type.
+    type: string
     enum:
       - heap_read
       - heap_hit
@@ -51,12 +55,14 @@ attributes:
       - tidx_hit
   operation:
     description: The database operation.
+    type: string
     enum: [ins, upd, del, hot_upd]
   replication_client:
     description: The IP address of the client connected to this backend. If this field is "unix", it indicates either that the client is connected via a Unix socket.
     type: string
   state:
     description: The tuple (row) state.
+    type: string
     enum: [dead, live]
   wal_operation_lag:
     value: operation

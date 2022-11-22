@@ -40,12 +40,14 @@ attributes:
   disk_direction:
     value: direction
     description: The direction of disk latency.
+    type: string
     enum:
       - read
       - write
   latency_type:
     value: type
     description: The type of disk latency being reported.
+    type: string
     enum:
       - kernel
       - device

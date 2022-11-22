@@ -10,35 +10,48 @@ resource_attributes:
 attributes:
   database:
     description: The SAP HANA database.
+    type: string
   system:
     description: The SAP HANA system.
+    type: string
   product:
     description: The SAP HANA product.
+    type: string
   primary_host:
     value: primary
     description: The primary SAP HANA host in replication.
+    type: string
   secondary_host:
     value: secondary
     description: The secondary SAP HANA host in replication.
+    type: string
   port:
     description: The SAP HANA port.
+    type: string
   replication_mode:
     value: mode
     description: The replication mode.
+    type: string
   component:
     description: The SAP HANA component.
+    type: string
   schema:
     description: The SAP HANA schema.
+    type: string
   service:
     description: The SAP HANA service.
+    type: string
   path:
     description: The SAP HANA disk path.
+    type: string
   disk_usage_type:
     value: usage_type
     description: The SAP HANA disk & volume usage type.
+    type: string
   transaction_type:
     value: type
     description: The transaction type.
+    type: string
     enum:
     - update
     - commit
@@ -46,6 +59,7 @@ attributes:
   connection_status:
     value: status
     description: The connection status.
+    type: string
     enum:
     - running
     - idle
@@ -53,6 +67,7 @@ attributes:
   cpu_type:
     value: type
     description: The type of cpu.
+    type: string
     enum:
     - user
     - system
@@ -61,15 +76,18 @@ attributes:
   alert_rating:
     value: rating
     description: The alert rating.
+    type: string
   column_memory_type:
     value: type
     description: The type of column store memory.
+    type: string
     enum:
     - main
     - delta
   column_memory_subtype:
     value: subtype
     description: The subtype of column store memory.
+    type: string
     enum:
     - data
     - dict
@@ -78,12 +96,14 @@ attributes:
   row_memory_type:
     value: type
     description: The type of row store memory.
+    type: string
     enum:
     - fixed
     - variable
   schema_memory_type:
     value: type
     description: The type of schema memory.
+    type: string
     enum:
     - main
     - delta
@@ -92,6 +112,7 @@ attributes:
   schema_record_type:
     value: type
     description: The type of schema record.
+    type: string
     enum:
     - main
     - delta
@@ -100,24 +121,28 @@ attributes:
   memory_state_used_free:
     value: state
     description: The state of memory.
+    type: string
     enum:
     - used
     - free
   disk_state_used_free:
     value: state
     description: The state of the disk storage.
+    type: string
     enum:
     - used
     - free
   host_swap_state:
     value: state
     description: The state of swap data.
+    type: string
     enum:
     - used
     - free
   schema_operation_type:
     value: type
     description: The type of operation.
+    type: string
     enum:
     - read
     - write
@@ -125,36 +150,42 @@ attributes:
   service_status:
     value: status
     description: The status of services.
+    type: string
     enum:
     - active
     - inactive
   thread_status:
     value: status
     description: The status of threads.
+    type: string
     enum:
     - active
     - inactive
   service_memory_used_type:
     value: type
     description: The type of service memory.
+    type: string
     enum:
     - logical
     - physical
   volume_operation_type:
     value: type
     description: The type of operation.
+    type: string
     enum:
     - read
     - write
   active_pending_request_state:
     value: state
     description: The state of network request.
+    type: string
     enum:
     - active
     - pending
   internal_external_request_type:
     value: type
     description: The type of network request.
+    type: string
     enum:
     - internal
     - external
