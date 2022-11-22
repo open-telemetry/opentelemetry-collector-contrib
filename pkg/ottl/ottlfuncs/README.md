@@ -25,7 +25,7 @@ List of available Functions:
 
 ## Factory Functions
 
-Factory Functions are functions that help translate between the OTTL grammar and the underlying pdatastructure.
+Factory Functions are functions that help translate between the OTTL grammar and the underlying pdata structure.
 They manipulate the OTTL grammar value into a form that will make working with the telemetry easier or more efficient.
 
 Factory Functions:
