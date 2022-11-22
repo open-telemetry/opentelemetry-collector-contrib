@@ -239,7 +239,7 @@ require (
 	github.com/gosnmp/gosnmp v1.35.0 // indirect
 	github.com/grafana/dskit v0.0.0-20220928083349-b1b307db4f30 // indirect
 	github.com/grafana/go-gelf/v2 v2.0.1 // indirect
-	github.com/grafana/loki v1.6.2-0.20221112094039-1f7fabfbb986 // indirect
+	github.com/grafana/loki v1.6.2-0.20221121081917-d3111bcaa774 // indirect
 	github.com/grafana/regexp v0.0.0-20221005093135-b4c2bcb0a4b6 // indirect
 	github.com/grobie/gomemcache v0.0.0-20180201122607-1f779c573665 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0 // indirect
@@ -548,7 +548,7 @@ require (
 	github.com/prometheus/common/sigv4 v0.1.0 // indirect
 	github.com/prometheus/exporter-toolkit v0.7.2-0.20220901134540-2434b08435da // indirect
 	github.com/prometheus/procfs v0.8.0 // indirect
-	github.com/prometheus/prometheus v1.8.2-0.20220303173753-edfe657b5405 // indirect
+	github.com/prometheus/prometheus v0.39.1 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
 	github.com/rs/cors v1.8.2 // indirect
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.9 // indirect
@@ -1061,10 +1061,6 @@ replace github.com/googleapis/gnostic v0.5.6 => github.com/googleapis/gnostic v0
 
 // see https://github.com/distribution/distribution/issues/3590
 exclude github.com/docker/distribution v2.8.0+incompatible
-
-// some dependencies attempt to bring something like v1.8.2-0.20220303173753-edfe657b5405, which is older than v0.39.1
-// at the time of this inclusion, v0.39.1 was the latest version available (also tagged as v2.39.1)
-replace github.com/prometheus/prometheus => github.com/prometheus/prometheus v0.39.1
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter => ../../internal/filter
 

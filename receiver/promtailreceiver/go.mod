@@ -5,7 +5,7 @@ go 1.18
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza => ../../pkg/stanza
 
 require (
-	github.com/grafana/loki v1.6.2-0.20221112094039-1f7fabfbb986
+	github.com/grafana/loki v1.6.2-0.20221121081917-d3111bcaa774
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.64.0
 	github.com/stretchr/testify v1.8.1
 	go.opentelemetry.io/collector v0.65.0
@@ -15,7 +15,7 @@ require (
 	github.com/go-kit/log v0.2.1
 	github.com/prometheus/client_golang v1.14.0
 	github.com/prometheus/common v0.37.0
-	github.com/prometheus/prometheus v1.8.2-0.20211119115433-692a54649ed7
+	github.com/prometheus/prometheus v0.39.1
 	github.com/weaveworks/common v0.0.0-20220916164235-da3fde973eec
 	go.opentelemetry.io/collector/component v0.65.0
 	go.uber.org/zap v1.23.0
@@ -242,10 +242,6 @@ require (
 
 // loki needs grafana fork to be used
 replace github.com/hpcloud/tail => github.com/grafana/tail v0.0.0-20220426200921-98e8eb28ea4c
-
-// some dependencies attempt to bring something like v1.8.2-0.20220303173753-edfe657b5405, which is older than v0.39.1
-// at the time of this inclusion, v0.39.1 was the latest version available (also tagged as v2.39.1)
-replace github.com/prometheus/prometheus => github.com/prometheus/prometheus v0.39.1
 
 // using fork for support LogpullReceived and LogpullFields for loki - see https://github.com/cloudflare/cloudflare-go/pull/743
 replace github.com/cloudflare/cloudflare-go => github.com/cyriltovena/cloudflare-go v0.27.1-0.20211118103540-ff77400bcb93

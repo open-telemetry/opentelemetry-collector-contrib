@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib
 go 1.18
 
 require (
-	github.com/grafana/loki v1.6.2-0.20221112094039-1f7fabfbb986
+	github.com/grafana/loki v1.6.2-0.20221121081917-d3111bcaa774
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.66.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter v0.66.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter v0.66.0
@@ -160,7 +160,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.66.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.66.0
 	github.com/prometheus/common v0.37.0
-	github.com/prometheus/prometheus v1.8.2-0.20220303173753-edfe657b5405
+	github.com/prometheus/prometheus v0.39.1
 	github.com/stretchr/testify v1.8.1
 	go.opentelemetry.io/collector v0.66.1-0.20221128222955-4ff1ff379b90
 	go.opentelemetry.io/collector/component v0.66.1-0.20221128222955-4ff1ff379b90
@@ -1070,10 +1070,6 @@ retract (
 
 // see https://github.com/distribution/distribution/issues/3590
 exclude github.com/docker/distribution v2.8.0+incompatible
-
-// some dependencies attempt to bring something like v1.8.2-0.20220303173753-edfe657b5405, which is older than v0.39.1
-// at the time of this inclusion, v0.39.1 was the latest version available (also tagged as v2.39.1)
-replace github.com/prometheus/prometheus => github.com/prometheus/prometheus v0.39.1
 
 // see https://github.com/mattn/go-ieproxy/issues/45
 replace github.com/mattn/go-ieproxy => github.com/mattn/go-ieproxy v0.0.1
