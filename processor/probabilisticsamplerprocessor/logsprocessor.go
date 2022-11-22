@@ -21,6 +21,7 @@ import (
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.uber.org/zap"
@@ -79,8 +80,11 @@ func (lsp *logSamplerProcessor) processLogs(ctx context.Context, ld plog.Logs) (
 				priority := lsp.scaledSamplingRate
 				if lsp.samplingPriority != "" {
 					if localPriority, ok := l.Attributes().Get(lsp.samplingPriority); ok {
-						if val, ok := localPriority.AsRaw().(float64); ok {
-							priority = uint32(val * percentageScaleFactor)
+						switch localPriority.Type() {
+						case pcommon.ValueTypeDouble:
+							priority = uint32(localPriority.Double() * percentageScaleFactor)
+						case pcommon.ValueTypeInt:
+							priority = uint32(float64(localPriority.Int()) * percentageScaleFactor)
 						}
 					}
 				}
