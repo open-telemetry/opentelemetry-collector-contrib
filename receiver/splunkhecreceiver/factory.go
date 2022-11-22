@@ -62,7 +62,8 @@ func createDefaultConfig() component.ReceiverConfig {
 			Index:      splunk.DefaultIndexLabel,
 			Host:       conventions.AttributeHostName,
 		},
-		RawPath: splunk.DefaultRawPath,
+		RawPath:    splunk.DefaultRawPath,
+		HealthPath: splunk.DefaultHealthPath,
 	}
 }
 
