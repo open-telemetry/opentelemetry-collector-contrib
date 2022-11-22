@@ -197,7 +197,7 @@ func extractRawAttributes(log AzureLogRecord) map[string]interface{} {
 // log record appears as fields and attributes in the
 // OpenTelemetry representation; the bodies of the
 // OpenTelemetry log records are empty.
-func Transform(data []byte) (*plog.Logs, error) {
+func transform(data []byte) (*plog.Logs, error) {
 
 	l := plog.NewLogs()
 
