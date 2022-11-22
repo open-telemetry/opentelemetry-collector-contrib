@@ -70,7 +70,7 @@ func AsTimestamp(s string) (pcommon.Timestamp, error) {
 // AsSeverity converts the Azure log level to equivalent
 // OpenTelemetry severity numbers. If the log level is not
 // valid, then the 'Unspecified' value is returned.
-func AsSeverity(s string) plog.SeverityNumber {
+func asSeverity(s string) plog.SeverityNumber {
 	switch s {
 	case "Informational":
 		return plog.SeverityNumberInfo
