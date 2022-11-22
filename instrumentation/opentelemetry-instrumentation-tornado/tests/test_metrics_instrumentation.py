@@ -57,7 +57,7 @@ class TornadoTest(AsyncHTTPTestCase, TestBase):
     def assert_metric_expected(
         self, metric, expected_value, expected_attributes
     ):
-        data_point = next(metric.data.data_points)
+        data_point = next(iter(metric.data.data_points))
 
         if isinstance(data_point, HistogramDataPoint):
             self.assertEqual(
@@ -78,7 +78,7 @@ class TornadoTest(AsyncHTTPTestCase, TestBase):
     def assert_duration_metric_expected(
         self, metric, duration_estimated, expected_attributes
     ):
-        data_point = next(metric.data.data_points)
+        data_point = next(iter(metric.data.data_points))
 
         self.assertAlmostEqual(
             data_point.sum,
