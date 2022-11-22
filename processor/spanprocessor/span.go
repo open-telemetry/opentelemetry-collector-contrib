@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterspan"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterspan"
 )
 
 type spanProcessor struct {

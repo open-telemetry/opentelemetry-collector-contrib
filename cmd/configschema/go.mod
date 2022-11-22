@@ -378,6 +378,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.64.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.64.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.64.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.64.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.64.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.64.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.64.0 // indirect
@@ -1021,3 +1022,5 @@ exclude github.com/docker/distribution v2.8.0+incompatible
 // some dependencies attempt to bring something like v1.8.2-0.20220303173753-edfe657b5405, which is older than v0.38.0
 // at the time of this inclusion, v0.38.0 was the latest version available (also tagged as v2.38.0)
 replace github.com/prometheus/prometheus => github.com/prometheus/prometheus v0.38.0
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter => ../../internal/filter
