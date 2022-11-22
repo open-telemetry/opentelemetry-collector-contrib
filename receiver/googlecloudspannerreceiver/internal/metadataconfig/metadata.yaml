@@ -70,7 +70,7 @@ metadata:
 # -------------------------------------------- Queries Stats -----------------------------------------------------------
 #
   - name: "top minute query stats"
-    query: "SELECT * FROM SPANNER_SYS.QUERY_STATS_TOP_MINUTE WHERE INTERVAL_END = @pullTimestamp ORDER BY INTERVAL_END DESC, EXECUTION_COUNT * AVG_CPU_SECONDS DESC"
+    query: "SELECT INTERVAL_END, TEXT, REQUEST_TAG, TEXT_TRUNCATED, TEXT_FINGERPRINT, EXECUTION_COUNT, AVG_LATENCY_SECONDS, AVG_ROWS, AVG_BYTES, AVG_ROWS_SCANNED, AVG_CPU_SECONDS, ALL_FAILED_EXECUTION_COUNT, ALL_FAILED_AVG_LATENCY_SECONDS, CANCELLED_OR_DISCONNECTED_EXECUTION_COUNT, TIMED_OUT_EXECUTION_COUNT, SPANNER_SYS.DISTRIBUTION_PERCENTILE(LATENCY_DISTRIBUTION[OFFSET(0)], 99.0) AS NINETY_NINE_PERCENTILE_LATENCY, SPANNER_SYS.DISTRIBUTION_PERCENTILE(LATENCY_DISTRIBUTION[OFFSET(0)], 95.0) AS NINETY_FIVE_PERCENTILE_LATENCY, SPANNER_SYS.DISTRIBUTION_PERCENTILE(LATENCY_DISTRIBUTION[OFFSET(0)], 50.0) AS FIFTY_PERCENTILE_LATENCY FROM SPANNER_SYS.QUERY_STATS_TOP_MINUTE WHERE INTERVAL_END = @pullTimestamp ORDER BY INTERVAL_END DESC, EXECUTION_COUNT * AVG_CPU_SECONDS DESC"
     metric_name_prefix: "database/spanner/query_stats/top/"
     timestamp_column_name: "INTERVAL_END"
     high_cardinality: true
@@ -148,8 +148,26 @@ metadata:
         data:
           type: "gauge"
         unit: "one"
+      - name: "ninety_nine_percentile_latency"
+        column_name: "NINETY_NINE_PERCENTILE_LATENCY"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "second"
+      - name: "ninety_five_percentile_latency"
+        column_name: "NINETY_FIVE_PERCENTILE_LATENCY"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "second"
+      - name: "fifty_percentile_latency"
+        column_name: "FIFTY_PERCENTILE_LATENCY"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "second"
   - name: "total minute query stats"
-    query: "SELECT * FROM SPANNER_SYS.QUERY_STATS_TOTAL_MINUTE WHERE INTERVAL_END = @pullTimestamp"
+    query: "SELECT INTERVAL_END, EXECUTION_COUNT, AVG_LATENCY_SECONDS, AVG_ROWS, AVG_BYTES, AVG_ROWS_SCANNED, AVG_CPU_SECONDS, ALL_FAILED_EXECUTION_COUNT, ALL_FAILED_AVG_LATENCY_SECONDS, CANCELLED_OR_DISCONNECTED_EXECUTION_COUNT, TIMED_OUT_EXECUTION_COUNT, SPANNER_SYS.DISTRIBUTION_PERCENTILE(LATENCY_DISTRIBUTION[OFFSET(0)], 99.0) AS NINETY_NINE_PERCENTILE_LATENCY, SPANNER_SYS.DISTRIBUTION_PERCENTILE(LATENCY_DISTRIBUTION[OFFSET(0)], 95.0) AS NINETY_FIVE_PERCENTILE_LATENCY, SPANNER_SYS.DISTRIBUTION_PERCENTILE(LATENCY_DISTRIBUTION[OFFSET(0)], 50.0) AS FIFTY_PERCENTILE_LATENCY FROM SPANNER_SYS.QUERY_STATS_TOTAL_MINUTE WHERE INTERVAL_END = @pullTimestamp"
     metric_name_prefix: "database/spanner/query_stats/total/"
     timestamp_column_name: "INTERVAL_END"
     high_cardinality: false
@@ -214,6 +232,24 @@ metadata:
         data:
           type: "gauge"
         unit: "one"
+      - name: "ninety_nine_percentile_latency"
+        column_name: "NINETY_NINE_PERCENTILE_LATENCY"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "second"
+      - name: "ninety_five_percentile_latency"
+        column_name: "NINETY_FIVE_PERCENTILE_LATENCY"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "second"
+      - name: "fifty_percentile_latency"
+        column_name: "FIFTY_PERCENTILE_LATENCY"
+        value_type: "float"
+        data:
+          type: "gauge"
+        unit: "second"
 #
 # -------------------------------------------- Reads Stats -------------------------------------------------------------
 #
@@ -324,7 +360,7 @@ metadata:
 # -------------------------------------------- Transactions Stats ------------------------------------------------------
 #
   - name: "top minute transaction stats"
-    query: "SELECT * FROM SPANNER_SYS.TXN_STATS_TOP_MINUTE WHERE INTERVAL_END = @pullTimestamp ORDER BY INTERVAL_END DESC, AVG_COMMIT_LATENCY_SECONDS DESC, COMMIT_ATTEMPT_COUNT DESC, AVG_BYTES DESC"
+    query: "SELECT INTERVAL_END, FPRINT, TRANSACTION_TAG, READ_COLUMNS, WRITE_CONSTRUCTIVE_COLUMNS, WRITE_DELETE_TABLES, COMMIT_ATTEMPT_COUNT, COMMIT_ABORT_COUNT, COMMIT_RETRY_COUNT, COMMIT_FAILED_PRECONDITION_COUNT, AVG_PARTICIPANTS, AVG_TOTAL_LATENCY_SECONDS, AVG_COMMIT_LATENCY_SECONDS, AVG_BYTES, CASE WHEN AVG_TOTAL_LATENCY_SECONDS IS NOT NULL THEN SPANNER_SYS.DISTRIBUTION_PERCENTILE(TOTAL_LATENCY_DISTRIBUTION[OFFSET(0)], 99.0) ELSE NULL END AS NINETY_NINE_PERCENTILE_TOTAL_LATENCY, CASE WHEN AVG_TOTAL_LATENCY_SECONDS IS NOT NULL THEN SPANNER_SYS.DISTRIBUTION_PERCENTILE(TOTAL_LATENCY_DISTRIBUTION[OFFSET(0)], 95.0) ELSE NULL END AS NINETY_FIVE_PERCENTILE_TOTAL_LATENCY, CASE WHEN AVG_TOTAL_LATENCY_SECONDS IS NOT NULL THEN SPANNER_SYS.DISTRIBUTION_PERCENTILE(TOTAL_LATENCY_DISTRIBUTION[OFFSET(0)], 50.0) ELSE NULL END AS FIFTY_PERCENTILE_TOTAL_LATENCY FROM SPANNER_SYS.TXN_STATS_TOP_MINUTE WHERE INTERVAL_END = @pullTimestamp ORDER BY INTERVAL_END DESC, AVG_COMMIT_LATENCY_SECONDS DESC, COMMIT_ATTEMPT_COUNT DESC, AVG_BYTES DESC"
     metric_name_prefix: "database/spanner/txn_stats/top/"
     timestamp_column_name: "INTERVAL_END"
     high_cardinality: true
@@ -393,8 +429,26 @@ metadata:
         data:
           type: "gauge"
         unit: "byte"
+      - name: "ninety_nine_percentile_total_latency"
+        column_name: "NINETY_NINE_PERCENTILE_TOTAL_LATENCY"
+        value_type: "null_float"
+        data:
+          type: "gauge"
+        unit: "second"
+      - name: "ninety_five_percentile_total_latency"
+        column_name: "NINETY_FIVE_PERCENTILE_TOTAL_LATENCY"
+        value_type: "null_float"
+        data:
+          type: "gauge"
+        unit: "second"
+      - name: "fifty_percentile_total_latency"
+        column_name: "FIFTY_PERCENTILE_TOTAL_LATENCY"
+        value_type: "null_float"
+        data:
+          type: "gauge"
+        unit: "second"
   - name: "total minute transaction stats"
-    query: "SELECT * FROM SPANNER_SYS.TXN_STATS_TOTAL_MINUTE WHERE INTERVAL_END = @pullTimestamp"
+    query: "SELECT INTERVAL_END, COMMIT_ATTEMPT_COUNT, COMMIT_ABORT_COUNT, COMMIT_RETRY_COUNT, COMMIT_FAILED_PRECONDITION_COUNT, AVG_PARTICIPANTS, AVG_TOTAL_LATENCY_SECONDS, AVG_COMMIT_LATENCY_SECONDS, AVG_BYTES, CASE WHEN AVG_TOTAL_LATENCY_SECONDS IS NOT NULL THEN SPANNER_SYS.DISTRIBUTION_PERCENTILE(TOTAL_LATENCY_DISTRIBUTION[OFFSET(0)], 99.0) ELSE NULL END AS NINETY_NINE_PERCENTILE_TOTAL_LATENCY, CASE WHEN AVG_TOTAL_LATENCY_SECONDS IS NOT NULL THEN SPANNER_SYS.DISTRIBUTION_PERCENTILE(TOTAL_LATENCY_DISTRIBUTION[OFFSET(0)], 95.0) ELSE NULL END AS NINETY_FIVE_PERCENTILE_TOTAL_LATENCY, CASE WHEN AVG_TOTAL_LATENCY_SECONDS IS NOT NULL THEN SPANNER_SYS.DISTRIBUTION_PERCENTILE(TOTAL_LATENCY_DISTRIBUTION[OFFSET(0)], 50.0) ELSE NULL END AS FIFTY_PERCENTILE_TOTAL_LATENCY FROM SPANNER_SYS.TXN_STATS_TOTAL_MINUTE WHERE INTERVAL_END = @pullTimestamp"
     metric_name_prefix: "database/spanner/txn_stats/total/"
     timestamp_column_name: "INTERVAL_END"
     high_cardinality: false
@@ -447,3 +501,21 @@ metadata:
         data:
           type: "gauge"
         unit: "byte"
+      - name: "ninety_nine_percentile_total_latency"
+        column_name: "NINETY_NINE_PERCENTILE_TOTAL_LATENCY"
+        value_type: "null_float"
+        data:
+          type: "gauge"
+        unit: "second"
+      - name: "ninety_five_percentile_total_latency"
+        column_name: "NINETY_FIVE_PERCENTILE_TOTAL_LATENCY"
+        value_type: "null_float"
+        data:
+          type: "gauge"
+        unit: "second"
+      - name: "fifty_percentile_total_latency"
+        column_name: "FIFTY_PERCENTILE_TOTAL_LATENCY"
+        value_type: "null_float"
+        data:
+          type: "gauge"
+        unit: "second"
