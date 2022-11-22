@@ -1,0 +1,4 @@
+change_type: enhancement
+component: k8sattributesprocessor
+note: Default `container.id` to latest instance unless `k8s.container.restart_count` is specified
+issues: [16432]
