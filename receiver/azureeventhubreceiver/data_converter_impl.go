@@ -59,7 +59,7 @@ type azureLogRecord struct {
 // AsTimestamp will parse an ISO8601 string into an OpenTelemetry
 // nanosecond timestamp. If the string cannot be parsed, it will
 // return zero and the error.
-func AsTimestamp(s string) (pcommon.Timestamp, error) {
+func asTimestamp(s string) (pcommon.Timestamp, error) {
 	t, err := iso8601.ParseString(s)
 	if err != nil {
 		return 0, err
