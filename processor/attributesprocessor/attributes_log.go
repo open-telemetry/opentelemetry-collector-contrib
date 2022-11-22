@@ -22,7 +22,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterlog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterlog"
 )
 
 type logAttributesProcessor struct {
