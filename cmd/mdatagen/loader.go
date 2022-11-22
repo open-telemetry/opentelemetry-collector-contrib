@@ -98,6 +98,24 @@ func (mvt ValueType) Primitive() string {
 	}
 }
 
+func (mvt ValueType) TestValue() string {
+	switch mvt.ValueType {
+	case pcommon.ValueTypeEmpty, pcommon.ValueTypeStr:
+		return `"attr-val"`
+	case pcommon.ValueTypeInt:
+		return "1"
+	case pcommon.ValueTypeDouble:
+		return "1.1"
+	case pcommon.ValueTypeBool:
+		return "true"
+	case pcommon.ValueTypeMap:
+		return `pcommon.NewMap()`
+	case pcommon.ValueTypeSlice:
+		return `pcommon.NewSlice()`
+	}
+	return ""
+}
+
 type metric struct {
 	// Enabled defines whether the metric is enabled by default.
 	Enabled *bool `yaml:"enabled" validate:"required"`
