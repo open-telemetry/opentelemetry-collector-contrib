@@ -88,7 +88,7 @@ func asSeverity(s string) plog.SeverityNumber {
 // SetIf will modify the given raw map by setting
 // the key and value iff the value is not null and
 // not the empty string.
-func SetIf(attrs map[string]interface{}, key string, value *string) {
+func setIf(attrs map[string]interface{}, key string, value *string) {
 	if value != nil && *value != "" {
 		attrs[key] = *value
 	}
