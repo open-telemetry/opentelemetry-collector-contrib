@@ -201,7 +201,7 @@ func TestTransformer(t *testing.T) {
 			var attributes map[string]interface{}
 
 			mock1 := testutil.NewMockOperator("output1")
-			mock1.On("Process", mock.Anything, mock.Anything).Return(nil).Run(func(args mock.Arguments) {
+			mock1.On("Process", mock.Anything, mock.Anything).Return(1, nil).Run(func(args mock.Arguments) {
 				results["output1"]++
 				if entry, ok := args[1].(*entry.Entry); ok {
 					attributes = entry.Attributes
@@ -209,7 +209,7 @@ func TestTransformer(t *testing.T) {
 			})
 
 			mock2 := testutil.NewMockOperator("output2")
-			mock2.On("Process", mock.Anything, mock.Anything).Return(nil).Run(func(args mock.Arguments) {
+			mock2.On("Process", mock.Anything, mock.Anything).Return(1, nil).Run(func(args mock.Arguments) {
 				results["output2"]++
 				if entry, ok := args[1].(*entry.Entry); ok {
 					attributes = entry.Attributes
@@ -220,8 +220,9 @@ func TestTransformer(t *testing.T) {
 			err = routerOperator.SetOutputs([]operator.Operator{mock1, mock2})
 			require.NoError(t, err)
 
-			err = routerOperator.Process(context.Background(), tc.input)
+			processed, err := routerOperator.Process(context.Background(), tc.input)
 			require.NoError(t, err)
+			require.Equal(t, len(tc.expectedCounts), processed)
 
 			require.Equal(t, tc.expectedCounts, results)
 			require.Equal(t, tc.expectedAttributes, attributes)

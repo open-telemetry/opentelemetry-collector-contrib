@@ -140,9 +140,10 @@ func TestProcess(t *testing.T) {
 
 			require.True(t, op.CanOutput(), "expected test operator CanOutput to return true")
 
-			err = op.Process(context.Background(), tc.input)
+			processed, err := op.Process(context.Background(), tc.input)
 			require.NoError(t, err)
 			require.Equal(t, tc.expect, tc.input)
+			require.Equal(t, 0, processed)
 		})
 	}
 }
@@ -523,7 +524,7 @@ func runLossyTimeParseTest(_ *testing.T, cfg *Config, ent *entry.Entry, buildErr
 		resultChan := make(chan *entry.Entry, 1)
 		mockOutput.On("Process", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 			resultChan <- args.Get(1).(*entry.Entry)
-		}).Return(nil)
+		}).Return(1, nil)
 
 		timeParser := op.(*Parser)
 		timeParser.OutputOperators = []operator.Operator{mockOutput}

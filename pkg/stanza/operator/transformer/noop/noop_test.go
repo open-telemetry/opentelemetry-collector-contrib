@@ -56,8 +56,9 @@ func TestProcess(t *testing.T) {
 	entry.TraceFlags = []byte{0x01}
 
 	expected := entry.Copy()
-	err = op.Process(context.Background(), entry)
+	processed, err := op.Process(context.Background(), entry)
 	require.NoError(t, err)
+	require.Equal(t, 1, processed)
 
 	fake.ExpectEntry(t, expected)
 }

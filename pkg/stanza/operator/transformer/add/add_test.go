@@ -321,13 +321,14 @@ func TestProcessAndBuild(t *testing.T) {
 			fake := testutil.NewFakeOutput(t)
 			require.NoError(t, add.SetOutputs([]operator.Operator{fake}))
 			val := tc.input()
-			err = add.Process(context.Background(), val)
+			processed, err := add.Process(context.Background(), val)
 			if tc.expectErr {
 				require.Error(t, err)
 			} else {
 				require.NoError(t, err)
 				fake.ExpectEntry(t, tc.output())
 			}
+			require.Equal(t, 1, processed)
 		})
 	}
 }

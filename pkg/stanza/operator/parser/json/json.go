@@ -69,7 +69,7 @@ type Parser struct {
 }
 
 // Process will parse an entry for JSON.
-func (j *Parser) Process(ctx context.Context, entry *entry.Entry) error {
+func (j *Parser) Process(ctx context.Context, entry *entry.Entry) (int, error) {
 	return j.ParserOperator.ProcessWith(ctx, entry, j.parse)
 }
 

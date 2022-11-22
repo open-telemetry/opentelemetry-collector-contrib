@@ -108,17 +108,20 @@ func (_m *Operator) Outputs() []operator.Operator {
 }
 
 // Process provides a mock function with given fields: _a0, _a1
-func (_m *Operator) Process(_a0 context.Context, _a1 *entry.Entry) error {
+func (_m *Operator) Process(_a0 context.Context, _a1 *entry.Entry) (int, error) {
 	ret := _m.Called(_a0, _a1)
 
-	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, *entry.Entry) error); ok {
-		r0 = rf(_a0, _a1)
+	var r1 error
+	var r0 int
+
+	if rf, ok := ret.Get(1).(func(context.Context, *entry.Entry) (int, error)); ok {
+		r0, r1 = rf(_a0, _a1)
 	} else {
-		r0 = ret.Error(0)
+		r1 = ret.Error(1)
+		r0 = ret.Int(0)
 	}
 
-	return r0
+	return r0, r1
 }
 
 // SetOutputIDs provides a mock function with given fields: _a0

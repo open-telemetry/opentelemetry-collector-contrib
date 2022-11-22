@@ -37,7 +37,8 @@ func TestLogEmitter(t *testing.T) {
 	in := entry.New()
 
 	go func() {
-		require.NoError(t, emitter.Process(context.Background(), in))
+		_, err := emitter.Process(context.Background(), in)
+		require.NoError(t, err)
 	}()
 
 	select {
@@ -65,7 +66,8 @@ func TestLogEmitterEmitsOnMaxBatchSize(t *testing.T) {
 	go func() {
 		ctx := context.Background()
 		for _, e := range entries {
-			require.NoError(t, emitter.Process(ctx, e))
+			_, err := emitter.Process(ctx, e)
+			require.NoError(t, err)
 		}
 	}()
 
@@ -94,8 +96,9 @@ func TestLogEmitterEmitsOnFlushInterval(t *testing.T) {
 	entry := complexEntry()
 
 	go func() {
-		ctx := context.Background()
-		require.NoError(t, emitter.Process(ctx, entry))
+		processed, err := emitter.Process(context.Background(), entry)
+		require.NoError(t, err)
+		require.Equal(t, 1, processed)
 	}()
 
 	timeoutChan := time.After(timeout)

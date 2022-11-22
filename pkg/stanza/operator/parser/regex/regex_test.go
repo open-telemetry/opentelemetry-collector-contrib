@@ -153,8 +153,9 @@ func TestParserRegex(t *testing.T) {
 			tc.input.ObservedTimestamp = ots
 			tc.expected.ObservedTimestamp = ots
 
-			err = op.Process(context.Background(), tc.input)
+			processed, err := op.Process(context.Background(), tc.input)
 			require.NoError(t, err)
+			require.Equal(t, 1, processed)
 
 			fake.ExpectEntry(t, tc.expected)
 		})

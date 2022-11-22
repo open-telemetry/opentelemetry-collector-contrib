@@ -115,7 +115,7 @@ type Parser struct {
 type parseFunc func(interface{}) (interface{}, error)
 
 // Process will parse an entry for csv.
-func (r *Parser) Process(ctx context.Context, e *entry.Entry) error {
+func (r *Parser) Process(ctx context.Context, e *entry.Entry) (int, error) {
 	parse := r.parse
 
 	// If we have a headerAttribute set we need to dynamically generate our parser function
@@ -124,13 +124,13 @@ func (r *Parser) Process(ctx context.Context, e *entry.Entry) error {
 		if !ok {
 			err := fmt.Errorf("failed to read dynamic header attribute %s", r.headerAttribute)
 			r.Error(err)
-			return err
+			return 0, err
 		}
 		headerString, ok := h.(string)
 		if !ok {
 			err := fmt.Errorf("header is expected to be a string but is %T", h)
 			r.Error(err)
-			return err
+			return 0, err
 		}
 		headers := strings.Split(headerString, string([]rune{r.fieldDelimiter}))
 		parse = generateParseFunc(headers, r.fieldDelimiter, r.lazyQuotes, r.ignoreQuotes)

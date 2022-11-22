@@ -200,7 +200,7 @@ func (r *Transformer) Stop() error {
 
 const DefaultSourceIdentifier = "DefaultSourceIdentifier"
 
-func (r *Transformer) Process(ctx context.Context, e *entry.Entry) error {
+func (r *Transformer) Process(ctx context.Context, e *entry.Entry) (int, error) {
 	// Lock the recombine operator because process can't run concurrently
 	r.Lock()
 	defer r.Unlock()
@@ -236,25 +236,25 @@ func (r *Transformer) Process(ctx context.Context, e *entry.Entry) error {
 		// Flush the existing batch
 		err := r.flushSource(s)
 		if err != nil {
-			return err
+			return 0, err
 		}
 
 		// Add the current log to the new batch
 		r.addToBatch(ctx, e, s)
-		return nil
+		return 1, nil
 	// This is the last entry in a complete batch
 	case matches && r.matchIndicatesLast():
 		fallthrough
 	// When matching on first entry, never batch partial first. Just emit immediately
 	case !matches && r.matchIndicatesFirst() && len(r.batchMap[s]) == 0:
 		r.addToBatch(ctx, e, s)
-		return r.flushSource(s)
+		return 1, r.flushSource(s)
 	}
 
 	// This is neither the first entry of a new log,
 	// nor the last entry of a log, so just add it to the batch
 	r.addToBatch(ctx, e, s)
-	return nil
+	return 1, nil
 }
 
 func (r *Transformer) matchIndicatesFirst() bool {

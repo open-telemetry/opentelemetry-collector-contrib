@@ -84,9 +84,9 @@ func (f *FakeOutput) Stop() error { return nil }
 func (f *FakeOutput) Type() string { return "fake_output" }
 
 // Process will place all incoming entries on the Received channel of a fake output
-func (f *FakeOutput) Process(ctx context.Context, entry *entry.Entry) error {
+func (f *FakeOutput) Process(ctx context.Context, entry *entry.Entry) (int, error) {
 	f.Received <- entry
-	return nil
+	return 1, nil
 }
 
 // ExpectBody expects that a body will be received by the fake operator within a second

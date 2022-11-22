@@ -106,13 +106,14 @@ func TestScopeNameParser(t *testing.T) {
 			parser, err := tc.config.Build(testutil.Logger(t))
 			require.NoError(t, err)
 
-			err = parser.Process(context.Background(), tc.input)
+			processed, err := parser.Process(context.Background(), tc.input)
 			if tc.expectErr {
 				require.Error(t, err)
 			}
 			if tc.expected != nil {
 				require.Equal(t, tc.expected, tc.input)
 			}
+			require.Equal(t, 0, processed)
 		})
 	}
 }

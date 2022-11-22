@@ -44,6 +44,7 @@ func TestProcess(t *testing.T) {
 	require.NoError(t, err)
 
 	entry := entry.New()
-	result := op.Process(context.Background(), entry)
-	require.Nil(t, result)
+	processed, err := op.Process(context.Background(), entry)
+	require.Nil(t, err)
+	require.Equal(t, 0, processed)
 }

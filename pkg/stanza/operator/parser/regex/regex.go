@@ -106,7 +106,7 @@ type Parser struct {
 }
 
 // Process will parse an entry for regex.
-func (r *Parser) Process(ctx context.Context, entry *entry.Entry) error {
+func (r *Parser) Process(ctx context.Context, entry *entry.Entry) (int, error) {
 	return r.ParserOperator.ProcessWith(ctx, entry, r.parse)
 }
 

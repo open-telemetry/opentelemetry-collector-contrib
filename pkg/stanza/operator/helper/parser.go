@@ -105,37 +105,38 @@ type ParserOperator struct {
 }
 
 // ProcessWith will run ParseWith on the entry, then forward the entry on to the next operators.
-func (p *ParserOperator) ProcessWith(ctx context.Context, entry *entry.Entry, parse ParseFunction) error {
+// Returns number of entries being processed by pipeline and error eventually.
+func (p *ParserOperator) ProcessWith(ctx context.Context, entry *entry.Entry, parse ParseFunction) (int, error) {
 	return p.ProcessWithCallback(ctx, entry, parse, nil)
 }
 
-func (p *ParserOperator) ProcessWithCallback(ctx context.Context, entry *entry.Entry, parse ParseFunction, cb func(*entry.Entry) error) error {
+func (p *ParserOperator) ProcessWithCallback(ctx context.Context, entry *entry.Entry, parse ParseFunction, cb func(*entry.Entry) error) (int, error) {
 	// Short circuit if the "if" condition does not match
 	skip, err := p.Skip(ctx, entry)
 	if err != nil {
 		return p.HandleEntryError(ctx, entry, err)
 	}
 	if skip {
-		p.Write(ctx, entry)
-		return nil
+		return p.Write(ctx, entry), nil
 	}
 
-	if err = p.ParseWith(ctx, entry, parse); err != nil {
-		return err
+	var processed int
+	if processed, err = p.ParseWith(ctx, entry, parse); err != nil {
+		return processed, err
 	}
 	if cb != nil {
 		err = cb(entry)
 		if err != nil {
-			return err
+			return 0, err
 		}
 	}
 
-	p.Write(ctx, entry)
-	return nil
+	return p.Write(ctx, entry), nil
 }
 
 // ParseWith will process an entry's field with a parser function.
-func (p *ParserOperator) ParseWith(ctx context.Context, entry *entry.Entry, parse ParseFunction) error {
+// Returns number of entries being processed by pipeline and error eventually.
+func (p *ParserOperator) ParseWith(ctx context.Context, entry *entry.Entry, parse ParseFunction) (int, error) {
 	value, ok := entry.Get(p.ParseFrom)
 	if !ok {
 		err := errors.NewError(
@@ -194,7 +195,7 @@ func (p *ParserOperator) ParseWith(ctx context.Context, entry *entry.Entry, pars
 	if scopeNameParserErr != nil {
 		return p.HandleEntryError(ctx, entry, errors.Wrap(scopeNameParserErr, "scope_name parser"))
 	}
-	return nil
+	return 0, nil
 }
 
 // ParseFunction is function that parses a raw value.

@@ -99,7 +99,7 @@ func tcpInputTest(input []byte, expected []string) func(t *testing.T) {
 		entryChan := make(chan *entry.Entry, 1)
 		mockOutput.On("Process", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 			entryChan <- args.Get(1).(*entry.Entry)
-		}).Return(nil)
+		}).Return(1, nil)
 
 		err = tcpInput.Start(testutil.NewMockPersister("test"))
 		require.NoError(t, err)
@@ -148,7 +148,7 @@ func tcpInputAttributesTest(input []byte, expected []string) func(t *testing.T) 
 		entryChan := make(chan *entry.Entry, 1)
 		mockOutput.On("Process", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 			entryChan <- args.Get(1).(*entry.Entry)
-		}).Return(nil)
+		}).Return(1, nil)
 
 		err = tcpInput.Start(testutil.NewMockPersister("test"))
 		require.NoError(t, err)
@@ -234,7 +234,7 @@ func tlsInputTest(input []byte, expected []string) func(t *testing.T) {
 		entryChan := make(chan *entry.Entry, 1)
 		mockOutput.On("Process", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 			entryChan <- args.Get(1).(*entry.Entry)
-		}).Return(nil)
+		}).Return(1, nil)
 
 		err = tcpInput.Start(testutil.NewMockPersister("test"))
 		require.NoError(t, err)
@@ -407,7 +407,7 @@ func TestFailToBind(t *testing.T) {
 		entryChan := make(chan *entry.Entry, 1)
 		mockOutput.On("Process", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 			entryChan <- args.Get(1).(*entry.Entry)
-		}).Return(nil)
+		}).Return(1, nil)
 		err = tcpInput.Start(testutil.NewMockPersister("test"))
 		return tcpInput, err
 	}

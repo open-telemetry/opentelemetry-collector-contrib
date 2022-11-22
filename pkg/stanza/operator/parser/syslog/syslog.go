@@ -160,7 +160,7 @@ type Parser struct {
 }
 
 // Process will parse an entry field as syslog.
-func (s *Parser) Process(ctx context.Context, entry *entry.Entry) error {
+func (s *Parser) Process(ctx context.Context, entry *entry.Entry) (int, error) {
 	return s.ParserOperator.ProcessWithCallback(ctx, entry, s.parse, postprocess)
 }
 

@@ -90,12 +90,13 @@ func (e *LogEmitter) OutChannel() <-chan []*entry.Entry {
 }
 
 // Process will emit an entry to the output channel
-func (e *LogEmitter) Process(ctx context.Context, ent *entry.Entry) error {
+func (e *LogEmitter) Process(ctx context.Context, ent *entry.Entry) (int, error) {
 	if oldBatch := e.appendEntry(ent); len(oldBatch) > 0 {
 		e.flush(ctx, oldBatch)
 	}
 
-	return nil
+	// always returns 1 as the entry is going to be emitted now or later
+	return 1, nil
 }
 
 // appendEntry appends the entry to the current batch. If maxBatchSize is reached, a new batch will be made, and the old batch

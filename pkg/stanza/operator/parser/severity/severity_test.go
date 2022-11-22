@@ -244,7 +244,7 @@ func runSeverityParseTest(cfg *Config, ent *entry.Entry, buildErr bool, parseErr
 		resultChan := make(chan *entry.Entry, 1)
 		mockOutput.On("Process", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 			resultChan <- args.Get(1).(*entry.Entry)
-		}).Return(nil)
+		}).Return(1, nil)
 
 		severityParser := op.(*Parser)
 		severityParser.OutputOperators = []operator.Operator{mockOutput}

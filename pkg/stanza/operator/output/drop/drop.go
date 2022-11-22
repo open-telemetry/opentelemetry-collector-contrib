@@ -58,6 +58,6 @@ type Output struct {
 }
 
 // Process will drop the incoming entry.
-func (p *Output) Process(ctx context.Context, entry *entry.Entry) error {
-	return nil
+func (p *Output) Process(ctx context.Context, entry *entry.Entry) (int, error) {
+	return 0, nil
 }

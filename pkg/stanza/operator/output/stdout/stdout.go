@@ -68,14 +68,14 @@ type Output struct {
 }
 
 // Process will log entries received.
-func (o *Output) Process(ctx context.Context, entry *entry.Entry) error {
+func (o *Output) Process(ctx context.Context, entry *entry.Entry) (int, error) {
 	o.mux.Lock()
 	err := o.encoder.Encode(entry)
 	if err != nil {
 		o.mux.Unlock()
 		o.Errorf("Failed to process entry: %s, $s", err, entry.Body)
-		return err
+		return 0, err
 	}
 	o.mux.Unlock()
-	return nil
+	return 0, nil
 }

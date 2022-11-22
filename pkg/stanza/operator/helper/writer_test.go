@@ -51,9 +51,9 @@ func TestWriterConfigValidBuild(t *testing.T) {
 
 func TestWriterOperatorWrite(t *testing.T) {
 	output1 := &testutil.Operator{}
-	output1.On("Process", mock.Anything, mock.Anything).Return(nil)
+	output1.On("Process", mock.Anything, mock.Anything).Return(1, nil)
 	output2 := &testutil.Operator{}
-	output2.On("Process", mock.Anything, mock.Anything).Return(nil)
+	output2.On("Process", mock.Anything, mock.Anything).Return(1, nil)
 	writer := WriterOperator{
 		OutputOperators: []operator.Operator{output1, output2},
 	}
@@ -61,7 +61,9 @@ func TestWriterOperatorWrite(t *testing.T) {
 	ctx := context.Background()
 	testEntry := entry.New()
 
-	writer.Write(ctx, testEntry)
+	processed := writer.Write(ctx, testEntry)
+
+	require.Equal(t, 2, processed)
 	output1.AssertCalled(t, "Process", ctx, mock.Anything)
 	output2.AssertCalled(t, "Process", ctx, mock.Anything)
 }
@@ -73,9 +75,9 @@ func TestWriterOperatorCanOutput(t *testing.T) {
 
 func TestWriterOperatorOutputs(t *testing.T) {
 	output1 := &testutil.Operator{}
-	output1.On("Process", mock.Anything, mock.Anything).Return(nil)
+	output1.On("Process", mock.Anything, mock.Anything).Return(1, nil)
 	output2 := &testutil.Operator{}
-	output2.On("Process", mock.Anything, mock.Anything).Return(nil)
+	output2.On("Process", mock.Anything, mock.Anything).Return(1, nil)
 	writer := WriterOperator{
 		OutputOperators: []operator.Operator{output1, output2},
 	}
@@ -83,7 +85,9 @@ func TestWriterOperatorOutputs(t *testing.T) {
 	ctx := context.Background()
 	testEntry := entry.New()
 
-	writer.Write(ctx, testEntry)
+	processed := writer.Write(ctx, testEntry)
+
+	require.Equal(t, 2, processed)
 	output1.AssertCalled(t, "Process", ctx, mock.Anything)
 	output2.AssertCalled(t, "Process", ctx, mock.Anything)
 }
@@ -158,4 +162,42 @@ func TestUnmarshalWriterConfig(t *testing.T) {
 			},
 		},
 	}.Run(t)
+}
+
+func TestWriterWithDroppingData(t *testing.T) {
+	output1 := &testutil.Operator{}
+	output1.On("Process", mock.Anything, mock.Anything).Return(0, nil)
+	output2 := &testutil.Operator{}
+	output2.On("Process", mock.Anything, mock.Anything).Return(3, nil)
+	writer := WriterOperator{
+		OutputOperators: []operator.Operator{output1, output2},
+	}
+
+	ctx := context.Background()
+	testEntry := entry.New()
+
+	processed := writer.Write(ctx, testEntry)
+
+	require.Equal(t, 3, processed)
+	output1.AssertCalled(t, "Process", ctx, mock.Anything)
+	output2.AssertCalled(t, "Process", ctx, mock.Anything)
+}
+
+func TestWriterWithMultipleEntries(t *testing.T) {
+	output1 := &testutil.Operator{}
+	output1.On("Process", mock.Anything, mock.Anything).Return(7, nil)
+	output2 := &testutil.Operator{}
+	output2.On("Process", mock.Anything, mock.Anything).Return(3, nil)
+	writer := WriterOperator{
+		OutputOperators: []operator.Operator{output1, output2},
+	}
+
+	ctx := context.Background()
+	testEntry := entry.New()
+
+	processed := writer.Write(ctx, testEntry)
+
+	require.Equal(t, 10, processed)
+	output1.AssertCalled(t, "Process", ctx, mock.Anything)
+	output2.AssertCalled(t, "Process", ctx, mock.Anything)
 }

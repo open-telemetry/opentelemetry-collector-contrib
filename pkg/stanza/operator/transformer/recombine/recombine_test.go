@@ -298,7 +298,9 @@ func TestTransformer(t *testing.T) {
 			require.NoError(t, err)
 
 			for _, e := range tc.input {
-				require.NoError(t, recombine.Process(context.Background(), e))
+				processed, err := recombine.Process(context.Background(), e)
+				require.NoError(t, err)
+				require.Equal(t, 1, processed)
 			}
 
 			for _, expected := range tc.expectedOutput {
@@ -327,7 +329,9 @@ func TestTransformer(t *testing.T) {
 		require.NoError(t, err)
 
 		// Send an entry that isn't the last in a multiline
-		require.NoError(t, recombine.Process(context.Background(), entry.New()))
+		processed, err := recombine.Process(context.Background(), entry.New())
+		require.NoError(t, err)
+		require.Equal(t, 1, processed)
 
 		// Ensure that the entry isn't immediately sent
 		select {
@@ -374,11 +378,11 @@ func BenchmarkRecombine(b *testing.B) {
 	ctx := context.Background()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		require.NoError(b, recombine.Process(ctx, e))
-		require.NoError(b, recombine.Process(ctx, e))
-		require.NoError(b, recombine.Process(ctx, e))
-		require.NoError(b, recombine.Process(ctx, e))
-		require.NoError(b, recombine.Process(ctx, e))
+		for j := 0; j < 5; j++ {
+			processed, err := recombine.Process(ctx, e)
+			require.NoError(b, err)
+			require.Equal(b, 1, processed)
+		}
 		recombine.flushUncombined(ctx)
 	}
 }
@@ -405,7 +409,9 @@ func TestTimeout(t *testing.T) {
 	ctx := context.Background()
 
 	require.NoError(t, recombine.Start(nil))
-	require.NoError(t, recombine.Process(ctx, e))
+	processed, err := recombine.Process(ctx, e)
+	require.NoError(t, err)
+	require.Equal(t, 1, processed)
 	select {
 	case <-fake.Received:
 		t.Logf("We shouldn't receive an entry before timeout")

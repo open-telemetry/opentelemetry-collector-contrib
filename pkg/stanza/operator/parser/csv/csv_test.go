@@ -344,16 +344,7 @@ func TestParserCSV(t *testing.T) {
 					Body: "stanza dev,1,400,555-555-5555",
 				},
 			},
-			[]entry.Entry{
-				{
-					Body: map[string]interface{}{
-						"name":   "stanza dev",
-						"age":    "1",
-						"height": "400",
-						"number": "555-555-5555",
-					},
-				},
-			},
+			[]entry.Entry{},
 			false,
 			true,
 		},
@@ -737,11 +728,13 @@ func TestParserCSV(t *testing.T) {
 			for i := range tc.inputEntries {
 				inputEntry := tc.inputEntries[i]
 				inputEntry.ObservedTimestamp = ots
-				err = op.Process(context.Background(), &inputEntry)
+				processed, err := op.Process(context.Background(), &inputEntry)
 				if tc.expectProcessErr {
 					require.Error(t, err)
+					require.Equal(t, len(tc.expectedEntries), processed)
 					return
 				}
+				require.Equal(t, 1, processed)
 				require.NoError(t, err)
 
 				expectedEntry := tc.expectedEntries[i]
@@ -975,8 +968,9 @@ cc""",dddd,eeee`,
 
 			entry := entry.New()
 			entry.Body = tc.input
-			err = op.Process(context.Background(), entry)
+			processed, err := op.Process(context.Background(), entry)
 			require.NoError(t, err)
+			require.Equal(t, 1, processed)
 			fake.ExpectBody(t, tc.expected)
 			fake.ExpectNoEntry(t, 100*time.Millisecond)
 		})
@@ -997,8 +991,9 @@ func TestParserCSVInvalidJSONInput(t *testing.T) {
 
 		entry := entry.New()
 		entry.Body = "{\"name\": \"stanza\"}"
-		err = op.Process(context.Background(), entry)
+		processed, err := op.Process(context.Background(), entry)
 		require.Error(t, err, "parse error on line 1, column 1: bare \" in non-quoted-field")
+		require.Equal(t, 1, processed)
 		fake.ExpectBody(t, "{\"name\": \"stanza\"}")
 	})
 }

@@ -65,8 +65,8 @@ func (o *UnstartableOperator) Start(_ operator.Persister) error {
 }
 
 // Process will return nil
-func (o *UnstartableOperator) Process(ctx context.Context, entry *entry.Entry) error {
-	return nil
+func (o *UnstartableOperator) Process(ctx context.Context, entry *entry.Entry) (int, error) {
+	return 0, nil
 }
 
 type mockLogsRejecter struct {

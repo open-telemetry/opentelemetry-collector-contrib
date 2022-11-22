@@ -48,8 +48,9 @@ func TestParser(t *testing.T) {
 			newEntry := tc.Input
 			ots := newEntry.ObservedTimestamp
 
-			err = op.Process(context.Background(), newEntry)
+			processed, err := op.Process(context.Background(), newEntry)
 			require.NoError(t, err)
+			require.Equal(t, 1, processed)
 
 			select {
 			case e := <-fake.Received:
@@ -77,9 +78,10 @@ func TestSyslogParseRFC5424_SDNameTooLong(t *testing.T) {
 
 	newEntry := entry.New()
 	newEntry.Body = body
-	err = op.Process(context.Background(), newEntry)
+	processed, err := op.Process(context.Background(), newEntry)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "expecting a structured data element id (from 1 to max 32 US-ASCII characters")
+	require.Equal(t, 1, processed)
 
 	select {
 	case e := <-fake.Received:

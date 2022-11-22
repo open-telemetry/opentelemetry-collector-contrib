@@ -68,7 +68,7 @@ type Parser struct {
 }
 
 // Process will parse an entry.
-func (u *Parser) Process(ctx context.Context, entry *entry.Entry) error {
+func (u *Parser) Process(ctx context.Context, entry *entry.Entry) (int, error) {
 	return u.ParserOperator.ProcessWith(ctx, entry, u.parse)
 }
 

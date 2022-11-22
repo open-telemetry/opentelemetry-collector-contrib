@@ -87,31 +87,30 @@ func (t *TransformerOperator) CanProcess() bool {
 }
 
 // ProcessWith will process an entry with a transform function.
-func (t *TransformerOperator) ProcessWith(ctx context.Context, entry *entry.Entry, transform TransformFunction) error {
+// Returns number of entries being processed by pipeline and error eventually.
+func (t *TransformerOperator) ProcessWith(ctx context.Context, entry *entry.Entry, transform TransformFunction) (int, error) {
 	// Short circuit if the "if" condition does not match
 	skip, err := t.Skip(ctx, entry)
 	if err != nil {
 		return t.HandleEntryError(ctx, entry, err)
 	}
 	if skip {
-		t.Write(ctx, entry)
-		return nil
+		return t.Write(ctx, entry), nil
 	}
 
 	if err := transform(entry); err != nil {
 		return t.HandleEntryError(ctx, entry, err)
 	}
-	t.Write(ctx, entry)
-	return nil
+	return t.Write(ctx, entry), nil
 }
 
 // HandleEntryError will handle an entry error using the on_error strategy.
-func (t *TransformerOperator) HandleEntryError(ctx context.Context, entry *entry.Entry, err error) error {
+func (t *TransformerOperator) HandleEntryError(ctx context.Context, entry *entry.Entry, err error) (int, error) {
 	t.Errorw("Failed to process entry", zap.Any("error", err), zap.Any("action", t.OnError), zap.Any("entry", entry))
 	if t.OnError == SendOnError {
-		t.Write(ctx, entry)
+		return t.Write(ctx, entry), err
 	}
-	return err
+	return 0, err
 }
 
 func (t *TransformerOperator) Skip(ctx context.Context, entry *entry.Entry) (bool, error) {

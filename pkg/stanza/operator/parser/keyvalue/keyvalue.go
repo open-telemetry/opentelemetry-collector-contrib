@@ -94,7 +94,7 @@ type Parser struct {
 }
 
 // Process will parse an entry for key value pairs.
-func (kv *Parser) Process(ctx context.Context, entry *entry.Entry) error {
+func (kv *Parser) Process(ctx context.Context, entry *entry.Entry) (int, error) {
 	return kv.ParserOperator.ProcessWith(ctx, entry, kv.parse)
 }
 

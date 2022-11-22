@@ -48,7 +48,8 @@ type Operator interface {
 	// CanProcess indicates if the operator will process entries from other operators.
 	CanProcess() bool
 	// Process will process an entry from an operator.
-	Process(context.Context, *entry.Entry) error
+	// Returns number of entries being processed by pipeline and error eventually.
+	Process(context.Context, *entry.Entry) (int, error)
 	// Logger returns the operator's logger
 	Logger() *zap.SugaredLogger
 }

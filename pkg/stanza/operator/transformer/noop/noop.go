@@ -65,7 +65,6 @@ type Transformer struct {
 }
 
 // Process will forward the entry to the next output without any alterations.
-func (p *Transformer) Process(ctx context.Context, entry *entry.Entry) error {
-	p.Write(ctx, entry)
-	return nil
+func (p *Transformer) Process(ctx context.Context, entry *entry.Entry) (int, error) {
+	return p.Write(ctx, entry), nil
 }

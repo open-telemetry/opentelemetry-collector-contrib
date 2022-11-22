@@ -120,9 +120,10 @@ func (p *Transformer) CanProcess() bool {
 }
 
 // Process will route incoming entries based on matching expressions
-func (p *Transformer) Process(ctx context.Context, entry *entry.Entry) error {
+func (p *Transformer) Process(ctx context.Context, entry *entry.Entry) (int, error) {
 	env := helper.GetExprEnv(entry)
 	defer helper.PutExprEnv(env)
+	processed := 0
 
 	for _, route := range p.routes {
 		matches, err := vm.Run(route.Expression, env)
@@ -135,17 +136,19 @@ func (p *Transformer) Process(ctx context.Context, entry *entry.Entry) error {
 		if matches.(bool) {
 			if err := route.Attribute(entry); err != nil {
 				p.Errorf("Failed to label entry: %s", err)
-				return err
+				return 0, err
 			}
 
 			for _, output := range route.OutputOperators {
-				_ = output.Process(ctx, entry)
+				// ToDo; check if at least one process is ok
+				pr, _ := output.Process(ctx, entry)
+				processed += pr
 			}
 			break
 		}
 	}
 
-	return nil
+	return processed, nil
 }
 
 // CanOutput will always return true for a router operator

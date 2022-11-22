@@ -73,6 +73,6 @@ type Parser struct {
 }
 
 // Process will parse traces from an entry.
-func (p *Parser) Process(ctx context.Context, entry *entry.Entry) error {
+func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (int, error) {
 	return p.ProcessWith(ctx, entry, p.Parse)
 }

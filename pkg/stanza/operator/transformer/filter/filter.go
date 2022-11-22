@@ -91,35 +91,34 @@ type Transformer struct {
 }
 
 // Process will drop incoming entries that match the filter expression
-func (f *Transformer) Process(ctx context.Context, entry *entry.Entry) error {
+func (f *Transformer) Process(ctx context.Context, entry *entry.Entry) (int, error) {
 	env := helper.GetExprEnv(entry)
 	defer helper.PutExprEnv(env)
 
 	matches, err := vm.Run(f.expression, env)
 	if err != nil {
 		f.Errorf("Running expressing returned an error", zap.Error(err))
-		return nil
+		return 0, nil
 	}
 
 	filtered, ok := matches.(bool)
 	if !ok {
 		f.Errorf("Expression did not compile as a boolean")
-		return nil
+		return 0, nil
 	}
 
 	if !filtered {
-		f.Write(ctx, entry)
-		return nil
+		return f.Write(ctx, entry), nil
 	}
 
 	i, err := randInt(rand.Reader, upperBound)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	if i.Cmp(f.dropCutoff) >= 0 {
-		f.Write(ctx, entry)
+		return f.Write(ctx, entry), nil
 	}
 
-	return nil
+	return 0, nil
 }

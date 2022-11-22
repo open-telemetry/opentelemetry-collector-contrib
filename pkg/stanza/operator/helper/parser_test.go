@@ -126,9 +126,10 @@ func TestParserMissingField(t *testing.T) {
 	}
 	ctx := context.Background()
 	testEntry := entry.New()
-	err := parser.ProcessWith(ctx, testEntry, parse)
+	processed, err := parser.ProcessWith(ctx, testEntry, parse)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "Entry is missing the expected parse_from field.")
+	require.Equal(t, 0, processed)
 }
 
 func TestParserInvalidParseDrop(t *testing.T) {
@@ -145,9 +146,10 @@ func TestParserInvalidParseDrop(t *testing.T) {
 	}
 	ctx := context.Background()
 	testEntry := entry.New()
-	err := parser.ProcessWith(ctx, testEntry, parse)
+	processed, err := parser.ProcessWith(ctx, testEntry, parse)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "parse failure")
+	require.Equal(t, 0, processed)
 	fakeOut.ExpectNoEntry(t, 100*time.Millisecond)
 }
 
@@ -165,10 +167,11 @@ func TestParserInvalidParseSend(t *testing.T) {
 	}
 	ctx := context.Background()
 	testEntry := entry.New()
-	err := parser.ProcessWith(ctx, testEntry, parse)
+	processed, err := parser.ProcessWith(ctx, testEntry, parse)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "parse failure")
 	fakeOut.ExpectEntry(t, testEntry)
+	require.Equal(t, 1, processed)
 	fakeOut.ExpectNoEntry(t, 100*time.Millisecond)
 }
 
@@ -193,9 +196,10 @@ func TestParserInvalidTimeParseDrop(t *testing.T) {
 	}
 	ctx := context.Background()
 	testEntry := entry.New()
-	err := parser.ProcessWith(ctx, testEntry, parse)
+	processed, err := parser.ProcessWith(ctx, testEntry, parse)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "time parser: log entry does not have the expected parse_from field")
+	require.Equal(t, 0, processed)
 	fakeOut.ExpectNoEntry(t, 100*time.Millisecond)
 }
 
@@ -220,9 +224,10 @@ func TestParserInvalidTimeParseSend(t *testing.T) {
 	}
 	ctx := context.Background()
 	testEntry := entry.New()
-	err := parser.ProcessWith(ctx, testEntry, parse)
+	processed, err := parser.ProcessWith(ctx, testEntry, parse)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "time parser: log entry does not have the expected parse_from field")
+	require.Equal(t, 1, processed)
 	fakeOut.ExpectEntry(t, testEntry)
 	fakeOut.ExpectNoEntry(t, 100*time.Millisecond)
 }
@@ -244,9 +249,10 @@ func TestParserInvalidSeverityParseDrop(t *testing.T) {
 	}
 	ctx := context.Background()
 	testEntry := entry.New()
-	err := parser.ProcessWith(ctx, testEntry, parse)
+	processed, err := parser.ProcessWith(ctx, testEntry, parse)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "severity parser: log entry does not have the expected parse_from field")
+	require.Equal(t, 0, processed)
 	fakeOut.ExpectNoEntry(t, 100*time.Millisecond)
 }
 
@@ -285,9 +291,10 @@ func TestParserInvalidTimeValidSeverityParse(t *testing.T) {
 	err := testEntry.Set(entry.NewBodyField("severity"), "info")
 	require.NoError(t, err)
 
-	err = parser.ProcessWith(ctx, testEntry, parse)
+	processed, err := parser.ProcessWith(ctx, testEntry, parse)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "time parser: log entry does not have the expected parse_from field")
+	require.Equal(t, 0, processed)
 
 	// But, this should have been set anyways
 	require.Equal(t, entry.Info, testEntry.Severity)
@@ -337,9 +344,10 @@ func TestParserValidTimeInvalidSeverityParse(t *testing.T) {
 	err = testEntry.Set(entry.NewBodyField("timestamp"), sample)
 	require.NoError(t, err)
 
-	err = parser.ProcessWith(ctx, testEntry, parse)
+	processed, err := parser.ProcessWith(ctx, testEntry, parse)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "severity parser: log entry does not have the expected parse_from field")
+	require.Equal(t, 0, processed)
 
 	require.Equal(t, expected, testEntry.Timestamp)
 }
@@ -347,7 +355,7 @@ func TestParserValidTimeInvalidSeverityParse(t *testing.T) {
 func TestParserOutput(t *testing.T) {
 	output := &testutil.Operator{}
 	output.On("ID").Return("test-output")
-	output.On("Process", mock.Anything, mock.Anything).Return(nil)
+	output.On("Process", mock.Anything, mock.Anything).Return(1, nil)
 
 	parser := ParserOperator{
 		TransformerOperator: TransformerOperator{
@@ -369,9 +377,10 @@ func TestParserOutput(t *testing.T) {
 	}
 	ctx := context.Background()
 	testEntry := entry.New()
-	err := parser.ProcessWith(ctx, testEntry, parse)
+	processed, err := parser.ProcessWith(ctx, testEntry, parse)
 	require.NoError(t, err)
 	output.AssertCalled(t, "Process", mock.Anything, mock.Anything)
+	require.Equal(t, 1, processed)
 }
 
 func TestParserFields(t *testing.T) {
@@ -642,10 +651,11 @@ func TestParserFields(t *testing.T) {
 			require.NoError(t, err)
 
 			e := tc.input()
-			err = parser.ProcessWith(context.Background(), e, parse)
+			processed, err := parser.ProcessWith(context.Background(), e, parse)
 
 			require.NoError(t, err)
 			require.Equal(t, tc.output(), e)
+			require.Equal(t, 0, processed)
 		})
 	}
 }

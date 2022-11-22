@@ -570,7 +570,9 @@ key=value`,
 			tc.input.ObservedTimestamp = ots
 			tc.expect.ObservedTimestamp = ots
 
-			err = op.Process(context.Background(), tc.input)
+			processed, err := op.Process(context.Background(), tc.input)
+			require.Equal(t, 1, processed)
+
 			if tc.expectError {
 				require.Error(t, err)
 				return

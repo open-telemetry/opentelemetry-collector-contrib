@@ -94,9 +94,9 @@ func (i *InputOperator) CanProcess() bool {
 }
 
 // Process will always return an error if called.
-func (i *InputOperator) Process(ctx context.Context, entry *entry.Entry) error {
+func (i *InputOperator) Process(ctx context.Context, entry *entry.Entry) (int, error) {
 	i.Errorw("Operator received an entry, but can not process", zap.Any("entry", entry))
-	return errors.NewError(
+	return 0, errors.NewError(
 		"Operator can not process logs.",
 		"Ensure that operator is not configured to receive logs from other operators",
 	)

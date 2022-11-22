@@ -166,9 +166,10 @@ func TestProcess(t *testing.T) {
 			op, err := tc.op()
 			require.NoError(t, err, "did not expect operator function to return an error, this is a bug with the test case")
 
-			err = op.Process(context.Background(), tc.input)
+			processed, err := op.Process(context.Background(), tc.input)
 			require.NoError(t, err)
 			require.Equal(t, tc.expect, tc.input)
+			require.Equal(t, 0, processed)
 		})
 	}
 }

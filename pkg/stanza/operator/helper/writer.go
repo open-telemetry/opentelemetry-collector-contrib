@@ -58,14 +58,20 @@ type WriterOperator struct {
 }
 
 // Write will write an entry to the outputs of the operator.
-func (w *WriterOperator) Write(ctx context.Context, e *entry.Entry) {
+// Returns number of entries being processed by pipeline
+func (w *WriterOperator) Write(ctx context.Context, e *entry.Entry) int {
+	emitted := 0
 	for i, operator := range w.OutputOperators {
 		if i == len(w.OutputOperators)-1 {
-			_ = operator.Process(ctx, e)
-			return
+			ok, _ := operator.Process(ctx, e)
+			emitted += ok
+			return emitted
 		}
-		_ = operator.Process(ctx, e.Copy())
+		ok, _ := operator.Process(ctx, e.Copy())
+
+		emitted += ok
 	}
+	return emitted
 }
 
 // CanOutput always returns true for a writer operator.

@@ -110,21 +110,21 @@ func (fo *Output) Stop() error {
 }
 
 // Process will write an entry to the output file.
-func (fo *Output) Process(ctx context.Context, entry *entry.Entry) error {
+func (fo *Output) Process(ctx context.Context, entry *entry.Entry) (int, error) {
 	fo.mux.Lock()
 	defer fo.mux.Unlock()
 
 	if fo.tmpl != nil {
 		err := fo.tmpl.Execute(fo.file, entry)
 		if err != nil {
-			return err
+			return 0, err
 		}
 	} else {
 		err := fo.encoder.Encode(entry)
 		if err != nil {
-			return err
+			return 0, err
 		}
 	}
 
-	return nil
+	return 0, nil
 }

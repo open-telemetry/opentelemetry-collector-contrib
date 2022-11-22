@@ -90,7 +90,7 @@ type Transformer struct {
 }
 
 // Process will process an entry with a retain transformation.
-func (p *Transformer) Process(ctx context.Context, entry *entry.Entry) error {
+func (p *Transformer) Process(ctx context.Context, entry *entry.Entry) (int, error) {
 	return p.ProcessWith(ctx, entry, p.Transform)
 }
 

@@ -51,8 +51,9 @@ func TestOperator(t *testing.T) {
 		Timestamp:         ts,
 		Body:              "test body",
 	}
-	err = op.Process(context.Background(), e)
+	processed, err := op.Process(context.Background(), e)
 	require.NoError(t, err)
+	require.Equal(t, 0, processed)
 
 	marshalledOTS, err := json.Marshal(ots)
 	require.NoError(t, err)

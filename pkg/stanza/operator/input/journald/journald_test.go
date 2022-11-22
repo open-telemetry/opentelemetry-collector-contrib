@@ -56,7 +56,7 @@ func TestInputJournald(t *testing.T) {
 	received := make(chan *entry.Entry)
 	mockOutput.On("Process", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 		received <- args.Get(1).(*entry.Entry)
-	}).Return(nil)
+	}).Return(1, nil)
 
 	err = op.SetOutputs([]operator.Operator{mockOutput})
 	require.NoError(t, err)

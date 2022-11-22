@@ -73,6 +73,6 @@ type Parser struct {
 }
 
 // Process will parse time from an entry.
-func (t *Parser) Process(ctx context.Context, entry *entry.Entry) error {
+func (t *Parser) Process(ctx context.Context, entry *entry.Entry) (int, error) {
 	return t.ProcessWith(ctx, entry, t.TimeParser.Parse)
 }

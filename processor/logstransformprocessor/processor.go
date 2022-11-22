@@ -151,7 +151,7 @@ func (ltp *logsTransformProcessor) converterLoop(ctx context.Context) {
 
 			for _, e := range entries {
 				// Add item to the first operator of the pipeline manually
-				if err := ltp.firstOperator.Process(ctx, e); err != nil {
+				if _, err := ltp.firstOperator.Process(ctx, e); err != nil {
 					ltp.logger.Error("processor encountered an issue with the pipeline", zap.Error(err))
 					break
 				}

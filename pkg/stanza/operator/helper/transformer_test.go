@@ -73,7 +73,7 @@ func TestTransformerOperatorCanProcess(t *testing.T) {
 func TestTransformerDropOnError(t *testing.T) {
 	output := &testutil.Operator{}
 	output.On("ID").Return("test-output")
-	output.On("Process", mock.Anything, mock.Anything).Return(nil)
+	output.On("Process", mock.Anything, mock.Anything).Return(1, nil)
 	transformer := TransformerOperator{
 		OnError: DropOnError,
 		WriterOperator: WriterOperator{
@@ -92,15 +92,16 @@ func TestTransformerDropOnError(t *testing.T) {
 		return fmt.Errorf("Failure")
 	}
 
-	err := transformer.ProcessWith(ctx, testEntry, transform)
+	processed, err := transformer.ProcessWith(ctx, testEntry, transform)
 	require.Error(t, err)
+	require.Equal(t, 0, processed)
 	output.AssertNotCalled(t, "Process", mock.Anything, mock.Anything)
 }
 
 func TestTransformerSendOnError(t *testing.T) {
 	output := &testutil.Operator{}
 	output.On("ID").Return("test-output")
-	output.On("Process", mock.Anything, mock.Anything).Return(nil)
+	output.On("Process", mock.Anything, mock.Anything).Return(1, nil)
 	transformer := TransformerOperator{
 		OnError: SendOnError,
 		WriterOperator: WriterOperator{
@@ -119,15 +120,16 @@ func TestTransformerSendOnError(t *testing.T) {
 		return fmt.Errorf("Failure")
 	}
 
-	err := transformer.ProcessWith(ctx, testEntry, transform)
+	processed, err := transformer.ProcessWith(ctx, testEntry, transform)
 	require.Error(t, err)
+	require.Equal(t, 1, processed)
 	output.AssertCalled(t, "Process", mock.Anything, mock.Anything)
 }
 
 func TestTransformerProcessWithValid(t *testing.T) {
 	output := &testutil.Operator{}
 	output.On("ID").Return("test-output")
-	output.On("Process", mock.Anything, mock.Anything).Return(nil)
+	output.On("Process", mock.Anything, mock.Anything).Return(1, nil)
 	transformer := TransformerOperator{
 		OnError: SendOnError,
 		WriterOperator: WriterOperator{
@@ -146,8 +148,9 @@ func TestTransformerProcessWithValid(t *testing.T) {
 		return nil
 	}
 
-	err := transformer.ProcessWith(ctx, testEntry, transform)
+	processed, err := transformer.ProcessWith(ctx, testEntry, transform)
 	require.NoError(t, err)
+	require.Equal(t, 1, processed)
 	output.AssertCalled(t, "Process", mock.Anything, mock.Anything)
 }
 
@@ -211,7 +214,7 @@ func TestTransformerIf(t *testing.T) {
 
 			e := entry.New()
 			e.Body = tc.inputBody
-			err = transformer.ProcessWith(context.Background(), e, func(e *entry.Entry) error {
+			processed, err := transformer.ProcessWith(context.Background(), e, func(e *entry.Entry) error {
 				e.Body = "parsed"
 				return nil
 			})
@@ -220,6 +223,7 @@ func TestTransformerIf(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 			}
+			require.Equal(t, 1, processed)
 
 			fake.ExpectBody(t, tc.expected)
 		})
