@@ -3,8 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscon
 go 1.18
 
 require (
-	github.com/aws/aws-sdk-go v1.44.133
-	github.com/google/cadvisor v0.45.0
+	github.com/aws/aws-sdk-go v1.44.142
+	github.com/google/cadvisor v0.46.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.64.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.64.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s v0.64.0
@@ -39,7 +39,7 @@ require (
 	github.com/docker/distribution v2.8.1+incompatible // indirect
 	github.com/docker/docker v20.10.21+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
-	github.com/docker/go-units v0.4.0 // indirect
+	github.com/docker/go-units v0.5.0 // indirect
 	github.com/emicklei/go-restful/v3 v3.8.0 // indirect
 	github.com/euank/go-kmsg-parser v2.0.0+incompatible // indirect
 	github.com/evanphx/json-patch v4.12.0+incompatible // indirect
@@ -64,7 +64,7 @@ require (
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/karrick/godirwalk v1.16.1 // indirect
+	github.com/karrick/godirwalk v1.17.0 // indirect
 	github.com/klauspost/compress v1.15.12 // indirect
 	github.com/knadh/koanf v1.4.4 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
@@ -75,7 +75,7 @@ require (
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
-	github.com/moby/sys/mountinfo v0.5.0 // indirect
+	github.com/moby/sys/mountinfo v0.6.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mrunalp/fileutils v0.5.0 // indirect
@@ -83,7 +83,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.64.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.2 // indirect
-	github.com/opencontainers/runc v1.1.3 // indirect
+	github.com/opencontainers/runc v1.1.4 // indirect
 	github.com/opencontainers/runtime-spec v1.0.3-0.20210326190908-1c3f411f0417 // indirect
 	github.com/opencontainers/selinux v1.10.0 // indirect
 	github.com/openshift/api v0.0.0-20210521075222-e273a339932a // indirect
@@ -126,7 +126,7 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gotest.tools/v3 v3.0.3 // indirect
-	k8s.io/klog/v2 v2.70.1 // indirect
+	k8s.io/klog/v2 v2.80.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20220803162953-67bda5d908f1 // indirect
 	k8s.io/utils v0.0.0-20220728103510-ee6ede2d64ed // indirect
 	sigs.k8s.io/json v0.0.0-20220713155537-f223a00ba0e2 // indirect
