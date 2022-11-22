@@ -37,7 +37,7 @@ type azureRecords struct {
 // AzureLogRecord represents a single Azure log following
 // the common schema:
 // https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/resource-logs-schema
-type AzureLogRecord struct {
+type azureLogRecord struct {
 	Time              string       `json:"time"`
 	ResourceID        string       `json:"resourceId"`
 	TenantID          *string      `json:"tenantId"`
