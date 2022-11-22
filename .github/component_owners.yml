@@ -31,3 +31,6 @@ components:
   sdk-extension/opentelemetry-sdk-extension-aws:
     - NathanielRN
     - Kausik-A
+
+  instrumentation/opentelemetry-instrumentation-tortoiseorm:
+    - tonybaloney

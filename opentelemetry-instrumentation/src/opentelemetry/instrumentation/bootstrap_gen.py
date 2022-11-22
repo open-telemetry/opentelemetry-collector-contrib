@@ -152,6 +152,14 @@ libraries = {
         "library": "tornado >= 5.1.1",
         "instrumentation": "opentelemetry-instrumentation-tornado==0.36b0.dev",
     },
+    "tortoise-orm": {
+        "library": "tortoise-orm >= 0.17.0",
+        "instrumentation": "opentelemetry-instrumentation-tortoiseorm==0.36b0.dev",
+    },
+    "pydantic": {
+        "library": "pydantic >= 1.10.2",
+        "instrumentation": "opentelemetry-instrumentation-tortoiseorm==0.36b0.dev",
+    },
     "urllib3": {
         "library": "urllib3 >= 1.0.0, < 2.0.0",
         "instrumentation": "opentelemetry-instrumentation-urllib3==0.36b0.dev",

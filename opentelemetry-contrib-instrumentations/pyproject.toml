@@ -67,6 +67,7 @@ dependencies = [
     "opentelemetry-instrumentation-starlette==0.36b0.dev",
     "opentelemetry-instrumentation-system-metrics==0.36b0.dev",
     "opentelemetry-instrumentation-tornado==0.36b0.dev",
+    "opentelemetry-instrumentation-tortoiseorm==0.36b0.dev",
     "opentelemetry-instrumentation-urllib==0.36b0.dev",
     "opentelemetry-instrumentation-urllib3==0.36b0.dev",
     "opentelemetry-instrumentation-wsgi==0.36b0.dev",
