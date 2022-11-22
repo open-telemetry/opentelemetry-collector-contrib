@@ -112,7 +112,7 @@ type firehoseCommonAttributes struct {
 	CommonAttributes map[string]string `json:"commonAttributes"`
 }
 
-var _ component.Receiver = (*firehoseReceiver)(nil)
+var _ component.MetricsReceiver = (*firehoseReceiver)(nil)
 var _ http.Handler = (*firehoseReceiver)(nil)
 
 // Start spins up the receiver's HTTP server and makes the receiver start
