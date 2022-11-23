@@ -68,6 +68,9 @@ func (r *receiver) scrapeV2(ctx context.Context) (pmetric.Metrics, error) {
 	var errs error
 
 	now := pcommon.NewTimestampFromTime(time.Now())
+
+	// take last result of channel as an arbitrary choice to record system-level signals
+	var lastResult resultV2
 	for res := range results {
 		if res.err != nil {
 			// Don't know the number of failed stats, but one container fetch is a partial error.
@@ -75,6 +78,11 @@ func (r *receiver) scrapeV2(ctx context.Context) (pmetric.Metrics, error) {
 			continue
 		}
 		r.recordContainerStats(now, res.stats, res.container)
+		lastResult = res
+	}
+	if lastResult.stats != nil {
+		// System usage recorded separate to container usage
+		r.mb.RecordContainerCPUUsageSystemDataPoint(now, int64(lastResult.stats.CPUStats.SystemUsage))
 	}
 
 	return r.mb.Emit(), errs
@@ -208,7 +216,6 @@ func (r *receiver) recordNetworkMetrics(now pcommon.Timestamp, networks *map[str
 }
 
 func (r *receiver) recordCPUMetrics(now pcommon.Timestamp, cpuStats *dtypes.CPUStats, prevStats *dtypes.CPUStats) {
-	r.mb.RecordContainerCPUUsageSystemDataPoint(now, int64(cpuStats.SystemUsage))
 	r.mb.RecordContainerCPUUsageTotalDataPoint(now, int64(cpuStats.CPUUsage.TotalUsage))
 	r.mb.RecordContainerCPUUsageKernelmodeDataPoint(now, int64(cpuStats.CPUUsage.UsageInKernelmode))
 	r.mb.RecordContainerCPUUsageUsermodeDataPoint(now, int64(cpuStats.CPUUsage.UsageInUsermode))

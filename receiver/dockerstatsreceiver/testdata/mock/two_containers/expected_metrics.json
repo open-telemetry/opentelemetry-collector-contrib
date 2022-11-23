@@ -2,6 +2,38 @@
   "resourceMetrics": [
     {
       "resource": {
+        "attributes": []
+      },
+      "schemaUrl": "https://opentelemetry.io/schemas/1.6.1",
+      "scopeMetrics": [
+        {
+          "metrics": [
+            {
+              "description": "System CPU usage, as reported by docker.",
+              "name": "container.cpu.usage.system",
+              "sum": {
+                "aggregationTemporality": 2,
+                "dataPoints": [
+                  {
+                    "asInt": "14834790000000",
+                    "startTimeUnixNano": "1669163843611034000",
+                    "timeUnixNano": "1669163843612864000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "ns"
+            }
+          ],
+          "scope": {
+            "name": "otelcol/dockerstatsreceiver",
+            "version": "latest"
+          }
+        }
+      ]
+    },
+    {
+      "resource": {
         "attributes": [
           {
             "key": "container.runtime",
@@ -372,21 +404,6 @@
                 "isMonotonic": true
               },
               "unit": "{operations}"
-            },
-            {
-              "description": "System CPU usage, as reported by docker.",
-              "name": "container.cpu.usage.system",
-              "sum": {
-                "aggregationTemporality": 2,
-                "dataPoints": [
-                  {
-                    "asInt": "14930240000000",
-                    "timeUnixNano": "1657771832637112000"
-                  }
-                ],
-                "isMonotonic": true
-              },
-              "unit": "ns"
             },
             {
               "description": "Total CPU time consumed.",
@@ -1589,21 +1606,6 @@
                 "isMonotonic": true
               },
               "unit": "{operations}"
-            },
-            {
-              "description": "System CPU usage, as reported by docker.",
-              "name": "container.cpu.usage.system",
-              "sum": {
-                "aggregationTemporality": 2,
-                "dataPoints": [
-                  {
-                    "asInt": "14834790000000",
-                    "timeUnixNano": "1657771832637093000"
-                  }
-                ],
-                "isMonotonic": true
-              },
-              "unit": "ns"
             },
             {
               "description": "Total CPU time consumed.",

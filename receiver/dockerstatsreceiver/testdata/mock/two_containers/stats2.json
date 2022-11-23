@@ -93,7 +93,7 @@
       "usage_in_usermode": 10000000
     },
     "online_cpus": 1,
-    "system_cpu_usage": 14930240000000,
+    "system_cpu_usage": 14834790000000,
     "throttling_data": {
       "periods": 0,
       "throttled_periods": 0,
