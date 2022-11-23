@@ -23,17 +23,11 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/multierr"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filtermetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset/regexp"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/common"
 )
 
@@ -291,32 +285,27 @@ func (cfg *Config) Validate() error {
 	var errors error
 
 	if cfg.Traces.SpanConditions != nil {
-		spanp := ottlspan.NewParser(common.Functions[ottlspan.TransformContext](), component.TelemetrySettings{Logger: zap.NewNop()})
-		_, err := spanp.ParseStatements(common.PrepareConditionForParsing(cfg.Traces.SpanConditions))
+		_, err := common.ParseSpan(cfg.Traces.SpanConditions, component.TelemetrySettings{})
 		errors = multierr.Append(errors, err)
 	}
 
 	if cfg.Traces.SpanEventConditions != nil {
-		spaneventp := ottlspanevent.NewParser(common.Functions[ottlspanevent.TransformContext](), component.TelemetrySettings{Logger: zap.NewNop()})
-		_, err := spaneventp.ParseStatements(common.PrepareConditionForParsing(cfg.Traces.SpanEventConditions))
+		_, err := common.ParseSpanEvent(cfg.Traces.SpanEventConditions, component.TelemetrySettings{})
 		errors = multierr.Append(errors, err)
 	}
 
 	if cfg.Metrics.MetricConditions != nil {
-		metricp := ottlmetric.NewParser(common.Functions[ottlmetric.TransformContext](), component.TelemetrySettings{Logger: zap.NewNop()})
-		_, err := metricp.ParseStatements(common.PrepareConditionForParsing(cfg.Metrics.MetricConditions))
+		_, err := common.ParseMetric(cfg.Metrics.MetricConditions, component.TelemetrySettings{})
 		errors = multierr.Append(errors, err)
 	}
 
 	if cfg.Metrics.DataPointConditions != nil {
-		datapointp := ottldatapoint.NewParser(common.Functions[ottldatapoint.TransformContext](), component.TelemetrySettings{Logger: zap.NewNop()})
-		_, err := datapointp.ParseStatements(common.PrepareConditionForParsing(cfg.Metrics.DataPointConditions))
+		_, err := common.ParseDataPoint(cfg.Metrics.DataPointConditions, component.TelemetrySettings{})
 		errors = multierr.Append(errors, err)
 	}
 
 	if cfg.Logs.LogConditions != nil {
-		logp := ottllog.NewParser(common.Functions[ottllog.TransformContext](), component.TelemetrySettings{Logger: zap.NewNop()})
-		_, err := logp.ParseStatements(common.PrepareConditionForParsing(cfg.Logs.LogConditions))
+		_, err := common.ParseLog(cfg.Logs.LogConditions, component.TelemetrySettings{})
 		errors = multierr.Append(errors, err)
 	}
 

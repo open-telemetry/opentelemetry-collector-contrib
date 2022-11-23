@@ -89,12 +89,14 @@ func (sp *spanProcessor) processTraces(ctx context.Context, td ptrace.Traces) (p
 			scope := ils.Scope()
 			for k := 0; k < spans.Len(); k++ {
 				span := spans.At(k)
-				skip, err := sp.skipExpr.Eval(ctx, ottlspan.NewTransformContext(span, scope, resource))
-				if err != nil {
-					return td, err
-				}
-				if skip {
-					continue
+				if sp.skipExpr != nil {
+					skip, err := sp.skipExpr.Eval(ctx, ottlspan.NewTransformContext(span, scope, resource))
+					if err != nil {
+						return td, err
+					}
+					if skip {
+						continue
+					}
 				}
 				sp.processFromAttributes(span)
 				sp.processToAttributes(span)

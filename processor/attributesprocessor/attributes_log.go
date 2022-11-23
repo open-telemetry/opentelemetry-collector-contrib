@@ -54,12 +54,14 @@ func (a *logAttributesProcessor) processLogs(ctx context.Context, ld plog.Logs) 
 			library := ils.Scope()
 			for k := 0; k < logs.Len(); k++ {
 				lr := logs.At(k)
-				skip, err := a.skipExpr.Eval(ctx, ottllog.NewTransformContext(lr, library, resource))
-				if err != nil {
-					return ld, err
-				}
-				if skip {
-					continue
+				if a.skipExpr != nil {
+					skip, err := a.skipExpr.Eval(ctx, ottllog.NewTransformContext(lr, library, resource))
+					if err != nil {
+						return ld, err
+					}
+					if skip {
+						continue
+					}
 				}
 
 				a.attrProc.Process(ctx, a.logger, lr.Attributes())
