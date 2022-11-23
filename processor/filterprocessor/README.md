@@ -305,6 +305,8 @@ See the table below for details on each context and the fields it exposes.
 The OTTL allows the use of `and`, `or`, and `()` in conditions.
 See [OTTL Boolean Expressions](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/README.md#boolean-expressions) for more details.
 
+The filter processor has access to all the [factory functions of the OTTL](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/ottlfuncs#ottl-functions) 
+
 For conditions that apply to the same signal, such as spans and span events, if the "higher" level telemetry matches a condition and is dropped, the "lower" level condition will not be checked.
 This means that if a span is dropped but a span event condition was defined, the span event condition will not be checked.
 The same relationship applies to metrics and datapoints.
