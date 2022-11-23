@@ -3,10 +3,10 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubele
 go 1.18
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.64.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.64.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.66.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.66.0
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.65.0
+	go.opentelemetry.io/collector v0.66.0
 	go.uber.org/zap v1.23.0
 )
 
@@ -62,3 +62,5 @@ require (
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig => ../../internal/k8sconfig
+
+retract v0.65.0

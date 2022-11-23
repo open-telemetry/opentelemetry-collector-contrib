@@ -5,14 +5,14 @@ go 1.18
 require (
 	github.com/cenkalti/backoff/v4 v4.2.0
 	github.com/mongodb-forks/digest v1.0.4
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.64.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.64.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.66.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.66.0
 	github.com/stretchr/testify v1.8.1
 	go.mongodb.org/atlas v0.19.0
-	go.opentelemetry.io/collector v0.65.0
-	go.opentelemetry.io/collector/component v0.65.0
-	go.opentelemetry.io/collector/consumer v0.65.0
-	go.opentelemetry.io/collector/pdata v0.65.0
+	go.opentelemetry.io/collector v0.66.0
+	go.opentelemetry.io/collector/component v0.66.0
+	go.opentelemetry.io/collector/consumer v0.66.0
+	go.opentelemetry.io/collector/pdata v0.66.0
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.23.0
 )
@@ -39,7 +39,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/featuregate v0.65.0 // indirect
+	go.opentelemetry.io/collector/featuregate v0.66.0 // indirect
 	go.opentelemetry.io/otel v1.11.1 // indirect
 	go.opentelemetry.io/otel/metric v0.33.0 // indirect
 	go.opentelemetry.io/otel/trace v1.11.1 // indirect
@@ -59,3 +59,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/commo
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza => ../../pkg/stanza
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage => ../../extension/storage
+
+retract v0.65.0
