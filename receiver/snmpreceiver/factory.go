@@ -29,7 +29,7 @@ import (
 
 const (
 	typeStr   = "snmp"
-	stability = component.StabilityLevelDevelopment
+	stability = component.StabilityLevelAlpha
 )
 
 var errConfigNotSNMP = errors.New("config was not a SNMP receiver config")
