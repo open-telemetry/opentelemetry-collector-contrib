@@ -55,7 +55,7 @@ func createMetricsProcessor(
 	cfg component.ProcessorConfig,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsProcessor, error) {
-	fp, err := newFilterMetricProcessor(set.Logger, cfg.(*Config))
+	fp, err := newFilterMetricProcessor(set.TelemetrySettings, cfg.(*Config))
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +74,7 @@ func createLogsProcessor(
 	cfg component.ProcessorConfig,
 	nextConsumer consumer.Logs,
 ) (component.LogsProcessor, error) {
-	fp, err := newFilterLogsProcessor(set.Logger, cfg.(*Config))
+	fp, err := newFilterLogsProcessor(set.TelemetrySettings, cfg.(*Config))
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +93,7 @@ func createTracesProcessor(
 	cfg component.ProcessorConfig,
 	nextConsumer consumer.Traces,
 ) (component.TracesProcessor, error) {
-	fp, err := newFilterSpansProcessor(set.Logger, cfg.(*Config))
+	fp, err := newFilterSpansProcessor(set.TelemetrySettings, cfg.(*Config))
 	if err != nil {
 		return nil, err
 	}

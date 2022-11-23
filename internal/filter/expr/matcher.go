@@ -54,5 +54,12 @@ func (om orMatcher[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
 }
 
 func Or[K any](matchers ...BoolExpr[K]) BoolExpr[K] {
-	return orMatcher[K]{matchers: matchers}
+	switch len(matchers) {
+	case 0:
+		return nil
+	case 1:
+		return matchers[0]
+	default:
+		return orMatcher[K]{matchers: matchers}
+	}
 }
