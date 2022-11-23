@@ -15,12 +15,15 @@
 package filtermetric
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 )
 
 var (
@@ -60,36 +63,34 @@ func TestMatcherMatches(t *testing.T) {
 			cfg:         createConfig(regexpFilters, filterset.Regexp),
 			metric:      createMetric("test/match/suffix"),
 			shouldMatch: true,
-		}, {
+		},
+		{
 			name:        "regexpNameMisatch",
 			cfg:         createConfig(regexpFilters, filterset.Regexp),
 			metric:      createMetric("test/match/wrongsuffix"),
 			shouldMatch: false,
-		}, {
+		},
+		{
 			name:        "strictNameMatch",
 			cfg:         createConfig(strictFilters, filterset.Strict),
 			metric:      createMetric("exact_string_match"),
 			shouldMatch: true,
-		}, {
+		},
+		{
 			name:        "strictNameMismatch",
 			cfg:         createConfig(regexpFilters, filterset.Regexp),
 			metric:      createMetric("wrong_string_match"),
-			shouldMatch: false,
-		}, {
-			name:        "matcherWithNoPropertyFilters",
-			cfg:         createConfig([]string{}, filterset.Strict),
-			metric:      createMetric("metric"),
 			shouldMatch: false,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			matcher, err := NewMatcher(test.cfg)
+			matcher, err := newExpr(test.cfg)
 			assert.NotNil(t, matcher)
 			assert.NoError(t, err)
 
-			matches, err := matcher.MatchMetric(test.metric)
+			matches, err := matcher.Eval(context.Background(), ottlmetric.NewTransformContext(test.metric, pcommon.NewInstrumentationScope(), pcommon.NewResource()))
 			assert.NoError(t, err)
 			assert.Equal(t, test.shouldMatch, matches)
 		})

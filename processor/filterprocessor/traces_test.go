@@ -136,7 +136,7 @@ func TestFilterTraceProcessor(t *testing.T) {
 			next := new(consumertest.TracesSink)
 			cfg := &Config{
 				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
-				Spans: SpanFilters{
+				Spans: filterconfig.MatchConfig{
 					Include: test.inc,
 					Exclude: test.exc,
 				},

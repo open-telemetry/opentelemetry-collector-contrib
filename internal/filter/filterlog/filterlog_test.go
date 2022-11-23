@@ -15,6 +15,7 @@
 package filterlog
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -24,6 +25,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 )
 
 func createConfig(matchType filterset.MatchType) *filterset.Config {
@@ -84,8 +86,8 @@ func TestLogRecord_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 	}
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			output, err := NewMatcher(&tc.property)
-			assert.Nil(t, output)
+			expr, err := newExpr(&tc.property)
+			assert.Nil(t, expr)
 			require.NotNil(t, err)
 			println(tc.name)
 			assert.Equal(t, tc.errorString, err.Error())
@@ -140,11 +142,13 @@ func TestLogRecord_Matching_False(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			matcher, err := NewMatcher(tc.properties)
+			expr, err := newExpr(tc.properties)
 			assert.Nil(t, err)
-			require.NotNil(t, matcher)
+			require.NotNil(t, expr)
 
-			assert.False(t, matcher.MatchLogRecord(lr, pcommon.Resource{}, pcommon.InstrumentationScope{}))
+			val, err := expr.Eval(context.Background(), ottllog.NewTransformContext(lr, pcommon.NewInstrumentationScope(), pcommon.NewResource()))
+			require.NoError(t, err)
+			assert.False(t, val)
 		})
 	}
 }
@@ -203,12 +207,14 @@ func TestLogRecord_Matching_True(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			mp, err := NewMatcher(tc.properties)
+			expr, err := newExpr(tc.properties)
 			assert.NoError(t, err)
-			require.NotNil(t, mp)
+			require.NotNil(t, expr)
 
 			assert.NotNil(t, lr)
-			assert.True(t, mp.MatchLogRecord(lr, pcommon.Resource{}, pcommon.InstrumentationScope{}))
+			val, err := expr.Eval(context.Background(), ottllog.NewTransformContext(lr, pcommon.NewInstrumentationScope(), pcommon.NewResource()))
+			require.NoError(t, err)
+			assert.True(t, val)
 		})
 	}
 }

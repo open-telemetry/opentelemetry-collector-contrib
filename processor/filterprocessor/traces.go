@@ -23,6 +23,7 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/expr"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
@@ -32,8 +33,7 @@ import (
 
 type filterSpanProcessor struct {
 	cfg                 *Config
-	include             filterspan.Matcher
-	exclude             filterspan.Matcher
+	skipExpr            expr.BoolExpr[ottlspan.TransformContext]
 	logger              *zap.Logger
 	spanConditions      []*ottl.Statement[ottlspan.TransformContext]
 	spanEventConditions []*ottl.Statement[ottlspanevent.TransformContext]
@@ -70,7 +70,7 @@ func newFilterSpansProcessor(logger *zap.Logger, cfg *Config) (*filterSpanProces
 		return nil, nil
 	}
 
-	inc, exc, err := createSpanMatcher(cfg)
+	skipExpr, err := filterspan.NewSkipExpr(&cfg.Spans)
 	if err != nil {
 		return nil, err
 	}
@@ -92,30 +92,10 @@ func newFilterSpansProcessor(logger *zap.Logger, cfg *Config) (*filterSpanProces
 	)
 
 	return &filterSpanProcessor{
-		cfg:     cfg,
-		include: inc,
-		exclude: exc,
-		logger:  logger,
+		cfg:      cfg,
+		skipExpr: skipExpr,
+		logger:   logger,
 	}, nil
-}
-
-func createSpanMatcher(cfg *Config) (filterspan.Matcher, filterspan.Matcher, error) {
-	var includeMatcher filterspan.Matcher
-	var excludeMatcher filterspan.Matcher
-	var err error
-	if cfg.Spans.Include != nil {
-		includeMatcher, err = filterspan.NewMatcher(cfg.Spans.Include)
-		if err != nil {
-			return nil, nil, err
-		}
-	}
-	if cfg.Spans.Exclude != nil {
-		excludeMatcher, err = filterspan.NewMatcher(cfg.Spans.Exclude)
-		if err != nil {
-			return nil, nil, err
-		}
-	}
-	return includeMatcher, excludeMatcher, nil
 }
 
 // processTraces filters the given spans of a traces based off the filterSpanProcessor's filters.
@@ -166,29 +146,26 @@ func (fsp *filterSpanProcessor) processTraces(ctx context.Context, pdt ptrace.Tr
 		return pdt, nil
 	}
 
+	var errors error
 	pdt.ResourceSpans().RemoveIf(func(rs ptrace.ResourceSpans) bool {
 		resource := rs.Resource()
 		rs.ScopeSpans().RemoveIf(func(ss ptrace.ScopeSpans) bool {
 			scope := ss.Scope()
 			ss.Spans().RemoveIf(func(span ptrace.Span) bool {
-				if fsp.include != nil {
-					if !fsp.include.MatchSpan(span, resource, scope) {
-						return true
-					}
+				skip, err := fsp.skipExpr.Eval(ctx, ottlspan.NewTransformContext(span, scope, resource))
+				if err != nil {
+					errors = multierr.Append(errors, err)
+					return false
 				}
-
-				if fsp.exclude != nil {
-					if fsp.exclude.MatchSpan(span, resource, scope) {
-						return true
-					}
-				}
-
-				return false
+				return skip
 			})
 			return ss.Spans().Len() == 0
 		})
 		return rs.ScopeSpans().Len() == 0
 	})
+	if errors != nil {
+		return pdt, errors
+	}
 	if pdt.ResourceSpans().Len() == 0 {
 		return pdt, processorhelper.ErrSkipProcessingData
 	}
