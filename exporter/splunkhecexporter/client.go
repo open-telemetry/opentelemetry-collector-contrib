@@ -198,7 +198,6 @@ func (c *client) checkHecHealth(
 	ctx context.Context) error {
 
 	var hecErr error
-	c.logger.Info("HealthCheckURL: " + c.healthCheckURL.String())
 	onceBody := func() {
 		req, err := http.NewRequestWithContext(ctx, "GET", c.healthCheckURL.String(), nil)
 		if err != nil {
@@ -253,7 +252,6 @@ func (c *client) pushMetricsData(
 
 	err := c.checkHecHealth(ctx)
 	if err != nil {
-		c.logger.Info("HealthCheckURL returned error: " + err.Error())
 		return consumererror.NewMetrics(err, md)
 	}
 	// Callback when each batch is to be sent.

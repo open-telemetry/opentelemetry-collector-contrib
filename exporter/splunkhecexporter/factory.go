@@ -86,6 +86,7 @@ func createDefaultConfig() component.ExporterConfig {
 			SeverityNumber: splunk.DefaultSeverityNumberLabel,
 			Name:           splunk.DefaultNameLabel,
 		},
+		HealthPath: splunk.DefaultHealthPath,
 	}
 }
 
