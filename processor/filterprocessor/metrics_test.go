@@ -29,7 +29,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/processor/processorhelper"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
@@ -695,7 +694,7 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			processor, err := newFilterMetricProcessor(zap.NewNop(), &Config{Metrics: tt.conditions})
+			processor, err := newFilterMetricProcessor(componenttest.NewNopTelemetrySettings(), &Config{Metrics: tt.conditions})
 			assert.NoError(t, err)
 
 			got, err := processor.processMetrics(context.Background(), constructMetrics())
