@@ -16,6 +16,7 @@ List of available Functions:
 - [delete_matching_keys](#delete_matching_keys)
 - [keep_keys](#keep_keys)
 - [limit](#limit)
+- [merge_maps](#merge_maps)
 - [replace_all_matches](#replace_all_matches)
 - [replace_all_patterns](#replace_all_patterns)
 - [replace_match](#replace_match)
@@ -237,6 +238,27 @@ Examples:
 
 
 - `limit(resource.attributes, 50, ["http.host", "http.method"])`
+
+### merge_maps
+
+`merge_maps(target, source)`
+
+The `merge_maps` function merges the source map into the target map. If any keys are the same, source's value is used.
+
+`target` is a `pdata.Map` type field. `source` is a `pdata.Map` type field.
+
+`merge_maps` is a special case of the [`set` function](#set) which preserves any of the `target` values that do not conflict with `source`.
+If you need to completely override `target`, use `set` instead.
+
+Examples:
+
+- `merge_maps(attributes, ParseJSON(body))`
+
+
+- `merge_maps(attributes, ParseJSON(attributes["kubernetes"]))`
+
+
+- `merge_maps(attributes, resource.attributes)`
 
 ### replace_all_matches
 
