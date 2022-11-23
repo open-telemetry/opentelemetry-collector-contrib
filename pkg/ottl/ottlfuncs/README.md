@@ -37,7 +37,7 @@ List of available Factory Functions:
 - [ConvertCase](#convertcase)
 - [Int](#int)
 - [IsMatch](#ismatch)
-- [ParseToMap](#ParseToMap)
+- [ParseJSON](#ParseJSON)
 - [SpanID](#spanid)
 - [Split](#split)
 - [TraceID](#traceid)
@@ -127,15 +127,16 @@ Examples:
 
 - `IsMatch("string", ".*ring")`
 
-### ParseToMap
+### ParseJSON
 
-`ParseToMap(target, inputFormat)`
+`ParseJSON(target)`
 
-The `ParseToMap` factory function returns a `pcommon.Map` struct that is a result of parsing the target string using the specified format.
+The `ParseJSON` factory function returns a `pcommon.Map` struct that is a result of parsing the target string as JSON
 
-`target` is a Getter that returns a string.  `inputFormat` is a string that specifies what format to use when parsing. Valid values for `inputFormat` are: `json`.
+`target` is a Getter that returns a string. This string should be in json format.
 
-If `json` is used the target is unmarshalled using [jsoniter](https://github.com/json-iterator/go).   Each JSON type is converted into a `pdata.Value` using the following map:
+Unmarshalling is done using [jsoniter](https://github.com/json-iterator/go).
+Each JSON type is converted into a `pdata.Value` using the following map:
 
 ```
 JSON boolean -> bool
@@ -148,9 +149,13 @@ JSON objects -> map[string]any
 
 Examples:
 
-- `ParseToMap("{\"attr\":true}", "json")`
-- `ParseToMap(attributes["kubernetes"], "json")`
-- `ParseToMap(body, "json")`
+- `ParseToMap("{\"attr\":true}")`
+
+
+- `ParseToMap(attributes["kubernetes"])`
+
+
+- `ParseToMap(body)`
 
 ### SpanID
 

@@ -24,45 +24,31 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-const InputFormatJSON = "json"
-
-func ParseToMap[K any](target ottl.Getter[K], inputFormat string) (ottl.ExprFunc[K], error) {
-	if inputFormat != InputFormatJSON {
-		return nil, fmt.Errorf("unknown inputFormat, %v", inputFormat)
-	}
+func ParseJSON[K any](target ottl.Getter[K]) (ottl.ExprFunc[K], error) {
 	return func(ctx context.Context, tCtx K) (interface{}, error) {
 		targetVal, err := target.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
-		if valStr, ok := targetVal.(string); ok {
-			switch inputFormat {
-			case InputFormatJSON:
-				return parseJSON(valStr)
-			default:
-				return nil, fmt.Errorf("unknown inputFormat, %v", inputFormat)
+		if jsonStr, ok := targetVal.(string); ok {
+			var parsedValue map[string]interface{}
+			err := jsoniter.UnmarshalFromString(jsonStr, &parsedValue)
+			if err != nil {
+				return pcommon.Map{}, err
 			}
+			result := pcommon.NewMap()
+			for k, v := range parsedValue {
+				attrVal := pcommon.NewValueEmpty()
+				err = setValue(attrVal, v)
+				if err != nil {
+					return pcommon.Map{}, err
+				}
+				attrVal.CopyTo(result.PutEmpty(k))
+			}
+			return result, nil
 		}
 		return nil, nil
 	}, nil
-}
-
-func parseJSON(jsonStr string) (pcommon.Map, error) {
-	var parsedValue map[string]interface{}
-	err := jsoniter.UnmarshalFromString(jsonStr, &parsedValue)
-	if err != nil {
-		return pcommon.Map{}, err
-	}
-	result := pcommon.NewMap()
-	for k, v := range parsedValue {
-		attrVal := pcommon.NewValueEmpty()
-		err = setValue(attrVal, v)
-		if err != nil {
-			return pcommon.Map{}, err
-		}
-		attrVal.CopyTo(result.PutEmpty(k))
-	}
-	return result, nil
 }
 
 func setValue(value pcommon.Value, val interface{}) error {
