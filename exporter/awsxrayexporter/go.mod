@@ -53,3 +53,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/x
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil => ./../../internal/aws/awsutil
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
+
+retract v0.65.0
