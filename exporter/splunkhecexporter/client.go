@@ -46,15 +46,15 @@ const minCompressionLen = 1500
 
 // client sends the data to the splunk backend.
 type client struct {
-	config         *Config
-	url            *url.URL
-	healthCheckURL *url.URL
-	client         *http.Client
-	logger         *zap.Logger
-	wg             sync.WaitGroup
-	headers        map[string]string
-	gzipWriterPool *sync.Pool
-	once           sync.Once
+	config             *Config
+	url                *url.URL
+	healthCheckURL     *url.URL
+	client             *http.Client
+	logger             *zap.Logger
+	wg                 sync.WaitGroup
+	headers            map[string]string
+	gzipWriterPool     *sync.Pool
+	checkHecHealthOnce sync.Once
 }
 
 // bufferState encapsulates intermediate buffer state when pushing data
@@ -226,9 +226,9 @@ func (c *client) checkHecHealth(
 		_, errCopy := io.Copy(io.Discard, resp.Body)
 		hecErr = multierr.Combine(err, errCopy)
 	}
-	c.once.Do(onceBody)
+	c.checkHecHealthOnce.Do(onceBody)
 	if hecErr != nil {
-		c.once = sync.Once{}
+		c.checkHecHealthOnce = sync.Once{}
 	}
 	return hecErr
 }
