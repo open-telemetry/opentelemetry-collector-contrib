@@ -48,11 +48,13 @@ const minCompressionLen = 1500
 type client struct {
 	config         *Config
 	url            *url.URL
+	healthCheckURL *url.URL
 	client         *http.Client
 	logger         *zap.Logger
 	wg             sync.WaitGroup
 	headers        map[string]string
 	gzipWriterPool *sync.Pool
+	once           sync.Once
 }
 
 // bufferState encapsulates intermediate buffer state when pushing data
@@ -192,6 +194,46 @@ func (c *cancellableGzipWriter) close() error {
 	return err
 }
 
+func (c *client) checkHecHealth(
+	ctx context.Context) error {
+
+	var hecErr error
+	c.logger.Info("HealthCheckURL: " + c.healthCheckURL.String())
+	onceBody := func() {
+		req, err := http.NewRequestWithContext(ctx, "GET", c.healthCheckURL.String(), nil)
+		if err != nil {
+			hecErr = consumererror.NewPermanent(err)
+			return
+		}
+
+		// Set the headers configured for the client
+		for k, v := range c.headers {
+			req.Header.Set(k, v)
+		}
+
+		resp, err := c.client.Do(req)
+		if err != nil {
+			hecErr = err
+			return
+		}
+		defer resp.Body.Close()
+
+		err = splunk.HandleHTTPCode(resp)
+		if err != nil {
+			hecErr = err
+			return
+		}
+
+		_, errCopy := io.Copy(io.Discard, resp.Body)
+		hecErr = multierr.Combine(err, errCopy)
+	}
+	c.once.Do(onceBody)
+	if hecErr != nil {
+		c.once = sync.Once{}
+	}
+	return hecErr
+}
+
 // Composite index of a record.
 type index struct {
 	// Index in orig list (i.e. root parent index).
@@ -209,6 +251,11 @@ func (c *client) pushMetricsData(
 	c.wg.Add(1)
 	defer c.wg.Done()
 
+	err := c.checkHecHealth(ctx)
+	if err != nil {
+		c.logger.Info("HealthCheckURL returned error: " + err.Error())
+		return consumererror.NewMetrics(err, md)
+	}
 	// Callback when each batch is to be sent.
 	send := func(ctx context.Context, bufState *bufferState) (err error) {
 		localHeaders := map[string]string{}
@@ -234,6 +281,10 @@ func (c *client) pushTraceData(
 	c.wg.Add(1)
 	defer c.wg.Done()
 
+	err := c.checkHecHealth(ctx)
+	if err != nil {
+		return consumererror.NewTraces(err, td)
+	}
 	// Callback when each batch is to be sent.
 	send := func(ctx context.Context, bufState *bufferState) (err error) {
 		localHeaders := map[string]string{}
@@ -256,6 +307,10 @@ func (c *client) pushLogData(ctx context.Context, ld plog.Logs) error {
 	c.wg.Add(1)
 	defer c.wg.Done()
 
+	err := c.checkHecHealth(ctx)
+	if err != nil {
+		return consumererror.NewLogs(err, ld)
+	}
 	// Callback when each batch is to be sent.
 	send := func(ctx context.Context, bufState *bufferState, headers map[string]string) (err error) {
 		localHeaders := headers

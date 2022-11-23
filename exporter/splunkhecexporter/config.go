@@ -107,6 +107,9 @@ type Config struct {
 	HecToOtelAttrs splunk.HecToOtelAttrs `mapstructure:"hec_metadata_to_otel_attrs"`
 	// HecFields creates a mapping from attributes to HEC fields.
 	HecFields OtelToHecFields `mapstructure:"otel_to_hec_fields"`
+
+	// HealthPath for health API, default is '/services/collector/health'
+	HealthPath string `mapstructure:"health_path"`
 }
 
 func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {
