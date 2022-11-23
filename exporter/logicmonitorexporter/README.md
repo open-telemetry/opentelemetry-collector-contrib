@@ -14,11 +14,9 @@ This exporter supports sending logs and traces data to [Logicmonitor](https://ww
 The following configuration options are supported:
 
 `endpoint (required)`: The address to send logs and traces\
-`apitoken` : API Token of Logicmonitor\
-`log_batching_enabled`(default = true) : The flag to enable/disable batching of logs\
-`log_batching_interval`(default = 10s) : The time interval for batching of logs
+`apitoken` : API Token of Logicmonitor
 
-## Prerequisite:
+## Prerequisite
 Below environment variable must be provided
 
 | Key                  | Value        |

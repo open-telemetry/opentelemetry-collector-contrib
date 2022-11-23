@@ -16,7 +16,6 @@ package logicmonitorexporter
 
 import (
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
@@ -31,11 +30,9 @@ func TestCreateDefaultConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 
 	assert.Equal(t, &Config{
-		ExporterSettings:    config.NewExporterSettings(component.NewID(typeStr)),
-		RetrySettings:       exporterhelper.NewDefaultRetrySettings(),
-		QueueSettings:       exporterhelper.NewDefaultQueueSettings(),
-		LogBatchingEnabled:  true,
-		LogBatchingInterval: 10 * time.Second,
+		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
+		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
+		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
 	}, cfg, "failed to create default config")
 
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
@@ -99,7 +96,6 @@ func TestCreateDefaultConfig(t *testing.T) {
 // 				HTTPClientSettings: confighttp.HTTPClientSettings{
 // 					Endpoint: "http://" + testutil.GetAvailableLocalAddress(t),
 // 				},
-// 				LogBatchingEnabled: false,
 // 			},
 // 			shouldError: false,
 // 		},

@@ -17,17 +17,12 @@ package logicmonitorexporter // import "github.com/open-telemetry/opentelemetry-
 import (
 	"fmt"
 	"net/url"
-	"time"
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
-)
-
-const (
-	minLogBatchInterval = 30 * time.Millisecond
 )
 
 // Config defines configuration for Logic Monitor exporter.
@@ -42,12 +37,6 @@ type Config struct {
 
 	// ApiToken of LM Platform
 	APIToken map[string]string `mapstructure:"apitoken"`
-
-	// Field to enable/disable batching for logs
-	LogBatchingEnabled bool `mapstructure:"log_batching_enabled"`
-
-	// Batching interval for logs
-	LogBatchingInterval time.Duration `mapstructure:"log_batching_interval"`
 }
 
 func (c *Config) Validate() error {
@@ -58,10 +47,6 @@ func (c *Config) Validate() error {
 	u, err := url.Parse(c.Endpoint)
 	if err != nil || u.Scheme == "" || u.Host == "" {
 		return fmt.Errorf("Endpoint must be valid")
-	}
-
-	if c.LogBatchingInterval < minLogBatchInterval {
-		return fmt.Errorf("Minimum log batching interval should be " + minLogBatchInterval.String())
 	}
 	return nil
 }

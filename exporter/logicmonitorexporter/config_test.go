@@ -16,11 +16,16 @@ package logicmonitorexporter
 
 import (
 	"errors"
+	"path/filepath"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 func TestConfigValidation(t *testing.T) {
@@ -36,7 +41,6 @@ func TestConfigValidation(t *testing.T) {
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "",
 				},
-				LogBatchingInterval: 200 * time.Millisecond,
 			},
 			wantErr:      true,
 			errorMessage: "Endpoint should not be empty",
@@ -47,7 +51,6 @@ func TestConfigValidation(t *testing.T) {
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "test.com/dummy",
 				},
-				LogBatchingInterval: 200 * time.Millisecond,
 			},
 			wantErr:      true,
 			errorMessage: "Endpoint must be valid",
@@ -58,21 +61,9 @@ func TestConfigValidation(t *testing.T) {
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "invalid.com@#$%",
 				},
-				LogBatchingInterval: 200 * time.Millisecond,
 			},
 			wantErr:      true,
 			errorMessage: "Endpoint must be valid",
-		},
-		{
-			name: "minimum batching interval",
-			cfg: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Endpoint: "http://validurl.com/rest",
-				},
-				LogBatchingInterval: 20 * time.Millisecond,
-			},
-			wantErr:      true,
-			errorMessage: "Minimum log batching interval should be 30ms",
 		},
 		{
 			name: "valid config",
@@ -80,7 +71,6 @@ func TestConfigValidation(t *testing.T) {
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "http://validurl.com/rest",
 				},
-				LogBatchingInterval: 200 * time.Millisecond,
 			},
 			wantErr:      false,
 			errorMessage: "",
@@ -102,6 +92,62 @@ func TestConfigValidation(t *testing.T) {
 				return
 			}
 			assert.NoError(t, err)
+		})
+	}
+}
+
+func TestLoadConfig(t *testing.T) {
+	t.Parallel()
+
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+
+	tests := []struct {
+		id       component.ID
+		expected component.ExporterConfig
+	}{
+		{
+			id: component.NewIDWithName(typeStr, "apitoken"),
+			expected: &Config{
+				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
+				RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
+				QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: "https://company.logicmonitor.com/rest",
+				},
+				APIToken: map[string]string{
+					"access_id":  "accessid",
+					"access_key": "accesskey",
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(typeStr, "bearertoken"),
+			expected: &Config{
+				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
+				RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
+				QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: "https://company.logicmonitor.com/rest",
+					Headers: map[string]string{
+						"Authorization": "Bearer <token>",
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, component.UnmarshalExporterConfig(sub, cfg))
+
+			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.Equal(t, tt.expected, cfg)
 		})
 	}
 }

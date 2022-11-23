@@ -16,7 +16,6 @@ package logicmonitorexporter // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"context"
-	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
@@ -29,9 +28,6 @@ const (
 	typeStr = "logicmonitor"
 	// The stability level of the exporter.
 	stability = component.StabilityLevelBeta
-	// Default values for batching of logs
-	defaultLogBatchingEnabled  = true
-	defaultLogBatchingInterval = 10 * time.Second
 )
 
 // NewFactory creates a LogicMonitor exporter factory
@@ -46,11 +42,9 @@ func NewFactory() component.ExporterFactory {
 
 func createDefaultConfig() component.ExporterConfig {
 	return &Config{
-		ExporterSettings:    config.NewExporterSettings(component.NewID(typeStr)),
-		RetrySettings:       exporterhelper.NewDefaultRetrySettings(),
-		QueueSettings:       exporterhelper.NewDefaultQueueSettings(),
-		LogBatchingEnabled:  defaultLogBatchingEnabled,
-		LogBatchingInterval: defaultLogBatchingInterval,
+		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
+		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
+		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
 	}
 }
 
