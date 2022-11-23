@@ -1,0 +1,4 @@
+change_type: breaking
+component: dockerstatsreceiver
+note: "Change `cpu.usage.system` so it's emitted only once and not per-container. Additionally, enable it by default."
+issues: [9794]
