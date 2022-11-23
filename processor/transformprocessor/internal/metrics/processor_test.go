@@ -456,6 +456,19 @@ func Test_ProcessMetrics_DataPointContext(t *testing.T) {
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutStr("test_camel", "OperationA")
 			},
 		},
+		{
+			statements: []string{`set(attributes["test"], ["A", "B", "C"]) where metric.name == "operationA"`},
+			want: func(td pmetric.Metrics) {
+				v00 := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutEmptySlice("test")
+				v00.AppendEmpty().SetStr("A")
+				v00.AppendEmpty().SetStr("B")
+				v00.AppendEmpty().SetStr("C")
+				v01 := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutEmptySlice("test")
+				v01.AppendEmpty().SetStr("A")
+				v01.AppendEmpty().SetStr("B")
+				v01.AppendEmpty().SetStr("C")
+			},
+		},
 	}
 
 	for _, tt := range tests {
