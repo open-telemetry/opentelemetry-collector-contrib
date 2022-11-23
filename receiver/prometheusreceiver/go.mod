@@ -13,9 +13,9 @@ require (
 	github.com/prometheus/prometheus v0.38.0
 	github.com/stretchr/testify v1.8.1
 	go.opentelemetry.io/collector v0.66.0
-	go.opentelemetry.io/collector/component v0.65.0
-	go.opentelemetry.io/collector/consumer v0.65.0
-	go.opentelemetry.io/collector/featuregate v0.65.0
+	go.opentelemetry.io/collector/component v0.66.0
+	go.opentelemetry.io/collector/consumer v0.66.0
+	go.opentelemetry.io/collector/featuregate v0.66.0
 	go.opentelemetry.io/collector/pdata v0.66.0
 	go.opentelemetry.io/collector/processor/batchprocessor v0.66.0
 	go.opentelemetry.io/collector/semconv v0.66.0

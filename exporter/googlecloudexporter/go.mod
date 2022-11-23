@@ -12,8 +12,8 @@ require (
 	github.com/stretchr/testify v1.8.1
 	go.opencensus.io v0.24.0
 	go.opentelemetry.io/collector v0.66.0
-	go.opentelemetry.io/collector/component v0.65.0
-	go.opentelemetry.io/collector/featuregate v0.65.0
+	go.opentelemetry.io/collector/component v0.66.0
+	go.opentelemetry.io/collector/featuregate v0.66.0
 	go.opentelemetry.io/collector/pdata v0.66.0
 	go.opentelemetry.io/collector/semconv v0.66.0
 	google.golang.org/api v0.103.0
@@ -75,7 +75,7 @@ require (
 	github.com/tklauser/go-sysconf v0.3.10 // indirect
 	github.com/tklauser/numcpus v0.4.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
-	go.opentelemetry.io/collector/consumer v0.65.0 // indirect
+	go.opentelemetry.io/collector/consumer v0.66.0 // indirect
 	go.opentelemetry.io/collector/processor/batchprocessor v0.66.0 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.11.1 // indirect
 	go.opentelemetry.io/otel v1.11.1 // indirect

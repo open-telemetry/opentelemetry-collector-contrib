@@ -10,10 +10,10 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver v0.66.0
 	github.com/stretchr/testify v1.8.1
 	go.opentelemetry.io/collector v0.66.0
-	go.opentelemetry.io/collector/component v0.65.0
-	go.opentelemetry.io/collector/consumer v0.65.0
+	go.opentelemetry.io/collector/component v0.66.0
+	go.opentelemetry.io/collector/consumer v0.66.0
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.66.0
-	go.opentelemetry.io/collector/featuregate v0.65.0
+	go.opentelemetry.io/collector/featuregate v0.66.0
 	go.opentelemetry.io/collector/pdata v0.66.0
 	go.opentelemetry.io/collector/processor/batchprocessor v0.66.0
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.66.0
