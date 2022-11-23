@@ -4,13 +4,13 @@ go 1.18
 
 require (
 	github.com/klauspost/compress v1.15.12
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.64.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.64.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.66.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.66.0
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.65.0
+	go.opentelemetry.io/collector v0.66.0
 	go.opentelemetry.io/collector/component v0.65.0
 	go.opentelemetry.io/collector/consumer v0.65.0
-	go.opentelemetry.io/collector/pdata v0.65.0
+	go.opentelemetry.io/collector/pdata v0.66.0
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 )
 

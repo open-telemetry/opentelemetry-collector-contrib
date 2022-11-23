@@ -6,10 +6,10 @@ require (
 	github.com/stretchr/testify v1.8.1
 	github.com/tinylib/msgp v1.1.6
 	go.opencensus.io v0.24.0
-	go.opentelemetry.io/collector v0.65.0
+	go.opentelemetry.io/collector v0.66.0
 	go.opentelemetry.io/collector/component v0.65.0
 	go.opentelemetry.io/collector/consumer v0.65.0
-	go.opentelemetry.io/collector/pdata v0.65.0
+	go.opentelemetry.io/collector/pdata v0.66.0
 	go.uber.org/zap v1.23.0
 )
 
