@@ -3,11 +3,11 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/obser
 go 1.18
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.64.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.66.0
 	github.com/shirou/gopsutil/v3 v3.22.10
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.65.0
-	go.opentelemetry.io/collector/component v0.65.0
+	go.opentelemetry.io/collector v0.66.0
+	go.opentelemetry.io/collector/component v0.66.0
 	go.uber.org/zap v1.23.0
 )
 
@@ -33,9 +33,9 @@ require (
 	github.com/tklauser/go-sysconf v0.3.10 // indirect
 	github.com/tklauser/numcpus v0.4.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
-	go.opentelemetry.io/collector/consumer v0.65.0 // indirect
-	go.opentelemetry.io/collector/featuregate v0.65.0 // indirect
-	go.opentelemetry.io/collector/pdata v0.65.0 // indirect
+	go.opentelemetry.io/collector/consumer v0.66.0 // indirect
+	go.opentelemetry.io/collector/featuregate v0.66.0 // indirect
+	go.opentelemetry.io/collector/pdata v0.66.0 // indirect
 	go.opentelemetry.io/otel v1.11.1 // indirect
 	go.opentelemetry.io/otel/metric v0.33.0 // indirect
 	go.opentelemetry.io/otel/trace v1.11.1 // indirect
@@ -52,3 +52,5 @@ require (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer => ../
+
+retract v0.65.0

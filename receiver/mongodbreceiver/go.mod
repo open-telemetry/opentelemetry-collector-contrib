@@ -4,14 +4,14 @@ go 1.18
 
 require (
 	github.com/hashicorp/go-version v1.6.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.64.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.66.0
 	github.com/stretchr/testify v1.8.1
 	github.com/testcontainers/testcontainers-go v0.15.0
 	go.mongodb.org/mongo-driver v1.10.3
-	go.opentelemetry.io/collector v0.65.0
-	go.opentelemetry.io/collector/component v0.65.0
-	go.opentelemetry.io/collector/consumer v0.65.0
-	go.opentelemetry.io/collector/pdata v0.65.0
+	go.opentelemetry.io/collector v0.66.0
+	go.opentelemetry.io/collector/component v0.66.0
+	go.opentelemetry.io/collector/consumer v0.66.0
+	go.opentelemetry.io/collector/pdata v0.66.0
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.23.0
 )
@@ -61,7 +61,7 @@ require (
 	github.com/xdg-go/stringprep v1.0.3 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20181117223130-1be2e3e5546d // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/featuregate v0.65.0 // indirect
+	go.opentelemetry.io/collector/featuregate v0.66.0 // indirect
 	go.opentelemetry.io/otel v1.11.1 // indirect
 	go.opentelemetry.io/otel/metric v0.33.0 // indirect
 	go.opentelemetry.io/otel/trace v1.11.1 // indirect
@@ -78,3 +78,5 @@ require (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest => ../../internal/scrapertest
+
+retract v0.65.0

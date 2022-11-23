@@ -6,16 +6,16 @@ require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/snappy v0.0.4
 	github.com/grafana/loki v1.6.2-0.20220718071907-6bd05c9a4399
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.64.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.64.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki v0.64.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.66.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.66.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki v0.66.0
 	github.com/prometheus/common v0.37.0
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.65.0
-	go.opentelemetry.io/collector/component v0.65.0
-	go.opentelemetry.io/collector/consumer v0.65.0
-	go.opentelemetry.io/collector/pdata v0.65.0
-	go.opentelemetry.io/collector/semconv v0.65.0
+	go.opentelemetry.io/collector v0.66.0
+	go.opentelemetry.io/collector/component v0.66.0
+	go.opentelemetry.io/collector/consumer v0.66.0
+	go.opentelemetry.io/collector/pdata v0.66.0
+	go.opentelemetry.io/collector/semconv v0.66.0
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.23.0
 )
@@ -97,7 +97,7 @@ require (
 	go.etcd.io/etcd/client/pkg/v3 v3.5.4 // indirect
 	go.etcd.io/etcd/client/v3 v3.5.4 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/featuregate v0.65.0 // indirect
+	go.opentelemetry.io/collector/featuregate v0.66.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.36.4 // indirect
 	go.opentelemetry.io/otel v1.11.1 // indirect
 	go.opentelemetry.io/otel/metric v0.33.0 // indirect
@@ -124,3 +124,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/commo
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki => ../../pkg/translator/loki
+
+retract v0.65.0
