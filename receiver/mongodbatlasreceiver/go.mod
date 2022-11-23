@@ -5,8 +5,8 @@ go 1.18
 require (
 	github.com/cenkalti/backoff/v4 v4.2.0
 	github.com/mongodb-forks/digest v1.0.4
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.64.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.64.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.65.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.65.1
 	github.com/stretchr/testify v1.8.1
 	go.mongodb.org/atlas v0.19.0
 	go.opentelemetry.io/collector v0.65.0
@@ -59,3 +59,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/commo
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza => ../../pkg/stanza
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage => ../../extension/storage
+
+retract v0.65.0 // Broken release that did not correctly update components to v0.65.0

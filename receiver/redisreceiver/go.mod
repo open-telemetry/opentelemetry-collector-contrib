@@ -72,3 +72,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/commo
 
 // see https://github.com/distribution/distribution/issues/3590
 exclude github.com/docker/distribution v2.8.0+incompatible
+
+retract v0.65.0 // Broken release that did not correctly update components to v0.65.0

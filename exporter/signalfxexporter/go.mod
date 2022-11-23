@@ -5,12 +5,12 @@ go 1.18
 require (
 	github.com/gobwas/glob v0.2.3
 	github.com/gogo/protobuf v1.3.2
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.64.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.64.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.64.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.64.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.64.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx v0.64.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.65.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.65.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.65.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.65.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.65.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx v0.65.1
 	github.com/shirou/gopsutil/v3 v3.22.10
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3
 	github.com/signalfx/signalfx-agent/pkg/apm v0.0.0-20220920175102-539ae8d8ba8e
@@ -90,3 +90,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperre
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata => ../../pkg/experimentalmetricmetadata
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx => ../../pkg/translator/signalfx
+
+retract v0.65.0 // Broken release that did not correctly update components to v0.65.0

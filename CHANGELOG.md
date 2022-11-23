@@ -4,6 +4,13 @@
 
 <!-- next version -->
 
+## v0.65.1
+
+### 🧰 Bug fixes 🧰
+
+- Fixes a problem with v0.65.0 which contained incorrect component versions. v0.65.0 is
+  unusable and is replaced by v0.65.1.
+
 ## v0.65.0
 
 ### 🛑 Breaking changes 🛑
