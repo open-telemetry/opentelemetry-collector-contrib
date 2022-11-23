@@ -25,52 +25,36 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/expr"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterspan"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/common"
 )
 
 type filterSpanProcessor struct {
-	cfg                 *Config
-	skipExpr            expr.BoolExpr[ottlspan.TransformContext]
-	logger              *zap.Logger
-	spanConditions      []*ottl.Statement[ottlspan.TransformContext]
-	spanEventConditions []*ottl.Statement[ottlspanevent.TransformContext]
+	skipSpanExpr      expr.BoolExpr[ottlspan.TransformContext]
+	skipSpanEventExpr expr.BoolExpr[ottlspanevent.TransformContext]
 }
 
-func newFilterSpansProcessor(logger *zap.Logger, cfg *Config) (*filterSpanProcessor, error) {
+func newFilterSpansProcessor(set component.TelemetrySettings, cfg *Config) (*filterSpanProcessor, error) {
+	var err error
+	fsp := &filterSpanProcessor{}
 	if cfg.Traces.SpanConditions != nil || cfg.Traces.SpanEventConditions != nil {
-		fsp := &filterSpanProcessor{
-			cfg:    cfg,
-			logger: logger,
-		}
-
 		if cfg.Traces.SpanConditions != nil {
-			spanp := ottlspan.NewParser(common.Functions[ottlspan.TransformContext](), component.TelemetrySettings{Logger: zap.NewNop()})
-			statements, err := spanp.ParseStatements(common.PrepareConditionForParsing(cfg.Traces.SpanConditions))
+			fsp.skipSpanExpr, err = common.ParseSpan(cfg.Traces.SpanConditions, set)
 			if err != nil {
 				return nil, err
 			}
-			fsp.spanConditions = statements
 		}
-
 		if cfg.Traces.SpanEventConditions != nil {
-			spaneventp := ottlspanevent.NewParser(common.Functions[ottlspanevent.TransformContext](), component.TelemetrySettings{Logger: zap.NewNop()})
-			statements, err := spaneventp.ParseStatements(common.PrepareConditionForParsing(cfg.Traces.SpanEventConditions))
+			fsp.skipSpanEventExpr, err = common.ParseSpanEvent(cfg.Traces.SpanEventConditions, set)
 			if err != nil {
 				return nil, err
 			}
-			fsp.spanEventConditions = statements
 		}
 		return fsp, nil
 	}
 
-	if cfg.Spans.Include == nil && cfg.Spans.Exclude == nil {
-		return nil, nil
-	}
-
-	skipExpr, err := filterspan.NewSkipExpr(&cfg.Spans)
+	fsp.skipSpanExpr, err = filterspan.NewSkipExpr(&cfg.Spans)
 	if err != nil {
 		return nil, err
 	}
@@ -84,90 +68,60 @@ func newFilterSpansProcessor(logger *zap.Logger, cfg *Config) (*filterSpanProces
 		excludeMatchType = string(cfg.Spans.Exclude.MatchType)
 	}
 
-	logger.Info(
+	set.Logger.Info(
 		"Span filter configured",
 		zap.String("ID", cfg.ID().String()),
 		zap.String("[Include] match_type", includeMatchType),
 		zap.String("[Exclude] match_type", excludeMatchType),
 	)
 
-	return &filterSpanProcessor{
-		cfg:      cfg,
-		skipExpr: skipExpr,
-		logger:   logger,
-	}, nil
+	return fsp, nil
 }
 
 // processTraces filters the given spans of a traces based off the filterSpanProcessor's filters.
-func (fsp *filterSpanProcessor) processTraces(ctx context.Context, pdt ptrace.Traces) (ptrace.Traces, error) {
-	filteringSpans := fsp.spanConditions != nil
-	filteringSpanEvents := fsp.spanEventConditions != nil
-
-	if filteringSpans || filteringSpanEvents {
-		var errors error
-		pdt.ResourceSpans().RemoveIf(func(rspans ptrace.ResourceSpans) bool {
-			rspans.ScopeSpans().RemoveIf(func(sspans ptrace.ScopeSpans) bool {
-				sspans.Spans().RemoveIf(func(span ptrace.Span) bool {
-					if filteringSpans {
-						tCtx := ottlspan.NewTransformContext(span, sspans.Scope(), rspans.Resource())
-						metCondition, err := common.CheckConditions(ctx, tCtx, fsp.spanConditions)
-						if err != nil {
-							errors = multierr.Append(errors, err)
-							return false
-						}
-						if metCondition {
-							return true
-						}
-					}
-					if filteringSpanEvents {
-						span.Events().RemoveIf(func(spanEvent ptrace.SpanEvent) bool {
-							tCtx := ottlspanevent.NewTransformContext(spanEvent, span, sspans.Scope(), rspans.Resource())
-							metCondition, err := common.CheckConditions(ctx, tCtx, fsp.spanEventConditions)
-							if err != nil {
-								errors = multierr.Append(errors, err)
-								return false
-							}
-							return metCondition
-						})
-					}
-					return false
-				})
-				return sspans.Spans().Len() == 0
-			})
-			return rspans.ScopeSpans().Len() == 0
-		})
-
-		if errors != nil {
-			return pdt, errors
-		}
-		if pdt.ResourceSpans().Len() == 0 {
-			return pdt, processorhelper.ErrSkipProcessingData
-		}
-		return pdt, nil
+func (fsp *filterSpanProcessor) processTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
+	if fsp.skipSpanExpr == nil && fsp.skipSpanEventExpr == nil {
+		return td, nil
 	}
 
 	var errors error
-	pdt.ResourceSpans().RemoveIf(func(rs ptrace.ResourceSpans) bool {
+	td.ResourceSpans().RemoveIf(func(rs ptrace.ResourceSpans) bool {
 		resource := rs.Resource()
 		rs.ScopeSpans().RemoveIf(func(ss ptrace.ScopeSpans) bool {
 			scope := ss.Scope()
 			ss.Spans().RemoveIf(func(span ptrace.Span) bool {
-				skip, err := fsp.skipExpr.Eval(ctx, ottlspan.NewTransformContext(span, scope, resource))
-				if err != nil {
-					errors = multierr.Append(errors, err)
-					return false
+				if fsp.skipSpanExpr != nil {
+					skip, err := fsp.skipSpanExpr.Eval(ctx, ottlspan.NewTransformContext(span, scope, resource))
+					if err != nil {
+						errors = multierr.Append(errors, err)
+						return false
+					}
+					if skip {
+						return true
+					}
 				}
-				return skip
+				if fsp.skipSpanEventExpr != nil {
+					span.Events().RemoveIf(func(spanEvent ptrace.SpanEvent) bool {
+						skip, err := fsp.skipSpanEventExpr.Eval(ctx, ottlspanevent.NewTransformContext(spanEvent, span, scope, resource))
+						if err != nil {
+							errors = multierr.Append(errors, err)
+							return false
+						}
+						return skip
+					})
+				}
+				return false
 			})
 			return ss.Spans().Len() == 0
 		})
 		return rs.ScopeSpans().Len() == 0
 	})
+
 	if errors != nil {
-		return pdt, errors
+		return td, errors
 	}
-	if pdt.ResourceSpans().Len() == 0 {
-		return pdt, processorhelper.ErrSkipProcessingData
+	if td.ResourceSpans().Len() == 0 {
+		return td, processorhelper.ErrSkipProcessingData
 	}
-	return pdt, nil
+	return td, nil
 }

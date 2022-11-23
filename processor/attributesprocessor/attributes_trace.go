@@ -54,15 +54,15 @@ func (a *spanAttributesProcessor) processTraces(ctx context.Context, td ptrace.T
 			scope := ils.Scope()
 			for k := 0; k < spans.Len(); k++ {
 				span := spans.At(k)
-
-				skip, err := a.skipExpr.Eval(ctx, ottlspan.NewTransformContext(span, scope, resource))
-				if err != nil {
-					return td, err
+				if a.skipExpr != nil {
+					skip, err := a.skipExpr.Eval(ctx, ottlspan.NewTransformContext(span, scope, resource))
+					if err != nil {
+						return td, err
+					}
+					if skip {
+						continue
+					}
 				}
-				if skip {
-					continue
-				}
-
 				a.attrProc.Process(ctx, a.logger, span.Attributes())
 			}
 		}
