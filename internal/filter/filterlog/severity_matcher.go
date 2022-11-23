@@ -15,7 +15,6 @@
 package filterlog // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterlog"
 
 import (
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
@@ -26,14 +25,14 @@ type severityNumberMatcher struct {
 	minSeverityNumber plog.SeverityNumber
 }
 
-func newSeverityNumberMatcher(minSeverity plog.SeverityNumber, matchUndefined bool) severityNumberMatcher {
-	return severityNumberMatcher{
+func newSeverityNumberMatcher(minSeverity plog.SeverityNumber, matchUndefined bool) *severityNumberMatcher {
+	return &severityNumberMatcher{
 		minSeverityNumber: minSeverity,
 		matchUndefined:    matchUndefined,
 	}
 }
 
-func (snm severityNumberMatcher) MatchLogRecord(lr plog.LogRecord, _ pcommon.Resource, _ pcommon.InstrumentationScope) bool {
+func (snm severityNumberMatcher) match(lr plog.LogRecord) bool {
 	// behavior on SeverityNumberUNDEFINED is explicitly defined by matchUndefined
 	if lr.SeverityNumber() == plog.SeverityNumberUnspecified {
 		return snm.matchUndefined

@@ -18,7 +18,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
@@ -85,12 +84,10 @@ func TestSeverityMatcher_MatchLogRecord(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			matcher := newSeverityNumberMatcher(tc.minSeverity, tc.matchUndefined)
 
-			r := pcommon.NewResource()
-			i := pcommon.NewInstrumentationScope()
 			lr := plog.NewLogRecord()
 			lr.SetSeverityNumber(tc.inputSeverity)
 
-			require.Equal(t, tc.matches, matcher.MatchLogRecord(lr, r, i))
+			require.Equal(t, tc.matches, matcher.match(lr))
 		})
 	}
 }

@@ -5,6 +5,7 @@ go 1.18
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.66.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.66.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.66.0
 	github.com/stretchr/testify v1.8.1
 	go.opentelemetry.io/collector v0.66.0
 	go.opentelemetry.io/collector/component v0.66.0
@@ -15,6 +16,7 @@ require (
 )
 
 require (
+	github.com/alecthomas/participle/v2 v2.0.0-beta.5 // indirect
 	github.com/antonmedv/expr v1.9.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
@@ -35,6 +37,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.11.1 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
+	golang.org/x/exp v0.0.0-20220722155223-a9213eeb770e // indirect
 	golang.org/x/net v0.0.0-20220722155237-a158d28d115b // indirect
 	golang.org/x/sys v0.2.0 // indirect
 	golang.org/x/text v0.4.0 // indirect
@@ -47,5 +50,7 @@ require (
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter => ../../internal/filter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl => ../../pkg/ottl
 
 retract v0.65.0
