@@ -46,3 +46,5 @@ require (
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor => ../../processor/groupbytraceprocessor
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal => ../../pkg/batchpersignal
+
+retract v0.65.0 // Broken release that did not correctly update components to v0.65.0

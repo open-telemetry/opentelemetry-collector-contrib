@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/lib/pq v1.10.7
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.64.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.65.1
 	github.com/stretchr/testify v1.8.1
 	github.com/testcontainers/testcontainers-go v0.15.0
 	go.opentelemetry.io/collector v0.65.0
@@ -67,3 +67,5 @@ require (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest => ../../internal/scrapertest
+
+retract v0.65.0 // Broken release that did not correctly update components to v0.65.0

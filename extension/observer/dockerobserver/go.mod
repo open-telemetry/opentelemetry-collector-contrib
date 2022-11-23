@@ -5,9 +5,9 @@ go 1.18
 require (
 	github.com/docker/docker v20.10.21+incompatible
 	github.com/docker/go-connections v0.4.1-0.20210727194412-58542c764a11
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.64.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.64.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.64.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.65.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.65.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.65.1
 	github.com/stretchr/testify v1.8.1
 	github.com/testcontainers/testcontainers-go v0.15.0
 	go.opentelemetry.io/collector v0.65.0
@@ -78,3 +78,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/commo
 
 // see https://github.com/distribution/distribution/issues/3590
 exclude github.com/docker/distribution v2.8.0+incompatible
+
+retract v0.65.0 // Broken release that did not correctly update components to v0.65.0

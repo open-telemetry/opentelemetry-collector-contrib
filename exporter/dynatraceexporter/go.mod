@@ -4,8 +4,8 @@ go 1.18
 
 require (
 	github.com/dynatrace-oss/dynatrace-metric-utils-go v0.5.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.64.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.64.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.65.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.65.1
 	github.com/stretchr/testify v1.8.1
 	go.opentelemetry.io/collector v0.65.0
 	go.opentelemetry.io/collector/component v0.65.0
@@ -55,3 +55,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/commo
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry => ../../pkg/resourcetotelemetry
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
+
+retract v0.65.0 // Broken release that did not correctly update components to v0.65.0

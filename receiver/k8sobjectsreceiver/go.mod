@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobj
 go 1.18
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.64.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.65.1
 	github.com/stretchr/testify v1.8.1
 	go.opentelemetry.io/collector v0.65.0
 	go.opentelemetry.io/collector/component v0.65.0
@@ -75,3 +75,5 @@ require (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig => ../../internal/k8sconfig
+
+retract v0.65.0 // Broken release that did not correctly update components to v0.65.0

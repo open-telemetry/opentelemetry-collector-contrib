@@ -112,3 +112,5 @@ require (
 replace github.com/mattn/go-ieproxy => github.com/mattn/go-ieproxy v0.0.1
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest => ../../internal/scrapertest
+
+retract v0.65.0 // Broken release that did not correctly update components to v0.65.0

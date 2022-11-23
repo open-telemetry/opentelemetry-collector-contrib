@@ -7,11 +7,11 @@ require (
 	github.com/census-instrumentation/opencensus-proto v0.4.1
 	github.com/golang/protobuf v1.5.2
 	github.com/google/uuid v1.3.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.64.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs v0.64.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics v0.64.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.64.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.64.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.65.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs v0.65.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics v0.65.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.65.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.65.1
 	github.com/stretchr/testify v1.8.1
 	go.opentelemetry.io/collector v0.65.0
 	go.opentelemetry.io/collector/component v0.65.0
@@ -36,7 +36,7 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.64.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.65.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
@@ -65,3 +65,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/corei
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry => ../../pkg/resourcetotelemetry
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus => ../../pkg/translator/opencensus
+
+retract v0.65.0 // Broken release that did not correctly update components to v0.65.0

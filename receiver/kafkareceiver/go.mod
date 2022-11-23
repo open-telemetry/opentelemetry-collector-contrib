@@ -7,10 +7,10 @@ require (
 	github.com/apache/thrift v0.17.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/jaegertracing/jaeger v1.39.1-0.20221110195127-14c11365a856
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter v0.64.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.64.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.64.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.64.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter v0.65.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.65.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.65.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.65.1
 	github.com/openzipkin/zipkin-go v0.4.1
 	github.com/stretchr/testify v1.8.1
 	go.opencensus.io v0.24.0
@@ -82,3 +82,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin => ../../pkg/translator/zipkin
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus => ../../pkg/translator/opencensus
+
+retract v0.65.0 // Broken release that did not correctly update components to v0.65.0
