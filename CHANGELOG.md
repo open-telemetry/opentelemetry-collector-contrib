@@ -4,6 +4,20 @@
 
 <!-- next version -->
 
+## v0.66.0
+
+### 💡 Enhancements 💡
+
+- `hostmetricsreceiver`: Add a new optional metric `process.signals_pending` to the metrics scraped by the `process` scraper of the `hostmetrics` receiver. (#14084)
+- `splunkhecreceiver`: Add a healthcheck endpoint as part of the splunkhecreceiver. Just returns 200 for now if the receiver is running. (#15367)
+- `filterprocessor`: Add ability to filter spans, span events, metrics, datapoints, and logs via OTTL conditions (#16369)
+- `googlecloudspannerreceiver`: Configurably mask the PII in lock stats metrics. (#16343)
+- `interna/coreinternal`: Split internal/coreinternal/processor into a separate internal/filter module (#16410)
+
+### 🧰 Bug fixes 🧰
+
+- Fixes missed dependency updates in v0.65.0
+
 ## v0.65.0
 
 ### 🛑 Breaking changes 🛑

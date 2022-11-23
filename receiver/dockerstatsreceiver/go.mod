@@ -5,16 +5,16 @@ go 1.18
 require (
 	github.com/docker/docker v20.10.21+incompatible
 	github.com/google/go-cmp v0.5.9
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.64.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.64.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.66.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.66.0
 	github.com/stretchr/testify v1.8.1
 	github.com/testcontainers/testcontainers-go v0.15.0
-	go.opentelemetry.io/collector v0.65.0
-	go.opentelemetry.io/collector/component v0.65.0
-	go.opentelemetry.io/collector/consumer v0.65.0
-	go.opentelemetry.io/collector/featuregate v0.65.0
-	go.opentelemetry.io/collector/pdata v0.65.0
-	go.opentelemetry.io/collector/semconv v0.65.0
+	go.opentelemetry.io/collector v0.66.0
+	go.opentelemetry.io/collector/component v0.66.0
+	go.opentelemetry.io/collector/consumer v0.66.0
+	go.opentelemetry.io/collector/featuregate v0.66.0
+	go.opentelemetry.io/collector/pdata v0.66.0
+	go.opentelemetry.io/collector/semconv v0.66.0
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.23.0
 )
@@ -79,3 +79,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrap
 
 // see https://github.com/distribution/distribution/issues/3590
 exclude github.com/docker/distribution v2.8.0+incompatible
+
+retract v0.65.0

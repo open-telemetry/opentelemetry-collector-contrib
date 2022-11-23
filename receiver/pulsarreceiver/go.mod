@@ -7,15 +7,15 @@ require (
 	github.com/apache/thrift v0.17.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/jaegertracing/jaeger v1.39.1-0.20221110195127-14c11365a856
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.64.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.64.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.66.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.66.0
 	github.com/openzipkin/zipkin-go v0.4.1
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.65.0
-	go.opentelemetry.io/collector/component v0.65.0
-	go.opentelemetry.io/collector/consumer v0.65.0
-	go.opentelemetry.io/collector/pdata v0.65.0
-	go.opentelemetry.io/collector/semconv v0.65.0
+	go.opentelemetry.io/collector v0.66.0
+	go.opentelemetry.io/collector/component v0.66.0
+	go.opentelemetry.io/collector/consumer v0.66.0
+	go.opentelemetry.io/collector/pdata v0.66.0
+	go.opentelemetry.io/collector/semconv v0.66.0
 	go.uber.org/zap v1.23.0
 )
 
@@ -49,7 +49,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mtibben/percent v0.2.1 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.64.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.66.0 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/pierrec/lz4 v2.6.1+incompatible // indirect
 	github.com/pkg/errors v0.9.1 // indirect
@@ -62,7 +62,7 @@ require (
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/uber/jaeger-client-go v2.30.0+incompatible // indirect
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
-	go.opentelemetry.io/collector/featuregate v0.65.0 // indirect
+	go.opentelemetry.io/collector/featuregate v0.66.0 // indirect
 	go.opentelemetry.io/otel v1.11.1 // indirect
 	go.opentelemetry.io/otel/metric v0.33.0 // indirect
 	go.opentelemetry.io/otel/trace v1.11.1 // indirect
@@ -88,3 +88,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin => ../../pkg/translator/zipkin
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus => ../../pkg/translator/opencensus
+
+retract v0.65.0
