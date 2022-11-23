@@ -49,6 +49,7 @@ func TestDefaultMetrics(t *testing.T) {
 
 	mb.RecordContainerCPUUsagePercpuDataPoint(ts, 1, "attr-val")
 
+	enabledMetrics["container.cpu.usage.system"] = true
 	mb.RecordContainerCPUUsageSystemDataPoint(ts, 1)
 
 	enabledMetrics["container.cpu.usage.total"] = true

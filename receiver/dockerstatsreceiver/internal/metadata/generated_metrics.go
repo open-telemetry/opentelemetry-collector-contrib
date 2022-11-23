@@ -148,7 +148,7 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: false,
 		},
 		ContainerCPUUsageSystem: MetricSettings{
-			Enabled: false,
+			Enabled: true,
 		},
 		ContainerCPUUsageTotal: MetricSettings{
 			Enabled: true,
