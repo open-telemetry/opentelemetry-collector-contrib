@@ -2,22 +2,17 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/promta
 
 go 1.18
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza => ../../pkg/stanza
-
-require (
-	github.com/grafana/loki v1.6.2-0.20221121081917-d3111bcaa774
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.64.0
-	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.65.0
-)
-
 require (
 	github.com/go-kit/log v0.2.1
+	github.com/grafana/loki v1.6.2-0.20221121081917-d3111bcaa774
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.64.0
 	github.com/prometheus/client_golang v1.14.0
 	github.com/prometheus/common v0.37.0
 	github.com/prometheus/prometheus v0.39.1
+	github.com/stretchr/testify v1.8.1
 	github.com/weaveworks/common v0.0.0-20220916164235-da3fde973eec
-	go.opentelemetry.io/collector/component v0.65.0
+	go.opentelemetry.io/collector v0.66.0
+	go.opentelemetry.io/collector/component v0.66.0
 	go.uber.org/zap v1.23.0
 	gopkg.in/yaml.v2 v2.4.0
 )
@@ -195,9 +190,9 @@ require (
 	go.etcd.io/etcd/client/v3 v3.5.4 // indirect
 	go.mongodb.org/mongo-driver v1.10.2 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/consumer v0.65.0 // indirect
-	go.opentelemetry.io/collector/featuregate v0.65.0 // indirect
-	go.opentelemetry.io/collector/pdata v0.65.0 // indirect
+	go.opentelemetry.io/collector/consumer v0.66.0 // indirect
+	go.opentelemetry.io/collector/featuregate v0.66.0 // indirect
+	go.opentelemetry.io/collector/pdata v0.66.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.36.4 // indirect
 	go.opentelemetry.io/otel v1.11.1 // indirect
 	go.opentelemetry.io/otel/metric v0.33.0 // indirect
@@ -251,3 +246,5 @@ replace github.com/bradfitz/gomemcache => github.com/grafana/gomemcache v0.0.0-2
 
 // fork containing a line-buffered logger which should improve logging performance for loki
 replace github.com/go-kit/log => github.com/dannykopping/go-kit-log v0.2.2-0.20221002180827-5591c1641b6b
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza => ../../pkg/stanza
