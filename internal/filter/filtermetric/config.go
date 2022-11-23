@@ -68,24 +68,3 @@ func CreateMatchPropertiesFromDefault(properties *filterconfig.MatchProperties) 
 		ResourceAttributes: properties.Resources,
 	}
 }
-
-// ChecksMetrics returns whether the check should iterate through all the metrics
-func (mp *MatchProperties) ChecksMetrics() bool {
-	if mp == nil {
-		return false
-	}
-
-	if mp.MatchType == Expr {
-		return len(mp.Expressions) > 0
-	}
-	return len(mp.MetricNames) > 0
-}
-
-// ChecksResourceAtributes returns whether or not it checks the resource_attributes
-func (mp *MatchProperties) ChecksResourceAtributes() bool {
-	if mp == nil {
-		return false
-	}
-
-	return len(mp.ResourceAttributes) > 0
-}

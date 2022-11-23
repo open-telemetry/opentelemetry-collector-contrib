@@ -15,53 +15,47 @@
 package filtermetric // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filtermetric"
 
 import (
-	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.uber.org/zap"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/expr"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 )
 
-type Matcher interface {
-	MatchMetric(metric pmetric.Metric) (bool, error)
+// NewSkipExpr creates a BoolExpr that on evaluation returns true if a metric should NOT be processed or kept.
+// The logic determining if a metric should be processed is based on include and exclude settings.
+// Include properties are checked before exclude settings are checked.
+func NewSkipExpr(include *MatchProperties, exclude *MatchProperties) (expr.BoolExpr[ottlmetric.TransformContext], error) {
+	var matchers []expr.BoolExpr[ottlmetric.TransformContext]
+	inclExpr, err := newExpr(include)
+	if err != nil {
+		return nil, err
+	}
+	if inclExpr != nil {
+		matchers = append(matchers, expr.Not(inclExpr))
+	}
+	exclExpr, err := newExpr(exclude)
+	if err != nil {
+		return nil, err
+	}
+	if exclExpr != nil {
+		matchers = append(matchers, exclExpr)
+	}
+	return expr.Or(matchers...), nil
 }
 
 // NewMatcher constructs a metric Matcher. If an 'expr' match type is specified,
 // returns an expr matcher, otherwise a name matcher.
-func NewMatcher(config *MatchProperties) (Matcher, error) {
-	if config == nil {
+func newExpr(mp *MatchProperties) (expr.BoolExpr[ottlmetric.TransformContext], error) {
+	if mp == nil {
 		return nil, nil
 	}
 
-	if config.MatchType == Expr {
-		return newExprMatcher(config.Expressions)
-	}
-	return newNameMatcher(config)
-}
-
-// Filters have the ability to include and exclude metrics based on the metric's properties.
-// The default is to not skip. If include is defined, the metric must match or it will be skipped.
-// If include is not defined but exclude is, metric will be skipped if it matches exclude. Metric
-// is included if neither specified.
-func SkipMetric(include, exclude Matcher, metric pmetric.Metric, logger *zap.Logger) bool {
-	if include != nil {
-		// A false (or an error) returned in this case means the metric should not be processed.
-		i, err := include.MatchMetric(metric)
-		if !i || err != nil {
-			logger.Debug("Skipping metric",
-				zap.String("metric_name", (metric.Name())),
-				zap.Error(err)) // zap.Error handles case where err is nil
-			return true
+	if mp.MatchType == Expr {
+		if len(mp.Expressions) == 0 {
+			return nil, nil
 		}
+		return newExprMatcher(mp.Expressions)
 	}
-
-	if exclude != nil {
-		// A true (or an error) returned in this case means the metric should not be processed.
-		e, err := exclude.MatchMetric(metric)
-		if e || err != nil {
-			logger.Debug("Skipping metric",
-				zap.String("metric_name", (metric.Name())),
-				zap.Error(err)) // zap.Error handles case where err is nil
-			return true
-		}
+	if len(mp.MetricNames) == 0 {
+		return nil, nil
 	}
-
-	return false
+	return newNameMatcher(mp)
 }

@@ -15,9 +15,10 @@
 package filtermetric // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filtermetric"
 
 import (
-	"go.opentelemetry.io/collector/pdata/pmetric"
+	"context"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterexpr"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 )
 
 type exprMatcher struct {
@@ -36,9 +37,9 @@ func newExprMatcher(expressions []string) (*exprMatcher, error) {
 	return m, nil
 }
 
-func (m *exprMatcher) MatchMetric(metric pmetric.Metric) (bool, error) {
+func (m *exprMatcher) Eval(_ context.Context, tCtx ottlmetric.TransformContext) (bool, error) {
 	for _, matcher := range m.matchers {
-		matched, err := matcher.MatchMetric(metric)
+		matched, err := matcher.MatchMetric(tCtx.GetMetric())
 		if err != nil {
 			return false, err
 		}

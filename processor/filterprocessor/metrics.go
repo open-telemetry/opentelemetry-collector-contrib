@@ -24,6 +24,7 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/expr"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filtermatcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filtermetric"
@@ -31,18 +32,15 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/common"
 )
 
 type filterMetricProcessor struct {
 	cfg                 *Config
-	include             filtermetric.Matcher
-	includeAttribute    filtermatcher.AttributesMatcher
-	exclude             filtermetric.Matcher
-	excludeAttribute    filtermatcher.AttributesMatcher
+	skipResourceExpr    expr.BoolExpr[ottlresource.TransformContext]
+	skipMetricExpr      expr.BoolExpr[ottlmetric.TransformContext]
 	logger              *zap.Logger
-	checksMetrics       bool
-	checksResouces      bool
 	metricConditions    []*ottl.Statement[ottlmetric.TransformContext]
 	dataPointConditions []*ottl.Statement[ottldatapoint.TransformContext]
 }
@@ -75,12 +73,12 @@ func newFilterMetricProcessor(logger *zap.Logger, cfg *Config) (*filterMetricPro
 		return fsp, nil
 	}
 
-	inc, includeAttr, err := createMatcher(cfg.Metrics.Include)
+	skipResourceExpr, err := newSkipResExpr(cfg.Metrics.Include, cfg.Metrics.Exclude)
 	if err != nil {
 		return nil, err
 	}
 
-	exc, excludeAttr, err := createMatcher(cfg.Metrics.Exclude)
+	skipMetricExpr, err := filtermetric.NewSkipExpr(cfg.Metrics.Include, cfg.Metrics.Exclude)
 	if err != nil {
 		return nil, err
 	}
@@ -107,9 +105,6 @@ func newFilterMetricProcessor(logger *zap.Logger, cfg *Config) (*filterMetricPro
 		excludeResourceAttributes = cfg.Metrics.Exclude.ResourceAttributes
 	}
 
-	checksMetrics := cfg.Metrics.Exclude.ChecksMetrics() || cfg.Metrics.Include.ChecksMetrics()
-	checksResouces := cfg.Metrics.Exclude.ChecksResourceAtributes() || cfg.Metrics.Include.ChecksResourceAtributes()
-
 	logger.Info(
 		"Metric filter configured",
 		zap.String("include match_type", includeMatchType),
@@ -120,41 +115,14 @@ func newFilterMetricProcessor(logger *zap.Logger, cfg *Config) (*filterMetricPro
 		zap.Strings("exclude expressions", excludeExpressions),
 		zap.Strings("exclude metric names", excludeMetricNames),
 		zap.Any("exclude metrics with resource attributes", excludeResourceAttributes),
-		zap.Bool("checksMetrics", checksMetrics),
-		zap.Bool("checkResouces", checksResouces),
 	)
 
 	return &filterMetricProcessor{
 		cfg:              cfg,
-		include:          inc,
-		includeAttribute: includeAttr,
-		exclude:          exc,
-		excludeAttribute: excludeAttr,
+		skipResourceExpr: skipResourceExpr,
+		skipMetricExpr:   skipMetricExpr,
 		logger:           logger,
-		checksMetrics:    checksMetrics,
-		checksResouces:   checksResouces,
 	}, nil
-}
-
-func createMatcher(mp *filtermetric.MatchProperties) (filtermetric.Matcher, filtermatcher.AttributesMatcher, error) {
-	// Nothing specified in configuration
-	if mp == nil {
-		return nil, nil, nil
-	}
-	var attributeMatcher filtermatcher.AttributesMatcher
-	attributeMatcher, err := filtermatcher.NewAttributesMatcher(
-		filterset.Config{
-			MatchType:    filterset.MatchType(mp.MatchType),
-			RegexpConfig: mp.RegexpConfig,
-		},
-		mp.ResourceAttributes,
-	)
-	if err != nil {
-		return nil, attributeMatcher, err
-	}
-
-	nameMatcher, err := filtermetric.NewMatcher(mp)
-	return nameMatcher, attributeMatcher, err
 }
 
 // processMetrics filters the given metrics based off the filterMetricProcessor's filters.
@@ -229,24 +197,27 @@ func (fmp *filterMetricProcessor) processMetrics(ctx context.Context, pdm pmetri
 		return pdm, nil
 	}
 
+	var errors error
 	pdm.ResourceMetrics().RemoveIf(func(rm pmetric.ResourceMetrics) bool {
-		keepMetricsForResource := fmp.shouldKeepMetricsForResource(rm.Resource())
-		if !keepMetricsForResource {
+		resource := rm.Resource()
+		skip, err := fmp.skipResourceExpr.Eval(ctx, ottlresource.NewTransformContext(resource))
+		if err != nil {
+			errors = multierr.Append(errors, err)
+			return false
+		}
+		if skip {
 			return true
 		}
 
-		if fmp.checksResouces && !fmp.checksMetrics {
-			return false
-		}
-
 		rm.ScopeMetrics().RemoveIf(func(ilm pmetric.ScopeMetrics) bool {
+			scope := ilm.Scope()
 			ilm.Metrics().RemoveIf(func(m pmetric.Metric) bool {
-				keep, err := fmp.shouldKeepMetric(m)
+				skip, err = fmp.skipMetricExpr.Eval(ctx, ottlmetric.NewTransformContext(m, scope, resource))
 				if err != nil {
-					fmp.logger.Error("shouldKeepMetric failed", zap.Error(err))
-					// don't `return`, keep the metric if there's an error
+					errors = multierr.Append(errors, err)
+					return false
 				}
-				return !keep
+				return skip
 			})
 			// Filter out empty ScopeMetrics
 			return ilm.Metrics().Len() == 0
@@ -257,52 +228,55 @@ func (fmp *filterMetricProcessor) processMetrics(ctx context.Context, pdm pmetri
 	if pdm.ResourceMetrics().Len() == 0 {
 		return pdm, processorhelper.ErrSkipProcessingData
 	}
+	if errors != nil {
+		return pdm, errors
+	}
 	return pdm, nil
 }
 
-func (fmp *filterMetricProcessor) shouldKeepMetric(metric pmetric.Metric) (bool, error) {
-	if fmp.include != nil {
-		matches, err := fmp.include.MatchMetric(metric)
-		if err != nil {
-			// default to keep if there's an error
-			return true, err
-		}
-		if !matches {
-			return false, nil
-		}
+func newSkipResExpr(include *filtermetric.MatchProperties, exclude *filtermetric.MatchProperties) (expr.BoolExpr[ottlresource.TransformContext], error) {
+	var matchers []expr.BoolExpr[ottlresource.TransformContext]
+	inclExpr, err := newResExpr(include)
+	if err != nil {
+		return nil, err
 	}
-
-	if fmp.exclude != nil {
-		matches, err := fmp.exclude.MatchMetric(metric)
-		if err != nil {
-			return true, err
-		}
-		if matches {
-			return false, nil
-		}
+	if inclExpr != nil {
+		matchers = append(matchers, expr.Not(inclExpr))
 	}
-
-	return true, nil
+	exclExpr, err := newResExpr(exclude)
+	if err != nil {
+		return nil, err
+	}
+	if exclExpr != nil {
+		matchers = append(matchers, exclExpr)
+	}
+	return expr.Or(matchers...), nil
 }
 
-func (fmp *filterMetricProcessor) shouldKeepMetricsForResource(resource pcommon.Resource) bool {
-	resourceAttributes := resource.Attributes()
+type resExpr filtermatcher.AttributesMatcher
 
-	if fmp.include != nil && fmp.includeAttribute != nil {
-		matches := fmp.includeAttribute.Match(resourceAttributes)
-		if !matches {
-			return false
-		}
+func (r resExpr) Eval(_ context.Context, tCtx ottlresource.TransformContext) (bool, error) {
+	return filtermatcher.AttributesMatcher(r).Match(tCtx.GetResource().Attributes()), nil
+}
+
+func newResExpr(mp *filtermetric.MatchProperties) (expr.BoolExpr[ottlresource.TransformContext], error) {
+	if mp == nil {
+		return nil, nil
 	}
-
-	if fmp.exclude != nil && fmp.excludeAttribute != nil {
-		matches := fmp.excludeAttribute.Match(resourceAttributes)
-		if matches {
-			return false
-		}
+	attributeMatcher, err := filtermatcher.NewAttributesMatcher(
+		filterset.Config{
+			MatchType:    filterset.MatchType(mp.MatchType),
+			RegexpConfig: mp.RegexpConfig,
+		},
+		mp.ResourceAttributes,
+	)
+	if err != nil {
+		return nil, err
 	}
-
-	return true
+	if attributeMatcher == nil {
+		return nil, err
+	}
+	return resExpr(attributeMatcher), nil
 }
 
 func (fmp *filterMetricProcessor) handleNumberDataPoints(ctx context.Context, dps pmetric.NumberDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource) error {

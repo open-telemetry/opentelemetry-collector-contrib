@@ -45,7 +45,7 @@ type Config struct {
 
 	Logs LogFilters `mapstructure:"logs"`
 
-	Spans SpanFilters `mapstructure:"spans"`
+	Spans filterconfig.MatchConfig `mapstructure:"spans"`
 
 	Traces TraceFilters `mapstructure:"traces"`
 }
@@ -74,19 +74,6 @@ type MetricFilters struct {
 	// If any condition resolves to true, the datapoint will be dropped.
 	// Supports `and`, `or`, and `()`
 	DataPointConditions []string `mapstructure:"datapoint"`
-}
-
-// SpanFilters filters by Span attributes and various other fields, Regexp config is per matcher
-type SpanFilters struct {
-	// Include match properties describe spans that should be included in the Collector Service pipeline,
-	// all other spans should be dropped from further processing.
-	// If both Include and Exclude are specified, Include filtering occurs first.
-	Include *filterconfig.MatchProperties `mapstructure:"include"`
-
-	// Exclude match properties describe spans that should be excluded from the Collector Service pipeline,
-	// all other spans should be included.
-	// If both Include and Exclude are specified, Include filtering occurs first.
-	Exclude *filterconfig.MatchProperties `mapstructure:"exclude"`
 }
 
 // TraceFilters filters by OTTL conditions

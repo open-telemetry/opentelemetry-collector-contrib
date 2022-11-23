@@ -37,12 +37,11 @@ import (
 )
 
 type metricNameTest struct {
-	name               string
-	inc                *filtermetric.MatchProperties
-	exc                *filtermetric.MatchProperties
-	inMetrics          pmetric.Metrics
-	outMN              [][]string // output Metric names per Resource
-	allMetricsFiltered bool
+	name      string
+	inc       *filtermetric.MatchProperties
+	exc       *filtermetric.MatchProperties
+	inMetrics pmetric.Metrics
+	outMN     [][]string // output Metric names per Resource
 }
 
 type metricWithResource struct {
@@ -192,18 +191,14 @@ var (
 			},
 		},
 		{
-			name: "emptyFilterInclude",
-			inc: &filtermetric.MatchProperties{
-				MatchType: filtermetric.Strict,
-			},
-			inMetrics:          testResourceMetrics([]metricWithResource{{metricNames: inMetricNames}}),
-			allMetricsFiltered: true,
+			name:      "emptyFilterInclude",
+			inc:       &filtermetric.MatchProperties{MatchType: filtermetric.Strict},
+			inMetrics: testResourceMetrics([]metricWithResource{{metricNames: inMetricNames}}),
+			outMN:     [][]string{inMetricNames},
 		},
 		{
-			name: "emptyFilterExclude",
-			exc: &filtermetric.MatchProperties{
-				MatchType: filtermetric.Strict,
-			},
+			name:      "emptyFilterExclude",
+			exc:       &filtermetric.MatchProperties{MatchType: filtermetric.Strict},
 			inMetrics: testResourceMetrics([]metricWithResource{{metricNames: inMetricNames}}),
 			outMN:     [][]string{inMetricNames},
 		},
@@ -363,7 +358,7 @@ func TestFilterMetricProcessor(t *testing.T) {
 			assert.Nil(t, cErr)
 			got := next.AllMetrics()
 
-			if test.allMetricsFiltered {
+			if len(test.outMN) == 0 {
 				require.Equal(t, 0, len(got))
 				return
 			}
