@@ -14,6 +14,10 @@
 - `googlecloudspannerreceiver`: Configurably mask the PII in lock stats metrics. (#16343)
 - `interna/coreinternal`: Split internal/coreinternal/processor into a separate internal/filter module (#16410)
 
+### 🧰 Bug fixes 🧰
+
+- Fixes missed dependency updates in v0.65.0
+
 ## v0.65.0
 
 ### 🛑 Breaking changes 🛑
