@@ -2,7 +2,7 @@
 
 | Status                   |           |
 |--------------------------|-----------|
-| Stability                | [alpha]   |
+| Stability                | [beta]   |
 | Supported pipeline types | traces    |
 | Distributions            | [contrib] |
 
@@ -95,5 +95,5 @@ service:
       receivers: [solace/primary,solace/backup]
 ```
 
-[alpha]:https://github.com/open-telemetry/opentelemetry-collector#alpha
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
