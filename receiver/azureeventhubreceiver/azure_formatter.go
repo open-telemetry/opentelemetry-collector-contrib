@@ -19,9 +19,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
-type DataConverter struct{}
+type AzureLogFormatConverter struct{}
 
-func (_ *DataConverter) ToLogs(event *eventhub.Event) (plog.Logs, error) {
-	logs, err := Transform(event.Data)
+func (_ *AzureLogFormatConverter) ToLogs(event *eventhub.Event) (plog.Logs, error) {
+	logs, err := transform(event.Data)
 	return *logs, err
 }

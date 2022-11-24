@@ -27,8 +27,8 @@ The offset at which to start watching the event hub. If empty, it starts with th
 
 Default: ""
 
-### encoding (Optional)
-Determines how to encode the Event Hub messages into OpenTelemetry logs. See the "Encoding"
+### format (Optional)
+Determines how to transform the Event Hub messages into OpenTelemetry logs. See the "Format"
 section below for details.
 
 Default: "raw"
@@ -45,17 +45,17 @@ receivers:
 
 This component can persist its state using the [storage extension].
 
-## Encoding
+## Format
 
 ### raw
 
-The "raw" encoding maps the AMQP properties and data into the
+The "raw" format maps the AMQP properties and data into the
 attributes and body of an OpenTelemetry LogRecord, respectively.
 The body is represented as a raw byte array.
 
-### data
+### azure
 
-The "data" encoding extracts the Azure log records from the AMQP
+The "azure" format extracts the Azure log records from the AMQP
 message data, parses them, and maps the fields to OpenTelemetry
 attributes. The table below summarizes the mapping between the 
 [Azure common log format](https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/resource-logs-schema)
@@ -65,7 +65,7 @@ and the OpenTelemetry attributes.
 | Azure                            | OpenTelemetry                          | 
 |----------------------------------|----------------------------------------|
 | time (required)                  | time_unix_nano (field)                 | 
-| resourceId (required)            | azure.resource.id (attribute)          | 
+| resourceId (required)            | azure.resource.id (resource attribute) | 
 | tenantId (required, tenant logs) | azure.tenant.id (attribute)            | 
 | operationName (required)         | azure.operation.name (attribute)       |
 | operationVersion (optional)      | azure.operation.version (attribute)    | 
@@ -75,7 +75,7 @@ and the OpenTelemetry attributes.
 | resultDescription (optional)     | azure.result.description (attribute)   | 
 | durationMs (optional)            | azure.duration (attribute)             | 
 | callerIpAddress (optional)       | net.sock.peer.addr (attribute)         | 
-| correlationId (optional)         | trace_id (field)                       | 
+| correlationId (optional)         | azure.correlation.id (attribute)       | 
 | identity (optional)              | azure.identity (attribute, nested)     |
 | Level (optional)                 | severity_number, severity_text (field) | 
 | location (optional)              | cloud.region (attribute)               | 
@@ -83,7 +83,7 @@ and the OpenTelemetry attributes.
 | properties (optional)            | azure.properties (attribute, nested)   | 
 
 Note: The Go JSON decoder converts all numbers to doubles by default. This is
-unnatural in many cases, e.g. HTTP status codes. This encoding will first try to 
+unnatural in many cases, e.g. HTTP status codes. This format will first try to 
 parse the number as an integer, if that works, then an integer is used. In all
 other cases, a double is used.
 

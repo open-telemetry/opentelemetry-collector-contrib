@@ -15,7 +15,6 @@
 package azureeventhubreceiver
 
 import (
-	"encoding/hex"
 	"encoding/json"
 	"github.com/go-test/deep"
 	"os"
@@ -24,19 +23,18 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
 func TestAsTimestamp(t *testing.T) {
 	timestamp := "2022-11-11T04:48:27.6767145Z"
-	nanos, err := AsTimestamp(timestamp)
+	nanos, err := asTimestamp(timestamp)
 	assert.NoError(t, err)
 	assert.Less(t, pcommon.Timestamp(0), nanos)
 
 	timestamp = "invalid-time"
-	nanos, err = AsTimestamp(timestamp)
+	nanos, err = asTimestamp(timestamp)
 	assert.Error(t, err)
 	assert.Equal(t, pcommon.Timestamp(0), nanos)
 }
@@ -52,7 +50,7 @@ func TestAsSeverity(t *testing.T) {
 
 	for input, expected := range tests {
 		t.Run(input, func(t *testing.T) {
-			assert.Equal(t, expected, AsSeverity(input))
+			assert.Equal(t, expected, asSeverity(input))
 		})
 	}
 }
@@ -60,55 +58,27 @@ func TestAsSeverity(t *testing.T) {
 func TestSetIf(t *testing.T) {
 	m := map[string]interface{}{}
 
-	SetIf(m, "key", nil)
+	setIf(m, "key", nil)
 	actual, found := m["key"]
 	assert.False(t, found)
 	assert.Nil(t, actual)
 
 	v := ""
-	SetIf(m, "key", &v)
+	setIf(m, "key", &v)
 	actual, found = m["key"]
 	assert.False(t, found)
 	assert.Nil(t, actual)
 
 	v = "ok"
-	SetIf(m, "key", &v)
+	setIf(m, "key", &v)
 	actual, found = m["key"]
 	assert.True(t, found)
 	assert.Equal(t, "ok", actual)
 }
 
-func TestTraceIDFromGUID(t *testing.T) {
-
-	emptyTrace := pcommon.NewTraceIDEmpty()
-
-	guidBytes, err := hex.DecodeString("607964b641a54e24a5dbdb7aab3b9b34")
-	require.NoError(t, err)
-	var goodTraceID pcommon.TraceID
-	copy(goodTraceID[:], guidBytes[0:16])
-
-	assert.Equal(t, emptyTrace, TraceIDFromGUID(nil))
-
-	tests := map[string]pcommon.TraceID{
-		"":                                          emptyTrace,
-		"invalid":                                   emptyTrace,
-		"607964b641a54e24a5dbdb7aab3b":              emptyTrace, // too short
-		"607964b641a54e24a5dbdb7aab3b9b34":          goodTraceID,
-		"607964b6-41a5-4e24-a5db-db7aab3b9b34":      goodTraceID,
-		"607964b6-41A5-4E24-A5DB-DB7AAB3B9B34":      goodTraceID,
-		"OK///607964b6-41a5-4e24-a5db-db7aab3b9b34": goodTraceID,
-	}
-
-	for input, expected := range tests {
-		t.Run(input, func(t *testing.T) {
-			assert.Equal(t, expected, TraceIDFromGUID(&input))
-		})
-	}
-}
-
 func TestJsonNumberToRaw(t *testing.T) {
-	assert.Equal(t, float64(1.34), JsonNumberToRaw("1.34"))
-	assert.Equal(t, int64(1024), JsonNumberToRaw("1024"))
+	assert.Equal(t, float64(1.34), jsonNumberToRaw("1.34"))
+	assert.Equal(t, int64(1024), jsonNumberToRaw("1024"))
 }
 
 func TestReplaceJsonNumber(t *testing.T) {
@@ -134,7 +104,7 @@ func TestReplaceJsonNumber(t *testing.T) {
 		"four": []interface{}{"ok", float64(3.14), false},
 	}
 
-	if diff := deep.Equal(expected, ReplaceJsonNumber(input)); diff != nil {
+	if diff := deep.Equal(expected, replaceJsonNumber(input)); diff != nil {
 		t.Errorf("FAIL\n%s\n", strings.Join(diff, "\n"))
 	}
 }
@@ -166,12 +136,12 @@ func TestExtractRawAttributes(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		log      AzureLogRecord
+		log      azureLogRecord
 		expected map[string]interface{}
 	}{
 		{
 			name: "minimal",
-			log: AzureLogRecord{
+			log: azureLogRecord{
 				Time:          "",
 				ResourceID:    "resource.id",
 				OperationName: "operation.name",
@@ -179,15 +149,15 @@ func TestExtractRawAttributes(t *testing.T) {
 				DurationMs:    &badDuration,
 			},
 			expected: map[string]interface{}{
-				"azure.resource.id":    "resource.id",
-				"azure.operation.name": "operation.name",
-				"azure.category":       "category",
-				"cloud.provider":       "azure",
+				azureResourceID:    "resource.id",
+				azureOperationName: "operation.name",
+				azureCategory:      "category",
+				cloudProvider:      "azure",
 			},
 		},
 		{
 			name: "bad-duration",
-			log: AzureLogRecord{
+			log: azureLogRecord{
 				Time:          "",
 				ResourceID:    "resource.id",
 				OperationName: "operation.name",
@@ -195,15 +165,15 @@ func TestExtractRawAttributes(t *testing.T) {
 				DurationMs:    &badDuration,
 			},
 			expected: map[string]interface{}{
-				"azure.resource.id":    "resource.id",
-				"azure.operation.name": "operation.name",
-				"azure.category":       "category",
-				"cloud.provider":       "azure",
+				azureResourceID:    "resource.id",
+				azureOperationName: "operation.name",
+				azureCategory:      "category",
+				cloudProvider:      "azure",
 			},
 		},
 		{
 			name: "everything",
-			log: AzureLogRecord{
+			log: azureLogRecord{
 				Time:              "",
 				ResourceID:        "resource.id",
 				TenantID:          &tenantID,
@@ -222,27 +192,28 @@ func TestExtractRawAttributes(t *testing.T) {
 				Properties:        &properties,
 			},
 			expected: map[string]interface{}{
-				"azure.resource.id":        "resource.id",
-				"azure.tenant.id":          "tenant.id",
-				"azure.operation.name":     "operation.name",
-				"azure.operation.version":  "operation.version",
-				"azure.category":           "category",
-				"azure.result.type":        "result.type",
-				"azure.result.signature":   "result.signature",
-				"azure.result.description": "result.description",
-				"azure.duration":           int64(1234),
-				"net.sock.peer.addr":       "127.0.0.1",
-				"azure.identity":           "someone",
-				"cloud.region":             "location",
-				"cloud.provider":           "azure",
-				"azure.properties":         properties,
+				azureResourceID:        "resource.id",
+				azureTenantID:          "tenant.id",
+				azureOperationName:     "operation.name",
+				azureOperationVersion:  "operation.version",
+				azureCategory:          "category",
+				azureCorrelationID:     correlationID,
+				azureResultType:        "result.type",
+				azureResultSignature:   "result.signature",
+				azureResultDescription: "result.description",
+				azureDuration:          int64(1234),
+				netSockPeerAddr:        "127.0.0.1",
+				azureIdentity:          "someone",
+				cloudRegion:            "location",
+				cloudProvider:          "azure",
+				azureProperties:        properties,
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.expected, ExtractRawAttributes(tt.log))
+			assert.Equal(t, tt.expected, extractRawAttributes(tt.log))
 		})
 	}
 
@@ -251,12 +222,12 @@ func TestExtractRawAttributes(t *testing.T) {
 var minimumLogRecord = func() plog.LogRecord {
 	lr := plog.NewLogs().ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
-	ts, _ := AsTimestamp("2022-11-11T04:48:27.6767145Z")
+	ts, _ := asTimestamp("2022-11-11T04:48:27.6767145Z")
 	lr.SetTimestamp(ts)
-	lr.Attributes().PutStr("azure.resource.id", "/RESOURCE_ID")
-	lr.Attributes().PutStr("azure.operation.name", "SecretGet")
-	lr.Attributes().PutStr("azure.category", "AuditEvent")
-	lr.Attributes().PutStr("cloud.provider", "azure")
+	lr.Attributes().PutStr(azureResourceID, "/RESOURCE_ID")
+	lr.Attributes().PutStr(azureOperationName, "SecretGet")
+	lr.Attributes().PutStr(azureCategory, "AuditEvent")
+	lr.Attributes().PutStr(cloudProvider, "azure")
 	lr.Attributes().Sort()
 	return lr
 }()
@@ -264,28 +235,28 @@ var minimumLogRecord = func() plog.LogRecord {
 var maximumLogRecord = func() plog.LogRecord {
 	lr := plog.NewLogs().ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
-	ts, _ := AsTimestamp("2022-11-11T04:48:27.6767145Z")
+	ts, _ := asTimestamp("2022-11-11T04:48:27.6767145Z")
 	lr.SetTimestamp(ts)
 	lr.SetSeverityNumber(plog.SeverityNumberWarn)
 	lr.SetSeverityText("Warning")
 	guid := "607964b6-41a5-4e24-a5db-db7aab3b9b34"
-	lr.SetTraceID(TraceIDFromGUID(&guid))
 
-	lr.Attributes().PutStr("azure.resource.id", "/RESOURCE_ID")
-	lr.Attributes().PutStr("azure.tenant.id", "/TENANT_ID")
-	lr.Attributes().PutStr("azure.operation.name", "SecretGet")
-	lr.Attributes().PutStr("azure.operation.version", "7.0")
-	lr.Attributes().PutStr("azure.category", "AuditEvent")
-	lr.Attributes().PutStr("azure.result.type", "Success")
-	lr.Attributes().PutStr("azure.result.signature", "Signature")
-	lr.Attributes().PutStr("azure.result.description", "Description")
-	lr.Attributes().PutInt("azure.duration", 1234)
-	lr.Attributes().PutStr("net.sock.peer.addr", "127.0.0.1")
-	lr.Attributes().PutStr("cloud.region", "ukso")
-	lr.Attributes().PutStr("cloud.provider", "azure")
+	lr.Attributes().PutStr(azureResourceID, "/RESOURCE_ID")
+	lr.Attributes().PutStr(azureTenantID, "/TENANT_ID")
+	lr.Attributes().PutStr(azureOperationName, "SecretGet")
+	lr.Attributes().PutStr(azureOperationVersion, "7.0")
+	lr.Attributes().PutStr(azureCategory, "AuditEvent")
+	lr.Attributes().PutStr(azureCorrelationID, guid)
+	lr.Attributes().PutStr(azureResultType, "Success")
+	lr.Attributes().PutStr(azureResultSignature, "Signature")
+	lr.Attributes().PutStr(azureResultDescription, "Description")
+	lr.Attributes().PutInt(azureDuration, 1234)
+	lr.Attributes().PutStr(netSockPeerAddr, "127.0.0.1")
+	lr.Attributes().PutStr(cloudRegion, "ukso")
+	lr.Attributes().PutStr(cloudProvider, "azure")
 
-	lr.Attributes().PutEmptyMap("azure.identity").PutEmptyMap("claim").PutStr("oid", "607964b6-41a5-4e24-a5db-db7aab3b9b34")
-	m := lr.Attributes().PutEmptyMap("azure.properties")
+	lr.Attributes().PutEmptyMap(azureIdentity).PutEmptyMap("claim").PutStr("oid", "607964b6-41a5-4e24-a5db-db7aab3b9b34")
+	m := lr.Attributes().PutEmptyMap(azureProperties)
 	m.PutStr("string", "string")
 	m.PutInt("int", 429)
 	m.PutDouble("float", 3.14)
@@ -376,7 +347,7 @@ func TestDecodeAzureLogRecord(t *testing.T) {
 			assert.NoError(t, err)
 			assert.NotNil(t, data)
 
-			logs, err := Transform(data)
+			logs, err := transform(data)
 			assert.NoError(t, err)
 
 			deep.CompareUnexportedFields = true

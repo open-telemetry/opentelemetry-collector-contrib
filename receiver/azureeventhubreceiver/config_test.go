@@ -42,13 +42,13 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, "Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName", r0.(*Config).Connection)
 	assert.Equal(t, "", r0.(*Config).Offset)
 	assert.Equal(t, "", r0.(*Config).Partition)
-	assert.Equal(t, "", r0.(*Config).Encoding)
+	assert.Equal(t, defaultLogFormat, logFormat(r0.(*Config).Format))
 
 	r1 := cfg.Receivers[component.NewIDWithName(typeStr, "all")]
 	assert.Equal(t, "Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName", r1.(*Config).Connection)
 	assert.Equal(t, "1234-5566", r1.(*Config).Offset)
 	assert.Equal(t, "foo", r1.(*Config).Partition)
-	assert.Equal(t, "raw", r1.(*Config).Encoding)
+	assert.Equal(t, rawLogFormat, logFormat(r1.(*Config).Format))
 }
 
 func TestMissingConnection(t *testing.T) {
