@@ -319,7 +319,6 @@ func TestUpdateDurationMetrics(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.caseStr, func(t *testing.T) {
-			p.reqDurationBounds = tc.reqDurationBounds
 			p.updateDurationMetrics(metricKey, tc.duration)
 		})
 	}
