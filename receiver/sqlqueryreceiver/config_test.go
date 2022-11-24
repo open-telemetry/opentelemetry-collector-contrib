@@ -135,10 +135,10 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
 
 			if tt.expected == nil {
-				assert.ErrorContains(t, cfg.Validate(), tt.errorMessage)
+				assert.ErrorContains(t, component.ValidateConfig(cfg), tt.errorMessage)
 				return
 			}
-			assert.NoError(t, cfg.Validate())
+			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -160,7 +160,7 @@ func TestConfig_Validate_Multierr(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
 
-	err = cfg.Validate()
+	err = component.ValidateConfig(cfg)
 
 	assert.ErrorContains(t, err, "invalid metric config with metric_name 'my.metric'")
 	assert.ErrorContains(t, err, "metric config has unsupported value_type: 'xint'")

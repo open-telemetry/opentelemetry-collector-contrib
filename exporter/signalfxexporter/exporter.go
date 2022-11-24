@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -65,13 +66,15 @@ type signalfxExporter struct {
 }
 
 type exporterOptions struct {
-	ingestURL        *url.URL
-	apiURL           *url.URL
-	httpTimeout      time.Duration
-	token            string
-	logDataPoints    bool
-	logDimUpdate     bool
-	metricTranslator *translation.MetricTranslator
+	ingestURL         *url.URL
+	ingestTLSSettings configtls.TLSClientSetting
+	apiURL            *url.URL
+	apiTLSSettings    configtls.TLSClientSetting
+	httpTimeout       time.Duration
+	token             string
+	logDataPoints     bool
+	logDimUpdate      bool
+	metricTranslator  *translation.MetricTranslator
 }
 
 // newSignalFxExporter returns a new SignalFx exporter.
@@ -108,6 +111,12 @@ func newSignalFxExporter(
 	transport.MaxIdleConnsPerHost = config.MaxConnections
 	transport.IdleConnTimeout = 30 * time.Second
 
+	ingestTLSCfg, err := config.IngestTLSSettings.LoadTLSConfig()
+	if err != nil {
+		return nil, fmt.Errorf("could not load Ingest TLS config: %w", err)
+	}
+	transport.TLSClientConfig = ingestTLSCfg
+
 	dpClient := &sfxDPClient{
 		sfxClientBase: sfxClientBase{
 			ingestURL: options.ingestURL,
@@ -124,13 +133,19 @@ func newSignalFxExporter(
 		converter:              converter,
 	}
 
+	apiTLSCfg, err := config.APITLSSettings.LoadTLSConfig()
+	if err != nil {
+		return nil, fmt.Errorf("could not load API TLS config: %w", err)
+	}
+
 	dimClient := dimensions.NewDimensionClient(
 		context.Background(),
 		dimensions.DimensionClientOptions{
-			Token:      options.token,
-			APIURL:     options.apiURL,
-			LogUpdates: options.logDimUpdate,
-			Logger:     logger,
+			Token:        options.token,
+			APIURL:       options.apiURL,
+			APITLSConfig: apiTLSCfg,
+			LogUpdates:   options.logDimUpdate,
+			Logger:       logger,
 			// Duration to wait between property updates. This might be worth
 			// being made configurable.
 			SendDelay: 10,
@@ -177,6 +192,12 @@ func newEventExporter(config *Config, logger *zap.Logger) (*signalfxExporter, er
 	transport.MaxIdleConns = config.MaxConnections
 	transport.MaxIdleConnsPerHost = config.MaxConnections
 	transport.IdleConnTimeout = 30 * time.Second
+
+	ingestTLSCfg, err := config.IngestTLSSettings.LoadTLSConfig()
+	if err != nil {
+		return nil, fmt.Errorf("could not load Ingest TLS config: %w", err)
+	}
+	transport.TLSClientConfig = ingestTLSCfg
 
 	eventClient := &sfxEventClient{
 		sfxClientBase: sfxClientBase{

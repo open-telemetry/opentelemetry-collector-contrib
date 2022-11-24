@@ -10,7 +10,7 @@ resource_attributes:
   <attribute.name>:
     # Required: description of the attribute.
     description:
-    # Required: attribute type.
+    # Required: attribute value type.
     type: <string|int|double|bool|bytes>
 
 # Optional: map of attribute definitions with the key being the attribute name and value
@@ -24,7 +24,7 @@ attributes:
     description:
     # Optional: array of attribute values if they are static values.
     enum:
-    # Optional: attribute type. Default: string.
+    # Required: attribute value type.
     type: <string|int|double|bool|bytes>
 
 # Required: map of metric names with the key being the metric name and value

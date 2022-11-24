@@ -54,16 +54,11 @@ func TestTraces_RegisterExportersForValidRoute(t *testing.T) {
 	otlpExp, err := otlpExpFactory.CreateTracesExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), otlpConfig)
 	require.NoError(t, err)
 
-	host := &mockHost{
-		Host: componenttest.NewNopHost(),
-		GetExportersFunc: func() map[component.DataType]map[component.ID]component.Exporter {
-			return map[component.DataType]map[component.ID]component.Exporter{
-				component.DataTypeTraces: {
-					otlpConfig.ID(): otlpExp,
-				},
-			}
+	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
+		component.DataTypeTraces: {
+			otlpConfig.ID(): otlpExp,
 		},
-	}
+	})
 
 	// test
 	require.NoError(t, exp.Start(context.Background(), host))
@@ -85,16 +80,11 @@ func TestTraces_InvalidExporter(t *testing.T) {
 		},
 	})
 
-	host := &mockHost{
-		Host: componenttest.NewNopHost(),
-		GetExportersFunc: func() map[component.DataType]map[component.ID]component.Exporter {
-			return map[component.DataType]map[component.ID]component.Exporter{
-				component.DataTypeTraces: {
-					component.NewID("otlp"): &mockComponent{},
-				},
-			}
+	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
+		component.DataTypeTraces: {
+			component.NewID("otlp"): &mockComponent{},
 		},
-	}
+	})
 
 	// test
 	err := exp.Start(context.Background(), host)
@@ -107,17 +97,12 @@ func TestTraces_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 	defaultExp := &mockTracesExporter{}
 	tExp := &mockTracesExporter{}
 
-	host := &mockHost{
-		Host: componenttest.NewNopHost(),
-		GetExportersFunc: func() map[component.DataType]map[component.ID]component.Exporter {
-			return map[component.DataType]map[component.ID]component.Exporter{
-				component.DataTypeTraces: {
-					component.NewID("otlp"):              defaultExp,
-					component.NewIDWithName("otlp", "2"): tExp,
-				},
-			}
+	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
+		component.DataTypeTraces: {
+			component.NewID("otlp"):              defaultExp,
+			component.NewIDWithName("otlp", "2"): tExp,
 		},
-	}
+	})
 
 	exp := newTracesProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
 		FromAttribute:    "X-Tenant",
@@ -167,17 +152,12 @@ func TestTraces_RoutingWorks_Context(t *testing.T) {
 	defaultExp := &mockTracesExporter{}
 	tExp := &mockTracesExporter{}
 
-	host := &mockHost{
-		Host: componenttest.NewNopHost(),
-		GetExportersFunc: func() map[component.DataType]map[component.ID]component.Exporter {
-			return map[component.DataType]map[component.ID]component.Exporter{
-				component.DataTypeTraces: {
-					component.NewID("otlp"):              defaultExp,
-					component.NewIDWithName("otlp", "2"): tExp,
-				},
-			}
+	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
+		component.DataTypeTraces: {
+			component.NewID("otlp"):              defaultExp,
+			component.NewIDWithName("otlp", "2"): tExp,
 		},
-	}
+	})
 
 	exp := newTracesProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
 		FromAttribute:    "X-Tenant",
@@ -231,17 +211,12 @@ func TestTraces_RoutingWorks_ResourceAttribute(t *testing.T) {
 	defaultExp := &mockTracesExporter{}
 	tExp := &mockTracesExporter{}
 
-	host := &mockHost{
-		Host: componenttest.NewNopHost(),
-		GetExportersFunc: func() map[component.DataType]map[component.ID]component.Exporter {
-			return map[component.DataType]map[component.ID]component.Exporter{
-				component.DataTypeTraces: {
-					component.NewID("otlp"):              defaultExp,
-					component.NewIDWithName("otlp", "2"): tExp,
-				},
-			}
+	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
+		component.DataTypeTraces: {
+			component.NewID("otlp"):              defaultExp,
+			component.NewIDWithName("otlp", "2"): tExp,
 		},
-	}
+	})
 
 	exp := newTracesProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
 		FromAttribute:    "X-Tenant",
@@ -289,17 +264,12 @@ func TestTraces_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing.
 	defaultExp := &mockTracesExporter{}
 	tExp := &mockTracesExporter{}
 
-	host := &mockHost{
-		Host: componenttest.NewNopHost(),
-		GetExportersFunc: func() map[component.DataType]map[component.ID]component.Exporter {
-			return map[component.DataType]map[component.ID]component.Exporter{
-				component.DataTypeTraces: {
-					component.NewID("otlp"):              defaultExp,
-					component.NewIDWithName("otlp", "2"): tExp,
-				},
-			}
+	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
+		component.DataTypeTraces: {
+			component.NewID("otlp"):              defaultExp,
+			component.NewIDWithName("otlp", "2"): tExp,
 		},
-	}
+	})
 
 	exp := newTracesProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
 		AttributeSource:              resourceAttributeSource,
@@ -339,18 +309,13 @@ func TestTracesAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 	firstExp := &mockTracesExporter{}
 	secondExp := &mockTracesExporter{}
 
-	host := &mockHost{
-		Host: componenttest.NewNopHost(),
-		GetExportersFunc: func() map[component.DataType]map[component.ID]component.Exporter {
-			return map[component.DataType]map[component.ID]component.Exporter{
-				component.DataTypeTraces: {
-					component.NewID("otlp"):              defaultExp,
-					component.NewIDWithName("otlp", "1"): firstExp,
-					component.NewIDWithName("otlp", "2"): secondExp,
-				},
-			}
+	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
+		component.DataTypeTraces: {
+			component.NewID("otlp"):              defaultExp,
+			component.NewIDWithName("otlp", "1"): firstExp,
+			component.NewIDWithName("otlp", "2"): secondExp,
 		},
-	}
+	})
 
 	exp := newTracesProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
 		DefaultExporters: []string{"otlp"},

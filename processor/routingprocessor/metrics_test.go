@@ -21,7 +21,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
@@ -50,17 +49,12 @@ func TestMetrics_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 	defaultExp := &mockMetricsExporter{}
 	mExp := &mockMetricsExporter{}
 
-	host := &mockHost{
-		Host: componenttest.NewNopHost(),
-		GetExportersFunc: func() map[component.DataType]map[component.ID]component.Exporter {
-			return map[component.DataType]map[component.ID]component.Exporter{
-				component.DataTypeMetrics: {
-					component.NewID("otlp"):              defaultExp,
-					component.NewIDWithName("otlp", "2"): mExp,
-				},
-			}
+	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
+		component.DataTypeMetrics: {
+			component.NewID("otlp"):              defaultExp,
+			component.NewIDWithName("otlp", "2"): mExp,
 		},
-	}
+	})
 
 	exp := newMetricProcessor(component.TelemetrySettings{}, &Config{
 		FromAttribute:    "X-Tenant",
@@ -113,17 +107,12 @@ func TestMetrics_RoutingWorks_Context(t *testing.T) {
 	defaultExp := &mockMetricsExporter{}
 	mExp := &mockMetricsExporter{}
 
-	host := &mockHost{
-		Host: componenttest.NewNopHost(),
-		GetExportersFunc: func() map[component.DataType]map[component.ID]component.Exporter {
-			return map[component.DataType]map[component.ID]component.Exporter{
-				component.DataTypeMetrics: {
-					component.NewID("otlp"):              defaultExp,
-					component.NewIDWithName("otlp", "2"): mExp,
-				},
-			}
+	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
+		component.DataTypeMetrics: {
+			component.NewID("otlp"):              defaultExp,
+			component.NewIDWithName("otlp", "2"): mExp,
 		},
-	}
+	})
 
 	exp := newMetricProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
 		FromAttribute:    "X-Tenant",
@@ -177,17 +166,12 @@ func TestMetrics_RoutingWorks_ResourceAttribute(t *testing.T) {
 	defaultExp := &mockMetricsExporter{}
 	mExp := &mockMetricsExporter{}
 
-	host := &mockHost{
-		Host: componenttest.NewNopHost(),
-		GetExportersFunc: func() map[component.DataType]map[component.ID]component.Exporter {
-			return map[component.DataType]map[component.ID]component.Exporter{
-				component.DataTypeMetrics: {
-					component.NewID("otlp"):              defaultExp,
-					component.NewIDWithName("otlp", "2"): mExp,
-				},
-			}
+	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
+		component.DataTypeMetrics: {
+			component.NewID("otlp"):              defaultExp,
+			component.NewIDWithName("otlp", "2"): mExp,
 		},
-	}
+	})
 
 	exp := newMetricProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
 		FromAttribute:    "X-Tenant",
@@ -235,17 +219,12 @@ func TestMetrics_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing
 	defaultExp := &mockMetricsExporter{}
 	mExp := &mockMetricsExporter{}
 
-	host := &mockHost{
-		Host: componenttest.NewNopHost(),
-		GetExportersFunc: func() map[component.DataType]map[component.ID]component.Exporter {
-			return map[component.DataType]map[component.ID]component.Exporter{
-				component.DataTypeMetrics: {
-					component.NewID("otlp"):              defaultExp,
-					component.NewIDWithName("otlp", "2"): mExp,
-				},
-			}
+	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
+		component.DataTypeMetrics: {
+			component.NewID("otlp"):              defaultExp,
+			component.NewIDWithName("otlp", "2"): mExp,
 		},
-	}
+	})
 
 	exp := newMetricProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
 		AttributeSource:              resourceAttributeSource,
@@ -300,17 +279,12 @@ func Benchmark_MetricsRouting_ResourceAttribute(b *testing.B) {
 		defaultExp := &mockMetricsExporter{}
 		mExp := &mockMetricsExporter{}
 
-		host := &mockHost{
-			Host: componenttest.NewNopHost(),
-			GetExportersFunc: func() map[component.DataType]map[component.ID]component.Exporter {
-				return map[component.DataType]map[component.ID]component.Exporter{
-					component.DataTypeMetrics: {
-						component.NewID("otlp"):              defaultExp,
-						component.NewIDWithName("otlp", "2"): mExp,
-					},
-				}
+		host := newMockHost(map[component.DataType]map[component.ID]component.Component{
+			component.DataTypeMetrics: {
+				component.NewID("otlp"):              defaultExp,
+				component.NewIDWithName("otlp", "2"): mExp,
 			},
-		}
+		})
 
 		exp := newMetricProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, cfg)
 		assert.NoError(b, exp.Start(context.Background(), host))
@@ -336,18 +310,13 @@ func TestMetricsAreCorrectlySplitPerResourceAttributeRoutingWithOTTL(t *testing.
 	firstExp := &mockMetricsExporter{}
 	secondExp := &mockMetricsExporter{}
 
-	host := &mockHost{
-		Host: componenttest.NewNopHost(),
-		GetExportersFunc: func() map[component.DataType]map[component.ID]component.Exporter {
-			return map[component.DataType]map[component.ID]component.Exporter{
-				component.DataTypeMetrics: {
-					component.NewID("otlp"):              defaultExp,
-					component.NewIDWithName("otlp", "1"): firstExp,
-					component.NewIDWithName("otlp", "2"): secondExp,
-				},
-			}
+	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
+		component.DataTypeMetrics: {
+			component.NewID("otlp"):              defaultExp,
+			component.NewIDWithName("otlp", "1"): firstExp,
+			component.NewIDWithName("otlp", "2"): secondExp,
 		},
-	}
+	})
 
 	exp := newMetricProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
 		DefaultExporters: []string{"otlp"},

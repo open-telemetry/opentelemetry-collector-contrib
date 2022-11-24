@@ -5,14 +5,18 @@ sem_conv_version: 1.9.0
 attributes:
   device:
     description: Name of the network interface.
+    type: string
   direction:
     description: Direction of flow of bytes/operations (receive or transmit).
+    type: string
     enum: [receive, transmit]
   protocol:
     description: Network protocol, e.g. TCP or UDP.
+    type: string
     enum: [tcp]
   state:
     description: State of the network connection.
+    type: string
 
 metrics:
   system.network.packets:

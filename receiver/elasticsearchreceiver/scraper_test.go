@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
@@ -37,6 +38,16 @@ import (
 const fullExpectedMetricsPath = "./testdata/expected_metrics/full.json"
 const skipClusterExpectedMetricsPath = "./testdata/expected_metrics/clusterSkip.json"
 const noNodesExpectedMetricsPath = "./testdata/expected_metrics/noNodes.json"
+
+func TestMain(m *testing.M) {
+	// Enable the feature gates before all tests to avoid flaky tests.
+	_ = featuregate.GetRegistry().Apply(map[string]bool{
+		emitClusterHealthDetailedShardMetricsID: true,
+		emitAllIndexOperationMetricsID:          true,
+	})
+	code := m.Run()
+	os.Exit(code)
+}
 
 func TestScraper(t *testing.T) {
 	t.Parallel()
@@ -57,6 +68,9 @@ func TestScraper(t *testing.T) {
 	config.Metrics.ElasticsearchIndexTranslogOperations.Enabled = true
 	config.Metrics.ElasticsearchIndexTranslogSize.Enabled = true
 	config.Metrics.ElasticsearchIndexCacheMemoryUsage.Enabled = true
+	config.Metrics.ElasticsearchIndexCacheSize.Enabled = true
+	config.Metrics.ElasticsearchIndexCacheEvictions.Enabled = true
+	config.Metrics.ElasticsearchIndexDocuments.Enabled = true
 
 	sc := newElasticSearchScraper(componenttest.NewNopReceiverCreateSettings(), config)
 

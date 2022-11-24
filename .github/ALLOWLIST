@@ -19,7 +19,6 @@
 
 ## COMMON & SHARED components
 internal/common
-internal/containertest
 
 ## DEPRECATED components
 extension/fluentbitextension

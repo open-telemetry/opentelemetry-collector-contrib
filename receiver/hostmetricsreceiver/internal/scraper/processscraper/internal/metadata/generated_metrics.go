@@ -47,6 +47,7 @@ type MetricsSettings struct {
 	ProcessMemoryVirtualUsage  MetricSettings `mapstructure:"process.memory.virtual_usage"`
 	ProcessOpenFileDescriptors MetricSettings `mapstructure:"process.open_file_descriptors"`
 	ProcessPagingFaults        MetricSettings `mapstructure:"process.paging.faults"`
+	ProcessSignalsPending      MetricSettings `mapstructure:"process.signals_pending"`
 	ProcessThreads             MetricSettings `mapstructure:"process.threads"`
 }
 
@@ -77,6 +78,9 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: false,
 		},
 		ProcessPagingFaults: MetricSettings{
+			Enabled: false,
+		},
+		ProcessSignalsPending: MetricSettings{
 			Enabled: false,
 		},
 		ProcessThreads: MetricSettings{
@@ -660,6 +664,57 @@ func newMetricProcessPagingFaults(settings MetricSettings) metricProcessPagingFa
 	return m
 }
 
+type metricProcessSignalsPending struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills process.signals_pending metric with initial data.
+func (m *metricProcessSignalsPending) init() {
+	m.data.SetName("process.signals_pending")
+	m.data.SetDescription("Number of pending signals for the process. This metric is only available on Linux.")
+	m.data.SetUnit("{signals}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricProcessSignalsPending) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricProcessSignalsPending) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricProcessSignalsPending) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricProcessSignalsPending(settings MetricSettings) metricProcessSignalsPending {
+	m := metricProcessSignalsPending{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricProcessThreads struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -728,6 +783,7 @@ type MetricsBuilder struct {
 	metricProcessMemoryVirtualUsage  metricProcessMemoryVirtualUsage
 	metricProcessOpenFileDescriptors metricProcessOpenFileDescriptors
 	metricProcessPagingFaults        metricProcessPagingFaults
+	metricProcessSignalsPending      metricProcessSignalsPending
 	metricProcessThreads             metricProcessThreads
 }
 
@@ -755,6 +811,7 @@ func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, 
 		metricProcessMemoryVirtualUsage:  newMetricProcessMemoryVirtualUsage(settings.ProcessMemoryVirtualUsage),
 		metricProcessOpenFileDescriptors: newMetricProcessOpenFileDescriptors(settings.ProcessOpenFileDescriptors),
 		metricProcessPagingFaults:        newMetricProcessPagingFaults(settings.ProcessPagingFaults),
+		metricProcessSignalsPending:      newMetricProcessSignalsPending(settings.ProcessSignalsPending),
 		metricProcessThreads:             newMetricProcessThreads(settings.ProcessThreads),
 	}
 	for _, op := range options {
@@ -867,6 +924,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricProcessMemoryVirtualUsage.emit(ils.Metrics())
 	mb.metricProcessOpenFileDescriptors.emit(ils.Metrics())
 	mb.metricProcessPagingFaults.emit(ils.Metrics())
+	mb.metricProcessSignalsPending.emit(ils.Metrics())
 	mb.metricProcessThreads.emit(ils.Metrics())
 	for _, op := range rmo {
 		op(rm)
@@ -930,6 +988,11 @@ func (mb *MetricsBuilder) RecordProcessOpenFileDescriptorsDataPoint(ts pcommon.T
 // RecordProcessPagingFaultsDataPoint adds a data point to process.paging.faults metric.
 func (mb *MetricsBuilder) RecordProcessPagingFaultsDataPoint(ts pcommon.Timestamp, val int64, pagingFaultTypeAttributeValue AttributePagingFaultType) {
 	mb.metricProcessPagingFaults.recordDataPoint(mb.startTime, ts, val, pagingFaultTypeAttributeValue.String())
+}
+
+// RecordProcessSignalsPendingDataPoint adds a data point to process.signals_pending metric.
+func (mb *MetricsBuilder) RecordProcessSignalsPendingDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricProcessSignalsPending.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordProcessThreadsDataPoint adds a data point to process.threads metric.

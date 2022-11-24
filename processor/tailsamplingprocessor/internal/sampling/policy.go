@@ -36,6 +36,8 @@ type TraceData struct {
 	SpanCount *atomic.Int64
 	// ReceivedBatches stores all the batches received for the trace.
 	ReceivedBatches ptrace.Traces
+	// FinalDecision.
+	FinalDecision Decision
 }
 
 // Decision gives the status of sampling decision.

@@ -190,7 +190,7 @@ func TestLoadBalancerShutdown(t *testing.T) {
 func TestOnBackendChanges(t *testing.T) {
 	// prepare
 	cfg := simpleConfig()
-	componentFactory := func(ctx context.Context, endpoint string) (component.Exporter, error) {
+	componentFactory := func(ctx context.Context, endpoint string) (component.Component, error) {
 		return newNopMockExporter(), nil
 	}
 	p, err := newLoadBalancer(componenttest.NewNopExporterCreateSettings(), cfg, componentFactory)
@@ -212,7 +212,7 @@ func TestOnBackendChanges(t *testing.T) {
 func TestRemoveExtraExporters(t *testing.T) {
 	// prepare
 	cfg := simpleConfig()
-	componentFactory := func(ctx context.Context, endpoint string) (component.Exporter, error) {
+	componentFactory := func(ctx context.Context, endpoint string) (component.Component, error) {
 		return newNopMockExporter(), nil
 	}
 	p, err := newLoadBalancer(componenttest.NewNopExporterCreateSettings(), cfg, componentFactory)
@@ -241,8 +241,8 @@ func TestAddMissingExporters(t *testing.T) {
 		_ component.ExporterConfig,
 	) (component.TracesExporter, error) {
 		return newNopMockTracesExporter(), nil
-	}, component.StabilityLevelInDevelopment))
-	fn := func(ctx context.Context, endpoint string) (component.Exporter, error) {
+	}, component.StabilityLevelDevelopment))
+	fn := func(ctx context.Context, endpoint string) (component.Component, error) {
 		oCfg := cfg.Protocol.OTLP
 		oCfg.Endpoint = endpoint
 		return exporterFactory.CreateTracesExporter(ctx, componenttest.NewNopExporterCreateSettings(), &oCfg)
@@ -275,8 +275,8 @@ func TestFailedToAddMissingExporters(t *testing.T) {
 		_ component.ExporterConfig,
 	) (component.TracesExporter, error) {
 		return nil, expectedErr
-	}, component.StabilityLevelInDevelopment))
-	fn := func(ctx context.Context, endpoint string) (component.Exporter, error) {
+	}, component.StabilityLevelDevelopment))
+	fn := func(ctx context.Context, endpoint string) (component.Component, error) {
 		oCfg := cfg.Protocol.OTLP
 		oCfg.Endpoint = endpoint
 		return exporterFactory.CreateTracesExporter(ctx, componenttest.NewNopExporterCreateSettings(), &oCfg)
@@ -344,7 +344,7 @@ func TestFailedExporterInRing(t *testing.T) {
 			Static: &StaticResolver{Hostnames: []string{"endpoint-1", "endpoint-2"}},
 		},
 	}
-	componentFactory := func(ctx context.Context, endpoint string) (component.Exporter, error) {
+	componentFactory := func(ctx context.Context, endpoint string) (component.Component, error) {
 		return newNopMockExporter(), nil
 	}
 	p, err := newLoadBalancer(componenttest.NewNopExporterCreateSettings(), cfg, componentFactory)
@@ -379,6 +379,6 @@ func TestFailedExporterInRing(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func newNopMockExporter() component.Exporter {
+func newNopMockExporter() component.Component {
 	return mockComponent{}
 }

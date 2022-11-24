@@ -586,6 +586,7 @@ var tracesFromZipkinV1 = func() ptrace.Traces {
 	span.SetKind(ptrace.SpanKindServer)
 	span.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(1544805927, 454487000)))
 	span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Unix(1544805927, 457320000)))
+	//nolint:errcheck
 	span.Attributes().FromRaw(map[string]interface{}{
 		"http.status_code": 200,
 		"http.url":         "http://localhost:9000/trace/2",

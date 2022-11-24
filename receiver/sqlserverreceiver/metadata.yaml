@@ -9,6 +9,7 @@ attributes:
   page.operations:
     value: type
     description: The page operation types.
+    type: string
     enum: [read, write]
 
 metrics:

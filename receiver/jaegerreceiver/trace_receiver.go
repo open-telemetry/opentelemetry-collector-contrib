@@ -31,7 +31,6 @@ import (
 	"github.com/jaegertracing/jaeger/cmd/agent/app/processors"
 	"github.com/jaegertracing/jaeger/cmd/agent/app/servers"
 	"github.com/jaegertracing/jaeger/cmd/agent/app/servers/thriftudp"
-	"github.com/jaegertracing/jaeger/cmd/collector/app/handler"
 	"github.com/jaegertracing/jaeger/model"
 	"github.com/jaegertracing/jaeger/pkg/metrics"
 	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
@@ -330,7 +329,7 @@ func (jr *jReceiver) decodeThriftHTTPBody(r *http.Request) (*jaeger.Batch, *http
 	r.Body.Close()
 	if err != nil {
 		return nil, &httpError{
-			handler.UnableToReadBodyErrFormat,
+			fmt.Sprintf("Unable to process request body: %v", err),
 			http.StatusInternalServerError,
 		}
 	}
@@ -353,7 +352,7 @@ func (jr *jReceiver) decodeThriftHTTPBody(r *http.Request) (*jaeger.Batch, *http
 	batch := &jaeger.Batch{}
 	if err = tdes.Read(r.Context(), batch, bodyBytes); err != nil {
 		return nil, &httpError{
-			fmt.Sprintf(handler.UnableToReadBodyErrFormat, err),
+			fmt.Sprintf("Unable to process request body: %v", err),
 			http.StatusBadRequest,
 		}
 	}

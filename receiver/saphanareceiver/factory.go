@@ -30,7 +30,7 @@ import (
 
 const (
 	typeStr         = "saphana"
-	stability       = component.StabilityLevelInDevelopment
+	stability       = component.StabilityLevelDevelopment
 	defaultEndpoint = "localhost:33015"
 )
 

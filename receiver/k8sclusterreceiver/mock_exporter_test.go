@@ -34,7 +34,7 @@ func (m MockExporter) Shutdown(context.Context) error {
 	return nil
 }
 
-var _ component.Exporter = (*mockExporterWithK8sMetadata)(nil)
+var _ component.Component = (*mockExporterWithK8sMetadata)(nil)
 
 type mockExporterWithK8sMetadata struct {
 	*consumertest.MetricsSink

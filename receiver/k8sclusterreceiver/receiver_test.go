@@ -164,7 +164,7 @@ func TestReceiverWithMetadata(t *testing.T) {
 	pods := createPods(t, client, 1)
 
 	ctx := context.Background()
-	require.NoError(t, r.Start(ctx, nopHostWithExporters{}))
+	require.NoError(t, r.Start(ctx, newNopHostWithExporters()))
 
 	// Mock an update on the Pod object. It appears that the fake clientset
 	// does not pass on events for updates to resources.

@@ -199,22 +199,22 @@ type createProcessorFn func(
 	ctx context.Context,
 	set component.ProcessorCreateSettings,
 	cfg component.ProcessorConfig,
-) (component.Processor, error)
+) (component.Component, error)
 
 func wrapCreateLogsProc(factory component.ProcessorFactory) createProcessorFn {
-	return func(ctx context.Context, set component.ProcessorCreateSettings, cfg component.ProcessorConfig) (component.Processor, error) {
+	return func(ctx context.Context, set component.ProcessorCreateSettings, cfg component.ProcessorConfig) (component.Component, error) {
 		return factory.CreateLogsProcessor(ctx, set, cfg, consumertest.NewNop())
 	}
 }
 
 func wrapCreateMetricsProc(factory component.ProcessorFactory) createProcessorFn {
-	return func(ctx context.Context, set component.ProcessorCreateSettings, cfg component.ProcessorConfig) (component.Processor, error) {
+	return func(ctx context.Context, set component.ProcessorCreateSettings, cfg component.ProcessorConfig) (component.Component, error) {
 		return factory.CreateMetricsProcessor(ctx, set, cfg, consumertest.NewNop())
 	}
 }
 
 func wrapCreateTracesProc(factory component.ProcessorFactory) createProcessorFn {
-	return func(ctx context.Context, set component.ProcessorCreateSettings, cfg component.ProcessorConfig) (component.Processor, error) {
+	return func(ctx context.Context, set component.ProcessorCreateSettings, cfg component.ProcessorConfig) (component.Component, error) {
 		return factory.CreateTracesProcessor(ctx, set, cfg, consumertest.NewNop())
 	}
 }

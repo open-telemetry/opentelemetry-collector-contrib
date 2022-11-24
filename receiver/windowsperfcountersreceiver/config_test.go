@@ -232,10 +232,10 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
 
 			if tt.expectedErr != "" {
-				assert.Equal(t, cfg.Validate().Error(), tt.expectedErr)
+				assert.Equal(t, component.ValidateConfig(cfg).Error(), tt.expectedErr)
 				return
 			}
-			assert.NoError(t, cfg.Validate())
+			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

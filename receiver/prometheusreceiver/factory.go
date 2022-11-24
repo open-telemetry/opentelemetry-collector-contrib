@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/featuregate"
 )
 
 // This file implements config for Prometheus receiver.
@@ -53,5 +54,5 @@ func createMetricsReceiver(
 	cfg component.ReceiverConfig,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
-	return newPrometheusReceiver(set, cfg.(*Config), nextConsumer), nil
+	return newPrometheusReceiver(set, cfg.(*Config), nextConsumer, featuregate.GetRegistry()), nil
 }

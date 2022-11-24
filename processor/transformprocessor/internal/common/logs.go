@@ -64,14 +64,20 @@ type LogParserCollection struct {
 
 type LogParserCollectionOption func(*LogParserCollection) error
 
-func NewLogParserCollection(functions map[string]interface{}, settings component.TelemetrySettings, options ...LogParserCollectionOption) (*LogParserCollection, error) {
+func WithLogParser(functions map[string]interface{}) LogParserCollectionOption {
+	return func(lp *LogParserCollection) error {
+		lp.logParser = ottllog.NewParser(functions, lp.settings)
+		return nil
+	}
+}
+
+func NewLogParserCollection(settings component.TelemetrySettings, options ...LogParserCollectionOption) (*LogParserCollection, error) {
 	lpc := &LogParserCollection{
 		parserCollection: parserCollection{
 			settings:       settings,
 			resourceParser: ottlresource.NewParser(ResourceFunctions(), settings),
 			scopeParser:    ottlscope.NewParser(ScopeFunctions(), settings),
 		},
-		logParser: ottllog.NewParser(functions, settings),
 	}
 
 	for _, op := range options {

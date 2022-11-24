@@ -64,4 +64,4 @@ metrics:
 | cmd | Redis command name |  |
 | db | Redis database identifier |  |
 | role | Redis node's role | replica, primary |
-| state | Redis CPU usage state |  |
+| state | Redis CPU usage state | sys, sys_children, sys_main_thread, user, user_children, user_main_thread |
