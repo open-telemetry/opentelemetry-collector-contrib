@@ -83,70 +83,70 @@ func TestLogsSampling(t *testing.T) {
 		cfg      *Config
 		received int
 	}{
-		// {
-		// 	name: "happy_path",
-		// 	cfg: &Config{
-		// 		ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
-		// 		SamplingPercentage: 100,
-		// 	},
-		// 	received: 100,
-		// },
-		// {
-		// 	name: "nothing",
-		// 	cfg: &Config{
-		// 		ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
-		// 		SamplingPercentage: 0,
-		// 	},
-		// 	received: 0,
-		// },
-		// {
-		// 	name: "roughly half",
-		// 	cfg: &Config{
-		// 		ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
-		// 		SamplingPercentage: 50,
-		// 		AttributeSource:    traceIDAttributeSource,
-		// 	},
-		// 	received: 52,
-		// },
-		// {
-		// 	name: "sampling_source no sampling",
-		// 	cfg: &Config{
-		// 		ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
-		// 		SamplingPercentage: 0,
-		// 		AttributeSource:    recordAttributeSource,
-		// 		FromAttribute:      "foo",
-		// 	},
-		// 	received: 0,
-		// },
-		// {
-		// 	name: "sampling_source all sampling",
-		// 	cfg: &Config{
-		// 		ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
-		// 		SamplingPercentage: 100,
-		// 		AttributeSource:    recordAttributeSource,
-		// 		FromAttribute:      "foo",
-		// 	},
-		// 	received: 100,
-		// },
-		// {
-		// 	name: "sampling_source sampling",
-		// 	cfg: &Config{
-		// 		ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
-		// 		SamplingPercentage: 50,
-		// 		AttributeSource:    recordAttributeSource,
-		// 		FromAttribute:      "foo",
-		// 	},
-		// 	received: 79,
-		// },
-		// {
-		// 	name: "sampling_priority",
-		// 	cfg: &Config{
-		// 		ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
-		// 		SamplingPercentage: 0,
-		// 		SamplingPriority:   "priority",
-		// 	},
-		// 	received: 25,
-		// },
+		{
+			name: "happy_path",
+			cfg: &Config{
+				ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
+				SamplingPercentage: 100,
+			},
+			received: 100,
+		},
+		{
+			name: "nothing",
+			cfg: &Config{
+				ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
+				SamplingPercentage: 0,
+			},
+			received: 0,
+		},
+		{
+			name: "roughly half",
+			cfg: &Config{
+				ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
+				SamplingPercentage: 50,
+				AttributeSource:    traceIDAttributeSource,
+			},
+			received: 52,
+		},
+		{
+			name: "sampling_source no sampling",
+			cfg: &Config{
+				ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
+				SamplingPercentage: 0,
+				AttributeSource:    recordAttributeSource,
+				FromAttribute:      "foo",
+			},
+			received: 0,
+		},
+		{
+			name: "sampling_source all sampling",
+			cfg: &Config{
+				ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
+				SamplingPercentage: 100,
+				AttributeSource:    recordAttributeSource,
+				FromAttribute:      "foo",
+			},
+			received: 100,
+		},
+		{
+			name: "sampling_source sampling",
+			cfg: &Config{
+				ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
+				SamplingPercentage: 50,
+				AttributeSource:    recordAttributeSource,
+				FromAttribute:      "foo",
+			},
+			received: 79,
+		},
+		{
+			name: "sampling_priority",
+			cfg: &Config{
+				ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
+				SamplingPercentage: 0,
+				SamplingPriority:   "priority",
+			},
+			received: 25,
+		},
 		{
 			name: "sampling_priority with sampling field",
 			cfg: &Config{
