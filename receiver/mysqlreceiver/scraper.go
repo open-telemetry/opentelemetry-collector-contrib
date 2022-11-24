@@ -34,8 +34,8 @@ import (
 const (
 	picosecondsInNanoseconds int64 = 1000
 	RenameCommands                 = "receiver.mysqlreceiver.renameCommands"
-	deprecationVersion             = "v0.66.0"
-	renameVersion                  = "v0.67.0"
+	deprecationVersion             = "v0.67.0"
+	renameVersion                  = "v0.68.0"
 )
 
 func init() {
