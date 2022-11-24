@@ -300,10 +300,8 @@ func TestUpdateDurationMetrics(t *testing.T) {
 	metricKey := p.buildMetricKey("foo", "bar", "", map[string]string{})
 
 	testCases := []struct {
-		caseStr           string
-		reqDurationBounds []float64
-		duration          float64
-		errMsg            string
+		caseStr  string
+		duration float64
 	}{
 
 		{
