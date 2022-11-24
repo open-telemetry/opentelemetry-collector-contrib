@@ -58,11 +58,12 @@ func TestAllMetrics(t *testing.T) {
 	{{- end }}
 
 	metrics := mb.Emit(
-	{{- $sep := "" }}
-	{{- range $name, $info := .ResourceAttributes -}}
-	{{ $sep }}With{{ $name.Render }}({{- if $info.Enum }}Attribute{{ $name.Render }}(1){{ else }}{{ $info.Type.TestValue }}{{ end }})
-	{{- $sep = ", " }}
-	{{- end -}}
+		{{- $sep := "" }}
+		{{- range $name, $info := .ResourceAttributes -}}
+			{{- $sep }}With{{ $name.Render }}
+			{{- if $info.Enum }}{{ index $info.Enum 0 | publicVar }}{{ else }}({{- $info.Type.TestValue }}){{ end }}
+			{{- $sep = ", " }}
+		{{- end -}}
 	)
 
 	assert.Equal(t, 1, metrics.ResourceMetrics().Len())
@@ -74,7 +75,7 @@ func TestAllMetrics(t *testing.T) {
 	attrVal, ok {{ $assignSign }} rm.Resource().Attributes().Get("{{ $name }}")
 	assert.True(t, ok)
 	{{- if $info.Enum }}
-	assert.Equal(t, Attribute{{ $name.Render }}(1).String(), attrVal.Str())
+	assert.Equal(t, "{{ index $info.Enum 0 }}", attrVal.Str())
 	{{- else }}
 	assert.EqualValues(t, {{ $info.Type.TestValue }}, attrVal.{{ $info.Type }}())
 	{{- end }}

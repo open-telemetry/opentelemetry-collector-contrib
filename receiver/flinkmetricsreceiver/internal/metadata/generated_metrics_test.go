@@ -186,7 +186,7 @@ func TestAllMetrics(t *testing.T) {
 	mb.RecordFlinkOperatorWatermarkOutputDataPoint(ts, "1", "attr-val")
 	mb.RecordFlinkTaskRecordCountDataPoint(ts, "1", AttributeRecord(1))
 
-	metrics := mb.Emit(WithFlinkJobName("attr-val"), WithFlinkResourceType("attr-val"), WithFlinkSubtaskIndex("attr-val"), WithFlinkTaskName("attr-val"), WithFlinkTaskmanagerID("attr-val"), WithHostName("attr-val"))
+	metrics := mb.Emit(WithFlinkJobName("attr-val"), WithFlinkResourceTypeJobmanager, WithFlinkSubtaskIndex("attr-val"), WithFlinkTaskName("attr-val"), WithFlinkTaskmanagerID("attr-val"), WithHostName("attr-val"))
 
 	assert.Equal(t, 1, metrics.ResourceMetrics().Len())
 	rm := metrics.ResourceMetrics().At(0)
@@ -198,7 +198,7 @@ func TestAllMetrics(t *testing.T) {
 	attrCount++
 	attrVal, ok = rm.Resource().Attributes().Get("flink.resource.type")
 	assert.True(t, ok)
-	assert.EqualValues(t, "attr-val", attrVal.Str())
+	assert.Equal(t, "jobmanager", attrVal.Str())
 	attrCount++
 	attrVal, ok = rm.Resource().Attributes().Get("flink.subtask.index")
 	assert.True(t, ok)
