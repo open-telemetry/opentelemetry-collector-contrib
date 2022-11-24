@@ -160,6 +160,14 @@ Outgoing packets dropped.
 | ---- | ----------- | ------ |
 | interface | Network interface. | Any Str |
 
+### container.status
+
+Container Status => 0-created 1-running 2-paused 3-restarting 4-removing 5-exited 6-dead
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
 ## Optional Metrics
 
 The following metrics are not emitted by default. Each of them can be enabled by applying the following configuration:
@@ -725,3 +733,4 @@ Time elapsed since container start time.
 | container.image.name | The name of the docker image in use by the container. | Any Str | true |
 | container.name | The name of the container. | Any Str | true |
 | container.runtime | The runtime of the container. For this receiver, it will always be 'docker'. | Any Str | true |
+| container.started_on | Container start time. | Any Str | true |

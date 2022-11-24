@@ -274,6 +274,10 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordContainerPidsLimitDataPoint(ts, 1)
 
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordContainerStatusDataPoint(ts, 1)
+
 			allMetricsCount++
 			mb.RecordContainerUptimeDataPoint(ts, 1)
 
@@ -285,6 +289,7 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetContainerImageName("container.image.name-val")
 			rb.SetContainerName("container.name-val")
 			rb.SetContainerRuntime("container.runtime-val")
+			rb.SetContainerStartedOn("container.started_on-val")
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 
@@ -1320,6 +1325,18 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.status":
+					assert.False(t, validatedMetrics["container.status"], "Found a duplicate in the metrics slice: container.status")
+					validatedMetrics["container.status"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Container Status => 0-created 1-running 2-paused 3-restarting 4-removing 5-exited 6-dead", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())

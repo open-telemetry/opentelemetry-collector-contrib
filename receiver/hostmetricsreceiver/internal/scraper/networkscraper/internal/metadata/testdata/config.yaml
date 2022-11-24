@@ -13,6 +13,8 @@ all_set:
       enabled: true
     system.network.io:
       enabled: true
+    system.network.io.bandwidth:
+      enabled: true
     system.network.packets:
       enabled: true
 none_set:
@@ -28,6 +30,8 @@ none_set:
     system.network.errors:
       enabled: false
     system.network.io:
+      enabled: false
+    system.network.io.bandwidth:
       enabled: false
     system.network.packets:
       enabled: false

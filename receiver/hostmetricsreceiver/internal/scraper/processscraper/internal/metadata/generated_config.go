@@ -32,6 +32,7 @@ type MetricsConfig struct {
 	ProcessDiskIo              MetricConfig `mapstructure:"process.disk.io"`
 	ProcessDiskOperations      MetricConfig `mapstructure:"process.disk.operations"`
 	ProcessHandles             MetricConfig `mapstructure:"process.handles"`
+	ProcessMemoryPercent       MetricConfig `mapstructure:"process.memory.percent"`
 	ProcessMemoryUsage         MetricConfig `mapstructure:"process.memory.usage"`
 	ProcessMemoryUtilization   MetricConfig `mapstructure:"process.memory.utilization"`
 	ProcessMemoryVirtual       MetricConfig `mapstructure:"process.memory.virtual"`
@@ -63,6 +64,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		ProcessHandles: MetricConfig{
 			Enabled: false,
+		},
+		ProcessMemoryPercent: MetricConfig{
+			Enabled: true,
 		},
 		ProcessMemoryUsage: MetricConfig{
 			Enabled: true,

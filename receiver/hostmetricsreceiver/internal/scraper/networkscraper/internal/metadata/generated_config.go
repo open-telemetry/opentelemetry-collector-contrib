@@ -31,6 +31,7 @@ type MetricsConfig struct {
 	SystemNetworkDropped        MetricConfig `mapstructure:"system.network.dropped"`
 	SystemNetworkErrors         MetricConfig `mapstructure:"system.network.errors"`
 	SystemNetworkIo             MetricConfig `mapstructure:"system.network.io"`
+	SystemNetworkIoBandwidth    MetricConfig `mapstructure:"system.network.io.bandwidth"`
 	SystemNetworkPackets        MetricConfig `mapstructure:"system.network.packets"`
 }
 
@@ -53,6 +54,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		SystemNetworkIo: MetricConfig{
 			Enabled: true,
+		},
+		SystemNetworkIoBandwidth: MetricConfig{
+			Enabled: false,
 		},
 		SystemNetworkPackets: MetricConfig{
 			Enabled: true,

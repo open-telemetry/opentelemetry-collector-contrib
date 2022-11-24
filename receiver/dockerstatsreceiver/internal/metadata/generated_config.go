@@ -91,6 +91,7 @@ type MetricsConfig struct {
 	ContainerNetworkIoUsageTxPackets           MetricConfig `mapstructure:"container.network.io.usage.tx_packets"`
 	ContainerPidsCount                         MetricConfig `mapstructure:"container.pids.count"`
 	ContainerPidsLimit                         MetricConfig `mapstructure:"container.pids.limit"`
+	ContainerStatus                            MetricConfig `mapstructure:"container.status"`
 	ContainerUptime                            MetricConfig `mapstructure:"container.uptime"`
 }
 
@@ -294,6 +295,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		ContainerPidsLimit: MetricConfig{
 			Enabled: false,
 		},
+		ContainerStatus: MetricConfig{
+			Enabled: true,
+		},
 		ContainerUptime: MetricConfig{
 			Enabled: false,
 		},
@@ -314,6 +318,7 @@ type ResourceAttributesConfig struct {
 	ContainerImageName   ResourceAttributeConfig `mapstructure:"container.image.name"`
 	ContainerName        ResourceAttributeConfig `mapstructure:"container.name"`
 	ContainerRuntime     ResourceAttributeConfig `mapstructure:"container.runtime"`
+	ContainerStartedOn   ResourceAttributeConfig `mapstructure:"container.started_on"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
@@ -337,6 +342,9 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		ContainerRuntime: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		ContainerStartedOn: ResourceAttributeConfig{
 			Enabled: true,
 		},
 	}

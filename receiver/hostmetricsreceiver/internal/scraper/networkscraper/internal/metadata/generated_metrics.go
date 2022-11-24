@@ -378,6 +378,57 @@ func newMetricSystemNetworkIo(cfg MetricConfig) metricSystemNetworkIo {
 	return m
 }
 
+type metricSystemNetworkIoBandwidth struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills system.network.io.bandwidth metric with initial data.
+func (m *metricSystemNetworkIoBandwidth) init() {
+	m.data.SetName("system.network.io.bandwidth")
+	m.data.SetDescription("The rate of transmission and reception.")
+	m.data.SetUnit("By/s")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSystemNetworkIoBandwidth) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, directionAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("direction", directionAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSystemNetworkIoBandwidth) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSystemNetworkIoBandwidth) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSystemNetworkIoBandwidth(cfg MetricConfig) metricSystemNetworkIoBandwidth {
+	m := metricSystemNetworkIoBandwidth{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricSystemNetworkPackets struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -446,6 +497,7 @@ type MetricsBuilder struct {
 	metricSystemNetworkDropped        metricSystemNetworkDropped
 	metricSystemNetworkErrors         metricSystemNetworkErrors
 	metricSystemNetworkIo             metricSystemNetworkIo
+	metricSystemNetworkIoBandwidth    metricSystemNetworkIoBandwidth
 	metricSystemNetworkPackets        metricSystemNetworkPackets
 }
 
@@ -471,6 +523,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricSystemNetworkDropped:        newMetricSystemNetworkDropped(mbc.Metrics.SystemNetworkDropped),
 		metricSystemNetworkErrors:         newMetricSystemNetworkErrors(mbc.Metrics.SystemNetworkErrors),
 		metricSystemNetworkIo:             newMetricSystemNetworkIo(mbc.Metrics.SystemNetworkIo),
+		metricSystemNetworkIoBandwidth:    newMetricSystemNetworkIoBandwidth(mbc.Metrics.SystemNetworkIoBandwidth),
 		metricSystemNetworkPackets:        newMetricSystemNetworkPackets(mbc.Metrics.SystemNetworkPackets),
 	}
 	for _, op := range options {
@@ -535,6 +588,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricSystemNetworkDropped.emit(ils.Metrics())
 	mb.metricSystemNetworkErrors.emit(ils.Metrics())
 	mb.metricSystemNetworkIo.emit(ils.Metrics())
+	mb.metricSystemNetworkIoBandwidth.emit(ils.Metrics())
 	mb.metricSystemNetworkPackets.emit(ils.Metrics())
 
 	for _, op := range rmo {
@@ -584,6 +638,11 @@ func (mb *MetricsBuilder) RecordSystemNetworkErrorsDataPoint(ts pcommon.Timestam
 // RecordSystemNetworkIoDataPoint adds a data point to system.network.io metric.
 func (mb *MetricsBuilder) RecordSystemNetworkIoDataPoint(ts pcommon.Timestamp, val int64, deviceAttributeValue string, directionAttributeValue AttributeDirection) {
 	mb.metricSystemNetworkIo.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, directionAttributeValue.String())
+}
+
+// RecordSystemNetworkIoBandwidthDataPoint adds a data point to system.network.io.bandwidth metric.
+func (mb *MetricsBuilder) RecordSystemNetworkIoBandwidthDataPoint(ts pcommon.Timestamp, val float64, directionAttributeValue AttributeDirection) {
+	mb.metricSystemNetworkIoBandwidth.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String())
 }
 
 // RecordSystemNetworkPacketsDataPoint adds a data point to system.network.packets metric.

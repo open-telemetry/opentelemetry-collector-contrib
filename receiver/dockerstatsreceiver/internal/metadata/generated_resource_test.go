@@ -20,15 +20,16 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetContainerImageName("container.image.name-val")
 			rb.SetContainerName("container.name-val")
 			rb.SetContainerRuntime("container.runtime-val")
+			rb.SetContainerStartedOn("container.started_on-val")
 
 			res := rb.Emit()
 			assert.Equal(t, 0, rb.Emit().Attributes().Len()) // Second call should return empty Resource
 
 			switch test {
 			case "default":
-				assert.Equal(t, 5, res.Attributes().Len())
+				assert.Equal(t, 6, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 7, res.Attributes().Len())
+				assert.Equal(t, 8, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -70,6 +71,11 @@ func TestResourceBuilder(t *testing.T) {
 			assert.True(t, ok)
 			if ok {
 				assert.EqualValues(t, "container.runtime-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("container.started_on")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "container.started_on-val", val.Str())
 			}
 		})
 	}

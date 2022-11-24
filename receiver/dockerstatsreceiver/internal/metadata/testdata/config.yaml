@@ -133,6 +133,8 @@ all_set:
       enabled: true
     container.pids.limit:
       enabled: true
+    container.status:
+      enabled: true
     container.uptime:
       enabled: true
   resource_attributes:
@@ -149,6 +151,8 @@ all_set:
     container.name:
       enabled: true
     container.runtime:
+      enabled: true
+    container.started_on:
       enabled: true
 none_set:
   metrics:
@@ -284,6 +288,8 @@ none_set:
       enabled: false
     container.pids.limit:
       enabled: false
+    container.status:
+      enabled: false
     container.uptime:
       enabled: false
   resource_attributes:
@@ -300,4 +306,6 @@ none_set:
     container.name:
       enabled: false
     container.runtime:
+      enabled: false
+    container.started_on:
       enabled: false

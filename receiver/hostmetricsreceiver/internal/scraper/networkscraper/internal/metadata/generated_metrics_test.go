@@ -76,6 +76,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordSystemNetworkIoDataPoint(ts, 1, "device-val", AttributeDirectionReceive)
 
+			allMetricsCount++
+			mb.RecordSystemNetworkIoBandwidthDataPoint(ts, 1, AttributeDirectionReceive)
+
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemNetworkPacketsDataPoint(ts, 1, "device-val", AttributeDirectionReceive)
@@ -208,6 +211,21 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.True(t, ok)
 					assert.EqualValues(t, "device-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("direction")
+					assert.True(t, ok)
+					assert.EqualValues(t, "receive", attrVal.Str())
+				case "system.network.io.bandwidth":
+					assert.False(t, validatedMetrics["system.network.io.bandwidth"], "Found a duplicate in the metrics slice: system.network.io.bandwidth")
+					validatedMetrics["system.network.io.bandwidth"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The rate of transmission and reception.", ms.At(i).Description())
+					assert.Equal(t, "By/s", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("direction")
 					assert.True(t, ok)
 					assert.EqualValues(t, "receive", attrVal.Str())
 				case "system.network.packets":
