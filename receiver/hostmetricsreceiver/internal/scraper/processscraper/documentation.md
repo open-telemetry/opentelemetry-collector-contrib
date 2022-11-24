@@ -50,6 +50,14 @@ Disk bytes transferred.
 | ---- | ----------- | ------ |
 | direction | Direction of flow of bytes (read or write). | Str: ``read``, ``write`` |
 
+### process.memory.percent
+
+Percent of Memory used by the process.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| % | Gauge | Double |
+
 ### process.memory.usage
 
 The amount of physical memory in use.

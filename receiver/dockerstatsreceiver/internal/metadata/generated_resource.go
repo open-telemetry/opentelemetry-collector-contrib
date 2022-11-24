@@ -70,6 +70,13 @@ func (rb *ResourceBuilder) SetContainerRuntime(val string) {
 	}
 }
 
+// SetContainerStartedOn sets provided value as "container.started_on" attribute.
+func (rb *ResourceBuilder) SetContainerStartedOn(val string) {
+	if rb.config.ContainerStartedOn.Enabled {
+		rb.res.Attributes().PutStr("container.started_on", val)
+	}
+}
+
 // Emit returns the built resource and resets the internal builder state.
 func (rb *ResourceBuilder) Emit() pcommon.Resource {
 	r := rb.res
