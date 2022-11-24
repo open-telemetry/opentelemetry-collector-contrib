@@ -174,7 +174,6 @@ func extractRawAttributes(log azureLogRecord) map[string]interface{} {
 	if log.Properties != nil {
 		attrs[azureProperties] = replaceJsonNumber(*log.Properties)
 	}
-	attrs[azureResourceID] = log.ResourceID
 	setIf(attrs, azureResultDescription, log.ResultDescription)
 	setIf(attrs, azureResultSignature, log.ResultSignature)
 	setIf(attrs, azureResultType, log.ResultType)
@@ -202,10 +201,13 @@ func transform(data []byte) (*plog.Logs, error) {
 	decoder := json.NewDecoder(bytes.NewReader(data))
 	decoder.UseNumber()
 	err := decoder.Decode(&azureLogs)
+	resourceLogs := l.ResourceLogs().AppendEmpty()
 	if err == nil {
-		logRecords := l.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
+		logRecords := resourceLogs.ScopeLogs().AppendEmpty().LogRecords()
 
+		resourceID := ""
 		for _, azureLog := range azureLogs.Records {
+			resourceID = azureLog.ResourceID
 			nanos, err := asTimestamp(azureLog.Time)
 			if err == nil {
 				lr := logRecords.AppendEmpty()
@@ -220,6 +222,10 @@ func transform(data []byte) (*plog.Logs, error) {
 
 				lr.Attributes().FromRaw(extractRawAttributes(azureLog))
 			}
+		}
+
+		if resourceID != "" {
+			resourceLogs.Resource().Attributes().PutStr(azureResourceID, resourceID)
 		}
 	}
 

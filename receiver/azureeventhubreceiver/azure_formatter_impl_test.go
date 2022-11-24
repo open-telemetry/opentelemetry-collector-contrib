@@ -149,7 +149,6 @@ func TestExtractRawAttributes(t *testing.T) {
 				DurationMs:    &badDuration,
 			},
 			expected: map[string]interface{}{
-				azureResourceID:    "resource.id",
 				azureOperationName: "operation.name",
 				azureCategory:      "category",
 				cloudProvider:      "azure",
@@ -165,7 +164,6 @@ func TestExtractRawAttributes(t *testing.T) {
 				DurationMs:    &badDuration,
 			},
 			expected: map[string]interface{}{
-				azureResourceID:    "resource.id",
 				azureOperationName: "operation.name",
 				azureCategory:      "category",
 				cloudProvider:      "azure",
@@ -192,7 +190,6 @@ func TestExtractRawAttributes(t *testing.T) {
 				Properties:        &properties,
 			},
 			expected: map[string]interface{}{
-				azureResourceID:        "resource.id",
 				azureTenantID:          "tenant.id",
 				azureOperationName:     "operation.name",
 				azureOperationVersion:  "operation.version",
@@ -224,7 +221,6 @@ var minimumLogRecord = func() plog.LogRecord {
 
 	ts, _ := asTimestamp("2022-11-11T04:48:27.6767145Z")
 	lr.SetTimestamp(ts)
-	lr.Attributes().PutStr(azureResourceID, "/RESOURCE_ID")
 	lr.Attributes().PutStr(azureOperationName, "SecretGet")
 	lr.Attributes().PutStr(azureCategory, "AuditEvent")
 	lr.Attributes().PutStr(cloudProvider, "azure")
@@ -241,7 +237,6 @@ var maximumLogRecord = func() plog.LogRecord {
 	lr.SetSeverityText("Warning")
 	guid := "607964b6-41a5-4e24-a5db-db7aab3b9b34"
 
-	lr.Attributes().PutStr(azureResourceID, "/RESOURCE_ID")
 	lr.Attributes().PutStr(azureTenantID, "/TENANT_ID")
 	lr.Attributes().PutStr(azureOperationName, "SecretGet")
 	lr.Attributes().PutStr(azureOperationVersion, "7.0")
@@ -309,18 +304,24 @@ func sortAttributes(attrs pcommon.Map) {
 func TestDecodeAzureLogRecord(t *testing.T) {
 
 	expectedMinimum := plog.NewLogs()
-	lr := expectedMinimum.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+	resourceLogs := expectedMinimum.ResourceLogs().AppendEmpty()
+	lr := resourceLogs.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+	resourceLogs.Resource().Attributes().PutStr(azureResourceID, "/RESOURCE_ID")
 	minimumLogRecord.CopyTo(lr)
 
 	expectedMinimum2 := plog.NewLogs()
-	logRecords := expectedMinimum2.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
+	resourceLogs = expectedMinimum2.ResourceLogs().AppendEmpty()
+	resourceLogs.Resource().Attributes().PutStr(azureResourceID, "/RESOURCE_ID")
+	logRecords := resourceLogs.ScopeLogs().AppendEmpty().LogRecords()
 	lr = logRecords.AppendEmpty()
 	minimumLogRecord.CopyTo(lr)
 	lr = logRecords.AppendEmpty()
 	minimumLogRecord.CopyTo(lr)
 
 	expectedMaximum := plog.NewLogs()
-	lr = expectedMaximum.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+	resourceLogs = expectedMaximum.ResourceLogs().AppendEmpty()
+	resourceLogs.Resource().Attributes().PutStr(azureResourceID, "/RESOURCE_ID")
+	lr = resourceLogs.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 	maximumLogRecord.CopyTo(lr)
 
 	tests := []struct {
