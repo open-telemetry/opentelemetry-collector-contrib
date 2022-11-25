@@ -30,9 +30,8 @@ const (
 	azureLogFormat   logFormat = "azure"
 )
 
-var validFormats = []logFormat{defaultLogFormat, rawLogFormat, azureLogFormat}
-
 var (
+	validFormats         = []logFormat{defaultLogFormat, rawLogFormat, azureLogFormat}
 	errMissingConnection = errors.New("missing connection")
 )
 

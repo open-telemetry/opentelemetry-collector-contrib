@@ -220,6 +220,7 @@ func transform(data []byte) (*plog.Logs, error) {
 					lr.SetSeverityText(*azureLog.Level)
 				}
 
+				//nolint:errcheck
 				lr.Attributes().FromRaw(extractRawAttributes(azureLog))
 			}
 		}

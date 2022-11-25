@@ -65,3 +65,19 @@ func TestInvalidConnectionString(t *testing.T) {
 	err := component.ValidateConfig(cfg)
 	assert.EqualError(t, err, "failed parsing connection string due to unmatched key value separated by '='")
 }
+
+func TestIsValidFormat(t *testing.T) {
+	for _, format := range []logFormat{defaultLogFormat, rawLogFormat, azureLogFormat} {
+		assert.True(t, isValidFormat(string(format)))
+	}
+	assert.False(t, isValidFormat("invalid-format"))
+}
+
+func TestInvalidFormat(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	cfg.(*Config).Connection = "Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName"
+	cfg.(*Config).Format = "invalid"
+	err := component.ValidateConfig(cfg)
+	assert.ErrorContains(t, err, "invalid format; must be one of")
+}

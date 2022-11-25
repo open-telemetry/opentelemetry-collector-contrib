@@ -33,7 +33,7 @@ section below for details.
 
 Default: "raw"
 
-Example:
+### Example Configuration
 
 ```yaml
 receivers:
@@ -41,6 +41,7 @@ receivers:
     connection: Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName
     partition: foo
     offset: "1234-5566"
+    format: "azure"
 ```
 
 This component can persist its state using the [storage extension].
@@ -64,28 +65,28 @@ and the OpenTelemetry attributes.
 
 | Azure                            | OpenTelemetry                          | 
 |----------------------------------|----------------------------------------|
-| time (required)                  | time_unix_nano (field)                 | 
-| resourceId (required)            | azure.resource.id (resource attribute) | 
-| tenantId (required, tenant logs) | azure.tenant.id (attribute)            | 
-| operationName (required)         | azure.operation.name (attribute)       |
-| operationVersion (optional)      | azure.operation.version (attribute)    | 
-| category (optional)              | azure.category (attribute)             | 
-| resultType (optional)            | azure.result.type (attribute)          | 
-| resultSignature (optional)       | azure.result.signature (attribute)     | 
-| resultDescription (optional)     | azure.result.description (attribute)   | 
-| durationMs (optional)            | azure.duration (attribute)             | 
 | callerIpAddress (optional)       | net.sock.peer.addr (attribute)         | 
 | correlationId (optional)         | azure.correlation.id (attribute)       | 
-| identity (optional)              | azure.identity (attribute, nested)     |
+| category (optional)              | azure.category (attribute)             | 
+| durationMs (optional)            | azure.duration (attribute)             | 
 | Level (optional)                 | severity_number, severity_text (field) | 
 | location (optional)              | cloud.region (attribute)               | 
 | —                                | cloud.provider (attribute)             | 
+| operationName (required)         | azure.operation.name (attribute)       |
+| operationVersion (optional)      | azure.operation.version (attribute)    | 
 | properties (optional)            | azure.properties (attribute, nested)   | 
+| resourceId (required)            | azure.resource.id (resource attribute) | 
+| resultDescription (optional)     | azure.result.description (attribute)   | 
+| resultSignature (optional)       | azure.result.signature (attribute)     | 
+| resultType (optional)            | azure.result.type (attribute)          | 
+| tenantId (required, tenant logs) | azure.tenant.id (attribute)            | 
+| time (required)                  | time_unix_nano (field)                 | 
+| identity (optional)              | azure.identity (attribute, nested)     |
 
-Note: The Go JSON decoder converts all numbers to doubles by default. This is
-unnatural in many cases, e.g. HTTP status codes. This format will first try to 
-parse the number as an integer, if that works, then an integer is used. In all
-other cases, a double is used.
+Note: JSON does not distinguish between fixed and floating point numbers. This
+formatter will first try to parse a number as an integer, if that works, then
+an integer is used for the OpenTelemetry attribute. In all other cases, a double
+is used.
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

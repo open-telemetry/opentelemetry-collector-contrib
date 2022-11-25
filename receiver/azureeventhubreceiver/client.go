@@ -15,6 +15,7 @@
 package azureeventhubreceiver // import "github.com/loomis-relativity/opentelemetry-collector-contrib/receiver/azureeventhubreceiver"
 import (
 	"context"
+
 	eventhub "github.com/Azure/azure-event-hubs-go/v3"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
