@@ -104,7 +104,7 @@ func TestSelfSignedBackend(t *testing.T) {
 			},
 		},
 		Endpoint:         server.URL,
-		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "valid")),
+		ExporterSettings: config.NewExporterSettings(component.NewIDWithName(typeStr, "valid")),
 	}
 
 	ctx := context.Background()
@@ -131,7 +131,7 @@ func TestSelfSignedBackendCAFileNotFound(t *testing.T) {
 			},
 		},
 		Endpoint:         "",
-		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "valid")),
+		ExporterSettings: config.NewExporterSettings(component.NewIDWithName(typeStr, "valid")),
 	}
 
 	ctx := context.Background()

@@ -17,7 +17,6 @@ package instanaexporter // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"bytes"
 	"context"
-	"crypto/tls"
 	"fmt"
 	"net/http"
 	"runtime"
@@ -110,20 +109,6 @@ func (e *instanaExporter) export(ctx context.Context, url string, header map[str
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(request))
 	if err != nil {
 		return consumererror.NewPermanent(err)
-	}
-
-	tlsConf, err := e.config.TLSSetting.LoadTLSConfig()
-
-	if err != nil {
-		return consumererror.NewPermanent(err)
-	}
-
-	if tlsConf.RootCAs != nil {
-		e.client.Transport = &http.Transport{
-			TLSClientConfig: &tls.Config{
-				RootCAs: tlsConf.RootCAs,
-			},
-		}
 	}
 
 	req.Header.Set("Content-Type", "application/json")
