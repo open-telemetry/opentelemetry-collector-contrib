@@ -3,6 +3,8 @@ all_set:
   metrics:
     system.disk.io:
       enabled: true
+    system.disk.io.speed:
+      enabled: true
     system.disk.io_time:
       enabled: true
     system.disk.merged:
@@ -18,6 +20,8 @@ all_set:
 none_set:
   metrics:
     system.disk.io:
+      enabled: false
+    system.disk.io.speed:
       enabled: false
     system.disk.io_time:
       enabled: false

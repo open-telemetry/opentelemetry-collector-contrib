@@ -26,6 +26,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
 					SystemDiskIo:                MetricConfig{Enabled: true},
+					SystemDiskIoSpeed:           MetricConfig{Enabled: true},
 					SystemDiskIoTime:            MetricConfig{Enabled: true},
 					SystemDiskMerged:            MetricConfig{Enabled: true},
 					SystemDiskOperationTime:     MetricConfig{Enabled: true},
@@ -40,6 +41,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
 					SystemDiskIo:                MetricConfig{Enabled: false},
+					SystemDiskIoSpeed:           MetricConfig{Enabled: false},
 					SystemDiskIoTime:            MetricConfig{Enabled: false},
 					SystemDiskMerged:            MetricConfig{Enabled: false},
 					SystemDiskOperationTime:     MetricConfig{Enabled: false},
