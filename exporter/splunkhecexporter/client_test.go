@@ -836,12 +836,16 @@ func TestReceiveMetricsWithCompression(t *testing.T) {
 func TestErrorReceived(t *testing.T) {
 	rr := make(chan receivedRequest)
 	capture := CapturingData{receivedRequest: rr, statusCode: 500}
+	capture_health := CapturingData{receivedRequest: rr, statusCode: 200}
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		panic(err)
 	}
+	mux := http.NewServeMux()
+	mux.Handle("/services/collector", &capture)
+	mux.Handle("/services/collector/health", &capture_health)
 	s := &http.Server{
-		Handler: &capture,
+		Handler: mux,
 	}
 	defer s.Close()
 	go func() {
@@ -913,7 +917,7 @@ func TestInvalidURL(t *testing.T) {
 	td := createTraceData(2)
 
 	err = exporter.ConsumeTraces(context.Background(), td)
-	assert.EqualError(t, err, "Get \"ftp://example.com:134/services/collector/health\": unsupported protocol scheme \"ftp\"")
+	assert.Contains(t, err.Error(), "Get \"ftp://example.com:134/services/collector/health\": unsupported protocol scheme \"ftp\"")
 }
 
 type badJSON struct {
@@ -1412,6 +1416,7 @@ func TestHecHealthCheckFailedPushTracesData(t *testing.T) {
 	err := c.pushTraceData(context.Background(), traces)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "503")
+	assert.Contains(t, err.Error(), "health check failed")
 }
 
 func TestHecHealthCheckFailedPushMetricsData(t *testing.T) {
@@ -1430,6 +1435,7 @@ func TestHecHealthCheckFailedPushMetricsData(t *testing.T) {
 	err := c.pushMetricsData(context.Background(), metrics)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "503")
+	assert.Contains(t, err.Error(), "health check failed")
 }
 
 func TestHecHealthCheckManyTimes(t *testing.T) {
