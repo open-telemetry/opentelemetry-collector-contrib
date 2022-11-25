@@ -115,3 +115,28 @@ Time disk spent activated multiplied by the queue length.
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | device | Name of the disk. | Any Str |
+
+## Optional Metrics
+
+The following metrics are not emitted by default. Each of them can be enabled by applying the following configuration:
+
+```yaml
+metrics:
+  <metric_name>:
+    enabled: true
+```
+
+### system.disk.io.speed
+
+The rate of transmission and reception.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By/s | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| device | Name of the disk. | Any Str |
+| direction | Direction of flow of bytes/operations (read or write). | Str: ``read``, ``write`` |

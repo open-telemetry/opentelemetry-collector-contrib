@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/diskscraper/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/diskscraper/scal"
 )
 
 const systemSpecificMetricsLen = 2
@@ -30,5 +31,12 @@ func (s *scraper) recordDiskMergedMetric(now pcommon.Timestamp, ioCounters map[s
 	for device, ioCounter := range ioCounters {
 		s.mb.RecordSystemDiskMergedDataPoint(now, int64(ioCounter.MergedReadCount), device, metadata.AttributeDirectionRead)
 		s.mb.RecordSystemDiskMergedDataPoint(now, int64(ioCounter.MergedWriteCount), device, metadata.AttributeDirectionWrite)
+	}
+}
+
+func (s *scraper) recordSystemDiskIoSpeed(now pcommon.Timestamp, diskSpeed scal.DiskSpeed) {
+	if s.config.Metrics.SystemDiskIoSpeed.Enabled {
+		s.mb.RecordSystemDiskIoSpeedDataPoint(now, diskSpeed.ReadSpeed, metadata.AttributeDirectionRead)
+		s.mb.RecordSystemDiskIoSpeedDataPoint(now, diskSpeed.WriteSpeed, metadata.AttributeDirectionWrite)
 	}
 }

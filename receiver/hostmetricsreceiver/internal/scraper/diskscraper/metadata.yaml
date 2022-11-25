@@ -24,6 +24,14 @@ metrics:
       aggregation_temporality: cumulative
       monotonic: true
     attributes: [device, direction]
+  # produced when receiver.hostmetricsreceiver.emitMetricsWithDirectionAttribute feature gate is enabled
+  system.disk.io.speed:
+    enabled: false
+    description: The rate of transmission and reception.
+    unit: "By/s"
+    gauge:
+      value_type: double
+    attributes: [ device, direction ]
   system.disk.operations:
     enabled: true
     description: Disk operations count.

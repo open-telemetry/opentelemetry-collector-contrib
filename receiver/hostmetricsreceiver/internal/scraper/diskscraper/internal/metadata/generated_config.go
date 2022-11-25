@@ -26,6 +26,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 // MetricsConfig provides config for hostmetricsreceiver/disk metrics.
 type MetricsConfig struct {
 	SystemDiskIo                MetricConfig `mapstructure:"system.disk.io"`
+	SystemDiskIoSpeed           MetricConfig `mapstructure:"system.disk.io.speed"`
 	SystemDiskIoTime            MetricConfig `mapstructure:"system.disk.io_time"`
 	SystemDiskMerged            MetricConfig `mapstructure:"system.disk.merged"`
 	SystemDiskOperationTime     MetricConfig `mapstructure:"system.disk.operation_time"`
@@ -38,6 +39,9 @@ func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
 		SystemDiskIo: MetricConfig{
 			Enabled: true,
+		},
+		SystemDiskIoSpeed: MetricConfig{
+			Enabled: false,
 		},
 		SystemDiskIoTime: MetricConfig{
 			Enabled: true,

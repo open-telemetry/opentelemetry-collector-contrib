@@ -58,6 +58,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordSystemDiskIoDataPoint(ts, 1, "device-val", AttributeDirectionRead)
 
+			allMetricsCount++
+			mb.RecordSystemDiskIoSpeedDataPoint(ts, 1, "device-val", AttributeDirectionRead)
+
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSystemDiskIoTimeDataPoint(ts, 1, "device-val")
@@ -118,6 +121,24 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("device")
+					assert.True(t, ok)
+					assert.EqualValues(t, "device-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("direction")
+					assert.True(t, ok)
+					assert.EqualValues(t, "read", attrVal.Str())
+				case "system.disk.io.speed":
+					assert.False(t, validatedMetrics["system.disk.io.speed"], "Found a duplicate in the metrics slice: system.disk.io.speed")
+					validatedMetrics["system.disk.io.speed"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The rate of transmission and reception.", ms.At(i).Description())
+					assert.Equal(t, "By/s", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
 					attrVal, ok := dp.Attributes().Get("device")
 					assert.True(t, ok)
 					assert.EqualValues(t, "device-val", attrVal.Str())
