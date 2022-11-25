@@ -162,14 +162,20 @@ func TestConsumeMetricsData(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			mux := http.NewServeMux()
+			mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 				if tt.reqTestFunc != nil {
 					tt.reqTestFunc(t, r)
 				}
 				w.WriteHeader(tt.httpResponseCode)
-			}))
-			defer server.Close()
+			})
 
+			mux.HandleFunc("/services/collector/health", func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(200)
+			})
+
+			server := httptest.NewServer(mux)
+			defer server.Close()
 			serverURL, err := url.Parse(server.URL)
 			assert.NoError(t, err)
 
@@ -300,13 +306,19 @@ func TestConsumeLogsData(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			mux := http.NewServeMux()
+			mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 				if tt.reqTestFunc != nil {
 					tt.reqTestFunc(t, r)
 				}
 				w.WriteHeader(tt.httpResponseCode)
-			}))
-			defer server.Close()
+			})
+
+			mux.HandleFunc("/services/collector/health", func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(200)
+			})
+
+			server := httptest.NewServer(mux)
 
 			serverURL, err := url.Parse(server.URL)
 			assert.NoError(t, err)

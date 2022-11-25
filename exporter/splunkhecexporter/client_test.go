@@ -56,21 +56,31 @@ func (t testRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	return t(req), nil
 }
 
-func newTestClient(respCode int, respBody string) (*http.Client, *[]http.Header) {
+func newTestClient(respCode int, respBody string, urlPathsToIgnore ...string) (*http.Client, *[]http.Header) {
+	if len(urlPathsToIgnore) > 0 {
+		return newTestClientWithPresetResponses([]int{respCode}, []string{respBody}, urlPathsToIgnore[0])
+	}
 	return newTestClientWithPresetResponses([]int{respCode}, []string{respBody})
 }
 
-func newTestClientWithPresetResponses(codes []int, bodies []string) (*http.Client, *[]http.Header) {
+func newTestClientWithPresetResponses(codes []int, bodies []string, urlPathsToIgnore ...string) (*http.Client, *[]http.Header) {
 	index := 0
+	urlPathToIgnore := ""
+	ignoreCertainUrl := false
 	var headers []http.Header
-
+	if len(urlPathsToIgnore) > 0 {
+		ignoreCertainUrl = true
+		urlPathToIgnore = urlPathsToIgnore[0]
+	}
 	return &http.Client{
 		Transport: testRoundTripper(func(req *http.Request) *http.Response {
 			code := codes[index%len(codes)]
 			body := bodies[index%len(bodies)]
 			index++
 
-			headers = append(headers, req.Header)
+			if !(ignoreCertainUrl && req.URL.Path == urlPathToIgnore) {
+				headers = append(headers, req.Header)
+			}
 
 			return &http.Response{
 				StatusCode: code,
@@ -237,7 +247,10 @@ func runMetricsExport(cfg *Config, metrics pmetric.Metrics, expectedBatchesNum i
 	for {
 		select {
 		case request := <-rr:
-			requests = append(requests, request)
+			// ignoring healthCheck calls, that are returning an empty body
+			if len(request.body) > 0 {
+				requests = append(requests, request)
+			}
 			if len(requests) == expectedBatchesNum {
 				return requests, nil
 			}
@@ -289,7 +302,10 @@ func runTraceExport(testConfig *Config, traces ptrace.Traces, expectedBatchesNum
 	for {
 		select {
 		case request := <-rr:
-			requests = append(requests, request)
+			// ignoring healthCheck calls, that are returning an empty body
+			if len(request.body) > 0 {
+				requests = append(requests, request)
+			}
 			if len(requests) == expectedBatchesNum {
 				// sort the requests according to the traces we received, reordering them so we can assert on their size.
 				sort.Slice(requests, func(i, j int) bool {
@@ -349,7 +365,10 @@ func runLogExport(cfg *Config, ld plog.Logs, expectedBatchesNum int, t *testing.
 	for {
 		select {
 		case request := <-rr:
-			requests = append(requests, request)
+			// ignoring healthCheck calls, that are returning an empty body
+			if len(request.body) > 0 {
+				requests = append(requests, request)
+			}
 			if len(requests) == expectedBatchesNum {
 				return requests, nil
 			}
@@ -905,7 +924,7 @@ func TestInvalidURL(t *testing.T) {
 	td := createTraceData(2)
 
 	err = exporter.ConsumeTraces(context.Background(), td)
-	assert.EqualError(t, err, "Post \"ftp://example.com:134/services/collector\": unsupported protocol scheme \"ftp\"")
+	assert.EqualError(t, err, "Get \"ftp://example.com:134/services/collector/health\": unsupported protocol scheme \"ftp\"")
 }
 
 type badJSON struct {
@@ -978,8 +997,11 @@ func Test_pushLogData_nil_Logs(t *testing.T) {
 		gzipWriterPool: &sync.Pool{New: func() interface{} {
 			return gzip.NewWriter(nil)
 		}},
+		url:            &url.URL{Scheme: "http", Host: "splunk"},
+		healthCheckURL: &url.URL{Scheme: "http", Host: "splunk", Path: "/services/collector/health"},
 	}
 
+	c.client, _ = newTestClientWithPresetResponses([]int{200}, []string{"OK"})
 	for _, test := range tests {
 		for _, disabled := range []bool{true, false} {
 			t.Run(test.name(disabled), func(t *testing.T) {
@@ -994,15 +1016,16 @@ func Test_pushLogData_nil_Logs(t *testing.T) {
 
 func Test_pushLogData_InvalidLog(t *testing.T) {
 	c := client{
-		config: NewFactory().CreateDefaultConfig().(*Config),
-		logger: zaptest.NewLogger(t),
+		config:         NewFactory().CreateDefaultConfig().(*Config),
+		logger:         zaptest.NewLogger(t),
+		healthCheckURL: &url.URL{Scheme: "http", Host: "splunk", Path: "/services/collector/health"},
 	}
 
 	logs := plog.NewLogs()
 	log := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 	// Invalid log value
 	log.Body().SetDouble(math.Inf(1))
-
+	c.client, _ = newTestClientWithPresetResponses([]int{200}, []string{"OK"})
 	err := c.pushLogData(context.Background(), logs)
 
 	assert.Error(t, err, "Permanent error: dropped log event: &{<nil> unknown    +Inf map[]}, error: splunk.Event.Event: unsupported value: +Inf")
@@ -1016,8 +1039,10 @@ func Test_pushLogData_PostError(t *testing.T) {
 		gzipWriterPool: &sync.Pool{New: func() interface{} {
 			return gzip.NewWriter(nil)
 		}},
+		healthCheckURL: &url.URL{Scheme: "http", Host: "splunk", Path: "/services/collector/health"},
 	}
 
+	c.client, _ = newTestClientWithPresetResponses([]int{200}, []string{"OK"})
 	// 2000 log records -> ~371888 bytes when JSON encoded.
 	logs := createLogData(1, 1, 2000)
 
@@ -1059,13 +1084,14 @@ func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
 		gzipWriterPool: &sync.Pool{New: func() interface{} {
 			return gzip.NewWriter(nil)
 		}},
+		healthCheckURL: &url.URL{Scheme: "http", Host: "splunk", Path: "/services/collector/health"},
 	}
 	logs := createLogData(1, 1, 1)
 
 	responseBody := `some error occurred`
 
 	// An HTTP client that returns status code 400 and response body responseBody.
-	splunkClient.client, _ = newTestClient(400, responseBody)
+	splunkClient.client, _ = newTestClientWithPresetResponses([]int{200, 400}, []string{"OK", responseBody})
 	// Sending logs using the client.
 	err := splunkClient.pushLogData(context.Background(), logs)
 	// TODO: Uncomment after consumererror.Logs implements method Unwrap.
@@ -1094,6 +1120,7 @@ func Test_pushLogData_ShouldReturnUnsentLogsOnly(t *testing.T) {
 		gzipWriterPool: &sync.Pool{New: func() interface{} {
 			return gzip.NewWriter(nil)
 		}},
+		healthCheckURL: &url.URL{Scheme: "http", Host: "splunk"},
 	}
 
 	// Just two records
@@ -1103,7 +1130,7 @@ func Test_pushLogData_ShouldReturnUnsentLogsOnly(t *testing.T) {
 	c.config.MaxContentLengthLogs, c.config.DisableCompression = 250, true
 
 	// The first record is to be sent successfully, the second one should not
-	c.client, _ = newTestClientWithPresetResponses([]int{200, 400}, []string{"OK", "NOK"})
+	c.client, _ = newTestClientWithPresetResponses([]int{200, 200, 400}, []string{"OK", "OK", "NOK"})
 
 	err := c.pushLogData(context.Background(), logs)
 	require.Error(t, err)
@@ -1124,12 +1151,13 @@ func Test_pushLogData_ShouldAddHeadersForProfilingData(t *testing.T) {
 		gzipWriterPool: &sync.Pool{New: func() interface{} {
 			return gzip.NewWriter(nil)
 		}},
+		healthCheckURL: &url.URL{Scheme: "http", Host: "splunk", Path: "/services/collector/health"},
 	}
 
 	logs := createLogDataWithCustomLibraries(1, []string{"otel.logs", "otel.profiling"}, []int{10, 20})
 	var headers *[]http.Header
 
-	c.client, headers = newTestClient(200, "OK")
+	c.client, headers = newTestClient(200, "OK", "/services/collector/health")
 	// A 300-byte buffer only fits one record (around 200 bytes), so each record will be sent separately
 	c.config.MaxContentLengthLogs, c.config.DisableCompression = 300, true
 
@@ -1212,13 +1240,13 @@ func Test_pushLogData_Small_MaxContentLength(t *testing.T) {
 		config: NewFactory().CreateDefaultConfig().(*Config),
 		logger: zaptest.NewLogger(t),
 		url:    &url.URL{Scheme: "http", Host: "splunk"},
-		client: http.DefaultClient,
 		gzipWriterPool: &sync.Pool{New: func() interface{} {
 			return gzip.NewWriter(nil)
 		}},
+		healthCheckURL: &url.URL{Scheme: "http", Host: "splunk"},
 	}
 	c.config.MaxContentLengthLogs = 1
-
+	c.client, _ = newTestClientWithPresetResponses([]int{200}, []string{"OK"})
 	logs := createLogData(1, 1, 2000)
 
 	for _, disable := range []bool{true, false} {
@@ -1358,6 +1386,81 @@ func TestSubLogs(t *testing.T) {
 	assert.Equal(t, "1_1_0", val.AsString())
 	val, _ = got.ResourceLogs().At(2).ScopeLogs().At(0).LogRecords().At(9).Attributes().Get(splunk.DefaultNameLabel)
 	assert.Equal(t, "1_1_9", val.AsString())
+}
+
+func TestHecHealthCheckFailedPushLogData(t *testing.T) {
+	c := client{
+		url:    &url.URL{Scheme: "http", Host: "splunk"},
+		config: NewFactory().CreateDefaultConfig().(*Config),
+		logger: zaptest.NewLogger(t),
+		gzipWriterPool: &sync.Pool{New: func() interface{} {
+			return gzip.NewWriter(nil)
+		}},
+		healthCheckURL: &url.URL{Scheme: "http", Host: "splunk"},
+	}
+
+	c.client, _ = newTestClient(503, "NOK")
+	logs := createLogData(2, 1, 1)
+	err := c.pushLogData(context.Background(), logs)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "503")
+}
+
+func TestHecHealthCheckFailedPushTracesData(t *testing.T) {
+	c := client{
+		url:    &url.URL{Scheme: "http", Host: "splunk"},
+		config: NewFactory().CreateDefaultConfig().(*Config),
+		logger: zaptest.NewLogger(t),
+		gzipWriterPool: &sync.Pool{New: func() interface{} {
+			return gzip.NewWriter(nil)
+		}},
+		healthCheckURL: &url.URL{Scheme: "http", Host: "splunk"},
+	}
+
+	c.client, _ = newTestClient(503, "NOK")
+	traces := createTraceData(1)
+	err := c.pushTraceData(context.Background(), traces)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "503")
+}
+
+func TestHecHealthCheckFailedPushMetricsData(t *testing.T) {
+	c := client{
+		url:    &url.URL{Scheme: "http", Host: "splunk"},
+		config: NewFactory().CreateDefaultConfig().(*Config),
+		logger: zaptest.NewLogger(t),
+		gzipWriterPool: &sync.Pool{New: func() interface{} {
+			return gzip.NewWriter(nil)
+		}},
+		healthCheckURL: &url.URL{Scheme: "http", Host: "splunk"},
+	}
+
+	c.client, _ = newTestClient(503, "NOK")
+	metrics := createMetricsData(1)
+	err := c.pushMetricsData(context.Background(), metrics)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "503")
+}
+
+func TestHecHealthCheckManyTimes(t *testing.T) {
+	c := client{
+		url:    &url.URL{Scheme: "http", Host: "splunk"},
+		config: NewFactory().CreateDefaultConfig().(*Config),
+		logger: zaptest.NewLogger(t),
+		gzipWriterPool: &sync.Pool{New: func() interface{} {
+			return gzip.NewWriter(nil)
+		}},
+		healthCheckURL: &url.URL{Scheme: "http", Host: "splunk"},
+	}
+	var headers *[]http.Header
+	c.client, headers = newTestClient(200, "OK")
+	err1 := c.checkHecHealth(context.Background())
+	err2 := c.checkHecHealth(context.Background())
+	err3 := c.checkHecHealth(context.Background())
+	assert.NoError(t, err1)
+	assert.NoError(t, err2)
+	assert.NoError(t, err3)
+	assert.Equal(t, len(*headers), 1)
 }
 
 // validateCompressedEqual validates that GZipped `got` contains `expected` strings
