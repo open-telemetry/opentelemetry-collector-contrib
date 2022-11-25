@@ -15,6 +15,7 @@
 package azureeventhubreceiver // import "github.com/loomis-relativity/opentelemetry-collector-contrib/receiver/azureeventhubreceiver"
 import (
 	"context"
+	"fmt"
 
 	eventhub "github.com/Azure/azure-event-hubs-go/v3"
 	"go.opentelemetry.io/collector/component"
@@ -127,8 +128,11 @@ func (c *client) setUpOnePartition(ctx context.Context, partitionID string, appl
 }
 
 func (c *client) handle(ctx context.Context, event *eventhub.Event) error {
+	logs, err := c.convert.ToLogs(event)
+	if err != nil {
+		return fmt.Errorf("failed to convert logs: %w", err)
+	}
 	c.obsrecv.StartLogsOp(ctx)
-	logs, _ := c.convert.ToLogs(event)
 	consumerErr := c.consumer.ConsumeLogs(ctx, logs)
 	c.obsrecv.EndLogsOp(ctx, "azureeventhub", logs.LogRecordCount(), consumerErr)
 	return consumerErr
