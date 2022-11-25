@@ -19,11 +19,15 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -99,6 +103,32 @@ func TestExporter_pushLogsData(t *testing.T) {
 
 		require.Equal(t, 3, items)
 	})
+}
+
+func TestLogsExporter_createDatabase(t *testing.T) {
+	c := &Config{
+		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
+		TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),
+		QueueSettings:    QueueSettings{QueueSize: exporterhelper.NewDefaultQueueSettings().QueueSize},
+		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
+		DSN:              "tcp://mydatabase-clickhouse-headless:9000/mydatabase",
+		LogsTableName:    "otel_logs",
+		TracesTableName:  "otel_traces",
+		TTLDays:          7,
+	}
+
+	// a part of createDatabase()
+	createFunc := func(cfg *Config) string {
+		database, _ := parseDSNDatabase(cfg.DSN)
+		if database == defaultDatabase {
+			return ""
+		}
+		// use default database to create new database
+		dsnUseDefaultDatabase := fmt.Sprintf("%s%s", cfg.DSN[0:strings.LastIndex(cfg.DSN, database)], defaultDatabase)
+		return dsnUseDefaultDatabase
+	}
+
+	require.Equal(t, "tcp://mydatabase-clickhouse-headless:9000/default", createFunc(c))
 }
 
 func newTestLogsExporter(t *testing.T, dsn string, fns ...func(*Config)) *logsExporter {

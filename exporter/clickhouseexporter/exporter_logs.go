@@ -192,7 +192,7 @@ func createDatabase(cfg *Config) error {
 		return nil
 	}
 	// use default database to create new database
-	dsnUseDefaultDatabase := strings.Replace(cfg.DSN, database, defaultDatabase, 1)
+	dsnUseDefaultDatabase := fmt.Sprintf("%s%s", cfg.DSN[0:strings.LastIndex(cfg.DSN, database)], defaultDatabase)
 	db, err := sql.Open(driverName, dsnUseDefaultDatabase)
 	if err != nil {
 		return fmt.Errorf("sql.Open:%w", err)
