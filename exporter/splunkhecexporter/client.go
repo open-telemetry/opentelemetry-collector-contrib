@@ -224,11 +224,12 @@ func (c *client) checkHecHealth(
 		}
 
 		_, errCopy := io.Copy(io.Discard, resp.Body)
-		hecErr = multierr.Combine(err, errCopy)
+		hecErr = errCopy
 	}
 	c.checkHecHealthOnce.Do(onceBody)
 	if hecErr != nil {
 		c.checkHecHealthOnce = sync.Once{}
+		hecErr = fmt.Errorf("health check failed: %s", hecErr.Error())
 	}
 	return hecErr
 }

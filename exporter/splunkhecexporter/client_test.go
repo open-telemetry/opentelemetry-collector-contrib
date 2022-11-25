@@ -56,31 +56,20 @@ func (t testRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	return t(req), nil
 }
 
-func newTestClient(respCode int, respBody string, urlPathsToIgnore ...string) (*http.Client, *[]http.Header) {
-	if len(urlPathsToIgnore) > 0 {
-		return newTestClientWithPresetResponses([]int{respCode}, []string{respBody}, urlPathsToIgnore[0])
-	}
+func newTestClient(respCode int, respBody string) (*http.Client, *[]http.Header) {
 	return newTestClientWithPresetResponses([]int{respCode}, []string{respBody})
 }
 
-func newTestClientWithPresetResponses(codes []int, bodies []string, urlPathsToIgnore ...string) (*http.Client, *[]http.Header) {
+func newTestClientWithPresetResponses(codes []int, bodies []string) (*http.Client, *[]http.Header) {
 	index := 0
-	urlPathToIgnore := ""
-	ignoreCertainUrl := false
 	var headers []http.Header
-	if len(urlPathsToIgnore) > 0 {
-		ignoreCertainUrl = true
-		urlPathToIgnore = urlPathsToIgnore[0]
-	}
 	return &http.Client{
 		Transport: testRoundTripper(func(req *http.Request) *http.Response {
 			code := codes[index%len(codes)]
 			body := bodies[index%len(bodies)]
 			index++
 
-			if !(ignoreCertainUrl && req.URL.Path == urlPathToIgnore) {
-				headers = append(headers, req.Header)
-			}
+			headers = append(headers, req.Header)
 
 			return &http.Response{
 				StatusCode: code,
@@ -1157,13 +1146,13 @@ func Test_pushLogData_ShouldAddHeadersForProfilingData(t *testing.T) {
 	logs := createLogDataWithCustomLibraries(1, []string{"otel.logs", "otel.profiling"}, []int{10, 20})
 	var headers *[]http.Header
 
-	c.client, headers = newTestClient(200, "OK", "/services/collector/health")
+	c.client, headers = newTestClient(200, "OK")
 	// A 300-byte buffer only fits one record (around 200 bytes), so each record will be sent separately
 	c.config.MaxContentLengthLogs, c.config.DisableCompression = 300, true
 
 	err := c.pushLogData(context.Background(), logs)
 	require.NoError(t, err)
-	assert.Equal(t, 30, len(*headers))
+	assert.Equal(t, 31, len(*headers))
 
 	profilingCount, nonProfilingCount := 0, 0
 	for i := range *headers {
@@ -1175,7 +1164,7 @@ func Test_pushLogData_ShouldAddHeadersForProfilingData(t *testing.T) {
 	}
 
 	assert.Equal(t, 20, profilingCount)
-	assert.Equal(t, 10, nonProfilingCount)
+	assert.Equal(t, 11, nonProfilingCount)
 }
 
 func Benchmark_pushLogData_100_10_10_1024(b *testing.B) {
@@ -1404,6 +1393,7 @@ func TestHecHealthCheckFailedPushLogData(t *testing.T) {
 	err := c.pushLogData(context.Background(), logs)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "503")
+	assert.Contains(t, err.Error(), "health check failed")
 }
 
 func TestHecHealthCheckFailedPushTracesData(t *testing.T) {
