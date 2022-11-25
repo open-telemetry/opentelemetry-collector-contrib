@@ -225,6 +225,9 @@ func transform(data []byte) (*plog.Logs, error) {
 			}
 		}
 
+		// The Azure resource ID will be pulled into a common resource attribute.
+		// This implementation assumes that a single log message from Azure will
+		// contain ONLY logs from a single resource.
 		if resourceID != "" {
 			resourceLogs.Resource().Attributes().PutStr(azureResourceID, resourceID)
 		}
