@@ -71,6 +71,24 @@ func (g exprGetter[K]) Get(ctx context.Context, tCtx K) (interface{}, error) {
 	return g.expr.Eval(ctx, tCtx)
 }
 
+type listGetter[K any] struct {
+	slice []Getter[K]
+}
+
+func (l *listGetter[K]) Get(ctx context.Context, tCtx K) (interface{}, error) {
+	evaluated := make([]any, len(l.slice))
+
+	for i, v := range l.slice {
+		val, err := v.Get(ctx, tCtx)
+		if err != nil {
+			return nil, err
+		}
+		evaluated[i] = val
+	}
+
+	return evaluated, nil
+}
+
 func (p *Parser[K]) newGetter(val value) (Getter[K], error) {
 	if val.IsNil != nil && *val.IsNil {
 		return &literal[K]{value: nil}, nil
@@ -78,12 +96,6 @@ func (p *Parser[K]) newGetter(val value) (Getter[K], error) {
 
 	if s := val.String; s != nil {
 		return &literal[K]{value: *s}, nil
-	}
-	if f := val.Float; f != nil {
-		return &literal[K]{value: *f}, nil
-	}
-	if i := val.Int; i != nil {
-		return &literal[K]{value: *i}, nil
 	}
 	if b := val.Bool; b != nil {
 		return &literal[K]{value: bool(*b)}, nil
@@ -100,19 +112,42 @@ func (p *Parser[K]) newGetter(val value) (Getter[K], error) {
 		return &literal[K]{value: int64(*enum)}, nil
 	}
 
-	if val.Path != nil {
-		return p.pathParser(val.Path)
+	if eL := val.Literal; eL != nil {
+		if f := eL.Float; f != nil {
+			return &literal[K]{value: *f}, nil
+		}
+		if i := eL.Int; i != nil {
+			return &literal[K]{value: *i}, nil
+		}
+		if eL.Path != nil {
+			return p.pathParser(eL.Path)
+		}
+		if eL.Invocation != nil {
+			call, err := p.newFunctionCall(*eL.Invocation)
+			if err != nil {
+				return nil, err
+			}
+			return &exprGetter[K]{
+				expr: call,
+			}, nil
+		}
 	}
 
-	if val.Invocation == nil {
+	if val.List != nil {
+		lg := listGetter[K]{slice: make([]Getter[K], len(val.List.Values))}
+		for i, v := range val.List.Values {
+			getter, err := p.newGetter(v)
+			if err != nil {
+				return nil, err
+			}
+			lg.slice[i] = getter
+		}
+		return &lg, nil
+	}
+
+	if val.MathExpression == nil {
 		// In practice, can't happen since the DSL grammar guarantees one is set
 		return nil, fmt.Errorf("no value field set. This is a bug in the OpenTelemetry Transformation Language")
 	}
-	call, err := p.newFunctionCall(*val.Invocation)
-	if err != nil {
-		return nil, err
-	}
-	return &exprGetter[K]{
-		expr: call,
-	}, nil
+	return p.evaluateMathExpression(val.MathExpression)
 }

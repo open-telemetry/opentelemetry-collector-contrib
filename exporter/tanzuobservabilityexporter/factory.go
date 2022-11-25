@@ -21,8 +21,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
 const (
@@ -61,7 +59,10 @@ func createTracesExporter(
 		return nil, err
 	}
 
-	tobsCfg := cfg.(*Config)
+	tobsCfg, ok := cfg.(*Config)
+	if !ok {
+		return nil, fmt.Errorf("invalid config: %#v", cfg)
+	}
 
 	return exporterhelper.NewTracesExporter(
 		ctx,
@@ -79,12 +80,14 @@ func createMetricsExporter(
 	set component.ExporterCreateSettings,
 	cfg component.ExporterConfig,
 ) (component.MetricsExporter, error) {
-	exp, err := newMetricsExporter(set, cfg, createMetricsConsumer)
+	tobsCfg, ok := cfg.(*Config)
+	if !ok {
+		return nil, fmt.Errorf("invalid config: %#v", cfg)
+	}
+	exp, err := newMetricsExporter(set, tobsCfg, createMetricsConsumer)
 	if err != nil {
 		return nil, err
 	}
-
-	tobsCfg := cfg.(*Config)
 
 	exporter, err := exporterhelper.NewMetricsExporter(
 		ctx,
@@ -98,12 +101,6 @@ func createMetricsExporter(
 	if err != nil {
 		return nil, err
 	}
-	ourConfig, ok := cfg.(*Config)
-	if !ok {
-		return nil, fmt.Errorf("invalid config: %#v", cfg)
-	}
-	return resourcetotelemetry.WrapMetricsExporter(
-		ourConfig.Metrics.ResourceAttributes,
-		exporter,
-	), nil
+
+	return exporter, nil
 }

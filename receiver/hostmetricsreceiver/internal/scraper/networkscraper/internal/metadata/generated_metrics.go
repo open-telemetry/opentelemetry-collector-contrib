@@ -286,7 +286,7 @@ type metricSystemNetworkDropped struct {
 // init fills system.network.dropped metric with initial data.
 func (m *metricSystemNetworkDropped) init() {
 	m.data.SetName("system.network.dropped")
-	m.data.SetDescription("The number of packets dropped. (Deprecated)")
+	m.data.SetDescription("The number of packets dropped.")
 	m.data.SetUnit("{packets}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -340,7 +340,7 @@ type metricSystemNetworkErrors struct {
 // init fills system.network.errors metric with initial data.
 func (m *metricSystemNetworkErrors) init() {
 	m.data.SetName("system.network.errors")
-	m.data.SetDescription("The number of errors encountered. (Deprecated)")
+	m.data.SetDescription("The number of errors encountered.")
 	m.data.SetUnit("{errors}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -394,7 +394,7 @@ type metricSystemNetworkIo struct {
 // init fills system.network.io metric with initial data.
 func (m *metricSystemNetworkIo) init() {
 	m.data.SetName("system.network.io")
-	m.data.SetDescription("The number of bytes transmitted and received. (Deprecated)")
+	m.data.SetDescription("The number of bytes transmitted and received.")
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -448,7 +448,7 @@ type metricSystemNetworkPackets struct {
 // init fills system.network.packets metric with initial data.
 func (m *metricSystemNetworkPackets) init() {
 	m.data.SetName("system.network.packets")
-	m.data.SetDescription("The number of packets transferred. (Deprecated)")
+	m.data.SetDescription("The number of packets transferred.")
 	m.data.SetUnit("{packets}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)

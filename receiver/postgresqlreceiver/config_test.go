@@ -111,7 +111,7 @@ func TestValidate(t *testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig().(*Config)
 			tC.defaultConfigModifier(cfg)
-			actual := cfg.Validate()
+			actual := component.ValidateConfig(cfg)
 			require.Equal(t, tC.expected, actual)
 		})
 	}

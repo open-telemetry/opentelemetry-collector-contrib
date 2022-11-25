@@ -49,15 +49,19 @@ func New(id component.ID, nextConsumer consumer.Traces, set component.ReceiverCr
 		return nil, component.ErrNilNextConsumer
 	}
 
+	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+		ReceiverID:             id,
+		Transport:              receiverTransport,
+		LongLivedCtx:           true,
+		ReceiverCreateSettings: set,
+	})
+	if err != nil {
+		return nil, err
+	}
 	return &Receiver{
 		nextConsumer: nextConsumer,
 		id:           id,
-		obsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
-			ReceiverID:             id,
-			Transport:              receiverTransport,
-			LongLivedCtx:           true,
-			ReceiverCreateSettings: set,
-		}),
+		obsrecv:      obsrecv,
 	}, nil
 }
 

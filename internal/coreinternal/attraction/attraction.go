@@ -23,8 +23,6 @@ import (
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterhelper"
 )
 
 // Settings specifies the processor settings.
@@ -218,7 +216,8 @@ func NewAttrProc(settings *Settings) (*AttrProc, error) {
 			}
 			// Convert the raw value from the configuration to the internal trace representation of the value.
 			if a.Value != nil {
-				val, err := filterhelper.NewAttributeValueRaw(a.Value)
+				val := pcommon.NewValueEmpty()
+				err := val.FromRaw(a.Value)
 				if err != nil {
 					return nil, err
 				}

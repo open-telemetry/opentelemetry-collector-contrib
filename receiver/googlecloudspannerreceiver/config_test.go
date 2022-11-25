@@ -47,9 +47,10 @@ func TestLoadConfig(t *testing.T) {
 				ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 				CollectionInterval: 120 * time.Second,
 			},
-			TopMetricsQueryMaxRows: 10,
-			BackfillEnabled:        true,
-			CardinalityTotalLimit:  200000,
+			TopMetricsQueryMaxRows:            10,
+			BackfillEnabled:                   true,
+			CardinalityTotalLimit:             200000,
+			HideTopnLockstatsRowrangestartkey: true,
 			Projects: []Project{
 				{
 					ID:                "spanner project 1",
@@ -194,7 +195,7 @@ func TestValidateConfig(t *testing.T) {
 				Projects:               testCase.projects,
 			}
 
-			err := cfg.Validate()
+			err := component.ValidateConfig(cfg)
 
 			if testCase.requireError {
 				require.Error(t, err)

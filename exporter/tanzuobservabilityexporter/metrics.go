@@ -63,12 +63,14 @@ type metricsConsumer struct {
 	consumerMap           map[pmetric.MetricType]typedMetricConsumer
 	sender                flushCloser
 	reportInternalMetrics bool
+	config                MetricsConfig
 }
 
 type metricInfo struct {
 	pmetric.Metric
-	Source    string
-	SourceKey string
+	Source        string
+	SourceKey     string
+	ResourceAttrs map[string]string
 }
 
 // newMetricsConsumer returns a new metricsConsumer. consumers are the
@@ -81,6 +83,7 @@ func newMetricsConsumer(
 	consumers []typedMetricConsumer,
 	sender flushCloser,
 	reportInternalMetrics bool,
+	config MetricsConfig,
 ) *metricsConsumer {
 	consumerMap := make(map[pmetric.MetricType]typedMetricConsumer, len(consumers))
 	for _, consumer := range consumers {
@@ -93,6 +96,7 @@ func newMetricsConsumer(
 		consumerMap:           consumerMap,
 		sender:                sender,
 		reportInternalMetrics: reportInternalMetrics,
+		config:                config,
 	}
 }
 
@@ -104,14 +108,20 @@ func (c *metricsConsumer) Consume(ctx context.Context, md pmetric.Metrics) error
 	var errs []error
 	rms := md.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
-		rm := rms.At(i).Resource().Attributes()
-		source, sourceKey := getSourceAndKey(rm)
+		resAttrs := rms.At(i).Resource().Attributes()
+		source, sourceKey := getSourceAndKey(resAttrs)
 		ilms := rms.At(i).ScopeMetrics()
 		for j := 0; j < ilms.Len(); j++ {
 			ms := ilms.At(j).Metrics()
 			for k := 0; k < ms.Len(); k++ {
 				m := ms.At(k)
-				mi := metricInfo{Metric: m, Source: source, SourceKey: sourceKey}
+				var resAttrsMap map[string]string
+				if c.config.ResourceAttrsIncluded {
+					resAttrsMap = attributesToTags(resAttrs)
+				} else if !c.config.AppTagsExcluded {
+					resAttrsMap = appAttributesToTags(resAttrs)
+				}
+				mi := metricInfo{Metric: m, Source: source, SourceKey: sourceKey, ResourceAttrs: resAttrsMap}
 				select {
 				case <-ctx.Done():
 					return multierr.Combine(append(errs, errors.New("context canceled"))...)
@@ -226,7 +236,7 @@ func pushGaugeNumberDataPoint(
 	settings component.TelemetrySettings,
 	missingValues *atomic.Int64,
 ) {
-	tags := attributesToTagsForMetrics(numberDataPoint.Attributes(), mi.SourceKey)
+	tags := pointAndResAttrsToTagsAndFixSource(mi.SourceKey, numberDataPoint.Attributes(), newMap(mi.ResourceAttrs))
 	ts := numberDataPoint.Timestamp().AsTime().Unix()
 	value, err := getValue(numberDataPoint)
 	if err != nil {
@@ -326,7 +336,7 @@ func (s *sumConsumer) PushInternalMetrics(errs *[]error) {
 }
 
 func (s *sumConsumer) pushNumberDataPoint(mi metricInfo, numberDataPoint pmetric.NumberDataPoint, errs *[]error) {
-	tags := attributesToTagsForMetrics(numberDataPoint.Attributes(), mi.SourceKey)
+	tags := pointAndResAttrsToTagsAndFixSource(mi.SourceKey, numberDataPoint.Attributes(), newMap(mi.ResourceAttrs))
 	value, err := getValue(numberDataPoint)
 	if err != nil {
 		logMissingValue(mi.Metric, s.settings, s.missingValues)
@@ -474,7 +484,7 @@ func (c *cumulativeHistogramDataPointConsumer) Consume(
 		return
 	}
 	name := mi.Name()
-	tags := attributesToTagsForMetrics(point.Attributes, mi.SourceKey)
+	tags := pointAndResAttrsToTagsAndFixSource(mi.SourceKey, point.Attributes, newMap(mi.ResourceAttrs))
 	if leTag, ok := tags["le"]; ok {
 		tags["_le"] = leTag
 	}
@@ -510,7 +520,7 @@ func (d *deltaHistogramDataPointConsumer) Consume(
 		return
 	}
 	name := mi.Name()
-	tags := attributesToTagsForMetrics(point.Attributes, mi.SourceKey)
+	tags := pointAndResAttrsToTagsAndFixSource(mi.SourceKey, point.Attributes, newMap(mi.ResourceAttrs))
 	err := d.sender.SendDistribution(
 		name, point.AsDelta(), allGranularity, point.SecondsSinceEpoch, mi.Source, tags)
 	if err != nil {
@@ -553,7 +563,7 @@ func (s *summaryConsumer) sendSummaryDataPoint(
 ) {
 	name := mi.Name()
 	ts := summaryDataPoint.Timestamp().AsTime().Unix()
-	tags := attributesToTagsForMetrics(summaryDataPoint.Attributes(), mi.SourceKey)
+	tags := pointAndResAttrsToTagsAndFixSource(mi.SourceKey, summaryDataPoint.Attributes(), newMap(mi.ResourceAttrs))
 	count := summaryDataPoint.Count()
 	sum := summaryDataPoint.Sum()
 
@@ -582,13 +592,6 @@ func (s *summaryConsumer) sendMetric(
 	if err != nil {
 		*errs = append(*errs, err)
 	}
-}
-
-func attributesToTagsForMetrics(attributes pcommon.Map, sourceKey string) map[string]string {
-	tags := attributesToTags(attributes)
-	delete(tags, sourceKey)
-	replaceSource(tags)
-	return tags
 }
 
 func quantileTagValue(quantile float64) string {

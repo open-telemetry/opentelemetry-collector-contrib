@@ -411,6 +411,11 @@ func (a *alertsReceiver) convertAlerts(now pcommon.Timestamp, alerts []mongodbat
 			attrs.PutStr("metric.units", alert.CurrentValue.Units)
 		}
 
+		// Only present for HOST, HOST_METRIC, and REPLICA_SET alerts
+		if alert.HostnameAndPort == "" {
+			continue
+		}
+
 		host, portStr, err := net.SplitHostPort(alert.HostnameAndPort)
 		if err != nil {
 			errs = multierr.Append(errs, fmt.Errorf("failed to split host:port %s: %w", alert.HostnameAndPort, err))
@@ -565,7 +570,7 @@ func (a *alertsReceiver) applyFilters(pConf *ProjectConfig, alerts []mongodbatla
 		lastRecordedTime = *a.record.LastRecordedTime
 	}
 	// we need to maintain two timestamps in order to not conflict while iterating
-	var latestInPayload time.Time = pcommon.Timestamp(0).AsTime()
+	var latestInPayload = pcommon.Timestamp(0).AsTime()
 
 	for _, alert := range alerts {
 		updatedTime, err := time.Parse(time.RFC3339, alert.Updated)

@@ -151,7 +151,7 @@ func TestTracesSource(t *testing.T) {
 	assert := assert.New(t)
 	params := componenttest.NewNopExporterCreateSettings()
 	reg := featuregate.NewRegistry()
-	reg.MustRegister(metadata.HostnamePreviewGate)
+	reg.MustRegisterID(metadata.HostnamePreviewFeatureGate, featuregate.StageBeta)
 	assert.NoError(reg.Apply(map[string]bool{
 		metadata.HostnamePreviewFeatureGate: true,
 	}))
@@ -346,6 +346,7 @@ func genTraces(traceID pcommon.TraceID, attrs map[string]interface{}) ptrace.Tra
 	if attrs == nil {
 		return traces
 	}
+	//nolint:errcheck
 	rspans.Resource().Attributes().FromRaw(attrs)
 	return traces
 }

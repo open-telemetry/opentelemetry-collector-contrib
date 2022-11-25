@@ -22,20 +22,14 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor/internal/tracking"
 )
 
 const enableHistogramSupportGateID = "processor.cumulativetodeltaprocessor.EnableHistogramSupport"
 
-var enableHistogramSupportGate = featuregate.Gate{
-	ID:          enableHistogramSupportGateID,
-	Enabled:     true,
-	Description: "Enables histogram conversion support",
-}
-
 func init() {
-	featuregate.GetRegistry().MustRegister(enableHistogramSupportGate)
+	featuregate.GetRegistry().MustRegisterID(enableHistogramSupportGateID, featuregate.StageBeta, featuregate.WithRegisterDescription("Enables histogram conversion support"))
 }
 
 type cumulativeToDeltaProcessor struct {

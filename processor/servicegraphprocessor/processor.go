@@ -58,7 +58,7 @@ type processor struct {
 	nextConsumer    consumer.Traces
 	metricsExporter consumer.Metrics
 
-	store store.Store
+	store *store.Store
 
 	startTime time.Time
 
@@ -196,7 +196,7 @@ func (p *processor) aggregateMetrics(ctx context.Context, td ptrace.Traces) (err
 					fallthrough
 				case ptrace.SpanKindClient:
 					traceID := span.TraceID()
-					key := buildEdgeKey(traceID.HexString(), span.SpanID().HexString())
+					key := store.NewKey(traceID, span.SpanID())
 					isNew, err = p.store.UpsertEdge(key, func(e *store.Edge) {
 						e.TraceID = traceID
 						e.ConnectionType = connectionType
@@ -219,7 +219,7 @@ func (p *processor) aggregateMetrics(ctx context.Context, td ptrace.Traces) (err
 					fallthrough
 				case ptrace.SpanKindServer:
 					traceID := span.TraceID()
-					key := buildEdgeKey(traceID.HexString(), span.ParentSpanID().HexString())
+					key := store.NewKey(traceID, span.ParentSpanID())
 					isNew, err = p.store.UpsertEdge(key, func(e *store.Edge) {
 						e.TraceID = traceID
 						e.ConnectionType = connectionType
@@ -267,7 +267,7 @@ func (p *processor) onComplete(e *store.Edge) {
 		zap.String("client_service", e.ClientService),
 		zap.String("server_service", e.ServerService),
 		zap.String("connection_type", string(e.ConnectionType)),
-		zap.String("trace_id", e.TraceID.HexString()),
+		zap.Stringer("trace_id", e.TraceID),
 	)
 	p.aggregateMetricsForEdge(e)
 }
@@ -278,7 +278,7 @@ func (p *processor) onExpire(e *store.Edge) {
 		zap.String("client_service", e.ClientService),
 		zap.String("server_service", e.ServerService),
 		zap.String("connection_type", string(e.ConnectionType)),
-		zap.String("trace_id", e.TraceID.HexString()),
+		zap.Stringer("trace_id", e.TraceID),
 	)
 	stats.Record(context.Background(), statExpiredEdges.M(1))
 }
@@ -489,14 +489,6 @@ func (p *processor) cleanCache() {
 	for _, key := range staleSeries {
 		delete(p.keyToMetric, key)
 	}
-}
-
-func buildEdgeKey(k1, k2 string) string {
-	var b strings.Builder
-	b.WriteString(k1)
-	b.WriteString("-")
-	b.WriteString(k2)
-	return b.String()
 }
 
 // durationToMillis converts the given duration to the number of milliseconds it represents.

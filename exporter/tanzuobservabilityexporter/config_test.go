@@ -22,32 +22,35 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
+	"go.opentelemetry.io/collector/service/servicetest"
 )
 
 func TestLoadConfig(t *testing.T) {
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
+
 	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
+	factories.Exporters[exporterType] = factory
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 
-	sub, err := cm.Sub(component.NewIDWithName(exporterType, "").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalExporterConfig(sub, cfg))
+	require.NotNil(t, cfg)
 
+	actual, ok := cfg.Exporters[component.NewID("tanzuobservability")]
+	require.True(t, ok)
 	expected := &Config{
 		ExporterSettings: config.NewExporterSettings(component.NewID("tanzuobservability")),
 		Traces: TracesConfig{
 			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: "http://localhost:40001"},
 		},
 		Metrics: MetricsConfig{
-			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: "http://localhost:2916"},
-			ResourceAttributes: resourcetotelemetry.Settings{Enabled: true},
+			HTTPClientSettings:    confighttp.HTTPClientSettings{Endpoint: "http://localhost:2916"},
+			ResourceAttrsIncluded: true,
+			AppTagsExcluded:       true,
 		},
 		QueueSettings: exporterhelper.QueueSettings{
 			Enabled:      true,
@@ -61,7 +64,7 @@ func TestLoadConfig(t *testing.T) {
 			MaxElapsedTime:  10 * time.Minute,
 		},
 	}
-	assert.Equal(t, expected, cfg)
+	assert.Equal(t, expected, actual)
 }
 
 func TestConfigRequiresValidEndpointUrl(t *testing.T) {
@@ -105,4 +108,23 @@ func TestConfigNormal(t *testing.T) {
 		},
 	}
 	assert.NoError(t, c.Validate())
+}
+
+func TestMetricConfig(t *testing.T) {
+	c := &Config{
+		Metrics: MetricsConfig{},
+	}
+	assert.NoError(t, c.Validate())
+	assert.False(t, c.Metrics.ResourceAttrsIncluded)
+	assert.False(t, c.Metrics.AppTagsExcluded)
+
+	c = &Config{
+		Metrics: MetricsConfig{
+			ResourceAttrsIncluded: true,
+			AppTagsExcluded:       true,
+		},
+	}
+	assert.NoError(t, c.Validate())
+	assert.True(t, c.Metrics.ResourceAttrsIncluded)
+	assert.True(t, c.Metrics.AppTagsExcluded)
 }

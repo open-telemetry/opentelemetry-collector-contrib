@@ -52,15 +52,13 @@ func (mn attributeName) RenderUnexported() (string, error) {
 
 // ValueType defines an attribute value type.
 type ValueType struct {
-	// ValueType is type of the metric number, options are "double", "int".
-	ValueType pcommon.ValueType
+	// ValueType is type of the attribute value.
+	ValueType pcommon.ValueType `validate:"required,notblank"`
 }
 
 // UnmarshalText implements the encoding.TextUnmarshaler interface.
 func (mvt *ValueType) UnmarshalText(text []byte) error {
 	switch vtStr := string(text); vtStr {
-	case "":
-		mvt.ValueType = pcommon.ValueTypeEmpty
 	case "string":
 		mvt.ValueType = pcommon.ValueTypeStr
 	case "int":
@@ -98,6 +96,24 @@ func (mvt ValueType) Primitive() string {
 	default:
 		return ""
 	}
+}
+
+func (mvt ValueType) TestValue() string {
+	switch mvt.ValueType {
+	case pcommon.ValueTypeEmpty, pcommon.ValueTypeStr:
+		return `"attr-val"`
+	case pcommon.ValueTypeInt:
+		return "1"
+	case pcommon.ValueTypeDouble:
+		return "1.1"
+	case pcommon.ValueTypeBool:
+		return "true"
+	case pcommon.ValueTypeMap:
+		return `pcommon.NewMap()`
+	case pcommon.ValueTypeSlice:
+		return `pcommon.NewSlice()`
+	}
+	return ""
 }
 
 type metric struct {
@@ -147,7 +163,7 @@ type attribute struct {
 	// Enum can optionally describe the set of values to which the attribute can belong.
 	Enum []string
 	// Type is an attribute type.
-	Type ValueType `mapstructure:"type"`
+	Type ValueType `mapstructure:"type" validate:"dive"`
 }
 
 type metadata struct {

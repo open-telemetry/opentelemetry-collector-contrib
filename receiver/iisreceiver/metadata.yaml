@@ -12,12 +12,14 @@ attributes:
   direction:
     value: direction
     description: The direction data is moving.
+    type: string
     enum:
       - sent
       - received
   request:
     value: request
     description: The type of request sent by a client.
+    type: string
     enum:
       - delete
       - get

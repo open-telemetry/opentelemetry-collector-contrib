@@ -106,6 +106,14 @@ func newMetricsReceiver(
 		transport = "https"
 	}
 
+	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+		ReceiverID:             config.ID(),
+		Transport:              transport,
+		ReceiverCreateSettings: settings,
+	})
+	if err != nil {
+		return nil, err
+	}
 	r := &splunkReceiver{
 		settings:        settings,
 		config:          &config,
@@ -117,11 +125,7 @@ func newMetricsReceiver(
 			ReadHeaderTimeout: defaultServerTimeout,
 			WriteTimeout:      defaultServerTimeout,
 		},
-		obsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
-			ReceiverID:             config.ID(),
-			Transport:              transport,
-			ReceiverCreateSettings: settings,
-		}),
+		obsrecv:        obsrecv,
 		gzipReaderPool: &sync.Pool{New: func() interface{} { return new(gzip.Reader) }},
 	}
 
@@ -146,6 +150,15 @@ func newLogsReceiver(
 		transport = "https"
 	}
 
+	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+		ReceiverID:             config.ID(),
+		Transport:              transport,
+		ReceiverCreateSettings: settings,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	r := &splunkReceiver{
 		settings:     settings,
 		config:       &config,
@@ -158,11 +171,7 @@ func newLogsReceiver(
 			WriteTimeout:      defaultServerTimeout,
 		},
 		gzipReaderPool: &sync.Pool{New: func() interface{} { return new(gzip.Reader) }},
-		obsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
-			ReceiverID:             config.ID(),
-			Transport:              transport,
-			ReceiverCreateSettings: settings,
-		}),
+		obsrecv:        obsrecv,
 	}
 
 	return r, nil
@@ -185,6 +194,7 @@ func (r *splunkReceiver) Start(_ context.Context, host component.Host) error {
 	}
 
 	mx := mux.NewRouter()
+	mx.NewRoute().Path(r.config.HealthPath).HandlerFunc(r.handleHealthReq)
 	if r.logsConsumer != nil {
 		mx.NewRoute().Path(r.config.RawPath).HandlerFunc(r.handleRawReq)
 	}
@@ -433,6 +443,10 @@ func (r *splunkReceiver) failRequest(
 			zap.Error(err), // It handles nil error
 		)
 	}
+}
+
+func (r *splunkReceiver) handleHealthReq(writer http.ResponseWriter, _ *http.Request) {
+	writer.WriteHeader(200)
 }
 
 func initJSONResponse(s string) []byte {

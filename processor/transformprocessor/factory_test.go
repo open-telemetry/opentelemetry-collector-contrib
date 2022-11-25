@@ -26,6 +26,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
 func TestFactory_Type(t *testing.T) {
@@ -49,6 +51,9 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 				Statements: []string{},
 			},
 		},
+		TraceStatements:  []common.ContextStatements{},
+		MetricStatements: []common.ContextStatements{},
+		LogStatements:    []common.ContextStatements{},
 	})
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
@@ -56,7 +61,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 func TestFactoryCreateProcessor_Empty(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	err := cfg.Validate()
+	err := component.ValidateConfig(cfg)
 	assert.NoError(t, err)
 }
 

@@ -28,11 +28,6 @@ import (
 	"text/template"
 )
 
-const (
-	tmplFile   = "metrics.tmpl"
-	outputFile = "generated_metrics.go"
-)
-
 func main() {
 	flag.Parse()
 	yml := flag.Arg(0)
@@ -59,16 +54,23 @@ func run(ymlPath string) error {
 	}
 	thisDir := filepath.Dir(filename)
 
-	if err = generateMetrics(ymlDir, thisDir, md); err != nil {
+	outputDir := filepath.Join(ymlDir, "internal", "metadata")
+	if err = os.MkdirAll(outputDir, 0700); err != nil {
+		return fmt.Errorf("unable to create output directory %q: %w", outputDir, err)
+	}
+	if err = generateCode(thisDir, outputDir, "metrics", md); err != nil {
+		return err
+	}
+	if err = generateCode(thisDir, outputDir, "metrics_test", md); err != nil {
 		return err
 	}
 	return generateDocumentation(ymlDir, thisDir, md)
 }
 
-func generateMetrics(ymlDir string, thisDir string, md metadata) error {
+func generateCode(thisDir string, outputDir string, tmplFile string, md metadata) error {
 	tmpl := template.Must(
 		template.
-			New(tmplFile).
+			New(tmplFile + ".tmpl").
 			Option("missingkey=error").
 			Funcs(map[string]interface{}{
 				"publicVar": func(s string) (string, error) {
@@ -91,7 +93,7 @@ func generateMetrics(ymlDir string, thisDir string, md metadata) error {
 					}
 					return false
 				},
-			}).ParseFiles(filepath.Join(thisDir, tmplFile)))
+			}).ParseFiles(filepath.Join(thisDir, tmplFile+".tmpl")))
 	buf := bytes.Buffer{}
 
 	if err := tmpl.Execute(&buf, templateContext{metadata: md, Package: "metadata"}); err != nil {
@@ -109,11 +111,7 @@ func generateMetrics(ymlDir string, thisDir string, md metadata) error {
 		return errors.New(errstr.String())
 	}
 
-	outputDir := filepath.Join(ymlDir, "internal", "metadata")
-	if err := os.MkdirAll(outputDir, 0700); err != nil {
-		return fmt.Errorf("unable to create output directory %q: %w", outputDir, err)
-	}
-	outputFilepath := filepath.Join(outputDir, outputFile)
+	outputFilepath := filepath.Join(outputDir, "generated_"+tmplFile+".go")
 	if err := os.Remove(outputFilepath); err != nil && !errors.Is(err, os.ErrNotExist) {
 		return fmt.Errorf("unable to remove genererated file %q: %w", outputFilepath, err)
 	}

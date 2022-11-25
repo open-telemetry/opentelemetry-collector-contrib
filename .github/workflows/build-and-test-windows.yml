@@ -1,10 +1,15 @@
 name: build-and-test-windows
 on:
   push:
-    branches: [ main ]
+    branches:
+      - 'main'
+      - 'releases/**'
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+*'
   pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+    branches:
+      - main
 env:
   TEST_RESULTS: testbed/tests/results/junit/results.xml
   # See: https://github.com/actions/cache/issues/810#issuecomment-1222550359
@@ -28,7 +33,7 @@ jobs:
           - internal
           - other
     runs-on: windows-latest
-    if: ${{ github.actor != 'dependabot[bot]' }}
+    if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Windows') || github.event_name == 'push') }}
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
@@ -50,13 +55,10 @@ jobs:
             ~\go\pkg\mod
             ~\AppData\Local\go-build
           key: go-build-cache-${{ runner.os }}-${{ matrix.group }}-go-${{ hashFiles('**/go.sum') }}
-      - name: Install dependencies
-        if: steps.go-mod-cache.outputs.cache-hit != 'true'
-        run: make -j2 gomoddownload GROUP=${{ matrix.group }}
       - name: Run Unit tests
         run: make -j2 gotest GROUP=${{ matrix.group }}
   windows-unittest:
-    if: ${{ always() }}
+    if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Windows') || github.event_name == 'push') }}
     runs-on: windows-latest
     needs: [windows-unittest-matrix]
     steps:

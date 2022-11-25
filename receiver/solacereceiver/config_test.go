@@ -82,10 +82,10 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
 
 			if tt.expectedErr != nil {
-				assert.ErrorIs(t, cfg.Validate(), tt.expectedErr)
+				assert.ErrorIs(t, component.ValidateConfig(cfg), tt.expectedErr)
 				return
 			}
-			assert.NoError(t, cfg.Validate())
+			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -94,14 +94,14 @@ func TestLoadConfig(t *testing.T) {
 func TestConfigValidateMissingAuth(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Queue = "someQueue"
-	err := cfg.Validate()
+	err := component.ValidateConfig(cfg)
 	assert.Equal(t, errMissingAuthDetails, err)
 }
 
 func TestConfigValidateMissingQueue(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Auth.PlainText = &SaslPlainTextConfig{"Username", "Password"}
-	err := cfg.Validate()
+	err := component.ValidateConfig(cfg)
 	assert.Equal(t, errMissingQueueName, err)
 }
 
@@ -147,7 +147,7 @@ func TestConfigValidateSuccess(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
 			cfg.Queue = "someQueue"
 			configure(cfg)
-			err := cfg.Validate()
+			err := component.ValidateConfig(cfg)
 			assert.NoError(t, err)
 		})
 	}

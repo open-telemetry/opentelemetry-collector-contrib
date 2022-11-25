@@ -34,7 +34,7 @@ import (
 type mockHostFactories struct {
 	component.Host
 	factories  component.Factories
-	extensions map[component.ID]component.Extension
+	extensions map[component.ID]component.Component
 }
 
 // GetFactory of the specified kind. Returns the factory for a component type.
@@ -52,7 +52,7 @@ func (mh *mockHostFactories) GetFactory(kind component.Kind, componentType compo
 	return nil
 }
 
-func (mh *mockHostFactories) GetExtensions() map[component.ID]component.Extension {
+func (mh *mockHostFactories) GetExtensions() map[component.ID]component.Component {
 	return mh.extensions
 }
 
@@ -124,7 +124,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
 
-			assert.NoError(t, cfg.Validate())
+			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

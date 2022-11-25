@@ -164,7 +164,7 @@ jobs:
       - name: Components dropdown in issue templates
         run: |
           make generate-gh-issue-templates
-          git diff --exit-code '.github/ISSUE_TEMPLATE' || (echo 'Dropdowns in issue templates are out of date, please run "make generate-all-component-dropdowns" and commit the changes in this PR.' && exit 1)
+          git diff --exit-code '.github/ISSUE_TEMPLATE' || (echo 'Dropdowns in issue templates are out of date, please run "make generate-gh-issue-templates" and commit the changes in this PR.' && exit 1)
   unittest-matrix:
     strategy:
       matrix:
@@ -368,7 +368,8 @@ jobs:
           path: ./bin/*
 
   build-package:
-    runs-on: ubuntu-latest
+    # Use 20.04.5 until https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16450 is resolved
+    runs-on: ubuntu-20.04
     needs: [cross-compile]
     strategy:
       fail-fast: false
@@ -380,7 +381,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Install Ruby
-        uses: actions/setup-ruby@v1
+        uses: ruby/setup-ruby@v1
         with:
           ruby-version: '2.6'
       - name: Install fpm

@@ -27,7 +27,7 @@ const (
 	// The value of "type" key in configuration.
 	typeStr = "spanmetrics"
 	// The stability level of the processor.
-	stability = component.StabilityLevelInDevelopment
+	stability = component.StabilityLevelDevelopment
 )
 
 // NewFactory creates a factory for the spanmetrics processor.
@@ -44,7 +44,7 @@ func createDefaultConfig() component.ProcessorConfig {
 		ProcessorSettings:      config.NewProcessorSettings(component.NewID(typeStr)),
 		AggregationTemporality: "AGGREGATION_TEMPORALITY_CUMULATIVE",
 		DimensionsCacheSize:    defaultDimensionsCacheSize,
-		skipSanitizeLabel:      featuregate.GetRegistry().IsEnabled(dropSanitizationGate.GetID()),
+		skipSanitizeLabel:      featuregate.GetRegistry().IsEnabled(dropSanitizationGateID),
 	}
 }
 

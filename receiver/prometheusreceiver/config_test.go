@@ -138,7 +138,7 @@ func TestLoadConfigFailsOnRenameDisallowed(t *testing.T) {
 	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
-	assert.Error(t, cfg.Validate())
+	assert.Error(t, component.ValidateConfig(cfg))
 
 }
 
@@ -152,7 +152,7 @@ func TestRejectUnsupportedPrometheusFeatures(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
 
-	err = cfg.Validate()
+	err = component.ValidateConfig(cfg)
 	require.NotNil(t, err, "Expected a non-nil error")
 
 	wantErrMsg := `unsupported features:
@@ -177,7 +177,7 @@ func TestNonExistentAuthCredentialsFile(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
 
-	err = cfg.Validate()
+	err = component.ValidateConfig(cfg)
 	require.NotNil(t, err, "Expected a non-nil error")
 
 	wantErrMsg := `error checking authorization credentials file "/nonexistentauthcredentialsfile"`
@@ -196,7 +196,7 @@ func TestTLSConfigNonExistentCertFile(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
 
-	err = cfg.Validate()
+	err = component.ValidateConfig(cfg)
 	require.NotNil(t, err, "Expected a non-nil error")
 
 	wantErrMsg := `error checking client cert file "/nonexistentcertfile"`
@@ -215,7 +215,7 @@ func TestTLSConfigNonExistentKeyFile(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
 
-	err = cfg.Validate()
+	err = component.ValidateConfig(cfg)
 	require.NotNil(t, err, "Expected a non-nil error")
 
 	wantErrMsg := `error checking client key file "/nonexistentkeyfile"`
@@ -234,7 +234,7 @@ func TestTLSConfigCertFileWithoutKeyFile(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
 
-	err = cfg.Validate()
+	err = component.ValidateConfig(cfg)
 	require.NotNil(t, err, "Expected a non-nil error")
 
 	wantErrMsg := `client cert file "./testdata/dummy-tls-cert-file" specified without client key file`
@@ -253,7 +253,7 @@ func TestTLSConfigKeyFileWithoutCertFile(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
 
-	err = cfg.Validate()
+	err = component.ValidateConfig(cfg)
 	require.NotNil(t, err, "Expected a non-nil error")
 
 	wantErrMsg := `client key file "./testdata/dummy-tls-key-file" specified without client cert file`
@@ -272,7 +272,7 @@ func TestKubernetesSDConfigWithoutKeyFile(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
 
-	err = cfg.Validate()
+	err = component.ValidateConfig(cfg)
 	require.NotNil(t, err, "Expected a non-nil error")
 
 	wantErrMsg := `client cert file "./testdata/dummy-tls-cert-file" specified without client key file`
@@ -291,7 +291,7 @@ func TestFileSDConfigJsonNilTargetGroup(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
 
-	err = cfg.Validate()
+	err = component.ValidateConfig(cfg)
 	require.NotNil(t, err, "Expected a non-nil error")
 
 	wantErrMsg := `checking SD file "./testdata/sd-config-with-null-target-group.json": nil target group item found (index 1)`
@@ -310,7 +310,7 @@ func TestFileSDConfigYamlNilTargetGroup(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
 
-	err = cfg.Validate()
+	err = component.ValidateConfig(cfg)
 	require.NotNil(t, err, "Expected a non-nil error")
 
 	wantErrMsg := `checking SD file "./testdata/sd-config-with-null-target-group.yaml": nil target group item found (index 1)`

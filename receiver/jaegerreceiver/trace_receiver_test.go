@@ -55,7 +55,8 @@ var jaegerReceiver = component.NewIDWithName("jaeger", "receiver_test")
 
 func TestTraceSource(t *testing.T) {
 	set := componenttest.NewNopReceiverCreateSettings()
-	jr := newJaegerReceiver(jaegerReceiver, &configuration{}, nil, set)
+	jr, err := newJaegerReceiver(jaegerReceiver, &configuration{}, nil, set)
+	require.NoError(t, err)
 	require.NotNil(t, jr)
 }
 
@@ -94,7 +95,8 @@ func TestReception(t *testing.T) {
 	sink := new(consumertest.TracesSink)
 
 	set := componenttest.NewNopReceiverCreateSettings()
-	jr := newJaegerReceiver(jaegerReceiver, config, sink, set)
+	jr, err := newJaegerReceiver(jaegerReceiver, config, sink, set)
+	require.NoError(t, err)
 
 	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
@@ -124,7 +126,8 @@ func TestPortsNotOpen(t *testing.T) {
 	sink := new(consumertest.TracesSink)
 
 	set := componenttest.NewNopReceiverCreateSettings()
-	jr := newJaegerReceiver(jaegerReceiver, config, sink, set)
+	jr, err := newJaegerReceiver(jaegerReceiver, config, sink, set)
+	require.NoError(t, err)
 
 	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
@@ -158,7 +161,8 @@ func TestGRPCReception(t *testing.T) {
 	sink := new(consumertest.TracesSink)
 
 	set := componenttest.NewNopReceiverCreateSettings()
-	jr := newJaegerReceiver(jaegerReceiver, config, sink, set)
+	jr, err := newJaegerReceiver(jaegerReceiver, config, sink, set)
+	require.NoError(t, err)
 
 	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
@@ -215,7 +219,8 @@ func TestGRPCReceptionWithTLS(t *testing.T) {
 	sink := new(consumertest.TracesSink)
 
 	set := componenttest.NewNopReceiverCreateSettings()
-	jr := newJaegerReceiver(jaegerReceiver, config, sink, set)
+	jr, err := newJaegerReceiver(jaegerReceiver, config, sink, set)
+	require.NoError(t, err)
 
 	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
@@ -350,7 +355,8 @@ func TestSampling(t *testing.T) {
 	sink := new(consumertest.TracesSink)
 
 	set := componenttest.NewNopReceiverCreateSettings()
-	jr := newJaegerReceiver(jaegerReceiver, config, sink, set)
+	jr, err := newJaegerReceiver(jaegerReceiver, config, sink, set)
+	require.NoError(t, err)
 
 	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })

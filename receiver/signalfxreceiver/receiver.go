@@ -95,22 +95,26 @@ var _ component.MetricsReceiver = (*sfxReceiver)(nil)
 func newReceiver(
 	settings component.ReceiverCreateSettings,
 	config Config,
-) *sfxReceiver {
+) (*sfxReceiver, error) {
 	transport := "http"
 	if config.TLSSetting != nil {
 		transport = "https"
 	}
+	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+		ReceiverID:             config.ID(),
+		Transport:              transport,
+		ReceiverCreateSettings: settings,
+	})
+	if err != nil {
+		return nil, err
+	}
 	r := &sfxReceiver{
 		settings: settings,
 		config:   &config,
-		obsrecv: obsreport.MustNewReceiver(obsreport.ReceiverSettings{
-			ReceiverID:             config.ID(),
-			Transport:              transport,
-			ReceiverCreateSettings: settings,
-		}),
+		obsrecv:  obsrecv,
 	}
 
-	return r
+	return r, nil
 }
 
 func (r *sfxReceiver) RegisterMetricsConsumer(mc consumer.Metrics) {

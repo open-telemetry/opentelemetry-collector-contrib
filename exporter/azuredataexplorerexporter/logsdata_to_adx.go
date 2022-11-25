@@ -20,6 +20,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
 type AdxLog struct {
@@ -43,8 +45,8 @@ func mapToAdxLog(resource pcommon.Resource, scope pcommon.InstrumentationScope, 
 	adxLog := &AdxLog{
 		Timestamp:          logData.Timestamp().AsTime().Format(time.RFC3339),
 		ObservedTimestamp:  logData.ObservedTimestamp().AsTime().Format(time.RFC3339),
-		TraceID:            logData.TraceID().HexString(),
-		SpanID:             logData.SpanID().HexString(),
+		TraceID:            traceutil.TraceIDToHexOrEmptyString(logData.TraceID()),
+		SpanID:             traceutil.SpanIDToHexOrEmptyString(logData.SpanID()),
 		SeverityText:       logData.SeverityText(),
 		SeverityNumber:     int32(logData.SeverityNumber()),
 		Body:               logData.Body().AsString(),

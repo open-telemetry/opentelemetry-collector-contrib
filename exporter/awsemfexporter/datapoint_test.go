@@ -582,11 +582,11 @@ func TestCreateLabels(t *testing.T) {
 		"c": "C",
 	}
 	labelsMap := pcommon.NewMap()
-	labelsMap.FromRaw(map[string]interface{}{
+	assert.NoError(t, labelsMap.FromRaw(map[string]interface{}{
 		"a": "A",
 		"b": "B",
 		"c": "C",
-	})
+	}))
 
 	labels := createLabels(labelsMap, noInstrumentationLibraryName)
 	assert.Equal(t, expectedLabels, labels)
