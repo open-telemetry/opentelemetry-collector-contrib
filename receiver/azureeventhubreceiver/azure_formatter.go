@@ -16,12 +16,19 @@ package azureeventhubreceiver // import "github.com/loomis-relativity/openteleme
 
 import (
 	eventhub "github.com/Azure/azure-event-hubs-go/v3"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
-type AzureLogFormatConverter struct{}
+type azureLogFormatConverter struct {
+	buildInfo component.BuildInfo
+}
 
-func (_ *AzureLogFormatConverter) ToLogs(event *eventhub.Event) (plog.Logs, error) {
-	logs, err := transform(event.Data)
+func NewAzureLogFormatConverter(settings component.ReceiverCreateSettings) *azureLogFormatConverter {
+	return &azureLogFormatConverter{buildInfo: settings.BuildInfo}
+}
+
+func (c *azureLogFormatConverter) ToLogs(event *eventhub.Event) (plog.Logs, error) {
+	logs, err := transform(c.buildInfo, event.Data)
 	return *logs, err
 }

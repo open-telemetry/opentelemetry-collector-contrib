@@ -16,13 +16,18 @@ package azureeventhubreceiver // import "github.com/loomis-relativity/openteleme
 
 import (
 	eventhub "github.com/Azure/azure-event-hubs-go/v3"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
-type RawConverter struct{}
+type rawConverter struct{}
 
-func (_ *RawConverter) ToLogs(event *eventhub.Event) (plog.Logs, error) {
+func NewRawConverter(settings component.ReceiverCreateSettings) *rawConverter {
+	return &rawConverter{}
+}
+
+func (_ *rawConverter) ToLogs(event *eventhub.Event) (plog.Logs, error) {
 	l := plog.NewLogs()
 	lr := l.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 	slice := lr.Body().SetEmptyBytes()

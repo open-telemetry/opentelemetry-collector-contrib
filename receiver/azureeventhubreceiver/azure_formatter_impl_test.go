@@ -17,6 +17,7 @@ package azureeventhubreceiver
 import (
 	"encoding/json"
 	"github.com/go-test/deep"
+	"go.opentelemetry.io/collector/component"
 	"os"
 	"path/filepath"
 	"strings"
@@ -301,18 +302,28 @@ func sortAttributes(attrs pcommon.Map) {
 	attrs.Sort()
 }
 
+var testBuildInfo = component.BuildInfo{
+	Version: "1.2.3",
+}
+
 func TestDecodeAzureLogRecord(t *testing.T) {
 
 	expectedMinimum := plog.NewLogs()
 	resourceLogs := expectedMinimum.ResourceLogs().AppendEmpty()
-	lr := resourceLogs.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
+	scopeLogs.Scope().SetName("otelcol/" + typeStr)
+	scopeLogs.Scope().SetVersion(testBuildInfo.Version)
+	lr := scopeLogs.LogRecords().AppendEmpty()
 	resourceLogs.Resource().Attributes().PutStr(azureResourceID, "/RESOURCE_ID")
 	minimumLogRecord.CopyTo(lr)
 
 	expectedMinimum2 := plog.NewLogs()
 	resourceLogs = expectedMinimum2.ResourceLogs().AppendEmpty()
 	resourceLogs.Resource().Attributes().PutStr(azureResourceID, "/RESOURCE_ID")
-	logRecords := resourceLogs.ScopeLogs().AppendEmpty().LogRecords()
+	scopeLogs = resourceLogs.ScopeLogs().AppendEmpty()
+	scopeLogs.Scope().SetName("otelcol/" + typeStr)
+	scopeLogs.Scope().SetVersion(testBuildInfo.Version)
+	logRecords := scopeLogs.LogRecords()
 	lr = logRecords.AppendEmpty()
 	minimumLogRecord.CopyTo(lr)
 	lr = logRecords.AppendEmpty()
@@ -321,7 +332,10 @@ func TestDecodeAzureLogRecord(t *testing.T) {
 	expectedMaximum := plog.NewLogs()
 	resourceLogs = expectedMaximum.ResourceLogs().AppendEmpty()
 	resourceLogs.Resource().Attributes().PutStr(azureResourceID, "/RESOURCE_ID")
-	lr = resourceLogs.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+	scopeLogs = resourceLogs.ScopeLogs().AppendEmpty()
+	scopeLogs.Scope().SetName("otelcol/" + typeStr)
+	scopeLogs.Scope().SetVersion(testBuildInfo.Version)
+	lr = scopeLogs.LogRecords().AppendEmpty()
 	maximumLogRecord.CopyTo(lr)
 
 	tests := []struct {
@@ -348,7 +362,7 @@ func TestDecodeAzureLogRecord(t *testing.T) {
 			assert.NoError(t, err)
 			assert.NotNil(t, data)
 
-			logs, err := transform(data)
+			logs, err := transform(testBuildInfo, data)
 			assert.NoError(t, err)
 
 			deep.CompareUnexportedFields = true

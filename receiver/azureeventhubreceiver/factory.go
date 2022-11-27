@@ -55,11 +55,11 @@ func createLogsReceiver(_ context.Context, settings component.ReceiverCreateSett
 	var converter eventConverter
 	switch logFormat(receiver.(*Config).Format) {
 	case azureLogFormat:
-		converter = &AzureLogFormatConverter{}
+		converter = NewAzureLogFormatConverter(settings)
 	case rawLogFormat:
-		converter = &RawConverter{}
+		converter = NewRawConverter(settings)
 	default:
-		converter = &RawConverter{}
+		converter = NewRawConverter(settings)
 	}
 
 	return &client{

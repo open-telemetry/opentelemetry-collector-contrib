@@ -17,7 +17,9 @@ package azureeventhubreceiver // import "github.com/loomis-relativity/openteleme
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"github.com/relvacode/iso8601"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"strconv"
@@ -193,7 +195,7 @@ func extractRawAttributes(log azureLogRecord) map[string]interface{} {
 // log record appears as fields and attributes in the
 // OpenTelemetry representation; the bodies of the
 // OpenTelemetry log records are empty.
-func transform(data []byte) (*plog.Logs, error) {
+func transform(buildInfo component.BuildInfo, data []byte) (*plog.Logs, error) {
 
 	l := plog.NewLogs()
 
@@ -202,8 +204,11 @@ func transform(data []byte) (*plog.Logs, error) {
 	decoder.UseNumber()
 	err := decoder.Decode(&azureLogs)
 	resourceLogs := l.ResourceLogs().AppendEmpty()
+	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
+	scopeLogs.Scope().SetName(fmt.Sprintf("otelcol/%s", typeStr))
+	scopeLogs.Scope().SetVersion(buildInfo.Version)
 	if err == nil {
-		logRecords := resourceLogs.ScopeLogs().AppendEmpty().LogRecords()
+		logRecords := scopeLogs.LogRecords()
 
 		resourceID := ""
 		for _, azureLog := range azureLogs.Records {
