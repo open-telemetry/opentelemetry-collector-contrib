@@ -202,33 +202,36 @@ func transform(buildInfo component.BuildInfo, data []byte) (*plog.Logs, error) {
 	var azureLogs azureRecords
 	decoder := json.NewDecoder(bytes.NewReader(data))
 	decoder.UseNumber()
-	err := decoder.Decode(&azureLogs)
+	if err := decoder.Decode(&azureLogs); err != nil {
+		return &l, err
+	}
+
 	resourceLogs := l.ResourceLogs().AppendEmpty()
 	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
 	scopeLogs.Scope().SetName(fmt.Sprintf("otelcol/%s", typeStr))
 	scopeLogs.Scope().SetVersion(buildInfo.Version)
-	if err == nil {
-		logRecords := scopeLogs.LogRecords()
+	logRecords := scopeLogs.LogRecords()
 
-		resourceID := ""
-		for _, azureLog := range azureLogs.Records {
-			resourceID = azureLog.ResourceID
-			nanos, err := asTimestamp(azureLog.Time)
-			if err == nil {
-				lr := logRecords.AppendEmpty()
-
-				lr.SetTimestamp(nanos)
-
-				if azureLog.Level != nil {
-					severity := asSeverity(*azureLog.Level)
-					lr.SetSeverityNumber(severity)
-					lr.SetSeverityText(*azureLog.Level)
-				}
-
-				//nolint:errcheck
-				lr.Attributes().FromRaw(extractRawAttributes(azureLog))
-			}
+	resourceID := ""
+	for _, azureLog := range azureLogs.Records {
+		resourceID = azureLog.ResourceID
+		nanos, err := asTimestamp(azureLog.Time)
+		if err != nil {
+			continue
 		}
+
+		lr := logRecords.AppendEmpty()
+
+		lr.SetTimestamp(nanos)
+
+		if azureLog.Level != nil {
+			severity := asSeverity(*azureLog.Level)
+			lr.SetSeverityNumber(severity)
+			lr.SetSeverityText(*azureLog.Level)
+		}
+
+		//nolint:errcheck
+		lr.Attributes().FromRaw(extractRawAttributes(azureLog))
 
 		// The Azure resource ID will be pulled into a common resource attribute.
 		// This implementation assumes that a single log message from Azure will
@@ -238,5 +241,5 @@ func transform(buildInfo component.BuildInfo, data []byte) (*plog.Logs, error) {
 		}
 	}
 
-	return &l, err
+	return &l, nil
 }
