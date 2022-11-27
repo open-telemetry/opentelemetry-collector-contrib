@@ -80,6 +80,7 @@ func TestSetIf(t *testing.T) {
 func TestJsonNumberToRaw(t *testing.T) {
 	assert.Equal(t, float64(1.34), jsonNumberToRaw("1.34"))
 	assert.Equal(t, int64(1024), jsonNumberToRaw("1024"))
+	assert.Nil(t, jsonNumberToRaw("invalid"))
 }
 
 func TestReplaceJsonNumber(t *testing.T) {
