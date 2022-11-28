@@ -39,8 +39,8 @@ type PromtailConfig struct {
 	adapter.BaseConfig `mapstructure:",squash" yaml:",inline"`
 }
 
-// NewConfig creates a new input config with default values
-func NewConfig() *Config {
+// newConfig creates a new input config with default values
+func newConfig() *Config {
 	return NewConfigWithID(operatorType)
 }
 
@@ -87,7 +87,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 
 	entries := make(chan api.Entry)
 
-	return &PromtailInput{
+	return &promtailInput{
 		InputOperator: inputOperator,
 		config:        &c,
 		app: &app{

@@ -29,35 +29,35 @@ const (
 
 // NewFactory creates a factory for promtail receiver
 func NewFactory() component.ReceiverFactory {
-	return adapter.NewFactory(ReceiverType{}, stability)
+	return adapter.NewFactory(receiverType{}, stability)
 }
 
-// ReceiverType implements stanza.LogReceiverType
+// receiverType implements stanza.LogReceiverType
 // to create a promtail receiver
-type ReceiverType struct{}
+type receiverType struct{}
 
 // Type is the receiver type
-func (f ReceiverType) Type() component.Type {
+func (f receiverType) Type() component.Type {
 	return typeStr
 }
 
 // CreateDefaultConfig creates a config with type and version
-func (f ReceiverType) CreateDefaultConfig() component.ReceiverConfig {
+func (f receiverType) CreateDefaultConfig() component.ReceiverConfig {
 	return &PromtailConfig{
 		BaseConfig: adapter.BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 			Operators:        []operator.Config{},
 		},
-		InputConfig: *NewConfig(),
+		InputConfig: *newConfig(),
 	}
 }
 
 // BaseConfig gets the base config from config, for now
-func (f ReceiverType) BaseConfig(cfg component.ReceiverConfig) adapter.BaseConfig {
+func (f receiverType) BaseConfig(cfg component.ReceiverConfig) adapter.BaseConfig {
 	return cfg.(*PromtailConfig).BaseConfig
 }
 
 // InputConfig unmarshals the input operator
-func (f ReceiverType) InputConfig(cfg component.ReceiverConfig) operator.Config {
+func (f receiverType) InputConfig(cfg component.ReceiverConfig) operator.Config {
 	return operator.NewConfig(&cfg.(*PromtailConfig).InputConfig)
 }

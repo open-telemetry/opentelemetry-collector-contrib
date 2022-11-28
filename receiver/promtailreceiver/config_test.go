@@ -60,7 +60,7 @@ func testdataConfigYaml() *PromtailConfig {
 			Operators:        []operator.Config{},
 		},
 		InputConfig: func() Config {
-			c := NewConfig()
+			c := newConfig()
 			c.Input.PositionsConfig = positions.Config{PositionsFile: "/tmp/positions.yaml"}
 			c.Input.ScrapeConfig = []scrapeconfig.Config{
 				{
@@ -119,13 +119,13 @@ func TestBuild(t *testing.T) {
 		name             string
 		modifyBaseConfig func(config *Config)
 		errorRequirement require.ErrorAssertionFunc
-		validate         func(*testing.T, *PromtailInput)
+		validate         func(*testing.T, *promtailInput)
 	}{
 		{
 			name:             "Basic",
 			modifyBaseConfig: func(f *Config) {},
 			errorRequirement: require.NoError,
-			validate: func(t *testing.T, f *PromtailInput) {
+			validate: func(t *testing.T, f *promtailInput) {
 				require.Equal(t, "/var/log/positions.yaml", f.config.Input.PositionsConfig.PositionsFile)
 				require.Equal(t, 10*time.Second, f.config.Input.PositionsConfig.SyncPeriod)
 				require.Len(t, f.config.Input.ScrapeConfig, 1)
@@ -166,7 +166,7 @@ func TestBuild(t *testing.T) {
 					return
 				}
 
-				promtailInput := op.(*PromtailInput)
+				promtailInput := op.(*promtailInput)
 				tc.validate(t, promtailInput)
 			},
 		)
@@ -175,19 +175,19 @@ func TestBuild(t *testing.T) {
 
 func TestUnmarshal(t *testing.T) {
 	operatortest.ConfigUnmarshalTests{
-		DefaultConfig: NewConfig(),
+		DefaultConfig: newConfig(),
 		TestsFile:     filepath.Join(".", "testdata", "config_stanza.yaml"),
 		Tests: []operatortest.ConfigUnmarshalTest{
 			{
 				Name:      "default",
 				ExpectErr: false,
-				Expect:    NewConfig(),
+				Expect:    newConfig(),
 			},
 			{
 				Name:      "static_config",
 				ExpectErr: false,
 				Expect: func() *Config {
-					cfg := NewConfig()
+					cfg := newConfig()
 					cfg.Input.ScrapeConfig = []scrapeconfig.Config{
 						{
 							JobName:        "testjob",
@@ -212,7 +212,7 @@ func TestUnmarshal(t *testing.T) {
 				Name:      "loki_push_api",
 				ExpectErr: false,
 				Expect: func() *Config {
-					cfg := NewConfig()
+					cfg := newConfig()
 					cfg.Input.ScrapeConfig = []scrapeconfig.Config{
 						{
 							JobName:        "push",

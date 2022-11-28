@@ -34,11 +34,11 @@ const (
 )
 
 func init() {
-	operator.Register(operatorType, func() operator.Builder { return NewConfig() })
+	operator.Register(operatorType, func() operator.Builder { return newConfig() })
 }
 
-// PromtailInput implements stanza.Operator interface
-type PromtailInput struct {
+// promtailInput implements stanza.Operator interface
+type promtailInput struct {
 	helper.InputOperator
 	config *Config
 	app    *app
@@ -64,7 +64,7 @@ func (a *app) Shutdown() {
 	a.reg.UnregisterAll()
 }
 
-func (p *PromtailInput) Start(_ operator.Persister) error {
+func (p *promtailInput) Start(_ operator.Persister) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	p.cancel = cancel
 
@@ -101,14 +101,14 @@ func (p *PromtailInput) Start(_ operator.Persister) error {
 	return nil
 }
 
-func (p *PromtailInput) Stop() error {
+func (p *promtailInput) Stop() error {
 	p.cancel()
 	p.app.Shutdown()
 	return nil
 }
 
 // parsePromtailEntry creates new stanza.Entry from promtail entry
-func (p *PromtailInput) parsePromtailEntry(inputEntry api.Entry) (*entry.Entry, error) {
+func (p *promtailInput) parsePromtailEntry(inputEntry api.Entry) (*entry.Entry, error) {
 	outputEntry, err := p.NewEntry(inputEntry.Entry.Line)
 	if err != nil {
 		return nil, err

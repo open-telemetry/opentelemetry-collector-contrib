@@ -59,7 +59,7 @@ func TestPromtailInput_parsePromtailEntry(t *testing.T) {
 	op, err := cfg.Build(testutil.Logger(t))
 	require.NoError(t, err)
 
-	promtailInput := op.(*PromtailInput)
+	promtailInput := op.(*promtailInput)
 
 	cases := []struct {
 		name        string
