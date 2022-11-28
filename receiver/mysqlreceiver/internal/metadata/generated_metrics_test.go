@@ -620,7 +620,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("command")
 			assert.True(t, ok)
-			assert.Equal(t, AttributePreparedStatementsCommand(1).String(), attrVal.Str())
+			assert.Equal(t, "execute", attrVal.Str())
 			validatedMetrics["mysql.prepared_statements"] = struct{}{}
 		case "mysql.query.client.count":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
