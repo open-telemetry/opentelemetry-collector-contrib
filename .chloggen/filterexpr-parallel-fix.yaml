@@ -5,7 +5,7 @@ change_type: bug_fix
 component: filterexpr
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Fixed filterexpr Matcher.MatchMetric to be gorutine-safe
+note: Fixed filterexpr Matcher.MatchMetric to be thread-safe
 
 # One or more tracking issues related to the change
 issues: [13573]
