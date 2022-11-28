@@ -53,33 +53,31 @@ func MergeMaps[K any](target ottl.Getter[K], source ottl.Getter[K], strategy str
 			}
 
 			if valueMap, ok := val.(pcommon.Map); ok {
-				var mergeFunc func(k string, v pcommon.Value)
 				switch strategy {
 				case INSERT:
-					mergeFunc = func(k string, v pcommon.Value) {
+					valueMap.Range(func(k string, v pcommon.Value) bool {
 						if _, ok := targetMap.Get(k); !ok {
 							tv := targetMap.PutEmpty(k)
 							v.CopyTo(tv)
 						}
-					}
+						return true
+					})
 				case UPDATE:
-					mergeFunc = func(k string, v pcommon.Value) {
+					valueMap.Range(func(k string, v pcommon.Value) bool {
 						if tv, ok := targetMap.Get(k); ok {
 							v.CopyTo(tv)
 						}
-					}
+						return true
+					})
 				case UPSERT:
-					mergeFunc = func(k string, v pcommon.Value) {
+					valueMap.Range(func(k string, v pcommon.Value) bool {
 						tv := targetMap.PutEmpty(k)
 						v.CopyTo(tv)
-					}
+						return true
+					})
 				default:
 					return nil, fmt.Errorf("unknown strategy, %v", strategy)
 				}
-				valueMap.Range(func(k string, v pcommon.Value) bool {
-					mergeFunc(k, v)
-					return true
-				})
 			}
 		}
 		return nil, nil
