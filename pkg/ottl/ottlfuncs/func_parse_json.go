@@ -44,14 +44,8 @@ func ParseJSON[K any](target ottl.Getter[K]) (ottl.ExprFunc[K], error) {
 				return pcommon.Map{}, err
 			}
 			result := pcommon.NewMap()
-			for k, v := range parsedValue {
-				attrVal := result.PutEmpty(k)
-				err = attrVal.FromRaw(v)
-				if err != nil {
-					return pcommon.Map{}, err
-				}
-			}
-			return result, nil
+			err = result.FromRaw(parsedValue)
+			return result, err
 		}
 		return nil, nil
 	}, nil
