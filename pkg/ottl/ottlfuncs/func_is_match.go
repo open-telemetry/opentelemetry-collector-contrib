@@ -17,6 +17,7 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 import (
 	"context"
 	"fmt"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"regexp"
 	"strconv"
 
@@ -41,8 +42,10 @@ func IsMatch[K any](target ottl.Getter[K], pattern string) (ottl.ExprFunc[K], er
 			return compiledPattern.MatchString(strconv.FormatBool(v)), nil
 		case int64:
 			return compiledPattern.MatchString(strconv.FormatInt(v, 10)), nil
-		case float64:
-			return compiledPattern.MatchString(strconv.FormatFloat(v, 'f', -1, 64)), nil
+		default:
+			pv := pcommon.NewValueEmpty()
+			pv.FromRaw(v)
+			return compiledPattern.MatchString(pv.AsString()), nil
 		}
 
 		return false, nil
