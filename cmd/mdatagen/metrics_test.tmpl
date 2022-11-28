@@ -58,11 +58,12 @@ func TestAllMetrics(t *testing.T) {
 	{{- end }}
 
 	metrics := mb.Emit(
-	{{- $sep := "" }}
-	{{- range $name, $info := .ResourceAttributes -}}
-	{{ $sep }}With{{ $name.Render }}({{- if $info.Enum }}Attribute{{ $name.Render }}(1){{ else }}{{ $info.Type.TestValue }}{{ end }})
-	{{- $sep = ", " }}
-	{{- end -}}
+		{{- $sep := "" }}
+		{{- range $name, $info := .ResourceAttributes -}}
+			{{- $sep }}With{{ $name.Render }}
+			{{- if $info.Enum }}{{ index $info.Enum 0 | publicVar }}{{ else }}({{- $info.Type.TestValue }}){{ end }}
+			{{- $sep = ", " }}
+		{{- end -}}
 	)
 
 	assert.Equal(t, 1, metrics.ResourceMetrics().Len())

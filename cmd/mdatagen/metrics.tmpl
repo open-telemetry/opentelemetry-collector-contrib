@@ -213,6 +213,12 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 type ResourceMetricsOption func(pmetric.ResourceMetrics)
 
 {{- range $name, $attr := .ResourceAttributes }}
+{{- range $attr.Enum }}
+// With{{ $name.Render }}{{ . | publicVar }} sets "{{ $name }}={{ . }}" attribute for current resource.
+func With{{ $name.Render }}{{ . | publicVar }}(rm pmetric.ResourceMetrics) {
+	rm.Resource().Attributes().PutStr("{{ attributeKey $name}}", "{{ . }}")
+}
+{{- else }}
 // With{{ $name.Render }} sets provided value as "{{ $name }}" attribute for current resource.
 func With{{ $name.Render }}(val {{ $attr.Type.Primitive }}) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
@@ -223,6 +229,7 @@ func With{{ $name.Render }}(val {{ $attr.Type.Primitive }}) ResourceMetricsOptio
 		{{- end }}
 	}
 }
+{{- end }}
 {{ end }}
 
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
