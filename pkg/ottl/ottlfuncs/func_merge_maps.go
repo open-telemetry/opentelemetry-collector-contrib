@@ -29,7 +29,13 @@ const (
 	UPSERT = "upsert"
 )
 
-func Merge[K any](target ottl.Getter[K], source ottl.Getter[K], strategy string) (ottl.ExprFunc[K], error) {
+// MergeMaps function merges the source map into the target map using the supplied strategy to handle conflicts.
+// Strategy definitions:
+//
+//	insert: Insert the value from `source` into `target` where the key does not already exist.
+//	update: Update the entry in `target` with the value from `source` where the key does exist
+//	upsert: Performs insert or update. Insert the value from `source` into `target` where the key does not already exist and update the entry in `target` with the value from `source` where the key does exist.
+func MergeMaps[K any](target ottl.Getter[K], source ottl.Getter[K], strategy string) (ottl.ExprFunc[K], error) {
 	if strategy != INSERT && strategy != UPDATE && strategy != UPSERT {
 		return nil, fmt.Errorf("invalid value for strategy, %v, must be 'insert', 'update' or 'upsert'", strategy)
 	}
@@ -64,12 +70,8 @@ func Merge[K any](target ottl.Getter[K], source ottl.Getter[K], strategy string)
 					}
 				case UPSERT:
 					mergeFunc = func(k string, v pcommon.Value) {
-						if tv, ok := targetMap.Get(k); ok {
-							v.CopyTo(tv)
-						} else {
-							tv := targetMap.PutEmpty(k)
-							v.CopyTo(tv)
-						}
+						tv := targetMap.PutEmpty(k)
+						v.CopyTo(tv)
 					}
 				default:
 					return nil, fmt.Errorf("unknown strategy, %v", strategy)
