@@ -60,7 +60,7 @@ func TestConvertAttributesAndMerge(t *testing.T) {
 			},
 		},
 		{
-			desc:     "selected attributes from resource attributes",
+			desc:     "selected attributes from resource attributes should be included",
 			logAttrs: map[string]interface{}{},
 			resAttrs: map[string]interface{}{
 				hintResources: "host.name",
