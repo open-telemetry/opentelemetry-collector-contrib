@@ -16,7 +16,7 @@ List of available Functions:
 - [delete_matching_keys](#delete_matching_keys)
 - [keep_keys](#keep_keys)
 - [limit](#limit)
-- [merge_maps](#merge_maps)
+- [merge](#merge)
 - [replace_all_matches](#replace_all_matches)
 - [replace_all_patterns](#replace_all_patterns)
 - [replace_match](#replace_match)
@@ -239,26 +239,31 @@ Examples:
 
 - `limit(resource.attributes, 50, ["http.host", "http.method"])`
 
-### merge_maps
+### merge
 
-`merge_maps(target, source)`
+`merge(target, source, strategy)`
 
-The `merge_maps` function merges the source map into the target map. If any keys are the same, source's value is used.
+The `merge` function merges the source type into the target type using the supplied strategy to handle conflicts.
+Currently only merging of maps is supported 
 
-`target` is a `pdata.Map` type field. `source` is a `pdata.Map` type field.
+`target` is a `pdata.Map` type field. `source` is a `pdata.Map` type field. `strategy` is a string that must be one of `insert`, `update`, or `upsert`.
 
-`merge_maps` is a special case of the [`set` function](#set) which preserves any of the `target` values that do not conflict with `source`.
-If you need to completely override `target`, use `set` instead.
+If strategy is:
+- `insert`: Insert the value from `source` into `target` where the key does not already exist.
+- `update`: Update the entry in `target` with the value from `source` where the key does exist.
+- `upsert`: Performs insert or update. Insert the value from `source` into `target` where the key does not already exist and update the entry in `target` with the value from `source` where the key does exist.
+
+`merge` is a special case of the [`set` function](#set). If you need to completely override `target`, use `set` instead.
 
 Examples:
 
-- `merge_maps(attributes, ParseJSON(body))`
+- `merge(attributes, ParseJSON(body), "upsert")`
 
 
-- `merge_maps(attributes, ParseJSON(attributes["kubernetes"]))`
+- `merge(attributes, ParseJSON(attributes["kubernetes"]), "update")`
 
 
-- `merge_maps(attributes, resource.attributes)`
+- `merge(attributes, resource.attributes, "insert")`
 
 ### replace_all_matches
 

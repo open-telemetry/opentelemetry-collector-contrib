@@ -16,30 +16,65 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import (
 	"context"
+	"fmt"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-func MergeMaps[K any](target ottl.Getter[K], source ottl.Getter[K]) (ottl.ExprFunc[K], error) {
+const (
+	INSERT = "insert"
+	UPDATE = "update"
+	UPSERT = "upsert"
+)
+
+func Merge[K any](target ottl.Getter[K], source ottl.Getter[K], strategy string) (ottl.ExprFunc[K], error) {
+	if strategy != INSERT && strategy != UPDATE && strategy != UPSERT {
+		return nil, fmt.Errorf("invalid value for strategy, %v, must be 'insert', 'update' or 'upsert'", strategy)
+	}
+
 	return func(ctx context.Context, tCtx K) (interface{}, error) {
 		targetVal, err := target.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
+
 		if targetMap, ok := targetVal.(pcommon.Map); ok {
 			val, err := source.Get(ctx, tCtx)
 			if err != nil {
 				return nil, err
 			}
+
 			if valueMap, ok := val.(pcommon.Map); ok {
-				valueMap.Range(func(k string, v pcommon.Value) bool {
-					if tv, ok := targetMap.Get(k); ok {
-						v.CopyTo(tv)
-					} else {
-						tv := targetMap.PutEmpty(k)
-						v.CopyTo(tv)
+				var mergeFunc func(k string, v pcommon.Value)
+				switch strategy {
+				case INSERT:
+					mergeFunc = func(k string, v pcommon.Value) {
+						if _, ok := targetMap.Get(k); !ok {
+							tv := targetMap.PutEmpty(k)
+							v.CopyTo(tv)
+						}
 					}
+				case UPDATE:
+					mergeFunc = func(k string, v pcommon.Value) {
+						if tv, ok := targetMap.Get(k); ok {
+							v.CopyTo(tv)
+						}
+					}
+				case UPSERT:
+					mergeFunc = func(k string, v pcommon.Value) {
+						if tv, ok := targetMap.Get(k); ok {
+							v.CopyTo(tv)
+						} else {
+							tv := targetMap.PutEmpty(k)
+							v.CopyTo(tv)
+						}
+					}
+				default:
+					return nil, fmt.Errorf("unknown strategy, %v", strategy)
+				}
+				valueMap.Range(func(k string, v pcommon.Value) bool {
+					mergeFunc(k, v)
 					return true
 				})
 			}

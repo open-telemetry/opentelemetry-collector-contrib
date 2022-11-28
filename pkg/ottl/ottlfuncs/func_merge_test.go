@@ -36,12 +36,13 @@ func Test_MergeMaps(t *testing.T) {
 	}
 
 	tests := []struct {
-		name   string
-		source ottl.Getter[pcommon.Map]
-		want   func(pcommon.Map)
+		name     string
+		source   ottl.Getter[pcommon.Map]
+		strategy string
+		want     func(pcommon.Map)
 	}{
 		{
-			name: "merge no conflicting keys",
+			name: "Upsert no conflicting keys",
 			source: ottl.StandardGetSetter[pcommon.Map]{
 				Getter: func(ctx context.Context, _ pcommon.Map) (interface{}, error) {
 					m := pcommon.NewMap()
@@ -49,13 +50,14 @@ func Test_MergeMaps(t *testing.T) {
 					return m, nil
 				},
 			},
+			strategy: UPSERT,
 			want: func(expectedValue pcommon.Map) {
 				expectedValue.PutStr("attr1", "value1")
 				expectedValue.PutStr("attr2", "value2")
 			},
 		},
 		{
-			name: "merge conflicting key",
+			name: "Upsert conflicting key",
 			source: ottl.StandardGetSetter[pcommon.Map]{
 				Getter: func(ctx context.Context, _ pcommon.Map) (interface{}, error) {
 					m := pcommon.NewMap()
@@ -64,9 +66,69 @@ func Test_MergeMaps(t *testing.T) {
 					return m, nil
 				},
 			},
+			strategy: UPSERT,
 			want: func(expectedValue pcommon.Map) {
 				expectedValue.PutStr("attr1", "value3")
 				expectedValue.PutStr("attr2", "value2")
+			},
+		},
+		{
+			name: "Insert no conflicting keys",
+			source: ottl.StandardGetSetter[pcommon.Map]{
+				Getter: func(ctx context.Context, _ pcommon.Map) (interface{}, error) {
+					m := pcommon.NewMap()
+					m.PutStr("attr2", "value2")
+					return m, nil
+				},
+			},
+			strategy: INSERT,
+			want: func(expectedValue pcommon.Map) {
+				expectedValue.PutStr("attr1", "value1")
+				expectedValue.PutStr("attr2", "value2")
+			},
+		},
+		{
+			name: "Insert conflicting key",
+			source: ottl.StandardGetSetter[pcommon.Map]{
+				Getter: func(ctx context.Context, _ pcommon.Map) (interface{}, error) {
+					m := pcommon.NewMap()
+					m.PutStr("attr1", "value3")
+					m.PutStr("attr2", "value2")
+					return m, nil
+				},
+			},
+			strategy: INSERT,
+			want: func(expectedValue pcommon.Map) {
+				expectedValue.PutStr("attr1", "value1")
+				expectedValue.PutStr("attr2", "value2")
+			},
+		},
+		{
+			name: "Update no conflicting keys",
+			source: ottl.StandardGetSetter[pcommon.Map]{
+				Getter: func(ctx context.Context, _ pcommon.Map) (interface{}, error) {
+					m := pcommon.NewMap()
+					m.PutStr("attr2", "value2")
+					return m, nil
+				},
+			},
+			strategy: UPDATE,
+			want: func(expectedValue pcommon.Map) {
+				expectedValue.PutStr("attr1", "value1")
+			},
+		},
+		{
+			name: "Update conflicting key",
+			source: ottl.StandardGetSetter[pcommon.Map]{
+				Getter: func(ctx context.Context, _ pcommon.Map) (interface{}, error) {
+					m := pcommon.NewMap()
+					m.PutStr("attr1", "value3")
+					return m, nil
+				},
+			},
+			strategy: UPDATE,
+			want: func(expectedValue pcommon.Map) {
+				expectedValue.PutStr("attr1", "value3")
 			},
 		},
 		{
@@ -76,6 +138,7 @@ func Test_MergeMaps(t *testing.T) {
 					return nil, nil
 				},
 			},
+			strategy: UPSERT,
 			want: func(expectedValue pcommon.Map) {
 				expectedValue.PutStr("attr1", "value1")
 			},
@@ -86,7 +149,7 @@ func Test_MergeMaps(t *testing.T) {
 			scenarioMap := pcommon.NewMap()
 			input.CopyTo(scenarioMap)
 
-			exprFunc, err := MergeMaps[pcommon.Map](targetGetter, tt.source)
+			exprFunc, err := Merge[pcommon.Map](targetGetter, tt.source, tt.strategy)
 			assert.NoError(t, err)
 
 			result, err := exprFunc(context.Background(), scenarioMap)
