@@ -42,6 +42,8 @@ func IsMatch[K any](target ottl.Getter[K], pattern string) (ottl.ExprFunc[K], er
 			return compiledPattern.MatchString(strconv.FormatBool(v)), nil
 		case int64:
 			return compiledPattern.MatchString(strconv.FormatInt(v, 10)), nil
+		case pcommon.Value:
+			return compiledPattern.MatchString(v.AsString()), nil
 		default:
 			pv := pcommon.NewValueEmpty()
 			pv.FromRaw(v)

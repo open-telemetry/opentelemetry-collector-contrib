@@ -16,6 +16,7 @@ package ottlfuncs
 
 import (
 	"context"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -92,14 +93,16 @@ func Test_isMatch(t *testing.T) {
 			expected: true,
 		},
 		{
-			name: "target invalid type",
+			name: "target pcommon.Value",
 			target: &ottl.StandardGetSetter[interface{}]{
 				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
-					return []string{"invalid"}, nil
+					v := pcommon.NewValueEmpty()
+					v.SetStr("test")
+					return v, nil
 				},
 			},
-			pattern:  `\[invalid\]`,
-			expected: false,
+			pattern:  `test`,
+			expected: true,
 		},
 		{
 			name: "target nil",
