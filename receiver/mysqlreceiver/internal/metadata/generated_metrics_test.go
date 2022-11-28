@@ -39,7 +39,7 @@ func TestDefaultMetrics(t *testing.T) {
 	mb.RecordMysqlClientNetworkIoDataPoint(ts, "1", AttributeDirection(1))
 
 	enabledMetrics["mysql.commands"] = true
-	mb.RecordMysqlCommandsDataPoint(ts, "1", AttributeCommand(1))
+	mb.RecordMysqlCommandsDataPoint(ts, "1", AttributePreparedStatementsCommand(1))
 
 	mb.RecordMysqlConnectionErrorsDataPoint(ts, "1", AttributeConnectionError(1))
 
@@ -79,6 +79,9 @@ func TestDefaultMetrics(t *testing.T) {
 
 	enabledMetrics["mysql.page_operations"] = true
 	mb.RecordMysqlPageOperationsDataPoint(ts, "1", AttributePageOperations(1))
+
+	enabledMetrics["mysql.prepared_statements"] = true
+	mb.RecordMysqlPreparedStatementsDataPoint(ts, "1", AttributePreparedStatementsCommand(1))
 
 	mb.RecordMysqlQueryClientCountDataPoint(ts, "1")
 
@@ -162,6 +165,7 @@ func TestAllMetrics(t *testing.T) {
 		MysqlOpenedResources:         MetricSettings{Enabled: true},
 		MysqlOperations:              MetricSettings{Enabled: true},
 		MysqlPageOperations:          MetricSettings{Enabled: true},
+		MysqlPreparedStatements:      MetricSettings{Enabled: true},
 		MysqlQueryClientCount:        MetricSettings{Enabled: true},
 		MysqlQueryCount:              MetricSettings{Enabled: true},
 		MysqlQuerySlowCount:          MetricSettings{Enabled: true},
@@ -189,7 +193,7 @@ func TestAllMetrics(t *testing.T) {
 	mb.RecordMysqlBufferPoolPagesDataPoint(ts, "1", AttributeBufferPoolPages(1))
 	mb.RecordMysqlBufferPoolUsageDataPoint(ts, 1, AttributeBufferPoolData(1))
 	mb.RecordMysqlClientNetworkIoDataPoint(ts, "1", AttributeDirection(1))
-	mb.RecordMysqlCommandsDataPoint(ts, "1", AttributeCommand(1))
+	mb.RecordMysqlCommandsDataPoint(ts, "1", AttributePreparedStatementsCommand(1))
 	mb.RecordMysqlConnectionErrorsDataPoint(ts, "1", AttributeConnectionError(1))
 	mb.RecordMysqlDoubleWritesDataPoint(ts, "1", AttributeDoubleWrites(1))
 	mb.RecordMysqlHandlersDataPoint(ts, "1", AttributeHandler(1))
@@ -204,6 +208,7 @@ func TestAllMetrics(t *testing.T) {
 	mb.RecordMysqlOpenedResourcesDataPoint(ts, "1", AttributeOpenedResources(1))
 	mb.RecordMysqlOperationsDataPoint(ts, "1", AttributeOperations(1))
 	mb.RecordMysqlPageOperationsDataPoint(ts, "1", AttributePageOperations(1))
+	mb.RecordMysqlPreparedStatementsDataPoint(ts, "1", AttributePreparedStatementsCommand(1))
 	mb.RecordMysqlQueryClientCountDataPoint(ts, "1")
 	mb.RecordMysqlQueryCountDataPoint(ts, "1")
 	mb.RecordMysqlQuerySlowCountDataPoint(ts, "1")
@@ -601,6 +606,22 @@ func TestAllMetrics(t *testing.T) {
 			assert.True(t, ok)
 			assert.Equal(t, "created", attrVal.Str())
 			validatedMetrics["mysql.page_operations"] = struct{}{}
+		case "mysql.prepared_statements":
+			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+			assert.Equal(t, "The number of times each type of prepared statement command has been issued.", ms.At(i).Description())
+			assert.Equal(t, "1", ms.At(i).Unit())
+			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+			dp := ms.At(i).Sum().DataPoints().At(0)
+			assert.Equal(t, start, dp.StartTimestamp())
+			assert.Equal(t, ts, dp.Timestamp())
+			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+			assert.Equal(t, int64(1), dp.IntValue())
+			attrVal, ok := dp.Attributes().Get("command")
+			assert.True(t, ok)
+			assert.Equal(t, "execute", attrVal.Str())
+			validatedMetrics["mysql.prepared_statements"] = struct{}{}
 		case "mysql.query.client.count":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
@@ -946,6 +967,7 @@ func TestNoMetrics(t *testing.T) {
 		MysqlOpenedResources:         MetricSettings{Enabled: false},
 		MysqlOperations:              MetricSettings{Enabled: false},
 		MysqlPageOperations:          MetricSettings{Enabled: false},
+		MysqlPreparedStatements:      MetricSettings{Enabled: false},
 		MysqlQueryClientCount:        MetricSettings{Enabled: false},
 		MysqlQueryCount:              MetricSettings{Enabled: false},
 		MysqlQuerySlowCount:          MetricSettings{Enabled: false},
@@ -972,7 +994,7 @@ func TestNoMetrics(t *testing.T) {
 	mb.RecordMysqlBufferPoolPagesDataPoint(ts, "1", AttributeBufferPoolPages(1))
 	mb.RecordMysqlBufferPoolUsageDataPoint(ts, 1, AttributeBufferPoolData(1))
 	mb.RecordMysqlClientNetworkIoDataPoint(ts, "1", AttributeDirection(1))
-	mb.RecordMysqlCommandsDataPoint(ts, "1", AttributeCommand(1))
+	mb.RecordMysqlCommandsDataPoint(ts, "1", AttributePreparedStatementsCommand(1))
 	mb.RecordMysqlConnectionErrorsDataPoint(ts, "1", AttributeConnectionError(1))
 	mb.RecordMysqlDoubleWritesDataPoint(ts, "1", AttributeDoubleWrites(1))
 	mb.RecordMysqlHandlersDataPoint(ts, "1", AttributeHandler(1))
@@ -987,6 +1009,7 @@ func TestNoMetrics(t *testing.T) {
 	mb.RecordMysqlOpenedResourcesDataPoint(ts, "1", AttributeOpenedResources(1))
 	mb.RecordMysqlOperationsDataPoint(ts, "1", AttributeOperations(1))
 	mb.RecordMysqlPageOperationsDataPoint(ts, "1", AttributePageOperations(1))
+	mb.RecordMysqlPreparedStatementsDataPoint(ts, "1", AttributePreparedStatementsCommand(1))
 	mb.RecordMysqlQueryClientCountDataPoint(ts, "1")
 	mb.RecordMysqlQueryCountDataPoint(ts, "1")
 	mb.RecordMysqlQuerySlowCountDataPoint(ts, "1")

@@ -27,6 +27,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
@@ -55,6 +56,13 @@ func TestScrape(t *testing.T) {
 		cfg.Metrics.MysqlTableLockWaitWriteTime.Enabled = true
 
 		cfg.Metrics.MysqlClientNetworkIo.Enabled = true
+		cfg.Metrics.MysqlPreparedStatements.Enabled = true
+
+		// Test with feature gate enabled
+		err := featuregate.GetRegistry().Apply(map[string]bool{
+			RenameCommands: true,
+		})
+		require.NoError(t, err)
 
 		scraper := newMySQLScraper(componenttest.NewNopReceiverCreateSettings(), cfg)
 		scraper.sqlclient = &mockClient{
@@ -65,6 +73,8 @@ func TestScrape(t *testing.T) {
 			statementEventsFile:         "statement_events",
 			tableLockWaitEventStatsFile: "table_lock_wait_event_stats",
 		}
+
+		scraper.renameCommands = true
 
 		actualMetrics, err := scraper.scrape(context.Background())
 		require.NoError(t, err)
