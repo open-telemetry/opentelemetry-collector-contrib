@@ -74,7 +74,7 @@ func TestAllMetrics(t *testing.T) {
 	attrVal, ok {{ $assignSign }} rm.Resource().Attributes().Get("{{ $name }}")
 	assert.True(t, ok)
 	{{- if $info.Enum }}
-	assert.Equal(t, Attribute{{ $name.Render }}(1).String(), attrVal.Str())
+	assert.Equal(t, "{{ index $info.Enum 0 }}", attrVal.Str())
 	{{- else }}
 	assert.EqualValues(t, {{ $info.Type.TestValue }}, attrVal.{{ $info.Type }}())
 	{{- end }}
@@ -110,7 +110,7 @@ func TestAllMetrics(t *testing.T) {
 			attrVal, ok {{ if eq $i 0 }}:{{ end }}= dp.Attributes().Get("{{ attributeKey $attr }}")
 			assert.True(t, ok)
 			{{- if (attributeInfo $attr).Enum }}
-			assert.Equal(t, Attribute{{ .Render }}(1).String(), attrVal.Str())
+			assert.Equal(t, "{{ index (attributeInfo $attr).Enum 0 }}", attrVal.Str())
 			{{- else }}
 			assert.EqualValues(t, {{ (attributeInfo $attr).Type.TestValue }}, attrVal.{{ (attributeInfo $attr).Type }}())
 			{{- end }}

@@ -98,7 +98,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, float64(1), dp.DoubleValue())
 			attrVal, ok := dp.Attributes().Get("leap.status")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeLeapStatus(1).String(), attrVal.Str())
+			assert.Equal(t, "normal", attrVal.Str())
 			validatedMetrics["ntp.frequency.offset"] = struct{}{}
 		case "ntp.skew":
 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
@@ -134,7 +134,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, float64(1), dp.DoubleValue())
 			attrVal, ok := dp.Attributes().Get("leap.status")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeLeapStatus(1).String(), attrVal.Str())
+			assert.Equal(t, "normal", attrVal.Str())
 			validatedMetrics["ntp.time.correction"] = struct{}{}
 		case "ntp.time.last_offset":
 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
@@ -148,7 +148,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, float64(1), dp.DoubleValue())
 			attrVal, ok := dp.Attributes().Get("leap.status")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeLeapStatus(1).String(), attrVal.Str())
+			assert.Equal(t, "normal", attrVal.Str())
 			validatedMetrics["ntp.time.last_offset"] = struct{}{}
 		case "ntp.time.rms_offset":
 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
@@ -162,7 +162,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, float64(1), dp.DoubleValue())
 			attrVal, ok := dp.Attributes().Get("leap.status")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeLeapStatus(1).String(), attrVal.Str())
+			assert.Equal(t, "normal", attrVal.Str())
 			validatedMetrics["ntp.time.rms_offset"] = struct{}{}
 		case "ntp.time.root_delay":
 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
@@ -176,7 +176,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, float64(1), dp.DoubleValue())
 			attrVal, ok := dp.Attributes().Get("leap.status")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeLeapStatus(1).String(), attrVal.Str())
+			assert.Equal(t, "normal", attrVal.Str())
 			validatedMetrics["ntp.time.root_delay"] = struct{}{}
 		}
 	}

@@ -550,7 +550,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("status")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeHealthStatus(1).String(), attrVal.Str())
+			assert.Equal(t, "green", attrVal.Str())
 			validatedMetrics["elasticsearch.cluster.health"] = struct{}{}
 		case "elasticsearch.cluster.in_flight_fetch":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -605,7 +605,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("state")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeClusterPublishedDifferenceState(1).String(), attrVal.Str())
+			assert.Equal(t, "incompatible", attrVal.Str())
 			validatedMetrics["elasticsearch.cluster.published_states.differences"] = struct{}{}
 		case "elasticsearch.cluster.published_states.full":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -634,7 +634,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("state")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeShardState(1).String(), attrVal.Str())
+			assert.Equal(t, "active", attrVal.Str())
 			validatedMetrics["elasticsearch.cluster.shards"] = struct{}{}
 		case "elasticsearch.cluster.state_queue":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -650,7 +650,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("state")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeClusterStateQueueState(1).String(), attrVal.Str())
+			assert.Equal(t, "pending", attrVal.Str())
 			validatedMetrics["elasticsearch.cluster.state_queue"] = struct{}{}
 		case "elasticsearch.cluster.state_update.count":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -685,7 +685,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.EqualValues(t, "attr-val", attrVal.Str())
 			attrVal, ok = dp.Attributes().Get("type")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeClusterStateUpdateType(1).String(), attrVal.Str())
+			assert.Equal(t, "computation", attrVal.Str())
 			validatedMetrics["elasticsearch.cluster.state_update.time"] = struct{}{}
 		case "elasticsearch.index.cache.evictions":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -701,10 +701,10 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("cache_name")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeCacheName(1).String(), attrVal.Str())
+			assert.Equal(t, "fielddata", attrVal.Str())
 			attrVal, ok = dp.Attributes().Get("aggregation")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeIndexAggregationType(1).String(), attrVal.Str())
+			assert.Equal(t, "primary_shards", attrVal.Str())
 			validatedMetrics["elasticsearch.index.cache.evictions"] = struct{}{}
 		case "elasticsearch.index.cache.memory.usage":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -720,10 +720,10 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("cache_name")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeCacheName(1).String(), attrVal.Str())
+			assert.Equal(t, "fielddata", attrVal.Str())
 			attrVal, ok = dp.Attributes().Get("aggregation")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeIndexAggregationType(1).String(), attrVal.Str())
+			assert.Equal(t, "primary_shards", attrVal.Str())
 			validatedMetrics["elasticsearch.index.cache.memory.usage"] = struct{}{}
 		case "elasticsearch.index.cache.size":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -739,7 +739,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("aggregation")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeIndexAggregationType(1).String(), attrVal.Str())
+			assert.Equal(t, "primary_shards", attrVal.Str())
 			validatedMetrics["elasticsearch.index.cache.size"] = struct{}{}
 		case "elasticsearch.index.documents":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -755,10 +755,10 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("state")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeDocumentState(1).String(), attrVal.Str())
+			assert.Equal(t, "active", attrVal.Str())
 			attrVal, ok = dp.Attributes().Get("aggregation")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeIndexAggregationType(1).String(), attrVal.Str())
+			assert.Equal(t, "primary_shards", attrVal.Str())
 			validatedMetrics["elasticsearch.index.documents"] = struct{}{}
 		case "elasticsearch.index.operations.completed":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -774,10 +774,10 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("operation")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeOperation(1).String(), attrVal.Str())
+			assert.Equal(t, "index", attrVal.Str())
 			attrVal, ok = dp.Attributes().Get("aggregation")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeIndexAggregationType(1).String(), attrVal.Str())
+			assert.Equal(t, "primary_shards", attrVal.Str())
 			validatedMetrics["elasticsearch.index.operations.completed"] = struct{}{}
 		case "elasticsearch.index.operations.merge.docs_count":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -793,7 +793,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("aggregation")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeIndexAggregationType(1).String(), attrVal.Str())
+			assert.Equal(t, "primary_shards", attrVal.Str())
 			validatedMetrics["elasticsearch.index.operations.merge.docs_count"] = struct{}{}
 		case "elasticsearch.index.operations.merge.size":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -809,7 +809,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("aggregation")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeIndexAggregationType(1).String(), attrVal.Str())
+			assert.Equal(t, "primary_shards", attrVal.Str())
 			validatedMetrics["elasticsearch.index.operations.merge.size"] = struct{}{}
 		case "elasticsearch.index.operations.time":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -825,10 +825,10 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("operation")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeOperation(1).String(), attrVal.Str())
+			assert.Equal(t, "index", attrVal.Str())
 			attrVal, ok = dp.Attributes().Get("aggregation")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeIndexAggregationType(1).String(), attrVal.Str())
+			assert.Equal(t, "primary_shards", attrVal.Str())
 			validatedMetrics["elasticsearch.index.operations.time"] = struct{}{}
 		case "elasticsearch.index.segments.count":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -844,7 +844,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("aggregation")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeIndexAggregationType(1).String(), attrVal.Str())
+			assert.Equal(t, "primary_shards", attrVal.Str())
 			validatedMetrics["elasticsearch.index.segments.count"] = struct{}{}
 		case "elasticsearch.index.segments.memory":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -860,10 +860,10 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("aggregation")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeIndexAggregationType(1).String(), attrVal.Str())
+			assert.Equal(t, "primary_shards", attrVal.Str())
 			attrVal, ok = dp.Attributes().Get("object")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeSegmentsMemoryObjectType(1).String(), attrVal.Str())
+			assert.Equal(t, "term", attrVal.Str())
 			validatedMetrics["elasticsearch.index.segments.memory"] = struct{}{}
 		case "elasticsearch.index.segments.size":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -879,7 +879,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("aggregation")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeIndexAggregationType(1).String(), attrVal.Str())
+			assert.Equal(t, "primary_shards", attrVal.Str())
 			validatedMetrics["elasticsearch.index.segments.size"] = struct{}{}
 		case "elasticsearch.index.shards.size":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -895,7 +895,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("aggregation")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeIndexAggregationType(1).String(), attrVal.Str())
+			assert.Equal(t, "primary_shards", attrVal.Str())
 			validatedMetrics["elasticsearch.index.shards.size"] = struct{}{}
 		case "elasticsearch.index.translog.operations":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -911,7 +911,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("aggregation")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeIndexAggregationType(1).String(), attrVal.Str())
+			assert.Equal(t, "primary_shards", attrVal.Str())
 			validatedMetrics["elasticsearch.index.translog.operations"] = struct{}{}
 		case "elasticsearch.index.translog.size":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -927,7 +927,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("aggregation")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeIndexAggregationType(1).String(), attrVal.Str())
+			assert.Equal(t, "primary_shards", attrVal.Str())
 			validatedMetrics["elasticsearch.index.translog.size"] = struct{}{}
 		case "elasticsearch.indexing_pressure.memory.limit":
 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
@@ -980,7 +980,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("stage")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeIndexingPressureStage(1).String(), attrVal.Str())
+			assert.Equal(t, "coordinating", attrVal.Str())
 			validatedMetrics["elasticsearch.memory.indexing_pressure"] = struct{}{}
 		case "elasticsearch.node.cache.count":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -996,7 +996,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("type")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeQueryCacheCountType(1).String(), attrVal.Str())
+			assert.Equal(t, "hit", attrVal.Str())
 			validatedMetrics["elasticsearch.node.cache.count"] = struct{}{}
 		case "elasticsearch.node.cache.evictions":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -1012,7 +1012,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("cache_name")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeCacheName(1).String(), attrVal.Str())
+			assert.Equal(t, "fielddata", attrVal.Str())
 			validatedMetrics["elasticsearch.node.cache.evictions"] = struct{}{}
 		case "elasticsearch.node.cache.memory.usage":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -1028,7 +1028,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("cache_name")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeCacheName(1).String(), attrVal.Str())
+			assert.Equal(t, "fielddata", attrVal.Str())
 			validatedMetrics["elasticsearch.node.cache.memory.usage"] = struct{}{}
 		case "elasticsearch.node.cluster.connections":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -1057,7 +1057,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("direction")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeDirection(1).String(), attrVal.Str())
+			assert.Equal(t, "received", attrVal.Str())
 			validatedMetrics["elasticsearch.node.cluster.io"] = struct{}{}
 		case "elasticsearch.node.disk.io.read":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -1099,7 +1099,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("state")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeDocumentState(1).String(), attrVal.Str())
+			assert.Equal(t, "active", attrVal.Str())
 			validatedMetrics["elasticsearch.node.documents"] = struct{}{}
 		case "elasticsearch.node.fs.disk.available":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -1219,7 +1219,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("operation")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeOperation(1).String(), attrVal.Str())
+			assert.Equal(t, "index", attrVal.Str())
 			validatedMetrics["elasticsearch.node.operations.completed"] = struct{}{}
 		case "elasticsearch.node.operations.get.completed":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -1235,7 +1235,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("result")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeGetResult(1).String(), attrVal.Str())
+			assert.Equal(t, "hit", attrVal.Str())
 			validatedMetrics["elasticsearch.node.operations.get.completed"] = struct{}{}
 		case "elasticsearch.node.operations.get.time":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -1251,7 +1251,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("result")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeGetResult(1).String(), attrVal.Str())
+			assert.Equal(t, "hit", attrVal.Str())
 			validatedMetrics["elasticsearch.node.operations.get.time"] = struct{}{}
 		case "elasticsearch.node.operations.time":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -1267,7 +1267,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("operation")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeOperation(1).String(), attrVal.Str())
+			assert.Equal(t, "index", attrVal.Str())
 			validatedMetrics["elasticsearch.node.operations.time"] = struct{}{}
 		case "elasticsearch.node.pipeline.ingest.documents.current":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -1370,7 +1370,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("object")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeSegmentsMemoryObjectType(1).String(), attrVal.Str())
+			assert.Equal(t, "term", attrVal.Str())
 			validatedMetrics["elasticsearch.node.segments.memory"] = struct{}{}
 		case "elasticsearch.node.shards.data_set.size":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -1428,7 +1428,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.EqualValues(t, "attr-val", attrVal.Str())
 			attrVal, ok = dp.Attributes().Get("state")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeTaskState(1).String(), attrVal.Str())
+			assert.Equal(t, "rejected", attrVal.Str())
 			validatedMetrics["elasticsearch.node.thread_pool.tasks.finished"] = struct{}{}
 		case "elasticsearch.node.thread_pool.tasks.queued":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -1463,7 +1463,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.EqualValues(t, "attr-val", attrVal.Str())
 			attrVal, ok = dp.Attributes().Get("state")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeThreadState(1).String(), attrVal.Str())
+			assert.Equal(t, "active", attrVal.Str())
 			validatedMetrics["elasticsearch.node.thread_pool.threads"] = struct{}{}
 		case "elasticsearch.node.translog.operations":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -1560,7 +1560,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("state")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeMemoryState(1).String(), attrVal.Str())
+			assert.Equal(t, "free", attrVal.Str())
 			validatedMetrics["elasticsearch.os.memory"] = struct{}{}
 		case "jvm.classes.loaded":
 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())

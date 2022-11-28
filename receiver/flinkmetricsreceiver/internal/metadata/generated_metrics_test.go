@@ -238,7 +238,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("checkpoint")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeCheckpoint(1).String(), attrVal.Str())
+			assert.Equal(t, "completed", attrVal.Str())
 			validatedMetrics["flink.job.checkpoint.count"] = struct{}{}
 		case "flink.job.checkpoint.in_progress":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -341,7 +341,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("name")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeGarbageCollectorName(1).String(), attrVal.Str())
+			assert.Equal(t, "PS_MarkSweep", attrVal.Str())
 			validatedMetrics["flink.jvm.gc.collections.count"] = struct{}{}
 		case "flink.jvm.gc.collections.time":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -357,7 +357,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("name")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeGarbageCollectorName(1).String(), attrVal.Str())
+			assert.Equal(t, "PS_MarkSweep", attrVal.Str())
 			validatedMetrics["flink.jvm.gc.collections.time"] = struct{}{}
 		case "flink.jvm.memory.direct.total_capacity":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -584,7 +584,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.EqualValues(t, "attr-val", attrVal.Str())
 			attrVal, ok = dp.Attributes().Get("record")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeRecord(1).String(), attrVal.Str())
+			assert.Equal(t, "in", attrVal.Str())
 			validatedMetrics["flink.operator.record.count"] = struct{}{}
 		case "flink.operator.watermark.output":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -616,7 +616,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("record")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeRecord(1).String(), attrVal.Str())
+			assert.Equal(t, "in", attrVal.Str())
 			validatedMetrics["flink.task.record.count"] = struct{}{}
 		}
 	}

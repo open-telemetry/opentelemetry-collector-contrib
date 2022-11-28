@@ -79,7 +79,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("status")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeStatus(1).String(), attrVal.Str())
+			assert.Equal(t, "blocked", attrVal.Str())
 			validatedMetrics["system.processes.count"] = struct{}{}
 		case "system.processes.created":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
