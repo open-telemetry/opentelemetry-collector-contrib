@@ -93,7 +93,7 @@ type pulsarReceiverFactory struct {
 func (f *pulsarReceiverFactory) createTracesReceiver(
 	_ context.Context,
 	set component.ReceiverCreateSettings,
-	cfg component.ReceiverConfig,
+	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (component.TracesReceiver, error) {
 	c := *(cfg.(*Config))
@@ -110,7 +110,7 @@ func (f *pulsarReceiverFactory) createTracesReceiver(
 func (f *pulsarReceiverFactory) createMetricsReceiver(
 	_ context.Context,
 	set component.ReceiverCreateSettings,
-	cfg component.ReceiverConfig,
+	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	c := *(cfg.(*Config))
@@ -127,7 +127,7 @@ func (f *pulsarReceiverFactory) createMetricsReceiver(
 func (f *pulsarReceiverFactory) createLogsReceiver(
 	_ context.Context,
 	set component.ReceiverCreateSettings,
-	cfg component.ReceiverConfig,
+	cfg component.Config,
 	nextConsumer consumer.Logs,
 ) (component.LogsReceiver, error) {
 	c := *(cfg.(*Config))
@@ -141,7 +141,7 @@ func (f *pulsarReceiverFactory) createLogsReceiver(
 	return r, nil
 }
 
-func createDefaultConfig() component.ReceiverConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 		Encoding:         defaultEncoding,

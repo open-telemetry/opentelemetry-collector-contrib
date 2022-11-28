@@ -47,7 +47,7 @@ func TestNewFactory(t *testing.T) {
 			testFunc: func(t *testing.T) {
 				factory := NewFactory()
 
-				var expectedCfg component.ReceiverConfig = &Config{
+				var expectedCfg component.Config = &Config{
 					ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 						ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 						CollectionInterval: 10 * time.Second,

@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
-func createDefaultLegacyConfig() component.ExporterConfig {
+func createDefaultLegacyConfig() component.Config {
 	return &Config{
 		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		HTTPClientSettings: confighttp.HTTPClientSettings{

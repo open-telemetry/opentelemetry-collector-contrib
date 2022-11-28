@@ -51,7 +51,7 @@ type Config struct {
 	StorageID               *component.ID `mapstructure:"storage"`
 }
 
-func createDefaultConfig() component.ReceiverConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		Config:           *fileconsumer.NewConfig(),
 		ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
@@ -76,7 +76,7 @@ func (f *receiver) Shutdown(ctx context.Context) error {
 	return f.input.Stop()
 }
 
-func createLogsReceiver(_ context.Context, settings component.ReceiverCreateSettings, configuration component.ReceiverConfig, logs consumer.Logs) (component.LogsReceiver, error) {
+func createLogsReceiver(_ context.Context, settings component.ReceiverCreateSettings, configuration component.Config, logs consumer.Logs) (component.LogsReceiver, error) {
 	logsUnmarshaler := &plog.JSONUnmarshaler{}
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
 		ReceiverID:             configuration.ID(),
@@ -105,7 +105,7 @@ func createLogsReceiver(_ context.Context, settings component.ReceiverCreateSett
 	return &receiver{input: input, id: cfg.ID(), storageID: cfg.StorageID}, nil
 }
 
-func createMetricsReceiver(_ context.Context, settings component.ReceiverCreateSettings, configuration component.ReceiverConfig, metrics consumer.Metrics) (component.MetricsReceiver, error) {
+func createMetricsReceiver(_ context.Context, settings component.ReceiverCreateSettings, configuration component.Config, metrics consumer.Metrics) (component.MetricsReceiver, error) {
 	metricsUnmarshaler := &pmetric.JSONUnmarshaler{}
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
 		ReceiverID:             configuration.ID(),
@@ -134,7 +134,7 @@ func createMetricsReceiver(_ context.Context, settings component.ReceiverCreateS
 	return &receiver{input: input, id: cfg.ID(), storageID: cfg.StorageID}, nil
 }
 
-func createTracesReceiver(ctx context.Context, settings component.ReceiverCreateSettings, configuration component.ReceiverConfig, traces consumer.Traces) (component.TracesReceiver, error) {
+func createTracesReceiver(ctx context.Context, settings component.ReceiverCreateSettings, configuration component.Config, traces consumer.Traces) (component.TracesReceiver, error) {
 	tracesUnmarshaler := &ptrace.JSONUnmarshaler{}
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
 		ReceiverID:             configuration.ID(),

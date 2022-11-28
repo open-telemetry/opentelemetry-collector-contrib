@@ -50,7 +50,7 @@ func TestDefaultProcessors(t *testing.T) {
 	}{
 		{
 			processor: "attributes",
-			getConfigFn: func() component.ProcessorConfig {
+			getConfigFn: func() component.Config {
 				cfg := procFactories["attributes"].CreateDefaultConfig().(*attributesprocessor.Config)
 				cfg.Actions = []attraction.ActionKeyValue{
 					{Key: "attribute1", Action: attraction.INSERT, Value: 123},
@@ -79,7 +79,7 @@ func TestDefaultProcessors(t *testing.T) {
 		},
 		{
 			processor: "memory_limiter",
-			getConfigFn: func() component.ProcessorConfig {
+			getConfigFn: func() component.Config {
 				cfg := procFactories["memory_limiter"].CreateDefaultConfig().(*memorylimiterprocessor.Config)
 				cfg.CheckInterval = 100 * time.Millisecond
 				cfg.MemoryLimitMiB = 1024 * 1024
@@ -100,7 +100,7 @@ func TestDefaultProcessors(t *testing.T) {
 		},
 		{
 			processor: "resource",
-			getConfigFn: func() component.ProcessorConfig {
+			getConfigFn: func() component.Config {
 				cfg := procFactories["resource"].CreateDefaultConfig().(*resourceprocessor.Config)
 				cfg.AttributesActions = []attraction.ActionKeyValue{
 					{Key: "attribute1", Action: attraction.INSERT, Value: 123},
@@ -114,7 +114,7 @@ func TestDefaultProcessors(t *testing.T) {
 		},
 		{
 			processor: "span",
-			getConfigFn: func() component.ProcessorConfig {
+			getConfigFn: func() component.Config {
 				cfg := procFactories["span"].CreateDefaultConfig().(*spanprocessor.Config)
 				cfg.Rename.FromAttributes = []string{"test-key"}
 				return cfg
@@ -159,7 +159,7 @@ func TestDefaultProcessors(t *testing.T) {
 // getProcessorConfigFn is used customize the configuration passed to the verification.
 // This is used to change ports or provide values required but not provided by the
 // default configuration.
-type getProcessorConfigFn func() component.ProcessorConfig
+type getProcessorConfigFn func() component.Config
 
 // verifyProcessorLifecycle is used to test if an processor type can handle the typical
 // lifecycle of a component. The getConfigFn parameter only need to be specified if
@@ -198,23 +198,23 @@ func verifyProcessorLifecycle(t *testing.T, factory component.ProcessorFactory, 
 type createProcessorFn func(
 	ctx context.Context,
 	set component.ProcessorCreateSettings,
-	cfg component.ProcessorConfig,
+	cfg component.Config,
 ) (component.Component, error)
 
 func wrapCreateLogsProc(factory component.ProcessorFactory) createProcessorFn {
-	return func(ctx context.Context, set component.ProcessorCreateSettings, cfg component.ProcessorConfig) (component.Component, error) {
+	return func(ctx context.Context, set component.ProcessorCreateSettings, cfg component.Config) (component.Component, error) {
 		return factory.CreateLogsProcessor(ctx, set, cfg, consumertest.NewNop())
 	}
 }
 
 func wrapCreateMetricsProc(factory component.ProcessorFactory) createProcessorFn {
-	return func(ctx context.Context, set component.ProcessorCreateSettings, cfg component.ProcessorConfig) (component.Component, error) {
+	return func(ctx context.Context, set component.ProcessorCreateSettings, cfg component.Config) (component.Component, error) {
 		return factory.CreateMetricsProcessor(ctx, set, cfg, consumertest.NewNop())
 	}
 }
 
 func wrapCreateTracesProc(factory component.ProcessorFactory) createProcessorFn {
-	return func(ctx context.Context, set component.ProcessorCreateSettings, cfg component.ProcessorConfig) (component.Component, error) {
+	return func(ctx context.Context, set component.ProcessorCreateSettings, cfg component.Config) (component.Component, error) {
 		return factory.CreateTracesProcessor(ctx, set, cfg, consumertest.NewNop())
 	}
 }

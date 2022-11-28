@@ -84,7 +84,7 @@ func TestMockedEndToEnd(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	sub, err := cm.Sub(component.NewIDWithName(typeStr, "1").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	params := componenttest.NewNopReceiverCreateSettings()
 	mockConsumer := new(consumertest.MetricsSink)

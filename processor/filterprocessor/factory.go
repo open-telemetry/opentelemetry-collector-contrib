@@ -43,7 +43,7 @@ func NewFactory() component.ProcessorFactory {
 	)
 }
 
-func createDefaultConfig() component.ProcessorConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 	}
@@ -52,7 +52,7 @@ func createDefaultConfig() component.ProcessorConfig {
 func createMetricsProcessor(
 	ctx context.Context,
 	set component.ProcessorCreateSettings,
-	cfg component.ProcessorConfig,
+	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsProcessor, error) {
 	fp, err := newFilterMetricProcessor(set.TelemetrySettings, cfg.(*Config))
@@ -71,7 +71,7 @@ func createMetricsProcessor(
 func createLogsProcessor(
 	ctx context.Context,
 	set component.ProcessorCreateSettings,
-	cfg component.ProcessorConfig,
+	cfg component.Config,
 	nextConsumer consumer.Logs,
 ) (component.LogsProcessor, error) {
 	fp, err := newFilterLogsProcessor(set.TelemetrySettings, cfg.(*Config))
@@ -90,7 +90,7 @@ func createLogsProcessor(
 func createTracesProcessor(
 	ctx context.Context,
 	set component.ProcessorCreateSettings,
-	cfg component.ProcessorConfig,
+	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (component.TracesProcessor, error) {
 	fp, err := newFilterSpansProcessor(set.TelemetrySettings, cfg.(*Config))

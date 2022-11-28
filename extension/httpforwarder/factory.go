@@ -40,7 +40,7 @@ func NewFactory() component.ExtensionFactory {
 		component.StabilityLevelUnmaintained)
 }
 
-func createDefaultConfig() component.ExtensionConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
 		Ingress: confighttp.HTTPServerSettings{
@@ -55,7 +55,7 @@ func createDefaultConfig() component.ExtensionConfig {
 func createExtension(
 	_ context.Context,
 	params component.ExtensionCreateSettings,
-	cfg component.ExtensionConfig,
+	cfg component.Config,
 ) (component.Extension, error) {
 	return newHTTPForwarder(cfg.(*Config), params.TelemetrySettings)
 }
