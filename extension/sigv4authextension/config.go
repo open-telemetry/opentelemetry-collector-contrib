@@ -20,6 +20,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/confmap"
 )
 
 // Config stores the configuration for the Sigv4 Authenticator
@@ -41,10 +42,18 @@ type AssumeRole struct {
 // compile time check that the Config struct satisfies the component.ExtensionConfig interface
 var _ component.ExtensionConfig = (*Config)(nil)
 
-// Validate checks that the configuration is valid.
+func (cfg *Config) Validate() error {
+	return nil
+}
+
 // We aim to catch most errors here to ensure that we
 // fail early and to avoid revalidating static data.
-func (cfg *Config) Validate() error {
+func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
+	err := componentParser.Unmarshal(cfg)
+	if err != nil {
+		return err
+	}
+
 	if cfg.AssumeRole.STSRegion == "" && cfg.Region != "" {
 		cfg.AssumeRole.STSRegion = cfg.Region
 	}
