@@ -2,7 +2,7 @@
 
 | Status                   |           |
 | ------------------------ |-----------|
-| Stability                | [alpha]   |
+| Stability                | [beta]    |
 | Supported pipeline types | logs      |
 | Distributions            | [contrib] |
 
@@ -91,5 +91,5 @@ receivers:
           layout: '%Y-%m-%d %H:%M:%S'
 ```
 
-[alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
+[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
