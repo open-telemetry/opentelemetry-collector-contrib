@@ -29,7 +29,7 @@ Tails and parses logs from files.
 | `attributes`                 | {}               | A map of `key: value` pairs to add to the entry's attributes                                                       |
 | `resource`                   | {}               | A map of `key: value` pairs to add to the entry's resource                                                    |
 | `operators`                  | []               | An array of [operators](../../pkg/stanza/docs/operators/README.md#what-operators-are-available). See below for more details |
-| `storage`                    |                  | The ID of a storage extension. The extension will be used to store file checkpoints, which allow the receiver to pick up where it left off in the case of a collector restart. |
+| `storage`                    | none             | The ID of a storage extension to be used to store file checkpoints. File checkpoints allow the receiver to pick up where it left off in the case of a collector restart. If no storage extension is used, the receiver will manage checkpoints in memory only. |
 
 Note that _by default_, no logs will be read from a file that is not actively being written to because `start_at` defaults to `end`.
 
