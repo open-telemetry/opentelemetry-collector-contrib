@@ -149,13 +149,13 @@ JSON objects -> map[string]any
 
 Examples:
 
-- `ParseToMap("{\"attr\":true}")`
+- `ParseJSON("{\"attr\":true}")`
 
 
-- `ParseToMap(attributes["kubernetes"])`
+- `ParseJSON(attributes["kubernetes"])`
 
 
-- `ParseToMap(body)`
+- `ParseJSON(body)`
 
 ### SpanID
 
