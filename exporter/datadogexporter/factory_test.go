@@ -389,9 +389,88 @@ func TestCreateAPIMetricsExporter(t *testing.T) {
 	assert.NotNil(t, exp)
 }
 
+func TestCreateAPIExporterFailOnInvalidKey_Zorkian(t *testing.T) {
+	server := testutil.DatadogServerMock(testutil.ValidateAPIKeyEndpointInvalid)
+	defer server.Close()
+
+	enableZorkianMetricExport()
+
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(component.NewIDWithName(typeStr, "api").String())
+	require.NoError(t, err)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+	// Use the mock server for API key validation
+	c := cfg.(*Config)
+	c.Metrics.TCPAddr.Endpoint = server.URL
+	c.HostMetadata.Enabled = false
+
+	t.Run("true", func(t *testing.T) {
+		c.API.FailOnInvalidKey = true
+		ctx := context.Background()
+		// metrics exporter
+		mexp, err := factory.CreateMetricsExporter(
+			ctx,
+			componenttest.NewNopExporterCreateSettings(),
+			cfg,
+		)
+		assert.EqualError(t, err, "API Key validation failed")
+		assert.Nil(t, mexp)
+
+		texp, err := factory.CreateTracesExporter(
+			ctx,
+			componenttest.NewNopExporterCreateSettings(),
+			cfg,
+		)
+		assert.EqualError(t, err, "API Key validation failed")
+		assert.Nil(t, texp)
+
+		lexp, err := factory.CreateLogsExporter(
+			ctx,
+			componenttest.NewNopExporterCreateSettings(),
+			cfg,
+		)
+		assert.EqualError(t, err, "API Key validation failed")
+		assert.Nil(t, lexp)
+	})
+	t.Run("false", func(t *testing.T) {
+		c.API.FailOnInvalidKey = false
+		ctx := context.Background()
+		exp, err := factory.CreateMetricsExporter(
+			ctx,
+			componenttest.NewNopExporterCreateSettings(),
+			cfg,
+		)
+		assert.Nil(t, err)
+		assert.NotNil(t, exp)
+
+		texp, err := factory.CreateTracesExporter(
+			ctx,
+			componenttest.NewNopExporterCreateSettings(),
+			cfg,
+		)
+		assert.Nil(t, err)
+		assert.NotNil(t, texp)
+
+		lexp, err := factory.CreateLogsExporter(
+			ctx,
+			componenttest.NewNopExporterCreateSettings(),
+			cfg,
+		)
+		assert.Nil(t, err)
+		assert.NotNil(t, lexp)
+	})
+}
+
 func TestCreateAPIExporterFailOnInvalidKey(t *testing.T) {
 	server := testutil.DatadogServerMock(testutil.ValidateAPIKeyEndpointInvalid)
 	defer server.Close()
+
+	enableNativeMetricExport()
 
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)

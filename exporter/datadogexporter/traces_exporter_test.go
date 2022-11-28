@@ -111,7 +111,13 @@ func (testlogger) Flush() {}
 func TestTracesSource(t *testing.T) {
 	reqs := make(chan []byte, 1)
 	metricsServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/api/v1/series" {
+		var expectedMetricEndpoint string
+		if isMetricExportV2Enabled() {
+			expectedMetricEndpoint = testutil.MetricV2Endpoint
+		} else {
+			expectedMetricEndpoint = testutil.MetricV1Endpoint
+		}
+		if r.URL.Path != expectedMetricEndpoint {
 			// we only want to capture series payloads
 			return
 		}
