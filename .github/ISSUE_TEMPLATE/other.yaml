@@ -165,6 +165,7 @@ body:
       - receiver/prometheus
       - receiver/prometheusexec
       - receiver/pulsar
+      - receiver/purefa
       - receiver/rabbitmq
       - receiver/receivercreator
       - receiver/redis
