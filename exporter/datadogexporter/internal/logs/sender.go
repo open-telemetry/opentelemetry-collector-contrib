@@ -64,11 +64,9 @@ func NewSender(endpoint string, logger *zap.Logger, s exporterhelper.TimeoutSett
 
 // SubmitLogs submits the logs contained in payload to the Datadog intake
 func (s *Sender) SubmitLogs(ctx context.Context, payload []datadogV2.HTTPLogItem) error {
-	var fields []zap.Field
 	if s.verbose {
-		fields = append(fields, zap.Any("payload", payload))
+		s.logger.Debug("Submitting logs", zap.Any("payload", payload))
 	}
-	s.logger.Debug("Submitting logs", fields...)
 
 	// Correctly sets apiSubmitLogRequest ddtags field based on tags from translator Transform method
 	if payload[0].HasDdtags() {
