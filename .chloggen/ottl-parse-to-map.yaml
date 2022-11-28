@@ -5,7 +5,7 @@ change_type: enhancement
 component: pkg/ottl
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add new `ParseToMap` function that can convert a json string into `pcommon.Map`.
+note: Add new `ParseJSON` function that can convert a json string into `pcommon.Map`.
 
 # One or more tracking issues related to the change
 issues: [16444]
