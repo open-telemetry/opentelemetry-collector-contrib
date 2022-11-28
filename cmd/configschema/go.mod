@@ -246,9 +246,9 @@ require (
 	github.com/iancoleman/strcase v0.2.0 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/influxdata/go-syslog/v3 v3.0.1-0.20210608084020-ac565dc76ba6 // indirect
-	github.com/influxdata/influxdb-observability/common v0.2.30 // indirect
-	github.com/influxdata/influxdb-observability/influx2otel v0.2.30 // indirect
-	github.com/influxdata/influxdb-observability/otel2influx v0.2.30 // indirect
+	github.com/influxdata/influxdb-observability/common v0.2.32 // indirect
+	github.com/influxdata/influxdb-observability/influx2otel v0.2.32 // indirect
+	github.com/influxdata/influxdb-observability/otel2influx v0.2.32 // indirect
 	github.com/influxdata/line-protocol/v2 v2.2.1 // indirect
 	github.com/ionos-cloud/sdk-go/v6 v6.1.2 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
