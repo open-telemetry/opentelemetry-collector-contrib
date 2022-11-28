@@ -68,7 +68,8 @@ func createMetricsExporter(
 		set,
 		cfg,
 		prometheus.ConsumeMetrics,
-		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
+		// TODO: Consider to revert to non mutable data, need to not modify the incoming data, like sorting when calculating the signature.
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
 		exporterhelper.WithStart(prometheus.Start),
 		exporterhelper.WithShutdown(prometheus.Shutdown),
 	)
