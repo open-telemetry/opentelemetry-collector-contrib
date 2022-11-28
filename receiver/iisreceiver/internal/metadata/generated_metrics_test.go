@@ -189,7 +189,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("direction")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeDirection(1).String(), attrVal.Str())
+			assert.Equal(t, "sent", attrVal.Str())
 			validatedMetrics["iis.network.file.count"] = struct{}{}
 		case "iis.network.io":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -205,7 +205,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("direction")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeDirection(1).String(), attrVal.Str())
+			assert.Equal(t, "sent", attrVal.Str())
 			validatedMetrics["iis.network.io"] = struct{}{}
 		case "iis.request.count":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -221,7 +221,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("request")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeRequest(1).String(), attrVal.Str())
+			assert.Equal(t, "delete", attrVal.Str())
 			validatedMetrics["iis.request.count"] = struct{}{}
 		case "iis.request.queue.age.max":
 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())

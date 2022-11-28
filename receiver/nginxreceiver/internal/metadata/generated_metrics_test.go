@@ -100,7 +100,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("state")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeState(1).String(), attrVal.Str())
+			assert.Equal(t, "active", attrVal.Str())
 			validatedMetrics["nginx.connections_current"] = struct{}{}
 		case "nginx.connections_handled":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())

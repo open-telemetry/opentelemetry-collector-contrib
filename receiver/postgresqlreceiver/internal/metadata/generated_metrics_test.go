@@ -220,7 +220,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("source")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeBgBufferSource(1).String(), attrVal.Str())
+			assert.Equal(t, "backend", attrVal.Str())
 			validatedMetrics["postgresql.bgwriter.buffers.writes"] = struct{}{}
 		case "postgresql.bgwriter.checkpoint.count":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -236,7 +236,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("type")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeBgCheckpointType(1).String(), attrVal.Str())
+			assert.Equal(t, "requested", attrVal.Str())
 			validatedMetrics["postgresql.bgwriter.checkpoint.count"] = struct{}{}
 		case "postgresql.bgwriter.duration":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -252,7 +252,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, float64(1), dp.DoubleValue())
 			attrVal, ok := dp.Attributes().Get("type")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeBgDurationType(1).String(), attrVal.Str())
+			assert.Equal(t, "sync", attrVal.Str())
 			validatedMetrics["postgresql.bgwriter.duration"] = struct{}{}
 		case "postgresql.bgwriter.maxwritten":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -287,7 +287,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.EqualValues(t, "attr-val", attrVal.Str())
 			attrVal, ok = dp.Attributes().Get("source")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeSource(1).String(), attrVal.Str())
+			assert.Equal(t, "heap_read", attrVal.Str())
 			validatedMetrics["postgresql.blocks_read"] = struct{}{}
 		case "postgresql.commits":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -389,7 +389,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.EqualValues(t, "attr-val", attrVal.Str())
 			attrVal, ok = dp.Attributes().Get("operation")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeOperation(1).String(), attrVal.Str())
+			assert.Equal(t, "ins", attrVal.Str())
 			validatedMetrics["postgresql.operations"] = struct{}{}
 		case "postgresql.replication.data_delay":
 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
@@ -441,7 +441,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.EqualValues(t, "attr-val", attrVal.Str())
 			attrVal, ok = dp.Attributes().Get("state")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeState(1).String(), attrVal.Str())
+			assert.Equal(t, "dead", attrVal.Str())
 			validatedMetrics["postgresql.rows"] = struct{}{}
 		case "postgresql.table.count":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -505,7 +505,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("operation")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeWalOperationLag(1).String(), attrVal.Str())
+			assert.Equal(t, "flush", attrVal.Str())
 			attrVal, ok = dp.Attributes().Get("replication_client")
 			assert.True(t, ok)
 			assert.EqualValues(t, "attr-val", attrVal.Str())
