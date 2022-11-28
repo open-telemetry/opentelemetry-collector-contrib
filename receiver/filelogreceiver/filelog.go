@@ -25,7 +25,7 @@ import (
 
 const (
 	typeStr   = "filelog"
-	stability = component.StabilityLevelAlpha
+	stability = component.StabilityLevelBeta
 )
 
 // NewFactory creates a factory for filelog receiver
