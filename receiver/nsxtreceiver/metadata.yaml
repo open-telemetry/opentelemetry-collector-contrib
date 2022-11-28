@@ -10,11 +10,6 @@ resource_attributes:
   nsxt.node.type:
     description: The type of NSX Node.
     type: string
-    # TODO: Add support for enum in resource attributes
-    # enum:
-    #   - manager
-    #   - host
-    #   - edge
   device.id:
     description: The name of the network interface.
     type: string

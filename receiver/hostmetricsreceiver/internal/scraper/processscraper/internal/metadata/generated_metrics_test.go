@@ -145,7 +145,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("type")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeContextSwitchType(1).String(), attrVal.Str())
+			assert.Equal(t, "involuntary", attrVal.Str())
 			validatedMetrics["process.context_switches"] = struct{}{}
 		case "process.cpu.time":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -161,7 +161,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, float64(1), dp.DoubleValue())
 			attrVal, ok := dp.Attributes().Get("state")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeState(1).String(), attrVal.Str())
+			assert.Equal(t, "system", attrVal.Str())
 			validatedMetrics["process.cpu.time"] = struct{}{}
 		case "process.disk.io":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -177,7 +177,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("direction")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeDirection(1).String(), attrVal.Str())
+			assert.Equal(t, "read", attrVal.Str())
 			validatedMetrics["process.disk.io"] = struct{}{}
 		case "process.memory.physical_usage":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -258,7 +258,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("type")
 			assert.True(t, ok)
-			assert.Equal(t, AttributePagingFaultType(1).String(), attrVal.Str())
+			assert.Equal(t, "major", attrVal.Str())
 			validatedMetrics["process.paging.faults"] = struct{}{}
 		case "process.signals_pending":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())

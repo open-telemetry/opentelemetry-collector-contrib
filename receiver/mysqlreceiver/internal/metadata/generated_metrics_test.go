@@ -259,7 +259,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("status")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeBufferPoolData(1).String(), attrVal.Str())
+			assert.Equal(t, "dirty", attrVal.Str())
 			validatedMetrics["mysql.buffer_pool.data_pages"] = struct{}{}
 		case "mysql.buffer_pool.limit":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -288,7 +288,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("operation")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeBufferPoolOperations(1).String(), attrVal.Str())
+			assert.Equal(t, "read_ahead_rnd", attrVal.Str())
 			validatedMetrics["mysql.buffer_pool.operations"] = struct{}{}
 		case "mysql.buffer_pool.page_flushes":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -317,7 +317,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("kind")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeBufferPoolPages(1).String(), attrVal.Str())
+			assert.Equal(t, "data", attrVal.Str())
 			validatedMetrics["mysql.buffer_pool.pages"] = struct{}{}
 		case "mysql.buffer_pool.usage":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -333,7 +333,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("status")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeBufferPoolData(1).String(), attrVal.Str())
+			assert.Equal(t, "dirty", attrVal.Str())
 			validatedMetrics["mysql.buffer_pool.usage"] = struct{}{}
 		case "mysql.client.network.io":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -349,7 +349,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("kind")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeDirection(1).String(), attrVal.Str())
+			assert.Equal(t, "received", attrVal.Str())
 			validatedMetrics["mysql.client.network.io"] = struct{}{}
 		case "mysql.commands":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -365,7 +365,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("command")
 			assert.True(t, ok)
-			assert.Equal(t, AttributePreparedStatementsCommand(1).String(), attrVal.Str())
+			assert.Equal(t, "execute", attrVal.Str())
 			validatedMetrics["mysql.commands"] = struct{}{}
 		case "mysql.connection.errors":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -381,7 +381,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("error")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeConnectionError(1).String(), attrVal.Str())
+			assert.Equal(t, "accept", attrVal.Str())
 			validatedMetrics["mysql.connection.errors"] = struct{}{}
 		case "mysql.double_writes":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -397,7 +397,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("kind")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeDoubleWrites(1).String(), attrVal.Str())
+			assert.Equal(t, "pages_written", attrVal.Str())
 			validatedMetrics["mysql.double_writes"] = struct{}{}
 		case "mysql.handlers":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -413,7 +413,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("kind")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeHandler(1).String(), attrVal.Str())
+			assert.Equal(t, "commit", attrVal.Str())
 			validatedMetrics["mysql.handlers"] = struct{}{}
 		case "mysql.index.io.wait.count":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -429,7 +429,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("operation")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeIoWaitsOperations(1).String(), attrVal.Str())
+			assert.Equal(t, "delete", attrVal.Str())
 			attrVal, ok = dp.Attributes().Get("table")
 			assert.True(t, ok)
 			assert.EqualValues(t, "attr-val", attrVal.Str())
@@ -454,7 +454,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("operation")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeIoWaitsOperations(1).String(), attrVal.Str())
+			assert.Equal(t, "delete", attrVal.Str())
 			attrVal, ok = dp.Attributes().Get("table")
 			assert.True(t, ok)
 			assert.EqualValues(t, "attr-val", attrVal.Str())
@@ -479,7 +479,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("kind")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeJoinKind(1).String(), attrVal.Str())
+			assert.Equal(t, "full", attrVal.Str())
 			validatedMetrics["mysql.joins"] = struct{}{}
 		case "mysql.locked_connects":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -508,7 +508,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("kind")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeLocks(1).String(), attrVal.Str())
+			assert.Equal(t, "immediate", attrVal.Str())
 			validatedMetrics["mysql.locks"] = struct{}{}
 		case "mysql.log_operations":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -524,7 +524,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("operation")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeLogOperations(1).String(), attrVal.Str())
+			assert.Equal(t, "waits", attrVal.Str())
 			validatedMetrics["mysql.log_operations"] = struct{}{}
 		case "mysql.mysqlx_connections":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -540,7 +540,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("status")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeConnectionStatus(1).String(), attrVal.Str())
+			assert.Equal(t, "accepted", attrVal.Str())
 			validatedMetrics["mysql.mysqlx_connections"] = struct{}{}
 		case "mysql.mysqlx_worker_threads":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -556,7 +556,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("kind")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeMysqlxThreads(1).String(), attrVal.Str())
+			assert.Equal(t, "available", attrVal.Str())
 			validatedMetrics["mysql.mysqlx_worker_threads"] = struct{}{}
 		case "mysql.opened_resources":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -572,7 +572,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("kind")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeOpenedResources(1).String(), attrVal.Str())
+			assert.Equal(t, "file", attrVal.Str())
 			validatedMetrics["mysql.opened_resources"] = struct{}{}
 		case "mysql.operations":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -588,7 +588,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("operation")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeOperations(1).String(), attrVal.Str())
+			assert.Equal(t, "fsyncs", attrVal.Str())
 			validatedMetrics["mysql.operations"] = struct{}{}
 		case "mysql.page_operations":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -604,7 +604,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("operation")
 			assert.True(t, ok)
-			assert.Equal(t, AttributePageOperations(1).String(), attrVal.Str())
+			assert.Equal(t, "created", attrVal.Str())
 			validatedMetrics["mysql.page_operations"] = struct{}{}
 		case "mysql.prepared_statements":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -675,7 +675,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("kind")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeRowLocks(1).String(), attrVal.Str())
+			assert.Equal(t, "waits", attrVal.Str())
 			validatedMetrics["mysql.row_locks"] = struct{}{}
 		case "mysql.row_operations":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -691,7 +691,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("operation")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeRowOperations(1).String(), attrVal.Str())
+			assert.Equal(t, "deleted", attrVal.Str())
 			validatedMetrics["mysql.row_operations"] = struct{}{}
 		case "mysql.sorts":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -707,7 +707,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("kind")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeSorts(1).String(), attrVal.Str())
+			assert.Equal(t, "merge_passes", attrVal.Str())
 			validatedMetrics["mysql.sorts"] = struct{}{}
 		case "mysql.statement_event.count":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -732,7 +732,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.EqualValues(t, "attr-val", attrVal.Str())
 			attrVal, ok = dp.Attributes().Get("kind")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeEventState(1).String(), attrVal.Str())
+			assert.Equal(t, "errors", attrVal.Str())
 			validatedMetrics["mysql.statement_event.count"] = struct{}{}
 		case "mysql.statement_event.wait.time":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -770,7 +770,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("operation")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeIoWaitsOperations(1).String(), attrVal.Str())
+			assert.Equal(t, "delete", attrVal.Str())
 			attrVal, ok = dp.Attributes().Get("table")
 			assert.True(t, ok)
 			assert.EqualValues(t, "attr-val", attrVal.Str())
@@ -792,7 +792,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("operation")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeIoWaitsOperations(1).String(), attrVal.Str())
+			assert.Equal(t, "delete", attrVal.Str())
 			attrVal, ok = dp.Attributes().Get("table")
 			assert.True(t, ok)
 			assert.EqualValues(t, "attr-val", attrVal.Str())
@@ -820,7 +820,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.EqualValues(t, "attr-val", attrVal.Str())
 			attrVal, ok = dp.Attributes().Get("kind")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeReadLockType(1).String(), attrVal.Str())
+			assert.Equal(t, "normal", attrVal.Str())
 			validatedMetrics["mysql.table.lock_wait.read.count"] = struct{}{}
 		case "mysql.table.lock_wait.read.time":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -842,7 +842,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.EqualValues(t, "attr-val", attrVal.Str())
 			attrVal, ok = dp.Attributes().Get("kind")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeReadLockType(1).String(), attrVal.Str())
+			assert.Equal(t, "normal", attrVal.Str())
 			validatedMetrics["mysql.table.lock_wait.read.time"] = struct{}{}
 		case "mysql.table.lock_wait.write.count":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -864,7 +864,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.EqualValues(t, "attr-val", attrVal.Str())
 			attrVal, ok = dp.Attributes().Get("kind")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeWriteLockType(1).String(), attrVal.Str())
+			assert.Equal(t, "allow_write", attrVal.Str())
 			validatedMetrics["mysql.table.lock_wait.write.count"] = struct{}{}
 		case "mysql.table.lock_wait.write.time":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -886,7 +886,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.EqualValues(t, "attr-val", attrVal.Str())
 			attrVal, ok = dp.Attributes().Get("kind")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeWriteLockType(1).String(), attrVal.Str())
+			assert.Equal(t, "allow_write", attrVal.Str())
 			validatedMetrics["mysql.table.lock_wait.write.time"] = struct{}{}
 		case "mysql.table_open_cache":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -902,7 +902,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("status")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeCacheStatus(1).String(), attrVal.Str())
+			assert.Equal(t, "hit", attrVal.Str())
 			validatedMetrics["mysql.table_open_cache"] = struct{}{}
 		case "mysql.threads":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -918,7 +918,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("kind")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeThreads(1).String(), attrVal.Str())
+			assert.Equal(t, "cached", attrVal.Str())
 			validatedMetrics["mysql.threads"] = struct{}{}
 		case "mysql.tmp_resources":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -934,7 +934,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("resource")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeTmpResource(1).String(), attrVal.Str())
+			assert.Equal(t, "disk_tables", attrVal.Str())
 			validatedMetrics["mysql.tmp_resources"] = struct{}{}
 		}
 	}

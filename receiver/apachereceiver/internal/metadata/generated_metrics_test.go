@@ -148,10 +148,10 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, float64(1), dp.DoubleValue())
 			attrVal, ok := dp.Attributes().Get("level")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeCPULevel(1).String(), attrVal.Str())
+			assert.Equal(t, "self", attrVal.Str())
 			attrVal, ok = dp.Attributes().Get("mode")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeCPUMode(1).String(), attrVal.Str())
+			assert.Equal(t, "system", attrVal.Str())
 			validatedMetrics["apache.cpu.time"] = struct{}{}
 		case "apache.current_connections":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -239,7 +239,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("state")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeScoreboardState(1).String(), attrVal.Str())
+			assert.Equal(t, "open", attrVal.Str())
 			validatedMetrics["apache.scoreboard"] = struct{}{}
 		case "apache.traffic":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -281,7 +281,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("state")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeWorkersState(1).String(), attrVal.Str())
+			assert.Equal(t, "busy", attrVal.Str())
 			validatedMetrics["apache.workers"] = struct{}{}
 		}
 	}
