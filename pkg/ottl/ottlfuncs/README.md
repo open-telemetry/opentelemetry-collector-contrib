@@ -118,7 +118,7 @@ The `IsMatch` factory function returns true if the `target` matches the regex `p
 `target` is either a path expression to a telemetry field to retrieve or a literal string. `pattern` is a regexp pattern.
 
 The function matches the target against the pattern, returning true if the match is successful and false otherwise.
-If target it a boolean, int, or float it will be converted to a string.
+If target is a boolean, int, or float it will be converted to a string.
 If target is nil or not a string, boolean, int, or float false is always returned.
 
 Examples:
