@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"strconv"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -32,11 +33,18 @@ func IsMatch[K any](target ottl.Getter[K], pattern string) (ottl.ExprFunc[K], er
 		if err != nil {
 			return nil, err
 		}
-		if val != nil {
-			if valStr, ok := val.(string); ok {
-				return compiledPattern.MatchString(valStr), nil
-			}
+
+		switch v := val.(type) {
+		case string:
+			return compiledPattern.MatchString(v), nil
+		case bool:
+			return compiledPattern.MatchString(strconv.FormatBool(v)), nil
+		case int64:
+			return compiledPattern.MatchString(strconv.FormatInt(v, 10)), nil
+		case float64:
+			return compiledPattern.MatchString(strconv.FormatFloat(v, 'f', -1, 64)), nil
 		}
+
 		return false, nil
 	}, nil
 }

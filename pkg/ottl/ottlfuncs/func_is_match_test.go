@@ -62,13 +62,43 @@ func Test_isMatch(t *testing.T) {
 			expected: true,
 		},
 		{
-			name: "target not a string",
+			name: "target bool",
 			target: &ottl.StandardGetSetter[interface{}]{
 				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
-					return 1, nil
+					return true, nil
 				},
 			},
-			pattern:  "doesnt matter will be false",
+			pattern:  "true",
+			expected: true,
+		},
+		{
+			name: "target int",
+			target: &ottl.StandardGetSetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return int64(1), nil
+				},
+			},
+			pattern:  `\d`,
+			expected: true,
+		},
+		{
+			name: "target float",
+			target: &ottl.StandardGetSetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return 1.1, nil
+				},
+			},
+			pattern:  `\d\.\d`,
+			expected: true,
+		},
+		{
+			name: "target invalid type",
+			target: &ottl.StandardGetSetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return []string{"invalid"}, nil
+				},
+			},
+			pattern:  `\[invalid\]`,
 			expected: false,
 		},
 		{
