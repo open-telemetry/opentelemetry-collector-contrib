@@ -199,7 +199,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("type")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeType(1).String(), attrVal.Str())
+			assert.Equal(t, "hit", attrVal.Str())
 			validatedMetrics["mongodb.cache.operations"] = struct{}{}
 		case "mongodb.collection.count":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -234,7 +234,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.EqualValues(t, "attr-val", attrVal.Str())
 			attrVal, ok = dp.Attributes().Get("type")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeConnectionType(1).String(), attrVal.Str())
+			assert.Equal(t, "active", attrVal.Str())
 			validatedMetrics["mongodb.connection.count"] = struct{}{}
 		case "mongodb.cursor.count":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -308,7 +308,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.EqualValues(t, "attr-val", attrVal.Str())
 			attrVal, ok = dp.Attributes().Get("operation")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeOperation(1).String(), attrVal.Str())
+			assert.Equal(t, "insert", attrVal.Str())
 			validatedMetrics["mongodb.document.operation.count"] = struct{}{}
 		case "mongodb.extent.count":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -407,10 +407,10 @@ func TestAllMetrics(t *testing.T) {
 			assert.EqualValues(t, "attr-val", attrVal.Str())
 			attrVal, ok = dp.Attributes().Get("lock_type")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeLockType(1).String(), attrVal.Str())
+			assert.Equal(t, "parallel_batch_write_mode", attrVal.Str())
 			attrVal, ok = dp.Attributes().Get("lock_mode")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeLockMode(1).String(), attrVal.Str())
+			assert.Equal(t, "shared", attrVal.Str())
 			validatedMetrics["mongodb.lock.acquire.count"] = struct{}{}
 		case "mongodb.lock.acquire.time":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -429,10 +429,10 @@ func TestAllMetrics(t *testing.T) {
 			assert.EqualValues(t, "attr-val", attrVal.Str())
 			attrVal, ok = dp.Attributes().Get("lock_type")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeLockType(1).String(), attrVal.Str())
+			assert.Equal(t, "parallel_batch_write_mode", attrVal.Str())
 			attrVal, ok = dp.Attributes().Get("lock_mode")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeLockMode(1).String(), attrVal.Str())
+			assert.Equal(t, "shared", attrVal.Str())
 			validatedMetrics["mongodb.lock.acquire.time"] = struct{}{}
 		case "mongodb.lock.acquire.wait_count":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -451,10 +451,10 @@ func TestAllMetrics(t *testing.T) {
 			assert.EqualValues(t, "attr-val", attrVal.Str())
 			attrVal, ok = dp.Attributes().Get("lock_type")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeLockType(1).String(), attrVal.Str())
+			assert.Equal(t, "parallel_batch_write_mode", attrVal.Str())
 			attrVal, ok = dp.Attributes().Get("lock_mode")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeLockMode(1).String(), attrVal.Str())
+			assert.Equal(t, "shared", attrVal.Str())
 			validatedMetrics["mongodb.lock.acquire.wait_count"] = struct{}{}
 		case "mongodb.lock.deadlock.count":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -473,10 +473,10 @@ func TestAllMetrics(t *testing.T) {
 			assert.EqualValues(t, "attr-val", attrVal.Str())
 			attrVal, ok = dp.Attributes().Get("lock_type")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeLockType(1).String(), attrVal.Str())
+			assert.Equal(t, "parallel_batch_write_mode", attrVal.Str())
 			attrVal, ok = dp.Attributes().Get("lock_mode")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeLockMode(1).String(), attrVal.Str())
+			assert.Equal(t, "shared", attrVal.Str())
 			validatedMetrics["mongodb.lock.deadlock.count"] = struct{}{}
 		case "mongodb.memory.usage":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -495,7 +495,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.EqualValues(t, "attr-val", attrVal.Str())
 			attrVal, ok = dp.Attributes().Get("type")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeMemoryType(1).String(), attrVal.Str())
+			assert.Equal(t, "resident", attrVal.Str())
 			validatedMetrics["mongodb.memory.usage"] = struct{}{}
 		case "mongodb.network.io.receive":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -566,7 +566,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("operation")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeOperation(1).String(), attrVal.Str())
+			assert.Equal(t, "insert", attrVal.Str())
 			validatedMetrics["mongodb.operation.count"] = struct{}{}
 		case "mongodb.operation.time":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -582,7 +582,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("operation")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeOperation(1).String(), attrVal.Str())
+			assert.Equal(t, "insert", attrVal.Str())
 			validatedMetrics["mongodb.operation.time"] = struct{}{}
 		case "mongodb.session.count":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())

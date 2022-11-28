@@ -78,7 +78,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("state")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeState(1).String(), attrVal.Str())
+			assert.Equal(t, "buffered", attrVal.Str())
 			validatedMetrics["system.memory.usage"] = struct{}{}
 		case "system.memory.utilization":
 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
@@ -92,7 +92,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, float64(1), dp.DoubleValue())
 			attrVal, ok := dp.Attributes().Get("state")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeState(1).String(), attrVal.Str())
+			assert.Equal(t, "buffered", attrVal.Str())
 			validatedMetrics["system.memory.utilization"] = struct{}{}
 		}
 	}
