@@ -17,11 +17,12 @@ package purefareceiver // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"context"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver/internal"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver/internal/array"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.uber.org/multierr"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver/internal/array"
 )
 
 var _ component.MetricsReceiver = (*purefaReceiver)(nil)
