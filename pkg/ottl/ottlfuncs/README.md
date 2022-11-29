@@ -38,6 +38,7 @@ List of available Factory Functions:
 - [ConvertCase](#convertcase)
 - [Int](#int)
 - [IsMatch](#ismatch)
+- [ParseJSON](#ParseJSON)
 - [SpanID](#spanid)
 - [Split](#split)
 - [TraceID](#traceid)
@@ -128,6 +129,36 @@ Examples:
 
 
 - `IsMatch("string", ".*ring")`
+
+### ParseJSON
+
+`ParseJSON(target)`
+
+The `ParseJSON` factory function returns a `pcommon.Map` struct that is a result of parsing the target string as JSON
+
+`target` is a Getter that returns a string. This string should be in json format.
+
+Unmarshalling is done using [jsoniter](https://github.com/json-iterator/go).
+Each JSON type is converted into a `pdata.Value` using the following map:
+
+```
+JSON boolean -> bool
+JSON number  -> float64
+JSON string  -> string
+JSON null    -> nil
+JSON arrays  -> pdata.SliceValue
+JSON objects -> map[string]any
+```
+
+Examples:
+
+- `ParseJSON("{\"attr\":true}")`
+
+
+- `ParseJSON(attributes["kubernetes"])`
+
+
+- `ParseJSON(body)`
 
 ### SpanID
 
