@@ -173,6 +173,7 @@ func newMetricsExporter(config Config, set component.ExporterCreateSettings, mar
 	if marshaler == nil {
 		return nil, errUnrecognizedEncoding
 	}
+	set.Logger.Debug("Configured marshaller", zap.String("encoding", marshaler.Encoding()))
 	producer, err := newSaramaProducer(config)
 	if err != nil {
 		return nil, err
@@ -193,6 +194,7 @@ func newTracesExporter(config Config, set component.ExporterCreateSettings, mars
 	if marshaler == nil {
 		return nil, errUnrecognizedEncoding
 	}
+	set.Logger.Debug("Configured marshaller", zap.String("encoding", marshaler.Encoding()))
 	producer, err := newSaramaProducer(config)
 	if err != nil {
 		return nil, err
@@ -210,6 +212,7 @@ func newLogsExporter(config Config, set component.ExporterCreateSettings, marsha
 	if marshaler == nil {
 		return nil, errUnrecognizedEncoding
 	}
+	set.Logger.Debug("Configured marshaller", zap.String("encoding", marshaler.Encoding()))
 	producer, err := newSaramaProducer(config)
 	if err != nil {
 		return nil, err

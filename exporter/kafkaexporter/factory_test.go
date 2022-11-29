@@ -26,6 +26,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 // data is a simple means of allowing
@@ -129,10 +132,14 @@ func TestCreateMetricExporter(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
+			core, observed := observer.New(zapcore.DebugLevel)
+			exporterSettings := componenttest.NewNopExporterCreateSettings()
+			exporterSettings.Logger = zap.New(core)
+
 			f := NewFactory(WithMetricsMarshalers(tc.marshalers...))
 			exporter, err := f.CreateMetricsExporter(
 				context.Background(),
-				componenttest.NewNopExporterCreateSettings(),
+				exporterSettings,
 				tc.conf,
 			)
 			if tc.err != nil {
@@ -142,6 +149,11 @@ func TestCreateMetricExporter(t *testing.T) {
 			}
 			assert.NoError(t, err, "Must not error")
 			assert.NotNil(t, exporter, "Must return valid exporter when no error is returned")
+
+			// confirm marshaler selected matches the encoding we asked for
+			logEntries := observed.FilterField(zap.String("encoding", tc.conf.Encoding))
+			assert.NotNil(t, logEntries)
+			assert.Equal(t, 1, logEntries.Len())
 		})
 	}
 }
@@ -205,10 +217,14 @@ func TestCreateLogExporter(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
+			core, observed := observer.New(zapcore.DebugLevel)
+			exporterSettings := componenttest.NewNopExporterCreateSettings()
+			exporterSettings.Logger = zap.New(core)
+
 			f := NewFactory(WithLogsMarshalers(tc.marshalers...))
 			exporter, err := f.CreateLogsExporter(
 				context.Background(),
-				componenttest.NewNopExporterCreateSettings(),
+				exporterSettings,
 				tc.conf,
 			)
 			if tc.err != nil {
@@ -218,6 +234,11 @@ func TestCreateLogExporter(t *testing.T) {
 			}
 			assert.NoError(t, err, "Must not error")
 			assert.NotNil(t, exporter, "Must return valid exporter when no error is returned")
+
+			// confirm marshaler selected matches the encoding we asked for
+			logEntries := observed.FilterField(zap.String("encoding", tc.conf.Encoding))
+			assert.NotNil(t, logEntries)
+			assert.Equal(t, 1, logEntries.Len())
 		})
 	}
 }
@@ -279,10 +300,14 @@ func TestCreateTraceExporter(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
+			core, observed := observer.New(zapcore.DebugLevel)
+			exporterSettings := componenttest.NewNopExporterCreateSettings()
+			exporterSettings.Logger = zap.New(core)
+
 			f := NewFactory(WithTracesMarshalers(tc.marshalers...))
 			exporter, err := f.CreateTracesExporter(
 				context.Background(),
-				componenttest.NewNopExporterCreateSettings(),
+				exporterSettings,
 				tc.conf,
 			)
 			if tc.err != nil {
@@ -292,6 +317,11 @@ func TestCreateTraceExporter(t *testing.T) {
 			}
 			assert.NoError(t, err, "Must not error")
 			assert.NotNil(t, exporter, "Must return valid exporter when no error is returned")
+
+			// confirm marshaler selected matches the encoding we asked for
+			logEntries := observed.FilterField(zap.String("encoding", tc.conf.Encoding))
+			assert.NotNil(t, logEntries)
+			assert.Equal(t, 1, logEntries.Len())
 		})
 	}
 }
