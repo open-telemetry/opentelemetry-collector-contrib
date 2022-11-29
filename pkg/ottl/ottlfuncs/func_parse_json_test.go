@@ -171,3 +171,15 @@ func Test_ParseJSON(t *testing.T) {
 		})
 	}
 }
+
+func Test_ParseJSON_Error(t *testing.T) {
+	target := &ottl.StandardGetSetter[interface{}]{
+		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			return 1, nil
+		},
+	}
+	exprFunc, err := ParseJSON[interface{}](target)
+	assert.NoError(t, err)
+	_, err = exprFunc(context.Background(), nil)
+	assert.Error(t, err)
+}
