@@ -89,7 +89,7 @@ func TestProcessorStart(t *testing.T) {
 
 	for _, tc := range []struct {
 		name            string
-		exporter        component.Exporter
+		exporter        component.Component
 		metricsExporter string
 		wantErrorMsg    string
 	}{
@@ -99,7 +99,7 @@ func TestProcessorStart(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			// Prepare
-			exporters := map[component.DataType]map[component.ID]component.Exporter{
+			exporters := map[component.DataType]map[component.ID]component.Component{
 				component.DataTypeMetrics: {
 					otlpConfig.ID(): tc.exporter,
 				},
@@ -715,9 +715,9 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			resAttr := pcommon.NewMap()
-			resAttr.FromRaw(tc.resourceAttrMap)
+			assert.NoError(t, resAttr.FromRaw(tc.resourceAttrMap))
 			span0 := ptrace.NewSpan()
-			span0.Attributes().FromRaw(tc.spanAttrMap)
+			assert.NoError(t, span0.Attributes().FromRaw(tc.spanAttrMap))
 			span0.SetName("c")
 			buf := &bytes.Buffer{}
 			buildKey(buf, "ab", span0, tc.optionalDims, resAttr)

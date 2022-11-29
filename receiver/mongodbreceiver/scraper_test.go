@@ -54,7 +54,7 @@ func TestScraperLifecycle(t *testing.T) {
 	require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, scraper.shutdown(context.Background()))
 
-	require.Less(t, time.Since(now), 100*time.Millisecond, "component start and stop should be very fast")
+	require.Less(t, time.Since(now), 200*time.Millisecond, "component start and stop should be very fast")
 }
 
 var (

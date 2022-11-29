@@ -76,7 +76,7 @@ func (s *flinkmetricsScraper) processJobmanagerMetrics(now pcommon.Timestamp, jo
 	}
 	s.mb.EmitForResource(
 		metadata.WithHostName(jobmanagerMetrics.Host),
-		metadata.WithFlinkResourceType("jobmanager"),
+		metadata.WithFlinkResourceTypeJobmanager,
 	)
 }
 
@@ -135,7 +135,7 @@ func (s *flinkmetricsScraper) processTaskmanagerMetrics(now pcommon.Timestamp, t
 		s.mb.EmitForResource(
 			metadata.WithHostName(taskmanagerMetrics.Host),
 			metadata.WithFlinkTaskmanagerID(taskmanagerMetrics.TaskmanagerID),
-			metadata.WithFlinkResourceType("taskmanager"),
+			metadata.WithFlinkResourceTypeTaskmanager,
 		)
 	}
 }

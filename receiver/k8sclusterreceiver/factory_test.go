@@ -61,12 +61,12 @@ func TestFactory(t *testing.T) {
 
 	// Test metadata exporters setup.
 	ctx := context.Background()
-	require.NoError(t, r.Start(ctx, nopHostWithExporters{}))
+	require.NoError(t, r.Start(ctx, newNopHostWithExporters()))
 	require.NoError(t, r.Shutdown(ctx))
 
 	rCfg.MetadataExporters = []string{"nop/withoutmetadata"}
 	r = newTestReceiver(t, rCfg)
-	require.Error(t, r.Start(context.Background(), nopHostWithExporters{}))
+	require.Error(t, r.Start(context.Background(), newNopHostWithExporters()))
 }
 
 func TestFactoryDistributions(t *testing.T) {
@@ -108,23 +108,15 @@ func newTestReceiver(t *testing.T, cfg *Config) *kubernetesReceiver {
 
 // nopHostWithExporters mocks a receiver.ReceiverHost for test purposes.
 type nopHostWithExporters struct {
+	component.Host
 }
 
-var _ component.Host = (*nopHostWithExporters)(nil)
-
-func (n nopHostWithExporters) ReportFatalError(error) {
+func newNopHostWithExporters() component.Host {
+	return &nopHostWithExporters{Host: componenttest.NewNopHost()}
 }
 
-func (n nopHostWithExporters) GetFactory(component.Kind, component.Type) component.Factory {
-	return nil
-}
-
-func (n nopHostWithExporters) GetExtensions() map[component.ID]component.Extension {
-	return nil
-}
-
-func (n nopHostWithExporters) GetExporters() map[component.DataType]map[component.ID]component.Exporter {
-	return map[component.DataType]map[component.ID]component.Exporter{
+func (n *nopHostWithExporters) GetExporters() map[component.DataType]map[component.ID]component.Component {
+	return map[component.DataType]map[component.ID]component.Component{
 		component.DataTypeMetrics: {
 			component.NewIDWithName("nop", "withoutmetadata"): MockExporter{},
 			component.NewIDWithName("nop", "withmetadata"):    mockExporterWithK8sMetadata{},

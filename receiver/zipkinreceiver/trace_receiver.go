@@ -162,7 +162,10 @@ func (zr *zipkinReceiver) v2ToTraceSpans(blob []byte, hdr http.Header) (reqs ptr
 // giving it a chance to perform any necessary clean-up and shutting down
 // its HTTP server.
 func (zr *zipkinReceiver) Shutdown(context.Context) error {
-	err := zr.server.Close()
+	var err error
+	if zr.server != nil {
+		err = zr.server.Close()
+	}
 	zr.shutdownWG.Wait()
 	return err
 }

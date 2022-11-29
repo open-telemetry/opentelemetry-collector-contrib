@@ -238,7 +238,7 @@ func TestToPlaintext(t *testing.T) {
 				ms.At(0).SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 				dp := ms.At(0).SetEmptyHistogram().DataPoints().AppendEmpty()
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(tsUnix))
-				dp.Attributes().FromRaw(map[string]interface{}{"k0": "v0", "k1": "v1"})
+				assert.NoError(t, dp.Attributes().FromRaw(map[string]interface{}{"k0": "v0", "k1": "v1"}))
 				dp.Attributes().Sort() // ensures result order
 				dp.SetCount(distributionCount)
 				dp.SetSum(distributionSum)
@@ -262,7 +262,7 @@ func TestToPlaintext(t *testing.T) {
 				ms.AppendEmpty().SetName("summary")
 				dp := ms.At(0).SetEmptySummary().DataPoints().AppendEmpty()
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(tsUnix))
-				dp.Attributes().FromRaw(map[string]interface{}{"k0": "v0", "k1": "v1"})
+				assert.NoError(t, dp.Attributes().FromRaw(map[string]interface{}{"k0": "v0", "k1": "v1"}))
 				dp.Attributes().Sort() // ensures result order
 				dp.SetCount(summaryCount)
 				dp.SetSum(summarySum)

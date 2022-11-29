@@ -467,7 +467,7 @@ func TestStartAtEnd(t *testing.T) {
 // a file created after the operator has been started is read from the
 // beginning
 func TestStartAtEndNewFile(t *testing.T) {
-	if runtime.GOOS != windowsOS {
+	if runtime.GOOS == windowsOS {
 		t.Skip("Rotation tests have been flaky on Windows. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16331")
 	}
 	t.Parallel()

@@ -2502,6 +2502,7 @@ func generateTestMetrics(tm testMetric) pmetric.Metrics {
 	now := time.Now()
 
 	rm := md.ResourceMetrics().AppendEmpty()
+	//nolint:errcheck
 	rm.Resource().Attributes().FromRaw(tm.resourceAttributeMap)
 	ms := rm.ScopeMetrics().AppendEmpty().Metrics()
 
@@ -2513,6 +2514,7 @@ func generateTestMetrics(tm testMetric) pmetric.Metrics {
 			dp := g.DataPoints().AppendEmpty()
 			dp.SetTimestamp(pcommon.NewTimestampFromTime(now.Add(10 * time.Second)))
 			dp.SetDoubleValue(value)
+			//nolint:errcheck
 			dp.Attributes().FromRaw(tm.attributeMap)
 		}
 	}

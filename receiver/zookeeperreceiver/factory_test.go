@@ -41,7 +41,7 @@ func TestFactory(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		config  component.ReceiverConfig
+		config  component.Config
 		wantErr bool
 	}{
 		{

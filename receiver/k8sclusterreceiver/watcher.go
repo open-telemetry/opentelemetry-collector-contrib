@@ -281,7 +281,7 @@ func (rw *resourceWatcher) waitForInitialInformerSync() {
 }
 
 func (rw *resourceWatcher) setupMetadataExporters(
-	exporters map[component.ID]component.Exporter,
+	exporters map[component.ID]component.Component,
 	metadataExportersFromConfig []string,
 ) error {
 	var out []metadataConsumer
@@ -309,9 +309,7 @@ func (rw *resourceWatcher) setupMetadataExporters(
 	return nil
 }
 
-func validateMetadataExporters(metadataExporters map[string]bool,
-	exporters map[component.ID]component.Exporter,
-) error {
+func validateMetadataExporters(metadataExporters map[string]bool, exporters map[component.ID]component.Component) error {
 	configuredExporters := map[string]bool{}
 	for cfg := range exporters {
 		configuredExporters[cfg.String()] = true
@@ -326,9 +324,7 @@ func validateMetadataExporters(metadataExporters map[string]bool,
 	return nil
 }
 
-func (rw *resourceWatcher) syncMetadataUpdate(oldMetadata,
-	newMetadata map[metadata.ResourceID]*collection.KubernetesMetadata,
-) {
+func (rw *resourceWatcher) syncMetadataUpdate(oldMetadata, newMetadata map[metadata.ResourceID]*collection.KubernetesMetadata) {
 	metadataUpdate := collection.GetMetadataUpdate(oldMetadata, newMetadata)
 	if len(metadataUpdate) == 0 {
 		return

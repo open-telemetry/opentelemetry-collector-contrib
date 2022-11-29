@@ -114,7 +114,7 @@ func (kr *kubernetesReceiver) dispatchMetrics(ctx context.Context) {
 }
 
 // newReceiver creates the Kubernetes cluster receiver with the given configuration.
-func newReceiver(_ context.Context, set component.ReceiverCreateSettings, cfg component.ReceiverConfig, consumer consumer.Metrics) (component.MetricsReceiver, error) {
+func newReceiver(_ context.Context, set component.ReceiverCreateSettings, cfg component.Config, consumer consumer.Metrics) (component.MetricsReceiver, error) {
 	rCfg := cfg.(*Config)
 
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{

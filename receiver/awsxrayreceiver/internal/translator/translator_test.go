@@ -56,14 +56,14 @@ type eventProps struct {
 func TestTranslation(t *testing.T) {
 	var defaultServerSpanAttrs = func(seg *awsxray.Segment) pcommon.Map {
 		m := pcommon.NewMap()
-		m.FromRaw(map[string]interface{}{
+		assert.NoError(t, m.FromRaw(map[string]interface{}{
 			conventions.AttributeHTTPMethod:       *seg.HTTP.Request.Method,
 			conventions.AttributeHTTPClientIP:     *seg.HTTP.Request.ClientIP,
 			conventions.AttributeHTTPUserAgent:    *seg.HTTP.Request.UserAgent,
 			awsxray.AWSXRayXForwardedForAttribute: *seg.HTTP.Request.XForwardedFor,
 			conventions.AttributeHTTPStatusCode:   *seg.HTTP.Response.Status,
 			conventions.AttributeHTTPURL:          *seg.HTTP.Request.URL,
-		})
+		}))
 		return m
 	}
 
@@ -181,7 +181,7 @@ func TestTranslation(t *testing.T) {
 
 				subseg7318 := seg.Subsegments[0].Subsegments[0]
 				childSpan7318Attrs := pcommon.NewMap()
-				childSpan7318Attrs.FromRaw(map[string]interface{}{
+				assert.NoError(t, childSpan7318Attrs.FromRaw(map[string]interface{}{
 					awsxray.AWSServiceAttribute:                    *subseg7318.Name,
 					conventions.AttributeHTTPResponseContentLength: int64(subseg7318.HTTP.Response.ContentLength.(float64)),
 					conventions.AttributeHTTPStatusCode:            *subseg7318.HTTP.Response.Status,
@@ -190,7 +190,7 @@ func TestTranslation(t *testing.T) {
 					awsxray.AWSRequestIDAttribute:                  *subseg7318.AWS.RequestID,
 					awsxray.AWSTableNameAttribute:                  *subseg7318.AWS.TableName,
 					awsxray.AWSXrayRetriesAttribute:                *subseg7318.AWS.Retries,
-				})
+				}))
 
 				childSpan7318 := perSpanProperties{
 					traceID:      *seg.TraceID,
@@ -377,7 +377,7 @@ func TestTranslation(t *testing.T) {
 
 				subseg7163 := seg.Subsegments[0].Subsegments[1]
 				childSpan7163Attrs := pcommon.NewMap()
-				childSpan7163Attrs.FromRaw(map[string]interface{}{
+				assert.NoError(t, childSpan7163Attrs.FromRaw(map[string]interface{}{
 					awsxray.AWSServiceAttribute:                    *subseg7163.Name,
 					conventions.AttributeHTTPStatusCode:            *subseg7163.HTTP.Response.Status,
 					conventions.AttributeHTTPResponseContentLength: int64(subseg7163.HTTP.Response.ContentLength.(float64)),
@@ -386,7 +386,7 @@ func TestTranslation(t *testing.T) {
 					awsxray.AWSRequestIDAttribute:                  *subseg7163.AWS.RequestID,
 					awsxray.AWSTableNameAttribute:                  *subseg7163.AWS.TableName,
 					awsxray.AWSXrayRetriesAttribute:                *subseg7163.AWS.Retries,
-				})
+				}))
 
 				childSpan7163Evts := initExceptionEvents(&subseg7163)
 				assert.Len(t, childSpan7163Evts, 1, testCase+": childSpan7163Evts has incorrect size")
@@ -667,13 +667,13 @@ func TestTranslation(t *testing.T) {
 			},
 			propsPerSpan: func(_ string, _ *testing.T, seg *awsxray.Segment) []perSpanProperties {
 				attrs := pcommon.NewMap()
-				attrs.FromRaw(map[string]interface{}{
+				assert.NoError(t, attrs.FromRaw(map[string]interface{}{
 					conventions.AttributeHTTPMethod:                *seg.HTTP.Request.Method,
 					conventions.AttributeHTTPStatusCode:            *seg.HTTP.Response.Status,
 					conventions.AttributeHTTPURL:                   *seg.HTTP.Request.URL,
 					conventions.AttributeHTTPResponseContentLength: int64(seg.HTTP.Response.ContentLength.(float64)),
 					awsxray.AWSXRayTracedAttribute:                 true,
-				})
+				}))
 				res := perSpanProperties{
 					traceID:      *seg.TraceID,
 					spanID:       *seg.ID,
@@ -710,13 +710,13 @@ func TestTranslation(t *testing.T) {
 			},
 			propsPerSpan: func(_ string, _ *testing.T, seg *awsxray.Segment) []perSpanProperties {
 				attrs := pcommon.NewMap()
-				attrs.FromRaw(map[string]interface{}{
+				assert.NoError(t, attrs.FromRaw(map[string]interface{}{
 					conventions.AttributeHTTPMethod:                *seg.HTTP.Request.Method,
 					conventions.AttributeHTTPStatusCode:            *seg.HTTP.Response.Status,
 					conventions.AttributeHTTPURL:                   *seg.HTTP.Request.URL,
 					conventions.AttributeHTTPResponseContentLength: seg.HTTP.Response.ContentLength.(string),
 					awsxray.AWSXRayTracedAttribute:                 true,
-				})
+				}))
 
 				res := perSpanProperties{
 					traceID:      *seg.TraceID,
@@ -754,14 +754,14 @@ func TestTranslation(t *testing.T) {
 			},
 			propsPerSpan: func(_ string, _ *testing.T, seg *awsxray.Segment) []perSpanProperties {
 				attrs := pcommon.NewMap()
-				attrs.FromRaw(map[string]interface{}{
+				assert.NoError(t, attrs.FromRaw(map[string]interface{}{
 					conventions.AttributeDBConnectionString: "jdbc:postgresql://aawijb5u25wdoy.cpamxznpdoq8.us-west-2." +
 						"rds.amazonaws.com:5432",
 					conventions.AttributeDBName:      "ebdb",
 					conventions.AttributeDBSystem:    *seg.SQL.DatabaseType,
 					conventions.AttributeDBStatement: *seg.SQL.SanitizedQuery,
 					conventions.AttributeDBUser:      *seg.SQL.User,
-				})
+				}))
 				res := perSpanProperties{
 					traceID:      *seg.TraceID,
 					spanID:       *seg.ID,
@@ -862,7 +862,7 @@ func TestTranslation(t *testing.T) {
 				// the correctness of the actual segment
 				// has been verified in the tracesegment_test.go
 				assert.NoError(t, err, "failed to unmarhal raw segment")
-				expectedRs = initResourceSpans(
+				expectedRs = initResourceSpans(t,
 					&actualSeg,
 					tc.expectedResourceAttrs(&actualSeg),
 					tc.propsPerSpan(tc.testCase, t, &actualSeg),
@@ -921,7 +921,7 @@ func initExceptionEvents(expectedSeg *awsxray.Segment) []eventProps {
 	return res
 }
 
-func initResourceSpans(expectedSeg *awsxray.Segment,
+func initResourceSpans(t *testing.T, expectedSeg *awsxray.Segment,
 	resourceAttrs map[string]interface{},
 	propsPerSpan []perSpanProperties,
 ) ptrace.ResourceSpans {
@@ -932,7 +932,7 @@ func initResourceSpans(expectedSeg *awsxray.Segment,
 	rs := ptrace.NewResourceSpans()
 
 	if len(resourceAttrs) > 0 {
-		rs.Resource().Attributes().FromRaw(resourceAttrs)
+		assert.NoError(t, rs.Resource().Attributes().FromRaw(resourceAttrs))
 	} else {
 		rs.Resource().Attributes().Clear()
 		rs.Resource().Attributes().EnsureCapacity(initAttrCapacity)

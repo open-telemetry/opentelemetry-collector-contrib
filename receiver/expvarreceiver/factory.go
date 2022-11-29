@@ -44,7 +44,7 @@ func NewFactory() component.ReceiverFactory {
 func newMetricsReceiver(
 	_ context.Context,
 	set component.ReceiverCreateSettings,
-	rCfg component.ReceiverConfig,
+	rCfg component.Config,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	cfg := rCfg.(*Config)
@@ -67,7 +67,7 @@ func newMetricsReceiver(
 	)
 }
 
-func newDefaultConfig() component.ReceiverConfig {
+func newDefaultConfig() component.Config {
 	return &Config{
 		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(typeStr),
 		HTTPClientSettings: confighttp.HTTPClientSettings{

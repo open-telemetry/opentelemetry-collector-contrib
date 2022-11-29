@@ -37,7 +37,7 @@ func TestLoadConfig(t *testing.T) {
 
 	sub, err := cm.Sub("k8sobjects")
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 	require.NotNil(t, cfg)
 
 	err = component.ValidateConfig(cfg)
@@ -88,7 +88,7 @@ func TestValidConfigs(t *testing.T) {
 
 	sub, err := cm.Sub("k8sobjects/invalid_resource")
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	cfg.makeDiscoveryClient = getMockDiscoveryClient
 

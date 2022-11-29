@@ -38,7 +38,7 @@ type metricsProcessor struct {
 	router    router[component.MetricsExporter, ottldatapoint.TransformContext]
 }
 
-func newMetricProcessor(settings component.TelemetrySettings, config component.ProcessorConfig) *metricsProcessor {
+func newMetricProcessor(settings component.TelemetrySettings, config component.Config) *metricsProcessor {
 	cfg := rewriteRoutingEntriesToOTTL(config.(*Config))
 
 	return &metricsProcessor{

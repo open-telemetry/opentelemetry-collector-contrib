@@ -39,7 +39,7 @@ func NewFactory() component.ExtensionFactory {
 	)
 }
 
-func createDefaultConfig() component.ExtensionConfig {
+func createDefaultConfig() component.Config {
 	cfg := defaultConfig()
 	return &cfg
 }
@@ -52,7 +52,7 @@ type extension struct {
 func createExtension(
 	_ context.Context,
 	params component.ExtensionCreateSettings,
-	cfg component.ExtensionConfig,
+	cfg component.Config,
 ) (component.Extension, error) {
 	obsCfg := cfg.(*Config)
 

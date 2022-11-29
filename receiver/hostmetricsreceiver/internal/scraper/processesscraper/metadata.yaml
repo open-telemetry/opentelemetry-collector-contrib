@@ -5,6 +5,7 @@ sem_conv_version: 1.9.0
 attributes:
   status:
     description: Breakdown status of the processes.
+    type: string
     enum: [blocked, daemon, detached, idle, locked, orphan, paging, running, sleeping, stopped, system, unknown, zombies]
 
 metrics:

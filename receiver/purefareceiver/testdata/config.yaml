@@ -1,0 +1,18 @@
+receivers:
+  purefa:
+    endpoint: https://172.0.0.0:9490/metrics/
+
+  purefa/with_custom_intervals:
+    endpoint: https://172.0.0.0:9490/metrics/
+    arrays:
+    - address: gse-array01
+      auth: bearertokenauth/array01
+    - address: gse-array02
+      auth: bearertokenauth/array02
+    settings:
+      reload_intervals:
+        array: 10s
+        host: 1m
+        volume: 2m
+        pods: 15s
+        directories: 15s

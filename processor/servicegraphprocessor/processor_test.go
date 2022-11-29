@@ -41,7 +41,7 @@ func TestProcessorStart(t *testing.T) {
 
 	for _, tc := range []struct {
 		name            string
-		exporter        component.Exporter
+		exporter        component.Component
 		metricsExporter string
 		wantErrorMsg    string
 	}{
@@ -51,14 +51,9 @@ func TestProcessorStart(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			// Prepare
-			exporters := map[component.DataType]map[component.ID]component.Exporter{
+			exporters := map[component.DataType]map[component.ID]component.Component{
 				component.DataTypeMetrics: {
 					otlpConfig.ID(): tc.exporter,
-				},
-			}
-			mHost := &mockHost{
-				GetExportersFunc: func() map[component.DataType]map[component.ID]component.Exporter {
-					return exporters
 				},
 			}
 
@@ -73,7 +68,7 @@ func TestProcessorStart(t *testing.T) {
 
 			// Test
 			smp := traceProcessor.(*processor)
-			err = smp.Start(context.Background(), mHost)
+			err = smp.Start(context.Background(), newMockHost(exporters))
 
 			// Verify
 			if tc.wantErrorMsg != "" {
@@ -112,15 +107,11 @@ func TestProcessorConsume(t *testing.T) {
 
 	processor := newProcessor(zaptest.NewLogger(t), cfg, consumertest.NewNop())
 
-	mHost := &mockHost{
-		GetExportersFunc: func() map[component.DataType]map[component.ID]component.Exporter {
-			return map[component.DataType]map[component.ID]component.Exporter{
-				component.DataTypeMetrics: {
-					component.NewID("mock"): mockMetricsExporter,
-				},
-			}
+	mHost := newMockHost(map[component.DataType]map[component.ID]component.Component{
+		component.DataTypeMetrics: {
+			component.NewID("mock"): mockMetricsExporter,
 		},
-	}
+	})
 
 	assert.NoError(t, processor.Start(context.Background(), mHost))
 
@@ -250,18 +241,20 @@ func newOTLPExporters(t *testing.T) (*otlpexporter.Config, component.MetricsExpo
 	return otlpConfig, mexp, texp
 }
 
-var _ component.Host = (*mockHost)(nil)
-
 type mockHost struct {
 	component.Host
-	GetExportersFunc func() map[component.DataType]map[component.ID]component.Exporter
+	exps map[component.DataType]map[component.ID]component.Component
 }
 
-func (m *mockHost) GetExporters() map[component.DataType]map[component.ID]component.Exporter {
-	if m.GetExportersFunc != nil {
-		return m.GetExportersFunc()
+func newMockHost(exps map[component.DataType]map[component.ID]component.Component) component.Host {
+	return &mockHost{
+		Host: componenttest.NewNopHost(),
+		exps: exps,
 	}
-	return m.Host.GetExporters()
+}
+
+func (m *mockHost) GetExporters() map[component.DataType]map[component.ID]component.Component {
+	return m.exps
 }
 
 var _ component.MetricsExporter = (*mockMetricsExporter)(nil)
@@ -282,4 +275,44 @@ func (m *mockMetricsExporter) Capabilities() consumer.Capabilities { return cons
 
 func (m *mockMetricsExporter) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
 	return m.verify(md)
+}
+
+func TestUpdateDurationMetrics(t *testing.T) {
+	p := processor{
+		reqTotal:                       make(map[string]int64),
+		reqFailedTotal:                 make(map[string]int64),
+		reqDurationSecondsSum:          make(map[string]float64),
+		reqDurationSecondsCount:        make(map[string]uint64),
+		reqDurationBounds:              defaultLatencyHistogramBucketsMs,
+		reqDurationSecondsBucketCounts: make(map[string][]uint64),
+		keyToMetric:                    make(map[string]metricSeries),
+		config: &Config{
+			Dimensions: []string{},
+		},
+	}
+	metricKey := p.buildMetricKey("foo", "bar", "", map[string]string{})
+
+	testCases := []struct {
+		caseStr  string
+		duration float64
+	}{
+
+		{
+			caseStr:  "index 0 latency",
+			duration: 0,
+		},
+		{
+			caseStr:  "out-of-range latency 1",
+			duration: 25_000,
+		},
+		{
+			caseStr:  "out-of-range latency 2",
+			duration: 125_000,
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.caseStr, func(t *testing.T) {
+			p.updateDurationMetrics(metricKey, tc.duration)
+		})
+	}
 }

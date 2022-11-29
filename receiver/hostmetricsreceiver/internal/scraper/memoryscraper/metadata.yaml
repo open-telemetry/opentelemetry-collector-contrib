@@ -5,6 +5,7 @@ sem_conv_version: 1.9.0
 attributes:
   state:
     description: Breakdown of memory usage by type.
+    type: string
     enum: [buffered, cached, inactive, free, slab_reclaimable, slab_unreclaimable, used]
 
 metrics:

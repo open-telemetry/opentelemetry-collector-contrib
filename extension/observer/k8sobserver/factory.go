@@ -39,7 +39,7 @@ func NewFactory() component.ExtensionFactory {
 }
 
 // CreateDefaultConfig creates the default configuration for the extension.
-func createDefaultConfig() component.ExtensionConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
 		APIConfig:         k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
@@ -52,7 +52,7 @@ func createDefaultConfig() component.ExtensionConfig {
 func createExtension(
 	ctx context.Context,
 	params component.ExtensionCreateSettings,
-	cfg component.ExtensionConfig,
+	cfg component.Config,
 ) (component.Extension, error) {
 	return newObserver(cfg.(*Config), params.TelemetrySettings)
 }

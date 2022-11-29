@@ -57,8 +57,9 @@ func TestNewIntervalStatsReader(t *testing.T) {
 	}
 	logger := zaptest.NewLogger(t)
 	config := ReaderConfig{
-		TopMetricsQueryMaxRows: topMetricsQueryMaxRows,
-		BackfillEnabled:        true,
+		TopMetricsQueryMaxRows:            topMetricsQueryMaxRows,
+		BackfillEnabled:                   true,
+		HideTopnLockstatsRowrangestartkey: true,
 	}
 
 	reader := newIntervalStatsReader(logger, database, metricsMetadata, config)
@@ -69,6 +70,7 @@ func TestNewIntervalStatsReader(t *testing.T) {
 	assert.Equal(t, topMetricsQueryMaxRows, reader.topMetricsQueryMaxRows)
 	assert.NotNil(t, reader.timestampsGenerator)
 	assert.True(t, reader.timestampsGenerator.backfillEnabled)
+	assert.True(t, reader.hideTopnLockstatsRowrangestartkey)
 }
 
 func TestIntervalStatsReader_NewPullStatement(t *testing.T) {
@@ -76,8 +78,9 @@ func TestIntervalStatsReader_NewPullStatement(t *testing.T) {
 	timestamp := time.Now().UTC()
 	logger := zaptest.NewLogger(t)
 	config := ReaderConfig{
-		TopMetricsQueryMaxRows: topMetricsQueryMaxRows,
-		BackfillEnabled:        false,
+		TopMetricsQueryMaxRows:            topMetricsQueryMaxRows,
+		BackfillEnabled:                   false,
+		HideTopnLockstatsRowrangestartkey: true,
 	}
 	ctx := context.Background()
 	client, _ := spanner.NewClient(ctx, "")

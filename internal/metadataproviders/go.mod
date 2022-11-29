@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/Showmax/go-fqdn v1.0.0
-	github.com/aws/aws-sdk-go v1.44.133
+	github.com/aws/aws-sdk-go v1.44.145
 	github.com/docker/docker v20.10.21+incompatible
 	github.com/hashicorp/consul/api v1.15.3
 	github.com/stretchr/testify v1.8.1
@@ -44,3 +44,5 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gotest.tools/v3 v3.2.0 // indirect
 )
+
+retract v0.65.0
