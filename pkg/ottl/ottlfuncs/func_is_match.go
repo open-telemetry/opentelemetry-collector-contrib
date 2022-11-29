@@ -45,9 +45,7 @@ func IsMatch[K any](target ottl.Getter[K], pattern string) (ottl.ExprFunc[K], er
 		case pcommon.Value:
 			return compiledPattern.MatchString(v.AsString()), nil
 		default:
-			pv := pcommon.NewValueEmpty()
-			pv.FromRaw(v)
-			return compiledPattern.MatchString(pv.AsString()), nil
+			return nil, errors.New("unsupported type")
 		}
 
 		return false, nil
