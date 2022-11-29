@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -55,6 +56,55 @@ func TestLoadConfig(t *testing.T) {
 	t.Run("valid config", func(t *testing.T) {
 		cfg := factory.CreateDefaultConfig()
 		sub, err := cm.Sub(component.NewIDWithName(typeStr, "valid").String())
+		require.NoError(t, err)
+		require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+		err = component.ValidateConfig(cfg)
+
+		require.NoError(t, err)
+		assert.Equal(t, &Config{
+			ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
+			HTTPClientSettings: confighttp.HTTPClientSettings{
+				Endpoint:        "https://example.com/api/",
+				Timeout:         30 * time.Second,
+				Headers:         map[string]string{},
+				WriteBufferSize: 512 * 1024,
+			},
+			Endpoint: "https://example.com/api/",
+			AgentKey: "key1",
+		}, cfg)
+	})
+
+	t.Run("valid config with ca_file", func(t *testing.T) {
+		cfg := factory.CreateDefaultConfig()
+		sub, err := cm.Sub(component.NewIDWithName(typeStr, "valid_with_ca_file").String())
+		require.NoError(t, err)
+		require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+		err = component.ValidateConfig(cfg)
+
+		require.NoError(t, err)
+		assert.Equal(t, &Config{
+			ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
+			HTTPClientSettings: confighttp.HTTPClientSettings{
+				Endpoint:        "https://example.com/api/",
+				Timeout:         30 * time.Second,
+				Headers:         map[string]string{},
+				WriteBufferSize: 512 * 1024,
+				TLSSetting: configtls.TLSClientSetting{
+					TLSSetting: configtls.TLSSetting{
+						CAFile: "ca.crt",
+					},
+				},
+			},
+			Endpoint: "https://example.com/api/",
+			AgentKey: "key1",
+		}, cfg)
+	})
+
+	t.Run("valid config without ca_file", func(t *testing.T) {
+		cfg := factory.CreateDefaultConfig()
+		sub, err := cm.Sub(component.NewIDWithName(typeStr, "valid_no_ca_file").String())
 		require.NoError(t, err)
 		require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
