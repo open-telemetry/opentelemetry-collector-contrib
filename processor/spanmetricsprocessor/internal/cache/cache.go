@@ -16,6 +16,7 @@ package cache // import "github.com/open-telemetry/opentelemetry-collector-contr
 
 import (
 	"github.com/hashicorp/golang-lru/simplelru"
+	"go.uber.org/zap"
 )
 
 // Cache consists of an LRU cache and the evicted items from the LRU cache.
@@ -28,10 +29,11 @@ import (
 type Cache[K comparable, V any] struct {
 	lru          simplelru.LRUCache
 	evictedItems map[K]V
+	logger       *zap.Logger
 }
 
 // NewCache creates a Cache.
-func NewCache[K comparable, V any](size int) (*Cache[K, V], error) {
+func NewCache[K comparable, V any](size int, logger *zap.Logger) (*Cache[K, V], error) {
 	evictedItems := make(map[K]V)
 	lruCache, err := simplelru.NewLRU(size, func(key any, value any) {
 		evictedItems[key.(K)] = value.(V)
@@ -43,6 +45,7 @@ func NewCache[K comparable, V any](size int) (*Cache[K, V], error) {
 	return &Cache[K, V]{
 		lru:          lruCache,
 		evictedItems: evictedItems,
+		logger:       logger,
 	}, nil
 }
 
@@ -50,21 +53,25 @@ func NewCache[K comparable, V any](size int) (*Cache[K, V], error) {
 func (c *Cache[K, V]) RemoveEvictedItems() {
 	// we need to keep the original pointer to evictedItems map as it is used in the closure of lru.NewWithEvict
 	for k := range c.evictedItems {
+		c.logger.Info("deleting: ", zap.Any("key", k))
 		delete(c.evictedItems, k)
 	}
 }
 
 // Add a value to the cache, returns true if an eviction occurred and updates the "recently used"-ness of the key.
 func (c *Cache[K, V]) Add(key K, value V) bool {
+	c.logger.Info("adding: ", zap.Any("key", key))
 	return c.lru.Add(key, value)
 }
 
 // Get an item from the LRU cache or evicted items.
 func (c *Cache[K, V]) Get(key K) (V, bool) {
 	if val, ok := c.lru.Get(key); ok {
+		c.logger.Info("cache hit: ", zap.Any("key", key))
 		return val.(V), ok
 	}
 	val, ok := c.evictedItems[key]
+	c.logger.Info("cache miss looking for evicted: ", zap.Any("key", key), zap.Bool("found", ok))
 	return val, ok
 }
 

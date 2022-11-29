@@ -16,6 +16,8 @@ package spanmetricsprocessor // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"context"
+	"github.com/tilinna/clock"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
@@ -48,6 +50,6 @@ func createDefaultConfig() component.ProcessorConfig {
 	}
 }
 
-func createTracesProcessor(_ context.Context, params component.ProcessorCreateSettings, cfg component.ProcessorConfig, nextConsumer consumer.Traces) (component.TracesProcessor, error) {
-	return newProcessor(params.Logger, cfg, nextConsumer)
+func createTracesProcessor(ctx context.Context, params component.ProcessorCreateSettings, cfg component.ProcessorConfig, nextConsumer consumer.Traces) (component.TracesProcessor, error) {
+	return newProcessor(ctx, params.Logger, cfg, nextConsumer, clock.Realtime().NewTicker(time.Second))
 }

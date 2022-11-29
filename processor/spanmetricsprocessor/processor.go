@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/tilinna/clock"
 	"sort"
 	"strings"
 	"sync"
@@ -84,6 +85,10 @@ type processorImp struct {
 	// An LRU cache of dimension key-value maps keyed by a unique identifier formed by a concatenation of its values:
 	// e.g. { "foo/barOK": { "serviceName": "foo", "operation": "/bar", "status_code": "OK" }}
 	metricKeyToDimensions *cache.Cache[metricKey, pcommon.Map]
+
+	ticker  *clock.Ticker
+	done    chan bool
+	started bool
 }
 
 type dimension struct {
@@ -113,7 +118,7 @@ type histogramData struct {
 	exemplarsData []exemplarData
 }
 
-func newProcessor(logger *zap.Logger, config component.ProcessorConfig, nextConsumer consumer.Traces) (*processorImp, error) {
+func newProcessor(ctx context.Context, logger *zap.Logger, config component.ProcessorConfig, nextConsumer consumer.Traces, ticker *clock.Ticker) (*processorImp, error) {
 	logger.Info("Building spanmetricsprocessor")
 	pConfig := config.(*Config)
 
@@ -132,12 +137,13 @@ func newProcessor(logger *zap.Logger, config component.ProcessorConfig, nextCons
 			pConfig.DimensionsCacheSize,
 		)
 	}
-	metricKeyToDimensionsCache, err := cache.NewCache[metricKey, pcommon.Map](pConfig.DimensionsCacheSize)
+	metricKeyToDimensionsCache, err := cache.NewCache[metricKey, pcommon.Map](pConfig.DimensionsCacheSize, logger)
 	if err != nil {
 		return nil, err
 	}
 
-	return &processorImp{
+	done := make(chan bool)
+	p := &processorImp{
 		logger:                logger,
 		config:                *pConfig,
 		startTimestamp:        pcommon.NewTimestampFromTime(time.Now()),
@@ -147,7 +153,11 @@ func newProcessor(logger *zap.Logger, config component.ProcessorConfig, nextCons
 		dimensions:            newDimensions(pConfig.Dimensions),
 		keyBuf:                bytes.NewBuffer(make([]byte, 0, 1024)),
 		metricKeyToDimensions: metricKeyToDimensionsCache,
-	}, nil
+		ticker:                ticker,
+		done:                  done,
+	}
+
+	return p, nil
 }
 
 // durationToMillis converts the given duration to the number of milliseconds it represents.
@@ -224,12 +234,30 @@ func (p *processorImp) Start(ctx context.Context, host component.Host) error {
 			p.config.MetricsExporter, availableMetricsExporters)
 	}
 	p.logger.Info("Started spanmetricsprocessor")
+
+	go func() {
+		for {
+			select {
+			case <-p.done:
+				return
+			case t := <-p.ticker.C:
+				fmt.Println("Tick at", t)
+				p.onTick(ctx)
+			}
+		}
+	}()
+
+	p.started = true
 	return nil
 }
 
 // Shutdown implements the component.Component interface.
 func (p *processorImp) Shutdown(context.Context) error {
 	p.logger.Info("Shutting down spanmetricsprocessor")
+	if p.started {
+		p.ticker.Stop()
+		p.done <- true
+	}
 	return nil
 }
 
@@ -243,13 +271,35 @@ func (p *processorImp) Capabilities() consumer.Capabilities {
 // The original input trace data will be forwarded to the next consumer, unmodified.
 func (p *processorImp) ConsumeTraces(ctx context.Context, traces ptrace.Traces) error {
 	// Forward trace data unmodified and propagate both metrics and trace pipeline errors, if any.
-	return multierr.Combine(p.tracesToMetrics(ctx, traces), p.nextConsumer.ConsumeTraces(ctx, traces))
+	return multierr.Combine(p.tracesToMetrics(traces), p.nextConsumer.ConsumeTraces(ctx, traces))
 }
 
-func (p *processorImp) tracesToMetrics(ctx context.Context, traces ptrace.Traces) error {
+func (p *processorImp) tracesToMetrics(traces ptrace.Traces) error {
 	p.lock.Lock()
-
 	p.aggregateMetrics(traces)
+	p.lock.Unlock()
+
+	// m, err := p.buildMetrics()
+	//
+	// // Exemplars are only relevant to this batch of traces, so must be cleared within the lock,
+	// // regardless of error while building metrics, before the next batch of spans is received.
+	// p.resetExemplarData()
+	//
+	// // This component no longer needs to read the metrics once built, so it is safe to unlock.
+	//
+	// if err != nil {
+	// 	return err
+	// }
+	//
+	// if err = p.metricsExporter.ConsumeMetrics(ctx, m); err != nil {
+	// 	return err
+	// }
+
+	return nil
+}
+
+func (p *processorImp) onTick(ctx context.Context) {
+	p.lock.Lock()
 	m, err := p.buildMetrics()
 
 	// Exemplars are only relevant to this batch of traces, so must be cleared within the lock,
@@ -260,14 +310,14 @@ func (p *processorImp) tracesToMetrics(ctx context.Context, traces ptrace.Traces
 	p.lock.Unlock()
 
 	if err != nil {
-		return err
+		p.logger.Error("Failed to build metrics: " + err.Error())
+		return
 	}
 
-	if err = p.metricsExporter.ConsumeMetrics(ctx, m); err != nil {
-		return err
+	if err := p.metricsExporter.ConsumeMetrics(ctx, m); err != nil {
+		p.logger.Error("Failed ConsumeMetrics: " + err.Error())
+		return
 	}
-
-	return nil
 }
 
 // buildMetrics collects the computed raw metrics data, builds the metrics object and
