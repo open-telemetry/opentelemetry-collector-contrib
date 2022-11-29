@@ -1,52 +1,12 @@
 name: apachereceiver
 
 resource_attributes:
-    apache.server.name:
-      description: The name of the Apache HTTP server.
-      type: string
-    apache.server.port:
-      description: The port of the Apache HTTP server.
-      type: string
-
-attributes:
-  workers_state:
-    value: state
-    description: The state of workers.
+  apache.server.name:
+    description: The name of the Apache HTTP server.
     type: string
-    enum:
-      - busy
-      - idle
-  cpu_level:
-    value: level
-    description: Level of processes.
+  apache.server.port:
+    description: The port of the Apache HTTP server.
     type: string
-    enum:
-      - self
-      - children
-  cpu_mode:
-    value: mode
-    description: Mode of processes.
-    type: string
-    enum:
-    - system
-    - user
-  scoreboard_state:
-    value: state
-    description: The state of a connection.
-    type: string
-    enum:
-      - open
-      - waiting
-      - starting
-      - reading
-      - sending
-      - keepalive
-      - dnslookup
-      - closing
-      - logging
-      - finishing
-      - idle_cleanup
-      - unknown
 
 metrics:
   apache.uptime:
@@ -78,7 +38,13 @@ metrics:
       input_type: string
       monotonic: false
       aggregation: cumulative
-    attributes: [workers_state]
+    attributes:
+      state:
+        description: The state of workers.
+        type: string
+        enum:
+          - busy
+          - idle
   apache.requests:
     enabled: true
     description: The number of requests serviced by the HTTP server per second.
@@ -107,7 +73,19 @@ metrics:
       input_type: string
       monotonic: true
       aggregation: cumulative
-    attributes: [cpu_level, cpu_mode]
+    attributes:
+      level:
+        description: Level of processes.
+        type: string
+        enum:
+          - self
+          - children
+      mode:
+        description: Mode of processes.
+        type: string
+        enum:
+          - system
+          - user
   apache.cpu.load:
     enabled: true
     description: Current load of the CPU.
@@ -162,4 +140,21 @@ metrics:
       value_type: int
       monotonic: false
       aggregation: cumulative
-    attributes: [scoreboard_state]
+    attributes:
+      state:
+        description: The state of a connection.
+        type: string
+        enum:
+          - open
+          - waiting
+          - starting
+          - reading
+          - sending
+          - keepalive
+          - dnslookup
+          - closing
+          - logging
+          - finishing
+          - idle_cleanup
+          - unknown
+

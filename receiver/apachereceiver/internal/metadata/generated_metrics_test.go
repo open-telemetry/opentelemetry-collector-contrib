@@ -22,7 +22,7 @@ func TestDefaultMetrics(t *testing.T) {
 	mb.RecordApacheCPULoadDataPoint(ts, "1")
 
 	enabledMetrics["apache.cpu.time"] = true
-	mb.RecordApacheCPUTimeDataPoint(ts, "1", AttributeCPULevel(1), AttributeCPUMode(1))
+	mb.RecordApacheCPUTimeDataPoint(ts, "1", AttributeSelf, AttributeSystem)
 
 	enabledMetrics["apache.current_connections"] = true
 	mb.RecordApacheCurrentConnectionsDataPoint(ts, "1")
@@ -43,7 +43,7 @@ func TestDefaultMetrics(t *testing.T) {
 	mb.RecordApacheRequestsDataPoint(ts, "1")
 
 	enabledMetrics["apache.scoreboard"] = true
-	mb.RecordApacheScoreboardDataPoint(ts, 1, AttributeScoreboardState(1))
+	mb.RecordApacheScoreboardDataPoint(ts, 1, AttributeOpen)
 
 	enabledMetrics["apache.traffic"] = true
 	mb.RecordApacheTrafficDataPoint(ts, 1)
@@ -52,7 +52,7 @@ func TestDefaultMetrics(t *testing.T) {
 	mb.RecordApacheUptimeDataPoint(ts, "1")
 
 	enabledMetrics["apache.workers"] = true
-	mb.RecordApacheWorkersDataPoint(ts, "1", AttributeWorkersState(1))
+	mb.RecordApacheWorkersDataPoint(ts, "1", AttributeBusy)
 
 	metrics := mb.Emit()
 
@@ -89,17 +89,17 @@ func TestAllMetrics(t *testing.T) {
 	mb := NewMetricsBuilder(settings, component.BuildInfo{}, WithStartTime(start))
 
 	mb.RecordApacheCPULoadDataPoint(ts, "1")
-	mb.RecordApacheCPUTimeDataPoint(ts, "1", AttributeCPULevel(1), AttributeCPUMode(1))
+	mb.RecordApacheCPUTimeDataPoint(ts, "1", AttributeSelf, AttributeSystem)
 	mb.RecordApacheCurrentConnectionsDataPoint(ts, "1")
 	mb.RecordApacheLoad1DataPoint(ts, "1")
 	mb.RecordApacheLoad15DataPoint(ts, "1")
 	mb.RecordApacheLoad5DataPoint(ts, "1")
 	mb.RecordApacheRequestTimeDataPoint(ts, "1")
 	mb.RecordApacheRequestsDataPoint(ts, "1")
-	mb.RecordApacheScoreboardDataPoint(ts, 1, AttributeScoreboardState(1))
+	mb.RecordApacheScoreboardDataPoint(ts, 1, AttributeOpen)
 	mb.RecordApacheTrafficDataPoint(ts, 1)
 	mb.RecordApacheUptimeDataPoint(ts, "1")
-	mb.RecordApacheWorkersDataPoint(ts, "1", AttributeWorkersState(1))
+	mb.RecordApacheWorkersDataPoint(ts, "1", AttributeBusy)
 
 	metrics := mb.Emit(WithApacheServerName("attr-val"), WithApacheServerPort("attr-val"))
 
@@ -307,17 +307,17 @@ func TestNoMetrics(t *testing.T) {
 	}
 	mb := NewMetricsBuilder(settings, component.BuildInfo{}, WithStartTime(start))
 	mb.RecordApacheCPULoadDataPoint(ts, "1")
-	mb.RecordApacheCPUTimeDataPoint(ts, "1", AttributeCPULevel(1), AttributeCPUMode(1))
+	mb.RecordApacheCPUTimeDataPoint(ts, "1", AttributeSelf, AttributeSystem)
 	mb.RecordApacheCurrentConnectionsDataPoint(ts, "1")
 	mb.RecordApacheLoad1DataPoint(ts, "1")
 	mb.RecordApacheLoad15DataPoint(ts, "1")
 	mb.RecordApacheLoad5DataPoint(ts, "1")
 	mb.RecordApacheRequestTimeDataPoint(ts, "1")
 	mb.RecordApacheRequestsDataPoint(ts, "1")
-	mb.RecordApacheScoreboardDataPoint(ts, 1, AttributeScoreboardState(1))
+	mb.RecordApacheScoreboardDataPoint(ts, 1, AttributeOpen)
 	mb.RecordApacheTrafficDataPoint(ts, 1)
 	mb.RecordApacheUptimeDataPoint(ts, "1")
-	mb.RecordApacheWorkersDataPoint(ts, "1", AttributeWorkersState(1))
+	mb.RecordApacheWorkersDataPoint(ts, "1", AttributeBusy)
 
 	metrics := mb.Emit()
 

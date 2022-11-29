@@ -75,7 +75,7 @@ func TestScrape_CollectClusterMetrics(t *testing.T) {
 
 	expectedMB := metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), component.NewDefaultBuildInfo())
 
-	require.NoError(t, expectedMB.RecordAerospikeNodeConnectionOpenDataPoint(now, "22", metadata.AttributeConnectionTypeClient))
+	require.NoError(t, expectedMB.RecordAerospikeNodeConnectionOpenDataPoint(now, "22", metadata.AttributeClient))
 	expectedMB.EmitForResource(metadata.WithAerospikeNodeName("BB990C28F270008"))
 
 	require.NoError(t, expectedMB.RecordAerospikeNamespaceMemoryFreeDataPoint(now, "45"))
@@ -84,10 +84,10 @@ func TestScrape_CollectClusterMetrics(t *testing.T) {
 	require.NoError(t, expectedMB.RecordAerospikeNamespaceMemoryFreeDataPoint(now, "30"))
 	expectedMB.EmitForResource(metadata.WithAerospikeNamespace("bar"), metadata.WithAerospikeNodeName("BB990C28F270008"))
 
-	require.NoError(t, expectedMB.RecordAerospikeNodeConnectionOpenDataPoint(now, "1", metadata.AttributeConnectionTypeClient))
+	require.NoError(t, expectedMB.RecordAerospikeNodeConnectionOpenDataPoint(now, "1", metadata.AttributeClient))
 	expectedMB.EmitForResource(metadata.WithAerospikeNodeName("BB990C28F270009"))
 
-	require.NoError(t, expectedMB.RecordAerospikeNamespaceMemoryUsageDataPoint(now, "128", metadata.AttributeNamespaceComponentData))
+	require.NoError(t, expectedMB.RecordAerospikeNamespaceMemoryUsageDataPoint(now, "128", metadata.AttributeData))
 	expectedMB.EmitForResource(metadata.WithAerospikeNamespace("test"), metadata.WithAerospikeNodeName("BB990C28F270009"))
 
 	// require.NoError(t, expectedMB.RecordAerospikeNamespaceMemoryUsageDataPoint(now, "badval", metadata.AttributeNamespaceComponentData))

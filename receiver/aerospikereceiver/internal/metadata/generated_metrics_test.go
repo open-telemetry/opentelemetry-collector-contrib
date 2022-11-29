@@ -37,22 +37,22 @@ func TestDefaultMetrics(t *testing.T) {
 	mb.RecordAerospikeNamespaceMemoryFreeDataPoint(ts, "1")
 
 	enabledMetrics["aerospike.namespace.memory.usage"] = true
-	mb.RecordAerospikeNamespaceMemoryUsageDataPoint(ts, "1", AttributeNamespaceComponent(1))
+	mb.RecordAerospikeNamespaceMemoryUsageDataPoint(ts, "1", AttributeData)
 
 	enabledMetrics["aerospike.namespace.query.count"] = true
-	mb.RecordAerospikeNamespaceQueryCountDataPoint(ts, "1", AttributeQueryType(1), AttributeIndexType(1), AttributeQueryResult(1))
+	mb.RecordAerospikeNamespaceQueryCountDataPoint(ts, "1", AttributePrimary, AttributeAbort, AttributeAggregation)
 
 	enabledMetrics["aerospike.namespace.scan.count"] = true
-	mb.RecordAerospikeNamespaceScanCountDataPoint(ts, "1", AttributeScanType(1), AttributeScanResult(1))
+	mb.RecordAerospikeNamespaceScanCountDataPoint(ts, "1", AttributeAbort, AttributeAggregation)
 
 	enabledMetrics["aerospike.namespace.transaction.count"] = true
-	mb.RecordAerospikeNamespaceTransactionCountDataPoint(ts, "1", AttributeTransactionType(1), AttributeTransactionResult(1))
+	mb.RecordAerospikeNamespaceTransactionCountDataPoint(ts, "1", AttributeError, AttributeDelete)
 
 	enabledMetrics["aerospike.node.connection.count"] = true
-	mb.RecordAerospikeNodeConnectionCountDataPoint(ts, "1", AttributeConnectionType(1), AttributeConnectionOp(1))
+	mb.RecordAerospikeNodeConnectionCountDataPoint(ts, "1", AttributeClose, AttributeClient)
 
 	enabledMetrics["aerospike.node.connection.open"] = true
-	mb.RecordAerospikeNodeConnectionOpenDataPoint(ts, "1", AttributeConnectionType(1))
+	mb.RecordAerospikeNodeConnectionOpenDataPoint(ts, "1", AttributeClient)
 
 	enabledMetrics["aerospike.node.memory.free"] = true
 	mb.RecordAerospikeNodeMemoryFreeDataPoint(ts, "1")
@@ -102,12 +102,12 @@ func TestAllMetrics(t *testing.T) {
 	mb.RecordAerospikeNamespaceGeojsonRegionQueryPointsDataPoint(ts, "1")
 	mb.RecordAerospikeNamespaceGeojsonRegionQueryRequestsDataPoint(ts, "1")
 	mb.RecordAerospikeNamespaceMemoryFreeDataPoint(ts, "1")
-	mb.RecordAerospikeNamespaceMemoryUsageDataPoint(ts, "1", AttributeNamespaceComponent(1))
-	mb.RecordAerospikeNamespaceQueryCountDataPoint(ts, "1", AttributeQueryType(1), AttributeIndexType(1), AttributeQueryResult(1))
-	mb.RecordAerospikeNamespaceScanCountDataPoint(ts, "1", AttributeScanType(1), AttributeScanResult(1))
-	mb.RecordAerospikeNamespaceTransactionCountDataPoint(ts, "1", AttributeTransactionType(1), AttributeTransactionResult(1))
-	mb.RecordAerospikeNodeConnectionCountDataPoint(ts, "1", AttributeConnectionType(1), AttributeConnectionOp(1))
-	mb.RecordAerospikeNodeConnectionOpenDataPoint(ts, "1", AttributeConnectionType(1))
+	mb.RecordAerospikeNamespaceMemoryUsageDataPoint(ts, "1", AttributeData)
+	mb.RecordAerospikeNamespaceQueryCountDataPoint(ts, "1", AttributePrimary, AttributeAbort, AttributeAggregation)
+	mb.RecordAerospikeNamespaceScanCountDataPoint(ts, "1", AttributeAbort, AttributeAggregation)
+	mb.RecordAerospikeNamespaceTransactionCountDataPoint(ts, "1", AttributeError, AttributeDelete)
+	mb.RecordAerospikeNodeConnectionCountDataPoint(ts, "1", AttributeClose, AttributeClient)
+	mb.RecordAerospikeNodeConnectionOpenDataPoint(ts, "1", AttributeClient)
 	mb.RecordAerospikeNodeMemoryFreeDataPoint(ts, "1")
 	mb.RecordAerospikeNodeQueryTrackedDataPoint(ts, "1")
 
@@ -235,15 +235,15 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, ts, dp.Timestamp())
 			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("type")
-			assert.True(t, ok)
-			assert.Equal(t, "aggregation", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("index")
+			attrVal, ok := dp.Attributes().Get("index")
 			assert.True(t, ok)
 			assert.Equal(t, "primary", attrVal.Str())
 			attrVal, ok = dp.Attributes().Get("result")
 			assert.True(t, ok)
 			assert.Equal(t, "abort", attrVal.Str())
+			attrVal, ok = dp.Attributes().Get("type")
+			assert.True(t, ok)
+			assert.Equal(t, "aggregation", attrVal.Str())
 			validatedMetrics["aerospike.namespace.query.count"] = struct{}{}
 		case "aerospike.namespace.scan.count":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -257,12 +257,12 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, ts, dp.Timestamp())
 			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("type")
-			assert.True(t, ok)
-			assert.Equal(t, "aggregation", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("result")
+			attrVal, ok := dp.Attributes().Get("result")
 			assert.True(t, ok)
 			assert.Equal(t, "abort", attrVal.Str())
+			attrVal, ok = dp.Attributes().Get("type")
+			assert.True(t, ok)
+			assert.Equal(t, "aggregation", attrVal.Str())
 			validatedMetrics["aerospike.namespace.scan.count"] = struct{}{}
 		case "aerospike.namespace.transaction.count":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -276,12 +276,12 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, ts, dp.Timestamp())
 			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("type")
-			assert.True(t, ok)
-			assert.Equal(t, "delete", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("result")
+			attrVal, ok := dp.Attributes().Get("result")
 			assert.True(t, ok)
 			assert.Equal(t, "error", attrVal.Str())
+			attrVal, ok = dp.Attributes().Get("type")
+			assert.True(t, ok)
+			assert.Equal(t, "delete", attrVal.Str())
 			validatedMetrics["aerospike.namespace.transaction.count"] = struct{}{}
 		case "aerospike.node.connection.count":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -295,12 +295,12 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, ts, dp.Timestamp())
 			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("type")
-			assert.True(t, ok)
-			assert.Equal(t, "client", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("operation")
+			attrVal, ok := dp.Attributes().Get("operation")
 			assert.True(t, ok)
 			assert.Equal(t, "close", attrVal.Str())
+			attrVal, ok = dp.Attributes().Get("type")
+			assert.True(t, ok)
+			assert.Equal(t, "client", attrVal.Str())
 			validatedMetrics["aerospike.node.connection.count"] = struct{}{}
 		case "aerospike.node.connection.open":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -373,12 +373,12 @@ func TestNoMetrics(t *testing.T) {
 	mb.RecordAerospikeNamespaceGeojsonRegionQueryPointsDataPoint(ts, "1")
 	mb.RecordAerospikeNamespaceGeojsonRegionQueryRequestsDataPoint(ts, "1")
 	mb.RecordAerospikeNamespaceMemoryFreeDataPoint(ts, "1")
-	mb.RecordAerospikeNamespaceMemoryUsageDataPoint(ts, "1", AttributeNamespaceComponent(1))
-	mb.RecordAerospikeNamespaceQueryCountDataPoint(ts, "1", AttributeQueryType(1), AttributeIndexType(1), AttributeQueryResult(1))
-	mb.RecordAerospikeNamespaceScanCountDataPoint(ts, "1", AttributeScanType(1), AttributeScanResult(1))
-	mb.RecordAerospikeNamespaceTransactionCountDataPoint(ts, "1", AttributeTransactionType(1), AttributeTransactionResult(1))
-	mb.RecordAerospikeNodeConnectionCountDataPoint(ts, "1", AttributeConnectionType(1), AttributeConnectionOp(1))
-	mb.RecordAerospikeNodeConnectionOpenDataPoint(ts, "1", AttributeConnectionType(1))
+	mb.RecordAerospikeNamespaceMemoryUsageDataPoint(ts, "1", AttributeData)
+	mb.RecordAerospikeNamespaceQueryCountDataPoint(ts, "1", AttributePrimary, AttributeAbort, AttributeAggregation)
+	mb.RecordAerospikeNamespaceScanCountDataPoint(ts, "1", AttributeAbort, AttributeAggregation)
+	mb.RecordAerospikeNamespaceTransactionCountDataPoint(ts, "1", AttributeError, AttributeDelete)
+	mb.RecordAerospikeNodeConnectionCountDataPoint(ts, "1", AttributeClose, AttributeClient)
+	mb.RecordAerospikeNodeConnectionOpenDataPoint(ts, "1", AttributeClient)
 	mb.RecordAerospikeNodeMemoryFreeDataPoint(ts, "1")
 	mb.RecordAerospikeNodeQueryTrackedDataPoint(ts, "1")
 

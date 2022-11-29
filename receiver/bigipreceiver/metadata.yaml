@@ -23,37 +23,6 @@ resource_attributes:
     description: The IP Address of the Big-IP Node.
     type: string
 
-attributes:
-  direction:
-    value: direction
-    description: The direction of data.
-    type: string
-    enum:
-      - sent
-      - received
-  availability.status:
-    value: status
-    description: The availability status.
-    type: string
-    enum:
-      - offline
-      - unknown
-      - available
-  enabled.status:
-    value: status
-    description: The enabled status.
-    type: string
-    enum:
-      - disabled
-      - enabled
-  active.status:
-    value: status
-    description: The active status.
-    type: string
-    enum:
-      - active
-      - inactive
-
 metrics:
   bigip.virtual_server.data.transmitted:
     description: Amount of data transmitted to and from the virtual server.
@@ -62,7 +31,13 @@ metrics:
       monotonic: true
       aggregation: cumulative
       value_type: int
-    attributes: [direction]
+    attributes:
+      direction: &direction
+        description: The direction of data.
+        type: string
+        enum:
+          - sent
+          - received
     enabled: true
   bigip.virtual_server.connection.count:
     description: Current number of connections to the virtual server.
@@ -87,21 +62,35 @@ metrics:
       monotonic: true
       aggregation: cumulative
       value_type: int
-    attributes: [direction]
+    attributes:
+      direction: *direction
     enabled: true
   bigip.virtual_server.availability:
     description: Availability of the virtual server.
     unit: 1
     gauge:
       value_type: int
-    attributes: [availability.status]
+    attributes:
+      status: &availability-status
+        description: The availability status.
+        type: string
+        enum:
+          - offline
+          - unknown
+          - available
     enabled: true
   bigip.virtual_server.enabled:
     description: Enabled state of of the virtual server.
     unit: 1
     gauge:
       value_type: int
-    attributes: [enabled.status]
+    attributes:
+      status: &enabled-status
+        description: The enabled status.
+        type: string
+        enum:
+          - disabled
+          - enabled
     enabled: true
   bigip.pool.data.transmitted:
     description: Amount of data transmitted to and from the pool.
@@ -110,7 +99,8 @@ metrics:
       monotonic: true
       aggregation: cumulative
       value_type: int
-    attributes: [direction]
+    attributes:
+      direction: *direction
     enabled: true
   bigip.pool.connection.count:
     description: Current number of connections to the pool.
@@ -135,7 +125,8 @@ metrics:
       monotonic: true
       aggregation: cumulative
       value_type: int
-    attributes: [direction]
+    attributes:
+      direction: *direction
     enabled: true
   bigip.pool.member.count:
     description: Total number of pool members.
@@ -144,21 +135,29 @@ metrics:
       monotonic: false
       aggregation: cumulative
       value_type: int
-    attributes: [active.status]
+    attributes:
+      status:
+        description: The active status.
+        type: string
+        enum:
+          - active
+          - inactive
     enabled: true
   bigip.pool.availability:
     description: Availability of the pool.
     unit: 1
     gauge:
       value_type: int
-    attributes: [availability.status]
+    attributes:
+      status: *availability-status
     enabled: true
   bigip.pool.enabled:
     description: Enabled state of of the pool.
     unit: 1
     gauge:
       value_type: int
-    attributes: [enabled.status]
+    attributes:
+      status: *enabled-status
     enabled: true
   bigip.pool_member.data.transmitted:
     description: Amount of data transmitted to and from the pool member.
@@ -167,7 +166,8 @@ metrics:
       monotonic: true
       aggregation: cumulative
       value_type: int
-    attributes: [direction]
+    attributes:
+      direction: *direction
     enabled: true
   bigip.pool_member.connection.count:
     description: Current number of connections to the pool member.
@@ -192,7 +192,8 @@ metrics:
       monotonic: true
       aggregation: cumulative
       value_type: int
-    attributes: [direction]
+    attributes:
+      direction: *direction
     enabled: true
   bigip.pool_member.session.count:
     description: Current number of sessions for the pool member.
@@ -207,14 +208,16 @@ metrics:
     unit: 1
     gauge:
       value_type: int
-    attributes: [availability.status]
+    attributes:
+      status: *availability-status
     enabled: true
   bigip.pool_member.enabled:
     description: Enabled state of of the pool member.
     unit: 1
     gauge:
       value_type: int
-    attributes: [enabled.status]
+    attributes:
+      status: *enabled-status
     enabled: true
   bigip.node.data.transmitted:
     description: Amount of data transmitted to and from the node.
@@ -223,7 +226,8 @@ metrics:
       monotonic: true
       aggregation: cumulative
       value_type: int
-    attributes: [direction]
+    attributes:
+      direction: *direction
     enabled: true
   bigip.node.connection.count:
     description: Current number of connections to the node.
@@ -248,7 +252,8 @@ metrics:
       monotonic: true
       aggregation: cumulative
       value_type: int
-    attributes: [direction]
+    attributes:
+      direction: *direction
     enabled: true
   bigip.node.session.count:
     description: Current number of sessions for the node.
@@ -263,12 +268,14 @@ metrics:
     unit: 1
     gauge:
       value_type: int
-    attributes: [availability.status]
+    attributes:
+      status: *availability-status
     enabled: true
   bigip.node.enabled:
     description: Enabled state of of the node.
     unit: 1
     gauge:
       value_type: int
-    attributes: [enabled.status]
+    attributes:
+      status: *enabled-status
     enabled: true

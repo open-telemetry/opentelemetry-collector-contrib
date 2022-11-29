@@ -59,38 +59,18 @@ func DefaultMetricsSettings() MetricsSettings {
 	}
 }
 
-{{ range $name, $info := .Attributes }}
-{{- if $info.Enum -}}
-// Attribute{{ $name.Render }} specifies the a value {{ $name }} attribute.
-type Attribute{{ $name.Render }} int
+{{ range .AllAttributeValues }}
+type attribute{{ . | publicVar }} struct{}
+func (av attribute{{ . | publicVar }}) String() string {
+	return "{{ . }}"
+}
+{{ end }}
 
-const (
-	_ Attribute{{ $name.Render }} = iota
-	{{- range $info.Enum }}
-	Attribute{{ $name.Render }}{{ . | publicVar }}
+var (
+	{{- range .AllAttributeValues }}
+	Attribute{{ . | publicVar }} = attribute{{ . | publicVar }}{}
 	{{- end }}
 )
-
-// String returns the string representation of the Attribute{{ $name.Render }}.
-func (av Attribute{{ $name.Render }}) String() string {
-	switch av {
-	{{- range $info.Enum }}
-	case Attribute{{ $name.Render }}{{ . | publicVar }}:
-		return "{{ . }}"
-	{{- end }}
-	}
-	return ""
-}
-
-// MapAttribute{{ $name.Render }} is a helper map of string to Attribute{{ $name.Render }} attribute value.
-var MapAttribute{{ $name.Render }} = map[string]Attribute{{ $name.Render }}{
-	{{- range $info.Enum }}
-	"{{ . }}": Attribute{{ $name.Render }}{{ . | publicVar }},
-	{{- end }}
-}
-
-{{ end }}
-{{- end }}
 
 {{ range $name, $metric := .Metrics -}}
 type metric{{ $name.Render }} struct {
@@ -116,8 +96,29 @@ func (m *metric{{ $name.Render }}) init() {
 	{{- end }}
 }
 
+{{ range $attrName, $attr := $metric.Attributes }}
+{{- if $attr.Enum }}
+// {{ $name.Render }}Attribute{{ $attrName.Render }} specifies the a value {{ $attrName }} attribute of {{ $name }} metric.
+type {{ $name.Render }}Attribute{{ $attrName.Render }} interface {
+	{{ $name.RenderUnexported }}Attribute{{ $attrName.Render }}()
+	String() string
+}
+
+{{ range $attr.Enum -}}
+func (av attribute{{ . | publicVar }}) {{ $name.RenderUnexported }}Attribute{{ $attrName.Render }}() {}
+{{ end }}
+
+// {{ $name.Render }}Attribute{{ $attrName.Render }}Map is a helper map to get {{ $name.Render }}Attribute{{ $attrName.Render }} from an attribute value.
+var {{ $name.Render }}Attribute{{ $attrName.Render }}Map = map[string]{{ $name.Render }}Attribute{{ $attrName.Render }}{
+	{{- range $attr.Enum }}
+	"{{ . }}": Attribute{{ . | publicVar }},
+	{{- end }}
+}
+{{- end }}
+{{- end }}
+
 func (m *metric{{ $name.Render }}) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val {{ $metric.Data.MetricValueType.BasicType }}
-{{- range $metric.Attributes -}}, {{ .RenderUnexported }}AttributeValue {{ (attributeInfo .).Type.Primitive }}{{ end }}) {
+{{- range $attrName, $attr := $metric.Attributes -}}, {{ $attrName.RenderUnexported }}Attribute {{ $attr.Type.Primitive }}{{ end }}) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -125,11 +126,11 @@ func (m *metric{{ $name.Render }}) recordDataPoint(start pcommon.Timestamp, ts p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.Set{{ $metric.Data.MetricValueType }}Value(val)
-	{{- range $metric.Attributes }}
-	{{- if eq (attributeInfo .).Type.Primitive "[]byte" }}
-	dp.Attributes().PutEmptyBytes("{{ attributeKey .}}").FromRaw({{ .RenderUnexported }}AttributeValue)
+	{{- range $attrName, $attr := $metric.Attributes }}
+	{{- if eq $attr.Type.Primitive "[]byte" }}
+	dp.Attributes().PutEmptyBytes("{{ $attrName }}").FromRaw({{ $attrName.RenderUnexported }}Attribute)
 	{{- else }}
-	dp.Attributes().Put{{ (attributeInfo .).Type }}("{{ attributeKey .}}", {{ .RenderUnexported }}AttributeValue)
+	dp.Attributes().Put{{ $attr.Type }}("{{ $attrName }}", {{ $attrName.RenderUnexported }}Attribute)
 	{{- end }}
 	{{- end }}
 }
@@ -216,16 +217,16 @@ type ResourceMetricsOption func(pmetric.ResourceMetrics)
 {{- range $attr.Enum }}
 // With{{ $name.Render }}{{ . | publicVar }} sets "{{ $name }}={{ . }}" attribute for current resource.
 func With{{ $name.Render }}{{ . | publicVar }}(rm pmetric.ResourceMetrics) {
-	rm.Resource().Attributes().PutStr("{{ attributeKey $name}}", "{{ . }}")
+	rm.Resource().Attributes().PutStr("{{ $name}}", "{{ . }}")
 }
 {{- else }}
 // With{{ $name.Render }} sets provided value as "{{ $name }}" attribute for current resource.
 func With{{ $name.Render }}(val {{ $attr.Type.Primitive }}) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
 		{{- if eq $attr.Type.Primitive "[]byte" }}
-		rm.Resource().Attributes().PutEmptyBytes("{{ attributeKey $name}}").FromRaw(val)
+		rm.Resource().Attributes().PutEmptyBytes("{{ $name}}").FromRaw(val)
 		{{- else }}
-		rm.Resource().Attributes().Put{{ $attr.Type }}("{{ attributeKey $name}}", val)
+		rm.Resource().Attributes().Put{{ $attr.Type }}("{{ $name}}", val)
 		{{- end }}
 	}
 }
@@ -295,8 +296,8 @@ func (mb *MetricsBuilder) Record{{ $name.Render }}DataPoint(ts pcommon.Timestamp
 	{{- if $metric.Data.HasMetricInputType }}, inputVal {{ $metric.Data.MetricInputType.String }}
 	{{- else }}, val {{ $metric.Data.MetricValueType.BasicType }}
 	{{- end }}
-	{{- range $metric.Attributes -}}
-	, {{ .RenderUnexported }}AttributeValue {{ if (attributeInfo .).Enum }}Attribute{{ .Render }}{{ else }}{{ (attributeInfo .).Type.Primitive }}{{ end }}
+	{{- range $attrName, $attr := $metric.Attributes -}}
+	, {{ $attrName.RenderUnexported }}Attribute {{ if $attr.Enum }}{{ $name.Render }}Attribute{{ $attrName.Render }}{{ else }}{{ $attr.Type.Primitive }}{{ end }}
 	{{- end }})
 	{{- if $metric.Data.HasMetricInputType }} error{{ end }} {
 	{{- if $metric.Data.HasMetricInputType }}
@@ -310,13 +311,14 @@ func (mb *MetricsBuilder) Record{{ $name.Render }}DataPoint(ts pcommon.Timestamp
 	}
 	{{- end }}
 	mb.metric{{ $name.Render }}.recordDataPoint(mb.startTime, ts, val
-		{{- range $metric.Attributes -}}
-		, {{ .RenderUnexported }}AttributeValue{{ if (attributeInfo .).Enum }}.String(){{ end }}
+		{{- range $attrName, $attr := $metric.Attributes -}}
+		, {{ $attrName.RenderUnexported }}Attribute{{ if $attr.Enum }}.String(){{ end }}
 		{{- end }})
 	{{- if $metric.Data.HasMetricInputType }}
 	return nil
 	{{- end }}
 }
+
 {{ end }}
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

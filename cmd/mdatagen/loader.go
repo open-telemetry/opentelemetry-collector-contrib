@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/go-playground/locales/en"
@@ -136,7 +137,7 @@ type metric struct {
 	Gauge *gauge `yaml:"gauge"`
 
 	// Attributes is the list of attributes that the metric emits.
-	Attributes []attributeName
+	Attributes map[attributeName]attribute `mapstructure:"attributes" validate:"dive"`
 }
 
 func (m metric) Data() MetricData {
@@ -156,10 +157,6 @@ func (m metric) IsEnabled() bool {
 type attribute struct {
 	// Description describes the purpose of the attribute.
 	Description string `validate:"notblank"`
-	// Value can optionally specify the value this attribute will have.
-	// For example, the attribute may have the identifier `MemState` to its
-	// value may be `state` when used.
-	Value string
 	// Enum can optionally describe the set of values to which the attribute can belong.
 	Enum []string
 	// Type is an attribute type.
@@ -173,8 +170,6 @@ type metadata struct {
 	SemConvVersion string `mapstructure:"sem_conv_version"`
 	// ResourceAttributes that can be emitted by the component.
 	ResourceAttributes map[attributeName]attribute `mapstructure:"resource_attributes" validate:"dive"`
-	// Attributes emitted by one or more metrics.
-	Attributes map[attributeName]attribute `validate:"dive"`
 	// Metrics that can be emitted by the component.
 	Metrics map[metricName]metric `validate:"dive"`
 }
@@ -183,6 +178,24 @@ type templateContext struct {
 	metadata
 	// Package name for generated code.
 	Package string
+}
+
+// AllAttributeValues returns list of all attribute values from all the metrics.
+func (m metadata) AllAttributeValues() []string {
+	uniqVals := make(map[string]struct{})
+	for _, m := range m.Metrics {
+		for _, attr := range m.Attributes {
+			for _, val := range attr.Enum {
+				uniqVals[val] = struct{}{}
+			}
+		}
+	}
+	vals := make([]string, 0, len(uniqVals))
+	for v, _ := range uniqVals {
+		vals = append(vals, v)
+	}
+	sort.Strings(vals)
+	return vals
 }
 
 func loadMetadata(filePath string) (metadata, error) {
@@ -236,8 +249,6 @@ func validateMetadata(out metadata) error {
 		return fmt.Errorf("failed registering nosuchattribute: %w", err)
 	}
 
-	v.RegisterStructValidation(metricValidation, metric{})
-
 	if err := v.Struct(&out); err != nil {
 		var verr validator.ValidationErrors
 		if errors.As(err, &verr) {
@@ -272,18 +283,4 @@ func validateMetadata(out metadata) error {
 	}
 
 	return nil
-}
-
-// metricValidation validates metric structs.
-func metricValidation(sl validator.StructLevel) {
-	// Make sure that the attributes are valid.
-	md := sl.Top().Interface().(*metadata)
-	cur := sl.Current().Interface().(metric)
-
-	for _, l := range cur.Attributes {
-		if _, ok := md.Attributes[l]; !ok {
-			sl.ReportError(cur.Attributes, fmt.Sprintf("Attributes[%s]", string(l)), "Attributes", "nosuchattribute",
-				"")
-		}
-	}
 }

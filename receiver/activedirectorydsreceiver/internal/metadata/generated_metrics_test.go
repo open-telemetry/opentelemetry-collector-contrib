@@ -19,7 +19,7 @@ func TestDefaultMetrics(t *testing.T) {
 	enabledMetrics := make(map[string]bool)
 
 	enabledMetrics["active_directory.ds.bind.rate"] = true
-	mb.RecordActiveDirectoryDsBindRateDataPoint(ts, 1, AttributeBindType(1))
+	mb.RecordActiveDirectoryDsBindRateDataPoint(ts, 1, AttributeServer)
 
 	enabledMetrics["active_directory.ds.ldap.bind.last_successful.time"] = true
 	mb.RecordActiveDirectoryDsLdapBindLastSuccessfulTimeDataPoint(ts, 1)
@@ -40,34 +40,34 @@ func TestDefaultMetrics(t *testing.T) {
 	mb.RecordActiveDirectoryDsNotificationQueuedDataPoint(ts, 1)
 
 	enabledMetrics["active_directory.ds.operation.rate"] = true
-	mb.RecordActiveDirectoryDsOperationRateDataPoint(ts, 1, AttributeOperationType(1))
+	mb.RecordActiveDirectoryDsOperationRateDataPoint(ts, 1, AttributeRead)
 
 	enabledMetrics["active_directory.ds.replication.network.io"] = true
-	mb.RecordActiveDirectoryDsReplicationNetworkIoDataPoint(ts, 1, AttributeDirection(1), AttributeNetworkDataType(1))
+	mb.RecordActiveDirectoryDsReplicationNetworkIoDataPoint(ts, 1, AttributeSent, AttributeCompressed)
 
 	enabledMetrics["active_directory.ds.replication.object.rate"] = true
-	mb.RecordActiveDirectoryDsReplicationObjectRateDataPoint(ts, 1, AttributeDirection(1))
+	mb.RecordActiveDirectoryDsReplicationObjectRateDataPoint(ts, 1, AttributeSent)
 
 	enabledMetrics["active_directory.ds.replication.operation.pending"] = true
 	mb.RecordActiveDirectoryDsReplicationOperationPendingDataPoint(ts, 1)
 
 	enabledMetrics["active_directory.ds.replication.property.rate"] = true
-	mb.RecordActiveDirectoryDsReplicationPropertyRateDataPoint(ts, 1, AttributeDirection(1))
+	mb.RecordActiveDirectoryDsReplicationPropertyRateDataPoint(ts, 1, AttributeSent)
 
 	enabledMetrics["active_directory.ds.replication.sync.object.pending"] = true
 	mb.RecordActiveDirectoryDsReplicationSyncObjectPendingDataPoint(ts, 1)
 
 	enabledMetrics["active_directory.ds.replication.sync.request.count"] = true
-	mb.RecordActiveDirectoryDsReplicationSyncRequestCountDataPoint(ts, 1, AttributeSyncResult(1))
+	mb.RecordActiveDirectoryDsReplicationSyncRequestCountDataPoint(ts, 1, AttributeSuccess)
 
 	enabledMetrics["active_directory.ds.replication.value.rate"] = true
-	mb.RecordActiveDirectoryDsReplicationValueRateDataPoint(ts, 1, AttributeDirection(1), AttributeValueType(1))
+	mb.RecordActiveDirectoryDsReplicationValueRateDataPoint(ts, 1, AttributeSent, AttributeDistingushedNames)
 
 	enabledMetrics["active_directory.ds.security_descriptor_propagations_event.queued"] = true
 	mb.RecordActiveDirectoryDsSecurityDescriptorPropagationsEventQueuedDataPoint(ts, 1)
 
 	enabledMetrics["active_directory.ds.suboperation.rate"] = true
-	mb.RecordActiveDirectoryDsSuboperationRateDataPoint(ts, 1, AttributeSuboperationType(1))
+	mb.RecordActiveDirectoryDsSuboperationRateDataPoint(ts, 1, AttributeSecurityDescriptorPropagationsEvent)
 
 	enabledMetrics["active_directory.ds.thread.count"] = true
 	mb.RecordActiveDirectoryDsThreadCountDataPoint(ts, 1)
@@ -112,23 +112,23 @@ func TestAllMetrics(t *testing.T) {
 	}
 	mb := NewMetricsBuilder(settings, component.BuildInfo{}, WithStartTime(start))
 
-	mb.RecordActiveDirectoryDsBindRateDataPoint(ts, 1, AttributeBindType(1))
+	mb.RecordActiveDirectoryDsBindRateDataPoint(ts, 1, AttributeServer)
 	mb.RecordActiveDirectoryDsLdapBindLastSuccessfulTimeDataPoint(ts, 1)
 	mb.RecordActiveDirectoryDsLdapBindRateDataPoint(ts, 1)
 	mb.RecordActiveDirectoryDsLdapClientSessionCountDataPoint(ts, 1)
 	mb.RecordActiveDirectoryDsLdapSearchRateDataPoint(ts, 1)
 	mb.RecordActiveDirectoryDsNameCacheHitRateDataPoint(ts, 1)
 	mb.RecordActiveDirectoryDsNotificationQueuedDataPoint(ts, 1)
-	mb.RecordActiveDirectoryDsOperationRateDataPoint(ts, 1, AttributeOperationType(1))
-	mb.RecordActiveDirectoryDsReplicationNetworkIoDataPoint(ts, 1, AttributeDirection(1), AttributeNetworkDataType(1))
-	mb.RecordActiveDirectoryDsReplicationObjectRateDataPoint(ts, 1, AttributeDirection(1))
+	mb.RecordActiveDirectoryDsOperationRateDataPoint(ts, 1, AttributeRead)
+	mb.RecordActiveDirectoryDsReplicationNetworkIoDataPoint(ts, 1, AttributeSent, AttributeCompressed)
+	mb.RecordActiveDirectoryDsReplicationObjectRateDataPoint(ts, 1, AttributeSent)
 	mb.RecordActiveDirectoryDsReplicationOperationPendingDataPoint(ts, 1)
-	mb.RecordActiveDirectoryDsReplicationPropertyRateDataPoint(ts, 1, AttributeDirection(1))
+	mb.RecordActiveDirectoryDsReplicationPropertyRateDataPoint(ts, 1, AttributeSent)
 	mb.RecordActiveDirectoryDsReplicationSyncObjectPendingDataPoint(ts, 1)
-	mb.RecordActiveDirectoryDsReplicationSyncRequestCountDataPoint(ts, 1, AttributeSyncResult(1))
-	mb.RecordActiveDirectoryDsReplicationValueRateDataPoint(ts, 1, AttributeDirection(1), AttributeValueType(1))
+	mb.RecordActiveDirectoryDsReplicationSyncRequestCountDataPoint(ts, 1, AttributeSuccess)
+	mb.RecordActiveDirectoryDsReplicationValueRateDataPoint(ts, 1, AttributeSent, AttributeDistingushedNames)
 	mb.RecordActiveDirectoryDsSecurityDescriptorPropagationsEventQueuedDataPoint(ts, 1)
-	mb.RecordActiveDirectoryDsSuboperationRateDataPoint(ts, 1, AttributeSuboperationType(1))
+	mb.RecordActiveDirectoryDsSuboperationRateDataPoint(ts, 1, AttributeSecurityDescriptorPropagationsEvent)
 	mb.RecordActiveDirectoryDsThreadCountDataPoint(ts, 1)
 
 	metrics := mb.Emit()
@@ -434,23 +434,23 @@ func TestNoMetrics(t *testing.T) {
 		ActiveDirectoryDsThreadCount:                               MetricSettings{Enabled: false},
 	}
 	mb := NewMetricsBuilder(settings, component.BuildInfo{}, WithStartTime(start))
-	mb.RecordActiveDirectoryDsBindRateDataPoint(ts, 1, AttributeBindType(1))
+	mb.RecordActiveDirectoryDsBindRateDataPoint(ts, 1, AttributeServer)
 	mb.RecordActiveDirectoryDsLdapBindLastSuccessfulTimeDataPoint(ts, 1)
 	mb.RecordActiveDirectoryDsLdapBindRateDataPoint(ts, 1)
 	mb.RecordActiveDirectoryDsLdapClientSessionCountDataPoint(ts, 1)
 	mb.RecordActiveDirectoryDsLdapSearchRateDataPoint(ts, 1)
 	mb.RecordActiveDirectoryDsNameCacheHitRateDataPoint(ts, 1)
 	mb.RecordActiveDirectoryDsNotificationQueuedDataPoint(ts, 1)
-	mb.RecordActiveDirectoryDsOperationRateDataPoint(ts, 1, AttributeOperationType(1))
-	mb.RecordActiveDirectoryDsReplicationNetworkIoDataPoint(ts, 1, AttributeDirection(1), AttributeNetworkDataType(1))
-	mb.RecordActiveDirectoryDsReplicationObjectRateDataPoint(ts, 1, AttributeDirection(1))
+	mb.RecordActiveDirectoryDsOperationRateDataPoint(ts, 1, AttributeRead)
+	mb.RecordActiveDirectoryDsReplicationNetworkIoDataPoint(ts, 1, AttributeSent, AttributeCompressed)
+	mb.RecordActiveDirectoryDsReplicationObjectRateDataPoint(ts, 1, AttributeSent)
 	mb.RecordActiveDirectoryDsReplicationOperationPendingDataPoint(ts, 1)
-	mb.RecordActiveDirectoryDsReplicationPropertyRateDataPoint(ts, 1, AttributeDirection(1))
+	mb.RecordActiveDirectoryDsReplicationPropertyRateDataPoint(ts, 1, AttributeSent)
 	mb.RecordActiveDirectoryDsReplicationSyncObjectPendingDataPoint(ts, 1)
-	mb.RecordActiveDirectoryDsReplicationSyncRequestCountDataPoint(ts, 1, AttributeSyncResult(1))
-	mb.RecordActiveDirectoryDsReplicationValueRateDataPoint(ts, 1, AttributeDirection(1), AttributeValueType(1))
+	mb.RecordActiveDirectoryDsReplicationSyncRequestCountDataPoint(ts, 1, AttributeSuccess)
+	mb.RecordActiveDirectoryDsReplicationValueRateDataPoint(ts, 1, AttributeSent, AttributeDistingushedNames)
 	mb.RecordActiveDirectoryDsSecurityDescriptorPropagationsEventQueuedDataPoint(ts, 1)
-	mb.RecordActiveDirectoryDsSuboperationRateDataPoint(ts, 1, AttributeSuboperationType(1))
+	mb.RecordActiveDirectoryDsSuboperationRateDataPoint(ts, 1, AttributeSecurityDescriptorPropagationsEvent)
 	mb.RecordActiveDirectoryDsThreadCountDataPoint(ts, 1)
 
 	metrics := mb.Emit()

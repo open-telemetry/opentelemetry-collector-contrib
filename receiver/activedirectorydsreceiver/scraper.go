@@ -62,25 +62,25 @@ func (a *activeDirectoryDSScraper) scrape(ctx context.Context) (pmetric.Metrics,
 	draInboundBytesCompressed, err := a.w.Scrape(draInboundBytesCompressed)
 	multiErr = multierr.Append(multiErr, err)
 	if err == nil {
-		a.mb.RecordActiveDirectoryDsReplicationNetworkIoDataPoint(now, int64(draInboundBytesCompressed), metadata.AttributeDirectionReceived, metadata.AttributeNetworkDataTypeCompressed)
+		a.mb.RecordActiveDirectoryDsReplicationNetworkIoDataPoint(now, int64(draInboundBytesCompressed), metadata.AttributeReceived, metadata.AttributeNetworkDataTypeCompressed)
 	}
 
 	draInboundBytesNotCompressed, err := a.w.Scrape(draInboundBytesNotCompressed)
 	multiErr = multierr.Append(multiErr, err)
 	if err == nil {
-		a.mb.RecordActiveDirectoryDsReplicationNetworkIoDataPoint(now, int64(draInboundBytesNotCompressed), metadata.AttributeDirectionReceived, metadata.AttributeNetworkDataTypeUncompressed)
+		a.mb.RecordActiveDirectoryDsReplicationNetworkIoDataPoint(now, int64(draInboundBytesNotCompressed), metadata.AttributeReceived, metadata.AttributeNetworkDataTypeUncompressed)
 	}
 
 	draOutboundBytesCompressed, err := a.w.Scrape(draOutboundBytesCompressed)
 	multiErr = multierr.Append(multiErr, err)
 	if err == nil {
-		a.mb.RecordActiveDirectoryDsReplicationNetworkIoDataPoint(now, int64(draOutboundBytesCompressed), metadata.AttributeDirectionSent, metadata.AttributeNetworkDataTypeCompressed)
+		a.mb.RecordActiveDirectoryDsReplicationNetworkIoDataPoint(now, int64(draOutboundBytesCompressed), metadata.AttributeSent, metadata.AttributeNetworkDataTypeCompressed)
 	}
 
 	draOutboundBytesNotCompressed, err := a.w.Scrape(draOutboundBytesNotCompressed)
 	multiErr = multierr.Append(multiErr, err)
 	if err == nil {
-		a.mb.RecordActiveDirectoryDsReplicationNetworkIoDataPoint(now, int64(draOutboundBytesNotCompressed), metadata.AttributeDirectionSent, metadata.AttributeNetworkDataTypeUncompressed)
+		a.mb.RecordActiveDirectoryDsReplicationNetworkIoDataPoint(now, int64(draOutboundBytesNotCompressed), metadata.AttributeSent, metadata.AttributeNetworkDataTypeUncompressed)
 	}
 
 	draInboundFullSyncObjectsRemaining, err := a.w.Scrape(draInboundFullSyncObjectsRemaining)
@@ -92,51 +92,51 @@ func (a *activeDirectoryDSScraper) scrape(ctx context.Context) (pmetric.Metrics,
 	draInboundObjects, err := a.w.Scrape(draInboundObjects)
 	multiErr = multierr.Append(multiErr, err)
 	if err == nil {
-		a.mb.RecordActiveDirectoryDsReplicationObjectRateDataPoint(now, draInboundObjects, metadata.AttributeDirectionReceived)
+		a.mb.RecordActiveDirectoryDsReplicationObjectRateDataPoint(now, draInboundObjects, metadata.AttributeReceived)
 	}
 
 	draOutboundObjects, err := a.w.Scrape(draOutboundObjects)
 	multiErr = multierr.Append(multiErr, err)
 	if err == nil {
-		a.mb.RecordActiveDirectoryDsReplicationObjectRateDataPoint(now, draOutboundObjects, metadata.AttributeDirectionSent)
+		a.mb.RecordActiveDirectoryDsReplicationObjectRateDataPoint(now, draOutboundObjects, metadata.AttributeSent)
 	}
 
 	draInboundProperties, err := a.w.Scrape(draInboundProperties)
 	multiErr = multierr.Append(multiErr, err)
 	if err == nil {
-		a.mb.RecordActiveDirectoryDsReplicationPropertyRateDataPoint(now, draInboundProperties, metadata.AttributeDirectionReceived)
+		a.mb.RecordActiveDirectoryDsReplicationPropertyRateDataPoint(now, draInboundProperties, metadata.AttributeReceived)
 	}
 
 	draOutboundProperties, err := a.w.Scrape(draOutboundProperties)
 	multiErr = multierr.Append(multiErr, err)
 	if err == nil {
-		a.mb.RecordActiveDirectoryDsReplicationPropertyRateDataPoint(now, draOutboundProperties, metadata.AttributeDirectionSent)
+		a.mb.RecordActiveDirectoryDsReplicationPropertyRateDataPoint(now, draOutboundProperties, metadata.AttributeSent)
 	}
 
 	draInboundValuesDNs, dnsErr := a.w.Scrape(draInboundValuesDNs)
 	multiErr = multierr.Append(multiErr, dnsErr)
 	if dnsErr == nil {
-		a.mb.RecordActiveDirectoryDsReplicationValueRateDataPoint(now, draInboundValuesDNs, metadata.AttributeDirectionReceived, metadata.AttributeValueTypeDistingushedNames)
+		a.mb.RecordActiveDirectoryDsReplicationValueRateDataPoint(now, draInboundValuesDNs, metadata.AttributeReceived, metadata.AttributeTypeDistingushedNames)
 	}
 
 	draInboundValuesTotal, totalErr := a.w.Scrape(draInboundValuesTotal)
 	multiErr = multierr.Append(multiErr, totalErr)
 	if dnsErr == nil && totalErr == nil {
 		otherValuesInbound := draInboundValuesTotal - draInboundValuesDNs
-		a.mb.RecordActiveDirectoryDsReplicationValueRateDataPoint(now, otherValuesInbound, metadata.AttributeDirectionReceived, metadata.AttributeValueTypeOther)
+		a.mb.RecordActiveDirectoryDsReplicationValueRateDataPoint(now, otherValuesInbound, metadata.AttributeReceived, metadata.AttributeOther)
 	}
 
 	draOutboundValuesDNs, dnsErr := a.w.Scrape(draOutboundValuesDNs)
 	multiErr = multierr.Append(multiErr, dnsErr)
 	if dnsErr == nil {
-		a.mb.RecordActiveDirectoryDsReplicationValueRateDataPoint(now, draOutboundValuesDNs, metadata.AttributeDirectionSent, metadata.AttributeValueTypeDistingushedNames)
+		a.mb.RecordActiveDirectoryDsReplicationValueRateDataPoint(now, draOutboundValuesDNs, metadata.AttributeSent, metadata.AttributeDistingushedNames)
 	}
 
 	draOutboundValuesTotal, totalErr := a.w.Scrape(draOutboundValuesTotal)
 	multiErr = multierr.Append(multiErr, totalErr)
 	if dnsErr == nil && totalErr == nil {
 		otherValuesOutbound := draOutboundValuesTotal - draOutboundValuesDNs
-		a.mb.RecordActiveDirectoryDsReplicationValueRateDataPoint(now, otherValuesOutbound, metadata.AttributeDirectionSent, metadata.AttributeValueTypeOther)
+		a.mb.RecordActiveDirectoryDsReplicationValueRateDataPoint(now, otherValuesOutbound, metadata.AttributeSent, metadata.AttributeOther)
 	}
 
 	draPendingReplicationOperations, err := a.w.Scrape(draPendingReplicationOperations)
@@ -148,50 +148,50 @@ func (a *activeDirectoryDSScraper) scrape(ctx context.Context) (pmetric.Metrics,
 	draSyncFailuresSchemaMistmatch, schemaMismatchErr := a.w.Scrape(draSyncFailuresSchemaMismatch)
 	multiErr = multierr.Append(multiErr, schemaMismatchErr)
 	if schemaMismatchErr == nil {
-		a.mb.RecordActiveDirectoryDsReplicationSyncRequestCountDataPoint(now, int64(draSyncFailuresSchemaMistmatch), metadata.AttributeSyncResultSchemaMismatch)
+		a.mb.RecordActiveDirectoryDsReplicationSyncRequestCountDataPoint(now, int64(draSyncFailuresSchemaMistmatch), metadata.AttributeSchemaMismatch)
 	}
 
 	draSyncRequestsSuccessful, requestsSuccessfulErr := a.w.Scrape(draSyncRequestsSuccessful)
 	multiErr = multierr.Append(multiErr, requestsSuccessfulErr)
 	if requestsSuccessfulErr == nil {
-		a.mb.RecordActiveDirectoryDsReplicationSyncRequestCountDataPoint(now, int64(draSyncRequestsSuccessful), metadata.AttributeSyncResultSuccess)
+		a.mb.RecordActiveDirectoryDsReplicationSyncRequestCountDataPoint(now, int64(draSyncRequestsSuccessful), metadata.AttributeSuccess)
 	}
 
 	draSyncRequestsTotal, totalErr := a.w.Scrape(draSyncRequestsMade)
 	multiErr = multierr.Append(multiErr, totalErr)
 	if totalErr == nil && requestsSuccessfulErr == nil && schemaMismatchErr == nil {
 		otherReplicationSyncRequests := draSyncRequestsTotal - draSyncRequestsSuccessful - draSyncFailuresSchemaMistmatch
-		a.mb.RecordActiveDirectoryDsReplicationSyncRequestCountDataPoint(now, int64(otherReplicationSyncRequests), metadata.AttributeSyncResultOther)
+		a.mb.RecordActiveDirectoryDsReplicationSyncRequestCountDataPoint(now, int64(otherReplicationSyncRequests), metadata.AttributeOther)
 	}
 
 	dsDirectoryReads, err := a.w.Scrape(dsDirectoryReads)
 	multiErr = multierr.Append(multiErr, err)
 	if err == nil {
-		a.mb.RecordActiveDirectoryDsOperationRateDataPoint(now, dsDirectoryReads, metadata.AttributeOperationTypeRead)
+		a.mb.RecordActiveDirectoryDsOperationRateDataPoint(now, dsDirectoryReads, metadata.AttributeRead)
 	}
 
 	dsDirectoryWrites, err := a.w.Scrape(dsDirectoryWrites)
 	multiErr = multierr.Append(multiErr, err)
 	if err == nil {
-		a.mb.RecordActiveDirectoryDsOperationRateDataPoint(now, dsDirectoryWrites, metadata.AttributeOperationTypeWrite)
+		a.mb.RecordActiveDirectoryDsOperationRateDataPoint(now, dsDirectoryWrites, metadata.AttributeWrite)
 	}
 
 	dsDirectorySearches, err := a.w.Scrape(dsDirectorySearches)
 	multiErr = multierr.Append(multiErr, err)
 	if err == nil {
-		a.mb.RecordActiveDirectoryDsOperationRateDataPoint(now, dsDirectorySearches, metadata.AttributeOperationTypeSearch)
+		a.mb.RecordActiveDirectoryDsOperationRateDataPoint(now, dsDirectorySearches, metadata.AttributeSearch)
 	}
 
 	dsClientBinds, err := a.w.Scrape(dsClientBinds)
 	multiErr = multierr.Append(multiErr, err)
 	if err == nil {
-		a.mb.RecordActiveDirectoryDsBindRateDataPoint(now, dsClientBinds, metadata.AttributeBindTypeClient)
+		a.mb.RecordActiveDirectoryDsBindRateDataPoint(now, dsClientBinds, metadata.AttributeClient)
 	}
 
 	dsServerBinds, err := a.w.Scrape(dsServerBinds)
 	multiErr = multierr.Append(multiErr, err)
 	if err == nil {
-		a.mb.RecordActiveDirectoryDsBindRateDataPoint(now, dsServerBinds, metadata.AttributeBindTypeServer)
+		a.mb.RecordActiveDirectoryDsBindRateDataPoint(now, dsServerBinds, metadata.AttributeServer)
 	}
 
 	dsCacheHitRate, err := a.w.Scrape(dsNameCacheHitRate)
@@ -215,13 +215,13 @@ func (a *activeDirectoryDSScraper) scrape(ctx context.Context) (pmetric.Metrics,
 	securityDescSubops, err := a.w.Scrape(dsSecurityDescripterSubOperations)
 	multiErr = multierr.Append(multiErr, err)
 	if err == nil {
-		a.mb.RecordActiveDirectoryDsSuboperationRateDataPoint(now, securityDescSubops, metadata.AttributeSuboperationTypeSecurityDescriptorPropagationsEvent)
+		a.mb.RecordActiveDirectoryDsSuboperationRateDataPoint(now, securityDescSubops, metadata.AttributeSecurityDescriptorPropagationsEvent)
 	}
 
 	searchSubops, err := a.w.Scrape(dsSearchSubOperations)
 	multiErr = multierr.Append(multiErr, err)
 	if err == nil {
-		a.mb.RecordActiveDirectoryDsSuboperationRateDataPoint(now, searchSubops, metadata.AttributeSuboperationTypeSearch)
+		a.mb.RecordActiveDirectoryDsSuboperationRateDataPoint(now, searchSubops, metadata.AttributeSearch)
 	}
 
 	threadsInUse, err := a.w.Scrape(dsThreadsInUse)

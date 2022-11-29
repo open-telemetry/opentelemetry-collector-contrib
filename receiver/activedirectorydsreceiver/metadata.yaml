@@ -1,56 +1,5 @@
 name: activedirectorydsreceiver
 
-attributes:
-  direction:
-    description: The direction of data flow.
-    type: string
-    enum:
-      - sent
-      - received
-  network_data_type:
-    value: type
-    description: The type of network data sent.
-    type: string
-    enum:
-      - compressed
-      - uncompressed
-  value_type:
-    value: type
-    description: The type of value sent.
-    type: string
-    enum:
-      - distingushed_names
-      - other
-  operation_type:
-    value: type
-    description: The type of operation.
-    type: string
-    enum:
-      - read
-      - write
-      - search
-  suboperation_type:
-    value: type
-    description: The type of suboperation.
-    type: string
-    enum:
-      - security_descriptor_propagations_event
-      - search
-  sync_result:
-    value: result
-    description: The result status of the sync request.
-    type: string
-    enum:
-      - success
-      - schema_mismatch
-      - other
-  bind_type:
-    value: type
-    description: The type of bind to the domain server.
-    type: string
-    enum:
-      - server
-      - client
 metrics:
   active_directory.ds.replication.network.io:
     description: "The amount of network data transmitted by the Directory Replication Agent."
@@ -59,7 +8,20 @@ metrics:
       monotonic: true
       aggregation: cumulative
       value_type: int
-    attributes: [direction, network_data_type]
+    attributes:
+      direction: &direction
+        description: The direction of data flow.
+        type: string
+        enum:
+          - sent
+          - received
+      type:
+        description: The type of network data sent.
+        type: string
+        enum:
+          - compressed
+          - uncompressed
+
     enabled: true
   active_directory.ds.replication.sync.object.pending:
     description: "The number of objects remaining until the full sync completes for the Directory Replication Agent."
@@ -76,7 +38,14 @@ metrics:
       monotonic: true
       aggregation: cumulative
       value_type: int
-    attributes: [sync_result]
+    attributes:
+      result:
+        description: The result status of the sync request.
+        type: string
+        enum:
+          - success
+          - schema_mismatch
+          - other
     enabled: true
   active_directory.ds.replication.object.rate:
     description: "The number of objects transmitted by the Directory Replication Agent per second."
@@ -85,7 +54,8 @@ metrics:
       monotonic: false
       aggregation: cumulative
       value_type: double
-    attributes: [direction]
+    attributes:
+      direction: *direction
     enabled: true
   active_directory.ds.replication.property.rate:
     description: "The number of properties transmitted by the Directory Replication Agent per second."
@@ -94,7 +64,8 @@ metrics:
       monotonic: false
       aggregation: cumulative
       value_type: double
-    attributes: [direction]
+    attributes:
+      direction: *direction
     enabled: true
   active_directory.ds.replication.value.rate:
     description: "The number of values transmitted by the Directory Replication Agent per second."
@@ -103,7 +74,15 @@ metrics:
       monotonic: false
       aggregation: cumulative
       value_type: double
-    attributes: [direction, value_type]
+    attributes:
+      direction: *direction
+      type:
+        description: The type of value sent.
+        type: string
+        enum:
+          - distingushed_names
+          - other
+
     enabled: true
   active_directory.ds.replication.operation.pending:
     description: "The number of pending replication operations for the Directory Replication Agent."
@@ -120,7 +99,14 @@ metrics:
       monotonic: false
       aggregation: cumulative
       value_type: double
-    attributes: [operation_type]
+    attributes:
+      type:
+        description: The type of operation.
+        type: string
+        enum:
+          - read
+          - write
+          - search
     enabled: true
   active_directory.ds.name_cache.hit_rate:
     description: "The percentage of directory object name component lookups that are satisfied by the Directory System Agent's name cache."
@@ -151,7 +137,13 @@ metrics:
       monotonic: false
       aggregation: cumulative
       value_type: double
-    attributes: [suboperation_type]
+    attributes:
+      type:
+        description: The type of suboperation.
+        type: string
+        enum:
+          - security_descriptor_propagations_event
+          - search
     enabled: true
   active_directory.ds.bind.rate:
     description: "The number of binds per second serviced by this domain controller."
@@ -160,7 +152,13 @@ metrics:
       monotonic: false
       aggregation: cumulative
       value_type: double
-    attributes: [bind_type]
+    attributes:
+      type:
+        description: The type of bind to the domain server.
+        type: string
+        enum:
+          - server
+          - client
     enabled: true
   active_directory.ds.thread.count:
     description: "The number of threads in use by the directory service."

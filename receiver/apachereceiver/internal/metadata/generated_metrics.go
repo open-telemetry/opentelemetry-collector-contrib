@@ -94,149 +94,134 @@ func DefaultMetricsSettings() MetricsSettings {
 	}
 }
 
-// AttributeCPULevel specifies the a value cpu_level attribute.
-type AttributeCPULevel int
+type attributeBusy struct{}
 
-const (
-	_ AttributeCPULevel = iota
-	AttributeCPULevelSelf
-	AttributeCPULevelChildren
+func (av attributeBusy) String() string {
+	return "busy"
+}
+
+type attributeChildren struct{}
+
+func (av attributeChildren) String() string {
+	return "children"
+}
+
+type attributeClosing struct{}
+
+func (av attributeClosing) String() string {
+	return "closing"
+}
+
+type attributeDnslookup struct{}
+
+func (av attributeDnslookup) String() string {
+	return "dnslookup"
+}
+
+type attributeFinishing struct{}
+
+func (av attributeFinishing) String() string {
+	return "finishing"
+}
+
+type attributeIdle struct{}
+
+func (av attributeIdle) String() string {
+	return "idle"
+}
+
+type attributeIdleCleanup struct{}
+
+func (av attributeIdleCleanup) String() string {
+	return "idle_cleanup"
+}
+
+type attributeKeepalive struct{}
+
+func (av attributeKeepalive) String() string {
+	return "keepalive"
+}
+
+type attributeLogging struct{}
+
+func (av attributeLogging) String() string {
+	return "logging"
+}
+
+type attributeOpen struct{}
+
+func (av attributeOpen) String() string {
+	return "open"
+}
+
+type attributeReading struct{}
+
+func (av attributeReading) String() string {
+	return "reading"
+}
+
+type attributeSelf struct{}
+
+func (av attributeSelf) String() string {
+	return "self"
+}
+
+type attributeSending struct{}
+
+func (av attributeSending) String() string {
+	return "sending"
+}
+
+type attributeStarting struct{}
+
+func (av attributeStarting) String() string {
+	return "starting"
+}
+
+type attributeSystem struct{}
+
+func (av attributeSystem) String() string {
+	return "system"
+}
+
+type attributeUnknown struct{}
+
+func (av attributeUnknown) String() string {
+	return "unknown"
+}
+
+type attributeUser struct{}
+
+func (av attributeUser) String() string {
+	return "user"
+}
+
+type attributeWaiting struct{}
+
+func (av attributeWaiting) String() string {
+	return "waiting"
+}
+
+var (
+	AttributeBusy        = attributeBusy{}
+	AttributeChildren    = attributeChildren{}
+	AttributeClosing     = attributeClosing{}
+	AttributeDnslookup   = attributeDnslookup{}
+	AttributeFinishing   = attributeFinishing{}
+	AttributeIdle        = attributeIdle{}
+	AttributeIdleCleanup = attributeIdleCleanup{}
+	AttributeKeepalive   = attributeKeepalive{}
+	AttributeLogging     = attributeLogging{}
+	AttributeOpen        = attributeOpen{}
+	AttributeReading     = attributeReading{}
+	AttributeSelf        = attributeSelf{}
+	AttributeSending     = attributeSending{}
+	AttributeStarting    = attributeStarting{}
+	AttributeSystem      = attributeSystem{}
+	AttributeUnknown     = attributeUnknown{}
+	AttributeUser        = attributeUser{}
+	AttributeWaiting     = attributeWaiting{}
 )
-
-// String returns the string representation of the AttributeCPULevel.
-func (av AttributeCPULevel) String() string {
-	switch av {
-	case AttributeCPULevelSelf:
-		return "self"
-	case AttributeCPULevelChildren:
-		return "children"
-	}
-	return ""
-}
-
-// MapAttributeCPULevel is a helper map of string to AttributeCPULevel attribute value.
-var MapAttributeCPULevel = map[string]AttributeCPULevel{
-	"self":     AttributeCPULevelSelf,
-	"children": AttributeCPULevelChildren,
-}
-
-// AttributeCPUMode specifies the a value cpu_mode attribute.
-type AttributeCPUMode int
-
-const (
-	_ AttributeCPUMode = iota
-	AttributeCPUModeSystem
-	AttributeCPUModeUser
-)
-
-// String returns the string representation of the AttributeCPUMode.
-func (av AttributeCPUMode) String() string {
-	switch av {
-	case AttributeCPUModeSystem:
-		return "system"
-	case AttributeCPUModeUser:
-		return "user"
-	}
-	return ""
-}
-
-// MapAttributeCPUMode is a helper map of string to AttributeCPUMode attribute value.
-var MapAttributeCPUMode = map[string]AttributeCPUMode{
-	"system": AttributeCPUModeSystem,
-	"user":   AttributeCPUModeUser,
-}
-
-// AttributeScoreboardState specifies the a value scoreboard_state attribute.
-type AttributeScoreboardState int
-
-const (
-	_ AttributeScoreboardState = iota
-	AttributeScoreboardStateOpen
-	AttributeScoreboardStateWaiting
-	AttributeScoreboardStateStarting
-	AttributeScoreboardStateReading
-	AttributeScoreboardStateSending
-	AttributeScoreboardStateKeepalive
-	AttributeScoreboardStateDnslookup
-	AttributeScoreboardStateClosing
-	AttributeScoreboardStateLogging
-	AttributeScoreboardStateFinishing
-	AttributeScoreboardStateIdleCleanup
-	AttributeScoreboardStateUnknown
-)
-
-// String returns the string representation of the AttributeScoreboardState.
-func (av AttributeScoreboardState) String() string {
-	switch av {
-	case AttributeScoreboardStateOpen:
-		return "open"
-	case AttributeScoreboardStateWaiting:
-		return "waiting"
-	case AttributeScoreboardStateStarting:
-		return "starting"
-	case AttributeScoreboardStateReading:
-		return "reading"
-	case AttributeScoreboardStateSending:
-		return "sending"
-	case AttributeScoreboardStateKeepalive:
-		return "keepalive"
-	case AttributeScoreboardStateDnslookup:
-		return "dnslookup"
-	case AttributeScoreboardStateClosing:
-		return "closing"
-	case AttributeScoreboardStateLogging:
-		return "logging"
-	case AttributeScoreboardStateFinishing:
-		return "finishing"
-	case AttributeScoreboardStateIdleCleanup:
-		return "idle_cleanup"
-	case AttributeScoreboardStateUnknown:
-		return "unknown"
-	}
-	return ""
-}
-
-// MapAttributeScoreboardState is a helper map of string to AttributeScoreboardState attribute value.
-var MapAttributeScoreboardState = map[string]AttributeScoreboardState{
-	"open":         AttributeScoreboardStateOpen,
-	"waiting":      AttributeScoreboardStateWaiting,
-	"starting":     AttributeScoreboardStateStarting,
-	"reading":      AttributeScoreboardStateReading,
-	"sending":      AttributeScoreboardStateSending,
-	"keepalive":    AttributeScoreboardStateKeepalive,
-	"dnslookup":    AttributeScoreboardStateDnslookup,
-	"closing":      AttributeScoreboardStateClosing,
-	"logging":      AttributeScoreboardStateLogging,
-	"finishing":    AttributeScoreboardStateFinishing,
-	"idle_cleanup": AttributeScoreboardStateIdleCleanup,
-	"unknown":      AttributeScoreboardStateUnknown,
-}
-
-// AttributeWorkersState specifies the a value workers_state attribute.
-type AttributeWorkersState int
-
-const (
-	_ AttributeWorkersState = iota
-	AttributeWorkersStateBusy
-	AttributeWorkersStateIdle
-)
-
-// String returns the string representation of the AttributeWorkersState.
-func (av AttributeWorkersState) String() string {
-	switch av {
-	case AttributeWorkersStateBusy:
-		return "busy"
-	case AttributeWorkersStateIdle:
-		return "idle"
-	}
-	return ""
-}
-
-// MapAttributeWorkersState is a helper map of string to AttributeWorkersState attribute value.
-var MapAttributeWorkersState = map[string]AttributeWorkersState{
-	"busy": AttributeWorkersStateBusy,
-	"idle": AttributeWorkersStateIdle,
-}
 
 type metricApacheCPULoad struct {
 	data     pmetric.Metric // data buffer for generated metric.
@@ -304,7 +289,37 @@ func (m *metricApacheCPUTime) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricApacheCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, cpuLevelAttributeValue string, cpuModeAttributeValue string) {
+// ApacheCPUTimeAttributeLevel specifies the a value level attribute of apache.cpu.time metric.
+type ApacheCPUTimeAttributeLevel interface {
+	apacheCPUTimeAttributeLevel()
+	String() string
+}
+
+func (av attributeSelf) apacheCPUTimeAttributeLevel()     {}
+func (av attributeChildren) apacheCPUTimeAttributeLevel() {}
+
+// ApacheCPUTimeAttributeLevelMap is a helper map to get ApacheCPUTimeAttributeLevel from an attribute value.
+var ApacheCPUTimeAttributeLevelMap = map[string]ApacheCPUTimeAttributeLevel{
+	"self":     AttributeSelf,
+	"children": AttributeChildren,
+}
+
+// ApacheCPUTimeAttributeMode specifies the a value mode attribute of apache.cpu.time metric.
+type ApacheCPUTimeAttributeMode interface {
+	apacheCPUTimeAttributeMode()
+	String() string
+}
+
+func (av attributeSystem) apacheCPUTimeAttributeMode() {}
+func (av attributeUser) apacheCPUTimeAttributeMode()   {}
+
+// ApacheCPUTimeAttributeModeMap is a helper map to get ApacheCPUTimeAttributeMode from an attribute value.
+var ApacheCPUTimeAttributeModeMap = map[string]ApacheCPUTimeAttributeMode{
+	"system": AttributeSystem,
+	"user":   AttributeUser,
+}
+
+func (m *metricApacheCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, levelAttribute string, modeAttribute string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -312,8 +327,8 @@ func (m *metricApacheCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("level", cpuLevelAttributeValue)
-	dp.Attributes().PutStr("mode", cpuModeAttributeValue)
+	dp.Attributes().PutStr("level", levelAttribute)
+	dp.Attributes().PutStr("mode", modeAttribute)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -658,7 +673,42 @@ func (m *metricApacheScoreboard) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricApacheScoreboard) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, scoreboardStateAttributeValue string) {
+// ApacheScoreboardAttributeState specifies the a value state attribute of apache.scoreboard metric.
+type ApacheScoreboardAttributeState interface {
+	apacheScoreboardAttributeState()
+	String() string
+}
+
+func (av attributeOpen) apacheScoreboardAttributeState()        {}
+func (av attributeWaiting) apacheScoreboardAttributeState()     {}
+func (av attributeStarting) apacheScoreboardAttributeState()    {}
+func (av attributeReading) apacheScoreboardAttributeState()     {}
+func (av attributeSending) apacheScoreboardAttributeState()     {}
+func (av attributeKeepalive) apacheScoreboardAttributeState()   {}
+func (av attributeDnslookup) apacheScoreboardAttributeState()   {}
+func (av attributeClosing) apacheScoreboardAttributeState()     {}
+func (av attributeLogging) apacheScoreboardAttributeState()     {}
+func (av attributeFinishing) apacheScoreboardAttributeState()   {}
+func (av attributeIdleCleanup) apacheScoreboardAttributeState() {}
+func (av attributeUnknown) apacheScoreboardAttributeState()     {}
+
+// ApacheScoreboardAttributeStateMap is a helper map to get ApacheScoreboardAttributeState from an attribute value.
+var ApacheScoreboardAttributeStateMap = map[string]ApacheScoreboardAttributeState{
+	"open":         AttributeOpen,
+	"waiting":      AttributeWaiting,
+	"starting":     AttributeStarting,
+	"reading":      AttributeReading,
+	"sending":      AttributeSending,
+	"keepalive":    AttributeKeepalive,
+	"dnslookup":    AttributeDnslookup,
+	"closing":      AttributeClosing,
+	"logging":      AttributeLogging,
+	"finishing":    AttributeFinishing,
+	"idle_cleanup": AttributeIdleCleanup,
+	"unknown":      AttributeUnknown,
+}
+
+func (m *metricApacheScoreboard) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, stateAttribute string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -666,7 +716,7 @@ func (m *metricApacheScoreboard) recordDataPoint(start pcommon.Timestamp, ts pco
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("state", scoreboardStateAttributeValue)
+	dp.Attributes().PutStr("state", stateAttribute)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -813,7 +863,22 @@ func (m *metricApacheWorkers) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricApacheWorkers) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, workersStateAttributeValue string) {
+// ApacheWorkersAttributeState specifies the a value state attribute of apache.workers metric.
+type ApacheWorkersAttributeState interface {
+	apacheWorkersAttributeState()
+	String() string
+}
+
+func (av attributeBusy) apacheWorkersAttributeState() {}
+func (av attributeIdle) apacheWorkersAttributeState() {}
+
+// ApacheWorkersAttributeStateMap is a helper map to get ApacheWorkersAttributeState from an attribute value.
+var ApacheWorkersAttributeStateMap = map[string]ApacheWorkersAttributeState{
+	"busy": AttributeBusy,
+	"idle": AttributeIdle,
+}
+
+func (m *metricApacheWorkers) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, stateAttribute string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -821,7 +886,7 @@ func (m *metricApacheWorkers) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("state", workersStateAttributeValue)
+	dp.Attributes().PutStr("state", stateAttribute)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1006,12 +1071,12 @@ func (mb *MetricsBuilder) RecordApacheCPULoadDataPoint(ts pcommon.Timestamp, inp
 }
 
 // RecordApacheCPUTimeDataPoint adds a data point to apache.cpu.time metric.
-func (mb *MetricsBuilder) RecordApacheCPUTimeDataPoint(ts pcommon.Timestamp, inputVal string, cpuLevelAttributeValue AttributeCPULevel, cpuModeAttributeValue AttributeCPUMode) error {
+func (mb *MetricsBuilder) RecordApacheCPUTimeDataPoint(ts pcommon.Timestamp, inputVal string, levelAttribute ApacheCPUTimeAttributeLevel, modeAttribute ApacheCPUTimeAttributeMode) error {
 	val, err := strconv.ParseFloat(inputVal, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse float64 for ApacheCPUTime, value was %s: %w", inputVal, err)
 	}
-	mb.metricApacheCPUTime.recordDataPoint(mb.startTime, ts, val, cpuLevelAttributeValue.String(), cpuModeAttributeValue.String())
+	mb.metricApacheCPUTime.recordDataPoint(mb.startTime, ts, val, levelAttribute.String(), modeAttribute.String())
 	return nil
 }
 
@@ -1076,8 +1141,8 @@ func (mb *MetricsBuilder) RecordApacheRequestsDataPoint(ts pcommon.Timestamp, in
 }
 
 // RecordApacheScoreboardDataPoint adds a data point to apache.scoreboard metric.
-func (mb *MetricsBuilder) RecordApacheScoreboardDataPoint(ts pcommon.Timestamp, val int64, scoreboardStateAttributeValue AttributeScoreboardState) {
-	mb.metricApacheScoreboard.recordDataPoint(mb.startTime, ts, val, scoreboardStateAttributeValue.String())
+func (mb *MetricsBuilder) RecordApacheScoreboardDataPoint(ts pcommon.Timestamp, val int64, stateAttribute ApacheScoreboardAttributeState) {
+	mb.metricApacheScoreboard.recordDataPoint(mb.startTime, ts, val, stateAttribute.String())
 }
 
 // RecordApacheTrafficDataPoint adds a data point to apache.traffic metric.
@@ -1096,12 +1161,12 @@ func (mb *MetricsBuilder) RecordApacheUptimeDataPoint(ts pcommon.Timestamp, inpu
 }
 
 // RecordApacheWorkersDataPoint adds a data point to apache.workers metric.
-func (mb *MetricsBuilder) RecordApacheWorkersDataPoint(ts pcommon.Timestamp, inputVal string, workersStateAttributeValue AttributeWorkersState) error {
+func (mb *MetricsBuilder) RecordApacheWorkersDataPoint(ts pcommon.Timestamp, inputVal string, stateAttribute ApacheWorkersAttributeState) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for ApacheWorkers, value was %s: %w", inputVal, err)
 	}
-	mb.metricApacheWorkers.recordDataPoint(mb.startTime, ts, val, workersStateAttributeValue.String())
+	mb.metricApacheWorkers.recordDataPoint(mb.startTime, ts, val, stateAttribute.String())
 	return nil
 }
 

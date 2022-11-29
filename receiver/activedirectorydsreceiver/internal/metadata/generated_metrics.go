@@ -116,195 +116,106 @@ func DefaultMetricsSettings() MetricsSettings {
 	}
 }
 
-// AttributeBindType specifies the a value bind_type attribute.
-type AttributeBindType int
+type attributeClient struct{}
 
-const (
-	_ AttributeBindType = iota
-	AttributeBindTypeServer
-	AttributeBindTypeClient
+func (av attributeClient) String() string {
+	return "client"
+}
+
+type attributeCompressed struct{}
+
+func (av attributeCompressed) String() string {
+	return "compressed"
+}
+
+type attributeDistingushedNames struct{}
+
+func (av attributeDistingushedNames) String() string {
+	return "distingushed_names"
+}
+
+type attributeOther struct{}
+
+func (av attributeOther) String() string {
+	return "other"
+}
+
+type attributeRead struct{}
+
+func (av attributeRead) String() string {
+	return "read"
+}
+
+type attributeReceived struct{}
+
+func (av attributeReceived) String() string {
+	return "received"
+}
+
+type attributeSchemaMismatch struct{}
+
+func (av attributeSchemaMismatch) String() string {
+	return "schema_mismatch"
+}
+
+type attributeSearch struct{}
+
+func (av attributeSearch) String() string {
+	return "search"
+}
+
+type attributeSecurityDescriptorPropagationsEvent struct{}
+
+func (av attributeSecurityDescriptorPropagationsEvent) String() string {
+	return "security_descriptor_propagations_event"
+}
+
+type attributeSent struct{}
+
+func (av attributeSent) String() string {
+	return "sent"
+}
+
+type attributeServer struct{}
+
+func (av attributeServer) String() string {
+	return "server"
+}
+
+type attributeSuccess struct{}
+
+func (av attributeSuccess) String() string {
+	return "success"
+}
+
+type attributeUncompressed struct{}
+
+func (av attributeUncompressed) String() string {
+	return "uncompressed"
+}
+
+type attributeWrite struct{}
+
+func (av attributeWrite) String() string {
+	return "write"
+}
+
+var (
+	AttributeClient                              = attributeClient{}
+	AttributeCompressed                          = attributeCompressed{}
+	AttributeDistingushedNames                   = attributeDistingushedNames{}
+	AttributeOther                               = attributeOther{}
+	AttributeRead                                = attributeRead{}
+	AttributeReceived                            = attributeReceived{}
+	AttributeSchemaMismatch                      = attributeSchemaMismatch{}
+	AttributeSearch                              = attributeSearch{}
+	AttributeSecurityDescriptorPropagationsEvent = attributeSecurityDescriptorPropagationsEvent{}
+	AttributeSent                                = attributeSent{}
+	AttributeServer                              = attributeServer{}
+	AttributeSuccess                             = attributeSuccess{}
+	AttributeUncompressed                        = attributeUncompressed{}
+	AttributeWrite                               = attributeWrite{}
 )
-
-// String returns the string representation of the AttributeBindType.
-func (av AttributeBindType) String() string {
-	switch av {
-	case AttributeBindTypeServer:
-		return "server"
-	case AttributeBindTypeClient:
-		return "client"
-	}
-	return ""
-}
-
-// MapAttributeBindType is a helper map of string to AttributeBindType attribute value.
-var MapAttributeBindType = map[string]AttributeBindType{
-	"server": AttributeBindTypeServer,
-	"client": AttributeBindTypeClient,
-}
-
-// AttributeDirection specifies the a value direction attribute.
-type AttributeDirection int
-
-const (
-	_ AttributeDirection = iota
-	AttributeDirectionSent
-	AttributeDirectionReceived
-)
-
-// String returns the string representation of the AttributeDirection.
-func (av AttributeDirection) String() string {
-	switch av {
-	case AttributeDirectionSent:
-		return "sent"
-	case AttributeDirectionReceived:
-		return "received"
-	}
-	return ""
-}
-
-// MapAttributeDirection is a helper map of string to AttributeDirection attribute value.
-var MapAttributeDirection = map[string]AttributeDirection{
-	"sent":     AttributeDirectionSent,
-	"received": AttributeDirectionReceived,
-}
-
-// AttributeNetworkDataType specifies the a value network_data_type attribute.
-type AttributeNetworkDataType int
-
-const (
-	_ AttributeNetworkDataType = iota
-	AttributeNetworkDataTypeCompressed
-	AttributeNetworkDataTypeUncompressed
-)
-
-// String returns the string representation of the AttributeNetworkDataType.
-func (av AttributeNetworkDataType) String() string {
-	switch av {
-	case AttributeNetworkDataTypeCompressed:
-		return "compressed"
-	case AttributeNetworkDataTypeUncompressed:
-		return "uncompressed"
-	}
-	return ""
-}
-
-// MapAttributeNetworkDataType is a helper map of string to AttributeNetworkDataType attribute value.
-var MapAttributeNetworkDataType = map[string]AttributeNetworkDataType{
-	"compressed":   AttributeNetworkDataTypeCompressed,
-	"uncompressed": AttributeNetworkDataTypeUncompressed,
-}
-
-// AttributeOperationType specifies the a value operation_type attribute.
-type AttributeOperationType int
-
-const (
-	_ AttributeOperationType = iota
-	AttributeOperationTypeRead
-	AttributeOperationTypeWrite
-	AttributeOperationTypeSearch
-)
-
-// String returns the string representation of the AttributeOperationType.
-func (av AttributeOperationType) String() string {
-	switch av {
-	case AttributeOperationTypeRead:
-		return "read"
-	case AttributeOperationTypeWrite:
-		return "write"
-	case AttributeOperationTypeSearch:
-		return "search"
-	}
-	return ""
-}
-
-// MapAttributeOperationType is a helper map of string to AttributeOperationType attribute value.
-var MapAttributeOperationType = map[string]AttributeOperationType{
-	"read":   AttributeOperationTypeRead,
-	"write":  AttributeOperationTypeWrite,
-	"search": AttributeOperationTypeSearch,
-}
-
-// AttributeSuboperationType specifies the a value suboperation_type attribute.
-type AttributeSuboperationType int
-
-const (
-	_ AttributeSuboperationType = iota
-	AttributeSuboperationTypeSecurityDescriptorPropagationsEvent
-	AttributeSuboperationTypeSearch
-)
-
-// String returns the string representation of the AttributeSuboperationType.
-func (av AttributeSuboperationType) String() string {
-	switch av {
-	case AttributeSuboperationTypeSecurityDescriptorPropagationsEvent:
-		return "security_descriptor_propagations_event"
-	case AttributeSuboperationTypeSearch:
-		return "search"
-	}
-	return ""
-}
-
-// MapAttributeSuboperationType is a helper map of string to AttributeSuboperationType attribute value.
-var MapAttributeSuboperationType = map[string]AttributeSuboperationType{
-	"security_descriptor_propagations_event": AttributeSuboperationTypeSecurityDescriptorPropagationsEvent,
-	"search":                                 AttributeSuboperationTypeSearch,
-}
-
-// AttributeSyncResult specifies the a value sync_result attribute.
-type AttributeSyncResult int
-
-const (
-	_ AttributeSyncResult = iota
-	AttributeSyncResultSuccess
-	AttributeSyncResultSchemaMismatch
-	AttributeSyncResultOther
-)
-
-// String returns the string representation of the AttributeSyncResult.
-func (av AttributeSyncResult) String() string {
-	switch av {
-	case AttributeSyncResultSuccess:
-		return "success"
-	case AttributeSyncResultSchemaMismatch:
-		return "schema_mismatch"
-	case AttributeSyncResultOther:
-		return "other"
-	}
-	return ""
-}
-
-// MapAttributeSyncResult is a helper map of string to AttributeSyncResult attribute value.
-var MapAttributeSyncResult = map[string]AttributeSyncResult{
-	"success":         AttributeSyncResultSuccess,
-	"schema_mismatch": AttributeSyncResultSchemaMismatch,
-	"other":           AttributeSyncResultOther,
-}
-
-// AttributeValueType specifies the a value value_type attribute.
-type AttributeValueType int
-
-const (
-	_ AttributeValueType = iota
-	AttributeValueTypeDistingushedNames
-	AttributeValueTypeOther
-)
-
-// String returns the string representation of the AttributeValueType.
-func (av AttributeValueType) String() string {
-	switch av {
-	case AttributeValueTypeDistingushedNames:
-		return "distingushed_names"
-	case AttributeValueTypeOther:
-		return "other"
-	}
-	return ""
-}
-
-// MapAttributeValueType is a helper map of string to AttributeValueType attribute value.
-var MapAttributeValueType = map[string]AttributeValueType{
-	"distingushed_names": AttributeValueTypeDistingushedNames,
-	"other":              AttributeValueTypeOther,
-}
 
 type metricActiveDirectoryDsBindRate struct {
 	data     pmetric.Metric // data buffer for generated metric.
@@ -323,7 +234,22 @@ func (m *metricActiveDirectoryDsBindRate) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricActiveDirectoryDsBindRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, bindTypeAttributeValue string) {
+// ActiveDirectoryDsBindRateAttributeType specifies the a value type attribute of active_directory.ds.bind.rate metric.
+type ActiveDirectoryDsBindRateAttributeType interface {
+	activeDirectoryDsBindRateAttributeType()
+	String() string
+}
+
+func (av attributeServer) activeDirectoryDsBindRateAttributeType() {}
+func (av attributeClient) activeDirectoryDsBindRateAttributeType() {}
+
+// ActiveDirectoryDsBindRateAttributeTypeMap is a helper map to get ActiveDirectoryDsBindRateAttributeType from an attribute value.
+var ActiveDirectoryDsBindRateAttributeTypeMap = map[string]ActiveDirectoryDsBindRateAttributeType{
+	"server": AttributeServer,
+	"client": AttributeClient,
+}
+
+func (m *metricActiveDirectoryDsBindRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, typeAttribute string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -331,7 +257,7 @@ func (m *metricActiveDirectoryDsBindRate) recordDataPoint(start pcommon.Timestam
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("type", bindTypeAttributeValue)
+	dp.Attributes().PutStr("type", typeAttribute)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -678,7 +604,24 @@ func (m *metricActiveDirectoryDsOperationRate) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricActiveDirectoryDsOperationRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, operationTypeAttributeValue string) {
+// ActiveDirectoryDsOperationRateAttributeType specifies the a value type attribute of active_directory.ds.operation.rate metric.
+type ActiveDirectoryDsOperationRateAttributeType interface {
+	activeDirectoryDsOperationRateAttributeType()
+	String() string
+}
+
+func (av attributeRead) activeDirectoryDsOperationRateAttributeType()   {}
+func (av attributeWrite) activeDirectoryDsOperationRateAttributeType()  {}
+func (av attributeSearch) activeDirectoryDsOperationRateAttributeType() {}
+
+// ActiveDirectoryDsOperationRateAttributeTypeMap is a helper map to get ActiveDirectoryDsOperationRateAttributeType from an attribute value.
+var ActiveDirectoryDsOperationRateAttributeTypeMap = map[string]ActiveDirectoryDsOperationRateAttributeType{
+	"read":   AttributeRead,
+	"write":  AttributeWrite,
+	"search": AttributeSearch,
+}
+
+func (m *metricActiveDirectoryDsOperationRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, typeAttribute string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -686,7 +629,7 @@ func (m *metricActiveDirectoryDsOperationRate) recordDataPoint(start pcommon.Tim
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("type", operationTypeAttributeValue)
+	dp.Attributes().PutStr("type", typeAttribute)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -731,7 +674,37 @@ func (m *metricActiveDirectoryDsReplicationNetworkIo) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricActiveDirectoryDsReplicationNetworkIo) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, directionAttributeValue string, networkDataTypeAttributeValue string) {
+// ActiveDirectoryDsReplicationNetworkIoAttributeDirection specifies the a value direction attribute of active_directory.ds.replication.network.io metric.
+type ActiveDirectoryDsReplicationNetworkIoAttributeDirection interface {
+	activeDirectoryDsReplicationNetworkIoAttributeDirection()
+	String() string
+}
+
+func (av attributeSent) activeDirectoryDsReplicationNetworkIoAttributeDirection()     {}
+func (av attributeReceived) activeDirectoryDsReplicationNetworkIoAttributeDirection() {}
+
+// ActiveDirectoryDsReplicationNetworkIoAttributeDirectionMap is a helper map to get ActiveDirectoryDsReplicationNetworkIoAttributeDirection from an attribute value.
+var ActiveDirectoryDsReplicationNetworkIoAttributeDirectionMap = map[string]ActiveDirectoryDsReplicationNetworkIoAttributeDirection{
+	"sent":     AttributeSent,
+	"received": AttributeReceived,
+}
+
+// ActiveDirectoryDsReplicationNetworkIoAttributeType specifies the a value type attribute of active_directory.ds.replication.network.io metric.
+type ActiveDirectoryDsReplicationNetworkIoAttributeType interface {
+	activeDirectoryDsReplicationNetworkIoAttributeType()
+	String() string
+}
+
+func (av attributeCompressed) activeDirectoryDsReplicationNetworkIoAttributeType()   {}
+func (av attributeUncompressed) activeDirectoryDsReplicationNetworkIoAttributeType() {}
+
+// ActiveDirectoryDsReplicationNetworkIoAttributeTypeMap is a helper map to get ActiveDirectoryDsReplicationNetworkIoAttributeType from an attribute value.
+var ActiveDirectoryDsReplicationNetworkIoAttributeTypeMap = map[string]ActiveDirectoryDsReplicationNetworkIoAttributeType{
+	"compressed":   AttributeCompressed,
+	"uncompressed": AttributeUncompressed,
+}
+
+func (m *metricActiveDirectoryDsReplicationNetworkIo) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, directionAttribute string, typeAttribute string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -739,8 +712,8 @@ func (m *metricActiveDirectoryDsReplicationNetworkIo) recordDataPoint(start pcom
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("direction", directionAttributeValue)
-	dp.Attributes().PutStr("type", networkDataTypeAttributeValue)
+	dp.Attributes().PutStr("direction", directionAttribute)
+	dp.Attributes().PutStr("type", typeAttribute)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -785,7 +758,22 @@ func (m *metricActiveDirectoryDsReplicationObjectRate) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricActiveDirectoryDsReplicationObjectRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, directionAttributeValue string) {
+// ActiveDirectoryDsReplicationObjectRateAttributeDirection specifies the a value direction attribute of active_directory.ds.replication.object.rate metric.
+type ActiveDirectoryDsReplicationObjectRateAttributeDirection interface {
+	activeDirectoryDsReplicationObjectRateAttributeDirection()
+	String() string
+}
+
+func (av attributeSent) activeDirectoryDsReplicationObjectRateAttributeDirection()     {}
+func (av attributeReceived) activeDirectoryDsReplicationObjectRateAttributeDirection() {}
+
+// ActiveDirectoryDsReplicationObjectRateAttributeDirectionMap is a helper map to get ActiveDirectoryDsReplicationObjectRateAttributeDirection from an attribute value.
+var ActiveDirectoryDsReplicationObjectRateAttributeDirectionMap = map[string]ActiveDirectoryDsReplicationObjectRateAttributeDirection{
+	"sent":     AttributeSent,
+	"received": AttributeReceived,
+}
+
+func (m *metricActiveDirectoryDsReplicationObjectRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, directionAttribute string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -793,7 +781,7 @@ func (m *metricActiveDirectoryDsReplicationObjectRate) recordDataPoint(start pco
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("direction", directionAttributeValue)
+	dp.Attributes().PutStr("direction", directionAttribute)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -889,7 +877,22 @@ func (m *metricActiveDirectoryDsReplicationPropertyRate) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricActiveDirectoryDsReplicationPropertyRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, directionAttributeValue string) {
+// ActiveDirectoryDsReplicationPropertyRateAttributeDirection specifies the a value direction attribute of active_directory.ds.replication.property.rate metric.
+type ActiveDirectoryDsReplicationPropertyRateAttributeDirection interface {
+	activeDirectoryDsReplicationPropertyRateAttributeDirection()
+	String() string
+}
+
+func (av attributeSent) activeDirectoryDsReplicationPropertyRateAttributeDirection()     {}
+func (av attributeReceived) activeDirectoryDsReplicationPropertyRateAttributeDirection() {}
+
+// ActiveDirectoryDsReplicationPropertyRateAttributeDirectionMap is a helper map to get ActiveDirectoryDsReplicationPropertyRateAttributeDirection from an attribute value.
+var ActiveDirectoryDsReplicationPropertyRateAttributeDirectionMap = map[string]ActiveDirectoryDsReplicationPropertyRateAttributeDirection{
+	"sent":     AttributeSent,
+	"received": AttributeReceived,
+}
+
+func (m *metricActiveDirectoryDsReplicationPropertyRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, directionAttribute string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -897,7 +900,7 @@ func (m *metricActiveDirectoryDsReplicationPropertyRate) recordDataPoint(start p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("direction", directionAttributeValue)
+	dp.Attributes().PutStr("direction", directionAttribute)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -993,7 +996,24 @@ func (m *metricActiveDirectoryDsReplicationSyncRequestCount) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricActiveDirectoryDsReplicationSyncRequestCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, syncResultAttributeValue string) {
+// ActiveDirectoryDsReplicationSyncRequestCountAttributeResult specifies the a value result attribute of active_directory.ds.replication.sync.request.count metric.
+type ActiveDirectoryDsReplicationSyncRequestCountAttributeResult interface {
+	activeDirectoryDsReplicationSyncRequestCountAttributeResult()
+	String() string
+}
+
+func (av attributeSuccess) activeDirectoryDsReplicationSyncRequestCountAttributeResult()        {}
+func (av attributeSchemaMismatch) activeDirectoryDsReplicationSyncRequestCountAttributeResult() {}
+func (av attributeOther) activeDirectoryDsReplicationSyncRequestCountAttributeResult()          {}
+
+// ActiveDirectoryDsReplicationSyncRequestCountAttributeResultMap is a helper map to get ActiveDirectoryDsReplicationSyncRequestCountAttributeResult from an attribute value.
+var ActiveDirectoryDsReplicationSyncRequestCountAttributeResultMap = map[string]ActiveDirectoryDsReplicationSyncRequestCountAttributeResult{
+	"success":         AttributeSuccess,
+	"schema_mismatch": AttributeSchemaMismatch,
+	"other":           AttributeOther,
+}
+
+func (m *metricActiveDirectoryDsReplicationSyncRequestCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, resultAttribute string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1001,7 +1021,7 @@ func (m *metricActiveDirectoryDsReplicationSyncRequestCount) recordDataPoint(sta
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("result", syncResultAttributeValue)
+	dp.Attributes().PutStr("result", resultAttribute)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1046,7 +1066,37 @@ func (m *metricActiveDirectoryDsReplicationValueRate) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricActiveDirectoryDsReplicationValueRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, directionAttributeValue string, valueTypeAttributeValue string) {
+// ActiveDirectoryDsReplicationValueRateAttributeDirection specifies the a value direction attribute of active_directory.ds.replication.value.rate metric.
+type ActiveDirectoryDsReplicationValueRateAttributeDirection interface {
+	activeDirectoryDsReplicationValueRateAttributeDirection()
+	String() string
+}
+
+func (av attributeSent) activeDirectoryDsReplicationValueRateAttributeDirection()     {}
+func (av attributeReceived) activeDirectoryDsReplicationValueRateAttributeDirection() {}
+
+// ActiveDirectoryDsReplicationValueRateAttributeDirectionMap is a helper map to get ActiveDirectoryDsReplicationValueRateAttributeDirection from an attribute value.
+var ActiveDirectoryDsReplicationValueRateAttributeDirectionMap = map[string]ActiveDirectoryDsReplicationValueRateAttributeDirection{
+	"sent":     AttributeSent,
+	"received": AttributeReceived,
+}
+
+// ActiveDirectoryDsReplicationValueRateAttributeType specifies the a value type attribute of active_directory.ds.replication.value.rate metric.
+type ActiveDirectoryDsReplicationValueRateAttributeType interface {
+	activeDirectoryDsReplicationValueRateAttributeType()
+	String() string
+}
+
+func (av attributeDistingushedNames) activeDirectoryDsReplicationValueRateAttributeType() {}
+func (av attributeOther) activeDirectoryDsReplicationValueRateAttributeType()             {}
+
+// ActiveDirectoryDsReplicationValueRateAttributeTypeMap is a helper map to get ActiveDirectoryDsReplicationValueRateAttributeType from an attribute value.
+var ActiveDirectoryDsReplicationValueRateAttributeTypeMap = map[string]ActiveDirectoryDsReplicationValueRateAttributeType{
+	"distingushed_names": AttributeDistingushedNames,
+	"other":              AttributeOther,
+}
+
+func (m *metricActiveDirectoryDsReplicationValueRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, directionAttribute string, typeAttribute string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1054,8 +1104,8 @@ func (m *metricActiveDirectoryDsReplicationValueRate) recordDataPoint(start pcom
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("direction", directionAttributeValue)
-	dp.Attributes().PutStr("type", valueTypeAttributeValue)
+	dp.Attributes().PutStr("direction", directionAttribute)
+	dp.Attributes().PutStr("type", typeAttribute)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1151,7 +1201,23 @@ func (m *metricActiveDirectoryDsSuboperationRate) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricActiveDirectoryDsSuboperationRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, suboperationTypeAttributeValue string) {
+// ActiveDirectoryDsSuboperationRateAttributeType specifies the a value type attribute of active_directory.ds.suboperation.rate metric.
+type ActiveDirectoryDsSuboperationRateAttributeType interface {
+	activeDirectoryDsSuboperationRateAttributeType()
+	String() string
+}
+
+func (av attributeSecurityDescriptorPropagationsEvent) activeDirectoryDsSuboperationRateAttributeType() {
+}
+func (av attributeSearch) activeDirectoryDsSuboperationRateAttributeType() {}
+
+// ActiveDirectoryDsSuboperationRateAttributeTypeMap is a helper map to get ActiveDirectoryDsSuboperationRateAttributeType from an attribute value.
+var ActiveDirectoryDsSuboperationRateAttributeTypeMap = map[string]ActiveDirectoryDsSuboperationRateAttributeType{
+	"security_descriptor_propagations_event": AttributeSecurityDescriptorPropagationsEvent,
+	"search":                                 AttributeSearch,
+}
+
+func (m *metricActiveDirectoryDsSuboperationRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, typeAttribute string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1159,7 +1225,7 @@ func (m *metricActiveDirectoryDsSuboperationRate) recordDataPoint(start pcommon.
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("type", suboperationTypeAttributeValue)
+	dp.Attributes().PutStr("type", typeAttribute)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1389,8 +1455,8 @@ func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 }
 
 // RecordActiveDirectoryDsBindRateDataPoint adds a data point to active_directory.ds.bind.rate metric.
-func (mb *MetricsBuilder) RecordActiveDirectoryDsBindRateDataPoint(ts pcommon.Timestamp, val float64, bindTypeAttributeValue AttributeBindType) {
-	mb.metricActiveDirectoryDsBindRate.recordDataPoint(mb.startTime, ts, val, bindTypeAttributeValue.String())
+func (mb *MetricsBuilder) RecordActiveDirectoryDsBindRateDataPoint(ts pcommon.Timestamp, val float64, typeAttribute ActiveDirectoryDsBindRateAttributeType) {
+	mb.metricActiveDirectoryDsBindRate.recordDataPoint(mb.startTime, ts, val, typeAttribute.String())
 }
 
 // RecordActiveDirectoryDsLdapBindLastSuccessfulTimeDataPoint adds a data point to active_directory.ds.ldap.bind.last_successful.time metric.
@@ -1424,18 +1490,18 @@ func (mb *MetricsBuilder) RecordActiveDirectoryDsNotificationQueuedDataPoint(ts 
 }
 
 // RecordActiveDirectoryDsOperationRateDataPoint adds a data point to active_directory.ds.operation.rate metric.
-func (mb *MetricsBuilder) RecordActiveDirectoryDsOperationRateDataPoint(ts pcommon.Timestamp, val float64, operationTypeAttributeValue AttributeOperationType) {
-	mb.metricActiveDirectoryDsOperationRate.recordDataPoint(mb.startTime, ts, val, operationTypeAttributeValue.String())
+func (mb *MetricsBuilder) RecordActiveDirectoryDsOperationRateDataPoint(ts pcommon.Timestamp, val float64, typeAttribute ActiveDirectoryDsOperationRateAttributeType) {
+	mb.metricActiveDirectoryDsOperationRate.recordDataPoint(mb.startTime, ts, val, typeAttribute.String())
 }
 
 // RecordActiveDirectoryDsReplicationNetworkIoDataPoint adds a data point to active_directory.ds.replication.network.io metric.
-func (mb *MetricsBuilder) RecordActiveDirectoryDsReplicationNetworkIoDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection, networkDataTypeAttributeValue AttributeNetworkDataType) {
-	mb.metricActiveDirectoryDsReplicationNetworkIo.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String(), networkDataTypeAttributeValue.String())
+func (mb *MetricsBuilder) RecordActiveDirectoryDsReplicationNetworkIoDataPoint(ts pcommon.Timestamp, val int64, directionAttribute ActiveDirectoryDsReplicationNetworkIoAttributeDirection, typeAttribute ActiveDirectoryDsReplicationNetworkIoAttributeType) {
+	mb.metricActiveDirectoryDsReplicationNetworkIo.recordDataPoint(mb.startTime, ts, val, directionAttribute.String(), typeAttribute.String())
 }
 
 // RecordActiveDirectoryDsReplicationObjectRateDataPoint adds a data point to active_directory.ds.replication.object.rate metric.
-func (mb *MetricsBuilder) RecordActiveDirectoryDsReplicationObjectRateDataPoint(ts pcommon.Timestamp, val float64, directionAttributeValue AttributeDirection) {
-	mb.metricActiveDirectoryDsReplicationObjectRate.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String())
+func (mb *MetricsBuilder) RecordActiveDirectoryDsReplicationObjectRateDataPoint(ts pcommon.Timestamp, val float64, directionAttribute ActiveDirectoryDsReplicationObjectRateAttributeDirection) {
+	mb.metricActiveDirectoryDsReplicationObjectRate.recordDataPoint(mb.startTime, ts, val, directionAttribute.String())
 }
 
 // RecordActiveDirectoryDsReplicationOperationPendingDataPoint adds a data point to active_directory.ds.replication.operation.pending metric.
@@ -1444,8 +1510,8 @@ func (mb *MetricsBuilder) RecordActiveDirectoryDsReplicationOperationPendingData
 }
 
 // RecordActiveDirectoryDsReplicationPropertyRateDataPoint adds a data point to active_directory.ds.replication.property.rate metric.
-func (mb *MetricsBuilder) RecordActiveDirectoryDsReplicationPropertyRateDataPoint(ts pcommon.Timestamp, val float64, directionAttributeValue AttributeDirection) {
-	mb.metricActiveDirectoryDsReplicationPropertyRate.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String())
+func (mb *MetricsBuilder) RecordActiveDirectoryDsReplicationPropertyRateDataPoint(ts pcommon.Timestamp, val float64, directionAttribute ActiveDirectoryDsReplicationPropertyRateAttributeDirection) {
+	mb.metricActiveDirectoryDsReplicationPropertyRate.recordDataPoint(mb.startTime, ts, val, directionAttribute.String())
 }
 
 // RecordActiveDirectoryDsReplicationSyncObjectPendingDataPoint adds a data point to active_directory.ds.replication.sync.object.pending metric.
@@ -1454,13 +1520,13 @@ func (mb *MetricsBuilder) RecordActiveDirectoryDsReplicationSyncObjectPendingDat
 }
 
 // RecordActiveDirectoryDsReplicationSyncRequestCountDataPoint adds a data point to active_directory.ds.replication.sync.request.count metric.
-func (mb *MetricsBuilder) RecordActiveDirectoryDsReplicationSyncRequestCountDataPoint(ts pcommon.Timestamp, val int64, syncResultAttributeValue AttributeSyncResult) {
-	mb.metricActiveDirectoryDsReplicationSyncRequestCount.recordDataPoint(mb.startTime, ts, val, syncResultAttributeValue.String())
+func (mb *MetricsBuilder) RecordActiveDirectoryDsReplicationSyncRequestCountDataPoint(ts pcommon.Timestamp, val int64, resultAttribute ActiveDirectoryDsReplicationSyncRequestCountAttributeResult) {
+	mb.metricActiveDirectoryDsReplicationSyncRequestCount.recordDataPoint(mb.startTime, ts, val, resultAttribute.String())
 }
 
 // RecordActiveDirectoryDsReplicationValueRateDataPoint adds a data point to active_directory.ds.replication.value.rate metric.
-func (mb *MetricsBuilder) RecordActiveDirectoryDsReplicationValueRateDataPoint(ts pcommon.Timestamp, val float64, directionAttributeValue AttributeDirection, valueTypeAttributeValue AttributeValueType) {
-	mb.metricActiveDirectoryDsReplicationValueRate.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String(), valueTypeAttributeValue.String())
+func (mb *MetricsBuilder) RecordActiveDirectoryDsReplicationValueRateDataPoint(ts pcommon.Timestamp, val float64, directionAttribute ActiveDirectoryDsReplicationValueRateAttributeDirection, typeAttribute ActiveDirectoryDsReplicationValueRateAttributeType) {
+	mb.metricActiveDirectoryDsReplicationValueRate.recordDataPoint(mb.startTime, ts, val, directionAttribute.String(), typeAttribute.String())
 }
 
 // RecordActiveDirectoryDsSecurityDescriptorPropagationsEventQueuedDataPoint adds a data point to active_directory.ds.security_descriptor_propagations_event.queued metric.
@@ -1469,8 +1535,8 @@ func (mb *MetricsBuilder) RecordActiveDirectoryDsSecurityDescriptorPropagationsE
 }
 
 // RecordActiveDirectoryDsSuboperationRateDataPoint adds a data point to active_directory.ds.suboperation.rate metric.
-func (mb *MetricsBuilder) RecordActiveDirectoryDsSuboperationRateDataPoint(ts pcommon.Timestamp, val float64, suboperationTypeAttributeValue AttributeSuboperationType) {
-	mb.metricActiveDirectoryDsSuboperationRate.recordDataPoint(mb.startTime, ts, val, suboperationTypeAttributeValue.String())
+func (mb *MetricsBuilder) RecordActiveDirectoryDsSuboperationRateDataPoint(ts pcommon.Timestamp, val float64, typeAttribute ActiveDirectoryDsSuboperationRateAttributeType) {
+	mb.metricActiveDirectoryDsSuboperationRate.recordDataPoint(mb.startTime, ts, val, typeAttribute.String())
 }
 
 // RecordActiveDirectoryDsThreadCountDataPoint adds a data point to active_directory.ds.thread.count metric.

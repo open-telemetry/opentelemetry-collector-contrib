@@ -152,113 +152,71 @@ func DefaultMetricsSettings() MetricsSettings {
 	}
 }
 
-// AttributeActiveStatus specifies the a value active.status attribute.
-type AttributeActiveStatus int
+type attributeActive struct{}
 
-const (
-	_ AttributeActiveStatus = iota
-	AttributeActiveStatusActive
-	AttributeActiveStatusInactive
+func (av attributeActive) String() string {
+	return "active"
+}
+
+type attributeAvailable struct{}
+
+func (av attributeAvailable) String() string {
+	return "available"
+}
+
+type attributeDisabled struct{}
+
+func (av attributeDisabled) String() string {
+	return "disabled"
+}
+
+type attributeEnabled struct{}
+
+func (av attributeEnabled) String() string {
+	return "enabled"
+}
+
+type attributeInactive struct{}
+
+func (av attributeInactive) String() string {
+	return "inactive"
+}
+
+type attributeOffline struct{}
+
+func (av attributeOffline) String() string {
+	return "offline"
+}
+
+type attributeReceived struct{}
+
+func (av attributeReceived) String() string {
+	return "received"
+}
+
+type attributeSent struct{}
+
+func (av attributeSent) String() string {
+	return "sent"
+}
+
+type attributeUnknown struct{}
+
+func (av attributeUnknown) String() string {
+	return "unknown"
+}
+
+var (
+	AttributeActive    = attributeActive{}
+	AttributeAvailable = attributeAvailable{}
+	AttributeDisabled  = attributeDisabled{}
+	AttributeEnabled   = attributeEnabled{}
+	AttributeInactive  = attributeInactive{}
+	AttributeOffline   = attributeOffline{}
+	AttributeReceived  = attributeReceived{}
+	AttributeSent      = attributeSent{}
+	AttributeUnknown   = attributeUnknown{}
 )
-
-// String returns the string representation of the AttributeActiveStatus.
-func (av AttributeActiveStatus) String() string {
-	switch av {
-	case AttributeActiveStatusActive:
-		return "active"
-	case AttributeActiveStatusInactive:
-		return "inactive"
-	}
-	return ""
-}
-
-// MapAttributeActiveStatus is a helper map of string to AttributeActiveStatus attribute value.
-var MapAttributeActiveStatus = map[string]AttributeActiveStatus{
-	"active":   AttributeActiveStatusActive,
-	"inactive": AttributeActiveStatusInactive,
-}
-
-// AttributeAvailabilityStatus specifies the a value availability.status attribute.
-type AttributeAvailabilityStatus int
-
-const (
-	_ AttributeAvailabilityStatus = iota
-	AttributeAvailabilityStatusOffline
-	AttributeAvailabilityStatusUnknown
-	AttributeAvailabilityStatusAvailable
-)
-
-// String returns the string representation of the AttributeAvailabilityStatus.
-func (av AttributeAvailabilityStatus) String() string {
-	switch av {
-	case AttributeAvailabilityStatusOffline:
-		return "offline"
-	case AttributeAvailabilityStatusUnknown:
-		return "unknown"
-	case AttributeAvailabilityStatusAvailable:
-		return "available"
-	}
-	return ""
-}
-
-// MapAttributeAvailabilityStatus is a helper map of string to AttributeAvailabilityStatus attribute value.
-var MapAttributeAvailabilityStatus = map[string]AttributeAvailabilityStatus{
-	"offline":   AttributeAvailabilityStatusOffline,
-	"unknown":   AttributeAvailabilityStatusUnknown,
-	"available": AttributeAvailabilityStatusAvailable,
-}
-
-// AttributeDirection specifies the a value direction attribute.
-type AttributeDirection int
-
-const (
-	_ AttributeDirection = iota
-	AttributeDirectionSent
-	AttributeDirectionReceived
-)
-
-// String returns the string representation of the AttributeDirection.
-func (av AttributeDirection) String() string {
-	switch av {
-	case AttributeDirectionSent:
-		return "sent"
-	case AttributeDirectionReceived:
-		return "received"
-	}
-	return ""
-}
-
-// MapAttributeDirection is a helper map of string to AttributeDirection attribute value.
-var MapAttributeDirection = map[string]AttributeDirection{
-	"sent":     AttributeDirectionSent,
-	"received": AttributeDirectionReceived,
-}
-
-// AttributeEnabledStatus specifies the a value enabled.status attribute.
-type AttributeEnabledStatus int
-
-const (
-	_ AttributeEnabledStatus = iota
-	AttributeEnabledStatusDisabled
-	AttributeEnabledStatusEnabled
-)
-
-// String returns the string representation of the AttributeEnabledStatus.
-func (av AttributeEnabledStatus) String() string {
-	switch av {
-	case AttributeEnabledStatusDisabled:
-		return "disabled"
-	case AttributeEnabledStatusEnabled:
-		return "enabled"
-	}
-	return ""
-}
-
-// MapAttributeEnabledStatus is a helper map of string to AttributeEnabledStatus attribute value.
-var MapAttributeEnabledStatus = map[string]AttributeEnabledStatus{
-	"disabled": AttributeEnabledStatusDisabled,
-	"enabled":  AttributeEnabledStatusEnabled,
-}
 
 type metricBigipNodeAvailability struct {
 	data     pmetric.Metric // data buffer for generated metric.
@@ -275,7 +233,24 @@ func (m *metricBigipNodeAvailability) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricBigipNodeAvailability) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, availabilityStatusAttributeValue string) {
+// BigipNodeAvailabilityAttributeStatus specifies the a value status attribute of bigip.node.availability metric.
+type BigipNodeAvailabilityAttributeStatus interface {
+	bigipNodeAvailabilityAttributeStatus()
+	String() string
+}
+
+func (av attributeOffline) bigipNodeAvailabilityAttributeStatus()   {}
+func (av attributeUnknown) bigipNodeAvailabilityAttributeStatus()   {}
+func (av attributeAvailable) bigipNodeAvailabilityAttributeStatus() {}
+
+// BigipNodeAvailabilityAttributeStatusMap is a helper map to get BigipNodeAvailabilityAttributeStatus from an attribute value.
+var BigipNodeAvailabilityAttributeStatusMap = map[string]BigipNodeAvailabilityAttributeStatus{
+	"offline":   AttributeOffline,
+	"unknown":   AttributeUnknown,
+	"available": AttributeAvailable,
+}
+
+func (m *metricBigipNodeAvailability) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, statusAttribute string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -283,7 +258,7 @@ func (m *metricBigipNodeAvailability) recordDataPoint(start pcommon.Timestamp, t
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("status", availabilityStatusAttributeValue)
+	dp.Attributes().PutStr("status", statusAttribute)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -379,7 +354,22 @@ func (m *metricBigipNodeDataTransmitted) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricBigipNodeDataTransmitted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, directionAttributeValue string) {
+// BigipNodeDataTransmittedAttributeDirection specifies the a value direction attribute of bigip.node.data.transmitted metric.
+type BigipNodeDataTransmittedAttributeDirection interface {
+	bigipNodeDataTransmittedAttributeDirection()
+	String() string
+}
+
+func (av attributeSent) bigipNodeDataTransmittedAttributeDirection()     {}
+func (av attributeReceived) bigipNodeDataTransmittedAttributeDirection() {}
+
+// BigipNodeDataTransmittedAttributeDirectionMap is a helper map to get BigipNodeDataTransmittedAttributeDirection from an attribute value.
+var BigipNodeDataTransmittedAttributeDirectionMap = map[string]BigipNodeDataTransmittedAttributeDirection{
+	"sent":     AttributeSent,
+	"received": AttributeReceived,
+}
+
+func (m *metricBigipNodeDataTransmitted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, directionAttribute string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -387,7 +377,7 @@ func (m *metricBigipNodeDataTransmitted) recordDataPoint(start pcommon.Timestamp
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("direction", directionAttributeValue)
+	dp.Attributes().PutStr("direction", directionAttribute)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -430,7 +420,22 @@ func (m *metricBigipNodeEnabled) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricBigipNodeEnabled) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, enabledStatusAttributeValue string) {
+// BigipNodeEnabledAttributeStatus specifies the a value status attribute of bigip.node.enabled metric.
+type BigipNodeEnabledAttributeStatus interface {
+	bigipNodeEnabledAttributeStatus()
+	String() string
+}
+
+func (av attributeDisabled) bigipNodeEnabledAttributeStatus() {}
+func (av attributeEnabled) bigipNodeEnabledAttributeStatus()  {}
+
+// BigipNodeEnabledAttributeStatusMap is a helper map to get BigipNodeEnabledAttributeStatus from an attribute value.
+var BigipNodeEnabledAttributeStatusMap = map[string]BigipNodeEnabledAttributeStatus{
+	"disabled": AttributeDisabled,
+	"enabled":  AttributeEnabled,
+}
+
+func (m *metricBigipNodeEnabled) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, statusAttribute string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -438,7 +443,7 @@ func (m *metricBigipNodeEnabled) recordDataPoint(start pcommon.Timestamp, ts pco
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("status", enabledStatusAttributeValue)
+	dp.Attributes().PutStr("status", statusAttribute)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -483,7 +488,22 @@ func (m *metricBigipNodePacketCount) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricBigipNodePacketCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, directionAttributeValue string) {
+// BigipNodePacketCountAttributeDirection specifies the a value direction attribute of bigip.node.packet.count metric.
+type BigipNodePacketCountAttributeDirection interface {
+	bigipNodePacketCountAttributeDirection()
+	String() string
+}
+
+func (av attributeSent) bigipNodePacketCountAttributeDirection()     {}
+func (av attributeReceived) bigipNodePacketCountAttributeDirection() {}
+
+// BigipNodePacketCountAttributeDirectionMap is a helper map to get BigipNodePacketCountAttributeDirection from an attribute value.
+var BigipNodePacketCountAttributeDirectionMap = map[string]BigipNodePacketCountAttributeDirection{
+	"sent":     AttributeSent,
+	"received": AttributeReceived,
+}
+
+func (m *metricBigipNodePacketCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, directionAttribute string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -491,7 +511,7 @@ func (m *metricBigipNodePacketCount) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("direction", directionAttributeValue)
+	dp.Attributes().PutStr("direction", directionAttribute)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -636,7 +656,24 @@ func (m *metricBigipPoolAvailability) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricBigipPoolAvailability) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, availabilityStatusAttributeValue string) {
+// BigipPoolAvailabilityAttributeStatus specifies the a value status attribute of bigip.pool.availability metric.
+type BigipPoolAvailabilityAttributeStatus interface {
+	bigipPoolAvailabilityAttributeStatus()
+	String() string
+}
+
+func (av attributeOffline) bigipPoolAvailabilityAttributeStatus()   {}
+func (av attributeUnknown) bigipPoolAvailabilityAttributeStatus()   {}
+func (av attributeAvailable) bigipPoolAvailabilityAttributeStatus() {}
+
+// BigipPoolAvailabilityAttributeStatusMap is a helper map to get BigipPoolAvailabilityAttributeStatus from an attribute value.
+var BigipPoolAvailabilityAttributeStatusMap = map[string]BigipPoolAvailabilityAttributeStatus{
+	"offline":   AttributeOffline,
+	"unknown":   AttributeUnknown,
+	"available": AttributeAvailable,
+}
+
+func (m *metricBigipPoolAvailability) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, statusAttribute string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -644,7 +681,7 @@ func (m *metricBigipPoolAvailability) recordDataPoint(start pcommon.Timestamp, t
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("status", availabilityStatusAttributeValue)
+	dp.Attributes().PutStr("status", statusAttribute)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -740,7 +777,22 @@ func (m *metricBigipPoolDataTransmitted) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricBigipPoolDataTransmitted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, directionAttributeValue string) {
+// BigipPoolDataTransmittedAttributeDirection specifies the a value direction attribute of bigip.pool.data.transmitted metric.
+type BigipPoolDataTransmittedAttributeDirection interface {
+	bigipPoolDataTransmittedAttributeDirection()
+	String() string
+}
+
+func (av attributeSent) bigipPoolDataTransmittedAttributeDirection()     {}
+func (av attributeReceived) bigipPoolDataTransmittedAttributeDirection() {}
+
+// BigipPoolDataTransmittedAttributeDirectionMap is a helper map to get BigipPoolDataTransmittedAttributeDirection from an attribute value.
+var BigipPoolDataTransmittedAttributeDirectionMap = map[string]BigipPoolDataTransmittedAttributeDirection{
+	"sent":     AttributeSent,
+	"received": AttributeReceived,
+}
+
+func (m *metricBigipPoolDataTransmitted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, directionAttribute string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -748,7 +800,7 @@ func (m *metricBigipPoolDataTransmitted) recordDataPoint(start pcommon.Timestamp
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("direction", directionAttributeValue)
+	dp.Attributes().PutStr("direction", directionAttribute)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -791,7 +843,22 @@ func (m *metricBigipPoolEnabled) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricBigipPoolEnabled) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, enabledStatusAttributeValue string) {
+// BigipPoolEnabledAttributeStatus specifies the a value status attribute of bigip.pool.enabled metric.
+type BigipPoolEnabledAttributeStatus interface {
+	bigipPoolEnabledAttributeStatus()
+	String() string
+}
+
+func (av attributeDisabled) bigipPoolEnabledAttributeStatus() {}
+func (av attributeEnabled) bigipPoolEnabledAttributeStatus()  {}
+
+// BigipPoolEnabledAttributeStatusMap is a helper map to get BigipPoolEnabledAttributeStatus from an attribute value.
+var BigipPoolEnabledAttributeStatusMap = map[string]BigipPoolEnabledAttributeStatus{
+	"disabled": AttributeDisabled,
+	"enabled":  AttributeEnabled,
+}
+
+func (m *metricBigipPoolEnabled) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, statusAttribute string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -799,7 +866,7 @@ func (m *metricBigipPoolEnabled) recordDataPoint(start pcommon.Timestamp, ts pco
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("status", enabledStatusAttributeValue)
+	dp.Attributes().PutStr("status", statusAttribute)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -844,7 +911,22 @@ func (m *metricBigipPoolMemberCount) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricBigipPoolMemberCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, activeStatusAttributeValue string) {
+// BigipPoolMemberCountAttributeStatus specifies the a value status attribute of bigip.pool.member.count metric.
+type BigipPoolMemberCountAttributeStatus interface {
+	bigipPoolMemberCountAttributeStatus()
+	String() string
+}
+
+func (av attributeActive) bigipPoolMemberCountAttributeStatus()   {}
+func (av attributeInactive) bigipPoolMemberCountAttributeStatus() {}
+
+// BigipPoolMemberCountAttributeStatusMap is a helper map to get BigipPoolMemberCountAttributeStatus from an attribute value.
+var BigipPoolMemberCountAttributeStatusMap = map[string]BigipPoolMemberCountAttributeStatus{
+	"active":   AttributeActive,
+	"inactive": AttributeInactive,
+}
+
+func (m *metricBigipPoolMemberCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, statusAttribute string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -852,7 +934,7 @@ func (m *metricBigipPoolMemberCount) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("status", activeStatusAttributeValue)
+	dp.Attributes().PutStr("status", statusAttribute)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -897,7 +979,22 @@ func (m *metricBigipPoolPacketCount) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricBigipPoolPacketCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, directionAttributeValue string) {
+// BigipPoolPacketCountAttributeDirection specifies the a value direction attribute of bigip.pool.packet.count metric.
+type BigipPoolPacketCountAttributeDirection interface {
+	bigipPoolPacketCountAttributeDirection()
+	String() string
+}
+
+func (av attributeSent) bigipPoolPacketCountAttributeDirection()     {}
+func (av attributeReceived) bigipPoolPacketCountAttributeDirection() {}
+
+// BigipPoolPacketCountAttributeDirectionMap is a helper map to get BigipPoolPacketCountAttributeDirection from an attribute value.
+var BigipPoolPacketCountAttributeDirectionMap = map[string]BigipPoolPacketCountAttributeDirection{
+	"sent":     AttributeSent,
+	"received": AttributeReceived,
+}
+
+func (m *metricBigipPoolPacketCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, directionAttribute string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -905,7 +1002,7 @@ func (m *metricBigipPoolPacketCount) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("direction", directionAttributeValue)
+	dp.Attributes().PutStr("direction", directionAttribute)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -999,7 +1096,24 @@ func (m *metricBigipPoolMemberAvailability) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricBigipPoolMemberAvailability) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, availabilityStatusAttributeValue string) {
+// BigipPoolMemberAvailabilityAttributeStatus specifies the a value status attribute of bigip.pool_member.availability metric.
+type BigipPoolMemberAvailabilityAttributeStatus interface {
+	bigipPoolMemberAvailabilityAttributeStatus()
+	String() string
+}
+
+func (av attributeOffline) bigipPoolMemberAvailabilityAttributeStatus()   {}
+func (av attributeUnknown) bigipPoolMemberAvailabilityAttributeStatus()   {}
+func (av attributeAvailable) bigipPoolMemberAvailabilityAttributeStatus() {}
+
+// BigipPoolMemberAvailabilityAttributeStatusMap is a helper map to get BigipPoolMemberAvailabilityAttributeStatus from an attribute value.
+var BigipPoolMemberAvailabilityAttributeStatusMap = map[string]BigipPoolMemberAvailabilityAttributeStatus{
+	"offline":   AttributeOffline,
+	"unknown":   AttributeUnknown,
+	"available": AttributeAvailable,
+}
+
+func (m *metricBigipPoolMemberAvailability) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, statusAttribute string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1007,7 +1121,7 @@ func (m *metricBigipPoolMemberAvailability) recordDataPoint(start pcommon.Timest
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("status", availabilityStatusAttributeValue)
+	dp.Attributes().PutStr("status", statusAttribute)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1103,7 +1217,22 @@ func (m *metricBigipPoolMemberDataTransmitted) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricBigipPoolMemberDataTransmitted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, directionAttributeValue string) {
+// BigipPoolMemberDataTransmittedAttributeDirection specifies the a value direction attribute of bigip.pool_member.data.transmitted metric.
+type BigipPoolMemberDataTransmittedAttributeDirection interface {
+	bigipPoolMemberDataTransmittedAttributeDirection()
+	String() string
+}
+
+func (av attributeSent) bigipPoolMemberDataTransmittedAttributeDirection()     {}
+func (av attributeReceived) bigipPoolMemberDataTransmittedAttributeDirection() {}
+
+// BigipPoolMemberDataTransmittedAttributeDirectionMap is a helper map to get BigipPoolMemberDataTransmittedAttributeDirection from an attribute value.
+var BigipPoolMemberDataTransmittedAttributeDirectionMap = map[string]BigipPoolMemberDataTransmittedAttributeDirection{
+	"sent":     AttributeSent,
+	"received": AttributeReceived,
+}
+
+func (m *metricBigipPoolMemberDataTransmitted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, directionAttribute string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1111,7 +1240,7 @@ func (m *metricBigipPoolMemberDataTransmitted) recordDataPoint(start pcommon.Tim
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("direction", directionAttributeValue)
+	dp.Attributes().PutStr("direction", directionAttribute)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1154,7 +1283,22 @@ func (m *metricBigipPoolMemberEnabled) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricBigipPoolMemberEnabled) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, enabledStatusAttributeValue string) {
+// BigipPoolMemberEnabledAttributeStatus specifies the a value status attribute of bigip.pool_member.enabled metric.
+type BigipPoolMemberEnabledAttributeStatus interface {
+	bigipPoolMemberEnabledAttributeStatus()
+	String() string
+}
+
+func (av attributeDisabled) bigipPoolMemberEnabledAttributeStatus() {}
+func (av attributeEnabled) bigipPoolMemberEnabledAttributeStatus()  {}
+
+// BigipPoolMemberEnabledAttributeStatusMap is a helper map to get BigipPoolMemberEnabledAttributeStatus from an attribute value.
+var BigipPoolMemberEnabledAttributeStatusMap = map[string]BigipPoolMemberEnabledAttributeStatus{
+	"disabled": AttributeDisabled,
+	"enabled":  AttributeEnabled,
+}
+
+func (m *metricBigipPoolMemberEnabled) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, statusAttribute string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1162,7 +1306,7 @@ func (m *metricBigipPoolMemberEnabled) recordDataPoint(start pcommon.Timestamp, 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("status", enabledStatusAttributeValue)
+	dp.Attributes().PutStr("status", statusAttribute)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1207,7 +1351,22 @@ func (m *metricBigipPoolMemberPacketCount) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricBigipPoolMemberPacketCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, directionAttributeValue string) {
+// BigipPoolMemberPacketCountAttributeDirection specifies the a value direction attribute of bigip.pool_member.packet.count metric.
+type BigipPoolMemberPacketCountAttributeDirection interface {
+	bigipPoolMemberPacketCountAttributeDirection()
+	String() string
+}
+
+func (av attributeSent) bigipPoolMemberPacketCountAttributeDirection()     {}
+func (av attributeReceived) bigipPoolMemberPacketCountAttributeDirection() {}
+
+// BigipPoolMemberPacketCountAttributeDirectionMap is a helper map to get BigipPoolMemberPacketCountAttributeDirection from an attribute value.
+var BigipPoolMemberPacketCountAttributeDirectionMap = map[string]BigipPoolMemberPacketCountAttributeDirection{
+	"sent":     AttributeSent,
+	"received": AttributeReceived,
+}
+
+func (m *metricBigipPoolMemberPacketCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, directionAttribute string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1215,7 +1374,7 @@ func (m *metricBigipPoolMemberPacketCount) recordDataPoint(start pcommon.Timesta
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("direction", directionAttributeValue)
+	dp.Attributes().PutStr("direction", directionAttribute)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1360,7 +1519,24 @@ func (m *metricBigipVirtualServerAvailability) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricBigipVirtualServerAvailability) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, availabilityStatusAttributeValue string) {
+// BigipVirtualServerAvailabilityAttributeStatus specifies the a value status attribute of bigip.virtual_server.availability metric.
+type BigipVirtualServerAvailabilityAttributeStatus interface {
+	bigipVirtualServerAvailabilityAttributeStatus()
+	String() string
+}
+
+func (av attributeOffline) bigipVirtualServerAvailabilityAttributeStatus()   {}
+func (av attributeUnknown) bigipVirtualServerAvailabilityAttributeStatus()   {}
+func (av attributeAvailable) bigipVirtualServerAvailabilityAttributeStatus() {}
+
+// BigipVirtualServerAvailabilityAttributeStatusMap is a helper map to get BigipVirtualServerAvailabilityAttributeStatus from an attribute value.
+var BigipVirtualServerAvailabilityAttributeStatusMap = map[string]BigipVirtualServerAvailabilityAttributeStatus{
+	"offline":   AttributeOffline,
+	"unknown":   AttributeUnknown,
+	"available": AttributeAvailable,
+}
+
+func (m *metricBigipVirtualServerAvailability) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, statusAttribute string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1368,7 +1544,7 @@ func (m *metricBigipVirtualServerAvailability) recordDataPoint(start pcommon.Tim
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("status", availabilityStatusAttributeValue)
+	dp.Attributes().PutStr("status", statusAttribute)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1464,7 +1640,22 @@ func (m *metricBigipVirtualServerDataTransmitted) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricBigipVirtualServerDataTransmitted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, directionAttributeValue string) {
+// BigipVirtualServerDataTransmittedAttributeDirection specifies the a value direction attribute of bigip.virtual_server.data.transmitted metric.
+type BigipVirtualServerDataTransmittedAttributeDirection interface {
+	bigipVirtualServerDataTransmittedAttributeDirection()
+	String() string
+}
+
+func (av attributeSent) bigipVirtualServerDataTransmittedAttributeDirection()     {}
+func (av attributeReceived) bigipVirtualServerDataTransmittedAttributeDirection() {}
+
+// BigipVirtualServerDataTransmittedAttributeDirectionMap is a helper map to get BigipVirtualServerDataTransmittedAttributeDirection from an attribute value.
+var BigipVirtualServerDataTransmittedAttributeDirectionMap = map[string]BigipVirtualServerDataTransmittedAttributeDirection{
+	"sent":     AttributeSent,
+	"received": AttributeReceived,
+}
+
+func (m *metricBigipVirtualServerDataTransmitted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, directionAttribute string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1472,7 +1663,7 @@ func (m *metricBigipVirtualServerDataTransmitted) recordDataPoint(start pcommon.
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("direction", directionAttributeValue)
+	dp.Attributes().PutStr("direction", directionAttribute)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1515,7 +1706,22 @@ func (m *metricBigipVirtualServerEnabled) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricBigipVirtualServerEnabled) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, enabledStatusAttributeValue string) {
+// BigipVirtualServerEnabledAttributeStatus specifies the a value status attribute of bigip.virtual_server.enabled metric.
+type BigipVirtualServerEnabledAttributeStatus interface {
+	bigipVirtualServerEnabledAttributeStatus()
+	String() string
+}
+
+func (av attributeDisabled) bigipVirtualServerEnabledAttributeStatus() {}
+func (av attributeEnabled) bigipVirtualServerEnabledAttributeStatus()  {}
+
+// BigipVirtualServerEnabledAttributeStatusMap is a helper map to get BigipVirtualServerEnabledAttributeStatus from an attribute value.
+var BigipVirtualServerEnabledAttributeStatusMap = map[string]BigipVirtualServerEnabledAttributeStatus{
+	"disabled": AttributeDisabled,
+	"enabled":  AttributeEnabled,
+}
+
+func (m *metricBigipVirtualServerEnabled) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, statusAttribute string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1523,7 +1729,7 @@ func (m *metricBigipVirtualServerEnabled) recordDataPoint(start pcommon.Timestam
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("status", enabledStatusAttributeValue)
+	dp.Attributes().PutStr("status", statusAttribute)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1568,7 +1774,22 @@ func (m *metricBigipVirtualServerPacketCount) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricBigipVirtualServerPacketCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, directionAttributeValue string) {
+// BigipVirtualServerPacketCountAttributeDirection specifies the a value direction attribute of bigip.virtual_server.packet.count metric.
+type BigipVirtualServerPacketCountAttributeDirection interface {
+	bigipVirtualServerPacketCountAttributeDirection()
+	String() string
+}
+
+func (av attributeSent) bigipVirtualServerPacketCountAttributeDirection()     {}
+func (av attributeReceived) bigipVirtualServerPacketCountAttributeDirection() {}
+
+// BigipVirtualServerPacketCountAttributeDirectionMap is a helper map to get BigipVirtualServerPacketCountAttributeDirection from an attribute value.
+var BigipVirtualServerPacketCountAttributeDirectionMap = map[string]BigipVirtualServerPacketCountAttributeDirection{
+	"sent":     AttributeSent,
+	"received": AttributeReceived,
+}
+
+func (m *metricBigipVirtualServerPacketCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, directionAttribute string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1576,7 +1797,7 @@ func (m *metricBigipVirtualServerPacketCount) recordDataPoint(start pcommon.Time
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("direction", directionAttributeValue)
+	dp.Attributes().PutStr("direction", directionAttribute)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1882,8 +2103,8 @@ func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 }
 
 // RecordBigipNodeAvailabilityDataPoint adds a data point to bigip.node.availability metric.
-func (mb *MetricsBuilder) RecordBigipNodeAvailabilityDataPoint(ts pcommon.Timestamp, val int64, availabilityStatusAttributeValue AttributeAvailabilityStatus) {
-	mb.metricBigipNodeAvailability.recordDataPoint(mb.startTime, ts, val, availabilityStatusAttributeValue.String())
+func (mb *MetricsBuilder) RecordBigipNodeAvailabilityDataPoint(ts pcommon.Timestamp, val int64, statusAttribute BigipNodeAvailabilityAttributeStatus) {
+	mb.metricBigipNodeAvailability.recordDataPoint(mb.startTime, ts, val, statusAttribute.String())
 }
 
 // RecordBigipNodeConnectionCountDataPoint adds a data point to bigip.node.connection.count metric.
@@ -1892,18 +2113,18 @@ func (mb *MetricsBuilder) RecordBigipNodeConnectionCountDataPoint(ts pcommon.Tim
 }
 
 // RecordBigipNodeDataTransmittedDataPoint adds a data point to bigip.node.data.transmitted metric.
-func (mb *MetricsBuilder) RecordBigipNodeDataTransmittedDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection) {
-	mb.metricBigipNodeDataTransmitted.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String())
+func (mb *MetricsBuilder) RecordBigipNodeDataTransmittedDataPoint(ts pcommon.Timestamp, val int64, directionAttribute BigipNodeDataTransmittedAttributeDirection) {
+	mb.metricBigipNodeDataTransmitted.recordDataPoint(mb.startTime, ts, val, directionAttribute.String())
 }
 
 // RecordBigipNodeEnabledDataPoint adds a data point to bigip.node.enabled metric.
-func (mb *MetricsBuilder) RecordBigipNodeEnabledDataPoint(ts pcommon.Timestamp, val int64, enabledStatusAttributeValue AttributeEnabledStatus) {
-	mb.metricBigipNodeEnabled.recordDataPoint(mb.startTime, ts, val, enabledStatusAttributeValue.String())
+func (mb *MetricsBuilder) RecordBigipNodeEnabledDataPoint(ts pcommon.Timestamp, val int64, statusAttribute BigipNodeEnabledAttributeStatus) {
+	mb.metricBigipNodeEnabled.recordDataPoint(mb.startTime, ts, val, statusAttribute.String())
 }
 
 // RecordBigipNodePacketCountDataPoint adds a data point to bigip.node.packet.count metric.
-func (mb *MetricsBuilder) RecordBigipNodePacketCountDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection) {
-	mb.metricBigipNodePacketCount.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String())
+func (mb *MetricsBuilder) RecordBigipNodePacketCountDataPoint(ts pcommon.Timestamp, val int64, directionAttribute BigipNodePacketCountAttributeDirection) {
+	mb.metricBigipNodePacketCount.recordDataPoint(mb.startTime, ts, val, directionAttribute.String())
 }
 
 // RecordBigipNodeRequestCountDataPoint adds a data point to bigip.node.request.count metric.
@@ -1917,8 +2138,8 @@ func (mb *MetricsBuilder) RecordBigipNodeSessionCountDataPoint(ts pcommon.Timest
 }
 
 // RecordBigipPoolAvailabilityDataPoint adds a data point to bigip.pool.availability metric.
-func (mb *MetricsBuilder) RecordBigipPoolAvailabilityDataPoint(ts pcommon.Timestamp, val int64, availabilityStatusAttributeValue AttributeAvailabilityStatus) {
-	mb.metricBigipPoolAvailability.recordDataPoint(mb.startTime, ts, val, availabilityStatusAttributeValue.String())
+func (mb *MetricsBuilder) RecordBigipPoolAvailabilityDataPoint(ts pcommon.Timestamp, val int64, statusAttribute BigipPoolAvailabilityAttributeStatus) {
+	mb.metricBigipPoolAvailability.recordDataPoint(mb.startTime, ts, val, statusAttribute.String())
 }
 
 // RecordBigipPoolConnectionCountDataPoint adds a data point to bigip.pool.connection.count metric.
@@ -1927,23 +2148,23 @@ func (mb *MetricsBuilder) RecordBigipPoolConnectionCountDataPoint(ts pcommon.Tim
 }
 
 // RecordBigipPoolDataTransmittedDataPoint adds a data point to bigip.pool.data.transmitted metric.
-func (mb *MetricsBuilder) RecordBigipPoolDataTransmittedDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection) {
-	mb.metricBigipPoolDataTransmitted.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String())
+func (mb *MetricsBuilder) RecordBigipPoolDataTransmittedDataPoint(ts pcommon.Timestamp, val int64, directionAttribute BigipPoolDataTransmittedAttributeDirection) {
+	mb.metricBigipPoolDataTransmitted.recordDataPoint(mb.startTime, ts, val, directionAttribute.String())
 }
 
 // RecordBigipPoolEnabledDataPoint adds a data point to bigip.pool.enabled metric.
-func (mb *MetricsBuilder) RecordBigipPoolEnabledDataPoint(ts pcommon.Timestamp, val int64, enabledStatusAttributeValue AttributeEnabledStatus) {
-	mb.metricBigipPoolEnabled.recordDataPoint(mb.startTime, ts, val, enabledStatusAttributeValue.String())
+func (mb *MetricsBuilder) RecordBigipPoolEnabledDataPoint(ts pcommon.Timestamp, val int64, statusAttribute BigipPoolEnabledAttributeStatus) {
+	mb.metricBigipPoolEnabled.recordDataPoint(mb.startTime, ts, val, statusAttribute.String())
 }
 
 // RecordBigipPoolMemberCountDataPoint adds a data point to bigip.pool.member.count metric.
-func (mb *MetricsBuilder) RecordBigipPoolMemberCountDataPoint(ts pcommon.Timestamp, val int64, activeStatusAttributeValue AttributeActiveStatus) {
-	mb.metricBigipPoolMemberCount.recordDataPoint(mb.startTime, ts, val, activeStatusAttributeValue.String())
+func (mb *MetricsBuilder) RecordBigipPoolMemberCountDataPoint(ts pcommon.Timestamp, val int64, statusAttribute BigipPoolMemberCountAttributeStatus) {
+	mb.metricBigipPoolMemberCount.recordDataPoint(mb.startTime, ts, val, statusAttribute.String())
 }
 
 // RecordBigipPoolPacketCountDataPoint adds a data point to bigip.pool.packet.count metric.
-func (mb *MetricsBuilder) RecordBigipPoolPacketCountDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection) {
-	mb.metricBigipPoolPacketCount.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String())
+func (mb *MetricsBuilder) RecordBigipPoolPacketCountDataPoint(ts pcommon.Timestamp, val int64, directionAttribute BigipPoolPacketCountAttributeDirection) {
+	mb.metricBigipPoolPacketCount.recordDataPoint(mb.startTime, ts, val, directionAttribute.String())
 }
 
 // RecordBigipPoolRequestCountDataPoint adds a data point to bigip.pool.request.count metric.
@@ -1952,8 +2173,8 @@ func (mb *MetricsBuilder) RecordBigipPoolRequestCountDataPoint(ts pcommon.Timest
 }
 
 // RecordBigipPoolMemberAvailabilityDataPoint adds a data point to bigip.pool_member.availability metric.
-func (mb *MetricsBuilder) RecordBigipPoolMemberAvailabilityDataPoint(ts pcommon.Timestamp, val int64, availabilityStatusAttributeValue AttributeAvailabilityStatus) {
-	mb.metricBigipPoolMemberAvailability.recordDataPoint(mb.startTime, ts, val, availabilityStatusAttributeValue.String())
+func (mb *MetricsBuilder) RecordBigipPoolMemberAvailabilityDataPoint(ts pcommon.Timestamp, val int64, statusAttribute BigipPoolMemberAvailabilityAttributeStatus) {
+	mb.metricBigipPoolMemberAvailability.recordDataPoint(mb.startTime, ts, val, statusAttribute.String())
 }
 
 // RecordBigipPoolMemberConnectionCountDataPoint adds a data point to bigip.pool_member.connection.count metric.
@@ -1962,18 +2183,18 @@ func (mb *MetricsBuilder) RecordBigipPoolMemberConnectionCountDataPoint(ts pcomm
 }
 
 // RecordBigipPoolMemberDataTransmittedDataPoint adds a data point to bigip.pool_member.data.transmitted metric.
-func (mb *MetricsBuilder) RecordBigipPoolMemberDataTransmittedDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection) {
-	mb.metricBigipPoolMemberDataTransmitted.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String())
+func (mb *MetricsBuilder) RecordBigipPoolMemberDataTransmittedDataPoint(ts pcommon.Timestamp, val int64, directionAttribute BigipPoolMemberDataTransmittedAttributeDirection) {
+	mb.metricBigipPoolMemberDataTransmitted.recordDataPoint(mb.startTime, ts, val, directionAttribute.String())
 }
 
 // RecordBigipPoolMemberEnabledDataPoint adds a data point to bigip.pool_member.enabled metric.
-func (mb *MetricsBuilder) RecordBigipPoolMemberEnabledDataPoint(ts pcommon.Timestamp, val int64, enabledStatusAttributeValue AttributeEnabledStatus) {
-	mb.metricBigipPoolMemberEnabled.recordDataPoint(mb.startTime, ts, val, enabledStatusAttributeValue.String())
+func (mb *MetricsBuilder) RecordBigipPoolMemberEnabledDataPoint(ts pcommon.Timestamp, val int64, statusAttribute BigipPoolMemberEnabledAttributeStatus) {
+	mb.metricBigipPoolMemberEnabled.recordDataPoint(mb.startTime, ts, val, statusAttribute.String())
 }
 
 // RecordBigipPoolMemberPacketCountDataPoint adds a data point to bigip.pool_member.packet.count metric.
-func (mb *MetricsBuilder) RecordBigipPoolMemberPacketCountDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection) {
-	mb.metricBigipPoolMemberPacketCount.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String())
+func (mb *MetricsBuilder) RecordBigipPoolMemberPacketCountDataPoint(ts pcommon.Timestamp, val int64, directionAttribute BigipPoolMemberPacketCountAttributeDirection) {
+	mb.metricBigipPoolMemberPacketCount.recordDataPoint(mb.startTime, ts, val, directionAttribute.String())
 }
 
 // RecordBigipPoolMemberRequestCountDataPoint adds a data point to bigip.pool_member.request.count metric.
@@ -1987,8 +2208,8 @@ func (mb *MetricsBuilder) RecordBigipPoolMemberSessionCountDataPoint(ts pcommon.
 }
 
 // RecordBigipVirtualServerAvailabilityDataPoint adds a data point to bigip.virtual_server.availability metric.
-func (mb *MetricsBuilder) RecordBigipVirtualServerAvailabilityDataPoint(ts pcommon.Timestamp, val int64, availabilityStatusAttributeValue AttributeAvailabilityStatus) {
-	mb.metricBigipVirtualServerAvailability.recordDataPoint(mb.startTime, ts, val, availabilityStatusAttributeValue.String())
+func (mb *MetricsBuilder) RecordBigipVirtualServerAvailabilityDataPoint(ts pcommon.Timestamp, val int64, statusAttribute BigipVirtualServerAvailabilityAttributeStatus) {
+	mb.metricBigipVirtualServerAvailability.recordDataPoint(mb.startTime, ts, val, statusAttribute.String())
 }
 
 // RecordBigipVirtualServerConnectionCountDataPoint adds a data point to bigip.virtual_server.connection.count metric.
@@ -1997,18 +2218,18 @@ func (mb *MetricsBuilder) RecordBigipVirtualServerConnectionCountDataPoint(ts pc
 }
 
 // RecordBigipVirtualServerDataTransmittedDataPoint adds a data point to bigip.virtual_server.data.transmitted metric.
-func (mb *MetricsBuilder) RecordBigipVirtualServerDataTransmittedDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection) {
-	mb.metricBigipVirtualServerDataTransmitted.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String())
+func (mb *MetricsBuilder) RecordBigipVirtualServerDataTransmittedDataPoint(ts pcommon.Timestamp, val int64, directionAttribute BigipVirtualServerDataTransmittedAttributeDirection) {
+	mb.metricBigipVirtualServerDataTransmitted.recordDataPoint(mb.startTime, ts, val, directionAttribute.String())
 }
 
 // RecordBigipVirtualServerEnabledDataPoint adds a data point to bigip.virtual_server.enabled metric.
-func (mb *MetricsBuilder) RecordBigipVirtualServerEnabledDataPoint(ts pcommon.Timestamp, val int64, enabledStatusAttributeValue AttributeEnabledStatus) {
-	mb.metricBigipVirtualServerEnabled.recordDataPoint(mb.startTime, ts, val, enabledStatusAttributeValue.String())
+func (mb *MetricsBuilder) RecordBigipVirtualServerEnabledDataPoint(ts pcommon.Timestamp, val int64, statusAttribute BigipVirtualServerEnabledAttributeStatus) {
+	mb.metricBigipVirtualServerEnabled.recordDataPoint(mb.startTime, ts, val, statusAttribute.String())
 }
 
 // RecordBigipVirtualServerPacketCountDataPoint adds a data point to bigip.virtual_server.packet.count metric.
-func (mb *MetricsBuilder) RecordBigipVirtualServerPacketCountDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection) {
-	mb.metricBigipVirtualServerPacketCount.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String())
+func (mb *MetricsBuilder) RecordBigipVirtualServerPacketCountDataPoint(ts pcommon.Timestamp, val int64, directionAttribute BigipVirtualServerPacketCountAttributeDirection) {
+	mb.metricBigipVirtualServerPacketCount.recordDataPoint(mb.startTime, ts, val, directionAttribute.String())
 }
 
 // RecordBigipVirtualServerRequestCountDataPoint adds a data point to bigip.virtual_server.request.count metric.

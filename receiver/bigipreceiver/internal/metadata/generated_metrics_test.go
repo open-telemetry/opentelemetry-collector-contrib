@@ -19,19 +19,19 @@ func TestDefaultMetrics(t *testing.T) {
 	enabledMetrics := make(map[string]bool)
 
 	enabledMetrics["bigip.node.availability"] = true
-	mb.RecordBigipNodeAvailabilityDataPoint(ts, 1, AttributeAvailabilityStatus(1))
+	mb.RecordBigipNodeAvailabilityDataPoint(ts, 1, AttributeOffline)
 
 	enabledMetrics["bigip.node.connection.count"] = true
 	mb.RecordBigipNodeConnectionCountDataPoint(ts, 1)
 
 	enabledMetrics["bigip.node.data.transmitted"] = true
-	mb.RecordBigipNodeDataTransmittedDataPoint(ts, 1, AttributeDirection(1))
+	mb.RecordBigipNodeDataTransmittedDataPoint(ts, 1, AttributeSent)
 
 	enabledMetrics["bigip.node.enabled"] = true
-	mb.RecordBigipNodeEnabledDataPoint(ts, 1, AttributeEnabledStatus(1))
+	mb.RecordBigipNodeEnabledDataPoint(ts, 1, AttributeDisabled)
 
 	enabledMetrics["bigip.node.packet.count"] = true
-	mb.RecordBigipNodePacketCountDataPoint(ts, 1, AttributeDirection(1))
+	mb.RecordBigipNodePacketCountDataPoint(ts, 1, AttributeSent)
 
 	enabledMetrics["bigip.node.request.count"] = true
 	mb.RecordBigipNodeRequestCountDataPoint(ts, 1)
@@ -40,40 +40,40 @@ func TestDefaultMetrics(t *testing.T) {
 	mb.RecordBigipNodeSessionCountDataPoint(ts, 1)
 
 	enabledMetrics["bigip.pool.availability"] = true
-	mb.RecordBigipPoolAvailabilityDataPoint(ts, 1, AttributeAvailabilityStatus(1))
+	mb.RecordBigipPoolAvailabilityDataPoint(ts, 1, AttributeOffline)
 
 	enabledMetrics["bigip.pool.connection.count"] = true
 	mb.RecordBigipPoolConnectionCountDataPoint(ts, 1)
 
 	enabledMetrics["bigip.pool.data.transmitted"] = true
-	mb.RecordBigipPoolDataTransmittedDataPoint(ts, 1, AttributeDirection(1))
+	mb.RecordBigipPoolDataTransmittedDataPoint(ts, 1, AttributeSent)
 
 	enabledMetrics["bigip.pool.enabled"] = true
-	mb.RecordBigipPoolEnabledDataPoint(ts, 1, AttributeEnabledStatus(1))
+	mb.RecordBigipPoolEnabledDataPoint(ts, 1, AttributeDisabled)
 
 	enabledMetrics["bigip.pool.member.count"] = true
-	mb.RecordBigipPoolMemberCountDataPoint(ts, 1, AttributeActiveStatus(1))
+	mb.RecordBigipPoolMemberCountDataPoint(ts, 1, AttributeActive)
 
 	enabledMetrics["bigip.pool.packet.count"] = true
-	mb.RecordBigipPoolPacketCountDataPoint(ts, 1, AttributeDirection(1))
+	mb.RecordBigipPoolPacketCountDataPoint(ts, 1, AttributeSent)
 
 	enabledMetrics["bigip.pool.request.count"] = true
 	mb.RecordBigipPoolRequestCountDataPoint(ts, 1)
 
 	enabledMetrics["bigip.pool_member.availability"] = true
-	mb.RecordBigipPoolMemberAvailabilityDataPoint(ts, 1, AttributeAvailabilityStatus(1))
+	mb.RecordBigipPoolMemberAvailabilityDataPoint(ts, 1, AttributeOffline)
 
 	enabledMetrics["bigip.pool_member.connection.count"] = true
 	mb.RecordBigipPoolMemberConnectionCountDataPoint(ts, 1)
 
 	enabledMetrics["bigip.pool_member.data.transmitted"] = true
-	mb.RecordBigipPoolMemberDataTransmittedDataPoint(ts, 1, AttributeDirection(1))
+	mb.RecordBigipPoolMemberDataTransmittedDataPoint(ts, 1, AttributeSent)
 
 	enabledMetrics["bigip.pool_member.enabled"] = true
-	mb.RecordBigipPoolMemberEnabledDataPoint(ts, 1, AttributeEnabledStatus(1))
+	mb.RecordBigipPoolMemberEnabledDataPoint(ts, 1, AttributeDisabled)
 
 	enabledMetrics["bigip.pool_member.packet.count"] = true
-	mb.RecordBigipPoolMemberPacketCountDataPoint(ts, 1, AttributeDirection(1))
+	mb.RecordBigipPoolMemberPacketCountDataPoint(ts, 1, AttributeSent)
 
 	enabledMetrics["bigip.pool_member.request.count"] = true
 	mb.RecordBigipPoolMemberRequestCountDataPoint(ts, 1)
@@ -82,19 +82,19 @@ func TestDefaultMetrics(t *testing.T) {
 	mb.RecordBigipPoolMemberSessionCountDataPoint(ts, 1)
 
 	enabledMetrics["bigip.virtual_server.availability"] = true
-	mb.RecordBigipVirtualServerAvailabilityDataPoint(ts, 1, AttributeAvailabilityStatus(1))
+	mb.RecordBigipVirtualServerAvailabilityDataPoint(ts, 1, AttributeOffline)
 
 	enabledMetrics["bigip.virtual_server.connection.count"] = true
 	mb.RecordBigipVirtualServerConnectionCountDataPoint(ts, 1)
 
 	enabledMetrics["bigip.virtual_server.data.transmitted"] = true
-	mb.RecordBigipVirtualServerDataTransmittedDataPoint(ts, 1, AttributeDirection(1))
+	mb.RecordBigipVirtualServerDataTransmittedDataPoint(ts, 1, AttributeSent)
 
 	enabledMetrics["bigip.virtual_server.enabled"] = true
-	mb.RecordBigipVirtualServerEnabledDataPoint(ts, 1, AttributeEnabledStatus(1))
+	mb.RecordBigipVirtualServerEnabledDataPoint(ts, 1, AttributeDisabled)
 
 	enabledMetrics["bigip.virtual_server.packet.count"] = true
-	mb.RecordBigipVirtualServerPacketCountDataPoint(ts, 1, AttributeDirection(1))
+	mb.RecordBigipVirtualServerPacketCountDataPoint(ts, 1, AttributeSent)
 
 	enabledMetrics["bigip.virtual_server.request.count"] = true
 	mb.RecordBigipVirtualServerRequestCountDataPoint(ts, 1)
@@ -148,32 +148,32 @@ func TestAllMetrics(t *testing.T) {
 	}
 	mb := NewMetricsBuilder(settings, component.BuildInfo{}, WithStartTime(start))
 
-	mb.RecordBigipNodeAvailabilityDataPoint(ts, 1, AttributeAvailabilityStatus(1))
+	mb.RecordBigipNodeAvailabilityDataPoint(ts, 1, AttributeOffline)
 	mb.RecordBigipNodeConnectionCountDataPoint(ts, 1)
-	mb.RecordBigipNodeDataTransmittedDataPoint(ts, 1, AttributeDirection(1))
-	mb.RecordBigipNodeEnabledDataPoint(ts, 1, AttributeEnabledStatus(1))
-	mb.RecordBigipNodePacketCountDataPoint(ts, 1, AttributeDirection(1))
+	mb.RecordBigipNodeDataTransmittedDataPoint(ts, 1, AttributeSent)
+	mb.RecordBigipNodeEnabledDataPoint(ts, 1, AttributeDisabled)
+	mb.RecordBigipNodePacketCountDataPoint(ts, 1, AttributeSent)
 	mb.RecordBigipNodeRequestCountDataPoint(ts, 1)
 	mb.RecordBigipNodeSessionCountDataPoint(ts, 1)
-	mb.RecordBigipPoolAvailabilityDataPoint(ts, 1, AttributeAvailabilityStatus(1))
+	mb.RecordBigipPoolAvailabilityDataPoint(ts, 1, AttributeOffline)
 	mb.RecordBigipPoolConnectionCountDataPoint(ts, 1)
-	mb.RecordBigipPoolDataTransmittedDataPoint(ts, 1, AttributeDirection(1))
-	mb.RecordBigipPoolEnabledDataPoint(ts, 1, AttributeEnabledStatus(1))
-	mb.RecordBigipPoolMemberCountDataPoint(ts, 1, AttributeActiveStatus(1))
-	mb.RecordBigipPoolPacketCountDataPoint(ts, 1, AttributeDirection(1))
+	mb.RecordBigipPoolDataTransmittedDataPoint(ts, 1, AttributeSent)
+	mb.RecordBigipPoolEnabledDataPoint(ts, 1, AttributeDisabled)
+	mb.RecordBigipPoolMemberCountDataPoint(ts, 1, AttributeActive)
+	mb.RecordBigipPoolPacketCountDataPoint(ts, 1, AttributeSent)
 	mb.RecordBigipPoolRequestCountDataPoint(ts, 1)
-	mb.RecordBigipPoolMemberAvailabilityDataPoint(ts, 1, AttributeAvailabilityStatus(1))
+	mb.RecordBigipPoolMemberAvailabilityDataPoint(ts, 1, AttributeOffline)
 	mb.RecordBigipPoolMemberConnectionCountDataPoint(ts, 1)
-	mb.RecordBigipPoolMemberDataTransmittedDataPoint(ts, 1, AttributeDirection(1))
-	mb.RecordBigipPoolMemberEnabledDataPoint(ts, 1, AttributeEnabledStatus(1))
-	mb.RecordBigipPoolMemberPacketCountDataPoint(ts, 1, AttributeDirection(1))
+	mb.RecordBigipPoolMemberDataTransmittedDataPoint(ts, 1, AttributeSent)
+	mb.RecordBigipPoolMemberEnabledDataPoint(ts, 1, AttributeDisabled)
+	mb.RecordBigipPoolMemberPacketCountDataPoint(ts, 1, AttributeSent)
 	mb.RecordBigipPoolMemberRequestCountDataPoint(ts, 1)
 	mb.RecordBigipPoolMemberSessionCountDataPoint(ts, 1)
-	mb.RecordBigipVirtualServerAvailabilityDataPoint(ts, 1, AttributeAvailabilityStatus(1))
+	mb.RecordBigipVirtualServerAvailabilityDataPoint(ts, 1, AttributeOffline)
 	mb.RecordBigipVirtualServerConnectionCountDataPoint(ts, 1)
-	mb.RecordBigipVirtualServerDataTransmittedDataPoint(ts, 1, AttributeDirection(1))
-	mb.RecordBigipVirtualServerEnabledDataPoint(ts, 1, AttributeEnabledStatus(1))
-	mb.RecordBigipVirtualServerPacketCountDataPoint(ts, 1, AttributeDirection(1))
+	mb.RecordBigipVirtualServerDataTransmittedDataPoint(ts, 1, AttributeSent)
+	mb.RecordBigipVirtualServerEnabledDataPoint(ts, 1, AttributeDisabled)
+	mb.RecordBigipVirtualServerPacketCountDataPoint(ts, 1, AttributeSent)
 	mb.RecordBigipVirtualServerRequestCountDataPoint(ts, 1)
 
 	metrics := mb.Emit(WithBigipNodeIPAddress("attr-val"), WithBigipNodeName("attr-val"), WithBigipPoolName("attr-val"), WithBigipPoolMemberIPAddress("attr-val"), WithBigipPoolMemberName("attr-val"), WithBigipVirtualServerDestination("attr-val"), WithBigipVirtualServerName("attr-val"))
@@ -642,32 +642,32 @@ func TestNoMetrics(t *testing.T) {
 		BigipVirtualServerRequestCount:    MetricSettings{Enabled: false},
 	}
 	mb := NewMetricsBuilder(settings, component.BuildInfo{}, WithStartTime(start))
-	mb.RecordBigipNodeAvailabilityDataPoint(ts, 1, AttributeAvailabilityStatus(1))
+	mb.RecordBigipNodeAvailabilityDataPoint(ts, 1, AttributeOffline)
 	mb.RecordBigipNodeConnectionCountDataPoint(ts, 1)
-	mb.RecordBigipNodeDataTransmittedDataPoint(ts, 1, AttributeDirection(1))
-	mb.RecordBigipNodeEnabledDataPoint(ts, 1, AttributeEnabledStatus(1))
-	mb.RecordBigipNodePacketCountDataPoint(ts, 1, AttributeDirection(1))
+	mb.RecordBigipNodeDataTransmittedDataPoint(ts, 1, AttributeSent)
+	mb.RecordBigipNodeEnabledDataPoint(ts, 1, AttributeDisabled)
+	mb.RecordBigipNodePacketCountDataPoint(ts, 1, AttributeSent)
 	mb.RecordBigipNodeRequestCountDataPoint(ts, 1)
 	mb.RecordBigipNodeSessionCountDataPoint(ts, 1)
-	mb.RecordBigipPoolAvailabilityDataPoint(ts, 1, AttributeAvailabilityStatus(1))
+	mb.RecordBigipPoolAvailabilityDataPoint(ts, 1, AttributeOffline)
 	mb.RecordBigipPoolConnectionCountDataPoint(ts, 1)
-	mb.RecordBigipPoolDataTransmittedDataPoint(ts, 1, AttributeDirection(1))
-	mb.RecordBigipPoolEnabledDataPoint(ts, 1, AttributeEnabledStatus(1))
-	mb.RecordBigipPoolMemberCountDataPoint(ts, 1, AttributeActiveStatus(1))
-	mb.RecordBigipPoolPacketCountDataPoint(ts, 1, AttributeDirection(1))
+	mb.RecordBigipPoolDataTransmittedDataPoint(ts, 1, AttributeSent)
+	mb.RecordBigipPoolEnabledDataPoint(ts, 1, AttributeDisabled)
+	mb.RecordBigipPoolMemberCountDataPoint(ts, 1, AttributeActive)
+	mb.RecordBigipPoolPacketCountDataPoint(ts, 1, AttributeSent)
 	mb.RecordBigipPoolRequestCountDataPoint(ts, 1)
-	mb.RecordBigipPoolMemberAvailabilityDataPoint(ts, 1, AttributeAvailabilityStatus(1))
+	mb.RecordBigipPoolMemberAvailabilityDataPoint(ts, 1, AttributeOffline)
 	mb.RecordBigipPoolMemberConnectionCountDataPoint(ts, 1)
-	mb.RecordBigipPoolMemberDataTransmittedDataPoint(ts, 1, AttributeDirection(1))
-	mb.RecordBigipPoolMemberEnabledDataPoint(ts, 1, AttributeEnabledStatus(1))
-	mb.RecordBigipPoolMemberPacketCountDataPoint(ts, 1, AttributeDirection(1))
+	mb.RecordBigipPoolMemberDataTransmittedDataPoint(ts, 1, AttributeSent)
+	mb.RecordBigipPoolMemberEnabledDataPoint(ts, 1, AttributeDisabled)
+	mb.RecordBigipPoolMemberPacketCountDataPoint(ts, 1, AttributeSent)
 	mb.RecordBigipPoolMemberRequestCountDataPoint(ts, 1)
 	mb.RecordBigipPoolMemberSessionCountDataPoint(ts, 1)
-	mb.RecordBigipVirtualServerAvailabilityDataPoint(ts, 1, AttributeAvailabilityStatus(1))
+	mb.RecordBigipVirtualServerAvailabilityDataPoint(ts, 1, AttributeOffline)
 	mb.RecordBigipVirtualServerConnectionCountDataPoint(ts, 1)
-	mb.RecordBigipVirtualServerDataTransmittedDataPoint(ts, 1, AttributeDirection(1))
-	mb.RecordBigipVirtualServerEnabledDataPoint(ts, 1, AttributeEnabledStatus(1))
-	mb.RecordBigipVirtualServerPacketCountDataPoint(ts, 1, AttributeDirection(1))
+	mb.RecordBigipVirtualServerDataTransmittedDataPoint(ts, 1, AttributeSent)
+	mb.RecordBigipVirtualServerEnabledDataPoint(ts, 1, AttributeDisabled)
+	mb.RecordBigipVirtualServerPacketCountDataPoint(ts, 1, AttributeSent)
 	mb.RecordBigipVirtualServerRequestCountDataPoint(ts, 1)
 
 	metrics := mb.Emit()

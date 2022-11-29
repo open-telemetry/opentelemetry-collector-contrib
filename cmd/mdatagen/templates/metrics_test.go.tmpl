@@ -21,8 +21,8 @@ func TestDefaultMetrics(t *testing.T) {
 
 	{{ if $metric.IsEnabled }}enabledMetrics["{{ $name }}"] = true{{ end }}
 	mb.Record{{ $name.Render }}DataPoint(ts, {{ if $metric.Data.HasMetricInputType }}"1"{{ else }}1{{ end }}
-	{{- range $metric.Attributes -}}
-	, {{ if (attributeInfo .).Enum }}Attribute{{ .Render }}(1){{ else }}{{ (attributeInfo .).Type.TestValue }}{{ end }}
+	{{- range $attrName, $attr := $metric.Attributes -}}
+	, {{ if $attr.Enum }}Attribute{{ index $attr.Enum 0 | publicVar }}{{ else }}{{ $attr.Type.TestValue }}{{ end }}
 	{{- end }})
 	{{- end }}
 
@@ -52,8 +52,8 @@ func TestAllMetrics(t *testing.T) {
 	mb := NewMetricsBuilder(settings, component.BuildInfo{}, WithStartTime(start))
 	{{ range $name, $metric := .Metrics }}
 	mb.Record{{ $name.Render }}DataPoint(ts, {{ if $metric.Data.HasMetricInputType }}"1"{{ else }}1{{ end }}
-	{{- range $metric.Attributes -}}
-	, {{ if (attributeInfo .).Enum }}Attribute{{ .Render }}(1){{ else }}{{ (attributeInfo .).Type.TestValue }}{{ end }}
+	{{- range $attrName, $attr := $metric.Attributes -}}
+	, {{ if $attr.Enum }}Attribute{{ index $attr.Enum 0 | publicVar }}{{ else }}{{ $attr.Type.TestValue }}{{ end }}
 	{{- end }})
 	{{- end }}
 
@@ -107,14 +107,16 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, ts, dp.Timestamp())
 			assert.Equal(t, pmetric.NumberDataPointValueType{{ $metric.Data.MetricValueType }}, dp.ValueType())
 			assert.Equal(t, {{ $metric.Data.MetricValueType.BasicType }}(1), dp.{{ $metric.Data.MetricValueType }}Value())
-			{{- range $i, $attr := $metric.Attributes }}
-			attrVal, ok {{ if eq $i 0 }}:{{ end }}= dp.Attributes().Get("{{ attributeKey $attr }}")
+			{{- $assignSign := ":=" }}
+			{{- range $attrName, $attr := $metric.Attributes }}
+			attrVal, ok {{ $assignSign }} dp.Attributes().Get("{{ $attrName }}")
 			assert.True(t, ok)
-			{{- if (attributeInfo $attr).Enum }}
-			assert.Equal(t, "{{ index (attributeInfo $attr).Enum 0 }}", attrVal.Str())
+			{{- if $attr.Enum }}
+			assert.Equal(t, "{{ index $attr.Enum 0 }}", attrVal.Str())
 			{{- else }}
-			assert.EqualValues(t, {{ (attributeInfo $attr).Type.TestValue }}, attrVal.{{ (attributeInfo $attr).Type }}())
+			assert.EqualValues(t, {{ $attr.Type.TestValue }}, attrVal.{{ $attr.Type }}())
 			{{- end }}
+			{{- $assignSign = "=" }}
 			{{- end }}
 			validatedMetrics["{{ $name }}"] = struct{}{}
 		{{- end }}
@@ -134,8 +136,8 @@ func TestNoMetrics(t *testing.T) {
 	mb := NewMetricsBuilder(settings, component.BuildInfo{}, WithStartTime(start))
 	{{- range $name, $metric := .Metrics }}
 	mb.Record{{ $name.Render }}DataPoint(ts, {{ if $metric.Data.HasMetricInputType }}"1"{{ else }}1{{ end }}
-	{{- range $metric.Attributes -}}
-	, {{ if (attributeInfo .).Enum }}Attribute{{ .Render }}(1){{ else }}{{ (attributeInfo .).Type.TestValue }}{{ end }}
+	{{- range $attrName, $attr := $metric.Attributes -}}
+	, {{ if $attr.Enum }}Attribute{{ index $attr.Enum 0 | publicVar }}{{ else }}{{ $attr.Type.TestValue }}{{ end }}
 	{{- end }})
 	{{- end }}
 
