@@ -102,27 +102,27 @@ func getBoundary(metricType pmetric.MetricType, labels labels.Labels) (float64, 
 }
 
 // convToMetricType returns the data type and if it is monotonic
-func convToMetricType(metricType textparse.MetricType) (pmetric.MetricType, bool) {
+func convToMetricType(metricType textparse.MetricType) pmetric.MetricType {
 	switch metricType {
 	case textparse.MetricTypeCounter:
 		// always use float64, as it's the internal data type used in prometheus
-		return pmetric.MetricTypeSum, true
+		return pmetric.MetricTypeSum
 	// textparse.MetricTypeUnknown is converted to gauge by default to prevent Prometheus untyped metrics from being dropped
 	case textparse.MetricTypeGauge, textparse.MetricTypeUnknown:
-		return pmetric.MetricTypeGauge, false
+		return pmetric.MetricTypeGauge
 	case textparse.MetricTypeHistogram:
-		return pmetric.MetricTypeHistogram, true
+		return pmetric.MetricTypeHistogram
 	// dropping support for gaugehistogram for now until we have an official spec of its implementation
 	// a draft can be found in: https://docs.google.com/document/d/1KwV0mAXwwbvvifBvDKH_LU1YjyXE_wxCkHNoCGq1GX0/edit#heading=h.1cvzqd4ksd23
 	// case textparse.MetricTypeGaugeHistogram:
 	//	return <pdata gauge histogram type>
 	case textparse.MetricTypeSummary:
-		return pmetric.MetricTypeSummary, true
+		return pmetric.MetricTypeSummary
 	case textparse.MetricTypeInfo, textparse.MetricTypeStateset:
-		return pmetric.MetricTypeSum, false
+		return pmetric.MetricTypeSum
 	default:
 		// including: textparse.MetricTypeGaugeHistogram
-		return pmetric.MetricTypeEmpty, false
+		return pmetric.MetricTypeEmpty
 	}
 }
 

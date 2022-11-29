@@ -63,67 +63,57 @@ func TestTimestampFromFloat64(t *testing.T) {
 
 func TestConvToMetricType(t *testing.T) {
 	tests := []struct {
-		name          string
-		mtype         textparse.MetricType
-		want          pmetric.MetricType
-		wantMonotonic bool
+		name  string
+		mtype textparse.MetricType
+		want  pmetric.MetricType
 	}{
 		{
-			name:          "textparse.counter",
-			mtype:         textparse.MetricTypeCounter,
-			want:          pmetric.MetricTypeSum,
-			wantMonotonic: true,
+			name:  "textparse.counter",
+			mtype: textparse.MetricTypeCounter,
+			want:  pmetric.MetricTypeSum,
 		},
 		{
-			name:          "textparse.gauge",
-			mtype:         textparse.MetricTypeGauge,
-			want:          pmetric.MetricTypeGauge,
-			wantMonotonic: false,
+			name:  "textparse.gauge",
+			mtype: textparse.MetricTypeGauge,
+			want:  pmetric.MetricTypeGauge,
 		},
 		{
-			name:          "textparse.unknown",
-			mtype:         textparse.MetricTypeUnknown,
-			want:          pmetric.MetricTypeGauge,
-			wantMonotonic: false,
+			name:  "textparse.unknown",
+			mtype: textparse.MetricTypeUnknown,
+			want:  pmetric.MetricTypeGauge,
 		},
 		{
-			name:          "textparse.histogram",
-			mtype:         textparse.MetricTypeHistogram,
-			want:          pmetric.MetricTypeHistogram,
-			wantMonotonic: true,
+			name:  "textparse.histogram",
+			mtype: textparse.MetricTypeHistogram,
+			want:  pmetric.MetricTypeHistogram,
 		},
 		{
-			name:          "textparse.summary",
-			mtype:         textparse.MetricTypeSummary,
-			want:          pmetric.MetricTypeSummary,
-			wantMonotonic: true,
+			name:  "textparse.summary",
+			mtype: textparse.MetricTypeSummary,
+			want:  pmetric.MetricTypeSummary,
 		},
 		{
-			name:          "textparse.metric_type_info",
-			mtype:         textparse.MetricTypeInfo,
-			want:          pmetric.MetricTypeSum,
-			wantMonotonic: false,
+			name:  "textparse.metric_type_info",
+			mtype: textparse.MetricTypeInfo,
+			want:  pmetric.MetricTypeSum,
 		},
 		{
-			name:          "textparse.metric_state_set",
-			mtype:         textparse.MetricTypeStateset,
-			want:          pmetric.MetricTypeSum,
-			wantMonotonic: false,
+			name:  "textparse.metric_state_set",
+			mtype: textparse.MetricTypeStateset,
+			want:  pmetric.MetricTypeSum,
 		},
 		{
-			name:          "textparse.metric_gauge_hostogram",
-			mtype:         textparse.MetricTypeGaugeHistogram,
-			want:          pmetric.MetricTypeEmpty,
-			wantMonotonic: false,
+			name:  "textparse.metric_gauge_hostogram",
+			mtype: textparse.MetricTypeGaugeHistogram,
+			want:  pmetric.MetricTypeEmpty,
 		},
 	}
 
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			got, monotonic := convToMetricType(tt.mtype)
+			got := convToMetricType(tt.mtype)
 			require.Equal(t, got.String(), tt.want.String())
-			require.Equal(t, monotonic, tt.wantMonotonic)
 		})
 	}
 }

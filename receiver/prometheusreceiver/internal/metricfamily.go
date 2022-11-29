@@ -37,9 +37,7 @@ const (
 )
 
 type metricFamily struct {
-	mtype pmetric.MetricType
-	// isMonotonic only applies to sums
-	isMonotonic bool
+	mtype       pmetric.MetricType
 	groups      map[uint64]*metricGroup
 	name        string
 	metadata    *scrape.MetricMetadata
@@ -50,7 +48,6 @@ type metricFamily struct {
 // a couple data complexValue (buckets and count/sum), a group of a metric family always share a same set of tags. for
 // simple types like counter and gauge, each data point is a group of itself
 type metricGroup struct {
-	mtype        pmetric.MetricType
 	ts           int64
 	ls           labels.Labels
 	count        float64
@@ -64,17 +61,16 @@ type metricGroup struct {
 
 func newMetricFamily(metricName string, mc scrape.MetricMetadataStore, logger *zap.Logger) *metricFamily {
 	metadata, familyName := metadataForMetric(metricName, mc)
-	mtype, isMonotonic := convToMetricType(metadata.Type)
+	mtype := convToMetricType(metadata.Type)
 	if mtype == pmetric.MetricTypeEmpty {
 		logger.Debug(fmt.Sprintf("Unknown-typed metric : %s %+v", metricName, metadata))
 	}
 
 	return &metricFamily{
-		mtype:       mtype,
-		isMonotonic: isMonotonic,
-		groups:      make(map[uint64]*metricGroup),
-		name:        familyName,
-		metadata:    metadata,
+		mtype:    mtype,
+		groups:   make(map[uint64]*metricGroup),
+		name:     familyName,
+		metadata: metadata,
 	}
 }
 
@@ -200,11 +196,11 @@ func (mg *metricGroup) toSummaryPoint(dest pmetric.SummaryDataPointSlice) {
 	populateAttributes(pmetric.MetricTypeSummary, mg.ls, point.Attributes())
 }
 
-func (mg *metricGroup) toNumberDataPoint(dest pmetric.NumberDataPointSlice) {
+func (mg *metricGroup) toNumberDataPoint(dest pmetric.NumberDataPointSlice, mType pmetric.MetricType) {
 	tsNanos := timestampFromMs(mg.ts)
 	point := dest.AppendEmpty()
 	// gauge/undefined types have no start time.
-	if mg.mtype == pmetric.MetricTypeSum {
+	if mType == pmetric.MetricTypeSum {
 		point.SetStartTimestamp(tsNanos) // metrics_adjuster adjusts the startTimestamp to the initial scrape timestamp
 	}
 	point.SetTimestamp(tsNanos)
@@ -240,7 +236,6 @@ func (mf *metricFamily) loadMetricGroupOrCreate(groupKey uint64, ls labels.Label
 	mg, ok := mf.groups[groupKey]
 	if !ok {
 		mg = &metricGroup{
-			mtype:     mf.mtype,
 			ts:        ts,
 			ls:        ls,
 			exemplars: pmetric.NewExemplarSlice(),
@@ -312,10 +307,11 @@ func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice, normalizer *pr
 	case pmetric.MetricTypeSum:
 		sum := metric.SetEmptySum()
 		sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-		sum.SetIsMonotonic(mf.isMonotonic)
+		// is_monotonic MUST be equal to true
+		sum.SetIsMonotonic(true)
 		sdpL := sum.DataPoints()
 		for _, mg := range mf.groupOrders {
-			mg.toNumberDataPoint(sdpL)
+			mg.toNumberDataPoint(sdpL, pmetric.MetricTypeSum)
 		}
 		pointCount = sdpL.Len()
 
@@ -323,7 +319,7 @@ func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice, normalizer *pr
 		gauge := metric.SetEmptyGauge()
 		gdpL := gauge.DataPoints()
 		for _, mg := range mf.groupOrders {
-			mg.toNumberDataPoint(gdpL)
+			mg.toNumberDataPoint(gdpL, pmetric.MetricTypeGauge)
 		}
 		pointCount = gdpL.Len()
 	}
