@@ -80,7 +80,7 @@ func TestLoadConfig(t *testing.T) {
 		cfg := factory.CreateDefaultConfig()
 		sub, err := cm.Sub(component.NewIDWithName(typeStr, "valid_with_ca_file").String())
 		require.NoError(t, err)
-		require.NoError(t, component.UnmarshalExporterConfig(sub, cfg))
+		require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 		err = component.ValidateConfig(cfg)
 
@@ -107,7 +107,7 @@ func TestLoadConfig(t *testing.T) {
 		cfg := factory.CreateDefaultConfig()
 		sub, err := cm.Sub(component.NewIDWithName(typeStr, "valid_no_ca_file").String())
 		require.NoError(t, err)
-		require.NoError(t, component.UnmarshalExporterConfig(sub, cfg))
+		require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 		err = component.ValidateConfig(cfg)
 
