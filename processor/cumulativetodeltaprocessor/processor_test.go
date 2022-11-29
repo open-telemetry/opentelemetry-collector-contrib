@@ -44,6 +44,8 @@ type testHistogramMetric struct {
 	metricNames   []string
 	metricCounts  [][]uint64
 	metricSums    [][]float64
+	metricMins    [][]float64
+	metricMaxes   [][]float64
 	metricBuckets [][][]uint64
 	isCumulative  []bool
 }
@@ -57,8 +59,8 @@ type cumulativeToDeltaTest struct {
 	histogramSupportEnabled bool
 }
 
-var (
-	testCases = []cumulativeToDeltaTest{
+func TestCumulativeToDeltaProcessor(t *testing.T) {
+	testCases := []cumulativeToDeltaTest{
 		{
 			name: "cumulative_to_delta_convert_nothing",
 			exclude: MatchMetrics{
@@ -145,6 +147,53 @@ var (
 				metricValues: [][]float64{{100}, {4}},
 				isCumulative: []bool{true, true},
 			}),
+		},
+		{
+			name: "cumulative_to_delta_histogram_min_and_max",
+			include: MatchMetrics{
+				Metrics: []string{"metric_1"},
+				Config: filterset.Config{
+					MatchType:    "strict",
+					RegexpConfig: nil,
+				},
+			},
+			inMetrics: generateTestHistogramMetrics(testHistogramMetric{
+				metricNames:  []string{"metric_1", "metric_2"},
+				metricCounts: [][]uint64{{100, 200, 500}, {4}},
+				metricSums:   [][]float64{{100, 200, 500}, {4}},
+				metricBuckets: [][][]uint64{
+					{{50, 25, 25}, {100, 50, 50}, {250, 125, 125}},
+					{{4, 4, 4}},
+				},
+				metricMins: [][]float64{
+					{5.0, 2.0, 3.0},
+					{2.0, 2.0, 2.0},
+				},
+				metricMaxes: [][]float64{
+					{800.0, 825.0, 800.0},
+					{3.0, 3.0, 3.0},
+				},
+				isCumulative: []bool{true, true},
+			}),
+			outMetrics: generateTestHistogramMetrics(testHistogramMetric{
+				metricNames:  []string{"metric_1", "metric_2"},
+				metricCounts: [][]uint64{{100, 100, 300}, {4}},
+				metricSums:   [][]float64{{100, 100, 300}, {4}},
+				metricBuckets: [][][]uint64{
+					{{50, 25, 25}, {50, 25, 25}, {150, 75, 75}},
+					{{4, 4, 4}},
+				},
+				metricMins: [][]float64{
+					nil,
+					{2.0, 2.0, 2.0},
+				},
+				metricMaxes: [][]float64{
+					nil,
+					{3.0, 3.0, 3.0},
+				},
+				isCumulative: []bool{false, true},
+			}),
+			histogramSupportEnabled: true,
 		},
 		{
 			name: "cumulative_to_delta_histogram_one_positive",
@@ -318,9 +367,7 @@ var (
 			}),
 		},
 	}
-)
 
-func TestCumulativeToDeltaProcessor(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			registry := featuregate.GetRegistry()
@@ -403,6 +450,8 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 					for j := 0; j < eDataPoints.Len(); j++ {
 						require.Equal(t, eDataPoints.At(j).Count(), aDataPoints.At(j).Count())
 						require.Equal(t, eDataPoints.At(j).HasSum(), aDataPoints.At(j).HasSum())
+						require.Equal(t, eDataPoints.At(j).HasMin(), aDataPoints.At(j).HasMin())
+						require.Equal(t, eDataPoints.At(j).HasMax(), aDataPoints.At(j).HasMax())
 						if math.IsNaN(eDataPoints.At(j).Sum()) {
 							require.True(t, math.IsNaN(aDataPoints.At(j).Sum()))
 						} else {
@@ -471,6 +520,18 @@ func generateTestHistogramMetrics(tm testHistogramMetric) pmetric.Metrics {
 			sums := tm.metricSums[i]
 			if len(sums) > 0 {
 				dp.SetSum(sums[index])
+			}
+			if tm.metricMins != nil {
+				mins := tm.metricMins[i]
+				if len(mins) > 0 {
+					dp.SetMin(sums[index])
+				}
+			}
+			if tm.metricMaxes != nil {
+				maxes := tm.metricMaxes[i]
+				if len(maxes) > 0 {
+					dp.SetMax(maxes[index])
+				}
 			}
 			dp.BucketCounts().FromRaw(tm.metricBuckets[i][index])
 		}
