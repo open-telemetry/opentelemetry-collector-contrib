@@ -36,7 +36,7 @@ func NewFactory() component.ReceiverFactory {
 }
 
 // createDefaultConfig creates the default configuration for receiver.
-func createDefaultConfig() component.ReceiverConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 		HTTPServerSettings: confighttp.HTTPServerSettings{
@@ -45,6 +45,6 @@ func createDefaultConfig() component.ReceiverConfig {
 	}
 }
 
-func createMetricsReceiver(_ context.Context, params component.ReceiverCreateSettings, cfg component.ReceiverConfig, nextConsumer consumer.Metrics) (component.MetricsReceiver, error) {
+func createMetricsReceiver(_ context.Context, params component.ReceiverCreateSettings, cfg component.Config, nextConsumer consumer.Metrics) (component.MetricsReceiver, error) {
 	return newMetricsReceiver(cfg.(*Config), params.TelemetrySettings, nextConsumer)
 }

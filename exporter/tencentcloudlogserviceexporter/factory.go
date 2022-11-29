@@ -37,7 +37,7 @@ func NewFactory() component.ExporterFactory {
 }
 
 // CreateDefaultConfig creates the default configuration for exporter.
-func createDefaultConfig() component.ExporterConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 	}
@@ -46,7 +46,7 @@ func createDefaultConfig() component.ExporterConfig {
 func createLogsExporter(
 	_ context.Context,
 	set component.ExporterCreateSettings,
-	cfg component.ExporterConfig,
+	cfg component.Config,
 ) (exp component.LogsExporter, err error) {
 	return newLogsExporter(set, cfg)
 }

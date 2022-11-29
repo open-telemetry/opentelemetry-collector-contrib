@@ -38,7 +38,7 @@ import (
 )
 
 // loadConfigAssertNoError loads the test config and asserts there are no errors, and returns the receiver wanted
-func loadConfigAssertNoError(t *testing.T, receiverConfigID component.ID) component.ReceiverConfig {
+func loadConfigAssertNoError(t *testing.T, receiverConfigID component.ID) component.Config {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 	factory := NewFactory()
@@ -46,7 +46,7 @@ func loadConfigAssertNoError(t *testing.T, receiverConfigID component.ID) compon
 
 	sub, err := cm.Sub(receiverConfigID.String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	return cfg
 }
@@ -59,7 +59,7 @@ func TestExecKeyMissing(t *testing.T) {
 }
 
 // assertErrorWhenExecKeyMissing makes sure the config passed throws an error, since it's missing the exec key
-func assertErrorWhenExecKeyMissing(t *testing.T, errorReceiverConfig component.ReceiverConfig) {
+func assertErrorWhenExecKeyMissing(t *testing.T, errorReceiverConfig component.Config) {
 	_, err := newPromExecReceiver(componenttest.NewNopReceiverCreateSettings(), errorReceiverConfig.(*Config), nil)
 	assert.Error(t, err, "newPromExecReceiver() didn't return an error")
 }
@@ -74,7 +74,7 @@ func TestEndToEnd(t *testing.T) {
 }
 
 // endToEndScrapeTest creates a receiver that invokes `go run test_prometheus_exporter.go` and waits until it has scraped the /metrics endpoint twice - the application will crash between each scrape
-func endToEndScrapeTest(t *testing.T, receiverConfig component.ReceiverConfig, testName string) { //nolint
+func endToEndScrapeTest(t *testing.T, receiverConfig component.Config, testName string) { //nolint
 	sink := new(consumertest.MetricsSink)
 	wrapper, err := newPromExecReceiver(componenttest.NewNopReceiverCreateSettings(), receiverConfig.(*Config), sink)
 	assert.NoError(t, err, "newPromExecReceiver() returned an error")

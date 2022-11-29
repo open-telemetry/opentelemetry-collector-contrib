@@ -66,7 +66,7 @@ func TestTracesAndLogsReceiversAreSame(t *testing.T) {
 	assert.Equal(t, logsReceiver, tracesReceiver)
 }
 
-func getConfig() component.ReceiverConfig {
+func getConfig() component.Config {
 	return &Config{
 		ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 		ConnectionString: goodConnectionString,

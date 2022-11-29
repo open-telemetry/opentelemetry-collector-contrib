@@ -75,7 +75,7 @@ type processor struct {
 	shutdownCh chan interface{}
 }
 
-func newProcessor(logger *zap.Logger, config component.ProcessorConfig, nextConsumer consumer.Traces) *processor {
+func newProcessor(logger *zap.Logger, config component.Config, nextConsumer consumer.Traces) *processor {
 	pConfig := config.(*Config)
 
 	bounds := defaultLatencyHistogramBucketsMs

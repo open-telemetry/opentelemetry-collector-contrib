@@ -40,7 +40,7 @@ func NewFactory() component.ExporterFactory {
 		component.WithLogsExporter(createLogsExporter, stability))
 }
 
-func createDefaultConfig() component.ExporterConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ExporterSettings:   config.NewExporterSettings(component.NewID(typeStr)),
 		RetrySettings:      exporterhelper.NewDefaultRetrySettings(),
@@ -51,7 +51,7 @@ func createDefaultConfig() component.ExporterConfig {
 	}
 }
 
-func createLogsExporter(_ context.Context, params component.ExporterCreateSettings, config component.ExporterConfig) (component.LogsExporter, error) {
+func createLogsExporter(_ context.Context, params component.ExporterCreateSettings, config component.Config) (component.LogsExporter, error) {
 	expConfig, ok := config.(*Config)
 	if !ok {
 		return nil, errors.New("invalid configuration type; can't cast to awscloudwatchlogsexporter.Config")

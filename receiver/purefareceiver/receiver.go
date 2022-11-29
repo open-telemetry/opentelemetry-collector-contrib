@@ -24,7 +24,7 @@ import (
 func createMetricsReceiver(
 	_ context.Context,
 	set component.ReceiverCreateSettings,
-	rCfg component.ReceiverConfig,
+	rCfg component.Config,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	return nil, nil

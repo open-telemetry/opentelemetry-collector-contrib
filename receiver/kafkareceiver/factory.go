@@ -100,7 +100,7 @@ func NewFactory(options ...FactoryOption) component.ReceiverFactory {
 	)
 }
 
-func createDefaultConfig() component.ReceiverConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 		Topic:            defaultTopic,
@@ -135,7 +135,7 @@ type kafkaReceiverFactory struct {
 func (f *kafkaReceiverFactory) createTracesReceiver(
 	_ context.Context,
 	set component.ReceiverCreateSettings,
-	cfg component.ReceiverConfig,
+	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (component.TracesReceiver, error) {
 	c := cfg.(*Config)
@@ -149,7 +149,7 @@ func (f *kafkaReceiverFactory) createTracesReceiver(
 func (f *kafkaReceiverFactory) createMetricsReceiver(
 	_ context.Context,
 	set component.ReceiverCreateSettings,
-	cfg component.ReceiverConfig,
+	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	c := cfg.(*Config)
@@ -163,7 +163,7 @@ func (f *kafkaReceiverFactory) createMetricsReceiver(
 func (f *kafkaReceiverFactory) createLogsReceiver(
 	_ context.Context,
 	set component.ReceiverCreateSettings,
-	cfg component.ReceiverConfig,
+	cfg component.Config,
 	nextConsumer consumer.Logs,
 ) (component.LogsReceiver, error) {
 	c := cfg.(*Config)

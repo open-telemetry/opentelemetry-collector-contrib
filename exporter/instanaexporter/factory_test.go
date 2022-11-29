@@ -56,7 +56,7 @@ func TestLoadConfig(t *testing.T) {
 		cfg := factory.CreateDefaultConfig()
 		sub, err := cm.Sub(component.NewIDWithName(typeStr, "valid").String())
 		require.NoError(t, err)
-		require.NoError(t, component.UnmarshalExporterConfig(sub, cfg))
+		require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 		err = component.ValidateConfig(cfg)
 
@@ -78,7 +78,7 @@ func TestLoadConfig(t *testing.T) {
 		cfg := factory.CreateDefaultConfig()
 		sub, err := cm.Sub(component.NewIDWithName(typeStr, "bad_endpoint").String())
 		require.NoError(t, err)
-		require.NoError(t, component.UnmarshalExporterConfig(sub, cfg))
+		require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 		err = component.ValidateConfig(cfg)
 		require.Error(t, err)
@@ -88,7 +88,7 @@ func TestLoadConfig(t *testing.T) {
 		cfg := factory.CreateDefaultConfig()
 		sub, err := cm.Sub(component.NewIDWithName(typeStr, "missing_agent_key").String())
 		require.NoError(t, err)
-		require.NoError(t, component.UnmarshalExporterConfig(sub, cfg))
+		require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 		err = component.ValidateConfig(cfg)
 		require.Error(t, err)

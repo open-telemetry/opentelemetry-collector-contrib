@@ -40,7 +40,7 @@ func NewFactory() component.ReceiverFactory {
 		component.WithMetricsReceiver(createMetricsReceiver, stability))
 }
 
-func createDefaultConfig() component.ReceiverConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 		GRPCServerSettings: configgrpc.GRPCServerSettings{
@@ -57,7 +57,7 @@ func createDefaultConfig() component.ReceiverConfig {
 func createTracesReceiver(
 	_ context.Context,
 	set component.ReceiverCreateSettings,
-	cfg component.ReceiverConfig,
+	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (component.TracesReceiver, error) {
 	var err error
@@ -78,7 +78,7 @@ func createTracesReceiver(
 func createMetricsReceiver(
 	_ context.Context,
 	set component.ReceiverCreateSettings,
-	cfg component.ReceiverConfig,
+	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	var err error

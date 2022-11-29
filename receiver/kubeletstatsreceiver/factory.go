@@ -49,7 +49,7 @@ func NewFactory() component.ReceiverFactory {
 		component.WithMetricsReceiver(createMetricsReceiver, stability))
 }
 
-func createDefaultConfig() component.ReceiverConfig {
+func createDefaultConfig() component.Config {
 	scs := scraperhelper.NewDefaultScraperControllerSettings(typeStr)
 	scs.CollectionInterval = 10 * time.Second
 
@@ -67,7 +67,7 @@ func createDefaultConfig() component.ReceiverConfig {
 func createMetricsReceiver(
 	ctx context.Context,
 	set component.ReceiverCreateSettings,
-	baseCfg component.ReceiverConfig,
+	baseCfg component.Config,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	cfg := baseCfg.(*Config)

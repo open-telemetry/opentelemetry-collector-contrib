@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 )
 
-var _ component.ReceiverConfig = (*Config)(nil)
+var _ component.Config = (*Config)(nil)
 
 // Config relating to Array Metric Scraper.
 type Config struct {

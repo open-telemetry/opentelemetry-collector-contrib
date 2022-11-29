@@ -38,8 +38,8 @@ type AssumeRole struct {
 	STSRegion   string `mapstructure:"sts_region,omitempty"`
 }
 
-// compile time check that the Config struct satisfies the component.ExtensionConfig interface
-var _ component.ExtensionConfig = (*Config)(nil)
+// compile time check that the Config struct satisfies the component.Config interface
+var _ component.Config = (*Config)(nil)
 
 // Validate checks that the configuration is valid.
 // We aim to catch most errors here to ensure that we

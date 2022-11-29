@@ -366,9 +366,9 @@ type Config struct {
 	OnlyMetadata bool `mapstructure:"only_metadata"`
 }
 
-var _ component.ExporterConfig = (*Config)(nil)
+var _ component.Config = (*Config)(nil)
 
-// Validate the configuration for errors. This is required by component.ExporterConfig.
+// Validate the configuration for errors. This is required by component.Config.
 func (c *Config) Validate() error {
 	if c.OnlyMetadata && (!c.HostMetadata.Enabled || c.HostMetadata.HostnameSource != HostnameSourceFirstResource) {
 		return errNoMetadata

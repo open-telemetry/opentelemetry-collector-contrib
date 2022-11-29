@@ -15,11 +15,11 @@ require (
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3
 	github.com/signalfx/signalfx-agent/pkg/apm v0.0.0-20220920175102-539ae8d8ba8e
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.66.0
-	go.opentelemetry.io/collector/component v0.66.0
-	go.opentelemetry.io/collector/consumer v0.66.0
-	go.opentelemetry.io/collector/pdata v0.66.0
-	go.opentelemetry.io/collector/semconv v0.66.0
+	go.opentelemetry.io/collector v0.66.1-0.20221128222955-4ff1ff379b90
+	go.opentelemetry.io/collector/component v0.66.1-0.20221128222955-4ff1ff379b90
+	go.opentelemetry.io/collector/consumer v0.66.1-0.20221128222955-4ff1ff379b90
+	go.opentelemetry.io/collector/pdata v0.66.1-0.20221128222955-4ff1ff379b90
+	go.opentelemetry.io/collector/semconv v0.66.1-0.20221128222955-4ff1ff379b90
 	go.uber.org/atomic v1.10.0
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.23.0
@@ -63,7 +63,7 @@ require (
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/featuregate v0.66.0 // indirect
+	go.opentelemetry.io/collector/featuregate v0.66.1-0.20221128222955-4ff1ff379b90 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.36.4 // indirect
 	go.opentelemetry.io/otel v1.11.1 // indirect
 	go.opentelemetry.io/otel/metric v0.33.0 // indirect

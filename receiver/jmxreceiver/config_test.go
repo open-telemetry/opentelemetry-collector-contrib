@@ -35,7 +35,7 @@ func TestLoadConfig(t *testing.T) {
 	initSupportedJars()
 	tests := []struct {
 		id          component.ID
-		expected    component.ReceiverConfig
+		expected    component.Config
 		expectedErr string
 	}{
 		{
@@ -229,7 +229,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 			if tt.expectedErr != "" {
 				assert.ErrorContains(t, cfg.(*Config).validate(), tt.expectedErr)
@@ -255,7 +255,7 @@ func TestCustomMetricsGathererConfig(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(typeStr, "invalidtargetsystem").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	conf := cfg.(*Config)
 

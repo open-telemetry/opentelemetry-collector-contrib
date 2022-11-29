@@ -45,7 +45,7 @@ type MatchMetrics struct {
 	Metrics []string `mapstructure:"metrics"`
 }
 
-var _ component.ProcessorConfig = (*Config)(nil)
+var _ component.Config = (*Config)(nil)
 
 // Validate checks whether the input configuration has all of the required fields for the processor.
 // An error is returned if there are any invalid inputs.

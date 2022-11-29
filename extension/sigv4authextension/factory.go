@@ -35,14 +35,14 @@ func NewFactory() component.ExtensionFactory {
 
 // createDefaultConfig() creates a Config struct with default values.
 // We only set the ID here.
-func createDefaultConfig() component.ExtensionConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
 	}
 }
 
 // createExtension() calls newSigv4Extension() in extension.go to create the extension.
-func createExtension(_ context.Context, set component.ExtensionCreateSettings, cfg component.ExtensionConfig) (component.Extension, error) {
+func createExtension(_ context.Context, set component.ExtensionCreateSettings, cfg component.Config) (component.Extension, error) {
 	awsSDKInfo := fmt.Sprintf("%s/%s", aws.SDKName, aws.SDKVersion)
 	return newSigv4Extension(cfg.(*Config), awsSDKInfo, set.Logger), nil
 }

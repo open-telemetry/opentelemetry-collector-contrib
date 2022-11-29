@@ -39,7 +39,7 @@ func NewFactory() component.ExporterFactory {
 		component.WithTracesExporter(createTracesExporter, stability))
 }
 
-func createDefaultConfig() component.ExporterConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		NumWorkers:       defaultNumWorkers,
@@ -55,7 +55,7 @@ func createDefaultConfig() component.ExporterConfig {
 func createTracesExporter(
 	_ context.Context,
 	params component.ExporterCreateSettings,
-	cfg component.ExporterConfig,
+	cfg component.Config,
 ) (component.TracesExporter, error) {
 	eCfg := cfg.(*Config)
 	return newSAPMTracesExporter(eCfg, params)
