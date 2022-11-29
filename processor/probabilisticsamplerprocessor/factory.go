@@ -69,7 +69,7 @@ func createTracesProcessor(
 func createLogsProcessor(
 	ctx context.Context,
 	set component.ProcessorCreateSettings,
-	cfg component.ProcessorConfig,
+	cfg component.Config,
 	nextConsumer consumer.Logs,
 ) (component.LogsProcessor, error) {
 	return newLogsProcessor(ctx, set, nextConsumer, cfg.(*Config))
