@@ -74,9 +74,10 @@ func TestCreateMetricExporter(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name string
-		conf *Config
-		err  error
+		name       string
+		conf       *Config
+		marshalers []MetricsMarshaler
+		err        error
 	}{
 		{
 			name: "valid config (no validating broker)",
@@ -87,7 +88,8 @@ func TestCreateMetricExporter(t *testing.T) {
 				conf.Brokers = []string{"invalid:9092"}
 				conf.ProtocolVersion = "2.0.0"
 			}),
-			err: nil,
+			marshalers: nil,
+			err:        nil,
 		},
 		{
 			name: "invalid config (validating broker)",
@@ -95,7 +97,30 @@ func TestCreateMetricExporter(t *testing.T) {
 				conf.Brokers = []string{"invalid:9092"}
 				conf.ProtocolVersion = "2.0.0"
 			}),
-			err: &net.DNSError{},
+			marshalers: nil,
+			err:        &net.DNSError{},
+		},
+		{
+			name: "default_encoding",
+			conf: applyConfigOption(func(conf *Config) {
+				// Disabling broker check to ensure encoding work
+				conf.Metadata.Full = false
+				conf.Encoding = defaultEncoding
+			}),
+			marshalers: nil,
+			err:        nil,
+		},
+		{
+			name: "custom_encoding",
+			conf: applyConfigOption(func(conf *Config) {
+				// Disabling broker check to ensure encoding work
+				conf.Metadata.Full = false
+				conf.Encoding = "custom"
+			}),
+			marshalers: []MetricsMarshaler{
+				newMockMarshaler[pmetric.Metrics]("custom"),
+			},
+			err: nil,
 		},
 	}
 
@@ -104,7 +129,7 @@ func TestCreateMetricExporter(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			f := NewFactory()
+			f := NewFactory(WithMetricsMarshalers(tc.marshalers...))
 			exporter, err := f.CreateMetricsExporter(
 				context.Background(),
 				componenttest.NewNopExporterCreateSettings(),
@@ -125,9 +150,10 @@ func TestCreateLogExporter(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name string
-		conf *Config
-		err  error
+		name       string
+		conf       *Config
+		marshalers []LogsMarshaler
+		err        error
 	}{
 		{
 			name: "valid config (no validating broker)",
@@ -138,7 +164,8 @@ func TestCreateLogExporter(t *testing.T) {
 				conf.Brokers = []string{"invalid:9092"}
 				conf.ProtocolVersion = "2.0.0"
 			}),
-			err: nil,
+			marshalers: nil,
+			err:        nil,
 		},
 		{
 			name: "invalid config (validating broker)",
@@ -146,7 +173,30 @@ func TestCreateLogExporter(t *testing.T) {
 				conf.Brokers = []string{"invalid:9092"}
 				conf.ProtocolVersion = "2.0.0"
 			}),
-			err: &net.DNSError{},
+			marshalers: nil,
+			err:        &net.DNSError{},
+		},
+		{
+			name: "default_encoding",
+			conf: applyConfigOption(func(conf *Config) {
+				// Disabling broker check to ensure encoding work
+				conf.Metadata.Full = false
+				conf.Encoding = defaultEncoding
+			}),
+			marshalers: nil,
+			err:        nil,
+		},
+		{
+			name: "custom_encoding",
+			conf: applyConfigOption(func(conf *Config) {
+				// Disabling broker check to ensure encoding work
+				conf.Metadata.Full = false
+				conf.Encoding = "custom"
+			}),
+			marshalers: []LogsMarshaler{
+				newMockMarshaler[plog.Logs]("custom"),
+			},
+			err: nil,
 		},
 	}
 
@@ -155,7 +205,7 @@ func TestCreateLogExporter(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			f := NewFactory()
+			f := NewFactory(WithLogsMarshalers(tc.marshalers...))
 			exporter, err := f.CreateLogsExporter(
 				context.Background(),
 				componenttest.NewNopExporterCreateSettings(),
