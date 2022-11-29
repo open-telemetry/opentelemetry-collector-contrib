@@ -247,6 +247,13 @@ docker-component: check-component
 	docker build -t $(COMPONENT) ./cmd/$(COMPONENT)/
 	rm ./cmd/$(COMPONENT)/$(COMPONENT)
 
+build-push-multiplatform:
+	docker buildx build \
+		--push \
+		--platform linux/amd64,linux/arm64 \
+		--tag ${IMG} \
+		.
+
 .PHONY: check-component
 check-component:
 ifndef COMPONENT

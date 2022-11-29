@@ -96,11 +96,18 @@ jobs:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.ACTIONS_TOKEN }}
-      - name: Build otel col contrib
-        run: GOOS=linux GOARCH=amd64 make otelcontribcol && cp ./bin/otelcontribcol_linux_amd64 ./cmd/otelcontribcol/otelcontribcol
-      - name: Push otel col contrib to Github packages
-        uses: docker/build-push-action@v3
+      - name: Build otel col contrib amd64
+        run: GOOS=linux GOARCH=amd64 make otelcontribcol && cp ./bin/otelcontribcol_$(GOOS)_$(GOARCH) ./cmd/otelcontribcol_$(GOOS)_$(GOARCH)
+      - name: Build otel col contrib arm64
+        run: GOOS=linux GOARCH=arm64 make otelcontribcol && cp ./bin/otelcontribcol_$(GOOS)_$(GOARCH) ./cmd/otelcontribcol_$(GOOS)_$(GOARCH)
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2.1.0
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2.2.1
+      - name: Build and push Docker image
+        uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
         with:
-          context: cmd/otelcontribcol
+          context: .
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ env.REGISTRY_SERVER_ADDRESS }}/opentelemetry-collector-contrib:${{ env.TAG }}
