@@ -44,6 +44,20 @@ func TestReplacePatternValidTaskId(t *testing.T) {
 	assert.True(t, success)
 }
 
+func TestReplacePatternValidServiceName(t *testing.T) {
+	logger := zap.NewNop()
+
+	input := "{ServiceName}"
+
+	attrMap := pcommon.NewMap()
+	attrMap.PutStr("service.name", "some-test-service")
+
+	s, success := replacePatterns(input, attrMaptoStringMap(attrMap), logger)
+
+	assert.Equal(t, "some-test-service", s)
+	assert.True(t, success)
+}
+
 func TestReplacePatternValidClusterName(t *testing.T) {
 	logger := zap.NewNop()
 
