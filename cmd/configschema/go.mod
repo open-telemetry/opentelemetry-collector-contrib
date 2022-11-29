@@ -8,9 +8,9 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib v0.66.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver v0.66.0
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.66.0
-	go.opentelemetry.io/collector/component v0.66.0
-	go.opentelemetry.io/collector/receiver/otlpreceiver v0.66.0
+	go.opentelemetry.io/collector v0.66.1-0.20221128222955-4ff1ff379b90
+	go.opentelemetry.io/collector/component v0.66.1-0.20221128222955-4ff1ff379b90
+	go.opentelemetry.io/collector/receiver/otlpreceiver v0.66.1-0.20221128222955-4ff1ff379b90
 	golang.org/x/mod v0.6.0
 	golang.org/x/text v0.4.0
 )
@@ -21,7 +21,7 @@ require (
 	cloud.google.com/go/compute v1.12.1 // indirect
 	cloud.google.com/go/compute/metadata v0.2.1 // indirect
 	cloud.google.com/go/iam v0.6.0 // indirect
-	cloud.google.com/go/logging v1.4.2 // indirect
+	cloud.google.com/go/logging v1.5.0 // indirect
 	cloud.google.com/go/longrunning v0.1.1 // indirect
 	cloud.google.com/go/monitoring v1.8.0 // indirect
 	cloud.google.com/go/pubsub v1.26.0 // indirect
@@ -74,10 +74,10 @@ require (
 	github.com/DataDog/zstd v1.5.2 // indirect
 	github.com/GehirnInc/crypt v0.0.0-20200316065508-bb7000b8a962 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v0.34.1 // indirect
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector v0.34.1 // indirect
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector v0.34.2 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector/googlemanagedprometheus v0.34.1 // indirect
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.10.1 // indirect
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.34.1 // indirect
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.10.2 // indirect
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.34.2 // indirect
 	github.com/Microsoft/go-winio v0.5.2 // indirect
 	github.com/ReneKroon/ttlcache/v2 v2.11.0 // indirect
 	github.com/SAP/go-hdb v0.109.1 // indirect
@@ -582,17 +582,17 @@ require (
 	go.mongodb.org/atlas v0.19.0 // indirect
 	go.mongodb.org/mongo-driver v1.10.3 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/consumer v0.66.0 // indirect
-	go.opentelemetry.io/collector/exporter/loggingexporter v0.66.0 // indirect
-	go.opentelemetry.io/collector/exporter/otlpexporter v0.66.0 // indirect
-	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.66.0 // indirect
-	go.opentelemetry.io/collector/extension/ballastextension v0.66.0 // indirect
-	go.opentelemetry.io/collector/extension/zpagesextension v0.66.0 // indirect
-	go.opentelemetry.io/collector/featuregate v0.66.0 // indirect
-	go.opentelemetry.io/collector/pdata v0.66.0 // indirect
-	go.opentelemetry.io/collector/processor/batchprocessor v0.66.0 // indirect
-	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.66.0 // indirect
-	go.opentelemetry.io/collector/semconv v0.66.0 // indirect
+	go.opentelemetry.io/collector/consumer v0.66.1-0.20221128222955-4ff1ff379b90 // indirect
+	go.opentelemetry.io/collector/exporter/loggingexporter v0.66.1-0.20221128222955-4ff1ff379b90 // indirect
+	go.opentelemetry.io/collector/exporter/otlpexporter v0.66.1-0.20221128222955-4ff1ff379b90 // indirect
+	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.66.1-0.20221128222955-4ff1ff379b90 // indirect
+	go.opentelemetry.io/collector/extension/ballastextension v0.66.1-0.20221128222955-4ff1ff379b90 // indirect
+	go.opentelemetry.io/collector/extension/zpagesextension v0.66.1-0.20221128222955-4ff1ff379b90 // indirect
+	go.opentelemetry.io/collector/featuregate v0.66.1-0.20221128222955-4ff1ff379b90 // indirect
+	go.opentelemetry.io/collector/pdata v0.66.1-0.20221128222955-4ff1ff379b90 // indirect
+	go.opentelemetry.io/collector/processor/batchprocessor v0.66.1-0.20221128222955-4ff1ff379b90 // indirect
+	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.66.1-0.20221128222955-4ff1ff379b90 // indirect
+	go.opentelemetry.io/collector/semconv v0.66.1-0.20221128222955-4ff1ff379b90 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.36.4 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.36.4 // indirect
 	go.opentelemetry.io/contrib/zpages v0.36.4 // indirect

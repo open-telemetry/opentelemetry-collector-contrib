@@ -54,7 +54,7 @@ func logDeprecation(logger *zap.Logger) {
 }
 
 // createDefaultConfig returns a default config
-func createDefaultConfig() component.ReceiverConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 		ScrapeInterval:   defaultCollectionInterval,
@@ -69,7 +69,7 @@ func createDefaultConfig() component.ReceiverConfig {
 func createMetricsReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateSettings,
-	cfg component.ReceiverConfig,
+	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	logDeprecation(params.Logger)

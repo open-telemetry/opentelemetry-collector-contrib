@@ -30,7 +30,7 @@ func TestLoadingConfig(t *testing.T) {
 
 	tests := []struct {
 		id       component.ID
-		expected component.ProcessorConfig
+		expected component.Config
 	}{
 		{
 			id: component.NewIDWithName(typeStr, "grouping"),
@@ -58,7 +58,7 @@ func TestLoadingConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalProcessorConfig(sub, cfg))
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)

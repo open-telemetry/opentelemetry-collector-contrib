@@ -52,7 +52,7 @@ const (
 	percentageScaleFactor = numHashBuckets / 100.0
 )
 
-type tracesamplerprocessor struct {
+type traceSamplerProcessor struct {
 	scaledSamplingRate uint32
 	hashSeed           uint32
 	logger             *zap.Logger
@@ -61,7 +61,7 @@ type tracesamplerprocessor struct {
 // newTracesProcessor returns a processor.TracesProcessor that will perform head sampling according to the given
 // configuration.
 func newTracesProcessor(ctx context.Context, set component.ProcessorCreateSettings, cfg *Config, nextConsumer consumer.Traces) (component.TracesProcessor, error) {
-	tsp := &tracesamplerprocessor{
+	tsp := &traceSamplerProcessor{
 		// Adjust sampling percentage on private so recalculations are avoided.
 		scaledSamplingRate: uint32(cfg.SamplingPercentage * percentageScaleFactor),
 		hashSeed:           cfg.HashSeed,
@@ -77,7 +77,7 @@ func newTracesProcessor(ctx context.Context, set component.ProcessorCreateSettin
 		processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}))
 }
 
-func (tsp *tracesamplerprocessor) processTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
+func (tsp *traceSamplerProcessor) processTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
 	td.ResourceSpans().RemoveIf(func(rs ptrace.ResourceSpans) bool {
 		rs.ScopeSpans().RemoveIf(func(ils ptrace.ScopeSpans) bool {
 			ils.Spans().RemoveIf(func(s ptrace.Span) bool {
@@ -183,58 +183,4 @@ func parseSpanSamplingPriority(span ptrace.Span) samplingPriority {
 	}
 
 	return decision
-}
-
-// hash is a murmur3 hash function, see http://en.wikipedia.org/wiki/MurmurHash
-func hash(key []byte, seed uint32) (hash uint32) {
-	const (
-		c1 = 0xcc9e2d51
-		c2 = 0x1b873593
-		c3 = 0x85ebca6b
-		c4 = 0xc2b2ae35
-		r1 = 15
-		r2 = 13
-		m  = 5
-		n  = 0xe6546b64
-	)
-
-	hash = seed
-	iByte := 0
-	for ; iByte+4 <= len(key); iByte += 4 {
-		k := uint32(key[iByte]) | uint32(key[iByte+1])<<8 | uint32(key[iByte+2])<<16 | uint32(key[iByte+3])<<24
-		k *= c1
-		k = (k << r1) | (k >> (32 - r1))
-		k *= c2
-		hash ^= k
-		hash = (hash << r2) | (hash >> (32 - r2))
-		hash = hash*m + n
-	}
-
-	// TraceId and SpanId have lengths that are multiple of 4 so the code below is never expected to
-	// be hit when sampling traces. However, it is preserved here to keep it as a correct murmur3 implementation.
-	// This is enforced via tests.
-	var remainingBytes uint32
-	switch len(key) - iByte {
-	case 3:
-		remainingBytes += uint32(key[iByte+2]) << 16
-		fallthrough
-	case 2:
-		remainingBytes += uint32(key[iByte+1]) << 8
-		fallthrough
-	case 1:
-		remainingBytes += uint32(key[iByte])
-		remainingBytes *= c1
-		remainingBytes = (remainingBytes << r1) | (remainingBytes >> (32 - r1))
-		remainingBytes *= c2
-		hash ^= remainingBytes
-	}
-
-	hash ^= uint32(len(key))
-	hash ^= hash >> 16
-	hash *= c3
-	hash ^= hash >> 13
-	hash *= c4
-	hash ^= hash >> 16
-
-	return
 }

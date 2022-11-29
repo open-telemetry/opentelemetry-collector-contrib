@@ -35,13 +35,13 @@ func NewFactory() component.ExtensionFactory {
 	)
 }
 
-func createDefaultConfig() component.ExtensionConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
 	}
 }
 
-func createExtension(_ context.Context, _ component.ExtensionCreateSettings, cfg component.ExtensionConfig) (component.Extension, error) {
+func createExtension(_ context.Context, _ component.ExtensionCreateSettings, cfg component.Config) (component.Extension, error) {
 	// check if config is a server auth(Htpasswd should be set)
 	if cfg.(*Config).Htpasswd != nil {
 		return newServerAuthExtension(cfg.(*Config))

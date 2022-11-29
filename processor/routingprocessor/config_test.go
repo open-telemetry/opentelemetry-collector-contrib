@@ -28,7 +28,7 @@ import (
 func TestLoadConfig(t *testing.T) {
 	testcases := []struct {
 		configPath string
-		expected   component.ProcessorConfig
+		expected   component.Config
 	}{
 		{
 			configPath: "config_traces.yaml",
@@ -99,7 +99,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalProcessorConfig(sub, cfg))
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
@@ -110,7 +110,7 @@ func TestLoadConfig(t *testing.T) {
 func TestValidateConfig(t *testing.T) {
 	tests := []struct {
 		name   string
-		config component.ProcessorConfig
+		config component.Config
 		error  string
 	}{
 		{

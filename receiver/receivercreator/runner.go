@@ -83,7 +83,7 @@ func (run *receiverRunner) loadRuntimeReceiverConfig(
 	factory component.ReceiverFactory,
 	receiver receiverConfig,
 	discoveredConfig userConfigMap,
-) (component.ReceiverConfig, error) {
+) (component.Config, error) {
 	// Merge in the config values specified in the config file.
 	mergedConfig := confmap.NewFromStringMap(receiver.config)
 
@@ -95,7 +95,7 @@ func (run *receiverRunner) loadRuntimeReceiverConfig(
 	receiverCfg := factory.CreateDefaultConfig()
 	receiverCfg.SetIDName(receiver.id.Name())
 
-	if err := component.UnmarshalReceiverConfig(mergedConfig, receiverCfg); err != nil {
+	if err := component.UnmarshalConfig(mergedConfig, receiverCfg); err != nil {
 		return nil, fmt.Errorf("failed to load template config: %w", err)
 	}
 	// Sets dynamically created receiver to something like receiver_creator/1/redis{endpoint="localhost:6380"}/<EndpointID>.
@@ -106,7 +106,7 @@ func (run *receiverRunner) loadRuntimeReceiverConfig(
 // createRuntimeReceiver creates a receiver that is discovered at runtime.
 func (run *receiverRunner) createRuntimeReceiver(
 	factory component.ReceiverFactory,
-	cfg component.ReceiverConfig,
+	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	runParams := run.params

@@ -56,7 +56,7 @@ func TestLoadConfig(t *testing.T) {
 		cfg := factory.CreateDefaultConfig()
 		sub, err := cm.Sub(component.NewIDWithName(typeStr, "valid").String())
 		require.NoError(t, err)
-		require.NoError(t, component.UnmarshalExporterConfig(sub, cfg))
+		require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 		err = component.ValidateConfig(cfg)
 
@@ -64,12 +64,12 @@ func TestLoadConfig(t *testing.T) {
 		assert.Equal(t, &Config{
 			ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 			HTTPClientSettings: confighttp.HTTPClientSettings{
-				Endpoint:        "http://example.com/api/",
+				Endpoint:        "https://example.com/api/",
 				Timeout:         30 * time.Second,
 				Headers:         map[string]string{},
 				WriteBufferSize: 512 * 1024,
 			},
-			Endpoint: "http://example.com/api/",
+			Endpoint: "https://example.com/api/",
 			AgentKey: "key1",
 		}, cfg)
 	})
@@ -78,7 +78,18 @@ func TestLoadConfig(t *testing.T) {
 		cfg := factory.CreateDefaultConfig()
 		sub, err := cm.Sub(component.NewIDWithName(typeStr, "bad_endpoint").String())
 		require.NoError(t, err)
-		require.NoError(t, component.UnmarshalExporterConfig(sub, cfg))
+		require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+		err = component.ValidateConfig(cfg)
+		require.Error(t, err)
+	})
+
+	t.Run("non https endpoint", func(t *testing.T) {
+		cfg := factory.CreateDefaultConfig()
+		sub, err := cm.Sub(component.NewIDWithName(typeStr, "non_https_endpoint").String())
+
+		require.NoError(t, err)
+		require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 		err = component.ValidateConfig(cfg)
 		require.Error(t, err)
@@ -88,7 +99,7 @@ func TestLoadConfig(t *testing.T) {
 		cfg := factory.CreateDefaultConfig()
 		sub, err := cm.Sub(component.NewIDWithName(typeStr, "missing_agent_key").String())
 		require.NoError(t, err)
-		require.NoError(t, component.UnmarshalExporterConfig(sub, cfg))
+		require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 		err = component.ValidateConfig(cfg)
 		require.Error(t, err)

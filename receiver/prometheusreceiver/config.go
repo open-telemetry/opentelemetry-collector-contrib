@@ -80,7 +80,7 @@ type targetAllocator struct {
 	HTTPSDConfig      *promHTTP.SDConfig `mapstructure:"-"`
 }
 
-var _ component.ReceiverConfig = (*Config)(nil)
+var _ component.Config = (*Config)(nil)
 var _ confmap.Unmarshaler = (*Config)(nil)
 
 func checkFile(fn string) error {
