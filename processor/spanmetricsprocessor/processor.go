@@ -366,13 +366,18 @@ func (p *processorImp) collectLatencyMetrics(ilm pmetric.ScopeMetrics) error {
 		dpLatency.SetSum(hist.sum)
 		setExemplars(hist.exemplarsData, timestamp, dpLatency.Exemplars())
 
-		dimensions, err := p.getDimensionsByMetricKey(key)
-		if err != nil {
-			p.logger.Error(err.Error())
-			return err
+		// If the key is not in the cache, simply don't publish it because it's likely
+		// the metric has expired (or the cache size is too small).
+		if dimensions, ok := p.metricKeyToDimensions.Get(key); ok {
+			dimensions.CopyTo(dpLatency.Attributes())
 		}
-
-		dimensions.CopyTo(dpLatency.Attributes())
+		// dimensions, err := p.getDimensionsByMetricKey(key)
+		// if err != nil {
+		// 	p.logger.Error(err.Error())
+		// 	return err
+		// }
+		//
+		// dimensions.CopyTo(dpLatency.Attributes())
 	}
 	return nil
 }
@@ -393,23 +398,26 @@ func (p *processorImp) collectCallMetrics(ilm pmetric.ScopeMetrics) error {
 		dpCalls.SetTimestamp(timestamp)
 		dpCalls.SetIntValue(int64(hist.count))
 
-		dimensions, err := p.getDimensionsByMetricKey(key)
-		if err != nil {
-			return err
+		// If the key is not in the cache, simply don't publish it because it's likely
+		// the metric has expired (or the cache size is too small).
+		if dimensions, ok := p.metricKeyToDimensions.Get(key); ok {
+			dimensions.CopyTo(dpCalls.Attributes())
 		}
-
-		dimensions.CopyTo(dpCalls.Attributes())
+		// dimensions, err := p.getDimensionsByMetricKey(key)
+		// if err != nil {
+		// 	return err
+		// }
 	}
 	return nil
 }
 
 // getDimensionsByMetricKey gets dimensions from `metricKeyToDimensions` cache.
-func (p *processorImp) getDimensionsByMetricKey(k metricKey) (pcommon.Map, error) {
-	if attributeMap, ok := p.metricKeyToDimensions.Get(k); ok {
-		return attributeMap, nil
-	}
-	return pcommon.Map{}, fmt.Errorf("value not found in metricKeyToDimensions cache by key %q", k)
-}
+// func (p *processorImp) getDimensionsByMetricKey(k metricKey) (pcommon.Map, error) {
+// 	if attributeMap, ok := p.metricKeyToDimensions.Get(k); ok {
+// 		return attributeMap, nil
+// 	}
+// 	return pcommon.Map{}, fmt.Errorf("value not found in metricKeyToDimensions cache by key %q", k)
+// }
 
 // aggregateMetrics aggregates the raw metrics from the input trace data.
 // Each metric is identified by a key that is built from the service name

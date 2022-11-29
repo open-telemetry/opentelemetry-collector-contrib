@@ -72,6 +72,12 @@ func (c *Cache[K, V]) Get(key K) (V, bool) {
 	}
 	val, ok := c.evictedItems[key]
 	c.logger.Info("cache miss looking for evicted: ", zap.Any("key", key), zap.Bool("found", ok))
+
+	// Revive from evicted items back into the main cache if a fetch was attempted.
+	if ok {
+		delete(c.evictedItems, key)
+		c.Add(key, val)
+	}
 	return val, ok
 }
 

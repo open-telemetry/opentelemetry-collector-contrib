@@ -15,6 +15,7 @@
 package cache
 
 import (
+	"go.uber.org/zap"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -63,6 +64,30 @@ func TestNewCache(t *testing.T) {
 			assert.NoError(t, err)
 		})
 	}
+}
+
+func TestCache_GetReviveEvicted(t *testing.T) {
+	cache, _ := NewCache[string, string](1)
+	cache.Add("key0", "val_from_LRU")
+	cache.evictedItems["key1"] = "val_from_evicted_items"
+
+	gotValue, gotOk := cache.Get("key0")
+	assert.True(t, gotOk)
+	assert.Equal(t, "val_from_LRU", gotValue)
+
+	// Should revive the evicted key back into the main LRU cache.
+	gotValue, gotOk = cache.Get("key1")
+	assert.True(t, gotOk)
+	assert.Equal(t, "val_from_evicted_items", gotValue)
+
+	cache.RemoveEvictedItems()
+
+	_, gotOk = cache.Get("key0")
+	assert.False(t, gotOk, "key0 should be removed from evicted items")
+
+	gotValue, gotOk = cache.Get("key1")
+	assert.True(t, gotOk)
+	assert.Equal(t, "val_from_evicted_items", gotValue, "key1 should be in the main LRU cache")
 }
 
 func TestCache_Get(t *testing.T) {
@@ -168,13 +193,13 @@ func TestCache_PurgeItems(t *testing.T) {
 		{
 			name: "no panic when there is no item to remove",
 			lruCache: func() (*Cache[string, string], error) {
-				return NewCache[string, string](1)
+				return NewCache[string, string](1, zap.NewNop())
 			},
 		},
 		{
 			name: "remove items from the lru cache",
 			lruCache: func() (*Cache[string, string], error) {
-				cache, err := NewCache[string, string](1)
+				cache, err := NewCache[string, string](1, zap.NewNop())
 				if err != nil {
 					return nil, err
 				}
@@ -186,7 +211,7 @@ func TestCache_PurgeItems(t *testing.T) {
 		{
 			name: "remove all the items from lru cache and the evicted items",
 			lruCache: func() (*Cache[string, string], error) {
-				cache, err := NewCache[string, string](10)
+				cache, err := NewCache[string, string](10, zap.NewNop())
 				if err != nil {
 					return nil, err
 				}
