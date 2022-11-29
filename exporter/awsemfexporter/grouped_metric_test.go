@@ -16,6 +16,7 @@ package awsemfexporter
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
 	"time"
 
@@ -207,23 +208,23 @@ func TestAddToGroupedMetric(t *testing.T) {
 			for metricName, metricInfo := range group.metrics {
 				switch metricName {
 				case "int-gauge", "double-gauge":
-					assert.Equal(t, 2, len(group.metrics))
+					assert.Len(t, group.metrics, 2)
 					assert.Equal(t, "Count", metricInfo.unit)
 					assert.Equal(t, generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, pmetric.MetricTypeGauge), group.metadata)
 				case "int-sum", "double-sum":
-					assert.Equal(t, 2, len(group.metrics))
+					assert.Len(t, group.metrics, 2)
 					assert.Equal(t, "Count", metricInfo.unit)
 					assert.Equal(t, generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, pmetric.MetricTypeSum), group.metadata)
 				case "double-histogram":
-					assert.Equal(t, 1, len(group.metrics))
+					assert.Len(t, group.metrics, 1)
 					assert.Equal(t, "Seconds", metricInfo.unit)
 					assert.Equal(t, generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, pmetric.MetricTypeHistogram), group.metadata)
 				case "summary":
-					assert.Equal(t, 1, len(group.metrics))
+					assert.Len(t, group.metrics, 1)
 					assert.Equal(t, "Seconds", metricInfo.unit)
 					assert.Equal(t, generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, pmetric.MetricTypeSummary), group.metadata)
 				default:
-					assert.FailNow(t, "Unhandled metric not expected")
+					assert.Fail(t, fmt.Sprintf("Unhandled metric %s not expected", metricName))
 				}
 				expectedLabels := map[string]string{
 					oTellibDimensionKey: "cloudwatch-otel",

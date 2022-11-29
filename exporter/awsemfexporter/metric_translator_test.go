@@ -15,6 +15,7 @@
 package awsemfexporter
 
 import (
+	"fmt"
 	"os"
 	"reflect"
 	"sort"
@@ -534,20 +535,21 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 
 			for _, v := range groupedMetrics {
 				assert.Equal(t, tc.expectedNamespace, v.metadata.namespace)
-				if v.metadata.metricDataType == pmetric.MetricTypeSum {
+				switch {
+				case v.metadata.metricDataType == pmetric.MetricTypeSum:
 					assert.Equal(t, 2, len(v.metrics))
 					assert.Equal(t, tc.counterLabels, v.labels)
 					assert.Equal(t, counterSumMetrics, v.metrics)
-				} else if v.metadata.metricDataType == pmetric.MetricTypeGauge {
+				case v.metadata.metricDataType == pmetric.MetricTypeGauge:
 					assert.Equal(t, 2, len(v.metrics))
 					assert.Equal(t, tc.counterLabels, v.labels)
 					assert.Equal(t, counterGaugeMetrics, v.metrics)
-				} else if v.metadata.metricDataType == pmetric.MetricTypeHistogram {
+				case v.metadata.metricDataType == pmetric.MetricTypeHistogram:
 					assert.Equal(t, 1, len(v.metrics))
 					assert.Equal(t, tc.timerLabels, v.labels)
 					assert.Equal(t, timerMetrics, v.metrics)
-				} else {
-					assert.Fail(t, "unexpected metric type")
+				default:
+					assert.Fail(t, fmt.Sprintf("Unhandled metric type %s not expected", v.metadata.metricDataType))
 				}
 			}
 		})
