@@ -33,7 +33,7 @@ main () {
     JSON=$(gh pr view "${PR}" --json "files,author")
     AUTHOR=$(printf "${JSON}"| jq -r '.author.login')
     FILES=$(printf "${JSON}"| jq -r '.files[].path')
-    COMPONENTS=$(grep -oE '^[a-z]+/[a-z/]+ ' < .github/CODEOWNERS)
+    COMPONENTS=$(bash "${CUR_DIRECTORY}/get-components.sh")
     REVIEWERS=""
     LABELS=""
     declare -A PROCESSED_COMPONENTS
@@ -74,14 +74,17 @@ main () {
             done
 
             # Convert the CODEOWNERS entry to a label
-            COMPONENT_CLEAN=$(echo "${COMPONENT}" | sed -E 's%/$%%')
-            TYPE=$(echo "${COMPONENT_CLEAN}" | cut -f1 -d '/' )
-            NAME=$(echo "${COMPONENT_CLEAN}" | cut -f2- -d '/' | sed -E "s%${TYPE}\$%%")
+            COMPONENT_NAME=$(echo "${COMPONENT}" | sed -E 's%^(.+)/(.+)\1%\1/\2%')
+
+            if (( "${#COMPONENT_NAME}" > 50 )); then
+                echo "'${COMPONENT_NAME}' exceeds GitHub's 50-character limit on labels, skipping adding label"
+                continue
+            fi
 
             if [[ -n "${LABELS}" ]]; then
                 LABELS+=","
             fi
-            LABELS+="${TYPE}/${NAME}"
+            LABELS+="${COMPONENT_NAME}"
         done
     done
 
