@@ -41,7 +41,7 @@ func ParseJSON[K any](target ottl.Getter[K]) (ottl.ExprFunc[K], error) {
 			var parsedValue map[string]interface{}
 			err := jsoniter.UnmarshalFromString(jsonStr, &parsedValue)
 			if err != nil {
-				return pcommon.Map{}, err
+				return nil, err
 			}
 			result := pcommon.NewMap()
 			err = result.FromRaw(parsedValue)
