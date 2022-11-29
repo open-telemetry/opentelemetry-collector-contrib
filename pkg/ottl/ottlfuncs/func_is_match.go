@@ -19,10 +19,11 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	jsoniter "github.com/json-iterator/go"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"regexp"
 	"strconv"
+
+	jsoniter "github.com/json-iterator/go"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
