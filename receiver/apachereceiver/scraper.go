@@ -43,12 +43,12 @@ const (
 func init() {
 	featuregate.GetRegistry().MustRegisterID(
 		EmitServerNameAsResourceAttribute,
-		featuregate.StageAlpha,
+		featuregate.StageBeta,
 		featuregate.WithRegisterDescription("When enabled, the name of the server will be sent as an apache.server.name resource attribute instead of a metric-level server_name attribute."),
 	)
 	featuregate.GetRegistry().MustRegisterID(
 		EmitPortAsResourceAttribute,
-		featuregate.StageAlpha,
+		featuregate.StageBeta,
 		featuregate.WithRegisterDescription("When enabled, the port of the server will be sent as an apache.server.port resource attribute."),
 	)
 }
