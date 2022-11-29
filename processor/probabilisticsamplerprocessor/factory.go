@@ -44,12 +44,14 @@ func NewFactory() component.ProcessorFactory {
 	return component.NewProcessorFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesProcessor(createTracesProcessor, stability))
+		component.WithTracesProcessor(createTracesProcessor, stability),
+		component.WithLogsProcessor(createLogsProcessor, component.StabilityLevelAlpha))
 }
 
 func createDefaultConfig() component.Config {
 	return &Config{
 		ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
+		AttributeSource:   defaultAttributeSource,
 	}
 }
 
@@ -61,4 +63,14 @@ func createTracesProcessor(
 	nextConsumer consumer.Traces,
 ) (component.TracesProcessor, error) {
 	return newTracesProcessor(ctx, set, cfg.(*Config), nextConsumer)
+}
+
+// createLogsProcessor creates a log processor based on this config.
+func createLogsProcessor(
+	ctx context.Context,
+	set component.ProcessorCreateSettings,
+	cfg component.Config,
+	nextConsumer consumer.Logs,
+) (component.LogsProcessor, error) {
+	return newLogsProcessor(ctx, set, nextConsumer, cfg.(*Config))
 }
