@@ -26,7 +26,6 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
-
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
