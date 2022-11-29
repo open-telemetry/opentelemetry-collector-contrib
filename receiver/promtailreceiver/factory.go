@@ -42,7 +42,7 @@ func (f receiverType) Type() component.Type {
 }
 
 // CreateDefaultConfig creates a config with type and version
-func (f receiverType) CreateDefaultConfig() component.ReceiverConfig {
+func (f receiverType) CreateDefaultConfig() component.Config {
 	return &PromtailConfig{
 		BaseConfig: adapter.BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
@@ -53,11 +53,11 @@ func (f receiverType) CreateDefaultConfig() component.ReceiverConfig {
 }
 
 // BaseConfig gets the base config from config, for now
-func (f receiverType) BaseConfig(cfg component.ReceiverConfig) adapter.BaseConfig {
+func (f receiverType) BaseConfig(cfg component.Config) adapter.BaseConfig {
 	return cfg.(*PromtailConfig).BaseConfig
 }
 
 // InputConfig unmarshals the input operator
-func (f receiverType) InputConfig(cfg component.ReceiverConfig) operator.Config {
+func (f receiverType) InputConfig(cfg component.Config) operator.Config {
 	return operator.NewConfig(&cfg.(*PromtailConfig).InputConfig)
 }
