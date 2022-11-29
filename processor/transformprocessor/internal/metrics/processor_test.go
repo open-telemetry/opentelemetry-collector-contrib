@@ -627,6 +627,69 @@ func Test_ProcessMetrics_MixContext(t *testing.T) {
 	}
 }
 
+func Test_ProcessMetrics_Error(t *testing.T) {
+	tests := []struct {
+		name             string
+		contextStatments []common.ContextStatements
+		want             func(td pmetric.Metrics)
+	}{
+		{
+			name: "metric error",
+			contextStatments: []common.ContextStatements{
+				{
+					Context: "metric",
+					Statements: []string{
+						`set(description, ParseJSON(1)) where name == "operationA"`,
+						`set(description, "pass")`,
+					},
+				},
+			},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).SetDescription("pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).SetDescription("pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(3).SetDescription("pass")
+			},
+		},
+		{
+			name: "datapoint error",
+			contextStatments: []common.ContextStatements{
+				{
+					Context: "datapoint",
+					Statements: []string{
+						`set(attributes["test"], ParseJSON(1)) where metric.name == "operationA"`,
+						`set(attributes["test"], "pass")`,
+					},
+				},
+			},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Histogram().DataPoints().At(0).Attributes().PutStr("test", "pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Histogram().DataPoints().At(1).Attributes().PutStr("test", "pass")
+
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).ExponentialHistogram().DataPoints().At(0).Attributes().PutStr("test", "pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).ExponentialHistogram().DataPoints().At(1).Attributes().PutStr("test", "pass")
+
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(3).Summary().DataPoints().At(0).Attributes().PutStr("test", "pass")
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			td := constructMetrics()
+			processor, err := NewProcessor(nil, tt.contextStatments, componenttest.NewNopTelemetrySettings())
+			assert.NoError(t, err)
+
+			_, err = processor.ProcessMetrics(context.Background(), td)
+			assert.Error(t, err)
+
+			exTd := constructMetrics()
+			tt.want(exTd)
+
+			assert.Equal(t, exTd, td)
+		})
+	}
+}
+
 func constructMetrics() pmetric.Metrics {
 	td := pmetric.NewMetrics()
 	rm0 := td.ResourceMetrics().AppendEmpty()

@@ -440,6 +440,46 @@ func Test_ProcessLogs_MixContext(t *testing.T) {
 	}
 }
 
+func Test_ProcessLogs_Error(t *testing.T) {
+	tests := []struct {
+		name             string
+		contextStatments []common.ContextStatements
+		want             func(td plog.Logs)
+	}{
+		{
+			name: "error",
+			contextStatments: []common.ContextStatements{
+				{
+					Context: "log",
+					Statements: []string{
+						`set(attributes["test"], ParseJSON(1)) where body == "operationA"`,
+						`set(attributes["test"], "pass")`,
+					},
+				},
+			},
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().PutStr("test", "pass")
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			td := constructLogs()
+			processor, err := NewProcessor(nil, tt.contextStatments, componenttest.NewNopTelemetrySettings())
+			assert.NoError(t, err)
+
+			_, err = processor.ProcessLogs(context.Background(), td)
+			assert.Error(t, err)
+
+			exTd := constructLogs()
+			tt.want(exTd)
+
+			assert.Equal(t, exTd, td)
+		})
+	}
+}
+
 func constructLogs() plog.Logs {
 	td := plog.NewLogs()
 	rs0 := td.ResourceLogs().AppendEmpty()

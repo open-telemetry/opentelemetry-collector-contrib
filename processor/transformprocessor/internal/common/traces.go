@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
@@ -39,6 +40,7 @@ func (t traceStatements) Capabilities() consumer.Capabilities {
 }
 
 func (t traceStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
+	var errors error
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rspans := td.ResourceSpans().At(i)
 		for j := 0; j < rspans.ScopeSpans().Len(); j++ {
@@ -49,13 +51,14 @@ func (t traceStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces) er
 				for _, statement := range t {
 					_, _, err := statement.Execute(ctx, tCtx)
 					if err != nil {
-						return err
+						errors = multierr.Append(errors, err)
+						break
 					}
 				}
 			}
 		}
 	}
-	return nil
+	return errors
 }
 
 var _ consumer.Traces = &spanEventStatements{}
@@ -69,6 +72,7 @@ func (s spanEventStatements) Capabilities() consumer.Capabilities {
 }
 
 func (s spanEventStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
+	var errors error
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rspans := td.ResourceSpans().At(i)
 		for j := 0; j < rspans.ScopeSpans().Len(); j++ {
@@ -82,14 +86,15 @@ func (s spanEventStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces
 					for _, statement := range s {
 						_, _, err := statement.Execute(ctx, tCtx)
 						if err != nil {
-							return err
+							errors = multierr.Append(errors, err)
+							break
 						}
 					}
 				}
 			}
 		}
 	}
-	return nil
+	return errors
 }
 
 type TraceParserCollection struct {

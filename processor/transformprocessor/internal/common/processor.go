@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
@@ -43,45 +44,51 @@ func (r resourceStatements) Capabilities() consumer.Capabilities {
 }
 
 func (r resourceStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
+	var errors error
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rspans := td.ResourceSpans().At(i)
 		tCtx := ottlresource.NewTransformContext(rspans.Resource())
 		for _, statement := range r {
 			_, _, err := statement.Execute(ctx, tCtx)
 			if err != nil {
-				return err
+				errors = multierr.Append(errors, err)
+				break
 			}
 		}
 	}
-	return nil
+	return errors
 }
 
 func (r resourceStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
+	var errors error
 	for i := 0; i < md.ResourceMetrics().Len(); i++ {
 		rmetrics := md.ResourceMetrics().At(i)
 		tCtx := ottlresource.NewTransformContext(rmetrics.Resource())
 		for _, statement := range r {
 			_, _, err := statement.Execute(ctx, tCtx)
 			if err != nil {
-				return err
+				errors = multierr.Append(errors, err)
+				break
 			}
 		}
 	}
-	return nil
+	return errors
 }
 
 func (r resourceStatements) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
+	var errors error
 	for i := 0; i < ld.ResourceLogs().Len(); i++ {
 		rlogs := ld.ResourceLogs().At(i)
 		tCtx := ottlresource.NewTransformContext(rlogs.Resource())
 		for _, statement := range r {
 			_, _, err := statement.Execute(ctx, tCtx)
 			if err != nil {
-				return err
+				errors = multierr.Append(errors, err)
+				break
 			}
 		}
 	}
-	return nil
+	return errors
 }
 
 var _ consumer.Traces = &scopeStatements{}
@@ -98,6 +105,7 @@ func (s scopeStatements) Capabilities() consumer.Capabilities {
 }
 
 func (s scopeStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
+	var errors error
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rspans := td.ResourceSpans().At(i)
 		for j := 0; j < rspans.ScopeSpans().Len(); j++ {
@@ -106,15 +114,17 @@ func (s scopeStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces) er
 			for _, statement := range s {
 				_, _, err := statement.Execute(ctx, tCtx)
 				if err != nil {
-					return err
+					errors = multierr.Append(errors, err)
+					break
 				}
 			}
 		}
 	}
-	return nil
+	return errors
 }
 
 func (s scopeStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
+	var errors error
 	for i := 0; i < md.ResourceMetrics().Len(); i++ {
 		rmetrics := md.ResourceMetrics().At(i)
 		for j := 0; j < rmetrics.ScopeMetrics().Len(); j++ {
@@ -123,15 +133,17 @@ func (s scopeStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metrics)
 			for _, statement := range s {
 				_, _, err := statement.Execute(ctx, tCtx)
 				if err != nil {
-					return err
+					errors = multierr.Append(errors, err)
+					break
 				}
 			}
 		}
 	}
-	return nil
+	return errors
 }
 
 func (s scopeStatements) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
+	var errors error
 	for i := 0; i < ld.ResourceLogs().Len(); i++ {
 		rlogs := ld.ResourceLogs().At(i)
 		for j := 0; j < rlogs.ScopeLogs().Len(); j++ {
@@ -140,12 +152,13 @@ func (s scopeStatements) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 			for _, statement := range s {
 				_, _, err := statement.Execute(ctx, tCtx)
 				if err != nil {
-					return err
+					errors = multierr.Append(errors, err)
+					break
 				}
 			}
 		}
 	}
-	return nil
+	return errors
 }
 
 type parserCollection struct {
