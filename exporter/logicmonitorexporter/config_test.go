@@ -115,9 +115,9 @@ func TestLoadConfig(t *testing.T) {
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "https://company.logicmonitor.com/rest",
 				},
-				APIToken: map[string]string{
-					"access_id":  "accessid",
-					"access_key": "accesskey",
+				APIToken: APIToken{
+					AccessID:  "accessid",
+					AccessKey: "accesskey",
 				},
 			},
 		},

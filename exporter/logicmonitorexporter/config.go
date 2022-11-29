@@ -25,7 +25,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
-// Config defines configuration for Logic Monitor exporter.
+// Config defines configuration for LogicMonitor exporter.
 type Config struct {
 	config.ExporterSettings `mapstructure:",squash"`
 
@@ -35,8 +35,13 @@ type Config struct {
 	exporterhelper.RetrySettings `mapstructure:"retry_on_failure"`
 	ResourceToTelemetrySettings  resourcetotelemetry.Settings `mapstructure:"resource_to_telemetry_conversion"`
 
-	// ApiToken of LM Platform
-	APIToken map[string]string `mapstructure:"apitoken"`
+	// ApiToken of Logicmonitor Platform
+	APIToken APIToken `mapstructure:"apitoken"`
+}
+
+type APIToken struct {
+	AccessID  string `mapstructure:"access_id"`
+	AccessKey string `mapstructure:"access_key"`
 }
 
 func (c *Config) Validate() error {
