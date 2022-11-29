@@ -44,7 +44,7 @@ func ParseJSON[K any](target ottl.Getter[K]) (ottl.ExprFunc[K], error) {
 			return nil, fmt.Errorf("target must be a string but got %T", targetVal)
 		}
 		var parsedValue map[string]interface{}
-		err := jsoniter.UnmarshalFromString(jsonStr, &parsedValue)
+		err = jsoniter.UnmarshalFromString(jsonStr, &parsedValue)
 		if err != nil {
 			return nil, err
 		}
