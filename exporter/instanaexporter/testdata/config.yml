@@ -1,8 +1,12 @@
 instana/bad_endpoint:
   endpoint: never a url
   agent_key: key1
-instana/missing_agent_key:
-  endpoint: http://example.com/api/
-instana/valid:
+instana/non_https_endpoint:
   endpoint: http://example.com/api/
   agent_key: key1
+instana/missing_agent_key:
+  endpoint: https://example.com/api/
+instana/valid:
+  endpoint: https://example.com/api/
+  agent_key: key1
+
