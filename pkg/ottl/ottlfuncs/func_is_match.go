@@ -16,7 +16,10 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import (
 	"context"
+	"encoding/base64"
+	"errors"
 	"fmt"
+	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"regexp"
 	"strconv"
@@ -42,12 +45,26 @@ func IsMatch[K any](target ottl.Getter[K], pattern string) (ottl.ExprFunc[K], er
 			return compiledPattern.MatchString(strconv.FormatBool(v)), nil
 		case int64:
 			return compiledPattern.MatchString(strconv.FormatInt(v, 10)), nil
+		case float64:
+			return compiledPattern.MatchString(strconv.FormatFloat(v, 'f', -1, 64)), nil
+		case []byte:
+			return compiledPattern.MatchString(base64.StdEncoding.EncodeToString(v)), nil
+		case pcommon.Map:
+			result, err := jsoniter.MarshalToString(v.AsRaw())
+			if err != nil {
+				return nil, err
+			}
+			return compiledPattern.MatchString(result), nil
+		case pcommon.Slice:
+			result, err := jsoniter.MarshalToString(v.AsRaw())
+			if err != nil {
+				return nil, err
+			}
+			return compiledPattern.MatchString(result), nil
 		case pcommon.Value:
 			return compiledPattern.MatchString(v.AsString()), nil
 		default:
 			return nil, errors.New("unsupported type")
 		}
-
-		return false, nil
 	}, nil
 }
