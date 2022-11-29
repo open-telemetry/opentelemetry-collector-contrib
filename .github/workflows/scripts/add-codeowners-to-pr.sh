@@ -103,7 +103,6 @@ main () {
     # accepts duplicate logins and logins that are already reviewers.
     if [[ -n "${REVIEWERS}" ]]; then
         curl \
-            --fail \
             -X POST \
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer ${GITHUB_TOKEN}" \
