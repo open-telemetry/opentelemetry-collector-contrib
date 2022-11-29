@@ -39,16 +39,17 @@ func ParseJSON[K any](target ottl.Getter[K]) (ottl.ExprFunc[K], error) {
 		if err != nil {
 			return nil, err
 		}
-		if jsonStr, ok := targetVal.(string); ok {
-			var parsedValue map[string]interface{}
-			err := jsoniter.UnmarshalFromString(jsonStr, &parsedValue)
-			if err != nil {
-				return nil, err
-			}
-			result := pcommon.NewMap()
-			err = result.FromRaw(parsedValue)
-			return result, err
+		jsonStr, ok := targetVal.(string)
+		if !ok {
+			return nil, fmt.Errorf("target must be a string but got %T", targetVal)
 		}
-		return nil, fmt.Errorf("target must be a string but got %T", targetVal)
+		var parsedValue map[string]interface{}
+		err := jsoniter.UnmarshalFromString(jsonStr, &parsedValue)
+		if err != nil {
+			return nil, err
+		}
+		result := pcommon.NewMap()
+		err = result.FromRaw(parsedValue)
+		return result, err
 	}, nil
 }
