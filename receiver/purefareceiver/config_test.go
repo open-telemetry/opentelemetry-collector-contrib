@@ -17,6 +17,7 @@ package purefareceiver // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -39,9 +40,13 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewID(typeStr),
 			expected: &Config{
 				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
+				Settings: &Settings{
+					ReloadIntervals: &ReloadIntervals{
+						Array: 15 * time.Second,
+					},
+				},
 			},
 		},
-		// TODO(dgoscn): testar with_custom_intervals
 	}
 
 	for _, tt := range tests {

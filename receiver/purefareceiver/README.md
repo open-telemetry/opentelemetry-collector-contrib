@@ -29,12 +29,15 @@ receivers:
     endpoint: http://172.0.0.0:9490/metrics/
     arrays:
     - address: gse-array01
-      auth: bearertokenauth/array01
+      auth:
+        authenticator: bearertokenauth/array01
     - address: gse-array02
-      auth: bearertokenauth/array02
+      auth:
+        authenticator: bearertokenauth/array02
     hosts:
     - address: gse-array01
-      auth: bearertokenauth/array01
+      auth:
+        authenticator: bearertokenauth/array01
     settings:
       reload_intervals:
         array: 10s
