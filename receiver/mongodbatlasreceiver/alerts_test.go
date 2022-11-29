@@ -72,12 +72,12 @@ func TestPayloadToLogRecord(t *testing.T) {
 				rl := logs.ResourceLogs().AppendEmpty()
 				lr := rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
-				rl.Resource().Attributes().FromRaw(map[string]interface{}{
+				assert.NoError(t, rl.Resource().Attributes().FromRaw(map[string]interface{}{
 					"mongodbatlas.group.id":        "some-group-id",
 					"mongodbatlas.alert.config.id": "123",
-				})
+				}))
 
-				lr.Attributes().FromRaw(map[string]interface{}{
+				assert.NoError(t, lr.Attributes().FromRaw(map[string]interface{}{
 					"created":      "2022-06-03T22:30:31Z",
 					"message":      "Some event happened",
 					"event.domain": "mongodbatlas",
@@ -85,7 +85,7 @@ func TestPayloadToLogRecord(t *testing.T) {
 					"updated":      "2022-06-03T22:30:31Z",
 					"status":       "STATUS",
 					"id":           "some-id",
-				})
+				}))
 
 				lr.SetObservedTimestamp(pcommon.NewTimestampFromTime(now))
 				lr.SetTimestamp(pcommon.NewTimestampFromTime(time.Date(2022, time.June, 3, 22, 30, 31, 0, time.UTC)))
@@ -129,14 +129,14 @@ func TestPayloadToLogRecord(t *testing.T) {
 				rl := logs.ResourceLogs().AppendEmpty()
 				lr := rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
-				rl.Resource().Attributes().FromRaw(map[string]interface{}{
+				assert.NoError(t, rl.Resource().Attributes().FromRaw(map[string]interface{}{
 					"mongodbatlas.group.id":         "some-group-id",
 					"mongodbatlas.alert.config.id":  "123",
 					"mongodbatlas.cluster.name":     "cluster-name",
 					"mongodbatlas.replica_set.name": "replica-set",
-				})
+				}))
 
-				lr.Attributes().FromRaw(map[string]interface{}{
+				assert.NoError(t, lr.Attributes().FromRaw(map[string]interface{}{
 					"acknowledgement.comment":  "Scheduled maintenance",
 					"acknowledgement.until":    "2022-06-03T22:32:34Z",
 					"acknowledgement.username": "devops",
@@ -156,7 +156,7 @@ func TestPayloadToLogRecord(t *testing.T) {
 					"type_name":                "type-name",
 					"updated":                  "2022-06-03T22:30:35Z",
 					"user_alias":               "user-alias",
-				})
+				}))
 
 				lr.SetObservedTimestamp(pcommon.NewTimestampFromTime(now))
 				lr.SetTimestamp(pcommon.NewTimestampFromTime(time.Date(2022, time.June, 3, 22, 30, 35, 0, time.UTC)))

@@ -39,7 +39,7 @@ func NewFactory() component.ExtensionFactory {
 	)
 }
 
-func createDefaultConfig() component.ExtensionConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
 		RefreshInterval:   defaultCollectionInterval * time.Second,
@@ -49,7 +49,7 @@ func createDefaultConfig() component.ExtensionConfig {
 func createExtension(
 	_ context.Context,
 	params component.ExtensionCreateSettings,
-	cfg component.ExtensionConfig,
+	cfg component.Config,
 ) (component.Extension, error) {
 	config := cfg.(*Config)
 	return newObserver(params.Logger, config)

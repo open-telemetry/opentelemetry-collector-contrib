@@ -55,5 +55,5 @@ func (cfg *Config) Validate() error {
 	if !cfg.ObservePods && !cfg.ObserveNodes {
 		return fmt.Errorf("one of observe_pods and observe_nodes must be true")
 	}
-	return cfg.APIConfig.Validate()
+	return nil
 }

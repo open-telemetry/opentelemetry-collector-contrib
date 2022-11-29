@@ -34,7 +34,7 @@ func TestLoadConfig(t *testing.T) {
 
 	tests := []struct {
 		id       component.ID
-		expected component.ExporterConfig
+		expected component.Config
 	}{
 
 		{
@@ -49,6 +49,7 @@ func TestLoadConfig(t *testing.T) {
 				InstrumentationKey: "abcdefg",
 				MaxBatchSize:       100,
 				MaxBatchInterval:   10 * time.Second,
+				SpanEventsEnabled:  false,
 			},
 		},
 	}
@@ -60,7 +61,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalExporterConfig(sub, cfg))
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)

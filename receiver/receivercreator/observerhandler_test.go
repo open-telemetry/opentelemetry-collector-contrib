@@ -34,12 +34,12 @@ func (run *mockRunner) start(
 	receiver receiverConfig,
 	discoveredConfig userConfigMap,
 	nextConsumer consumer.Metrics,
-) (component.Receiver, error) {
+) (component.Component, error) {
 	args := run.Called(receiver, discoveredConfig, nextConsumer)
-	return args.Get(0).(component.Receiver), args.Error(1)
+	return args.Get(0).(component.Component), args.Error(1)
 }
 
-func (run *mockRunner) shutdown(rcvr component.Receiver) error {
+func (run *mockRunner) shutdown(rcvr component.Component) error {
 	args := run.Called(rcvr)
 	return args.Error(0)
 }

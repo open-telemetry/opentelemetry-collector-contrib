@@ -41,7 +41,7 @@ func NewFactory() component.ExporterFactory {
 		component.WithMetricsExporter(createMetricsExporter, stability))
 }
 
-func createDefaultConfig() component.ExporterConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ExporterSettings:  config.NewExporterSettings(component.NewID(typeStr)),
 		ConstLabels:       map[string]string{},
@@ -54,7 +54,7 @@ func createDefaultConfig() component.ExporterConfig {
 func createMetricsExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
-	cfg component.ExporterConfig,
+	cfg component.Config,
 ) (component.MetricsExporter, error) {
 	pcfg := cfg.(*Config)
 
@@ -68,7 +68,8 @@ func createMetricsExporter(
 		set,
 		cfg,
 		prometheus.ConsumeMetrics,
-		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
+		// TODO: Consider to revert to non mutable data, need to not modify the incoming data, like sorting when calculating the signature.
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
 		exporterhelper.WithStart(prometheus.Start),
 		exporterhelper.WithShutdown(prometheus.Shutdown),
 	)

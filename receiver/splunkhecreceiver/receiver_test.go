@@ -981,6 +981,27 @@ func Test_splunkhecReceiver_handleRawReq(t *testing.T) {
 	}
 }
 
+func Test_splunkhecreceiver_handleHealthPath(t *testing.T) {
+	config := createDefaultConfig().(*Config)
+	sink := new(consumertest.LogsSink)
+	rcv, err := newLogsReceiver(componenttest.NewNopReceiverCreateSettings(), *config, sink)
+	assert.NoError(t, err)
+
+	r := rcv.(*splunkReceiver)
+	assert.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
+	defer func() {
+		assert.NoError(t, r.Shutdown(context.Background()))
+	}()
+	w := httptest.NewRecorder()
+	r.handleHealthReq(w, httptest.NewRequest("POST", "http://localhost/services/collector/health", nil))
+
+	resp := w.Result()
+	respBytes, err := io.ReadAll(resp.Body)
+	assert.NoError(t, err)
+	assert.Len(t, respBytes, 0)
+	assert.Equal(t, 200, resp.StatusCode)
+}
+
 func BenchmarkHandleReq(b *testing.B) {
 	config := createDefaultConfig().(*Config)
 	config.Endpoint = "localhost:0"

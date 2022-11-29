@@ -35,7 +35,7 @@ func NewFactory() component.ReceiverFactory {
 		component.WithTracesReceiver(createTracesReceiver, component.StabilityLevelBeta))
 }
 
-func createDefaultConfig() component.ReceiverConfig {
+func createDefaultConfig() component.Config {
 	// reference the existing default configurations provided
 	// in the X-Ray daemon:
 	// https://github.com/aws/aws-xray-daemon/blob/master/pkg/cfg/cfg.go#L99
@@ -54,7 +54,7 @@ func createDefaultConfig() component.ReceiverConfig {
 func createTracesReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateSettings,
-	cfg component.ReceiverConfig,
+	cfg component.Config,
 	consumer consumer.Traces) (component.TracesReceiver, error) {
 	rcfg := cfg.(*Config)
 	return newReceiver(rcfg, consumer, params)

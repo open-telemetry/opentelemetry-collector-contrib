@@ -31,6 +31,8 @@ type Config struct {
 	Path string `mapstructure:"path"`
 	// RawPath for raw data collection, default is '/services/collector/raw'
 	RawPath string `mapstructure:"raw_path"`
+	// HealthPath for health API, default is '/services/collector/health'
+	HealthPath string `mapstructure:"health_path"`
 	// HecToOtelAttrs creates a mapping from HEC metadata to attributes.
 	HecToOtelAttrs splunk.HecToOtelAttrs `mapstructure:"hec_metadata_to_otel_attrs"`
 }

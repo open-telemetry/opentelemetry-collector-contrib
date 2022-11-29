@@ -36,7 +36,7 @@ type Config struct {
 	DefaultServiceName string `mapstructure:"default_service_name"`
 }
 
-var _ component.ExporterConfig = (*Config)(nil)
+var _ component.Config = (*Config)(nil)
 
 // Validate checks if the exporter configuration is valid
 func (cfg *Config) Validate() error {

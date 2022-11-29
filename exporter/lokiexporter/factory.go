@@ -35,7 +35,7 @@ func NewFactory() component.ExporterFactory {
 	)
 }
 
-func createLogsExporter(ctx context.Context, set component.ExporterCreateSettings, config component.ExporterConfig) (component.LogsExporter, error) {
+func createLogsExporter(ctx context.Context, set component.ExporterCreateSettings, config component.Config) (component.LogsExporter, error) {
 	expCfg := config.(*Config)
 
 	// this should go away once the legacy code is removed, as the config validation happens during the loading

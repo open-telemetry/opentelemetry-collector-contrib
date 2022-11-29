@@ -27,4 +27,5 @@ type Config struct {
 	InstrumentationKey      string        `mapstructure:"instrumentation_key"`
 	MaxBatchSize            int           `mapstructure:"maxbatchsize"`
 	MaxBatchInterval        time.Duration `mapstructure:"maxbatchinterval"`
+	SpanEventsEnabled       bool          `mapstructure:"spaneventsenabled"`
 }

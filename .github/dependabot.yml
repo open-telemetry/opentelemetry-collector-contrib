@@ -343,6 +343,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/internal/filter"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/internal/k8sconfig"
     schedule:
       interval: "weekly"
@@ -716,6 +720,10 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/receiver/pulsarreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/purefareceiver"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"

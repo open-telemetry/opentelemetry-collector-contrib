@@ -32,7 +32,7 @@ type transformer struct {
 
 func newTransformer(
 	_ context.Context,
-	conf component.ProcessorConfig,
+	conf component.Config,
 	set component.ProcessorCreateSettings,
 ) (*transformer, error) {
 	cfg, ok := conf.(*Config)

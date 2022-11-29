@@ -103,6 +103,7 @@ internal/scrapertest/                                @open-telemetry/collector-c
 internal/splunk/                                     @open-telemetry/collector-contrib-approvers @pmcollins @dmitryax
 internal/tools/                                      @open-telemetry/collector-contrib-approvers
 internal/coreinternal/                               @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
+internal/filter/                                     @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 internal/sharedcomponent/                            @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 
 pkg/batchpersignal/                                  @open-telemetry/collector-contrib-approvers @jpkrohling
@@ -123,7 +124,7 @@ pkg/experimentalmetricmetadata/                      @open-telemetry/collector-c
 processor/attributesprocessor/                       @open-telemetry/collector-contrib-approvers @boostchicken
 processor/cumulativetodeltaprocessor/                @open-telemetry/collector-contrib-approvers @TylerHelmuth
 processor/deltatorateprocessor/                      @open-telemetry/collector-contrib-approvers @Aneurysm9
-processor/filterprocessor/                           @open-telemetry/collector-contrib-approvers @boostchicken
+processor/filterprocessor/                           @open-telemetry/collector-contrib-approvers @TylerHelmuth @boostchicken
 processor/groupbyattrsprocessor/                     @open-telemetry/collector-contrib-approvers
 processor/groupbytraceprocessor/                     @open-telemetry/collector-contrib-approvers @jpkrohling
 processor/k8sattributesprocessor/                    @open-telemetry/collector-contrib-approvers @owais @dmitryax
@@ -166,7 +167,7 @@ receiver/filelogreceiver/                            @open-telemetry/collector-c
 receiver/flinkmetricsreceiver/                       @open-telemetry/collector-contrib-approvers @jonathanwamsley @djaglowski
 receiver/fluentforwardreceiver/                      @open-telemetry/collector-contrib-approvers @dmitryax
 receiver/googlecloudpubsubreceiver/                  @open-telemetry/collector-contrib-approvers @alexvanboxel
-receiver/googlecloudspannerreceiver/                 @open-telemetry/collector-contrib-approvers @ydrozhdzhal @asukhyy @khospodarysko @architjugran
+receiver/googlecloudspannerreceiver/                 @open-telemetry/collector-contrib-approvers @architjugran @varunraiko @kiranmayib
 receiver/hostmetricsreceiver/                        @open-telemetry/collector-contrib-approvers @dmitryax
 receiver/httpcheckreceiver/                          @open-telemetry/collector-contrib-approvers @codeboten
 receiver/influxdbreceiver/                           @open-telemetry/collector-contrib-approvers @jacobmarble
@@ -195,6 +196,7 @@ receiver/prometheusexecreceiver/                     @open-telemetry/collector-c
 receiver/prometheusreceiver/                         @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole
 receiver/rabbitmqreceiver/                           @open-telemetry/collector-contrib-approvers @djaglowski @cpheps
 receiver/pulsarreceiver/                             @open-telemetry/collector-contrib-approvers @dmitryax @tjiuming
+receiver/purefareceiver/                             @open-telemetry/collector-contrib-approvers @jpkrohling @dgoscn @chrroberts-pure
 receiver/receivercreator/                            @open-telemetry/collector-contrib-approvers @jrcamp
 receiver/redisreceiver/                              @open-telemetry/collector-contrib-approvers @pmcollins @dmitryax
 receiver/riakreceiver/                               @open-telemetry/collector-contrib-approvers @djaglowski @armstrmi

@@ -37,14 +37,14 @@ func TestLoadConfig(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	r0 := cfg.(*Config)
 	assert.Equal(t, r0, factory.CreateDefaultConfig())
 
 	sub, err = cm.Sub(component.NewIDWithName(typeStr, "customname").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	r1 := cfg.(*Config)
 	assert.Equal(t, r1.ReceiverSettings, config.NewReceiverSettings(component.NewID(typeStr)))
@@ -69,7 +69,7 @@ func TestLoadTargetAllocatorConfig(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	r0 := cfg.(*Config)
 	assert.Nil(t, r0.PrometheusConfig)
@@ -80,7 +80,7 @@ func TestLoadTargetAllocatorConfig(t *testing.T) {
 	sub, err = cm.Sub(component.NewIDWithName(typeStr, "withScrape").String())
 	require.NoError(t, err)
 	cfg = factory.CreateDefaultConfig()
-	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	r1 := cfg.(*Config)
 	assert.Nil(t, r0.PrometheusConfig)
@@ -95,7 +95,7 @@ func TestLoadTargetAllocatorConfig(t *testing.T) {
 	sub, err = cm.Sub(component.NewIDWithName(typeStr, "withOnlyScrape").String())
 	require.NoError(t, err)
 	cfg = factory.CreateDefaultConfig()
-	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	r2 := cfg.(*Config)
 	assert.Equal(t, 1, len(r2.PrometheusConfig.ScrapeConfigs))
@@ -111,7 +111,7 @@ func TestLoadConfigFailsOnUnknownSection(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
 	require.NoError(t, err)
-	require.Error(t, component.UnmarshalReceiverConfig(sub, cfg))
+	require.Error(t, component.UnmarshalConfig(sub, cfg))
 }
 
 // As one of the config parameters is consuming prometheus
@@ -125,7 +125,7 @@ func TestLoadConfigFailsOnUnknownPrometheusSection(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
 	require.NoError(t, err)
-	require.Error(t, component.UnmarshalReceiverConfig(sub, cfg))
+	require.Error(t, component.UnmarshalConfig(sub, cfg))
 }
 
 // Renaming is not allowed
@@ -137,7 +137,7 @@ func TestLoadConfigFailsOnRenameDisallowed(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 	assert.Error(t, component.ValidateConfig(cfg))
 
 }
@@ -150,7 +150,7 @@ func TestRejectUnsupportedPrometheusFeatures(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	err = component.ValidateConfig(cfg)
 	require.NotNil(t, err, "Expected a non-nil error")
@@ -175,7 +175,7 @@ func TestNonExistentAuthCredentialsFile(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	err = component.ValidateConfig(cfg)
 	require.NotNil(t, err, "Expected a non-nil error")
@@ -194,7 +194,7 @@ func TestTLSConfigNonExistentCertFile(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	err = component.ValidateConfig(cfg)
 	require.NotNil(t, err, "Expected a non-nil error")
@@ -213,7 +213,7 @@ func TestTLSConfigNonExistentKeyFile(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	err = component.ValidateConfig(cfg)
 	require.NotNil(t, err, "Expected a non-nil error")
@@ -232,7 +232,7 @@ func TestTLSConfigCertFileWithoutKeyFile(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	err = component.ValidateConfig(cfg)
 	require.NotNil(t, err, "Expected a non-nil error")
@@ -251,7 +251,7 @@ func TestTLSConfigKeyFileWithoutCertFile(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	err = component.ValidateConfig(cfg)
 	require.NotNil(t, err, "Expected a non-nil error")
@@ -270,7 +270,7 @@ func TestKubernetesSDConfigWithoutKeyFile(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	err = component.ValidateConfig(cfg)
 	require.NotNil(t, err, "Expected a non-nil error")
@@ -289,7 +289,7 @@ func TestFileSDConfigJsonNilTargetGroup(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	err = component.ValidateConfig(cfg)
 	require.NotNil(t, err, "Expected a non-nil error")
@@ -308,7 +308,7 @@ func TestFileSDConfigYamlNilTargetGroup(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	err = component.ValidateConfig(cfg)
 	require.NotNil(t, err, "Expected a non-nil error")

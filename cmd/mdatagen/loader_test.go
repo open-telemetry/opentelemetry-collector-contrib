@@ -41,13 +41,24 @@ func Test_loadMetadata(t *testing.T) {
 						Description: "Attribute with a known set of values.",
 						Value:       "",
 						Enum:        []string{"red", "green", "blue"},
+						Type: ValueType{
+							ValueType: pcommon.ValueTypeStr,
+						},
 					},
 					"freeFormAttribute": {
 						Description: "Attribute that can take on any value.",
-						Value:       ""},
+						Value:       "",
+						Type: ValueType{
+							ValueType: pcommon.ValueTypeStr,
+						},
+					},
 					"freeFormAttributeWithValue": {
 						Description: "Attribute that has alternate value set.",
-						Value:       "state"},
+						Value:       "state",
+						Type: ValueType{
+							ValueType: pcommon.ValueTypeStr,
+						},
+					},
 					"booleanValueType": {
 						Description: "Attribute with a boolean value.",
 						Value:       "0",

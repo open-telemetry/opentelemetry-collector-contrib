@@ -3,11 +3,13 @@ name: kafkametricsreceiver
 attributes:
   topic:
     description: The ID (integer) of a topic
+    type: string
   partition:
     description: The number (integer) of the partition
     type: int
   group:
     description: The ID (string) of a consumer group
+    type: string
 
 metrics:
 #  brokers scraper

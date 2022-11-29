@@ -64,6 +64,7 @@ func appendTestLogData(dest plog.Logs, numberOfLogs int, attributes map[string]i
 		ts := pcommon.Timestamp(int64(i) * time.Millisecond.Nanoseconds())
 		logRecord := sl.LogRecords().AppendEmpty()
 		logRecord.Body().SetStr("mylog")
+		//nolint:errcheck
 		logRecord.Attributes().FromRaw(attributes)
 		logRecord.SetTimestamp(ts)
 	}

@@ -35,6 +35,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/atomic"
 )
 
@@ -509,7 +510,7 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 			defer allocator.Stop()
 
 			tc.cfg.TargetAllocator.Endpoint = allocator.srv.URL // set service URL with the automatic generated one
-			receiver := newPrometheusReceiver(componenttest.NewNopReceiverCreateSettings(), tc.cfg, cms)
+			receiver := newPrometheusReceiver(componenttest.NewNopReceiverCreateSettings(), tc.cfg, cms, featuregate.GetRegistry())
 
 			require.NoError(t, receiver.Start(ctx, componenttest.NewNopHost()))
 

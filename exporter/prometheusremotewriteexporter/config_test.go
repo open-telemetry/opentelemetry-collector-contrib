@@ -39,7 +39,7 @@ func TestLoadConfig(t *testing.T) {
 
 	tests := []struct {
 		id           component.ID
-		expected     component.ExporterConfig
+		expected     component.Config
 		errorMessage string
 	}{
 		{
@@ -102,7 +102,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalExporterConfig(sub, cfg))
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 			if tt.expected == nil {
 				assert.EqualError(t, component.ValidateConfig(cfg), tt.errorMessage)
@@ -122,7 +122,7 @@ func TestDisabledQueue(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(typeStr, "disabled_queue").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalExporterConfig(sub, cfg))
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	assert.False(t, cfg.(*Config).RemoteWriteQueue.Enabled)
 }
@@ -135,7 +135,7 @@ func TestDisabledTargetInfo(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(typeStr, "disabled_target_info").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalExporterConfig(sub, cfg))
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	assert.False(t, cfg.(*Config).TargetInfo.Enabled)
 }

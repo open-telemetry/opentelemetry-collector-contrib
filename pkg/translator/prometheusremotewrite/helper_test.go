@@ -463,10 +463,10 @@ func TestAddResourceTargetInfo(t *testing.T) {
 		conventions.AttributeServiceInstanceID: "service-instance-id",
 	}
 	resourceWithServiceAttrs := pcommon.NewResource()
-	resourceWithServiceAttrs.Attributes().FromRaw(resourceAttrMap)
+	assert.NoError(t, resourceWithServiceAttrs.Attributes().FromRaw(resourceAttrMap))
 	resourceWithServiceAttrs.Attributes().PutStr("resource_attr", "resource-attr-val-1")
 	resourceWithOnlyServiceAttrs := pcommon.NewResource()
-	resourceWithOnlyServiceAttrs.Attributes().FromRaw(resourceAttrMap)
+	assert.NoError(t, resourceWithOnlyServiceAttrs.Attributes().FromRaw(resourceAttrMap))
 	for _, tc := range []struct {
 		desc      string
 		resource  pcommon.Resource

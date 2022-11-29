@@ -54,7 +54,7 @@ func NewFactory() component.ExporterFactory {
 }
 
 // createDefaultConfig creates the default configuration for exporter.
-func createDefaultConfig() component.ExporterConfig {
+func createDefaultConfig() component.Config {
 	if !featuregate.GetRegistry().IsEnabled(pdataExporterFeatureGate) {
 		return &LegacyConfig{
 			ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
@@ -76,7 +76,7 @@ func createDefaultConfig() component.ExporterConfig {
 func createLogsExporter(
 	ctx context.Context,
 	params component.ExporterCreateSettings,
-	cfg component.ExporterConfig) (component.LogsExporter, error) {
+	cfg component.Config) (component.LogsExporter, error) {
 	var eCfg *Config
 	if !featuregate.GetRegistry().IsEnabled(pdataExporterFeatureGate) {
 		eCfg = toNewConfig(cfg.(*LegacyConfig))
@@ -104,7 +104,7 @@ func createLogsExporter(
 func createTracesExporter(
 	ctx context.Context,
 	params component.ExporterCreateSettings,
-	cfg component.ExporterConfig) (component.TracesExporter, error) {
+	cfg component.Config) (component.TracesExporter, error) {
 	var eCfg *Config
 	if !featuregate.GetRegistry().IsEnabled(pdataExporterFeatureGate) {
 		eCfg = toNewConfig(cfg.(*LegacyConfig))
@@ -132,7 +132,7 @@ func createTracesExporter(
 func createMetricsExporter(
 	ctx context.Context,
 	params component.ExporterCreateSettings,
-	cfg component.ExporterConfig) (component.MetricsExporter, error) {
+	cfg component.Config) (component.MetricsExporter, error) {
 	if !featuregate.GetRegistry().IsEnabled(pdataExporterFeatureGate) {
 		eCfg := cfg.(*LegacyConfig)
 		return newLegacyGoogleCloudMetricsExporter(eCfg, params)

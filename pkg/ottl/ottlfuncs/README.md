@@ -2,20 +2,21 @@
 
 The following functions are intended to be used in implementations of the OpenTelemetry Transformation Language that interact with otel data via the collector's internal data model, [pdata](https://github.com/open-telemetry/opentelemetry-collector/tree/main/pdata). These functions may make assumptions about the types of the data returned by Paths.
 
-Factory Functions
-- [Concat](#concat)
-- [Int](#int)
-- [IsMatch](#ismatch)
-- [SpanID](#spanid)
-- [Split](#split)
-- [TraceID](#traceid)
-- [ConvertCase](#convertcase)
+## Functions
 
-Functions
+Functions are the way that components that use OTTL transform telemetry.
+
+Functions:
+- Are allowed to transform telemetry.  When a Function is invoked the expectation is that the underlying telemetry is modified in some way.
+- May have side effects.  Some Functions may generate telemetry and add it to the telemetry payload to be processed in this batch.
+- May return values.  Although not common, Functions may return values, but they do not have to.
+
+List of available Functions:
 - [delete_key](#delete_key)
 - [delete_matching_keys](#delete_matching_keys)
 - [keep_keys](#keep_keys)
 - [limit](#limit)
+- [merge_maps](#merge_maps)
 - [replace_all_matches](#replace_all_matches)
 - [replace_all_patterns](#replace_all_patterns)
 - [replace_match](#replace_match)
@@ -23,7 +24,25 @@ Functions
 - [set](#set)
 - [truncate_all](#truncate_all)
 
-## Concat
+## Factory Functions
+
+Factory Functions are functions that help translate between the OTTL grammar and the underlying pdata structure.
+They manipulate the OTTL grammar value into a form that will make working with the telemetry easier or more efficient.
+
+Factory Functions:
+- Are pure functions.  They should never change the underlying telemetry and the same inputs should always result in the same output.
+- Always return something.  
+
+List of available Factory Functions:
+- [Concat](#concat)
+- [ConvertCase](#convertcase)
+- [Int](#int)
+- [IsMatch](#ismatch)
+- [SpanID](#spanid)
+- [Split](#split)
+- [TraceID](#traceid)
+
+### Concat
 
 `Concat(values[], delimiter)`
 
@@ -43,7 +62,30 @@ Examples:
 
 - `Concat(["HTTP method is: ", attributes["http.method"]], "")`
 
-## Int
+### ConvertCase
+
+`ConvertCase(target, toCase)`
+
+The `ConvertCase` factory function converts the `target` string into the desired case `toCase`.
+
+`target` is a string. `toCase` is a string.
+
+If the `target` is not a string or does not exist, the `ConvertCase` factory function will return `nil`.
+
+`toCase` can be:
+
+- `lower`: Converts the `target` string to lowercase (e.g. `MY_METRIC` to `my_metric`)
+- `upper`: Converts the `target` string to uppercase (e.g. `my_metric` to `MY_METRIC`)
+- `snake`: Converts the `target` string to snakecase (e.g. `myMetric` to `my_metric`)
+- `camel`: Converts the `target` string to camelcase (e.g. `my_metric` to `MyMetric`)
+
+If `toCase` is any value other than the options above, the `ConvertCase` factory function will return an error during collector startup.
+
+Examples:
+
+- `ConvertCase(metric.name, "snake")`
+
+### Int
 
 `Int(value)`
 
@@ -68,7 +110,7 @@ Examples:
 
 - `Int("2.0")`
 
-## IsMatch
+### IsMatch
 
 `IsMatch(target, pattern)`
 
@@ -85,7 +127,7 @@ Examples:
 
 - `IsMatch("string", ".*ring")`
 
-## SpanID
+### SpanID
 
 `SpanID(bytes)`
 
@@ -97,7 +139,7 @@ Examples:
 
 - `SpanID(0x0000000000000000)`
 
-## Split
+### Split
 
 `Split(target, delimiter)`
 
@@ -111,7 +153,7 @@ Examples:
 
 - ```Split("A|B|C", "|")```
 
-## TraceID
+### TraceID
 
 `TraceID(bytes)`
 
@@ -123,30 +165,7 @@ Examples:
 
 - `TraceID(0x00000000000000000000000000000000)`
 
-## ConvertCase
-
-`ConvertCase(target, toCase)`
-
-The `ConvertCase` factory function converts the `target` string into the desired case `toCase`.
-
-`target` is a string. `toCase` is a string.
-
-If the `target` is not a string or does not exist, the `ConvertCase` factory function will return `nil`.
-
-`toCase` can be:
-
-- `lower`: Converts the `target` string to lowercase (e.g. `MY_METRIC` to `my_metric`)
-- `upper`: Converts the `target` string to uppercase (e.g. `my_metric` to `MY_METRIC`)
-- `snake`: Converts the `target` string to snakecase (e.g. `myMetric` to `my_metric`)
-- `camel`: Converts the `target` string to camelcase (e.g. `my_metric` to `MyMetric`)
-
-If `toCase` is any value other than the options above, the `ConvertCase` factory function will return an error during collector startup.
-
-Examples:
-
-- `ConvertCase(metric.name, "snake")`
-
-## delete_key
+### delete_key
 
 `delete_key(target, key)`
 
@@ -163,7 +182,7 @@ Examples:
 
 - `delete_key(resource.attributes, "http.request.header.authorization")`
 
-## delete_matching_keys
+### delete_matching_keys
 
 `delete_matching_keys(target, pattern)`
 
@@ -180,7 +199,7 @@ Examples:
 
 - `delete_key(resource.attributes, "http.request.header.authorization")`
 
-## keep_keys
+### keep_keys
 
 `keep_keys(target, keys[])`
 
@@ -197,7 +216,7 @@ Examples:
 
 - `keep_keys(resource.attributes, ["http.method", "http.route", "http.url"])`
 
-## limit
+### limit
 
 `limit(target, limit, priority_keys[])`
 
@@ -220,7 +239,32 @@ Examples:
 
 - `limit(resource.attributes, 50, ["http.host", "http.method"])`
 
-## replace_all_matches
+### merge_maps
+
+`merge_maps(target, source, strategy)`
+
+The `merge_maps` function merges the source map into the target map using the supplied strategy to handle conflicts.
+
+`target` is a `pdata.Map` type field. `source` is a `pdata.Map` type field. `strategy` is a string that must be one of `insert`, `update`, or `upsert`.
+
+If strategy is:
+- `insert`: Insert the value from `source` into `target` where the key does not already exist.
+- `update`: Update the entry in `target` with the value from `source` where the key does exist.
+- `upsert`: Performs insert or update. Insert the value from `source` into `target` where the key does not already exist and update the entry in `target` with the value from `source` where the key does exist.
+
+`merge_maps` is a special case of the [`set` function](#set). If you need to completely override `target`, use `set` instead.
+
+Examples:
+
+- `merge_maps(attributes, ParseJSON(body), "upsert")`
+
+
+- `merge_maps(attributes, ParseJSON(attributes["kubernetes"]), "update")`
+
+
+- `merge_maps(attributes, resource.attributes, "insert")`
+
+### replace_all_matches
 
 `replace_all_matches(target, pattern, replacement)`
 
@@ -234,7 +278,7 @@ Examples:
 
 - `replace_all_matches(attributes, "/user/*/list/*", "/user/{userId}/list/{listId}")`
 
-## replace_all_patterns
+### replace_all_patterns
 
 `replace_all_patterns(target, mode, regex, replacement)`
 
@@ -251,7 +295,7 @@ Examples:
 - `replace_all_patterns(attributes, "value", "/account/\\d{4}", "/account/{accountId}")`
 - `replace_all_patterns(attributes, "key", "/account/\\d{4}", "/account/{accountId}")`
 
-## replace_pattern
+### replace_pattern
 
 `replace_pattern(target, regex, replacement)`
 
@@ -266,7 +310,7 @@ Examples:
 - `replace_pattern(resource.attributes["process.command_line"], "password\\=[^\\s]*(\\s?)", "password=***")`
 
 
-## replace_match
+### replace_match
 
 `replace_match(target, pattern, replacement)`
 
@@ -280,7 +324,7 @@ Examples:
 
 - `replace_match(attributes["http.target"], "/user/*/list/*", "/user/{userId}/list/{listId}")`
 
-## set
+### set
 
 `set(target, value)`
 
@@ -303,7 +347,7 @@ Examples:
 
 - `set(attributes["source"], trace_state["source"])`
 
-## truncate_all
+### truncate_all
 
 `truncate_all(target, limit)`
 
@@ -320,3 +364,12 @@ Examples:
 
 - `truncate_all(resource.attributes, 50)`
 
+## Function syntax
+
+Functions should be named and formatted according to the following standards.
+- Function names MUST start with a verb unless it is a Factory that creates a new type.
+- Factory functions MUST be UpperCamelCase.
+- Function names that contain multiple words MUST separate those words with `_`.
+- Functions that interact with multiple items MUST have plurality in the name.  Ex: `truncate_all`, `keep_keys`, `replace_all_matches`.
+- Functions that interact with a single item MUST NOT have plurality in the name.  If a function would interact with multiple items due to a condition, like `where`, it is still considered singular.  Ex: `set`, `delete`, `replace_match`.
+- Functions that change a specific target MUST set the target as the first parameter.

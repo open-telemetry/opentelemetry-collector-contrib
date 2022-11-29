@@ -2,8 +2,6 @@ name: hostmetricsreceiver/load
 
 sem_conv_version: 1.9.0
 
-attributes:
-
 metrics:
   system.cpu.load_average.1m:
     enabled: true
