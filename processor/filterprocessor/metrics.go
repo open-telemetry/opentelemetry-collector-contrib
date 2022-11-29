@@ -24,63 +24,50 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/expr"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filtermatcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filtermetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/common"
 )
 
 type filterMetricProcessor struct {
-	cfg                 *Config
-	include             filtermetric.Matcher
-	includeAttribute    filtermatcher.AttributesMatcher
-	exclude             filtermetric.Matcher
-	excludeAttribute    filtermatcher.AttributesMatcher
-	logger              *zap.Logger
-	checksMetrics       bool
-	checksResouces      bool
-	metricConditions    []*ottl.Statement[ottlmetric.TransformContext]
-	dataPointConditions []*ottl.Statement[ottldatapoint.TransformContext]
+	skipResourceExpr  expr.BoolExpr[ottlresource.TransformContext]
+	skipMetricExpr    expr.BoolExpr[ottlmetric.TransformContext]
+	skipDataPointExpr expr.BoolExpr[ottldatapoint.TransformContext]
 }
 
-func newFilterMetricProcessor(logger *zap.Logger, cfg *Config) (*filterMetricProcessor, error) {
+func newFilterMetricProcessor(set component.TelemetrySettings, cfg *Config) (*filterMetricProcessor, error) {
+	var err error
+	fsp := &filterMetricProcessor{}
 	if cfg.Metrics.MetricConditions != nil || cfg.Metrics.DataPointConditions != nil {
-		fsp := &filterMetricProcessor{
-			cfg:    cfg,
-			logger: logger,
-		}
-
 		if cfg.Metrics.MetricConditions != nil {
-			metricp := ottlmetric.NewParser(common.Functions[ottlmetric.TransformContext](), component.TelemetrySettings{Logger: zap.NewNop()})
-			statements, err := metricp.ParseStatements(common.PrepareConditionForParsing(cfg.Metrics.MetricConditions))
+			fsp.skipMetricExpr, err = common.ParseMetric(cfg.Metrics.MetricConditions, set)
 			if err != nil {
 				return nil, err
 			}
-			fsp.metricConditions = statements
 		}
 
 		if cfg.Metrics.DataPointConditions != nil {
-			datapointp := ottldatapoint.NewParser(common.Functions[ottldatapoint.TransformContext](), component.TelemetrySettings{Logger: zap.NewNop()})
-			statements, err := datapointp.ParseStatements(common.PrepareConditionForParsing(cfg.Metrics.DataPointConditions))
+			fsp.skipDataPointExpr, err = common.ParseDataPoint(cfg.Metrics.DataPointConditions, set)
 			if err != nil {
 				return nil, err
 			}
-			fsp.dataPointConditions = statements
 		}
 
 		return fsp, nil
 	}
 
-	inc, includeAttr, err := createMatcher(cfg.Metrics.Include)
+	fsp.skipResourceExpr, err = newSkipResExpr(cfg.Metrics.Include, cfg.Metrics.Exclude)
 	if err != nil {
 		return nil, err
 	}
 
-	exc, excludeAttr, err := createMatcher(cfg.Metrics.Exclude)
+	fsp.skipMetricExpr, err = filtermetric.NewSkipExpr(cfg.Metrics.Include, cfg.Metrics.Exclude)
 	if err != nil {
 		return nil, err
 	}
@@ -107,10 +94,7 @@ func newFilterMetricProcessor(logger *zap.Logger, cfg *Config) (*filterMetricPro
 		excludeResourceAttributes = cfg.Metrics.Exclude.ResourceAttributes
 	}
 
-	checksMetrics := cfg.Metrics.Exclude.ChecksMetrics() || cfg.Metrics.Include.ChecksMetrics()
-	checksResouces := cfg.Metrics.Exclude.ChecksResourceAtributes() || cfg.Metrics.Include.ChecksResourceAtributes()
-
-	logger.Info(
+	set.Logger.Info(
 		"Metric filter configured",
 		zap.String("include match_type", includeMatchType),
 		zap.Strings("include expressions", includeExpressions),
@@ -120,28 +104,108 @@ func newFilterMetricProcessor(logger *zap.Logger, cfg *Config) (*filterMetricPro
 		zap.Strings("exclude expressions", excludeExpressions),
 		zap.Strings("exclude metric names", excludeMetricNames),
 		zap.Any("exclude metrics with resource attributes", excludeResourceAttributes),
-		zap.Bool("checksMetrics", checksMetrics),
-		zap.Bool("checkResouces", checksResouces),
 	)
 
-	return &filterMetricProcessor{
-		cfg:              cfg,
-		include:          inc,
-		includeAttribute: includeAttr,
-		exclude:          exc,
-		excludeAttribute: excludeAttr,
-		logger:           logger,
-		checksMetrics:    checksMetrics,
-		checksResouces:   checksResouces,
-	}, nil
+	return fsp, nil
 }
 
-func createMatcher(mp *filtermetric.MatchProperties) (filtermetric.Matcher, filtermatcher.AttributesMatcher, error) {
-	// Nothing specified in configuration
-	if mp == nil {
-		return nil, nil, nil
+// processMetrics filters the given metrics based off the filterMetricProcessor's filters.
+func (fmp *filterMetricProcessor) processMetrics(ctx context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
+	if fmp.skipResourceExpr == nil && fmp.skipMetricExpr == nil && fmp.skipDataPointExpr == nil {
+		return md, nil
 	}
-	var attributeMatcher filtermatcher.AttributesMatcher
+
+	var errors error
+	md.ResourceMetrics().RemoveIf(func(rmetrics pmetric.ResourceMetrics) bool {
+		resource := rmetrics.Resource()
+		if fmp.skipResourceExpr != nil {
+			skip, err := fmp.skipResourceExpr.Eval(ctx, ottlresource.NewTransformContext(resource))
+			if err != nil {
+				errors = multierr.Append(errors, err)
+				return false
+			}
+			if skip {
+				return true
+			}
+		}
+		rmetrics.ScopeMetrics().RemoveIf(func(smetrics pmetric.ScopeMetrics) bool {
+			scope := smetrics.Scope()
+			smetrics.Metrics().RemoveIf(func(metric pmetric.Metric) bool {
+				if fmp.skipMetricExpr != nil {
+					skip, err := fmp.skipMetricExpr.Eval(ctx, ottlmetric.NewTransformContext(metric, scope, resource))
+					if err != nil {
+						errors = multierr.Append(errors, err)
+					}
+					if skip {
+						return true
+					}
+				}
+				if fmp.skipDataPointExpr != nil {
+					switch metric.Type() {
+					case pmetric.MetricTypeSum:
+						errors = multierr.Append(errors, fmp.handleNumberDataPoints(ctx, metric.Sum().DataPoints(), metric, smetrics.Metrics(), scope, resource))
+						return metric.Sum().DataPoints().Len() == 0
+					case pmetric.MetricTypeGauge:
+						errors = multierr.Append(errors, fmp.handleNumberDataPoints(ctx, metric.Gauge().DataPoints(), metric, smetrics.Metrics(), scope, resource))
+						return metric.Gauge().DataPoints().Len() == 0
+					case pmetric.MetricTypeHistogram:
+						errors = multierr.Append(errors, fmp.handleHistogramDataPoints(ctx, metric.Histogram().DataPoints(), metric, smetrics.Metrics(), scope, resource))
+						return metric.Histogram().DataPoints().Len() == 0
+					case pmetric.MetricTypeExponentialHistogram:
+						errors = multierr.Append(errors, fmp.handleExponetialHistogramDataPoints(ctx, metric.ExponentialHistogram().DataPoints(), metric, smetrics.Metrics(), scope, resource))
+						return metric.ExponentialHistogram().DataPoints().Len() == 0
+					case pmetric.MetricTypeSummary:
+						errors = multierr.Append(errors, fmp.handleSummaryDataPoints(ctx, metric.Summary().DataPoints(), metric, smetrics.Metrics(), scope, resource))
+						return metric.Summary().DataPoints().Len() == 0
+					default:
+						return false
+					}
+				}
+				return false
+			})
+			return smetrics.Metrics().Len() == 0
+		})
+		return rmetrics.ScopeMetrics().Len() == 0
+	})
+
+	if errors != nil {
+		return md, errors
+	}
+	if md.ResourceMetrics().Len() == 0 {
+		return md, processorhelper.ErrSkipProcessingData
+	}
+	return md, nil
+}
+
+func newSkipResExpr(include *filtermetric.MatchProperties, exclude *filtermetric.MatchProperties) (expr.BoolExpr[ottlresource.TransformContext], error) {
+	var matchers []expr.BoolExpr[ottlresource.TransformContext]
+	inclExpr, err := newResExpr(include)
+	if err != nil {
+		return nil, err
+	}
+	if inclExpr != nil {
+		matchers = append(matchers, expr.Not(inclExpr))
+	}
+	exclExpr, err := newResExpr(exclude)
+	if err != nil {
+		return nil, err
+	}
+	if exclExpr != nil {
+		matchers = append(matchers, exclExpr)
+	}
+	return expr.Or(matchers...), nil
+}
+
+type resExpr filtermatcher.AttributesMatcher
+
+func (r resExpr) Eval(_ context.Context, tCtx ottlresource.TransformContext) (bool, error) {
+	return filtermatcher.AttributesMatcher(r).Match(tCtx.GetResource().Attributes()), nil
+}
+
+func newResExpr(mp *filtermetric.MatchProperties) (expr.BoolExpr[ottlresource.TransformContext], error) {
+	if mp == nil {
+		return nil, nil
+	}
 	attributeMatcher, err := filtermatcher.NewAttributesMatcher(
 		filterset.Config{
 			MatchType:    filterset.MatchType(mp.MatchType),
@@ -150,171 +214,23 @@ func createMatcher(mp *filtermetric.MatchProperties) (filtermetric.Matcher, filt
 		mp.ResourceAttributes,
 	)
 	if err != nil {
-		return nil, attributeMatcher, err
+		return nil, err
 	}
-
-	nameMatcher, err := filtermetric.NewMatcher(mp)
-	return nameMatcher, attributeMatcher, err
-}
-
-// processMetrics filters the given metrics based off the filterMetricProcessor's filters.
-func (fmp *filterMetricProcessor) processMetrics(ctx context.Context, pdm pmetric.Metrics) (pmetric.Metrics, error) {
-	filteringMetrics := fmp.metricConditions != nil
-	filteringDataPoints := fmp.dataPointConditions != nil
-
-	if filteringMetrics || filteringDataPoints {
-		var errors error
-		pdm.ResourceMetrics().RemoveIf(func(rmetrics pmetric.ResourceMetrics) bool {
-			rmetrics.ScopeMetrics().RemoveIf(func(smetrics pmetric.ScopeMetrics) bool {
-				smetrics.Metrics().RemoveIf(func(metric pmetric.Metric) bool {
-					if filteringMetrics {
-						tCtx := ottlmetric.NewTransformContext(metric, smetrics.Scope(), rmetrics.Resource())
-						metCondition, err := common.CheckConditions(ctx, tCtx, fmp.metricConditions)
-						if err != nil {
-							errors = multierr.Append(errors, err)
-						}
-						if metCondition {
-							return true
-						}
-					}
-					if filteringDataPoints {
-						switch metric.Type() {
-						case pmetric.MetricTypeSum:
-							err := fmp.handleNumberDataPoints(ctx, metric.Sum().DataPoints(), metric, smetrics.Metrics(), smetrics.Scope(), rmetrics.Resource())
-							if err != nil {
-								errors = multierr.Append(errors, err)
-							}
-							return metric.Sum().DataPoints().Len() == 0
-						case pmetric.MetricTypeGauge:
-							err := fmp.handleNumberDataPoints(ctx, metric.Gauge().DataPoints(), metric, smetrics.Metrics(), smetrics.Scope(), rmetrics.Resource())
-							if err != nil {
-								errors = multierr.Append(errors, err)
-							}
-							return metric.Gauge().DataPoints().Len() == 0
-						case pmetric.MetricTypeHistogram:
-							err := fmp.handleHistogramDataPoints(ctx, metric.Histogram().DataPoints(), metric, smetrics.Metrics(), smetrics.Scope(), rmetrics.Resource())
-							if err != nil {
-								errors = multierr.Append(errors, err)
-							}
-							return metric.Histogram().DataPoints().Len() == 0
-						case pmetric.MetricTypeExponentialHistogram:
-							err := fmp.handleExponetialHistogramDataPoints(ctx, metric.ExponentialHistogram().DataPoints(), metric, smetrics.Metrics(), smetrics.Scope(), rmetrics.Resource())
-							if err != nil {
-								errors = multierr.Append(errors, err)
-							}
-							return metric.ExponentialHistogram().DataPoints().Len() == 0
-						case pmetric.MetricTypeSummary:
-							err := fmp.handleSummaryDataPoints(ctx, metric.Summary().DataPoints(), metric, smetrics.Metrics(), smetrics.Scope(), rmetrics.Resource())
-							if err != nil {
-								errors = multierr.Append(errors, err)
-							}
-							return metric.Summary().DataPoints().Len() == 0
-						default:
-							return false
-						}
-					}
-					return false
-				})
-				return smetrics.Metrics().Len() == 0
-			})
-			return rmetrics.ScopeMetrics().Len() == 0
-		})
-
-		if errors != nil {
-			return pdm, errors
-		}
-		if pdm.ResourceMetrics().Len() == 0 {
-			return pdm, processorhelper.ErrSkipProcessingData
-		}
-		return pdm, nil
+	if attributeMatcher == nil {
+		return nil, err
 	}
-
-	pdm.ResourceMetrics().RemoveIf(func(rm pmetric.ResourceMetrics) bool {
-		keepMetricsForResource := fmp.shouldKeepMetricsForResource(rm.Resource())
-		if !keepMetricsForResource {
-			return true
-		}
-
-		if fmp.checksResouces && !fmp.checksMetrics {
-			return false
-		}
-
-		rm.ScopeMetrics().RemoveIf(func(ilm pmetric.ScopeMetrics) bool {
-			ilm.Metrics().RemoveIf(func(m pmetric.Metric) bool {
-				keep, err := fmp.shouldKeepMetric(m)
-				if err != nil {
-					fmp.logger.Error("shouldKeepMetric failed", zap.Error(err))
-					// don't `return`, keep the metric if there's an error
-				}
-				return !keep
-			})
-			// Filter out empty ScopeMetrics
-			return ilm.Metrics().Len() == 0
-		})
-		// Filter out empty ResourceMetrics
-		return rm.ScopeMetrics().Len() == 0
-	})
-	if pdm.ResourceMetrics().Len() == 0 {
-		return pdm, processorhelper.ErrSkipProcessingData
-	}
-	return pdm, nil
-}
-
-func (fmp *filterMetricProcessor) shouldKeepMetric(metric pmetric.Metric) (bool, error) {
-	if fmp.include != nil {
-		matches, err := fmp.include.MatchMetric(metric)
-		if err != nil {
-			// default to keep if there's an error
-			return true, err
-		}
-		if !matches {
-			return false, nil
-		}
-	}
-
-	if fmp.exclude != nil {
-		matches, err := fmp.exclude.MatchMetric(metric)
-		if err != nil {
-			return true, err
-		}
-		if matches {
-			return false, nil
-		}
-	}
-
-	return true, nil
-}
-
-func (fmp *filterMetricProcessor) shouldKeepMetricsForResource(resource pcommon.Resource) bool {
-	resourceAttributes := resource.Attributes()
-
-	if fmp.include != nil && fmp.includeAttribute != nil {
-		matches := fmp.includeAttribute.Match(resourceAttributes)
-		if !matches {
-			return false
-		}
-	}
-
-	if fmp.exclude != nil && fmp.excludeAttribute != nil {
-		matches := fmp.excludeAttribute.Match(resourceAttributes)
-		if matches {
-			return false
-		}
-	}
-
-	return true
+	return resExpr(attributeMatcher), nil
 }
 
 func (fmp *filterMetricProcessor) handleNumberDataPoints(ctx context.Context, dps pmetric.NumberDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource) error {
 	var errors error
 	dps.RemoveIf(func(datapoint pmetric.NumberDataPoint) bool {
-		tCtx := ottldatapoint.NewTransformContext(datapoint, metric, metrics, is, resource)
-		metCondition, err := common.CheckConditions(ctx, tCtx, fmp.dataPointConditions)
+		skip, err := fmp.skipDataPointExpr.Eval(ctx, ottldatapoint.NewTransformContext(datapoint, metric, metrics, is, resource))
 		if err != nil {
 			errors = multierr.Append(errors, err)
 			return false
 		}
-		return metCondition
+		return skip
 	})
 	return errors
 }
@@ -322,13 +238,12 @@ func (fmp *filterMetricProcessor) handleNumberDataPoints(ctx context.Context, dp
 func (fmp *filterMetricProcessor) handleHistogramDataPoints(ctx context.Context, dps pmetric.HistogramDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource) error {
 	var errors error
 	dps.RemoveIf(func(datapoint pmetric.HistogramDataPoint) bool {
-		tCtx := ottldatapoint.NewTransformContext(datapoint, metric, metrics, is, resource)
-		metCondition, err := common.CheckConditions(ctx, tCtx, fmp.dataPointConditions)
+		skip, err := fmp.skipDataPointExpr.Eval(ctx, ottldatapoint.NewTransformContext(datapoint, metric, metrics, is, resource))
 		if err != nil {
 			errors = multierr.Append(errors, err)
 			return false
 		}
-		return metCondition
+		return skip
 	})
 	return errors
 }
@@ -336,13 +251,12 @@ func (fmp *filterMetricProcessor) handleHistogramDataPoints(ctx context.Context,
 func (fmp *filterMetricProcessor) handleExponetialHistogramDataPoints(ctx context.Context, dps pmetric.ExponentialHistogramDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource) error {
 	var errors error
 	dps.RemoveIf(func(datapoint pmetric.ExponentialHistogramDataPoint) bool {
-		tCtx := ottldatapoint.NewTransformContext(datapoint, metric, metrics, is, resource)
-		metCondition, err := common.CheckConditions(ctx, tCtx, fmp.dataPointConditions)
+		skip, err := fmp.skipDataPointExpr.Eval(ctx, ottldatapoint.NewTransformContext(datapoint, metric, metrics, is, resource))
 		if err != nil {
 			errors = multierr.Append(errors, err)
 			return false
 		}
-		return metCondition
+		return skip
 	})
 	return errors
 }
@@ -350,13 +264,12 @@ func (fmp *filterMetricProcessor) handleExponetialHistogramDataPoints(ctx contex
 func (fmp *filterMetricProcessor) handleSummaryDataPoints(ctx context.Context, dps pmetric.SummaryDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource) error {
 	var errors error
 	dps.RemoveIf(func(datapoint pmetric.SummaryDataPoint) bool {
-		tCtx := ottldatapoint.NewTransformContext(datapoint, metric, metrics, is, resource)
-		metCondition, err := common.CheckConditions(ctx, tCtx, fmp.dataPointConditions)
+		skip, err := fmp.skipDataPointExpr.Eval(ctx, ottldatapoint.NewTransformContext(datapoint, metric, metrics, is, resource))
 		if err != nil {
 			errors = multierr.Append(errors, err)
 			return false
 		}
-		return metCondition
+		return skip
 	})
 	return errors
 }

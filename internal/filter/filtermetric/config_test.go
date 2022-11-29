@@ -61,7 +61,8 @@ func TestConfig(t *testing.T) {
 		{
 			name:   "config/regexp",
 			expCfg: createConfig(regexpNameMatches, filterset.Regexp),
-		}, {
+		},
+		{
 			name: "config/regexpoptions",
 			expCfg: createConfigWithRegexpOptions(
 				regexpNameMatches,
@@ -70,10 +71,12 @@ func TestConfig(t *testing.T) {
 					CacheMaxNumEntries: 5,
 				},
 			),
-		}, {
+		},
+		{
 			name:   "config/strict",
 			expCfg: createConfig(strictNameMatches, filterset.Strict),
-		}, {
+		},
+		{
 			name:   "config/emptyproperties",
 			expCfg: createConfig(nil, filterset.Regexp),
 		},
@@ -84,8 +87,7 @@ func TestConfig(t *testing.T) {
 			cfg := testYamls[test.name]
 			assert.Equal(t, *test.expCfg, cfg)
 
-			matcher, err := NewMatcher(&cfg)
-			assert.NotNil(t, matcher)
+			_, err := newExpr(&cfg)
 			assert.NoError(t, err)
 		})
 	}

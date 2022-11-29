@@ -69,21 +69,16 @@ func createTracesProcessor(
 	if err != nil {
 		return nil, fmt.Errorf("error creating \"attributes\" processor %v: %w", cfg.ID(), err)
 	}
-	include, err := filterspan.NewMatcher(oCfg.Include)
+	skipExpr, err := filterspan.NewSkipExpr(&oCfg.MatchConfig)
 	if err != nil {
 		return nil, err
 	}
-	exclude, err := filterspan.NewMatcher(oCfg.Exclude)
-	if err != nil {
-		return nil, err
-	}
-
 	return processorhelper.NewTracesProcessor(
 		ctx,
 		set,
 		cfg,
 		nextConsumer,
-		newSpanAttributesProcessor(set.Logger, attrProc, include, exclude).processTraces,
+		newSpanAttributesProcessor(set.Logger, attrProc, skipExpr).processTraces,
 		processorhelper.WithCapabilities(processorCapabilities))
 }
 
@@ -102,11 +97,7 @@ func createLogsProcessor(
 		return nil, fmt.Errorf("error creating \"attributes\" processor %v: %w", cfg.ID(), err)
 	}
 
-	include, err := filterlog.NewMatcher(oCfg.Include)
-	if err != nil {
-		return nil, err
-	}
-	exclude, err := filterlog.NewMatcher(oCfg.Exclude)
+	skipExpr, err := filterlog.NewSkipExpr(&oCfg.MatchConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +107,7 @@ func createLogsProcessor(
 		set,
 		cfg,
 		nextConsumer,
-		newLogAttributesProcessor(set.Logger, attrProc, include, exclude).processLogs,
+		newLogAttributesProcessor(set.Logger, attrProc, skipExpr).processLogs,
 		processorhelper.WithCapabilities(processorCapabilities))
 }
 
@@ -137,12 +128,10 @@ func createMetricsProcessor(
 		return nil, fmt.Errorf("error creating \"attributes\" processor %v: %w", cfg.ID(), err)
 	}
 
-	include, err := filtermetric.NewMatcher(filtermetric.CreateMatchPropertiesFromDefault(oCfg.Include))
-	if err != nil {
-		return nil, err
-	}
-
-	exclude, err := filtermetric.NewMatcher(filtermetric.CreateMatchPropertiesFromDefault(oCfg.Exclude))
+	skipExpr, err := filtermetric.NewSkipExpr(
+		filtermetric.CreateMatchPropertiesFromDefault(oCfg.Include),
+		filtermetric.CreateMatchPropertiesFromDefault(oCfg.Exclude),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -152,6 +141,6 @@ func createMetricsProcessor(
 		set,
 		cfg,
 		nextConsumer,
-		newMetricAttributesProcessor(set.Logger, attrProc, include, exclude).processMetrics,
+		newMetricAttributesProcessor(set.Logger, attrProc, skipExpr).processMetrics,
 		processorhelper.WithCapabilities(processorCapabilities))
 }

@@ -29,7 +29,7 @@ func GetMapValue(attrs pcommon.Map, mapKey string) interface{} {
 func SetMapValue(attrs pcommon.Map, mapKey string, val interface{}) {
 	var value pcommon.Value
 	switch val.(type) {
-	case []string, []bool, []int64, []float64, [][]byte:
+	case []string, []bool, []int64, []float64, [][]byte, []any:
 		value = pcommon.NewValueSlice()
 	default:
 		value = pcommon.NewValueEmpty()

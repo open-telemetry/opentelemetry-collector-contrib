@@ -5,10 +5,10 @@ go 1.18
 require (
 	github.com/go-logfmt/logfmt v0.5.1
 	github.com/grafana/loki v1.6.2-0.20220718071907-6bd05c9a4399
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.64.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.66.0
 	github.com/prometheus/common v0.37.0
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector/pdata v0.65.0
+	go.opentelemetry.io/collector/pdata v0.66.0
 )
 
 require (
@@ -106,3 +106,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/corei
 // some dependencies attempt to bring something like v1.8.2-0.20220303173753-edfe657b5405, which is older than v0.38.0
 // at the time of this inclusion, v0.38.0 was the latest version available (also tagged as v2.38.0)
 replace github.com/prometheus/prometheus => github.com/prometheus/prometheus v0.38.0
+
+retract v0.65.0

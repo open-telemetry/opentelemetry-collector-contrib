@@ -15,23 +15,38 @@
 package filterlog // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterlog"
 
 import (
+	"context"
 	"fmt"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/plog"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/expr"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filtermatcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 )
 
-// Matcher is an interface that allows matching a log record against a
-// configuration of a match.
-// TODO: Modify Matcher to invoke both the include and exclude properties so
-//
-//	calling processors will always have the same logic.
-type Matcher interface {
-	MatchLogRecord(lr plog.LogRecord, resource pcommon.Resource, library pcommon.InstrumentationScope) bool
+// NewSkipExpr creates a BoolExpr that on evaluation returns true if a log should NOT be processed or kept.
+// The logic determining if a log should be processed is based on include and exclude settings.
+// Include properties are checked before exclude settings are checked.
+func NewSkipExpr(mp *filterconfig.MatchConfig) (expr.BoolExpr[ottllog.TransformContext], error) {
+	var matchers []expr.BoolExpr[ottllog.TransformContext]
+	inclExpr, err := newExpr(mp.Include)
+	if err != nil {
+		return nil, err
+	}
+	if inclExpr != nil {
+		matchers = append(matchers, expr.Not(inclExpr))
+	}
+	exclExpr, err := newExpr(mp.Exclude)
+	if err != nil {
+		return nil, err
+	}
+	if exclExpr != nil {
+		matchers = append(matchers, exclExpr)
+	}
+	return expr.Or(matchers...), nil
 }
 
 // propertiesMatcher allows matching a log record against various log record properties.
@@ -45,11 +60,11 @@ type propertiesMatcher struct {
 	severityTextFilters filterset.FilterSet
 
 	// matcher for severity number
-	severityNumberMatcher Matcher
+	severityNumberMatcher *severityNumberMatcher
 }
 
 // NewMatcher creates a LogRecord Matcher that matches based on the given MatchProperties.
-func NewMatcher(mp *filterconfig.MatchProperties) (Matcher, error) {
+func newExpr(mp *filterconfig.MatchProperties) (expr.BoolExpr[ottllog.TransformContext], error) {
 	if mp == nil {
 		return nil, nil
 	}
@@ -78,20 +93,20 @@ func NewMatcher(mp *filterconfig.MatchProperties) (Matcher, error) {
 		}
 	}
 
-	var severityNumberMatcher Matcher
-	if mp.LogSeverityNumber != nil {
-		severityNumberMatcher = newSeverityNumberMatcher(mp.LogSeverityNumber.Min, mp.LogSeverityNumber.MatchUndefined)
+	pm := &propertiesMatcher{
+		PropertiesMatcher:   rm,
+		bodyFilters:         bodyFS,
+		severityTextFilters: severitytextFS,
 	}
 
-	return &propertiesMatcher{
-		PropertiesMatcher:     rm,
-		bodyFilters:           bodyFS,
-		severityTextFilters:   severitytextFS,
-		severityNumberMatcher: severityNumberMatcher,
-	}, nil
+	if mp.LogSeverityNumber != nil {
+		pm.severityNumberMatcher = newSeverityNumberMatcher(mp.LogSeverityNumber.Min, mp.LogSeverityNumber.MatchUndefined)
+	}
+
+	return pm, nil
 }
 
-// MatchLogRecord matches a log record to a set of properties.
+// Eval matches a log record to a set of properties.
 // There are 3 sets of properties to match against.
 // The log record names are matched, if specified.
 // The log record bodies are matched, if specified.
@@ -99,16 +114,17 @@ func NewMatcher(mp *filterconfig.MatchProperties) (Matcher, error) {
 // At least one of log record names or attributes must be specified. It is
 // supported to have more than one of these specified, and all specified must
 // evaluate to true for a match to occur.
-func (mp *propertiesMatcher) MatchLogRecord(lr plog.LogRecord, resource pcommon.Resource, library pcommon.InstrumentationScope) bool {
+func (mp *propertiesMatcher) Eval(_ context.Context, tCtx ottllog.TransformContext) (bool, error) {
+	lr := tCtx.GetLogRecord()
 	if lr.Body().Type() == pcommon.ValueTypeStr && mp.bodyFilters != nil && !mp.bodyFilters.Matches(lr.Body().Str()) {
-		return false
+		return false, nil
 	}
 	if mp.severityTextFilters != nil && !mp.severityTextFilters.Matches(lr.SeverityText()) {
-		return false
+		return false, nil
 	}
-	if mp.severityNumberMatcher != nil && !mp.severityNumberMatcher.MatchLogRecord(lr, resource, library) {
-		return false
+	if mp.severityNumberMatcher != nil && !mp.severityNumberMatcher.match(lr) {
+		return false, nil
 	}
 
-	return mp.PropertiesMatcher.Match(lr.Attributes(), resource, library)
+	return mp.PropertiesMatcher.Match(lr.Attributes(), tCtx.GetResource(), tCtx.GetInstrumentationScope()), nil
 }

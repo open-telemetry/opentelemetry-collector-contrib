@@ -1,14 +1,14 @@
 # One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
-change_type: enhancement
+change_type: 'bug_fix'
 
 # The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
-component: hostmetricsreceiver
+component: pkg/translator/loki
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add a new optional metric `process.signals_pending` to the metrics scraped by the `process` scraper of the `hostmetrics` receiver.
+note: "fix loki.resource.labels not working as expected"
 
 # One or more tracking issues related to the change
-issues: [14084]
+issues: [15386]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.

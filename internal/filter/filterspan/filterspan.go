@@ -15,25 +15,40 @@
 package filterspan // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterspan"
 
 import (
+	"context"
 	"fmt"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/expr"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filtermatcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 )
 
-// Matcher is an interface that allows matching a span against a configuration
-// of a match.
-// TODO: Modify Matcher to invoke both the include and exclude properties so
-//
-//	calling processors will always have the same logic.
-type Matcher interface {
-	MatchSpan(span ptrace.Span, resource pcommon.Resource, library pcommon.InstrumentationScope) bool
+// NewSkipExpr creates a BoolExpr that on evaluation returns true if a span should NOT be processed or kept.
+// The logic determining if a span should be processed is based on include and exclude settings.
+// Include properties are checked before exclude settings are checked.
+func NewSkipExpr(mp *filterconfig.MatchConfig) (expr.BoolExpr[ottlspan.TransformContext], error) {
+	var matchers []expr.BoolExpr[ottlspan.TransformContext]
+	inclExpr, err := newExpr(mp.Include)
+	if err != nil {
+		return nil, err
+	}
+	if inclExpr != nil {
+		matchers = append(matchers, expr.Not(inclExpr))
+	}
+	exclExpr, err := newExpr(mp.Exclude)
+	if err != nil {
+		return nil, err
+	}
+	if exclExpr != nil {
+		matchers = append(matchers, exclExpr)
+	}
+	return expr.Or(matchers...), nil
 }
 
 // propertiesMatcher allows matching a span against various span properties.
@@ -50,8 +65,8 @@ type propertiesMatcher struct {
 	kindFilters filterset.FilterSet
 }
 
-// NewMatcher creates a span Matcher that matches based on the given MatchProperties.
-func NewMatcher(mp *filterconfig.MatchProperties) (Matcher, error) {
+// newExpr creates a BoolExpr that matches based on the given MatchProperties.
+func newExpr(mp *filterconfig.MatchProperties) (expr.BoolExpr[ottlspan.TransformContext], error) {
 	if mp == nil {
 		return nil, nil
 	}
@@ -97,52 +112,28 @@ func NewMatcher(mp *filterconfig.MatchProperties) (Matcher, error) {
 	}, nil
 }
 
-// SkipSpan determines if a span should be processed.
-// True is returned when a span should be skipped.
-// False is returned when a span should not be skipped.
-// The logic determining if a span should be processed is set
-// in the attribute configuration with the include and exclude settings.
-// Include properties are checked before exclude settings are checked.
-func SkipSpan(include Matcher, exclude Matcher, span ptrace.Span, resource pcommon.Resource, library pcommon.InstrumentationScope) bool {
-	if include != nil {
-		// A false returned in this case means the span should not be processed.
-		if i := include.MatchSpan(span, resource, library); !i {
-			return true
-		}
-	}
-
-	if exclude != nil {
-		// A true returned in this case means the span should not be processed.
-		if e := exclude.MatchSpan(span, resource, library); e {
-			return true
-		}
-	}
-
-	return false
-}
-
-// MatchSpan matches a span and service to a set of properties.
+// Eval matches a span and service to a set of properties.
 // see filterconfig.MatchProperties for more details
-func (mp *propertiesMatcher) MatchSpan(span ptrace.Span, resource pcommon.Resource, library pcommon.InstrumentationScope) bool {
+func (mp *propertiesMatcher) Eval(_ context.Context, tCtx ottlspan.TransformContext) (bool, error) {
 	// If a set of properties was not in the mp, all spans are considered to match on that property
 	if mp.serviceFilters != nil {
 		// Check resource and spans for service.name
-		serviceName := serviceNameForResource(resource)
+		serviceName := serviceNameForResource(tCtx.GetResource())
 
 		if !mp.serviceFilters.Matches(serviceName) {
-			return false
+			return false, nil
 		}
 	}
 
-	if mp.nameFilters != nil && !mp.nameFilters.Matches(span.Name()) {
-		return false
+	if mp.nameFilters != nil && !mp.nameFilters.Matches(tCtx.GetSpan().Name()) {
+		return false, nil
 	}
 
-	if mp.kindFilters != nil && !mp.kindFilters.Matches(traceutil.SpanKindStr(span.Kind())) {
-		return false
+	if mp.kindFilters != nil && !mp.kindFilters.Matches(traceutil.SpanKindStr(tCtx.GetSpan().Kind())) {
+		return false, nil
 	}
 
-	return mp.PropertiesMatcher.Match(span.Attributes(), resource, library)
+	return mp.PropertiesMatcher.Match(tCtx.GetSpan().Attributes(), tCtx.GetResource(), tCtx.GetInstrumentationScope()), nil
 }
 
 // serviceNameForResource gets the service name for a specified Resource.

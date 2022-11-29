@@ -248,6 +248,9 @@ type LogsConfig struct {
 	// TCPAddr.Endpoint is the host of the Datadog intake server to send logs to.
 	// If unset, the value is obtained from the Site.
 	confignet.TCPAddr `mapstructure:",squash"`
+
+	// DumpPayloads report whether payloads should be dumped when logging level is debug.
+	DumpPayloads bool `mapstructure:"dump_payloads"`
 }
 
 // TagsConfig defines the tag-related configuration

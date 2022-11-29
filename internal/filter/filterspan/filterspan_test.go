@@ -15,6 +15,7 @@
 package filterspan
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -27,6 +28,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 )
 
 func createConfig(matchType filterset.MatchType) *filterset.Config {
@@ -105,7 +107,7 @@ func TestSpan_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 	}
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			output, err := NewMatcher(&tc.property)
+			output, err := newExpr(&tc.property)
 			assert.Nil(t, output)
 			assert.EqualError(t, err, tc.errorString)
 		})
@@ -181,11 +183,13 @@ func TestSpan_Matching_False(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			matcher, err := NewMatcher(tc.properties)
+			expr, err := newExpr(tc.properties)
 			require.NoError(t, err)
-			assert.NotNil(t, matcher)
+			assert.NotNil(t, expr)
 
-			assert.False(t, matcher.MatchSpan(span, resource, library))
+			val, err := expr.Eval(context.Background(), ottlspan.NewTransformContext(span, library, resource))
+			require.NoError(t, err)
+			assert.False(t, val)
 		})
 	}
 }
@@ -196,12 +200,14 @@ func TestSpan_MissingServiceName(t *testing.T) {
 		Services: []string{"svcA"},
 	}
 
-	mp, err := NewMatcher(cfg)
+	mp, err := newExpr(cfg)
 	assert.Nil(t, err)
 	assert.NotNil(t, mp)
 
 	emptySpan := ptrace.NewSpan()
-	assert.False(t, mp.MatchSpan(emptySpan, pcommon.NewResource(), pcommon.NewInstrumentationScope()))
+	val, err := mp.Eval(context.Background(), ottlspan.NewTransformContext(emptySpan, pcommon.NewInstrumentationScope(), pcommon.NewResource()))
+	require.NoError(t, err)
+	assert.False(t, val)
 }
 
 func TestSpan_Matching_True(t *testing.T) {
@@ -286,11 +292,13 @@ func TestSpan_Matching_True(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			mp, err := NewMatcher(tc.properties)
+			mp, err := newExpr(tc.properties)
 			require.NoError(t, err)
 			assert.NotNil(t, mp)
 
-			assert.True(t, mp.MatchSpan(span, resource, library))
+			val, err := mp.Eval(context.Background(), ottlspan.NewTransformContext(span, library, resource))
+			require.NoError(t, err)
+			assert.True(t, val)
 		})
 	}
 }
