@@ -38,11 +38,11 @@ func NewFactory() component.ReceiverFactory {
 		component.WithLogsReceiver(createLogsReceiver, stability))
 }
 
-func createDefaultConfig() component.ReceiverConfig {
+func createDefaultConfig() component.Config {
 	return &Config{ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr))}
 }
 
-func createLogsReceiver(_ context.Context, settings component.ReceiverCreateSettings, receiver component.ReceiverConfig, logs consumer.Logs) (component.LogsReceiver, error) {
+func createLogsReceiver(_ context.Context, settings component.ReceiverCreateSettings, receiver component.Config, logs consumer.Logs) (component.LogsReceiver, error) {
 
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
 		ReceiverID:             receiver.ID(),

@@ -60,7 +60,7 @@ func NewFactory() component.ExporterFactory {
 		component.WithLogsExporter(createLogsExporter, stability))
 }
 
-func createDefaultConfig() component.ExporterConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		LogDataEnabled:       true,
 		ProfilingDataEnabled: true,
@@ -92,7 +92,7 @@ func createDefaultConfig() component.ExporterConfig {
 func createTracesExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
-	config component.ExporterConfig,
+	config component.Config,
 ) (component.TracesExporter, error) {
 	if config == nil {
 		return nil, errors.New("nil config")
@@ -120,7 +120,7 @@ func createTracesExporter(
 func createMetricsExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
-	config component.ExporterConfig,
+	config component.Config,
 ) (component.MetricsExporter, error) {
 	if config == nil {
 		return nil, errors.New("nil config")
@@ -159,7 +159,7 @@ func createMetricsExporter(
 func createLogsExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
-	config component.ExporterConfig,
+	config component.Config,
 ) (exporter component.LogsExporter, err error) {
 	if config == nil {
 		return nil, errors.New("nil config")

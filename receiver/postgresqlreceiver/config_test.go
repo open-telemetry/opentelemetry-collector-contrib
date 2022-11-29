@@ -127,7 +127,7 @@ func TestLoadConfig(t *testing.T) {
 	t.Run("postgresql", func(t *testing.T) {
 		sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
 		require.NoError(t, err)
-		require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
+		require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 		expected := factory.CreateDefaultConfig().(*Config)
 		expected.Endpoint = "localhost:5432"
@@ -140,7 +140,7 @@ func TestLoadConfig(t *testing.T) {
 	t.Run("postgresql/all", func(t *testing.T) {
 		sub, err := cm.Sub(component.NewIDWithName(typeStr, "all").String())
 		require.NoError(t, err)
-		require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
+		require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 		expected := factory.CreateDefaultConfig().(*Config)
 		expected.Endpoint = "localhost:5432"

@@ -81,7 +81,7 @@ func defaulttimeoutSettings() exporterhelper.TimeoutSettings {
 }
 
 // createDefaultConfig creates the default exporter configuration
-func (f *factory) createDefaultConfig() component.ExporterConfig {
+func (f *factory) createDefaultConfig() component.Config {
 	hostnameSource := HostnameSourceFirstResource
 	if f.registry.IsEnabled(metadata.HostnamePreviewFeatureGate) {
 		hostnameSource = HostnameSourceConfigOrSystem
@@ -140,7 +140,7 @@ func (f *factory) createDefaultConfig() component.ExporterConfig {
 
 // checkAndCastConfig checks the configuration type and its warnings, and casts it to
 // the Datadog Config struct.
-func checkAndCastConfig(c component.ExporterConfig) *Config {
+func checkAndCastConfig(c component.Config) *Config {
 	cfg, ok := c.(*Config)
 	if !ok {
 		panic("programming error: config structure is not of type *datadogexporter.Config")
@@ -152,7 +152,7 @@ func checkAndCastConfig(c component.ExporterConfig) *Config {
 func (f *factory) createMetricsExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
-	c component.ExporterConfig,
+	c component.Config,
 ) (component.MetricsExporter, error) {
 	cfg := checkAndCastConfig(c)
 
@@ -212,7 +212,7 @@ func (f *factory) createMetricsExporter(
 func (f *factory) createTracesExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
-	c component.ExporterConfig,
+	c component.Config,
 ) (component.TracesExporter, error) {
 	cfg := checkAndCastConfig(c)
 
@@ -275,7 +275,7 @@ func (f *factory) createTracesExporter(
 func (f *factory) createLogsExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
-	c component.ExporterConfig,
+	c component.Config,
 ) (component.LogsExporter, error) {
 	cfg := checkAndCastConfig(c)
 

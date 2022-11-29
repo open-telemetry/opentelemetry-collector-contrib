@@ -35,12 +35,12 @@ func NewFactory() component.ExtensionFactory {
 	)
 }
 
-func createDefaultConfig() component.ExtensionConfig {
+func createDefaultConfig() component.Config {
 	cfg := DefaultConfig()
 	return &cfg
 }
 
-func createExtension(ctx context.Context, params component.ExtensionCreateSettings, cfg component.ExtensionConfig) (component.Extension, error) {
+func createExtension(ctx context.Context, params component.ExtensionCreateSettings, cfg component.Config) (component.Extension, error) {
 	sdCfg := cfg.(*Config)
 	fetcher, err := newTaskFetcherFromConfig(*sdCfg, params.Logger)
 	if err != nil {

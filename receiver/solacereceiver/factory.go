@@ -44,7 +44,7 @@ func NewFactory() component.ReceiverFactory {
 }
 
 // createDefaultConfig creates the default configuration for receiver.
-func createDefaultConfig() component.ReceiverConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ReceiverSettings: config.NewReceiverSettings(component.NewID(componentType)),
 		Broker:           []string{defaultHost},
@@ -61,7 +61,7 @@ func createDefaultConfig() component.ReceiverConfig {
 func createTracesReceiver(
 	_ context.Context,
 	params component.ReceiverCreateSettings,
-	receiverConfig component.ReceiverConfig,
+	receiverConfig component.Config,
 	nextConsumer consumer.Traces,
 ) (component.TracesReceiver, error) {
 	cfg, ok := receiverConfig.(*Config)

@@ -32,7 +32,7 @@ var errConfigNotSqlServer = errors.New("config was not a sqlserver receiver conf
 func createMetricsReceiver(
 	_ context.Context,
 	params component.ReceiverCreateSettings,
-	receiverCfg component.ReceiverConfig,
+	receiverCfg component.Config,
 	metricsConsumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	cfg, ok := receiverCfg.(*Config)
