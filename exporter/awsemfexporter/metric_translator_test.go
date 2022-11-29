@@ -445,7 +445,7 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 	noNamespaceMetric.Resource().Attributes().Remove(conventions.AttributeServiceNamespace)
 	noNamespaceMetric.Resource().Attributes().Remove(conventions.AttributeServiceName)
 
-	counterMetrics := map[string]*metricInfo{
+	counterSumMetrics := map[string]*metricInfo{
 		"spanCounter": {
 			value: float64(1),
 			unit:  "Count",
@@ -454,6 +454,8 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 			value: 0.1,
 			unit:  "Count",
 		},
+	}
+	counterGaugeMetrics := map[string]*metricInfo{
 		"spanGaugeCounter": {
 			value: float64(1),
 			unit:  "Count",
@@ -528,17 +530,24 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 			err := translator.translateOTelToGroupedMetric(tc.metric, groupedMetrics, config)
 			assert.Nil(t, err)
 			assert.NotNil(t, groupedMetrics)
-			assert.Equal(t, 2, len(groupedMetrics))
+			assert.Equal(t, 3, len(groupedMetrics))
 
 			for _, v := range groupedMetrics {
 				assert.Equal(t, tc.expectedNamespace, v.metadata.namespace)
-				if len(v.metrics) == 4 {
+				if v.metadata.metricDataType == pmetric.MetricTypeSum {
+					assert.Equal(t, 2, len(v.metrics))
 					assert.Equal(t, tc.counterLabels, v.labels)
-					assert.Equal(t, counterMetrics, v.metrics)
-				} else {
+					assert.Equal(t, counterSumMetrics, v.metrics)
+				} else if v.metadata.metricDataType == pmetric.MetricTypeGauge {
+					assert.Equal(t, 2, len(v.metrics))
+					assert.Equal(t, tc.counterLabels, v.labels)
+					assert.Equal(t, counterGaugeMetrics, v.metrics)
+				} else if v.metadata.metricDataType == pmetric.MetricTypeHistogram {
 					assert.Equal(t, 1, len(v.metrics))
 					assert.Equal(t, tc.timerLabels, v.labels)
 					assert.Equal(t, timerMetrics, v.metrics)
+				} else {
+					assert.Fail(t, "unexpected metric type")
 				}
 			}
 		})

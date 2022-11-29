@@ -59,6 +59,20 @@ func generateTestIntGauge(name string) *metricspb.Metric {
 	}
 }
 
+func generateTestMetricMetadata(namespace string, timestamp int64, logGroup, logStreamName, instrumentationLibraryName string, metricType pmetric.MetricType) cWMetricMetadata {
+	return cWMetricMetadata{
+		receiver: prometheusReceiver,
+		groupedMetricMetadata: groupedMetricMetadata{
+			namespace:   namespace,
+			timestampMs: timestamp,
+			logGroup:    logGroup,
+			logStream:   logStreamName,
+		},
+		instrumentationLibraryName: instrumentationLibraryName,
+		metricDataType:             metricType,
+	}
+}
+
 func generateTestDoubleGauge(name string) *metricspb.Metric {
 	return &metricspb.Metric{
 		MetricDescriptor: &metricspb.MetricDescriptor{

@@ -61,7 +61,7 @@ func NewMetricCalculator(calculateFunc CalculateFunc) MetricCalculator {
 	}
 }
 
-// Calculate accepts a new metric value identified by matricName and labels, and delegates
+// Calculate accepts a new metric value identified by metricName and labels, and delegates
 // the calculation with value and timestamp back to CalculateFunc for the result. Returns
 // true if the calculation is executed successfully.
 func (rm *MetricCalculator) Calculate(metricName string, labels map[string]string, value interface{}, timestamp time.Time) (interface{}, bool) {
@@ -87,10 +87,15 @@ func (rm *MetricCalculator) Calculate(metricName string, labels map[string]strin
 
 type Key struct {
 	MetricMetadata interface{}
+	MetricType     interface{}
 	MetricLabels   attribute.Distinct
 }
 
 func NewKey(metricMetadata interface{}, labels map[string]string) Key {
+	return NewGroupKey(metricMetadata, nil, labels)
+}
+
+func NewGroupKey(metricMetadata interface{}, metricType interface{}, labels map[string]string) Key {
 	var kvs []attribute.KeyValue
 	var sortable attribute.Sortable
 	for k, v := range labels {
@@ -101,6 +106,7 @@ func NewKey(metricMetadata interface{}, labels map[string]string) Key {
 	dedupSortedLabels := set.Equivalent()
 	return Key{
 		MetricMetadata: metricMetadata,
+		MetricType:     metricType,
 		MetricLabels:   dedupSortedLabels,
 	}
 }
