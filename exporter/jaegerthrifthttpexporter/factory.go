@@ -40,7 +40,7 @@ func NewFactory() component.ExporterFactory {
 		component.WithTracesExporter(createTracesExporter, stability))
 }
 
-func createDefaultConfig() component.ExporterConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		HTTPClientSettings: confighttp.HTTPClientSettings{
@@ -52,7 +52,7 @@ func createDefaultConfig() component.ExporterConfig {
 func createTracesExporter(
 	_ context.Context,
 	set component.ExporterCreateSettings,
-	config component.ExporterConfig,
+	config component.Config,
 ) (component.TracesExporter, error) {
 
 	expCfg := config.(*Config)

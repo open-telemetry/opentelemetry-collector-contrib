@@ -233,12 +233,12 @@ func TestRemoveExtraExporters(t *testing.T) {
 func TestAddMissingExporters(t *testing.T) {
 	// prepare
 	cfg := simpleConfig()
-	exporterFactory := component.NewExporterFactory("otlp", func() component.ExporterConfig {
+	exporterFactory := component.NewExporterFactory("otlp", func() component.Config {
 		return &otlpexporter.Config{}
 	}, component.WithTracesExporter(func(
 		_ context.Context,
 		_ component.ExporterCreateSettings,
-		_ component.ExporterConfig,
+		_ component.Config,
 	) (component.TracesExporter, error) {
 		return newNopMockTracesExporter(), nil
 	}, component.StabilityLevelDevelopment))
@@ -267,12 +267,12 @@ func TestFailedToAddMissingExporters(t *testing.T) {
 	// prepare
 	cfg := simpleConfig()
 	expectedErr := errors.New("some expected error")
-	exporterFactory := component.NewExporterFactory("otlp", func() component.ExporterConfig {
+	exporterFactory := component.NewExporterFactory("otlp", func() component.Config {
 		return &otlpexporter.Config{}
 	}, component.WithTracesExporter(func(
 		_ context.Context,
 		_ component.ExporterCreateSettings,
-		_ component.ExporterConfig,
+		_ component.Config,
 	) (component.TracesExporter, error) {
 		return nil, expectedErr
 	}, component.StabilityLevelDevelopment))

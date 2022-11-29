@@ -9,15 +9,15 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.66.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver v0.66.0
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.66.0
-	go.opentelemetry.io/collector/component v0.66.0
-	go.opentelemetry.io/collector/consumer v0.66.0
-	go.opentelemetry.io/collector/exporter/otlpexporter v0.66.0
-	go.opentelemetry.io/collector/featuregate v0.66.0
-	go.opentelemetry.io/collector/pdata v0.66.0
-	go.opentelemetry.io/collector/processor/batchprocessor v0.66.0
-	go.opentelemetry.io/collector/receiver/otlpreceiver v0.66.0
-	go.opentelemetry.io/collector/semconv v0.66.0
+	go.opentelemetry.io/collector v0.66.1-0.20221128222955-4ff1ff379b90
+	go.opentelemetry.io/collector/component v0.66.1-0.20221128222955-4ff1ff379b90
+	go.opentelemetry.io/collector/consumer v0.66.1-0.20221128222955-4ff1ff379b90
+	go.opentelemetry.io/collector/exporter/otlpexporter v0.66.1-0.20221128222955-4ff1ff379b90
+	go.opentelemetry.io/collector/featuregate v0.66.1-0.20221128222955-4ff1ff379b90
+	go.opentelemetry.io/collector/pdata v0.66.1-0.20221128222955-4ff1ff379b90
+	go.opentelemetry.io/collector/processor/batchprocessor v0.66.1-0.20221128222955-4ff1ff379b90
+	go.opentelemetry.io/collector/receiver/otlpreceiver v0.66.1-0.20221128222955-4ff1ff379b90
+	go.opentelemetry.io/collector/semconv v0.66.1-0.20221128222955-4ff1ff379b90
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.23.0
 	google.golang.org/grpc v1.51.0

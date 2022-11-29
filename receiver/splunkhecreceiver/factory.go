@@ -49,7 +49,7 @@ func NewFactory() component.ReceiverFactory {
 }
 
 // CreateDefaultConfig creates the default configuration for Splunk HEC receiver.
-func createDefaultConfig() component.ReceiverConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 		HTTPServerSettings: confighttp.HTTPServerSettings{
@@ -71,7 +71,7 @@ func createDefaultConfig() component.ReceiverConfig {
 func createMetricsReceiver(
 	_ context.Context,
 	params component.ReceiverCreateSettings,
-	cfg component.ReceiverConfig,
+	cfg component.Config,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 
@@ -88,7 +88,7 @@ func createMetricsReceiver(
 func createLogsReceiver(
 	_ context.Context,
 	params component.ReceiverCreateSettings,
-	cfg component.ReceiverConfig,
+	cfg component.Config,
 	consumer consumer.Logs,
 ) (component.LogsReceiver, error) {
 

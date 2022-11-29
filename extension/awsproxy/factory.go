@@ -42,7 +42,7 @@ func NewFactory() component.ExtensionFactory {
 	)
 }
 
-func createDefaultConfig() component.ExtensionConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
 		ProxyConfig: proxy.Config{
@@ -56,6 +56,6 @@ func createDefaultConfig() component.ExtensionConfig {
 	}
 }
 
-func createExtension(_ context.Context, params component.ExtensionCreateSettings, cfg component.ExtensionConfig) (component.Extension, error) {
+func createExtension(_ context.Context, params component.ExtensionCreateSettings, cfg component.Config) (component.Extension, error) {
 	return newXrayProxy(cfg.(*Config), params.Logger)
 }

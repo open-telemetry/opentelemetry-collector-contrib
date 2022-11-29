@@ -36,7 +36,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.NoError(t, component.UnmarshalProcessorConfig(cm, cfg))
+	assert.NoError(t, component.UnmarshalConfig(cm, cfg))
 	assert.Equal(t, &Config{
 		ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 		BaseConfig: adapter.BaseConfig{

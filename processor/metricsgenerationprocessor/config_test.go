@@ -31,7 +31,7 @@ func TestLoadConfig(t *testing.T) {
 
 	tests := []struct {
 		id           component.ID
-		expected     component.ProcessorConfig
+		expected     component.Config
 		errorMessage string
 	}{
 		{
@@ -97,7 +97,7 @@ func TestLoadConfig(t *testing.T) {
 			cfg := factory.CreateDefaultConfig()
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalProcessorConfig(sub, cfg))
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 			if tt.expected == nil {
 				assert.EqualError(t, component.ValidateConfig(cfg), tt.errorMessage)
