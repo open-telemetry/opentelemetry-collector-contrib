@@ -19,8 +19,9 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/confighttp"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver/internal/array"
 )
 
 var _ component.Config = (*Config)(nil)
@@ -34,12 +35,7 @@ type Config struct {
 	Settings *Settings `mapstructure:"settings"`
 
 	// Arrays represents the list of arrays to query
-	Arrays []Array `mapstructure:"arrays"`
-}
-
-type Array struct {
-	Address string                    `mapstructure:"address"`
-	Auth    configauth.Authentication `mapstructure:"auth"`
+	Arrays []array.Config `mapstructure:"arrays"`
 }
 
 type Settings struct {
