@@ -23,6 +23,8 @@ func TestDefaultMetrics(t *testing.T) {
 	enabledMetrics["process.cpu.time"] = true
 	mb.RecordProcessCPUTimeDataPoint(ts, 1, AttributeState(1))
 
+	mb.RecordProcessCPUUtilizationDataPoint(ts, 1, AttributeState(1))
+
 	enabledMetrics["process.disk.io"] = true
 	mb.RecordProcessDiskIoDataPoint(ts, 1, AttributeDirection(1))
 
@@ -65,6 +67,7 @@ func TestAllMetrics(t *testing.T) {
 	settings := MetricsSettings{
 		ProcessContextSwitches:     MetricSettings{Enabled: true},
 		ProcessCPUTime:             MetricSettings{Enabled: true},
+		ProcessCPUUtilization:      MetricSettings{Enabled: true},
 		ProcessDiskIo:              MetricSettings{Enabled: true},
 		ProcessMemoryPhysicalUsage: MetricSettings{Enabled: true},
 		ProcessMemoryUsage:         MetricSettings{Enabled: true},
@@ -79,6 +82,7 @@ func TestAllMetrics(t *testing.T) {
 
 	mb.RecordProcessContextSwitchesDataPoint(ts, 1, AttributeContextSwitchType(1))
 	mb.RecordProcessCPUTimeDataPoint(ts, 1, AttributeState(1))
+	mb.RecordProcessCPUUtilizationDataPoint(ts, 1, AttributeState(1))
 	mb.RecordProcessDiskIoDataPoint(ts, 1, AttributeDirection(1))
 	mb.RecordProcessMemoryPhysicalUsageDataPoint(ts, 1)
 	mb.RecordProcessMemoryUsageDataPoint(ts, 1)
@@ -163,6 +167,20 @@ func TestAllMetrics(t *testing.T) {
 			assert.True(t, ok)
 			assert.Equal(t, "system", attrVal.Str())
 			validatedMetrics["process.cpu.time"] = struct{}{}
+		case "process.cpu.utilization":
+			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+			assert.Equal(t, "Percentage of total CPU time used by the process since last scrape, expressed as a value between 0 and 1. On the first scrape, no data point is emitted for this metric.", ms.At(i).Description())
+			assert.Equal(t, "1", ms.At(i).Unit())
+			dp := ms.At(i).Gauge().DataPoints().At(0)
+			assert.Equal(t, start, dp.StartTimestamp())
+			assert.Equal(t, ts, dp.Timestamp())
+			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+			assert.Equal(t, float64(1), dp.DoubleValue())
+			attrVal, ok := dp.Attributes().Get("state")
+			assert.True(t, ok)
+			assert.Equal(t, "system", attrVal.Str())
+			validatedMetrics["process.cpu.utilization"] = struct{}{}
 		case "process.disk.io":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
@@ -297,6 +315,7 @@ func TestNoMetrics(t *testing.T) {
 	settings := MetricsSettings{
 		ProcessContextSwitches:     MetricSettings{Enabled: false},
 		ProcessCPUTime:             MetricSettings{Enabled: false},
+		ProcessCPUUtilization:      MetricSettings{Enabled: false},
 		ProcessDiskIo:              MetricSettings{Enabled: false},
 		ProcessMemoryPhysicalUsage: MetricSettings{Enabled: false},
 		ProcessMemoryUsage:         MetricSettings{Enabled: false},
@@ -310,6 +329,7 @@ func TestNoMetrics(t *testing.T) {
 	mb := NewMetricsBuilder(settings, component.BuildInfo{}, WithStartTime(start))
 	mb.RecordProcessContextSwitchesDataPoint(ts, 1, AttributeContextSwitchType(1))
 	mb.RecordProcessCPUTimeDataPoint(ts, 1, AttributeState(1))
+	mb.RecordProcessCPUUtilizationDataPoint(ts, 1, AttributeState(1))
 	mb.RecordProcessDiskIoDataPoint(ts, 1, AttributeDirection(1))
 	mb.RecordProcessMemoryPhysicalUsageDataPoint(ts, 1)
 	mb.RecordProcessMemoryUsageDataPoint(ts, 1)
