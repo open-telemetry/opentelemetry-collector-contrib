@@ -230,8 +230,10 @@ func transform(buildInfo component.BuildInfo, data []byte) (*plog.Logs, error) {
 			lr.SetSeverityText(*azureLog.Level)
 		}
 
-		//nolint:errcheck
-		lr.Attributes().FromRaw(extractRawAttributes(azureLog))
+		//
+		if err := lr.Attributes().FromRaw(extractRawAttributes(azureLog)); err != nil {
+			return &l, err
+		}
 
 		// The Azure resource ID will be pulled into a common resource attribute.
 		// This implementation assumes that a single log message from Azure will

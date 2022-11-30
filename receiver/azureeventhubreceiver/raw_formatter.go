@@ -27,15 +27,16 @@ func NewRawConverter(settings component.ReceiverCreateSettings) *rawConverter {
 	return &rawConverter{}
 }
 
-func (_ *rawConverter) ToLogs(event *eventhub.Event) (plog.Logs, error) {
+func (_ *rawConverter) ToLogs(event *eventhub.Event) (*plog.Logs, error) {
 	l := plog.NewLogs()
 	lr := l.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 	slice := lr.Body().SetEmptyBytes()
 	slice.Append(event.Data...)
-	//nolint:errcheck
-	lr.Attributes().FromRaw(event.Properties)
 	if event.SystemProperties.EnqueuedTime != nil {
 		lr.SetTimestamp(pcommon.NewTimestampFromTime(*event.SystemProperties.EnqueuedTime))
 	}
-	return l, nil
+	if err := lr.Attributes().FromRaw(event.Properties); err != nil {
+		return &l, err
+	}
+	return &l, nil
 }
