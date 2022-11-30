@@ -142,7 +142,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/riakreceiver v0.66.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver v0.66.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver v0.66.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver v0.66.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver v0.66.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver v0.66.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver v0.66.0
@@ -560,6 +560,7 @@ require (
 	github.com/prometheus/procfs v0.8.0 // indirect
 	github.com/prometheus/statsd_exporter v0.22.7 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
+	github.com/relvacode/iso8601 v1.1.0 // indirect
 	github.com/rs/cors v1.8.2 // indirect
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.9 // indirect
 	github.com/sean-/seed v0.0.0-20170313163322-e2103e2c3529 // indirect
