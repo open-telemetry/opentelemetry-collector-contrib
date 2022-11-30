@@ -324,6 +324,9 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "rabbitmq",
 		},
 		{
+			receiver: "purefa",
+		},
+		{
 			receiver: "receiver_creator",
 		},
 		{

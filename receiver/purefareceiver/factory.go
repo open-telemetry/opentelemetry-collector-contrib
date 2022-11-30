@@ -16,9 +16,14 @@ package purefareceiver // import "github.com/open-telemetry/opentelemetry-collec
 
 // This file implements Factory for Array scraper.
 import (
+	"context"
+	"fmt"
+	"time"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/consumer"
 )
 
 // NewFactory creates a factory for Pure Storage FlashArray receiver.
@@ -38,5 +43,23 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 		HTTPClientSettings: confighttp.HTTPClientSettings{},
+		Settings: &Settings{
+			ReloadIntervals: &ReloadIntervals{
+				Array: 15 * time.Second,
+			},
+		},
 	}
+}
+
+func createMetricsReceiver(
+	_ context.Context,
+	set component.ReceiverCreateSettings,
+	rCfg component.Config,
+	next consumer.Metrics,
+) (component.MetricsReceiver, error) {
+	cfg, ok := rCfg.(*Config)
+	if !ok {
+		return nil, fmt.Errorf("a purefa receiver config was expected by the receiver factory, but got %T", rCfg)
+	}
+	return newReceiver(cfg, set, next), nil
 }
