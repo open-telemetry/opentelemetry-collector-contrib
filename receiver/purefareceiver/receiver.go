@@ -22,8 +22,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver/internal/array"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver/internal/host"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver/internal"
 )
 
 var _ component.MetricsReceiver = (*purefaReceiver)(nil)
@@ -48,14 +47,14 @@ func (r *purefaReceiver) Start(ctx context.Context, compHost component.Host) err
 	fact := prometheusreceiver.NewFactory()
 	scrapeCfgs := []*config.ScrapeConfig{}
 
-	arrScraper := array.NewScraper(ctx, r.cfg.Endpoint, r.cfg.Arrays, r.cfg.Settings.ReloadIntervals.Array)
+	arrScraper := internal.NewScraper(ctx, "array", r.cfg.Endpoint, r.cfg.Arrays, r.cfg.Settings.ReloadIntervals.Array)
 	if scCfgs, err := arrScraper.ToPrometheusReceiverConfig(compHost, fact); err == nil {
 		scrapeCfgs = append(scrapeCfgs, scCfgs...)
 	} else {
 		return err
 	}
 
-	hostScraper := host.NewScraper(ctx, r.cfg.Endpoint, r.cfg.Hosts, r.cfg.Settings.ReloadIntervals.Host)
+	hostScraper := internal.NewScraper(ctx, "hosts", r.cfg.Endpoint, r.cfg.Hosts, r.cfg.Settings.ReloadIntervals.Host)
 	if scCfgs, err := hostScraper.ToPrometheusReceiverConfig(compHost, fact); err == nil {
 		scrapeCfgs = append(scrapeCfgs, scCfgs...)
 	} else {

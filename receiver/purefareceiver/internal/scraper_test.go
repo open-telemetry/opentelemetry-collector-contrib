@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package array // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver/internal/array"
+package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver/internal"
 
 import (
 	"context"
@@ -27,8 +27,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver/internal"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver/internal/scrapertest"
 )
 
 func TestToPrometheusConfig(t *testing.T) {
@@ -42,15 +40,15 @@ func TestToPrometheusConfig(t *testing.T) {
 	baExt, err := baFactory.CreateExtension(context.Background(), componenttest.NewNopExtensionCreateSettings(), baCfg)
 	require.NoError(t, err)
 
-	host := &scrapertest.MockHost{
-		Extensions: map[component.ID]component.Component{
+	host := &mockHost{
+		extensions: map[component.ID]component.Component{
 			component.NewIDWithName("bearertokenauth", "array01"): baExt,
 		},
 	}
 
 	endpoint := "http://example.com"
 	interval := 15 * time.Second
-	arrs := []internal.ScraperConfig{
+	cfgs := []ScraperConfig{
 		{
 			Address: "gse-array01",
 			Auth: configauth.Authentication{
@@ -59,7 +57,7 @@ func TestToPrometheusConfig(t *testing.T) {
 		},
 	}
 
-	scraper := NewScraper(context.Background(), endpoint, arrs, interval)
+	scraper := NewScraper(context.Background(), "hosts", endpoint, cfgs, interval)
 
 	// test
 	scCfgs, err := scraper.ToPrometheusReceiverConfig(host, prFactory)
@@ -69,8 +67,8 @@ func TestToPrometheusConfig(t *testing.T) {
 	assert.Len(t, scCfgs, 1)
 	assert.EqualValues(t, "the-token", scCfgs[0].HTTPClientConfig.BearerToken)
 	assert.Equal(t, "gse-array01", scCfgs[0].Params.Get("endpoint"))
-	assert.Equal(t, "/metrics/array", scCfgs[0].MetricsPath)
-	assert.Equal(t, "purefa/arrays/gse-array01", scCfgs[0].JobName)
+	assert.Equal(t, "/metrics/hosts", scCfgs[0].MetricsPath)
+	assert.Equal(t, "purefa/hosts/gse-array01", scCfgs[0].JobName)
 	assert.EqualValues(t, interval, scCfgs[0].ScrapeTimeout)
 	assert.EqualValues(t, interval, scCfgs[0].ScrapeInterval)
 }

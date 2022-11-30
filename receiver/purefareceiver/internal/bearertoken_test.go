@@ -25,7 +25,6 @@ import (
 	"go.opentelemetry.io/collector/config/configauth"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver/internal/scrapertest"
 )
 
 func TestBearerToken(t *testing.T) {
@@ -40,8 +39,8 @@ func TestBearerToken(t *testing.T) {
 
 	baComponentName := component.NewIDWithName("bearertokenauth", "array01")
 
-	host := &scrapertest.MockHost{
-		Extensions: map[component.ID]component.Component{
+	host := &mockHost{
+		extensions: map[component.ID]component.Component{
 			baComponentName: baExt,
 		},
 	}
@@ -56,4 +55,22 @@ func TestBearerToken(t *testing.T) {
 	// verify
 	assert.NoError(t, err)
 	assert.Equal(t, "the-token", token)
+}
+
+type mockHost struct {
+	extensions map[component.ID]component.Component
+}
+
+func (h *mockHost) ReportFatalError(_ error) {}
+
+func (h *mockHost) GetFactory(_ component.Kind, _ component.Type) component.Factory {
+	return nil
+}
+
+func (h *mockHost) GetExtensions() map[component.ID]component.Component {
+	return h.extensions
+}
+
+func (h *mockHost) GetExporters() map[component.DataType]map[component.ID]component.Component {
+	return nil
 }
