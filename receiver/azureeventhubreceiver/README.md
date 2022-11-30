@@ -83,10 +83,8 @@ and the OpenTelemetry attributes.
 | time (required)                  | time_unix_nano (field)                 | 
 | identity (optional)              | azure.identity (attribute, nested)     |
 
-Note: JSON does not distinguish between fixed and floating point numbers. This
-formatter will first try to parse a number as an integer, if that works, then
-an integer is used for the OpenTelemetry attribute. In all other cases, a double
-is used.
+Note: JSON does not distinguish between fixed and floating point numbers. All
+JSON numbers are encoded as doubles.
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

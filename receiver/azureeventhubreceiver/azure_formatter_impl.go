@@ -109,49 +109,6 @@ func setIf(attrs map[string]interface{}, key string, value *string) {
 	}
 }
 
-// jsonNumberToRaw converts a json.Number instance to either
-// a raw int64 or double value. If the value can be parsed
-// as an integer, then the integer is returned, otherwise
-// a double is returned. Nil may be returned if the
-// json.Number instance is not valid.
-func jsonNumberToRaw(n json.Number) interface{} {
-	if i, err := n.Int64(); err == nil {
-		return i
-	}
-	if f, err := n.Float64(); err == nil {
-		return f
-	}
-	return nil
-}
-
-// replaceJsonNumber will recursively scan through the
-// given interface to find and replace json.Number
-// instances with a raw int or double. This function
-// returns the possibly mutated interface.
-func replaceJsonNumber(i interface{}) interface{} {
-	switch t := i.(type) {
-	case map[string]interface{}:
-		for k, v := range t {
-			switch number := v.(type) {
-			case json.Number:
-				t[k] = jsonNumberToRaw(number)
-			default:
-				replaceJsonNumber(v)
-			}
-		}
-	case []interface{}:
-		for k, v := range t {
-			switch number := v.(type) {
-			case json.Number:
-				t[k] = jsonNumberToRaw(number)
-			default:
-				replaceJsonNumber(v)
-			}
-		}
-	}
-	return i
-}
-
 // extractRawAttributes creates a raw attribute map and
 // inserts attributes from the Azure log record. Optional
 // attributes are only inserted if they are defined. The
@@ -169,12 +126,12 @@ func extractRawAttributes(log azureLogRecord) map[string]interface{} {
 		}
 	}
 	if log.Identity != nil {
-		attrs[azureIdentity] = replaceJsonNumber(*log.Identity)
+		attrs[azureIdentity] = *log.Identity
 	}
 	attrs[azureOperationName] = log.OperationName
 	setIf(attrs, azureOperationVersion, log.OperationVersion)
 	if log.Properties != nil {
-		attrs[azureProperties] = replaceJsonNumber(*log.Properties)
+		attrs[azureProperties] = *log.Properties
 	}
 	setIf(attrs, azureResultDescription, log.ResultDescription)
 	setIf(attrs, azureResultSignature, log.ResultSignature)
@@ -201,7 +158,6 @@ func transform(buildInfo component.BuildInfo, data []byte) (*plog.Logs, error) {
 
 	var azureLogs azureRecords
 	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.UseNumber()
 	if err := decoder.Decode(&azureLogs); err != nil {
 		return &l, err
 	}

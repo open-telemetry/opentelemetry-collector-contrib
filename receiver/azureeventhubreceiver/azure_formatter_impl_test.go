@@ -15,7 +15,6 @@
 package azureeventhubreceiver // import "github.com/loomis-relativity/opentelemetry-collector-contrib/receiver/azureeventhubreceiver"
 
 import (
-	"encoding/json"
 	"github.com/go-test/deep"
 	"go.opentelemetry.io/collector/component"
 	"os"
@@ -75,40 +74,6 @@ func TestSetIf(t *testing.T) {
 	actual, found = m["key"]
 	assert.True(t, found)
 	assert.Equal(t, "ok", actual)
-}
-
-func TestJsonNumberToRaw(t *testing.T) {
-	assert.Equal(t, float64(1.34), jsonNumberToRaw("1.34"))
-	assert.Equal(t, int64(1024), jsonNumberToRaw("1024"))
-	assert.Nil(t, jsonNumberToRaw("invalid"))
-}
-
-func TestReplaceJsonNumber(t *testing.T) {
-	input := map[string]interface{}{
-		"one": json.Number("3.14"),
-		"two": []interface{}{json.Number("1"), json.Number("2"), json.Number("3.1"), json.Number("4.1")},
-		"three": map[string]interface{}{
-			"s1": "ok",
-			"s2": json.Number("1"),
-			"s3": true,
-		},
-		"four": []interface{}{"ok", json.Number("3.14"), false},
-	}
-
-	expected := map[string]interface{}{
-		"one": float64(3.14),
-		"two": []interface{}{int64(1), int64(2), float64(3.1), float64(4.1)},
-		"three": map[string]interface{}{
-			"s1": "ok",
-			"s2": int64(1),
-			"s3": true,
-		},
-		"four": []interface{}{"ok", float64(3.14), false},
-	}
-
-	if diff := deep.Equal(expected, replaceJsonNumber(input)); diff != nil {
-		t.Errorf("FAIL\n%s\n", strings.Join(diff, "\n"))
-	}
 }
 
 func TestExtractRawAttributes(t *testing.T) {
@@ -255,7 +220,7 @@ var maximumLogRecord = func() plog.LogRecord {
 	lr.Attributes().PutEmptyMap(azureIdentity).PutEmptyMap("claim").PutStr("oid", "607964b6-41a5-4e24-a5db-db7aab3b9b34")
 	m := lr.Attributes().PutEmptyMap(azureProperties)
 	m.PutStr("string", "string")
-	m.PutInt("int", 429)
+	m.PutDouble("int", 429)
 	m.PutDouble("float", 3.14)
 	m.PutBool("bool", false)
 	m.Sort()

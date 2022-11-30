@@ -132,6 +132,8 @@ func (c *client) handle(ctx context.Context, event *eventhub.Event) error {
 	if err != nil {
 		return fmt.Errorf("failed to convert logs: %w", err)
 	}
+	// TODO: remove this debugging statement
+	c.logger.Error(string(event.Data[:]))
 	c.obsrecv.StartLogsOp(ctx)
 	consumerErr := c.consumer.ConsumeLogs(ctx, *logs)
 	c.obsrecv.EndLogsOp(ctx, "azureeventhub", logs.LogRecordCount(), consumerErr)
