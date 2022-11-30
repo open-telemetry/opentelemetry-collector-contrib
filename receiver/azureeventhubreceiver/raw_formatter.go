@@ -23,11 +23,11 @@ import (
 
 type rawConverter struct{}
 
-func NewRawConverter(settings component.ReceiverCreateSettings) *rawConverter {
+func newRawConverter(settings component.ReceiverCreateSettings) *rawConverter {
 	return &rawConverter{}
 }
 
-func (_ *rawConverter) ToLogs(event *eventhub.Event) (*plog.Logs, error) {
+func (*rawConverter) ToLogs(event *eventhub.Event) (*plog.Logs, error) {
 	l := plog.NewLogs()
 	lr := l.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 	slice := lr.Body().SetEmptyBytes()

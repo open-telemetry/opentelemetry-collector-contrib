@@ -24,7 +24,7 @@ type azureLogFormatConverter struct {
 	buildInfo component.BuildInfo
 }
 
-func NewAzureLogFormatConverter(settings component.ReceiverCreateSettings) *azureLogFormatConverter {
+func newAzureLogFormatConverter(settings component.ReceiverCreateSettings) *azureLogFormatConverter {
 	return &azureLogFormatConverter{buildInfo: settings.BuildInfo}
 }
 

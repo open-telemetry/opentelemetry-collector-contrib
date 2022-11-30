@@ -15,14 +15,14 @@
 package azureeventhubreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver"
 
 import (
-	"github.com/go-test/deep"
-	"go.opentelemetry.io/collector/component"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/go-test/deep"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 )
@@ -90,16 +90,14 @@ func TestExtractRawAttributes(t *testing.T) {
 	level := "Informational"
 	location := "location"
 
-	var identity interface{}
-	identity = "someone"
+	identity := interface{}("someone")
 
-	var properties interface{}
-	properties = map[string]interface{}{
+	properties := interface{}(map[string]interface{}{
 		"a": uint64(1),
 		"b": true,
 		"c": 1.23,
 		"d": "ok",
-	}
+	})
 
 	tests := []struct {
 		name     string

@@ -16,6 +16,7 @@ package azureeventhubreceiver // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
@@ -55,11 +56,11 @@ func createLogsReceiver(_ context.Context, settings component.ReceiverCreateSett
 	var converter eventConverter
 	switch logFormat(receiver.(*Config).Format) {
 	case azureLogFormat:
-		converter = NewAzureLogFormatConverter(settings)
+		converter = newAzureLogFormatConverter(settings)
 	case rawLogFormat:
-		converter = NewRawConverter(settings)
+		converter = newRawConverter(settings)
 	default:
-		converter = NewRawConverter(settings)
+		converter = newRawConverter(settings)
 	}
 
 	return &client{
