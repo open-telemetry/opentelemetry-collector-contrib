@@ -33,7 +33,7 @@ func init() {
 		enableHistogramSupportGateID,
 		featuregate.StageBeta,
 		featuregate.WithRegisterDescription("Enables histogram conversion support"),
-		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/15288"),
+		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/15658"),
 		featuregate.WithRegisterRemovalVersion("v0.66.0"),
 	)
 }
