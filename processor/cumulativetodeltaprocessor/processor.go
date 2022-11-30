@@ -211,6 +211,8 @@ func (ctdp *cumulativeToDeltaProcessor) convertHistogramDataPoints(in interface{
 					dp.SetSum(delta.HistogramValue.Sum)
 				}
 				dp.BucketCounts().FromRaw(delta.HistogramValue.Buckets)
+				dp.RemoveMin()
+				dp.RemoveMax()
 				return false
 			}
 

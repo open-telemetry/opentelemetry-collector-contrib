@@ -344,7 +344,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("power_state")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeVMCountPowerState(1).String(), attrVal.Str())
+			assert.Equal(t, "on", attrVal.Str())
 			validatedMetrics["vcenter.cluster.vm.count"] = struct{}{}
 		case "vcenter.datastore.disk.usage":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -360,7 +360,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("disk_state")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeDiskState(1).String(), attrVal.Str())
+			assert.Equal(t, "available", attrVal.Str())
 			validatedMetrics["vcenter.datastore.disk.usage"] = struct{}{}
 		case "vcenter.datastore.disk.utilization":
 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
@@ -409,7 +409,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("direction")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeDiskDirection(1).String(), attrVal.Str())
+			assert.Equal(t, "read", attrVal.Str())
 			validatedMetrics["vcenter.host.disk.latency.avg"] = struct{}{}
 		case "vcenter.host.disk.latency.max":
 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
@@ -436,7 +436,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("direction")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeDiskDirection(1).String(), attrVal.Str())
+			assert.Equal(t, "read", attrVal.Str())
 			validatedMetrics["vcenter.host.disk.throughput"] = struct{}{}
 		case "vcenter.host.memory.usage":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -476,7 +476,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("direction")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeThroughputDirection(1).String(), attrVal.Str())
+			assert.Equal(t, "transmitted", attrVal.Str())
 			validatedMetrics["vcenter.host.network.packet.count"] = struct{}{}
 		case "vcenter.host.network.packet.errors":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -492,7 +492,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("direction")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeThroughputDirection(1).String(), attrVal.Str())
+			assert.Equal(t, "transmitted", attrVal.Str())
 			validatedMetrics["vcenter.host.network.packet.errors"] = struct{}{}
 		case "vcenter.host.network.throughput":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -508,7 +508,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("direction")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeThroughputDirection(1).String(), attrVal.Str())
+			assert.Equal(t, "transmitted", attrVal.Str())
 			validatedMetrics["vcenter.host.network.throughput"] = struct{}{}
 		case "vcenter.host.network.usage":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -587,10 +587,10 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("direction")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeDiskDirection(1).String(), attrVal.Str())
+			assert.Equal(t, "read", attrVal.Str())
 			attrVal, ok = dp.Attributes().Get("disk_type")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeDiskType(1).String(), attrVal.Str())
+			assert.Equal(t, "virtual", attrVal.Str())
 			validatedMetrics["vcenter.vm.disk.latency.avg"] = struct{}{}
 		case "vcenter.vm.disk.latency.max":
 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
@@ -630,7 +630,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("disk_state")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeDiskState(1).String(), attrVal.Str())
+			assert.Equal(t, "available", attrVal.Str())
 			validatedMetrics["vcenter.vm.disk.usage"] = struct{}{}
 		case "vcenter.vm.disk.utilization":
 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
@@ -683,7 +683,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("direction")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeThroughputDirection(1).String(), attrVal.Str())
+			assert.Equal(t, "transmitted", attrVal.Str())
 			validatedMetrics["vcenter.vm.network.packet.count"] = struct{}{}
 		case "vcenter.vm.network.throughput":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -699,7 +699,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("direction")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeThroughputDirection(1).String(), attrVal.Str())
+			assert.Equal(t, "transmitted", attrVal.Str())
 			validatedMetrics["vcenter.vm.network.throughput"] = struct{}{}
 		case "vcenter.vm.network.usage":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())

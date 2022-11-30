@@ -37,7 +37,7 @@ func NewFactory() component.ExtensionFactory {
 	)
 }
 
-func createDefaultConfig() component.ExtensionConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
 		Endpoint:          "unix:///var/run/docker.sock",
@@ -50,7 +50,7 @@ func createDefaultConfig() component.ExtensionConfig {
 func createExtension(
 	_ context.Context,
 	settings component.ExtensionCreateSettings,
-	cfg component.ExtensionConfig,
+	cfg component.Config,
 ) (component.Extension, error) {
 	config := cfg.(*Config)
 	return newObserver(settings.Logger, config)

@@ -41,24 +41,24 @@ func NewFactory() component.ProcessorFactory {
 	)
 }
 
-func createDefaultConfig() component.ProcessorConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 		AttributeSource:   defaultAttributeSource,
 	}
 }
 
-func createTracesProcessor(_ context.Context, params component.ProcessorCreateSettings, cfg component.ProcessorConfig, nextConsumer consumer.Traces) (component.TracesProcessor, error) {
+func createTracesProcessor(_ context.Context, params component.ProcessorCreateSettings, cfg component.Config, nextConsumer consumer.Traces) (component.TracesProcessor, error) {
 	warnIfNotLastInPipeline(nextConsumer, params.Logger)
 	return newTracesProcessor(params.TelemetrySettings, cfg), nil
 }
 
-func createMetricsProcessor(_ context.Context, params component.ProcessorCreateSettings, cfg component.ProcessorConfig, nextConsumer consumer.Metrics) (component.MetricsProcessor, error) {
+func createMetricsProcessor(_ context.Context, params component.ProcessorCreateSettings, cfg component.Config, nextConsumer consumer.Metrics) (component.MetricsProcessor, error) {
 	warnIfNotLastInPipeline(nextConsumer, params.Logger)
 	return newMetricProcessor(params.TelemetrySettings, cfg), nil
 }
 
-func createLogsProcessor(_ context.Context, params component.ProcessorCreateSettings, cfg component.ProcessorConfig, nextConsumer consumer.Logs) (component.LogsProcessor, error) {
+func createLogsProcessor(_ context.Context, params component.ProcessorCreateSettings, cfg component.Config, nextConsumer consumer.Logs) (component.LogsProcessor, error) {
 	warnIfNotLastInPipeline(nextConsumer, params.Logger)
 	return newLogProcessor(params.TelemetrySettings, cfg), nil
 }

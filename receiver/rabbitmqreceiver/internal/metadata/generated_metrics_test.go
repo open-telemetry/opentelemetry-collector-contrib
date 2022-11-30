@@ -137,7 +137,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("state")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeMessageState(1).String(), attrVal.Str())
+			assert.Equal(t, "ready", attrVal.Str())
 			validatedMetrics["rabbitmq.message.current"] = struct{}{}
 		case "rabbitmq.message.delivered":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())

@@ -36,7 +36,7 @@ func NewFactory() component.ExporterFactory {
 		component.WithMetricsExporter(createMetricsExporter, stability))
 }
 
-func createDefaultConfig() component.ExporterConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		Endpoint:         DefaultEndpoint,
@@ -47,7 +47,7 @@ func createDefaultConfig() component.ExporterConfig {
 func createMetricsExporter(
 	_ context.Context,
 	params component.ExporterCreateSettings,
-	config component.ExporterConfig,
+	config component.Config,
 ) (component.MetricsExporter, error) {
 	exp, err := newCarbonExporter(config.(*Config), params)
 

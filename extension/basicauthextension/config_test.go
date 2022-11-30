@@ -30,7 +30,7 @@ func TestLoadConfig(t *testing.T) {
 
 	tests := []struct {
 		id          component.ID
-		expected    component.ExtensionConfig
+		expected    component.Config
 		expectedErr bool
 	}{
 		{
@@ -69,7 +69,7 @@ func TestLoadConfig(t *testing.T) {
 			cfg := factory.CreateDefaultConfig()
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalExtensionConfig(sub, cfg))
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 			if tt.expectedErr {
 				assert.Error(t, component.ValidateConfig(cfg))
 				return

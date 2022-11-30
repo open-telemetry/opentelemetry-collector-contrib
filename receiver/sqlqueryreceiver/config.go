@@ -158,7 +158,7 @@ func (a MetricAggregation) Validate() error {
 	return fmt.Errorf("metric config has unsupported aggregation: '%s'", a)
 }
 
-func createDefaultConfig() component.ReceiverConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 			ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),

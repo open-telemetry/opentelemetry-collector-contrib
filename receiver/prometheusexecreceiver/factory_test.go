@@ -46,7 +46,7 @@ func TestCreateTraceAndMetricsReceiver(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	assert.NoError(t, err)
 	assert.NotNil(t, cfg)
@@ -64,7 +64,7 @@ func TestCreateTraceAndMetricsReceiver(t *testing.T) {
 	// Test CreateMetricsReceiver
 	sub, err = cm.Sub(component.NewIDWithName(typeStr, "test").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 	metricReceiver, err = factory.CreateMetricsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, nil)
 	assert.Equal(t, nil, err)
 

@@ -102,7 +102,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("protocol")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeProtocol(1).String(), attrVal.Str())
+			assert.Equal(t, "tcp", attrVal.Str())
 			attrVal, ok = dp.Attributes().Get("state")
 			assert.True(t, ok)
 			assert.EqualValues(t, "attr-val", attrVal.Str())
@@ -150,7 +150,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.EqualValues(t, "attr-val", attrVal.Str())
 			attrVal, ok = dp.Attributes().Get("direction")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeDirection(1).String(), attrVal.Str())
+			assert.Equal(t, "receive", attrVal.Str())
 			validatedMetrics["system.network.dropped"] = struct{}{}
 		case "system.network.errors":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -169,7 +169,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.EqualValues(t, "attr-val", attrVal.Str())
 			attrVal, ok = dp.Attributes().Get("direction")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeDirection(1).String(), attrVal.Str())
+			assert.Equal(t, "receive", attrVal.Str())
 			validatedMetrics["system.network.errors"] = struct{}{}
 		case "system.network.io":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -188,7 +188,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.EqualValues(t, "attr-val", attrVal.Str())
 			attrVal, ok = dp.Attributes().Get("direction")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeDirection(1).String(), attrVal.Str())
+			assert.Equal(t, "receive", attrVal.Str())
 			validatedMetrics["system.network.io"] = struct{}{}
 		case "system.network.packets":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -207,7 +207,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.EqualValues(t, "attr-val", attrVal.Str())
 			attrVal, ok = dp.Attributes().Get("direction")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeDirection(1).String(), attrVal.Str())
+			assert.Equal(t, "receive", attrVal.Str())
 			validatedMetrics["system.network.packets"] = struct{}{}
 		}
 	}

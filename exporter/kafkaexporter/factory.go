@@ -81,7 +81,7 @@ func NewFactory(options ...FactoryOption) component.ExporterFactory {
 	)
 }
 
-func createDefaultConfig() component.ExporterConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),
@@ -116,7 +116,7 @@ type kafkaExporterFactory struct {
 func (f *kafkaExporterFactory) createTracesExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
-	cfg component.ExporterConfig,
+	cfg component.Config,
 ) (component.TracesExporter, error) {
 	oCfg := *(cfg.(*Config)) // Clone the config
 	if oCfg.Topic == "" {
@@ -146,7 +146,7 @@ func (f *kafkaExporterFactory) createTracesExporter(
 func (f *kafkaExporterFactory) createMetricsExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
-	cfg component.ExporterConfig,
+	cfg component.Config,
 ) (component.MetricsExporter, error) {
 	oCfg := *(cfg.(*Config)) // Clone the config
 	if oCfg.Topic == "" {
@@ -176,7 +176,7 @@ func (f *kafkaExporterFactory) createMetricsExporter(
 func (f *kafkaExporterFactory) createLogsExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
-	cfg component.ExporterConfig,
+	cfg component.Config,
 ) (component.LogsExporter, error) {
 	oCfg := *(cfg.(*Config)) // Clone the config
 	if oCfg.Topic == "" {

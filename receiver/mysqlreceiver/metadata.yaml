@@ -21,9 +21,9 @@ attributes:
     description: The buffer pool operations types.
     type: string
     enum: [read_ahead_rnd, read_ahead, read_ahead_evicted, read_requests, reads, wait_free, write_requests]
-  command:
+  prepared_statements_command:
     value: command
-    description: The command types.
+    description: The prepare statement command types.
     type: string
     enum: [execute, close, fetch, prepare, reset, send_long_data]
   connection_error:
@@ -223,7 +223,17 @@ metrics:
       input_type: string
       monotonic: true
       aggregation: cumulative
-    attributes: [command]
+    attributes: [prepared_statements_command]
+  mysql.prepared_statements:
+    enabled: true
+    description: The number of times each type of prepared statement command has been issued.
+    unit: 1
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: true
+      aggregation: cumulative
+    attributes: [prepared_statements_command]
   mysql.handlers:
     enabled: true
     description: The number of requests to various MySQL handlers.

@@ -52,7 +52,7 @@ type Source struct {
 	ReloadInterval time.Duration `mapstructure:"reload_interval"`
 }
 
-var _ component.ExtensionConfig = (*Config)(nil)
+var _ component.Config = (*Config)(nil)
 
 // Validate checks if the extension configuration is valid
 func (cfg *Config) Validate() error {
