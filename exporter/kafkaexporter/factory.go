@@ -53,11 +53,36 @@ const (
 // FactoryOption applies changes to kafkaExporterFactory.
 type FactoryOption func(factory *kafkaExporterFactory)
 
-// WithTracesMarshalers adds tracesMarshalers.
+// WithTracesMarshalers adds tracesMarshalers to the exporter factory.
+// This allows custom-built collectors to configure custom Kafka marshaler(s) for trace data.
+// An example use case is keying the message by trace ID so downstream collectors could do tail-based sampling with horizontal scale
 func WithTracesMarshalers(tracesMarshalers ...TracesMarshaler) FactoryOption {
 	return func(factory *kafkaExporterFactory) {
 		for _, marshaler := range tracesMarshalers {
 			factory.tracesMarshalers[marshaler.Encoding()] = marshaler
+		}
+	}
+}
+
+// WithMetricsMarshalers adds metricsMarshalers to the exporter factory.
+// This allows custom-built collectors to configure custom Kafka marshaler(s) for metric data.
+// An example use case is keying the message by resource attribute values so downstream collectors can be horizontally scaled and still deliver metrics in the correct order to the backend.
+// Another use case might be pre-aggregating metrics to reduce backend update throughput.
+func WithMetricsMarshalers(metricsMarshalers ...MetricsMarshaler) FactoryOption {
+	return func(factory *kafkaExporterFactory) {
+		for _, marshaler := range metricsMarshalers {
+			factory.metricsMarshalers[marshaler.Encoding()] = marshaler
+		}
+	}
+}
+
+// WithLogsMarshalers adds logsMarshalers to the exporter factory.
+// This allows custom-built collectors to configure custom Kafka marshaler(s) for log data.
+// An example use case is keying the message by resource attribute values so downstream collectors can be horizontally scaled and still deliver logs in the correct order to the backend.
+func WithLogsMarshalers(logsMarshalers ...LogsMarshaler) FactoryOption {
+	return func(factory *kafkaExporterFactory) {
+		for _, marshaler := range logsMarshalers {
+			factory.logsMarshalers[marshaler.Encoding()] = marshaler
 		}
 	}
 }
