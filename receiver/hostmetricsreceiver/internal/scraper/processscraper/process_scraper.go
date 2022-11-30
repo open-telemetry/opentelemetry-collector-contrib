@@ -89,7 +89,7 @@ func newProcessScraper(settings component.ReceiverCreateSettings, cfg *Config) (
 }
 
 func (s *scraper) start(context.Context, component.Host) error {
-	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, s.settings.BuildInfo)
+	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, s.settings)
 	return nil
 }
 

@@ -7,15 +7,17 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 func TestDefaultMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	mb := NewMetricsBuilder(DefaultMetricsSettings(), component.BuildInfo{}, WithStartTime(start))
+	mb := NewMetricsBuilder(DefaultMetricsSettings(), componenttest.NewNopReceiverCreateSettings(), WithStartTime(start))
 	enabledMetrics := make(map[string]bool)
 
 	enabledMetrics["bigip.node.availability"] = true
@@ -117,7 +119,7 @@ func TestDefaultMetrics(t *testing.T) {
 func TestAllMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	settings := MetricsSettings{
+	metricsSettings := MetricsSettings{
 		BigipNodeAvailability:             MetricSettings{Enabled: true},
 		BigipNodeConnectionCount:          MetricSettings{Enabled: true},
 		BigipNodeDataTransmitted:          MetricSettings{Enabled: true},
@@ -146,7 +148,12 @@ func TestAllMetrics(t *testing.T) {
 		BigipVirtualServerPacketCount:     MetricSettings{Enabled: true},
 		BigipVirtualServerRequestCount:    MetricSettings{Enabled: true},
 	}
-	mb := NewMetricsBuilder(settings, component.BuildInfo{}, WithStartTime(start))
+	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+	settings := componenttest.NewNopReceiverCreateSettings()
+	settings.Logger = zap.New(observedZapCore)
+	mb := NewMetricsBuilder(metricsSettings, settings, WithStartTime(start))
+
+	assert.Equal(t, 0, observedLogs.Len())
 
 	mb.RecordBigipNodeAvailabilityDataPoint(ts, 1, AttributeAvailabilityStatus(1))
 	mb.RecordBigipNodeConnectionCountDataPoint(ts, 1)
@@ -612,7 +619,7 @@ func TestAllMetrics(t *testing.T) {
 func TestNoMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	settings := MetricsSettings{
+	metricsSettings := MetricsSettings{
 		BigipNodeAvailability:             MetricSettings{Enabled: false},
 		BigipNodeConnectionCount:          MetricSettings{Enabled: false},
 		BigipNodeDataTransmitted:          MetricSettings{Enabled: false},
@@ -641,7 +648,12 @@ func TestNoMetrics(t *testing.T) {
 		BigipVirtualServerPacketCount:     MetricSettings{Enabled: false},
 		BigipVirtualServerRequestCount:    MetricSettings{Enabled: false},
 	}
-	mb := NewMetricsBuilder(settings, component.BuildInfo{}, WithStartTime(start))
+	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+	settings := componenttest.NewNopReceiverCreateSettings()
+	settings.Logger = zap.New(observedZapCore)
+	mb := NewMetricsBuilder(metricsSettings, settings, WithStartTime(start))
+
+	assert.Equal(t, 0, observedLogs.Len())
 	mb.RecordBigipNodeAvailabilityDataPoint(ts, 1, AttributeAvailabilityStatus(1))
 	mb.RecordBigipNodeConnectionCountDataPoint(ts, 1)
 	mb.RecordBigipNodeDataTransmittedDataPoint(ts, 1, AttributeDirection(1))

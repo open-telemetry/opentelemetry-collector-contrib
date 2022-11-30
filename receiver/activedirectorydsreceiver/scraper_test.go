@@ -46,7 +46,7 @@ func TestScrape(t *testing.T) {
 		require.NoError(t, err)
 
 		scraper := &activeDirectoryDSScraper{
-			mb: metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), componenttest.NewNopReceiverCreateSettings().BuildInfo),
+			mb: metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), componenttest.NewNopReceiverCreateSettings()),
 			w:  mockWatchers,
 		}
 
@@ -78,7 +78,7 @@ func TestScrape(t *testing.T) {
 		mockWatchers.counterNameToWatcher[draInboundValuesDNs].(*mockPerfCounterWatcher).scrapeErr = draInboundValuesDNErr
 
 		scraper := &activeDirectoryDSScraper{
-			mb: metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), componenttest.NewNopReceiverCreateSettings().BuildInfo),
+			mb: metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), componenttest.NewNopReceiverCreateSettings()),
 			w:  mockWatchers,
 		}
 
@@ -113,7 +113,7 @@ func TestScrape(t *testing.T) {
 		mockWatchers.counterNameToWatcher[draInboundValuesDNs].(*mockPerfCounterWatcher).closeErr = draInboundValuesDNErr
 
 		scraper := &activeDirectoryDSScraper{
-			mb: metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), componenttest.NewNopReceiverCreateSettings().BuildInfo),
+			mb: metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), componenttest.NewNopReceiverCreateSettings()),
 			w:  mockWatchers,
 		}
 
@@ -132,7 +132,7 @@ func TestScrape(t *testing.T) {
 		require.NoError(t, err)
 
 		scraper := &activeDirectoryDSScraper{
-			mb: metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), componenttest.NewNopReceiverCreateSettings().BuildInfo),
+			mb: metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), componenttest.NewNopReceiverCreateSettings()),
 			w:  mockWatchers,
 		}
 

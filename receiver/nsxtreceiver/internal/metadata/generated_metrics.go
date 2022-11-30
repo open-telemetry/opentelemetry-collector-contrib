@@ -569,18 +569,18 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, options ...metricBuilderOption) *MetricsBuilder {
+func NewMetricsBuilder(ms MetricsSettings, settings component.ReceiverCreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                           pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                       pmetric.NewMetrics(),
-		buildInfo:                           buildInfo,
-		metricNsxtNodeCPUUtilization:        newMetricNsxtNodeCPUUtilization(settings.NsxtNodeCPUUtilization),
-		metricNsxtNodeFilesystemUsage:       newMetricNsxtNodeFilesystemUsage(settings.NsxtNodeFilesystemUsage),
-		metricNsxtNodeFilesystemUtilization: newMetricNsxtNodeFilesystemUtilization(settings.NsxtNodeFilesystemUtilization),
-		metricNsxtNodeMemoryCacheUsage:      newMetricNsxtNodeMemoryCacheUsage(settings.NsxtNodeMemoryCacheUsage),
-		metricNsxtNodeMemoryUsage:           newMetricNsxtNodeMemoryUsage(settings.NsxtNodeMemoryUsage),
-		metricNsxtNodeNetworkIo:             newMetricNsxtNodeNetworkIo(settings.NsxtNodeNetworkIo),
-		metricNsxtNodeNetworkPacketCount:    newMetricNsxtNodeNetworkPacketCount(settings.NsxtNodeNetworkPacketCount),
+		buildInfo:                           settings.BuildInfo,
+		metricNsxtNodeCPUUtilization:        newMetricNsxtNodeCPUUtilization(ms.NsxtNodeCPUUtilization),
+		metricNsxtNodeFilesystemUsage:       newMetricNsxtNodeFilesystemUsage(ms.NsxtNodeFilesystemUsage),
+		metricNsxtNodeFilesystemUtilization: newMetricNsxtNodeFilesystemUtilization(ms.NsxtNodeFilesystemUtilization),
+		metricNsxtNodeMemoryCacheUsage:      newMetricNsxtNodeMemoryCacheUsage(ms.NsxtNodeMemoryCacheUsage),
+		metricNsxtNodeMemoryUsage:           newMetricNsxtNodeMemoryUsage(ms.NsxtNodeMemoryUsage),
+		metricNsxtNodeNetworkIo:             newMetricNsxtNodeNetworkIo(ms.NsxtNodeNetworkIo),
+		metricNsxtNodeNetworkPacketCount:    newMetricNsxtNodeNetworkPacketCount(ms.NsxtNodeNetworkPacketCount),
 	}
 	for _, op := range options {
 		op(mb)

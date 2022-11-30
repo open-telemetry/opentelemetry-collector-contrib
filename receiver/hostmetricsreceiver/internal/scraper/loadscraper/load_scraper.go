@@ -58,7 +58,7 @@ func (s *scraper) start(ctx context.Context, _ component.Host) error {
 		return err
 	}
 
-	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, s.settings.BuildInfo, metadata.WithStartTime(pcommon.Timestamp(bootTime*1e9)))
+	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, s.settings, metadata.WithStartTime(pcommon.Timestamp(bootTime*1e9)))
 	err = startSampling(ctx, s.settings.Logger)
 
 	var initErr *perfcounters.PerfCounterInitError

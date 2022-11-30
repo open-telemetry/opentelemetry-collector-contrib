@@ -462,17 +462,17 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, options ...metricBuilderOption) *MetricsBuilder {
+func NewMetricsBuilder(ms MetricsSettings, settings component.ReceiverCreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                          pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                      pmetric.NewMetrics(),
-		buildInfo:                          buildInfo,
-		metricRiakMemoryLimit:              newMetricRiakMemoryLimit(settings.RiakMemoryLimit),
-		metricRiakNodeOperationCount:       newMetricRiakNodeOperationCount(settings.RiakNodeOperationCount),
-		metricRiakNodeOperationTimeMean:    newMetricRiakNodeOperationTimeMean(settings.RiakNodeOperationTimeMean),
-		metricRiakNodeReadRepairCount:      newMetricRiakNodeReadRepairCount(settings.RiakNodeReadRepairCount),
-		metricRiakVnodeIndexOperationCount: newMetricRiakVnodeIndexOperationCount(settings.RiakVnodeIndexOperationCount),
-		metricRiakVnodeOperationCount:      newMetricRiakVnodeOperationCount(settings.RiakVnodeOperationCount),
+		buildInfo:                          settings.BuildInfo,
+		metricRiakMemoryLimit:              newMetricRiakMemoryLimit(ms.RiakMemoryLimit),
+		metricRiakNodeOperationCount:       newMetricRiakNodeOperationCount(ms.RiakNodeOperationCount),
+		metricRiakNodeOperationTimeMean:    newMetricRiakNodeOperationTimeMean(ms.RiakNodeOperationTimeMean),
+		metricRiakNodeReadRepairCount:      newMetricRiakNodeReadRepairCount(ms.RiakNodeReadRepairCount),
+		metricRiakVnodeIndexOperationCount: newMetricRiakVnodeIndexOperationCount(ms.RiakVnodeIndexOperationCount),
+		metricRiakVnodeOperationCount:      newMetricRiakVnodeOperationCount(ms.RiakVnodeOperationCount),
 	}
 	for _, op := range options {
 		op(mb)

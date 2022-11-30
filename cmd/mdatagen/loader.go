@@ -120,6 +120,9 @@ type metric struct {
 	// Enabled defines whether the metric is enabled by default.
 	Enabled *bool `yaml:"enabled" validate:"required"`
 
+	// Warnings that will be shown to user under specified conditions.
+	Warnings warnings `mapstructure:"warnings"`
+
 	// Description of the metric.
 	Description string `validate:"required,notblank"`
 
@@ -151,6 +154,11 @@ func (m metric) Data() MetricData {
 
 func (m metric) IsEnabled() bool {
 	return *m.Enabled
+}
+
+type warnings struct {
+	// A warning that will be displayed if the metric is enabled in user config.
+	IfEnabled string `mapstructure:"if_enabled"`
 }
 
 type attribute struct {

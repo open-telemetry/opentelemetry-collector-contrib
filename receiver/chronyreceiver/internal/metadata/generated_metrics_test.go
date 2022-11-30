@@ -7,15 +7,17 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 func TestDefaultMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	mb := NewMetricsBuilder(DefaultMetricsSettings(), component.BuildInfo{}, WithStartTime(start))
+	mb := NewMetricsBuilder(DefaultMetricsSettings(), componenttest.NewNopReceiverCreateSettings(), WithStartTime(start))
 	enabledMetrics := make(map[string]bool)
 
 	mb.RecordNtpFrequencyOffsetDataPoint(ts, 1, AttributeLeapStatus(1))
@@ -53,7 +55,7 @@ func TestDefaultMetrics(t *testing.T) {
 func TestAllMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	settings := MetricsSettings{
+	metricsSettings := MetricsSettings{
 		NtpFrequencyOffset: MetricSettings{Enabled: true},
 		NtpSkew:            MetricSettings{Enabled: true},
 		NtpStratum:         MetricSettings{Enabled: true},
@@ -62,7 +64,12 @@ func TestAllMetrics(t *testing.T) {
 		NtpTimeRmsOffset:   MetricSettings{Enabled: true},
 		NtpTimeRootDelay:   MetricSettings{Enabled: true},
 	}
-	mb := NewMetricsBuilder(settings, component.BuildInfo{}, WithStartTime(start))
+	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+	settings := componenttest.NewNopReceiverCreateSettings()
+	settings.Logger = zap.New(observedZapCore)
+	mb := NewMetricsBuilder(metricsSettings, settings, WithStartTime(start))
+
+	assert.Equal(t, 0, observedLogs.Len())
 
 	mb.RecordNtpFrequencyOffsetDataPoint(ts, 1, AttributeLeapStatus(1))
 	mb.RecordNtpSkewDataPoint(ts, 1)
@@ -186,7 +193,7 @@ func TestAllMetrics(t *testing.T) {
 func TestNoMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	settings := MetricsSettings{
+	metricsSettings := MetricsSettings{
 		NtpFrequencyOffset: MetricSettings{Enabled: false},
 		NtpSkew:            MetricSettings{Enabled: false},
 		NtpStratum:         MetricSettings{Enabled: false},
@@ -195,7 +202,12 @@ func TestNoMetrics(t *testing.T) {
 		NtpTimeRmsOffset:   MetricSettings{Enabled: false},
 		NtpTimeRootDelay:   MetricSettings{Enabled: false},
 	}
-	mb := NewMetricsBuilder(settings, component.BuildInfo{}, WithStartTime(start))
+	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+	settings := componenttest.NewNopReceiverCreateSettings()
+	settings.Logger = zap.New(observedZapCore)
+	mb := NewMetricsBuilder(metricsSettings, settings, WithStartTime(start))
+
+	assert.Equal(t, 0, observedLogs.Len())
 	mb.RecordNtpFrequencyOffsetDataPoint(ts, 1, AttributeLeapStatus(1))
 	mb.RecordNtpSkewDataPoint(ts, 1)
 	mb.RecordNtpStratumDataPoint(ts, 1)

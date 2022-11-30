@@ -501,18 +501,18 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, options ...metricBuilderOption) *MetricsBuilder {
+func NewMetricsBuilder(ms MetricsSettings, settings component.ReceiverCreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                         pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                     pmetric.NewMetrics(),
-		buildInfo:                         buildInfo,
-		metricSystemDiskIo:                newMetricSystemDiskIo(settings.SystemDiskIo),
-		metricSystemDiskIoTime:            newMetricSystemDiskIoTime(settings.SystemDiskIoTime),
-		metricSystemDiskMerged:            newMetricSystemDiskMerged(settings.SystemDiskMerged),
-		metricSystemDiskOperationTime:     newMetricSystemDiskOperationTime(settings.SystemDiskOperationTime),
-		metricSystemDiskOperations:        newMetricSystemDiskOperations(settings.SystemDiskOperations),
-		metricSystemDiskPendingOperations: newMetricSystemDiskPendingOperations(settings.SystemDiskPendingOperations),
-		metricSystemDiskWeightedIoTime:    newMetricSystemDiskWeightedIoTime(settings.SystemDiskWeightedIoTime),
+		buildInfo:                         settings.BuildInfo,
+		metricSystemDiskIo:                newMetricSystemDiskIo(ms.SystemDiskIo),
+		metricSystemDiskIoTime:            newMetricSystemDiskIoTime(ms.SystemDiskIoTime),
+		metricSystemDiskMerged:            newMetricSystemDiskMerged(ms.SystemDiskMerged),
+		metricSystemDiskOperationTime:     newMetricSystemDiskOperationTime(ms.SystemDiskOperationTime),
+		metricSystemDiskOperations:        newMetricSystemDiskOperations(ms.SystemDiskOperations),
+		metricSystemDiskPendingOperations: newMetricSystemDiskPendingOperations(ms.SystemDiskPendingOperations),
+		metricSystemDiskWeightedIoTime:    newMetricSystemDiskWeightedIoTime(ms.SystemDiskWeightedIoTime),
 	}
 	for _, op := range options {
 		op(mb)

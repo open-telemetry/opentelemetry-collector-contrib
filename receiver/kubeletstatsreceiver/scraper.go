@@ -64,10 +64,10 @@ func newKubletScraper(
 		k8sAPIClient:          rOptions.k8sAPIClient,
 		cachedVolumeLabels:    make(map[string][]metadata.ResourceMetricsOption),
 		mbs: &metadata.MetricsBuilders{
-			NodeMetricsBuilder:      metadata.NewMetricsBuilder(metricsConfig, set.BuildInfo),
-			PodMetricsBuilder:       metadata.NewMetricsBuilder(metricsConfig, set.BuildInfo),
-			ContainerMetricsBuilder: metadata.NewMetricsBuilder(metricsConfig, set.BuildInfo),
-			OtherMetricsBuilder:     metadata.NewMetricsBuilder(metricsConfig, set.BuildInfo),
+			NodeMetricsBuilder:      metadata.NewMetricsBuilder(metricsConfig, set),
+			PodMetricsBuilder:       metadata.NewMetricsBuilder(metricsConfig, set),
+			ContainerMetricsBuilder: metadata.NewMetricsBuilder(metricsConfig, set),
+			OtherMetricsBuilder:     metadata.NewMetricsBuilder(metricsConfig, set),
 		},
 	}
 	return scraperhelper.NewScraper(typeStr, ks.scrape)
