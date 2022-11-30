@@ -39,6 +39,7 @@ func init() {
 		pdataExporterFeatureGate,
 		featuregate.StageBeta,
 		featuregate.WithRegisterDescription("When enabled, the googlecloud exporter translates pdata directly to google cloud monitoring's types, rather than first translating to opencensus."),
+		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/7132"),
 	)
 }
 
