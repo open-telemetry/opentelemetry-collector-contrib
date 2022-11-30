@@ -16,10 +16,10 @@ The following configuration options are required:
 Multiple policies exist today and it is straight forward to add more. These include:
 - `always_sample`: Sample all traces
 - `latency`: Sample based on the duration of the trace. The duration is determined by looking at the earliest start time and latest end time, without taking into consideration what happened in between.
-- `numeric_attribute`: Sample based on number attributes
+- `numeric_attribute`: Sample based on number attributes (resource and record)
 - `probabilistic`: Sample a percentage of traces. Read [a comparison with the Probabilistic Sampling Processor](#probabilistic-sampling-processor-compared-to-the-tail-sampling-processor-with-the-probabilistic-policy).
 - `status_code`: Sample based upon the status code (`OK`, `ERROR` or `UNSET`)
-- `string_attribute`: Sample based on string attributes value matches, both exact and regex value matches are supported
+- `string_attribute`: Sample based on string attributes (resource and record) value matches, both exact and regex value matches are supported
 - `trace_state`: Sample based on [TraceState](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/api.md#tracestate) value matches
 - `rate_limiting`: Sample based on rate
 - `span_count`: Sample based on the minimum number of spans within a batch. If all traces within the batch have less number of spans than the threshold, the batch will not be sampled.
