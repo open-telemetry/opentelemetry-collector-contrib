@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package array // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver/internal/array"
+package host // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver/internal/host"
 
 import (
 	"context"
@@ -31,14 +31,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver/internal"
 )
 
-type arrScraper struct {
+type hostScraper struct {
 	internal.Scraper
 
 	set  component.ReceiverCreateSettings
 	next consumer.Metrics
 
 	endpoint       string
-	arrays         []internal.ScraperConfig
+	hosts          []internal.ScraperConfig
 	scrapeInterval time.Duration
 
 	wrapped component.MetricsReceiver
@@ -48,32 +48,32 @@ func NewScraper(ctx context.Context,
 	set component.ReceiverCreateSettings,
 	next consumer.Metrics,
 	endpoint string,
-	arrs []internal.ScraperConfig,
+	hosts []internal.ScraperConfig,
 	scrapeInterval time.Duration,
 ) internal.Scraper {
-	return &arrScraper{
+	return &hostScraper{
 		set:            set,
 		next:           next,
 		endpoint:       endpoint,
-		arrays:         arrs,
+		hosts:          hosts,
 		scrapeInterval: scrapeInterval,
 	}
 }
 
-func (a *arrScraper) Start(ctx context.Context, host component.Host) error {
+func (h *hostScraper) Start(ctx context.Context, host component.Host) error {
 	fact := prometheusreceiver.NewFactory()
 
-	promRecvCfg, err := a.ToPrometheusReceiverConfig(host, fact)
+	promRecvCfg, err := h.ToPrometheusReceiverConfig(host, fact)
 	if err != nil {
 		return err
 	}
 
-	a.wrapped, err = fact.CreateMetricsReceiver(ctx, a.set, promRecvCfg, a.next)
+	h.wrapped, err = fact.CreateMetricsReceiver(ctx, h.set, promRecvCfg, h.next)
 	if err != nil {
 		return err
 	}
 
-	err = a.wrapped.Start(ctx, host)
+	err = h.wrapped.Start(ctx, host)
 	if err != nil {
 		return err
 	}
@@ -81,15 +81,15 @@ func (a *arrScraper) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
-func (a *arrScraper) Shutdown(ctx context.Context) error {
-	return a.wrapped.Shutdown(ctx)
+func (h *hostScraper) Shutdown(ctx context.Context) error {
+	return h.wrapped.Shutdown(ctx)
 }
 
-func (a *arrScraper) ToPrometheusReceiverConfig(host component.Host, fact component.ReceiverFactory) (*prometheusreceiver.Config, error) {
+func (h *hostScraper) ToPrometheusReceiverConfig(host component.Host, fact component.ReceiverFactory) (*prometheusreceiver.Config, error) {
 	scrapeCfgs := []*promcfg.ScrapeConfig{}
 
-	for _, arr := range a.arrays {
-		u, err := url.Parse(a.endpoint)
+	for _, arr := range h.hosts {
+		u, err := url.Parse(h.endpoint)
 		if err != nil {
 			return nil, err
 		}
@@ -104,12 +104,12 @@ func (a *arrScraper) ToPrometheusReceiverConfig(host component.Host, fact compon
 
 		scrapeConfig := &promcfg.ScrapeConfig{
 			HTTPClientConfig: httpConfig,
-			ScrapeInterval:   model.Duration(a.scrapeInterval),
-			ScrapeTimeout:    model.Duration(a.scrapeInterval),
-			JobName:          fmt.Sprintf("%s/%s/%s", "purefa", "arrays", arr.Address),
+			ScrapeInterval:   model.Duration(h.scrapeInterval),
+			ScrapeTimeout:    model.Duration(h.scrapeInterval),
+			JobName:          fmt.Sprintf("%s/%s/%s", "purefa", "hosts", arr.Address),
 			HonorTimestamps:  true,
 			Scheme:           u.Scheme,
-			MetricsPath:      "/metrics/array",
+			MetricsPath:      "/metrics/hosts",
 			Params: url.Values{
 				"endpoint": {arr.Address},
 			},

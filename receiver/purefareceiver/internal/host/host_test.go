@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package array // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver/internal/array"
+package host // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver/internal/host"
 
 import (
 	"context"
@@ -72,8 +72,8 @@ func TestToPrometheusConfig(t *testing.T) {
 	assert.Len(t, scCfgs, 1)
 	assert.EqualValues(t, "the-token", scCfgs[0].HTTPClientConfig.BearerToken)
 	assert.Equal(t, "gse-array01", scCfgs[0].Params.Get("endpoint"))
-	assert.Equal(t, "/metrics/array", scCfgs[0].MetricsPath)
-	assert.Equal(t, "purefa/arrays/gse-array01", scCfgs[0].JobName)
+	assert.Equal(t, "/metrics/hosts", scCfgs[0].MetricsPath)
+	assert.Equal(t, "purefa/hosts/gse-array01", scCfgs[0].JobName)
 	assert.EqualValues(t, interval, scCfgs[0].ScrapeTimeout)
 	assert.EqualValues(t, interval, scCfgs[0].ScrapeInterval)
 }

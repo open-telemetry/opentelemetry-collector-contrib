@@ -23,6 +23,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver/internal/array"
+	fahost "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver/internal/host"
 )
 
 var _ component.MetricsReceiver = (*purefaReceiver)(nil)
@@ -57,6 +58,11 @@ func newReceiver(cfg *Config, set component.ReceiverCreateSettings, next consume
 func (r *purefaReceiver) Start(ctx context.Context, host component.Host) error {
 	r.recvs[arrayScraper] = array.NewScraper(ctx, r.set, r.next, r.cfg.Endpoint, r.cfg.Arrays, r.cfg.Settings.ReloadIntervals.Array)
 	if err := r.recvs[arrayScraper].Start(ctx, host); err != nil {
+		return err
+	}
+
+	r.recvs[hostScraper] = fahost.NewScraper(ctx, r.set, r.next, r.cfg.Endpoint, r.cfg.Hosts, r.cfg.Settings.ReloadIntervals.Host)
+	if err := r.recvs[hostScraper].Start(ctx, host); err != nil {
 		return err
 	}
 
