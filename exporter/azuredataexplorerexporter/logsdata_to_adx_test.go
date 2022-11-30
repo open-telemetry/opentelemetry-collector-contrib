@@ -29,7 +29,7 @@ import (
 func Test_mapToAdxLog(t *testing.T) {
 	logger := zap.NewNop()
 	epoch, _ := time.Parse("2006-01-02T15:04:05Z07:00", "1970-01-01T00:00:00Z")
-	defaultTime := pcommon.NewTimestampFromTime(epoch).AsTime().Format(time.RFC3339)
+	defaultTime := pcommon.NewTimestampFromTime(epoch).AsTime().Format(time.RFC3339Nano)
 	tmap := make(map[string]interface{})
 	tmap["key"] = "value"
 	tmap[hostkey] = testhost
