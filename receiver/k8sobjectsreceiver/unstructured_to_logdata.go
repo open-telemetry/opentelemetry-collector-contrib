@@ -18,10 +18,11 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	semconv "go.opentelemetry.io/collector/semconv/v1.9.0"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
 )
 
-func watchEventToLogData(event *watch.Event) plog.Logs {
+func watchEventToLogData(event *watch.Event, gvr schema.GroupVersionResource) plog.Logs {
 	udata := event.Object.(*unstructured.Unstructured)
 	ul := unstructured.UnstructuredList{
 		Items: []unstructured.Unstructured{{
@@ -31,10 +32,10 @@ func watchEventToLogData(event *watch.Event) plog.Logs {
 			},
 		}},
 	}
-	return unstructuredListToLogData(&ul)
+	return unstructuredListToLogData(&ul, gvr)
 }
 
-func unstructuredListToLogData(event *unstructured.UnstructuredList) plog.Logs {
+func unstructuredListToLogData(event *unstructured.UnstructuredList, gvr schema.GroupVersionResource) plog.Logs {
 	out := plog.NewLogs()
 	resourceLogs := out.ResourceLogs()
 	namespaceResourceMap := make(map[string]plog.LogRecordSlice)
@@ -56,7 +57,7 @@ func unstructuredListToLogData(event *unstructured.UnstructuredList) plog.Logs {
 		attrs := record.Attributes()
 		attrs.EnsureCapacity(2)
 		attrs.PutStr("event.domain", "k8s")
-		attrs.PutStr("event.name", e.GetKind())
+		attrs.PutStr("event.name", gvr.Resource)
 
 		dest := record.Body()
 		destMap := dest.SetEmptyMap()
