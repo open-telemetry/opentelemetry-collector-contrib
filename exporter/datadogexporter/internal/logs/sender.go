@@ -16,7 +16,6 @@ package logs // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
@@ -71,8 +70,8 @@ func (s *Sender) SubmitLogs(ctx context.Context, payload []datadogV2.HTTPLogItem
 	// Correctly sets apiSubmitLogRequest ddtags field based on tags from translator Transform method
 	if payload[0].HasDdtags() {
 		tags := datadog.PtrString(payload[0].GetDdtags())
-		if s.opts.Ddtags != nil {
-			tags = datadog.PtrString(fmt.Sprint(*s.opts.Ddtags, ",", payload[0].GetDdtags()))
+		if s.verbose {
+			s.logger.Debug("Tags", zap.String("tags", *tags))
 		}
 		s.opts.Ddtags = tags
 	}
