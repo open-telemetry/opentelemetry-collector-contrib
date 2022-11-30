@@ -6,6 +6,8 @@
 | Supported pipeline types | traces, metrics, logs  |
 | Distributions            | [contrib]              |
 
+**Note**: This component was marked as unmaintained on 2022-11-30, it will be removed from official builds on 2023-05-30
+
 The Coralogix exporter sends traces, metrics and logs to [Coralogix](https://coralogix.com/).
 
 > Please review the Collector's [security
