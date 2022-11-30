@@ -90,6 +90,7 @@ func init() {
 		normalizeNameGateID,
 		featuregate.StageAlpha,
 		featuregate.WithRegisterDescription("Controls whether metrics names are automatically normalized to follow Prometheus naming convention"),
+		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/8950"),
 	)
 }
 
