@@ -6,11 +6,9 @@
 | Supported pipeline types | traces    |
 | Distributions            | [contrib] |
 
-The tail sampling processor samples traces based on a set of defined policies.
-Today, this processor only works with a single instance of the collector.
-Technically, trace ID aware load balancing could be used to support multiple
-collector instances, but this configuration has not been tested. Please refer to
-[config.go](./config.go) for the config spec.
+The tail sampling processor samples traces based on a set of defined policies. All spans for a given trace MUST be received by the same collector instance for effective sampling decisions.
+
+Please refer to [config.go](./config.go) for the config spec.
 
 The following configuration options are required:
 - `policies` (no default): Policies used to make a sampling decision
@@ -36,6 +34,15 @@ The following configuration options can also be modified:
 - `decision_wait` (default = 30s): Wait time since the first span of a trace before making a sampling decision
 - `num_traces` (default = 50000): Number of traces kept in memory
 - `expected_new_traces_per_sec` (default = 0): Expected number of new traces (helps in allocating data structures)
+
+Each policy will result in a decision, and the processor will evaluate them to make a final decision:
+
+- When there's an "inverted not sample" decision, the trace is not sampled;
+- When there's a "sample" decision, the trace is sampled;
+- When there's a "inverted sample" decision and no "not sample" decisions, the trace is sampled;
+- In all other cases, the trace is NOT sampled
+
+An "inverted" decision is the one made based on the "invert_match" attribute, such as the one from the string tag policy.
 
 Examples:
 
@@ -160,25 +167,25 @@ processors:
         ]
 ```
 
-Refer to [tail_sampling_config.yaml](./testdata/tail_sampling_config.yaml) for detailed
-examples on using the processor.
+Refer to [tail_sampling_config.yaml](./testdata/tail_sampling_config.yaml) for detailed examples on using the processor.
+
+### Scaling collectors with the tail sampling processor
+
+This processor requires all spans for a given trace to be sent to the same collector instane for the correct sampling decision to be derived. When scaling the collector, you'll then need to ensure that all spans for the same trace are reaching the same collector. You can achieve this by having two layers of collectors in your infra: one with the [load balancing exporter][loadbalancing_exporter], and one with the tail sampling processor.
+
+While it's technically possible to have one layer of collectors with two pipelines on each instance, we recommend separating the layers phisically in order to have better failure isolation.
 
 ### Probabilistic Sampling Processor compared to the Tail Sampling Processor with the Probabilistic policy
 
-The [probabilistic sampling processor][probabilistic_sampling_processor] and the probabilistic tail sampling processor policy work very similar:
-based upon a configurable sampling percentage they will sample a fixed ratio of received traces.
-But depending on the overall processing pipeline you should prefer using one over the other.
+The [probabilistic sampling processor][probabilistic_sampling_processor] and the probabilistic tail sampling processor policy work very similar: based upon a configurable sampling percentage they will sample a fixed ratio of received traces. But depending on the overall processing pipeline you should prefer using one over the other.
 
 As a rule of thumb, if you want to add probabilistic sampling and...
 
-...you are not using the tail sampling processor already: use the [probabilistic sampling processor][probabilistic_sampling_processor].
-Running the probabilistic sampling processor is more efficient than the tail sampling processor.
-The probabilistic sampling policy makes decision based upon the trace ID, so waiting until more spans have arrived will not influence its decision. 
+...you are not using the tail sampling processor already: use the [probabilistic sampling processor][probabilistic_sampling_processor]. Running the probabilistic sampling processor is more efficient than the tail sampling processor. The probabilistic sampling policy makes decision based upon the trace ID, so waiting until more spans have arrived will not influence its decision. 
 
-...you are already using the tail sampling processor: add the probabilistic sampling policy.
-You are already incurring the cost of running the tail sampling processor, adding the probabilistic policy will be negligible.
-Additionally, using the policy within the tail sampling processor will ensure traces that are sampled by other policies will not be dropped.
+...you are already using the tail sampling processor: add the probabilistic sampling policy. You are already incurring the cost of running the tail sampling processor, adding the probabilistic policy will be negligible. Additionally, using the policy within the tail sampling processor will ensure traces that are sampled by other policies will not be dropped.
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
 [probabilistic_sampling_processor]: ../probabilisticsamplerprocessor
+[loadbalancing_exporter]: ../../exporter/loadbalancingexporter
