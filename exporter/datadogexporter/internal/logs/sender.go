@@ -51,12 +51,9 @@ func NewSender(endpoint string, logger *zap.Logger, s exporterhelper.TimeoutSett
 	cfg.HTTPClient = clientutil.NewHTTPClient(s, insecureSkipVerify)
 	cfg.AddDefaultHeader("DD-API-KEY", apiKey)
 	apiClient := datadog.NewAPIClient(cfg)
-	// enable sending gzip
-	opts := *datadogV2.NewSubmitLogOptionalParameters().WithContentEncoding(datadogV2.CONTENTENCODING_GZIP)
 	return &Sender{
 		api:     datadogV2.NewLogsApi(apiClient),
 		logger:  logger,
-		opts:    opts,
 		verbose: verbose,
 	}
 }
@@ -67,11 +64,15 @@ func (s *Sender) SubmitLogs(ctx context.Context, payload []datadogV2.HTTPLogItem
 		s.logger.Debug("Submitting logs", zap.Any("payload", payload))
 	}
 
+	// enable sending gzip
+	// Get a fresh opts for each request to avoid duplicating ddtags
+	s.opts = *datadogV2.NewSubmitLogOptionalParameters().WithContentEncoding(datadogV2.CONTENTENCODING_GZIP)
+
 	// Correctly sets apiSubmitLogRequest ddtags field based on tags from translator Transform method
 	if payload[0].HasDdtags() {
 		tags := datadog.PtrString(payload[0].GetDdtags())
-		if s.verbose {
-			s.logger.Debug("Tags", zap.String("tags", *tags))
+		if s.opts.Ddtags != nil {
+			tags = datadog.PtrString(fmt.Sprint(*s.opts.Ddtags, ",", payload[0].GetDdtags()))
 		}
 		s.opts.Ddtags = tags
 	}
