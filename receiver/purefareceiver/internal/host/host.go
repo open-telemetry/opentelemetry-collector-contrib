@@ -22,71 +22,33 @@ import (
 
 	configutil "github.com/prometheus/common/config"
 	"github.com/prometheus/common/model"
-	promcfg "github.com/prometheus/prometheus/config"
+	"github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/discovery"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver/internal"
 )
 
 type hostScraper struct {
-	internal.Scraper
-
-	set  component.ReceiverCreateSettings
-	next consumer.Metrics
-
 	endpoint       string
 	hosts          []internal.ScraperConfig
 	scrapeInterval time.Duration
-
-	wrapped component.MetricsReceiver
 }
 
 func NewScraper(ctx context.Context,
-	set component.ReceiverCreateSettings,
-	next consumer.Metrics,
 	endpoint string,
 	hosts []internal.ScraperConfig,
 	scrapeInterval time.Duration,
 ) internal.Scraper {
 	return &hostScraper{
-		set:            set,
-		next:           next,
 		endpoint:       endpoint,
 		hosts:          hosts,
 		scrapeInterval: scrapeInterval,
 	}
 }
 
-func (h *hostScraper) Start(ctx context.Context, host component.Host) error {
-	fact := prometheusreceiver.NewFactory()
-
-	promRecvCfg, err := h.ToPrometheusReceiverConfig(host, fact)
-	if err != nil {
-		return err
-	}
-
-	h.wrapped, err = fact.CreateMetricsReceiver(ctx, h.set, promRecvCfg, h.next)
-	if err != nil {
-		return err
-	}
-
-	err = h.wrapped.Start(ctx, host)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (h *hostScraper) Shutdown(ctx context.Context) error {
-	return h.wrapped.Shutdown(ctx)
-}
-
-func (h *hostScraper) ToPrometheusReceiverConfig(host component.Host, fact component.ReceiverFactory) (*prometheusreceiver.Config, error) {
-	scrapeCfgs := []*promcfg.ScrapeConfig{}
+func (h *hostScraper) ToPrometheusReceiverConfig(host component.Host, fact component.ReceiverFactory) ([]*config.ScrapeConfig, error) {
+	scrapeCfgs := []*config.ScrapeConfig{}
 
 	for _, arr := range h.hosts {
 		u, err := url.Parse(h.endpoint)
@@ -102,7 +64,7 @@ func (h *hostScraper) ToPrometheusReceiverConfig(host component.Host, fact compo
 		httpConfig := configutil.HTTPClientConfig{}
 		httpConfig.BearerToken = configutil.Secret(bearerToken)
 
-		scrapeConfig := &promcfg.ScrapeConfig{
+		scrapeConfig := &config.ScrapeConfig{
 			HTTPClientConfig: httpConfig,
 			ScrapeInterval:   model.Duration(h.scrapeInterval),
 			ScrapeTimeout:    model.Duration(h.scrapeInterval),
@@ -128,8 +90,5 @@ func (h *hostScraper) ToPrometheusReceiverConfig(host component.Host, fact compo
 		scrapeCfgs = append(scrapeCfgs, scrapeConfig)
 	}
 
-	promRecvCfg := fact.CreateDefaultConfig().(*prometheusreceiver.Config)
-	promRecvCfg.PrometheusConfig = &promcfg.Config{ScrapeConfigs: scrapeCfgs}
-
-	return promRecvCfg, nil
+	return scrapeCfgs, nil
 }
