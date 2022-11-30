@@ -883,11 +883,11 @@ func TestTranslateGroupedMetricToCWMetric(t *testing.T) {
 				},
 				metadata: cWMetricMetadata{
 					groupedMetricMetadata: groupedMetricMetadata{
-						namespace:   namespace,
-						timestampMs: timestamp,
+						namespace:      namespace,
+						timestampMs:    timestamp,
+						metricDataType: pmetric.MetricTypeGauge,
 					},
-					receiver:       prometheusReceiver,
-					metricDataType: pmetric.MetricTypeGauge,
+					receiver: prometheusReceiver,
 				},
 			},
 			nil,

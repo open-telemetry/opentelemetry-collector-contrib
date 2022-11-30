@@ -80,7 +80,7 @@ func addToGroupedMetric(pmd pmetric.Metric, groupedMetrics map[interface{}]*grou
 		}
 
 		// Extra params to use when grouping metrics
-		groupKey := groupedMetricKey(metadata.groupedMetricMetadata, metadata.metricDataType, labels)
+		groupKey := groupedMetricKey(metadata.groupedMetricMetadata, labels)
 		if _, ok := groupedMetrics[groupKey]; ok {
 			// if metricName already exists in metrics map, print warning log
 			if _, ok := groupedMetrics[groupKey].metrics[metricName]; ok {
@@ -178,8 +178,8 @@ func mapGetHelper(labels map[string]string, key string) string {
 	return ""
 }
 
-func groupedMetricKey(metadata groupedMetricMetadata, metricDataType pmetric.MetricType, labels map[string]string) aws.Key {
-	return aws.NewGroupKey(metadata, metricDataType, labels)
+func groupedMetricKey(metadata groupedMetricMetadata, labels map[string]string) aws.Key {
+	return aws.NewKey(metadata, labels)
 }
 
 func translateUnit(metric pmetric.Metric, descriptor map[string]MetricDescriptor) string {

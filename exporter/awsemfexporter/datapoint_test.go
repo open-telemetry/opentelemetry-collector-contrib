@@ -63,13 +63,13 @@ func generateTestMetricMetadata(namespace string, timestamp int64, logGroup, log
 	return cWMetricMetadata{
 		receiver: prometheusReceiver,
 		groupedMetricMetadata: groupedMetricMetadata{
-			namespace:   namespace,
-			timestampMs: timestamp,
-			logGroup:    logGroup,
-			logStream:   logStreamName,
+			namespace:      namespace,
+			timestampMs:    timestamp,
+			logGroup:       logGroup,
+			logStream:      logStreamName,
+			metricDataType: metricType,
 		},
 		instrumentationLibraryName: instrumentationLibraryName,
-		metricDataType:             metricType,
 	}
 }
 
