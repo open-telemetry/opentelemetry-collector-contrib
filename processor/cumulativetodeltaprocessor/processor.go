@@ -29,7 +29,13 @@ import (
 const enableHistogramSupportGateID = "processor.cumulativetodeltaprocessor.EnableHistogramSupport"
 
 func init() {
-	featuregate.GetRegistry().MustRegisterID(enableHistogramSupportGateID, featuregate.StageBeta, featuregate.WithRegisterDescription("Enables histogram conversion support"))
+	featuregate.GetRegistry().MustRegisterID(
+		enableHistogramSupportGateID,
+		featuregate.StageBeta,
+		featuregate.WithRegisterDescription("Enables histogram conversion support"),
+		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/15658"),
+		featuregate.WithRegisterRemovalVersion("v0.66.0"),
+	)
 }
 
 type cumulativeToDeltaProcessor struct {
