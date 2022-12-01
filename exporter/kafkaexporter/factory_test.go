@@ -202,6 +202,8 @@ func TestCreateMetricExporter(t *testing.T) {
 			// sends some metrics to the exporter to see if we get the expected message for the configuration
 			err = exporter.ConsumeMetrics(context.TODO(), metrics)
 			assert.NoError(t, err, "exporter should not error if the expected message is produced")
+			err = exporter.Shutdown(context.TODO())
+			assert.NoError(t, err, "exporter should not error on shutdown if all expectations have been met")
 		})
 	}
 }
@@ -305,6 +307,8 @@ func TestCreateLogExporter(t *testing.T) {
 			// sends some logs to the exporter to see if we get the expected message for the configuration
 			err = exporter.ConsumeLogs(context.TODO(), logs)
 			assert.NoError(t, err, "exporter should not error if the expected message is produced")
+			err = exporter.Shutdown(context.TODO())
+			assert.NoError(t, err, "exporter should not error on shutdown if all expectations have been met")
 		})
 	}
 }
@@ -406,6 +410,8 @@ func TestCreateTraceExporter(t *testing.T) {
 			// sends some traces to the exporter to see if we get the expected message for the configuration
 			err = exporter.ConsumeTraces(context.TODO(), traces)
 			assert.NoError(t, err, "exporter should not error if the expected message is produced")
+			err = exporter.Shutdown(context.TODO())
+			assert.NoError(t, err, "exporter should not error on shutdown if all expectations have been met")
 		})
 	}
 }
