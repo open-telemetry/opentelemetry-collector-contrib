@@ -928,21 +928,21 @@ func TestUnmarshallerBaggageString(t *testing.T) {
 			name:    "Valid baggage",
 			baggage: `someKey=someVal`,
 			expected: func(m pcommon.Map) {
-				m.FromRaw(map[string]interface{}{
+				assert.NoError(t, m.FromRaw(map[string]interface{}{
 					"messaging.solace.message.baggage.someKey": "someVal",
-				})
+				}))
 			},
 		},
 		{
 			name:    "Valid baggage with properties",
 			baggage: `someKey=someVal;someProp=someOtherThing,someOtherKey=someOtherVal;someProp=NewProp123;someOtherProp=AnotherProp192`,
 			expected: func(m pcommon.Map) {
-				m.FromRaw(map[string]interface{}{
+				assert.NoError(t, m.FromRaw(map[string]interface{}{
 					"messaging.solace.message.baggage.someKey":               "someVal",
 					"messaging.solace.message.baggage_metadata.someKey":      "someProp=someOtherThing",
 					"messaging.solace.message.baggage.someOtherKey":          `someOtherVal`,
 					"messaging.solace.message.baggage_metadata.someOtherKey": "someProp=NewProp123;someOtherProp=AnotherProp192",
-				})
+				}))
 			},
 		},
 		{
