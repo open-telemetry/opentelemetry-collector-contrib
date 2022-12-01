@@ -137,7 +137,7 @@ Boolean Expressions allow a decision to be made about whether an Invocation shou
 Boolean Expressions consist of the literal string `where` followed by one or more Booleans (see below).
 Booleans can be joined with the literal strings `and` and `or`.
 Booleans can be negated with the literal string `not`.
-Note that `and` Boolean Expressions have higher precedence than `or` and `not` has the highest precedence.
+Note that `not` has the highest precedence and `and` Boolean Expressions have higher precedence than `or`.
 Boolean Expressions can be grouped with parentheses to override evaluation precedence.
 
 ### Booleans
