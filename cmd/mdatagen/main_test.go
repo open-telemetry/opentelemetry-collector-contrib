@@ -55,22 +55,17 @@ func Test_runContents(t *testing.T) {
 		yml string
 	}
 	tests := []struct {
-		name                  string
-		args                  args
-		expectedDocumentation string
-		want                  string
-		wantErr               bool
+		name    string
+		args    args
+		wantErr bool
 	}{
 		{
-			name:                  "valid metadata",
-			args:                  args{validMetadata},
-			expectedDocumentation: "testdata/documentation.md",
-			want:                  "",
+			name: "valid metadata",
+			args: args{validMetadata},
 		},
 		{
 			name:    "invalid yaml",
 			args:    args{"invalid"},
-			want:    "",
 			wantErr: true,
 		},
 	}
@@ -89,18 +84,7 @@ func Test_runContents(t *testing.T) {
 			require.NoError(t, err)
 
 			require.FileExists(t, filepath.Join(tmpdir, "internal/metadata/generated_metrics.go"))
-
-			actualDocumentation := filepath.Join(tmpdir, "documentation.md")
-			require.FileExists(t, actualDocumentation)
-			if tt.expectedDocumentation != "" {
-				expectedFileBytes, err := os.ReadFile(tt.expectedDocumentation)
-				require.NoError(t, err)
-
-				actualFileBytes, err := os.ReadFile(actualDocumentation)
-				require.NoError(t, err)
-
-				require.Equal(t, expectedFileBytes, actualFileBytes)
-			}
+			require.FileExists(t, filepath.Join(tmpdir, "documentation.md"))
 		})
 	}
 }
