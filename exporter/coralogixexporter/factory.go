@@ -32,11 +32,12 @@ func NewFactory() component.ExporterFactory {
 		createDefaultConfig,
 		component.WithTracesExporter(createTraceExporter, stability),
 		component.WithMetricsExporter(createMetricsExporter, stability),
-		component.WithLogsExporter(createLogsExporter, component.StabilityLevelAlpha),
+		// Marked as unmantained on 2022-11-30, will be removed from official builds on 2023-05-30.
+		component.WithLogsExporter(createLogsExporter, component.StabilityLevelUnmaintained),
 	)
 }
 
-func createDefaultConfig() component.ExporterConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
@@ -63,7 +64,7 @@ func createDefaultConfig() component.ExporterConfig {
 	}
 }
 
-func createTraceExporter(ctx context.Context, set component.ExporterCreateSettings, config component.ExporterConfig) (component.TracesExporter, error) {
+func createTraceExporter(ctx context.Context, set component.ExporterCreateSettings, config component.Config) (component.TracesExporter, error) {
 	cfg := config.(*Config)
 
 	// Use deprecated jaeger endpoint if it's not empty
@@ -109,7 +110,7 @@ func createTraceExporter(ctx context.Context, set component.ExporterCreateSettin
 func createMetricsExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
-	cfg component.ExporterConfig,
+	cfg component.Config,
 ) (component.MetricsExporter, error) {
 	oce, err := newMetricsExporter(cfg, set)
 	if err != nil {
@@ -133,7 +134,7 @@ func createMetricsExporter(
 func createLogsExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
-	cfg component.ExporterConfig,
+	cfg component.Config,
 ) (component.LogsExporter, error) {
 	oce, err := newLogsExporter(cfg, set)
 	if err != nil {

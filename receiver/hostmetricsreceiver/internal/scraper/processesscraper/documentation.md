@@ -2,26 +2,34 @@
 
 # hostmetricsreceiver/processes
 
-## Metrics
+## Default Metrics
 
-These are the metrics available for this scraper.
-
-| Name | Description | Unit | Type | Attributes |
-| ---- | ----------- | ---- | ---- | ---------- |
-| **system.processes.count** | Total number of processes in each state. | {processes} | Sum(Int) | <ul> <li>status</li> </ul> |
-| **system.processes.created** | Total number of created processes. | {processes} | Sum(Int) | <ul> </ul> |
-
-**Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
-Any metric can be enabled or disabled with the following scraper configuration:
+The following metrics are emitted by default. Each of them can be disabled by applying the following configuration:
 
 ```yaml
 metrics:
   <metric_name>:
-    enabled: <true|false>
+    enabled: false
 ```
 
-## Metric attributes
+### system.processes.count
+
+Total number of processes in each state.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {processes} | Sum | Int | Cumulative | false |
+
+#### Attributes
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| status | Breakdown status of the processes. | blocked, daemon, detached, idle, locked, orphan, paging, running, sleeping, stopped, system, unknown, zombies |
+| status | Breakdown status of the processes. | Str: ``blocked``, ``daemon``, ``detached``, ``idle``, ``locked``, ``orphan``, ``paging``, ``running``, ``sleeping``, ``stopped``, ``system``, ``unknown``, ``zombies`` |
+
+### system.processes.created
+
+Total number of created processes.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {processes} | Sum | Int | Cumulative | true |

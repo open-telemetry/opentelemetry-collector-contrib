@@ -52,7 +52,7 @@ type factory struct {
 	tChannel transportChannel
 }
 
-func createDefaultConfig() component.ExporterConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ExporterSettings:  config.NewExporterSettings(component.NewID(typeStr)),
 		Endpoint:          defaultEndpoint,
@@ -65,7 +65,7 @@ func createDefaultConfig() component.ExporterConfig {
 func (f *factory) createTracesExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
-	cfg component.ExporterConfig,
+	cfg component.Config,
 ) (component.TracesExporter, error) {
 	exporterConfig, ok := cfg.(*Config)
 
@@ -80,7 +80,7 @@ func (f *factory) createTracesExporter(
 func (f *factory) createLogsExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
-	cfg component.ExporterConfig,
+	cfg component.Config,
 ) (component.LogsExporter, error) {
 	exporterConfig, ok := cfg.(*Config)
 

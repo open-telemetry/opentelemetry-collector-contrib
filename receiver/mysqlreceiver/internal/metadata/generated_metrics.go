@@ -61,6 +61,7 @@ type MetricsSettings struct {
 	MysqlOpenedResources         MetricSettings `mapstructure:"mysql.opened_resources"`
 	MysqlOperations              MetricSettings `mapstructure:"mysql.operations"`
 	MysqlPageOperations          MetricSettings `mapstructure:"mysql.page_operations"`
+	MysqlPreparedStatements      MetricSettings `mapstructure:"mysql.prepared_statements"`
 	MysqlQueryClientCount        MetricSettings `mapstructure:"mysql.query.client.count"`
 	MysqlQueryCount              MetricSettings `mapstructure:"mysql.query.count"`
 	MysqlQuerySlowCount          MetricSettings `mapstructure:"mysql.query.slow.count"`
@@ -146,6 +147,9 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		MysqlPageOperations: MetricSettings{
+			Enabled: true,
+		},
+		MysqlPreparedStatements: MetricSettings{
 			Enabled: true,
 		},
 		MysqlQueryClientCount: MetricSettings{
@@ -332,48 +336,6 @@ var MapAttributeCacheStatus = map[string]AttributeCacheStatus{
 	"hit":      AttributeCacheStatusHit,
 	"miss":     AttributeCacheStatusMiss,
 	"overflow": AttributeCacheStatusOverflow,
-}
-
-// AttributeCommand specifies the a value command attribute.
-type AttributeCommand int
-
-const (
-	_ AttributeCommand = iota
-	AttributeCommandExecute
-	AttributeCommandClose
-	AttributeCommandFetch
-	AttributeCommandPrepare
-	AttributeCommandReset
-	AttributeCommandSendLongData
-)
-
-// String returns the string representation of the AttributeCommand.
-func (av AttributeCommand) String() string {
-	switch av {
-	case AttributeCommandExecute:
-		return "execute"
-	case AttributeCommandClose:
-		return "close"
-	case AttributeCommandFetch:
-		return "fetch"
-	case AttributeCommandPrepare:
-		return "prepare"
-	case AttributeCommandReset:
-		return "reset"
-	case AttributeCommandSendLongData:
-		return "send_long_data"
-	}
-	return ""
-}
-
-// MapAttributeCommand is a helper map of string to AttributeCommand attribute value.
-var MapAttributeCommand = map[string]AttributeCommand{
-	"execute":        AttributeCommandExecute,
-	"close":          AttributeCommandClose,
-	"fetch":          AttributeCommandFetch,
-	"prepare":        AttributeCommandPrepare,
-	"reset":          AttributeCommandReset,
-	"send_long_data": AttributeCommandSendLongData,
 }
 
 // AttributeConnectionError specifies the a value connection_error attribute.
@@ -890,6 +852,48 @@ var MapAttributePageOperations = map[string]AttributePageOperations{
 	"created": AttributePageOperationsCreated,
 	"read":    AttributePageOperationsRead,
 	"written": AttributePageOperationsWritten,
+}
+
+// AttributePreparedStatementsCommand specifies the a value prepared_statements_command attribute.
+type AttributePreparedStatementsCommand int
+
+const (
+	_ AttributePreparedStatementsCommand = iota
+	AttributePreparedStatementsCommandExecute
+	AttributePreparedStatementsCommandClose
+	AttributePreparedStatementsCommandFetch
+	AttributePreparedStatementsCommandPrepare
+	AttributePreparedStatementsCommandReset
+	AttributePreparedStatementsCommandSendLongData
+)
+
+// String returns the string representation of the AttributePreparedStatementsCommand.
+func (av AttributePreparedStatementsCommand) String() string {
+	switch av {
+	case AttributePreparedStatementsCommandExecute:
+		return "execute"
+	case AttributePreparedStatementsCommandClose:
+		return "close"
+	case AttributePreparedStatementsCommandFetch:
+		return "fetch"
+	case AttributePreparedStatementsCommandPrepare:
+		return "prepare"
+	case AttributePreparedStatementsCommandReset:
+		return "reset"
+	case AttributePreparedStatementsCommandSendLongData:
+		return "send_long_data"
+	}
+	return ""
+}
+
+// MapAttributePreparedStatementsCommand is a helper map of string to AttributePreparedStatementsCommand attribute value.
+var MapAttributePreparedStatementsCommand = map[string]AttributePreparedStatementsCommand{
+	"execute":        AttributePreparedStatementsCommandExecute,
+	"close":          AttributePreparedStatementsCommandClose,
+	"fetch":          AttributePreparedStatementsCommandFetch,
+	"prepare":        AttributePreparedStatementsCommandPrepare,
+	"reset":          AttributePreparedStatementsCommandReset,
+	"send_long_data": AttributePreparedStatementsCommandSendLongData,
 }
 
 // AttributeReadLockType specifies the a value read_lock_type attribute.
@@ -1510,7 +1514,7 @@ func (m *metricMysqlCommands) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricMysqlCommands) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, commandAttributeValue string) {
+func (m *metricMysqlCommands) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, preparedStatementsCommandAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1518,7 +1522,7 @@ func (m *metricMysqlCommands) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("command", commandAttributeValue)
+	dp.Attributes().PutStr("command", preparedStatementsCommandAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2285,6 +2289,59 @@ func (m *metricMysqlPageOperations) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlPageOperations(settings MetricSettings) metricMysqlPageOperations {
 	m := metricMysqlPageOperations{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlPreparedStatements struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.prepared_statements metric with initial data.
+func (m *metricMysqlPreparedStatements) init() {
+	m.data.SetName("mysql.prepared_statements")
+	m.data.SetDescription("The number of times each type of prepared statement command has been issued.")
+	m.data.SetUnit("1")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricMysqlPreparedStatements) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, preparedStatementsCommandAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("command", preparedStatementsCommandAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlPreparedStatements) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlPreparedStatements) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlPreparedStatements(settings MetricSettings) metricMysqlPreparedStatements {
+	m := metricMysqlPreparedStatements{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3234,6 +3291,7 @@ type MetricsBuilder struct {
 	metricMysqlOpenedResources         metricMysqlOpenedResources
 	metricMysqlOperations              metricMysqlOperations
 	metricMysqlPageOperations          metricMysqlPageOperations
+	metricMysqlPreparedStatements      metricMysqlPreparedStatements
 	metricMysqlQueryClientCount        metricMysqlQueryClientCount
 	metricMysqlQueryCount              metricMysqlQueryCount
 	metricMysqlQuerySlowCount          metricMysqlQuerySlowCount
@@ -3290,6 +3348,7 @@ func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, 
 		metricMysqlOpenedResources:         newMetricMysqlOpenedResources(settings.MysqlOpenedResources),
 		metricMysqlOperations:              newMetricMysqlOperations(settings.MysqlOperations),
 		metricMysqlPageOperations:          newMetricMysqlPageOperations(settings.MysqlPageOperations),
+		metricMysqlPreparedStatements:      newMetricMysqlPreparedStatements(settings.MysqlPreparedStatements),
 		metricMysqlQueryClientCount:        newMetricMysqlQueryClientCount(settings.MysqlQueryClientCount),
 		metricMysqlQueryCount:              newMetricMysqlQueryCount(settings.MysqlQueryCount),
 		metricMysqlQuerySlowCount:          newMetricMysqlQuerySlowCount(settings.MysqlQuerySlowCount),
@@ -3388,6 +3447,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricMysqlOpenedResources.emit(ils.Metrics())
 	mb.metricMysqlOperations.emit(ils.Metrics())
 	mb.metricMysqlPageOperations.emit(ils.Metrics())
+	mb.metricMysqlPreparedStatements.emit(ils.Metrics())
 	mb.metricMysqlQueryClientCount.emit(ils.Metrics())
 	mb.metricMysqlQueryCount.emit(ils.Metrics())
 	mb.metricMysqlQuerySlowCount.emit(ils.Metrics())
@@ -3485,12 +3545,12 @@ func (mb *MetricsBuilder) RecordMysqlClientNetworkIoDataPoint(ts pcommon.Timesta
 }
 
 // RecordMysqlCommandsDataPoint adds a data point to mysql.commands metric.
-func (mb *MetricsBuilder) RecordMysqlCommandsDataPoint(ts pcommon.Timestamp, inputVal string, commandAttributeValue AttributeCommand) error {
+func (mb *MetricsBuilder) RecordMysqlCommandsDataPoint(ts pcommon.Timestamp, inputVal string, preparedStatementsCommandAttributeValue AttributePreparedStatementsCommand) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for MysqlCommands, value was %s: %w", inputVal, err)
 	}
-	mb.metricMysqlCommands.recordDataPoint(mb.startTime, ts, val, commandAttributeValue.String())
+	mb.metricMysqlCommands.recordDataPoint(mb.startTime, ts, val, preparedStatementsCommandAttributeValue.String())
 	return nil
 }
 
@@ -3621,6 +3681,16 @@ func (mb *MetricsBuilder) RecordMysqlPageOperationsDataPoint(ts pcommon.Timestam
 		return fmt.Errorf("failed to parse int64 for MysqlPageOperations, value was %s: %w", inputVal, err)
 	}
 	mb.metricMysqlPageOperations.recordDataPoint(mb.startTime, ts, val, pageOperationsAttributeValue.String())
+	return nil
+}
+
+// RecordMysqlPreparedStatementsDataPoint adds a data point to mysql.prepared_statements metric.
+func (mb *MetricsBuilder) RecordMysqlPreparedStatementsDataPoint(ts pcommon.Timestamp, inputVal string, preparedStatementsCommandAttributeValue AttributePreparedStatementsCommand) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlPreparedStatements, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlPreparedStatements.recordDataPoint(mb.startTime, ts, val, preparedStatementsCommandAttributeValue.String())
 	return nil
 }
 

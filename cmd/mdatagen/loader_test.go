@@ -38,30 +38,30 @@ func Test_loadMetadata(t *testing.T) {
 				SemConvVersion: "1.9.0",
 				Attributes: map[attributeName]attribute{
 					"enumAttribute": {
-						Description: "Attribute with a known set of values.",
-						Value:       "",
-						Enum:        []string{"red", "green", "blue"},
+						Description:  "Attribute with a known set of values.",
+						NameOverride: "",
+						Enum:         []string{"red", "green", "blue"},
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
 						},
 					},
 					"freeFormAttribute": {
-						Description: "Attribute that can take on any value.",
-						Value:       "",
+						Description:  "Attribute that can take on any value.",
+						NameOverride: "",
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
 						},
 					},
 					"freeFormAttributeWithValue": {
-						Description: "Attribute that has alternate value set.",
-						Value:       "state",
+						Description:  "Attribute that has alternate value set.",
+						NameOverride: "state",
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
 						},
 					},
 					"booleanValueType": {
-						Description: "Attribute with a boolean value.",
-						Value:       "0",
+						Description:  "Attribute with a boolean value.",
+						NameOverride: "0",
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeBool,
 						},
@@ -74,7 +74,7 @@ func Test_loadMetadata(t *testing.T) {
 						Unit:                  "s",
 						Sum: &sum{
 							MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeDouble},
-							Aggregated:      Aggregated{Aggregation: "cumulative"},
+							Aggregated:      Aggregated{Aggregation: pmetric.AggregationTemporalityCumulative},
 							Mono:            Mono{Monotonic: true},
 						},
 						Attributes: []attributeName{"freeFormAttribute", "freeFormAttributeWithValue", "enumAttribute", "booleanValueType"},

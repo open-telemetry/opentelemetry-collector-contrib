@@ -88,7 +88,7 @@ func TestDefaultExporters(t *testing.T) {
 	}{
 		{
 			exporter: "file",
-			getConfigFn: func() component.ExporterConfig {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["file"].CreateDefaultConfig().(*fileexporter.Config)
 				cfg.Path = filepath.Join(t.TempDir(), "random.file")
 				return cfg
@@ -96,7 +96,7 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "jaeger",
-			getConfigFn: func() component.ExporterConfig {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["jaeger"].CreateDefaultConfig().(*jaegerexporter.Config)
 				cfg.Endpoint = endpoint
 				return cfg
@@ -104,7 +104,7 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "jaeger_thrift",
-			getConfigFn: func() component.ExporterConfig {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["jaeger_thrift"].CreateDefaultConfig().(*jaegerthrifthttpexporter.Config)
 				cfg.Endpoint = "http://" + endpoint
 				return cfg
@@ -112,7 +112,7 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "kafka",
-			getConfigFn: func() component.ExporterConfig {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["kafka"].CreateDefaultConfig().(*kafkaexporter.Config)
 				cfg.Brokers = []string{"invalid:9092"}
 				// this disables contacting the broker so we can successfully create the exporter
@@ -126,7 +126,7 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "opencensus",
-			getConfigFn: func() component.ExporterConfig {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["opencensus"].CreateDefaultConfig().(*opencensusexporter.Config)
 				cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
 					Endpoint: endpoint,
@@ -136,7 +136,7 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "otlp",
-			getConfigFn: func() component.ExporterConfig {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["otlp"].CreateDefaultConfig().(*otlpexporter.Config)
 				cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
 					Endpoint: endpoint,
@@ -146,7 +146,7 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "otlphttp",
-			getConfigFn: func() component.ExporterConfig {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["otlphttp"].CreateDefaultConfig().(*otlphttpexporter.Config)
 				cfg.Endpoint = "http://" + endpoint
 				return cfg
@@ -154,7 +154,7 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "parquet",
-			getConfigFn: func() component.ExporterConfig {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["parquet"].CreateDefaultConfig().(*parquetexporter.Config)
 				cfg.Path = t.TempDir()
 				return cfg
@@ -162,7 +162,7 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "prometheus",
-			getConfigFn: func() component.ExporterConfig {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["prometheus"].CreateDefaultConfig().(*prometheusexporter.Config)
 				cfg.Endpoint = endpoint
 				return cfg
@@ -173,7 +173,7 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "pulsar",
-			getConfigFn: func() component.ExporterConfig {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["pulsar"].CreateDefaultConfig().(*pulsarexporter.Config)
 				cfg.Endpoint = "unknown:6650"
 				return cfg
@@ -181,7 +181,7 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "sapm",
-			getConfigFn: func() component.ExporterConfig {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["sapm"].CreateDefaultConfig().(*sapmexporter.Config)
 				cfg.Endpoint = "http://" + endpoint
 				return cfg
@@ -189,7 +189,7 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "signalfx",
-			getConfigFn: func() component.ExporterConfig {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["signalfx"].CreateDefaultConfig().(*signalfxexporter.Config)
 				cfg.AccessToken = "my_fake_token"
 				cfg.IngestURL = "http://" + endpoint
@@ -199,7 +199,7 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "splunk_hec",
-			getConfigFn: func() component.ExporterConfig {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["splunk_hec"].CreateDefaultConfig().(*splunkhecexporter.Config)
 				cfg.Token = "my_fake_token"
 				cfg.Endpoint = "http://" + endpoint
@@ -208,7 +208,7 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "zipkin",
-			getConfigFn: func() component.ExporterConfig {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["zipkin"].CreateDefaultConfig().(*zipkinexporter.Config)
 				cfg.Endpoint = endpoint
 				return cfg
@@ -216,7 +216,7 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "awskinesis",
-			getConfigFn: func() component.ExporterConfig {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["awskinesis"].CreateDefaultConfig().(*awskinesisexporter.Config)
 				cfg.AWS.KinesisEndpoint = endpoint
 				return cfg
@@ -224,7 +224,7 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "alibabacloud_logservice",
-			getConfigFn: func() component.ExporterConfig {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["alibabacloud_logservice"].CreateDefaultConfig().(*alibabacloudlogserviceexporter.Config)
 				cfg.Endpoint = "http://" + endpoint
 				cfg.Project = "otel-testing"
@@ -234,7 +234,7 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "awscloudwatch",
-			getConfigFn: func() component.ExporterConfig {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["awscloudwatch"].CreateDefaultConfig().(*awscloudwatchlogsexporter.Config)
 				cfg.Endpoint = "http://" + endpoint
 				cfg.Region = "local"
@@ -243,7 +243,7 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "awsemf",
-			getConfigFn: func() component.ExporterConfig {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["awsemf"].CreateDefaultConfig().(*awsemfexporter.Config)
 				cfg.Endpoint = "http://" + endpoint
 				cfg.Region = "local"
@@ -252,7 +252,7 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "awsxray",
-			getConfigFn: func() component.ExporterConfig {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["awsxray"].CreateDefaultConfig().(*awsxrayexporter.Config)
 				cfg.Endpoint = "http://" + endpoint
 				cfg.Region = "local"
@@ -261,7 +261,7 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "azuredataexplorer",
-			getConfigFn: func() component.ExporterConfig {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["azuredataexplorer"].CreateDefaultConfig().(*azuredataexplorerexporter.Config)
 				cfg.ClusterURI = "http://" + endpoint
 				cfg.ApplicationID = "otel-app-id"
@@ -272,7 +272,7 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "azuremonitor",
-			getConfigFn: func() component.ExporterConfig {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["azuremonitor"].CreateDefaultConfig().(*azuremonitorexporter.Config)
 				cfg.Endpoint = "http://" + endpoint
 
@@ -281,7 +281,7 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "carbon",
-			getConfigFn: func() component.ExporterConfig {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["carbon"].CreateDefaultConfig().(*carbonexporter.Config)
 				cfg.Endpoint = "http://" + endpoint
 				return cfg
@@ -289,7 +289,7 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "clickhouse",
-			getConfigFn: func() component.ExporterConfig {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["clickhouse"].CreateDefaultConfig().(*clickhouseexporter.Config)
 				cfg.DSN = "clickhouse://" + endpoint
 				return cfg
@@ -297,7 +297,7 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "coralogix",
-			getConfigFn: func() component.ExporterConfig {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["coralogix"].CreateDefaultConfig().(*coralogixexporter.Config)
 				cfg.Traces.Endpoint = endpoint
 				return cfg
@@ -305,7 +305,7 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "datadog",
-			getConfigFn: func() component.ExporterConfig {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["datadog"].CreateDefaultConfig().(*datadogexporter.Config)
 				cfg.API.Key = "cutedogsgotoheaven"
 				return cfg
@@ -313,7 +313,7 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "dynatrace",
-			getConfigFn: func() component.ExporterConfig {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["dynatrace"].CreateDefaultConfig().(*dtconf.Config)
 				cfg.Endpoint = "http://" + endpoint
 				cfg.APIToken = "dynamictracing"
@@ -322,7 +322,7 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "elasticsearch",
-			getConfigFn: func() component.ExporterConfig {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["elasticsearch"].CreateDefaultConfig().(*elasticsearchexporter.Config)
 				cfg.Endpoints = []string{"http://" + endpoint}
 				return cfg
@@ -330,7 +330,7 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "f5cloud",
-			getConfigFn: func() component.ExporterConfig {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["f5cloud"].CreateDefaultConfig().(*f5cloudexporter.Config)
 				cfg.Endpoint = "http://" + endpoint
 				cfg.Source = "magic-source"
@@ -352,7 +352,7 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "humio",
-			getConfigFn: func() component.ExporterConfig {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["humio"].CreateDefaultConfig().(*humioexporter.Config)
 				cfg.Endpoint = "http://" + endpoint
 				return cfg
@@ -360,7 +360,7 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "influxdb",
-			getConfigFn: func() component.ExporterConfig {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["influxdb"].CreateDefaultConfig().(*influxdbexporter.Config)
 				cfg.Endpoint = "http://" + endpoint
 				return cfg
@@ -368,7 +368,7 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "instana",
-			getConfigFn: func() component.ExporterConfig {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["instana"].CreateDefaultConfig().(*instanaexporter.Config)
 				cfg.Endpoint = "http://" + endpoint
 				cfg.AgentKey = "Key1"
@@ -377,14 +377,14 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "loadbalancing",
-			getConfigFn: func() component.ExporterConfig {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["loadbalancing"].CreateDefaultConfig().(*loadbalancingexporter.Config)
 				return cfg
 			},
 		},
 		{
 			exporter: "logzio",
-			getConfigFn: func() component.ExporterConfig {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["logzio"].CreateDefaultConfig().(*logzioexporter.Config)
 				cfg.Endpoint = "http://" + endpoint
 				return cfg
@@ -392,7 +392,7 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "loki",
-			getConfigFn: func() component.ExporterConfig {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["loki"].CreateDefaultConfig().(*lokiexporter.Config)
 				cfg.Endpoint = "http://" + endpoint
 				return cfg
@@ -400,7 +400,7 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "mezmo",
-			getConfigFn: func() component.ExporterConfig {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["mezmo"].CreateDefaultConfig().(*mezmoexporter.Config)
 				cfg.Endpoint = "http://" + endpoint
 				return cfg
@@ -408,21 +408,21 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "sentry",
-			getConfigFn: func() component.ExporterConfig {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["sentry"].CreateDefaultConfig().(*sentryexporter.Config)
 				return cfg
 			},
 		},
 		{
 			exporter: "skywalking",
-			getConfigFn: func() component.ExporterConfig {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["skywalking"].CreateDefaultConfig().(*skywalkingexporter.Config)
 				return cfg
 			},
 		},
 		{
 			exporter: "sumologic",
-			getConfigFn: func() component.ExporterConfig {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["sumologic"].CreateDefaultConfig().(*sumologicexporter.Config)
 				cfg.Endpoint = "http://" + endpoint
 
@@ -431,7 +431,7 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "tanzuobservability",
-			getConfigFn: func() component.ExporterConfig {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["tanzuobservability"].CreateDefaultConfig().(*tanzuobservabilityexporter.Config)
 				cfg.Traces.Endpoint = "http://" + endpoint
 				return cfg
@@ -439,7 +439,7 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "tencentcloud_logservice",
-			getConfigFn: func() component.ExporterConfig {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["tencentcloud_logservice"].CreateDefaultConfig().(*tencentcloudlogserviceexporter.Config)
 
 				return cfg
@@ -470,7 +470,7 @@ func TestDefaultExporters(t *testing.T) {
 // GetExporterConfigFn is used customize the configuration passed to the verification.
 // This is used to change ports or provide values required but not provided by the
 // default configuration.
-type getExporterConfigFn func() component.ExporterConfig
+type getExporterConfigFn func() component.Config
 
 // verifyExporterLifecycle is used to test if an exporter type can handle the typical
 // lifecycle of a component. The getConfigFn parameter only need to be specified if
@@ -511,23 +511,23 @@ func verifyExporterLifecycle(t *testing.T, factory component.ExporterFactory, ge
 type createExporterFn func(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
-	cfg component.ExporterConfig,
+	cfg component.Config,
 ) (component.Component, error)
 
 func wrapCreateLogsExp(factory component.ExporterFactory) createExporterFn {
-	return func(ctx context.Context, set component.ExporterCreateSettings, cfg component.ExporterConfig) (component.Component, error) {
+	return func(ctx context.Context, set component.ExporterCreateSettings, cfg component.Config) (component.Component, error) {
 		return factory.CreateLogsExporter(ctx, set, cfg)
 	}
 }
 
 func wrapCreateTracesExp(factory component.ExporterFactory) createExporterFn {
-	return func(ctx context.Context, set component.ExporterCreateSettings, cfg component.ExporterConfig) (component.Component, error) {
+	return func(ctx context.Context, set component.ExporterCreateSettings, cfg component.Config) (component.Component, error) {
 		return factory.CreateTracesExporter(ctx, set, cfg)
 	}
 }
 
 func wrapCreateMetricsExp(factory component.ExporterFactory) createExporterFn {
-	return func(ctx context.Context, set component.ExporterCreateSettings, cfg component.ExporterConfig) (component.Component, error) {
+	return func(ctx context.Context, set component.ExporterCreateSettings, cfg component.Config) (component.Component, error) {
 		return factory.CreateMetricsExporter(ctx, set, cfg)
 	}
 }

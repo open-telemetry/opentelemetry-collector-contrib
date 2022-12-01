@@ -16,6 +16,7 @@ List of available Functions:
 - [delete_matching_keys](#delete_matching_keys)
 - [keep_keys](#keep_keys)
 - [limit](#limit)
+- [merge_maps](#merge_maps)
 - [replace_all_matches](#replace_all_matches)
 - [replace_all_patterns](#replace_all_patterns)
 - [replace_match](#replace_match)
@@ -37,6 +38,7 @@ List of available Factory Functions:
 - [ConvertCase](#convertcase)
 - [Int](#int)
 - [IsMatch](#ismatch)
+- [ParseJSON](#ParseJSON)
 - [SpanID](#spanid)
 - [Split](#split)
 - [TraceID](#traceid)
@@ -117,7 +119,9 @@ The `IsMatch` factory function returns true if the `target` matches the regex `p
 
 `target` is either a path expression to a telemetry field to retrieve or a literal string. `pattern` is a regexp pattern.
 
-The function matches the target against the pattern, returning true if the match is successful and false otherwise. If target is nil or not a string false is always returned.
+The function matches the target against the pattern, returning true if the match is successful and false otherwise.
+If target is a boolean, int, or float it will be converted to a string.
+If target is nil or not a string, boolean, int, or float false is always returned.
 
 Examples:
 
@@ -125,6 +129,36 @@ Examples:
 
 
 - `IsMatch("string", ".*ring")`
+
+### ParseJSON
+
+`ParseJSON(target)`
+
+The `ParseJSON` factory function returns a `pcommon.Map` struct that is a result of parsing the target string as JSON
+
+`target` is a Getter that returns a string. This string should be in json format.
+
+Unmarshalling is done using [jsoniter](https://github.com/json-iterator/go).
+Each JSON type is converted into a `pdata.Value` using the following map:
+
+```
+JSON boolean -> bool
+JSON number  -> float64
+JSON string  -> string
+JSON null    -> nil
+JSON arrays  -> pdata.SliceValue
+JSON objects -> map[string]any
+```
+
+Examples:
+
+- `ParseJSON("{\"attr\":true}")`
+
+
+- `ParseJSON(attributes["kubernetes"])`
+
+
+- `ParseJSON(body)`
 
 ### SpanID
 
@@ -237,6 +271,31 @@ Examples:
 
 
 - `limit(resource.attributes, 50, ["http.host", "http.method"])`
+
+### merge_maps
+
+`merge_maps(target, source, strategy)`
+
+The `merge_maps` function merges the source map into the target map using the supplied strategy to handle conflicts.
+
+`target` is a `pdata.Map` type field. `source` is a `pdata.Map` type field. `strategy` is a string that must be one of `insert`, `update`, or `upsert`.
+
+If strategy is:
+- `insert`: Insert the value from `source` into `target` where the key does not already exist.
+- `update`: Update the entry in `target` with the value from `source` where the key does exist.
+- `upsert`: Performs insert or update. Insert the value from `source` into `target` where the key does not already exist and update the entry in `target` with the value from `source` where the key does exist.
+
+`merge_maps` is a special case of the [`set` function](#set). If you need to completely override `target`, use `set` instead.
+
+Examples:
+
+- `merge_maps(attributes, ParseJSON(body), "upsert")`
+
+
+- `merge_maps(attributes, ParseJSON(attributes["kubernetes"]), "update")`
+
+
+- `merge_maps(attributes, resource.attributes, "insert")`
 
 ### replace_all_matches
 

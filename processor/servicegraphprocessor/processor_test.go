@@ -276,3 +276,43 @@ func (m *mockMetricsExporter) Capabilities() consumer.Capabilities { return cons
 func (m *mockMetricsExporter) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
 	return m.verify(md)
 }
+
+func TestUpdateDurationMetrics(t *testing.T) {
+	p := processor{
+		reqTotal:                       make(map[string]int64),
+		reqFailedTotal:                 make(map[string]int64),
+		reqDurationSecondsSum:          make(map[string]float64),
+		reqDurationSecondsCount:        make(map[string]uint64),
+		reqDurationBounds:              defaultLatencyHistogramBucketsMs,
+		reqDurationSecondsBucketCounts: make(map[string][]uint64),
+		keyToMetric:                    make(map[string]metricSeries),
+		config: &Config{
+			Dimensions: []string{},
+		},
+	}
+	metricKey := p.buildMetricKey("foo", "bar", "", map[string]string{})
+
+	testCases := []struct {
+		caseStr  string
+		duration float64
+	}{
+
+		{
+			caseStr:  "index 0 latency",
+			duration: 0,
+		},
+		{
+			caseStr:  "out-of-range latency 1",
+			duration: 25_000,
+		},
+		{
+			caseStr:  "out-of-range latency 2",
+			duration: 125_000,
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.caseStr, func(t *testing.T) {
+			p.updateDurationMetrics(metricKey, tc.duration)
+		})
+	}
+}

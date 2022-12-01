@@ -36,11 +36,11 @@ func NewFactory() component.ExtensionFactory {
 	)
 }
 
-func createExtension(_ context.Context, _ component.ExtensionCreateSettings, cfg component.ExtensionConfig) (component.Extension, error) {
+func createExtension(_ context.Context, _ component.ExtensionCreateSettings, cfg component.Config) (component.Extension, error) {
 	return createASAPClientAuthenticator(cfg.(*Config))
 }
 
-func createDefaultConfig() component.ExtensionConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
 	}

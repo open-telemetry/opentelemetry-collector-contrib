@@ -156,10 +156,8 @@ func (m metric) IsEnabled() bool {
 type attribute struct {
 	// Description describes the purpose of the attribute.
 	Description string `validate:"notblank"`
-	// Value can optionally specify the value this attribute will have.
-	// For example, the attribute may have the identifier `MemState` to its
-	// value may be `state` when used.
-	Value string
+	// NameOverride can be used to override the attribute name.
+	NameOverride string `mapstructure:"name_override"`
 	// Enum can optionally describe the set of values to which the attribute can belong.
 	Enum []string
 	// Type is an attribute type.

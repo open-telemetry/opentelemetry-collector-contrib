@@ -41,7 +41,7 @@ func NewFactory() component.ExporterFactory {
 }
 
 // Provides a struct with default values for all relevant configuration settings
-func createDefaultConfig() component.ExporterConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 
@@ -66,7 +66,7 @@ func createDefaultConfig() component.ExporterConfig {
 func createTracesExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
-	config component.ExporterConfig,
+	config component.Config,
 ) (component.TracesExporter, error) {
 	if config == nil {
 		return nil, errors.New("missing config")

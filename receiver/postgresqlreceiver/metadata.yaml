@@ -20,21 +20,21 @@ attributes:
       - backend_fsync
       - checkpoints
       - bgwriter
-    value: source
+    name_override: source
   bg_checkpoint_type:
     description: The type of checkpoint state.
     type: string
     enum:
       - requested
       - scheduled
-    value: type
+    name_override: type
   bg_duration_type:
     description: The type of time spent during the checkpoint.
     type: string
     enum:
       - sync
       - write
-    value: type
+    name_override: type
   database:
     description: The name of the database.
     type: string
@@ -65,7 +65,7 @@ attributes:
     type: string
     enum: [dead, live]
   wal_operation_lag:
-    value: operation
+    name_override: operation
     description: The operation which is responsible for the lag.
     type: string
     enum: [flush, replay, write]

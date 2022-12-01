@@ -39,7 +39,7 @@ func NewFactory() component.ExporterFactory {
 	)
 }
 
-func createDefaultConfig() component.ExporterConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ExporterSettings: config.NewExporterSettings(component.NewID(exporterType)),
 		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
@@ -52,7 +52,7 @@ func createDefaultConfig() component.ExporterConfig {
 func createTracesExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
-	cfg component.ExporterConfig,
+	cfg component.Config,
 ) (component.TracesExporter, error) {
 	exp, err := newTracesExporter(set, cfg)
 	if err != nil {
@@ -78,7 +78,7 @@ func createTracesExporter(
 func createMetricsExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
-	cfg component.ExporterConfig,
+	cfg component.Config,
 ) (component.MetricsExporter, error) {
 	tobsCfg, ok := cfg.(*Config)
 	if !ok {

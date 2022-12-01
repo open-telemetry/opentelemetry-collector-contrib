@@ -39,7 +39,7 @@ func TestLoadConfig(t *testing.T) {
 
 	tests := []struct {
 		id           component.ID
-		expected     component.ExporterConfig
+		expected     component.Config
 		errorMessage string
 	}{
 		{
@@ -99,7 +99,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			err = component.UnmarshalExporterConfig(sub, cfg)
+			err = component.UnmarshalConfig(sub, cfg)
 
 			if tt.expected == nil {
 				err = multierr.Append(err, component.ValidateConfig(cfg))
