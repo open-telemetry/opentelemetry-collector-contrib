@@ -31,7 +31,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
@@ -137,7 +136,7 @@ func newProcessor(ctx context.Context, logger *zap.Logger, config component.Proc
 			pConfig.DimensionsCacheSize,
 		)
 	}
-	metricKeyToDimensionsCache, err := cache.NewCache[metricKey, pcommon.Map](pConfig.DimensionsCacheSize, logger)
+	metricKeyToDimensionsCache, err := cache.NewCache[metricKey, pcommon.Map](pConfig.DimensionsCacheSize)
 	if err != nil {
 		return nil, err
 	}
@@ -240,9 +239,8 @@ func (p *processorImp) Start(ctx context.Context, host component.Host) error {
 			select {
 			case <-p.done:
 				return
-			case t := <-p.ticker.C:
-				fmt.Println("Tick at", t)
-				p.onTick(ctx)
+			case <-p.ticker.C:
+				p.exportMetrics(ctx)
 			}
 		}
 	}()
@@ -270,37 +268,18 @@ func (p *processorImp) Capabilities() consumer.Capabilities {
 // It aggregates the trace data to generate metrics, forwarding these metrics to the discovered metrics exporter.
 // The original input trace data will be forwarded to the next consumer, unmodified.
 func (p *processorImp) ConsumeTraces(ctx context.Context, traces ptrace.Traces) error {
-	// Forward trace data unmodified and propagate both metrics and trace pipeline errors, if any.
-	return multierr.Combine(p.tracesToMetrics(traces), p.nextConsumer.ConsumeTraces(ctx, traces))
-}
-
-func (p *processorImp) tracesToMetrics(traces ptrace.Traces) error {
 	p.lock.Lock()
 	p.aggregateMetrics(traces)
 	p.lock.Unlock()
 
-	// m, err := p.buildMetrics()
-	//
-	// // Exemplars are only relevant to this batch of traces, so must be cleared within the lock,
-	// // regardless of error while building metrics, before the next batch of spans is received.
-	// p.resetExemplarData()
-	//
-	// // This component no longer needs to read the metrics once built, so it is safe to unlock.
-	//
-	// if err != nil {
-	// 	return err
-	// }
-	//
-	// if err = p.metricsExporter.ConsumeMetrics(ctx, m); err != nil {
-	// 	return err
-	// }
-
-	return nil
+	// Forward trace data unmodified and propagate trace pipeline errors, if any.
+	return p.nextConsumer.ConsumeTraces(ctx, traces)
 }
 
-func (p *processorImp) onTick(ctx context.Context) {
+func (p *processorImp) exportMetrics(ctx context.Context) {
 	p.lock.Lock()
-	m, err := p.buildMetrics()
+
+	m := p.buildMetrics()
 
 	// Exemplars are only relevant to this batch of traces, so must be cleared within the lock,
 	// regardless of error while building metrics, before the next batch of spans is received.
@@ -308,11 +287,6 @@ func (p *processorImp) onTick(ctx context.Context) {
 
 	// This component no longer needs to read the metrics once built, so it is safe to unlock.
 	p.lock.Unlock()
-
-	if err != nil {
-		p.logger.Error("Failed to build metrics: " + err.Error())
-		return
-	}
 
 	if err := p.metricsExporter.ConsumeMetrics(ctx, m); err != nil {
 		p.logger.Error("Failed ConsumeMetrics: " + err.Error())
@@ -322,18 +296,13 @@ func (p *processorImp) onTick(ctx context.Context) {
 
 // buildMetrics collects the computed raw metrics data, builds the metrics object and
 // writes the raw metrics data into the metrics object.
-func (p *processorImp) buildMetrics() (pmetric.Metrics, error) {
+func (p *processorImp) buildMetrics() pmetric.Metrics {
 	m := pmetric.NewMetrics()
 	ilm := m.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 	ilm.Scope().SetName("spanmetricsprocessor")
 
-	if err := p.collectCallMetrics(ilm); err != nil {
-		return pmetric.Metrics{}, err
-	}
-
-	if err := p.collectLatencyMetrics(ilm); err != nil {
-		return pmetric.Metrics{}, err
-	}
+	p.collectCallMetrics(ilm)
+	p.collectLatencyMetrics(ilm)
 
 	p.metricKeyToDimensions.RemoveEvictedItems()
 
@@ -343,12 +312,12 @@ func (p *processorImp) buildMetrics() (pmetric.Metrics, error) {
 	}
 	p.resetExemplarData()
 
-	return m, nil
+	return m
 }
 
 // collectLatencyMetrics collects the raw latency metrics, writing the data
 // into the given instrumentation library metrics.
-func (p *processorImp) collectLatencyMetrics(ilm pmetric.ScopeMetrics) error {
+func (p *processorImp) collectLatencyMetrics(ilm pmetric.ScopeMetrics) {
 	mLatency := ilm.Metrics().AppendEmpty()
 	mLatency.SetName("latency")
 	mLatency.SetUnit("ms")
@@ -371,20 +340,12 @@ func (p *processorImp) collectLatencyMetrics(ilm pmetric.ScopeMetrics) error {
 		if dimensions, ok := p.metricKeyToDimensions.Get(key); ok {
 			dimensions.CopyTo(dpLatency.Attributes())
 		}
-		// dimensions, err := p.getDimensionsByMetricKey(key)
-		// if err != nil {
-		// 	p.logger.Error(err.Error())
-		// 	return err
-		// }
-		//
-		// dimensions.CopyTo(dpLatency.Attributes())
 	}
-	return nil
 }
 
 // collectCallMetrics collects the raw call count metrics, writing the data
 // into the given instrumentation library metrics.
-func (p *processorImp) collectCallMetrics(ilm pmetric.ScopeMetrics) error {
+func (p *processorImp) collectCallMetrics(ilm pmetric.ScopeMetrics) {
 	mCalls := ilm.Metrics().AppendEmpty()
 	mCalls.SetName("calls_total")
 	mCalls.SetEmptySum().SetIsMonotonic(true)
@@ -403,21 +364,8 @@ func (p *processorImp) collectCallMetrics(ilm pmetric.ScopeMetrics) error {
 		if dimensions, ok := p.metricKeyToDimensions.Get(key); ok {
 			dimensions.CopyTo(dpCalls.Attributes())
 		}
-		// dimensions, err := p.getDimensionsByMetricKey(key)
-		// if err != nil {
-		// 	return err
-		// }
 	}
-	return nil
 }
-
-// getDimensionsByMetricKey gets dimensions from `metricKeyToDimensions` cache.
-// func (p *processorImp) getDimensionsByMetricKey(k metricKey) (pcommon.Map, error) {
-// 	if attributeMap, ok := p.metricKeyToDimensions.Get(k); ok {
-// 		return attributeMap, nil
-// 	}
-// 	return pcommon.Map{}, fmt.Errorf("value not found in metricKeyToDimensions cache by key %q", k)
-// }
 
 // aggregateMetrics aggregates the raw metrics from the input trace data.
 // Each metric is identified by a key that is built from the service name

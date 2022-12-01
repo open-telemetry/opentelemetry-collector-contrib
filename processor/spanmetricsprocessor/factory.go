@@ -17,12 +17,11 @@ package spanmetricsprocessor // import "github.com/open-telemetry/opentelemetry-
 import (
 	"context"
 	"github.com/tilinna/clock"
-	"time"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/featuregate"
+	"time"
 )
 
 const (
@@ -47,9 +46,11 @@ func createDefaultConfig() component.ProcessorConfig {
 		AggregationTemporality: "AGGREGATION_TEMPORALITY_CUMULATIVE",
 		DimensionsCacheSize:    defaultDimensionsCacheSize,
 		skipSanitizeLabel:      featuregate.GetRegistry().IsEnabled(dropSanitizationGateID),
+		MetricsFlushInterval:   15 * time.Second,
 	}
 }
 
 func createTracesProcessor(ctx context.Context, params component.ProcessorCreateSettings, cfg component.ProcessorConfig, nextConsumer consumer.Traces) (component.TracesProcessor, error) {
-	return newProcessor(ctx, params.Logger, cfg, nextConsumer, clock.Realtime().NewTicker(time.Second))
+	pConfig := cfg.(*Config)
+	return newProcessor(ctx, params.Logger, cfg, nextConsumer, clock.Realtime().NewTicker(pConfig.MetricsFlushInterval))
 }

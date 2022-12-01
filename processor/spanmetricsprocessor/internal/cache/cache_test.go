@@ -15,7 +15,6 @@
 package cache
 
 import (
-	"go.uber.org/zap"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -193,13 +192,13 @@ func TestCache_PurgeItems(t *testing.T) {
 		{
 			name: "no panic when there is no item to remove",
 			lruCache: func() (*Cache[string, string], error) {
-				return NewCache[string, string](1, zap.NewNop())
+				return NewCache[string, string](1)
 			},
 		},
 		{
 			name: "remove items from the lru cache",
 			lruCache: func() (*Cache[string, string], error) {
-				cache, err := NewCache[string, string](1, zap.NewNop())
+				cache, err := NewCache[string, string](1)
 				if err != nil {
 					return nil, err
 				}
@@ -211,7 +210,7 @@ func TestCache_PurgeItems(t *testing.T) {
 		{
 			name: "remove all the items from lru cache and the evicted items",
 			lruCache: func() (*Cache[string, string], error) {
-				cache, err := NewCache[string, string](10, zap.NewNop())
+				cache, err := NewCache[string, string](10)
 				if err != nil {
 					return nil, err
 				}
