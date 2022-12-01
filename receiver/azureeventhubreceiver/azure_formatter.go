@@ -15,25 +15,20 @@
 package azureeventhubreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver"
 
 import (
-	"context"
-	"testing"
-
-	"github.com/stretchr/testify/assert"
+	eventhub "github.com/Azure/azure-event-hubs-go/v3"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pdata/plog"
 )
 
-func TestNewFactory(t *testing.T) {
-	f := NewFactory()
-	assert.Equal(t, component.Type("azureeventhub"), f.Type())
-	assert.Equal(t, &Config{ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr))}, f.CreateDefaultConfig())
+type azureLogFormatConverter struct {
+	buildInfo component.BuildInfo
 }
 
-func TestNewLogsReceiver(t *testing.T) {
-	f := NewFactory()
-	receiver, err := f.CreateLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), f.CreateDefaultConfig(), consumertest.NewNop())
-	assert.NoError(t, err)
-	assert.NotNil(t, receiver)
+func newAzureLogFormatConverter(settings component.ReceiverCreateSettings) *azureLogFormatConverter {
+	return &azureLogFormatConverter{buildInfo: settings.BuildInfo}
+}
+
+func (c *azureLogFormatConverter) ToLogs(event *eventhub.Event) (plog.Logs, error) {
+	logs, err := transform(c.buildInfo, event.Data)
+	return logs, err
 }

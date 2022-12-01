@@ -15,25 +15,28 @@
 package azureeventhubreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver"
 
 import (
-	"context"
-	"testing"
-
-	"github.com/stretchr/testify/assert"
+	eventhub "github.com/Azure/azure-event-hubs-go/v3"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 )
 
-func TestNewFactory(t *testing.T) {
-	f := NewFactory()
-	assert.Equal(t, component.Type("azureeventhub"), f.Type())
-	assert.Equal(t, &Config{ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr))}, f.CreateDefaultConfig())
+type rawConverter struct{}
+
+func newRawConverter(_ component.ReceiverCreateSettings) *rawConverter {
+	return &rawConverter{}
 }
 
-func TestNewLogsReceiver(t *testing.T) {
-	f := NewFactory()
-	receiver, err := f.CreateLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), f.CreateDefaultConfig(), consumertest.NewNop())
-	assert.NoError(t, err)
-	assert.NotNil(t, receiver)
+func (*rawConverter) ToLogs(event *eventhub.Event) (plog.Logs, error) {
+	l := plog.NewLogs()
+	lr := l.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+	slice := lr.Body().SetEmptyBytes()
+	slice.Append(event.Data...)
+	if event.SystemProperties.EnqueuedTime != nil {
+		lr.SetTimestamp(pcommon.NewTimestampFromTime(*event.SystemProperties.EnqueuedTime))
+	}
+	if err := lr.Attributes().FromRaw(event.Properties); err != nil {
+		return l, err
+	}
+	return l, nil
 }
