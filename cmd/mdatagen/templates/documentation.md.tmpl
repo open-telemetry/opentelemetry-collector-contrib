@@ -26,7 +26,7 @@
 | ---- | ----------- | ------ |
 {{- range $metric.Attributes }}
 {{- $attribute := . | attributeInfo }}
-| {{ . | attributeKey }} | {{ $attribute.Description }} |
+| {{ attributeName . }} | {{ $attribute.Description }} |
 {{- if $attribute.Enum }} {{ $attribute.Type }}: ``{{ stringsJoin $attribute.Enum "``, ``" }}``{{ else }} Any {{ $attribute.Type }}{{ end }} |
 {{- end }}
 

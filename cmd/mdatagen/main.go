@@ -81,9 +81,9 @@ func generateFile(tmplFile string, outputFile string, md metadata) error {
 				"attributeInfo": func(an attributeName) attribute {
 					return md.Attributes[an]
 				},
-				"attributeKey": func(an attributeName) string {
-					if md.Attributes[an].Value != "" {
-						return md.Attributes[an].Value
+				"attributeName": func(an attributeName) string {
+					if md.Attributes[an].NameOverride != "" {
+						return md.Attributes[an].NameOverride
 					}
 					return string(an)
 				},
