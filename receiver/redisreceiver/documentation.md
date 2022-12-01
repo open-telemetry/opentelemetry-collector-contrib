@@ -278,261 +278,55 @@ metrics:
     enabled: true
 ```
 
-### redis.clients.blocked
+### redis.cmd.calls
 
-Number of clients pending on a blocking call
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-|  | Sum | Int | Cumulative | false |
-
-### redis.clients.connected
-
-Number of client connections (excluding connections from replicas)
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-|  | Sum | Int | Cumulative | false |
-
-### redis.clients.max_input_buffer
-
-Biggest input buffer among current client connections
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-|  | Gauge | Int |
-
-### redis.clients.max_output_buffer
-
-Longest output list among current client connections
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-|  | Gauge | Int |
-
-### redis.commands
-
-Number of commands processed per second
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {ops}/s | Gauge | Int |
-
-### redis.commands.processed
-
-Total number of commands processed by the server
+Total number of calls for a command
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 |  | Sum | Int | Cumulative | true |
-
-### redis.connections.received
-
-Total number of connections accepted by the server
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-|  | Sum | Int | Cumulative | true |
-
-### redis.connections.rejected
-
-Number of connections rejected because of maxclients limit
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-|  | Sum | Int | Cumulative | true |
-
-### redis.cpu.time
-
-System CPU consumed by the Redis server in seconds since server start
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| s | Sum | Double | Cumulative | true |
 
 #### Attributes
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| state | Redis CPU usage state | Str: ``sys``, ``sys_children``, ``sys_main_thread``, ``user``, ``user_children``, ``user_main_thread`` |
+| cmd | Redis command name | Any Str |
 
-### redis.db.avg_ttl
+### redis.cmd.usec
 
-Average keyspace keys TTL
+Total time for all executions of this command
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| ms | Gauge | Int |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| us | Sum | Int | Cumulative | true |
 
 #### Attributes
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| db | Redis database identifier | Any Str |
+| cmd | Redis command name | Any Str |
 
-### redis.db.expires
+### redis.maxmemory
 
-Number of keyspace keys with an expiration
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-|  | Gauge | Int |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| db | Redis database identifier | Any Str |
-
-### redis.db.keys
-
-Number of keyspace keys
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-|  | Gauge | Int |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| db | Redis database identifier | Any Str |
-
-### redis.keys.evicted
-
-Number of evicted keys due to maxmemory limit
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-|  | Sum | Int | Cumulative | true |
-
-### redis.keys.expired
-
-Total number of key expiration events
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-|  | Sum | Int | Cumulative | true |
-
-### redis.keyspace.hits
-
-Number of successful lookup of keys in the main dictionary
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-|  | Sum | Int | Cumulative | true |
-
-### redis.keyspace.misses
-
-Number of failed lookup of keys in the main dictionary
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-|  | Sum | Int | Cumulative | true |
-
-### redis.latest_fork
-
-Duration of the latest fork operation in microseconds
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| us | Gauge | Int |
-
-### redis.memory.fragmentation_ratio
-
-Ratio between used_memory_rss and used_memory
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-|  | Gauge | Double |
-
-### redis.memory.lua
-
-Number of bytes used by the Lua engine
+The value of the maxmemory configuration directive
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | By | Gauge | Int |
 
-### redis.memory.peak
+### redis.role
 
-Peak memory consumed by Redis (in bytes)
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| By | Gauge | Int |
-
-### redis.memory.rss
-
-Number of bytes that Redis allocated as seen by the operating system
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| By | Gauge | Int |
-
-### redis.memory.used
-
-Total number of bytes allocated by Redis using its allocator
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| By | Gauge | Int |
-
-### redis.net.input
-
-The total number of bytes read from the network
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | true |
-
-### redis.net.output
-
-The total number of bytes written to the network
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | true |
-
-### redis.rdb.changes_since_last_save
-
-Number of changes since the last dump
+Redis node's role
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 |  | Sum | Int | Cumulative | false |
 
-### redis.replication.backlog_first_byte_offset
+#### Attributes
 
-The master offset of the replication backlog buffer
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-|  | Gauge | Int |
-
-### redis.replication.offset
-
-The server's current replication offset
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-|  | Gauge | Int |
-
-### redis.slaves.connected
-
-Number of connected replicas
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-|  | Sum | Int | Cumulative | false |
-
-### redis.uptime
-
-Number of seconds since Redis server start
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| s | Sum | Int | Cumulative | true |
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| role | Redis node's role | Str: ``replica``, ``primary`` |
 
 ## Resource Attributes
 

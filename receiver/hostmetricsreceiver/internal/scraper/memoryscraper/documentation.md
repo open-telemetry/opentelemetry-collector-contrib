@@ -36,13 +36,13 @@ metrics:
     enabled: true
 ```
 
-### system.memory.usage
+### system.memory.utilization
 
-Bytes of memory in use.
+Percentage of memory bytes in use.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
 
 #### Attributes
 

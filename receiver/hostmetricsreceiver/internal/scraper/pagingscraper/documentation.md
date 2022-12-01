@@ -66,42 +66,13 @@ metrics:
     enabled: true
 ```
 
-### system.paging.faults
+### system.paging.utilization
 
-The number of page faults.
+Swap (unix) or pagefile (windows) utilization.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {faults} | Sum | Int | Cumulative | true |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| type | Type of fault. | Str: ``major``, ``minor`` |
-
-### system.paging.operations
-
-The number of paging operations.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {operations} | Sum | Int | Cumulative | true |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| direction | Page In or Page Out. | Str: ``page_in``, ``page_out`` |
-| type | Type of fault. | Str: ``major``, ``minor`` |
-
-### system.paging.usage
-
-Swap (unix) or pagefile (windows) usage.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
 
 #### Attributes
 

@@ -775,274 +775,9 @@ metrics:
     enabled: true
 ```
 
-### elasticsearch.breaker.memory.estimated
+### elasticsearch.index.cache.evictions
 
-Estimated memory used for the operation.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| By | Gauge | Int |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| name | The name of circuit breaker. | Any Str |
-
-### elasticsearch.breaker.memory.limit
-
-Memory limit for the circuit breaker.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | false |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| name | The name of circuit breaker. | Any Str |
-
-### elasticsearch.breaker.tripped
-
-Total number of times the circuit breaker has been triggered and prevented an out of memory error.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | true |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| name | The name of circuit breaker. | Any Str |
-
-### elasticsearch.cluster.data_nodes
-
-The number of data nodes in the cluster.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {nodes} | Sum | Int | Cumulative | false |
-
-### elasticsearch.cluster.health
-
-The health status of the cluster.
-
-Health status is based on the state of its primary and replica shards. Green indicates all shards are assigned. Yellow indicates that one or more replica shards are unassigned. Red indicates that one or more primary shards are unassigned, making some data unavailable.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {status} | Sum | Int | Cumulative | false |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| status | The health status of the cluster. | Str: ``green``, ``yellow``, ``red`` |
-
-### elasticsearch.cluster.in_flight_fetch
-
-The number of unfinished fetches.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {fetches} | Sum | Int | Cumulative | false |
-
-### elasticsearch.cluster.nodes
-
-The total number of nodes in the cluster.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {nodes} | Sum | Int | Cumulative | false |
-
-### elasticsearch.cluster.pending_tasks
-
-The number of cluster-level changes that have not yet been executed.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {tasks} | Sum | Int | Cumulative | false |
-
-### elasticsearch.cluster.published_states.differences
-
-Number of differences between published cluster states.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | false |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| state | State of the published differences | Str: ``incompatible``, ``compatible`` |
-
-### elasticsearch.cluster.published_states.full
-
-Number of published cluster states.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | false |
-
-### elasticsearch.cluster.shards
-
-The number of shards in the cluster.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {shards} | Sum | Int | Cumulative | false |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| state | The state of the shard. | Str: ``active``, ``active_primary``, ``relocating``, ``initializing``, ``unassigned``, ``unassigned_delayed`` |
-
-### elasticsearch.cluster.state_queue
-
-Number of cluster states in queue.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | false |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| state | State of the published differences | Str: ``pending``, ``committed`` |
-
-### elasticsearch.cluster.state_update.count
-
-The number of cluster state update attempts that changed the cluster state since the node started.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | true |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| state | State of cluster state update | Any Str |
-
-### elasticsearch.cluster.state_update.time
-
-The cumulative amount of time updating the cluster state since the node started.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| ms | Sum | Int | Cumulative | true |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| state | State of cluster state update | Any Str |
-| type | Type of cluster state update | Str: ``computation``, ``context_construction``, ``commit``, ``completion``, ``master_apply``, ``notification`` |
-
-### elasticsearch.index.operations.completed
-
-The number of operations completed for an index.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {operations} | Sum | Int | Cumulative | true |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| operation | The type of operation. | Str: ``index``, ``delete``, ``get``, ``query``, ``fetch``, ``scroll``, ``suggest``, ``merge``, ``refresh``, ``flush``, ``warmer`` |
-| aggregation | Type of shard aggregation for index statistics | Str: ``primary_shards``, ``total`` |
-
-### elasticsearch.index.operations.time
-
-Time spent on operations for an index.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| ms | Sum | Int | Cumulative | true |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| operation | The type of operation. | Str: ``index``, ``delete``, ``get``, ``query``, ``fetch``, ``scroll``, ``suggest``, ``merge``, ``refresh``, ``flush``, ``warmer`` |
-| aggregation | Type of shard aggregation for index statistics | Str: ``primary_shards``, ``total`` |
-
-### elasticsearch.index.shards.size
-
-The size of the shards assigned to this index.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | false |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| aggregation | Type of shard aggregation for index statistics | Str: ``primary_shards``, ``total`` |
-
-### elasticsearch.indexing_pressure.memory.limit
-
-Configured memory limit, in bytes, for the indexing requests.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| By | Gauge | Int |
-
-### elasticsearch.indexing_pressure.memory.total.primary_rejections
-
-Cumulative number of indexing requests rejected in the primary stage.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | true |
-
-### elasticsearch.indexing_pressure.memory.total.replica_rejections
-
-Number of indexing requests rejected in the replica stage.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | true |
-
-### elasticsearch.memory.indexing_pressure
-
-Memory consumed, in bytes, by indexing requests in the specified stage.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | false |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| stage | Stage of the indexing pressure | Str: ``coordinating``, ``primary``, ``replica`` |
-
-### elasticsearch.node.cache.count
-
-Total count of query cache misses across all shards assigned to selected nodes.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {count} | Sum | Int | Cumulative | false |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| type | Type of query cache count | Str: ``hit``, ``miss`` |
-
-### elasticsearch.node.cache.evictions
-
-The number of evictions from the cache on a node.
+The number of evictions from the cache for an index.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -1053,10 +788,11 @@ The number of evictions from the cache on a node.
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | cache_name | The name of cache. | Str: ``fielddata``, ``query`` |
+| aggregation | Type of shard aggregation for index statistics | Str: ``primary_shards``, ``total`` |
 
-### elasticsearch.node.cache.memory.usage
+### elasticsearch.index.cache.memory.usage
 
-The size in bytes of the cache on a node.
+The size in bytes of the cache for an index.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -1067,48 +803,25 @@ The size in bytes of the cache on a node.
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | cache_name | The name of cache. | Str: ``fielddata``, ``query`` |
+| aggregation | Type of shard aggregation for index statistics | Str: ``primary_shards``, ``total`` |
 
-### elasticsearch.node.cluster.connections
+### elasticsearch.index.cache.size
 
-The number of open tcp connections for internal cluster communication.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {connections} | Sum | Int | Cumulative | false |
-
-### elasticsearch.node.cluster.io
-
-The number of bytes sent and received on the network for internal cluster communication.
+The number of elements of the query cache for an index.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | true |
+| 1 | Sum | Int | Cumulative | false |
 
 #### Attributes
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| direction | The direction of network data. | Str: ``received``, ``sent`` |
+| aggregation | Type of shard aggregation for index statistics | Str: ``primary_shards``, ``total`` |
 
-### elasticsearch.node.disk.io.read
+### elasticsearch.index.documents
 
-The total number of kilobytes read across all file stores for this node.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| KiBy | Sum | Int | Cumulative | false |
-
-### elasticsearch.node.disk.io.write
-
-The total number of kilobytes written across all file stores for this node.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| KiBy | Sum | Int | Cumulative | false |
-
-### elasticsearch.node.documents
-
-The number of documents on the node.
+The number of documents for an index.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -1119,74 +832,82 @@ The number of documents on the node.
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | state | The state of the document. | Str: ``active``, ``deleted`` |
+| aggregation | Type of shard aggregation for index statistics | Str: ``primary_shards``, ``total`` |
 
-### elasticsearch.node.fs.disk.available
+### elasticsearch.index.operations.merge.docs_count
 
-The amount of disk space available to the JVM across all file stores for this node. Depending on OS or process level restrictions, this might appear less than free. This is the actual amount of free disk space the Elasticsearch node can utilise.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | false |
-
-### elasticsearch.node.fs.disk.free
-
-The amount of unallocated disk space across all file stores for this node.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | false |
-
-### elasticsearch.node.fs.disk.total
-
-The amount of disk space across all file stores for this node.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | false |
-
-### elasticsearch.node.http.connections
-
-The number of HTTP connections to the node.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {connections} | Sum | Int | Cumulative | false |
-
-### elasticsearch.node.ingest.documents
-
-Total number of documents ingested during the lifetime of this node.
+The total number of documents in merge operations for an index.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {documents} | Sum | Int | Cumulative | true |
 
-### elasticsearch.node.ingest.documents.current
+#### Attributes
 
-Total number of documents currently being ingested.
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| aggregation | Type of shard aggregation for index statistics | Str: ``primary_shards``, ``total`` |
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {documents} | Sum | Int | Cumulative | false |
+### elasticsearch.index.operations.merge.size
 
-### elasticsearch.node.ingest.operations.failed
-
-Total number of failed ingest operations during the lifetime of this node.
+The total size of merged segments for an index.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| {operation} | Sum | Int | Cumulative | true |
+| By | Sum | Int | Cumulative | true |
 
-### elasticsearch.node.open_files
+#### Attributes
 
-The number of open file descriptors held by the node.
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| aggregation | Type of shard aggregation for index statistics | Str: ``primary_shards``, ``total`` |
+
+### elasticsearch.index.segments.count
+
+Number of segments of an index.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| {files} | Sum | Int | Cumulative | false |
+| {segments} | Sum | Int | Cumulative | false |
 
-### elasticsearch.node.operations.completed
+#### Attributes
 
-The number of operations completed by a node.
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| aggregation | Type of shard aggregation for index statistics | Str: ``primary_shards``, ``total`` |
+
+### elasticsearch.index.segments.memory
+
+Size of memory for segment object of an index.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| aggregation | Type of shard aggregation for index statistics | Str: ``primary_shards``, ``total`` |
+| object | Type of object in segment | Str: ``term``, ``doc_value``, ``index_writer``, ``fixed_bit_set`` |
+
+### elasticsearch.index.segments.size
+
+Size of segments of an index.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| aggregation | Type of shard aggregation for index statistics | Str: ``primary_shards``, ``total`` |
+
+### elasticsearch.index.translog.operations
+
+Number of transaction log operations for an index.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -1196,251 +917,39 @@ The number of operations completed by a node.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| operation | The type of operation. | Str: ``index``, ``delete``, ``get``, ``query``, ``fetch``, ``scroll``, ``suggest``, ``merge``, ``refresh``, ``flush``, ``warmer`` |
+| aggregation | Type of shard aggregation for index statistics | Str: ``primary_shards``, ``total`` |
 
-### elasticsearch.node.operations.time
+### elasticsearch.index.translog.size
 
-Time spent on operations by a node.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| ms | Sum | Int | Cumulative | true |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| operation | The type of operation. | Str: ``index``, ``delete``, ``get``, ``query``, ``fetch``, ``scroll``, ``suggest``, ``merge``, ``refresh``, ``flush``, ``warmer`` |
-
-### elasticsearch.node.pipeline.ingest.documents.current
-
-Total number of documents currently being ingested by a pipeline.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {documents} | Sum | Int | Cumulative | false |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| name | Name of the ingest pipeline. | Any Str |
-
-### elasticsearch.node.pipeline.ingest.documents.preprocessed
-
-Number of documents preprocessed by the ingest pipeline.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {documents} | Sum | Int | Cumulative | false |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| name | Name of the ingest pipeline. | Any Str |
-
-### elasticsearch.node.pipeline.ingest.operations.failed
-
-Total number of failed operations for the ingest pipeline.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {operation} | Sum | Int | Cumulative | true |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| name | Name of the ingest pipeline. | Any Str |
-
-### elasticsearch.node.script.cache_evictions
-
-Total number of times the script cache has evicted old data.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | true |
-
-### elasticsearch.node.script.compilation_limit_triggered
-
-Total number of times the script compilation circuit breaker has limited inline script compilations.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | true |
-
-### elasticsearch.node.script.compilations
-
-Total number of inline script compilations performed by the node.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {compilations} | Sum | Int | Cumulative | false |
-
-### elasticsearch.node.shards.data_set.size
-
-Total data set size of all shards assigned to the node. This includes the size of shards not stored fully on the node, such as the cache for partially mounted indices.
+Size of the transaction log for an index.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | By | Sum | Int | Cumulative | false |
 
-### elasticsearch.node.shards.reserved.size
-
-A prediction of how much larger the shard stores on this node will eventually grow due to ongoing peer recoveries, restoring snapshots, and similar activities. A value of -1 indicates that this is not available.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | false |
-
-### elasticsearch.node.shards.size
-
-The size of the shards assigned to this node.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | false |
-
-### elasticsearch.node.thread_pool.tasks.finished
-
-The number of tasks finished by the thread pool.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {tasks} | Sum | Int | Cumulative | true |
-
 #### Attributes
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| thread_pool_name | The name of the thread pool. | Any Str |
-| state | The state of the task. | Str: ``rejected``, ``completed`` |
+| aggregation | Type of shard aggregation for index statistics | Str: ``primary_shards``, ``total`` |
 
-### elasticsearch.node.thread_pool.tasks.queued
+### elasticsearch.node.operations.get.completed
 
-The number of queued tasks in the thread pool.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {tasks} | Sum | Int | Cumulative | false |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| thread_pool_name | The name of the thread pool. | Any Str |
-
-### elasticsearch.node.thread_pool.threads
-
-The number of threads in the thread pool.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {threads} | Sum | Int | Cumulative | false |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| thread_pool_name | The name of the thread pool. | Any Str |
-| state | The state of the thread. | Str: ``active``, ``idle`` |
-
-### elasticsearch.node.translog.operations
-
-Number of transaction log operations.
+The number of hits and misses resulting from GET operations.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {operations} | Sum | Int | Cumulative | true |
 
-### elasticsearch.node.translog.size
-
-Size of the transaction log.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | false |
-
-### elasticsearch.node.translog.uncommitted.size
-
-Size of uncommitted transaction log operations.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | false |
-
-### elasticsearch.os.cpu.load_avg.15m
-
-Fifteen-minute load average on the system (field is not present if fifteen-minute load average is not available).
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Double |
-
-### elasticsearch.os.cpu.load_avg.1m
-
-One-minute load average on the system (field is not present if one-minute load average is not available).
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Double |
-
-### elasticsearch.os.cpu.load_avg.5m
-
-Five-minute load average on the system (field is not present if five-minute load average is not available).
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Double |
-
-### elasticsearch.os.cpu.usage
-
-Recent CPU usage for the whole system, or -1 if not supported.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| % | Gauge | Int |
-
-### elasticsearch.os.memory
-
-Amount of physical memory.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| By | Gauge | Int |
-
 #### Attributes
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| state | State of the memory | Str: ``free``, ``used`` |
+| result | Result of get operation | Str: ``hit``, ``miss`` |
 
-### jvm.classes.loaded
+### elasticsearch.node.operations.get.time
 
-The number of loaded classes
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
-
-### jvm.gc.collections.count
-
-The total number of garbage collections that have occurred
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | true |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| name | The name of the garbage collector. | Any Str |
-
-### jvm.gc.collections.elapsed
-
-The approximate accumulated collection elapsed time
+The time spent on hits and misses resulting from GET operations.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -1450,83 +959,29 @@ The approximate accumulated collection elapsed time
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| name | The name of the garbage collector. | Any Str |
+| result | Result of get operation | Str: ``hit``, ``miss`` |
 
-### jvm.memory.heap.committed
+### elasticsearch.node.segments.memory
 
-The amount of memory that is guaranteed to be available for the heap
+Size of memory for segment object of a node.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| By | Gauge | Int |
-
-### jvm.memory.heap.max
-
-The maximum amount of memory can be used for the heap
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| By | Gauge | Int |
-
-### jvm.memory.heap.used
-
-The current heap memory usage
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| By | Gauge | Int |
-
-### jvm.memory.nonheap.committed
-
-The amount of memory that is guaranteed to be available for non-heap purposes
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| By | Gauge | Int |
-
-### jvm.memory.nonheap.used
-
-The current non-heap memory usage
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| By | Gauge | Int |
-
-### jvm.memory.pool.max
-
-The maximum amount of memory can be used for the memory pool
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| By | Gauge | Int |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
 
 #### Attributes
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| name | The name of the JVM memory pool. | Any Str |
+| object | Type of object in segment | Str: ``term``, ``doc_value``, ``index_writer``, ``fixed_bit_set`` |
 
-### jvm.memory.pool.used
+### jvm.memory.heap.utilization
 
-The current memory pool memory usage
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| By | Gauge | Int |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| name | The name of the JVM memory pool. | Any Str |
-
-### jvm.threads.count
-
-The current number of threads
+Fraction of heap memory usage
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| 1 | Gauge | Double |
 
 ## Resource Attributes
 
