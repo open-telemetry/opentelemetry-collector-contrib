@@ -34,7 +34,7 @@ type Config struct {
 	ResourceToTelemetrySettings  resourcetotelemetry.Settings `mapstructure:"resource_to_telemetry_conversion"`
 
 	// ApiToken of Logicmonitor Platform
-	APIToken APIToken `mapstructure:"apitoken"`
+	APIToken APIToken `mapstructure:"api_token"`
 }
 
 type APIToken struct {
