@@ -15,20 +15,21 @@
 package kafkaexporter
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"net"
 	"testing"
 
 	"github.com/Shopify/sarama"
+	"github.com/Shopify/sarama/mocks"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-	"go.uber.org/zap/zaptest/observer"
 )
 
 // data is a simple means of allowing
@@ -53,7 +54,18 @@ func (mm *mockMarshaler[Data]) Marshal(d Data, topic string) ([]*sarama.Producer
 }
 
 func newMockMarshaler[Data data](encoding string) *mockMarshaler[Data] {
-	return &mockMarshaler[Data]{encoding: encoding}
+	return &mockMarshaler[Data]{
+		encoding: encoding,
+		consume: func(d Data, topic string) ([]*sarama.ProducerMessage, error) {
+			return []*sarama.ProducerMessage{
+				{
+					Topic: topic,
+					// message payload will simply be the marshaler's encoding to easily confirm a specific marshaler was used
+					Value: sarama.StringEncoder(encoding),
+				},
+			}, nil
+		},
+	}
 }
 
 // applyConfigOption is used to modify values of the
@@ -73,14 +85,41 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.Equal(t, "", cfg.Topic)
 }
 
+// convenience method for the TestCreate*Exporter tests
+// sets up a mock producer which validates the message payload sent by the exporter
+func mockProducerFunc(t *testing.T, expectedValue []byte) ProducerFactoryFunc {
+	// setup producer mock which validates message was encoded by the configured marshaler
+	producer := mocks.NewSyncProducer(t, nil)
+	producer.ExpectSendMessageWithMessageCheckerFunctionAndSucceed(func(pm *sarama.ProducerMessage) error {
+		valueBytes, err := pm.Value.Encode()
+		if err != nil {
+			return err
+		}
+		if !bytes.Equal(expectedValue, valueBytes) {
+			return fmt.Errorf("unexpected payload (%s) for encoding: %s", string(valueBytes), expectedValue)
+		}
+		return nil
+	})
+	return func(config Config) (sarama.SyncProducer, error) { return producer, nil }
+}
+
 func TestCreateMetricExporter(t *testing.T) {
 	t.Parallel()
 
+	// Fake metrics to export
+	metrics := pmetric.NewMetrics()
+	metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetName("test")
+
+	// default encoding of above metrics.
+	protoMetrics, err := (&pmetric.ProtoMarshaler{}).MarshalMetrics(metrics)
+	assert.NoError(t, err, "Expect no error marshaling hard-coded pmetric.Metrics")
+
 	tests := []struct {
-		name       string
-		conf       *Config
-		marshalers []MetricsMarshaler
-		err        error
+		name         string
+		conf         *Config
+		marshalers   []MetricsMarshaler
+		producerFunc ProducerFactoryFunc
+		err          error
 	}{
 		{
 			name: "valid config (no validating broker)",
@@ -91,8 +130,9 @@ func TestCreateMetricExporter(t *testing.T) {
 				conf.Brokers = []string{"invalid:9092"}
 				conf.ProtocolVersion = "2.0.0"
 			}),
-			marshalers: nil,
-			err:        nil,
+			marshalers:   nil,
+			producerFunc: newSaramaProducer,
+			err:          nil,
 		},
 		{
 			name: "invalid config (validating broker)",
@@ -100,30 +140,43 @@ func TestCreateMetricExporter(t *testing.T) {
 				conf.Brokers = []string{"invalid:9092"}
 				conf.ProtocolVersion = "2.0.0"
 			}),
-			marshalers: nil,
-			err:        &net.DNSError{},
+			marshalers:   nil,
+			producerFunc: newSaramaProducer,
+			err:          &net.DNSError{},
 		},
 		{
 			name: "default_encoding",
 			conf: applyConfigOption(func(conf *Config) {
-				// Disabling broker check to ensure encoding work
-				conf.Metadata.Full = false
-				conf.Encoding = defaultEncoding
+				// disabling queue for exporter helper so metrics go right to pusher
+				conf.QueueSettings = exporterhelper.QueueSettings{
+					Enabled: false,
+				}
+				conf.RetrySettings = exporterhelper.RetrySettings{
+					Enabled: false,
+				}
 			}),
 			marshalers: nil,
-			err:        nil,
+			// oltp_encoding
+			producerFunc: mockProducerFunc(t, protoMetrics),
+			err:          nil,
 		},
 		{
 			name: "custom_encoding",
 			conf: applyConfigOption(func(conf *Config) {
-				// Disabling broker check to ensure encoding work
-				conf.Metadata.Full = false
 				conf.Encoding = "custom"
+				// disabling queue for exporter helper so metrics go right to pusher
+				conf.QueueSettings = exporterhelper.QueueSettings{
+					Enabled: false,
+				}
+				conf.RetrySettings = exporterhelper.RetrySettings{
+					Enabled: false,
+				}
 			}),
 			marshalers: []MetricsMarshaler{
 				newMockMarshaler[pmetric.Metrics]("custom"),
 			},
-			err: nil,
+			producerFunc: mockProducerFunc(t, []byte("custom")),
+			err:          nil,
 		},
 	}
 
@@ -132,14 +185,10 @@ func TestCreateMetricExporter(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			core, observed := observer.New(zapcore.DebugLevel)
-			exporterSettings := componenttest.NewNopExporterCreateSettings()
-			exporterSettings.Logger = zap.New(core)
-
-			f := NewFactory(WithMetricsMarshalers(tc.marshalers...))
+			f := NewFactory(WithMetricsMarshalers(tc.marshalers...), WithProducerFactory(tc.producerFunc))
 			exporter, err := f.CreateMetricsExporter(
 				context.Background(),
-				exporterSettings,
+				componenttest.NewNopExporterCreateSettings(),
 				tc.conf,
 			)
 			if tc.err != nil {
@@ -150,10 +199,9 @@ func TestCreateMetricExporter(t *testing.T) {
 			assert.NoError(t, err, "Must not error")
 			assert.NotNil(t, exporter, "Must return valid exporter when no error is returned")
 
-			// confirm marshaler selected matches the encoding we asked for
-			logEntries := observed.FilterField(zap.String("encoding", tc.conf.Encoding))
-			assert.NotNil(t, logEntries)
-			assert.Equal(t, 1, logEntries.Len())
+			// sends some metrics to the exporter to see if we get the expected message for the configuration
+			err = exporter.ConsumeMetrics(context.TODO(), metrics)
+			assert.NoError(t, err, "exporter should not error if the expected message is produced")
 		})
 	}
 }
@@ -161,11 +209,20 @@ func TestCreateMetricExporter(t *testing.T) {
 func TestCreateLogExporter(t *testing.T) {
 	t.Parallel()
 
+	// Fake logs to export
+	logs := plog.NewLogs()
+	logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("test")
+
+	// default encoding of above logs.
+	protoLogs, err := (&plog.ProtoMarshaler{}).MarshalLogs(logs)
+	assert.NoError(t, err, "Expect no error marshaling hard-coded plog.Logs")
+
 	tests := []struct {
-		name       string
-		conf       *Config
-		marshalers []LogsMarshaler
-		err        error
+		name         string
+		conf         *Config
+		marshalers   []LogsMarshaler
+		producerFunc ProducerFactoryFunc
+		err          error
 	}{
 		{
 			name: "valid config (no validating broker)",
@@ -176,8 +233,9 @@ func TestCreateLogExporter(t *testing.T) {
 				conf.Brokers = []string{"invalid:9092"}
 				conf.ProtocolVersion = "2.0.0"
 			}),
-			marshalers: nil,
-			err:        nil,
+			marshalers:   nil,
+			producerFunc: newSaramaProducer,
+			err:          nil,
 		},
 		{
 			name: "invalid config (validating broker)",
@@ -185,26 +243,39 @@ func TestCreateLogExporter(t *testing.T) {
 				conf.Brokers = []string{"invalid:9092"}
 				conf.ProtocolVersion = "2.0.0"
 			}),
-			marshalers: nil,
-			err:        &net.DNSError{},
+			marshalers:   nil,
+			producerFunc: newSaramaProducer,
+			err:          &net.DNSError{},
 		},
 		{
 			name: "default_encoding",
 			conf: applyConfigOption(func(conf *Config) {
-				// Disabling broker check to ensure encoding work
-				conf.Metadata.Full = false
+				// disabling queue for exporter helper so metrics go right to pusher
+				conf.QueueSettings = exporterhelper.QueueSettings{
+					Enabled: false,
+				}
+				conf.RetrySettings = exporterhelper.RetrySettings{
+					Enabled: false,
+				}
 				conf.Encoding = defaultEncoding
 			}),
-			marshalers: nil,
-			err:        nil,
+			marshalers:   nil,
+			producerFunc: mockProducerFunc(t, protoLogs),
+			err:          nil,
 		},
 		{
 			name: "custom_encoding",
 			conf: applyConfigOption(func(conf *Config) {
-				// Disabling broker check to ensure encoding work
-				conf.Metadata.Full = false
+				// disabling queue for exporter helper so metrics go right to pusher
+				conf.QueueSettings = exporterhelper.QueueSettings{
+					Enabled: false,
+				}
+				conf.RetrySettings = exporterhelper.RetrySettings{
+					Enabled: false,
+				}
 				conf.Encoding = "custom"
 			}),
+			producerFunc: mockProducerFunc(t, []byte("custom")),
 			marshalers: []LogsMarshaler{
 				newMockMarshaler[plog.Logs]("custom"),
 			},
@@ -217,14 +288,10 @@ func TestCreateLogExporter(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			core, observed := observer.New(zapcore.DebugLevel)
-			exporterSettings := componenttest.NewNopExporterCreateSettings()
-			exporterSettings.Logger = zap.New(core)
-
-			f := NewFactory(WithLogsMarshalers(tc.marshalers...))
+			f := NewFactory(WithLogsMarshalers(tc.marshalers...), WithProducerFactory(tc.producerFunc))
 			exporter, err := f.CreateLogsExporter(
 				context.Background(),
-				exporterSettings,
+				componenttest.NewNopExporterCreateSettings(),
 				tc.conf,
 			)
 			if tc.err != nil {
@@ -235,10 +302,9 @@ func TestCreateLogExporter(t *testing.T) {
 			assert.NoError(t, err, "Must not error")
 			assert.NotNil(t, exporter, "Must return valid exporter when no error is returned")
 
-			// confirm marshaler selected matches the encoding we asked for
-			logEntries := observed.FilterField(zap.String("encoding", tc.conf.Encoding))
-			assert.NotNil(t, logEntries)
-			assert.Equal(t, 1, logEntries.Len())
+			// sends some logs to the exporter to see if we get the expected message for the configuration
+			err = exporter.ConsumeLogs(context.TODO(), logs)
+			assert.NoError(t, err, "exporter should not error if the expected message is produced")
 		})
 	}
 }
@@ -246,11 +312,20 @@ func TestCreateLogExporter(t *testing.T) {
 func TestCreateTraceExporter(t *testing.T) {
 	t.Parallel()
 
+	// fake traces for export
+	traces := ptrace.NewTraces()
+	traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetName("testSpan")
+
+	// default encoding of above logs.
+	protoTraces, err := (&ptrace.ProtoMarshaler{}).MarshalTraces(traces)
+	assert.NoError(t, err, "Expect no error marshaling hard-coded ptrace.Traces")
+
 	tests := []struct {
-		name       string
-		conf       *Config
-		marshalers []TracesMarshaler
-		err        error
+		name         string
+		conf         *Config
+		marshalers   []TracesMarshaler
+		producerFunc ProducerFactoryFunc
+		err          error
 	}{
 		{
 			name: "valid config (no validating brokers)",
@@ -259,8 +334,9 @@ func TestCreateTraceExporter(t *testing.T) {
 				conf.Brokers = []string{"invalid:9092"}
 				conf.ProtocolVersion = "2.0.0"
 			}),
-			marshalers: nil,
-			err:        nil,
+			marshalers:   nil,
+			producerFunc: newSaramaProducer,
+			err:          nil,
 		},
 		{
 			name: "invalid config (validating brokers)",
@@ -268,30 +344,43 @@ func TestCreateTraceExporter(t *testing.T) {
 				conf.Brokers = []string{"invalid:9092"}
 				conf.ProtocolVersion = "2.0.0"
 			}),
-			marshalers: nil,
-			err:        &net.DNSError{},
+			marshalers:   nil,
+			producerFunc: newSaramaProducer,
+			err:          &net.DNSError{},
 		},
 		{
 			name: "default_encoding",
 			conf: applyConfigOption(func(conf *Config) {
-				// Disabling broker check to ensure encoding work
-				conf.Metadata.Full = false
+				// disabling queue for exporter helper so metrics go right to pusher
+				conf.QueueSettings = exporterhelper.QueueSettings{
+					Enabled: false,
+				}
+				conf.RetrySettings = exporterhelper.RetrySettings{
+					Enabled: false,
+				}
 				conf.Encoding = defaultEncoding
 			}),
-			marshalers: nil,
-			err:        nil,
+			marshalers:   nil,
+			producerFunc: mockProducerFunc(t, protoTraces),
+			err:          nil,
 		},
 		{
 			name: "custom_encoding",
 			conf: applyConfigOption(func(conf *Config) {
-				// Disabling broker check to ensure encoding work
-				conf.Metadata.Full = false
+				// disabling queue for exporter helper so metrics go right to pusher
+				conf.QueueSettings = exporterhelper.QueueSettings{
+					Enabled: false,
+				}
+				conf.RetrySettings = exporterhelper.RetrySettings{
+					Enabled: false,
+				}
 				conf.Encoding = "custom"
 			}),
 			marshalers: []TracesMarshaler{
 				newMockMarshaler[ptrace.Traces]("custom"),
 			},
-			err: nil,
+			producerFunc: mockProducerFunc(t, []byte("custom")),
+			err:          nil,
 		},
 	}
 
@@ -300,14 +389,10 @@ func TestCreateTraceExporter(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			core, observed := observer.New(zapcore.DebugLevel)
-			exporterSettings := componenttest.NewNopExporterCreateSettings()
-			exporterSettings.Logger = zap.New(core)
-
-			f := NewFactory(WithTracesMarshalers(tc.marshalers...))
+			f := NewFactory(WithTracesMarshalers(tc.marshalers...), WithProducerFactory(tc.producerFunc))
 			exporter, err := f.CreateTracesExporter(
 				context.Background(),
-				exporterSettings,
+				componenttest.NewNopExporterCreateSettings(),
 				tc.conf,
 			)
 			if tc.err != nil {
@@ -318,10 +403,9 @@ func TestCreateTraceExporter(t *testing.T) {
 			assert.NoError(t, err, "Must not error")
 			assert.NotNil(t, exporter, "Must return valid exporter when no error is returned")
 
-			// confirm marshaler selected matches the encoding we asked for
-			logEntries := observed.FilterField(zap.String("encoding", tc.conf.Encoding))
-			assert.NotNil(t, logEntries)
-			assert.Equal(t, 1, logEntries.Len())
+			// sends some traces to the exporter to see if we get the expected message for the configuration
+			err = exporter.ConsumeTraces(context.TODO(), traces)
+			assert.NoError(t, err, "exporter should not error if the expected message is produced")
 		})
 	}
 }
