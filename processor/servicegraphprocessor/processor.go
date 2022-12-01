@@ -130,6 +130,7 @@ func (p *processor) Start(_ context.Context, host component.Host) error {
 	go p.storeExpirationLoop(2 * time.Second)
 
 	p.logger.Info("Started servicegraphprocessor")
+	p.logger.Warn("Servicegraphprocessor has a breaking change in the next release, please refer to README!")
 	return nil
 }
 
@@ -260,6 +261,9 @@ func (p *processor) upsertDimensions(kind string, m map[string]string, resourceA
 	for _, dim := range p.config.Dimensions {
 		if v, ok := findAttributeValue(dim, resourceAttr, spanAttr); ok {
 			m[kind+"_"+dim] = v
+
+			// next release will remove those dimensions
+			m[dim] = v
 		}
 	}
 }
