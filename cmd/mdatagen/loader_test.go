@@ -74,7 +74,7 @@ func Test_loadMetadata(t *testing.T) {
 						Unit:                  "s",
 						Sum: &sum{
 							MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeDouble},
-							Aggregated:      Aggregated{Aggregation: "cumulative"},
+							Aggregated:      Aggregated{Aggregation: pmetric.AggregationTemporalityCumulative},
 							Mono:            Mono{Monotonic: true},
 						},
 						Attributes: []attributeName{"freeFormAttribute", "freeFormAttributeWithValue", "enumAttribute", "booleanValueType"},
