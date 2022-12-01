@@ -79,8 +79,8 @@ func getResourceProcessorTestCases() []resourceProcessorTestCase {
 			expectedMetrics: func() pmetric.Metrics {
 				md := pmetric.NewMetrics()
 				rm := md.ResourceMetrics().AppendEmpty()
-				rm.Resource().Attributes().PutStr("resource-type", "host")
 				rm.Resource().Attributes().PutStr("label-key", "new-label-value")
+				rm.Resource().Attributes().PutStr("resource-type", "host")
 				return md
 			}(),
 		},
@@ -168,11 +168,12 @@ func TestMetricResourceProcessor(t *testing.T) {
 			m := tc.MockBackend.ReceivedMetrics[0]
 			rm := m.ResourceMetrics()
 			require.Equal(t, 1, rm.Len())
+			rm.At(0).Resource().Attributes().Sort()
 
 			expectidMD := test.expectedMetrics
 			require.Equal(t,
-				expectidMD.ResourceMetrics().At(0).Resource().Attributes().Sort(),
-				rm.At(0).Resource().Attributes().Sort(),
+				expectidMD.ResourceMetrics().At(0).Resource().Attributes(),
+				rm.At(0).Resource().Attributes(),
 			)
 		})
 	}
