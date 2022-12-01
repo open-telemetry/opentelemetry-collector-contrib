@@ -469,6 +469,13 @@ func Test_ProcessMetrics_DataPointContext(t *testing.T) {
 				v01.AppendEmpty().SetStr("C")
 			},
 		},
+		{
+			statements: []string{`merge_maps(attributes, ParseJSON("{\"json_test\":\"pass\"}"), "insert") where metric.name == "operationA"`},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutStr("json_test", "pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutStr("json_test", "pass")
+			},
+		},
 	}
 
 	for _, tt := range tests {
