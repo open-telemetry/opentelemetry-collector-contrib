@@ -36,7 +36,7 @@ const (
 // The timestamps used for the tests
 var tsUnix = time.Unix(time.Now().Unix(), time.Now().UnixNano())
 var ts = pcommon.NewTimestampFromTime(tsUnix)
-var tstr = ts.AsTime().Format(time.RFC3339)
+var tstr = ts.AsTime().Format(time.RFC3339Nano)
 
 // the histogram values and distribution for the tests
 var distributionBounds = []float64{1, 2, 4}
