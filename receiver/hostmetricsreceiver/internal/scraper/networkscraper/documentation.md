@@ -97,77 +97,18 @@ metrics:
     enabled: true
 ```
 
-### system.network.connections
+### system.network.conntrack.count
 
-The number of connections.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {connections} | Sum | Int | Cumulative | false |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| protocol | Network protocol, e.g. TCP or UDP. | Str: ``tcp`` |
-| state | State of the network connection. | Any Str |
-
-### system.network.dropped
-
-The number of packets dropped.
+The count of entries in conntrack table.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| {packets} | Sum | Int | Cumulative | true |
+| {entries} | Sum | Int | Cumulative | false |
 
-#### Attributes
+### system.network.conntrack.max
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| device | Name of the network interface. | Any Str |
-| direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` |
-
-### system.network.errors
-
-The number of errors encountered.
+The limit for entries in the conntrack table.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| {errors} | Sum | Int | Cumulative | true |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| device | Name of the network interface. | Any Str |
-| direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` |
-
-### system.network.io
-
-The number of bytes transmitted and received.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | true |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| device | Name of the network interface. | Any Str |
-| direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` |
-
-### system.network.packets
-
-The number of packets transferred.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {packets} | Sum | Int | Cumulative | true |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| device | Name of the network interface. | Any Str |
-| direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` |
+| {entries} | Sum | Int | Cumulative | false |
