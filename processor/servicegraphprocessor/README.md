@@ -6,7 +6,7 @@
 | Supported pipeline types | traces    |
 | Distributions            | [contrib] |
 
-> note: The labels of service graph metrics emitted by this processor have a breaking change in the next release, refer [Edge loss attributes from client-side or server-side](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16002)
+> note: The labels of service graph metrics emitted by this processor have a breaking change, the previous labels set will deprecate in the next release, refer [Edge loss attributes from client-side or server-side](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16002)
 
 The service graphs processor is a traces processor that builds a map representing the interrelationships between various services in a system.
 The processor will analyse trace data and generate metrics describing the relationship between the services.
