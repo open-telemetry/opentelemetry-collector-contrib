@@ -16,9 +16,9 @@ package azureeventhubreceiver // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"bytes"
-	"encoding/json"
 	"strconv"
 
+	jsoniter "github.com/json-iterator/go"
 	"github.com/relvacode/iso8601"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -159,7 +159,7 @@ func transform(buildInfo component.BuildInfo, data []byte) (plog.Logs, error) {
 	l := plog.NewLogs()
 
 	var azureLogs azureRecords
-	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder := jsoniter.NewDecoder(bytes.NewReader(data))
 	if err := decoder.Decode(&azureLogs); err != nil {
 		return l, err
 	}
