@@ -65,7 +65,7 @@ and the OpenTelemetry attributes.
 
 | Azure                            | OpenTelemetry                          | 
 |----------------------------------|----------------------------------------|
-| callerIpAddress (optional)       | net.sock.peer.addr (attribute)         | 
+| callerIpAddress (optional)       | net.peer.ip (attribute)                | 
 | correlationId (optional)         | azure.correlation.id (attribute)       | 
 | category (optional)              | azure.category (attribute)             | 
 | durationMs (optional)            | azure.duration (attribute)             | 

@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 )
 
 const azureCategory = "azure.category"
@@ -37,11 +38,6 @@ const azureResultType = "azure.result.type"
 const azureResultSignature = "azure.result.signature"
 const azureResultDescription = "azure.result.description"
 const azureTenantID = "azure.tenant.id"
-
-const cloudProvider = "cloud.provider"
-const cloudRegion = "cloud.region"
-
-const netSockPeerAddr = "net.sock.peer.addr"
 
 const receiverScopeName = "otelcol/" + typeStr
 
@@ -140,11 +136,10 @@ func extractRawAttributes(log azureLogRecord) map[string]interface{} {
 	setIf(attrs, azureResultType, log.ResultType)
 	setIf(attrs, azureTenantID, log.TenantID)
 
-	setIf(attrs, cloudRegion, log.Location)
-	attrs[cloudProvider] = "azure"
+	setIf(attrs, conventions.AttributeCloudRegion, log.Location)
+	attrs[conventions.AttributeCloudProvider] = conventions.AttributeCloudProviderAzure
 
-	setIf(attrs, netSockPeerAddr, log.CallerIPAddress)
-
+	setIf(attrs, conventions.AttributeNetPeerIP, log.CallerIPAddress)
 	return attrs
 }
 

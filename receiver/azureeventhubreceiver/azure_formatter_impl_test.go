@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 )
 
 var testBuildInfo = component.BuildInfo{
@@ -38,7 +39,7 @@ var minimumLogRecord = func() plog.LogRecord {
 	lr.SetTimestamp(ts)
 	lr.Attributes().PutStr(azureOperationName, "SecretGet")
 	lr.Attributes().PutStr(azureCategory, "AuditEvent")
-	lr.Attributes().PutStr(cloudProvider, "azure")
+	lr.Attributes().PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAzure)
 	lr.Attributes().Sort()
 	return lr
 }()
@@ -61,9 +62,9 @@ var maximumLogRecord = func() plog.LogRecord {
 	lr.Attributes().PutStr(azureResultSignature, "Signature")
 	lr.Attributes().PutStr(azureResultDescription, "Description")
 	lr.Attributes().PutInt(azureDuration, 1234)
-	lr.Attributes().PutStr(netSockPeerAddr, "127.0.0.1")
-	lr.Attributes().PutStr(cloudRegion, "ukso")
-	lr.Attributes().PutStr(cloudProvider, "azure")
+	lr.Attributes().PutStr(conventions.AttributeNetPeerIP, "127.0.0.1")
+	lr.Attributes().PutStr(conventions.AttributeCloudRegion, "ukso")
+	lr.Attributes().PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAzure)
 
 	lr.Attributes().PutEmptyMap(azureIdentity).PutEmptyMap("claim").PutStr("oid", "607964b6-41a5-4e24-a5db-db7aab3b9b34")
 	m := lr.Attributes().PutEmptyMap(azureProperties)
@@ -165,9 +166,9 @@ func TestExtractRawAttributes(t *testing.T) {
 				DurationMs:    &badDuration,
 			},
 			expected: map[string]interface{}{
-				azureOperationName: "operation.name",
-				azureCategory:      "category",
-				cloudProvider:      "azure",
+				azureOperationName:                 "operation.name",
+				azureCategory:                      "category",
+				conventions.AttributeCloudProvider: conventions.AttributeCloudProviderAzure,
 			},
 		},
 		{
@@ -180,9 +181,9 @@ func TestExtractRawAttributes(t *testing.T) {
 				DurationMs:    &badDuration,
 			},
 			expected: map[string]interface{}{
-				azureOperationName: "operation.name",
-				azureCategory:      "category",
-				cloudProvider:      "azure",
+				azureOperationName:                 "operation.name",
+				azureCategory:                      "category",
+				conventions.AttributeCloudProvider: conventions.AttributeCloudProviderAzure,
 			},
 		},
 		{
@@ -206,20 +207,20 @@ func TestExtractRawAttributes(t *testing.T) {
 				Properties:        &properties,
 			},
 			expected: map[string]interface{}{
-				azureTenantID:          "tenant.id",
-				azureOperationName:     "operation.name",
-				azureOperationVersion:  "operation.version",
-				azureCategory:          "category",
-				azureCorrelationID:     correlationID,
-				azureResultType:        "result.type",
-				azureResultSignature:   "result.signature",
-				azureResultDescription: "result.description",
-				azureDuration:          int64(1234),
-				netSockPeerAddr:        "127.0.0.1",
-				azureIdentity:          "someone",
-				cloudRegion:            "location",
-				cloudProvider:          "azure",
-				azureProperties:        properties,
+				azureTenantID:                      "tenant.id",
+				azureOperationName:                 "operation.name",
+				azureOperationVersion:              "operation.version",
+				azureCategory:                      "category",
+				azureCorrelationID:                 correlationID,
+				azureResultType:                    "result.type",
+				azureResultSignature:               "result.signature",
+				azureResultDescription:             "result.description",
+				azureDuration:                      int64(1234),
+				conventions.AttributeNetPeerIP:     "127.0.0.1",
+				azureIdentity:                      "someone",
+				conventions.AttributeCloudRegion:   "location",
+				conventions.AttributeCloudProvider: conventions.AttributeCloudProviderAzure,
+				azureProperties:                    properties,
 			},
 		},
 	}
