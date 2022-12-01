@@ -58,17 +58,35 @@ metrics:
     enabled: true
 ```
 
-### ntp.skew
+### ntp.frequency.offset
 
-This is the estimated error bound on the frequency.
+The frequency is the rate by which the system s clock would be wrong if chronyd was not correcting it.
+
+It is expressed in ppm (parts per million). For example, a value of 1 ppm would mean that when the system’s clock thinks it has advanced 1 second, it has actually advanced by 1.000001 seconds relative to true time.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | ppm | Gauge | Double |
 
-### ntp.time.correction
+#### Attributes
 
-The number of seconds difference between the system's clock and the reference clock
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| leap.status | how the chrony is handling leap seconds | Str: ``normal``, ``insert_second``, ``delete_second``, ``unsynchronised`` |
+
+### ntp.stratum
+
+The number of hops away from the reference system keeping the reference time
+
+To read further, refer to https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/system_administrators_guide/ch-configuring_ntp_using_the_chrony_suite#sect-Checking_chrony_tracking
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {count} | Gauge | Int |
+
+### ntp.time.rms_offset
+
+the long term average of the offset value
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -80,9 +98,9 @@ The number of seconds difference between the system's clock and the reference cl
 | ---- | ----------- | ------ |
 | leap.status | how the chrony is handling leap seconds | Str: ``normal``, ``insert_second``, ``delete_second``, ``unsynchronised`` |
 
-### ntp.time.last_offset
+### ntp.time.root_delay
 
-The estimated local offset on the last clock update
+This is the total of the network path delays to the stratum-1 system from which the system is ultimately synchronised.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |

@@ -33,35 +33,3 @@ Total number of created processes.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {processes} | Sum | Int | Cumulative | true |
-
-## Optional Metrics
-
-The following metrics are not emitted by default. Each of them can be enabled by applying the following configuration:
-
-```yaml
-metrics:
-  <metric_name>:
-    enabled: true
-```
-
-### system.processes.count
-
-Total number of processes in each state.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {processes} | Sum | Int | Cumulative | false |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| status | Breakdown status of the processes. | Str: ``blocked``, ``daemon``, ``detached``, ``idle``, ``locked``, ``orphan``, ``paging``, ``running``, ``sleeping``, ``stopped``, ``system``, ``unknown``, ``zombies`` |
-
-### system.processes.created
-
-Total number of created processes.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {processes} | Sum | Int | Cumulative | true |

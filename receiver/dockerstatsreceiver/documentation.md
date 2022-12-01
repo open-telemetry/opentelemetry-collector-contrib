@@ -160,15 +160,15 @@ metrics:
     enabled: true
 ```
 
-### container.blockio.io_service_bytes_recursive
+### container.blockio.io_merged_recursive
 
-Number of bytes transferred to/from the disk by the group and descendant groups.
+Number of bios/requests merged into requests belonging to this cgroup and its descendant cgroups.
 
 [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt).
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | true |
+| {operations} | Sum | Int | Cumulative | true |
 
 #### Attributes
 
@@ -178,77 +178,453 @@ Number of bytes transferred to/from the disk by the group and descendant groups.
 | device_minor | Device minor number for block IO operations. | Any Str |
 | operation | Type of BlockIO operation. | Any Str |
 
-### container.cpu.percent
+### container.blockio.io_queued_recursive
 
-Percent of CPU used by the container.
+Number of requests queued up for this cgroup and its descendant cgroups.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Double |
+[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt).
 
-### container.cpu.usage.kernelmode
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {operations} | Sum | Int | Cumulative | true |
 
-Time spent by tasks of the cgroup in kernel mode (Linux).  Time spent by all container processes in kernel mode (Windows).
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| device_major | Device major number for block IO operations. | Any Str |
+| device_minor | Device minor number for block IO operations. | Any Str |
+| operation | Type of BlockIO operation. | Any Str |
+
+### container.blockio.io_service_time_recursive
+
+Total amount of time in nanoseconds between request dispatch and request completion for the IOs done by this cgroup and descendant cgroups.
+
+[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt).
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | ns | Sum | Int | Cumulative | true |
 
-### container.cpu.usage.total
+#### Attributes
 
-Total CPU time consumed.
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| device_major | Device major number for block IO operations. | Any Str |
+| device_minor | Device minor number for block IO operations. | Any Str |
+| operation | Type of BlockIO operation. | Any Str |
+
+### container.blockio.io_serviced_recursive
+
+Number of IOs (bio) issued to the disk by the group and descendant groups.
+
+[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt).
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {operations} | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| device_major | Device major number for block IO operations. | Any Str |
+| device_minor | Device minor number for block IO operations. | Any Str |
+| operation | Type of BlockIO operation. | Any Str |
+
+### container.blockio.io_time_recursive
+
+Disk time allocated to cgroup (and descendant cgroups) per device in milliseconds.
+
+[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt).
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| ms | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| device_major | Device major number for block IO operations. | Any Str |
+| device_minor | Device minor number for block IO operations. | Any Str |
+| operation | Type of BlockIO operation. | Any Str |
+
+### container.blockio.io_wait_time_recursive
+
+Total amount of time the IOs for this cgroup (and descendant cgroups) spent waiting in the scheduler queues for service.
+
+[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt).
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | ns | Sum | Int | Cumulative | true |
 
-### container.cpu.usage.usermode
+#### Attributes
 
-Time spent by tasks of the cgroup in user mode (Linux).  Time spent by all container processes in user mode (Windows).
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| device_major | Device major number for block IO operations. | Any Str |
+| device_minor | Device minor number for block IO operations. | Any Str |
+| operation | Type of BlockIO operation. | Any Str |
+
+### container.blockio.sectors_recursive
+
+Number of sectors transferred to/from disk by the group and descendant groups.
+
+[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt).
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {sectors} | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| device_major | Device major number for block IO operations. | Any Str |
+| device_minor | Device minor number for block IO operations. | Any Str |
+| operation | Type of BlockIO operation. | Any Str |
+
+### container.cpu.throttling_data.periods
+
+Number of periods with throttling active.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {periods} | Sum | Int | Cumulative | true |
+
+### container.cpu.throttling_data.throttled_periods
+
+Number of periods when the container hits its throttling limit.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {periods} | Sum | Int | Cumulative | true |
+
+### container.cpu.throttling_data.throttled_time
+
+Aggregate time the container was throttled.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | ns | Sum | Int | Cumulative | true |
 
-### container.memory.percent
+### container.cpu.usage.percpu
 
-Percentage of memory used.
+Per-core CPU usage by the container.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Double |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| ns | Sum | Int | Cumulative | true |
 
-### container.memory.total_cache
+#### Attributes
 
-Total amount of memory used by the processes of this cgroup (and descendants) that can be associated with a block on a block device. Also accounts for memory used by tmpfs.
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| core | The CPU core number when utilising per-CPU metrics. | Any Str |
+
+### container.cpu.usage.system
+
+System CPU usage, as reported by docker.
+
+Note this is the usage for the system, not the container.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| ns | Sum | Int | Cumulative | true |
+
+### container.memory.active_anon
+
+The amount of anonymous memory that has been identified as active by the kernel.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | By | Sum | Int | Cumulative | false |
 
-### container.memory.usage.limit
+### container.memory.active_file
 
-Memory limit of the container.
+Cache memory that has been identified as active by the kernel.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | false |
-
-### container.memory.usage.total
-
-Memory usage of the container. This excludes the total cache.
+[More docs](https://docs.docker.com/config/containers/runmetrics/)
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | By | Sum | Int | Cumulative | false |
 
-### container.network.io.usage.rx_bytes
+### container.memory.cache
 
-Bytes received by the container.
+The amount of memory used by the processes of this control group that can be associated precisely with a block on a block device.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | true |
+| By | Sum | Int | Cumulative | false |
+
+### container.memory.dirty
+
+Bytes that are waiting to get written back to the disk, from this cgroup.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### container.memory.hierarchical_memory_limit
+
+The maximum amount of physical memory that can be used by the processes of this control group.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### container.memory.hierarchical_memsw_limit
+
+The maximum amount of RAM + swap that can be used by the processes of this control group.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### container.memory.inactive_anon
+
+The amount of anonymous memory that has been identified as inactive by the kernel.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### container.memory.inactive_file
+
+Cache memory that has been identified as inactive by the kernel.
+
+[More docs](https://docs.docker.com/config/containers/runmetrics/)
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### container.memory.mapped_file
+
+Indicates the amount of memory mapped by the processes in the control group.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### container.memory.pgfault
+
+Indicate the number of times that a process of the cgroup triggered a page fault.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {faults} | Sum | Int | Cumulative | true |
+
+### container.memory.pgmajfault
+
+Indicate the number of times that a process of the cgroup triggered a major fault.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {faults} | Sum | Int | Cumulative | true |
+
+### container.memory.pgpgin
+
+Number of pages read from disk by the cgroup.
+
+[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/memory.txt).
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {operations} | Sum | Int | Cumulative | true |
+
+### container.memory.pgpgout
+
+Number of pages written to disk by the cgroup.
+
+[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/memory.txt).
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {operations} | Sum | Int | Cumulative | true |
+
+### container.memory.rss
+
+The amount of memory that doesn’t correspond to anything on disk: stacks, heaps, and anonymous memory maps.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### container.memory.rss_huge
+
+Number of bytes of anonymous transparent hugepages in this cgroup.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### container.memory.swap
+
+The amount of swap currently used by the processes in this cgroup.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### container.memory.total_active_anon
+
+The amount of anonymous memory that has been identified as active by the kernel. Includes descendant cgroups.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### container.memory.total_active_file
+
+Cache memory that has been identified as active by the kernel. Includes descendant cgroups.
+
+[More docs](https://docs.docker.com/config/containers/runmetrics/).
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### container.memory.total_dirty
+
+Bytes that are waiting to get written back to the disk, from this cgroup and descendants.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### container.memory.total_inactive_anon
+
+The amount of anonymous memory that has been identified as inactive by the kernel. Includes descendant cgroups.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### container.memory.total_inactive_file
+
+Cache memory that has been identified as inactive by the kernel. Includes descendant cgroups.
+
+[More docs](https://docs.docker.com/config/containers/runmetrics/).
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### container.memory.total_mapped_file
+
+Indicates the amount of memory mapped by the processes in the control group and descendant groups.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### container.memory.total_pgfault
+
+Indicate the number of times that a process of the cgroup (or descendant cgroups) triggered a page fault.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {faults} | Sum | Int | Cumulative | true |
+
+### container.memory.total_pgmajfault
+
+Indicate the number of times that a process of the cgroup (or descendant cgroups) triggered a major fault.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {faults} | Sum | Int | Cumulative | true |
+
+### container.memory.total_pgpgin
+
+Number of pages read from disk by the cgroup and descendant groups.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {operations} | Sum | Int | Cumulative | true |
+
+### container.memory.total_pgpgout
+
+Number of pages written to disk by the cgroup and descendant groups.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {operations} | Sum | Int | Cumulative | true |
+
+### container.memory.total_rss
+
+The amount of memory that doesn’t correspond to anything on disk: stacks, heaps, and anonymous memory maps. Includes descendant cgroups.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### container.memory.total_rss_huge
+
+Number of bytes of anonymous transparent hugepages in this cgroup and descendant cgroups.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### container.memory.total_swap
+
+The amount of swap currently used by the processes in this cgroup and descendant groups.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### container.memory.total_unevictable
+
+The amount of memory that cannot be reclaimed. Includes descendant cgroups.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### container.memory.total_writeback
+
+Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup and descendants.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### container.memory.unevictable
+
+The amount of memory that cannot be reclaimed.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### container.memory.usage.max
+
+Maximum memory usage.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### container.memory.writeback
+
+Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### container.network.io.usage.rx_errors
+
+Received errors.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {errors} | Sum | Int | Cumulative | true |
 
 #### Attributes
 
@@ -256,9 +632,9 @@ Bytes received by the container.
 | ---- | ----------- | ------ |
 | interface | Network interface. | Any Str |
 
-### container.network.io.usage.rx_dropped
+### container.network.io.usage.rx_packets
 
-Incoming packets dropped.
+Packets received.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -270,13 +646,13 @@ Incoming packets dropped.
 | ---- | ----------- | ------ |
 | interface | Network interface. | Any Str |
 
-### container.network.io.usage.tx_bytes
+### container.network.io.usage.tx_errors
 
-Bytes sent.
+Sent errors.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | true |
+| {errors} | Sum | Int | Cumulative | true |
 
 #### Attributes
 
@@ -284,9 +660,9 @@ Bytes sent.
 | ---- | ----------- | ------ |
 | interface | Network interface. | Any Str |
 
-### container.network.io.usage.tx_dropped
+### container.network.io.usage.tx_packets
 
-Outgoing packets dropped.
+Packets sent.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |

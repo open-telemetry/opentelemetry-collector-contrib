@@ -8,4 +8,4 @@ component: cmd/mdatagen
 note: Improve generated documentation
 
 # One or more tracking issues related to the change
-issues: [16556]
+issues: [16556, 16563]

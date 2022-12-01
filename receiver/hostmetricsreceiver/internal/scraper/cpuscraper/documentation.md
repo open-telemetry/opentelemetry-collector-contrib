@@ -37,13 +37,13 @@ metrics:
     enabled: true
 ```
 
-### system.cpu.time
+### system.cpu.utilization
 
-Total CPU seconds broken down by different states.
+Percentage of CPU time broken down by different states.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| s | Sum | Double | Cumulative | true |
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
 
 #### Attributes
 
