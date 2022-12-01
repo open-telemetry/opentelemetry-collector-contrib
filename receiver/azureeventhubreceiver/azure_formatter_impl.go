@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.13.0"
 )
 
 const azureCategory = "azure.category"
@@ -139,7 +139,7 @@ func extractRawAttributes(log azureLogRecord) map[string]interface{} {
 	setIf(attrs, conventions.AttributeCloudRegion, log.Location)
 	attrs[conventions.AttributeCloudProvider] = conventions.AttributeCloudProviderAzure
 
-	setIf(attrs, conventions.AttributeNetPeerIP, log.CallerIPAddress)
+	setIf(attrs, conventions.AttributeNetSockPeerAddr, log.CallerIPAddress)
 	return attrs
 }
 
