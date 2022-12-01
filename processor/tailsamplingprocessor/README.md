@@ -173,7 +173,7 @@ Refer to [tail_sampling_config.yaml](./testdata/tail_sampling_config.yaml) for d
 
 This processor requires all spans for a given trace to be sent to the same collector instance for the correct sampling decision to be derived. When scaling the collector, you'll then need to ensure that all spans for the same trace are reaching the same collector. You can achieve this by having two layers of collectors in your infrastructure: one with the [load balancing exporter][loadbalancing_exporter], and one with the tail sampling processor.
 
-While it's technically possible to have one layer of collectors with two pipelines on each instance, we recommend separating the layers phisically in order to have better failure isolation.
+While it's technically possible to have one layer of collectors with two pipelines on each instance, we recommend separating the layers in order to have better failure isolation.
 
 ### Probabilistic Sampling Processor compared to the Tail Sampling Processor with the Probabilistic policy
 
