@@ -140,7 +140,7 @@ func TestScraperNoNodesMetrics(t *testing.T) {
 	mockClient := mocks.MockElasticsearchClient{}
 	mockClient.On("ClusterMetadata", mock.Anything).Return(clusterMetadata(t), nil)
 	mockClient.On("ClusterHealth", mock.Anything).Return(clusterHealth(t), nil)
-	mockClient.On("ClusterStats", mock.Anything, []string{"_all"}).Return(clusterStats(t), nil)
+	mockClient.On("ClusterStats", mock.Anything, []string{}).Return(clusterStats(t), nil)
 	mockClient.On("NodeStats", mock.Anything, []string{}).Return(nodeStats(t), nil)
 	mockClient.On("IndexStats", mock.Anything, []string{"_all"}).Return(indexStats(t), nil)
 

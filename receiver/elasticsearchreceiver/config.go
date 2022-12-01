@@ -47,10 +47,6 @@ type Config struct {
 	// See https://www.elastic.co/guide/en/elasticsearch/reference/7.9/cluster.html#cluster-nodes for which selectors may be used here.
 	// If Nodes is empty, no nodes will be scraped.
 	Nodes []string `mapstructure:"nodes"`
-	// ClusterNodes defines the nodes to scrape from /_cluster/stats endpoint.
-	// See https://www.elastic.co/guide/en/elasticsearch/reference/7.9/cluster.html#cluster-nodes for which selectors may be used here.
-	// If ClusterNodes is empty, no nodes will be scraped.
-	ClusterMetricsNodes []string `mapstructure:"cluster_metrics_nodes"`
 	// SkipClusterMetrics indicates whether cluster level metrics from /_cluster/* endpoints should be scraped or not.
 	SkipClusterMetrics bool `mapstructure:"skip_cluster_metrics"`
 	// Indices defines the indices to scrape.

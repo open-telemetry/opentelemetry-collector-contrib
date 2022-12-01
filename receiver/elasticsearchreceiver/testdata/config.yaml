@@ -4,7 +4,6 @@ elasticsearch:
     elasticsearch.node.fs.disk.available:
       enabled: false
   nodes: [ "_local" ]
-  cluster_metrics_nodes: ["_local2"]
   skip_cluster_metrics: true
   indices: [ ".geoip_databases" ]
   endpoint: http://example.com:9200
