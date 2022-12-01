@@ -50,13 +50,13 @@ attributes:
     enum: [system, user, wait]
 
   paging_fault_type:
-    value: type
+    name_override: type
     description: Type of memory paging fault.
     type: string
     enum: [major, minor]
 
   context_switch_type:
-    value: type
+    name_override: type
     description: Type of context switched.
     type: string
     enum: [involuntary, voluntary]

@@ -27,7 +27,7 @@ const (
 name: metricreceiver
 attributes:
   cpu_type:
-    value: type
+    name_override: type
     description: The type of CPU consumption
     type: string
     enum:
