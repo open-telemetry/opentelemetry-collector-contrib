@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver/internal/array"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver/internal"
 )
 
 var _ component.Config = (*Config)(nil)
@@ -35,7 +35,10 @@ type Config struct {
 	Settings *Settings `mapstructure:"settings"`
 
 	// Arrays represents the list of arrays to query
-	Arrays []array.Config `mapstructure:"arrays"`
+	Arrays []internal.ScraperConfig `mapstructure:"arrays"`
+
+	// Hosts represents the list of hosts to query
+	Hosts []internal.ScraperConfig `mapstructure:"hosts"`
 }
 
 type Settings struct {
@@ -44,6 +47,7 @@ type Settings struct {
 
 type ReloadIntervals struct {
 	Array time.Duration `mapstructure:"array"`
+	Host  time.Duration `mapstructure:"host"`
 }
 
 func (c *Config) Validate() error {

@@ -12,24 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package array // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver/internal/array"
+package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver/internal"
 
-import "go.opentelemetry.io/collector/component"
+import "go.opentelemetry.io/collector/config/configauth"
 
-type mockHost struct {
-	extensions map[component.ID]component.Component
-}
-
-func (h *mockHost) ReportFatalError(_ error) {}
-
-func (h *mockHost) GetFactory(_ component.Kind, _ component.Type) component.Factory {
-	return nil
-}
-
-func (h *mockHost) GetExtensions() map[component.ID]component.Component {
-	return h.extensions
-}
-
-func (h *mockHost) GetExporters() map[component.DataType]map[component.ID]component.Component {
-	return nil
+type ScraperConfig struct {
+	Address string                    `mapstructure:"address"`
+	Auth    configauth.Authentication `mapstructure:"auth"`
 }
