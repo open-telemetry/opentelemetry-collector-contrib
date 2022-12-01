@@ -171,7 +171,7 @@ Refer to [tail_sampling_config.yaml](./testdata/tail_sampling_config.yaml) for d
 
 ### Scaling collectors with the tail sampling processor
 
-This processor requires all spans for a given trace to be sent to the same collector instane for the correct sampling decision to be derived. When scaling the collector, you'll then need to ensure that all spans for the same trace are reaching the same collector. You can achieve this by having two layers of collectors in your infra: one with the [load balancing exporter][loadbalancing_exporter], and one with the tail sampling processor.
+This processor requires all spans for a given trace to be sent to the same collector instance for the correct sampling decision to be derived. When scaling the collector, you'll then need to ensure that all spans for the same trace are reaching the same collector. You can achieve this by having two layers of collectors in your infrastructure: one with the [load balancing exporter][loadbalancing_exporter], and one with the tail sampling processor.
 
 While it's technically possible to have one layer of collectors with two pipelines on each instance, we recommend separating the layers phisically in order to have better failure isolation.
 
