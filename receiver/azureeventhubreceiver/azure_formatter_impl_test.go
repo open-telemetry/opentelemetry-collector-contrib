@@ -242,6 +242,7 @@ func sortLogAttributes(logs plog.Logs) plog.Logs {
 		sortAttributes(rl.Resource().Attributes())
 		for s := 0; s < rl.ScopeLogs().Len(); s++ {
 			sl := rl.ScopeLogs().At(s)
+			sortAttributes(sl.Scope().Attributes())
 			for l := 0; l < sl.LogRecords().Len(); l++ {
 				sortAttributes(sl.LogRecords().At(l).Attributes())
 			}
