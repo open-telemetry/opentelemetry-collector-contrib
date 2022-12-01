@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package azureeventhubreceiver
+package azureeventhubreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver"
 
 import (
 	"context"
@@ -70,6 +70,7 @@ func TestClient_Start(t *testing.T) {
 		logger:   zap.NewNop(),
 		consumer: consumertest.NewNop(),
 		config:   config.(*Config),
+		convert:  &rawConverter{},
 	}
 	c.hub = &mockHubWrapper{}
 	err := c.Start(context.Background(), componenttest.NewNopHost())
@@ -95,6 +96,7 @@ func TestClient_handle(t *testing.T) {
 		consumer: sink,
 		config:   config.(*Config),
 		obsrecv:  obsrecv,
+		convert:  &rawConverter{},
 	}
 	c.hub = &mockHubWrapper{}
 	err = c.Start(context.Background(), componenttest.NewNopHost())

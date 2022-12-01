@@ -5,13 +5,16 @@ go 1.18
 require (
 	github.com/Azure/azure-amqp-common-go/v3 v3.2.3
 	github.com/Azure/azure-event-hubs-go/v3 v3.3.19
+	github.com/go-test/deep v1.0.8
 	github.com/json-iterator/go v1.1.12
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.66.0
+	github.com/relvacode/iso8601 v1.1.0
 	github.com/stretchr/testify v1.8.1
 	go.opentelemetry.io/collector v0.66.1-0.20221128222955-4ff1ff379b90
 	go.opentelemetry.io/collector/component v0.66.1-0.20221128222955-4ff1ff379b90
 	go.opentelemetry.io/collector/consumer v0.66.1-0.20221128222955-4ff1ff379b90
 	go.opentelemetry.io/collector/pdata v0.66.1-0.20221128222955-4ff1ff379b90
+	go.opentelemetry.io/collector/semconv v0.66.1-0.20221128222955-4ff1ff379b90
 	go.uber.org/zap v1.23.0
 )
 
@@ -69,7 +72,6 @@ require (
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/collector/featuregate v0.66.1-0.20221128222955-4ff1ff379b90 // indirect
 	go.opentelemetry.io/collector/processor/batchprocessor v0.66.1-0.20221128222955-4ff1ff379b90 // indirect
-	go.opentelemetry.io/collector/semconv v0.66.1-0.20221128222955-4ff1ff379b90 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.11.1 // indirect
 	go.opentelemetry.io/otel v1.11.1 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.33.0 // indirect
