@@ -86,13 +86,13 @@ type Config struct {
 }
 
 type MetricDescriptor struct {
-	// metricName is the name of the metric
-	metricName string `mapstructure:"metric_name"`
-	// unit defines the override value of metric descriptor `unit`
-	unit string `mapstructure:"unit"`
-	// overwrite set to true means the existing metric descriptor will be overwritten or a new metric descriptor will be created; false means
+	// MetricName is the name of the metric
+	MetricName string `mapstructure:"metric_name"`
+	// Unit defines the override value of metric descriptor `unit`
+	Unit string `mapstructure:"unit"`
+	// Overwrite set to true means the existing metric descriptor will be overwritten or a new metric descriptor will be created; false means
 	// the descriptor will only be configured if empty.
-	overwrite bool `mapstructure:"overwrite"`
+	Overwrite bool `mapstructure:"overwrite"`
 }
 
 // Validate filters out invalid metricDeclarations and metricDescriptors
@@ -110,13 +110,13 @@ func (config *Config) Validate() error {
 
 	var validDescriptors []MetricDescriptor
 	for _, descriptor := range config.MetricDescriptors {
-		if descriptor.metricName == "" {
+		if descriptor.MetricName == "" {
 			continue
 		}
-		if _, ok := eMFSupportedUnits[descriptor.unit]; ok {
+		if _, ok := eMFSupportedUnits[descriptor.Unit]; ok {
 			validDescriptors = append(validDescriptors, descriptor)
 		} else {
-			config.logger.Warn("Dropped unsupported metric desctriptor.", zap.String("unit", descriptor.unit))
+			config.logger.Warn("Dropped unsupported metric desctriptor.", zap.String("unit", descriptor.Unit))
 		}
 	}
 	config.MetricDescriptors = validDescriptors

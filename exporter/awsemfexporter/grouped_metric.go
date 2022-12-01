@@ -82,7 +82,7 @@ func addToGroupedMetric(pmd pmetric.Metric, groupedMetrics map[interface{}]*grou
 		// Extra params to use when grouping metrics
 		groupKey := groupedMetricKey(metadata.groupedMetricMetadata, labels)
 		if _, ok := groupedMetrics[groupKey]; ok {
-			// if metricName already exists in metrics map, print warning log
+			// if MetricName already exists in metrics map, print warning log
 			if _, ok := groupedMetrics[groupKey].metrics[metricName]; ok {
 				logger.Warn(
 					"Duplicate metric found",
@@ -185,8 +185,8 @@ func groupedMetricKey(metadata groupedMetricMetadata, labels map[string]string) 
 func translateUnit(metric pmetric.Metric, descriptor map[string]MetricDescriptor) string {
 	unit := metric.Unit()
 	if descriptor, exists := descriptor[metric.Name()]; exists {
-		if unit == "" || descriptor.overwrite {
-			return descriptor.unit
+		if unit == "" || descriptor.Overwrite {
+			return descriptor.Unit
 		}
 	}
 	switch unit {
