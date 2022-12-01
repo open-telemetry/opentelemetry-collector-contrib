@@ -15,12 +15,85 @@
 package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver/internal"
 
 import (
-	"go.opentelemetry.io/collector/component"
+	"context"
+	"fmt"
+	"net/url"
+	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
+	configutil "github.com/prometheus/common/config"
+	"github.com/prometheus/common/model"
+	"github.com/prometheus/prometheus/config"
+	"github.com/prometheus/prometheus/discovery"
+	"go.opentelemetry.io/collector/component"
 )
 
 type Scraper interface {
-	component.Component
-	ToPrometheusReceiverConfig(host component.Host, fact component.ReceiverFactory) (*prometheusreceiver.Config, error)
+	ToPrometheusReceiverConfig(host component.Host, fact component.ReceiverFactory) ([]*config.ScrapeConfig, error)
+}
+
+type scraper struct {
+	scraperType    string
+	endpoint       string
+	hosts          []ScraperConfig
+	scrapeInterval time.Duration
+}
+
+func NewScraper(ctx context.Context,
+	scraperType string,
+	endpoint string,
+	hosts []ScraperConfig,
+	scrapeInterval time.Duration,
+) Scraper {
+	return &scraper{
+		scraperType:    scraperType,
+		endpoint:       endpoint,
+		hosts:          hosts,
+		scrapeInterval: scrapeInterval,
+	}
+}
+
+func (h *scraper) ToPrometheusReceiverConfig(host component.Host, fact component.ReceiverFactory) ([]*config.ScrapeConfig, error) {
+	scrapeCfgs := []*config.ScrapeConfig{}
+
+	for _, arr := range h.hosts {
+		u, err := url.Parse(h.endpoint)
+		if err != nil {
+			return nil, err
+		}
+
+		bearerToken, err := RetrieveBearerToken(arr.Auth, host.GetExtensions())
+		if err != nil {
+			return nil, err
+		}
+
+		httpConfig := configutil.HTTPClientConfig{}
+		httpConfig.BearerToken = configutil.Secret(bearerToken)
+
+		scrapeConfig := &config.ScrapeConfig{
+			HTTPClientConfig: httpConfig,
+			ScrapeInterval:   model.Duration(h.scrapeInterval),
+			ScrapeTimeout:    model.Duration(h.scrapeInterval),
+			JobName:          fmt.Sprintf("%s/%s/%s", "purefa", h.scraperType, arr.Address),
+			HonorTimestamps:  true,
+			Scheme:           u.Scheme,
+			MetricsPath:      fmt.Sprintf("/metrics/%s", h.scraperType),
+			Params: url.Values{
+				"endpoint": {arr.Address},
+			},
+
+			ServiceDiscoveryConfigs: discovery.Configs{
+				&discovery.StaticConfig{
+					{
+						Targets: []model.LabelSet{
+							{model.AddressLabel: model.LabelValue(u.Host)},
+						},
+					},
+				},
+			},
+		}
+
+		scrapeCfgs = append(scrapeCfgs, scrapeConfig)
+	}
+
+	return scrapeCfgs, nil
 }
