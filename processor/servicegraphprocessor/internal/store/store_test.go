@@ -136,7 +136,8 @@ func TestStoreExpire(t *testing.T) {
 
 	s.Expire()
 	assert.Equal(t, 0, s.len())
-	assert.Equal(t, 0, onCompletedCount)
+	// callball onComplete before edge expired.
+	assert.Equal(t, 100, onCompletedCount)
 	assert.Equal(t, testSize, onExpireCount)
 }
 

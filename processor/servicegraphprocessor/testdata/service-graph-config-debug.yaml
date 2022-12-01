@@ -1,0 +1,38 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+  otlp/processor_metrics: # Dummy receiver for the metrics pipeline
+    protocols:
+      grpc:
+        endpoint: localhost:12345
+
+processors:
+  servicegraph:
+    metrics_exporter: prometheus/processor_metrics # Exporter to send metrics to
+    latency_histogram_buckets: [100us, 1ms, 2ms, 6ms, 10ms, 100ms, 250ms] # Buckets for latency histogram
+    dimensions: [cluster, namespace] # Additional dimensions (labels) to be added to the metrics extracted from the resource and span attributes
+    store: # Configuration for the in-memory store
+      ttl: 60s # Value to wait for an edge to be completed
+      max_items: 200 # Amount of edges that will be stored in the storeMap
+
+exporters:
+  prometheus/processor_metrics:
+    endpoint: "0.0.0.0:8889"
+  otlp:
+    endpoint: localhost:4317
+  logging:
+
+service:
+  telemetry:
+    logs:
+      level: debug
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [servicegraph]
+      exporters: [logging]
+    metrics/processor_metrics:
+      receivers: [otlp/processor_metrics]
+      processors: []
+      exporters: [prometheus/processor_metrics]

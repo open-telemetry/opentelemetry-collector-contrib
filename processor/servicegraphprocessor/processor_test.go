@@ -228,6 +228,9 @@ func sampleTraces() ptrace.Traces {
 	clientSpan.SetStartTimestamp(pcommon.NewTimestampFromTime(tStart))
 	clientSpan.SetEndTimestamp(pcommon.NewTimestampFromTime(tEnd))
 	clientSpan.Attributes().PutStr("some-attribute", "val") // Attribute selected as dimension for metrics
+	clientSpan.Attributes().PutStr(semconv.AttributeNetPeerIP, "127.0.0.99")
+	clientSpan.Attributes().PutStr(semconv.AttributeHTTPURL, "https://www.foo.bar/search?q=OpenTelemetry#SemConv")
+	clientSpan.Attributes().PutStr(semconv.AttributeRPCService, "myservice.EchoService")
 
 	serverSpan := scopeSpans.Spans().AppendEmpty()
 	serverSpan.SetName("server span")

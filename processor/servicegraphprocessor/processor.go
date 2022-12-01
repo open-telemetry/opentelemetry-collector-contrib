@@ -206,6 +206,7 @@ func (p *processor) aggregateMetrics(ctx context.Context, td ptrace.Traces) (err
 						e.ClientLatencySec = float64(span.EndTimestamp()-span.StartTimestamp()) / float64(time.Millisecond.Nanoseconds())
 						e.Failed = e.Failed || span.Status().Code() == ptrace.StatusCodeError
 						p.upsertDimensions(clientKind, e.Dimensions, rAttributes, span.Attributes())
+						p.upsertPeerAttributes(store.NeedToFindAttributes, e.Peer.RpcAttributes, span.Attributes())
 
 						// A database request will only have one span, we don't wait for the server
 						// span but just copy details from the client span
@@ -259,6 +260,14 @@ func (p *processor) upsertDimensions(kind string, m map[string]string, resourceA
 	for _, dim := range p.config.Dimensions {
 		if v, ok := findAttributeValue(dim, resourceAttr, spanAttr); ok {
 			m[kind+"_"+dim] = v
+		}
+	}
+}
+
+func (p *processor) upsertPeerAttributes(m []string, peers map[string]string, spanAttr pcommon.Map) {
+	for _, s := range m {
+		if v, ok := findAttributeValue(s, spanAttr); ok {
+			peers[s] = v
 		}
 	}
 }

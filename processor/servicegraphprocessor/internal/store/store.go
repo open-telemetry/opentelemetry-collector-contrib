@@ -17,6 +17,7 @@ package store // import "github.com/open-telemetry/opentelemetry-collector-contr
 import (
 	"container/list"
 	"errors"
+	semconv "go.opentelemetry.io/collector/semconv/v1.13.0"
 	"sync"
 	"time"
 
@@ -25,6 +26,8 @@ import (
 
 var (
 	ErrTooManyItems = errors.New("too many items")
+	// NeedToFindAttributes the list of attributes need to matches, the higher the front, the higher the priority.
+	NeedToFindAttributes = []string{semconv.AttributeNetSockHostAddr, semconv.AttributeRPCService, semconv.AttributeHTTPURL, semconv.AttributeHTTPTarget, semconv.AttributeNetPeerName, semconv.AttributeNetHostName}
 )
 
 type Callback func(e *Edge)
@@ -119,8 +122,45 @@ func (s *Store) Expire() {
 	defer s.mtx.Unlock()
 
 	// Iterates until no more items can be evicted
-	for s.tryEvictHead() {
+	for s.trySpeculateEvictHead() {
+		s.tryEvictHead()
 	}
+}
+
+// speculate virtual node before edge get expired.
+func (s *Store) trySpeculateEvictHead() bool {
+	head := s.l.Front()
+	if head == nil {
+		return false // list is empty
+	}
+	headEdge := head.Value.(*Edge)
+	if !headEdge.isExpired() {
+		return false
+	}
+
+	if len(headEdge.ClientService) == 0 {
+		headEdge.ClientService = "user"
+	}
+
+	if len(headEdge.ServerService) == 0 {
+		headEdge.ServerService = s.getPeerHost(NeedToFindAttributes, headEdge.Peer.RpcAttributes)
+	}
+
+	if headEdge.isComplete() {
+		s.onComplete(headEdge)
+	}
+	return true
+}
+
+func (s *Store) getPeerHost(m []string, peers map[string]string) string {
+	peerStr := "unknown"
+	for _, s := range m {
+		if len(peers[s]) != 0 {
+			peerStr = peers[s]
+			break
+		}
+	}
+	return peerStr
 }
 
 // tryEvictHead checks if the oldest item (head of list) can be evicted and will delete it if so.
