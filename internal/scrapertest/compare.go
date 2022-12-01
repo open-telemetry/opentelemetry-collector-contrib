@@ -61,7 +61,7 @@ func CompareMetrics(expected, actual pmetric.Metrics, options ...CompareOption) 
 			if _, ok := matchingResources[ar]; ok {
 				continue
 			}
-			if reflect.DeepEqual(er.Resource().Attributes().Sort().AsRaw(), ar.Resource().Attributes().Sort().AsRaw()) {
+			if reflect.DeepEqual(er.Resource().Attributes().AsRaw(), ar.Resource().Attributes().AsRaw()) {
 				foundMatch = true
 				matchingResources[ar] = er
 				break
@@ -212,7 +212,7 @@ func CompareNumberDataPointSlices(expected, actual pmetric.NumberDataPointSlice)
 			if _, ok := matchingDPS[adp]; ok {
 				continue
 			}
-			if reflect.DeepEqual(edp.Attributes().Sort().AsRaw(), adp.Attributes().Sort().AsRaw()) {
+			if reflect.DeepEqual(edp.Attributes().AsRaw(), adp.Attributes().AsRaw()) {
 				foundMatch = true
 				matchingDPS[adp] = edp
 				break
