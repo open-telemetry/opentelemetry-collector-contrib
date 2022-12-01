@@ -1,8 +1,8 @@
 cloud.google.com/go v0.26.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
 cloud.google.com/go v0.34.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
 contrib.go.opencensus.io/exporter/prometheus v0.4.2 h1:sqfsYl5GIY/L570iT+l93ehxaWJs2/OwXtiWwew3oAg=
-github.com/Azure/azure-kusto-go v0.8.1 h1:TFpi1kt3Xz2RtF5vP2bu7P0RRjNVrFhoVs2rknpmRp0=
-github.com/Azure/azure-kusto-go v0.8.1/go.mod h1:i7WCtgt4XeHge3+Oi5sq84HYhneNi7VY7hr35wsUdrg=
+github.com/Azure/azure-kusto-go v0.9.2 h1:AP0bNhGyvc51XHi6nBMABDjCqgJb/KGrCrcm7KvYFyk=
+github.com/Azure/azure-kusto-go v0.9.2/go.mod h1:i7WCtgt4XeHge3+Oi5sq84HYhneNi7VY7hr35wsUdrg=
 github.com/Azure/azure-pipeline-go v0.1.8/go.mod h1:XA1kFWRVhSK+KNFiOhfv83Fv8L9achrP7OxIzeTn1Yg=
 github.com/Azure/azure-pipeline-go v0.2.3 h1:7U9HBg1JFK3jHl5qmo4CTZKFTVgMwdFHMVtCdfBE21U=
 github.com/Azure/azure-pipeline-go v0.2.3/go.mod h1:x841ezTBIMG6O3lAcl8ATHnsOPVl2bqk7S3ta6S6u4k=
