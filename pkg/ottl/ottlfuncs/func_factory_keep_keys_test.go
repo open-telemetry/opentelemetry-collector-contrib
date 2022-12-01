@@ -24,7 +24,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-func Test_keepKeys(t *testing.T) {
+func Test_KeepKeysFactory(t *testing.T) {
 	input := pcommon.NewMap()
 	input.PutStr("test", "hello world")
 	input.PutInt("test2", 3)
@@ -83,59 +83,33 @@ func Test_keepKeys(t *testing.T) {
 			scenarioMap := pcommon.NewMap()
 			input.CopyTo(scenarioMap)
 
-			exprFunc, err := KeepKeys(tt.target, tt.keys)
+			exprFunc, err := KeepKeysFactory(tt.target, tt.keys)
 			assert.NoError(t, err)
 
-			_, err = exprFunc(nil, scenarioMap)
+			result, err := exprFunc(nil, scenarioMap)
 			assert.Nil(t, err)
 
 			expected := pcommon.NewMap()
 			tt.want(expected)
 
-			assert.Equal(t, expected, scenarioMap)
+			assert.Equal(t, expected, result)
 		})
 	}
 }
 
-func Test_keepKeys_bad_input(t *testing.T) {
+func Test_KeepKeysFactory_bad_input(t *testing.T) {
 	input := pcommon.NewValueStr("not a map")
 	target := &ottl.StandardGetSetter[interface{}]{
 		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
 			return tCtx, nil
 		},
-		Setter: func(ctx context.Context, tCtx interface{}, val interface{}) error {
-			t.Errorf("nothing should be set in this scenario")
-			return nil
-		},
 	}
 
 	keys := []string{"anything"}
 
-	exprFunc, err := KeepKeys[interface{}](target, keys)
+	exprFunc, err := KeepKeysFactory[interface{}](target, keys)
 	assert.NoError(t, err)
 
 	_, err = exprFunc(nil, input)
-	assert.Nil(t, err)
-
-	assert.Equal(t, pcommon.NewValueStr("not a map"), input)
-}
-
-func Test_keepKeys_get_nil(t *testing.T) {
-	target := &ottl.StandardGetSetter[interface{}]{
-		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
-			return tCtx, nil
-		},
-		Setter: func(ctx context.Context, tCtx interface{}, val interface{}) error {
-			t.Errorf("nothing should be set in this scenario")
-			return nil
-		},
-	}
-
-	keys := []string{"anything"}
-
-	exprFunc, err := KeepKeys[interface{}](target, keys)
-	assert.NoError(t, err)
-	result, err := exprFunc(nil, nil)
-	assert.NoError(t, err)
-	assert.Nil(t, result)
+	assert.Error(t, err)
 }

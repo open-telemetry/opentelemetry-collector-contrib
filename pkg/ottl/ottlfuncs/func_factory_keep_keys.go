@@ -16,16 +16,41 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import (
 	"context"
+	"fmt"
+
+	"go.opentelemetry.io/collector/pdata/pcommon"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-func KeepKeys[K any](target ottl.Getter[K], keys []string) (ottl.ExprFunc[K], error) {
-	exprFunc, err := KeepKeysFactory[K](target, keys)
-	if err != nil {
-		return nil, err
+func KeepKeysFactory[K any](target ottl.Getter[K], keys []string) (ottl.ExprFunc[K], error) {
+	keySet := make(map[string]struct{}, len(keys))
+	for _, key := range keys {
+		keySet[key] = struct{}{}
 	}
+
 	return func(ctx context.Context, tCtx K) (interface{}, error) {
-		_, err := exprFunc(ctx, tCtx)
-		return nil, err
+		val, err := target.Get(ctx, tCtx)
+		if err != nil {
+			return nil, err
+		}
+		if val == nil {
+			return nil, nil
+		}
+
+		mapVal, ok := val.(pcommon.Map)
+		if !ok {
+			return nil, fmt.Errorf("target must be a map but got %T", val)
+		}
+
+		mapVal.RemoveIf(func(key string, value pcommon.Value) bool {
+			_, ok := keySet[key]
+			return !ok
+		})
+		if mapVal.Len() == 0 {
+			mapVal.Clear()
+		}
+
+		return mapVal, nil
 	}, nil
 }
