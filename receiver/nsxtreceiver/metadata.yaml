@@ -16,21 +16,20 @@ resource_attributes:
 
 attributes:
   direction:
-    value: direction
     description: The direction of network flow.
     type: string
     enum:
       - received
       - transmitted
   disk_state:
-    value: state
+    name_override: state
     description: The state of storage space.
     type: string
     enum:
       - used
       - available
   packet.type:
-    value: type
+    name_override: type
     description: The type of packet counter.
     type: string
     enum:

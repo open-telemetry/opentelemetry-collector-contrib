@@ -32,7 +32,8 @@ func NewFactory() component.ExporterFactory {
 		createDefaultConfig,
 		component.WithTracesExporter(createTraceExporter, stability),
 		component.WithMetricsExporter(createMetricsExporter, stability),
-		component.WithLogsExporter(createLogsExporter, component.StabilityLevelAlpha),
+		// Marked as unmantained on 2022-11-30, will be removed from official builds on 2023-05-30.
+		component.WithLogsExporter(createLogsExporter, component.StabilityLevelUnmaintained),
 	)
 }
 

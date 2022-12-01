@@ -116,6 +116,11 @@ func TestScrape(t *testing.T) {
 			require.Greater(t, md.ResourceMetrics().Len(), 1)
 			assertProcessResourceAttributesExist(t, md.ResourceMetrics())
 			assertCPUTimeMetricValid(t, md.ResourceMetrics(), expectedStartTime)
+			if metricsSettings.ProcessCPUUtilization.Enabled {
+				assertCPUUtilizationMetricValid(t, md.ResourceMetrics(), expectedStartTime)
+			} else {
+				assertMetricMissing(t, md.ResourceMetrics(), "process.cpu.utilization")
+			}
 			assertMemoryUsageMetricValid(t, md.ResourceMetrics(), expectedStartTime)
 			assertOldDiskIOMetricValid(t, md.ResourceMetrics(), expectedStartTime)
 			if metricsSettings.ProcessPagingFaults.Enabled {
@@ -170,6 +175,19 @@ func assertCPUTimeMetricValid(t *testing.T, resourceMetrics pmetric.ResourceMetr
 	if runtime.GOOS == "linux" {
 		internal.AssertSumMetricHasAttributeValue(t, cpuTimeMetric, 2, "state",
 			pcommon.NewValueStr(metadata.AttributeStateWait.String()))
+	}
+}
+
+func assertCPUUtilizationMetricValid(t *testing.T, resourceMetrics pmetric.ResourceMetricsSlice, startTime pcommon.Timestamp) {
+	metric := getMetric(t, "process.cpu.utilization", resourceMetrics)
+	if startTime != 0 {
+		internal.AssertGaugeMetricStartTimeEquals(t, metric, startTime)
+	}
+
+	internal.AssertGaugeMetricHasAttributeValue(t, metric, 0, "state", pcommon.NewValueStr(metadata.AttributeStateUser.String()))
+	internal.AssertGaugeMetricHasAttributeValue(t, metric, 1, "state", pcommon.NewValueStr(metadata.AttributeStateSystem.String()))
+	if runtime.GOOS == "linux" {
+		internal.AssertGaugeMetricHasAttributeValue(t, metric, 2, "state", pcommon.NewValueStr(metadata.AttributeStateWait.String()))
 	}
 }
 
@@ -367,6 +385,11 @@ func (p *processHandleMock) Times() (*cpu.TimesStat, error) {
 	return args.Get(0).(*cpu.TimesStat), args.Error(1)
 }
 
+func (p *processHandleMock) Percent(time.Duration) (float64, error) {
+	args := p.MethodCalled("Percent")
+	return args.Get(0).(float64), args.Error(1)
+}
+
 func (p *processHandleMock) MemoryInfo() (*process.MemoryInfoStat, error) {
 	args := p.MethodCalled("MemoryInfo")
 	return args.Get(0).(*process.MemoryInfoStat), args.Error(1)
@@ -418,6 +441,7 @@ func newDefaultHandleMock() *processHandleMock {
 	handleMock.On("Cmdline").Return("cmdline", nil)
 	handleMock.On("CmdlineSlice").Return([]string{"cmdline"}, nil)
 	handleMock.On("Times").Return(&cpu.TimesStat{}, nil)
+	handleMock.On("Percent").Return(float64(0), nil)
 	handleMock.On("MemoryInfo").Return(&process.MemoryInfoStat{}, nil)
 	handleMock.On("IOCounters").Return(&process.IOCountersStat{}, nil)
 	handleMock.On("Parent").Return(&process.Process{Pid: 2}, nil)
@@ -713,6 +737,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			handleMock.On("Cmdline").Return("cmdline", test.cmdlineError)
 			handleMock.On("CmdlineSlice").Return([]string{"cmdline"}, test.cmdlineError)
 			handleMock.On("Times").Return(&cpu.TimesStat{}, test.timesError)
+			handleMock.On("Percent").Return(float64(0), nil)
 			handleMock.On("MemoryInfo").Return(&process.MemoryInfoStat{}, test.memoryInfoError)
 			handleMock.On("IOCounters").Return(&process.IOCountersStat{}, test.ioCountersError)
 			handleMock.On("CreateTime").Return(int64(0), test.createTimeError)
@@ -867,6 +892,7 @@ func newErroringHandleMock() *processHandleMock {
 	handleMock.On("Cmdline").Return("cmdline", nil)
 	handleMock.On("CmdlineSlice").Return([]string{"cmdline"}, nil)
 	handleMock.On("Times").Return(&cpu.TimesStat{}, &ProcessReadError{})
+	handleMock.On("Percent").Return(float64(0), nil)
 	handleMock.On("MemoryInfo").Return(&process.MemoryInfoStat{}, &ProcessReadError{})
 	handleMock.On("IOCounters").Return(&process.IOCountersStat{}, &ProcessReadError{})
 	handleMock.On("NumThreads").Return(int32(0), &ProcessReadError{})

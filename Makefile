@@ -120,35 +120,16 @@ for-all:
 	 	$${CMD} ); \
 	done
 
-.PHONY: add-tag
-add-tag:
-	@[ "${TAG}" ] || ( echo ">> env var TAG is not set"; exit 1 )
-	@echo "Adding tag ${TAG}"
-	@git tag -a ${TAG} -s -m "Version ${TAG}"
-	@set -e; for dir in $(NONROOT_MODS); do \
-	  (echo Adding tag "$${dir:2}/$${TAG}" && \
-	 	git tag -a "$${dir:2}/$${TAG}" -s -m "Version ${dir:2}/${TAG}" ); \
-	done
-
-.PHONY: push-tag
-push-tag:
-	@[ "${TAG}" ] || ( echo ">> env var TAG is not set"; exit 1 )
-	@echo "Pushing tag ${TAG}"
-	@git push git@github.com:open-telemetry/opentelemetry-collector-contrib.git ${TAG}
-	@set -e; for dir in $(NONROOT_MODS); do \
-	  (echo Pushing tag "$${dir:2}/$${TAG}" && \
-	 	git push git@github.com:open-telemetry/opentelemetry-collector-contrib.git "$${dir:2}/$${TAG}"); \
-	done
-
-.PHONY: delete-tag
-delete-tag:
-	@[ "${TAG}" ] || ( echo ">> env var TAG is not set"; exit 1 )
-	@echo "Deleting tag ${TAG}"
-	@git tag -d ${TAG}
-	@set -e; for dir in $(NONROOT_MODS); do \
-	  (echo Deleting tag "$${dir:2}/$${TAG}" && \
-	 	git tag -d "$${dir:2}/$${TAG}" ); \
-	done
+COMMIT?=HEAD
+MODSET?=contrib-core
+REMOTE?=git@github.com:open-telemetry/opentelemetry-collector-contrib.git
+.PHONY: push-tags
+push-tags:
+	multimod verify
+	set -e; for tag in `multimod tag -m ${MODSET} -c ${COMMIT} --print-tags | grep -v "Using" `; do \
+		echo "pushing tag $${tag}"; \
+		git push ${REMOTE} $${tag}; \
+	done;
 
 DEPENDABOT_PATH=".github/dependabot.yml"
 .PHONY: gendependabot
