@@ -17,7 +17,6 @@ package azureeventhubreceiver // import "github.com/open-telemetry/opentelemetry
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"strconv"
 
 	"github.com/relvacode/iso8601"
@@ -43,6 +42,8 @@ const cloudProvider = "cloud.provider"
 const cloudRegion = "cloud.region"
 
 const netSockPeerAddr = "net.sock.peer.addr"
+
+const receiverScopeName = "otelcol/" + typeStr
 
 // azureRecords represents an array of Azure log records
 // as exported via an Azure Event Hub
@@ -153,19 +154,19 @@ func extractRawAttributes(log azureLogRecord) map[string]interface{} {
 // log record appears as fields and attributes in the
 // OpenTelemetry representation; the bodies of the
 // OpenTelemetry log records are empty.
-func transform(buildInfo component.BuildInfo, data []byte) (*plog.Logs, error) {
+func transform(buildInfo component.BuildInfo, data []byte) (plog.Logs, error) {
 
 	l := plog.NewLogs()
 
 	var azureLogs azureRecords
 	decoder := json.NewDecoder(bytes.NewReader(data))
 	if err := decoder.Decode(&azureLogs); err != nil {
-		return &l, err
+		return l, err
 	}
 
 	resourceLogs := l.ResourceLogs().AppendEmpty()
 	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
-	scopeLogs.Scope().SetName(fmt.Sprintf("otelcol/%s", typeStr))
+	scopeLogs.Scope().SetName(receiverScopeName)
 	scopeLogs.Scope().SetVersion(buildInfo.Version)
 	logRecords := scopeLogs.LogRecords()
 
@@ -187,9 +188,8 @@ func transform(buildInfo component.BuildInfo, data []byte) (*plog.Logs, error) {
 			lr.SetSeverityText(*azureLog.Level)
 		}
 
-		//
 		if err := lr.Attributes().FromRaw(extractRawAttributes(azureLog)); err != nil {
-			return &l, err
+			return l, err
 		}
 
 		// The Azure resource ID will be pulled into a common resource attribute.
@@ -200,5 +200,5 @@ func transform(buildInfo component.BuildInfo, data []byte) (*plog.Logs, error) {
 		}
 	}
 
-	return &l, nil
+	return l, nil
 }

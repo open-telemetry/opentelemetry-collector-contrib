@@ -27,6 +27,57 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
+var testBuildInfo = component.BuildInfo{
+	Version: "1.2.3",
+}
+
+var minimumLogRecord = func() plog.LogRecord {
+	lr := plog.NewLogs().ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+
+	ts, _ := asTimestamp("2022-11-11T04:48:27.6767145Z")
+	lr.SetTimestamp(ts)
+	lr.Attributes().PutStr(azureOperationName, "SecretGet")
+	lr.Attributes().PutStr(azureCategory, "AuditEvent")
+	lr.Attributes().PutStr(cloudProvider, "azure")
+	lr.Attributes().Sort()
+	return lr
+}()
+
+var maximumLogRecord = func() plog.LogRecord {
+	lr := plog.NewLogs().ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+
+	ts, _ := asTimestamp("2022-11-11T04:48:27.6767145Z")
+	lr.SetTimestamp(ts)
+	lr.SetSeverityNumber(plog.SeverityNumberWarn)
+	lr.SetSeverityText("Warning")
+	guid := "607964b6-41a5-4e24-a5db-db7aab3b9b34"
+
+	lr.Attributes().PutStr(azureTenantID, "/TENANT_ID")
+	lr.Attributes().PutStr(azureOperationName, "SecretGet")
+	lr.Attributes().PutStr(azureOperationVersion, "7.0")
+	lr.Attributes().PutStr(azureCategory, "AuditEvent")
+	lr.Attributes().PutStr(azureCorrelationID, guid)
+	lr.Attributes().PutStr(azureResultType, "Success")
+	lr.Attributes().PutStr(azureResultSignature, "Signature")
+	lr.Attributes().PutStr(azureResultDescription, "Description")
+	lr.Attributes().PutInt(azureDuration, 1234)
+	lr.Attributes().PutStr(netSockPeerAddr, "127.0.0.1")
+	lr.Attributes().PutStr(cloudRegion, "ukso")
+	lr.Attributes().PutStr(cloudProvider, "azure")
+
+	lr.Attributes().PutEmptyMap(azureIdentity).PutEmptyMap("claim").PutStr("oid", "607964b6-41a5-4e24-a5db-db7aab3b9b34")
+	m := lr.Attributes().PutEmptyMap(azureProperties)
+	m.PutStr("string", "string")
+	m.PutDouble("int", 429)
+	m.PutDouble("float", 3.14)
+	m.PutBool("bool", false)
+	m.Sort()
+
+	lr.Attributes().Sort()
+
+	return lr
+}()
+
 func TestAsTimestamp(t *testing.T) {
 	timestamp := "2022-11-11T04:48:27.6767145Z"
 	nanos, err := asTimestamp(timestamp)
@@ -181,53 +232,6 @@ func TestExtractRawAttributes(t *testing.T) {
 
 }
 
-var minimumLogRecord = func() plog.LogRecord {
-	lr := plog.NewLogs().ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
-
-	ts, _ := asTimestamp("2022-11-11T04:48:27.6767145Z")
-	lr.SetTimestamp(ts)
-	lr.Attributes().PutStr(azureOperationName, "SecretGet")
-	lr.Attributes().PutStr(azureCategory, "AuditEvent")
-	lr.Attributes().PutStr(cloudProvider, "azure")
-	lr.Attributes().Sort()
-	return lr
-}()
-
-var maximumLogRecord = func() plog.LogRecord {
-	lr := plog.NewLogs().ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
-
-	ts, _ := asTimestamp("2022-11-11T04:48:27.6767145Z")
-	lr.SetTimestamp(ts)
-	lr.SetSeverityNumber(plog.SeverityNumberWarn)
-	lr.SetSeverityText("Warning")
-	guid := "607964b6-41a5-4e24-a5db-db7aab3b9b34"
-
-	lr.Attributes().PutStr(azureTenantID, "/TENANT_ID")
-	lr.Attributes().PutStr(azureOperationName, "SecretGet")
-	lr.Attributes().PutStr(azureOperationVersion, "7.0")
-	lr.Attributes().PutStr(azureCategory, "AuditEvent")
-	lr.Attributes().PutStr(azureCorrelationID, guid)
-	lr.Attributes().PutStr(azureResultType, "Success")
-	lr.Attributes().PutStr(azureResultSignature, "Signature")
-	lr.Attributes().PutStr(azureResultDescription, "Description")
-	lr.Attributes().PutInt(azureDuration, 1234)
-	lr.Attributes().PutStr(netSockPeerAddr, "127.0.0.1")
-	lr.Attributes().PutStr(cloudRegion, "ukso")
-	lr.Attributes().PutStr(cloudProvider, "azure")
-
-	lr.Attributes().PutEmptyMap(azureIdentity).PutEmptyMap("claim").PutStr("oid", "607964b6-41a5-4e24-a5db-db7aab3b9b34")
-	m := lr.Attributes().PutEmptyMap(azureProperties)
-	m.PutStr("string", "string")
-	m.PutDouble("int", 429)
-	m.PutDouble("float", 3.14)
-	m.PutBool("bool", false)
-	m.Sort()
-
-	lr.Attributes().Sort()
-
-	return lr
-}()
-
 // sortLogAttributes is a utility function that will sort
 // all the resource and logRecord attributes to allow
 // reliable comparison in the tests
@@ -264,10 +268,6 @@ func sortAttributes(attrs pcommon.Map) {
 		return true
 	})
 	attrs.Sort()
-}
-
-var testBuildInfo = component.BuildInfo{
-	Version: "1.2.3",
 }
 
 func TestDecodeAzureLogRecord(t *testing.T) {
@@ -330,7 +330,7 @@ func TestDecodeAzureLogRecord(t *testing.T) {
 			assert.NoError(t, err)
 
 			deep.CompareUnexportedFields = true
-			if diff := deep.Equal(tt.expected, sortLogAttributes(*logs)); diff != nil {
+			if diff := deep.Equal(tt.expected, sortLogAttributes(logs)); diff != nil {
 				t.Errorf("FAIL\n%s\n", strings.Join(diff, "\n"))
 			}
 			deep.CompareUnexportedFields = false

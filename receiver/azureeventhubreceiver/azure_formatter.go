@@ -28,7 +28,7 @@ func newAzureLogFormatConverter(settings component.ReceiverCreateSettings) *azur
 	return &azureLogFormatConverter{buildInfo: settings.BuildInfo}
 }
 
-func (c *azureLogFormatConverter) ToLogs(event *eventhub.Event) (*plog.Logs, error) {
+func (c *azureLogFormatConverter) ToLogs(event *eventhub.Event) (plog.Logs, error) {
 	logs, err := transform(c.buildInfo, event.Data)
 	return logs, err
 }

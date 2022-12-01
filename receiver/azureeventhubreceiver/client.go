@@ -43,7 +43,7 @@ type hubWrapper interface {
 }
 
 type eventConverter interface {
-	ToLogs(event *eventhub.Event) (*plog.Logs, error)
+	ToLogs(event *eventhub.Event) (plog.Logs, error)
 }
 
 type listerHandleWrapper interface {
@@ -133,7 +133,7 @@ func (c *client) handle(ctx context.Context, event *eventhub.Event) error {
 		return fmt.Errorf("failed to convert logs: %w", err)
 	}
 	c.obsrecv.StartLogsOp(ctx)
-	consumerErr := c.consumer.ConsumeLogs(ctx, *logs)
+	consumerErr := c.consumer.ConsumeLogs(ctx, logs)
 	c.obsrecv.EndLogsOp(ctx, "azureeventhub", logs.LogRecordCount(), consumerErr)
 	return consumerErr
 }
