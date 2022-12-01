@@ -108,7 +108,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, pmetric.NumberDataPointValueType{{ $metric.Data.MetricValueType }}, dp.ValueType())
 			assert.Equal(t, {{ $metric.Data.MetricValueType.BasicType }}(1), dp.{{ $metric.Data.MetricValueType }}Value())
 			{{- range $i, $attr := $metric.Attributes }}
-			attrVal, ok {{ if eq $i 0 }}:{{ end }}= dp.Attributes().Get("{{ attributeKey $attr }}")
+			attrVal, ok {{ if eq $i 0 }}:{{ end }}= dp.Attributes().Get("{{ attributeName $attr }}")
 			assert.True(t, ok)
 			{{- if (attributeInfo $attr).Enum }}
 			assert.Equal(t, "{{ index (attributeInfo $attr).Enum 0 }}", attrVal.Str())
