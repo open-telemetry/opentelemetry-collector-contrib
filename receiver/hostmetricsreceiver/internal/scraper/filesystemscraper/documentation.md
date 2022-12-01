@@ -58,31 +58,13 @@ metrics:
     enabled: true
 ```
 
-### system.filesystem.inodes.usage
+### system.filesystem.utilization
 
-FileSystem inodes used.
+Fraction of filesystem bytes used.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {inodes} | Sum | Int | Cumulative | false |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| device | Identifier of the filesystem. | Any Str |
-| mode | Mountpoint mode such "ro", "rw", etc. | Any Str |
-| mountpoint | Mountpoint path. | Any Str |
-| type | Filesystem type, such as, "ext4", "tmpfs", etc. | Any Str |
-| state | Breakdown of filesystem usage by type. | Str: ``free``, ``reserved``, ``used`` |
-
-### system.filesystem.usage
-
-Filesystem bytes used.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
 
 #### Attributes
 
@@ -92,4 +74,3 @@ Filesystem bytes used.
 | mode | Mountpoint mode such "ro", "rw", etc. | Any Str |
 | mountpoint | Mountpoint path. | Any Str |
 | type | Filesystem type, such as, "ext4", "tmpfs", etc. | Any Str |
-| state | Breakdown of filesystem usage by type. | Str: ``free``, ``reserved``, ``used`` |

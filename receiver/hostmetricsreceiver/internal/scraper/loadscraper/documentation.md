@@ -35,37 +35,3 @@ Average CPU Load over 5 minutes.
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | 1 | Gauge | Double |
-
-## Optional Metrics
-
-The following metrics are not emitted by default. Each of them can be enabled by applying the following configuration:
-
-```yaml
-metrics:
-  <metric_name>:
-    enabled: true
-```
-
-### system.cpu.load_average.15m
-
-Average CPU Load over 15 minutes.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Double |
-
-### system.cpu.load_average.1m
-
-Average CPU Load over 1 minute.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Double |
-
-### system.cpu.load_average.5m
-
-Average CPU Load over 5 minutes.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Double |

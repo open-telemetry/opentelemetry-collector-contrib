@@ -66,13 +66,27 @@ metrics:
     enabled: true
 ```
 
-### process.cpu.time
+### process.context_switches
 
-Total CPU seconds broken down by different states.
+Number of times the process has been context switched.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| s | Sum | Double | Cumulative | true |
+| {count} | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| type | Type of context switched. | Str: ``involuntary``, ``voluntary`` |
+
+### process.cpu.utilization
+
+Percentage of total CPU time used by the process since last scrape, expressed as a value between 0 and 1. On the first scrape, no data point is emitted for this metric.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
 
 #### Attributes
 
@@ -80,35 +94,59 @@ Total CPU seconds broken down by different states.
 | ---- | ----------- | ------ |
 | state | Breakdown of CPU usage by type. | Str: ``system``, ``user``, ``wait`` |
 
-### process.disk.io
+### process.memory.usage
 
-Disk bytes transferred.
+The amount of physical memory in use.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | true |
+| By | Sum | Int | Cumulative | false |
+
+### process.memory.virtual
+
+Virtual memory size.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### process.open_file_descriptors
+
+Number of file descriptors in use by the process.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {count} | Sum | Int | Cumulative | false |
+
+### process.paging.faults
+
+Number of page faults the process has made. This metric is only available on Linux.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {faults} | Sum | Int | Cumulative | true |
 
 #### Attributes
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| direction | Direction of flow of bytes (read or write). | Str: ``read``, ``write`` |
+| type | Type of memory paging fault. | Str: ``major``, ``minor`` |
 
-### process.memory.physical_usage
+### process.signals_pending
 
-Deprecated: use `process.memory.usage` metric instead. The amount of physical memory in use.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | false |
-
-### process.memory.virtual_usage
-
-Deprecated: Use `process.memory.virtual` metric instead. Virtual memory size.
+Number of pending signals for the process. This metric is only available on Linux.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | false |
+| {signals} | Sum | Int | Cumulative | false |
+
+### process.threads
+
+Process threads count.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {threads} | Sum | Int | Cumulative | false |
 
 ## Resource Attributes
 
