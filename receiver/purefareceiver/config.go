@@ -39,6 +39,9 @@ type Config struct {
 
 	// Hosts represents the list of hosts to query
 	Hosts []internal.ScraperConfig `mapstructure:"hosts"`
+
+	// Directories represents the list of directories to query
+	Directories []internal.ScraperConfig `mapstructure:"directories"`
 }
 
 type Settings struct {
@@ -46,8 +49,9 @@ type Settings struct {
 }
 
 type ReloadIntervals struct {
-	Array time.Duration `mapstructure:"array"`
-	Host  time.Duration `mapstructure:"host"`
+	Array       time.Duration `mapstructure:"array"`
+	Host        time.Duration `mapstructure:"host"`
+	Directories time.Duration `mapstructure:"directories"`
 }
 
 func (c *Config) Validate() error {
