@@ -77,7 +77,7 @@ func createCombinedLogReceiver(
 	recv := &combinedLogsReceiver{}
 
 	if cfg.Alerts.Enabled {
-		recv.alerts, err = newAlertsReceiver(params.Logger, cfg, consumer)
+		recv.alerts, err = newAlertsReceiver(params, cfg, consumer)
 		if err != nil {
 			return nil, fmt.Errorf("unable to create a MongoDB Atlas Alerts Receiver instance: %w", err)
 		}

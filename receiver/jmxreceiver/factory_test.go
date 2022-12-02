@@ -38,7 +38,7 @@ func TestWithInvalidConfig(t *testing.T) {
 		cfg, consumertest.NewNop(),
 	)
 	require.Error(t, err)
-	assert.Equal(t, "jmx missing required fields: `endpoint`, `target_system`", err.Error())
+	assert.Equal(t, "missing required field(s): `endpoint`, `target_system`", err.Error())
 	require.Nil(t, r)
 }
 

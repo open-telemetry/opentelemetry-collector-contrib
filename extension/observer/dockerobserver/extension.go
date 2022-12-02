@@ -24,6 +24,7 @@ import (
 	dtypes "github.com/docker/docker/api/types"
 	"github.com/docker/go-connections/nat"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/extension"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
@@ -36,7 +37,7 @@ const (
 	minimalRequiredDockerAPIVersion = 1.22
 )
 
-var _ component.Extension = (*dockerObserver)(nil)
+var _ extension.Extension = (*dockerObserver)(nil)
 var _ observer.EndpointsLister = (*dockerObserver)(nil)
 var _ observer.Observable = (*dockerObserver)(nil)
 
@@ -51,7 +52,7 @@ type dockerObserver struct {
 }
 
 // newObserver creates a new docker observer extension.
-func newObserver(logger *zap.Logger, config *Config) (component.Extension, error) {
+func newObserver(logger *zap.Logger, config *Config) (extension.Extension, error) {
 	d := &dockerObserver{
 		logger: logger, config: config,
 		once: &sync.Once{},

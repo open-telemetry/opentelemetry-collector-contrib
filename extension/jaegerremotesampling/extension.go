@@ -22,12 +22,13 @@ import (
 	"github.com/jaegertracing/jaeger/cmd/collector/app/sampling/strategystore"
 	"github.com/jaegertracing/jaeger/plugin/sampling/strategystore/static"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/extension"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling/internal"
 )
 
-var _ component.Extension = (*jrsExtension)(nil)
+var _ extension.Extension = (*jrsExtension)(nil)
 
 type jrsExtension struct {
 	cfg       *Config

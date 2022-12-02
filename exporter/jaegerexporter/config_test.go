@@ -77,9 +77,12 @@ func TestLoadConfig(t *testing.T) {
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
 			require.NoError(t, component.UnmarshalConfig(sub, cfg))
-
-			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
+}
+
+func TestValidateConfig(t *testing.T) {
+	cfg := &Config{}
+	assert.EqualError(t, component.ValidateConfig(cfg), "must have a non-empty \"endpoint\"")
 }

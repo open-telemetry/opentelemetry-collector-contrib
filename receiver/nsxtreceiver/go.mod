@@ -6,12 +6,13 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.66.0
 	github.com/stretchr/testify v1.8.1
 	github.com/vmware/go-vmware-nsxt v0.0.0-20220328155605-f49a14c1ef5f
-	go.opentelemetry.io/collector v0.66.1-0.20221128222955-4ff1ff379b90
-	go.opentelemetry.io/collector/component v0.66.1-0.20221128222955-4ff1ff379b90
-	go.opentelemetry.io/collector/consumer v0.66.1-0.20221128222955-4ff1ff379b90
-	go.opentelemetry.io/collector/pdata v0.66.1-0.20221128222955-4ff1ff379b90
+	go.opentelemetry.io/collector v0.66.1-0.20221202005155-1c54042beb70
+	go.opentelemetry.io/collector/component v0.66.1-0.20221202005155-1c54042beb70
+	go.opentelemetry.io/collector/confmap v0.0.0-20221201172708-2bdff61fa52a
+	go.opentelemetry.io/collector/consumer v0.66.1-0.20221202005155-1c54042beb70
+	go.opentelemetry.io/collector/pdata v0.66.1-0.20221202005155-1c54042beb70
 	go.uber.org/multierr v1.8.0
-	go.uber.org/zap v1.23.0
+	go.uber.org/zap v1.24.0
 )
 
 require (
@@ -35,7 +36,7 @@ require (
 	github.com/rs/cors v1.8.2 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/featuregate v0.66.1-0.20221128222955-4ff1ff379b90 // indirect
+	go.opentelemetry.io/collector/featuregate v0.66.1-0.20221202005155-1c54042beb70 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.36.4 // indirect
 	go.opentelemetry.io/otel v1.11.1 // indirect
 	go.opentelemetry.io/otel/metric v0.33.0 // indirect

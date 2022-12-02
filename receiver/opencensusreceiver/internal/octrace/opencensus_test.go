@@ -44,7 +44,7 @@ import (
 )
 
 func TestReceiver_endToEnd(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry()
+	tt, err := obsreporttest.SetupTelemetryWithID(component.NewID("opencensus"))
 	require.NoError(t, err)
 	defer func() {
 		require.NoError(t, tt.Shutdown(context.Background()))
@@ -77,7 +77,7 @@ func TestReceiver_endToEnd(t *testing.T) {
 // accept nodes from downstream sources, but if a node isn't specified in
 // an exportTrace request, assume it is from the last received and non-nil node.
 func TestExportMultiplexing(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry()
+	tt, err := obsreporttest.SetupTelemetryWithID(component.NewID("opencensus"))
 	require.NoError(t, err)
 	defer func() {
 		require.NoError(t, tt.Shutdown(context.Background()))
@@ -213,7 +213,7 @@ func TestExportMultiplexing(t *testing.T) {
 // The first message without a Node MUST be rejected and teardown the connection.
 // See https://github.com/census-instrumentation/opencensus-service/issues/53
 func TestExportProtocolViolations_nodelessFirstMessage(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry()
+	tt, err := obsreporttest.SetupTelemetryWithID(component.NewID("opencensus"))
 	require.NoError(t, err)
 	defer func() {
 		require.NoError(t, tt.Shutdown(context.Background()))
@@ -287,7 +287,7 @@ func TestExportProtocolViolations_nodelessFirstMessage(t *testing.T) {
 // spans should be received and NEVER discarded.
 // See https://github.com/census-instrumentation/opencensus-service/issues/51
 func TestExportProtocolConformation_spansInFirstMessage(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry()
+	tt, err := obsreporttest.SetupTelemetryWithID(component.NewID("opencensus"))
 	require.NoError(t, err)
 	defer func() {
 		require.NoError(t, tt.Shutdown(context.Background()))
@@ -387,7 +387,7 @@ func ocReceiverOnGRPCServer(t *testing.T, sr consumer.Traces, set component.Rece
 		}
 	}
 
-	oci, err := New(component.NewID("opencensus"), sr, set)
+	oci, err := New(sr, set)
 	require.NoError(t, err, "Failed to create the Receiver: %v", err)
 
 	// Now run it as a gRPC server

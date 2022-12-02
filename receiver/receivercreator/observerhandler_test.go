@@ -20,8 +20,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
@@ -49,14 +49,16 @@ var _ runner = (*mockRunner)(nil)
 func TestOnAdd(t *testing.T) {
 	runner := &mockRunner{}
 
-	rcvrCfg := receiverConfig{id: component.NewIDWithName("name", "1"), config: userConfigMap{"foo": "bar"}, endpointID: portEndpoint.ID}
+	set := componenttest.NewNopReceiverCreateSettings()
+	set.ID = component.NewIDWithName("name", "1")
+	rcvrCfg := receiverConfig{id: set.ID, config: userConfigMap{"foo": "bar"}, endpointID: portEndpoint.ID}
 	cfg := createDefaultConfig().(*Config)
 	cfg.receiverTemplates = map[string]receiverTemplate{
 		"name/1": {rcvrCfg, "", map[string]interface{}{}, newRuleOrPanic(`type == "port"`)},
 	}
 	handler := &observerHandler{
+		params:                set,
 		config:                cfg,
-		logger:                zap.NewNop(),
 		receiversByEndpointID: receiverMap{},
 		runner:                runner,
 	}
@@ -80,9 +82,11 @@ func TestOnAdd(t *testing.T) {
 func TestOnRemove(t *testing.T) {
 	runner := &mockRunner{}
 	rcvr := &nopWithEndpointReceiver{}
+	set := componenttest.NewNopReceiverCreateSettings()
+	set.ID = component.NewID(typeStr)
 	handler := &observerHandler{
+		params:                set,
 		config:                createDefaultConfig().(*Config),
-		logger:                zap.NewNop(),
 		receiversByEndpointID: receiverMap{},
 		runner:                runner,
 	}
@@ -99,7 +103,9 @@ func TestOnRemove(t *testing.T) {
 
 func TestOnChange(t *testing.T) {
 	runner := &mockRunner{}
-	rcvrCfg := receiverConfig{id: component.NewIDWithName("name", "1"), config: userConfigMap{"foo": "bar"}, endpointID: portEndpoint.ID}
+	set := componenttest.NewNopReceiverCreateSettings()
+	set.ID = component.NewIDWithName("name", "1")
+	rcvrCfg := receiverConfig{id: set.ID, config: userConfigMap{"foo": "bar"}, endpointID: portEndpoint.ID}
 	oldRcvr := &nopWithEndpointReceiver{}
 	newRcvr := &nopWithEndpointReceiver{}
 	cfg := createDefaultConfig().(*Config)
@@ -107,8 +113,8 @@ func TestOnChange(t *testing.T) {
 		"name/1": {rcvrCfg, "", map[string]interface{}{}, newRuleOrPanic(`type == "port"`)},
 	}
 	handler := &observerHandler{
+		params:                set,
 		config:                cfg,
-		logger:                zap.NewNop(),
 		receiversByEndpointID: receiverMap{},
 		runner:                runner,
 	}
@@ -132,17 +138,19 @@ func TestOnChange(t *testing.T) {
 
 func TestDynamicConfig(t *testing.T) {
 	runner := &mockRunner{}
+	set := componenttest.NewNopReceiverCreateSettings()
+	set.ID = component.NewIDWithName("name", "1")
 	cfg := createDefaultConfig().(*Config)
 	cfg.receiverTemplates = map[string]receiverTemplate{
 		"name/1": {
-			receiverConfig: receiverConfig{id: component.NewIDWithName("name", "1"), config: userConfigMap{"endpoint": "`endpoint`:6379"}, endpointID: podEndpoint.ID},
+			receiverConfig: receiverConfig{id: set.ID, config: userConfigMap{"endpoint": "`endpoint`:6379"}, endpointID: podEndpoint.ID},
 			Rule:           `type == "pod"`,
 			rule:           newRuleOrPanic("type == \"pod\""),
 		},
 	}
 	handler := &observerHandler{
+		params:                set,
 		config:                cfg,
-		logger:                zap.NewNop(),
 		receiversByEndpointID: receiverMap{},
 		runner:                runner,
 	}
