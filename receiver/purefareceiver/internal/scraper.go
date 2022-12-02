@@ -31,23 +31,30 @@ type Scraper interface {
 	ToPrometheusReceiverConfig(host component.Host, fact component.ReceiverFactory) ([]*config.ScrapeConfig, error)
 }
 
+type ScraperType string
+
+const (
+	ScraperTypeArray ScraperType = "array"
+	ScraperTypeHost  ScraperType = "host"
+)
+
 type scraper struct {
-	scraperType    string
+	scraperType    ScraperType
 	endpoint       string
-	hosts          []ScraperConfig
+	configs        []ScraperConfig
 	scrapeInterval time.Duration
 }
 
 func NewScraper(ctx context.Context,
-	scraperType string,
+	scraperType ScraperType,
 	endpoint string,
-	hosts []ScraperConfig,
+	configs []ScraperConfig,
 	scrapeInterval time.Duration,
 ) Scraper {
 	return &scraper{
 		scraperType:    scraperType,
 		endpoint:       endpoint,
-		hosts:          hosts,
+		configs:        configs,
 		scrapeInterval: scrapeInterval,
 	}
 }
@@ -55,7 +62,7 @@ func NewScraper(ctx context.Context,
 func (h *scraper) ToPrometheusReceiverConfig(host component.Host, fact component.ReceiverFactory) ([]*config.ScrapeConfig, error) {
 	scrapeCfgs := []*config.ScrapeConfig{}
 
-	for _, arr := range h.hosts {
+	for _, arr := range h.configs {
 		u, err := url.Parse(h.endpoint)
 		if err != nil {
 			return nil, err
