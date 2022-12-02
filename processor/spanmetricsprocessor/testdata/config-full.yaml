@@ -62,6 +62,10 @@ processors:
     # Default: "AGGREGATION_TEMPORALITY_CUMULATIVE"
     aggregation_temporality: "AGGREGATION_TEMPORALITY_DELTA"
 
+    # The period on which all metrics (whose dimension keys remain in cache) will be emitted.
+    # Default: 15s.
+    metrics_flush_interval: 30s
+
 service:
   pipelines:
     traces:
