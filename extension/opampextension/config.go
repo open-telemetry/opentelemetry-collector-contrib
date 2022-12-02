@@ -27,7 +27,7 @@ type Config struct {
 	// Endpoint is the OpAMP server URL. Transport based on the scheme of the URL.
 	Endpoint string `mapstructure:"endpoint"`
 
-	// InstanceUID is a ULID formatted as a 36 character string in canonical
+	// InstanceUID is a ULID formatted as a 26 character string in canonical
 	// representation. Auto-generated on start if missing.
 	InstanceUID string `mapstructure:"instance_uid"`
 }
