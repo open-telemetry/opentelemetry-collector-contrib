@@ -18,12 +18,13 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/tilinna/clock"
 	"sort"
 	"strings"
 	"sync"
 	"time"
 	"unicode"
+
+	"github.com/tilinna/clock"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -47,11 +48,9 @@ const (
 	defaultDimensionsCacheSize = 1000
 )
 
-var (
-	defaultLatencyHistogramBucketsMs = []float64{
-		2, 4, 6, 8, 10, 50, 100, 200, 400, 800, 1000, 1400, 2000, 5000, 10_000, 15_000,
-	}
-)
+var defaultLatencyHistogramBucketsMs = []float64{
+	2, 4, 6, 8, 10, 50, 100, 200, 400, 800, 1000, 1400, 2000, 5000, 10_000, 15_000,
+}
 
 type exemplarData struct {
 	traceID pcommon.TraceID

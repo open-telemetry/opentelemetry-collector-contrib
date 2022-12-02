@@ -16,12 +16,13 @@ package spanmetricsprocessor // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"context"
+	"time"
+
 	"github.com/tilinna/clock"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/featuregate"
-	"time"
 )
 
 const (

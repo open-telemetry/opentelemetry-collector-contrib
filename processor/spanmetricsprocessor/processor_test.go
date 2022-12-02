@@ -18,9 +18,10 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/tilinna/clock"
 	"testing"
 	"time"
+
+	"github.com/tilinna/clock"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
