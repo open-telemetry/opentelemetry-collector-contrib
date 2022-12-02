@@ -86,7 +86,8 @@ func createDefaultConfig() component.ExporterConfig {
 			SeverityNumber: splunk.DefaultSeverityNumberLabel,
 			Name:           splunk.DefaultNameLabel,
 		},
-		HealthPath: splunk.DefaultHealthPath,
+		HealthPath:            splunk.DefaultHealthPath,
+		HecHealthCheckEnabled: false,
 	}
 }
 

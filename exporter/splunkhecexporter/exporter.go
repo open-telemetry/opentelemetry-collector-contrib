@@ -88,6 +88,13 @@ func createExporter(
 		return nil, err
 	}
 
+	if config.HecHealthCheckEnabled {
+		err = client.checkHecHealth()
+		if err != nil {
+			return nil, fmt.Errorf("health check failed: %s", err.Error())
+		}
+	}
+
 	return &splunkExporter{
 		pushMetricsData: client.pushMetricsData,
 		pushTraceData:   client.pushTraceData,

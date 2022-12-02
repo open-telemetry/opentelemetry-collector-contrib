@@ -46,15 +46,14 @@ const minCompressionLen = 1500
 
 // client sends the data to the splunk backend.
 type client struct {
-	config             *Config
-	url                *url.URL
-	healthCheckURL     *url.URL
-	client             *http.Client
-	logger             *zap.Logger
-	wg                 sync.WaitGroup
-	headers            map[string]string
-	gzipWriterPool     *sync.Pool
-	checkHecHealthOnce sync.Once
+	config         *Config
+	url            *url.URL
+	healthCheckURL *url.URL
+	client         *http.Client
+	logger         *zap.Logger
+	wg             sync.WaitGroup
+	headers        map[string]string
+	gzipWriterPool *sync.Pool
 }
 
 // bufferState encapsulates intermediate buffer state when pushing data
@@ -194,46 +193,6 @@ func (c *cancellableGzipWriter) close() error {
 	return err
 }
 
-func (c *client) checkHecHealth(
-	ctx context.Context) error {
-
-	var hecErr error
-	onceBody := func() {
-		req, err := http.NewRequestWithContext(ctx, "GET", c.healthCheckURL.String(), nil)
-		if err != nil {
-			hecErr = consumererror.NewPermanent(err)
-			return
-		}
-
-		// Set the headers configured for the client
-		for k, v := range c.headers {
-			req.Header.Set(k, v)
-		}
-
-		resp, err := c.client.Do(req)
-		if err != nil {
-			hecErr = err
-			return
-		}
-		defer resp.Body.Close()
-
-		err = splunk.HandleHTTPCode(resp)
-		if err != nil {
-			hecErr = err
-			return
-		}
-
-		_, errCopy := io.Copy(io.Discard, resp.Body)
-		hecErr = errCopy
-	}
-	c.checkHecHealthOnce.Do(onceBody)
-	if hecErr != nil {
-		c.checkHecHealthOnce = sync.Once{}
-		hecErr = fmt.Errorf("health check failed: %s", hecErr.Error())
-	}
-	return hecErr
-}
-
 // Composite index of a record.
 type index struct {
 	// Index in orig list (i.e. root parent index).
@@ -244,6 +203,32 @@ type index struct {
 	record int
 }
 
+func (c *client) checkHecHealth() error {
+
+	req, err := http.NewRequest("GET", c.healthCheckURL.String(), nil)
+	if err != nil {
+		return consumererror.NewPermanent(err)
+	}
+
+	// Set the headers configured for the client
+	for k, v := range c.headers {
+		req.Header.Set(k, v)
+	}
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	err = splunk.HandleHTTPCode(resp)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (c *client) pushMetricsData(
 	ctx context.Context,
 	md pmetric.Metrics,
@@ -251,10 +236,6 @@ func (c *client) pushMetricsData(
 	c.wg.Add(1)
 	defer c.wg.Done()
 
-	err := c.checkHecHealth(ctx)
-	if err != nil {
-		return consumererror.NewMetrics(err, md)
-	}
 	// Callback when each batch is to be sent.
 	send := func(ctx context.Context, bufState *bufferState) (err error) {
 		localHeaders := map[string]string{}
@@ -280,10 +261,6 @@ func (c *client) pushTraceData(
 	c.wg.Add(1)
 	defer c.wg.Done()
 
-	err := c.checkHecHealth(ctx)
-	if err != nil {
-		return consumererror.NewTraces(err, td)
-	}
 	// Callback when each batch is to be sent.
 	send := func(ctx context.Context, bufState *bufferState) (err error) {
 		localHeaders := map[string]string{}
@@ -306,10 +283,6 @@ func (c *client) pushLogData(ctx context.Context, ld plog.Logs) error {
 	c.wg.Add(1)
 	defer c.wg.Done()
 
-	err := c.checkHecHealth(ctx)
-	if err != nil {
-		return consumererror.NewLogs(err, ld)
-	}
 	// Callback when each batch is to be sent.
 	send := func(ctx context.Context, bufState *bufferState, headers map[string]string) (err error) {
 		localHeaders := headers

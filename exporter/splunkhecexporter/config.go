@@ -110,6 +110,9 @@ type Config struct {
 
 	// HealthPath for health API, default is '/services/collector/health'
 	HealthPath string `mapstructure:"health_path"`
+
+	// HecHealthCheckEnabled can be used to verify Splunk HEC health on exporter's startup
+	HecHealthCheckEnabled bool `mapstructure:"health_check_enabled"`
 }
 
 func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {
