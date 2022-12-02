@@ -80,7 +80,7 @@ func New(
 		return nil, err
 	}
 
-	rep, err := newReporter(config.ID(), set)
+	rep, err := newReporter(set)
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +105,7 @@ func buildTransportServer(config Config) (transport.Server, error) {
 		return transport.NewUDPServer(config.Endpoint)
 	}
 
-	return nil, fmt.Errorf("unsupported transport %q for receiver %v", config.Transport, config.ID())
+	return nil, fmt.Errorf("unsupported transport %q", config.Transport)
 }
 
 // Start tells the receiver to start its processing.

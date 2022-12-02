@@ -45,7 +45,7 @@ func newReceiver(params component.ReceiverCreateSettings, config *Config, consum
 	}
 
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
-		ReceiverID:             config.ID(),
+		ReceiverID:             params.ID,
 		Transport:              transport,
 		ReceiverCreateSettings: params,
 	})

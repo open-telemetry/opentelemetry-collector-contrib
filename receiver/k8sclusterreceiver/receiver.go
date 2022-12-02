@@ -17,7 +17,6 @@ package k8sclusterreceiver // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -73,7 +72,7 @@ func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) er
 			if errors.Is(timedContextForInitialSync.Err(), context.DeadlineExceeded) {
 				kr.resourceWatcher.initialSyncTimedOut.Store(true)
 				kr.settings.Logger.Error("Timed out waiting for initial cache sync.")
-				host.ReportFatalError(fmt.Errorf("failed to start receiver: %v", kr.config.ID()))
+				host.ReportFatalError(errors.New("failed to start receiver"))
 				return
 			}
 		}
@@ -118,7 +117,7 @@ func newReceiver(_ context.Context, set component.ReceiverCreateSettings, cfg co
 	rCfg := cfg.(*Config)
 
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
-		ReceiverID:             cfg.ID(),
+		ReceiverID:             set.ID,
 		Transport:              transport,
 		ReceiverCreateSettings: set,
 	})

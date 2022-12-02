@@ -33,20 +33,12 @@ func TestCreateDefaultConfig(t *testing.T) {
 }
 
 func TestCreateInstanceViaFactory(t *testing.T) {
-
 	cfg := createDefaultConfig()
-
-	// Default config doesn't have default URL so creating from it should
-	// fail.
 	params := componenttest.NewNopExporterCreateSettings()
-	exp, err := createTracesExporter(context.Background(), params, cfg)
-	assert.Error(t, err)
-	assert.Nil(t, exp)
-
 	// Endpoint doesn't have a default value so set it directly.
 	expCfg := cfg.(*Config)
 	expCfg.HTTPClientSettings.Endpoint = "http://jaeger.example.com:12345/api/traces"
-	exp, err = createTracesExporter(context.Background(), params, cfg)
+	exp, err := createTracesExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
 
@@ -70,49 +62,4 @@ func TestFactory_CreateTracesExporter(t *testing.T) {
 	te, err := createTracesExporter(context.Background(), params, config)
 	assert.NoError(t, err)
 	assert.NotNil(t, te)
-}
-
-func TestFactory_CreateTracesExporterFails(t *testing.T) {
-	tests := []struct {
-		name         string
-		config       *Config
-		errorMessage string
-	}{
-		{
-			name: "empty_url",
-			config: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-			},
-			errorMessage: "\"jaeger_thrift\" config requires a valid \"endpoint\": parse \"\": empty url",
-		},
-		{
-			name: "invalid_url",
-			config: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Endpoint: ".example:123",
-				},
-			},
-			errorMessage: "\"jaeger_thrift\" config requires a valid \"endpoint\": parse \".example:123\": invalid URI for request",
-		},
-		{
-			name: "negative_duration",
-			config: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Endpoint: "example.com:123",
-					Timeout:  -2 * time.Second,
-				},
-			},
-			errorMessage: "\"jaeger_thrift\" config requires a positive value for \"timeout\"",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			params := componenttest.NewNopExporterCreateSettings()
-			te, err := createTracesExporter(context.Background(), params, tt.config)
-			assert.EqualError(t, err, tt.errorMessage)
-			assert.Nil(t, te)
-		})
-	}
 }

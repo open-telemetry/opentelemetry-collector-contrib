@@ -15,6 +15,7 @@
 package prometheusexecreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver"
 
 import (
+	"errors"
 	"time"
 
 	"go.opentelemetry.io/collector/config"
@@ -34,4 +35,11 @@ type Config struct {
 	Port int `mapstructure:"port"`
 	// SubprocessConfig is the configuration needed for the subprocess
 	SubprocessConfig subprocessmanager.SubprocessConfig `mapstructure:",squash"`
+}
+
+func (cfg *Config) Validate() error {
+	if cfg.SubprocessConfig.Command == "" {
+		return errors.New("command to execute must be non-empty")
+	}
+	return nil
 }

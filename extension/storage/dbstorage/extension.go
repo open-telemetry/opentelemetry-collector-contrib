@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.uber.org/zap"
 )
@@ -35,7 +36,7 @@ type databaseStorage struct {
 // Ensure this storage extension implements the appropriate interface
 var _ storage.Extension = (*databaseStorage)(nil)
 
-func newDBStorage(logger *zap.Logger, config *Config) (component.Extension, error) {
+func newDBStorage(logger *zap.Logger, config *Config) (extension.Extension, error) {
 	return &databaseStorage{
 		driverName:     config.DriverName,
 		datasourceName: config.DataSource,

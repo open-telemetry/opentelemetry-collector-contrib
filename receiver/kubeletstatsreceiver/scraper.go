@@ -32,7 +32,6 @@ import (
 )
 
 type scraperOptions struct {
-	id                    component.ID
 	collectionInterval    time.Duration
 	extraMetadataLabels   []kubelet.MetadataLabel
 	metricGroupsToCollect map[kubelet.MetricGroup]bool

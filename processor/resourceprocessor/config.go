@@ -15,6 +15,8 @@
 package resourceprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor"
 
 import (
+	"errors"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 
@@ -34,5 +36,8 @@ var _ component.Config = (*Config)(nil)
 
 // Validate checks if the processor configuration is valid
 func (cfg *Config) Validate() error {
+	if len(cfg.AttributesActions) == 0 {
+		return errors.New("missing required field \"attributes\"")
+	}
 	return nil
 }
