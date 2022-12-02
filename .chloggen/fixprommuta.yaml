@@ -5,8 +5,8 @@ change_type: bug_fix
 component: prometheusexporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Mark prometheus exporter as mutable since it sorts attributes
+note: Make sure the exporter doesn't mutate metrics
 
 # One or more tracking issues related to the change
-issues: [16499]
+issues: [16499, 16572]
 
