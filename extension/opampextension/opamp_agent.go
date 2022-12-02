@@ -118,7 +118,7 @@ func (o *opampAgent) Shutdown(_ context.Context) error {
 }
 
 func newOpampAgent(cfg *Config, logger *zap.Logger) (*opampAgent, error) {
-	uid := ulid.Make()
+	uid := ulid.Make() // TODO: Replace with https://github.com/open-telemetry/opentelemetry-collector/issues/6599
 
 	if cfg.InstanceUID != "" {
 		puid, err := ulid.Parse(cfg.InstanceUID)
@@ -196,7 +196,7 @@ func (o *opampAgent) onMessage(ctx context.Context, msg *types.MessageData) {
 	if msg.AgentIdentification != nil {
 		instanceId, err := ulid.Parse(msg.AgentIdentification.NewInstanceUid)
 		if err != nil {
-			o.logger.Error("Failed parse a new agent identity", zap.Error(err))
+			o.logger.Error("Failed to parse a new agent identity", zap.Error(err))
 		}
 		o.updateAgentIdentity(instanceId)
 	}
