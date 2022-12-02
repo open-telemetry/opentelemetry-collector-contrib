@@ -128,3 +128,10 @@ func (o *opampAgent) createAgentDescription() error {
 
 	return nil
 }
+
+func (o *opampAgent) updateAgentIdentity(instanceId ulid.ULID) {
+	o.logger.Debug("Agent identify is being changed",
+		zap.String("old_id", o.instanceId.String()),
+		zap.String("new_id", instanceId.String()))
+	o.instanceId = instanceId
+}

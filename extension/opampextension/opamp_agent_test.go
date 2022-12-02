@@ -17,8 +17,8 @@ package opampextension
 import (
 	"testing"
 
+	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/assert"
-
 	"go.opentelemetry.io/collector/component/componenttest"
 )
 
@@ -41,4 +41,20 @@ func TestCreateAgentDescription(t *testing.T) {
 	assert.Nil(t, o.agentDescription)
 	o.createAgentDescription()
 	assert.NotNil(t, o.agentDescription)
+}
+
+func TestUpdateAgentIdentity(t *testing.T) {
+	cfg := createDefaultConfig()
+	set := componenttest.NewNopExtensionCreateSettings()
+	o, err := newOpampAgent(cfg.(*Config), set.Logger)
+	assert.NoError(t, err)
+
+	olduid := o.instanceId
+	assert.NotEmpty(t, olduid.String())
+
+	uid := ulid.Make()
+	assert.NotEqual(t, uid, olduid)
+
+	o.updateAgentIdentity(uid)
+	assert.Equal(t, o.instanceId, uid)
 }
