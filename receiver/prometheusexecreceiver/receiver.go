@@ -76,12 +76,9 @@ type runResult struct {
 }
 
 // newPromExecReceiver returns a prometheusExecReceiver
-func newPromExecReceiver(params component.ReceiverCreateSettings, config *Config, consumer consumer.Metrics) (*prometheusExecReceiver, error) {
-	if config.SubprocessConfig.Command == "" {
-		return nil, fmt.Errorf("no command to execute entered in config file for %v", config.ID())
-	}
+func newPromExecReceiver(params component.ReceiverCreateSettings, config *Config, consumer consumer.Metrics) *prometheusExecReceiver {
 	subprocessConfig := getSubprocessConfig(config)
-	promReceiverConfig := getPromReceiverConfig(config)
+	promReceiverConfig := getPromReceiverConfig(params.ID, config)
 
 	return &prometheusExecReceiver{
 		params:             params,
@@ -90,21 +87,21 @@ func newPromExecReceiver(params component.ReceiverCreateSettings, config *Config
 		subprocessConfig:   subprocessConfig,
 		promReceiverConfig: promReceiverConfig,
 		port:               config.Port,
-	}, nil
+	}
 }
 
 // getPromReceiverConfig returns the Prometheus receiver config
-func getPromReceiverConfig(cfg *Config) *prometheusreceiver.Config {
+func getPromReceiverConfig(id component.ID, cfg *Config) *prometheusreceiver.Config {
 	scrapeConfig := &promconfig.ScrapeConfig{}
 
 	scrapeConfig.ScrapeInterval = model.Duration(cfg.ScrapeInterval)
 	scrapeConfig.ScrapeTimeout = model.Duration(cfg.ScrapeTimeout)
 	scrapeConfig.Scheme = "http"
 	scrapeConfig.MetricsPath = defaultMetricsPath
-	jobName := cfg.ID().Name()
+	jobName := id.Name()
 	if jobName == "" {
 		// Fallback to type if no name
-		jobName = string(cfg.ID().Type())
+		jobName = string(id.Type())
 	}
 	scrapeConfig.JobName = jobName
 	scrapeConfig.HonorLabels = false
@@ -122,7 +119,7 @@ func getPromReceiverConfig(cfg *Config) *prometheusreceiver.Config {
 	}
 
 	return &prometheusreceiver.Config{
-		ReceiverSettings: config.NewReceiverSettings(component.NewIDWithName(typeStr, cfg.ID().Name())),
+		ReceiverSettings: config.NewReceiverSettings(id),
 		PrometheusConfig: &promconfig.Config{
 			ScrapeConfigs: []*promconfig.ScrapeConfig{scrapeConfig},
 		},

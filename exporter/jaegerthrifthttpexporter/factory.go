@@ -16,8 +16,6 @@ package jaegerthrifthttpexporter // import "github.com/open-telemetry/openteleme
 
 import (
 	"context"
-	"fmt"
-	"net/url"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
@@ -56,17 +54,6 @@ func createTracesExporter(
 ) (component.TracesExporter, error) {
 
 	expCfg := config.(*Config)
-	_, err := url.ParseRequestURI(expCfg.HTTPClientSettings.Endpoint)
-	if err != nil {
-		// TODO: Improve error message, see #215
-		err = fmt.Errorf("%q config requires a valid \"endpoint\": %w", expCfg.ID().String(), err)
-		return nil, err
-	}
-
-	if expCfg.HTTPClientSettings.Timeout <= 0 {
-		err := fmt.Errorf("%q config requires a positive value for \"timeout\"", expCfg.ID().String())
-		return nil, err
-	}
 
 	return newTracesExporter(expCfg, set)
 }

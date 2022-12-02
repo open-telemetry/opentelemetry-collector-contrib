@@ -111,5 +111,5 @@ func createTracesReceiver(
 	}
 
 	// Create the receiver.
-	return newJaegerReceiver(rCfg.ID(), &config, nextConsumer, set)
+	return newJaegerReceiver(set.ID, &config, nextConsumer, set)
 }

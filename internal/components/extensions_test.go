@@ -29,7 +29,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/ballastextension"
+	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/extension/zpagesextension"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension"
@@ -226,7 +228,6 @@ func TestDefaultExtensions(t *testing.T) {
 			factory, ok := extFactories[tt.extension]
 			require.True(t, ok)
 			assert.Equal(t, tt.extension, factory.Type())
-			assert.Equal(t, component.NewID(tt.extension), factory.CreateDefaultConfig().ID())
 
 			if tt.skipLifecycle {
 				t.Skip("Skipping lifecycle test for ", tt.extension)
@@ -246,10 +247,10 @@ type getExtensionConfigFn func() component.Config
 // verifyExtensionLifecycle is used to test if an extension type can handle the typical
 // lifecycle of a component. The getConfigFn parameter only need to be specified if
 // the test can't be done with the default configuration for the component.
-func verifyExtensionLifecycle(t *testing.T, factory component.ExtensionFactory, getConfigFn getExtensionConfigFn) {
+func verifyExtensionLifecycle(t *testing.T, factory extension.Factory, getConfigFn getExtensionConfigFn) {
 	ctx := context.Background()
 	host := newAssertNoErrorHost(t)
-	extCreateSet := componenttest.NewNopExtensionCreateSettings()
+	extCreateSet := extensiontest.NewNopCreateSettings()
 
 	if getConfigFn == nil {
 		getConfigFn = factory.CreateDefaultConfig

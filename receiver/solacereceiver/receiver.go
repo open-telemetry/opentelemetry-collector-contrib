@@ -29,7 +29,6 @@ import (
 
 // solaceTracesReceiver uses azure AMQP to consume and handle telemetry data from SOlace. Implements component.TracesReceiver
 type solaceTracesReceiver struct {
-	instanceID component.ID
 	// config is the receiver.Config instance used to build the receiver
 	config *Config
 
@@ -49,36 +48,35 @@ type solaceTracesReceiver struct {
 }
 
 // newTracesReceiver creates a new solaceTraceReceiver as a component.TracesReceiver
-func newTracesReceiver(config *Config, receiverCreateSettings component.ReceiverCreateSettings, nextConsumer consumer.Traces) (component.TracesReceiver, error) {
+func newTracesReceiver(config *Config, set component.ReceiverCreateSettings, nextConsumer consumer.Traces) (component.TracesReceiver, error) {
 	if nextConsumer == nil {
-		receiverCreateSettings.Logger.Warn("Next consumer in pipeline is null, stopping receiver")
+		set.Logger.Warn("Next consumer in pipeline is null, stopping receiver")
 		return nil, component.ErrNilNextConsumer
 	}
 
 	if err := config.Validate(); err != nil {
-		receiverCreateSettings.Logger.Warn("Error validating configuration", zap.Any("error", err))
+		set.Logger.Warn("Error validating configuration", zap.Any("error", err))
 		return nil, err
 	}
 
-	factory, err := newAMQPMessagingServiceFactory(config, receiverCreateSettings.Logger)
+	factory, err := newAMQPMessagingServiceFactory(config, set.Logger)
 	if err != nil {
-		receiverCreateSettings.Logger.Warn("Error validating messaging service configuration", zap.Any("error", err))
+		set.Logger.Warn("Error validating messaging service configuration", zap.Any("error", err))
 		return nil, err
 	}
 
-	metrics, err := newOpenCensusMetrics(config.ID().Name())
+	metrics, err := newOpenCensusMetrics(set.ID.Name())
 	if err != nil {
-		receiverCreateSettings.Logger.Warn("Error registering metrics", zap.Any("error", err))
+		set.Logger.Warn("Error registering metrics", zap.Any("error", err))
 		return nil, err
 	}
 
-	unmarshaller := newTracesUnmarshaller(receiverCreateSettings.Logger, metrics)
+	unmarshaller := newTracesUnmarshaller(set.Logger, metrics)
 
 	return &solaceTracesReceiver{
-		instanceID:        config.ID(),
 		config:            config,
 		nextConsumer:      nextConsumer,
-		settings:          receiverCreateSettings,
+		settings:          set,
 		metrics:           metrics,
 		unmarshaller:      unmarshaller,
 		shutdownWaitGroup: &sync.WaitGroup{},

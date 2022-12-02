@@ -22,7 +22,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -349,7 +348,6 @@ func newReceiver(t *testing.T) (*solaceTracesReceiver, *mockMessagingService, *m
 	metrics := newTestMetrics(t)
 	receiver := &solaceTracesReceiver{
 		settings:          componenttest.NewNopReceiverCreateSettings(),
-		instanceID:        component.NewID(component.Type(t.Name())),
 		config:            &Config{},
 		nextConsumer:      consumertest.NewNop(),
 		metrics:           metrics,

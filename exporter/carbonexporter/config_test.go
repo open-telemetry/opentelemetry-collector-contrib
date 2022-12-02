@@ -66,3 +66,41 @@ func TestLoadConfig(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateConfig(t *testing.T) {
+	tests := []struct {
+		name    string
+		config  *Config
+		wantErr bool
+	}{
+		{
+			name:   "default_config",
+			config: createDefaultConfig().(*Config),
+		},
+		{
+			name: "invalid_tcp_addr",
+			config: &Config{
+				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
+				Endpoint:         "http://localhost:2003",
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid_timeout",
+			config: &Config{
+				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
+				Timeout:          -5 * time.Second,
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.wantErr {
+				assert.Error(t, tt.config.Validate())
+			} else {
+				assert.NoError(t, tt.config.Validate())
+			}
+		})
+	}
+}

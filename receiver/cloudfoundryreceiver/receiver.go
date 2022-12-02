@@ -58,7 +58,7 @@ func newCloudFoundryReceiver(
 	}
 
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
-		ReceiverID:             config.ID(),
+		ReceiverID:             settings.ID,
 		Transport:              transport,
 		ReceiverCreateSettings: settings,
 	})

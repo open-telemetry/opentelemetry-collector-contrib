@@ -70,7 +70,6 @@ func newFilterSpansProcessor(set component.TelemetrySettings, cfg *Config) (*fil
 
 	set.Logger.Info(
 		"Span filter configured",
-		zap.String("ID", cfg.ID().String()),
 		zap.String("[Include] match_type", includeMatchType),
 		zap.String("[Exclude] match_type", excludeMatchType),
 	)

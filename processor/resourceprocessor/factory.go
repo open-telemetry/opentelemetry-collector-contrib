@@ -16,7 +16,6 @@ package resourceprocessor // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
-	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
@@ -57,7 +56,7 @@ func createTracesProcessor(
 	set component.ProcessorCreateSettings,
 	cfg component.Config,
 	nextConsumer consumer.Traces) (component.TracesProcessor, error) {
-	attrProc, err := createAttrProcessor(cfg.(*Config))
+	attrProc, err := attraction.NewAttrProc(&attraction.Settings{Actions: cfg.(*Config).AttributesActions})
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +75,7 @@ func createMetricsProcessor(
 	set component.ProcessorCreateSettings,
 	cfg component.Config,
 	nextConsumer consumer.Metrics) (component.MetricsProcessor, error) {
-	attrProc, err := createAttrProcessor(cfg.(*Config))
+	attrProc, err := attraction.NewAttrProc(&attraction.Settings{Actions: cfg.(*Config).AttributesActions})
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +94,7 @@ func createLogsProcessor(
 	set component.ProcessorCreateSettings,
 	cfg component.Config,
 	nextConsumer consumer.Logs) (component.LogsProcessor, error) {
-	attrProc, err := createAttrProcessor(cfg.(*Config))
+	attrProc, err := attraction.NewAttrProc(&attraction.Settings{Actions: cfg.(*Config).AttributesActions})
 	if err != nil {
 		return nil, err
 	}
@@ -107,15 +106,4 @@ func createLogsProcessor(
 		nextConsumer,
 		proc.processLogs,
 		processorhelper.WithCapabilities(processorCapabilities))
-}
-
-func createAttrProcessor(cfg *Config) (*attraction.AttrProc, error) {
-	if len(cfg.AttributesActions) == 0 {
-		return nil, fmt.Errorf("error creating \"%v\" processor due to missing required field \"attributes\"", cfg.ID())
-	}
-	attrProc, err := attraction.NewAttrProc(&attraction.Settings{Actions: cfg.AttributesActions})
-	if err != nil {
-		return nil, fmt.Errorf("error creating \"%v\" processor: %w", cfg.ID(), err)
-	}
-	return attrProc, nil
 }

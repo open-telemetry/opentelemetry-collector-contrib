@@ -95,7 +95,7 @@ type alertsReceiver struct {
 	storageClient storage.Client
 }
 
-func newAlertsReceiver(logger *zap.Logger, baseConfig *Config, consumer consumer.Logs) (*alertsReceiver, error) {
+func newAlertsReceiver(params component.ReceiverCreateSettings, baseConfig *Config, consumer consumer.Logs) (*alertsReceiver, error) {
 	cfg := baseConfig.Alerts
 	var tlsConfig *tls.Config
 
@@ -127,8 +127,8 @@ func newAlertsReceiver(logger *zap.Logger, baseConfig *Config, consumer consumer
 		maxPages:      baseConfig.Alerts.MaxPages,
 		pageSize:      baseConfig.Alerts.PageSize,
 		doneChan:      make(chan bool, 1),
-		logger:        logger,
-		id:            baseConfig.ID(),
+		logger:        params.Logger,
+		id:            params.ID,
 		storageID:     baseConfig.StorageID,
 	}
 

@@ -101,7 +101,7 @@ func newReceiver(
 		transport = "https"
 	}
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
-		ReceiverID:             config.ID(),
+		ReceiverID:             settings.ID,
 		Transport:              transport,
 		ReceiverCreateSettings: settings,
 	})
@@ -330,7 +330,7 @@ func (r *sfxReceiver) failRequest(
 			r.settings.Logger.Warn(
 				"Error writing HTTP response message",
 				zap.Error(writeErr),
-				zap.String("receiver", r.config.ID().String()))
+				zap.String("receiver", r.settings.ID.String()))
 		}
 	}
 

@@ -42,10 +42,10 @@ func createDefaultConfig() component.Config {
 	return &Config{ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr))}
 }
 
-func createLogsReceiver(_ context.Context, settings component.ReceiverCreateSettings, receiver component.Config, logs consumer.Logs) (component.LogsReceiver, error) {
+func createLogsReceiver(_ context.Context, settings component.ReceiverCreateSettings, cfg component.Config, logs consumer.Logs) (component.LogsReceiver, error) {
 
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
-		ReceiverID:             receiver.ID(),
+		ReceiverID:             settings.ID,
 		Transport:              "azureeventhub",
 		ReceiverCreateSettings: settings,
 	})
@@ -54,7 +54,7 @@ func createLogsReceiver(_ context.Context, settings component.ReceiverCreateSett
 	}
 
 	var converter eventConverter
-	switch logFormat(receiver.(*Config).Format) {
+	switch logFormat(cfg.(*Config).Format) {
 	case azureLogFormat:
 		converter = newAzureLogFormatConverter(settings)
 	case rawLogFormat:
@@ -64,9 +64,9 @@ func createLogsReceiver(_ context.Context, settings component.ReceiverCreateSett
 	}
 
 	return &client{
-		logger:   settings.Logger,
+		settings: settings,
 		consumer: logs,
-		config:   receiver.(*Config),
+		config:   cfg.(*Config),
 		obsrecv:  obsrecv,
 		convert:  converter,
 	}, nil

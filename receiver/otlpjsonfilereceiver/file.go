@@ -79,7 +79,7 @@ func (f *receiver) Shutdown(ctx context.Context) error {
 func createLogsReceiver(_ context.Context, settings component.ReceiverCreateSettings, configuration component.Config, logs consumer.Logs) (component.LogsReceiver, error) {
 	logsUnmarshaler := &plog.JSONUnmarshaler{}
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
-		ReceiverID:             configuration.ID(),
+		ReceiverID:             settings.ID,
 		Transport:              transport,
 		ReceiverCreateSettings: settings,
 	})
@@ -102,13 +102,13 @@ func createLogsReceiver(_ context.Context, settings component.ReceiverCreateSett
 		return nil, err
 	}
 
-	return &receiver{input: input, id: cfg.ID(), storageID: cfg.StorageID}, nil
+	return &receiver{input: input, id: settings.ID, storageID: cfg.StorageID}, nil
 }
 
 func createMetricsReceiver(_ context.Context, settings component.ReceiverCreateSettings, configuration component.Config, metrics consumer.Metrics) (component.MetricsReceiver, error) {
 	metricsUnmarshaler := &pmetric.JSONUnmarshaler{}
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
-		ReceiverID:             configuration.ID(),
+		ReceiverID:             settings.ID,
 		Transport:              transport,
 		ReceiverCreateSettings: settings,
 	})
@@ -131,13 +131,13 @@ func createMetricsReceiver(_ context.Context, settings component.ReceiverCreateS
 		return nil, err
 	}
 
-	return &receiver{input: input, id: cfg.ID(), storageID: cfg.StorageID}, nil
+	return &receiver{input: input, id: settings.ID, storageID: cfg.StorageID}, nil
 }
 
 func createTracesReceiver(ctx context.Context, settings component.ReceiverCreateSettings, configuration component.Config, traces consumer.Traces) (component.TracesReceiver, error) {
 	tracesUnmarshaler := &ptrace.JSONUnmarshaler{}
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
-		ReceiverID:             configuration.ID(),
+		ReceiverID:             settings.ID,
 		Transport:              transport,
 		ReceiverCreateSettings: settings,
 	})
@@ -160,5 +160,5 @@ func createTracesReceiver(ctx context.Context, settings component.ReceiverCreate
 		return nil, err
 	}
 
-	return &receiver{input: input, id: cfg.ID(), storageID: cfg.StorageID}, nil
+	return &receiver{input: input, id: settings.ID, storageID: cfg.StorageID}, nil
 }

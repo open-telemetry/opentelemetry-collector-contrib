@@ -182,7 +182,7 @@ func (f *factory) getResourceDetectionProcessor(
 ) (*resourceDetectionProcessor, error) {
 	oCfg := cfg.(*Config)
 
-	provider, err := f.getResourceProvider(params, cfg.ID(), oCfg.HTTPClientSettings.Timeout, oCfg.Detectors, oCfg.DetectorConfig, oCfg.Attributes)
+	provider, err := f.getResourceProvider(params, oCfg.HTTPClientSettings.Timeout, oCfg.Detectors, oCfg.DetectorConfig, oCfg.Attributes)
 	if err != nil {
 		return nil, err
 	}
@@ -197,7 +197,6 @@ func (f *factory) getResourceDetectionProcessor(
 
 func (f *factory) getResourceProvider(
 	params component.ProcessorCreateSettings,
-	processorName component.ID,
 	timeout time.Duration,
 	configuredDetectors []string,
 	detectorConfigs DetectorConfig,
@@ -206,7 +205,7 @@ func (f *factory) getResourceProvider(
 	f.lock.Lock()
 	defer f.lock.Unlock()
 
-	if provider, ok := f.providers[processorName]; ok {
+	if provider, ok := f.providers[params.ID]; ok {
 		return provider, nil
 	}
 
@@ -223,6 +222,6 @@ func (f *factory) getResourceProvider(
 		return nil, err
 	}
 
-	f.providers[processorName] = provider
+	f.providers[params.ID] = provider
 	return provider, nil
 }

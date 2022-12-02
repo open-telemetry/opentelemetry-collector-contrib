@@ -227,7 +227,6 @@ func TestGetReceiverOptions(t *testing.T) {
 				},
 			},
 			want: &scraperOptions{
-				id: component.NewID(typeStr),
 				extraMetadataLabels: []kubelet.MetadataLabel{
 					kubelet.MetadataLabelContainerID,
 				},

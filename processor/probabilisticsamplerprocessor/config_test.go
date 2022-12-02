@@ -45,7 +45,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "logs"),
 			expected: &Config{
-				ProcessorSettings:  config.NewProcessorSettings(component.NewIDWithName(typeStr, "logs")),
+				ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
 				SamplingPercentage: 15.3,
 				HashSeed:           22,
 				AttributeSource:    "record",
@@ -68,7 +68,6 @@ func TestLoadConfig(t *testing.T) {
 			sub, err := processors.Sub(tt.id.String())
 			require.NoError(t, err)
 			require.NoError(t, component.UnmarshalConfig(sub, cfg))
-			cfg.SetIDName(tt.id.Name())
 
 			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)

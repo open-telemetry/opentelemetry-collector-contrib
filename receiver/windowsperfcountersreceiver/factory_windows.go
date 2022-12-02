@@ -36,7 +36,7 @@ func createMetricsReceiver(
 	scraper := newScraper(oCfg, params.TelemetrySettings)
 
 	scrp, err := scraperhelper.NewScraper(
-		cfg.ID().String(),
+		params.ID.String(),
 		scraper.scrape,
 		scraperhelper.WithStart(scraper.start),
 		scraperhelper.WithShutdown(scraper.shutdown),

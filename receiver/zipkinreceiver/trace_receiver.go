@@ -46,7 +46,6 @@ var errNextConsumerRespBody = []byte(`"Internal Server Error"`)
 // zipkinReceiver type is used to handle spans received in the Zipkin format.
 type zipkinReceiver struct {
 	nextConsumer consumer.Traces
-	id           component.ID
 
 	shutdownWG sync.WaitGroup
 	server     *http.Server
@@ -74,7 +73,7 @@ func newReceiver(config *Config, nextConsumer consumer.Traces, settings componen
 	obsrecvrs := make(map[string]*obsreport.Receiver)
 	for _, transport := range transports {
 		obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
-			ReceiverID:             config.ID(),
+			ReceiverID:             settings.ID,
 			Transport:              transport,
 			ReceiverCreateSettings: settings,
 		})
@@ -86,7 +85,6 @@ func newReceiver(config *Config, nextConsumer consumer.Traces, settings componen
 
 	zr := &zipkinReceiver{
 		nextConsumer:             nextConsumer,
-		id:                       config.ID(),
 		config:                   config,
 		v1ThriftUnmarshaler:      zipkinv1.NewThriftTracesUnmarshaler(),
 		v1JSONUnmarshaler:        zipkinv1.NewJSONTracesUnmarshaler(config.ParseStringTags),

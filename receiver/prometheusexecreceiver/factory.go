@@ -74,5 +74,5 @@ func createMetricsReceiver(
 ) (component.MetricsReceiver, error) {
 	logDeprecation(params.Logger)
 	rCfg := cfg.(*Config)
-	return newPromExecReceiver(params, rCfg, nextConsumer)
+	return newPromExecReceiver(params, rCfg, nextConsumer), nil
 }

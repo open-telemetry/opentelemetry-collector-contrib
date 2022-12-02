@@ -16,7 +16,6 @@ package jaegerexporter // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
-	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
@@ -59,12 +58,5 @@ func createTracesExporter(
 ) (component.TracesExporter, error) {
 
 	expCfg := config.(*Config)
-	if expCfg.Endpoint == "" {
-		// TODO: Improve error message, see #215
-		return nil, fmt.Errorf(
-			"%q config requires a non-empty \"endpoint\"",
-			expCfg.ID().String())
-	}
-
 	return newTracesExporter(expCfg, set)
 }

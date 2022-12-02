@@ -23,7 +23,6 @@ import (
 	"errors"
 	"path/filepath"
 	"runtime"
-	"strconv"
 	"testing"
 	"time"
 
@@ -229,10 +228,8 @@ func TestDefaultReceivers(t *testing.T) {
 		},
 		{
 			receiver: "mongodbatlas",
-			// MongoDB Atlas needs unique config IDs
 			getConfigFn: func() component.Config {
 				cfg := rcvrFactories["mongodbatlas"].CreateDefaultConfig().(*mongodbatlasreceiver.Config)
-				cfg.SetIDName(strconv.Itoa(int(time.Now().UnixNano())))
 				cfg.Logs.Enabled = true
 				return cfg
 			},
@@ -438,7 +435,6 @@ func TestDefaultReceivers(t *testing.T) {
 			factory, ok := rcvrFactories[tt.receiver]
 			require.True(t, ok)
 			assert.Equal(t, tt.receiver, factory.Type())
-			assert.Equal(t, component.NewID(tt.receiver), factory.CreateDefaultConfig().ID())
 
 			if tt.skipLifecyle {
 				t.Skip("Skipping lifecycle test", tt.receiver)

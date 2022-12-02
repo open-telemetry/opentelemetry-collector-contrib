@@ -79,8 +79,7 @@ func createExporter(
 
 	options, err := config.getOptionsFromConfig()
 	if err != nil {
-		return nil,
-			fmt.Errorf("failed to process %q config: %w", config.ID().String(), err)
+		return nil, err
 	}
 
 	client, err := buildClient(options, config, logger)

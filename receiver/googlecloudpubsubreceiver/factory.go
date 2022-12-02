@@ -61,7 +61,7 @@ func (factory *pubsubReceiverFactory) ensureReceiver(params component.ReceiverCr
 	}
 	rconfig := config.(*Config)
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
-		ReceiverID:             config.ID(),
+		ReceiverID:             params.ID,
 		Transport:              reportTransport,
 		ReceiverCreateSettings: params,
 	})

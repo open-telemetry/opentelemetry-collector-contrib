@@ -75,3 +75,45 @@ func TestLoadConfig(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateConfig(t *testing.T) {
+	tests := []struct {
+		name         string
+		config       *Config
+		errorMessage string
+	}{
+		{
+			name: "empty_url",
+			config: &Config{
+				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
+			},
+			errorMessage: "invalid \"endpoint\": parse \"\": empty url",
+		},
+		{
+			name: "invalid_url",
+			config: &Config{
+				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: ".example:123",
+				},
+			},
+			errorMessage: "invalid \"endpoint\": parse \".example:123\": invalid URI for request",
+		},
+		{
+			name: "negative_duration",
+			config: &Config{
+				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: "example.com:123",
+					Timeout:  -2 * time.Second,
+				},
+			},
+			errorMessage: "invalid negative value for \"timeout\"",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.EqualError(t, tt.config.Validate(), tt.errorMessage)
+		})
+	}
+}

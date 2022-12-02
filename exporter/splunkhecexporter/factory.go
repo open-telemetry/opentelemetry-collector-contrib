@@ -128,7 +128,6 @@ func createMetricsExporter(
 	cfg := config.(*Config)
 
 	exp, err := createExporter(cfg, set.Logger, &set.BuildInfo)
-
 	if err != nil {
 		return nil, err
 	}

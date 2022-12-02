@@ -69,7 +69,6 @@ func createLogsProcessor(
 	}
 
 	proc := &logsTransformProcessor{
-		id:     cfg.ID(),
 		logger: set.Logger,
 		config: pCfg,
 	}

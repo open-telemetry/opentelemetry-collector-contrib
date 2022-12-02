@@ -16,7 +16,6 @@ package attributesprocessor // import "github.com/open-telemetry/opentelemetry-c
 
 import (
 	"context"
-	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
@@ -62,12 +61,9 @@ func createTracesProcessor(
 	nextConsumer consumer.Traces,
 ) (component.TracesProcessor, error) {
 	oCfg := cfg.(*Config)
-	if len(oCfg.Actions) == 0 {
-		return nil, fmt.Errorf("error creating \"attributes\" processor due to missing required field \"actions\" of processor %v", cfg.ID())
-	}
 	attrProc, err := attraction.NewAttrProc(&oCfg.Settings)
 	if err != nil {
-		return nil, fmt.Errorf("error creating \"attributes\" processor %v: %w", cfg.ID(), err)
+		return nil, err
 	}
 	skipExpr, err := filterspan.NewSkipExpr(&oCfg.MatchConfig)
 	if err != nil {
@@ -89,12 +85,9 @@ func createLogsProcessor(
 	nextConsumer consumer.Logs,
 ) (component.LogsProcessor, error) {
 	oCfg := cfg.(*Config)
-	if len(oCfg.Actions) == 0 {
-		return nil, fmt.Errorf("error creating \"attributes\" processor due to missing required field \"actions\" of processor %v", cfg.ID())
-	}
 	attrProc, err := attraction.NewAttrProc(&oCfg.Settings)
 	if err != nil {
-		return nil, fmt.Errorf("error creating \"attributes\" processor %v: %w", cfg.ID(), err)
+		return nil, err
 	}
 
 	skipExpr, err := filterlog.NewSkipExpr(&oCfg.MatchConfig)
@@ -119,13 +112,9 @@ func createMetricsProcessor(
 ) (component.MetricsProcessor, error) {
 
 	oCfg := cfg.(*Config)
-	if len(oCfg.Actions) == 0 {
-		return nil, fmt.Errorf("error creating \"attributes\" processor due to missing required field \"actions\" of processor %v", cfg.ID())
-	}
-
 	attrProc, err := attraction.NewAttrProc(&oCfg.Settings)
 	if err != nil {
-		return nil, fmt.Errorf("error creating \"attributes\" processor %v: %w", cfg.ID(), err)
+		return nil, err
 	}
 
 	skipExpr, err := filtermetric.NewSkipExpr(
