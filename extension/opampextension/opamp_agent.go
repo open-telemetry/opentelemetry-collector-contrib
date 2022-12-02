@@ -24,6 +24,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opamp-go/client"
+	"github.com/open-telemetry/opamp-go/client/types"
 	"github.com/open-telemetry/opamp-go/protobufs"
 )
 
@@ -64,10 +65,55 @@ type opampAgent struct {
 }
 
 func (o *opampAgent) Start(_ context.Context, _ component.Host) error {
+	o.opampClient = client.NewWebSocket(&Logger{Logger: o.logger.Sugar()})
+
+	settings := types.StartSettings{
+		OpAMPServerURL: o.cfg.Endpoint,
+		InstanceUid:    o.instanceId.String(),
+		Callbacks: types.CallbacksStruct{
+			OnConnectFunc: func() {
+				o.logger.Debug("Connected to the OpAMP server")
+			},
+			OnConnectFailedFunc: func(err error) {
+				o.logger.Error("Failed to connect to the OpAMP server", zap.Error(err))
+			},
+			OnErrorFunc: func(err *protobufs.ServerErrorResponse) {
+				o.logger.Error("OpAMP server returned an error response", zap.String("message", err.ErrorMessage))
+			},
+			GetEffectiveConfigFunc: func(ctx context.Context) (*protobufs.EffectiveConfig, error) {
+				return o.composeEffectiveConfig(), nil
+			},
+			OnMessageFunc: o.onMessage,
+		},
+		Capabilities: protobufs.AgentCapabilities_AgentCapabilities_ReportsEffectiveConfig,
+	}
+
+	if err := o.createAgentDescription(); err != nil {
+		return err
+	}
+
+	if err := o.opampClient.SetAgentDescription(o.agentDescription); err != nil {
+		return err
+	}
+
+	o.logger.Debug("Starting OpAMP client...")
+
+	if err := o.opampClient.Start(context.Background(), settings); err != nil {
+		return err
+	}
+
+	o.logger.Debug("OpAMP client started")
+
 	return nil
 }
 
 func (o *opampAgent) Shutdown(_ context.Context) error {
+	o.logger.Debug("OpAMP agent shutting down...")
+	if o.opampClient != nil {
+		o.logger.Debug("Stopping OpAMP client...")
+		err := o.opampClient.Stop(context.Background())
+		return err
+	}
 	return nil
 }
 
@@ -86,7 +132,7 @@ func newOpampAgent(cfg *Config, logger *zap.Logger) (*opampAgent, error) {
 		cfg:             cfg,
 		logger:          logger,
 		agentType:       "io.opentelemetry.collector",
-		agentVersion:    "1.0.0",     // TODO: Replace with actual collector version info.
+		agentVersion:    "1.0.0", // TODO: Replace with actual collector version info.
 		instanceId:      uid,
 		effectiveConfig: localConfig, // TODO: Replace with https://github.com/open-telemetry/opentelemetry-collector/issues/6596
 	}
@@ -130,7 +176,7 @@ func (o *opampAgent) createAgentDescription() error {
 }
 
 func (o *opampAgent) updateAgentIdentity(instanceId ulid.ULID) {
-	o.logger.Debug("Agent identify is being changed",
+	o.logger.Debug("OpAMP agent identity is being changed",
 		zap.String("old_id", o.instanceId.String()),
 		zap.String("new_id", instanceId.String()))
 	o.instanceId = instanceId
@@ -143,5 +189,15 @@ func (o *opampAgent) composeEffectiveConfig() *protobufs.EffectiveConfig {
 				"": {Body: []byte(o.effectiveConfig)},
 			},
 		},
+	}
+}
+
+func (o *opampAgent) onMessage(ctx context.Context, msg *types.MessageData) {
+	if msg.AgentIdentification != nil {
+		instanceId, err := ulid.Parse(msg.AgentIdentification.NewInstanceUid)
+		if err != nil {
+			o.logger.Error("Failed parse a new agent identity", zap.Error(err))
+		}
+		o.updateAgentIdentity(instanceId)
 	}
 }

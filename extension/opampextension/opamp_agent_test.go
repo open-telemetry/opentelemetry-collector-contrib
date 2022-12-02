@@ -15,6 +15,7 @@
 package opampextension
 
 import (
+	"context"
 	"testing"
 
 	"github.com/oklog/ulid/v2"
@@ -68,4 +69,23 @@ func TestComposeEffectiveConfig(t *testing.T) {
 
 	ec := o.composeEffectiveConfig()
 	assert.NotNil(t, ec)
+}
+
+func TestShutdown(t *testing.T) {
+	cfg := createDefaultConfig()
+	set := componenttest.NewNopExtensionCreateSettings()
+	o, err := newOpampAgent(cfg.(*Config), set.Logger)
+	assert.NoError(t, err)
+
+	// Shutdown with no OpAMP client
+	assert.NoError(t, o.Shutdown(context.TODO()))
+}
+
+func TestStart(t *testing.T) {
+	cfg := createDefaultConfig()
+	set := componenttest.NewNopExtensionCreateSettings()
+	o, err := newOpampAgent(cfg.(*Config), set.Logger)
+	assert.NoError(t, err)
+
+	assert.NoError(t, o.Start(context.TODO(), componenttest.NewNopHost()))
 }
