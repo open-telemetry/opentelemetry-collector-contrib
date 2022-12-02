@@ -87,7 +87,7 @@ func newOpampAgent(cfg *Config, logger *zap.Logger) (*opampAgent, error) {
 		logger:          logger,
 		agentType:       "io.opentelemetry.collector",
 		agentVersion:    "1.0.0",     // TODO: Replace with actual collector version info.
-		instanceId:      uid,         // TODO: Generate if empty string
+		instanceId:      uid,
 		effectiveConfig: localConfig, // TODO: Replace with https://github.com/open-telemetry/opentelemetry-collector/issues/6596
 	}
 
@@ -134,4 +134,14 @@ func (o *opampAgent) updateAgentIdentity(instanceId ulid.ULID) {
 		zap.String("old_id", o.instanceId.String()),
 		zap.String("new_id", instanceId.String()))
 	o.instanceId = instanceId
+}
+
+func (o *opampAgent) composeEffectiveConfig() *protobufs.EffectiveConfig {
+	return &protobufs.EffectiveConfig{
+		ConfigMap: &protobufs.AgentConfigMap{
+			ConfigMap: map[string]*protobufs.AgentConfigFile{
+				"": {Body: []byte(o.effectiveConfig)},
+			},
+		},
+	}
 }

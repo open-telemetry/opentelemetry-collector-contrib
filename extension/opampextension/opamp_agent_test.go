@@ -58,3 +58,14 @@ func TestUpdateAgentIdentity(t *testing.T) {
 	o.updateAgentIdentity(uid)
 	assert.Equal(t, o.instanceId, uid)
 }
+
+func TestComposeEffectiveConfig(t *testing.T) {
+	cfg := createDefaultConfig()
+	set := componenttest.NewNopExtensionCreateSettings()
+	o, err := newOpampAgent(cfg.(*Config), set.Logger)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, o.effectiveConfig)
+
+	ec := o.composeEffectiveConfig()
+	assert.NotNil(t, ec)
+}
