@@ -223,66 +223,126 @@ func TestNewClientErrorsOnInvalidBucket(t *testing.T) {
 }
 
 func TestClientReboundCompaction(t *testing.T) {
-	tempDir := t.TempDir()
-	dbFile := filepath.Join(tempDir, "my_db")
-
-	checkInterval := time.Second
-
-	logger, _ := zap.NewDevelopment()
-	client, err := newClient(logger, dbFile, time.Second, &CompactionConfig{
-		OnRebound:                  true,
-		CheckInterval:              checkInterval,
-		ReboundNeededThresholdMiB:  1,
-		ReboundTriggerThresholdMiB: 4,
-	})
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		require.NoError(t, client.Close(context.TODO()))
-	})
-
-	// 1. Fill up the database
-	position := int64(0)
-	ctx := context.Background()
-
-	entrySize := int64(1048576)
-
-	for ; position < 5; position++ {
-		batchWrite := []storage.Operation{
-			storage.SetOperation(fmt.Sprintf("foo-%d", position), make([]byte, entrySize)),
-			storage.SetOperation(fmt.Sprintf("bar-%d", position), []byte("testValueBar")),
-		}
-		err = client.Batch(ctx, batchWrite...)
-		require.NoError(t, err)
+	testCases := []struct {
+		testName                   string
+		reboundNeededThresholdMiB  int64
+		reboundTriggerThresholdMiB int64
+		fillStorageAboveMiB        int64
+		drainStorageBelowMiB       int64
+		shouldTriggerCompaction    bool
+	}{
+		{
+			testName:                   "should trigger compaction",
+			reboundNeededThresholdMiB:  4,
+			reboundTriggerThresholdMiB: 1,
+			fillStorageAboveMiB:        10,
+			drainStorageBelowMiB:       1,
+			shouldTriggerCompaction:    true,
+		},
+		{
+			testName:                   "should not trigger compaction because upper threshold not met",
+			reboundNeededThresholdMiB:  20,
+			reboundTriggerThresholdMiB: 1,
+			fillStorageAboveMiB:        10,
+			drainStorageBelowMiB:       1,
+			shouldTriggerCompaction:    false,
+		},
+		{
+			testName:                   "should not trigger compaction because lower threshold not met",
+			reboundNeededThresholdMiB:  10,
+			reboundTriggerThresholdMiB: 1,
+			fillStorageAboveMiB:        20,
+			drainStorageBelowMiB:       5,
+			shouldTriggerCompaction:    false,
+		},
 	}
 
-	require.Eventually(t,
-		func() bool {
-			totalSize, realSize, dbErr := client.getDbSize()
-			require.NoError(t, dbErr)
-			return totalSize > position*entrySize && realSize > position*entrySize
-		},
-		10*time.Second, 5*time.Millisecond, "database allocated space for data",
-	)
+	for _, testCase := range testCases {
+		t.Run(testCase.testName, func(t *testing.T) {
+			tempDir := t.TempDir()
+			dbFile := filepath.Join(tempDir, "my_db")
 
-	// 2. Remove the large entries
-	for i := 0; i < int(position); i++ {
-		err = client.Batch(ctx, storage.DeleteOperation(fmt.Sprintf("foo-%d", i)))
-		require.NoError(t, err)
+			checkInterval := time.Second
+
+			logger, _ := zap.NewDevelopment()
+			client, err := newClient(logger, dbFile, time.Second, &CompactionConfig{
+				OnRebound:                  true,
+				CheckInterval:              checkInterval,
+				ReboundNeededThresholdMiB:  testCase.reboundNeededThresholdMiB,
+				ReboundTriggerThresholdMiB: testCase.reboundTriggerThresholdMiB,
+			})
+			require.NoError(t, err)
+			t.Cleanup(func() {
+				require.NoError(t, client.Close(context.TODO()))
+			})
+
+			// 1. Fill up the database
+			ctx := context.Background()
+
+			entrySize := int64(400_000)
+
+			numEntries := int64(0)
+			for ; ; numEntries++ {
+				batchWrite := []storage.Operation{
+					storage.SetOperation(fmt.Sprintf("foo-%d", numEntries), make([]byte, entrySize)),
+					storage.SetOperation(fmt.Sprintf("bar-%d", numEntries), []byte("testValueBar")),
+				}
+				err = client.Batch(ctx, batchWrite...)
+				require.NoError(t, err)
+
+				totalSize, _, err := client.getDbSize()
+				require.NoError(t, err)
+				if totalSize > testCase.fillStorageAboveMiB*oneMiB {
+					break
+				}
+			}
+
+			require.Eventually(t,
+				func() bool {
+					totalSize, _, dbErr := client.getDbSize()
+					require.NoError(t, dbErr)
+					return totalSize > testCase.fillStorageAboveMiB*oneMiB
+				},
+				10*time.Second, 5*time.Millisecond, "database allocated space for data",
+			)
+
+			// 2. Remove the large entries
+			for i := 0; i < int(numEntries); i++ {
+				_, realSize, err := client.getDbSize()
+				require.NoError(t, err)
+				if realSize < testCase.drainStorageBelowMiB*oneMiB {
+					break
+				}
+
+				err = client.Batch(ctx, storage.DeleteOperation(fmt.Sprintf("foo-%d", i)))
+				require.NoError(t, err)
+			}
+
+			if testCase.shouldTriggerCompaction {
+				require.Eventually(t,
+					func() bool {
+						// The check is performed while the database might be compacted, hence we're reusing the mutex here
+						// (getDbSize is not called from outside the compaction loop otherwise)
+						client.compactionMutex.Lock()
+						defer client.compactionMutex.Unlock()
+
+						totalSize, _, dbErr := client.getDbSize()
+						require.NoError(t, dbErr)
+						return totalSize < testCase.drainStorageBelowMiB*oneMiB
+					},
+					10*time.Second, 5*time.Millisecond, "Compaction did not happen, but it should have.",
+				)
+			} else {
+				// Wait for compaction check interval (twice) to make sure compaction does not happen.
+				time.Sleep(checkInterval * 2)
+
+				// Check that compaction did not happen.
+				totalSize, _, dbErr := client.getDbSize()
+				require.NoError(t, dbErr)
+				require.GreaterOrEqual(t, totalSize, testCase.fillStorageAboveMiB*oneMiB, "Compaction happened, but it should have not.")
+			}
+		})
 	}
-
-	require.Eventually(t,
-		func() bool {
-			// The check is performed while the database might be compacted, hence we're reusing the mutex here
-			// (getDbSize is not called from outside the compaction loop otherwise)
-			client.compactionMutex.Lock()
-			defer client.compactionMutex.Unlock()
-
-			totalSize, realSize, dbErr := client.getDbSize()
-			require.NoError(t, dbErr)
-			return totalSize < entrySize && realSize < entrySize
-		},
-		10*time.Second, 5*time.Millisecond, "database cleaned up not used space",
-	)
 }
 
 func TestClientConcurrentCompaction(t *testing.T) {
