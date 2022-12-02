@@ -95,7 +95,7 @@ func TestNewWithHealthCheckSuccess(t *testing.T) {
 		}
 	}()
 
-	endpoint := "http://" + listener.Addr().String() + "/services/collector/health"
+	endpoint := "http://" + listener.Addr().String() + "/services/collector"
 
 	config := &Config{
 		Token:                 "someToken",
@@ -128,7 +128,7 @@ func TestNewWithHealthCheckFail(t *testing.T) {
 		}
 	}()
 
-	endpoint := "http://" + listener.Addr().String() + "/services/collector/health"
+	endpoint := "http://" + listener.Addr().String() + "/services/collector"
 
 	config := &Config{
 		Token:                 "someToken",

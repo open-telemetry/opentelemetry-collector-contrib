@@ -100,7 +100,8 @@ func TestLoadConfig(t *testing.T) {
 					SeverityNumber: "myseveritynumfield",
 					Name:           "mynamefield",
 				},
-				HealthPath: "/services/collector/health",
+				HealthPath:            "/services/collector/health",
+				HecHealthCheckEnabled: false,
 			},
 		},
 	}

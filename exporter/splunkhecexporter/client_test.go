@@ -978,11 +978,8 @@ func Test_pushLogData_nil_Logs(t *testing.T) {
 		gzipWriterPool: &sync.Pool{New: func() interface{} {
 			return gzip.NewWriter(nil)
 		}},
-		url:            &url.URL{Scheme: "http", Host: "splunk"},
-		healthCheckURL: &url.URL{Scheme: "http", Host: "splunk", Path: "/services/collector/health"},
 	}
 
-	c.client, _ = newTestClientWithPresetResponses([]int{200}, []string{"OK"})
 	for _, test := range tests {
 		for _, disabled := range []bool{true, false} {
 			t.Run(test.name(disabled), func(t *testing.T) {
