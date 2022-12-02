@@ -50,7 +50,7 @@ func newPrometheusExporter(config *Config, set component.ExporterCreateSettings)
 	_ = registry.Register(collector)
 	return &prometheusExporter{
 		config:       *config,
-		name:         config.ID().String(),
+		name:         set.ID.String(),
 		endpoint:     addr,
 		collector:    collector,
 		registry:     registry,

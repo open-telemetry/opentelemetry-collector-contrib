@@ -145,7 +145,7 @@ func TestFactory_CreateMetricsExporterFails(t *testing.T) {
 				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				Token:            "token",
 			},
-			errorMessage: "failed to process \"splunk_hec\" config: requires a non-empty \"endpoint\"",
+			errorMessage: "requires a non-empty \"endpoint\"",
 		},
 		{
 			name: "empty_token",
@@ -153,7 +153,7 @@ func TestFactory_CreateMetricsExporterFails(t *testing.T) {
 				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				Endpoint:         "https://example.com:8000",
 			},
-			errorMessage: "failed to process \"splunk_hec\" config: requires a non-empty \"token\"",
+			errorMessage: "requires a non-empty \"token\"",
 		},
 	}
 	for _, tt := range tests {

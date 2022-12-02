@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/extension"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy"
 )
@@ -33,8 +34,8 @@ const (
 )
 
 // NewFactory creates a factory for awsproxy extension.
-func NewFactory() component.ExtensionFactory {
-	return component.NewExtensionFactory(
+func NewFactory() extension.Factory {
+	return extension.NewFactory(
 		typeStr,
 		createDefaultConfig,
 		createExtension,
@@ -56,6 +57,6 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func createExtension(_ context.Context, params component.ExtensionCreateSettings, cfg component.Config) (component.Extension, error) {
+func createExtension(_ context.Context, params extension.CreateSettings, cfg component.Config) (extension.Extension, error) {
 	return newXrayProxy(cfg.(*Config), params.Logger)
 }

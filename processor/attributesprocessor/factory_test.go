@@ -42,12 +42,10 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
-func TestFactoryCreateTracesProcessor_EmptyActions(t *testing.T) {
+func TestValidateConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	ap, err := factory.CreateTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
-	assert.Error(t, err)
-	assert.Nil(t, ap)
+	assert.Error(t, component.ValidateConfig(cfg))
 }
 
 func TestFactoryCreateTracesProcessor_InvalidActions(t *testing.T) {
@@ -67,7 +65,7 @@ func TestFactoryCreateTracesProcessor_InvalidActions(t *testing.T) {
 	}
 	ap2, err2 := factory.CreateTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
 	assert.Error(t, err2)
-	assert.Equal(t, "error creating \"attributes\" processor attributes: error creating AttrProc due to invalid value \"array\" in field \"converted_type\" for action \"convert\" at the 0-th action", err2.Error())
+	assert.Equal(t, "error creating AttrProc due to invalid value \"array\" in field \"converted_type\" for action \"convert\" at the 0-th action", err2.Error())
 	assert.Nil(t, ap2)
 }
 
@@ -98,17 +96,11 @@ func TestFactoryCreateTracesProcessor(t *testing.T) {
 func TestFactory_CreateMetricsProcessor(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-
-	// Create should fail without any actions
-	mp, err := factory.CreateMetricsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
-	require.Nil(t, mp)
-	assert.Error(t, err)
-
 	cfg.(*Config).Actions = []attraction.ActionKeyValue{
 		{Key: "fake_key", Action: attraction.INSERT, Value: "100"},
 	}
 
-	mp, err = factory.CreateMetricsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
+	mp, err := factory.CreateMetricsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
 	require.NotNil(t, mp)
 	require.NoError(t, err)
 
@@ -124,14 +116,6 @@ func TestFactory_CreateMetricsProcessor(t *testing.T) {
 	mp, err = factory.CreateMetricsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
 	require.Nil(t, mp)
 	require.Error(t, err)
-}
-
-func TestFactoryCreateLogsProcessor_EmptyActions(t *testing.T) {
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
-	ap, err := factory.CreateLogsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
-	assert.Error(t, err)
-	assert.Nil(t, ap)
 }
 
 func TestFactoryCreateLogsProcessor_InvalidActions(t *testing.T) {

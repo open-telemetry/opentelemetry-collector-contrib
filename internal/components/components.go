@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/loggingexporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/exporter/otlphttpexporter"
+	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/ballastextension"
 	"go.opentelemetry.io/collector/extension/zpagesextension"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
@@ -184,7 +185,7 @@ import (
 func Components() (component.Factories, error) {
 	var err error
 	factories := component.Factories{}
-	extensions := []component.ExtensionFactory{
+	extensions := []extension.Factory{
 		asapauthextension.NewFactory(),
 		awsproxy.NewFactory(),
 		ballastextension.NewFactory(),
@@ -205,7 +206,7 @@ func Components() (component.Factories, error) {
 		sigv4authextension.NewFactory(),
 		zpagesextension.NewFactory(),
 	}
-	factories.Extensions, err = component.MakeExtensionFactoryMap(extensions...)
+	factories.Extensions, err = extension.MakeFactoryMap(extensions...)
 	if err != nil {
 		return component.Factories{}, err
 	}

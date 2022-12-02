@@ -54,11 +54,11 @@ func New(
 		return nil, component.ErrNilNextConsumer
 	}
 
-	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: config.ID(), Transport: "http"})
+	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: params.ID, Transport: "http", ReceiverCreateSettings: params})
 	if err != nil {
 		return nil, err
 	}
-	httpsObsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: config.ID(), Transport: "https"})
+	httpsObsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: params.ID, Transport: "https", ReceiverCreateSettings: params})
 	if err != nil {
 		return nil, err
 	}

@@ -38,7 +38,6 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 
 	// Check the values of the default configuration.
 	assert.NotNil(t, cfg)
-	assert.Equal(t, component.NewID(typeStr), cfg.ID())
 }
 
 func TestFactory_CreateTracesProcessor(t *testing.T) {

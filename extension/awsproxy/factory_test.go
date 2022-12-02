@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/extension/extensiontest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
@@ -73,7 +74,7 @@ func TestFactory_CreateExtension(t *testing.T) {
 	t.Setenv("AWS_SECRET_ACCESS_KEY", "fakeSecretAccessKey")
 
 	ctx := context.Background()
-	ext, err := createExtension(ctx, componenttest.NewNopExtensionCreateSettings(), cfg)
+	ext, err := createExtension(ctx, extensiontest.NewNopCreateSettings(), cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, ext)
 

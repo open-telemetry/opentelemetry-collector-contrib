@@ -44,7 +44,7 @@ func TestCreateTraceAndMetricsReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
+	sub, err := cm.Sub(component.NewID(typeStr).String())
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
@@ -57,19 +57,20 @@ func TestCreateTraceAndMetricsReceiver(t *testing.T) {
 	assert.Equal(t, nil, traceReceiver)
 	assert.ErrorIs(t, err, component.ErrDataTypeIsNotSupported)
 
-	// Test CreateMetricsReceiver error because of lack of command
-	_, err = factory.CreateMetricsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, nil)
-	assert.NotNil(t, err)
+	// Test error because of lack of command
+	assert.Error(t, component.ValidateConfig(cfg))
 
 	// Test CreateMetricsReceiver
 	sub, err = cm.Sub(component.NewIDWithName(typeStr, "test").String())
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
-	metricReceiver, err = factory.CreateMetricsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, nil)
+	set := componenttest.NewNopReceiverCreateSettings()
+	set.ID = component.NewID(typeStr)
+	metricReceiver, err = factory.CreateMetricsReceiver(context.Background(), set, cfg, nil)
 	assert.Equal(t, nil, err)
 
 	wantPer := &prometheusExecReceiver{
-		params:   componenttest.NewNopReceiverCreateSettings(),
+		params:   set,
 		config:   cfg.(*Config),
 		consumer: nil,
 		promReceiverConfig: &prometheusreceiver.Config{

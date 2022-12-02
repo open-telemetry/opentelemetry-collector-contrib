@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/extension/extensiontest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
@@ -39,7 +40,7 @@ func TestFactory_CreateExtension(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 
-	ext, err := factory.CreateExtension(context.Background(), componenttest.NewNopExtensionCreateSettings(), cfg)
+	ext, err := factory.CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
 	require.Error(t, err)
 	require.Nil(t, ext)
 }

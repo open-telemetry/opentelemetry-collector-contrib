@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package azureeventhubreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver"
+
 import (
 	"context"
 	"fmt"
@@ -28,7 +29,7 @@ import (
 )
 
 type client struct {
-	logger   *zap.Logger
+	settings component.ReceiverCreateSettings
 	consumer consumer.Logs
 	config   *Config
 	obsrecv  *obsreport.Receiver
@@ -69,7 +70,7 @@ func (h *hubWrapperImpl) Close(ctx context.Context) error {
 }
 
 func (c *client) Start(ctx context.Context, host component.Host) error {
-	storageClient, err := adapter.GetStorageClient(ctx, host, c.config.StorageID, c.config.ID())
+	storageClient, err := adapter.GetStorageClient(ctx, host, c.config.StorageID, c.settings.ID)
 	if err != nil {
 		return err
 	}
@@ -120,7 +121,7 @@ func (c *client) setUpOnePartition(ctx context.Context, partitionID string, appl
 		<-handle.Done()
 		err := handle.Err()
 		if err != nil {
-			c.logger.Error("Error reported by event hub", zap.Error(err))
+			c.settings.Logger.Error("Error reported by event hub", zap.Error(err))
 		}
 	}()
 

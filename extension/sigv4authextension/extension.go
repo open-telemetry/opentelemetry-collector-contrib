@@ -25,12 +25,12 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configauth"
+	"go.opentelemetry.io/collector/extension/auth"
 	"go.uber.org/zap"
 	grpcCredentials "google.golang.org/grpc/credentials"
 )
 
-// sigv4Auth is a struct that implements the configauth.ClientAuthenticator interface.
+// sigv4Auth is a struct that implements the auth.Client interface.
 // It provides the implementation for providing Sigv4 authentication for HTTP requests only.
 type sigv4Auth struct {
 	cfg                    *Config
@@ -40,8 +40,8 @@ type sigv4Auth struct {
 	component.ShutdownFunc // embedded default behavior to do nothing with Shutdown()
 }
 
-// compile time check that the sigv4Auth struct satisfies the configauth.ClientAuthenticator interface
-var _ configauth.ClientAuthenticator = (*sigv4Auth)(nil)
+// compile time check that the sigv4Auth struct satisfies the auth.Client interface
+var _ auth.Client = (*sigv4Auth)(nil)
 
 // RoundTripper() returns a custom signingRoundTripper.
 func (sa *sigv4Auth) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
@@ -63,8 +63,7 @@ func (sa *sigv4Auth) RoundTripper(base http.RoundTripper) (http.RoundTripper, er
 	return &rt, nil
 }
 
-// PerRPCCredentials() is implemented to satisfy the configauth.ClientAuthenticator
-// interface but will not be implemented.
+// PerRPCCredentials is implemented to satisfy the auth.Client interface but will not be implemented.
 func (sa *sigv4Auth) PerRPCCredentials() (grpcCredentials.PerRPCCredentials, error) {
 	return nil, errors.New("Not Implemented")
 }
