@@ -30,13 +30,28 @@ fi
 
 main () {
     CUR_DIRECTORY=$(dirname "$0")
-    JSON=$(gh pr view "${PR}" --json "files,author")
+    # Reviews may have comments that need to be cleaned up for jq,
+    # so restrict output to only printable characters and ensure escape
+    # sequences are removed.
+    # The latestReviews key only returns the latest review for each reviewer,
+    # cutting out any other reviews. We use that instead of requestedReviews
+    # since we need to get the list of users eligible for requesting another
+    # review. The GitHub CLI does not offer a list of all reviewers, which
+    # is only available through the API. To cut down on API calls to GitHub,
+    # we use the latest reviews to determine which users to filter out.
+    JSON=$(gh pr view "${PR}" --json "files,author,latestReviews" | tr -dc '[:print:]' | sed -E 's/\\[a-z]//g')
     AUTHOR=$(printf "${JSON}"| jq -r '.author.login')
     FILES=$(printf "${JSON}"| jq -r '.files[].path')
+    REVIEW_LOGINS=$(printf "${JSON}"| jq -r '.latestReviews[].author.login')
     COMPONENTS=$(bash "${CUR_DIRECTORY}/get-components.sh")
     REVIEWERS=""
     LABELS=""
     declare -A PROCESSED_COMPONENTS
+    declare -A REVIEWED
+
+    for REVIEWER in ${REVIEW_LOGINS}; do
+        REVIEWED["@${REVIEWER}"]=true
+    done
 
     for COMPONENT in ${COMPONENTS}; do
         # Files will be in alphabetical order and there are many files to
@@ -63,7 +78,10 @@ main () {
             OWNERS=$(COMPONENT="${COMPONENT}" bash "${CUR_DIRECTORY}/get-codeowners.sh")
 
             for OWNER in ${OWNERS}; do
-                if [[ "${OWNER}" = "@${AUTHOR}" ]]; then
+                # Users that leave reviews are removed from the "requested reviewers"
+                # list and are eligible to have another review requested. We only want
+                # to request a review once, so remove them from the list.
+                if [[ -v REVIEWED["${OWNER}"] || "${OWNER}" = "@${AUTHOR}" ]]; then
                     continue
                 fi
 
