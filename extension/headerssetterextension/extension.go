@@ -89,9 +89,11 @@ func (h *headersPerRPC) GetRequestMetadata(
 	return metadata, nil
 }
 
-// RequireTransportSecurity always returns true for this implementation.
+// RequireTransportSecurity always returns false for this implementation.
+// The header setter is not sending auth data, so it should not require
+// a transport security.
 func (h *headersPerRPC) RequireTransportSecurity() bool {
-	return true
+	return false
 }
 
 // headersRoundTripper intercepts downstream requests and sets headers with
