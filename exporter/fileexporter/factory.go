@@ -73,15 +73,7 @@ func createTracesExporter(
 		return nil, err
 	}
 	fe := exporters.GetOrAdd(cfg, func() component.Component {
-		return &fileExporter{
-			path:            conf.Path,
-			formatType:      conf.FormatType,
-			file:            writer,
-			tracesMarshaler: tracesMarshalers[conf.FormatType],
-			exporter:        buildExportFunc(conf),
-			compression:     conf.Compression,
-			compressor:      buildCompressor(conf.Compression),
-		}
+		return newFileExporter(conf, writer)
 	})
 	return exporterhelper.NewTracesExporter(
 		ctx,
@@ -104,15 +96,7 @@ func createMetricsExporter(
 		return nil, err
 	}
 	fe := exporters.GetOrAdd(cfg, func() component.Component {
-		return &fileExporter{
-			path:             conf.Path,
-			formatType:       conf.FormatType,
-			file:             writer,
-			metricsMarshaler: metricsMarshalers[conf.FormatType],
-			exporter:         buildExportFunc(conf),
-			compression:      conf.Compression,
-			compressor:       buildCompressor(conf.Compression),
-		}
+		return newFileExporter(conf, writer)
 	})
 	return exporterhelper.NewMetricsExporter(
 		ctx,
@@ -135,15 +119,7 @@ func createLogsExporter(
 		return nil, err
 	}
 	fe := exporters.GetOrAdd(cfg, func() component.Component {
-		return &fileExporter{
-			path:          conf.Path,
-			formatType:    conf.FormatType,
-			file:          writer,
-			logsMarshaler: logsMarshalers[conf.FormatType],
-			exporter:      buildExportFunc(conf),
-			compression:   conf.Compression,
-			compressor:    buildCompressor(conf.Compression),
-		}
+		return newFileExporter(conf, writer)
 	})
 	return exporterhelper.NewLogsExporter(
 		ctx,
@@ -153,6 +129,20 @@ func createLogsExporter(
 		exporterhelper.WithStart(fe.Start),
 		exporterhelper.WithShutdown(fe.Shutdown),
 	)
+}
+
+func newFileExporter(conf *Config, writer io.WriteCloser) *fileExporter {
+	return &fileExporter{
+		path:             conf.Path,
+		formatType:       conf.FormatType,
+		file:             writer,
+		tracesMarshaler:  tracesMarshalers[conf.FormatType],
+		metricsMarshaler: metricsMarshalers[conf.FormatType],
+		logsMarshaler:    logsMarshalers[conf.FormatType],
+		exporter:         buildExportFunc(conf),
+		compression:      conf.Compression,
+		compressor:       buildCompressor(conf.Compression),
+	}
 }
 
 func buildFileWriter(cfg *Config) (io.WriteCloser, error) {
