@@ -25,6 +25,20 @@ import (
 func TestNewOpampAgent(t *testing.T) {
 	cfg := createDefaultConfig()
 	set := componenttest.NewNopExtensionCreateSettings()
-	_, err := newOpampAgent(cfg.(*Config), set.Logger)
+	o, err := newOpampAgent(cfg.(*Config), set.Logger)
 	assert.NoError(t, err)
+	assert.NotEmpty(t, o.instanceId.String())
+	assert.NotEmpty(t, o.effectiveConfig)
+	assert.Nil(t, o.agentDescription)
+}
+
+func TestCreateAgentDescription(t *testing.T) {
+	cfg := createDefaultConfig()
+	set := componenttest.NewNopExtensionCreateSettings()
+	o, err := newOpampAgent(cfg.(*Config), set.Logger)
+	assert.NoError(t, err)
+
+	assert.Nil(t, o.agentDescription)
+	o.createAgentDescription()
+	assert.NotNil(t, o.agentDescription)
 }

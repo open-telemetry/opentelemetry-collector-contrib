@@ -16,15 +16,51 @@ package opampextension
 
 import (
 	"context"
+	"os"
+	"runtime"
 
+	"github.com/oklog/ulid/v2"
+	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/component"
+	"github.com/open-telemetry/opamp-go/client"
+	"github.com/open-telemetry/opamp-go/protobufs"
 )
 
+// TODO: Replace with https://github.com/open-telemetry/opentelemetry-collector/issues/6596
+const localConfig = `
+exporters:
+  otlp:
+    endpoint: localhost:1111
+receivers:
+  otlp:
+    protocols:
+      grpc: {}
+      http: {}
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: []
+      exporters: [otlp]
+`
+
 type opampAgent struct {
-	cfg              *Config
-	logger           *zap.Logger
+	cfg    *Config
+	logger *zap.Logger
+
+	agentType    string
+	agentVersion string
+
+	instanceId ulid.ULID
+
+	effectiveConfig string
+
+	agentDescription *protobufs.AgentDescription
+
+	opampClient client.OpAMPClient
+
+	remoteConfigStatus *protobufs.RemoteConfigStatus
 }
 
 func (o *opampAgent) Start(_ context.Context, _ component.Host) error {
@@ -36,8 +72,59 @@ func (o *opampAgent) Shutdown(_ context.Context) error {
 }
 
 func newOpampAgent(cfg *Config, logger *zap.Logger) (*opampAgent, error) {
-	return &opampAgent{
-		cfg:         cfg,
-		logger:      logger,
-	}, nil
+	uid := ulid.Make()
+
+	if cfg.InstanceUID != "" {
+		puid, err := ulid.Parse(cfg.InstanceUID)
+		if err != nil {
+			return nil, err
+		}
+		uid = puid
+	}
+
+	agent := &opampAgent{
+		cfg:             cfg,
+		logger:          logger,
+		agentType:       "io.opentelemetry.collector",
+		agentVersion:    "1.0.0",     // TODO: Replace with actual collector version info.
+		instanceId:      uid,         // TODO: Generate if empty string
+		effectiveConfig: localConfig, // TODO: Replace with https://github.com/open-telemetry/opentelemetry-collector/issues/6596
+	}
+
+	return agent, nil
+}
+
+func stringKeyValue(key, value string) *protobufs.KeyValue {
+	return &protobufs.KeyValue{
+		Key: key,
+		Value: &protobufs.AnyValue{
+			Value: &protobufs.AnyValue_StringValue{StringValue: value},
+		},
+	}
+}
+
+func (o *opampAgent) createAgentDescription() error {
+	hostname, err := os.Hostname()
+	if err != nil {
+		return err
+	}
+
+	ident := []*protobufs.KeyValue{
+		stringKeyValue("service.instance.id", o.instanceId.String()),
+		stringKeyValue("service.name", o.agentType),
+		stringKeyValue("service.version", o.agentVersion),
+	}
+
+	nonIdent := []*protobufs.KeyValue{
+		stringKeyValue("os.arch", runtime.GOARCH),
+		stringKeyValue("os.family", runtime.GOOS),
+		stringKeyValue("host.name", hostname),
+	}
+
+	o.agentDescription = &protobufs.AgentDescription{
+		IdentifyingAttributes:    ident,
+		NonIdentifyingAttributes: nonIdent,
+	}
+
+	return nil
 }
