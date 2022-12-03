@@ -19,6 +19,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/extension"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
@@ -29,8 +30,8 @@ const (
 )
 
 // NewFactory should be called to create a factory with default values.
-func NewFactory() component.ExtensionFactory {
-	return component.NewExtensionFactory(
+func NewFactory() extension.Factory {
+	return extension.NewFactory(
 		typeStr,
 		createDefaultConfig,
 		createExtension,
@@ -39,7 +40,7 @@ func NewFactory() component.ExtensionFactory {
 }
 
 // CreateDefaultConfig creates the default configuration for the extension.
-func createDefaultConfig() component.ExtensionConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
 		APIConfig:         k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
@@ -51,8 +52,8 @@ func createDefaultConfig() component.ExtensionConfig {
 // CreateExtension creates the extension based on this config.
 func createExtension(
 	ctx context.Context,
-	params component.ExtensionCreateSettings,
-	cfg component.ExtensionConfig,
-) (component.Extension, error) {
-	return newObserver(cfg.(*Config), params.TelemetrySettings)
+	params extension.CreateSettings,
+	cfg component.Config,
+) (extension.Extension, error) {
+	return newObserver(cfg.(*Config), params)
 }

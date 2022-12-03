@@ -53,7 +53,7 @@ var (
 	_ component.LogsExporter    = (*Exporter)(nil)
 )
 
-func createExporter(ctx context.Context, c component.ExporterConfig, log *zap.Logger, opts ...func(opt *options)) (*Exporter, error) {
+func createExporter(ctx context.Context, c component.Config, log *zap.Logger, opts ...func(opt *options)) (*Exporter, error) {
 	options := &options{
 		NewKinesisClient: kinesis.NewFromConfig,
 	}

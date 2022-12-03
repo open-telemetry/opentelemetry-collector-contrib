@@ -118,7 +118,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, float64(1), dp.DoubleValue())
 			attrVal, ok := dp.Attributes().Get("class")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeClass(1).String(), attrVal.Str())
+			assert.Equal(t, "datapath", attrVal.Str())
 			validatedMetrics["nsxt.node.cpu.utilization"] = struct{}{}
 		case "nsxt.node.filesystem.usage":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -134,7 +134,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("state")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeDiskState(1).String(), attrVal.Str())
+			assert.Equal(t, "used", attrVal.Str())
 			validatedMetrics["nsxt.node.filesystem.usage"] = struct{}{}
 		case "nsxt.node.filesystem.utilization":
 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
@@ -187,7 +187,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("direction")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeDirection(1).String(), attrVal.Str())
+			assert.Equal(t, "received", attrVal.Str())
 			validatedMetrics["nsxt.node.network.io"] = struct{}{}
 		case "nsxt.node.network.packet.count":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -203,10 +203,10 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("direction")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeDirection(1).String(), attrVal.Str())
+			assert.Equal(t, "received", attrVal.Str())
 			attrVal, ok = dp.Attributes().Get("type")
 			assert.True(t, ok)
-			assert.Equal(t, AttributePacketType(1).String(), attrVal.Str())
+			assert.Equal(t, "dropped", attrVal.Str())
 			validatedMetrics["nsxt.node.network.packet.count"] = struct{}{}
 		}
 	}

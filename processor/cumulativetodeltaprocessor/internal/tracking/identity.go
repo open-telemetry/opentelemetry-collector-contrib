@@ -42,7 +42,8 @@ func (mi *MetricIdentity) Write(b *bytes.Buffer) {
 	b.WriteRune(A + int32(mi.MetricType))
 	b.WriteByte(SEP)
 	b.WriteRune(A + int32(mi.MetricValueType))
-	mi.Resource.Attributes().Sort().Range(func(k string, v pcommon.Value) bool {
+	mi.Resource.Attributes().Sort()
+	mi.Resource.Attributes().Range(func(k string, v pcommon.Value) bool {
 		b.WriteByte(SEP)
 		b.WriteString(k)
 		b.WriteByte(':')
@@ -66,7 +67,8 @@ func (mi *MetricIdentity) Write(b *bytes.Buffer) {
 	b.WriteByte(SEP)
 	b.WriteString(mi.MetricUnit)
 
-	mi.Attributes.Sort().Range(func(k string, v pcommon.Value) bool {
+	mi.Attributes.Sort()
+	mi.Attributes.Range(func(k string, v pcommon.Value) bool {
 		b.WriteByte(SEP)
 		b.WriteString(k)
 		b.WriteByte(':')

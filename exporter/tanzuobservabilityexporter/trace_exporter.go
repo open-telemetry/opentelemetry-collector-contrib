@@ -63,7 +63,7 @@ type tracesExporter struct {
 	logger *zap.Logger
 }
 
-func newTracesExporter(settings component.ExporterCreateSettings, c component.ExporterConfig) (*tracesExporter, error) {
+func newTracesExporter(settings component.ExporterCreateSettings, c component.Config) (*tracesExporter, error) {
 	cfg, ok := c.(*Config)
 	if !ok {
 		return nil, fmt.Errorf("invalid config: %#v", c)

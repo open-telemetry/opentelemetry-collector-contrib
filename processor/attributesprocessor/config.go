@@ -15,6 +15,8 @@
 package attributesprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor"
 
 import (
+	"errors"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 
@@ -40,9 +42,12 @@ type Config struct {
 	attraction.Settings `mapstructure:",squash"`
 }
 
-var _ component.ProcessorConfig = (*Config)(nil)
+var _ component.Config = (*Config)(nil)
 
 // Validate checks if the processor configuration is valid
 func (cfg *Config) Validate() error {
+	if len(cfg.Actions) == 0 {
+		return errors.New("missing required field \"actions\"")
+	}
 	return nil
 }

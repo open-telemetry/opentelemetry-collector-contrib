@@ -32,7 +32,8 @@ func TestLoadConfig(t *testing.T) {
 
 	tests := []struct {
 		id       component.ID
-		expected component.ProcessorConfig
+		expected component.Config
+		valid    bool
 	}{
 		{
 			id: component.NewIDWithName(typeStr, ""),
@@ -44,6 +45,7 @@ func TestLoadConfig(t *testing.T) {
 					{Key: "redundant-attribute", Action: attraction.DELETE},
 				},
 			},
+			valid: true,
 		},
 		{
 			id:       component.NewIDWithName(typeStr, "invalid"),
@@ -61,9 +63,13 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalProcessorConfig(sub, cfg))
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-			assert.NoError(t, component.ValidateConfig(cfg))
+			if tt.valid {
+				assert.NoError(t, component.ValidateConfig(cfg))
+			} else {
+				assert.Error(t, component.ValidateConfig(cfg))
+			}
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

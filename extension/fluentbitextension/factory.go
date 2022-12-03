@@ -20,6 +20,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/extension"
 	"go.uber.org/zap"
 )
 
@@ -31,8 +32,8 @@ const (
 var once sync.Once
 
 // NewFactory creates a factory for FluentBit extension.
-func NewFactory() component.ExtensionFactory {
-	return component.NewExtensionFactory(
+func NewFactory() extension.Factory {
+	return extension.NewFactory(
 		typeStr,
 		createDefaultConfig,
 		createExtension,
@@ -40,7 +41,7 @@ func NewFactory() component.ExtensionFactory {
 	)
 }
 
-func createDefaultConfig() component.ExtensionConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
 	}
@@ -52,7 +53,7 @@ func logDeprecation(logger *zap.Logger) {
 	})
 }
 
-func createExtension(_ context.Context, params component.ExtensionCreateSettings, cfg component.ExtensionConfig) (component.Extension, error) {
+func createExtension(_ context.Context, params extension.CreateSettings, cfg component.Config) (extension.Extension, error) {
 	logDeprecation(params.Logger)
 	config := cfg.(*Config)
 	return newProcessManager(config, params.Logger), nil

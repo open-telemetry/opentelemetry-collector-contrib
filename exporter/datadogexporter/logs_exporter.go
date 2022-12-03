@@ -51,7 +51,7 @@ func newLogsExporter(ctx context.Context, params component.ExporterCreateSetting
 		return nil, err
 	}
 
-	s := logs.NewSender(cfg.Logs.TCPAddr.Endpoint, params.Logger, cfg.TimeoutSettings, cfg.LimitedHTTPClientSettings.TLSSetting.InsecureSkipVerify, cfg.API.Key)
+	s := logs.NewSender(cfg.Logs.TCPAddr.Endpoint, params.Logger, cfg.TimeoutSettings, cfg.LimitedHTTPClientSettings.TLSSetting.InsecureSkipVerify, cfg.Logs.DumpPayloads, cfg.API.Key)
 
 	return &logsExporter{
 		params:         params,

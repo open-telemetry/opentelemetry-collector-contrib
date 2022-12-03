@@ -31,7 +31,7 @@ import (
 )
 
 // Helper method to handle boilerplate of loading exporter configuration from file
-func loadExporterConfig(t *testing.T, file string, id component.ID) (component.ExporterConfig, *Config) {
+func loadExporterConfig(t *testing.T, file string, id component.ID) (component.Config, *Config) {
 	// Initialize exporter factory
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", file))
 	require.NoError(t, err)
@@ -40,7 +40,7 @@ func loadExporterConfig(t *testing.T, file string, id component.ID) (component.E
 
 	sub, err := cm.Sub(id.String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalExporterConfig(sub, cfg))
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	def := factory.CreateDefaultConfig().(*Config)
 	require.NotNil(t, def)

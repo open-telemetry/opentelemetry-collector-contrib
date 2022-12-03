@@ -26,24 +26,15 @@ import (
 
 func TestDefaultConfig(t *testing.T) {
 	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.SetIDName("testDefaultConfig")
-	params := componenttest.NewNopReceiverCreateSettings()
-	ctx := context.Background()
-
-	receiver, err := createMetricsReceiver(
-		ctx,
-		params,
-		cfg,
-		consumertest.NewNop(),
-	)
+	cfg := factory.CreateDefaultConfig()
+	recv, err := createMetricsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, consumertest.NewNop())
 	require.NoError(t, err)
-	require.NotNil(t, receiver, "receiver creation failed")
+	require.NotNil(t, recv, "receiver creation failed")
 
-	err = receiver.Start(ctx, componenttest.NewNopHost())
+	err = recv.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
-	err = receiver.Shutdown(ctx)
+	err = recv.Shutdown(context.Background())
 	require.NoError(t, err)
 }
 

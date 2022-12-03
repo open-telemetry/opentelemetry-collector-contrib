@@ -46,7 +46,7 @@ func NewFactory() component.ReceiverFactory {
 		component.WithMetricsReceiver(createMetricsReceiver, stability))
 }
 
-func createDefaultConfig() component.ReceiverConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 		HTTPClientSettings: confighttp.HTTPClientSettings{
@@ -63,7 +63,7 @@ func createDefaultConfig() component.ReceiverConfig {
 func createMetricsReceiver(
 	_ context.Context,
 	params component.ReceiverCreateSettings,
-	cfg component.ReceiverConfig,
+	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	rCfg := cfg.(*Config)

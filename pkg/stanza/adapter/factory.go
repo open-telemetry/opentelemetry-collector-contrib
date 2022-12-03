@@ -28,9 +28,9 @@ import (
 // LogReceiverType is the interface used by stanza-based log receivers
 type LogReceiverType interface {
 	Type() component.Type
-	CreateDefaultConfig() component.ReceiverConfig
-	BaseConfig(component.ReceiverConfig) BaseConfig
-	InputConfig(component.ReceiverConfig) operator.Config
+	CreateDefaultConfig() component.Config
+	BaseConfig(component.Config) BaseConfig
+	InputConfig(component.Config) operator.Config
 }
 
 // NewFactory creates a factory for a Stanza-based receiver
@@ -46,7 +46,7 @@ func createLogsReceiver(logReceiverType LogReceiverType) component.CreateLogsRec
 	return func(
 		ctx context.Context,
 		params component.ReceiverCreateSettings,
-		cfg component.ReceiverConfig,
+		cfg component.Config,
 		nextConsumer consumer.Logs,
 	) (component.LogsReceiver, error) {
 		inputCfg := logReceiverType.InputConfig(cfg)
@@ -65,14 +65,14 @@ func createLogsReceiver(logReceiverType LogReceiverType) component.CreateLogsRec
 
 		converter := NewConverter(params.Logger)
 		obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
-			ReceiverID:             cfg.ID(),
+			ReceiverID:             params.ID,
 			ReceiverCreateSettings: params,
 		})
 		if err != nil {
 			return nil, err
 		}
 		return &receiver{
-			id:        cfg.ID(),
+			id:        params.ID,
 			pipe:      pipe,
 			emitter:   emitter,
 			consumer:  nextConsumer,

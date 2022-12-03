@@ -67,7 +67,7 @@ func Test_statsdreceiver_New(t *testing.T) {
 				},
 				nextConsumer: consumertest.NewNop(),
 			},
-			wantErr: errors.New("unsupported transport \"unknown\" for receiver statsd"),
+			wantErr: errors.New("unsupported transport \"unknown\""),
 		},
 	}
 	for _, tt := range tests {

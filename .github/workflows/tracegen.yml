@@ -15,6 +15,11 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.actor != 'dependabot[bot]' }}
     steps:
+      - name: Collect Workflow Telemetry
+        if: always()
+        uses: runforesight/foresight-workflow-kit-action@v1
+        with:
+          api_key: ${{ secrets.FORESIGHT_API_KEY }}
       - name: Checkout Repo
         uses: actions/checkout@v3
       - name: Build tracegen
@@ -30,6 +35,11 @@ jobs:
     permissions:
       packages: write
     steps:
+      - name: Collect Workflow Telemetry
+        if: always()
+        uses: runforesight/foresight-workflow-kit-action@v1
+        with:
+          api_key: ${{ secrets.FORESIGHT_API_KEY }}
       - name: Checkout Repo
         uses: actions/checkout@v3
       - name: Login to GitHub Container Registry
@@ -51,6 +61,11 @@ jobs:
     permissions:
       packages: write
     steps:
+      - name: Collect Workflow Telemetry
+        if: always()
+        uses: runforesight/foresight-workflow-kit-action@v1
+        with:
+          api_key: ${{ secrets.FORESIGHT_API_KEY }}
       - name: Checkout Repo
         uses: actions/checkout@v3
       - name: Set Release Tag

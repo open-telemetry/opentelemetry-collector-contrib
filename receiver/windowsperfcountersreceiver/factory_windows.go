@@ -29,14 +29,14 @@ import (
 func createMetricsReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateSettings,
-	cfg component.ReceiverConfig,
+	cfg component.Config,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	oCfg := cfg.(*Config)
 	scraper := newScraper(oCfg, params.TelemetrySettings)
 
 	scrp, err := scraperhelper.NewScraper(
-		cfg.ID().String(),
+		params.ID.String(),
 		scraper.scrape,
 		scraperhelper.WithStart(scraper.start),
 		scraperhelper.WithShutdown(scraper.shutdown),

@@ -33,7 +33,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func newMetricsExporter(cfg component.ExporterConfig, set component.ExporterCreateSettings) (*exporter, error) {
+func newMetricsExporter(cfg component.Config, set component.ExporterCreateSettings) (*exporter, error) {
 	oCfg := cfg.(*Config)
 
 	if oCfg.Metrics.Endpoint == "" || oCfg.Metrics.Endpoint == "https://" || oCfg.Metrics.Endpoint == "http://" {

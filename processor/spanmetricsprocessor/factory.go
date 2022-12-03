@@ -41,7 +41,7 @@ func NewFactory() component.ProcessorFactory {
 	)
 }
 
-func createDefaultConfig() component.ProcessorConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ProcessorSettings:      config.NewProcessorSettings(component.NewID(typeStr)),
 		AggregationTemporality: "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -51,7 +51,6 @@ func createDefaultConfig() component.ProcessorConfig {
 	}
 }
 
-func createTracesProcessor(ctx context.Context, params component.ProcessorCreateSettings, cfg component.ProcessorConfig, nextConsumer consumer.Traces) (component.TracesProcessor, error) {
-	pConfig := cfg.(*Config)
-	return newProcessor(params.Logger, cfg, nextConsumer, clock.Realtime().NewTicker(pConfig.MetricsFlushInterval))
+func createTracesProcessor(_ context.Context, params component.ProcessorCreateSettings, cfg component.Config, nextConsumer consumer.Traces) (component.TracesProcessor, error) {
+	return newProcessor(params.Logger, cfg, nextConsumer, clock.Realtime().NewTicker(cfg.(*Config).MetricsFlushInterval))
 }

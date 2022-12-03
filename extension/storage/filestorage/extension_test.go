@@ -24,8 +24,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
+	"go.opentelemetry.io/collector/extension/extensiontest"
 )
 
 func TestExtensionIntegrity(t *testing.T) {
@@ -205,7 +205,7 @@ func TestGetClientErrorsOnDeletedDirectory(t *testing.T) {
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Directory = tempDir
 
-	extension, err := f.CreateExtension(context.Background(), componenttest.NewNopExtensionCreateSettings(), cfg)
+	extension, err := f.CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
 	require.NoError(t, err)
 
 	se, ok := extension.(storage.Extension)
@@ -231,7 +231,7 @@ func newTestExtension(t *testing.T) storage.Extension {
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Directory = t.TempDir()
 
-	extension, err := f.CreateExtension(context.Background(), componenttest.NewNopExtensionCreateSettings(), cfg)
+	extension, err := f.CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
 	require.NoError(t, err)
 
 	se, ok := extension.(storage.Extension)
@@ -253,7 +253,7 @@ func TestCompaction(t *testing.T) {
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Directory = tempDir
 
-	extension, err := f.CreateExtension(context.Background(), componenttest.NewNopExtensionCreateSettings(), cfg)
+	extension, err := f.CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
 	require.NoError(t, err)
 
 	se, ok := extension.(storage.Extension)
@@ -343,7 +343,7 @@ func TestCompactionRemoveTemp(t *testing.T) {
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Directory = tempDir
 
-	extension, err := f.CreateExtension(context.Background(), componenttest.NewNopExtensionCreateSettings(), cfg)
+	extension, err := f.CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
 	require.NoError(t, err)
 
 	se, ok := extension.(storage.Extension)

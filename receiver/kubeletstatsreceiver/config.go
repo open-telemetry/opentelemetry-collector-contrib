@@ -30,7 +30,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
-var _ component.ReceiverConfig = (*Config)(nil)
+var _ component.Config = (*Config)(nil)
 
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
@@ -55,15 +55,6 @@ type Config struct {
 	Metrics metadata.MetricsSettings `mapstructure:"metrics"`
 }
 
-func (cfg *Config) Validate() error {
-	if cfg.K8sAPIConfig != nil {
-		if err := cfg.K8sAPIConfig.Validate(); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 // getReceiverOptions returns scraperOptions is the config is valid,
 // otherwise it will return an error.
 func (cfg *Config) getReceiverOptions() (*scraperOptions, error) {
@@ -86,7 +77,6 @@ func (cfg *Config) getReceiverOptions() (*scraperOptions, error) {
 	}
 
 	return &scraperOptions{
-		id:                    cfg.ID(),
 		collectionInterval:    cfg.CollectionInterval,
 		extraMetadataLabels:   cfg.ExtraMetadataLabels,
 		metricGroupsToCollect: mgs,

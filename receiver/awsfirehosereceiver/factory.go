@@ -71,7 +71,7 @@ func defaultMetricsUnmarshalers(logger *zap.Logger) map[string]unmarshaler.Metri
 
 // createDefaultConfig creates a default config with the endpoint set
 // to port 8443 and the record type set to the CloudWatch metric stream.
-func createDefaultConfig() component.ReceiverConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 		RecordType:       defaultRecordType,
@@ -85,7 +85,7 @@ func createDefaultConfig() component.ReceiverConfig {
 func createMetricsReceiver(
 	_ context.Context,
 	set component.ReceiverCreateSettings,
-	cfg component.ReceiverConfig,
+	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	return newMetricsReceiver(cfg.(*Config), set, defaultMetricsUnmarshalers(set.Logger), nextConsumer)

@@ -34,7 +34,7 @@ func TestLoadConfig(t *testing.T) {
 
 	tests := []struct {
 		id           component.ID
-		expected     component.ExporterConfig
+		expected     component.Config
 		errorMessage string
 	}{
 
@@ -59,10 +59,48 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalExporterConfig(sub, cfg))
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
+		})
+	}
+}
+
+func TestValidateConfig(t *testing.T) {
+	tests := []struct {
+		name    string
+		config  *Config
+		wantErr bool
+	}{
+		{
+			name:   "default_config",
+			config: createDefaultConfig().(*Config),
+		},
+		{
+			name: "invalid_tcp_addr",
+			config: &Config{
+				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
+				Endpoint:         "http://localhost:2003",
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid_timeout",
+			config: &Config{
+				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
+				Timeout:          -5 * time.Second,
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.wantErr {
+				assert.Error(t, tt.config.Validate())
+			} else {
+				assert.NoError(t, tt.config.Validate())
+			}
 		})
 	}
 }

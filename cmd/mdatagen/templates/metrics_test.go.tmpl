@@ -58,11 +58,12 @@ func TestAllMetrics(t *testing.T) {
 	{{- end }}
 
 	metrics := mb.Emit(
-	{{- $sep := "" }}
-	{{- range $name, $info := .ResourceAttributes -}}
-	{{ $sep }}With{{ $name.Render }}({{- if $info.Enum }}Attribute{{ $name.Render }}(1){{ else }}{{ $info.Type.TestValue }}{{ end }})
-	{{- $sep = ", " }}
-	{{- end -}}
+		{{- $sep := "" }}
+		{{- range $name, $info := .ResourceAttributes -}}
+			{{- $sep }}With{{ $name.Render }}
+			{{- if $info.Enum }}{{ index $info.Enum 0 | publicVar }}{{ else }}({{- $info.Type.TestValue }}){{ end }}
+			{{- $sep = ", " }}
+		{{- end -}}
 	)
 
 	assert.Equal(t, 1, metrics.ResourceMetrics().Len())
@@ -74,7 +75,7 @@ func TestAllMetrics(t *testing.T) {
 	attrVal, ok {{ $assignSign }} rm.Resource().Attributes().Get("{{ $name }}")
 	assert.True(t, ok)
 	{{- if $info.Enum }}
-	assert.Equal(t, Attribute{{ $name.Render }}(1).String(), attrVal.Str())
+	assert.Equal(t, "{{ index $info.Enum 0 }}", attrVal.Str())
 	{{- else }}
 	assert.EqualValues(t, {{ $info.Type.TestValue }}, attrVal.{{ $info.Type }}())
 	{{- end }}
@@ -99,7 +100,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, {{ $metric.Data.Monotonic }}, ms.At(i).{{ $metric.Data.Type }}().IsMonotonic())
 			{{- end }}
 			{{- if $metric.Data.HasAggregated }}
-			assert.Equal(t, {{ $metric.Data.Aggregated.Type }}, ms.At(i).{{ $metric.Data.Type }}().AggregationTemporality())
+			assert.Equal(t, pmetric.AggregationTemporality{{ $metric.Data.Aggregated }}, ms.At(i).{{ $metric.Data.Type }}().AggregationTemporality())
 			{{- end }}
 			dp := ms.At(i).{{ $metric.Data.Type }}().DataPoints().At(0)
 			assert.Equal(t, start, dp.StartTimestamp())
@@ -107,10 +108,10 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, pmetric.NumberDataPointValueType{{ $metric.Data.MetricValueType }}, dp.ValueType())
 			assert.Equal(t, {{ $metric.Data.MetricValueType.BasicType }}(1), dp.{{ $metric.Data.MetricValueType }}Value())
 			{{- range $i, $attr := $metric.Attributes }}
-			attrVal, ok {{ if eq $i 0 }}:{{ end }}= dp.Attributes().Get("{{ attributeKey $attr }}")
+			attrVal, ok {{ if eq $i 0 }}:{{ end }}= dp.Attributes().Get("{{ attributeName $attr }}")
 			assert.True(t, ok)
 			{{- if (attributeInfo $attr).Enum }}
-			assert.Equal(t, Attribute{{ .Render }}(1).String(), attrVal.Str())
+			assert.Equal(t, "{{ index (attributeInfo $attr).Enum 0 }}", attrVal.Str())
 			{{- else }}
 			assert.EqualValues(t, {{ (attributeInfo $attr).Type.TestValue }}, attrVal.{{ (attributeInfo $attr).Type }}())
 			{{- end }}

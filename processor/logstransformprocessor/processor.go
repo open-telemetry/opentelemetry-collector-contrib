@@ -40,7 +40,6 @@ type outputType struct {
 type logsTransformProcessor struct {
 	logger *zap.Logger
 	config *Config
-	id     component.ID
 
 	pipe          *pipeline.DirectedPipeline
 	firstOperator operator.Operator

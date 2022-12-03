@@ -44,7 +44,7 @@ type traceExporterImp struct {
 }
 
 // Create new traces exporter
-func newTracesExporter(params component.ExporterCreateSettings, cfg component.ExporterConfig) (*traceExporterImp, error) {
+func newTracesExporter(params component.ExporterCreateSettings, cfg component.Config) (*traceExporterImp, error) {
 	exporterFactory := otlpexporter.NewFactory()
 
 	lb, err := newLoadBalancer(params, cfg, func(ctx context.Context, endpoint string) (component.Component, error) {

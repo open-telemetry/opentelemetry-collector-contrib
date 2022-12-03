@@ -2,26 +2,36 @@
 
 # hostmetricsreceiver/load
 
-## Metrics
+## Default Metrics
 
-These are the metrics available for this scraper.
-
-| Name | Description | Unit | Type | Attributes |
-| ---- | ----------- | ---- | ---- | ---------- |
-| **system.cpu.load_average.15m** | Average CPU Load over 15 minutes. | 1 | Gauge(Double) | <ul> </ul> |
-| **system.cpu.load_average.1m** | Average CPU Load over 1 minute. | 1 | Gauge(Double) | <ul> </ul> |
-| **system.cpu.load_average.5m** | Average CPU Load over 5 minutes. | 1 | Gauge(Double) | <ul> </ul> |
-
-**Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
-Any metric can be enabled or disabled with the following scraper configuration:
+The following metrics are emitted by default. Each of them can be disabled by applying the following configuration:
 
 ```yaml
 metrics:
   <metric_name>:
-    enabled: <true|false>
+    enabled: false
 ```
 
-## Metric attributes
+### system.cpu.load_average.15m
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
+Average CPU Load over 15 minutes.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
+
+### system.cpu.load_average.1m
+
+Average CPU Load over 1 minute.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
+
+### system.cpu.load_average.5m
+
+Average CPU Load over 5 minutes.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
