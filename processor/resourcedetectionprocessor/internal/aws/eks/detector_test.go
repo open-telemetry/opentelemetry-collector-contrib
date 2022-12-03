@@ -23,8 +23,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
 
 type MockDetectorUtils struct {
@@ -57,7 +55,7 @@ func TestEKS(t *testing.T) {
 	assert.Equal(t, map[string]interface{}{
 		"cloud.provider": "aws",
 		"cloud.platform": "aws_eks",
-	}, internal.AttributesToMap(res.Attributes()), "Resource object returned is incorrect")
+	}, res.Attributes().AsRaw(), "Resource object returned is incorrect")
 }
 
 // Tests EKS resource detector not running in EKS environment by verifying resource is not running on k8s
