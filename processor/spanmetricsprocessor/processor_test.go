@@ -147,7 +147,7 @@ func TestProcessorShutdown(t *testing.T) {
 	// Test
 	next := new(consumertest.TracesSink)
 	ctx := context.Background()
-	p, err := newProcessor(ctx, zaptest.NewLogger(t), cfg, next, clock.NewTicker(ctx, time.Nanosecond))
+	p, err := newProcessor(zaptest.NewLogger(t), cfg, next, clock.NewTicker(ctx, time.Nanosecond))
 	assert.NoError(t, err)
 	p.Start(ctx, mhost)
 	err = p.Shutdown(context.Background())
@@ -170,7 +170,7 @@ func TestConfigureLatencyBounds(t *testing.T) {
 	// Test
 	next := new(consumertest.TracesSink)
 	ctx := context.Background()
-	p, err := newProcessor(ctx, zaptest.NewLogger(t), cfg, next, nil)
+	p, err := newProcessor(zaptest.NewLogger(t), cfg, next, nil)
 
 	// Verify
 	assert.NoError(t, err)
@@ -186,7 +186,7 @@ func TestProcessorCapabilities(t *testing.T) {
 	// Test
 	next := new(consumertest.TracesSink)
 	ctx := context.Background()
-	p, err := newProcessor(ctx, zaptest.NewLogger(t), cfg, next, nil)
+	p, err := newProcessor(zaptest.NewLogger(t), cfg, next, nil)
 	assert.NoError(t, err)
 	caps := p.Capabilities()
 
@@ -313,8 +313,6 @@ func TestProcessorConsumeTraces(t *testing.T) {
 		// instantiate a copy of the test case for t.Run's closure to use.
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-
 			// Prepare
 			mexp := &mocks.MetricsExporter{}
 			tcon := &mocks.TracesConsumer{}
@@ -784,7 +782,7 @@ func TestProcessorDuplicateDimensions(t *testing.T) {
 	// Test
 	next := new(consumertest.TracesSink)
 	ctx := context.Background()
-	p, err := newProcessor(ctx, zaptest.NewLogger(t), cfg, next, nil)
+	p, err := newProcessor(zaptest.NewLogger(t), cfg, next, nil)
 	assert.Error(t, err)
 	assert.Nil(t, p)
 }
@@ -909,7 +907,7 @@ func TestProcessorUpdateExemplars(t *testing.T) {
 	key := metricKey("metricKey")
 	next := new(consumertest.TracesSink)
 	ctx := context.Background()
-	p, err := newProcessor(ctx, zaptest.NewLogger(t), cfg, next, nil)
+	p, err := newProcessor(zaptest.NewLogger(t), cfg, next, nil)
 	value := float64(42)
 
 	// ----- call -------------------------------------------------------------

@@ -53,5 +53,5 @@ func createDefaultConfig() component.ProcessorConfig {
 
 func createTracesProcessor(ctx context.Context, params component.ProcessorCreateSettings, cfg component.ProcessorConfig, nextConsumer consumer.Traces) (component.TracesProcessor, error) {
 	pConfig := cfg.(*Config)
-	return newProcessor(ctx, params.Logger, cfg, nextConsumer, clock.Realtime().NewTicker(pConfig.MetricsFlushInterval))
+	return newProcessor(params.Logger, cfg, nextConsumer, clock.Realtime().NewTicker(pConfig.MetricsFlushInterval))
 }
