@@ -146,11 +146,12 @@ func TestProcessorShutdown(t *testing.T) {
 
 	// Test
 	next := new(consumertest.TracesSink)
-	ctx := context.Background()
 	p, err := newProcessor(zaptest.NewLogger(t), cfg, next, clock.NewTicker(ctx, time.Nanosecond))
 	assert.NoError(t, err)
+
+	ctx := context.Background()
 	p.Start(ctx, mhost)
-	err = p.Shutdown(context.Background())
+	err = p.Shutdown(ctx)
 
 	// Verify
 	assert.NoError(t, err)
@@ -169,7 +170,6 @@ func TestConfigureLatencyBounds(t *testing.T) {
 
 	// Test
 	next := new(consumertest.TracesSink)
-	ctx := context.Background()
 	p, err := newProcessor(zaptest.NewLogger(t), cfg, next, nil)
 
 	// Verify
@@ -185,7 +185,6 @@ func TestProcessorCapabilities(t *testing.T) {
 
 	// Test
 	next := new(consumertest.TracesSink)
-	ctx := context.Background()
 	p, err := newProcessor(zaptest.NewLogger(t), cfg, next, nil)
 	assert.NoError(t, err)
 	caps := p.Capabilities()
@@ -781,7 +780,6 @@ func TestProcessorDuplicateDimensions(t *testing.T) {
 
 	// Test
 	next := new(consumertest.TracesSink)
-	ctx := context.Background()
 	p, err := newProcessor(zaptest.NewLogger(t), cfg, next, nil)
 	assert.Error(t, err)
 	assert.Nil(t, p)
@@ -906,7 +904,6 @@ func TestProcessorUpdateExemplars(t *testing.T) {
 	spanID := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).SpanID()
 	key := metricKey("metricKey")
 	next := new(consumertest.TracesSink)
-	ctx := context.Background()
 	p, err := newProcessor(zaptest.NewLogger(t), cfg, next, nil)
 	value := float64(42)
 
