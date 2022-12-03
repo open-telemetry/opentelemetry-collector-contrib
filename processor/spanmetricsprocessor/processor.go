@@ -140,7 +140,6 @@ func newProcessor(logger *zap.Logger, config component.ProcessorConfig, nextCons
 		return nil, err
 	}
 
-	done := make(chan bool)
 	p := &processorImp{
 		logger:                logger,
 		config:                *pConfig,
@@ -152,7 +151,7 @@ func newProcessor(logger *zap.Logger, config component.ProcessorConfig, nextCons
 		keyBuf:                bytes.NewBuffer(make([]byte, 0, 1024)),
 		metricKeyToDimensions: metricKeyToDimensionsCache,
 		ticker:                ticker,
-		done:                  done,
+		done:                  make(chan bool),
 	}
 
 	return p, nil
@@ -233,6 +232,7 @@ func (p *processorImp) Start(ctx context.Context, host component.Host) error {
 	}
 	p.logger.Info("Started spanmetricsprocessor")
 
+	p.started = true
 	go func() {
 		for {
 			select {
@@ -244,7 +244,6 @@ func (p *processorImp) Start(ctx context.Context, host component.Host) error {
 		}
 	}()
 
-	p.started = true
 	return nil
 }
 
@@ -252,8 +251,10 @@ func (p *processorImp) Start(ctx context.Context, host component.Host) error {
 func (p *processorImp) Shutdown(context.Context) error {
 	p.logger.Info("Shutting down spanmetricsprocessor")
 	if p.started {
+		p.logger.Info("Stopping ticker")
 		p.ticker.Stop()
 		p.done <- true
+		p.started = false
 	}
 	return nil
 }

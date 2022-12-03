@@ -123,7 +123,9 @@ func TestProcessorStart(t *testing.T) {
 
 			// Test
 			smp := traceProcessor.(*processorImp)
-			err = smp.Start(context.Background(), mhost)
+			ctx := context.Background()
+			err = smp.Start(ctx, mhost)
+			defer func() { sdErr := smp.Shutdown(ctx); require.NoError(t, sdErr) }()
 
 			// Verify
 			if tc.wantErrorMsg != "" {
@@ -137,24 +139,62 @@ func TestProcessorStart(t *testing.T) {
 
 func TestProcessorShutdown(t *testing.T) {
 	// Prepare
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig().(*Config)
-
 	exporters := map[component.DataType]map[component.ID]component.Component{}
 	mhost := &mocks.Host{}
 	mhost.On("GetExporters").Return(exporters)
 
-	// Test
-	next := new(consumertest.TracesSink)
 	ctx := context.Background()
-	p, err := newProcessor(zaptest.NewLogger(t), cfg, next, clock.NewTicker(ctx, time.Nanosecond))
-	assert.NoError(t, err)
+	logger := zap.NewNop()
 
-	p.Start(ctx, mhost)
+	mexp := &mocks.MetricsExporter{}
+	mexp.On("ConsumeMetrics", mock.Anything, mock.Anything).Return(nil)
+
+	tcon := &mocks.TracesConsumer{}
+	tcon.On("ConsumeTraces", mock.Anything, mock.Anything).Return(nil)
+
+	mockClock := clock.NewMock(time.Now())
+	ticker := mockClock.NewTicker(time.Nanosecond)
+
+	// Test
+	p := newProcessorImp(mexp, tcon, nil, cumulative, logger, ticker)
+	defer func() { sdErr := p.Shutdown(ctx); require.NoError(t, sdErr) }()
+
+	// Should be safe to call Shutdown without Start.
+	err := p.Shutdown(ctx)
+	require.NoError(t, err)
+
+	// Should be no calls of ConsumeMetrics because no goroutine started for emitting metrics.
+	mexp.AssertNumberOfCalls(t, "ConsumeMetrics", 0)
+
+	err = p.Start(ctx, mhost)
+	defer func() { sdErr := p.Shutdown(ctx); require.NoError(t, sdErr) }()
+	require.NoError(t, err)
+
+	// Allow goroutines time to execute any actions.
+	time.Sleep(time.Millisecond)
+
+	// Still no metrics emitted because ticker hasn't ticked.
+	mexp.AssertNumberOfCalls(t, "ConsumeMetrics", 0)
+
+	// Trigger flush.
+	mockClock.Add(time.Nanosecond)
+
+	// Allow goroutine time to invoke tick callback.
+	time.Sleep(time.Millisecond)
+
+	mexp.AssertNumberOfCalls(t, "ConsumeMetrics", 1)
+
 	err = p.Shutdown(ctx)
+	require.NoError(t, err)
 
-	// Verify
-	assert.NoError(t, err)
+	// Trigger flush.
+	mockClock.Add(time.Nanosecond)
+
+	// Allow goroutine time to invoke tick callback.
+	time.Sleep(time.Millisecond)
+
+	// No new metrics emitted even after time elapsed because ticker should be stopped and goroutine exited.
+	mexp.AssertNumberOfCalls(t, "ConsumeMetrics", 1)
 }
 
 func TestConfigureLatencyBounds(t *testing.T) {
@@ -242,6 +282,7 @@ func TestProcessorConsumeMetricsErrors(t *testing.T) {
 
 	ctx := metadata.NewIncomingContext(context.Background(), nil)
 	err := p.Start(ctx, mhost)
+	defer func() { sdErr := p.Shutdown(ctx); require.NoError(t, sdErr) }()
 	require.NoError(t, err)
 
 	traces := buildSampleTrace()
@@ -335,6 +376,7 @@ func TestProcessorConsumeTraces(t *testing.T) {
 
 			ctx := metadata.NewIncomingContext(context.Background(), nil)
 			err := p.Start(ctx, mhost)
+			defer func() { sdErr := p.Shutdown(ctx); require.NoError(t, sdErr) }()
 			require.NoError(t, err)
 
 			for _, traces := range tc.traces {
@@ -444,6 +486,7 @@ func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, de
 		keyBuf:                new(bytes.Buffer),
 		metricKeyToDimensions: metricKeyToDimensions,
 		ticker:                ticker,
+		done:                  make(chan bool),
 	}
 }
 
@@ -1000,7 +1043,6 @@ func TestConsumeTracesEvictedCacheKey(t *testing.T) {
 
 	// Mocked metric exporter will perform validation on metrics, during p.ConsumeTraces()
 	mexp.On("ConsumeMetrics", mock.Anything, mock.MatchedBy(func(input pmetric.Metrics) bool {
-		fmt.Println("ConsumeMetrics called")
 		// Verify
 		require.NotEmpty(t, wantDataPointCounts)
 
@@ -1022,21 +1064,19 @@ func TestConsumeTracesEvictedCacheKey(t *testing.T) {
 	// Note: default dimension key cache size is 2.
 	p := newProcessorImp(mexp, tcon, &defaultNullValue, cumulative, zaptest.NewLogger(t), ticker)
 
-	exporters := map[component.DataType]map[component.ID]component.Component{
-		component.DataTypeMetrics: {},
-	}
+	exporters := map[component.DataType]map[component.ID]component.Component{}
 
 	mhost := &mocks.Host{}
 	mhost.On("GetExporters").Return(exporters)
 
 	ctx := metadata.NewIncomingContext(context.Background(), nil)
 	err := p.Start(ctx, mhost)
+	defer func() { sdErr := p.Shutdown(ctx); require.NoError(t, sdErr) }()
 	require.NoError(t, err)
 
 	for _, traces := range []ptrace.Traces{traces0, traces1} {
-		fmt.Printf("Processing trace batch: %+v\n", traces.ResourceSpans())
 		// Test
-		err := p.ConsumeTraces(ctx, traces)
+		err = p.ConsumeTraces(ctx, traces)
 
 		// Trigger flush.
 		mockClock.Add(time.Nanosecond)
