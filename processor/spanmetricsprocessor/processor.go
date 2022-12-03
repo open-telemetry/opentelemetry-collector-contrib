@@ -325,6 +325,12 @@ func (p *processorImp) collectLatencyMetrics(ilm pmetric.ScopeMetrics) {
 	dps.EnsureCapacity(len(p.histograms))
 	timestamp := pcommon.NewTimestampFromTime(time.Now())
 	for key, hist := range p.histograms {
+		// If the key is not in the cache, simply don't publish it because it's likely
+		// the metric has expired (or the cache size is too small).
+		dimensions, ok := p.metricKeyToDimensions.Get(key)
+		if !ok {
+			continue
+		}
 		dpLatency := dps.AppendEmpty()
 		dpLatency.SetStartTimestamp(p.startTimestamp)
 		dpLatency.SetTimestamp(timestamp)
@@ -333,12 +339,7 @@ func (p *processorImp) collectLatencyMetrics(ilm pmetric.ScopeMetrics) {
 		dpLatency.SetCount(hist.count)
 		dpLatency.SetSum(hist.sum)
 		setExemplars(hist.exemplarsData, timestamp, dpLatency.Exemplars())
-
-		// If the key is not in the cache, simply don't publish it because it's likely
-		// the metric has expired (or the cache size is too small).
-		if dimensions, ok := p.metricKeyToDimensions.Get(key); ok {
-			dimensions.CopyTo(dpLatency.Attributes())
-		}
+		dimensions.CopyTo(dpLatency.Attributes())
 	}
 }
 
@@ -353,16 +354,18 @@ func (p *processorImp) collectCallMetrics(ilm pmetric.ScopeMetrics) {
 	dps.EnsureCapacity(len(p.histograms))
 	timestamp := pcommon.NewTimestampFromTime(time.Now())
 	for key, hist := range p.histograms {
+		// If the key is not in the cache, simply don't publish it because it's likely
+		// the metric has expired (or the cache size is too small).
+		dimensions, ok := p.metricKeyToDimensions.Get(key)
+		if !ok {
+			continue
+		}
+
 		dpCalls := dps.AppendEmpty()
 		dpCalls.SetStartTimestamp(p.startTimestamp)
 		dpCalls.SetTimestamp(timestamp)
 		dpCalls.SetIntValue(int64(hist.count))
-
-		// If the key is not in the cache, simply don't publish it because it's likely
-		// the metric has expired (or the cache size is too small).
-		if dimensions, ok := p.metricKeyToDimensions.Get(key); ok {
-			dimensions.CopyTo(dpCalls.Attributes())
-		}
+		dimensions.CopyTo(dpCalls.Attributes())
 	}
 }
 

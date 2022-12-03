@@ -71,6 +71,7 @@ func (c *Cache[K, V]) Get(key K) (V, bool) {
 		delete(c.evictedItems, key)
 		c.Add(key, val)
 	}
+
 	return val, ok
 }
 
