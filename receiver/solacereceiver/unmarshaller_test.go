@@ -261,7 +261,7 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 				require.Equal(t, 1, traces.ResourceSpans().Len())
 				expectedResource := tt.want.ResourceSpans().At(0)
 				resource := traces.ResourceSpans().At(0)
-				assert.Equal(t, expectedResource.Resource().Attributes().Sort(), resource.Resource().Attributes().Sort())
+				assert.Equal(t, expectedResource.Resource().Attributes().AsRaw(), resource.Resource().Attributes().AsRaw())
 				require.Equal(t, 1, resource.ScopeSpans().Len())
 				expectedInstrumentation := expectedResource.ScopeSpans().At(0)
 				instrumentation := resource.ScopeSpans().At(0)
@@ -820,7 +820,7 @@ func TestUnmarshallerEvents(t *testing.T) {
 }
 
 func compareSpans(t *testing.T, expected, actual ptrace.Span) {
-	assert.Equal(t, expected.Attributes().Sort(), actual.Attributes().Sort())
+	assert.Equal(t, expected.Attributes().AsRaw(), actual.Attributes().AsRaw())
 	require.Equal(t, expected.Events().Len(), actual.Events().Len())
 	for i := 0; i < expected.Events().Len(); i++ {
 		lessFunc := func(a, b ptrace.SpanEvent) bool {
@@ -830,7 +830,7 @@ func compareSpans(t *testing.T, expected, actual ptrace.Span) {
 		actualEvent := actual.Events().Sort(lessFunc).At(i)
 		assert.Equal(t, expectedEvent.Name(), actualEvent.Name())
 		assert.Equal(t, expectedEvent.Timestamp(), actualEvent.Timestamp())
-		assert.Equal(t, expectedEvent.Attributes().Sort(), actualEvent.Attributes().Sort())
+		assert.Equal(t, expectedEvent.Attributes().AsRaw(), actualEvent.Attributes().AsRaw())
 	}
 }
 

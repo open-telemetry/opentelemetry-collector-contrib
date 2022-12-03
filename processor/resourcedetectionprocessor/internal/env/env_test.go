@@ -77,17 +77,17 @@ func TestInitializeAttributeMap(t *testing.T) {
 	cases := []struct {
 		name               string
 		encoded            string
-		expectedAttributes pcommon.Map
+		expectedAttributes map[string]any
 		expectedError      string
 	}{
 		{
 			name:               "multiple valid attributes",
 			encoded:            ` example.org/test-1 =  test $ %3A \" ,  Abc=Def  `,
-			expectedAttributes: internal.NewAttributeMap(map[string]interface{}{"example.org/test-1": `test $ : \"`, "Abc": "Def"}),
+			expectedAttributes: map[string]any{"example.org/test-1": `test $ : \"`, "Abc": "Def"},
 		}, {
 			name:               "single valid attribute",
 			encoded:            `single=key`,
-			expectedAttributes: internal.NewAttributeMap(map[string]interface{}{"single": "key"}),
+			expectedAttributes: map[string]any{"single": "key"},
 		}, {
 			name:          "invalid url escape sequence in value",
 			encoded:       `invalid=url-%3-encoding`,
@@ -120,7 +120,7 @@ func TestInitializeAttributeMap(t *testing.T) {
 				assert.EqualError(t, err, c.expectedError)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, c.expectedAttributes.Sort(), am.Sort())
+				assert.Equal(t, c.expectedAttributes, am.AsRaw())
 			}
 		})
 	}
