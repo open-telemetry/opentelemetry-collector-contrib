@@ -51,14 +51,14 @@ func TestLoadConfig(t *testing.T) {
 			wantMetricsExporter:        "prometheus",
 			wantAggregationTemporality: cumulative,
 			wantDimensionsCacheSize:    500,
-			wantMetricsFlushInterval:   15 * time.Second,
+			wantMetricsFlushInterval:   15 * time.Second, // Default.
 		},
 		{
 			configFile:                 "config-3-pipelines.yaml",
 			wantMetricsExporter:        "otlp/spanmetrics",
 			wantAggregationTemporality: cumulative,
 			wantDimensionsCacheSize:    defaultDimensionsCacheSize,
-			wantMetricsFlushInterval:   15 * time.Second,
+			wantMetricsFlushInterval:   15 * time.Second, // Default.
 		},
 		{
 			configFile:          "config-full.yaml",

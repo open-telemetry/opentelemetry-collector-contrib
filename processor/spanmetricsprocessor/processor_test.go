@@ -146,10 +146,10 @@ func TestProcessorShutdown(t *testing.T) {
 
 	// Test
 	next := new(consumertest.TracesSink)
+	ctx := context.Background()
 	p, err := newProcessor(zaptest.NewLogger(t), cfg, next, clock.NewTicker(ctx, time.Nanosecond))
 	assert.NoError(t, err)
 
-	ctx := context.Background()
 	p.Start(ctx, mhost)
 	err = p.Shutdown(ctx)
 
