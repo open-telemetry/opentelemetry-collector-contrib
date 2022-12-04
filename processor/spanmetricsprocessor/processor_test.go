@@ -304,7 +304,7 @@ func TestProcessorConsumeMetricsErrors(t *testing.T) {
 
 	// Allow time for log observer to sync all logs emitted.
 	// Unfortunately, we can't tell the log observer to wait until all logs have been synced/received.
-	// Core/Logger.Sync() does not appear to achieve the desired behaviour of syncing observedLogs with the logger.
+	// Core/Logger.Sync() does not appear to achieve the desired behavior of syncing observedLogs with the logger.
 	time.Sleep(time.Millisecond)
 
 	// Verify
