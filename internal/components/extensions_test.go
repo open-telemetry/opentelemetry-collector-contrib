@@ -37,6 +37,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/crashreportextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/fluentbitextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
@@ -114,6 +115,14 @@ func TestDefaultExtensions(t *testing.T) {
 			getConfigFn: func() component.Config {
 				cfg := extFactories["bearertokenauth"].CreateDefaultConfig().(*bearertokenauthextension.Config)
 				cfg.BearerToken = "sometoken"
+				return cfg
+			},
+		},
+		{
+			extension: "crashreport",
+			getConfigFn: func() component.Config {
+				cfg := extFactories["crashreport"].CreateDefaultConfig().(*crashreportextension.Config)
+				cfg.HTTPClientSettings.Endpoint = "http://example.com"
 				return cfg
 			},
 		},

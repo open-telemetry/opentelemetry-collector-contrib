@@ -67,6 +67,7 @@ body:
       - extension/awsproxy
       - extension/basicauth
       - extension/bearertokenauth
+      - extension/crashreport
       - extension/headerssetter
       - extension/healthcheck
       - extension/jaegerremotesampling
