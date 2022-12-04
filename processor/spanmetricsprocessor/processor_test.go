@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"sync"
 	"testing"
 	"time"
 
@@ -144,8 +145,12 @@ func TestProcessorShutdown(t *testing.T) {
 	ctx := context.Background()
 	logger := zap.NewNop()
 
+	var wg sync.WaitGroup
 	mexp := &mocks.MetricsExporter{}
-	mexp.On("ConsumeMetrics", mock.Anything, mock.Anything).Return(nil)
+	mexp.On("ConsumeMetrics", mock.Anything, mock.MatchedBy(func(input pmetric.Metrics) bool {
+		wg.Done()
+		return true
+	})).Return(nil)
 
 	tcon := &mocks.TracesConsumer{}
 	tcon.On("ConsumeTraces", mock.Anything, mock.Anything).Return(nil)
@@ -168,17 +173,16 @@ func TestProcessorShutdown(t *testing.T) {
 	defer func() { sdErr := p.Shutdown(ctx); require.NoError(t, sdErr) }()
 	require.NoError(t, err)
 
-	// Allow goroutines time to execute any actions.
+	// Allow goroutines time to execute any actions. Given the timer hasn't ticked, can't use the WaitGroup.
 	time.Sleep(time.Millisecond)
 
 	// Still no metrics emitted because ticker hasn't ticked.
 	mexp.AssertNumberOfCalls(t, "ConsumeMetrics", 0)
 
 	// Trigger flush.
+	wg.Add(1)
 	mockClock.Add(time.Nanosecond)
-
-	// Allow goroutine time to invoke tick callback.
-	time.Sleep(time.Millisecond)
+	wg.Wait()
 
 	mexp.AssertNumberOfCalls(t, "ConsumeMetrics", 1)
 
@@ -188,7 +192,7 @@ func TestProcessorShutdown(t *testing.T) {
 	// Trigger flush.
 	mockClock.Add(time.Nanosecond)
 
-	// Allow goroutine time to invoke tick callback.
+	// Allow goroutines time to execute any actions, given the timer should be stopped.
 	time.Sleep(time.Millisecond)
 
 	// No new metrics emitted even after time elapsed because ticker should be stopped and goroutine exited.
@@ -264,8 +268,12 @@ func TestProcessorConsumeMetricsErrors(t *testing.T) {
 	core, observedLogs := observer.New(zapcore.ErrorLevel)
 	logger := zap.New(core)
 
+	var wg sync.WaitGroup
 	mexp := &mocks.MetricsExporter{}
-	mexp.On("ConsumeMetrics", mock.Anything, mock.Anything).Return(fakeErr)
+	mexp.On("ConsumeMetrics", mock.Anything, mock.MatchedBy(func(input pmetric.Metrics) bool {
+		wg.Done()
+		return true
+	})).Return(fakeErr)
 
 	tcon := &mocks.TracesConsumer{}
 	tcon.On("ConsumeTraces", mock.Anything, mock.Anything).Return(nil)
@@ -290,9 +298,13 @@ func TestProcessorConsumeMetricsErrors(t *testing.T) {
 	require.NoError(t, err)
 
 	// Trigger flush.
+	wg.Add(1)
 	mockClock.Add(time.Nanosecond)
+	wg.Wait()
 
-	// Allow goroutine time to invoke tick callback.
+	// Allow time for log observer to sync all logs emitted.
+	// Unfortunately, we can't tell the log observer to wait until all logs have been synced/received.
+	// Core/Logger.Sync() does not appear to achieve the desired behaviour of syncing observedLogs with the logger.
 	time.Sleep(time.Millisecond)
 
 	// Verify
@@ -355,8 +367,10 @@ func TestProcessorConsumeTraces(t *testing.T) {
 			mexp := &mocks.MetricsExporter{}
 			tcon := &mocks.TracesConsumer{}
 
+			var wg sync.WaitGroup
 			// Mocked metric exporter will perform validation on metrics, during p.ConsumeTraces()
 			mexp.On("ConsumeMetrics", mock.Anything, mock.MatchedBy(func(input pmetric.Metrics) bool {
+				wg.Done()
 				return tc.verifier(t, input)
 			})).Return(nil)
 			tcon.On("ConsumeTraces", mock.Anything, mock.Anything).Return(nil)
@@ -380,15 +394,12 @@ func TestProcessorConsumeTraces(t *testing.T) {
 			for _, traces := range tc.traces {
 				// Test
 				err = p.ConsumeTraces(ctx, traces)
+				assert.NoError(t, err)
 
 				// Trigger flush.
+				wg.Add(1)
 				mockClock.Add(time.Nanosecond)
-
-				// Allow goroutine time to invoke tick callback.
-				time.Sleep(time.Millisecond)
-
-				// Verify
-				assert.NoError(t, err)
+				wg.Wait()
 			}
 		})
 	}
@@ -1040,17 +1051,25 @@ func TestConsumeTracesEvictedCacheKey(t *testing.T) {
 		4, // (calls_total + latency) * (service-b + service-c)
 	}
 
+	// Ensure the assertion that wantDataPointCounts is performed only after all ConsumeMetrics
+	// invocations are complete.
+	var wg sync.WaitGroup
+	wg.Add(len(wantDataPointCounts))
+
 	// Mocked metric exporter will perform validation on metrics, during p.ConsumeTraces()
 	mexp.On("ConsumeMetrics", mock.Anything, mock.MatchedBy(func(input pmetric.Metrics) bool {
+		defer wg.Done()
+
 		// Verify
 		require.NotEmpty(t, wantDataPointCounts)
 
 		// GreaterOrEqual is particularly necessary for the second assertion where we
 		// expect 4 data points; but could also be 6 due to the non-deterministic nature
-		// of the p.histograms map which, through the act of attempting to "Get" a
-		// cached key, will lead to updating its recent-ness.
+		// of the p.histograms map which, through the act of "Get"ting a cached key, will
+		// lead to updating its recent-ness.
 		require.GreaterOrEqual(t, input.DataPointCount(), wantDataPointCounts[0])
 		wantDataPointCounts = wantDataPointCounts[1:] // Dequeue
+
 		return true
 	})).Return(nil)
 
@@ -1076,16 +1095,12 @@ func TestConsumeTracesEvictedCacheKey(t *testing.T) {
 	for _, traces := range []ptrace.Traces{traces0, traces1} {
 		// Test
 		err = p.ConsumeTraces(ctx, traces)
+		require.NoError(t, err)
 
 		// Trigger flush.
 		mockClock.Add(time.Nanosecond)
-
-		// Allow goroutine time to invoke tick callback.
-		time.Sleep(time.Millisecond)
-
-		// Verify
-		assert.NoError(t, err)
 	}
 
+	wg.Wait()
 	assert.Empty(t, wantDataPointCounts)
 }
