@@ -130,7 +130,6 @@ func (p *processor) Start(_ context.Context, host component.Host) error {
 	go p.storeExpirationLoop(2 * time.Second)
 
 	p.logger.Info("Started servicegraphprocessor")
-	p.logger.Warn("Servicegraphprocessor has a breaking change in the next release, please refer to README!")
 	return nil
 }
 
