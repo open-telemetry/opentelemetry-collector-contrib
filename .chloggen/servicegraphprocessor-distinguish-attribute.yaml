@@ -15,5 +15,5 @@ issues: [16002]
 # Use pipe (|) for multiline entries.
 subtext: |
   The metrics label converts from dimensions specifying in the config will have a prefix to mark where are from.
-  The `client_` prefix regards the dimensions come from a span with `SPAN_KIND_CLIENT`, and the `server_` prefix is regard as the
-  dimensions come from a span with `SPAN_KIND_SERVER`. Servicegraphprocessor will reserve the old dimensions in the next release.
+  The `client_` prefix relates to the dimensions coming from spans with `SPAN_KIND_CLIENT`, and the `server_` prefix relates to the
+  dimensions coming from spans with `SPAN_KIND_SERVER`. The old dimensions will be removed in the next release.

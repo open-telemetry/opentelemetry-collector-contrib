@@ -62,9 +62,9 @@ Duration is measured both from the client and the server sides.
 
 Possible values for `connection_type`: unset, `messaging_system`, or `database`.
 
-Additional labels can be included using the `dimensions` configuration option. Those labels will have a prefix to mark where are from.
-The `client_` prefix regards the dimensions come from a span with `SPAN_KIND_CLIENT`, and the `server_` prefix is regard as the
-dimensions come from a span with `SPAN_KIND_SERVER`.
+Additional labels can be included using the `dimensions` configuration option. Those labels will have a prefix to mark where they originate (client or server span kinds).
+The `client_` prefix relates to the dimensions coming from spans with `SPAN_KIND_CLIENT`, and the `server_` prefix relates to the
+dimensions coming from spans with `SPAN_KIND_SERVER`.
 
 Since the service graph processor has to process both sides of an edge,
 it needs to process all spans of a trace to function properly.
