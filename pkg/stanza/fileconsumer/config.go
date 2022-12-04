@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/bmatcuk/doublestar/v3"
+	"github.com/bmatcuk/doublestar/v4"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
