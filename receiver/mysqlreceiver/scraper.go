@@ -41,7 +41,7 @@ const (
 func init() {
 	featuregate.GetRegistry().MustRegisterID(
 		RenameCommands,
-		featuregate.StageAlpha,
+		featuregate.StageBeta,
 		featuregate.WithRegisterDescription("When enabled, the mysql.commands will be deprecated and additionally emitted as optional mysql.prepared_statements metric"),
 	)
 }
