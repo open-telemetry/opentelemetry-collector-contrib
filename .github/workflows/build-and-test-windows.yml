@@ -16,8 +16,9 @@ env:
   # Cache downloads for this workflow consistently run in under 10 minutes
   SEGMENT_DOWNLOAD_TIMEOUT_MINS: 15
 
+# Do not cancel this workflow on main
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref }}
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 
 jobs:
@@ -61,7 +62,7 @@ jobs:
             ~\AppData\Local\go-build
           key: go-build-cache-${{ runner.os }}-${{ matrix.group }}-go-${{ hashFiles('**/go.sum') }}
       - name: Run Unit tests
-        run: make -j2 gotest GROUP=${{ matrix.group }}      
+        run: make -j2 gotest GROUP=${{ matrix.group }}
       - name: Analyze Test and/or Coverage Results
         if: always()
         uses: runforesight/foresight-test-kit-action@v1
