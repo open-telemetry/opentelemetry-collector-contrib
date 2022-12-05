@@ -22,7 +22,6 @@ import (
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
@@ -37,7 +36,7 @@ func TestDetect(t *testing.T) {
 		desc             string
 		detector         internal.Detector
 		expectErr        bool
-		expectedResource pcommon.Resource
+		expectedResource map[string]any
 	}{
 		{
 			desc: "zonal GKE cluster",
@@ -49,7 +48,7 @@ func TestDetect(t *testing.T) {
 				gkeClusterName:      "my-cluster",
 				gkeAvailabilityZone: "us-central1-c",
 			}),
-			expectedResource: internal.NewResource(map[string]interface{}{
+			expectedResource: map[string]any{
 				conventions.AttributeCloudProvider:         conventions.AttributeCloudProviderGCP,
 				conventions.AttributeCloudAccountID:        "my-project",
 				conventions.AttributeCloudPlatform:         conventions.AttributeCloudPlatformGCPKubernetesEngine,
@@ -57,7 +56,7 @@ func TestDetect(t *testing.T) {
 				conventions.AttributeCloudAvailabilityZone: "us-central1-c",
 				conventions.AttributeHostID:                "1472385723456792345",
 				conventions.AttributeHostName:              "my-gke-node-1234",
-			}),
+			},
 		},
 		{
 			desc: "regional GKE cluster",
@@ -69,7 +68,7 @@ func TestDetect(t *testing.T) {
 				gkeClusterName: "my-cluster",
 				gkeRegion:      "us-central1",
 			}),
-			expectedResource: internal.NewResource(map[string]interface{}{
+			expectedResource: map[string]any{
 				conventions.AttributeCloudProvider:  conventions.AttributeCloudProviderGCP,
 				conventions.AttributeCloudAccountID: "my-project",
 				conventions.AttributeCloudPlatform:  conventions.AttributeCloudPlatformGCPKubernetesEngine,
@@ -77,7 +76,7 @@ func TestDetect(t *testing.T) {
 				conventions.AttributeCloudRegion:    "us-central1",
 				conventions.AttributeHostID:         "1472385723456792345",
 				conventions.AttributeHostName:       "my-gke-node-1234",
-			}),
+			},
 		},
 		{
 			desc: "regional GKE cluster with workload identity",
@@ -89,14 +88,14 @@ func TestDetect(t *testing.T) {
 				gkeClusterName: "my-cluster",
 				gkeRegion:      "us-central1",
 			}),
-			expectedResource: internal.NewResource(map[string]interface{}{
+			expectedResource: map[string]any{
 				conventions.AttributeCloudProvider:  conventions.AttributeCloudProviderGCP,
 				conventions.AttributeCloudAccountID: "my-project",
 				conventions.AttributeCloudPlatform:  conventions.AttributeCloudPlatformGCPKubernetesEngine,
 				conventions.AttributeK8SClusterName: "my-cluster",
 				conventions.AttributeCloudRegion:    "us-central1",
 				conventions.AttributeHostID:         "1472385723456792345",
-			}),
+			},
 		},
 		{
 			desc: "GCE",
@@ -109,7 +108,7 @@ func TestDetect(t *testing.T) {
 				gceAvailabilityZone: "us-central1-c",
 				gceRegion:           "us-central1",
 			}),
-			expectedResource: internal.NewResource(map[string]interface{}{
+			expectedResource: map[string]any{
 				conventions.AttributeCloudProvider:         conventions.AttributeCloudProviderGCP,
 				conventions.AttributeCloudAccountID:        "my-project",
 				conventions.AttributeCloudPlatform:         conventions.AttributeCloudPlatformGCPComputeEngine,
@@ -118,7 +117,7 @@ func TestDetect(t *testing.T) {
 				conventions.AttributeHostType:              "n1-standard1",
 				conventions.AttributeCloudRegion:           "us-central1",
 				conventions.AttributeCloudAvailabilityZone: "us-central1-c",
-			}),
+			},
 		},
 		{
 			desc: "Cloud Run",
@@ -130,7 +129,7 @@ func TestDetect(t *testing.T) {
 				faaSName:        "my-service",
 				faaSVersion:     "123456",
 			}),
-			expectedResource: internal.NewResource(map[string]interface{}{
+			expectedResource: map[string]any{
 				conventions.AttributeCloudProvider:  conventions.AttributeCloudProviderGCP,
 				conventions.AttributeCloudAccountID: "my-project",
 				conventions.AttributeCloudPlatform:  conventions.AttributeCloudPlatformGCPCloudRun,
@@ -138,7 +137,7 @@ func TestDetect(t *testing.T) {
 				conventions.AttributeFaaSName:       "my-service",
 				conventions.AttributeFaaSVersion:    "123456",
 				conventions.AttributeFaaSID:         "1472385723456792345",
-			}),
+			},
 		},
 		{
 			desc: "Cloud Functions",
@@ -150,7 +149,7 @@ func TestDetect(t *testing.T) {
 				faaSName:        "my-service",
 				faaSVersion:     "123456",
 			}),
-			expectedResource: internal.NewResource(map[string]interface{}{
+			expectedResource: map[string]any{
 				conventions.AttributeCloudProvider:  conventions.AttributeCloudProviderGCP,
 				conventions.AttributeCloudAccountID: "my-project",
 				conventions.AttributeCloudPlatform:  conventions.AttributeCloudPlatformGCPCloudFunctions,
@@ -158,7 +157,7 @@ func TestDetect(t *testing.T) {
 				conventions.AttributeFaaSName:       "my-service",
 				conventions.AttributeFaaSVersion:    "123456",
 				conventions.AttributeFaaSID:         "1472385723456792345",
-			}),
+			},
 		},
 		{
 			desc: "App Engine Standard",
@@ -171,7 +170,7 @@ func TestDetect(t *testing.T) {
 				appEngineServiceName:      "my-service",
 				appEngineServiceVersion:   "123456",
 			}),
-			expectedResource: internal.NewResource(map[string]interface{}{
+			expectedResource: map[string]any{
 				conventions.AttributeCloudProvider:         conventions.AttributeCloudProviderGCP,
 				conventions.AttributeCloudAccountID:        "my-project",
 				conventions.AttributeCloudPlatform:         conventions.AttributeCloudPlatformGCPAppEngine,
@@ -180,7 +179,7 @@ func TestDetect(t *testing.T) {
 				conventions.AttributeFaaSName:              "my-service",
 				conventions.AttributeFaaSVersion:           "123456",
 				conventions.AttributeFaaSID:                "1472385723456792345",
-			}),
+			},
 		},
 		{
 			desc: "App Engine Flex",
@@ -193,7 +192,7 @@ func TestDetect(t *testing.T) {
 				appEngineServiceName:      "my-service",
 				appEngineServiceVersion:   "123456",
 			}),
-			expectedResource: internal.NewResource(map[string]interface{}{
+			expectedResource: map[string]any{
 				conventions.AttributeCloudProvider:         conventions.AttributeCloudProviderGCP,
 				conventions.AttributeCloudAccountID:        "my-project",
 				conventions.AttributeCloudPlatform:         conventions.AttributeCloudPlatformGCPAppEngine,
@@ -202,7 +201,7 @@ func TestDetect(t *testing.T) {
 				conventions.AttributeFaaSName:              "my-service",
 				conventions.AttributeFaaSVersion:           "123456",
 				conventions.AttributeFaaSID:                "1472385723456792345",
-			}),
+			},
 		},
 		{
 			desc: "Unknown Platform",
@@ -210,10 +209,10 @@ func TestDetect(t *testing.T) {
 				projectID:     "my-project",
 				cloudPlatform: gcp.UnknownPlatform,
 			}),
-			expectedResource: internal.NewResource(map[string]interface{}{
+			expectedResource: map[string]any{
 				conventions.AttributeCloudProvider:  conventions.AttributeCloudProviderGCP,
 				conventions.AttributeCloudAccountID: "my-project",
-			}),
+			},
 		},
 		{
 			desc: "error",
@@ -221,9 +220,9 @@ func TestDetect(t *testing.T) {
 				err: fmt.Errorf("failed to get metadata"),
 			}),
 			expectErr: true,
-			expectedResource: internal.NewResource(map[string]interface{}{
+			expectedResource: map[string]any{
 				conventions.AttributeCloudProvider: conventions.AttributeCloudProviderGCP,
-			}),
+			},
 		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
@@ -234,9 +233,7 @@ func TestDetect(t *testing.T) {
 				assert.NoError(t, err)
 			}
 			assert.Equal(t, conventions.SchemaURL, schema)
-			tc.expectedResource.Attributes().Sort()
-			res.Attributes().Sort()
-			assert.Equal(t, tc.expectedResource, res, "Resource object returned is incorrect")
+			assert.Equal(t, tc.expectedResource, res.Attributes().AsRaw(), "Resource object returned is incorrect")
 		})
 	}
 }
