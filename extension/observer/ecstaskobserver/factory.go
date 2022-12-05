@@ -20,6 +20,7 @@ import (
 	"net/url"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/extension"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
@@ -30,8 +31,8 @@ const (
 )
 
 // NewFactory creates a factory for ECSTaskObserver extension.
-func NewFactory() component.ExtensionFactory {
-	return component.NewExtensionFactory(
+func NewFactory() extension.Factory {
+	return extension.NewFactory(
 		typeStr,
 		createDefaultConfig,
 		createExtension,
@@ -44,16 +45,16 @@ func createDefaultConfig() component.Config {
 	return &cfg
 }
 
-type extension struct {
+type baseExtension struct {
 	component.StartFunc
 	component.ShutdownFunc
 }
 
 func createExtension(
 	_ context.Context,
-	params component.ExtensionCreateSettings,
+	params extension.CreateSettings,
 	cfg component.Config,
-) (component.Extension, error) {
+) (extension.Extension, error) {
 	obsCfg := cfg.(*Config)
 
 	var metadataProvider ecsutil.MetadataProvider
@@ -73,7 +74,7 @@ func createExtension(
 		metadataProvider: metadataProvider,
 		telemetry:        params.TelemetrySettings,
 	}
-	e.Extension = extension{
+	e.Extension = baseExtension{
 		ShutdownFunc: e.Shutdown,
 	}
 	e.EndpointsWatcher = observer.NewEndpointsWatcher(e, obsCfg.RefreshInterval, params.TelemetrySettings.Logger)

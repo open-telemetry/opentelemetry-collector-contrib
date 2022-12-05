@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/extension/extensiontest"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -49,7 +50,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestCreateExtension(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 
-	ext, err := createExtension(context.Background(), componenttest.NewNopExtensionCreateSettings(), cfg)
+	ext, err := createExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, ext)
 }

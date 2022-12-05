@@ -15,14 +15,15 @@ require (
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3
 	github.com/signalfx/signalfx-agent/pkg/apm v0.0.0-20220920175102-539ae8d8ba8e
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.66.1-0.20221128222955-4ff1ff379b90
-	go.opentelemetry.io/collector/component v0.66.1-0.20221128222955-4ff1ff379b90
-	go.opentelemetry.io/collector/consumer v0.66.1-0.20221128222955-4ff1ff379b90
-	go.opentelemetry.io/collector/pdata v0.66.1-0.20221128222955-4ff1ff379b90
-	go.opentelemetry.io/collector/semconv v0.66.1-0.20221128222955-4ff1ff379b90
+	go.opentelemetry.io/collector v0.66.1-0.20221202005155-1c54042beb70
+	go.opentelemetry.io/collector/component v0.66.1-0.20221202005155-1c54042beb70
+	go.opentelemetry.io/collector/confmap v0.0.0-20221201172708-2bdff61fa52a
+	go.opentelemetry.io/collector/consumer v0.66.1-0.20221202005155-1c54042beb70
+	go.opentelemetry.io/collector/pdata v0.66.1-0.20221202005155-1c54042beb70
+	go.opentelemetry.io/collector/semconv v0.66.1-0.20221202005155-1c54042beb70
 	go.uber.org/atomic v1.10.0
 	go.uber.org/multierr v1.8.0
-	go.uber.org/zap v1.23.0
+	go.uber.org/zap v1.24.0
 	golang.org/x/sys v0.2.0
 	gopkg.in/yaml.v2 v2.4.0
 )
@@ -57,13 +58,13 @@ require (
 	github.com/signalfx/gohistogram v0.0.0-20160107210732-1ccfd2ff5083 // indirect
 	github.com/signalfx/golib/v3 v3.3.46 // indirect
 	github.com/signalfx/sapm-proto v0.12.0 // indirect
-	github.com/tklauser/go-sysconf v0.3.10 // indirect
-	github.com/tklauser/numcpus v0.4.0 // indirect
+	github.com/tklauser/go-sysconf v0.3.11 // indirect
+	github.com/tklauser/numcpus v0.6.0 // indirect
 	github.com/uber/jaeger-client-go v2.30.0+incompatible // indirect
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/featuregate v0.66.1-0.20221128222955-4ff1ff379b90 // indirect
+	go.opentelemetry.io/collector/featuregate v0.66.1-0.20221202005155-1c54042beb70 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.36.4 // indirect
 	go.opentelemetry.io/otel v1.11.1 // indirect
 	go.opentelemetry.io/otel/metric v0.33.0 // indirect

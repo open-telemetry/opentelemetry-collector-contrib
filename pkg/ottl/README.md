@@ -136,7 +136,8 @@ Boolean Expressions allow a decision to be made about whether an Invocation shou
 
 Boolean Expressions consist of the literal string `where` followed by one or more Booleans (see below).
 Booleans can be joined with the literal strings `and` and `or`.
-Note that `and` Boolean Expressions have higher precedence than `or`.
+Booleans can be negated with the literal string `not`.
+Note that `not` has the highest precedence and `and` Boolean Expressions have higher precedence than `or`.
 Boolean Expressions can be grouped with parentheses to override evaluation precedence.
 
 ### Booleans
@@ -155,6 +156,11 @@ The valid operators are:
 - Greater Than (`>`). Tests if left is greater than right.
 - Less Than or Equal To (`<=`). Tests if left is less than or equal to right.
 - Greater Than or Equal to (`>=`). Tests if left is greater than or equal to right.
+
+Booleans can be negated with the `not` keyword such as
+- `not true`
+- `not name == "foo"`   
+  `not (IsMatch(name, "http_.*") == true and kind > 0)`
 
 ### Comparison Rules
 

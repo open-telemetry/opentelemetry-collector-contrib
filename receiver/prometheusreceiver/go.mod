@@ -12,15 +12,16 @@ require (
 	github.com/prometheus/common v0.37.0
 	github.com/prometheus/prometheus v0.38.0
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.66.1-0.20221128222955-4ff1ff379b90
-	go.opentelemetry.io/collector/component v0.66.1-0.20221128222955-4ff1ff379b90
-	go.opentelemetry.io/collector/consumer v0.66.1-0.20221128222955-4ff1ff379b90
-	go.opentelemetry.io/collector/featuregate v0.66.1-0.20221128222955-4ff1ff379b90
-	go.opentelemetry.io/collector/pdata v0.66.1-0.20221128222955-4ff1ff379b90
-	go.opentelemetry.io/collector/processor/batchprocessor v0.66.1-0.20221128222955-4ff1ff379b90
-	go.opentelemetry.io/collector/semconv v0.66.1-0.20221128222955-4ff1ff379b90
+	go.opentelemetry.io/collector v0.66.1-0.20221202005155-1c54042beb70
+	go.opentelemetry.io/collector/component v0.66.1-0.20221202005155-1c54042beb70
+	go.opentelemetry.io/collector/confmap v0.0.0-20221201172708-2bdff61fa52a
+	go.opentelemetry.io/collector/consumer v0.66.1-0.20221202005155-1c54042beb70
+	go.opentelemetry.io/collector/featuregate v0.66.1-0.20221202005155-1c54042beb70
+	go.opentelemetry.io/collector/pdata v0.66.1-0.20221202005155-1c54042beb70
+	go.opentelemetry.io/collector/processor/batchprocessor v0.66.1-0.20221202005155-1c54042beb70
+	go.opentelemetry.io/collector/semconv v0.66.1-0.20221202005155-1c54042beb70
 	go.uber.org/atomic v1.10.0
-	go.uber.org/zap v1.23.0
+	go.uber.org/zap v1.24.0
 	google.golang.org/protobuf v1.28.1
 	gopkg.in/yaml.v2 v2.4.0
 )
@@ -144,8 +145,8 @@ require (
 	github.com/tidwall/pretty v1.2.0 // indirect
 	github.com/tidwall/tinylru v1.1.0 // indirect
 	github.com/tidwall/wal v1.1.7 // indirect
-	github.com/tklauser/go-sysconf v0.3.10 // indirect
-	github.com/tklauser/numcpus v0.4.0 // indirect
+	github.com/tklauser/go-sysconf v0.3.11 // indirect
+	github.com/tklauser/numcpus v0.6.0 // indirect
 	github.com/vultr/govultr/v2 v2.17.2 // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	go.opencensus.io v0.24.0 // indirect

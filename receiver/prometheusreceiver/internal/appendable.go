@@ -47,7 +47,6 @@ func NewAppendable(
 	gcInterval time.Duration,
 	useStartTimeMetric bool,
 	startTimeMetricRegex *regexp.Regexp,
-	receiverID component.ID,
 	externalLabels labels.Labels,
 	registry *featuregate.Registry) (storage.Appendable, error) {
 	var metricAdjuster MetricsAdjuster
@@ -57,7 +56,7 @@ func NewAppendable(
 		metricAdjuster = NewStartTimeMetricAdjuster(set.Logger, startTimeMetricRegex)
 	}
 
-	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: receiverID, Transport: transport, ReceiverCreateSettings: set})
+	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: set.ID, Transport: transport, ReceiverCreateSettings: set})
 	if err != nil {
 		return nil, err
 	}

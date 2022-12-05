@@ -58,7 +58,7 @@ func createReceiver(
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	jmxConfig := cfg.(*Config)
-	if err := jmxConfig.validate(); err != nil {
+	if err := jmxConfig.Validate(); err != nil {
 		return nil, err
 	}
 	return newJMXMetricReceiver(params, jmxConfig, consumer), nil

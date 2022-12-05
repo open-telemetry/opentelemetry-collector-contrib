@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/extension/extensiontest"
 )
 
 func TestValidConfig(t *testing.T) {
@@ -32,7 +33,7 @@ func TestValidConfig(t *testing.T) {
 func TestCreateExtension(t *testing.T) {
 	dockerObserver, err := createExtension(
 		context.Background(),
-		componenttest.NewNopExtensionCreateSettings(),
+		extensiontest.NewNopCreateSettings(),
 		&Config{
 			ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
 		},

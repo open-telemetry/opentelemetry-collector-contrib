@@ -49,7 +49,7 @@ func newReceiver(
 	transport := "http"
 
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
-		ReceiverID:             config.ID(),
+		ReceiverID:             set.ID,
 		Transport:              transport,
 		ReceiverCreateSettings: set,
 	})

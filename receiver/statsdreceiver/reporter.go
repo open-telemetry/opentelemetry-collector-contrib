@@ -28,7 +28,6 @@ import (
 // reporter struct implements the transport.Reporter interface to give consistent
 // observability per Collector metric observability package.
 type reporter struct {
-	id            component.ID
 	logger        *zap.Logger
 	sugaredLogger *zap.SugaredLogger // Used for generic debug logging
 	obsrecv       *obsreport.Receiver
@@ -36,9 +35,9 @@ type reporter struct {
 
 var _ transport.Reporter = (*reporter)(nil)
 
-func newReporter(receiverID component.ID, set component.ReceiverCreateSettings) (transport.Reporter, error) {
+func newReporter(set component.ReceiverCreateSettings) (transport.Reporter, error) {
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
-		ReceiverID:             receiverID,
+		ReceiverID:             set.ID,
 		Transport:              "tcp",
 		ReceiverCreateSettings: set,
 	})
@@ -46,7 +45,6 @@ func newReporter(receiverID component.ID, set component.ReceiverCreateSettings) 
 		return nil, err
 	}
 	return &reporter{
-		id:            receiverID,
 		logger:        set.Logger,
 		sugaredLogger: set.Logger.Sugar(),
 		obsrecv:       obsrecv,

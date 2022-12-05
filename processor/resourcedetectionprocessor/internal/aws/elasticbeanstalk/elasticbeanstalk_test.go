@@ -24,8 +24,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
 
 const xrayConf = "{\"deployment_id\":23,\"version_label\":\"env-version-1234\",\"environment_name\":\"BETA\"}"
@@ -106,5 +104,5 @@ func Test_AttributesDetectedSuccessfully(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.NotNil(t, r)
-	assert.Equal(t, internal.AttributesToMap(want.Attributes()), internal.AttributesToMap(r.Attributes()))
+	assert.Equal(t, want.Attributes().AsRaw(), r.Attributes().AsRaw())
 }

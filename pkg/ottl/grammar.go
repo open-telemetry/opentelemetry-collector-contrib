@@ -30,6 +30,7 @@ type parsedStatement struct {
 // either an equality or inequality, explicit true or false, or
 // a parenthesized subexpression.
 type booleanValue struct {
+	Negation   *string            `parser:"@OpNot?"`
 	Comparison *comparison        `parser:"( @@"`
 	ConstExpr  *boolean           `parser:"| @Boolean"`
 	SubExpr    *booleanExpression `parser:"| '(' @@ ')' )"`
@@ -266,6 +267,7 @@ func buildLexer() *lexer.StatefulDefinition {
 		{Name: `Float`, Pattern: `[-+]?\d*\.\d+([eE][-+]?\d+)?`},
 		{Name: `Int`, Pattern: `[-+]?\d+`},
 		{Name: `String`, Pattern: `"(\\"|[^"])*"`},
+		{Name: `OpNot`, Pattern: `\b(not)\b`},
 		{Name: `OpOr`, Pattern: `\b(or)\b`},
 		{Name: `OpAnd`, Pattern: `\b(and)\b`},
 		{Name: `OpComparison`, Pattern: `==|!=|>=|<=|>|<`},

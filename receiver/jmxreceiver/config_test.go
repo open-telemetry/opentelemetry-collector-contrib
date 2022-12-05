@@ -40,7 +40,7 @@ func TestLoadConfig(t *testing.T) {
 	}{
 		{
 			id:          component.NewIDWithName(typeStr, ""),
-			expectedErr: "missing required fields: `endpoint`, `target_system`",
+			expectedErr: "missing required field(s): `endpoint`, `target_system`",
 			expected:    createDefaultConfig(),
 		},
 		{
@@ -80,7 +80,8 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "missingendpoint"),
+			id:          component.NewIDWithName(typeStr, "missingendpoint"),
+			expectedErr: "missing required field(s): `endpoint`",
 			expected: &Config{
 				ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 				JARPath:            "testdata/fake_jmx.jar",
@@ -96,7 +97,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			id:          component.NewIDWithName(typeStr, "missingtarget"),
-			expectedErr: "jmx missing required field: `target_system`",
+			expectedErr: "missing required field(s): `target_system`",
 			expected: &Config{
 				ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 				JARPath:            "testdata/fake_jmx.jar",
@@ -148,7 +149,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "nonexistentjar"),
 			// Error is different based on OS, which is why this is contains, not equals
-			expectedErr: "error validating `jar_path`: error hashing file: open testdata/file_does_not_exist.jar:",
+			expectedErr: "invalid `jar_path`: error hashing file: open testdata/file_does_not_exist.jar:",
 			expected: &Config{
 				ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 				JARPath:            "testdata/file_does_not_exist.jar",
@@ -165,7 +166,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			id:          component.NewIDWithName(typeStr, "invalidjar"),
-			expectedErr: "error validating `jar_path`: jar hash does not match known versions",
+			expectedErr: "invalid `jar_path`: jar hash does not match known versions",
 			expected: &Config{
 				ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 				JARPath:            "testdata/fake_jmx_wrong.jar",
@@ -182,7 +183,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			id:          component.NewIDWithName(typeStr, "invalidloglevel"),
-			expectedErr: "jmx `log_level` must be one of 'debug', 'error', 'info', 'off', 'trace', 'warn'",
+			expectedErr: "`log_level` must be one of 'debug', 'error', 'info', 'off', 'trace', 'warn'",
 			expected: &Config{
 				ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 				JARPath:            "testdata/fake_jmx.jar",
@@ -232,7 +233,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 			if tt.expectedErr != "" {
-				assert.ErrorContains(t, cfg.(*Config).validate(), tt.expectedErr)
+				assert.ErrorContains(t, cfg.(*Config).Validate(), tt.expectedErr)
 				assert.Equal(t, tt.expected, cfg)
 				return
 			}
@@ -259,16 +260,16 @@ func TestCustomMetricsGathererConfig(t *testing.T) {
 
 	conf := cfg.(*Config)
 
-	err = conf.validate()
+	err = conf.Validate()
 	require.Error(t, err)
-	assert.Equal(t, "jmx error validating `jar_path`: jar hash does not match known versions", err.Error())
+	assert.Equal(t, "invalid `jar_path`: jar hash does not match known versions", err.Error())
 
 	MetricsGathererHash = "5994471abb01112afcc18159f6cc74b4f511b99806da59b3caf5a9c173cacfc5"
 	initSupportedJars()
 
-	err = conf.validate()
+	err = conf.Validate()
 	require.Error(t, err)
-	assert.Equal(t, "jmx `target_system` list may only be a subset of 'activemq', 'cassandra', 'hadoop', 'hbase', 'jetty', 'jvm', 'kafka', 'kafka-consumer', 'kafka-producer', 'solr', 'tomcat', 'wildfly'", err.Error())
+	assert.Equal(t, "`target_system` list may only be a subset of 'activemq', 'cassandra', 'hadoop', 'hbase', 'jetty', 'jvm', 'kafka', 'kafka-consumer', 'kafka-producer', 'solr', 'tomcat', 'wildfly'", err.Error())
 
 	AdditionalTargetSystems = "fakejvmtechnology,anothertechnology"
 	t.Cleanup(func() {
@@ -279,7 +280,7 @@ func TestCustomMetricsGathererConfig(t *testing.T) {
 
 	conf.TargetSystem = "jvm,fakejvmtechnology,anothertechnology"
 
-	require.NoError(t, conf.validate())
+	require.NoError(t, conf.Validate())
 }
 
 func TestClassPathParse(t *testing.T) {

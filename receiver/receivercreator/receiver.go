@@ -67,12 +67,12 @@ var _ component.Host = (*loggingHost)(nil)
 func (rc *receiverCreator) Start(_ context.Context, host component.Host) error {
 	rc.observerHandler = &observerHandler{
 		config:                rc.cfg,
-		logger:                rc.params.Logger,
+		params:                rc.params,
 		receiversByEndpointID: receiverMap{},
 		nextConsumer:          rc.nextConsumer,
 		runner: &receiverRunner{
 			params:      rc.params,
-			idNamespace: rc.cfg.ID(),
+			idNamespace: rc.params.ID,
 			host:        &loggingHost{host, rc.params.Logger},
 		},
 	}
