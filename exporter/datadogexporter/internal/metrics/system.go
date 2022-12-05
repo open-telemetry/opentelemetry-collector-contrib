@@ -115,11 +115,28 @@ func extractSystemMetrics(m datadog.Metric) []datadog.Metric {
 // otelNamespacePrefix specifies the namespace used for OpenTelemetry host metrics.
 const otelNamespacePrefix = "otel."
 
+// goRuntimeMetricsMappings defines the mappings from OTel runtime metric names to their
+// equivalent Datadog runtime metric names
+var goRuntimeMetricsMappings = map[string]string{
+	"process.runtime.go.goroutines":        "runtime.go.num_goroutine",
+	"process.runtime.go.cgo.calls":         "runtime.go.num_cgo_call",
+	"process.runtime.go.lookups":           "runtime.go.mem_stats.lookups",
+	"process.runtime.go.mem.heap_alloc":    "runtime.go.mem_stats.heap_alloc",
+	"process.runtime.go.mem.heap_sys":      "runtime.go.mem_stats.heap_sys",
+	"process.runtime.go.mem.heap_idle":     "runtime.go.mem_stats.heap_idle",
+	"process.runtime.go.mem.heap_inuse":    "runtime.go.mem_stats.heap_inuse",
+	"process.runtime.go.mem.heap_released": "runtime.go.mem_stats.heap_released",
+	"process.runtime.go.mem.heap_objects":  "runtime.go.mem_stats.heap_objects",
+	"process.runtime.go.gc.pause_total_ns": "runtime.go.mem_stats.pause_total_ns",
+	"process.runtime.go.gc.count":          "runtime.go.mem_stats.num_gc",
+}
+
 // PrepareSystemMetrics prepends system hosts metrics with the otel.* prefix to identify
 // them as part of the Datadog OpenTelemetry Integration. It also extracts Datadog compatible
 // system metrics and returns the full set of metrics to be used.
 func PrepareSystemMetrics(ms []datadog.Metric) []datadog.Metric {
 	series := ms
+	var ddruntimemetrics []datadog.Metric
 	for i, m := range ms {
 		if !strings.HasPrefix(*m.Metric, "system.") &&
 			!strings.HasPrefix(*m.Metric, "process.") {
@@ -130,6 +147,20 @@ func PrepareSystemMetrics(ms []datadog.Metric) []datadog.Metric {
 		// all existing system metrics need to be prepended
 		newname := otelNamespacePrefix + *m.Metric
 		series[i].Metric = &newname
+
+		// Map metric to equivalent Datadog runtime metric if found
+		var ddruntimename string
+		for otelname, ddname := range goRuntimeMetricsMappings {
+			if *m.Metric == otelname {
+				ddruntimename = ddname
+				break
+			}
+		}
+		if ddruntimename != "" {
+			ddruntime := series[i]
+			ddruntime.Metric = &ddruntimename
+			ddruntimemetrics = append(ddruntimemetrics, ddruntime)
+		}
 	}
-	return series
+	return append(series, ddruntimemetrics...)
 }
