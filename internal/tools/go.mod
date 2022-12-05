@@ -10,7 +10,7 @@ require (
 	github.com/jstemmer/go-junit-report v1.0.0
 	github.com/pavius/impi v0.0.3
 	github.com/tcnksm/ghr v0.16.0
-	go.opentelemetry.io/build-tools/checkdoc v0.2.0
+	go.opentelemetry.io/build-tools/checkdoc v0.3.0
 	go.opentelemetry.io/build-tools/chloggen v0.2.0
 	go.opentelemetry.io/build-tools/crosslink v0.2.0
 	go.opentelemetry.io/build-tools/issuegenerator v0.2.0
