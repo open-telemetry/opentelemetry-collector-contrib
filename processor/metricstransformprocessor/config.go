@@ -170,9 +170,19 @@ const (
 
 	// Group groups mutiple metrics matching the predicate into multiple ResourceMetrics messages
 	Group ConfigAction = "group"
+
+	// SplitBy creates a new metric by copying matching datapoints
+	// into the new metric using the label matching.
+	SplitBy ConfigAction = "splitby"
 )
 
-var actions = []ConfigAction{Insert, Update, Combine, Group}
+var actions = []ConfigAction{
+	Insert,
+	Update,
+	Combine,
+	Group,
+	SplitBy,
+}
 
 func (ca ConfigAction) isValid() bool {
 	for _, configAction := range actions {
@@ -220,16 +230,19 @@ const (
 	AggregateLabelValues OperationAction = "aggregate_label_values"
 )
 
-var operationActions = []OperationAction{AddLabel, UpdateLabel, DeleteLabelValue, ToggleScalarDataType, ScaleValue, AggregateLabels, AggregateLabelValues}
+var operationActions = map[OperationAction]struct{}{
+	AddLabel:             {},
+	UpdateLabel:          {},
+	DeleteLabelValue:     {},
+	ToggleScalarDataType: {},
+	ScaleValue:           {},
+	AggregateLabels:      {},
+	AggregateLabelValues: {},
+}
 
 func (oa OperationAction) isValid() bool {
-	for _, operationAction := range operationActions {
-		if oa == operationAction {
-			return true
-		}
-	}
-
-	return false
+	_, ok := operationActions[oa]
+	return ok
 }
 
 // AggregationType is the enum to capture the three types of aggregation for the aggregation operation.

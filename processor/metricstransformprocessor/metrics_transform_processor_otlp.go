@@ -21,6 +21,8 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor/internal/datapoint"
 )
 
 // extractAndRemoveMatchedMetrics extracts matched metrics from ms metric slice and returns a new slice.
@@ -293,6 +295,45 @@ func (mtp *metricsTransformProcessor) processMetrics(_ context.Context, md pmetr
 						// Drop the metric if all the data points were dropped after transformations.
 						return !transformMetric(metric, transform)
 					})
+				case SplitBy:
+					mLen := metrics.Len()
+					for i := 0; i < mLen; i++ {
+						original := metrics.At(i)
+						if !transform.MetricIncludeFilter.matchMetric(original) {
+							continue
+						}
+						metric := pmetric.NewMetric()
+						copyMetricDetails(original, metric)
+						metric.SetName(transform.NewName)
+
+						rangeDatapoints(original, func(dp datapoint.Datapoint) bool {
+							if !transform.MetricIncludeFilter.matchAttrs(dp.Attributes()) {
+								return true
+							}
+							switch metric.Type() {
+							case pmetric.MetricTypeGauge:
+								v := dp.(pmetric.NumberDataPoint)
+								v.CopyTo(metric.Gauge().DataPoints().AppendEmpty())
+							case pmetric.MetricTypeSum:
+								v := dp.(pmetric.NumberDataPoint)
+								v.CopyTo(metric.Sum().DataPoints().AppendEmpty())
+							case pmetric.MetricTypeSummary:
+								v := dp.(pmetric.SummaryDataPoint)
+								v.CopyTo(metric.Summary().DataPoints().AppendEmpty())
+							case pmetric.MetricTypeHistogram:
+								v := dp.(pmetric.HistogramDataPoint)
+								v.CopyTo(metric.Histogram().DataPoints().AppendEmpty())
+							case pmetric.MetricTypeExponentialHistogram:
+								v := dp.(pmetric.ExponentialHistogramDataPoint)
+								v.CopyTo(metric.ExponentialHistogram().DataPoints().AppendEmpty())
+							}
+							return true
+						})
+
+						if count := countDataPoints(metric); count > 0 && transformMetric(metric, transform) {
+							metric.MoveTo(metrics.AppendEmpty())
+						}
+					}
 				}
 			}
 
@@ -468,46 +509,53 @@ func copyMetricDetails(from, to pmetric.Metric) {
 	}
 }
 
-// rangeDataPointAttributes calls f sequentially on attributes of every metric data point.
-// The iteration terminates if f returns false.
-func rangeDataPointAttributes(metric pmetric.Metric, f func(pcommon.Map) bool) {
+// rangeDatapoints calls fn sequentially on each datapoint within metric until fn returns false.
+func rangeDatapoints(metric pmetric.Metric, fn func(dp datapoint.Datapoint) bool) {
 	switch metric.Type() {
 	case pmetric.MetricTypeGauge:
 		for i := 0; i < metric.Gauge().DataPoints().Len(); i++ {
 			dp := metric.Gauge().DataPoints().At(i)
-			if !f(dp.Attributes()) {
+			if !fn(dp) {
 				return
 			}
 		}
 	case pmetric.MetricTypeSum:
 		for i := 0; i < metric.Sum().DataPoints().Len(); i++ {
 			dp := metric.Sum().DataPoints().At(i)
-			if !f(dp.Attributes()) {
+			if !fn(dp) {
 				return
 			}
 		}
 	case pmetric.MetricTypeHistogram:
 		for i := 0; i < metric.Histogram().DataPoints().Len(); i++ {
 			dp := metric.Histogram().DataPoints().At(i)
-			if !f(dp.Attributes()) {
+			if !fn(dp) {
 				return
 			}
 		}
 	case pmetric.MetricTypeExponentialHistogram:
 		for i := 0; i < metric.ExponentialHistogram().DataPoints().Len(); i++ {
 			dp := metric.ExponentialHistogram().DataPoints().At(i)
-			if !f(dp.Attributes()) {
+			if !fn(dp) {
 				return
 			}
 		}
 	case pmetric.MetricTypeSummary:
 		for i := 0; i < metric.Summary().DataPoints().Len(); i++ {
 			dp := metric.Summary().DataPoints().At(i)
-			if !f(dp.Attributes()) {
+			if !fn(dp) {
 				return
 			}
 		}
 	}
+}
+
+// rangeDataPointAttributes calls f sequentially on attributes of every metric data point.
+// The iteration terminates if f returns false.
+func rangeDataPointAttributes(metric pmetric.Metric, f func(pcommon.Map) bool) {
+	rangeDatapoints(metric, func(dp datapoint.Datapoint) bool {
+		return f(dp.Attributes())
+	})
 }
 
 func countDataPoints(metric pmetric.Metric) int {
