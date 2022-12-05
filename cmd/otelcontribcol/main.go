@@ -16,9 +16,6 @@
 // that includes additional components, some vendor-specific, contributed
 // from the wider community.
 
-//go:build !testbed
-// +build !testbed
-
 package main
 
 import (

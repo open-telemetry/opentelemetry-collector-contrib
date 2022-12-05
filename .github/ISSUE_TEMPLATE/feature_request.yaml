@@ -15,6 +15,7 @@ body:
       - cmd/configschema
       - cmd/mdatagen
       - cmd/otelcontribcol
+      - cmd/oteltestbedcol
       - cmd/telemetrygen
       - cmd/tracegen
       - confmap/provider/s3provider
