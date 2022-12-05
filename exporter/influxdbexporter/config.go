@@ -15,8 +15,6 @@
 package influxdbexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter"
 
 import (
-	"fmt"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -29,6 +27,18 @@ const (
 	// The stability level of the exporter.
 	stability = component.StabilityLevelBeta
 )
+
+// V1Compatibility is used to specify if the exporter should use the v1.X InfluxDB API schema.
+type V1Compatibility struct {
+	// Enabled is used to specify if the exporter should use the v1.X InfluxDB API schema
+	Enabled bool `mapstructure:"enabled"`
+	// DB is used to specify the name of the V1 InfluxDB database that telemetry will be written to.
+	DB string `mapstructure:"db"`
+	// Username is used to optionally specify the basic auth username
+	Username string `mapstructure:"username"`
+	// Password is used to optionally specify the basic auth password
+	Password string `mapstructure:"password"`
+}
 
 // Config defines configuration for the InfluxDB exporter.
 type Config struct {
@@ -43,6 +53,8 @@ type Config struct {
 	Bucket string `mapstructure:"bucket"`
 	// Token is used to identify InfluxDB permissions within the organization.
 	Token string `mapstructure:"token"`
+	// V1Compatibility is used to specify if the exporter should use the v1.X InfluxDB API schema.
+	V1Compatibility V1Compatibility `mapstructure:"v1_compatibility"`
 
 	// MetricsSchema indicates the metrics schema to emit to line protocol.
 	// Options:
@@ -52,8 +64,5 @@ type Config struct {
 }
 
 func (cfg *Config) Validate() error {
-	if err := cfg.ExporterSettings.Validate(); err != nil {
-		return fmt.Errorf("exporter settings are invalid :%w", err)
-	}
 	return nil
 }

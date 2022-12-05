@@ -24,9 +24,12 @@ import (
 	"github.com/prometheus/prometheus/model/value"
 	"github.com/prometheus/prometheus/scrape"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 type testMetadataStore map[string]scrape.MetricMetadata
@@ -187,7 +190,8 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 				} else {
 					lbls = tt.labels.Copy()
 				}
-				err := mp.Add(tv.metric, lbls, tv.at, tv.value)
+				sRef, _ := getSeriesRef(nil, lbls, mp.mtype)
+				err := mp.addSeries(sRef, tv.metric, lbls, tv.at, tv.value)
 				if tt.wantErr {
 					if i != 0 {
 						require.Error(t, err)
@@ -202,11 +206,9 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 			}
 
 			require.Len(t, mp.groups, 1)
-			groupKey := mp.getGroupKey(tt.labels.Copy())
-			require.NotNil(t, mp.groups[groupKey])
 
 			sl := pmetric.NewMetricSlice()
-			mp.appendMetric(sl)
+			mp.appendMetric(sl, prometheus.NewNormalizer(featuregate.GetRegistry()))
 
 			require.Equal(t, 1, sl.Len(), "Exactly one metric expected")
 			metric := sl.At(0)
@@ -400,7 +402,9 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 			mp := newMetricFamily(tt.name, mc, zap.NewNop())
 			for _, lbs := range tt.labelsScrapes {
 				for i, scrape := range lbs.scrapes {
-					err := mp.Add(scrape.metric, lbs.labels.Copy(), scrape.at, scrape.value)
+					lb := lbs.labels.Copy()
+					sRef, _ := getSeriesRef(nil, lb, mp.mtype)
+					err := mp.addSeries(sRef, scrape.metric, lb, scrape.at, scrape.value)
 					if tt.wantErr {
 						// The first scrape won't have an error
 						if i != 0 {
@@ -417,11 +421,9 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 			}
 
 			require.Len(t, mp.groups, 1)
-			groupKey := mp.getGroupKey(tt.labelsScrapes[0].labels.Copy())
-			require.NotNil(t, mp.groups[groupKey])
 
 			sl := pmetric.NewMetricSlice()
-			mp.appendMetric(sl)
+			mp.appendMetric(sl, prometheus.NewNormalizer(featuregate.GetRegistry()))
 
 			require.Equal(t, 1, sl.Len(), "Exactly one metric expected")
 			metric := sl.At(0)
@@ -496,15 +498,15 @@ func TestMetricGroupData_toNumberDataUnitTest(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mp := newMetricFamily(tt.metricKind, mc, zap.NewNop())
 			for _, tv := range tt.scrapes {
-				require.NoError(t, mp.Add(tv.metric, tt.labels.Copy(), tv.at, tv.value))
+				lb := tt.labels.Copy()
+				sRef, _ := getSeriesRef(nil, lb, mp.mtype)
+				require.NoError(t, mp.addSeries(sRef, tv.metric, lb, tv.at, tv.value))
 			}
 
 			require.Len(t, mp.groups, 1)
-			groupKey := mp.getGroupKey(tt.labels.Copy())
-			require.NotNil(t, mp.groups[groupKey])
 
 			sl := pmetric.NewMetricSlice()
-			mp.appendMetric(sl)
+			mp.appendMetric(sl, prometheus.NewNormalizer(featuregate.GetRegistry()))
 
 			require.Equal(t, 1, sl.Len(), "Exactly one metric expected")
 			metric := sl.At(0)

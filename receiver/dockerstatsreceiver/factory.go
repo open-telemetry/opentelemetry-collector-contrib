@@ -19,7 +19,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
@@ -34,11 +33,12 @@ const (
 )
 
 func init() {
-	featuregate.GetRegistry().MustRegister(featuregate.Gate{
-		ID:          useScraperV2ID,
-		Description: "When enabled, the receiver will use the function ScrapeV2 to collect metrics. This allows each metric to be turned off/on via config. The new metrics are slightly different to the legacy implementation.",
-		Enabled:     false,
-	})
+	featuregate.GetRegistry().MustRegisterID(
+		useScraperV2ID,
+		featuregate.StageBeta,
+		featuregate.WithRegisterDescription("When enabled, the receiver will use the function ScrapeV2 to collect metrics. This allows each metric to be turned off/on via config. The new metrics are slightly different to the legacy implementation."),
+		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9794"),
+	)
 }
 
 func NewFactory() component.ReceiverFactory {
@@ -48,7 +48,7 @@ func NewFactory() component.ReceiverFactory {
 		component.WithMetricsReceiver(createMetricsReceiver, stability))
 }
 
-func createDefaultConfig() config.Receiver {
+func createDefaultConfig() component.Config {
 	scs := scraperhelper.NewDefaultScraperControllerSettings(typeStr)
 	scs.CollectionInterval = 10 * time.Second
 	return &Config{
@@ -63,7 +63,7 @@ func createDefaultConfig() config.Receiver {
 func createMetricsReceiver(
 	_ context.Context,
 	params component.ReceiverCreateSettings,
-	config config.Receiver,
+	config component.Config,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	dockerConfig := config.(*Config)

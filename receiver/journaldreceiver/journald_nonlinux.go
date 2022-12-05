@@ -46,10 +46,10 @@ type JournaldConfig struct {
 	adapter.BaseConfig `mapstructure:",squash"`
 }
 
-func createDefaultConfig() config.Receiver {
+func createDefaultConfig() component.Config {
 	return &JournaldConfig{
 		BaseConfig: adapter.BaseConfig{
-			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+			ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 			Operators:        []operator.Config{},
 		},
 	}
@@ -58,7 +58,7 @@ func createDefaultConfig() config.Receiver {
 func createLogsReceiver(
 	_ context.Context,
 	params component.ReceiverCreateSettings,
-	cfg config.Receiver,
+	cfg component.Config,
 	consumer consumer.Logs,
 ) (component.LogsReceiver, error) {
 	return nil, fmt.Errorf("journald is only supported on linux")

@@ -21,7 +21,7 @@ import (
 	"strings"
 	"time"
 
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
@@ -30,7 +30,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/metadata"
 )
 
-var _ config.Receiver = (*Config)(nil)
+var _ component.Config = (*Config)(nil)
 
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
@@ -41,7 +41,7 @@ type Config struct {
 	Alerts                                  AlertConfig                  `mapstructure:"alerts"`
 	Logs                                    LogConfig                    `mapstructure:"logs"`
 	RetrySettings                           exporterhelper.RetrySettings `mapstructure:"retry_on_failure"`
-	StorageID                               *config.ComponentID          `mapstructure:"storage"`
+	StorageID                               *component.ID                `mapstructure:"storage"`
 }
 
 type AlertConfig struct {
@@ -107,7 +107,6 @@ var (
 func (c *Config) Validate() error {
 	var errs error
 
-	errs = multierr.Append(errs, c.ScraperControllerSettings.Validate())
 	errs = multierr.Append(errs, c.Alerts.validate())
 	errs = multierr.Append(errs, c.Logs.validate())
 

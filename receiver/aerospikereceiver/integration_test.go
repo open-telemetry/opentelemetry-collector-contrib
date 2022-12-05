@@ -19,6 +19,7 @@ package aerospikereceiver_test
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"os"
 	"path/filepath"
@@ -28,10 +29,11 @@ import (
 
 	as "github.com/aerospike/aerospike-client-go/v6"
 	"github.com/stretchr/testify/require"
+	testcontainers "github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/containertest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver"
@@ -262,11 +264,28 @@ func populateMetrics(t *testing.T, host *as.Host) {
 func TestAerospikeIntegration(t *testing.T) {
 	t.Parallel()
 
-	ct := containertest.New(t)
-	container := ct.StartImage("aerospike:ce-6.1.0.1", containertest.WithPortReady(3000))
+	ctx := context.Background()
+	req := testcontainers.ContainerRequest{
+		Image:        "aerospike:ce-6.1.0.1",
+		ExposedPorts: []string{"3000/tcp"},
+		WaitingFor:   wait.ForListeningPort("3000/tcp"),
+	}
+	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	require.Nil(t, err)
+	require.NotNil(t, container)
+
+	mappedPort, err := container.MappedPort(ctx, "3000")
+	require.Nil(t, err)
+
+	hostIP, err := container.Host(ctx)
+	require.Nil(t, err)
+
 	time.Sleep(time.Second * 2)
 
-	host := container.AddrForPort(3000)
+	host := fmt.Sprintf("%s:%s", hostIP, mappedPort.Port())
 	ip, portStr, err := net.SplitHostPort(host)
 	require.NoError(t, err)
 

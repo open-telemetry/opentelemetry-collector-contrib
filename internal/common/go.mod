@@ -4,11 +4,12 @@ go 1.18
 
 require (
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.63.2-0.20221031183340-2ed8c0c6ff9c
+	go.opentelemetry.io/collector/featuregate v0.66.1-0.20221202005155-1c54042beb70
 	go.uber.org/zap v1.23.0
 )
 
 require (
+	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
@@ -18,3 +19,5 @@ require (
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+retract v0.65.0

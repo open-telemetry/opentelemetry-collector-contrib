@@ -30,7 +30,6 @@ import (
 	"go.uber.org/zap"
 
 	ec2provider "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/aws/ec2"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
 
 var errUnavailable = errors.New("ec2metadata unavailable")
@@ -195,7 +194,7 @@ func TestDetector_Detect(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 				require.NotNil(t, got)
-				assert.Equal(t, internal.AttributesToMap(tt.want.Attributes()), internal.AttributesToMap(got.Attributes()))
+				assert.Equal(t, tt.want.Attributes().AsRaw(), got.Attributes().AsRaw())
 			}
 		})
 	}

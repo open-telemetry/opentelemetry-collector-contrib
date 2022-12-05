@@ -15,15 +15,17 @@
 package metrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics"
 
 import (
+	"context"
+
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoints"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 )
 
-func convertSumToGauge() (ottl.ExprFunc[ottldatapoints.TransformContext], error) {
-	return func(ctx ottldatapoints.TransformContext) (interface{}, error) {
-		metric := ctx.GetMetric()
+func convertSumToGauge() (ottl.ExprFunc[ottldatapoint.TransformContext], error) {
+	return func(_ context.Context, tCtx ottldatapoint.TransformContext) (interface{}, error) {
+		metric := tCtx.GetMetric()
 		if metric.Type() != pmetric.MetricTypeSum {
 			return nil, nil
 		}

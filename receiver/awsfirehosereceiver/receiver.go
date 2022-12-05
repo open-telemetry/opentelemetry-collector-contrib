@@ -27,7 +27,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.uber.org/zap"
 )
 
@@ -55,8 +54,6 @@ type firehoseConsumer interface {
 
 // firehoseReceiver
 type firehoseReceiver struct {
-	// instanceID is the instance ID for the receiver.
-	instanceID config.ComponentID
 	// settings is the base receiver settings.
 	settings component.ReceiverCreateSettings
 	// config is the configuration for the receiver.
@@ -113,7 +110,7 @@ type firehoseCommonAttributes struct {
 	CommonAttributes map[string]string `json:"commonAttributes"`
 }
 
-var _ component.Receiver = (*firehoseReceiver)(nil)
+var _ component.MetricsReceiver = (*firehoseReceiver)(nil)
 var _ http.Handler = (*firehoseReceiver)(nil)
 
 // Start spins up the receiver's HTTP server and makes the receiver start

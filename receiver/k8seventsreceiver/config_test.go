@@ -20,6 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
@@ -33,18 +34,18 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	tests := []struct {
-		id          config.ComponentID
-		expected    config.Receiver
+		id          component.ID
+		expected    component.Config
 		expectedErr error
 	}{
 		{
-			id:       config.NewComponentIDWithName(typeStr, ""),
+			id:       component.NewIDWithName(typeStr, ""),
 			expected: createDefaultConfig(),
 		},
 		{
-			id: config.NewComponentIDWithName(typeStr, "all_settings"),
+			id: component.NewIDWithName(typeStr, "all_settings"),
 			expected: &Config{
-				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 				Namespaces:       []string{"default", "my_namespace"},
 				APIConfig: k8sconfig.APIConfig{
 					AuthType: k8sconfig.AuthTypeServiceAccount,
@@ -60,9 +61,9 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-			assert.NoError(t, cfg.Validate())
+			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

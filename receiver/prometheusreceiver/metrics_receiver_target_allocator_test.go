@@ -31,9 +31,11 @@ import (
 	promConfig "github.com/prometheus/prometheus/config"
 	promHTTP "github.com/prometheus/prometheus/discovery/http"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/atomic"
 )
 
@@ -229,7 +231,7 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 				},
 			},
 			cfg: &Config{
-				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 				PrometheusConfig: &promConfig.Config{},
 				TargetAllocator: &targetAllocator{
 					Interval:    10 * time.Second,
@@ -324,7 +326,7 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 				},
 			},
 			cfg: &Config{
-				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 				PrometheusConfig: &promConfig.Config{},
 				TargetAllocator: &targetAllocator{
 					Interval:    10 * time.Second,
@@ -437,7 +439,7 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 				},
 			},
 			cfg: &Config{
-				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 				PrometheusConfig: &promConfig.Config{},
 				TargetAllocator: &targetAllocator{
 					Interval:    10 * time.Second,
@@ -480,7 +482,7 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 				},
 			},
 			cfg: &Config{
-				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 				PrometheusConfig: &promConfig.Config{},
 				TargetAllocator: &targetAllocator{
 					Interval:    50 * time.Millisecond,
@@ -508,7 +510,7 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 			defer allocator.Stop()
 
 			tc.cfg.TargetAllocator.Endpoint = allocator.srv.URL // set service URL with the automatic generated one
-			receiver := newPrometheusReceiver(componenttest.NewNopReceiverCreateSettings(), tc.cfg, cms)
+			receiver := newPrometheusReceiver(componenttest.NewNopReceiverCreateSettings(), tc.cfg, cms, featuregate.GetRegistry())
 
 			require.NoError(t, receiver.Start(ctx, componenttest.NewNopHost()))
 

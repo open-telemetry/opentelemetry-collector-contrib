@@ -59,6 +59,20 @@ func generateTestIntGauge(name string) *metricspb.Metric {
 	}
 }
 
+func generateTestMetricMetadata(namespace string, timestamp int64, logGroup, logStreamName, instrumentationLibraryName string, metricType pmetric.MetricType) cWMetricMetadata {
+	return cWMetricMetadata{
+		receiver: prometheusReceiver,
+		groupedMetricMetadata: groupedMetricMetadata{
+			namespace:      namespace,
+			timestampMs:    timestamp,
+			logGroup:       logGroup,
+			logStream:      logStreamName,
+			metricDataType: metricType,
+		},
+		instrumentationLibraryName: instrumentationLibraryName,
+	}
+}
+
 func generateTestDoubleGauge(name string) *metricspb.Metric {
 	return &metricspb.Metric{
 		MetricDescriptor: &metricspb.MetricDescriptor{
@@ -582,11 +596,11 @@ func TestCreateLabels(t *testing.T) {
 		"c": "C",
 	}
 	labelsMap := pcommon.NewMap()
-	labelsMap.FromRaw(map[string]interface{}{
+	assert.NoError(t, labelsMap.FromRaw(map[string]interface{}{
 		"a": "A",
 		"b": "B",
 		"c": "C",
-	})
+	}))
 
 	labels := createLabels(labelsMap, noInstrumentationLibraryName)
 	assert.Equal(t, expectedLabels, labels)

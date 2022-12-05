@@ -18,11 +18,11 @@ import (
 	"errors"
 	"time"
 
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
-var _ config.Receiver = (*Config)(nil)
+var _ component.Config = (*Config)(nil)
 
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`

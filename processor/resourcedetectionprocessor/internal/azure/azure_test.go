@@ -54,7 +54,7 @@ func TestDetectAzureAvailable(t *testing.T) {
 	mp.AssertExpectations(t)
 	res.Attributes().Sort()
 
-	expected := internal.NewResource(map[string]interface{}{
+	expected := map[string]any{
 		conventions.AttributeCloudProvider:  conventions.AttributeCloudProviderAzure,
 		conventions.AttributeCloudPlatform:  conventions.AttributeCloudPlatformAzureVM,
 		conventions.AttributeHostName:       "name",
@@ -65,10 +65,9 @@ func TestDetectAzureAvailable(t *testing.T) {
 		"azure.vm.size":                     "vmSize",
 		"azure.resourcegroup.name":          "resourceGroup",
 		"azure.vm.scaleset.name":            "myScaleset",
-	})
-	expected.Attributes().Sort()
+	}
 
-	assert.Equal(t, expected, res)
+	assert.Equal(t, expected, res.Attributes().AsRaw())
 }
 
 func TestDetectError(t *testing.T) {

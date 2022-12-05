@@ -219,8 +219,12 @@ type IndexingOperations struct {
 }
 
 type GetOperation struct {
-	Total         int64 `json:"total"`
-	TotalTimeInMs int64 `json:"time_in_millis"`
+	Total           int64 `json:"total"`
+	TotalTimeInMs   int64 `json:"time_in_millis"`
+	Exists          int64 `json:"exists_total"`
+	ExistsTimeInMs  int64 `json:"exists_time_in_millis"`
+	Missing         int64 `json:"missing_total"`
+	MissingTimeInMs int64 `json:"missing_time_in_millis"`
 }
 
 type SearchOperations struct {
@@ -263,6 +267,7 @@ type JVMMemoryInfo struct {
 	NonHeapUsedInBy     int64          `json:"non_heap_used_in_bytes"`
 	MaxHeapInBy         int64          `json:"heap_max_in_bytes"`
 	HeapCommittedInBy   int64          `json:"heap_committed_in_bytes"`
+	HeapUsedPercent     int64          `json:"heap_used_percent"`
 	NonHeapComittedInBy int64          `json:"non_heap_committed_in_bytes"`
 	MemoryPools         JVMMemoryPools `json:"pools"`
 }

@@ -87,7 +87,7 @@ exporters:
 A signal may get matched by routing conditions of more than one routing table entry. In this case, the signal will be routed to all exporters of matching routes.
 Respectively, if none of the routing conditions met, then a signal is routed to default exporters.
 
-It is also possible to use both the conventional routing items configuration and the routing items with [OTTL] conditions.
+It is also possible to mix both the conventional routing configuration and the routing configuration with [OTTL] conditions.
 
 #### Limitations:
 

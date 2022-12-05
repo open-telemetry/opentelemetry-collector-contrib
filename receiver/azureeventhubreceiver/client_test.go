@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package azureeventhubreceiver
+package azureeventhubreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver"
 
 import (
 	"context"
@@ -21,10 +21,11 @@ import (
 
 	eventhub "github.com/Azure/azure-event-hubs-go/v3"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/obsreport"
-	"go.uber.org/zap"
 )
 
 type mockHubWrapper struct {
@@ -66,9 +67,10 @@ func TestClient_Start(t *testing.T) {
 	config.(*Config).Connection = "Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName"
 
 	c := &client{
-		logger:   zap.NewNop(),
+		settings: componenttest.NewNopReceiverCreateSettings(),
 		consumer: consumertest.NewNop(),
 		config:   config.(*Config),
+		convert:  &rawConverter{},
 	}
 	c.hub = &mockHubWrapper{}
 	err := c.Start(context.Background(), componenttest.NewNopHost())
@@ -82,19 +84,22 @@ func TestClient_handle(t *testing.T) {
 	config.(*Config).Connection = "Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName"
 
 	sink := new(consumertest.LogsSink)
+	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+		ReceiverID:             component.NewID(typeStr),
+		Transport:              "",
+		LongLivedCtx:           false,
+		ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings(),
+	})
+	require.NoError(t, err)
 	c := &client{
-		logger:   zap.NewNop(),
+		settings: componenttest.NewNopReceiverCreateSettings(),
 		consumer: sink,
 		config:   config.(*Config),
-		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
-			ReceiverID:             config.ID(),
-			Transport:              "",
-			LongLivedCtx:           false,
-			ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings(),
-		}),
+		obsrecv:  obsrecv,
+		convert:  &rawConverter{},
 	}
 	c.hub = &mockHubWrapper{}
-	err := c.Start(context.Background(), componenttest.NewNopHost())
+	err = c.Start(context.Background(), componenttest.NewNopHost())
 	assert.NoError(t, err)
 	now := time.Now()
 	err = c.handle(context.Background(), &eventhub.Event{

@@ -26,7 +26,7 @@ import (
 
 const (
 	typeStr           = "podman_stats"
-	stability         = component.StabilityLevelInDevelopment
+	stability         = component.StabilityLevelDevelopment
 	defaultAPIVersion = "3.3.1"
 )
 
@@ -40,7 +40,7 @@ func NewFactory() component.ReceiverFactory {
 func createDefaultConfig() *Config {
 	return &Config{
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
+			ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 			CollectionInterval: 10 * time.Second,
 		},
 		Endpoint:   "unix:///run/podman/podman.sock",
@@ -49,14 +49,14 @@ func createDefaultConfig() *Config {
 	}
 }
 
-func createDefaultReceiverConfig() config.Receiver {
+func createDefaultReceiverConfig() component.Config {
 	return createDefaultConfig()
 }
 
 func createMetricsReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateSettings,
-	config config.Receiver,
+	config component.Config,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	podmanConfig := config.(*Config)

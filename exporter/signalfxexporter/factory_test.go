@@ -26,9 +26,9 @@ import (
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -41,7 +41,7 @@ import (
 func TestCreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
-	assert.NoError(t, configtest.CheckConfigStruct(cfg))
+	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
 func TestCreateMetricsExporter(t *testing.T) {
@@ -111,7 +111,7 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 
 func TestCreateMetricsExporter_CustomConfig(t *testing.T) {
 	config := &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		AccessToken:      "testToken",
 		Realm:            "us1",
 		Headers: map[string]string{
@@ -135,43 +135,41 @@ func TestFactory_CreateMetricsExporterFails(t *testing.T) {
 		{
 			name: "negative_duration",
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				AccessToken:      "testToken",
 				Realm:            "lab",
 				TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: -2 * time.Second},
 			},
-			errorMessage: "failed to process \"signalfx\" config: cannot have a negative \"timeout\"",
+			errorMessage: "cannot have a negative \"timeout\"",
 		},
 		{
 			name: "empty_realm_and_urls",
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				AccessToken:      "testToken",
 			},
-			errorMessage: "failed to process \"signalfx\" config: requires a non-empty \"realm\"," +
-				" or \"ingest_url\" and \"api_url\" should be explicitly set",
+			errorMessage: "requires a non-empty \"realm\", or \"ingest_url\" and \"api_url\" should be explicitly set",
 		},
 		{
 			name: "empty_realm_and_api_url",
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				AccessToken:      "testToken",
 				IngestURL:        "http://localhost:123",
 			},
-			errorMessage: "failed to process \"signalfx\" config: requires a non-empty \"realm\"," +
-				" or \"ingest_url\" and \"api_url\" should be explicitly set",
+			errorMessage: "requires a non-empty \"realm\", or \"ingest_url\" and \"api_url\" should be explicitly set",
 		},
 		{
 			name: "negative_MaxConnections",
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				AccessToken:      "testToken",
 				Realm:            "lab",
 				IngestURL:        "http://localhost:123",
 				APIURL:           "https://api.us1.signalfx.com/",
 				MaxConnections:   -10,
 			},
-			errorMessage: "failed to process \"signalfx\" config: cannot have a negative \"max_connections\"",
+			errorMessage: "cannot have a negative \"max_connections\"",
 		},
 	}
 	for _, tt := range tests {
@@ -263,7 +261,7 @@ func TestDefaultTranslationRules(t *testing.T) {
 
 func TestCreateMetricsExporterWithDefaultExcludeMetrics(t *testing.T) {
 	config := &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		AccessToken:      "testToken",
 		Realm:            "us1",
 	}
@@ -278,7 +276,7 @@ func TestCreateMetricsExporterWithDefaultExcludeMetrics(t *testing.T) {
 
 func TestCreateMetricsExporterWithExcludeMetrics(t *testing.T) {
 	config := &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		AccessToken:      "testToken",
 		Realm:            "us1",
 		ExcludeMetrics: []dpfilters.MetricFilter{
@@ -298,7 +296,7 @@ func TestCreateMetricsExporterWithExcludeMetrics(t *testing.T) {
 
 func TestCreateMetricsExporterWithEmptyExcludeMetrics(t *testing.T) {
 	config := &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		AccessToken:      "testToken",
 		Realm:            "us1",
 		ExcludeMetrics:   []dpfilters.MetricFilter{},
@@ -695,7 +693,7 @@ func TestDefaultExcludes_not_translated(t *testing.T) {
 	require.NoError(t, err)
 
 	md := getMetrics(metrics)
-	require.Equal(t, 71, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
+	require.Equal(t, 69, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
 	dps := converter.MetricsToSignalFxV2(md)
 	require.Equal(t, 0, len(dps))
 }

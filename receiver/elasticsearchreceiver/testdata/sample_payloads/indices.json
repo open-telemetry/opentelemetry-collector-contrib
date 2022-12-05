@@ -23,16 +23,16 @@
           "index_time_in_millis" : 938,
           "index_current" : 0,
           "index_failed" : 0,
-          "delete_total" : 0,
-          "delete_time_in_millis" : 0,
+          "delete_total" : 12,
+          "delete_time_in_millis" : 2,
           "delete_current" : 0,
           "noop_update_total" : 0,
           "is_throttled" : false,
           "throttle_time_in_millis" : 0
         },
         "get" : {
-          "total" : 0,
-          "time_in_millis" : 0,
+          "total" : 13,
+          "time_in_millis" : 3,
           "exists_total" : 0,
           "exists_time_in_millis" : 0,
           "missing_total" : 0,
@@ -50,15 +50,15 @@
           "scroll_total" : 3,
           "scroll_time_in_millis" : 30,
           "scroll_current" : 0,
-          "suggest_total" : 0,
-          "suggest_time_in_millis" : 0,
+          "suggest_total" : 5,
+          "suggest_time_in_millis" : 1,
           "suggest_current" : 0
         },
         "merges" : {
           "current" : 0,
           "current_docs" : 0,
           "current_size_in_bytes" : 0,
-          "total" : 0,
+          "total" : 8,
           "total_time_in_millis" : 12,
           "total_docs" : 5,
           "total_size_in_bytes" : 64,
@@ -81,19 +81,19 @@
         "warmer" : {
           "current" : 0,
           "total" : 6,
-          "total_time_in_millis" : 0
+          "total_time_in_millis" : 4
         },
         "query_cache" : {
-          "memory_size_in_bytes" : 0,
+          "memory_size_in_bytes" : 12,
           "total_count" : 0,
           "hit_count" : 0,
           "miss_count" : 0,
-          "cache_size" : 0,
+          "cache_size" : 3,
           "cache_count" : 0,
-          "evictions" : 0
+          "evictions" : 2
         },
         "fielddata" : {
-          "memory_size_in_bytes" : 0,
+          "memory_size_in_bytes" : 3,
           "evictions" : 0
         },
         "completion" : {
@@ -151,16 +151,16 @@
           "index_time_in_millis" : 938,
           "index_current" : 0,
           "index_failed" : 0,
-          "delete_total" : 0,
-          "delete_time_in_millis" : 0,
+          "delete_total" : 12,
+          "delete_time_in_millis" : 2,
           "delete_current" : 0,
           "noop_update_total" : 0,
           "is_throttled" : false,
           "throttle_time_in_millis" : 0
         },
         "get" : {
-          "total" : 0,
-          "time_in_millis" : 0,
+          "total" : 13,
+          "time_in_millis" : 3,
           "exists_total" : 0,
           "exists_time_in_millis" : 0,
           "missing_total" : 0,
@@ -178,15 +178,15 @@
           "scroll_total" : 3,
           "scroll_time_in_millis" : 30,
           "scroll_current" : 0,
-          "suggest_total" : 0,
-          "suggest_time_in_millis" : 0,
+          "suggest_total" : 5,
+          "suggest_time_in_millis" : 1,
           "suggest_current" : 0
         },
         "merges" : {
           "current" : 0,
           "current_docs" : 0,
           "current_size_in_bytes" : 0,
-          "total" : 0,
+          "total" : 8,
           "total_time_in_millis" : 12,
           "total_docs" : 5,
           "total_size_in_bytes" : 64,
@@ -209,19 +209,19 @@
         "warmer" : {
           "current" : 0,
           "total" : 6,
-          "total_time_in_millis" : 0
+          "total_time_in_millis" : 4
         },
         "query_cache" : {
-          "memory_size_in_bytes" : 0,
+          "memory_size_in_bytes" : 12,
           "total_count" : 0,
           "hit_count" : 0,
           "miss_count" : 0,
-          "cache_size" : 0,
+          "cache_size" : 3,
           "cache_count" : 0,
-          "evictions" : 0
+          "evictions" : 2
         },
         "fielddata" : {
-          "memory_size_in_bytes" : 0,
+          "memory_size_in_bytes" : 3,
           "evictions" : 0
         },
         "completion" : {
@@ -283,16 +283,16 @@
             "index_time_in_millis" : 938,
             "index_current" : 0,
             "index_failed" : 0,
-            "delete_total" : 0,
-            "delete_time_in_millis" : 0,
+            "delete_total" : 12,
+            "delete_time_in_millis" : 2,
             "delete_current" : 0,
             "noop_update_total" : 0,
             "is_throttled" : false,
             "throttle_time_in_millis" : 0
           },
           "get" : {
-            "total" : 0,
-            "time_in_millis" : 0,
+            "total" : 13,
+            "time_in_millis" : 3,
             "exists_total" : 0,
             "exists_time_in_millis" : 0,
             "missing_total" : 0,
@@ -310,15 +310,15 @@
             "scroll_total" : 3,
             "scroll_time_in_millis" : 30,
             "scroll_current" : 0,
-            "suggest_total" : 0,
-            "suggest_time_in_millis" : 0,
+            "suggest_total" : 5,
+            "suggest_time_in_millis" : 1,
             "suggest_current" : 0
           },
           "merges" : {
             "current" : 0,
             "current_docs" : 0,
             "current_size_in_bytes" : 0,
-            "total" : 0,
+            "total" : 8,
             "total_time_in_millis" : 12,
             "total_docs" : 5,
             "total_size_in_bytes" : 64,
@@ -341,19 +341,19 @@
           "warmer" : {
             "current" : 0,
             "total" : 6,
-            "total_time_in_millis" : 0
+            "total_time_in_millis" : 4
           },
           "query_cache" : {
-            "memory_size_in_bytes" : 0,
+            "memory_size_in_bytes" : 12,
             "total_count" : 0,
             "hit_count" : 0,
             "miss_count" : 0,
-            "cache_size" : 0,
+            "cache_size" : 3,
             "cache_count" : 0,
-            "evictions" : 0
+            "evictions" : 2
           },
           "fielddata" : {
-            "memory_size_in_bytes" : 0,
+            "memory_size_in_bytes" : 3,
             "evictions" : 0
           },
           "completion" : {
@@ -411,16 +411,16 @@
             "index_time_in_millis" : 938,
             "index_current" : 0,
             "index_failed" : 0,
-            "delete_total" : 0,
-            "delete_time_in_millis" : 0,
+            "delete_total" : 12,
+            "delete_time_in_millis" : 2,
             "delete_current" : 0,
             "noop_update_total" : 0,
             "is_throttled" : false,
             "throttle_time_in_millis" : 0
           },
           "get" : {
-            "total" : 0,
-            "time_in_millis" : 0,
+            "total" : 13,
+            "time_in_millis" : 3,
             "exists_total" : 0,
             "exists_time_in_millis" : 0,
             "missing_total" : 0,
@@ -438,15 +438,15 @@
             "scroll_total" : 3,
             "scroll_time_in_millis" : 30,
             "scroll_current" : 0,
-            "suggest_total" : 0,
-            "suggest_time_in_millis" : 0,
+            "suggest_total" : 5,
+            "suggest_time_in_millis" : 1,
             "suggest_current" : 0
           },
           "merges" : {
             "current" : 0,
             "current_docs" : 0,
             "current_size_in_bytes" : 0,
-            "total" : 0,
+            "total" : 8,
             "total_time_in_millis" : 12,
             "total_docs" : 5,
             "total_size_in_bytes" : 64,
@@ -469,19 +469,19 @@
           "warmer" : {
             "current" : 0,
             "total" : 6,
-            "total_time_in_millis" : 0
+            "total_time_in_millis" : 4
           },
           "query_cache" : {
-            "memory_size_in_bytes" : 0,
+            "memory_size_in_bytes" : 12,
             "total_count" : 0,
             "hit_count" : 0,
             "miss_count" : 0,
-            "cache_size" : 0,
+            "cache_size" : 3,
             "cache_count" : 0,
-            "evictions" : 0
+            "evictions" : 2
           },
           "fielddata" : {
-            "memory_size_in_bytes" : 0,
+            "memory_size_in_bytes" : 3,
             "evictions" : 0
           },
           "completion" : {

@@ -38,7 +38,7 @@ func TestProcessorGetsCreatedWithValidConfiguration(t *testing.T) {
 	factory := NewFactory()
 	creationParams := componenttest.NewNopProcessorCreateSettings()
 	cfg := &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
+		ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 		DefaultExporters:  []string{"otlp"},
 		FromAttribute:     "X-Tenant",
 		Table: []RoutingTableItem{
@@ -73,13 +73,13 @@ func TestProcessorGetsCreatedWithValidConfiguration(t *testing.T) {
 
 func TestFailOnEmptyConfiguration(t *testing.T) {
 	cfg := NewFactory().CreateDefaultConfig()
-	assert.ErrorIs(t, cfg.Validate(), errNoTableItems)
+	assert.ErrorIs(t, component.ValidateConfig(cfg), errNoTableItems)
 }
 
 func TestProcessorFailsToBeCreatedWhenRouteHasNoExporters(t *testing.T) {
 	// prepare
 	cfg := &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
+		ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 		DefaultExporters:  []string{"otlp"},
 		FromAttribute:     "X-Tenant",
 		Table: []RoutingTableItem{
@@ -88,22 +88,22 @@ func TestProcessorFailsToBeCreatedWhenRouteHasNoExporters(t *testing.T) {
 			},
 		},
 	}
-	assert.ErrorIs(t, cfg.Validate(), errNoExporters)
+	assert.ErrorIs(t, component.ValidateConfig(cfg), errNoExporters)
 }
 
 func TestProcessorFailsToBeCreatedWhenNoRoutesExist(t *testing.T) {
 	cfg := &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
+		ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 		DefaultExporters:  []string{"otlp"},
 		FromAttribute:     "X-Tenant",
 		Table:             []RoutingTableItem{},
 	}
-	assert.ErrorIs(t, cfg.Validate(), errNoTableItems)
+	assert.ErrorIs(t, component.ValidateConfig(cfg), errNoTableItems)
 }
 
 func TestProcessorFailsWithNoFromAttribute(t *testing.T) {
 	cfg := &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
+		ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 		DefaultExporters:  []string{"otlp"},
 		Table: []RoutingTableItem{
 			{
@@ -112,7 +112,7 @@ func TestProcessorFailsWithNoFromAttribute(t *testing.T) {
 			},
 		},
 	}
-	assert.ErrorIs(t, cfg.Validate(), errNoMissingFromAttribute)
+	assert.ErrorIs(t, component.ValidateConfig(cfg), errNoMissingFromAttribute)
 }
 
 func TestShouldNotFailWhenNextIsProcessor(t *testing.T) {
@@ -120,7 +120,7 @@ func TestShouldNotFailWhenNextIsProcessor(t *testing.T) {
 	factory := NewFactory()
 	creationParams := componenttest.NewNopProcessorCreateSettings()
 	cfg := &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
+		ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 		DefaultExporters:  []string{"otlp"},
 		FromAttribute:     "X-Tenant",
 		Table: []RoutingTableItem{
@@ -155,7 +155,7 @@ func TestProcessorDoesNotFailToBuildExportersWithMultiplePipelines(t *testing.T)
 	factories.Exporters["otlp"] = otlpExporterFactory
 
 	otlpConfig := &otlpexporter.Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID("otlp")),
+		ExporterSettings: config.NewExporterSettings(component.NewID("otlp")),
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: "example.com:1234",
 		},
@@ -167,19 +167,14 @@ func TestProcessorDoesNotFailToBuildExportersWithMultiplePipelines(t *testing.T)
 	otlpMetricsExporter, err := otlpExporterFactory.CreateMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), otlpConfig)
 	require.NoError(t, err)
 
-	host := &mockHost{
-		Host: componenttest.NewNopHost(),
-		GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
-			return map[config.DataType]map[config.ComponentID]component.Exporter{
-				config.TracesDataType: {
-					config.NewComponentID("otlp/traces"): otlpTracesExporter,
-				},
-				config.MetricsDataType: {
-					config.NewComponentID("otlp/metrics"): otlpMetricsExporter,
-				},
-			}
+	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
+		component.DataTypeTraces: {
+			component.NewID("otlp/traces"): otlpTracesExporter,
 		},
-	}
+		component.DataTypeMetrics: {
+			component.NewID("otlp/metrics"): otlpMetricsExporter,
+		},
+	})
 
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
@@ -191,7 +186,7 @@ func TestProcessorDoesNotFailToBuildExportersWithMultiplePipelines(t *testing.T)
 
 			sub, err := cm.Sub(k)
 			require.NoError(t, err)
-			require.NoError(t, config.UnmarshalProcessor(sub, cfg))
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 			exp := newMetricProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, cfg)
 			err = exp.Start(context.Background(), host)
@@ -207,7 +202,7 @@ func TestShutdown(t *testing.T) {
 	factory := NewFactory()
 	creationParams := componenttest.NewNopProcessorCreateSettings()
 	cfg := &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
+		ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 		DefaultExporters:  []string{"otlp"},
 		FromAttribute:     "X-Tenant",
 		Table: []RoutingTableItem{
@@ -237,14 +232,18 @@ func (mp *mockProcessor) processTraces(context.Context, ptrace.Traces) (ptrace.T
 
 type mockHost struct {
 	component.Host
-	GetExportersFunc func() map[config.DataType]map[config.ComponentID]component.Exporter
+	exps map[component.DataType]map[component.ID]component.Component
 }
 
-func (m *mockHost) GetExporters() map[config.DataType]map[config.ComponentID]component.Exporter {
-	if m.GetExportersFunc != nil {
-		return m.GetExportersFunc()
+func newMockHost(exps map[component.DataType]map[component.ID]component.Component) component.Host {
+	return &mockHost{
+		Host: componenttest.NewNopHost(),
+		exps: exps,
 	}
-	return m.Host.GetExporters()
+}
+
+func (m *mockHost) GetExporters() map[component.DataType]map[component.ID]component.Component {
+	return m.exps
 }
 
 type mockComponent struct {

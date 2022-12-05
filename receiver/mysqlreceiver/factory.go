@@ -39,10 +39,10 @@ func NewFactory() component.ReceiverFactory {
 		component.WithMetricsReceiver(createMetricsReceiver, stability))
 }
 
-func createDefaultConfig() config.Receiver {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
+			ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 			CollectionInterval: 10 * time.Second,
 		},
 		AllowNativePasswords: true,
@@ -63,7 +63,7 @@ func createDefaultConfig() config.Receiver {
 func createMetricsReceiver(
 	_ context.Context,
 	params component.ReceiverCreateSettings,
-	rConf config.Receiver,
+	rConf component.Config,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	cfg := rConf.(*Config)

@@ -21,7 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -37,15 +37,15 @@ func TestLoadConfig(t *testing.T) {
 
 	sub, err := cm.Sub("k8sobjects")
 	require.NoError(t, err)
-	require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 	require.NotNil(t, cfg)
 
-	err = cfg.Validate()
+	err = component.ValidateConfig(cfg)
 	require.Error(t, err)
 
 	cfg.makeDiscoveryClient = getMockDiscoveryClient
 
-	err = cfg.Validate()
+	err = component.ValidateConfig(cfg)
 	require.NoError(t, err)
 
 	expected := []*K8sObjectsConfig{
@@ -88,11 +88,11 @@ func TestValidConfigs(t *testing.T) {
 
 	sub, err := cm.Sub("k8sobjects/invalid_resource")
 	require.NoError(t, err)
-	require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	cfg.makeDiscoveryClient = getMockDiscoveryClient
 
-	err = cfg.Validate()
+	err = component.ValidateConfig(cfg)
 	assert.ErrorContains(t, err, "resource fake_resource not found")
 
 }

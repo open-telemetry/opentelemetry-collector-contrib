@@ -2,10 +2,15 @@ mapping:
   type: helpers_test
   severity:
     mapping:
-      critical: 5xx
-      error: 4xx
       info: 3xx
-      debug: 2xx
+      error3: 4xx
+      debug4: 5xx
+      trace2:
+        - "ttttttracer"
+        - min: 1111
+          max: 1234
+      fatal2: ""
+      12: infooo
 parse_from:
   type: helpers_test
   severity:

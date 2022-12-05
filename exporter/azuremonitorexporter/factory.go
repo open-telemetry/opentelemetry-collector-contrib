@@ -52,19 +52,20 @@ type factory struct {
 	tChannel transportChannel
 }
 
-func createDefaultConfig() config.Exporter {
+func createDefaultConfig() component.Config {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-		Endpoint:         defaultEndpoint,
-		MaxBatchSize:     1024,
-		MaxBatchInterval: 10 * time.Second,
+		ExporterSettings:  config.NewExporterSettings(component.NewID(typeStr)),
+		Endpoint:          defaultEndpoint,
+		MaxBatchSize:      1024,
+		MaxBatchInterval:  10 * time.Second,
+		SpanEventsEnabled: false,
 	}
 }
 
 func (f *factory) createTracesExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
-	cfg config.Exporter,
+	cfg component.Config,
 ) (component.TracesExporter, error) {
 	exporterConfig, ok := cfg.(*Config)
 
@@ -79,7 +80,7 @@ func (f *factory) createTracesExporter(
 func (f *factory) createLogsExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
-	cfg config.Exporter,
+	cfg component.Config,
 ) (component.LogsExporter, error) {
 	exporterConfig, ok := cfg.(*Config)
 

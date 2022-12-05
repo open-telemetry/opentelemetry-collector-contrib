@@ -15,6 +15,7 @@
 package ottlcommon
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -130,6 +131,23 @@ func TestResourcePathGetSetter(t *testing.T) {
 			},
 		},
 		{
+			name: "attributes array empty",
+			path: []ottl.Field{
+				{
+					Name:   "attributes",
+					MapKey: ottltest.Strp("arr_empty"),
+				},
+			},
+			orig: func() pcommon.Slice {
+				val, _ := refResource.Attributes().Get("arr_empty")
+				return val.Slice()
+			}(),
+			newVal: []any{},
+			modified: func(resource pcommon.Resource) {
+				// no-op
+			},
+		},
+		{
 			name: "attributes array string",
 			path: []ottl.Field{
 				{
@@ -235,11 +253,11 @@ func TestResourcePathGetSetter(t *testing.T) {
 
 			resource := createResource()
 
-			got, err := accessor.Get(newResourceContext(resource))
+			got, err := accessor.Get(context.Background(), newResourceContext(resource))
 			assert.Nil(t, err)
 			assert.Equal(t, tt.orig, got)
 
-			err = accessor.Set(newResourceContext(resource), tt.newVal)
+			err = accessor.Set(context.Background(), newResourceContext(resource), tt.newVal)
 			assert.Nil(t, err)
 
 			expectedResource := createResource()
@@ -257,6 +275,8 @@ func createResource() pcommon.Resource {
 	resource.Attributes().PutInt("int", 10)
 	resource.Attributes().PutDouble("double", 1.2)
 	resource.Attributes().PutEmptyBytes("bytes").FromRaw([]byte{1, 3, 2})
+
+	resource.Attributes().PutEmptySlice("arr_empty")
 
 	arrStr := resource.Attributes().PutEmptySlice("arr_str")
 	arrStr.AppendEmpty().SetStr("one")

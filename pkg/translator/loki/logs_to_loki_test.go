@@ -244,12 +244,14 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 
 func TestLogsToLokiRequestWithoutTenant(t *testing.T) {
 	testCases := []struct {
-		desc          string
-		hints         map[string]interface{}
-		attrs         map[string]interface{}
-		res           map[string]interface{}
-		expectedLabel string
-		expectedLines []string
+		desc           string
+		hints          map[string]interface{}
+		attrs          map[string]interface{}
+		res            map[string]interface{}
+		severity       plog.SeverityNumber
+		levelAttribute string
+		expectedLabel  string
+		expectedLines  []string
 	}{
 		{
 			desc: "with attribute to label and regular attribute",
@@ -300,6 +302,27 @@ func TestLogsToLokiRequestWithoutTenant(t *testing.T) {
 				`traceID=03000000000000000000000000000000 attribute_http.status=200`,
 			},
 		},
+		{
+			desc:          "with severity to label",
+			severity:      plog.SeverityNumberDebug4,
+			expectedLabel: `{exporter="OTLP", level="DEBUG4"}`,
+			expectedLines: []string{
+				`{"traceid":"01000000000000000000000000000000"}`,
+				`{"traceid":"02000000000000000000000000000000"}`,
+				`{"traceid":"03000000000000000000000000000000"}`,
+			},
+		},
+		{
+			desc:           "with severity, already existing level",
+			severity:       plog.SeverityNumberDebug4,
+			levelAttribute: "dummy",
+			expectedLabel:  `{exporter="OTLP", level="dummy"}`,
+			expectedLines: []string{
+				`{"traceid":"01000000000000000000000000000000"}`,
+				`{"traceid":"02000000000000000000000000000000"}`,
+				`{"traceid":"03000000000000000000000000000000"}`,
+			},
+		},
 	}
 	for _, tt := range testCases {
 		t.Run(tt.desc, func(t *testing.T) {
@@ -310,10 +333,14 @@ func TestLogsToLokiRequestWithoutTenant(t *testing.T) {
 				ld.ResourceLogs().At(0).ScopeLogs().AppendEmpty()
 				ld.ResourceLogs().At(0).ScopeLogs().At(i).LogRecords().AppendEmpty()
 				ld.ResourceLogs().At(0).ScopeLogs().At(i).LogRecords().At(0).SetTraceID([16]byte{byte(i + 1)})
+				ld.ResourceLogs().At(0).ScopeLogs().At(i).LogRecords().At(0).SetSeverityNumber(tt.severity)
+				if len(tt.levelAttribute) > 0 {
+					ld.ResourceLogs().At(0).ScopeLogs().At(i).LogRecords().At(0).Attributes().PutStr(levelAttributeName, tt.levelAttribute)
+				}
 			}
 
 			if len(tt.res) > 0 {
-				ld.ResourceLogs().At(0).Resource().Attributes().FromRaw(tt.res)
+				assert.NoError(t, ld.ResourceLogs().At(0).Resource().Attributes().FromRaw(tt.res))
 			}
 
 			rlogs := ld.ResourceLogs()
@@ -324,7 +351,7 @@ func TestLogsToLokiRequestWithoutTenant(t *testing.T) {
 					for k := 0; k < logs.Len(); k++ {
 						log := logs.At(k)
 						if len(tt.attrs) > 0 {
-							log.Attributes().FromRaw(tt.attrs)
+							assert.NoError(t, log.Attributes().FromRaw(tt.attrs))
 						}
 						for k, v := range tt.hints {
 							log.Attributes().PutStr(k, fmt.Sprintf("%v", v))
@@ -355,12 +382,14 @@ func TestLogsToLokiRequestWithoutTenant(t *testing.T) {
 
 func TestLogsToLoki(t *testing.T) {
 	testCases := []struct {
-		desc          string
-		hints         map[string]interface{}
-		attrs         map[string]interface{}
-		res           map[string]interface{}
-		expectedLabel string
-		expectedLines []string
+		desc           string
+		hints          map[string]interface{}
+		attrs          map[string]interface{}
+		res            map[string]interface{}
+		severity       plog.SeverityNumber
+		levelAttribute string
+		expectedLabel  string
+		expectedLines  []string
 	}{
 		{
 			desc: "with attribute to label and regular attribute",
@@ -411,6 +440,27 @@ func TestLogsToLoki(t *testing.T) {
 				`traceID=01020304050600000000000000000000 resource_region.az=eu-west-1a`,
 			},
 		},
+		{
+			desc:          "with severity to label",
+			severity:      plog.SeverityNumberDebug4,
+			expectedLabel: `{exporter="OTLP", level="DEBUG4"}`,
+			expectedLines: []string{
+				`{"traceid":"01020304000000000000000000000000"}`,
+				`{"traceid":"01020304050000000000000000000000"}`,
+				`{"traceid":"01020304050600000000000000000000"}`,
+			},
+		},
+		{
+			desc:           "with severity, already existing level",
+			severity:       plog.SeverityNumberDebug4,
+			levelAttribute: "dummy",
+			expectedLabel:  `{exporter="OTLP", level="dummy"}`,
+			expectedLines: []string{
+				`{"traceid":"01020304000000000000000000000000"}`,
+				`{"traceid":"01020304050000000000000000000000"}`,
+				`{"traceid":"01020304050600000000000000000000"}`,
+			},
+		},
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
@@ -421,18 +471,26 @@ func TestLogsToLoki(t *testing.T) {
 			ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().AppendEmpty()
 			ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().AppendEmpty()
 			ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().AppendEmpty()
+			ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).SetSeverityNumber(tC.severity)
 			ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).SetTraceID(pcommon.TraceID([16]byte{1, 2, 3, 4}))
+			ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).SetSeverityNumber(tC.severity)
 			ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).SetTraceID(pcommon.TraceID([16]byte{1, 2, 3, 4, 5}))
+			ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(2).SetSeverityNumber(tC.severity)
 			ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(2).SetTraceID(pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6}))
 
 			// copy the attributes from the test case to the log entry
 			if len(tC.attrs) > 0 {
-				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().FromRaw(tC.attrs)
-				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().FromRaw(tC.attrs)
-				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(2).Attributes().FromRaw(tC.attrs)
+				assert.NoError(t, ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().FromRaw(tC.attrs))
+				assert.NoError(t, ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().FromRaw(tC.attrs))
+				assert.NoError(t, ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(2).Attributes().FromRaw(tC.attrs))
 			}
 			if len(tC.res) > 0 {
-				ld.ResourceLogs().At(0).Resource().Attributes().FromRaw(tC.res)
+				assert.NoError(t, ld.ResourceLogs().At(0).Resource().Attributes().FromRaw(tC.res))
+			}
+			if len(tC.levelAttribute) > 0 {
+				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr(levelAttributeName, tC.levelAttribute)
+				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().PutStr(levelAttributeName, tC.levelAttribute)
+				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(2).Attributes().PutStr(levelAttributeName, tC.levelAttribute)
 			}
 
 			// we can't use copy here, as the value (Value) will be used as string lookup later, so, we need to convert it to string now

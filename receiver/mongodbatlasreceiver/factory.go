@@ -20,7 +20,6 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
@@ -49,7 +48,7 @@ func NewFactory() component.ReceiverFactory {
 func createMetricsReceiver(
 	_ context.Context,
 	params component.ReceiverCreateSettings,
-	rConf config.Receiver,
+	rConf component.Config,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	cfg := rConf.(*Config)
@@ -65,7 +64,7 @@ func createMetricsReceiver(
 func createCombinedLogReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateSettings,
-	rConf config.Receiver,
+	rConf component.Config,
 	consumer consumer.Logs,
 ) (component.LogsReceiver, error) {
 	cfg := rConf.(*Config)
@@ -78,7 +77,7 @@ func createCombinedLogReceiver(
 	recv := &combinedLogsReceiver{}
 
 	if cfg.Alerts.Enabled {
-		recv.alerts, err = newAlertsReceiver(params.Logger, cfg, consumer)
+		recv.alerts, err = newAlertsReceiver(params, cfg, consumer)
 		if err != nil {
 			return nil, fmt.Errorf("unable to create a MongoDB Atlas Alerts Receiver instance: %w", err)
 		}
@@ -91,7 +90,7 @@ func createCombinedLogReceiver(
 	return recv, nil
 }
 
-func createDefaultConfig() config.Receiver {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(typeStr),
 		Granularity:               defaultGranularity,

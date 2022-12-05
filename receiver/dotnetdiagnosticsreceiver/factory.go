@@ -43,10 +43,10 @@ func NewFactory() component.ReceiverFactory {
 	)
 }
 
-func createDefaultConfig() config.Receiver {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
+			ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 			CollectionInterval: time.Second,
 		},
 		Counters: []string{"System.Runtime", "Microsoft.AspNetCore.Hosting"},
@@ -56,7 +56,7 @@ func createDefaultConfig() config.Receiver {
 func createMetricsReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateSettings,
-	baseConfig config.Receiver,
+	baseConfig component.Config,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	cfg := baseConfig.(*Config)

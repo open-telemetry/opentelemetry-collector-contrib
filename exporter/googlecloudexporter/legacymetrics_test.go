@@ -20,6 +20,7 @@ import (
 	"testing"
 	"time"
 
+	cloudmonitoringpb "cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -29,7 +30,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"google.golang.org/api/option"
 	cloudmetricpb "google.golang.org/genproto/googleapis/api/metric"
-	cloudmonitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -101,7 +101,7 @@ func TestGoogleCloudMetricExport(t *testing.T) {
 	}
 
 	sde, err := newLegacyGoogleCloudMetricsExporter(&LegacyConfig{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		ProjectID:        "idk",
 		Endpoint:         "127.0.0.1:8080",
 		UserAgent:        "MyAgent {{version}}",
@@ -115,34 +115,34 @@ func TestGoogleCloudMetricExport(t *testing.T) {
 
 	md := pmetric.NewMetrics()
 	rm1 := md.ResourceMetrics().AppendEmpty()
-	rm1.Resource().Attributes().FromRaw(map[string]interface{}{
+	assert.NoError(t, rm1.Resource().Attributes().FromRaw(map[string]interface{}{
 		occonventions.AttributeResourceType: "host",
 		"cloud.availability_zone":           "us-central1",
 		"host.name":                         "foo",
 		"k8s.cluster.name":                  "test",
 		"contrib.opencensus.io/exporter/stackdriver/project_id": "1234567",
-	})
+	}))
 	initGaugeMetric0(rm1.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty())
 	initGaugeMetric1(rm1.ScopeMetrics().At(0).Metrics().AppendEmpty())
 	rm2 := md.ResourceMetrics().AppendEmpty()
-	rm2.Resource().Attributes().FromRaw(map[string]interface{}{
+	assert.NoError(t, rm2.Resource().Attributes().FromRaw(map[string]interface{}{
 		occonventions.AttributeResourceType: "host",
 		"cloud.availability_zone":           "us-central1",
 		"host.name":                         "bar",
 		"k8s.cluster.name":                  "test",
 		"contrib.opencensus.io/exporter/stackdriver/project_id": "1234567",
-	})
+	}))
 	initGaugeMetric2(rm2.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty())
 	rm3 := md.ResourceMetrics().AppendEmpty()
-	rm3.Resource().Attributes().FromRaw(map[string]interface{}{
+	assert.NoError(t, rm3.Resource().Attributes().FromRaw(map[string]interface{}{
 		occonventions.AttributeResourceType:                     "host",
 		"contrib.opencensus.io/exporter/stackdriver/project_id": "1234567",
-	})
+	}))
 	initGaugeMetric3(rm3.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty())
 	rm4 := md.ResourceMetrics().AppendEmpty()
-	rm4.Resource().Attributes().FromRaw(map[string]interface{}{
+	assert.NoError(t, rm4.Resource().Attributes().FromRaw(map[string]interface{}{
 		occonventions.AttributeResourceType: "test",
-	})
+	}))
 	initGaugeMetric4(rm4.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty())
 	assert.NoError(t, sde.ConsumeMetrics(context.Background(), md))
 

@@ -19,7 +19,6 @@ import (
 
 	"go.opencensus.io/trace"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/zap"
 
@@ -29,8 +28,6 @@ import (
 // reporter struct implements the transport.Reporter interface to give consistent
 // observability per Collector metric observability package.
 type reporter struct {
-	id            config.ComponentID
-	spanName      string
 	logger        *zap.Logger
 	sugaredLogger *zap.SugaredLogger // Used for generic debug logging
 	obsrecv       *obsreport.Receiver
@@ -38,18 +35,21 @@ type reporter struct {
 
 var _ transport.Reporter = (*reporter)(nil)
 
-func newReporter(id config.ComponentID, set component.ReceiverCreateSettings) transport.Reporter {
+func newReporter(set component.ReceiverCreateSettings) (transport.Reporter, error) {
+	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+		ReceiverID:             set.ID,
+		Transport:              "tcp",
+		ReceiverCreateSettings: set,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	return &reporter{
-		id:            id,
-		spanName:      id.String() + ".receiver",
 		logger:        set.Logger,
 		sugaredLogger: set.Logger.Sugar(),
-		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
-			ReceiverID:             id,
-			Transport:              "tcp",
-			ReceiverCreateSettings: set,
-		}),
-	}
+		obsrecv:       obsrecv,
+	}, nil
 }
 
 // OnDataReceived is called when a message or request is received from

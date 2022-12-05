@@ -153,7 +153,11 @@ func TestPostgreSQLIntegration(t *testing.T) {
 
 			actualMetrics := consumer.AllMetrics()[0]
 
-			require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics, scrapertest.IgnoreMetricValues()))
+			require.NoError(t, scrapertest.CompareMetrics(
+				expectedMetrics, actualMetrics,
+				scrapertest.IgnoreMetricValues(),
+				scrapertest.IgnoreSubsequentDataPoints("postgresql.backends"),
+			))
 		})
 	}
 }

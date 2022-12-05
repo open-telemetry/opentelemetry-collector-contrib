@@ -20,14 +20,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
-	assert.NoError(t, configtest.CheckConfigStruct(cfg))
+	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
 func TestCreateProcessor(t *testing.T) {
@@ -36,4 +35,12 @@ func TestCreateProcessor(t *testing.T) {
 	tp, err := createTracesProcessor(context.Background(), set, cfg, consumertest.NewNop())
 	assert.NotNil(t, tp)
 	assert.NoError(t, err, "cannot create trace processor")
+}
+
+func TestCreateProcessorLogs(t *testing.T) {
+	cfg := createDefaultConfig()
+	set := componenttest.NewNopProcessorCreateSettings()
+	tp, err := createLogsProcessor(context.Background(), set, cfg, consumertest.NewNop())
+	assert.NotNil(t, tp)
+	assert.NoError(t, err, "cannot create logs processor")
 }

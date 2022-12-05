@@ -43,9 +43,9 @@ func NewFactory() component.ExporterFactory {
 }
 
 // createDefaultConfig creates the default exporter configuration
-func createDefaultConfig() config.Exporter {
+func createDefaultConfig() component.Config {
 	return &dtconfig.Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
 		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
 		ResourceToTelemetrySettings: resourcetotelemetry.Settings{
@@ -64,7 +64,7 @@ func createDefaultConfig() config.Exporter {
 func createMetricsExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
-	c config.Exporter,
+	c component.Config,
 ) (component.MetricsExporter, error) {
 
 	cfg := c.(*dtconfig.Config)

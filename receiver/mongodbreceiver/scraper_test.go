@@ -54,7 +54,7 @@ func TestScraperLifecycle(t *testing.T) {
 	require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, scraper.shutdown(context.Background()))
 
-	require.Less(t, time.Since(now), 100*time.Millisecond, "component start and stop should be very fast")
+	require.Less(t, time.Since(now), 200*time.Millisecond, "component start and stop should be very fast")
 }
 
 var (
@@ -134,21 +134,6 @@ func TestScraperScrape(t *testing.T) {
 				return pmetric.NewMetrics()
 			},
 			expectedErr: errors.New("no client was initialized before calling scrape"),
-		},
-		{
-			desc:       "Failed to get version",
-			partialErr: false,
-			setupMockClient: func(t *testing.T) client {
-				fc := &fakeClient{}
-				mongo40, err := version.NewVersion("4.0")
-				require.NoError(t, err)
-				fc.On("GetVersion", mock.Anything).Return(mongo40, errors.New("some version error"))
-				return fc
-			},
-			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
-				return pmetric.NewMetrics()
-			},
-			expectedErr: errors.New("unable to determine version of mongo scraping against: some version error"),
 		},
 		{
 			desc:       "Failed to fetch database names",
@@ -297,15 +282,16 @@ func TestScraperScrape(t *testing.T) {
 			scraper := newMongodbScraper(componenttest.NewNopReceiverCreateSettings(), createDefaultConfig().(*Config))
 			scraper.client = tc.setupMockClient(t)
 			actualMetrics, err := scraper.scrape(context.Background())
-
 			if tc.expectedErr == nil {
 				require.NoError(t, err)
 			} else {
 				if strings.Contains(err.Error(), ";") {
 					// metrics with attributes use a map and errors can be returned in random order so sorting is required.
-					actualErrs := strings.Split(err.Error(), ";")
+					// The first error message would not have a leading whitespace and hence split on "; "
+					actualErrs := strings.Split(err.Error(), "; ")
 					sort.Strings(actualErrs)
-					expectedErrs := strings.Split(tc.expectedErr.Error(), ";")
+					// The first error message would not have a leading whitespace and hence split on "; "
+					expectedErrs := strings.Split(tc.expectedErr.Error(), "; ")
 					sort.Strings(expectedErrs)
 					require.Equal(t, actualErrs, expectedErrs)
 				} else {

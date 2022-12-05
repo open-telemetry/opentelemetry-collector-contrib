@@ -19,37 +19,38 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/extension/extensiontest"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
 	expected := &Config{
-		ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
+		ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
 	}
 	actual := createDefaultConfig()
 	assert.Equal(t, expected, createDefaultConfig())
-	assert.NoError(t, configtest.CheckConfigStruct(actual))
+	assert.NoError(t, componenttest.CheckConfigStruct(actual))
 }
 
 func TestCreateExtension_DefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
 
-	ext, err := createExtension(context.Background(), componenttest.NewNopExtensionCreateSettings(), cfg)
+	ext, err := createExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
 	assert.Equal(t, err, errNoCredentialSource)
 	assert.Nil(t, ext)
 }
 
 func TestCreateExtension_ValidConfig(t *testing.T) {
 	cfg := &Config{
-		ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
+		ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
 		Htpasswd: &HtpasswdSettings{
 			Inline: "username:password",
 		},
 	}
 
-	ext, err := createExtension(context.Background(), componenttest.NewNopExtensionCreateSettings(), cfg)
+	ext, err := createExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, ext)
 }
@@ -57,5 +58,5 @@ func TestCreateExtension_ValidConfig(t *testing.T) {
 func TestNewFactory(t *testing.T) {
 	f := NewFactory()
 	assert.NotNil(t, f)
-	assert.Equal(t, f.Type(), config.Type(typeStr))
+	assert.Equal(t, f.Type(), component.Type(typeStr))
 }

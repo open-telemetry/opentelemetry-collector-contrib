@@ -431,7 +431,8 @@ func TestZipkinThriftAnnotationsToOCStatus(t *testing.T) {
 			td, err := thriftBatchToTraces(zSpans)
 			require.NoError(t, err)
 			gs := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
-			require.Equal(t, c.wantAttributes.Sort(), gs.Attributes().Sort())
+			gs.Attributes().Sort()
+			require.Equal(t, c.wantAttributes, gs.Attributes())
 			require.Equal(t, c.wantStatus, gs.Status())
 		})
 	}

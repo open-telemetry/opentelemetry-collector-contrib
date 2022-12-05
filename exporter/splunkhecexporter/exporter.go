@@ -79,8 +79,7 @@ func createExporter(
 
 	options, err := config.getOptionsFromConfig()
 	if err != nil {
-		return nil,
-			fmt.Errorf("failed to process %q config: %w", config.ID().String(), err)
+		return nil, err
 	}
 
 	client, err := buildClient(options, config, logger)
@@ -120,9 +119,6 @@ func buildClient(options *exporterOptions, config *Config, logger *zap.Logger) (
 			},
 		},
 		logger: logger,
-		zippers: sync.Pool{New: func() interface{} {
-			return gzip.NewWriter(nil)
-		}},
 		headers: map[string]string{
 			"Connection":           "keep-alive",
 			"Content-Type":         "application/json",
@@ -132,5 +128,8 @@ func buildClient(options *exporterOptions, config *Config, logger *zap.Logger) (
 			"__splunk_app_version": config.SplunkAppVersion,
 		},
 		config: config,
+		gzipWriterPool: &sync.Pool{New: func() interface{} {
+			return gzip.NewWriter(nil)
+		}},
 	}, nil
 }

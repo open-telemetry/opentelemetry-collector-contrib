@@ -30,7 +30,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver/internal/metadata"
 )
 
-var _ component.Receiver = (*vcenterMetricScraper)(nil)
+var _ component.MetricsReceiver = (*vcenterMetricScraper)(nil)
 
 type vcenterMetricScraper struct {
 	client *vcenterClient
@@ -269,8 +269,6 @@ func (v *vcenterMetricScraper) collectVMs(
 			continue
 		}
 
-		vmUUID := moVM.Config.InstanceUuid
-
 		if string(moVM.Runtime.PowerState) == "poweredOff" {
 			poweredOffVMs++
 		} else {
@@ -287,6 +285,12 @@ func (v *vcenterMetricScraper) collectVMs(
 			errs.AddPartial(1, err)
 			return
 		}
+
+		if moVM.Config == nil {
+			errs.AddPartial(1, fmt.Errorf("vm config empty for %s", hostname))
+			continue
+		}
+		vmUUID := moVM.Config.InstanceUuid
 
 		v.collectVM(ctx, colTime, moVM, errs)
 		v.mb.EmitForResource(

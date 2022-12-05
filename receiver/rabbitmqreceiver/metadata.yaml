@@ -13,8 +13,9 @@ resource_attributes:
 
 attributes:
   message.state:
-    value: state
+    name_override: state
     description: The state of messages in a queue.
+    type: string
     enum:
       - ready
       - unacknowledged

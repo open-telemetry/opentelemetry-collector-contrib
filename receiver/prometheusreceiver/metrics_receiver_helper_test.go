@@ -33,9 +33,11 @@ import (
 	"github.com/prometheus/prometheus/scrape"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/atomic"
@@ -118,6 +120,7 @@ type testData struct {
 	pages           []mockPrometheusResponse
 	attributes      pcommon.Map
 	validateScrapes bool
+	normalizedName  bool
 	validateFunc    func(t *testing.T, td *testData, result []pmetric.ResourceMetrics)
 }
 
@@ -232,13 +235,13 @@ func metricsCount(resourceMetric pmetric.ResourceMetrics) int {
 	return metricsCount
 }
 
-func getValidScrapes(t *testing.T, rms []pmetric.ResourceMetrics) []pmetric.ResourceMetrics {
+func getValidScrapes(t *testing.T, rms []pmetric.ResourceMetrics, normalizedNames bool) []pmetric.ResourceMetrics {
 	var out []pmetric.ResourceMetrics
 	// rms will include failed scrapes and scrapes that received no metrics but have internal scrape metrics, filter those out
 	for i := 0; i < len(rms); i++ {
 		allMetrics := getMetrics(rms[i])
-		if expectedScrapeMetricCount < len(allMetrics) && countScrapeMetrics(allMetrics) == expectedScrapeMetricCount {
-			if isFirstFailedScrape(allMetrics) {
+		if expectedScrapeMetricCount < len(allMetrics) && countScrapeMetrics(allMetrics, normalizedNames) == expectedScrapeMetricCount {
+			if isFirstFailedScrape(allMetrics, normalizedNames) {
 				continue
 			}
 			assertUp(t, 1, allMetrics)
@@ -250,7 +253,7 @@ func getValidScrapes(t *testing.T, rms []pmetric.ResourceMetrics) []pmetric.Reso
 	return out
 }
 
-func isFirstFailedScrape(metrics []pmetric.Metric) bool {
+func isFirstFailedScrape(metrics []pmetric.Metric, normalizedNames bool) bool {
 	for _, m := range metrics {
 		if m.Name() == "up" {
 			if m.Gauge().DataPoints().At(0).DoubleValue() == 1 { // assumed up will not have multiple datapoints
@@ -260,10 +263,10 @@ func isFirstFailedScrape(metrics []pmetric.Metric) bool {
 	}
 
 	for _, m := range metrics {
-		switch m.Name() {
-		case "up", "scrape_duration_seconds", "scrape_samples_scraped", "scrape_samples_post_metric_relabeling", "scrape_series_added":
+		if isDefaultMetrics(m, normalizedNames) {
 			continue
 		}
+
 		switch m.Type() {
 		case pmetric.MetricTypeGauge:
 			for i := 0; i < m.Gauge().DataPoints().Len(); i++ {
@@ -304,13 +307,13 @@ func assertUp(t *testing.T, expected float64, metrics []pmetric.Metric) {
 	t.Error("No 'up' metric found")
 }
 
-func countScrapeMetricsRM(got pmetric.ResourceMetrics) int {
+func countScrapeMetricsRM(got pmetric.ResourceMetrics, normalizedNames bool) int {
 	n := 0
 	ilms := got.ScopeMetrics()
 	for j := 0; j < ilms.Len(); j++ {
 		ilm := ilms.At(j)
 		for i := 0; i < ilm.Metrics().Len(); i++ {
-			if isDefaultMetrics(ilm.Metrics().At(i)) {
+			if isDefaultMetrics(ilm.Metrics().At(i), normalizedNames) {
 				n++
 			}
 		}
@@ -318,20 +321,26 @@ func countScrapeMetricsRM(got pmetric.ResourceMetrics) int {
 	return n
 }
 
-func countScrapeMetrics(metrics []pmetric.Metric) int {
+func countScrapeMetrics(metrics []pmetric.Metric, normalizedNames bool) int {
 	n := 0
 	for _, m := range metrics {
-		if isDefaultMetrics(m) {
+		if isDefaultMetrics(m, normalizedNames) {
 			n++
 		}
 	}
 	return n
 }
 
-func isDefaultMetrics(m pmetric.Metric) bool {
+func isDefaultMetrics(m pmetric.Metric, normalizedNames bool) bool {
 	switch m.Name() {
-	case "up", "scrape_duration_seconds", "scrape_samples_scraped", "scrape_samples_post_metric_relabeling", "scrape_series_added":
+	case "up", "scrape_samples_scraped", "scrape_samples_post_metric_relabeling", "scrape_series_added":
 		return true
+
+	// if normalizedNames is true, we expect unit `_seconds` to be trimmed.
+	case "scrape_duration_seconds":
+		return !normalizedNames
+	case "scrape_duration":
+		return normalizedNames
 	default:
 	}
 	return false
@@ -351,8 +360,12 @@ type dataPointExpectation struct {
 type testExpectation func(*testing.T, pmetric.ResourceMetrics)
 
 func doCompare(t *testing.T, name string, want pcommon.Map, got pmetric.ResourceMetrics, expectations []testExpectation) {
+	doCompareNormalized(t, name, want, got, expectations, false)
+}
+
+func doCompareNormalized(t *testing.T, name string, want pcommon.Map, got pmetric.ResourceMetrics, expectations []testExpectation, normalizedNames bool) {
 	t.Run(name, func(t *testing.T) {
-		assert.Equal(t, expectedScrapeMetricCount, countScrapeMetricsRM(got))
+		assert.Equal(t, expectedScrapeMetricCount, countScrapeMetricsRM(got, normalizedNames))
 		assert.Equal(t, want.Len(), got.Resource().Attributes().Len())
 		for k, v := range want.AsRaw() {
 			val, ok := got.Resource().Attributes().Get(k)
@@ -370,36 +383,40 @@ func doCompare(t *testing.T, name string, want pcommon.Map, got pmetric.Resource
 func assertMetricPresent(name string, metricTypeExpectations metricTypeComparator, dataPointExpectations []dataPointExpectation) testExpectation {
 	return func(t *testing.T, rm pmetric.ResourceMetrics) {
 		allMetrics := getMetrics(rm)
+		var present bool
 		for _, m := range allMetrics {
 			if name != m.Name() {
 				continue
 			}
+
+			present = true
 			metricTypeExpectations(t, m)
 			for i, de := range dataPointExpectations {
 				switch m.Type() {
 				case pmetric.MetricTypeGauge:
 					for _, npc := range de.numberPointComparator {
-						require.Equal(t, m.Gauge().DataPoints().Len(), len(dataPointExpectations), "Expected number of data-points in Gauge metric does not match to testdata")
+						require.Equal(t, m.Gauge().DataPoints().Len(), len(dataPointExpectations), "Expected number of data-points in Gauge metric '%s' does not match to testdata", name)
 						npc(t, m.Gauge().DataPoints().At(i))
 					}
 				case pmetric.MetricTypeSum:
 					for _, npc := range de.numberPointComparator {
-						require.Equal(t, m.Sum().DataPoints().Len(), len(dataPointExpectations), "Expected number of data-points in Sum metric does not match to testdata")
+						require.Equal(t, m.Sum().DataPoints().Len(), len(dataPointExpectations), "Expected number of data-points in Sum metric '%s' does not match to testdata", name)
 						npc(t, m.Sum().DataPoints().At(i))
 					}
 				case pmetric.MetricTypeHistogram:
 					for _, hpc := range de.histogramPointComparator {
-						require.Equal(t, m.Histogram().DataPoints().Len(), len(dataPointExpectations), "Expected number of data-points in Histogram metric does not match to testdata")
+						require.Equal(t, m.Histogram().DataPoints().Len(), len(dataPointExpectations), "Expected number of data-points in Histogram metric '%s' does not match to testdata", name)
 						hpc(t, m.Histogram().DataPoints().At(i))
 					}
 				case pmetric.MetricTypeSummary:
 					for _, spc := range de.summaryPointComparator {
-						require.Equal(t, m.Summary().DataPoints().Len(), len(dataPointExpectations), "Expected number of data-points in Summary metric does not match to testdata")
+						require.Equal(t, m.Summary().DataPoints().Len(), len(dataPointExpectations), "Expected number of data-points in Summary metric '%s' does not match to testdata", name)
 						spc(t, m.Summary().DataPoints().At(i))
 					}
 				}
 			}
 		}
+		require.True(t, present, "expected metric '%s' is not present", name)
 	}
 }
 
@@ -579,7 +596,7 @@ func compareSummary(count uint64, sum float64, quantiles [][]float64) summaryPoi
 }
 
 // starts prometheus receiver with custom config, retrieves metrics from MetricsSink
-func testComponent(t *testing.T, targets []*testData, useStartTimeMetric bool, startTimeMetricRegex string, cfgMuts ...func(*promcfg.Config)) {
+func testComponent(t *testing.T, targets []*testData, useStartTimeMetric bool, startTimeMetricRegex string, registry *featuregate.Registry, cfgMuts ...func(*promcfg.Config)) {
 	ctx := context.Background()
 	mp, cfg, err := setupMockPrometheus(targets...)
 	for _, cfgMut := range cfgMuts {
@@ -590,11 +607,11 @@ func testComponent(t *testing.T, targets []*testData, useStartTimeMetric bool, s
 
 	cms := new(consumertest.MetricsSink)
 	receiver := newPrometheusReceiver(componenttest.NewNopReceiverCreateSettings(), &Config{
-		ReceiverSettings:     config.NewReceiverSettings(config.NewComponentID(typeStr)),
+		ReceiverSettings:     config.NewReceiverSettings(component.NewID(typeStr)),
 		PrometheusConfig:     cfg,
 		UseStartTimeMetric:   useStartTimeMetric,
 		StartTimeMetricRegex: startTimeMetricRegex,
-	}, cms)
+	}, cms, registry)
 
 	require.NoError(t, receiver.Start(ctx, componenttest.NewNopHost()))
 	// verify state after shutdown is called
@@ -633,7 +650,7 @@ func testComponent(t *testing.T, targets []*testData, useStartTimeMetric bool, s
 			}
 			scrapes := pResults[name]
 			if !target.validateScrapes {
-				scrapes = getValidScrapes(t, pResults[name])
+				scrapes = getValidScrapes(t, pResults[name], target.normalizedName)
 			}
 			target.validateFunc(t, target, scrapes)
 		})

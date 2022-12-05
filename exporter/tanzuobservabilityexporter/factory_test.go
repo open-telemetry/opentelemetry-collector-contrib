@@ -21,18 +21,19 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configtest"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
-	require.NoError(t, configtest.CheckConfigStruct(cfg))
+	require.NoError(t, componenttest.CheckConfigStruct(cfg))
 
 	actual, ok := cfg.(*Config)
 	require.True(t, ok, "invalid Config: %#v", cfg)
 	assert.False(t, actual.hasMetricsEndpoint())
 	assert.False(t, actual.hasTracesEndpoint())
+	assert.False(t, actual.Metrics.ResourceAttrsIncluded)
+	assert.False(t, actual.Metrics.AppTagsExcluded)
 }
 
 func TestCreateExporter(t *testing.T) {

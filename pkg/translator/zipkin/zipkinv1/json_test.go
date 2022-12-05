@@ -455,7 +455,8 @@ func TestZipkinAnnotationsToSpanStatus(t *testing.T) {
 			td, err := jsonBatchToTraces(zBytes, true)
 			require.NoError(t, err)
 			gs := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
-			require.Equal(t, c.wantAttributes.Sort(), gs.Attributes().Sort(), "Unsuccessful conversion %d", i)
+			gs.Attributes().Sort()
+			require.Equal(t, c.wantAttributes, gs.Attributes(), "Unsuccessful conversion %d", i)
 			require.Equal(t, c.wantStatus, gs.Status(), "Unsuccessful conversion %d", i)
 		})
 	}
@@ -488,6 +489,29 @@ func TestSpanWithoutTimestampGetsTag(t *testing.T) {
 	wantAttributes := pcommon.NewMap()
 	wantAttributes.PutBool(zipkin.StartTimeAbsent, true)
 	assert.EqualValues(t, wantAttributes, gs.Attributes())
+}
+
+func TestSpanWithTimestamp(t *testing.T) {
+	timestampMicroseconds := int64(1667492727795000)
+	timestamp := pcommon.NewTimestampFromTime(time.UnixMicro(timestampMicroseconds))
+
+	fakeTraceID := "00000000000000010000000000000002"
+	fakeSpanID := "0000000000000001"
+	zSpans := []*jsonSpan{
+		{
+			ID:        fakeSpanID,
+			TraceID:   fakeTraceID,
+			Timestamp: timestampMicroseconds,
+		},
+	}
+	zBytes, err := json.Marshal(zSpans)
+	require.NoError(t, err)
+
+	td, err := jsonBatchToTraces(zBytes, false)
+	require.NoError(t, err)
+
+	gs := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+	assert.Equal(t, timestamp, gs.StartTimestamp())
 }
 
 func TestJSONHTTPToStatusCode(t *testing.T) {
@@ -563,6 +587,7 @@ var tracesFromZipkinV1 = func() ptrace.Traces {
 	span.SetKind(ptrace.SpanKindServer)
 	span.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(1544805927, 454487000)))
 	span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Unix(1544805927, 457320000)))
+	//nolint:errcheck
 	span.Attributes().FromRaw(map[string]interface{}{
 		"http.status_code": 200,
 		"http.url":         "http://localhost:9000/trace/2",

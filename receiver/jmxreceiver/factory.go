@@ -37,9 +37,9 @@ func NewFactory() component.ReceiverFactory {
 		component.WithMetricsReceiver(createReceiver, stability))
 }
 
-func createDefaultConfig() config.Receiver {
+func createDefaultConfig() component.Config {
 	return &Config{
-		ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
+		ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 		JARPath:            "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
 		CollectionInterval: 10 * time.Second,
 		OTLPExporterConfig: otlpExporterConfig{
@@ -54,11 +54,11 @@ func createDefaultConfig() config.Receiver {
 func createReceiver(
 	_ context.Context,
 	params component.ReceiverCreateSettings,
-	cfg config.Receiver,
+	cfg component.Config,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	jmxConfig := cfg.(*Config)
-	if err := jmxConfig.validate(); err != nil {
+	if err := jmxConfig.Validate(); err != nil {
 		return nil, err
 	}
 	return newJMXMetricReceiver(params, jmxConfig, consumer), nil

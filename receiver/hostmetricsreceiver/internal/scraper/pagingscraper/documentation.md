@@ -2,31 +2,81 @@
 
 # hostmetricsreceiver/paging
 
-## Metrics
+## Default Metrics
 
-These are the metrics available for this scraper.
-
-| Name | Description | Unit | Type | Attributes |
-| ---- | ----------- | ---- | ---- | ---------- |
-| **system.paging.faults** | The number of page faults. | {faults} | Sum(Int) | <ul> <li>type</li> </ul> |
-| **system.paging.operations** | The number of paging operations. | {operations} | Sum(Int) | <ul> <li>direction</li> <li>type</li> </ul> |
-| **system.paging.usage** | Swap (unix) or pagefile (windows) usage. | By | Sum(Int) | <ul> <li>device</li> <li>state</li> </ul> |
-| system.paging.utilization | Swap (unix) or pagefile (windows) utilization. | 1 | Gauge(Double) | <ul> <li>device</li> <li>state</li> </ul> |
-
-**Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
-Any metric can be enabled or disabled with the following scraper configuration:
+The following metrics are emitted by default. Each of them can be disabled by applying the following configuration:
 
 ```yaml
 metrics:
   <metric_name>:
-    enabled: <true|false>
+    enabled: false
 ```
 
-## Metric attributes
+### system.paging.faults
+
+The number of page faults.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {faults} | Sum | Int | Cumulative | true |
+
+#### Attributes
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| device | Name of the page file. |  |
-| direction | Page In or Page Out. | page_in, page_out |
-| state | Breakdown of paging usage by type. | cached, free, used |
-| type | Type of fault. | major, minor |
+| type | Type of fault. | Str: ``major``, ``minor`` |
+
+### system.paging.operations
+
+The number of paging operations.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {operations} | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| direction | Page In or Page Out. | Str: ``page_in``, ``page_out`` |
+| type | Type of fault. | Str: ``major``, ``minor`` |
+
+### system.paging.usage
+
+Swap (unix) or pagefile (windows) usage.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| device | Name of the page file. | Any Str |
+| state | Breakdown of paging usage by type. | Str: ``cached``, ``free``, ``used`` |
+
+## Optional Metrics
+
+The following metrics are not emitted by default. Each of them can be enabled by applying the following configuration:
+
+```yaml
+metrics:
+  <metric_name>:
+    enabled: true
+```
+
+### system.paging.utilization
+
+Swap (unix) or pagefile (windows) utilization.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| device | Name of the page file. | Any Str |
+| state | Breakdown of paging usage by type. | Str: ``cached``, ``free``, ``used`` |

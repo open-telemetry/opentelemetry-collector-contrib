@@ -41,7 +41,7 @@ type Config struct {
 ```
 
 
-* [config.ExtensionSettings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/extension.go#L32) is a struct needed to needed to satisfy the [config.Extension](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/extension.go#L19) interface
+* [config.ExtensionSettings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/extension.go) is a struct needed to needed to satisfy the [component.Config](https://github.com/open-telemetry/opentelemetry-collector/blob/main/component/config.go) interface
 * `Region` is the AWS region for AWS Sigv4. This is an optional field.
     * Note that an attempt will be made to obtain a valid region from the endpoint of the service you are exporting to
 * `Service` is the AWS service for AWS Sigv4. This is an optional field.
@@ -355,7 +355,7 @@ Lastly, we introduce `factory.go`, which provides the logic for creating the Sig
 
 
 ```go
-func NewFactory() component.ExtensionFactory {
+func NewFactory() extension.Factory {
     return extensionhelper.NewFactory(
         "sigv4auth",
         createDefaultConfig,
@@ -368,9 +368,9 @@ func NewFactory() component.ExtensionFactory {
 
 
 ```go
-func createDefaultConfig() config.Extension {
+func createDefaultConfig() component.Config {
     return &Config{
-        ExtensionSettings: config.NewExtensionSettings(config.NewComponentID("sigv4auth")),
+        ExtensionSettings: config.NewExtensionSettings(component.NewID("sigv4auth")),
     }
 }
 ```
@@ -380,7 +380,7 @@ func createDefaultConfig() config.Extension {
 
 
 ```go
-func createExtension(_ context.Context, set component.ExtensionCreateSettings, cfg config.Extension) (component.Extension, error) {
+func createExtension(_ context.Context, set extension.CreateSettings, cfg component.Config) (extension.Extension, error) {
     awsSDKInfo := fmt.Sprintf("%s/%s", aws.SDKName, aws.SDKVersion)
     return newSigv4Extension(cfg.(*Config), awsSDKInfo, set.Logger)
 }

@@ -128,7 +128,7 @@ func TestTracesExporterShutdown(t *testing.T) {
 }
 
 func TestConsumeTraces(t *testing.T) {
-	componentFactory := func(ctx context.Context, endpoint string) (component.Exporter, error) {
+	componentFactory := func(ctx context.Context, endpoint string) (component.Component, error) {
 		return newNopMockTracesExporter(), nil
 	}
 	lb, err := newLoadBalancer(componenttest.NewNopExporterCreateSettings(), simpleConfig(), componentFactory)
@@ -164,7 +164,7 @@ func TestConsumeTraces(t *testing.T) {
 }
 
 func TestConsumeTracesServiceBased(t *testing.T) {
-	componentFactory := func(ctx context.Context, endpoint string) (component.Exporter, error) {
+	componentFactory := func(ctx context.Context, endpoint string) (component.Component, error) {
 		return newNopMockTracesExporter(), nil
 	}
 	lb, err := newLoadBalancer(componenttest.NewNopExporterCreateSettings(), serviceBasedRoutingConfig(), componentFactory)
@@ -229,7 +229,7 @@ func TestServiceBasedRoutingForSameTraceId(t *testing.T) {
 }
 
 func TestConsumeTracesExporterNoEndpoint(t *testing.T) {
-	componentFactory := func(ctx context.Context, endpoint string) (component.Exporter, error) {
+	componentFactory := func(ctx context.Context, endpoint string) (component.Component, error) {
 		return newNopMockTracesExporter(), nil
 	}
 	lb, err := newLoadBalancer(componenttest.NewNopExporterCreateSettings(), simpleConfig(), componentFactory)
@@ -263,7 +263,7 @@ func TestConsumeTracesExporterNoEndpoint(t *testing.T) {
 }
 
 func TestConsumeTracesUnexpectedExporterType(t *testing.T) {
-	componentFactory := func(ctx context.Context, endpoint string) (component.Exporter, error) {
+	componentFactory := func(ctx context.Context, endpoint string) (component.Component, error) {
 		return newNopMockExporter(), nil
 	}
 	lb, err := newLoadBalancer(componenttest.NewNopExporterCreateSettings(), simpleConfig(), componentFactory)
@@ -309,7 +309,7 @@ func TestBuildExporterConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	c := cfg.Exporters[config.NewComponentID(typeStr)]
+	c := cfg.Exporters[component.NewID(typeStr)]
 	require.NotNil(t, c)
 
 	// test
@@ -329,7 +329,7 @@ func TestBuildExporterConfig(t *testing.T) {
 
 func TestBatchWithTwoTraces(t *testing.T) {
 	sink := new(consumertest.TracesSink)
-	componentFactory := func(ctx context.Context, endpoint string) (component.Exporter, error) {
+	componentFactory := func(ctx context.Context, endpoint string) (component.Component, error) {
 		return newMockTracesExporter(sink.ConsumeTraces), nil
 	}
 	lb, err := newLoadBalancer(componenttest.NewNopExporterCreateSettings(), simpleConfig(), componentFactory)
@@ -452,12 +452,12 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 	res.resInterval = 10 * time.Millisecond
 
 	cfg := &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		Resolver: ResolverSettings{
 			DNS: &DNSResolver{Hostname: "service-1", Port: ""},
 		},
 	}
-	componentFactory := func(ctx context.Context, endpoint string) (component.Exporter, error) {
+	componentFactory := func(ctx context.Context, endpoint string) (component.Component, error) {
 		return newNopMockTracesExporter(), nil
 	}
 	lb, err := newLoadBalancer(componenttest.NewNopExporterCreateSettings(), cfg, componentFactory)
@@ -473,7 +473,7 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 
 	counter1 := atomic.NewInt64(0)
 	counter2 := atomic.NewInt64(0)
-	defaultExporters := map[string]component.Exporter{
+	defaultExporters := map[string]component.Component{
 		"127.0.0.1:4317": newMockTracesExporter(func(ctx context.Context, td ptrace.Traces) error {
 			counter1.Inc()
 			// simulate an unreachable backend
@@ -585,7 +585,7 @@ func appendSimpleTraceWithID(dest ptrace.ResourceSpans, id pcommon.TraceID) {
 
 func simpleConfig() *Config {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		Resolver: ResolverSettings{
 			Static: &StaticResolver{Hostnames: []string{"endpoint-1"}},
 		},
@@ -594,7 +594,7 @@ func simpleConfig() *Config {
 
 func serviceBasedRoutingConfig() *Config {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		Resolver: ResolverSettings{
 			Static: &StaticResolver{Hostnames: []string{"endpoint-1"}},
 		},

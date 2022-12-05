@@ -17,11 +17,9 @@ package k8sclusterreceiver // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
 )
@@ -53,7 +51,7 @@ func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) er
 
 	exporters := host.GetExporters()
 	if err := kr.resourceWatcher.setupMetadataExporters(
-		exporters[config.MetricsDataType], kr.config.MetadataExporters); err != nil {
+		exporters[component.DataTypeMetrics], kr.config.MetadataExporters); err != nil {
 		return err
 	}
 
@@ -74,7 +72,7 @@ func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) er
 			if errors.Is(timedContextForInitialSync.Err(), context.DeadlineExceeded) {
 				kr.resourceWatcher.initialSyncTimedOut.Store(true)
 				kr.settings.Logger.Error("Timed out waiting for initial cache sync.")
-				host.ReportFatalError(fmt.Errorf("failed to start receiver: %v", kr.config.ID()))
+				host.ReportFatalError(errors.New("failed to start receiver"))
 				return
 			}
 		}
@@ -115,17 +113,22 @@ func (kr *kubernetesReceiver) dispatchMetrics(ctx context.Context) {
 }
 
 // newReceiver creates the Kubernetes cluster receiver with the given configuration.
-func newReceiver(_ context.Context, set component.ReceiverCreateSettings, cfg config.Receiver, consumer consumer.Metrics) (component.MetricsReceiver, error) {
+func newReceiver(_ context.Context, set component.ReceiverCreateSettings, cfg component.Config, consumer consumer.Metrics) (component.MetricsReceiver, error) {
 	rCfg := cfg.(*Config)
+
+	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+		ReceiverID:             set.ID,
+		Transport:              transport,
+		ReceiverCreateSettings: set,
+	})
+	if err != nil {
+		return nil, err
+	}
 	return &kubernetesReceiver{
 		resourceWatcher: newResourceWatcher(set.Logger, rCfg),
 		settings:        set,
 		config:          rCfg,
 		consumer:        consumer,
-		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
-			ReceiverID:             cfg.ID(),
-			Transport:              transport,
-			ReceiverCreateSettings: set,
-		}),
+		obsrecv:         obsrecv,
 	}, nil
 }

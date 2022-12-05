@@ -35,7 +35,6 @@ const windowsOS = "windows"
 func TestMultiFileRotate(t *testing.T) {
 	if runtime.GOOS == windowsOS {
 		// Windows has very poor support for moving active files, so rotation is less commonly used
-		// This may possibly be handled better in Go 1.16: https://github.com/golang/go/issues/35358
 		t.Skip()
 	}
 	t.Parallel()
@@ -94,7 +93,6 @@ func TestMultiFileRotate(t *testing.T) {
 func TestMultiFileRotateSlow(t *testing.T) {
 	if runtime.GOOS == windowsOS {
 		// Windows has very poor support for moving active files, so rotation is less commonly used
-		// This may possibly be handled better in Go 1.16: https://github.com/golang/go/issues/35358
 		t.Skip()
 	}
 
@@ -151,6 +149,9 @@ func TestMultiFileRotateSlow(t *testing.T) {
 }
 
 func TestMultiCopyTruncateSlow(t *testing.T) {
+	if runtime.GOOS == windowsOS {
+		t.Skip("Rotation tests have been flaky on Windows. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16331")
+	}
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
@@ -307,6 +308,9 @@ func (rt rotationTest) run(tc rotationTest, copyTruncate, sequential bool) func(
 }
 
 func TestRotation(t *testing.T) {
+	if runtime.GOOS == windowsOS {
+		t.Skip("Rotation tests have been flaky on Windows. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16331")
+	}
 	cases := []rotationTest{
 		{
 			name:            "NoRotation",
@@ -347,7 +351,6 @@ func TestRotation(t *testing.T) {
 	for _, tc := range cases {
 		if runtime.GOOS != windowsOS {
 			// Windows has very poor support for moving active files, so rotation is less commonly used
-			// This may possibly be handled better in Go 1.16: https://github.com/golang/go/issues/35358
 			t.Run(fmt.Sprintf("%s/MoveCreateTimestamped", tc.name), tc.run(tc, false, false))
 			t.Run(fmt.Sprintf("%s/MoveCreateSequential", tc.name), tc.run(tc, false, true))
 		}
@@ -430,9 +433,53 @@ func TestTrackMovedAwayFiles(t *testing.T) {
 	waitForToken(t, emitCalls, []byte("testlog2"))
 }
 
+// Check if we read log lines from a rotated file before lines from the newly created file
+// Note that we don't guarantee ordering based on file identity - only that we read from rotated files first
+func TestTrackRotatedFilesLogOrder(t *testing.T) {
+	if runtime.GOOS == windowsOS {
+		t.Skip("Moving files while open is unsupported on Windows")
+	}
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir)
+	cfg.StartAt = "beginning"
+	operator, emitCalls := buildTestManager(t, cfg)
+
+	originalFile := openTemp(t, tempDir)
+	orginalName := originalFile.Name()
+	writeString(t, originalFile, "testlog1\n")
+
+	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
+
+	waitForToken(t, emitCalls, []byte("testlog1"))
+	writeString(t, originalFile, "testlog2\n")
+	originalFile.Close()
+
+	newDir := fmt.Sprintf("%s%s", tempDir[:len(tempDir)-1], "_new/")
+	err := os.Mkdir(newDir, 0777)
+	require.NoError(t, err)
+	movedFileName := fmt.Sprintf("%s%s", newDir, "newfile.log")
+
+	err = os.Rename(orginalName, movedFileName)
+	require.NoError(t, err)
+
+	newFile, err := os.OpenFile(orginalName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	require.NoError(t, err)
+	writeString(t, newFile, "testlog3\n")
+
+	waitForTokens(t, emitCalls, [][]byte{[]byte("testlog2"), []byte("testlog3")})
+}
+
 // TruncateThenWrite tests that, after a file has been truncated,
 // any new writes are picked up
 func TestTruncateThenWrite(t *testing.T) {
+	if runtime.GOOS == windowsOS {
+		t.Skip("Rotation tests have been flaky on Windows. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16331")
+	}
 	t.Parallel()
 
 	tempDir := t.TempDir()
@@ -467,6 +514,9 @@ func TestTruncateThenWrite(t *testing.T) {
 // we get the unread logs on the copy as well as any new logs
 // written to the truncated file
 func TestCopyTruncateWriteBoth(t *testing.T) {
+	if runtime.GOOS == windowsOS {
+		t.Skip("Rotation tests have been flaky on Windows. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16331")
+	}
 	t.Parallel()
 
 	tempDir := t.TempDir()
@@ -507,6 +557,9 @@ func TestCopyTruncateWriteBoth(t *testing.T) {
 }
 
 func TestFileMovedWhileOff_BigFiles(t *testing.T) {
+	if runtime.GOOS == windowsOS {
+		t.Skip("Rotation tests have been flaky on Windows. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16331")
+	}
 	t.Parallel()
 
 	tempDir := t.TempDir()

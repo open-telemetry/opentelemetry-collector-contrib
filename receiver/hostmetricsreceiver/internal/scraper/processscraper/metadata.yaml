@@ -41,15 +41,25 @@ resource_attributes:
 attributes:
   direction:
     description: Direction of flow of bytes (read or write).
+    type: string
     enum: [read, write]
 
   state:
     description: Breakdown of CPU usage by type.
+    type: string
     enum: [system, user, wait]
 
-  type:
+  paging_fault_type:
+    name_override: type
     description: Type of memory paging fault.
+    type: string
     enum: [major, minor]
+
+  context_switch_type:
+    name_override: type
+    description: Type of context switched.
+    type: string
+    enum: [involuntary, voluntary]
 
 metrics:
   process.cpu.time:
@@ -62,8 +72,28 @@ metrics:
       monotonic: true
     attributes: [state]
 
+  process.cpu.utilization:
+    enabled: false
+    description: >-
+      Percentage of total CPU time used by the process since last scrape,
+      expressed as a value between 0 and 1.
+      On the first scrape, no data point is emitted for this metric.
+    unit: 1
+    gauge:
+      value_type: double
+    attributes: [state]
+
   process.memory.physical_usage:
     enabled: true
+    description: "Deprecated: use `process.memory.usage` metric instead. The amount of physical memory in use."
+    unit: By
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: false
+
+  process.memory.usage:
+    enabled: false
     description: The amount of physical memory in use.
     unit: By
     sum:
@@ -73,6 +103,15 @@ metrics:
 
   process.memory.virtual_usage:
     enabled: true
+    description: "Deprecated: Use `process.memory.virtual` metric instead. Virtual memory size."
+    unit: By
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: false
+
+  process.memory.virtual:
+    enabled: false
     description: Virtual memory size.
     unit: By
     sum:
@@ -98,7 +137,16 @@ metrics:
       value_type: int
       aggregation: cumulative
       monotonic: true
-    attributes: [type]
+    attributes: [paging_fault_type]
+
+  process.signals_pending:
+    enabled: false
+    description: Number of pending signals for the process. This metric is only available on Linux.
+    unit: "{signals}"
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: false
 
   process.threads:
     enabled: false
@@ -108,3 +156,22 @@ metrics:
       value_type: int
       aggregation: cumulative
       monotonic: false
+
+  process.open_file_descriptors:
+    enabled: false
+    description: Number of file descriptors in use by the process.
+    unit: '{count}'
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: false
+  
+  process.context_switches:
+    enabled: false
+    description: Number of times the process has been context switched.
+    unit: '{count}'
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: true
+    attributes: [context_switch_type]

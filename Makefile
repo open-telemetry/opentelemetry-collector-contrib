@@ -56,7 +56,7 @@ all-groups:
 	@echo "\nother: $(OTHER_MODS)"
 
 .PHONY: all
-all: install-tools all-common gotest otelcontribcol otelcontribcol-unstable
+all: install-tools all-common goporto multimod-verify gotest otelcontribcol otelcontribcol-unstable
 
 .PHONY: all-common
 all-common:
@@ -103,11 +103,11 @@ golint:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="lint"
 
 .PHONY: goimpi
-goimpi:
+goimpi: install-tools
 	@$(MAKE) $(FOR_GROUP_TARGET) TARGET="impi"
 
 .PHONY: goporto
-goporto:
+goporto: install-tools
 	porto -w --include-internal --skip-dirs "^cmd$$" ./
 
 .PHONY: for-all
@@ -120,35 +120,16 @@ for-all:
 	 	$${CMD} ); \
 	done
 
-.PHONY: add-tag
-add-tag:
-	@[ "${TAG}" ] || ( echo ">> env var TAG is not set"; exit 1 )
-	@echo "Adding tag ${TAG}"
-	@git tag -a ${TAG} -s -m "Version ${TAG}"
-	@set -e; for dir in $(NONROOT_MODS); do \
-	  (echo Adding tag "$${dir:2}/$${TAG}" && \
-	 	git tag -a "$${dir:2}/$${TAG}" -s -m "Version ${dir:2}/${TAG}" ); \
-	done
-
-.PHONY: push-tag
-push-tag:
-	@[ "${TAG}" ] || ( echo ">> env var TAG is not set"; exit 1 )
-	@echo "Pushing tag ${TAG}"
-	@git push git@github.com:open-telemetry/opentelemetry-collector-contrib.git ${TAG}
-	@set -e; for dir in $(NONROOT_MODS); do \
-	  (echo Pushing tag "$${dir:2}/$${TAG}" && \
-	 	git push git@github.com:open-telemetry/opentelemetry-collector-contrib.git "$${dir:2}/$${TAG}"); \
-	done
-
-.PHONY: delete-tag
-delete-tag:
-	@[ "${TAG}" ] || ( echo ">> env var TAG is not set"; exit 1 )
-	@echo "Deleting tag ${TAG}"
-	@git tag -d ${TAG}
-	@set -e; for dir in $(NONROOT_MODS); do \
-	  (echo Deleting tag "$${dir:2}/$${TAG}" && \
-	 	git tag -d "$${dir:2}/$${TAG}" ); \
-	done
+COMMIT?=HEAD
+MODSET?=contrib-core
+REMOTE?=git@github.com:open-telemetry/opentelemetry-collector-contrib.git
+.PHONY: push-tags
+push-tags:
+	multimod verify
+	set -e; for tag in `multimod tag -m ${MODSET} -c ${COMMIT} --print-tags | grep -v "Using" `; do \
+		echo "pushing tag $${tag}"; \
+		git push ${REMOTE} $${tag}; \
+	done;
 
 DEPENDABOT_PATH=".github/dependabot.yml"
 .PHONY: gendependabot
@@ -395,25 +376,12 @@ clean:
 genconfigdocs:
 	cd cmd/configschema && $(GOCMD) run ./docsgen all
 
-.PHONY: generate-all-labels
-generate-all-labels:
-	$(MAKE) generate-labels TYPE="cmd" COLOR="#483C32"
-	$(MAKE) generate-labels TYPE="pkg" COLOR="#F9DE22"
-	$(MAKE) generate-labels TYPE="extension" COLOR="#FF794D"
-	$(MAKE) generate-labels TYPE="receiver" COLOR="#E91B7B"
-	$(MAKE) generate-labels TYPE="processor" COLOR="#800080"
-	$(MAKE) generate-labels TYPE="exporter" COLOR="#50C878"
-
-.PHONY: generate-labels
-generate-labels:
-	if [ -z $${TYPE+x} ] || [ -z $${COLOR+x} ]; then \
-		echo "Must provide a TYPE and COLOR"; \
-		exit 1; \
-	fi; \
-	echo "Generating labels for $${TYPE}" ; \
-	COMPONENTS=$$(find ./$${TYPE} -type d -maxdepth 1 -mindepth 1 -exec basename \{\} \;); \
-	for comp in $${COMPONENTS}; do \
-		NAME=$${comp//"$${TYPE}"}; \
-		gh label create "$${TYPE}/$${NAME}" -c "$${COLOR}"; \
-	done; \
-	exit 0
+.PHONY: generate-gh-issue-templates
+generate-gh-issue-templates:
+	for FILE in bug_report feature_request other; do \
+		YAML_FILE=".github/ISSUE_TEMPLATE/$${FILE}.yaml"; \
+		TMP_FILE=".github/ISSUE_TEMPLATE/$${FILE}.yaml.tmp"; \
+		cat "$${YAML_FILE}" > "$${TMP_FILE}"; \
+	 	FILE="$${TMP_FILE}" ./.github/workflows/scripts/add-component-options.sh > "$${YAML_FILE}"; \
+		rm "$${TMP_FILE}"; \
+	done

@@ -15,6 +15,7 @@
 package ottlscope
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -29,6 +30,15 @@ func Test_newPathGetSetter(t *testing.T) {
 
 	newAttrs := pcommon.NewMap()
 	newAttrs.PutStr("hello", "world")
+
+	newPMap := pcommon.NewMap()
+	pMap2 := newPMap.PutEmptyMap("k2")
+	pMap2.PutStr("k1", "string")
+
+	newMap := make(map[string]interface{})
+	newMap2 := make(map[string]interface{})
+	newMap2["k1"] = "string"
+	newMap["k2"] = newMap2
 
 	tests := []struct {
 		name     string
@@ -206,6 +216,44 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 		},
 		{
+			name: "attributes pcommon.Map",
+			path: []ottl.Field{
+				{
+					Name:   "attributes",
+					MapKey: ottltest.Strp("pMap"),
+				},
+			},
+			orig: func() pcommon.Map {
+				val, _ := refIS.Attributes().Get("pMap")
+				return val.Map()
+			}(),
+			newVal: newPMap,
+			modified: func(il pcommon.InstrumentationScope, resource pcommon.Resource) {
+				m := il.Attributes().PutEmptyMap("pMap")
+				m2 := m.PutEmptyMap("k2")
+				m2.PutStr("k1", "string")
+			},
+		},
+		{
+			name: "attributes map[string]interface{}",
+			path: []ottl.Field{
+				{
+					Name:   "attributes",
+					MapKey: ottltest.Strp("map"),
+				},
+			},
+			orig: func() pcommon.Map {
+				val, _ := refIS.Attributes().Get("map")
+				return val.Map()
+			}(),
+			newVal: newMap,
+			modified: func(il pcommon.InstrumentationScope, resource pcommon.Resource) {
+				m := il.Attributes().PutEmptyMap("map")
+				m2 := m.PutEmptyMap("k2")
+				m2.PutStr("k1", "string")
+			},
+		},
+		{
 			name: "dropped_attributes_count",
 			path: []ottl.Field{
 				{
@@ -265,11 +313,11 @@ func Test_newPathGetSetter(t *testing.T) {
 
 			il, resource := createTelemetry()
 
-			got, err := accessor.Get(NewTransformContext(il, resource))
+			got, err := accessor.Get(context.Background(), NewTransformContext(il, resource))
 			assert.Nil(t, err)
 			assert.Equal(t, tt.orig, got)
 
-			err = accessor.Set(NewTransformContext(il, resource), tt.newVal)
+			err = accessor.Set(context.Background(), NewTransformContext(il, resource), tt.newVal)
 			assert.Nil(t, err)
 
 			exIl, exRes := createTelemetry()
@@ -312,6 +360,12 @@ func createTelemetry() (pcommon.InstrumentationScope, pcommon.Resource) {
 	arrBytes := is.Attributes().PutEmptySlice("arr_bytes")
 	arrBytes.AppendEmpty().SetEmptyBytes().FromRaw([]byte{1, 2, 3})
 	arrBytes.AppendEmpty().SetEmptyBytes().FromRaw([]byte{2, 3, 4})
+
+	pMap := is.Attributes().PutEmptyMap("pMap")
+	pMap.PutStr("original", "map")
+
+	m := is.Attributes().PutEmptyMap("map")
+	m.PutStr("original", "map")
 
 	resource := pcommon.NewResource()
 	is.Attributes().CopyTo(resource.Attributes())
