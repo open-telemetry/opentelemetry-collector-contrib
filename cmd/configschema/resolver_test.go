@@ -69,12 +69,12 @@ func TestTypeToPackagePath_Error(t *testing.T) {
 }
 
 func TestTypeToProjectPath(t *testing.T) {
-	dir := testDR().TypeToProjectPath(reflect.ValueOf(redisreceiver.Config{}).Type())
+	dir := testDR().ReflectValueToProjectPath(reflect.ValueOf(&redisreceiver.Config{}))
 	assert.Equal(t, "../../receiver/redisreceiver", dir)
 }
 
 func TestTypetoProjectPath_External(t *testing.T) {
-	dir := testDR().TypeToProjectPath(reflect.ValueOf(otlpreceiver.Config{}).Type())
+	dir := testDR().ReflectValueToProjectPath(reflect.ValueOf(&otlpreceiver.Config{}))
 	assert.Equal(t, "", dir)
 }
 
