@@ -310,6 +310,7 @@ func (mtp *metricsTransformProcessor) processMetrics(_ context.Context, md pmetr
 							if !transform.MetricIncludeFilter.matchAttrs(dp.Attributes()) {
 								return true
 							}
+							// Need to remove the original matched labels
 							switch metric.Type() {
 							case pmetric.MetricTypeGauge:
 								v := dp.(pmetric.NumberDataPoint)

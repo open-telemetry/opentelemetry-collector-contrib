@@ -16,32 +16,29 @@ package metricstransformprocessor // import "github.com/open-telemetry/opentelem
 
 import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor/internal/datapoint"
 )
 
 // toggleScalarDataTypeOp translates the numeric value type to the opposite type, int -> double and double -> int.
 // Applicable to sum and gauge metrics only.
 func toggleScalarDataTypeOp(metric pmetric.Metric, f internalFilter) {
-	var dps pmetric.NumberDataPointSlice
 	switch metric.Type() {
-	case pmetric.MetricTypeGauge:
-		dps = metric.Gauge().DataPoints()
-	case pmetric.MetricTypeSum:
-		dps = metric.Sum().DataPoints()
+	case pmetric.MetricTypeGauge, pmetric.MetricTypeSum:
+		rangeDatapoints(metric, func(dp datapoint.Datapoint) bool {
+			if !f.matchAttrs(dp.Attributes()) {
+				return true
+			}
+			v := dp.(pmetric.NumberDataPoint)
+			switch v.ValueType() {
+			case pmetric.NumberDataPointValueTypeInt:
+				v.SetDoubleValue(float64(v.IntValue()))
+			case pmetric.NumberDataPointValueTypeDouble:
+				v.SetIntValue(int64(v.DoubleValue()))
+			}
+			return true
+		})
 	default:
 		return
-	}
-
-	for i := 0; i < dps.Len(); i++ {
-		dp := dps.At(i)
-		if !f.matchAttrs(dp.Attributes()) {
-			continue
-		}
-
-		switch dp.ValueType() {
-		case pmetric.NumberDataPointValueTypeInt:
-			dp.SetDoubleValue(float64(dp.IntValue()))
-		case pmetric.NumberDataPointValueTypeDouble:
-			dp.SetIntValue(int64(dp.DoubleValue()))
-		}
 	}
 }

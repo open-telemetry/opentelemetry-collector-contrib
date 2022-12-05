@@ -16,36 +16,34 @@ package metricstransformprocessor // import "github.com/open-telemetry/opentelem
 
 import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor/internal/datapoint"
 )
 
 // scaleValueOp scales the numeric metric value of sum and gauge metrics.
 // For histograms it scales the value of the sum and the explicit bounds.
 func scaleValueOp(metric pmetric.Metric, op internalOperation, f internalFilter) {
-	var dps pmetric.NumberDataPointSlice
 	switch metric.Type() {
-	case pmetric.MetricTypeGauge:
-		dps = metric.Gauge().DataPoints()
-	case pmetric.MetricTypeSum:
-		dps = metric.Sum().DataPoints()
+	case pmetric.MetricTypeGauge, pmetric.MetricTypeSum:
+		rangeDatapoints(metric, func(v datapoint.Datapoint) bool {
+			if !f.matchAttrs(v.Attributes()) {
+				return true
+			}
+			dp := v.(pmetric.NumberDataPoint)
+			switch dp.ValueType() {
+			case pmetric.NumberDataPointValueTypeInt:
+				dp.SetIntValue(int64(float64(dp.IntValue()) * op.configOperation.Scale))
+			case pmetric.NumberDataPointValueTypeDouble:
+				dp.SetDoubleValue(dp.DoubleValue() * op.configOperation.Scale)
+			}
+			return true
+		})
 	case pmetric.MetricTypeHistogram:
 		scaleHistogramOp(metric, op, f)
-		return
 	default:
 		return
 	}
 
-	for i := 0; i < dps.Len(); i++ {
-		dp := dps.At(i)
-		if !f.matchAttrs(dp.Attributes()) {
-			continue
-		}
-		switch dp.ValueType() {
-		case pmetric.NumberDataPointValueTypeInt:
-			dp.SetIntValue(int64(float64(dp.IntValue()) * op.configOperation.Scale))
-		case pmetric.NumberDataPointValueTypeDouble:
-			dp.SetDoubleValue(dp.DoubleValue() * op.configOperation.Scale)
-		}
-	}
 }
 
 func scaleHistogramOp(metric pmetric.Metric, op internalOperation, f internalFilter) {

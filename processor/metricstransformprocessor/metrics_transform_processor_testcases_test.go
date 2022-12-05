@@ -1730,5 +1730,49 @@ var (
 			},
 			out: []pmetric.Metric{},
 		},
+		// Split by metrics
+		{
+			name: "split singular metric into parts",
+			transforms: []internalTransform{
+				{
+					MetricIncludeFilter: internalFilterStrict{
+						include: "system.cpu.usage",
+						attrMatchers: map[string]StringMatcher{
+							"state": strictMatcher("idle"),
+						},
+					},
+					Action:  SplitBy,
+					NewName: "cpu.idle",
+				},
+				{
+					MetricIncludeFilter: internalFilterStrict{
+						include: "system.cpu.usage",
+						attrMatchers: map[string]StringMatcher{
+							"state": strictMatcher("busy"),
+						},
+					},
+					Action:  SplitBy,
+					NewName: "cpu.busy",
+				},
+			},
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "system.cpu.usage", "state").
+					addIntDatapoint(1, 2, 3, "busy").
+					addIntDatapoint(1, 2, 3, "idle").
+					build(),
+			},
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "system.cpu.usage", "state").
+					addIntDatapoint(1, 2, 3, "busy").
+					addIntDatapoint(1, 2, 3, "idle").
+					build(),
+				metricBuilder(pmetric.MetricTypeGauge, "cpu.idle", "state").
+					addIntDatapoint(1, 2, 3, "idle").
+					build(),
+				metricBuilder(pmetric.MetricTypeGauge, "cpu.busy", "state").
+					addIntDatapoint(1, 2, 3, "busy").
+					build(),
+			},
+		},
 	}
 )
