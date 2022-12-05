@@ -101,6 +101,12 @@ func TestLoadConfig(t *testing.T) {
 				},
 				HealthPath:            "/services/collector/health",
 				HecHealthCheckEnabled: false,
+				WorkerQueueConfig: WorkerQueueConfig{
+					Size:     10,
+					Worker:   5,
+					Retries:  5,
+					Interval: time.Minute,
+				},
 			},
 		},
 	}

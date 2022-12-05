@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"net/url"
 	"path"
+	"time"
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -44,6 +45,13 @@ type OtelToHecFields struct {
 	SeverityText string `mapstructure:"severity_text"`
 	// SeverityNumber informs the exporter to map the severity number field to a specific HEC field.
 	SeverityNumber string `mapstructure:"severity_number"`
+}
+
+type WorkerQueueConfig struct {
+	Worker   int           `mapstructure:"worker"`
+	Size     int           `mapstructure:"size"`
+	Retries  int           `mapstructure:"retries_count"`
+	Interval time.Duration `mapstructure:"retry_interval"`
 }
 
 // Config defines configuration for Splunk exporter.
@@ -111,6 +119,8 @@ type Config struct {
 
 	// HecHealthCheckEnabled can be used to verify Splunk HEC health on exporter's startup
 	HecHealthCheckEnabled bool `mapstructure:"health_check_enabled"`
+	// Internal worker queue for sending batches to splunk
+	WorkerQueueConfig WorkerQueueConfig `mapstructure:"worker_queue"`
 }
 
 func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {

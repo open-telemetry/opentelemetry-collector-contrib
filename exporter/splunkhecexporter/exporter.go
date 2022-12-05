@@ -17,6 +17,7 @@ package splunkhecexporter // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"compress/gzip"
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"net"
@@ -106,36 +107,46 @@ func buildClient(options *exporterOptions, config *Config, logger *zap.Logger) (
 	}
 	healthCheckURLPath := *options.url
 	healthCheckURLPath.Path = config.HealthPath
+
 	return &client{
 		url:            options.url,
 		healthCheckURL: &healthCheckURLPath,
-		client: &http.Client{
-			Timeout: config.Timeout,
-			Transport: &http.Transport{
-				Proxy: http.ProxyFromEnvironment,
-				DialContext: (&net.Dialer{
-					Timeout:   dialerTimeout,
-					KeepAlive: dialerKeepAlive,
-				}).DialContext,
-				MaxIdleConns:        int(config.MaxConnections),
-				MaxIdleConnsPerHost: int(config.MaxConnections),
-				IdleConnTimeout:     idleConnTimeout,
-				TLSHandshakeTimeout: tlsHandshakeTimeout,
-				TLSClientConfig:     tlsCfg,
-			},
-		},
-		logger: logger,
-		headers: map[string]string{
-			"Connection":           "keep-alive",
-			"Content-Type":         "application/json",
-			"User-Agent":           config.SplunkAppName + "/" + config.SplunkAppVersion,
-			"Authorization":        splunk.HECTokenHeader + " " + config.Token,
-			"__splunk_app_name":    config.SplunkAppName,
-			"__splunk_app_version": config.SplunkAppVersion,
-		},
-		config: config,
+		client:         buildHttpClient(config, tlsCfg),
+		logger:         logger,
+		headers:        buildHttpHeaders(config),
+		config:         config,
+		workerQueue: newWorkerQueue(config, logger, func() *http.Client {
+			return buildHttpClient(config, tlsCfg)
+		}),
 		gzipWriterPool: &sync.Pool{New: func() interface{} {
 			return gzip.NewWriter(nil)
 		}},
 	}, nil
+}
+
+func buildHttpClient(config *Config, tlsCfg *tls.Config) *http.Client {
+	return &http.Client{
+		Timeout: config.Timeout,
+		Transport: &http.Transport{
+			Proxy: http.ProxyFromEnvironment,
+			DialContext: (&net.Dialer{
+				Timeout:   dialerTimeout,
+				KeepAlive: dialerKeepAlive,
+			}).DialContext,
+			MaxIdleConns:        int(config.MaxConnections),
+			MaxIdleConnsPerHost: int(config.MaxConnections),
+			IdleConnTimeout:     idleConnTimeout,
+			TLSHandshakeTimeout: tlsHandshakeTimeout,
+			TLSClientConfig:     tlsCfg,
+		}}
+}
+func buildHttpHeaders(config *Config) map[string]string {
+	return map[string]string{
+		"Connection":           "keep-alive",
+		"Content-Type":         "application/json",
+		"User-Agent":           config.SplunkAppName + "/" + config.SplunkAppVersion,
+		"Authorization":        splunk.HECTokenHeader + " " + config.Token,
+		"__splunk_app_name":    config.SplunkAppName,
+		"__splunk_app_version": config.SplunkAppVersion,
+	}
 }

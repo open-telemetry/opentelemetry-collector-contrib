@@ -49,6 +49,7 @@ import (
 )
 
 var requestTimeRegex = regexp.MustCompile(`time":(\d+)`)
+var otelLogNameRegex = regexp.MustCompile(`otel.log.name":"(\w+)"`)
 
 type testRoundTripper func(req *http.Request) *http.Response
 
@@ -63,9 +64,12 @@ func newTestClient(respCode int, respBody string) (*http.Client, *[]http.Header)
 func newTestClientWithPresetResponses(codes []int, bodies []string) (*http.Client, *[]http.Header) {
 	index := 0
 	var headers []http.Header
+	mu := &sync.Mutex{}
 
 	return &http.Client{
 		Transport: testRoundTripper(func(req *http.Request) *http.Response {
+			mu.Lock()
+			defer mu.Unlock()
 			code := codes[index%len(codes)]
 			body := bodies[index%len(bodies)]
 			index++
@@ -80,6 +84,12 @@ func newTestClientWithPresetResponses(codes []int, bodies []string) (*http.Clien
 		}),
 	}, &headers
 }
+
+// type mockWorkerQueue struct {
+// 	// queue full
+// }
+
+// func newTestWorkerQueue(accept bool)
 
 func createMetricsData(numberOfDataPoints int) pmetric.Metrics {
 
@@ -351,6 +361,16 @@ func runLogExport(cfg *Config, ld plog.Logs, expectedBatchesNum int, t *testing.
 		case request := <-rr:
 			requests = append(requests, request)
 			if len(requests) == expectedBatchesNum {
+				// sort the requests according to the log we received, reordering them so we can assert on their size.
+				sort.Slice(requests, func(i, j int) bool {
+					imatch := otelLogNameRegex.FindSubmatch(requests[i].body)
+					jmatch := otelLogNameRegex.FindSubmatch(requests[j].body)
+					// no matches mean it's compressed, just leave as is
+					if len(imatch) == 0 {
+						return i < j
+					}
+					return string(imatch[1]) <= string(jmatch[1])
+				})
 				return requests, nil
 			}
 		case <-time.After(5 * time.Second):
@@ -920,10 +940,15 @@ func TestInvalidJson(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestStartAlwaysReturnsNil(t *testing.T) {
+func TestWorkerQueueShouldBeInitialisedBeforeStart(t *testing.T) {
 	c := client{}
 	err := c.start(context.Background(), componenttest.NewNopHost())
+	assert.Contains(t, err.Error(), "uninitialised worker queue")
+
+	c.workerQueue = newMockWorkerQueue()
+	err = c.start(context.Background(), componenttest.NewNopHost())
 	assert.NoError(t, err)
+
 }
 
 func Test_pushLogData_nil_Logs(t *testing.T) {
@@ -1016,21 +1041,30 @@ func Test_pushLogData_PostError(t *testing.T) {
 		gzipWriterPool: &sync.Pool{New: func() interface{} {
 			return gzip.NewWriter(nil)
 		}},
+		workerQueue: newMockWorkerQueue(errSendingQueueIsFull),
 	}
 
 	// 2000 log records -> ~371888 bytes when JSON encoded.
 	logs := createLogData(1, 1, 2000)
 
-	// 0 -> unlimited size batch, true -> compression disabled.
-	c.config.MaxContentLengthLogs, c.config.DisableCompression = 0, true
 	err := c.pushLogData(context.Background(), logs)
 	require.Error(t, err)
 	var logsErr consumererror.Logs
 	assert.ErrorAs(t, err, &logsErr)
 	assert.Equal(t, logs, logsErr.GetLogs())
 
+	// 0 -> unlimited size batch, true -> compression disabled.
+	c.config.MaxContentLengthLogs, c.config.DisableCompression = 0, true
+	c.workerQueue = newMockWorkerQueue(errSendingQueueIsFull)
+	err = c.pushLogData(context.Background(), logs)
+	require.Error(t, err)
+	// var logsErr consumererror.Logs
+	assert.ErrorAs(t, err, &logsErr)
+	assert.Equal(t, logs, logsErr.GetLogs())
+
 	// 0 -> unlimited size batch, false -> compression enabled.
 	c.config.MaxContentLengthLogs, c.config.DisableCompression = 0, false
+	c.workerQueue = newMockWorkerQueue(errSendingQueueIsFull)
 	err = c.pushLogData(context.Background(), logs)
 	require.Error(t, err)
 	assert.ErrorAs(t, err, &logsErr)
@@ -1038,6 +1072,7 @@ func Test_pushLogData_PostError(t *testing.T) {
 
 	// 200000 < 371888 -> multiple batches, true -> compression disabled.
 	c.config.MaxContentLengthLogs, c.config.DisableCompression = 200000, true
+	c.workerQueue = newMockWorkerQueue(errSendingQueueIsFull)
 	err = c.pushLogData(context.Background(), logs)
 	require.Error(t, err)
 	assert.ErrorAs(t, err, &logsErr)
@@ -1045,44 +1080,11 @@ func Test_pushLogData_PostError(t *testing.T) {
 
 	// 200000 < 371888 -> multiple batches, false -> compression enabled.
 	c.config.MaxContentLengthLogs, c.config.DisableCompression = 200000, false
+	c.workerQueue = newMockWorkerQueue(errSendingQueueIsFull)
 	err = c.pushLogData(context.Background(), logs)
 	require.Error(t, err)
 	assert.ErrorAs(t, err, &logsErr)
 	assert.Equal(t, logs, logsErr.GetLogs())
-}
-
-func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
-	splunkClient := client{
-		url:    &url.URL{Scheme: "http", Host: "splunk"},
-		config: NewFactory().CreateDefaultConfig().(*Config),
-		logger: zaptest.NewLogger(t),
-		gzipWriterPool: &sync.Pool{New: func() interface{} {
-			return gzip.NewWriter(nil)
-		}},
-	}
-	logs := createLogData(1, 1, 1)
-
-	responseBody := `some error occurred`
-
-	// An HTTP client that returns status code 400 and response body responseBody.
-	splunkClient.client, _ = newTestClient(400, responseBody)
-	// Sending logs using the client.
-	err := splunkClient.pushLogData(context.Background(), logs)
-	// TODO: Uncomment after consumererror.Logs implements method Unwrap.
-	// require.True(t, consumererror.IsPermanent(err), "Expecting permanent error")
-	require.Contains(t, err.Error(), "HTTP/0.0 400")
-	// The returned error should contain the response body responseBody.
-	assert.Contains(t, err.Error(), responseBody)
-
-	// An HTTP client that returns some other status code other than 400 and response body responseBody.
-	splunkClient.client, _ = newTestClient(500, responseBody)
-	// Sending logs using the client.
-	err = splunkClient.pushLogData(context.Background(), logs)
-	// TODO: Uncomment after consumererror.Logs implements method Unwrap.
-	// require.False(t, consumererror.IsPermanent(err), "Expecting non-permanent error")
-	require.Contains(t, err.Error(), "HTTP 500")
-	// The returned error should not contain the response body responseBody.
-	assert.NotContains(t, err.Error(), responseBody)
 }
 
 func Test_pushLogData_ShouldReturnUnsentLogsOnly(t *testing.T) {
@@ -1094,6 +1096,7 @@ func Test_pushLogData_ShouldReturnUnsentLogsOnly(t *testing.T) {
 		gzipWriterPool: &sync.Pool{New: func() interface{} {
 			return gzip.NewWriter(nil)
 		}},
+		workerQueue: newMockWorkerQueue(nil, errSendingQueueIsFull),
 	}
 
 	// Just two records
@@ -1101,9 +1104,6 @@ func Test_pushLogData_ShouldReturnUnsentLogsOnly(t *testing.T) {
 
 	// Each record is about 200 bytes, so the 250-byte buffer will fit only one at a time
 	c.config.MaxContentLengthLogs, c.config.DisableCompression = 250, true
-
-	// The first record is to be sent successfully, the second one should not
-	c.client, _ = newTestClientWithPresetResponses([]int{200, 400}, []string{"OK", "NOK"})
 
 	err := c.pushLogData(context.Background(), logs)
 	require.Error(t, err)
@@ -1117,23 +1117,31 @@ func Test_pushLogData_ShouldReturnUnsentLogsOnly(t *testing.T) {
 }
 
 func Test_pushLogData_ShouldAddHeadersForProfilingData(t *testing.T) {
+	config := NewFactory().CreateDefaultConfig().(*Config)
+	config.WorkerQueueConfig.Size = 30
+
+	mockClient, headers := newTestClient(200, "OK")
 	c := client{
 		url:    &url.URL{Scheme: "http", Host: "splunk"},
-		config: NewFactory().CreateDefaultConfig().(*Config),
+		config: config,
 		logger: zaptest.NewLogger(t),
 		gzipWriterPool: &sync.Pool{New: func() interface{} {
 			return gzip.NewWriter(nil)
 		}},
+		workerQueue: newWorkerQueue(config, zaptest.NewLogger(t), func() *http.Client {
+			return mockClient
+		}),
 	}
+	c.workerQueue.Start()
 
 	logs := createLogDataWithCustomLibraries(1, []string{"otel.logs", "otel.profiling"}, []int{10, 20})
-	var headers *[]http.Header
 
-	c.client, headers = newTestClient(200, "OK")
 	// A 300-byte buffer only fits one record (around 200 bytes), so each record will be sent separately
 	c.config.MaxContentLengthLogs, c.config.DisableCompression = 300, true
 
 	err := c.pushLogData(context.Background(), logs)
+	// time.Sleep(time.Second)
+	c.workerQueue.Stop()
 	require.NoError(t, err)
 	assert.Equal(t, 30, len(*headers))
 
@@ -1415,14 +1423,11 @@ func BenchmarkPushLogRecords(b *testing.B) {
 			return gzip.NewWriter(nil)
 		}},
 	}
-	sender := func(ctx context.Context, state *bufferState, headers map[string]string) error {
-		return nil
-	}
 	state := makeBlankBufferState(4096, true, &sync.Pool{New: func() interface{} {
 		return gzip.NewWriter(nil)
 	}})
 	for n := 0; n < b.N; n++ {
-		permanentErrs, sendingErr := c.pushLogRecords(context.Background(), logs.ResourceLogs(), state, map[string]string{}, sender)
+		permanentErrs, sendingErr := c.pushLogRecords(context.Background(), logs.ResourceLogs(), state, map[string]string{})
 		assert.NoError(b, sendingErr)
 		for _, permanentErr := range permanentErrs {
 			assert.NoError(b, permanentErr)
