@@ -3,135 +3,134 @@ name: snowflakereceiver
 # every meter will have these attributes
 resource_attributes:
   snowflake.account.name:
-    description: The name of the snowflake account being monitored
+    description: The name of the snowflake account being monitored.
     type: string
   snowflake.warehouse.name:
-    description: The name of the warehouse being used
+    description: The name of the warehouse being used.
     type: string
   snowflake.username:
-    description: The name of the snowflake user account being used
+    description: The name of the snowflake user account being used.
     type: string
 
 attributes:
   service_type:
-    description: Service type
+    description: Service type associateed with metric query
     type: string
   error_message:
-    description: Error message if present
+    description: Error message reported by query if present
     type: string 
   reported_client_type:
     description: Client type used for attempt
     type: string
   is_success:
-    description: Login status
+    description: Login status (success or failure).
     type: string
   schema_name:
-    description: name of schema 
+    description: Name of schema associated with query result. 
     type: string
-  # this should probably be an enum, investigate
   execution_status:
-    description: execution status 
+    description: Execution status of query being reported.
     type: string
   query_type:
-    description: type of query performed
+    description: Type of query performed.
     type: string
   database_name:
-    description: name of database (default is snowflake)
-    type: string
+    description: Name of database being queried (default is snowflake).
   warehouse_size:
-    description: size of Warehouse in query
+    description: Size of warehouse being reported on.
     type: string
   pipe_name:
-    description: name of snowpipe 
+    description: Name of snowpipe. 
     type: string
   warehouse_name:
-    description: name of Warehouse in query
+    description: Name of warehouse in query being reported on.
     type: string
   user_name:
-    description: username in query
+    description: Username in query being reported.
     type: string
 
 
 # sql query associated with each group of metrics included
 metrics:
   # Billing Metrics
-  snowflake.billing.cloud_service.sum:
-    description: cloud services sum
-    unit: credits
+  snowflake.billing.cloud_service.total:
+    description: Reported total credits used in the cloud service.
+    unit: "{credits}"
     gauge:
       value_type: double
-    enabled: true
+    enabled: false
     attributes: [service_type]
-  snowflake.billing.total_credit.sum:
-    description: billing total sum 
-    unit: credits
+  snowflake.billing.total_credit.total:
+    description: Reported total credits used across account.
+    unit: "{credits}"
     gauge:
       value_type: double
-    enabled: true
+    enabled: false
     attributes: [service_type]
-  snowflake.billing.virtual_warehouse.sum:
-    enabled: true
-    description: compute credits used sum
+  snowflake.billing.virtual_warehouse.total:
+    description: Reported total credits used by virtual warehouse service.
+    unit: "{credits}"
     attributes: [service_type]
     gauge:
       value_type: double
+    enabled: false
 
   # Warehouse Billing Metrics
-  snowflake.billing.warehouse.cloud_service.sum:
-    description: ware billing for cloud service
-    unit: credits
+  snowflake.billing.warehouse.cloud_service.total:
+    description: Credits used across cloud service for given warehouse.
+    unit: "{credits}"
     gauge: 
       value_type: double
-    enabled: true
+    enabled: false
     attributes: [warehouse_name]
-  snowflake.billing.warehouse.total_credit.sum:
-    description: warehouse total credits
-    unit: credits
+  snowflake.billing.warehouse.total_credit.total:
+    description: Total credits used associated with given warehouse.
+    unit: "{credits}"
     gauge: 
       value_type: double
-    enabled: true
+    enabled: false
     attributes: [warehouse_name]
-  snowflake.billing.warehouse.virtual_warehouse.sum:
-    description: virtual warehouse credits used
-    unit: credits
+  snowflake.billing.warehouse.virtual_warehouse.total:
+    description: Total credits used by virtual warehouse service for given warehouse.
+    unit: "{credits}"
     gauge:
       value_type: double
-    enabled: true
+    enabled: false
     attributes: [warehouse_name]
 
   # Login (Security) metrics 
   snowflake.logins.total:
-    description: total logins
+    description: Total login attempts for account.
     unit: 1
     gauge:
       value_type: int 
-    enabled: true 
+    enabled: false 
     attributes: [error_message, reported_client_type, is_success]
 
   # High level low dimensionality query metrics 
   snowflake.query.blocked:
-    description: number of blocked queries
+    description: Blocked query count for warehouse.
     unit: 1
     gauge:
       value_type: double
     enabled: true 
     attributes: [warehouse_name]
   snowflake.query.executed:
-    description: number of executed queries
+    description: Executed query count for warehouse.
     unit: 1
     gauge:
       value_type: double
     enabled: true 
     attributes: [warehouse_name]
   snowflake.query.queued_overload:
-    description: queue overload count
+    description: Overloaded query count for warehouse.
     unit: 1
     gauge:
       value_type: double
     enabled: true 
     attributes: [warehouse_name]
   snowflake.query.queued_provision:
-    description: queue provision count
+    description: Number of compute resources queued for provisioning.
     unit: 1
     gauge:
       value_type: double 
@@ -140,169 +139,168 @@ metrics:
 
   # DB metrics
   snowflake.database.query.count:
-    description: total number of queries
+    description: Total query count for database.
     unit: 1
     gauge:
       value_type: int 
     enabled: true
     attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
   snowflake.database.bytes_scanned.avg:
-    description: average bytes scanned
-    unit: bytes
+    description: Average bytes scanned in a database.
+    unit: By
     gauge:
       value_type: double
     enabled: true
     attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
-  snowflake.query.bytes_scanned.sum:
-    description: total bytes scanend
-    unit: bytes
+  snowflake.query.bytes_scanned.total:
+    description: Total bytes scanend in database.
+    unit: By
     gauge:
       value_type: int 
-    enabled: true 
+    enabled: false
     attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
-  snowflake.query.bytes_deleted.sum:
-    description: total bytes bytes deleted 
-    unit: bytes 
+  snowflake.query.bytes_deleted.total:
+    description: Total bytes deleted in database.
+    unit: By
     gauge:
       value_type: int 
     enabled: true
     attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
-  snowflake.query.bytes_spilled.local.sum:
-    description: total bytes spilled 
-    unit: bytes 
+  snowflake.query.bytes_spilled.local.total:
+    description: Total bytes spilled (intermediate results do not fit in memory) by local storage.
+    unit: By 
     gauge:
       value_type: int
-    enabled: true 
+    enabled: false 
     attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
-  snowflake.query.bytes_spilled.remote.sum:
-    description: remote bytes spilled
-    unit: bytes 
+  snowflake.query.bytes_spilled.remote.total:
+    description: Total bytes spilled (intermediate results do not fit in memory) by remote storage.
+    unit: By
     gauge:
       value_type: int
-    enabled: true
+    enabled: false
     attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
-  snowflake.query.bytes_written.sum:
-    description: total bytes bytes
-    unit: bytes 
+  snowflake.query.bytes_written.total:
+    description: Total bytes written by database.
+    unit: By 
     gauge: 
       value_type: int
     enabled: true
     attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
-  snowflake.query.compilation_time.sum:
-    description: total compilation time
-    unit: s 
+  snowflake.query.compilation_time.total:
+    description: Total time taken to compile query.
+    unit: s
     gauge:
-      # maybe int, unclear
       value_type: double
     enabled: true
     attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
   snowflake.query.data_scanned_cache.avg:
-    description: average data scanned cache 
+    description: Average percentage of data scanned from cache.
     unit: 1
     gauge:
       value_type: double
-    enabled: true
+    enabled: false 
     attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
-  snowflake.query.execution_time.sum:
-    description: query execution time 
+  snowflake.query.execution_time.total:
+    description: Total time spent executing queries in database.
     unit: s 
     gauge: 
       value_type: double
     enabled: true
     attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
-  snowflake.query.partitions_scanned.sum:
-    description: number of partitions scanned 
+  snowflake.query.partitions_scanned.total:
+    description: Number of partitions scanned during query so far. 
     unit: 1
     gauge:
       value_type: int
-    enabled: true
+    enabled: false
     attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
   snowflake.queued_overload_time.avg:
-    description: average queued overload time 
+    description: Average time spent in warehouse queue due to warehouse being overloaded.
     unit: s 
     gauge: 
       value_type: double
     enabled: true 
     attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
-  snowflake.queued_overload_time.sum:
-    description: total queued overload time 
-    unit: s 
+  snowflake.queued_overload_time.total:
+    description: Total time spent in warehouse queue due to warehouse being overloaded.
+    unit: s
     gauge: 
       value_type: int
-    enabled: true 
+    enabled: false 
     attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
   snowflake.queued_provisioning_time.avg:
-    description: average queued provisioning time
+    description: Average time spent in warehouse queue waiting for resources to provision.
     unit: s 
     gauge:
       value_type: double
     enabled: true
     attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
-  snowflake.queued_provisioning_time.sum:
-    description: total queued provisioning time
+  snowflake.queued_provisioning_time.total:
+    description: Total time spent in warehouse queue waiting for resources to provision.
     unit: s 
     gauge:
       value_type: int
-    enabled: true
+    enabled: false
     attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
-  snowflake.queued_repair_time.sum:
-    description: total queued repair time
+  snowflake.queued_repair_time.total:
+    description: Total time spent in warehouse queue waiting for compute resources to be repaired.
     unit: s 
     gauge:
       value_type: int
-    enabled: true
+    enabled: false
     attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
   snowflake.queued_repair_time.avg:
-    description: average queued repair time
+    description: Average time spent in warehouse queue waiting for compute resources to be repaired.
     unit: s 
     gauge:
       value_type: double
     enabled: true
     attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
-  snowflake.rows_inserted.sum:
-    description: rows inserted
-    unit: rows
+  snowflake.rows_inserted.total:
+    description: Number of rows inserted into a table (or tables).
+    unit: "{rows}"
     gauge:
       value_type: int
-    enabled: true
+    enabled: false
     attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
-  snowflake.rows_deleted.sum:
-    description: rows deleted
-    unit: rows 
+  snowflake.rows_deleted.total:
+    description: Number of rows deleted from a table (or tables).
+    unit: "{rows}" 
     gauge:
       value_type: int
-    enabled: true
+    enabled: false
     attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
-  snowflake.rows_produced.sum:
-    description: rows produced
-    unit: rows 
+  snowflake.rows_produced.total:
+    description: Total number of rows produced by statement.
+    unit: "{rows}" 
     gauge:
       value_type: int
-    enabled: true
+    enabled: false
     attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
-  snowflake.rows_unloaded.sum:
-    description: rows unloaded
-    unit: rows 
+  snowflake.rows_unloaded.total:
+    description: Total number of rows unloaded during data export.
+    unit: "{rows}"
     gauge:
       value_type: int
-    enabled: true
+    enabled: false
     attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
-  snowflake.rows_updated.sum:
-    description: rows updated
-    unit: rows 
+  snowflake.rows_updated.total:
+    description: Total number of rows updated in a table.
+    unit: "{rows}" 
     gauge:
       value_type: int
-    enabled: true
+    enabled: false
     attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
-  snowflake.total_elapsed_time.sum:
-    description: total elapsed time
+  snowflake.total_elapsed_time.total:
+    description: Total elapsed time.
     unit: s 
     gauge:
       value_type: int 
-    enabled: true 
+    enabled: false
     attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
   snowflake.total_elapsed_time.avg:
-    description: average elapsed time
+    description: Average elapsed time.
     unit: s 
     gauge:
       value_type: double 
@@ -311,39 +309,38 @@ metrics:
 
   # Session metric 
   snowflake.session_id.count:
-    description: distinct session ids
+    description: Distinct session id's associated with snowflake username.
     unit: 1
     gauge:
       value_type: int
-    enabled: true
+    enabled: false
     attributes: [user_name]
   
   # Snowpipe usage metrics
-  snowflake.pipe.credits_used.sum:
-    description: snow pipe credits consumed
-    unit: credits
+  snowflake.pipe.credits_used.total:
+    description: Snow pipe credits contotaled.
+    unit: "{credits}"
     gauge:
       value_type: double
-    enabled: true
+    enabled: false
     attributes: [pipe_name]
 
   # Storage usage metrics 
   snowflake.storage.storage_bytes.total:
-    description: total storage bytes in snowflake
-    unit: bytes
+    description: Number of bytes of table storage used, including bytes for data currently in Time Travel.
+    unit: By
     gauge:
       value_type: int
     enabled: true
   snowflake.storage.stage_bytes.total:
-    description: total stage bytes in snowflake
-    unit: bytes
+    description: Number of bytes of stage storage used by files in all internal stages (named, table, user).
+    unit: By
     gauge:
       value_type: int
     enabled: true
   snowflake.storage.failsafe_bytes.total:
-    description: total failsafe bytes in snowflake
-    unit: bytes
+    description: Number of bytes of data in Fail-safe.
+    unit: By
     gauge:
       value_type: int
-    enabled: true
-
+    enabled: false 
