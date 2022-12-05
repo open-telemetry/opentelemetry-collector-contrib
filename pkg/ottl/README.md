@@ -15,12 +15,16 @@ The OTTL grammar includes Invocations, Values and Boolean Expressions.
 Invocations represent a function call. Invocations are made up of 2 parts:
 
 - a string identifier. The string identifier must start with a letter or an underscore (`_`).
+  - If the invocation is used as a parameter in another function or as part of a boolean expression it must start with an uppercase letter or an underscore (`_`) followed by an uppercase letter. Otherwise, it must start with a lowercase letter or an underscore (`_`) followed by a lowercase letter.
 - zero or more Values (comma separated) surrounded by parentheses (`()`).
 
-**The OTTL does not define any function implementations.** Users must supply a map between string identifiers and the actual function implementation.  The OTTL will use this map and reflection to generate Invocations, that can then be invoked by the user.
+**The OTTL does not define any function implementations.**
+Users must supply a map between string identifiers and the actual function implementation.
+The OTTL will use this map and reflection to generate Invocations, that can then be invoked by the user.
+See [ottlfuncs](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/ottlfuncs) for pre-made, usable functions.
 
 Example Invocations
-- `drop()`
+- `route()`
 - `set(field, 1)`
 
 #### Invocation parameters

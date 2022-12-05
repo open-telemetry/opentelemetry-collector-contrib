@@ -123,7 +123,13 @@ type comparison struct {
 
 // invocation represents a function call.
 type invocation struct {
-	Function  string  `parser:"@(Uppercase | Lowercase)+"`
+	Function  string  `parser:"@(Lowercase(Uppercase | Lowercase)*)"`
+	Arguments []value `parser:"'(' ( @@ ( ',' @@ )* )? ')'"`
+}
+
+// invocation represents a function call.
+type factoryFunction struct {
+	Function  string  `parser:"@(Uppercase(Uppercase | Lowercase)*)"`
 	Arguments []value `parser:"'(' ( @@ ( ',' @@ )* )? ')'"`
 }
 
@@ -185,10 +191,10 @@ func (n *isNil) Capture(_ []string) error {
 }
 
 type mathExprLiteral struct {
-	Invocation *invocation `parser:"( @@"`
-	Float      *float64    `parser:"| @Float"`
-	Int        *int64      `parser:"| @Int"`
-	Path       *Path       `parser:"| @@ )"`
+	Invocation *factoryFunction `parser:"( @@"`
+	Float      *float64         `parser:"| @Float"`
+	Int        *int64           `parser:"| @Int"`
+	Path       *Path            `parser:"| @@ )"`
 }
 
 type mathValue struct {

@@ -88,7 +88,7 @@ func Test_parse(t *testing.T) {
 		},
 		{
 			name:      "complex invocation",
-			statement: `set("foo", getSomething(bear.honey))`,
+			statement: `set("foo", GetSomething(bear.honey))`,
 			expected: &parsedStatement{
 				Invocation: invocation{
 					Function: "set",
@@ -98,8 +98,8 @@ func Test_parse(t *testing.T) {
 						},
 						{
 							Literal: &mathExprLiteral{
-								Invocation: &invocation{
-									Function: "getSomething",
+								Invocation: &factoryFunction{
+									Function: "GetSomething",
 									Arguments: []value{
 										{
 											Literal: &mathExprLiteral{
@@ -576,7 +576,7 @@ func Test_parse(t *testing.T) {
 								Values: []value{
 									{
 										Literal: &mathExprLiteral{
-											Invocation: &invocation{
+											Invocation: &factoryFunction{
 												Function: "Concat",
 												Arguments: []value{
 													{
@@ -642,7 +642,7 @@ func Test_parse(t *testing.T) {
 		},
 		{
 			name:      "Invocation math mathExpression",
-			statement: `set(attributes["test"], 1000 - 600) where 1 + 1 * 2 == three / one()`,
+			statement: `set(attributes["test"], 1000 - 600) where 1 + 1 * 2 == three / One()`,
 			expected: &parsedStatement{
 				Invocation: invocation{
 					Function: "set",
@@ -741,8 +741,8 @@ func Test_parse(t *testing.T) {
 													Operator: DIV,
 													Value: &mathValue{
 														Literal: &mathExprLiteral{
-															Invocation: &invocation{
-																Function: "one",
+															Invocation: &factoryFunction{
+																Function: "One",
 															},
 														},
 													},
@@ -1229,21 +1229,24 @@ func Test_parseStatement(t *testing.T) {
 	}{
 		{`set(foo.attributes["bar"].cat, "dog")`, false},
 		{`set(foo.attributes["animal"], "dog") where animal == "cat"`, false},
-		{`drop() where service == "pinger" or foo.attributes["endpoint"] == "/x/alive"`, false},
-		{`drop() where service == "pinger" or foo.attributes["verb"] == "GET" and foo.attributes["endpoint"] == "/x/alive"`, false},
-		{`drop() where animal > "cat"`, false},
-		{`drop() where animal >= "cat"`, false},
-		{`drop() where animal <= "cat"`, false},
-		{`drop() where animal < "cat"`, false},
-		{`drop() where animal =< "dog"`, true},
-		{`drop() where animal => "dog"`, true},
-		{`drop() where animal <> "dog"`, true},
-		{`drop() where animal = "dog"`, true},
-		{`drop() where animal`, true},
-		{`drop() where animal ==`, true},
-		{`drop() where ==`, true},
-		{`drop() where == animal`, true},
-		{`drop() where attributes["path"] == "/healthcheck"`, false},
+		{`test() where service == "pinger" or foo.attributes["endpoint"] == "/x/alive"`, false},
+		{`test() where service == "pinger" or foo.attributes["verb"] == "GET" and foo.attributes["endpoint"] == "/x/alive"`, false},
+		{`test() where animal > "cat"`, false},
+		{`test() where animal >= "cat"`, false},
+		{`test() where animal <= "cat"`, false},
+		{`test() where animal < "cat"`, false},
+		{`test() where animal =< "dog"`, true},
+		{`test() where animal => "dog"`, true},
+		{`test() where animal <> "dog"`, true},
+		{`test() where animal = "dog"`, true},
+		{`test() where animal`, true},
+		{`test() where animal ==`, true},
+		{`test() where ==`, true},
+		{`test() where == animal`, true},
+		{`test() where attributes["path"] == "/healthcheck"`, false},
+		{`test() where one() == 1`, true},
+		{`test(fail())`, true},
+		{`Test()`, true},
 	}
 	pat := regexp.MustCompile("[^a-zA-Z0-9]+")
 	for _, tt := range tests {
