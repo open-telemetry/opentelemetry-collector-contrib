@@ -17,6 +17,7 @@ package solacereceiver // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"errors"
 	"strings"
+	"time"
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -28,10 +29,12 @@ const (
 )
 
 var (
-	errMissingAuthDetails     = errors.New("authentication details are required, either for plain user name password or XOAUTH2 or client certificate")
-	errMissingQueueName       = errors.New("queue definition is required, queue definition has format queue://<queuename>")
-	errMissingPlainTextParams = errors.New("missing plain text auth params: Username, Password")
-	errMissingXauth2Params    = errors.New("missing xauth2 text auth params: Username, Bearer")
+	errMissingAuthDetails       = errors.New("authentication details are required, either for plain user name password or XOAUTH2 or client certificate")
+	errMissingQueueName         = errors.New("queue definition is required, queue definition has format queue://<queuename>")
+	errMissingPlainTextParams   = errors.New("missing plain text auth params: Username, Password")
+	errMissingXauth2Params      = errors.New("missing xauth2 text auth params: Username, Bearer")
+	errMissingFlowControl       = errors.New("missing flow control configuration: DelayedRetry must be selected")
+	errInvalidDelayedRetryDelay = errors.New("delayed_retry.delay must > 0")
 )
 
 // Config defines configuration for Solace receiver.
@@ -49,6 +52,8 @@ type Config struct {
 	TLS configtls.TLSClientSetting `mapstructure:"tls,omitempty"`
 
 	Auth Authentication `mapstructure:"auth"`
+
+	Flow FlowControl `mapstructure:"flow_control"`
 }
 
 // Validate checks the receiver configuration is valid
@@ -58,6 +63,11 @@ func (cfg *Config) Validate() error {
 	}
 	if len(strings.TrimSpace(cfg.Queue)) == 0 {
 		return errMissingQueueName
+	}
+	if cfg.Flow.DelayedRetry == nil {
+		return errMissingFlowControl
+	} else if cfg.Flow.DelayedRetry.Delay <= 0 {
+		return errInvalidDelayedRetryDelay
 	}
 	return nil
 }
@@ -83,4 +93,14 @@ type SaslXAuth2Config struct {
 
 // SaslExternalConfig defines the configuration for the SASL External used in conjunction with TLS client authentication.
 type SaslExternalConfig struct {
+}
+
+// FlowControl defines the configuration for what to do in backpressure scenarios, e.g. memorylimiter errors
+type FlowControl struct {
+	DelayedRetry *FlowControlDelayedRetry `mapstructure:"delayed_retry"`
+}
+
+// FlowControlDelayedRetry represents the strategy of waiting for a defined amount of time (in time.Duration) and attempt redelivery
+type FlowControlDelayedRetry struct {
+	Delay time.Duration `mapstructure:"delay"`
 }
