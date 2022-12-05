@@ -16,16 +16,49 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import (
 	"context"
+	"fmt"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 func KeepKeys[K any](target ottl.Getter[K], keys []string) (ottl.ExprFunc[K], error) {
-	exprFunc, err := KeepKeysFactory[K](target, keys)
-	if err != nil {
-		return nil, err
-	}
+	keySet := newKeyMap(keys)
 	return func(ctx context.Context, tCtx K) (interface{}, error) {
-		_, err := exprFunc(ctx, tCtx)
-		return nil, err
+		mapVal, err := getMapTarget(ctx, tCtx, target)
+		if err != nil {
+			return nil, err
+		}
+		keepKeys(mapVal, keySet)
+		return nil, nil
 	}, nil
+}
+
+func newKeyMap(keys []string) map[string]struct{} {
+	keySet := make(map[string]struct{}, len(keys))
+	for _, key := range keys {
+		keySet[key] = struct{}{}
+	}
+	return keySet
+}
+
+func getMapTarget[K any](ctx context.Context, tCtx K, target ottl.Getter[K]) (pcommon.Map, error) {
+	val, err := target.Get(ctx, tCtx)
+	if err != nil {
+		return pcommon.Map{}, err
+	}
+	mapVal, ok := val.(pcommon.Map)
+	if !ok {
+		return pcommon.Map{}, fmt.Errorf("target must be a pcommon.map but got %T", val)
+	}
+	return mapVal, nil
+}
+
+func keepKeys(mapVal pcommon.Map, keySet map[string]struct{}) {
+	mapVal.RemoveIf(func(key string, value pcommon.Value) bool {
+		_, ok := keySet[key]
+		return !ok
+	})
+	if mapVal.Len() == 0 {
+		mapVal.Clear()
+	}
 }

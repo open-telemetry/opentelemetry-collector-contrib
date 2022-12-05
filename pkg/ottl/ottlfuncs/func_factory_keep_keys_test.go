@@ -86,8 +86,11 @@ func Test_KeepKeysFactory(t *testing.T) {
 			exprFunc, err := KeepKeysFactory(tt.target, tt.keys)
 			assert.NoError(t, err)
 
-			result, err := exprFunc(nil, scenarioMap)
+			origScenarioMap := pcommon.NewMap()
+			scenarioMap.CopyTo(origScenarioMap)
+			result, err := exprFunc(context.Background(), scenarioMap)
 			assert.Nil(t, err)
+			assert.Equal(t, origScenarioMap, scenarioMap)
 
 			expected := pcommon.NewMap()
 			tt.want(expected)
@@ -110,6 +113,21 @@ func Test_KeepKeysFactory_bad_input(t *testing.T) {
 	exprFunc, err := KeepKeysFactory[interface{}](target, keys)
 	assert.NoError(t, err)
 
-	_, err = exprFunc(nil, input)
+	_, err = exprFunc(context.Background(), input)
+	assert.Error(t, err)
+}
+
+func Test_KeepKeysFactory_get_nil(t *testing.T) {
+	target := &ottl.StandardGetSetter[interface{}]{
+		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			return tCtx, nil
+		},
+	}
+
+	keys := []string{"anything"}
+	exprFunc, err := KeepKeysFactory[interface{}](target, keys)
+	assert.NoError(t, err)
+
+	_, err = exprFunc(context.Background(), nil)
 	assert.Error(t, err)
 }
