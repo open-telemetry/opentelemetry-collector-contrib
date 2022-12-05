@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphan
 go 1.18
 
 require (
-	github.com/SAP/go-hdb v0.109.1
+	github.com/SAP/go-hdb v0.111.4
 	github.com/google/go-cmp v0.5.9
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.66.0
 	github.com/stretchr/testify v1.8.1
@@ -39,9 +39,9 @@ require (
 	go.opentelemetry.io/otel/trace v1.11.1 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/zap v1.24.0 // indirect
-	golang.org/x/crypto v0.1.0 // indirect
-	golang.org/x/exp v0.0.0-20221019170559-20944726eadf // indirect
-	golang.org/x/net v0.1.0 // indirect
+	golang.org/x/crypto v0.3.0 // indirect
+	golang.org/x/exp v0.0.0-20221126150942-6ab00d035af9 // indirect
+	golang.org/x/net v0.2.0 // indirect
 	golang.org/x/sys v0.2.0 // indirect
 	golang.org/x/text v0.4.0 // indirect
 	google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa // indirect
