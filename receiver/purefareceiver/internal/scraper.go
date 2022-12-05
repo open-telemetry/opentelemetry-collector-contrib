@@ -34,8 +34,9 @@ type Scraper interface {
 type ScraperType string
 
 const (
-	ScraperTypeArray ScraperType = "array"
-	ScraperTypeHost  ScraperType = "host"
+	ScraperTypeArray       ScraperType = "array"
+	ScraperTypeHost        ScraperType = "host"
+	ScraperTypeDirectories ScraperType = "directories"
 )
 
 type scraper struct {
