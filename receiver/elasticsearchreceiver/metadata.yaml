@@ -724,6 +724,15 @@ metrics:
       value_type: int
     attributes: [ cluster_state_update_state, cluster_state_update_type ]
     enabled: true
+  elasticsearch.cluster.indices.cache.evictions:
+    description: The number of evictions from the cache for indices in cluster.
+    unit: "{evictions}"
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    attributes: [cache_name]
+    enabled: false
   elasticsearch.node.ingest.documents:
     description: Total number of documents ingested during the lifetime of this node.
     unit: "{documents}"
