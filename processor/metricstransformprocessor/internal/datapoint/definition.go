@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package datapoint
+package datapoint // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor/internal/datapoint"
 
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
