@@ -31,7 +31,6 @@ import (
 type Sender struct {
 	logger  *zap.Logger
 	api     *datadogV2.LogsApi
-	opts    datadogV2.SubmitLogOptionalParameters
 	verbose bool // reports whether payload contents should be dumped when logging at debug level
 }
 
@@ -67,17 +66,17 @@ func (s *Sender) SubmitLogs(ctx context.Context, payload []datadogV2.HTTPLogItem
 
 	// enable sending gzip
 	// Get a fresh opts for each request to avoid duplicating ddtags
-	s.opts = *datadogV2.NewSubmitLogOptionalParameters().WithContentEncoding(datadogV2.CONTENTENCODING_GZIP)
+	opts := *datadogV2.NewSubmitLogOptionalParameters().WithContentEncoding(datadogV2.CONTENTENCODING_GZIP)
 
 	// Correctly sets apiSubmitLogRequest ddtags field based on tags from translator Transform method
 	if payload[0].HasDdtags() {
 		tags := datadog.PtrString(payload[0].GetDdtags())
-		if s.opts.Ddtags != nil {
-			tags = datadog.PtrString(fmt.Sprint(*s.opts.Ddtags, ",", payload[0].GetDdtags()))
+		if opts.Ddtags != nil {
+			tags = datadog.PtrString(fmt.Sprint(*opts.Ddtags, ",", payload[0].GetDdtags()))
 		}
-		s.opts.Ddtags = tags
+		opts.Ddtags = tags
 	}
-	_, r, err := s.api.SubmitLog(ctx, payload, s.opts)
+	_, r, err := s.api.SubmitLog(ctx, payload, opts)
 	if err != nil {
 		if r != nil {
 			b := make([]byte, 1024) // 1KB message max
