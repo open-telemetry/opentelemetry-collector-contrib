@@ -24,7 +24,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil/endpoints"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
 
 type mockMetaDataProvider struct {
@@ -121,7 +120,7 @@ func Test_ecsDetectV4(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.NotNil(t, got)
-	assert.Equal(t, internal.AttributesToMap(want.Attributes()), internal.AttributesToMap(got.Attributes()))
+	assert.Equal(t, want.Attributes().AsRaw(), got.Attributes().AsRaw())
 }
 
 func Test_ecsDetectV3(t *testing.T) {
@@ -144,7 +143,7 @@ func Test_ecsDetectV3(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.NotNil(t, got)
-	assert.Equal(t, internal.AttributesToMap(want.Attributes()), internal.AttributesToMap(got.Attributes()))
+	assert.Equal(t, want.Attributes().AsRaw(), got.Attributes().AsRaw())
 }
 
 func createTestContainer(isV4 bool) ecsutil.ContainerMetadata {
