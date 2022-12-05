@@ -24,7 +24,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema"
 )
 
-// GenerateFiles is the entry point for the cfgmetadatagen GenerateFiles. Component factories are
+// GenerateFiles is the entry point for cfgmetadatagen. Component factories are
 // passed in so it can be used by other distros.
 func GenerateFiles(factories component.Factories, sourceDir string, outputDir string) error {
 	dr := configschema.NewDirResolver(sourceDir, configschema.DefaultModule)

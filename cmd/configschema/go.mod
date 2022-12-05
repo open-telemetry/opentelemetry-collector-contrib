@@ -13,6 +13,7 @@ require (
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.66.1-0.20221202005155-1c54042beb70
 	golang.org/x/mod v0.6.0
 	golang.org/x/text v0.4.0
+	gopkg.in/yaml.v2 v2.4.0
 )
 
 require (
@@ -662,7 +663,6 @@ require (
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
 	gopkg.in/square/go-jose.v2 v2.5.1 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gopkg.in/zorkian/go-datadog-api.v2 v2.30.0 // indirect
 	inet.af/netaddr v0.0.0-20211027220019-c74959edd3b6 // indirect
