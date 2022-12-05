@@ -147,50 +147,13 @@ func (p *ResourceProvider) detectResource(ctx context.Context) {
 
 	droppedAttributes := filterAttributes(res.Attributes(), p.attributesToKeep)
 
-	p.logger.Info("detected resource information", zap.Any("resource", AttributesToMap(res.Attributes())))
+	p.logger.Info("detected resource information", zap.Any("resource", res.Attributes().AsRaw()))
 	if len(droppedAttributes) > 0 {
 		p.logger.Info("dropped resource information", zap.Strings("resource keys", droppedAttributes))
 	}
 
 	p.detectedResource.resource = res
 	p.detectedResource.schemaURL = mergedSchemaURL
-}
-
-func AttributesToMap(am pcommon.Map) map[string]interface{} {
-	mp := make(map[string]interface{}, am.Len())
-	am.Range(func(k string, v pcommon.Value) bool {
-		mp[k] = UnwrapAttribute(v)
-		return true
-	})
-	return mp
-}
-
-func UnwrapAttribute(v pcommon.Value) interface{} {
-	switch v.Type() {
-	case pcommon.ValueTypeBool:
-		return v.Bool()
-	case pcommon.ValueTypeInt:
-		return v.Int()
-	case pcommon.ValueTypeDouble:
-		return v.Double()
-	case pcommon.ValueTypeStr:
-		return v.Str()
-	case pcommon.ValueTypeSlice:
-		return getSerializableArray(v.Slice())
-	case pcommon.ValueTypeMap:
-		return AttributesToMap(v.Map())
-	default:
-		return nil
-	}
-}
-
-func getSerializableArray(inArr pcommon.Slice) []interface{} {
-	var outArr []interface{}
-	for i := 0; i < inArr.Len(); i++ {
-		outArr = append(outArr, UnwrapAttribute(inArr.At(i)))
-	}
-
-	return outArr
 }
 
 func MergeSchemaURL(currentSchemaURL string, newSchemaURL string) string {

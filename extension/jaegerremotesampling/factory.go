@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/extension"
 )
 
 const (
@@ -30,8 +31,8 @@ const (
 )
 
 // NewFactory creates a factory for the OIDC Authenticator extension.
-func NewFactory() component.ExtensionFactory {
-	return component.NewExtensionFactory(
+func NewFactory() extension.Factory {
+	return extension.NewFactory(
 		typeStr,
 		createDefaultConfig,
 		createExtension,
@@ -55,6 +56,6 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func createExtension(_ context.Context, set component.ExtensionCreateSettings, cfg component.Config) (component.Extension, error) {
+func createExtension(_ context.Context, set extension.CreateSettings, cfg component.Config) (extension.Extension, error) {
 	return newExtension(cfg.(*Config), set.TelemetrySettings), nil
 }

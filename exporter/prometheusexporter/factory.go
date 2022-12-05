@@ -20,7 +20,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
@@ -68,8 +67,6 @@ func createMetricsExporter(
 		set,
 		cfg,
 		prometheus.ConsumeMetrics,
-		// TODO: Consider to revert to non mutable data, need to not modify the incoming data, like sorting when calculating the signature.
-		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
 		exporterhelper.WithStart(prometheus.Start),
 		exporterhelper.WithShutdown(prometheus.Shutdown),
 	)

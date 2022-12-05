@@ -20,6 +20,7 @@ import (
 	"strconv"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/extension"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
@@ -29,12 +30,12 @@ import (
 
 const runningStatus = "RUNNING"
 
-var _ component.Extension = (*ecsTaskObserver)(nil)
+var _ extension.Extension = (*ecsTaskObserver)(nil)
 var _ observer.EndpointsLister = (*ecsTaskObserver)(nil)
 var _ observer.Observable = (*ecsTaskObserver)(nil)
 
 type ecsTaskObserver struct {
-	component.Extension
+	extension.Extension
 	*observer.EndpointsWatcher
 	config           *Config
 	metadataProvider ecsutil.MetadataProvider

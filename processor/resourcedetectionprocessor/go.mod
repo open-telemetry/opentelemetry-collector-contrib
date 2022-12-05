@@ -4,21 +4,20 @@ go 1.18
 
 require (
 	cloud.google.com/go/compute v1.10.0
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v0.34.1
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v0.34.3-0.20221202192616-0186b89ba914
 	github.com/aws/aws-sdk-go v1.44.145
-	github.com/census-instrumentation/opencensus-proto v0.4.1
 	github.com/hashicorp/consul/api v1.15.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.66.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.66.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.66.0
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.66.1-0.20221128222955-4ff1ff379b90
-	go.opentelemetry.io/collector/component v0.66.1-0.20221128222955-4ff1ff379b90
-	go.opentelemetry.io/collector/consumer v0.66.1-0.20221128222955-4ff1ff379b90
-	go.opentelemetry.io/collector/pdata v0.66.1-0.20221128222955-4ff1ff379b90
-	go.opentelemetry.io/collector/semconv v0.66.1-0.20221128222955-4ff1ff379b90
+	go.opentelemetry.io/collector v0.66.1-0.20221202005155-1c54042beb70
+	go.opentelemetry.io/collector/component v0.66.1-0.20221202005155-1c54042beb70
+	go.opentelemetry.io/collector/confmap v0.0.0-20221201172708-2bdff61fa52a
+	go.opentelemetry.io/collector/consumer v0.66.1-0.20221202005155-1c54042beb70
+	go.opentelemetry.io/collector/pdata v0.66.1-0.20221202005155-1c54042beb70
+	go.opentelemetry.io/collector/semconv v0.66.1-0.20221202005155-1c54042beb70
 	go.uber.org/multierr v1.8.0
-	go.uber.org/zap v1.23.0
+	go.uber.org/zap v1.24.0
 	k8s.io/apimachinery v0.25.4
 	k8s.io/client-go v0.25.4
 )
@@ -44,7 +43,6 @@ require (
 	github.com/go-openapi/jsonreference v0.19.5 // indirect
 	github.com/go-openapi/swag v0.19.14 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/gnostic v0.5.7-v3refs // indirect
@@ -71,16 +69,16 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.66.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.66.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/rogpeppe/go-internal v1.9.0 // indirect
 	github.com/rs/cors v1.8.2 // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/featuregate v0.66.1-0.20221128222955-4ff1ff379b90 // indirect
+	go.opentelemetry.io/collector/featuregate v0.66.1-0.20221202005155-1c54042beb70 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.36.4 // indirect
 	go.opentelemetry.io/otel v1.11.1 // indirect
 	go.opentelemetry.io/otel/metric v0.33.0 // indirect

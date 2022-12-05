@@ -85,7 +85,7 @@ type span struct {
 
 func TestProcessorStart(t *testing.T) {
 	// Create otlp exporters.
-	otlpConfig, mexp, texp := newOTLPExporters(t)
+	otlpID, mexp, texp := newOTLPExporters(t)
 
 	for _, tc := range []struct {
 		name            string
@@ -101,7 +101,7 @@ func TestProcessorStart(t *testing.T) {
 			// Prepare
 			exporters := map[component.DataType]map[component.ID]component.Component{
 				component.DataTypeMetrics: {
-					otlpConfig.ID(): tc.exporter,
+					otlpID: tc.exporter,
 				},
 			}
 			mhost := &mocks.Host{}
@@ -620,10 +620,11 @@ func initSpan(span span, s ptrace.Span) {
 	s.SetSpanID(pcommon.SpanID([8]byte{byte(42)}))
 }
 
-func newOTLPExporters(t *testing.T) (*otlpexporter.Config, component.MetricsExporter, component.TracesExporter) {
+func newOTLPExporters(t *testing.T) (component.ID, component.MetricsExporter, component.TracesExporter) {
 	otlpExpFactory := otlpexporter.NewFactory()
+	otlpID := component.NewID("otlp")
 	otlpConfig := &otlpexporter.Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID("otlp")),
+		ExporterSettings: config.NewExporterSettings(otlpID),
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: "example.com:1234",
 		},
@@ -633,7 +634,7 @@ func newOTLPExporters(t *testing.T) (*otlpexporter.Config, component.MetricsExpo
 	require.NoError(t, err)
 	texp, err := otlpExpFactory.CreateTracesExporter(context.Background(), expCreationParams, otlpConfig)
 	require.NoError(t, err)
-	return otlpConfig, mexp, texp
+	return otlpID, mexp, texp
 }
 
 func TestBuildKeySameServiceOperationCharSequence(t *testing.T) {

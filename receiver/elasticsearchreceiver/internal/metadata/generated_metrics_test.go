@@ -36,6 +36,8 @@ func TestDefaultMetrics(t *testing.T) {
 	enabledMetrics["elasticsearch.cluster.in_flight_fetch"] = true
 	mb.RecordElasticsearchClusterInFlightFetchDataPoint(ts, 1)
 
+	mb.RecordElasticsearchClusterIndicesCacheEvictionsDataPoint(ts, 1, AttributeCacheName(1))
+
 	enabledMetrics["elasticsearch.cluster.nodes"] = true
 	mb.RecordElasticsearchClusterNodesDataPoint(ts, 1)
 
@@ -283,6 +285,7 @@ func TestAllMetrics(t *testing.T) {
 		ElasticsearchClusterDataNodes:                             MetricSettings{Enabled: true},
 		ElasticsearchClusterHealth:                                MetricSettings{Enabled: true},
 		ElasticsearchClusterInFlightFetch:                         MetricSettings{Enabled: true},
+		ElasticsearchClusterIndicesCacheEvictions:                 MetricSettings{Enabled: true},
 		ElasticsearchClusterNodes:                                 MetricSettings{Enabled: true},
 		ElasticsearchClusterPendingTasks:                          MetricSettings{Enabled: true},
 		ElasticsearchClusterPublishedStatesDifferences:            MetricSettings{Enabled: true},
@@ -371,6 +374,7 @@ func TestAllMetrics(t *testing.T) {
 	mb.RecordElasticsearchClusterDataNodesDataPoint(ts, 1)
 	mb.RecordElasticsearchClusterHealthDataPoint(ts, 1, AttributeHealthStatus(1))
 	mb.RecordElasticsearchClusterInFlightFetchDataPoint(ts, 1)
+	mb.RecordElasticsearchClusterIndicesCacheEvictionsDataPoint(ts, 1, AttributeCacheName(1))
 	mb.RecordElasticsearchClusterNodesDataPoint(ts, 1)
 	mb.RecordElasticsearchClusterPendingTasksDataPoint(ts, 1)
 	mb.RecordElasticsearchClusterPublishedStatesDifferencesDataPoint(ts, 1, AttributeClusterPublishedDifferenceState(1))
@@ -565,6 +569,22 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 			assert.Equal(t, int64(1), dp.IntValue())
 			validatedMetrics["elasticsearch.cluster.in_flight_fetch"] = struct{}{}
+		case "elasticsearch.cluster.indices.cache.evictions":
+			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+			assert.Equal(t, "The number of evictions from the cache for indices in cluster.", ms.At(i).Description())
+			assert.Equal(t, "{evictions}", ms.At(i).Unit())
+			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+			dp := ms.At(i).Sum().DataPoints().At(0)
+			assert.Equal(t, start, dp.StartTimestamp())
+			assert.Equal(t, ts, dp.Timestamp())
+			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+			assert.Equal(t, int64(1), dp.IntValue())
+			attrVal, ok := dp.Attributes().Get("cache_name")
+			assert.True(t, ok)
+			assert.Equal(t, "fielddata", attrVal.Str())
+			validatedMetrics["elasticsearch.cluster.indices.cache.evictions"] = struct{}{}
 		case "elasticsearch.cluster.nodes":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
@@ -1725,6 +1745,7 @@ func TestNoMetrics(t *testing.T) {
 		ElasticsearchClusterDataNodes:                             MetricSettings{Enabled: false},
 		ElasticsearchClusterHealth:                                MetricSettings{Enabled: false},
 		ElasticsearchClusterInFlightFetch:                         MetricSettings{Enabled: false},
+		ElasticsearchClusterIndicesCacheEvictions:                 MetricSettings{Enabled: false},
 		ElasticsearchClusterNodes:                                 MetricSettings{Enabled: false},
 		ElasticsearchClusterPendingTasks:                          MetricSettings{Enabled: false},
 		ElasticsearchClusterPublishedStatesDifferences:            MetricSettings{Enabled: false},
@@ -1812,6 +1833,7 @@ func TestNoMetrics(t *testing.T) {
 	mb.RecordElasticsearchClusterDataNodesDataPoint(ts, 1)
 	mb.RecordElasticsearchClusterHealthDataPoint(ts, 1, AttributeHealthStatus(1))
 	mb.RecordElasticsearchClusterInFlightFetchDataPoint(ts, 1)
+	mb.RecordElasticsearchClusterIndicesCacheEvictionsDataPoint(ts, 1, AttributeCacheName(1))
 	mb.RecordElasticsearchClusterNodesDataPoint(ts, 1)
 	mb.RecordElasticsearchClusterPendingTasksDataPoint(ts, 1)
 	mb.RecordElasticsearchClusterPublishedStatesDifferencesDataPoint(ts, 1, AttributeClusterPublishedDifferenceState(1))

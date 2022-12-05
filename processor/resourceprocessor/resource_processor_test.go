@@ -150,29 +150,6 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 	}
 }
 
-func TestResourceProcessorError(t *testing.T) {
-	badCfg := &Config{
-		ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
-		AttributesActions: nil,
-	}
-
-	// Test traces consumer
-	factory := NewFactory()
-	rtp, err := factory.CreateTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), badCfg, consumertest.NewNop())
-	require.Error(t, err)
-	require.Nil(t, rtp)
-
-	// Test metrics consumer
-	rmp, err := factory.CreateMetricsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), badCfg, consumertest.NewNop())
-	require.Error(t, err)
-	require.Nil(t, rmp)
-
-	// Test logs consumer
-	rlp, err := factory.CreateLogsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), badCfg, consumertest.NewNop())
-	require.Error(t, err)
-	require.Nil(t, rlp)
-}
-
 func generateTraceData(attributes map[string]string) ptrace.Traces {
 	td := testdata.GenerateTracesOneSpanNoResource()
 	if attributes == nil {

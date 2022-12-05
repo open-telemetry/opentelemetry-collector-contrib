@@ -7,11 +7,11 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v0.3.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.66.0
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.66.1-0.20221128222955-4ff1ff379b90
-	go.opentelemetry.io/collector/component v0.66.1-0.20221128222955-4ff1ff379b90
-	go.opentelemetry.io/collector/consumer v0.66.1-0.20221128222955-4ff1ff379b90
-	go.opentelemetry.io/collector/pdata v0.66.1-0.20221128222955-4ff1ff379b90
-	go.uber.org/zap v1.23.0
+	go.opentelemetry.io/collector v0.66.1-0.20221202005155-1c54042beb70
+	go.opentelemetry.io/collector/component v0.66.1-0.20221202005155-1c54042beb70
+	go.opentelemetry.io/collector/consumer v0.66.1-0.20221202005155-1c54042beb70
+	go.opentelemetry.io/collector/pdata v0.66.1-0.20221202005155-1c54042beb70
+	go.uber.org/zap v1.24.0
 )
 
 require (
@@ -68,13 +68,14 @@ require (
 	github.com/spf13/cobra v1.6.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
-	github.com/tklauser/go-sysconf v0.3.10 // indirect
-	github.com/tklauser/numcpus v0.4.0 // indirect
+	github.com/tklauser/go-sysconf v0.3.11 // indirect
+	github.com/tklauser/numcpus v0.6.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/featuregate v0.66.1-0.20221128222955-4ff1ff379b90 // indirect
-	go.opentelemetry.io/collector/processor/batchprocessor v0.66.1-0.20221128222955-4ff1ff379b90 // indirect
-	go.opentelemetry.io/collector/semconv v0.66.1-0.20221128222955-4ff1ff379b90 // indirect
+	go.opentelemetry.io/collector/confmap v0.0.0-20221201172708-2bdff61fa52a // indirect
+	go.opentelemetry.io/collector/featuregate v0.66.1-0.20221202005155-1c54042beb70 // indirect
+	go.opentelemetry.io/collector/processor/batchprocessor v0.66.1-0.20221202005155-1c54042beb70 // indirect
+	go.opentelemetry.io/collector/semconv v0.66.1-0.20221202005155-1c54042beb70 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.11.1 // indirect
 	go.opentelemetry.io/otel v1.11.1 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.33.0 // indirect

@@ -16,6 +16,7 @@ package solacereceiver // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
@@ -53,6 +54,11 @@ func createDefaultConfig() component.Config {
 		TLS: configtls.TLSClientSetting{
 			InsecureSkipVerify: false,
 			Insecure:           false,
+		},
+		Flow: FlowControl{
+			DelayedRetry: &FlowControlDelayedRetry{
+				Delay: 10 * time.Millisecond,
+			},
 		},
 	}
 }

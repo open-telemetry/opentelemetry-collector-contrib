@@ -145,7 +145,6 @@ func TestDefaultProcessors(t *testing.T) {
 			factory, ok := procFactories[tt.processor]
 			require.True(t, ok)
 			assert.Equal(t, tt.processor, factory.Type())
-			assert.EqualValues(t, component.NewID(tt.processor), factory.CreateDefaultConfig().ID())
 
 			if tt.skipLifecycle {
 				t.Skip("Skipping lifecycle processor check for:", tt.processor)

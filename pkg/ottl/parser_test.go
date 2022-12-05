@@ -1116,6 +1116,79 @@ func Test_parseWhere(t *testing.T) {
 				},
 			}),
 		},
+		{
+			statement: `true and not false`,
+			expected: setNameTest(&booleanExpression{
+				Left: &term{
+					Left: &booleanValue{
+						ConstExpr: booleanp(true),
+					},
+					Right: []*opAndBooleanValue{
+						{
+							Operator: "and",
+							Value: &booleanValue{
+								Negation:  ottltest.Strp("not"),
+								ConstExpr: booleanp(false),
+							},
+						},
+					},
+				},
+			}),
+		},
+		{
+			statement: `not name == "bar"`,
+			expected: setNameTest(&booleanExpression{
+				Left: &term{
+					Left: &booleanValue{
+						Negation: ottltest.Strp("not"),
+						Comparison: &comparison{
+							Left: value{
+								Literal: &mathExprLiteral{
+									Path: &Path{
+										Fields: []Field{
+											{
+												Name: "name",
+											},
+										},
+									},
+								},
+							},
+							Op: EQ,
+							Right: value{
+								String: ottltest.Strp("bar"),
+							},
+						},
+					},
+				},
+			}),
+		},
+		{
+			statement: `not (true or false)`,
+			expected: setNameTest(&booleanExpression{
+				Left: &term{
+					Left: &booleanValue{
+						Negation: ottltest.Strp("not"),
+						SubExpr: &booleanExpression{
+							Left: &term{
+								Left: &booleanValue{
+									ConstExpr: booleanp(true),
+								},
+							},
+							Right: []*opOrTerm{
+								{
+									Operator: "or",
+									Term: &term{
+										Left: &booleanValue{
+											ConstExpr: booleanp(false),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}),
+		},
 	}
 
 	// create a test name that doesn't confuse vscode so we can rerun tests with one click

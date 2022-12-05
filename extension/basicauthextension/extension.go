@@ -27,7 +27,7 @@ import (
 	"github.com/tg123/go-htpasswd"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configauth"
+	"go.opentelemetry.io/collector/extension/auth"
 	creds "google.golang.org/grpc/credentials"
 )
 
@@ -44,7 +44,7 @@ type basicAuth struct {
 	matchFunc  func(username, password string) bool
 }
 
-func newClientAuthExtension(cfg *Config) (configauth.ClientAuthenticator, error) {
+func newClientAuthExtension(cfg *Config) (auth.Client, error) {
 	if cfg.ClientAuth == nil || cfg.ClientAuth.Username == "" {
 		return nil, errNoCredentialSource
 	}
@@ -52,13 +52,13 @@ func newClientAuthExtension(cfg *Config) (configauth.ClientAuthenticator, error)
 	ba := basicAuth{
 		clientAuth: cfg.ClientAuth,
 	}
-	return configauth.NewClientAuthenticator(
-		configauth.WithClientRoundTripper(ba.roundTripper),
-		configauth.WithPerRPCCredentials(ba.perRPCCredentials),
+	return auth.NewClient(
+		auth.WithClientRoundTripper(ba.roundTripper),
+		auth.WithClientPerRPCCredentials(ba.perRPCCredentials),
 	), nil
 }
 
-func newServerAuthExtension(cfg *Config) (configauth.ServerAuthenticator, error) {
+func newServerAuthExtension(cfg *Config) (auth.Server, error) {
 
 	if cfg.Htpasswd == nil || (cfg.Htpasswd.File == "" && cfg.Htpasswd.Inline == "") {
 		return nil, errNoCredentialSource
@@ -67,9 +67,9 @@ func newServerAuthExtension(cfg *Config) (configauth.ServerAuthenticator, error)
 	ba := basicAuth{
 		htpasswd: cfg.Htpasswd,
 	}
-	return configauth.NewServerAuthenticator(
-		configauth.WithStart(ba.serverStart),
-		configauth.WithAuthenticate(ba.authenticate),
+	return auth.NewServer(
+		auth.WithServerStart(ba.serverStart),
+		auth.WithServerAuthenticate(ba.authenticate),
 	), nil
 }
 

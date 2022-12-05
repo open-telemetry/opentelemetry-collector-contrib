@@ -351,6 +351,108 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 				},
 			},
 		},
+		{"i", true,
+			&booleanExpression{
+				Left: &term{
+					Left: &booleanValue{
+						Negation:  ottltest.Strp("not"),
+						ConstExpr: booleanp(false),
+					},
+				},
+			},
+		},
+		{"j", false,
+			&booleanExpression{
+				Left: &term{
+					Left: &booleanValue{
+						Negation:  ottltest.Strp("not"),
+						ConstExpr: booleanp(true),
+					},
+				},
+			},
+		},
+		{"k", true,
+			&booleanExpression{
+				Left: &term{
+					Left: &booleanValue{
+						Negation: ottltest.Strp("not"),
+						Comparison: &comparison{
+							Left: value{
+								String: ottltest.Strp("test"),
+							},
+							Op: EQ,
+							Right: value{
+								String: ottltest.Strp("not test"),
+							},
+						},
+					},
+				},
+			},
+		},
+		{"l", false,
+			&booleanExpression{
+				Left: &term{
+					Left: &booleanValue{
+						ConstExpr: booleanp(true),
+					},
+					Right: []*opAndBooleanValue{
+						{
+							Operator: "and",
+							Value: &booleanValue{
+								Negation: ottltest.Strp("not"),
+								SubExpr: &booleanExpression{
+									Left: &term{
+										Left: &booleanValue{
+											ConstExpr: booleanp(true),
+										},
+									},
+									Right: []*opOrTerm{
+										{
+											Operator: "or",
+											Term: &term{
+												Left: &booleanValue{
+													ConstExpr: booleanp(false),
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{"m", false,
+			&booleanExpression{
+				Left: &term{
+					Left: &booleanValue{
+						Negation:  ottltest.Strp("not"),
+						ConstExpr: booleanp(true),
+					},
+					Right: []*opAndBooleanValue{
+						{
+							Operator: "and",
+							Value: &booleanValue{
+								Negation:  ottltest.Strp("not"),
+								ConstExpr: booleanp(false),
+							},
+						},
+					},
+				},
+				Right: []*opOrTerm{
+					{
+						Operator: "or",
+						Term: &term{
+							Left: &booleanValue{
+								Negation:  ottltest.Strp("not"),
+								ConstExpr: booleanp(true),
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

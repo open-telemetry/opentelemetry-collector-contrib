@@ -38,8 +38,8 @@ const (
 // request and then posts the request to the configured region's X-Ray endpoint.
 func newTracesExporter(
 	config component.Config, set component.ExporterCreateSettings, cn awsutil.ConnAttr) (component.TracesExporter, error) {
-	typeLog := zap.String("type", string(config.ID().Type()))
-	nameLog := zap.String("name", config.ID().String())
+	typeLog := zap.String("type", string(set.ID.Type()))
+	nameLog := zap.String("name", set.ID.String())
 	logger := set.Logger
 	awsConfig, session, err := awsutil.GetAWSConfigSession(logger, cn, &config.(*Config).AWSSessionSettings)
 	if err != nil {

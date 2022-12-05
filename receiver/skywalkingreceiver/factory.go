@@ -99,7 +99,7 @@ func createTracesReceiver(
 	}
 
 	// Create the receiver.
-	return newSkywalkingReceiver(rCfg.ID(), &c, nextConsumer, set)
+	return newSkywalkingReceiver(&c, nextConsumer, set)
 }
 
 // extract the port number from string in "address:port" format. If the

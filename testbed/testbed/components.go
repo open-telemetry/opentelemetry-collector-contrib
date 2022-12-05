@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/loggingexporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/exporter/otlphttpexporter"
+	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/ballastextension"
 	"go.opentelemetry.io/collector/extension/zpagesextension"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
@@ -41,7 +42,7 @@ func Components() (
 ) {
 	var errs error
 
-	extensions, err := component.MakeExtensionFactoryMap(
+	extensions, err := extension.MakeFactoryMap(
 		zpagesextension.NewFactory(),
 		ballastextension.NewFactory(),
 	)

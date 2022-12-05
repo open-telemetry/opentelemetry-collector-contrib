@@ -20,6 +20,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/extension"
 )
 
 // The value of extension "type" in configuration.
@@ -35,8 +36,8 @@ const (
 )
 
 // NewFactory creates a factory for HostObserver extension.
-func NewFactory() component.ExtensionFactory {
-	return component.NewExtensionFactory(
+func NewFactory() extension.Factory {
+	return extension.NewFactory(
 		typeStr,
 		createDefaultConfig,
 		createExtension,
@@ -53,8 +54,8 @@ func createDefaultConfig() component.Config {
 			OnStart:                    false,
 			OnRebound:                  false,
 			MaxTransactionSize:         defaultMaxTransactionSize,
-			ReboundNeededThresholdMiB:  defaultReboundTriggerThresholdMib,
-			ReboundTriggerThresholdMiB: defaultReboundNeededThresholdMib,
+			ReboundNeededThresholdMiB:  defaultReboundNeededThresholdMib,
+			ReboundTriggerThresholdMiB: defaultReboundTriggerThresholdMib,
 			CheckInterval:              defaultCompactionInterval,
 		},
 		Timeout: time.Second,
@@ -63,8 +64,8 @@ func createDefaultConfig() component.Config {
 
 func createExtension(
 	_ context.Context,
-	params component.ExtensionCreateSettings,
+	params extension.CreateSettings,
 	cfg component.Config,
-) (component.Extension, error) {
+) (extension.Extension, error) {
 	return newLocalFileStorage(params.Logger, cfg.(*Config))
 }
