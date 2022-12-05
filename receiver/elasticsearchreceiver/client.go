@@ -90,7 +90,7 @@ const nodeStatsMetrics = "breaker,indices,process,jvm,thread_pool,transport,http
 // nodeStatsIndexMetrics is a comma separated list of index metrics that will be gathered from NodeStats.
 const nodeStatsIndexMetrics = "store,docs,indexing,get,search,merge,refresh,flush,warmer,query_cache,fielddata,translog"
 
-const indexStatsMetrics = "search"
+const indexStatsMetrics = "_all"
 
 func (c defaultElasticsearchClient) NodeStats(ctx context.Context, nodes []string) (*model.NodeStats, error) {
 	var nodeSpec string
