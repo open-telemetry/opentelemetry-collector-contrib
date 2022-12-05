@@ -91,7 +91,7 @@ func createExporter(
 	if config.HecHealthCheckEnabled {
 		err = client.checkHecHealth()
 		if err != nil {
-			return nil, fmt.Errorf("health check failed: %s", err.Error())
+			return nil, fmt.Errorf("health check failed: %w", err.Error())
 		}
 	}
 
