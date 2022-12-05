@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snowfl
 go 1.19
 
 require (
-	go.opentelemetry.io/collector/component v0.66.0
+	go.opentelemetry.io/collector/component v0.66.1-0.20221202005155-1c54042beb70
 	go.opentelemetry.io/collector/confmap v0.0.0-20221201172708-2bdff61fa52a
 	go.opentelemetry.io/collector/pdata v0.66.1-0.20221202005155-1c54042beb70
 )
