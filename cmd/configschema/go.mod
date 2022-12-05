@@ -12,7 +12,7 @@ require (
 	go.opentelemetry.io/collector/component v0.66.1-0.20221202005155-1c54042beb70
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.66.1-0.20221202005155-1c54042beb70
 	golang.org/x/mod v0.6.0
-	golang.org/x/text v0.4.0
+	golang.org/x/text v0.5.0
 )
 
 require (
