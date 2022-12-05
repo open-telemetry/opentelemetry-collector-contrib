@@ -18,12 +18,12 @@ import (
 	"errors"
 
 	"go.uber.org/zap"
-	"gopkg.in/zorkian/go-datadog-api.v2"
+	zorkian "gopkg.in/zorkian/go-datadog-api.v2"
 )
 
-// CreateClient creates a new Datadog client
-func CreateClient(apiKey string, endpoint string) *datadog.Client {
-	client := datadog.NewClient(apiKey, "")
+// CreateZorkianClient creates a new Zorkian Datadog client
+func CreateZorkianClient(apiKey string, endpoint string) *zorkian.Client {
+	client := zorkian.NewClient(apiKey, "")
 	client.SetBaseUrl(endpoint)
 
 	return client
@@ -31,8 +31,8 @@ func CreateClient(apiKey string, endpoint string) *datadog.Client {
 
 var ErrInvalidAPI = errors.New("API Key validation failed")
 
-// ValidateAPIKey checks that the provided client was given a correct API key.
-func ValidateAPIKey(logger *zap.Logger, client *datadog.Client) error {
+// ValidateAPIKeyZorkian checks that the provided client was given a correct API key.
+func ValidateAPIKeyZorkian(logger *zap.Logger, client *zorkian.Client) error {
 	logger.Info("Validating API key.")
 	valid, err := client.Validate()
 	if err == nil && valid {

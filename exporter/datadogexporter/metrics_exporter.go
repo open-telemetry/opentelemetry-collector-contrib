@@ -30,7 +30,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
-	"gopkg.in/zorkian/go-datadog-api.v2"
+	zorkian "gopkg.in/zorkian/go-datadog-api.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/clientutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
@@ -43,7 +43,7 @@ type metricsExporter struct {
 	params         component.ExporterCreateSettings
 	cfg            *Config
 	ctx            context.Context
-	client         *datadog.Client
+	client         *zorkian.Client
 	tr             *translator.Translator
 	scrubber       scrub.Scrubber
 	retrier        *clientutil.Retrier
@@ -97,11 +97,11 @@ func translatorFromConfig(logger *zap.Logger, cfg *Config, sourceProvider source
 }
 
 func newMetricsExporter(ctx context.Context, params component.ExporterCreateSettings, cfg *Config, onceMetadata *sync.Once, sourceProvider source.Provider) (*metricsExporter, error) {
-	client := clientutil.CreateClient(cfg.API.Key, cfg.Metrics.TCPAddr.Endpoint)
+	client := clientutil.CreateZorkianClient(cfg.API.Key, cfg.Metrics.TCPAddr.Endpoint)
 	client.ExtraHeader["User-Agent"] = clientutil.UserAgent(params.BuildInfo)
 	client.HttpClient = clientutil.NewHTTPClient(cfg.TimeoutSettings, cfg.LimitedHTTPClientSettings.TLSSetting.InsecureSkipVerify)
 
-	if err := clientutil.ValidateAPIKey(params.Logger, client); err != nil && cfg.API.FailOnInvalidKey {
+	if err := clientutil.ValidateAPIKeyZorkian(params.Logger, client); err != nil && cfg.API.FailOnInvalidKey {
 		return nil, err
 	}
 
@@ -171,7 +171,7 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metr
 			go metadata.Pusher(exp.ctx, exp.params, newMetadataConfigfromConfig(exp.cfg), exp.sourceProvider, attrs)
 		})
 	}
-	consumer := metrics.NewConsumer()
+	consumer := metrics.NewZorkianConsumer()
 	err := exp.tr.MapMetrics(ctx, md, consumer)
 	if err != nil {
 		return fmt.Errorf("failed to map metrics: %w", err)
@@ -185,7 +185,7 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metr
 		tags = append(tags, exp.cfg.HostMetadata.Tags...)
 	}
 	ms, sl := consumer.All(exp.getPushTime(), exp.params.BuildInfo, tags)
-	ms = metrics.PrepareSystemMetrics(ms)
+	ms = metrics.PrepareZorkianSystemMetrics(ms)
 
 	err = nil
 	if len(ms) > 0 {
