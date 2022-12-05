@@ -32,8 +32,7 @@ func NewFactory() component.ExporterFactory {
 		createDefaultConfig,
 		component.WithTracesExporter(createTraceExporter, stability),
 		component.WithMetricsExporter(createMetricsExporter, stability),
-		// Marked as unmantained on 2022-11-30, will be removed from official builds on 2023-05-30.
-		component.WithLogsExporter(createLogsExporter, component.StabilityLevelUnmaintained),
+		component.WithLogsExporter(createLogsExporter, component.StabilityLevelAlpha),
 	)
 }
 
@@ -66,27 +65,6 @@ func createDefaultConfig() component.Config {
 
 func createTraceExporter(ctx context.Context, set component.ExporterCreateSettings, config component.Config) (component.TracesExporter, error) {
 	cfg := config.(*Config)
-
-	// Use deprecated jaeger endpoint if it's not empty
-	if !isEmpty(cfg.Endpoint) {
-		set.Logger.Warn("endpoint field is deprecated.Please use the new `traces.endpoint` field with OpenTelemtry endpoint.")
-
-		exporter, err := newCoralogixExporter(cfg, set)
-		if err != nil {
-			return nil, err
-		}
-
-		return exporterhelper.NewTracesExporter(
-			ctx,
-			set,
-			config,
-			exporter.tracesPusher,
-			exporterhelper.WithQueue(cfg.QueueSettings),
-			exporterhelper.WithRetry(cfg.RetrySettings),
-			exporterhelper.WithTimeout(cfg.TimeoutSettings),
-			exporterhelper.WithStart(exporter.client.startConnection),
-		)
-	}
 
 	exporter, err := newTracesExporter(cfg, set)
 	if err != nil {
