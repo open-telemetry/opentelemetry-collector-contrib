@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/Azure/azure-amqp-common-go/v3 v3.2.3
-	github.com/Azure/azure-event-hubs-go/v3 v3.3.19
+	github.com/Azure/azure-event-hubs-go/v3 v3.3.20
 	github.com/go-test/deep v1.0.8
 	github.com/json-iterator/go v1.1.12
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.66.0
