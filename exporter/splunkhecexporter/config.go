@@ -44,8 +44,6 @@ type OtelToHecFields struct {
 	SeverityText string `mapstructure:"severity_text"`
 	// SeverityNumber informs the exporter to map the severity number field to a specific HEC field.
 	SeverityNumber string `mapstructure:"severity_number"`
-	// Name informs the exporter to map the name field to a specific HEC field.
-	Name string `mapstructure:"name"`
 }
 
 // Config defines configuration for Splunk exporter.
