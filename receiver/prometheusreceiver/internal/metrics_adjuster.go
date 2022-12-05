@@ -129,10 +129,12 @@ func (tsm *timeseriesMap) get(metric pmetric.Metric, kv pcommon.Map) (*timeserie
 	return tsi, ok
 }
 
-// Create a unique timeseries signature consisting of the metric name and label values.
+// Create a unique string signature for attributes values sorted by attribute keys.
+// NOTE: this function mutates the attributes map as a side effect.
 func getAttributesSignature(kv pcommon.Map) string {
 	labelValues := make([]string, 0, kv.Len())
-	kv.Sort().Range(func(_ string, attrValue pcommon.Value) bool {
+	kv.Sort()
+	kv.Range(func(_ string, attrValue pcommon.Value) bool {
 		value := attrValue.Str()
 		if value != "" {
 			labelValues = append(labelValues, value)
