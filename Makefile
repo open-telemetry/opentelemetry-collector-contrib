@@ -56,14 +56,14 @@ all-groups:
 	@echo "\nother: $(OTHER_MODS)"
 
 .PHONY: all
-all: install-tools all-common goporto multimod-verify gotest otelcontribcol otelcontribcol-unstable
+all: install-tools all-common goporto multimod-verify gotest otelcontribcol
 
 .PHONY: all-common
 all-common:
 	@$(MAKE) $(FOR_GROUP_TARGET) TARGET="common"
 
 .PHONY: e2e-test
-e2e-test: otelcontribcol otelcontribcol-unstable otelcontribcol-testbed
+e2e-test: otelcontribcol otelcontribcol-testbed
 	$(MAKE) -C testbed run-tests
 
 .PHONY: unit-tests-with-cover
@@ -269,12 +269,6 @@ chlog-update: chlog-install
 otelcontribcol:
 	GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ./bin/otelcontribcol_$(GOOS)_$(GOARCH)$(EXTENSION) \
 		$(BUILD_INFO) -tags $(GO_BUILD_TAGS) ./cmd/otelcontribcol
-
-# Build the Collector executable, including unstable functionality.
-.PHONY: otelcontribcol-unstable
-otelcontribcol-unstable:
-	GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ./bin/otelcontribcol_unstable_$(GOOS)_$(GOARCH)$(EXTENSION) \
-		$(BUILD_INFO) -tags $(GO_BUILD_TAGS),enable_unstable ./cmd/otelcontribcol
 
 # Build the Collector executable, with only components used in testbed.
 .PHONY: otelcontribcol-testbed
