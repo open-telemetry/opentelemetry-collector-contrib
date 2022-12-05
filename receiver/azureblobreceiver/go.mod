@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureb
 go 1.18
 
 require (
-	github.com/Azure/azure-event-hubs-go/v3 v3.3.19
+	github.com/Azure/azure-event-hubs-go/v3 v3.3.20
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v0.3.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.66.0
 	github.com/stretchr/testify v1.8.1
