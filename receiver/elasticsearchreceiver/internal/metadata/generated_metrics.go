@@ -43,6 +43,7 @@ type MetricsSettings struct {
 	ElasticsearchClusterDataNodes                             MetricSettings `mapstructure:"elasticsearch.cluster.data_nodes"`
 	ElasticsearchClusterHealth                                MetricSettings `mapstructure:"elasticsearch.cluster.health"`
 	ElasticsearchClusterInFlightFetch                         MetricSettings `mapstructure:"elasticsearch.cluster.in_flight_fetch"`
+	ElasticsearchClusterIndicesCacheEvictions                 MetricSettings `mapstructure:"elasticsearch.cluster.indices.cache.evictions"`
 	ElasticsearchClusterNodes                                 MetricSettings `mapstructure:"elasticsearch.cluster.nodes"`
 	ElasticsearchClusterPendingTasks                          MetricSettings `mapstructure:"elasticsearch.cluster.pending_tasks"`
 	ElasticsearchClusterPublishedStatesDifferences            MetricSettings `mapstructure:"elasticsearch.cluster.published_states.differences"`
@@ -143,6 +144,9 @@ func DefaultMetricsSettings() MetricsSettings {
 		},
 		ElasticsearchClusterInFlightFetch: MetricSettings{
 			Enabled: true,
+		},
+		ElasticsearchClusterIndicesCacheEvictions: MetricSettings{
+			Enabled: false,
 		},
 		ElasticsearchClusterNodes: MetricSettings{
 			Enabled: true,
@@ -1267,6 +1271,59 @@ func (m *metricElasticsearchClusterInFlightFetch) emit(metrics pmetric.MetricSli
 
 func newMetricElasticsearchClusterInFlightFetch(settings MetricSettings) metricElasticsearchClusterInFlightFetch {
 	m := metricElasticsearchClusterInFlightFetch{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricElasticsearchClusterIndicesCacheEvictions struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills elasticsearch.cluster.indices.cache.evictions metric with initial data.
+func (m *metricElasticsearchClusterIndicesCacheEvictions) init() {
+	m.data.SetName("elasticsearch.cluster.indices.cache.evictions")
+	m.data.SetDescription("The number of evictions from the cache for indices in cluster.")
+	m.data.SetUnit("{evictions}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricElasticsearchClusterIndicesCacheEvictions) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, cacheNameAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("cache_name", cacheNameAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricElasticsearchClusterIndicesCacheEvictions) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricElasticsearchClusterIndicesCacheEvictions) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricElasticsearchClusterIndicesCacheEvictions(settings MetricSettings) metricElasticsearchClusterIndicesCacheEvictions {
+	m := metricElasticsearchClusterIndicesCacheEvictions{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -5376,6 +5433,7 @@ type MetricsBuilder struct {
 	metricElasticsearchClusterDataNodes                             metricElasticsearchClusterDataNodes
 	metricElasticsearchClusterHealth                                metricElasticsearchClusterHealth
 	metricElasticsearchClusterInFlightFetch                         metricElasticsearchClusterInFlightFetch
+	metricElasticsearchClusterIndicesCacheEvictions                 metricElasticsearchClusterIndicesCacheEvictions
 	metricElasticsearchClusterNodes                                 metricElasticsearchClusterNodes
 	metricElasticsearchClusterPendingTasks                          metricElasticsearchClusterPendingTasks
 	metricElasticsearchClusterPublishedStatesDifferences            metricElasticsearchClusterPublishedStatesDifferences
@@ -5478,6 +5536,7 @@ func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, 
 		metricElasticsearchClusterDataNodes:                             newMetricElasticsearchClusterDataNodes(settings.ElasticsearchClusterDataNodes),
 		metricElasticsearchClusterHealth:                                newMetricElasticsearchClusterHealth(settings.ElasticsearchClusterHealth),
 		metricElasticsearchClusterInFlightFetch:                         newMetricElasticsearchClusterInFlightFetch(settings.ElasticsearchClusterInFlightFetch),
+		metricElasticsearchClusterIndicesCacheEvictions:                 newMetricElasticsearchClusterIndicesCacheEvictions(settings.ElasticsearchClusterIndicesCacheEvictions),
 		metricElasticsearchClusterNodes:                                 newMetricElasticsearchClusterNodes(settings.ElasticsearchClusterNodes),
 		metricElasticsearchClusterPendingTasks:                          newMetricElasticsearchClusterPendingTasks(settings.ElasticsearchClusterPendingTasks),
 		metricElasticsearchClusterPublishedStatesDifferences:            newMetricElasticsearchClusterPublishedStatesDifferences(settings.ElasticsearchClusterPublishedStatesDifferences),
@@ -5636,6 +5695,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricElasticsearchClusterDataNodes.emit(ils.Metrics())
 	mb.metricElasticsearchClusterHealth.emit(ils.Metrics())
 	mb.metricElasticsearchClusterInFlightFetch.emit(ils.Metrics())
+	mb.metricElasticsearchClusterIndicesCacheEvictions.emit(ils.Metrics())
 	mb.metricElasticsearchClusterNodes.emit(ils.Metrics())
 	mb.metricElasticsearchClusterPendingTasks.emit(ils.Metrics())
 	mb.metricElasticsearchClusterPublishedStatesDifferences.emit(ils.Metrics())
@@ -5762,6 +5822,11 @@ func (mb *MetricsBuilder) RecordElasticsearchClusterHealthDataPoint(ts pcommon.T
 // RecordElasticsearchClusterInFlightFetchDataPoint adds a data point to elasticsearch.cluster.in_flight_fetch metric.
 func (mb *MetricsBuilder) RecordElasticsearchClusterInFlightFetchDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricElasticsearchClusterInFlightFetch.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordElasticsearchClusterIndicesCacheEvictionsDataPoint adds a data point to elasticsearch.cluster.indices.cache.evictions metric.
+func (mb *MetricsBuilder) RecordElasticsearchClusterIndicesCacheEvictionsDataPoint(ts pcommon.Timestamp, val int64, cacheNameAttributeValue AttributeCacheName) {
+	mb.metricElasticsearchClusterIndicesCacheEvictions.recordDataPoint(mb.startTime, ts, val, cacheNameAttributeValue.String())
 }
 
 // RecordElasticsearchClusterNodesDataPoint adds a data point to elasticsearch.cluster.nodes metric.
