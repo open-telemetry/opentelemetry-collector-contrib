@@ -5,12 +5,6 @@ resource_attributes:
   snowflake.account.name:
     description: Snowflake account being used by receiver.
     type: string
-  snowflake.warehouse.name:
-    description: The name of the warehouse being used by receiver.
-    type: string
-  snowflake.username:
-    description: The name of the snowflake user account being used by receiver.
-    type: string
 
 attributes:
   service_type:
