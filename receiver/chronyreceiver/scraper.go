@@ -34,7 +34,7 @@ type chronyScraper struct {
 func newScraper(ctx context.Context, client chrony.Client, cfg *Config, set component.ReceiverCreateSettings) *chronyScraper {
 	return &chronyScraper{
 		client: client,
-		mb: metadata.NewMetricsBuilder(cfg.MetricsSettings, set.BuildInfo,
+		mb: metadata.NewMetricsBuilder(cfg.MetricsSettings, set,
 			metadata.WithStartTime(pcommon.NewTimestampFromTime(clock.FromContext(ctx).Now())),
 		),
 	}

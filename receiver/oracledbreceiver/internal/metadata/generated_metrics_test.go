@@ -7,15 +7,17 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 func TestDefaultMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	mb := NewMetricsBuilder(DefaultMetricsSettings(), component.BuildInfo{}, WithStartTime(start))
+	mb := NewMetricsBuilder(DefaultMetricsSettings(), componenttest.NewNopReceiverCreateSettings(), WithStartTime(start))
 	enabledMetrics := make(map[string]bool)
 
 	enabledMetrics["oracledb.cpu_time"] = true
@@ -111,7 +113,7 @@ func TestDefaultMetrics(t *testing.T) {
 func TestAllMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	settings := MetricsSettings{
+	metricsSettings := MetricsSettings{
 		OracledbCPUTime:               MetricSettings{Enabled: true},
 		OracledbDmlLocksLimit:         MetricSettings{Enabled: true},
 		OracledbDmlLocksUsage:         MetricSettings{Enabled: true},
@@ -138,7 +140,12 @@ func TestAllMetrics(t *testing.T) {
 		OracledbUserCommits:           MetricSettings{Enabled: true},
 		OracledbUserRollbacks:         MetricSettings{Enabled: true},
 	}
-	mb := NewMetricsBuilder(settings, component.BuildInfo{}, WithStartTime(start))
+	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+	settings := componenttest.NewNopReceiverCreateSettings()
+	settings.Logger = zap.New(observedZapCore)
+	mb := NewMetricsBuilder(metricsSettings, settings, WithStartTime(start))
+
+	assert.Equal(t, 0, observedLogs.Len())
 
 	mb.RecordOracledbCPUTimeDataPoint(ts, 1)
 	mb.RecordOracledbDmlLocksLimitDataPoint(ts, 1)
@@ -501,7 +508,7 @@ func TestAllMetrics(t *testing.T) {
 func TestNoMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	settings := MetricsSettings{
+	metricsSettings := MetricsSettings{
 		OracledbCPUTime:               MetricSettings{Enabled: false},
 		OracledbDmlLocksLimit:         MetricSettings{Enabled: false},
 		OracledbDmlLocksUsage:         MetricSettings{Enabled: false},
@@ -528,7 +535,12 @@ func TestNoMetrics(t *testing.T) {
 		OracledbUserCommits:           MetricSettings{Enabled: false},
 		OracledbUserRollbacks:         MetricSettings{Enabled: false},
 	}
-	mb := NewMetricsBuilder(settings, component.BuildInfo{}, WithStartTime(start))
+	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+	settings := componenttest.NewNopReceiverCreateSettings()
+	settings.Logger = zap.New(observedZapCore)
+	mb := NewMetricsBuilder(metricsSettings, settings, WithStartTime(start))
+
+	assert.Equal(t, 0, observedLogs.Len())
 	mb.RecordOracledbCPUTimeDataPoint(ts, 1)
 	mb.RecordOracledbDmlLocksLimitDataPoint(ts, 1)
 	mb.RecordOracledbDmlLocksUsageDataPoint(ts, 1)

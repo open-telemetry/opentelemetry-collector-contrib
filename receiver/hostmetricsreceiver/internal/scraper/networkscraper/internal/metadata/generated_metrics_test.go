@@ -7,15 +7,17 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 func TestDefaultMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	mb := NewMetricsBuilder(DefaultMetricsSettings(), component.BuildInfo{}, WithStartTime(start))
+	mb := NewMetricsBuilder(DefaultMetricsSettings(), componenttest.NewNopReceiverCreateSettings(), WithStartTime(start))
 	enabledMetrics := make(map[string]bool)
 
 	enabledMetrics["system.network.connections"] = true
@@ -55,7 +57,7 @@ func TestDefaultMetrics(t *testing.T) {
 func TestAllMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	settings := MetricsSettings{
+	metricsSettings := MetricsSettings{
 		SystemNetworkConnections:    MetricSettings{Enabled: true},
 		SystemNetworkConntrackCount: MetricSettings{Enabled: true},
 		SystemNetworkConntrackMax:   MetricSettings{Enabled: true},
@@ -64,7 +66,12 @@ func TestAllMetrics(t *testing.T) {
 		SystemNetworkIo:             MetricSettings{Enabled: true},
 		SystemNetworkPackets:        MetricSettings{Enabled: true},
 	}
-	mb := NewMetricsBuilder(settings, component.BuildInfo{}, WithStartTime(start))
+	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+	settings := componenttest.NewNopReceiverCreateSettings()
+	settings.Logger = zap.New(observedZapCore)
+	mb := NewMetricsBuilder(metricsSettings, settings, WithStartTime(start))
+
+	assert.Equal(t, 0, observedLogs.Len())
 
 	mb.RecordSystemNetworkConnectionsDataPoint(ts, 1, AttributeProtocol(1), "attr-val")
 	mb.RecordSystemNetworkConntrackCountDataPoint(ts, 1)
@@ -217,7 +224,7 @@ func TestAllMetrics(t *testing.T) {
 func TestNoMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	settings := MetricsSettings{
+	metricsSettings := MetricsSettings{
 		SystemNetworkConnections:    MetricSettings{Enabled: false},
 		SystemNetworkConntrackCount: MetricSettings{Enabled: false},
 		SystemNetworkConntrackMax:   MetricSettings{Enabled: false},
@@ -226,7 +233,12 @@ func TestNoMetrics(t *testing.T) {
 		SystemNetworkIo:             MetricSettings{Enabled: false},
 		SystemNetworkPackets:        MetricSettings{Enabled: false},
 	}
-	mb := NewMetricsBuilder(settings, component.BuildInfo{}, WithStartTime(start))
+	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+	settings := componenttest.NewNopReceiverCreateSettings()
+	settings.Logger = zap.New(observedZapCore)
+	mb := NewMetricsBuilder(metricsSettings, settings, WithStartTime(start))
+
+	assert.Equal(t, 0, observedLogs.Len())
 	mb.RecordSystemNetworkConnectionsDataPoint(ts, 1, AttributeProtocol(1), "attr-val")
 	mb.RecordSystemNetworkConntrackCountDataPoint(ts, 1)
 	mb.RecordSystemNetworkConntrackMaxDataPoint(ts, 1)

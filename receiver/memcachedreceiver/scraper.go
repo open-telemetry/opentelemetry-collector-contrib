@@ -42,7 +42,7 @@ func newMemcachedScraper(
 		logger:    settings.Logger,
 		config:    config,
 		newClient: newMemcachedClient,
-		mb:        metadata.NewMetricsBuilder(config.Metrics, settings.BuildInfo),
+		mb:        metadata.NewMetricsBuilder(config.Metrics, settings),
 	}
 }
 

@@ -63,7 +63,7 @@ func newMySQLScraper(
 	ms := &mySQLScraper{
 		logger:         settings.Logger,
 		config:         config,
-		mb:             metadata.NewMetricsBuilder(config.Metrics, settings.BuildInfo),
+		mb:             metadata.NewMetricsBuilder(config.Metrics, settings),
 		renameCommands: featuregate.GetRegistry().IsEnabled(RenameCommands),
 	}
 

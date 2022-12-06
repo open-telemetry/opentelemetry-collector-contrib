@@ -1176,31 +1176,31 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, options ...metricBuilderOption) *MetricsBuilder {
+func NewMetricsBuilder(ms MetricsSettings, settings component.ReceiverCreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                                  pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                              pmetric.NewMetrics(),
-		buildInfo:                                  buildInfo,
-		metricSqlserverBatchRequestRate:            newMetricSqlserverBatchRequestRate(settings.SqlserverBatchRequestRate),
-		metricSqlserverBatchSQLCompilationRate:     newMetricSqlserverBatchSQLCompilationRate(settings.SqlserverBatchSQLCompilationRate),
-		metricSqlserverBatchSQLRecompilationRate:   newMetricSqlserverBatchSQLRecompilationRate(settings.SqlserverBatchSQLRecompilationRate),
-		metricSqlserverLockWaitRate:                newMetricSqlserverLockWaitRate(settings.SqlserverLockWaitRate),
-		metricSqlserverLockWaitTimeAvg:             newMetricSqlserverLockWaitTimeAvg(settings.SqlserverLockWaitTimeAvg),
-		metricSqlserverPageBufferCacheHitRatio:     newMetricSqlserverPageBufferCacheHitRatio(settings.SqlserverPageBufferCacheHitRatio),
-		metricSqlserverPageCheckpointFlushRate:     newMetricSqlserverPageCheckpointFlushRate(settings.SqlserverPageCheckpointFlushRate),
-		metricSqlserverPageLazyWriteRate:           newMetricSqlserverPageLazyWriteRate(settings.SqlserverPageLazyWriteRate),
-		metricSqlserverPageLifeExpectancy:          newMetricSqlserverPageLifeExpectancy(settings.SqlserverPageLifeExpectancy),
-		metricSqlserverPageOperationRate:           newMetricSqlserverPageOperationRate(settings.SqlserverPageOperationRate),
-		metricSqlserverPageSplitRate:               newMetricSqlserverPageSplitRate(settings.SqlserverPageSplitRate),
-		metricSqlserverTransactionRate:             newMetricSqlserverTransactionRate(settings.SqlserverTransactionRate),
-		metricSqlserverTransactionWriteRate:        newMetricSqlserverTransactionWriteRate(settings.SqlserverTransactionWriteRate),
-		metricSqlserverTransactionLogFlushDataRate: newMetricSqlserverTransactionLogFlushDataRate(settings.SqlserverTransactionLogFlushDataRate),
-		metricSqlserverTransactionLogFlushRate:     newMetricSqlserverTransactionLogFlushRate(settings.SqlserverTransactionLogFlushRate),
-		metricSqlserverTransactionLogFlushWaitRate: newMetricSqlserverTransactionLogFlushWaitRate(settings.SqlserverTransactionLogFlushWaitRate),
-		metricSqlserverTransactionLogGrowthCount:   newMetricSqlserverTransactionLogGrowthCount(settings.SqlserverTransactionLogGrowthCount),
-		metricSqlserverTransactionLogShrinkCount:   newMetricSqlserverTransactionLogShrinkCount(settings.SqlserverTransactionLogShrinkCount),
-		metricSqlserverTransactionLogUsage:         newMetricSqlserverTransactionLogUsage(settings.SqlserverTransactionLogUsage),
-		metricSqlserverUserConnectionCount:         newMetricSqlserverUserConnectionCount(settings.SqlserverUserConnectionCount),
+		buildInfo:                                  settings.BuildInfo,
+		metricSqlserverBatchRequestRate:            newMetricSqlserverBatchRequestRate(ms.SqlserverBatchRequestRate),
+		metricSqlserverBatchSQLCompilationRate:     newMetricSqlserverBatchSQLCompilationRate(ms.SqlserverBatchSQLCompilationRate),
+		metricSqlserverBatchSQLRecompilationRate:   newMetricSqlserverBatchSQLRecompilationRate(ms.SqlserverBatchSQLRecompilationRate),
+		metricSqlserverLockWaitRate:                newMetricSqlserverLockWaitRate(ms.SqlserverLockWaitRate),
+		metricSqlserverLockWaitTimeAvg:             newMetricSqlserverLockWaitTimeAvg(ms.SqlserverLockWaitTimeAvg),
+		metricSqlserverPageBufferCacheHitRatio:     newMetricSqlserverPageBufferCacheHitRatio(ms.SqlserverPageBufferCacheHitRatio),
+		metricSqlserverPageCheckpointFlushRate:     newMetricSqlserverPageCheckpointFlushRate(ms.SqlserverPageCheckpointFlushRate),
+		metricSqlserverPageLazyWriteRate:           newMetricSqlserverPageLazyWriteRate(ms.SqlserverPageLazyWriteRate),
+		metricSqlserverPageLifeExpectancy:          newMetricSqlserverPageLifeExpectancy(ms.SqlserverPageLifeExpectancy),
+		metricSqlserverPageOperationRate:           newMetricSqlserverPageOperationRate(ms.SqlserverPageOperationRate),
+		metricSqlserverPageSplitRate:               newMetricSqlserverPageSplitRate(ms.SqlserverPageSplitRate),
+		metricSqlserverTransactionRate:             newMetricSqlserverTransactionRate(ms.SqlserverTransactionRate),
+		metricSqlserverTransactionWriteRate:        newMetricSqlserverTransactionWriteRate(ms.SqlserverTransactionWriteRate),
+		metricSqlserverTransactionLogFlushDataRate: newMetricSqlserverTransactionLogFlushDataRate(ms.SqlserverTransactionLogFlushDataRate),
+		metricSqlserverTransactionLogFlushRate:     newMetricSqlserverTransactionLogFlushRate(ms.SqlserverTransactionLogFlushRate),
+		metricSqlserverTransactionLogFlushWaitRate: newMetricSqlserverTransactionLogFlushWaitRate(ms.SqlserverTransactionLogFlushWaitRate),
+		metricSqlserverTransactionLogGrowthCount:   newMetricSqlserverTransactionLogGrowthCount(ms.SqlserverTransactionLogGrowthCount),
+		metricSqlserverTransactionLogShrinkCount:   newMetricSqlserverTransactionLogShrinkCount(ms.SqlserverTransactionLogShrinkCount),
+		metricSqlserverTransactionLogUsage:         newMetricSqlserverTransactionLogUsage(ms.SqlserverTransactionLogUsage),
+		metricSqlserverUserConnectionCount:         newMetricSqlserverUserConnectionCount(ms.SqlserverUserConnectionCount),
 	}
 	for _, op := range options {
 		op(mb)

@@ -51,7 +51,7 @@ func newMongoDBAtlasReceiver(settings component.ReceiverCreateSettings, cfg *Con
 		log:         settings.Logger,
 		cfg:         cfg,
 		client:      client,
-		mb:          metadata.NewMetricsBuilder(cfg.Metrics, settings.BuildInfo),
+		mb:          metadata.NewMetricsBuilder(cfg.Metrics, settings),
 		stopperChan: make(chan struct{}),
 	}
 }

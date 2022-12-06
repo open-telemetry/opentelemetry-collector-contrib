@@ -37,6 +37,10 @@ metrics:
     description:
     # Optional: extended documentation of the metric.
     extended_documentation:
+    # Optional: warnings that will be shown to user under specified conditions.
+    warnings:
+      # A warning that will be displayed if the metric is enabled in user config.
+      if_enabled:
     # Required: metric unit as defined by https://ucum.org/ucum.html.
     unit:
     # Required: metric type with its settings.
