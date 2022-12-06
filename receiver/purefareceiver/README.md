@@ -32,6 +32,9 @@ receivers:
     settings:
       reload_intervals:
         array: 10s
+        host: 13s
+        directories: 15s
+        pods: 30s
 ```
 
 The full list of settings exposed for this receiver are documented [here](./config.go)
