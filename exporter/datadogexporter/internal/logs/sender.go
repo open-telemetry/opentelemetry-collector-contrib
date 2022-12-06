@@ -29,9 +29,9 @@ import (
 
 // Sender submits logs to Datadog intake
 type Sender struct {
-	logger *zap.Logger
-	api    *datadogV2.LogsApi
-	opts   datadogV2.SubmitLogOptionalParameters
+	logger  *zap.Logger
+	api     *datadogV2.LogsApi
+	verbose bool // reports whether payload contents should be dumped when logging at debug level
 }
 
 // logsV2 is the key in datadog ServerConfiguration
@@ -40,7 +40,7 @@ type Sender struct {
 const logsV2 = "v2.LogsApi.SubmitLog"
 
 // NewSender creates a new Sender
-func NewSender(endpoint string, logger *zap.Logger, s exporterhelper.TimeoutSettings, insecureSkipVerify bool, apiKey string) *Sender {
+func NewSender(endpoint string, logger *zap.Logger, s exporterhelper.TimeoutSettings, insecureSkipVerify, verbose bool, apiKey string) *Sender {
 	cfg := datadog.NewConfiguration()
 	logger.Info("Logs sender initialized", zap.String("endpoint", endpoint))
 	cfg.OperationServers[logsV2] = datadog.ServerConfigurations{
@@ -51,28 +51,32 @@ func NewSender(endpoint string, logger *zap.Logger, s exporterhelper.TimeoutSett
 	cfg.HTTPClient = clientutil.NewHTTPClient(s, insecureSkipVerify)
 	cfg.AddDefaultHeader("DD-API-KEY", apiKey)
 	apiClient := datadog.NewAPIClient(cfg)
-	// enable sending gzip
-	opts := *datadogV2.NewSubmitLogOptionalParameters().WithContentEncoding(datadogV2.CONTENTENCODING_GZIP)
 	return &Sender{
-		api:    datadogV2.NewLogsApi(apiClient),
-		logger: logger,
-		opts:   opts,
+		api:     datadogV2.NewLogsApi(apiClient),
+		logger:  logger,
+		verbose: verbose,
 	}
 }
 
 // SubmitLogs submits the logs contained in payload to the Datadog intake
 func (s *Sender) SubmitLogs(ctx context.Context, payload []datadogV2.HTTPLogItem) error {
-	s.logger.Debug("Submitting logs", zap.Any("payload", payload))
+	if s.verbose {
+		s.logger.Debug("Submitting logs", zap.Any("payload", payload))
+	}
+
+	// enable sending gzip
+	// Get a fresh opts for each request to avoid duplicating ddtags
+	opts := *datadogV2.NewSubmitLogOptionalParameters().WithContentEncoding(datadogV2.CONTENTENCODING_GZIP)
 
 	// Correctly sets apiSubmitLogRequest ddtags field based on tags from translator Transform method
 	if payload[0].HasDdtags() {
 		tags := datadog.PtrString(payload[0].GetDdtags())
-		if s.opts.Ddtags != nil {
-			tags = datadog.PtrString(fmt.Sprint(*s.opts.Ddtags, ",", payload[0].GetDdtags()))
+		if opts.Ddtags != nil {
+			tags = datadog.PtrString(fmt.Sprint(*opts.Ddtags, ",", payload[0].GetDdtags()))
 		}
-		s.opts.Ddtags = tags
+		opts.Ddtags = tags
 	}
-	_, r, err := s.api.SubmitLog(ctx, payload, s.opts)
+	_, r, err := s.api.SubmitLog(ctx, payload, opts)
 	if err != nil {
 		if r != nil {
 			b := make([]byte, 1024) // 1KB message max

@@ -44,7 +44,7 @@ const (
 
 // This is derived from the specification https://opentelemetry.io/docs/reference/specification/metrics/datamodel/
 type AdxMetric struct {
-	Timestamp string // The timestamp of the occurrence. A metric is measured at a point of time. Formatted into string as RFC3339
+	Timestamp string // The timestamp of the occurrence. A metric is measured at a point of time. Formatted into string as RFC3339Nano
 	// Including name, the Metric object is defined by the following properties:
 	MetricName        string                 // Name of the metric field
 	MetricType        string                 // The data point type (e.g. Sum, Gauge, Histogram ExponentialHistogram, Summary)
@@ -81,7 +81,7 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 			desc = md.Description()
 		}
 		return &AdxMetric{
-			Timestamp:          times.Format(time.RFC3339),
+			Timestamp:          times.Format(time.RFC3339Nano),
 			MetricName:         name,
 			MetricType:         mt.String(),
 			MetricUnit:         md.Unit(),

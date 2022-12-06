@@ -33,17 +33,16 @@ func TestAddAnnotations(t *testing.T) {
 	attrMap := pcommon.NewMap()
 	attrMap.EnsureCapacity(initAttrCapacity)
 	addAnnotations(input, attrMap)
+	attrMap.Sort()
 
 	expectedAttrMap := pcommon.NewMap()
-	assert.NoError(t, expectedAttrMap.FromRaw(
-		map[string]interface{}{
-			"int":     0,
-			"int32":   int32(1),
-			"int64":   int64(2),
-			"bool":    false,
-			"float32": 4.5,
-			"float64": 5.5,
-		},
-	))
-	assert.Equal(t, expectedAttrMap.Sort(), attrMap.Sort(), "attribute maps differ")
+	expectedAttrMap.PutBool("bool", false)
+	expectedAttrMap.PutDouble("float32", 4.5)
+	expectedAttrMap.PutDouble("float64", 5.5)
+	expectedAttrMap.PutInt("int", 0)
+	expectedAttrMap.PutInt("int32", 1)
+	expectedAttrMap.PutInt("int64", 2)
+	expectedAttrMap.Sort()
+
+	assert.Equal(t, expectedAttrMap, attrMap, "attribute maps differ")
 }

@@ -17,6 +17,8 @@ body:
       - cmd/otelcontribcol
       - cmd/telemetrygen
       - cmd/tracegen
+      - confmap/provider/s3provider
+      - examples/demo
       - exporter/alibabacloudlogservice
       - exporter/awscloudwatchlogs
       - exporter/awsemf
@@ -42,6 +44,7 @@ body:
       - exporter/jaegerthrifthttp
       - exporter/kafka
       - exporter/loadbalancing
+      - exporter/logicmonitor
       - exporter/logzio
       - exporter/loki
       - exporter/mezmo
@@ -78,6 +81,17 @@ body:
       - extension/storage
       - extension/storage/dbstorage
       - extension/storage/filestorage
+      - internal/aws
+      - internal/core
+      - internal/docker
+      - internal/filter
+      - internal/k8sconfig
+      - internal/kubelet
+      - internal/metadataproviders
+      - internal/scrapertest
+      - internal/sharedcomponent
+      - internal/splunk
+      - internal/tools
       - pkg/batchperresourceattr
       - pkg/batchpersignal
       - pkg/experimentalmetricmetadata
@@ -164,7 +178,9 @@ body:
       - receiver/postgresql
       - receiver/prometheus
       - receiver/prometheusexec
+      - receiver/promtail
       - receiver/pulsar
+      - receiver/purefa
       - receiver/rabbitmq
       - receiver/receivercreator
       - receiver/redis
@@ -190,6 +206,8 @@ body:
       - receiver/windowsperfcounters
       - receiver/zipkin
       - receiver/zookeeper
+      - testbed
+      - testbed/mockdatareceivers/mockawsxrayreceiver
       # End Collector components list
   - type: textarea
     attributes:

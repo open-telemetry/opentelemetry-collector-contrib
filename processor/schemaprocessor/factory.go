@@ -37,7 +37,7 @@ type factory struct{}
 
 // newDefaultConfiguration returns the configuration for schema transformer processor
 // with the default values being used throughout it
-func newDefaultConfiguration() component.ProcessorConfig {
+func newDefaultConfiguration() component.Config {
 	return &Config{
 		ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
 		HTTPClientSettings: confighttp.NewDefaultHTTPClientSettings(),
@@ -58,7 +58,7 @@ func NewFactory() component.ProcessorFactory {
 func (f factory) createLogsProcessor(
 	ctx context.Context,
 	set component.ProcessorCreateSettings,
-	cfg component.ProcessorConfig,
+	cfg component.Config,
 	next consumer.Logs,
 ) (component.LogsProcessor, error) {
 	transformer, err := newTransformer(ctx, cfg, set)
@@ -79,7 +79,7 @@ func (f factory) createLogsProcessor(
 func (f factory) createMetricsProcessor(
 	ctx context.Context,
 	set component.ProcessorCreateSettings,
-	cfg component.ProcessorConfig,
+	cfg component.Config,
 	next consumer.Metrics,
 ) (component.MetricsProcessor, error) {
 	transformer, err := newTransformer(ctx, cfg, set)
@@ -100,7 +100,7 @@ func (f factory) createMetricsProcessor(
 func (f factory) createTracesProcessor(
 	ctx context.Context,
 	set component.ProcessorCreateSettings,
-	cfg component.ProcessorConfig,
+	cfg component.Config,
 	next consumer.Traces,
 ) (component.TracesProcessor, error) {
 	transformer, err := newTransformer(ctx, cfg, set)

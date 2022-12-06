@@ -8,7 +8,7 @@ attributes:
     type: string
 
   freeFormAttributeWithValue:
-    value: state
+    name_override: state
     description: Attribute that has alternate value set.
     type: string
 
@@ -18,9 +18,9 @@ attributes:
     enum: [red, green, blue]
 
   booleanValueType:
+    name_override: false
     description: Attribute with a boolean value.
     type: bool
-    value: false
 
 metrics:
   # A metric enabled by default.

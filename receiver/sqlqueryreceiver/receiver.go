@@ -35,7 +35,7 @@ func createReceiverFunc(sqlOpenerFunc sqlOpenerFunc, clientProviderFunc clientPr
 	return func(
 		ctx context.Context,
 		settings component.ReceiverCreateSettings,
-		cfg component.ReceiverConfig,
+		cfg component.Config,
 		consumer consumer.Metrics,
 	) (component.MetricsReceiver, error) {
 		sqlCfg := cfg.(*Config)

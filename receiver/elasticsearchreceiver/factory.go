@@ -44,7 +44,7 @@ func NewFactory() component.ReceiverFactory {
 }
 
 // createDefaultConfig creates the default elasticsearchreceiver config.
-func createDefaultConfig() component.ReceiverConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 			ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
@@ -66,7 +66,7 @@ var errConfigNotES = errors.New("config was not an elasticsearch receiver config
 func createMetricsReceiver(
 	_ context.Context,
 	params component.ReceiverCreateSettings,
-	rConf component.ReceiverConfig,
+	rConf component.Config,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	c, ok := rConf.(*Config)

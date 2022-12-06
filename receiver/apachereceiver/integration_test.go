@@ -34,6 +34,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
@@ -53,6 +54,10 @@ func TestApacheIntegration(t *testing.T) {
 		require.NoError(t, container.Terminate(context.Background()))
 	}()
 	hostname, err := container.Host(context.Background())
+	require.NoError(t, err)
+
+	// Let this test check if it works with the features disabled and the unit test will test the feature enabled.
+	err = featuregate.GetRegistry().Apply(map[string]bool{EmitServerNameAsResourceAttribute: false, EmitPortAsResourceAttribute: false})
 	require.NoError(t, err)
 
 	f := NewFactory()

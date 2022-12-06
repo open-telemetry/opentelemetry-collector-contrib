@@ -95,7 +95,7 @@ func (*factory) Type() component.Type {
 	return typeStr
 }
 
-func createDefaultConfig() component.ProcessorConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
 		Detectors:          []string{env.TypeStr},
@@ -116,7 +116,7 @@ func defaultHTTPClientSettings() confighttp.HTTPClientSettings {
 func (f *factory) createTracesProcessor(
 	ctx context.Context,
 	set component.ProcessorCreateSettings,
-	cfg component.ProcessorConfig,
+	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (component.TracesProcessor, error) {
 	rdp, err := f.getResourceDetectionProcessor(set, cfg)
@@ -137,7 +137,7 @@ func (f *factory) createTracesProcessor(
 func (f *factory) createMetricsProcessor(
 	ctx context.Context,
 	set component.ProcessorCreateSettings,
-	cfg component.ProcessorConfig,
+	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsProcessor, error) {
 	rdp, err := f.getResourceDetectionProcessor(set, cfg)
@@ -158,7 +158,7 @@ func (f *factory) createMetricsProcessor(
 func (f *factory) createLogsProcessor(
 	ctx context.Context,
 	set component.ProcessorCreateSettings,
-	cfg component.ProcessorConfig,
+	cfg component.Config,
 	nextConsumer consumer.Logs,
 ) (component.LogsProcessor, error) {
 	rdp, err := f.getResourceDetectionProcessor(set, cfg)
@@ -178,11 +178,11 @@ func (f *factory) createLogsProcessor(
 
 func (f *factory) getResourceDetectionProcessor(
 	params component.ProcessorCreateSettings,
-	cfg component.ProcessorConfig,
+	cfg component.Config,
 ) (*resourceDetectionProcessor, error) {
 	oCfg := cfg.(*Config)
 
-	provider, err := f.getResourceProvider(params, cfg.ID(), oCfg.HTTPClientSettings.Timeout, oCfg.Detectors, oCfg.DetectorConfig, oCfg.Attributes)
+	provider, err := f.getResourceProvider(params, oCfg.HTTPClientSettings.Timeout, oCfg.Detectors, oCfg.DetectorConfig, oCfg.Attributes)
 	if err != nil {
 		return nil, err
 	}
@@ -197,7 +197,6 @@ func (f *factory) getResourceDetectionProcessor(
 
 func (f *factory) getResourceProvider(
 	params component.ProcessorCreateSettings,
-	processorName component.ID,
 	timeout time.Duration,
 	configuredDetectors []string,
 	detectorConfigs DetectorConfig,
@@ -206,7 +205,7 @@ func (f *factory) getResourceProvider(
 	f.lock.Lock()
 	defer f.lock.Unlock()
 
-	if provider, ok := f.providers[processorName]; ok {
+	if provider, ok := f.providers[params.ID]; ok {
 		return provider, nil
 	}
 
@@ -223,6 +222,6 @@ func (f *factory) getResourceProvider(
 		return nil, err
 	}
 
-	f.providers[processorName] = provider
+	f.providers[params.ID] = provider
 	return provider, nil
 }

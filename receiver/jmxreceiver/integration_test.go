@@ -171,7 +171,7 @@ func (suite *JMXIntegrationSuite) TestJMXReceiverHappyPath() {
 				},
 				LogLevel: "debug",
 			}
-			require.NoError(t, cfg.validate())
+			require.NoError(t, cfg.Validate())
 
 			consumer := new(consumertest.MetricsSink)
 			require.NotNil(t, consumer)

@@ -53,7 +53,7 @@ func (c ConfigUnmarshalTests) Run(t *testing.T) {
 			require.NotZero(t, len(testConfMap.AllKeys()), fmt.Sprintf("config not found: '%s'", tc.Name))
 
 			cfg := newAnyOpConfig(c.DefaultConfig)
-			err = component.UnmarshalReceiverConfig(testConfMap, cfg)
+			err = component.UnmarshalConfig(testConfMap, cfg)
 
 			if tc.ExpectErr {
 				require.Error(t, err)

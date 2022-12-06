@@ -40,7 +40,7 @@ func NewFactory() component.ReceiverFactory {
 	)
 }
 
-func createDefaultConfig() component.ReceiverConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 		APIConfig: k8sconfig.APIConfig{
@@ -52,7 +52,7 @@ func createDefaultConfig() component.ReceiverConfig {
 func createLogsReceiver(
 	_ context.Context,
 	params component.ReceiverCreateSettings,
-	cfg component.ReceiverConfig,
+	cfg component.Config,
 	consumer consumer.Logs,
 ) (component.LogsReceiver, error) {
 	rcfg := cfg.(*Config)

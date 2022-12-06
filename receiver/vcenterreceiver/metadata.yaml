@@ -35,31 +35,31 @@ attributes:
       - physical
   host_effective:
     type: bool
-    value: effective
+    name_override: effective
     description: Whether the host is effective in the vCenter cluster.
   disk_direction:
-    value: direction
+    name_override: direction
     description: The direction of disk latency.
     type: string
     enum:
       - read
       - write
   latency_type:
-    value: type
+    name_override: type
     description: The type of disk latency being reported.
     type: string
     enum:
       - kernel
       - device
   throughput_direction:
-    value: direction
+    name_override: direction
     description: The direction of network throughput.
     type: string
     enum:
       - transmitted
       - received
   vm_count_power_state:
-    value: power_state
+    name_override: power_state
     description: Whether the virtual machines are powered on or off.
     type: string
     enum:

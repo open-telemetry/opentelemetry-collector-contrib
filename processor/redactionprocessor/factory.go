@@ -40,7 +40,7 @@ func NewFactory() component.ProcessorFactory {
 	)
 }
 
-func createDefaultConfig() component.ProcessorConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 	}
@@ -50,7 +50,7 @@ func createDefaultConfig() component.ProcessorConfig {
 func createTracesProcessor(
 	ctx context.Context,
 	set component.ProcessorCreateSettings,
-	cfg component.ProcessorConfig,
+	cfg component.Config,
 	next consumer.Traces,
 ) (component.TracesProcessor, error) {
 	oCfg := cfg.(*Config)

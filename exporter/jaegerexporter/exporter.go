@@ -41,7 +41,7 @@ import (
 // The exporter name is the name to be used in the observability of the exporter.
 // The collectorEndpoint should be of the form "hostname:14250" (a gRPC target).
 func newTracesExporter(cfg *Config, set component.ExporterCreateSettings) (component.TracesExporter, error) {
-	s := newProtoGRPCSender(cfg, set.TelemetrySettings)
+	s := newProtoGRPCSender(cfg, set)
 	return exporterhelper.NewTracesExporter(
 		context.TODO(), set, cfg, s.pushTraces,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
@@ -72,10 +72,10 @@ type protoGRPCSender struct {
 	clientSettings *configgrpc.GRPCClientSettings
 }
 
-func newProtoGRPCSender(cfg *Config, settings component.TelemetrySettings) *protoGRPCSender {
+func newProtoGRPCSender(cfg *Config, set component.ExporterCreateSettings) *protoGRPCSender {
 	s := &protoGRPCSender{
-		name:                      cfg.ID().String(),
-		settings:                  settings,
+		name:                      set.ID.String(),
+		settings:                  set.TelemetrySettings,
 		metadata:                  metadata.New(cfg.GRPCClientSettings.Headers),
 		waitForReady:              cfg.WaitForReady,
 		connStateReporterInterval: time.Second,

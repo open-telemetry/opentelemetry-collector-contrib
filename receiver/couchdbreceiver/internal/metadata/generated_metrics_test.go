@@ -137,7 +137,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("operation")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeOperation(1).String(), attrVal.Str())
+			assert.Equal(t, "writes", attrVal.Str())
 			validatedMetrics["couchdb.database.operations"] = struct{}{}
 		case "couchdb.file_descriptor.open":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -179,7 +179,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("http.method")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeHTTPMethod(1).String(), attrVal.Str())
+			assert.Equal(t, "COPY", attrVal.Str())
 			validatedMetrics["couchdb.httpd.requests"] = struct{}{}
 		case "couchdb.httpd.responses":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -211,7 +211,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("view")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeView(1).String(), attrVal.Str())
+			assert.Equal(t, "temporary_view_reads", attrVal.Str())
 			validatedMetrics["couchdb.httpd.views"] = struct{}{}
 		}
 	}

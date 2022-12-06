@@ -39,6 +39,7 @@ func init() {
 		pdataExporterFeatureGate,
 		featuregate.StageBeta,
 		featuregate.WithRegisterDescription("When enabled, the googlecloud exporter translates pdata directly to google cloud monitoring's types, rather than first translating to opencensus."),
+		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/7132"),
 	)
 }
 
@@ -54,7 +55,7 @@ func NewFactory() component.ExporterFactory {
 }
 
 // createDefaultConfig creates the default configuration for exporter.
-func createDefaultConfig() component.ExporterConfig {
+func createDefaultConfig() component.Config {
 	if !featuregate.GetRegistry().IsEnabled(pdataExporterFeatureGate) {
 		return &LegacyConfig{
 			ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
@@ -76,7 +77,7 @@ func createDefaultConfig() component.ExporterConfig {
 func createLogsExporter(
 	ctx context.Context,
 	params component.ExporterCreateSettings,
-	cfg component.ExporterConfig) (component.LogsExporter, error) {
+	cfg component.Config) (component.LogsExporter, error) {
 	var eCfg *Config
 	if !featuregate.GetRegistry().IsEnabled(pdataExporterFeatureGate) {
 		eCfg = toNewConfig(cfg.(*LegacyConfig))
@@ -104,7 +105,7 @@ func createLogsExporter(
 func createTracesExporter(
 	ctx context.Context,
 	params component.ExporterCreateSettings,
-	cfg component.ExporterConfig) (component.TracesExporter, error) {
+	cfg component.Config) (component.TracesExporter, error) {
 	var eCfg *Config
 	if !featuregate.GetRegistry().IsEnabled(pdataExporterFeatureGate) {
 		eCfg = toNewConfig(cfg.(*LegacyConfig))
@@ -132,7 +133,7 @@ func createTracesExporter(
 func createMetricsExporter(
 	ctx context.Context,
 	params component.ExporterCreateSettings,
-	cfg component.ExporterConfig) (component.MetricsExporter, error) {
+	cfg component.Config) (component.MetricsExporter, error) {
 	if !featuregate.GetRegistry().IsEnabled(pdataExporterFeatureGate) {
 		eCfg := cfg.(*LegacyConfig)
 		return newLegacyGoogleCloudMetricsExporter(eCfg, params)

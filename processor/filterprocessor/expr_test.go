@@ -148,7 +148,7 @@ func testProcessor(t *testing.T, include []string, exclude []string) (component.
 	return proc, next
 }
 
-func exprConfig(factory component.ProcessorFactory, include []string, exclude []string) component.ProcessorConfig {
+func exprConfig(factory component.ProcessorFactory, include []string, exclude []string) component.Config {
 	cfg := factory.CreateDefaultConfig()
 	pCfg := cfg.(*Config)
 	pCfg.Metrics = MetricFilters{}

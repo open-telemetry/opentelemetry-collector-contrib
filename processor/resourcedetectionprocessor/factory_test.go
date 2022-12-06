@@ -62,7 +62,7 @@ func TestCreateConfigProcessors(t *testing.T) {
 
 			sub, err := cm.Sub(k)
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalProcessorConfig(sub, cfg))
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 			tt, err := factory.CreateTracesProcessor(
 				context.Background(),

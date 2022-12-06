@@ -270,7 +270,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, float64(1), dp.DoubleValue())
 			attrVal, ok := dp.Attributes().Get("type")
 			assert.True(t, ok)
-			assert.Equal(t, AttributePageOperations(1).String(), attrVal.Str())
+			assert.Equal(t, "read", attrVal.Str())
 			validatedMetrics["sqlserver.page.operation.rate"] = struct{}{}
 		case "sqlserver.page.split.rate":
 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())

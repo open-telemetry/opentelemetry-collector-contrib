@@ -31,7 +31,7 @@ func TestLoadConfig(t *testing.T) {
 
 	tests := []struct {
 		id       component.ID
-		expected component.ExtensionConfig
+		expected component.Config
 	}{
 		{
 			id:       component.NewID(typeStr),
@@ -85,7 +85,7 @@ func loadConfig(t testing.TB, id component.ID) *Config {
 	cfg := factory.CreateDefaultConfig()
 	sub, err := cm.Sub(id.String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalExtensionConfig(sub, cfg))
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	return cfg.(*Config)
 }

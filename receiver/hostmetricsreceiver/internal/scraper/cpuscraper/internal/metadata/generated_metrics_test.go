@@ -81,7 +81,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.EqualValues(t, "attr-val", attrVal.Str())
 			attrVal, ok = dp.Attributes().Get("state")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeState(1).String(), attrVal.Str())
+			assert.Equal(t, "idle", attrVal.Str())
 			validatedMetrics["system.cpu.time"] = struct{}{}
 		case "system.cpu.utilization":
 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
@@ -98,7 +98,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.EqualValues(t, "attr-val", attrVal.Str())
 			attrVal, ok = dp.Attributes().Get("state")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeState(1).String(), attrVal.Str())
+			assert.Equal(t, "idle", attrVal.Str())
 			validatedMetrics["system.cpu.utilization"] = struct{}{}
 		}
 	}

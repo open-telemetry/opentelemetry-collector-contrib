@@ -46,22 +46,22 @@ Details about the metrics produced by this receiver can be found in [metadata.ya
 
 See the [Collector feature gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) for an overview of feature gates in the collector.
 
-**ALPHA**: `receiver.apache.emitServerNameAsResourceAttribute`
+**BETA**: `receiver.apache.emitServerNameAsResourceAttribute`
 
 The feature gate `receiver.apache.emitServerNameAsResourceAttribute` once enabled starts emitting the metrics with a resource attribute `apache.server.name`. When the feature gate is disabled, the metrics are emitted with a `server_name` metric-level attribute instead.
 
 This is considered a breaking change for existing users of this receiver, and it is recommended to migrate to the new implementation when possible. Any new users planning to adopt this receiver should enable this feature gate to avoid having to migrate any visualisations or alerts.
 
-This feature gate will eventually be enabled by default, and eventually the old implementation will be removed. It aims
-to give users time to migrate to the new implementation. The target release for this featuregate to be enabled by default
-is 0.66.0.
+This feature gate is enabled by default, and eventually the old implementation will be removed. It aims
+to give users time to migrate to the new implementation. The target release for the old implementation to be removed
+is 0.69.0.
 
-**ALPHA**: `receiver.apache.emitPortAsResourceAttribute`
+**BETA**: `receiver.apache.emitPortAsResourceAttribute`
 
 The feature gate `receiver.apache.emitPortAsResourceAttribute` once enabled starts emitting the metrics with a resource attribute `apache.server.port`.
 
 This is considered a breaking change for existing users of this receiver, and it is recommended to migrate to the new implementation when possible. Any new users planning to adopt this receiver should enable this feature gate to avoid having to migrate any visualisations or alerts.
 
-This feature gate will eventually be enabled by default, and eventually the old implementation will be removed. It aims
-to give users time to migrate to the new implementation. The target release for this featuregate to be enabled by default
-is 0.66.0.
+This feature gate is enabled by default, and eventually the old implementation will be removed. It aims
+to give users time to migrate to the new implementation. The target release for the old implementation to be removed
+is 0.69.0.

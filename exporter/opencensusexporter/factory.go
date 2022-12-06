@@ -40,7 +40,7 @@ func NewFactory() component.ExporterFactory {
 		component.WithMetricsExporter(createMetricsExporter, stability))
 }
 
-func createDefaultConfig() component.ExporterConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
@@ -52,7 +52,7 @@ func createDefaultConfig() component.ExporterConfig {
 	}
 }
 
-func createTracesExporter(ctx context.Context, set component.ExporterCreateSettings, cfg component.ExporterConfig) (component.TracesExporter, error) {
+func createTracesExporter(ctx context.Context, set component.ExporterCreateSettings, cfg component.Config) (component.TracesExporter, error) {
 	oCfg := cfg.(*Config)
 	oce, err := newTracesExporter(ctx, oCfg, set.TelemetrySettings)
 	if err != nil {
@@ -71,7 +71,7 @@ func createTracesExporter(ctx context.Context, set component.ExporterCreateSetti
 		exporterhelper.WithShutdown(oce.shutdown))
 }
 
-func createMetricsExporter(ctx context.Context, set component.ExporterCreateSettings, cfg component.ExporterConfig) (component.MetricsExporter, error) {
+func createMetricsExporter(ctx context.Context, set component.ExporterCreateSettings, cfg component.Config) (component.MetricsExporter, error) {
 	oCfg := cfg.(*Config)
 	oce, err := newMetricsExporter(ctx, oCfg, set.TelemetrySettings)
 	if err != nil {

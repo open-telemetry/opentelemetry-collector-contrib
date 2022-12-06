@@ -27,7 +27,7 @@ if [ -z "${FILE}" ]; then
   exit 1
 fi
 
-COMPONENT_REGEX='(cmd|pkg|extension|processor|receiver|exporter)'
+CUR_DIRECTORY=$(dirname "$0")
 
 # Get the line number for text within a file
 get_line_number() {
@@ -42,10 +42,8 @@ END_LINE=$(get_line_number '# End Collector components list' "${FILE}")
 TOTAL_LINES=$(wc -l "${FILE}" | awk '{ print $1 }')
 
 head -n "${START_LINE}" "${FILE}"
-grep -E "^${COMPONENT_REGEX}" < ".github/CODEOWNERS" | \
-  awk '{ print $1 }' | \
-  sed -E 's%(.+)/$%\1%' | \
-  sed -E "s%${COMPONENT_REGEX}/(.+)${COMPONENT_REGEX}%\1/\2%" | \
+sh "${CUR_DIRECTORY}/get-components.sh" | \
+  sed -E 's%^(.+)/(.+)\1%\1/\2%' | \
   sort | \
   awk '{ printf "      - %s\n",$1 }'
 tail -n $((TOTAL_LINES-END_LINE+1)) "${FILE}"

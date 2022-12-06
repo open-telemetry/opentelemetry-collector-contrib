@@ -135,7 +135,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("command")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeCommand(1).String(), attrVal.Str())
+			assert.Equal(t, "get", attrVal.Str())
 			validatedMetrics["memcached.commands"] = struct{}{}
 		case "memcached.connections.current":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -177,7 +177,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, float64(1), dp.DoubleValue())
 			attrVal, ok := dp.Attributes().Get("state")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeState(1).String(), attrVal.Str())
+			assert.Equal(t, "system", attrVal.Str())
 			validatedMetrics["memcached.cpu.usage"] = struct{}{}
 		case "memcached.current_items":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -219,7 +219,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("direction")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeDirection(1).String(), attrVal.Str())
+			assert.Equal(t, "sent", attrVal.Str())
 			validatedMetrics["memcached.network"] = struct{}{}
 		case "memcached.operation_hit_ratio":
 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
@@ -233,7 +233,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, float64(1), dp.DoubleValue())
 			attrVal, ok := dp.Attributes().Get("operation")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeOperation(1).String(), attrVal.Str())
+			assert.Equal(t, "increment", attrVal.Str())
 			validatedMetrics["memcached.operation_hit_ratio"] = struct{}{}
 		case "memcached.operations":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -249,10 +249,10 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("type")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeType(1).String(), attrVal.Str())
+			assert.Equal(t, "hit", attrVal.Str())
 			attrVal, ok = dp.Attributes().Get("operation")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeOperation(1).String(), attrVal.Str())
+			assert.Equal(t, "increment", attrVal.Str())
 			validatedMetrics["memcached.operations"] = struct{}{}
 		case "memcached.threads":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())

@@ -50,7 +50,7 @@ exporters:
 ```
 ### Tracing deprecation 
 
-The v0.60 version deprecates old Jaeger based tracing endpoint in favour of Opentelemetry based one.
+The v0.67 version removed old Jaeger based tracing endpoint in favour of Opentelemetry based one.
 
 To migrate, please remove the old endpoint field, and change the configuration to `traces.endpoint` using the new Tracing endpoint.
 

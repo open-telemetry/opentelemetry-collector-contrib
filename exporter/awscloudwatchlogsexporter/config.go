@@ -63,7 +63,7 @@ type QueueSettings struct {
 	QueueSize int `mapstructure:"queue_size"`
 }
 
-var _ component.ExporterConfig = (*Config)(nil)
+var _ component.Config = (*Config)(nil)
 
 // Validate config
 func (config *Config) Validate() error {

@@ -95,7 +95,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.EqualValues(t, "attr-val", attrVal.Str())
 			attrVal, ok = dp.Attributes().Get("state")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeState(1).String(), attrVal.Str())
+			assert.Equal(t, "free", attrVal.Str())
 			validatedMetrics["system.filesystem.inodes.usage"] = struct{}{}
 		case "system.filesystem.usage":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -123,7 +123,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.EqualValues(t, "attr-val", attrVal.Str())
 			attrVal, ok = dp.Attributes().Get("state")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeState(1).String(), attrVal.Str())
+			assert.Equal(t, "free", attrVal.Str())
 			validatedMetrics["system.filesystem.usage"] = struct{}{}
 		case "system.filesystem.utilization":
 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())

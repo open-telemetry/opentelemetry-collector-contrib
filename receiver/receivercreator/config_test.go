@@ -64,7 +64,7 @@ func TestLoadConfig(t *testing.T) {
 
 	tests := []struct {
 		id       component.ID
-		expected component.ReceiverConfig
+		expected component.Config
 	}{
 		{
 			id:       component.NewIDWithName(typeStr, ""),
@@ -122,7 +122,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
@@ -171,7 +171,7 @@ type nopWithEndpointReceiver struct {
 	component.ReceiverCreateSettings
 }
 
-func (*nopWithEndpointFactory) CreateDefaultConfig() component.ReceiverConfig {
+func (*nopWithEndpointFactory) CreateDefaultConfig() component.Config {
 	return &nopWithEndpointConfig{
 		ReceiverSettings: config.NewReceiverSettings(component.NewID("nop")),
 	}
@@ -185,7 +185,7 @@ type mockComponent struct {
 func (*nopWithEndpointFactory) CreateMetricsReceiver(
 	ctx context.Context,
 	rcs component.ReceiverCreateSettings,
-	_ component.ReceiverConfig,
+	_ component.Config,
 	nextConsumer consumer.Metrics) (component.MetricsReceiver, error) {
 	return &nopWithEndpointReceiver{
 		Component:              mockComponent{},

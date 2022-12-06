@@ -43,7 +43,7 @@ func NewFactory() component.ReceiverFactory {
 func newMetricsReceiver(
 	ctx context.Context,
 	set component.ReceiverCreateSettings,
-	rCfg component.ReceiverConfig,
+	rCfg component.Config,
 	consumer consumer.Metrics) (component.MetricsReceiver, error) {
 	cfg, ok := rCfg.(*Config)
 	if !ok {

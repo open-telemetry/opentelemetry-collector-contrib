@@ -104,9 +104,9 @@ func (b *blobReceiver) consumeTracesJSON(ctx context.Context, json []byte) error
 }
 
 // Returns a new instance of the log receiver
-func newReceiver(config Config, set component.ReceiverCreateSettings, blobEventHandler blobEventHandler) (component.Component, error) {
+func newReceiver(set component.ReceiverCreateSettings, blobEventHandler blobEventHandler) (component.Component, error) {
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
-		ReceiverID:             config.ID(),
+		ReceiverID:             set.ID,
 		Transport:              "event",
 		ReceiverCreateSettings: set,
 	})

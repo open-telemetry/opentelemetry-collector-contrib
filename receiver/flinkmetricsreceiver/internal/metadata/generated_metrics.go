@@ -1850,11 +1850,14 @@ func WithFlinkJobName(val string) ResourceMetricsOption {
 	}
 }
 
-// WithFlinkResourceType sets provided value as "flink.resource.type" attribute for current resource.
-func WithFlinkResourceType(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("flink.resource.type", val)
-	}
+// WithFlinkResourceTypeJobmanager sets "flink.resource.type=jobmanager" attribute for current resource.
+func WithFlinkResourceTypeJobmanager(rm pmetric.ResourceMetrics) {
+	rm.Resource().Attributes().PutStr("flink.resource.type", "jobmanager")
+}
+
+// WithFlinkResourceTypeTaskmanager sets "flink.resource.type=taskmanager" attribute for current resource.
+func WithFlinkResourceTypeTaskmanager(rm pmetric.ResourceMetrics) {
+	rm.Resource().Attributes().PutStr("flink.resource.type", "taskmanager")
 }
 
 // WithFlinkSubtaskIndex sets provided value as "flink.subtask.index" attribute for current resource.

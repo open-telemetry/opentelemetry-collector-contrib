@@ -212,14 +212,14 @@ func newReceiver(
 	defaultResponse := &splunksapm.PostSpansResponse{}
 	defaultResponseBytes, err := defaultResponse.Marshal()
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal default response body for %v receiver: %w", config.ID(), err)
+		return nil, fmt.Errorf("failed to marshal default response body for %v receiver: %w", params.ID, err)
 	}
 	transport := "http"
 	if config.TLSSetting != nil {
 		transport = "https"
 	}
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
-		ReceiverID:             config.ID(),
+		ReceiverID:             params.ID,
 		Transport:              transport,
 		ReceiverCreateSettings: params,
 	})

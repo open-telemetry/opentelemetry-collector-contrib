@@ -26,7 +26,6 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/azure"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
 
 func TestNewDetector(t *testing.T) {
@@ -44,7 +43,7 @@ func TestDetector_Detect_K8s_Azure(t *testing.T) {
 	assert.Equal(t, map[string]interface{}{
 		"cloud.provider": "azure",
 		"cloud.platform": "azure_aks",
-	}, internal.AttributesToMap(res.Attributes()), "Resource attrs returned are incorrect")
+	}, res.Attributes().AsRaw(), "Resource attrs returned are incorrect")
 }
 
 func TestDetector_Detect_K8s_NonAzure(t *testing.T) {

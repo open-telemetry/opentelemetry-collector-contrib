@@ -38,7 +38,7 @@ type logProcessor struct {
 	router    router[component.LogsExporter, ottllog.TransformContext]
 }
 
-func newLogProcessor(settings component.TelemetrySettings, config component.ProcessorConfig) *logProcessor {
+func newLogProcessor(settings component.TelemetrySettings, config component.Config) *logProcessor {
 	cfg := rewriteRoutingEntriesToOTTL(config.(*Config))
 
 	return &logProcessor{

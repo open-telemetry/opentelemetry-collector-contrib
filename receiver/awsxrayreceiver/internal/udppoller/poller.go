@@ -65,14 +65,12 @@ type RawSegment struct {
 // Config represents the configurations needed to
 // start the UDP poller
 type Config struct {
-	ReceiverID         component.ID
 	Transport          string
 	Endpoint           string
 	NumOfPollerToStart int
 }
 
 type poller struct {
-	receiverID           component.ID
 	udpSock              socketconn.SocketConn
 	logger               *zap.Logger
 	wg                   sync.WaitGroup
@@ -109,7 +107,7 @@ func New(cfg *Config, set component.ReceiverCreateSettings) (Poller, error) {
 		zap.String(Transport, addr.String()))
 
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
-		ReceiverID:             cfg.ReceiverID,
+		ReceiverID:             set.ID,
 		Transport:              cfg.Transport,
 		LongLivedCtx:           true,
 		ReceiverCreateSettings: set,
@@ -119,7 +117,6 @@ func New(cfg *Config, set component.ReceiverCreateSettings) (Poller, error) {
 	}
 
 	return &poller{
-		receiverID:     cfg.ReceiverID,
 		udpSock:        sock,
 		logger:         set.Logger,
 		maxPollerCount: cfg.NumOfPollerToStart,

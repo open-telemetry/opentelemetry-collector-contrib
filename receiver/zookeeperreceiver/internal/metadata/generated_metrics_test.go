@@ -215,7 +215,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("state")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeState(1).String(), attrVal.Str())
+			assert.Equal(t, "synced", attrVal.Str())
 			validatedMetrics["zookeeper.follower.count"] = struct{}{}
 		case "zookeeper.fsync.exceeded_threshold.count":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -277,7 +277,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("direction")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeDirection(1).String(), attrVal.Str())
+			assert.Equal(t, "received", attrVal.Str())
 			validatedMetrics["zookeeper.packet.count"] = struct{}{}
 		case "zookeeper.request.active":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())

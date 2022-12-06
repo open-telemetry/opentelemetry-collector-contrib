@@ -116,7 +116,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("request")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeRequest(1).String(), attrVal.Str())
+			assert.Equal(t, "put", attrVal.Str())
 			validatedMetrics["riak.node.operation.count"] = struct{}{}
 		case "riak.node.operation.time.mean":
 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
@@ -130,7 +130,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("request")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeRequest(1).String(), attrVal.Str())
+			assert.Equal(t, "put", attrVal.Str())
 			validatedMetrics["riak.node.operation.time.mean"] = struct{}{}
 		case "riak.node.read_repair.count":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -159,7 +159,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("operation")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeOperation(1).String(), attrVal.Str())
+			assert.Equal(t, "read", attrVal.Str())
 			validatedMetrics["riak.vnode.index.operation.count"] = struct{}{}
 		case "riak.vnode.operation.count":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -175,7 +175,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("request")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeRequest(1).String(), attrVal.Str())
+			assert.Equal(t, "put", attrVal.Str())
 			validatedMetrics["riak.vnode.operation.count"] = struct{}{}
 		}
 	}

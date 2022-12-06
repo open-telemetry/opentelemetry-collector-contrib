@@ -88,7 +88,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("type")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeType(1).String(), attrVal.Str())
+			assert.Equal(t, "major", attrVal.Str())
 			validatedMetrics["system.paging.faults"] = struct{}{}
 		case "system.paging.operations":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -104,10 +104,10 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("direction")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeDirection(1).String(), attrVal.Str())
+			assert.Equal(t, "page_in", attrVal.Str())
 			attrVal, ok = dp.Attributes().Get("type")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeType(1).String(), attrVal.Str())
+			assert.Equal(t, "major", attrVal.Str())
 			validatedMetrics["system.paging.operations"] = struct{}{}
 		case "system.paging.usage":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -126,7 +126,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.EqualValues(t, "attr-val", attrVal.Str())
 			attrVal, ok = dp.Attributes().Get("state")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeState(1).String(), attrVal.Str())
+			assert.Equal(t, "cached", attrVal.Str())
 			validatedMetrics["system.paging.usage"] = struct{}{}
 		case "system.paging.utilization":
 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
@@ -143,7 +143,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.EqualValues(t, "attr-val", attrVal.Str())
 			attrVal, ok = dp.Attributes().Get("state")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeState(1).String(), attrVal.Str())
+			assert.Equal(t, "cached", attrVal.Str())
 			validatedMetrics["system.paging.utilization"] = struct{}{}
 		}
 	}

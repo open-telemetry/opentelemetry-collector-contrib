@@ -300,7 +300,7 @@ See the table below for details on each context and the fields it exposes.
 | `spans.spanevent`   | [SpanEvent](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottlspanevent/README.md) |
 | `metrics.metric`    | [Metric](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottlmetric/README.md)       |
 | `metrics.datapoint` | [DataPoint](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottldatapoint/README.md) |
-| `logs.log`          | [Log](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottllog/README.md)             |
+| `logs.log_record`   | [Log](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottllog/README.md)             |
 
 The OTTL allows the use of `and`, `or`, and `()` in conditions.
 See [OTTL Boolean Expressions](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/README.md#boolean-expressions) for more details.
@@ -319,7 +319,7 @@ If all datapoints for a metric are dropped, the metric will also be dropped.
 ```yaml
 processors:
   filter:
-    traces:
+    spans:
       span:
         - 'attributes["container.name"] == "app_container_1"'
         - 'resource.attributes["host.name"] == "localhost"'

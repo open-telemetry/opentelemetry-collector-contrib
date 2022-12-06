@@ -51,7 +51,7 @@ func newPodIdentifier(from string, name string, value string) kube.PodIdentifier
 	}
 }
 
-func newTracesProcessor(cfg component.ProcessorConfig, next consumer.Traces, options ...option) (component.TracesProcessor, error) {
+func newTracesProcessor(cfg component.Config, next consumer.Traces, options ...option) (component.TracesProcessor, error) {
 	opts := options
 	opts = append(opts, withKubeClientProvider(newFakeClient))
 	return createTracesProcessorWithOptions(
@@ -63,7 +63,7 @@ func newTracesProcessor(cfg component.ProcessorConfig, next consumer.Traces, opt
 	)
 }
 
-func newMetricsProcessor(cfg component.ProcessorConfig, nextMetricsConsumer consumer.Metrics, options ...option) (component.MetricsProcessor, error) {
+func newMetricsProcessor(cfg component.Config, nextMetricsConsumer consumer.Metrics, options ...option) (component.MetricsProcessor, error) {
 	opts := options
 	opts = append(opts, withKubeClientProvider(newFakeClient))
 	return createMetricsProcessorWithOptions(
@@ -75,7 +75,7 @@ func newMetricsProcessor(cfg component.ProcessorConfig, nextMetricsConsumer cons
 	)
 }
 
-func newLogsProcessor(cfg component.ProcessorConfig, nextLogsConsumer consumer.Logs, options ...option) (component.LogsProcessor, error) {
+func newLogsProcessor(cfg component.Config, nextLogsConsumer consumer.Logs, options ...option) (component.LogsProcessor, error) {
 	opts := options
 	opts = append(opts, withKubeClientProvider(newFakeClient))
 	return createLogsProcessorWithOptions(
@@ -120,7 +120,7 @@ type multiTest struct {
 
 func newMultiTest(
 	t *testing.T,
-	cfg component.ProcessorConfig,
+	cfg component.Config,
 	errFunc func(err error),
 	options ...option,
 ) *multiTest {

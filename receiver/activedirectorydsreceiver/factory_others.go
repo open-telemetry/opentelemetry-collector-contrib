@@ -30,7 +30,7 @@ var errReceiverNotSupported = fmt.Errorf("The '%s' receiver is only supported on
 func createMetricsReceiver(
 	_ context.Context,
 	_ component.ReceiverCreateSettings,
-	_ component.ReceiverConfig,
+	_ component.Config,
 	_ consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	return nil, errReceiverNotSupported

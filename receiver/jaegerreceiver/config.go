@@ -85,7 +85,7 @@ type Config struct {
 	RemoteSampling          *RemoteSamplingConfig `mapstructure:"remote_sampling"`
 }
 
-var _ component.ReceiverConfig = (*Config)(nil)
+var _ component.Config = (*Config)(nil)
 var _ confmap.Unmarshaler = (*Config)(nil)
 
 // Validate checks the receiver configuration is valid

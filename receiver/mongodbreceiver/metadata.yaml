@@ -13,7 +13,7 @@ attributes:
     description: The name of a collection.
     type: string
   memory_type:
-    value: type
+    name_override: type
     description: The type of memory used.
     type: string
     enum:
@@ -30,7 +30,7 @@ attributes:
       - getmore
       - command
   connection_type:
-    value: type
+    name_override: type
     description: The status of the connection.
     type: string
     enum:

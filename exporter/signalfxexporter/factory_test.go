@@ -140,7 +140,7 @@ func TestFactory_CreateMetricsExporterFails(t *testing.T) {
 				Realm:            "lab",
 				TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: -2 * time.Second},
 			},
-			errorMessage: "failed to process \"signalfx\" config: cannot have a negative \"timeout\"",
+			errorMessage: "cannot have a negative \"timeout\"",
 		},
 		{
 			name: "empty_realm_and_urls",
@@ -148,8 +148,7 @@ func TestFactory_CreateMetricsExporterFails(t *testing.T) {
 				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				AccessToken:      "testToken",
 			},
-			errorMessage: "failed to process \"signalfx\" config: requires a non-empty \"realm\"," +
-				" or \"ingest_url\" and \"api_url\" should be explicitly set",
+			errorMessage: "requires a non-empty \"realm\", or \"ingest_url\" and \"api_url\" should be explicitly set",
 		},
 		{
 			name: "empty_realm_and_api_url",
@@ -158,8 +157,7 @@ func TestFactory_CreateMetricsExporterFails(t *testing.T) {
 				AccessToken:      "testToken",
 				IngestURL:        "http://localhost:123",
 			},
-			errorMessage: "failed to process \"signalfx\" config: requires a non-empty \"realm\"," +
-				" or \"ingest_url\" and \"api_url\" should be explicitly set",
+			errorMessage: "requires a non-empty \"realm\", or \"ingest_url\" and \"api_url\" should be explicitly set",
 		},
 		{
 			name: "negative_MaxConnections",
@@ -171,7 +169,7 @@ func TestFactory_CreateMetricsExporterFails(t *testing.T) {
 				APIURL:           "https://api.us1.signalfx.com/",
 				MaxConnections:   -10,
 			},
-			errorMessage: "failed to process \"signalfx\" config: cannot have a negative \"max_connections\"",
+			errorMessage: "cannot have a negative \"max_connections\"",
 		},
 	}
 	for _, tt := range tests {

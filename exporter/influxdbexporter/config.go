@@ -28,6 +28,18 @@ const (
 	stability = component.StabilityLevelBeta
 )
 
+// V1Compatibility is used to specify if the exporter should use the v1.X InfluxDB API schema.
+type V1Compatibility struct {
+	// Enabled is used to specify if the exporter should use the v1.X InfluxDB API schema
+	Enabled bool `mapstructure:"enabled"`
+	// DB is used to specify the name of the V1 InfluxDB database that telemetry will be written to.
+	DB string `mapstructure:"db"`
+	// Username is used to optionally specify the basic auth username
+	Username string `mapstructure:"username"`
+	// Password is used to optionally specify the basic auth password
+	Password string `mapstructure:"password"`
+}
+
 // Config defines configuration for the InfluxDB exporter.
 type Config struct {
 	config.ExporterSettings       `mapstructure:",squash"`
@@ -41,6 +53,8 @@ type Config struct {
 	Bucket string `mapstructure:"bucket"`
 	// Token is used to identify InfluxDB permissions within the organization.
 	Token string `mapstructure:"token"`
+	// V1Compatibility is used to specify if the exporter should use the v1.X InfluxDB API schema.
+	V1Compatibility V1Compatibility `mapstructure:"v1_compatibility"`
 
 	// MetricsSchema indicates the metrics schema to emit to line protocol.
 	// Options:

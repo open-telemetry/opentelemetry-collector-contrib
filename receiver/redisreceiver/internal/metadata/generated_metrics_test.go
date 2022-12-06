@@ -364,7 +364,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, float64(1), dp.DoubleValue())
 			attrVal, ok := dp.Attributes().Get("state")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeState(1).String(), attrVal.Str())
+			assert.Equal(t, "sys", attrVal.Str())
 			validatedMetrics["redis.cpu.time"] = struct{}{}
 		case "redis.db.avg_ttl":
 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
@@ -612,7 +612,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, int64(1), dp.IntValue())
 			attrVal, ok := dp.Attributes().Get("role")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeRole(1).String(), attrVal.Str())
+			assert.Equal(t, "replica", attrVal.Str())
 			validatedMetrics["redis.role"] = struct{}{}
 		case "redis.slaves.connected":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())

@@ -42,7 +42,7 @@ func NewFactory() component.ExporterFactory {
 }
 
 // createDefaultConfig creates the default configuration for exporter.
-func createDefaultConfig() component.ExporterConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: defaultTimeout},
@@ -55,7 +55,7 @@ func createDefaultConfig() component.ExporterConfig {
 func createMetricsExporter(
 	ctx context.Context,
 	params component.ExporterCreateSettings,
-	cfg component.ExporterConfig) (component.MetricsExporter, error) {
+	cfg component.Config) (component.MetricsExporter, error) {
 	eCfg := cfg.(*Config)
 	mExp, err := collector.NewGoogleCloudMetricsExporter(ctx, eCfg.GMPConfig.toCollectorConfig(), params.TelemetrySettings.Logger, params.BuildInfo.Version, eCfg.Timeout)
 	if err != nil {

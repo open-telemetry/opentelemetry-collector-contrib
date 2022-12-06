@@ -588,7 +588,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.EqualValues(t, "attr-val", attrVal.Str())
 			attrVal, ok = dp.Attributes().Get("direction")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeDirection(1).String(), attrVal.Str())
+			assert.Equal(t, "receive", attrVal.Str())
 			validatedMetrics["k8s.node.network.errors"] = struct{}{}
 		case "k8s.node.network.io":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -607,7 +607,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.EqualValues(t, "attr-val", attrVal.Str())
 			attrVal, ok = dp.Attributes().Get("direction")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeDirection(1).String(), attrVal.Str())
+			assert.Equal(t, "receive", attrVal.Str())
 			validatedMetrics["k8s.node.network.io"] = struct{}{}
 		case "k8s.pod.cpu.time":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -749,7 +749,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.EqualValues(t, "attr-val", attrVal.Str())
 			attrVal, ok = dp.Attributes().Get("direction")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeDirection(1).String(), attrVal.Str())
+			assert.Equal(t, "receive", attrVal.Str())
 			validatedMetrics["k8s.pod.network.errors"] = struct{}{}
 		case "k8s.pod.network.io":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -768,7 +768,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.EqualValues(t, "attr-val", attrVal.Str())
 			attrVal, ok = dp.Attributes().Get("direction")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeDirection(1).String(), attrVal.Str())
+			assert.Equal(t, "receive", attrVal.Str())
 			validatedMetrics["k8s.pod.network.io"] = struct{}{}
 		case "k8s.volume.available":
 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())

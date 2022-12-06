@@ -2,27 +2,52 @@
 
 # hostmetricsreceiver/cpu
 
-## Metrics
+## Default Metrics
 
-These are the metrics available for this scraper.
-
-| Name | Description | Unit | Type | Attributes |
-| ---- | ----------- | ---- | ---- | ---------- |
-| **system.cpu.time** | Total CPU seconds broken down by different states. | s | Sum(Double) | <ul> <li>cpu</li> <li>state</li> </ul> |
-| system.cpu.utilization | Percentage of CPU time broken down by different states. | 1 | Gauge(Double) | <ul> <li>cpu</li> <li>state</li> </ul> |
-
-**Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
-Any metric can be enabled or disabled with the following scraper configuration:
+The following metrics are emitted by default. Each of them can be disabled by applying the following configuration:
 
 ```yaml
 metrics:
   <metric_name>:
-    enabled: <true|false>
+    enabled: false
 ```
 
-## Metric attributes
+### system.cpu.time
+
+Total CPU seconds broken down by different states.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| s | Sum | Double | Cumulative | true |
+
+#### Attributes
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| cpu | CPU number starting at 0. |  |
-| state | Breakdown of CPU usage by type. | idle, interrupt, nice, softirq, steal, system, user, wait |
+| cpu | CPU number starting at 0. | Any Str |
+| state | Breakdown of CPU usage by type. | Str: ``idle``, ``interrupt``, ``nice``, ``softirq``, ``steal``, ``system``, ``user``, ``wait`` |
+
+## Optional Metrics
+
+The following metrics are not emitted by default. Each of them can be enabled by applying the following configuration:
+
+```yaml
+metrics:
+  <metric_name>:
+    enabled: true
+```
+
+### system.cpu.utilization
+
+Percentage of CPU time broken down by different states.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| cpu | CPU number starting at 0. | Any Str |
+| state | Breakdown of CPU usage by type. | Str: ``idle``, ``interrupt``, ``nice``, ``softirq``, ``steal``, ``system``, ``user``, ``wait`` |

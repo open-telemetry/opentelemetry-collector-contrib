@@ -326,20 +326,29 @@ func Test_ProcessTraces_TraceContext(t *testing.T) {
 			want: func(td ptrace.Traces) {
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("test", "operationa")
 			},
-		}, {
+		},
+		{
 			statement: `set(attributes["test"], ConvertCase(name, "upper")) where name == "operationA"`,
 			want: func(td ptrace.Traces) {
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("test", "OPERATIONA")
 			},
-		}, {
+		},
+		{
 			statement: `set(attributes["test"], ConvertCase(name, "snake")) where name == "operationA"`,
 			want: func(td ptrace.Traces) {
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("test", "operation_a")
 			},
-		}, {
+		},
+		{
 			statement: `set(attributes["test"], ConvertCase(name, "camel")) where name == "operationA"`,
 			want: func(td ptrace.Traces) {
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("test", "OperationA")
+			},
+		},
+		{
+			statement: `merge_maps(attributes, ParseJSON("{\"json_test\":\"pass\"}"), "insert") where name == "operationA"`,
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("json_test", "pass")
 			},
 		},
 	}
@@ -348,6 +357,36 @@ func Test_ProcessTraces_TraceContext(t *testing.T) {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructTraces()
 			processor, err := NewProcessor(nil, []common.ContextStatements{{Context: "span", Statements: []string{tt.statement}}}, componenttest.NewNopTelemetrySettings())
+			assert.NoError(t, err)
+
+			_, err = processor.ProcessTraces(context.Background(), td)
+			assert.NoError(t, err)
+
+			exTd := constructTraces()
+			tt.want(exTd)
+
+			assert.Equal(t, exTd, td)
+		})
+	}
+}
+
+func Test_ProcessTraces_SpanEventContext(t *testing.T) {
+	tests := []struct {
+		statement string
+		want      func(td ptrace.Traces)
+	}{
+		{
+			statement: `set(attributes["test"], "pass") where name == "eventA"`,
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Events().At(0).Attributes().PutStr("test", "pass")
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.statement, func(t *testing.T) {
+			td := constructTraces()
+			processor, err := NewProcessor(nil, []common.ContextStatements{{Context: "spanevent", Statements: []string{tt.statement}}}, componenttest.NewNopTelemetrySettings())
 			assert.NoError(t, err)
 
 			_, err = processor.ProcessTraces(context.Background(), td)
@@ -608,6 +647,8 @@ func fillSpanOne(span ptrace.Span) {
 	status := span.Status()
 	status.SetCode(ptrace.StatusCodeError)
 	status.SetMessage("status-cancelled")
+	event := span.Events().AppendEmpty()
+	event.SetName("eventA")
 }
 
 func fillSpanTwo(span ptrace.Span) {
@@ -626,4 +667,6 @@ func fillSpanTwo(span ptrace.Span) {
 	status := span.Status()
 	status.SetCode(ptrace.StatusCodeError)
 	status.SetMessage("status-cancelled")
+	event := span.Events().AppendEmpty()
+	event.SetName("eventB")
 }

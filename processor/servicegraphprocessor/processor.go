@@ -75,7 +75,7 @@ type processor struct {
 	shutdownCh chan interface{}
 }
 
-func newProcessor(logger *zap.Logger, config component.ProcessorConfig, nextConsumer consumer.Traces) *processor {
+func newProcessor(logger *zap.Logger, config component.Config, nextConsumer consumer.Traces) *processor {
 	pConfig := config.(*Config)
 
 	bounds := defaultLatencyHistogramBucketsMs
@@ -323,7 +323,7 @@ func (p *processor) updateErrorMetrics(key string) { p.reqFailedTotal[key]++ }
 func (p *processor) updateDurationMetrics(key string, duration float64) {
 	index := sort.SearchFloat64s(p.reqDurationBounds, duration) // Search bucket index
 	if _, ok := p.reqDurationSecondsBucketCounts[key]; !ok {
-		p.reqDurationSecondsBucketCounts[key] = make([]uint64, len(p.reqDurationBounds))
+		p.reqDurationSecondsBucketCounts[key] = make([]uint64, len(p.reqDurationBounds)+1)
 	}
 	p.reqDurationSecondsSum[key] += duration
 	p.reqDurationSecondsCount[key]++

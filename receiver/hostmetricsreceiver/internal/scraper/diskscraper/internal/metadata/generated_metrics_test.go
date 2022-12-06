@@ -107,7 +107,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.EqualValues(t, "attr-val", attrVal.Str())
 			attrVal, ok = dp.Attributes().Get("direction")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeDirection(1).String(), attrVal.Str())
+			assert.Equal(t, "read", attrVal.Str())
 			validatedMetrics["system.disk.io"] = struct{}{}
 		case "system.disk.io_time":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -142,7 +142,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.EqualValues(t, "attr-val", attrVal.Str())
 			attrVal, ok = dp.Attributes().Get("direction")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeDirection(1).String(), attrVal.Str())
+			assert.Equal(t, "read", attrVal.Str())
 			validatedMetrics["system.disk.merged"] = struct{}{}
 		case "system.disk.operation_time":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -161,7 +161,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.EqualValues(t, "attr-val", attrVal.Str())
 			attrVal, ok = dp.Attributes().Get("direction")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeDirection(1).String(), attrVal.Str())
+			assert.Equal(t, "read", attrVal.Str())
 			validatedMetrics["system.disk.operation_time"] = struct{}{}
 		case "system.disk.operations":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
@@ -180,7 +180,7 @@ func TestAllMetrics(t *testing.T) {
 			assert.EqualValues(t, "attr-val", attrVal.Str())
 			attrVal, ok = dp.Attributes().Get("direction")
 			assert.True(t, ok)
-			assert.Equal(t, AttributeDirection(1).String(), attrVal.Str())
+			assert.Equal(t, "read", attrVal.Str())
 			validatedMetrics["system.disk.operations"] = struct{}{}
 		case "system.disk.pending_operations":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())

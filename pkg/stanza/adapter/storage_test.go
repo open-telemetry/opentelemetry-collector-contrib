@@ -31,9 +31,9 @@ func TestStorage(t *testing.T) {
 
 	storageExt := storagetest.NewFileBackedStorageExtension("test", t.TempDir())
 	host := storagetest.NewStorageHost().
-		WithExtension(storageExt.ID(), storageExt)
+		WithExtension(storageExt.ID, storageExt)
 
-	id := storageExt.ID()
+	id := storageExt.ID
 	r := createReceiver(t, id)
 	require.NoError(t, r.Start(ctx, host))
 
@@ -75,7 +75,7 @@ func TestStorage(t *testing.T) {
 
 func TestFindCorrectStorageExtension(t *testing.T) {
 	correctStoragedExt := storagetest.NewInMemoryStorageExtension("want")
-	id := correctStoragedExt.ID()
+	id := correctStoragedExt.ID
 	r := createReceiver(t, id)
 	host := storagetest.NewStorageHost().
 		WithNonStorageExtension("one").
@@ -104,7 +104,7 @@ func TestFailOnMissingStorageExtension(t *testing.T) {
 
 func TestFailOnNonStorageExtension(t *testing.T) {
 	nonStorageExt := storagetest.NewNonStorageExtension("non")
-	id := nonStorageExt.ID()
+	id := nonStorageExt.ID
 	r := createReceiver(t, id)
 	host := storagetest.NewStorageHost().
 		WithExtension(id, nonStorageExt)

@@ -55,7 +55,7 @@ func NewFactory() component.ProcessorFactory {
 }
 
 // createDefaultConfig creates the default configuration for the processor.
-func createDefaultConfig() component.ProcessorConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 		NumTraces:         defaultNumTraces,
@@ -72,7 +72,7 @@ func createDefaultConfig() component.ProcessorConfig {
 func createTracesProcessor(
 	_ context.Context,
 	params component.ProcessorCreateSettings,
-	cfg component.ProcessorConfig,
+	cfg component.Config,
 	nextConsumer consumer.Traces) (component.TracesProcessor, error) {
 
 	oCfg := cfg.(*Config)

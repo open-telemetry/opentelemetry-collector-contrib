@@ -52,7 +52,7 @@ func createMetricsConsumer(config MetricsConfig, settings component.TelemetrySet
 type metricsConsumerCreator func(config MetricsConfig, settings component.TelemetrySettings, otelVersion string) (
 	*metricsConsumer, error)
 
-func newMetricsExporter(settings component.ExporterCreateSettings, c component.ExporterConfig, creator metricsConsumerCreator) (*metricsExporter, error) {
+func newMetricsExporter(settings component.ExporterCreateSettings, c component.Config, creator metricsConsumerCreator) (*metricsExporter, error) {
 	cfg, ok := c.(*Config)
 	if !ok {
 		return nil, fmt.Errorf("invalid config: %#v", c)

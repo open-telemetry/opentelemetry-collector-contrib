@@ -35,7 +35,7 @@ type Config struct {
 	Filename string `mapstructure:"filename,omitempty"`
 }
 
-var _ component.ExtensionConfig = (*Config)(nil)
+var _ component.Config = (*Config)(nil)
 var errNoTokenProvided = errors.New("no bearer token provided")
 
 // Validate checks if the extension configuration is valid

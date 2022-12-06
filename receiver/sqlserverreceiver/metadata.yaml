@@ -7,7 +7,7 @@ resource_attributes:
 
 attributes:
   page.operations:
-    value: type
+    name_override: type
     description: The page operation types.
     type: string
     enum: [read, write]

@@ -10,28 +10,28 @@ resource_attributes:
 
 attributes:
   workers_state:
-    value: state
+    name_override: state
     description: The state of workers.
     type: string
     enum:
       - busy
       - idle
   cpu_level:
-    value: level
+    name_override: level
     description: Level of processes.
     type: string
     enum:
       - self
       - children
   cpu_mode:
-    value: mode
+    name_override: mode
     description: Mode of processes.
     type: string
     enum:
     - system
     - user
   scoreboard_state:
-    value: state
+    name_override: state
     description: The state of a connection.
     type: string
     enum:

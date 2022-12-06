@@ -91,7 +91,7 @@ func (f TestReceiverType) Type() component.Type {
 	return testType
 }
 
-func (f TestReceiverType) CreateDefaultConfig() component.ReceiverConfig {
+func (f TestReceiverType) CreateDefaultConfig() component.Config {
 	return &TestConfig{
 		BaseConfig: BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(component.NewID(testType)),
@@ -101,10 +101,10 @@ func (f TestReceiverType) CreateDefaultConfig() component.ReceiverConfig {
 	}
 }
 
-func (f TestReceiverType) BaseConfig(cfg component.ReceiverConfig) BaseConfig {
+func (f TestReceiverType) BaseConfig(cfg component.Config) BaseConfig {
 	return cfg.(*TestConfig).BaseConfig
 }
 
-func (f TestReceiverType) InputConfig(cfg component.ReceiverConfig) operator.Config {
+func (f TestReceiverType) InputConfig(cfg component.Config) operator.Config {
 	return cfg.(*TestConfig).Input
 }

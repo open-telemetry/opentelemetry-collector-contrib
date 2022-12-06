@@ -48,11 +48,15 @@ func init() {
 	featuregate.GetRegistry().MustRegisterID(
 		emitMetricsWithoutResourceAttributesFeatureGateID,
 		featuregate.StageAlpha,
-		featuregate.WithRegisterDescription(emitMetricsWithoutResourceAttributesDescription))
+		featuregate.WithRegisterDescription(emitMetricsWithoutResourceAttributesDescription),
+		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/12960"),
+	)
 	featuregate.GetRegistry().MustRegisterID(
 		emitMetricsWithResourceAttributesFeatureGateID,
 		featuregate.StageBeta,
-		featuregate.WithRegisterDescription(emitMetricsWithResourceAttributesDescription))
+		featuregate.WithRegisterDescription(emitMetricsWithResourceAttributesDescription),
+		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/12960"),
+	)
 }
 
 type postgreSQLScraper struct {
