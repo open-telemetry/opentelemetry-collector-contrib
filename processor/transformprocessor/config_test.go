@@ -38,17 +38,6 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(typeStr, ""),
 			expected: &Config{
 				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
-				OTTLConfig: OTTLConfig{
-					Traces: SignalConfig{
-						Statements: []string{},
-					},
-					Metrics: SignalConfig{
-						Statements: []string{},
-					},
-					Logs: SignalConfig{
-						Statements: []string{},
-					},
-				},
 				TraceStatements: []common.ContextStatements{
 					{
 						Context: "span",
@@ -95,39 +84,6 @@ func TestLoadConfig(t *testing.T) {
 					},
 				},
 			},
-		},
-		{
-			id: component.NewIDWithName(typeStr, "deprecated_format"),
-			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewIDWithName(typeStr, "")),
-				OTTLConfig: OTTLConfig{
-					Traces: SignalConfig{
-						Statements: []string{
-							`set(name, "bear") where attributes["http.path"] == "/animal"`,
-							`keep_keys(attributes, ["http.method", "http.path"])`,
-						},
-					},
-					Metrics: SignalConfig{
-						Statements: []string{
-							`set(metric.name, "bear") where attributes["http.path"] == "/animal"`,
-							`keep_keys(attributes, ["http.method", "http.path"])`,
-						},
-					},
-					Logs: SignalConfig{
-						Statements: []string{
-							`set(body, "bear") where attributes["http.path"] == "/animal"`,
-							`keep_keys(attributes, ["http.method", "http.path"])`,
-						},
-					},
-				},
-				TraceStatements:  []common.ContextStatements{},
-				MetricStatements: []common.ContextStatements{},
-				LogStatements:    []common.ContextStatements{},
-			},
-		},
-		{
-			id:           component.NewIDWithName(typeStr, "using_both_formats"),
-			errorMessage: "cannot use Traces, Metrics and/or Logs with TraceStatements, MetricStatements and/or LogStatements",
 		},
 		{
 			id:           component.NewIDWithName(typeStr, "bad_syntax_trace"),
