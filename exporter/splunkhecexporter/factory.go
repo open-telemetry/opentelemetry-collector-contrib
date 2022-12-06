@@ -86,6 +86,8 @@ func createDefaultConfig() component.Config {
 			SeverityNumber: splunk.DefaultSeverityNumberLabel,
 			Name:           splunk.DefaultNameLabel,
 		},
+		HealthPath:            splunk.DefaultHealthPath,
+		HecHealthCheckEnabled: false,
 	}
 }
 
