@@ -43,7 +43,7 @@ type Config struct {
 	// Directories represents the list of directories to query
 	Directories []internal.ScraperConfig `mapstructure:"directories"`
 
-	// Pods represents the list of directories to query
+	// Pods represents the list of pods to query
 	Pods []internal.ScraperConfig `mapstructure:"pods"`
 }
 
