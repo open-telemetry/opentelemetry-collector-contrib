@@ -1716,6 +1716,22 @@
                      "unit": "ns"
                   },
                   {
+                     "description": "The number of connection attempts (successful or not) to the MySQL server.",
+                     "name": "mysql.connection.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "188",
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "1"
+                  },
+                  {
                      "description": "The number of transmitted bytes between server and clients.",
                      "name": "mysql.client.network.io",
                      "sum": {
