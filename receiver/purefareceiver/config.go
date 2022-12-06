@@ -52,10 +52,10 @@ type Settings struct {
 }
 
 type ReloadIntervals struct {
-	Array      time.Duration `mapstructure:"array"`
-	Host       time.Duration `mapstructure:"host"`
-	Directorie time.Duration `mapstructure:"directorie"`
-	Pod        time.Duration `mapstructure:"pod"`
+	Array       time.Duration `mapstructure:"array"`
+	Host        time.Duration `mapstructure:"host"`
+	Directories time.Duration `mapstructure:"directories"`
+	Pods        time.Duration `mapstructure:"pods"`
 }
 
 func (c *Config) Validate() error {
