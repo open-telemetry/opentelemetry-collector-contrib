@@ -15,7 +15,10 @@
 package fileconsumer // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
 
 import (
-	"github.com/bmatcuk/doublestar/v3"
+	"os"
+	"path/filepath"
+
+	"github.com/bmatcuk/doublestar/v4"
 )
 
 type Finder struct {
@@ -27,11 +30,14 @@ type Finder struct {
 func (f Finder) FindFiles() []string {
 	all := make([]string, 0, len(f.Include))
 	for _, include := range f.Include {
-		matches, _ := doublestar.Glob(include) // compile error checked in build
+		basepath, pattern := doublestar.SplitPattern(include)
+		fsys := os.DirFS(basepath)
+		matches, _ := doublestar.Glob(fsys, pattern) // compile error checked in build
 	INCLUDE:
 		for _, match := range matches {
 			for _, exclude := range f.Exclude {
-				if itMatches, _ := doublestar.PathMatch(exclude, match); itMatches {
+				_, pattern = doublestar.SplitPattern(exclude)
+				if itMatches, _ := doublestar.PathMatch(pattern, match); itMatches {
 					continue INCLUDE
 				}
 			}
@@ -42,7 +48,7 @@ func (f Finder) FindFiles() []string {
 				}
 			}
 
-			all = append(all, match)
+			all = append(all, filepath.Join(basepath, match))
 		}
 	}
 
