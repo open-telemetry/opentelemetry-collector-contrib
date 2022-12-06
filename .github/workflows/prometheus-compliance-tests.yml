@@ -53,7 +53,7 @@ jobs:
       - name: Copy binary to compliance directory
         run: mkdir compliance/remote_write_sender/bin && cp opentelemetry-collector-contrib/bin/otelcontribcol_linux_amd64 compliance/remote_write_sender/bin/otelcol_linux_amd64
       - name: Run compliance tests
-        run: go test -v -json --tags=compliance -run "TestRemoteWrite/otel/.+" ./ > ./test-report.json
+        run: go test -v --tags=compliance -run "TestRemoteWrite/otel/.+" ./ |& tee ./test-report.txt
         working-directory: compliance/remote_write_sender
       - name: Analyze Test and/or Coverage Results
         if: always()
@@ -62,5 +62,5 @@ jobs:
           api_key: ${{ secrets.FORESIGHT_API_KEY }}
           working_directory: compliance/remote_write_sender
           test_framework: golang
-          test_format: json
-          test_path: ./test-report.json
+          test_format: text
+          test_path: ./test-report.txt
