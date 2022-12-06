@@ -95,6 +95,15 @@ func TestDefaultReceivers(t *testing.T) {
 			skipLifecyle: true, // Requires AWS endpoint to check identity to run
 		},
 		{
+			receiver: "azureblob",
+			getConfigFn: func() component.Config {
+				cfg := rcvrFactories["azureeventhub"].CreateDefaultConfig().(*azureeventhubreceiver.Config)
+				cfg.Connection = "DefaultEndpointsProtocol=https;AccountName=accountName;AccountKey=accountKey==;EndpointSuffix=core.windows.net"
+				return cfg
+			},
+			skipLifecyle: true, // Requires Azure blob store to run
+		},
+		{
 			receiver: "azureeventhub",
 			getConfigFn: func() component.Config {
 				cfg := rcvrFactories["azureeventhub"].CreateDefaultConfig().(*azureeventhubreceiver.Config)

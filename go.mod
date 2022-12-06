@@ -870,6 +870,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfi
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver => ./receiver/awsxrayreceiver
 
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver => ./receiver/azureblobreceiver
+
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver => ./receiver/azureeventhubreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver => ./receiver/bigipreceiver
