@@ -36,6 +36,7 @@ attributes:
     type: string
   database_name:
     description: Name of database being queried (default is snowflake).
+    type: string
   warehouse_size:
     description: Size of warehouse being reported on.
     type: string

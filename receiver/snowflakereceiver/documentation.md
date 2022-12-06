@@ -2,83 +2,718 @@
 
 # snowflakereceiver
 
-## Metrics
+## Default Metrics
 
-These are the metrics available for this scraper.
-
-| Name | Description | Unit | Type | Attributes |
-| ---- | ----------- | ---- | ---- | ---------- |
-| snowflake.billing.cloud_service.total | Reported total credits used in the cloud service. | {credits} | Gauge(Double) | <ul> <li>service_type</li> </ul> |
-| snowflake.billing.total_credit.total | Reported total credits used across account. | {credits} | Gauge(Double) | <ul> <li>service_type</li> </ul> |
-| snowflake.billing.virtual_warehouse.total | Reported total credits used by virtual warehouse service. | {credits} | Gauge(Double) | <ul> <li>service_type</li> </ul> |
-| snowflake.billing.warehouse.cloud_service.total | Credits used across cloud service for given warehouse. | {credits} | Gauge(Double) | <ul> <li>warehouse_name</li> </ul> |
-| snowflake.billing.warehouse.total_credit.total | Total credits used associated with given warehouse. | {credits} | Gauge(Double) | <ul> <li>warehouse_name</li> </ul> |
-| snowflake.billing.warehouse.virtual_warehouse.total | Total credits used by virtual warehouse service for given warehouse. | {credits} | Gauge(Double) | <ul> <li>warehouse_name</li> </ul> |
-| **snowflake.database.bytes_scanned.avg** | Average bytes scanned in a database. | By | Gauge(Double) | <ul> <li>schema_name</li> <li>execution_status</li> <li>error_message</li> <li>query_type</li> <li>warehouse_name</li> <li>database_name</li> <li>warehouse_size</li> </ul> |
-| **snowflake.database.query.count** | Total query count for database. | 1 | Gauge(Int) | <ul> <li>schema_name</li> <li>execution_status</li> <li>error_message</li> <li>query_type</li> <li>warehouse_name</li> <li>database_name</li> <li>warehouse_size</li> </ul> |
-| snowflake.logins.total | Total login attempts for account. | 1 | Gauge(Int) | <ul> <li>error_message</li> <li>reported_client_type</li> <li>is_success</li> </ul> |
-| snowflake.pipe.credits_used.total | Snow pipe credits contotaled. | {credits} | Gauge(Double) | <ul> <li>pipe_name</li> </ul> |
-| **snowflake.query.blocked** | Blocked query count for warehouse. | 1 | Gauge(Double) | <ul> <li>warehouse_name</li> </ul> |
-| **snowflake.query.bytes_deleted.total** | Total bytes deleted in database. | By | Gauge(Int) | <ul> <li>schema_name</li> <li>execution_status</li> <li>error_message</li> <li>query_type</li> <li>warehouse_name</li> <li>database_name</li> <li>warehouse_size</li> </ul> |
-| snowflake.query.bytes_scanned.total | Total bytes scanend in database. | By | Gauge(Int) | <ul> <li>schema_name</li> <li>execution_status</li> <li>error_message</li> <li>query_type</li> <li>warehouse_name</li> <li>database_name</li> <li>warehouse_size</li> </ul> |
-| snowflake.query.bytes_spilled.local.total | Total bytes spilled (intermediate results do not fit in memory) by local storage. | By | Gauge(Int) | <ul> <li>schema_name</li> <li>execution_status</li> <li>error_message</li> <li>query_type</li> <li>warehouse_name</li> <li>database_name</li> <li>warehouse_size</li> </ul> |
-| snowflake.query.bytes_spilled.remote.total | Total bytes spilled (intermediate results do not fit in memory) by remote storage. | By | Gauge(Int) | <ul> <li>schema_name</li> <li>execution_status</li> <li>error_message</li> <li>query_type</li> <li>warehouse_name</li> <li>database_name</li> <li>warehouse_size</li> </ul> |
-| **snowflake.query.bytes_written.total** | Total bytes written by database. | By | Gauge(Int) | <ul> <li>schema_name</li> <li>execution_status</li> <li>error_message</li> <li>query_type</li> <li>warehouse_name</li> <li>database_name</li> <li>warehouse_size</li> </ul> |
-| **snowflake.query.compilation_time.total** | Total time taken to compile query. | s | Gauge(Double) | <ul> <li>schema_name</li> <li>execution_status</li> <li>error_message</li> <li>query_type</li> <li>warehouse_name</li> <li>database_name</li> <li>warehouse_size</li> </ul> |
-| snowflake.query.data_scanned_cache.avg | Average percentage of data scanned from cache. | 1 | Gauge(Double) | <ul> <li>schema_name</li> <li>execution_status</li> <li>error_message</li> <li>query_type</li> <li>warehouse_name</li> <li>database_name</li> <li>warehouse_size</li> </ul> |
-| **snowflake.query.executed** | Executed query count for warehouse. | 1 | Gauge(Double) | <ul> <li>warehouse_name</li> </ul> |
-| **snowflake.query.execution_time.total** | Total time spent executing queries in database. | s | Gauge(Double) | <ul> <li>schema_name</li> <li>execution_status</li> <li>error_message</li> <li>query_type</li> <li>warehouse_name</li> <li>database_name</li> <li>warehouse_size</li> </ul> |
-| snowflake.query.partitions_scanned.total | Number of partitions scanned during query so far. | 1 | Gauge(Int) | <ul> <li>schema_name</li> <li>execution_status</li> <li>error_message</li> <li>query_type</li> <li>warehouse_name</li> <li>database_name</li> <li>warehouse_size</li> </ul> |
-| **snowflake.query.queued_overload** | Overloaded query count for warehouse. | 1 | Gauge(Double) | <ul> <li>warehouse_name</li> </ul> |
-| **snowflake.query.queued_provision** | Number of compute resources queued for provisioning. | 1 | Gauge(Double) | <ul> <li>warehouse_name</li> </ul> |
-| **snowflake.queued_overload_time.avg** | Average time spent in warehouse queue due to warehouse being overloaded. | s | Gauge(Double) | <ul> <li>schema_name</li> <li>execution_status</li> <li>error_message</li> <li>query_type</li> <li>warehouse_name</li> <li>database_name</li> <li>warehouse_size</li> </ul> |
-| snowflake.queued_overload_time.total | Total time spent in warehouse queue due to warehouse being overloaded. | s | Gauge(Int) | <ul> <li>schema_name</li> <li>execution_status</li> <li>error_message</li> <li>query_type</li> <li>warehouse_name</li> <li>database_name</li> <li>warehouse_size</li> </ul> |
-| **snowflake.queued_provisioning_time.avg** | Average time spent in warehouse queue waiting for resources to provision. | s | Gauge(Double) | <ul> <li>schema_name</li> <li>execution_status</li> <li>error_message</li> <li>query_type</li> <li>warehouse_name</li> <li>database_name</li> <li>warehouse_size</li> </ul> |
-| snowflake.queued_provisioning_time.total | Total time spent in warehouse queue waiting for resources to provision. | s | Gauge(Int) | <ul> <li>schema_name</li> <li>execution_status</li> <li>error_message</li> <li>query_type</li> <li>warehouse_name</li> <li>database_name</li> <li>warehouse_size</li> </ul> |
-| **snowflake.queued_repair_time.avg** | Average time spent in warehouse queue waiting for compute resources to be repaired. | s | Gauge(Double) | <ul> <li>schema_name</li> <li>execution_status</li> <li>error_message</li> <li>query_type</li> <li>warehouse_name</li> <li>database_name</li> <li>warehouse_size</li> </ul> |
-| snowflake.queued_repair_time.total | Total time spent in warehouse queue waiting for compute resources to be repaired. | s | Gauge(Int) | <ul> <li>schema_name</li> <li>execution_status</li> <li>error_message</li> <li>query_type</li> <li>warehouse_name</li> <li>database_name</li> <li>warehouse_size</li> </ul> |
-| snowflake.rows_deleted.total | Number of rows deleted from a table (or tables). | {rows} | Gauge(Int) | <ul> <li>schema_name</li> <li>execution_status</li> <li>error_message</li> <li>query_type</li> <li>warehouse_name</li> <li>database_name</li> <li>warehouse_size</li> </ul> |
-| snowflake.rows_inserted.total | Number of rows inserted into a table (or tables). | {rows} | Gauge(Int) | <ul> <li>schema_name</li> <li>execution_status</li> <li>error_message</li> <li>query_type</li> <li>warehouse_name</li> <li>database_name</li> <li>warehouse_size</li> </ul> |
-| snowflake.rows_produced.total | Total number of rows produced by statement. | {rows} | Gauge(Int) | <ul> <li>schema_name</li> <li>execution_status</li> <li>error_message</li> <li>query_type</li> <li>warehouse_name</li> <li>database_name</li> <li>warehouse_size</li> </ul> |
-| snowflake.rows_unloaded.total | Total number of rows unloaded during data export. | {rows} | Gauge(Int) | <ul> <li>schema_name</li> <li>execution_status</li> <li>error_message</li> <li>query_type</li> <li>warehouse_name</li> <li>database_name</li> <li>warehouse_size</li> </ul> |
-| snowflake.rows_updated.total | Total number of rows updated in a table. | {rows} | Gauge(Int) | <ul> <li>schema_name</li> <li>execution_status</li> <li>error_message</li> <li>query_type</li> <li>warehouse_name</li> <li>database_name</li> <li>warehouse_size</li> </ul> |
-| snowflake.session_id.count | Distinct session id's associated with snowflake username. | 1 | Gauge(Int) | <ul> <li>user_name</li> </ul> |
-| snowflake.storage.failsafe_bytes.total | Number of bytes of data in Fail-safe. | By | Gauge(Int) | <ul> </ul> |
-| **snowflake.storage.stage_bytes.total** | Number of bytes of stage storage used by files in all internal stages (named, table, user). | By | Gauge(Int) | <ul> </ul> |
-| **snowflake.storage.storage_bytes.total** | Number of bytes of table storage used, including bytes for data currently in Time Travel. | By | Gauge(Int) | <ul> </ul> |
-| **snowflake.total_elapsed_time.avg** | Average elapsed time. | s | Gauge(Double) | <ul> <li>schema_name</li> <li>execution_status</li> <li>error_message</li> <li>query_type</li> <li>warehouse_name</li> <li>database_name</li> <li>warehouse_size</li> </ul> |
-| snowflake.total_elapsed_time.total | Total elapsed time. | s | Gauge(Int) | <ul> <li>schema_name</li> <li>execution_status</li> <li>error_message</li> <li>query_type</li> <li>warehouse_name</li> <li>database_name</li> <li>warehouse_size</li> </ul> |
-
-**Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
-Any metric can be enabled or disabled with the following scraper configuration:
+The following metrics are emitted by default. Each of them can be disabled by applying the following configuration:
 
 ```yaml
 metrics:
   <metric_name>:
-    enabled: <true|false>
+    enabled: false
 ```
 
-## Resource attributes
+### snowflake.database.bytes_scanned.avg
 
-| Name | Description | Type |
-| ---- | ----------- | ---- |
-| snowflake.account.name | The name of the snowflake account being monitored. | String |
-| snowflake.username | The name of the snowflake user account being used. | String |
-| snowflake.warehouse.name | The name of the warehouse being used. | String |
+Average bytes scanned in a database.
 
-## Metric attributes
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Double |
+
+#### Attributes
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| database_name | Name of database being queried (default is snowflake). |  |
-| error_message | Error message reported by query if present |  |
-| execution_status | Execution status of query being reported. |  |
-| is_success | Login status (success or failure). |  |
-| pipe_name | Name of snowpipe. |  |
-| query_type | Type of query performed. |  |
-| reported_client_type | Client type used for attempt |  |
-| schema_name | Name of schema associated with query result. |  |
-| service_type | Service type associateed with metric query |  |
-| user_name | Username in query being reported. |  |
-| warehouse_name | Name of warehouse in query being reported on. |  |
-| warehouse_size | Size of warehouse being reported on. |  |
+| schema_name | Name of schema associated with query result. | Any Str |
+| execution_status | Execution status of query being reported. | Any Str |
+| error_message | Error message reported by query if present | Any Str |
+| query_type | Type of query performed. | Any Str |
+| warehouse_name | Name of warehouse in query being reported on. | Any Str |
+| database_name | Name of database being queried (default is snowflake). | Any Str |
+| warehouse_size | Size of warehouse being reported on. | Any Str |
+
+### snowflake.database.query.count
+
+Total query count for database.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| schema_name | Name of schema associated with query result. | Any Str |
+| execution_status | Execution status of query being reported. | Any Str |
+| error_message | Error message reported by query if present | Any Str |
+| query_type | Type of query performed. | Any Str |
+| warehouse_name | Name of warehouse in query being reported on. | Any Str |
+| database_name | Name of database being queried (default is snowflake). | Any Str |
+| warehouse_size | Size of warehouse being reported on. | Any Str |
+
+### snowflake.query.blocked
+
+Blocked query count for warehouse.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| warehouse_name | Name of warehouse in query being reported on. | Any Str |
+
+### snowflake.query.bytes_deleted.total
+
+Total bytes deleted in database.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| schema_name | Name of schema associated with query result. | Any Str |
+| execution_status | Execution status of query being reported. | Any Str |
+| error_message | Error message reported by query if present | Any Str |
+| query_type | Type of query performed. | Any Str |
+| warehouse_name | Name of warehouse in query being reported on. | Any Str |
+| database_name | Name of database being queried (default is snowflake). | Any Str |
+| warehouse_size | Size of warehouse being reported on. | Any Str |
+
+### snowflake.query.bytes_written.total
+
+Total bytes written by database.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| schema_name | Name of schema associated with query result. | Any Str |
+| execution_status | Execution status of query being reported. | Any Str |
+| error_message | Error message reported by query if present | Any Str |
+| query_type | Type of query performed. | Any Str |
+| warehouse_name | Name of warehouse in query being reported on. | Any Str |
+| database_name | Name of database being queried (default is snowflake). | Any Str |
+| warehouse_size | Size of warehouse being reported on. | Any Str |
+
+### snowflake.query.compilation_time.total
+
+Total time taken to compile query.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| s | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| schema_name | Name of schema associated with query result. | Any Str |
+| execution_status | Execution status of query being reported. | Any Str |
+| error_message | Error message reported by query if present | Any Str |
+| query_type | Type of query performed. | Any Str |
+| warehouse_name | Name of warehouse in query being reported on. | Any Str |
+| database_name | Name of database being queried (default is snowflake). | Any Str |
+| warehouse_size | Size of warehouse being reported on. | Any Str |
+
+### snowflake.query.executed
+
+Executed query count for warehouse.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| warehouse_name | Name of warehouse in query being reported on. | Any Str |
+
+### snowflake.query.execution_time.total
+
+Total time spent executing queries in database.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| s | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| schema_name | Name of schema associated with query result. | Any Str |
+| execution_status | Execution status of query being reported. | Any Str |
+| error_message | Error message reported by query if present | Any Str |
+| query_type | Type of query performed. | Any Str |
+| warehouse_name | Name of warehouse in query being reported on. | Any Str |
+| database_name | Name of database being queried (default is snowflake). | Any Str |
+| warehouse_size | Size of warehouse being reported on. | Any Str |
+
+### snowflake.query.queued_overload
+
+Overloaded query count for warehouse.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| warehouse_name | Name of warehouse in query being reported on. | Any Str |
+
+### snowflake.query.queued_provision
+
+Number of compute resources queued for provisioning.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| warehouse_name | Name of warehouse in query being reported on. | Any Str |
+
+### snowflake.queued_overload_time.avg
+
+Average time spent in warehouse queue due to warehouse being overloaded.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| s | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| schema_name | Name of schema associated with query result. | Any Str |
+| execution_status | Execution status of query being reported. | Any Str |
+| error_message | Error message reported by query if present | Any Str |
+| query_type | Type of query performed. | Any Str |
+| warehouse_name | Name of warehouse in query being reported on. | Any Str |
+| database_name | Name of database being queried (default is snowflake). | Any Str |
+| warehouse_size | Size of warehouse being reported on. | Any Str |
+
+### snowflake.queued_provisioning_time.avg
+
+Average time spent in warehouse queue waiting for resources to provision.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| s | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| schema_name | Name of schema associated with query result. | Any Str |
+| execution_status | Execution status of query being reported. | Any Str |
+| error_message | Error message reported by query if present | Any Str |
+| query_type | Type of query performed. | Any Str |
+| warehouse_name | Name of warehouse in query being reported on. | Any Str |
+| database_name | Name of database being queried (default is snowflake). | Any Str |
+| warehouse_size | Size of warehouse being reported on. | Any Str |
+
+### snowflake.queued_repair_time.avg
+
+Average time spent in warehouse queue waiting for compute resources to be repaired.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| s | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| schema_name | Name of schema associated with query result. | Any Str |
+| execution_status | Execution status of query being reported. | Any Str |
+| error_message | Error message reported by query if present | Any Str |
+| query_type | Type of query performed. | Any Str |
+| warehouse_name | Name of warehouse in query being reported on. | Any Str |
+| database_name | Name of database being queried (default is snowflake). | Any Str |
+| warehouse_size | Size of warehouse being reported on. | Any Str |
+
+### snowflake.storage.stage_bytes.total
+
+Number of bytes of stage storage used by files in all internal stages (named, table, user).
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+### snowflake.storage.storage_bytes.total
+
+Number of bytes of table storage used, including bytes for data currently in Time Travel.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+### snowflake.total_elapsed_time.avg
+
+Average elapsed time.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| s | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| schema_name | Name of schema associated with query result. | Any Str |
+| execution_status | Execution status of query being reported. | Any Str |
+| error_message | Error message reported by query if present | Any Str |
+| query_type | Type of query performed. | Any Str |
+| warehouse_name | Name of warehouse in query being reported on. | Any Str |
+| database_name | Name of database being queried (default is snowflake). | Any Str |
+| warehouse_size | Size of warehouse being reported on. | Any Str |
+
+## Optional Metrics
+
+The following metrics are not emitted by default. Each of them can be enabled by applying the following configuration:
+
+```yaml
+metrics:
+  <metric_name>:
+    enabled: true
+```
+
+### snowflake.billing.cloud_service.total
+
+Reported total credits used in the cloud service.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {credits} | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| service_type | Service type associateed with metric query | Any Str |
+
+### snowflake.billing.total_credit.total
+
+Reported total credits used across account.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {credits} | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| service_type | Service type associateed with metric query | Any Str |
+
+### snowflake.billing.virtual_warehouse.total
+
+Reported total credits used by virtual warehouse service.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {credits} | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| service_type | Service type associateed with metric query | Any Str |
+
+### snowflake.billing.warehouse.cloud_service.total
+
+Credits used across cloud service for given warehouse.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {credits} | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| warehouse_name | Name of warehouse in query being reported on. | Any Str |
+
+### snowflake.billing.warehouse.total_credit.total
+
+Total credits used associated with given warehouse.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {credits} | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| warehouse_name | Name of warehouse in query being reported on. | Any Str |
+
+### snowflake.billing.warehouse.virtual_warehouse.total
+
+Total credits used by virtual warehouse service for given warehouse.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {credits} | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| warehouse_name | Name of warehouse in query being reported on. | Any Str |
+
+### snowflake.logins.total
+
+Total login attempts for account.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| error_message | Error message reported by query if present | Any Str |
+| reported_client_type | Client type used for attempt | Any Str |
+| is_success | Login status (success or failure). | Any Str |
+
+### snowflake.pipe.credits_used.total
+
+Snow pipe credits contotaled.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {credits} | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| pipe_name | Name of snowpipe. | Any Str |
+
+### snowflake.query.bytes_scanned.total
+
+Total bytes scanend in database.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| schema_name | Name of schema associated with query result. | Any Str |
+| execution_status | Execution status of query being reported. | Any Str |
+| error_message | Error message reported by query if present | Any Str |
+| query_type | Type of query performed. | Any Str |
+| warehouse_name | Name of warehouse in query being reported on. | Any Str |
+| database_name | Name of database being queried (default is snowflake). | Any Str |
+| warehouse_size | Size of warehouse being reported on. | Any Str |
+
+### snowflake.query.bytes_spilled.local.total
+
+Total bytes spilled (intermediate results do not fit in memory) by local storage.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| schema_name | Name of schema associated with query result. | Any Str |
+| execution_status | Execution status of query being reported. | Any Str |
+| error_message | Error message reported by query if present | Any Str |
+| query_type | Type of query performed. | Any Str |
+| warehouse_name | Name of warehouse in query being reported on. | Any Str |
+| database_name | Name of database being queried (default is snowflake). | Any Str |
+| warehouse_size | Size of warehouse being reported on. | Any Str |
+
+### snowflake.query.bytes_spilled.remote.total
+
+Total bytes spilled (intermediate results do not fit in memory) by remote storage.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| schema_name | Name of schema associated with query result. | Any Str |
+| execution_status | Execution status of query being reported. | Any Str |
+| error_message | Error message reported by query if present | Any Str |
+| query_type | Type of query performed. | Any Str |
+| warehouse_name | Name of warehouse in query being reported on. | Any Str |
+| database_name | Name of database being queried (default is snowflake). | Any Str |
+| warehouse_size | Size of warehouse being reported on. | Any Str |
+
+### snowflake.query.data_scanned_cache.avg
+
+Average percentage of data scanned from cache.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| schema_name | Name of schema associated with query result. | Any Str |
+| execution_status | Execution status of query being reported. | Any Str |
+| error_message | Error message reported by query if present | Any Str |
+| query_type | Type of query performed. | Any Str |
+| warehouse_name | Name of warehouse in query being reported on. | Any Str |
+| database_name | Name of database being queried (default is snowflake). | Any Str |
+| warehouse_size | Size of warehouse being reported on. | Any Str |
+
+### snowflake.query.partitions_scanned.total
+
+Number of partitions scanned during query so far.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| schema_name | Name of schema associated with query result. | Any Str |
+| execution_status | Execution status of query being reported. | Any Str |
+| error_message | Error message reported by query if present | Any Str |
+| query_type | Type of query performed. | Any Str |
+| warehouse_name | Name of warehouse in query being reported on. | Any Str |
+| database_name | Name of database being queried (default is snowflake). | Any Str |
+| warehouse_size | Size of warehouse being reported on. | Any Str |
+
+### snowflake.queued_overload_time.total
+
+Total time spent in warehouse queue due to warehouse being overloaded.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| schema_name | Name of schema associated with query result. | Any Str |
+| execution_status | Execution status of query being reported. | Any Str |
+| error_message | Error message reported by query if present | Any Str |
+| query_type | Type of query performed. | Any Str |
+| warehouse_name | Name of warehouse in query being reported on. | Any Str |
+| database_name | Name of database being queried (default is snowflake). | Any Str |
+| warehouse_size | Size of warehouse being reported on. | Any Str |
+
+### snowflake.queued_provisioning_time.total
+
+Total time spent in warehouse queue waiting for resources to provision.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| schema_name | Name of schema associated with query result. | Any Str |
+| execution_status | Execution status of query being reported. | Any Str |
+| error_message | Error message reported by query if present | Any Str |
+| query_type | Type of query performed. | Any Str |
+| warehouse_name | Name of warehouse in query being reported on. | Any Str |
+| database_name | Name of database being queried (default is snowflake). | Any Str |
+| warehouse_size | Size of warehouse being reported on. | Any Str |
+
+### snowflake.queued_repair_time.total
+
+Total time spent in warehouse queue waiting for compute resources to be repaired.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| schema_name | Name of schema associated with query result. | Any Str |
+| execution_status | Execution status of query being reported. | Any Str |
+| error_message | Error message reported by query if present | Any Str |
+| query_type | Type of query performed. | Any Str |
+| warehouse_name | Name of warehouse in query being reported on. | Any Str |
+| database_name | Name of database being queried (default is snowflake). | Any Str |
+| warehouse_size | Size of warehouse being reported on. | Any Str |
+
+### snowflake.rows_deleted.total
+
+Number of rows deleted from a table (or tables).
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {rows} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| schema_name | Name of schema associated with query result. | Any Str |
+| execution_status | Execution status of query being reported. | Any Str |
+| error_message | Error message reported by query if present | Any Str |
+| query_type | Type of query performed. | Any Str |
+| warehouse_name | Name of warehouse in query being reported on. | Any Str |
+| database_name | Name of database being queried (default is snowflake). | Any Str |
+| warehouse_size | Size of warehouse being reported on. | Any Str |
+
+### snowflake.rows_inserted.total
+
+Number of rows inserted into a table (or tables).
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {rows} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| schema_name | Name of schema associated with query result. | Any Str |
+| execution_status | Execution status of query being reported. | Any Str |
+| error_message | Error message reported by query if present | Any Str |
+| query_type | Type of query performed. | Any Str |
+| warehouse_name | Name of warehouse in query being reported on. | Any Str |
+| database_name | Name of database being queried (default is snowflake). | Any Str |
+| warehouse_size | Size of warehouse being reported on. | Any Str |
+
+### snowflake.rows_produced.total
+
+Total number of rows produced by statement.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {rows} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| schema_name | Name of schema associated with query result. | Any Str |
+| execution_status | Execution status of query being reported. | Any Str |
+| error_message | Error message reported by query if present | Any Str |
+| query_type | Type of query performed. | Any Str |
+| warehouse_name | Name of warehouse in query being reported on. | Any Str |
+| database_name | Name of database being queried (default is snowflake). | Any Str |
+| warehouse_size | Size of warehouse being reported on. | Any Str |
+
+### snowflake.rows_unloaded.total
+
+Total number of rows unloaded during data export.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {rows} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| schema_name | Name of schema associated with query result. | Any Str |
+| execution_status | Execution status of query being reported. | Any Str |
+| error_message | Error message reported by query if present | Any Str |
+| query_type | Type of query performed. | Any Str |
+| warehouse_name | Name of warehouse in query being reported on. | Any Str |
+| database_name | Name of database being queried (default is snowflake). | Any Str |
+| warehouse_size | Size of warehouse being reported on. | Any Str |
+
+### snowflake.rows_updated.total
+
+Total number of rows updated in a table.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {rows} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| schema_name | Name of schema associated with query result. | Any Str |
+| execution_status | Execution status of query being reported. | Any Str |
+| error_message | Error message reported by query if present | Any Str |
+| query_type | Type of query performed. | Any Str |
+| warehouse_name | Name of warehouse in query being reported on. | Any Str |
+| database_name | Name of database being queried (default is snowflake). | Any Str |
+| warehouse_size | Size of warehouse being reported on. | Any Str |
+
+### snowflake.session_id.count
+
+Distinct session id's associated with snowflake username.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| user_name | Username in query being reported. | Any Str |
+
+### snowflake.storage.failsafe_bytes.total
+
+Number of bytes of data in Fail-safe.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+### snowflake.total_elapsed_time.total
+
+Total elapsed time.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| schema_name | Name of schema associated with query result. | Any Str |
+| execution_status | Execution status of query being reported. | Any Str |
+| error_message | Error message reported by query if present | Any Str |
+| query_type | Type of query performed. | Any Str |
+| warehouse_name | Name of warehouse in query being reported on. | Any Str |
+| database_name | Name of database being queried (default is snowflake). | Any Str |
+| warehouse_size | Size of warehouse being reported on. | Any Str |
+
+## Resource Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| snowflake.account.name | Snowflake account being used by receiver. | Any Str |
+| snowflake.username | The name of the snowflake user account being used by receiver. | Any Str |
+| snowflake.warehouse.name | The name of the warehouse being used by receiver. | Any Str |
