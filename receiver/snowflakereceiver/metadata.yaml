@@ -3,13 +3,13 @@ name: snowflakereceiver
 # every meter will have these attributes
 resource_attributes:
   snowflake.account.name:
-    description: The name of the snowflake account being monitored.
+    description: Snowflake account being used by receiver.
     type: string
   snowflake.warehouse.name:
-    description: The name of the warehouse being used.
+    description: The name of the warehouse being used by receiver.
     type: string
   snowflake.username:
-    description: The name of the snowflake user account being used.
+    description: The name of the snowflake user account being used by receiver.
     type: string
 
 attributes:
