@@ -1,0 +1,27 @@
+variables:
+  CI_IMAGE: registry.ddbuild.io/images/docker:20.10.13
+  RESTORE_CACHE_ATTEMPTS: 2
+  BUILD_STABLE_REGISTRY: '486234852809.dkr.ecr.us-east-1.amazonaws.com'
+
+stages:
+  - build
+
+# =======================================================================
+# Build and deploy the images used for CI
+# =======================================================================
+
+.build-ci-image: &build-ci-image
+  stage: build
+  tags: ["runner:docker"]
+  image: $CI_IMAGE
+  script:
+    - TAG="$IMAGE_TAG_PREFIX-v$CI_COMMIT_SHORT_SHA"
+    - docker build --file $DOCKERFILE --tag registry.ddbuild.io/ci/opentelemetry-collector-contrib:$TAG --label target=staging .
+    - docker push registry.ddbuild.io/ci/opentelemetry-collector-contrib:$TAG
+
+build-ci-image-main:
+  <<: *build-ci-image
+  variables:
+    DOCKERFILE: ci/Dockerfile
+    IMAGE_TAG_PREFIX: otelcolcontrib
+
