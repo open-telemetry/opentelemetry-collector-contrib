@@ -37,6 +37,7 @@ const (
 	ScraperTypeArray       ScraperType = "array"
 	ScraperTypeHost        ScraperType = "host"
 	ScraperTypeDirectories ScraperType = "directories"
+	ScraperTypePods        ScraperType = "pods"
 )
 
 type scraper struct {

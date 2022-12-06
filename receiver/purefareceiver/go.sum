@@ -509,12 +509,6 @@ github.com/oklog/run v1.0.0/go.mod h1:dlhp/R75TPv97u0XWUtDeV/lRKWPKSdTuV0TZvrmrQ
 github.com/oklog/ulid v1.3.1 h1:EGfNDEx6MqHz8B3uNV6QAib1UR2Lm97sHi3ocA6ESJ4=
 github.com/onsi/ginkgo/v2 v2.1.6 h1:Fx2POJZfKRQcM1pH49qSZiYeu319wji004qX+GDovrU=
 github.com/onsi/gomega v1.20.1 h1:PA/3qinGoukvymdIDV8pii6tiZgC8kbmJO6Z5+b002Q=
-github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter v0.66.0 h1:jPT+d36vO/PBUJPjEtWJmjofZZX2XESHRVxirTRLl1c=
-github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.66.0 h1:RulU4uPrYuBvZ6QnVLJo8YyTqgcGjVimtSuRm4jR+/I=
-github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.66.0 h1:9YMRxke8epHmm//BxHet6uySE+aI9OIzTjJ/ugQZ/pc=
-github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.66.0 h1:EwCj4hTC34weL4fjgd6yvoGL7yslqUvkm0u4Fcjy//8=
-github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.66.0/go.mod h1:jtReUrSK+X6+2qy3ut39Vt1x2wlGv67lxW/a0y4qSsk=
-github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite v0.66.0 h1:wrAsoO5Wnfx/EIstRg5OC9NMQZX+gSqFnvoJF9v7Qzg=
 github.com/opencontainers/go-digest v1.0.0 h1:apOUWs51W5PlhuyGyz9FCeeBIOUDA/6nW8Oi/yOhh5U=
 github.com/opencontainers/go-digest v1.0.0/go.mod h1:0JzlMkj0TRzQZfJkVvzbP0HBR3IKzErnv2BNG4W4MAM=
 github.com/opencontainers/image-spec v1.0.2 h1:9yCKha/T5XdGtO0q9Q9a6T5NUCsTn/DrBg0D7ufOcFM=
