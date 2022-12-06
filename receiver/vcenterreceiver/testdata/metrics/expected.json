@@ -3327,7 +3327,7 @@
                         {
                             "name": "vcenter.vm.memory.ballooned",
                             "description": "The amount of memory that is ballooned due to virtualization.",
-                            "unit": "By",
+                            "unit": "MiBy",
                             "sum": {
                                 "dataPoints": [
                                     {

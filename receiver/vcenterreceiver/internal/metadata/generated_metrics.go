@@ -1830,7 +1830,7 @@ type metricVcenterVMMemoryBallooned struct {
 func (m *metricVcenterVMMemoryBallooned) init() {
 	m.data.SetName("vcenter.vm.memory.ballooned")
 	m.data.SetDescription("The amount of memory that is ballooned due to virtualization.")
-	m.data.SetUnit("By")
+	m.data.SetUnit("MiBy")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
