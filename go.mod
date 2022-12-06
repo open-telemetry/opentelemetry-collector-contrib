@@ -133,7 +133,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver v0.66.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver v0.66.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.66.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/promtailreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/promtailreceiver v0.66.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pulsarreceiver v0.66.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver v0.66.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver v0.66.0
@@ -142,7 +142,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/riakreceiver v0.66.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver v0.66.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver v0.66.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver v0.66.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver v0.66.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver v0.66.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver v0.66.0
