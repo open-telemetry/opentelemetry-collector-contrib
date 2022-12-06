@@ -221,6 +221,9 @@ func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererr
 		case "Connection_errors_tcpwrap":
 			addPartialIfError(errs, m.mb.RecordMysqlConnectionErrorsDataPoint(now, v,
 				metadata.AttributeConnectionErrorTcpwrap))
+		// connection
+		case "Connections":
+			addPartialIfError(errs, m.mb.RecordMysqlConnectionCountDataPoint(now, v))
 
 		// commands
 		case "Com_stmt_execute":

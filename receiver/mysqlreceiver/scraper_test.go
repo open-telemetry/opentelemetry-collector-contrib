@@ -64,6 +64,8 @@ func TestScrape(t *testing.T) {
 		})
 		require.NoError(t, err)
 
+		cfg.Metrics.MysqlConnectionCount.Enabled = true
+
 		scraper := newMySQLScraper(componenttest.NewNopReceiverCreateSettings(), cfg)
 		scraper.sqlclient = &mockClient{
 			globalStatsFile:             "global_stats",

@@ -41,6 +41,8 @@ func TestDefaultMetrics(t *testing.T) {
 	enabledMetrics["mysql.commands"] = true
 	mb.RecordMysqlCommandsDataPoint(ts, "1", AttributePreparedStatementsCommand(1))
 
+	mb.RecordMysqlConnectionCountDataPoint(ts, "1")
+
 	mb.RecordMysqlConnectionErrorsDataPoint(ts, "1", AttributeConnectionError(1))
 
 	enabledMetrics["mysql.double_writes"] = true
@@ -151,6 +153,7 @@ func TestAllMetrics(t *testing.T) {
 		MysqlBufferPoolUsage:         MetricSettings{Enabled: true},
 		MysqlClientNetworkIo:         MetricSettings{Enabled: true},
 		MysqlCommands:                MetricSettings{Enabled: true},
+		MysqlConnectionCount:         MetricSettings{Enabled: true},
 		MysqlConnectionErrors:        MetricSettings{Enabled: true},
 		MysqlDoubleWrites:            MetricSettings{Enabled: true},
 		MysqlHandlers:                MetricSettings{Enabled: true},
@@ -194,6 +197,7 @@ func TestAllMetrics(t *testing.T) {
 	mb.RecordMysqlBufferPoolUsageDataPoint(ts, 1, AttributeBufferPoolData(1))
 	mb.RecordMysqlClientNetworkIoDataPoint(ts, "1", AttributeDirection(1))
 	mb.RecordMysqlCommandsDataPoint(ts, "1", AttributePreparedStatementsCommand(1))
+	mb.RecordMysqlConnectionCountDataPoint(ts, "1")
 	mb.RecordMysqlConnectionErrorsDataPoint(ts, "1", AttributeConnectionError(1))
 	mb.RecordMysqlDoubleWritesDataPoint(ts, "1", AttributeDoubleWrites(1))
 	mb.RecordMysqlHandlersDataPoint(ts, "1", AttributeHandler(1))
@@ -367,6 +371,19 @@ func TestAllMetrics(t *testing.T) {
 			assert.True(t, ok)
 			assert.Equal(t, "execute", attrVal.Str())
 			validatedMetrics["mysql.commands"] = struct{}{}
+		case "mysql.connection.count":
+			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+			assert.Equal(t, "The number of connection attempts (successful or not) to the MySQL server.", ms.At(i).Description())
+			assert.Equal(t, "1", ms.At(i).Unit())
+			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+			dp := ms.At(i).Sum().DataPoints().At(0)
+			assert.Equal(t, start, dp.StartTimestamp())
+			assert.Equal(t, ts, dp.Timestamp())
+			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+			assert.Equal(t, int64(1), dp.IntValue())
+			validatedMetrics["mysql.connection.count"] = struct{}{}
 		case "mysql.connection.errors":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
@@ -953,6 +970,7 @@ func TestNoMetrics(t *testing.T) {
 		MysqlBufferPoolUsage:         MetricSettings{Enabled: false},
 		MysqlClientNetworkIo:         MetricSettings{Enabled: false},
 		MysqlCommands:                MetricSettings{Enabled: false},
+		MysqlConnectionCount:         MetricSettings{Enabled: false},
 		MysqlConnectionErrors:        MetricSettings{Enabled: false},
 		MysqlDoubleWrites:            MetricSettings{Enabled: false},
 		MysqlHandlers:                MetricSettings{Enabled: false},
@@ -995,6 +1013,7 @@ func TestNoMetrics(t *testing.T) {
 	mb.RecordMysqlBufferPoolUsageDataPoint(ts, 1, AttributeBufferPoolData(1))
 	mb.RecordMysqlClientNetworkIoDataPoint(ts, "1", AttributeDirection(1))
 	mb.RecordMysqlCommandsDataPoint(ts, "1", AttributePreparedStatementsCommand(1))
+	mb.RecordMysqlConnectionCountDataPoint(ts, "1")
 	mb.RecordMysqlConnectionErrorsDataPoint(ts, "1", AttributeConnectionError(1))
 	mb.RecordMysqlDoubleWritesDataPoint(ts, "1", AttributeDoubleWrites(1))
 	mb.RecordMysqlHandlersDataPoint(ts, "1", AttributeHandler(1))
