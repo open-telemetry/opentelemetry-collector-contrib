@@ -35,6 +35,7 @@ receivers:
         host: 13s
         directories: 15s
         pods: 30s
+        volumes: 25s
 ```
 
 The full list of settings exposed for this receiver are documented [here](./config.go)

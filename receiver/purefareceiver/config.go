@@ -45,6 +45,9 @@ type Config struct {
 
 	// Pods represents the list of pods to query
 	Pods []internal.ScraperConfig `mapstructure:"pods"`
+
+	// Volumes represents the list of volumes to query
+	Volumes []internal.ScraperConfig `mapstructure:"volumes"`
 }
 
 type Settings struct {
@@ -56,6 +59,7 @@ type ReloadIntervals struct {
 	Host        time.Duration `mapstructure:"host"`
 	Directories time.Duration `mapstructure:"directories"`
 	Pods        time.Duration `mapstructure:"pods"`
+	Volumes     time.Duration `mapstructure:"volumes"`
 }
 
 func (c *Config) Validate() error {

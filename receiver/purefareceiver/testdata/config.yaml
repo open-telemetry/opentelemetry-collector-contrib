@@ -17,3 +17,4 @@ receivers:
         host: 13s
         directories: 15s
         pods: 30s
+        volumes: 25s
