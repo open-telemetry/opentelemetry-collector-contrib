@@ -15,14 +15,15 @@
 package k8sobjectsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver"
 
 import (
+	"fmt"
+
 	"go.opentelemetry.io/collector/pdata/plog"
 	semconv "go.opentelemetry.io/collector/semconv/v1.9.0"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
 )
 
-func watchEventToLogData(event *watch.Event, gvr schema.GroupVersionResource) plog.Logs {
+func watchObjectsToLogData(event *watch.Event, config *K8sObjectsConfig) plog.Logs {
 	udata := event.Object.(*unstructured.Unstructured)
 	ul := unstructured.UnstructuredList{
 		Items: []unstructured.Unstructured{{
@@ -32,10 +33,15 @@ func watchEventToLogData(event *watch.Event, gvr schema.GroupVersionResource) pl
 			},
 		}},
 	}
-	return unstructuredListToLogData(&ul, gvr)
+	eventName := fmt.Sprintf("Watch %s", config.gvr.Resource)
+	return unstructuredListToLogData(&ul, config, eventName)
 }
 
-func unstructuredListToLogData(event *unstructured.UnstructuredList, gvr schema.GroupVersionResource) plog.Logs {
+func pullObjectsToLogData(event *unstructured.UnstructuredList, config *K8sObjectsConfig) plog.Logs {
+	eventName := fmt.Sprintf("Pull %s", config.gvr.Resource)
+	return unstructuredListToLogData(event, config, eventName)
+}
+func unstructuredListToLogData(event *unstructured.UnstructuredList, config *K8sObjectsConfig, eventName string) plog.Logs {
 	out := plog.NewLogs()
 	resourceLogs := out.ResourceLogs()
 	namespaceResourceMap := make(map[string]plog.LogRecordSlice)
@@ -57,7 +63,8 @@ func unstructuredListToLogData(event *unstructured.UnstructuredList, gvr schema.
 		attrs := record.Attributes()
 		attrs.EnsureCapacity(2)
 		attrs.PutStr("event.domain", "k8s")
-		attrs.PutStr("event.name", gvr.Resource)
+		attrs.PutStr("event.name", eventName)
+		attrs.PutStr("k8s.resource.name", config.gvr.Resource)
 
 		dest := record.Body()
 		destMap := dest.SetEmptyMap()

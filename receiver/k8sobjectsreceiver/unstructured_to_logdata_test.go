@@ -40,12 +40,15 @@ func TestUnstructuredListToLogData(t *testing.T) {
 			object.SetName(fmt.Sprintf("pod-%d", i))
 			objects.Items = append(objects.Items, object)
 		}
-		gvr := schema.GroupVersionResource{
-			Group:    "",
-			Version:  "v1",
-			Resource: "pods",
+
+		config := &K8sObjectsConfig{
+			gvr: &schema.GroupVersionResource{
+				Group:    "",
+				Version:  "v1",
+				Resource: "pods",
+			},
 		}
-		logs := unstructuredListToLogData(&objects, gvr)
+		logs := pullObjectsToLogData(&objects, config)
 
 		assert.Equal(t, logs.LogRecordCount(), 4)
 
@@ -69,7 +72,7 @@ func TestUnstructuredListToLogData(t *testing.T) {
 
 				name, ok := logRecords.At(j).Attributes().Get("event.name")
 				require.Equal(t, true, ok)
-				assert.Equal(t, "pods", name.AsString())
+				assert.Equal(t, "Pull pods", name.AsString())
 			}
 
 		}
@@ -86,13 +89,15 @@ func TestUnstructuredListToLogData(t *testing.T) {
 			objects.Items = append(objects.Items, object)
 		}
 
-		gvr := schema.GroupVersionResource{
-			Group:    "",
-			Version:  "v1",
-			Resource: "nodes",
+		config := &K8sObjectsConfig{
+			gvr: &schema.GroupVersionResource{
+				Group:    "",
+				Version:  "v1",
+				Resource: "nodes",
+			},
 		}
 
-		logs := unstructuredListToLogData(&objects, gvr)
+		logs := pullObjectsToLogData(&objects, config)
 
 		assert.Equal(t, logs.LogRecordCount(), 3)
 
@@ -114,7 +119,7 @@ func TestUnstructuredListToLogData(t *testing.T) {
 
 			name, ok := logRecords.At(i).Attributes().Get("event.name")
 			require.Equal(t, true, ok)
-			assert.Equal(t, "nodes", name.AsString())
+			assert.Equal(t, "Pull nodes", name.AsString())
 		}
 
 	})
