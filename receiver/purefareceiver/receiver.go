@@ -75,6 +75,13 @@ func (r *purefaReceiver) Start(ctx context.Context, compHost component.Host) err
 		return err
 	}
 
+	volumesScraper := internal.NewScraper(ctx, internal.ScraperTypeVolumes, r.cfg.Endpoint, r.cfg.Volumes, r.cfg.Settings.ReloadIntervals.Volumes)
+	if scCfgs, err := volumesScraper.ToPrometheusReceiverConfig(compHost, fact); err == nil {
+		scrapeCfgs = append(scrapeCfgs, scCfgs...)
+	} else {
+		return err
+	}
+
 	promRecvCfg := fact.CreateDefaultConfig().(*prometheusreceiver.Config)
 	promRecvCfg.PrometheusConfig = &config.Config{ScrapeConfigs: scrapeCfgs}
 

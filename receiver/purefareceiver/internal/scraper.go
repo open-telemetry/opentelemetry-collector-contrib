@@ -38,6 +38,7 @@ const (
 	ScraperTypeHost        ScraperType = "host"
 	ScraperTypeDirectories ScraperType = "directories"
 	ScraperTypePods        ScraperType = "pods"
+	ScraperTypeVolumes     ScraperType = "volumes"
 )
 
 type scraper struct {
