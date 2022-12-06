@@ -67,7 +67,7 @@ func newZookeeperMetricsScraper(settings component.ReceiverCreateSettings, confi
 	z := &zookeeperMetricsScraper{
 		logger:                settings.Logger,
 		config:                config,
-		mb:                    metadata.NewMetricsBuilder(config.Metrics, settings.BuildInfo),
+		mb:                    metadata.NewMetricsBuilder(config.Metrics, settings),
 		closeConnection:       closeConnection,
 		setConnectionDeadline: setConnectionDeadline,
 		sendCmd:               sendCmd,

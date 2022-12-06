@@ -44,7 +44,7 @@ func newNginxScraper(
 	return &nginxScraper{
 		settings: settings.TelemetrySettings,
 		cfg:      cfg,
-		mb:       metadata.NewMetricsBuilder(cfg.Metrics, settings.BuildInfo),
+		mb:       metadata.NewMetricsBuilder(cfg.Metrics, settings),
 	}
 }
 

@@ -520,18 +520,18 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, options ...metricBuilderOption) *MetricsBuilder {
+func NewMetricsBuilder(ms MetricsSettings, settings component.ReceiverCreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                         pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                     pmetric.NewMetrics(),
-		buildInfo:                         buildInfo,
-		metricSystemNetworkConnections:    newMetricSystemNetworkConnections(settings.SystemNetworkConnections),
-		metricSystemNetworkConntrackCount: newMetricSystemNetworkConntrackCount(settings.SystemNetworkConntrackCount),
-		metricSystemNetworkConntrackMax:   newMetricSystemNetworkConntrackMax(settings.SystemNetworkConntrackMax),
-		metricSystemNetworkDropped:        newMetricSystemNetworkDropped(settings.SystemNetworkDropped),
-		metricSystemNetworkErrors:         newMetricSystemNetworkErrors(settings.SystemNetworkErrors),
-		metricSystemNetworkIo:             newMetricSystemNetworkIo(settings.SystemNetworkIo),
-		metricSystemNetworkPackets:        newMetricSystemNetworkPackets(settings.SystemNetworkPackets),
+		buildInfo:                         settings.BuildInfo,
+		metricSystemNetworkConnections:    newMetricSystemNetworkConnections(ms.SystemNetworkConnections),
+		metricSystemNetworkConntrackCount: newMetricSystemNetworkConntrackCount(ms.SystemNetworkConntrackCount),
+		metricSystemNetworkConntrackMax:   newMetricSystemNetworkConntrackMax(ms.SystemNetworkConntrackMax),
+		metricSystemNetworkDropped:        newMetricSystemNetworkDropped(ms.SystemNetworkDropped),
+		metricSystemNetworkErrors:         newMetricSystemNetworkErrors(ms.SystemNetworkErrors),
+		metricSystemNetworkIo:             newMetricSystemNetworkIo(ms.SystemNetworkIo),
+		metricSystemNetworkPackets:        newMetricSystemNetworkPackets(ms.SystemNetworkPackets),
 	}
 	for _, op := range options {
 		op(mb)

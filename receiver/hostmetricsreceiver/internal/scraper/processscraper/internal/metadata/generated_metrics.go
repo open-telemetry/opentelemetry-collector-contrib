@@ -853,23 +853,31 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, options ...metricBuilderOption) *MetricsBuilder {
+func NewMetricsBuilder(ms MetricsSettings, settings component.ReceiverCreateSettings, options ...metricBuilderOption) *MetricsBuilder {
+	if ms.ProcessMemoryPhysicalUsage.Enabled {
+		settings.Logger.Warn("[WARNING] `process.memory.physical_usage` should not be enabled: The metric is deprecated and will be removed in v0.70.0. Please use `process.memory.usage` instead. See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/hostmetricsreceiver#transition-to-process-memory-metric-names-aligned-with-opentelemetry-specification for more details.")
+	}
+
+	if ms.ProcessMemoryVirtualUsage.Enabled {
+		settings.Logger.Warn("[WARNING] `process.memory.virtual_usage` should not be enabled: The metric is deprecated and will be removed in v0.70.0. Please use `process.memory.virtual` metric instead. See  https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/hostmetricsreceiver#transition-to-process-memory-metric-names-aligned-with-opentelemetry-specification for more details.")
+	}
+
 	mb := &MetricsBuilder{
 		startTime:                        pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                    pmetric.NewMetrics(),
-		buildInfo:                        buildInfo,
-		metricProcessContextSwitches:     newMetricProcessContextSwitches(settings.ProcessContextSwitches),
-		metricProcessCPUTime:             newMetricProcessCPUTime(settings.ProcessCPUTime),
-		metricProcessCPUUtilization:      newMetricProcessCPUUtilization(settings.ProcessCPUUtilization),
-		metricProcessDiskIo:              newMetricProcessDiskIo(settings.ProcessDiskIo),
-		metricProcessMemoryPhysicalUsage: newMetricProcessMemoryPhysicalUsage(settings.ProcessMemoryPhysicalUsage),
-		metricProcessMemoryUsage:         newMetricProcessMemoryUsage(settings.ProcessMemoryUsage),
-		metricProcessMemoryVirtual:       newMetricProcessMemoryVirtual(settings.ProcessMemoryVirtual),
-		metricProcessMemoryVirtualUsage:  newMetricProcessMemoryVirtualUsage(settings.ProcessMemoryVirtualUsage),
-		metricProcessOpenFileDescriptors: newMetricProcessOpenFileDescriptors(settings.ProcessOpenFileDescriptors),
-		metricProcessPagingFaults:        newMetricProcessPagingFaults(settings.ProcessPagingFaults),
-		metricProcessSignalsPending:      newMetricProcessSignalsPending(settings.ProcessSignalsPending),
-		metricProcessThreads:             newMetricProcessThreads(settings.ProcessThreads),
+		buildInfo:                        settings.BuildInfo,
+		metricProcessContextSwitches:     newMetricProcessContextSwitches(ms.ProcessContextSwitches),
+		metricProcessCPUTime:             newMetricProcessCPUTime(ms.ProcessCPUTime),
+		metricProcessCPUUtilization:      newMetricProcessCPUUtilization(ms.ProcessCPUUtilization),
+		metricProcessDiskIo:              newMetricProcessDiskIo(ms.ProcessDiskIo),
+		metricProcessMemoryPhysicalUsage: newMetricProcessMemoryPhysicalUsage(ms.ProcessMemoryPhysicalUsage),
+		metricProcessMemoryUsage:         newMetricProcessMemoryUsage(ms.ProcessMemoryUsage),
+		metricProcessMemoryVirtual:       newMetricProcessMemoryVirtual(ms.ProcessMemoryVirtual),
+		metricProcessMemoryVirtualUsage:  newMetricProcessMemoryVirtualUsage(ms.ProcessMemoryVirtualUsage),
+		metricProcessOpenFileDescriptors: newMetricProcessOpenFileDescriptors(ms.ProcessOpenFileDescriptors),
+		metricProcessPagingFaults:        newMetricProcessPagingFaults(ms.ProcessPagingFaults),
+		metricProcessSignalsPending:      newMetricProcessSignalsPending(ms.ProcessSignalsPending),
+		metricProcessThreads:             newMetricProcessThreads(ms.ProcessThreads),
 	}
 	for _, op := range options {
 		op(mb)

@@ -93,7 +93,7 @@ func newPostgreSQLScraper(
 		logger:                               settings.Logger,
 		config:                               config,
 		clientFactory:                        clientFactory,
-		mb:                                   metadata.NewMetricsBuilder(config.Metrics, settings.BuildInfo),
+		mb:                                   metadata.NewMetricsBuilder(config.Metrics, settings),
 		emitMetricsWithResourceAttributes:    featuregate.GetRegistry().IsEnabled(emitMetricsWithResourceAttributesFeatureGateID),
 		emitMetricsWithoutResourceAttributes: featuregate.GetRegistry().IsEnabled(emitMetricsWithoutResourceAttributesFeatureGateID),
 	}
