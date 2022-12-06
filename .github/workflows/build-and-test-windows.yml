@@ -69,9 +69,9 @@ jobs:
         with:
           api_key: ${{ secrets.FORESIGHT_API_KEY }}
           test_framework: golang
-          test_format: json
+          test_format: text
           test_path: |
-            ./**/foresight-test*.json
+            ./**/foresight-test*.txt
   windows-unittest:
     if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Windows') || github.event_name == 'push') }}
     runs-on: windows-latest
