@@ -61,8 +61,15 @@ func (r *purefaReceiver) Start(ctx context.Context, compHost component.Host) err
 		return err
 	}
 
-	directoriesScraper := internal.NewScraper(ctx, internal.ScraperTypeDirectories, r.cfg.Endpoint, r.cfg.Hosts, r.cfg.Settings.ReloadIntervals.Host)
+	directoriesScraper := internal.NewScraper(ctx, internal.ScraperTypeDirectories, r.cfg.Endpoint, r.cfg.Directories, r.cfg.Settings.ReloadIntervals.Directories)
 	if scCfgs, err := directoriesScraper.ToPrometheusReceiverConfig(compHost, fact); err == nil {
+		scrapeCfgs = append(scrapeCfgs, scCfgs...)
+	} else {
+		return err
+	}
+
+	podsScraper := internal.NewScraper(ctx, internal.ScraperTypePods, r.cfg.Endpoint, r.cfg.Pods, r.cfg.Settings.ReloadIntervals.Pods)
+	if scCfgs, err := podsScraper.ToPrometheusReceiverConfig(compHost, fact); err == nil {
 		scrapeCfgs = append(scrapeCfgs, scCfgs...)
 	} else {
 		return err
