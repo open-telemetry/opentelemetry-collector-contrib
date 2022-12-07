@@ -517,61 +517,6 @@ func Test_ProcessTraces_MixContext(t *testing.T) {
 	}
 }
 
-func Test_ProcessTraces_Error(t *testing.T) {
-	tests := []struct {
-		name             string
-		contextStatments []common.ContextStatements
-		want             func(td ptrace.Traces)
-	}{
-		{
-			name: "error processing spans",
-			contextStatments: []common.ContextStatements{
-				{
-					Context: "span",
-					Statements: []string{
-						`set(attributes["test"], ParseJSON(1)) where name == "operationA"`,
-						`set(attributes["test"], "pass")`,
-					},
-				},
-			},
-			want: func(td ptrace.Traces) {
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutStr("test", "pass")
-			},
-		},
-		{
-			name: "error processing span events",
-			contextStatments: []common.ContextStatements{
-				{
-					Context: "spanevent",
-					Statements: []string{
-						`set(attributes["test"], ParseJSON(1)) where name == "eventA"`,
-						`set(attributes["test"], "pass")`,
-					},
-				},
-			},
-			want: func(td ptrace.Traces) {
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Events().At(0).Attributes().PutStr("test", "pass")
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			td := constructTraces()
-			processor, err := NewProcessor(nil, tt.contextStatments, componenttest.NewNopTelemetrySettings())
-			assert.NoError(t, err)
-
-			_, err = processor.ProcessTraces(context.Background(), td)
-			assert.Error(t, err)
-
-			exTd := constructTraces()
-			tt.want(exTd)
-
-			assert.Equal(t, exTd, td)
-		})
-	}
-}
-
 func BenchmarkTwoSpans(b *testing.B) {
 	tests := []struct {
 		name       string

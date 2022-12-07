@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
@@ -31,6 +32,7 @@ type Processor struct {
 	contexts []consumer.Metrics
 	// Deprecated.  Use contexts instead
 	statements []*ottl.Statement[ottldatapoint.TransformContext]
+	logger     *zap.Logger
 }
 
 func NewProcessor(statements []string, contextStatements []common.ContextStatements, settings component.TelemetrySettings) (*Processor, error) {
@@ -61,6 +63,7 @@ func NewProcessor(statements []string, contextStatements []common.ContextStateme
 
 	return &Processor{
 		contexts: contexts,
+		logger:   settings.Logger,
 	}, nil
 }
 
@@ -96,6 +99,7 @@ func (p *Processor) ProcessMetrics(ctx context.Context, md pmetric.Metrics) (pme
 		for _, c := range p.contexts {
 			err := c.ConsumeMetrics(ctx, md)
 			if err != nil {
+				p.logger.Error("error while transforming metric data", zap.Error(err))
 				return md, err
 			}
 		}

@@ -20,7 +20,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
-	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
@@ -39,7 +38,6 @@ func (l logStatements) Capabilities() consumer.Capabilities {
 }
 
 func (l logStatements) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
-	var errors error
 	for i := 0; i < ld.ResourceLogs().Len(); i++ {
 		rlogs := ld.ResourceLogs().At(i)
 		for j := 0; j < rlogs.ScopeLogs().Len(); j++ {
@@ -50,14 +48,13 @@ func (l logStatements) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 				for _, statement := range l {
 					_, _, err := statement.Execute(ctx, tCtx)
 					if err != nil {
-						errors = multierr.Append(errors, err)
-						break
+						return err
 					}
 				}
 			}
 		}
 	}
-	return errors
+	return nil
 }
 
 type LogParserCollection struct {

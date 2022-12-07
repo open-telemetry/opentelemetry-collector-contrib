@@ -21,7 +21,6 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
@@ -41,7 +40,6 @@ func (m metricStatements) Capabilities() consumer.Capabilities {
 }
 
 func (m metricStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
-	var errors error
 	for i := 0; i < md.ResourceMetrics().Len(); i++ {
 		rmetrics := md.ResourceMetrics().At(i)
 		for j := 0; j < rmetrics.ScopeMetrics().Len(); j++ {
@@ -52,14 +50,13 @@ func (m metricStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metrics
 				for _, statement := range m {
 					_, _, err := statement.Execute(ctx, tCtx)
 					if err != nil {
-						errors = multierr.Append(errors, err)
-						break
+						return err
 					}
 				}
 			}
 		}
 	}
-	return errors
+	return nil
 }
 
 var _ consumer.Metrics = &dataPointStatements{}
@@ -73,7 +70,6 @@ func (d dataPointStatements) Capabilities() consumer.Capabilities {
 }
 
 func (d dataPointStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
-	var errors error
 	for i := 0; i < md.ResourceMetrics().Len(); i++ {
 		rmetrics := md.ResourceMetrics().At(i)
 		for j := 0; j < rmetrics.ScopeMetrics().Len(); j++ {
@@ -94,51 +90,57 @@ func (d dataPointStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metr
 				case pmetric.MetricTypeSummary:
 					err = d.handleSummaryDataPoints(ctx, metric.Summary().DataPoints(), metrics.At(k), metrics, smetrics.Scope(), rmetrics.Resource())
 				}
-				errors = multierr.Append(errors, err)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
-	return errors
+	return nil
 }
 
 func (d dataPointStatements) handleNumberDataPoints(ctx context.Context, dps pmetric.NumberDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource) error {
-	var errors error
 	for i := 0; i < dps.Len(); i++ {
 		tCtx := ottldatapoint.NewTransformContext(dps.At(i), metric, metrics, is, resource)
 		err := d.callFunctions(ctx, tCtx)
-		errors = multierr.Append(errors, err)
+		if err != nil {
+			return err
+		}
 	}
-	return errors
+	return nil
 }
 
 func (d dataPointStatements) handleHistogramDataPoints(ctx context.Context, dps pmetric.HistogramDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource) error {
-	var errors error
 	for i := 0; i < dps.Len(); i++ {
 		tCtx := ottldatapoint.NewTransformContext(dps.At(i), metric, metrics, is, resource)
 		err := d.callFunctions(ctx, tCtx)
-		errors = multierr.Append(errors, err)
+		if err != nil {
+			return err
+		}
 	}
-	return errors
+	return nil
 }
 
 func (d dataPointStatements) handleExponetialHistogramDataPoints(ctx context.Context, dps pmetric.ExponentialHistogramDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource) error {
-	var errors error
 	for i := 0; i < dps.Len(); i++ {
 		tCtx := ottldatapoint.NewTransformContext(dps.At(i), metric, metrics, is, resource)
 		err := d.callFunctions(ctx, tCtx)
-		errors = multierr.Append(errors, err)
+		if err != nil {
+			return err
+		}
 	}
-	return errors
+	return nil
 }
 
 func (d dataPointStatements) handleSummaryDataPoints(ctx context.Context, dps pmetric.SummaryDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource) error {
-	var errors error
 	for i := 0; i < dps.Len(); i++ {
 		tCtx := ottldatapoint.NewTransformContext(dps.At(i), metric, metrics, is, resource)
 		err := d.callFunctions(ctx, tCtx)
-		errors = multierr.Append(errors, err)
+		if err != nil {
+			return err
+		}
 	}
-	return errors
+	return nil
 }
 
 func (d dataPointStatements) callFunctions(ctx context.Context, tCtx ottldatapoint.TransformContext) error {
