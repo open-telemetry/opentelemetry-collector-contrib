@@ -36,7 +36,7 @@ func TestScraper_ErrorOnStart(t *testing.T) {
 			return nil, errors.New("oops")
 		},
 	}
-	err := scrpr.Start(context.Background(), componenttest.NewNopHost())
+	err := scrpr.start(context.Background(), componenttest.NewNopHost())
 	require.Error(t, err)
 }
 
@@ -50,7 +50,7 @@ var queryResponses = map[string][]metricRow{
 }
 
 func TestScraper_Scrape(t *testing.T) {
-	metricsBuilder := metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), component.NewDefaultBuildInfo())
+	metricsBuilder := metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), componenttest.NewNopReceiverCreateSettings())
 
 	scrpr := scraper{
 		logger:         zap.NewNop(),
@@ -68,15 +68,18 @@ func TestScraper_Scrape(t *testing.T) {
 		id:              component.ID{},
 		metricsSettings: metadata.DefaultMetricsSettings(),
 	}
-	err := scrpr.Start(context.Background(), componenttest.NewNopHost())
+	err := scrpr.start(context.Background(), componenttest.NewNopHost())
+	defer func() {
+		assert.NoError(t, scrpr.shutdown(context.Background()))
+	}()
 	require.NoError(t, err)
-	m, err := scrpr.Scrape(context.Background())
+	m, err := scrpr.scrape(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, 16, m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
 }
 
 func TestPartial_InvalidScrape(t *testing.T) {
-	metricsBuilder := metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), component.NewDefaultBuildInfo())
+	metricsBuilder := metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), componenttest.NewNopReceiverCreateSettings())
 
 	scrpr := scraper{
 		logger:         zap.NewNop(),
@@ -99,10 +102,13 @@ func TestPartial_InvalidScrape(t *testing.T) {
 		id:              component.ID{},
 		metricsSettings: metadata.DefaultMetricsSettings(),
 	}
-	err := scrpr.Start(context.Background(), componenttest.NewNopHost())
+	err := scrpr.start(context.Background(), componenttest.NewNopHost())
+	defer func() {
+		assert.NoError(t, scrpr.shutdown(context.Background()))
+	}()
 	require.NoError(t, err)
-	_, err = scrpr.Scrape(context.Background())
+	_, err = scrpr.scrape(context.Background())
 	require.Error(t, err)
 	require.True(t, scrapererror.IsPartialScrapeError(err))
-	require.EqualError(t, err, `bytes for "": "", select TABLESPACE_NAME, BYTES from DBA_DATA_FILES, strconv.ParseInt: parsing "": invalid syntax`)
+	require.EqualError(t, err, `failed to parse int64 for OracledbTablespaceSizeUsage, value was : strconv.ParseInt: parsing "": invalid syntax`)
 }

@@ -64,22 +64,23 @@ func createReceiverFunc(sqlOpenerFunc sqlOpenerFunc, clientProviderFunc clientPr
 		consumer consumer.Metrics,
 	) (component.MetricsReceiver, error) {
 		sqlCfg := cfg.(*Config)
-		var opts []scraperhelper.ScraperControllerOption
-		metricsBuilder := metadata.NewMetricsBuilder(sqlCfg.MetricsSettings, settings.BuildInfo)
+		metricsBuilder := metadata.NewMetricsBuilder(sqlCfg.MetricsSettings, settings)
 		datasourceURL, _ := url.Parse(sqlCfg.DataSource)
 		instanceName := datasourceURL.Host
 
-		mp := newScraper(settings.ID, metricsBuilder, sqlCfg.MetricsSettings, sqlCfg.ScraperControllerSettings, settings.TelemetrySettings.Logger, func() (*sql.DB, error) {
+		mp, err := newScraper(settings.ID, metricsBuilder, sqlCfg.MetricsSettings, sqlCfg.ScraperControllerSettings, settings.TelemetrySettings.Logger, func() (*sql.DB, error) {
 			return sqlOpenerFunc(sqlCfg.DataSource)
 		}, clientProviderFunc, instanceName)
+		if err != nil {
+			return nil, err
+		}
 		opt := scraperhelper.AddScraper(mp)
-		opts = append(opts, opt)
 
 		return scraperhelper.NewScraperControllerReceiver(
 			&sqlCfg.ScraperControllerSettings,
 			settings,
 			consumer,
-			opts...,
+			opt,
 		)
 	}
 }

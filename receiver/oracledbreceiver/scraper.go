@@ -73,9 +73,8 @@ type scraper struct {
 	metricsSettings            metadata.MetricsSettings
 }
 
-func newScraper(id component.ID, metricsBuilder *metadata.MetricsBuilder, metricsSettings metadata.MetricsSettings, scrapeCfg scraperhelper.ScraperControllerSettings, logger *zap.Logger, providerFunc dbProviderFunc, clientProviderFunc clientProviderFunc, instanceName string) *scraper {
-	return &scraper{
-		id:                 id,
+func newScraper(id component.ID, metricsBuilder *metadata.MetricsBuilder, metricsSettings metadata.MetricsSettings, scrapeCfg scraperhelper.ScraperControllerSettings, logger *zap.Logger, providerFunc dbProviderFunc, clientProviderFunc clientProviderFunc, instanceName string) (scraperhelper.Scraper, error) {
+	s := &scraper{
 		metricsBuilder:     metricsBuilder,
 		metricsSettings:    metricsSettings,
 		scrapeCfg:          scrapeCfg,
@@ -84,15 +83,10 @@ func newScraper(id component.ID, metricsBuilder *metadata.MetricsBuilder, metric
 		clientProviderFunc: clientProviderFunc,
 		instanceName:       instanceName,
 	}
+	return scraperhelper.NewScraper(id.String(), s.scrape, scraperhelper.WithShutdown(s.shutdown), scraperhelper.WithStart(s.start))
 }
 
-var _ scraperhelper.Scraper = (*scraper)(nil)
-
-func (s *scraper) ID() component.ID {
-	return s.id
-}
-
-func (s *scraper) Start(context.Context, component.Host) error {
+func (s *scraper) start(context.Context, component.Host) error {
 	s.startTime = pcommon.NewTimestampFromTime(time.Now())
 	var err error
 	s.db, err = s.dbProviderFunc()
@@ -107,7 +101,7 @@ func (s *scraper) Start(context.Context, component.Host) error {
 	return nil
 }
 
-func (s *scraper) Scrape(ctx context.Context) (pmetric.Metrics, error) {
+func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	s.logger.Debug("Begin scrape")
 
 	var scrapeErrors []error
@@ -124,75 +118,66 @@ func (s *scraper) Scrape(ctx context.Context) (pmetric.Metrics, error) {
 			switch row["NAME"] {
 			case enqueueDeadlocks:
 				if s.metricsSettings.OracledbEnqueueDeadlocks.Enabled {
-					value, err := strconv.ParseInt(row["VALUE"], 10, 64)
+					err := s.metricsBuilder.RecordOracledbEnqueueDeadlocksDataPoint(now, row["VALUE"])
 					if err != nil {
-						scrapeErrors = append(scrapeErrors, fmt.Errorf("%s value: %q, %w", enqueueDeadlocks, row["VALUE"], err))
+						scrapeErrors = append(scrapeErrors, err)
 					}
-					s.metricsBuilder.RecordOracledbEnqueueDeadlocksDataPoint(now, value)
 				}
 			case exchangeDeadlocks:
 				if s.metricsSettings.OracledbExchangeDeadlocks.Enabled {
-					value, err := strconv.ParseInt(row["VALUE"], 10, 64)
+					err := s.metricsBuilder.RecordOracledbExchangeDeadlocksDataPoint(now, row["VALUE"])
 					if err != nil {
-						scrapeErrors = append(scrapeErrors, fmt.Errorf("%s value: %q, %w", exchangeDeadlocks, row["VALUE"], err))
+						scrapeErrors = append(scrapeErrors, err)
 					}
-					s.metricsBuilder.RecordOracledbExchangeDeadlocksDataPoint(now, value)
 				}
 			case executeCount:
 				if s.metricsSettings.OracledbExecutions.Enabled {
-					value, err := strconv.ParseInt(row["VALUE"], 10, 64)
+					err := s.metricsBuilder.RecordOracledbExecutionsDataPoint(now, row["VALUE"])
 					if err != nil {
-						scrapeErrors = append(scrapeErrors, fmt.Errorf("%s value: %q, %w", executeCount, row["VALUE"], err))
+						scrapeErrors = append(scrapeErrors, err)
 					}
-					s.metricsBuilder.RecordOracledbExecutionsDataPoint(now, value)
 				}
 			case parseCountTotal:
 				if s.metricsSettings.OracledbParseCalls.Enabled {
-					value, err := strconv.ParseInt(row["VALUE"], 10, 64)
+					err := s.metricsBuilder.RecordOracledbParseCallsDataPoint(now, row["VALUE"])
 					if err != nil {
-						scrapeErrors = append(scrapeErrors, fmt.Errorf("%s value: %q, %w", parseCountTotal, row["VALUE"], err))
+						scrapeErrors = append(scrapeErrors, err)
 					}
-					s.metricsBuilder.RecordOracledbParseCallsDataPoint(now, value)
 				}
 			case parseCountHard:
 				if s.metricsSettings.OracledbHardParses.Enabled {
-					value, err := strconv.ParseInt(row["VALUE"], 10, 64)
+					err := s.metricsBuilder.RecordOracledbHardParsesDataPoint(now, row["VALUE"])
 					if err != nil {
-						scrapeErrors = append(scrapeErrors, fmt.Errorf("%s value: %q, %w", parseCountHard, row["VALUE"], err))
+						scrapeErrors = append(scrapeErrors, err)
 					}
-					s.metricsBuilder.RecordOracledbHardParsesDataPoint(now, value)
 				}
 			case userCommits:
 				if s.metricsSettings.OracledbUserCommits.Enabled {
-					value, err := strconv.ParseInt(row["VALUE"], 10, 64)
+					err := s.metricsBuilder.RecordOracledbUserCommitsDataPoint(now, row["VALUE"])
 					if err != nil {
-						scrapeErrors = append(scrapeErrors, fmt.Errorf("%s value: %q, %w", userCommits, row["VALUE"], err))
+						scrapeErrors = append(scrapeErrors, err)
 					}
-					s.metricsBuilder.RecordOracledbUserCommitsDataPoint(now, value)
 				}
 			case userRollbacks:
 				if s.metricsSettings.OracledbUserRollbacks.Enabled {
-					value, err := strconv.ParseInt(row["VALUE"], 10, 64)
+					err := s.metricsBuilder.RecordOracledbUserRollbacksDataPoint(now, row["VALUE"])
 					if err != nil {
-						scrapeErrors = append(scrapeErrors, fmt.Errorf("%s value: %q, %w", userRollbacks, row["VALUE"], err))
+						scrapeErrors = append(scrapeErrors, err)
 					}
-					s.metricsBuilder.RecordOracledbUserRollbacksDataPoint(now, value)
 				}
 			case physicalReads:
 				if s.metricsSettings.OracledbPhysicalReads.Enabled {
-					value, err := strconv.ParseInt(row["VALUE"], 10, 64)
+					err := s.metricsBuilder.RecordOracledbPhysicalReadsDataPoint(now, row["VALUE"])
 					if err != nil {
-						scrapeErrors = append(scrapeErrors, fmt.Errorf("%s value: %q, %w", physicalReads, row["VALUE"], err))
+						scrapeErrors = append(scrapeErrors, err)
 					}
-					s.metricsBuilder.RecordOracledbPhysicalReadsDataPoint(now, value)
 				}
 			case sessionLogicalReads:
 				if s.metricsSettings.OracledbLogicalReads.Enabled {
-					value, err := strconv.ParseInt(row["VALUE"], 10, 64)
+					err := s.metricsBuilder.RecordOracledbLogicalReadsDataPoint(now, row["VALUE"])
 					if err != nil {
-						scrapeErrors = append(scrapeErrors, fmt.Errorf("%s value: %q, %w", sessionLogicalReads, row["VALUE"], err))
+						scrapeErrors = append(scrapeErrors, err)
 					}
-					s.metricsBuilder.RecordOracledbLogicalReadsDataPoint(now, value)
 				}
 			case cpuTime:
 				if s.metricsSettings.OracledbCPUTime.Enabled {
@@ -206,11 +191,10 @@ func (s *scraper) Scrape(ctx context.Context) (pmetric.Metrics, error) {
 				}
 			case pgaMemory:
 				if s.metricsSettings.OracledbPgaMemory.Enabled {
-					value, err := strconv.ParseInt(row["VALUE"], 10, 64)
+					err := s.metricsBuilder.RecordOracledbPgaMemoryDataPoint(pcommon.NewTimestampFromTime(time.Now()), row["VALUE"])
 					if err != nil {
-						scrapeErrors = append(scrapeErrors, fmt.Errorf("%s value: %q, %w", pgaMemory, row["VALUE"], err))
+						scrapeErrors = append(scrapeErrors, err)
 					}
-					s.metricsBuilder.RecordOracledbPgaMemoryDataPoint(pcommon.NewTimestampFromTime(time.Now()), value)
 				}
 			}
 		}
@@ -222,11 +206,10 @@ func (s *scraper) Scrape(ctx context.Context) (pmetric.Metrics, error) {
 			scrapeErrors = append(scrapeErrors, fmt.Errorf("error executing %s: %w", sessionCountSQL, err))
 		}
 		for _, row := range rows {
-			value, err := strconv.ParseInt(row["VALUE"], 10, 64)
+			err := s.metricsBuilder.RecordOracledbSessionsUsageDataPoint(pcommon.NewTimestampFromTime(time.Now()), row["VALUE"], row["TYPE"], row["STATUS"])
 			if err != nil {
-				scrapeErrors = append(scrapeErrors, fmt.Errorf("value: %q: %q, %w", row["VALUE"], sessionCountSQL, err))
+				scrapeErrors = append(scrapeErrors, err)
 			}
-			s.metricsBuilder.RecordOracledbSessionsUsageDataPoint(pcommon.NewTimestampFromTime(time.Now()), value, row["TYPE"], row["STATUS"])
 		}
 	}
 
@@ -243,96 +226,74 @@ func (s *scraper) Scrape(ctx context.Context) (pmetric.Metrics, error) {
 			switch resourceName {
 			case "processes":
 				if s.metricsSettings.OracledbProcessesUsage.Enabled {
-					currentUsage, err := strconv.ParseInt(row["CURRENT_UTILIZATION"], 10, 64)
+					err := s.metricsBuilder.RecordOracledbProcessesUsageDataPoint(pcommon.NewTimestampFromTime(time.Now()), row["CURRENT_UTILIZATION"])
 					if err != nil {
-						scrapeErrors = append(scrapeErrors, fmt.Errorf("current Usage for %q: %q, %s, %w", resourceName, row["CURRENT_Usage"], systemResourceLimitsSQL, err))
-					} else {
-						s.metricsBuilder.RecordOracledbProcessesUsageDataPoint(pcommon.NewTimestampFromTime(time.Now()), currentUsage)
+						scrapeErrors = append(scrapeErrors, err)
 					}
 				}
 				if s.metricsSettings.OracledbProcessesLimit.Enabled {
-					maxUsage, err := strconv.ParseInt(row["LIMIT_VALUE"], 10, 64)
+					err := s.metricsBuilder.RecordOracledbProcessesLimitDataPoint(pcommon.NewTimestampFromTime(time.Now()), row["LIMIT_VALUE"])
 					if err != nil {
-						scrapeErrors = append(scrapeErrors, fmt.Errorf("max Usage for %q: %q, %s, %w", resourceName, row["MAX_Usage"], systemResourceLimitsSQL, err))
-					} else {
-						s.metricsBuilder.RecordOracledbProcessesLimitDataPoint(pcommon.NewTimestampFromTime(time.Now()), maxUsage)
+						scrapeErrors = append(scrapeErrors, err)
 					}
 				}
 			case "sessions":
 				if s.metricsSettings.OracledbSessionsLimit.Enabled {
-					maxUtilization, err := strconv.ParseInt(row["LIMIT_VALUE"], 10, 64)
+					err := s.metricsBuilder.RecordOracledbSessionsLimitDataPoint(pcommon.NewTimestampFromTime(time.Now()), row["LIMIT_VALUE"])
 					if err != nil {
-						scrapeErrors = append(scrapeErrors, fmt.Errorf("max utilization for %q: %q, %s, %w", resourceName, row["LIMIT_VALUE"], systemResourceLimitsSQL, err))
-					} else {
-						s.metricsBuilder.RecordOracledbSessionsLimitDataPoint(pcommon.NewTimestampFromTime(time.Now()), maxUtilization)
+						scrapeErrors = append(scrapeErrors, err)
 					}
 				}
 			case "enqueue_locks":
 				if s.metricsSettings.OracledbEnqueueLocksUsage.Enabled {
-					currentUtilization, err := strconv.ParseInt(row["CURRENT_UTILIZATION"], 10, 64)
+					err := s.metricsBuilder.RecordOracledbEnqueueLocksUsageDataPoint(pcommon.NewTimestampFromTime(time.Now()), row["CURRENT_UTILIZATION"])
 					if err != nil {
-						scrapeErrors = append(scrapeErrors, fmt.Errorf("current utilization for %q: %q, %s, %w", resourceName, row["CURRENT_UTILIZATION"], systemResourceLimitsSQL, err))
-					} else {
-						s.metricsBuilder.RecordOracledbEnqueueLocksUsageDataPoint(pcommon.NewTimestampFromTime(time.Now()), currentUtilization)
+						scrapeErrors = append(scrapeErrors, err)
 					}
 				}
 				if s.metricsSettings.OracledbEnqueueLocksLimit.Enabled {
-					maxUtilization, err := strconv.ParseInt(row["LIMIT_VALUE"], 10, 64)
+					err := s.metricsBuilder.RecordOracledbEnqueueLocksLimitDataPoint(pcommon.NewTimestampFromTime(time.Now()), row["LIMIT_VALUE"])
 					if err != nil {
-						scrapeErrors = append(scrapeErrors, fmt.Errorf("max utilization for %q: %q, %s, %w", resourceName, row["LIMIT_VALUE"], systemResourceLimitsSQL, err))
-					} else {
-						s.metricsBuilder.RecordOracledbEnqueueLocksLimitDataPoint(pcommon.NewTimestampFromTime(time.Now()), maxUtilization)
+						scrapeErrors = append(scrapeErrors, err)
 					}
 				}
 			case "dml_locks":
 				if s.metricsSettings.OracledbDmlLocksUsage.Enabled {
-					currentUtilization, err := strconv.ParseInt(row["CURRENT_UTILIZATION"], 10, 64)
+					err := s.metricsBuilder.RecordOracledbDmlLocksUsageDataPoint(pcommon.NewTimestampFromTime(time.Now()), row["CURRENT_UTILIZATION"])
 					if err != nil {
-						scrapeErrors = append(scrapeErrors, fmt.Errorf("current utilization for %q: %q, %s, %w", resourceName, row["CURRENT_UTILIZATION"], systemResourceLimitsSQL, err))
-					} else {
-						s.metricsBuilder.RecordOracledbDmlLocksUsageDataPoint(pcommon.NewTimestampFromTime(time.Now()), currentUtilization)
+						scrapeErrors = append(scrapeErrors, err)
 					}
 				}
 				if s.metricsSettings.OracledbDmlLocksLimit.Enabled {
-					maxUtilization, err := strconv.ParseInt(row["LIMIT_VALUE"], 10, 64)
+					err := s.metricsBuilder.RecordOracledbDmlLocksLimitDataPoint(pcommon.NewTimestampFromTime(time.Now()), row["LIMIT_VALUE"])
 					if err != nil {
-						scrapeErrors = append(scrapeErrors, fmt.Errorf("max utilization for %q: %q, %s, %w", resourceName, row["LIMIT_VALUE"], systemResourceLimitsSQL, err))
-					} else {
-						s.metricsBuilder.RecordOracledbDmlLocksLimitDataPoint(pcommon.NewTimestampFromTime(time.Now()), maxUtilization)
+						scrapeErrors = append(scrapeErrors, err)
 					}
 				}
 			case "enqueue_resources":
 				if s.metricsSettings.OracledbEnqueueResourcesUsage.Enabled {
-					currentUtilization, err := strconv.ParseInt(row["CURRENT_UTILIZATION"], 10, 64)
+					err := s.metricsBuilder.RecordOracledbEnqueueResourcesUsageDataPoint(pcommon.NewTimestampFromTime(time.Now()), row["CURRENT_UTILIZATION"])
 					if err != nil {
-						scrapeErrors = append(scrapeErrors, fmt.Errorf("current utilization for %q: %q, %s, %w", resourceName, row["CURRENT_UTILIZATION"], systemResourceLimitsSQL, err))
-					} else {
-						s.metricsBuilder.RecordOracledbEnqueueResourcesUsageDataPoint(pcommon.NewTimestampFromTime(time.Now()), currentUtilization)
+						scrapeErrors = append(scrapeErrors, err)
 					}
 				}
 				if s.metricsSettings.OracledbEnqueueResourcesLimit.Enabled {
-					maxUtilization, err := strconv.ParseInt(row["LIMIT_VALUE"], 10, 64)
+					err := s.metricsBuilder.RecordOracledbEnqueueResourcesLimitDataPoint(pcommon.NewTimestampFromTime(time.Now()), row["LIMIT_VALUE"])
 					if err != nil {
-						scrapeErrors = append(scrapeErrors, fmt.Errorf("max utilization for %q: %q, %s, %w", resourceName, row["LIMIT_VALUE"], systemResourceLimitsSQL, err))
-					} else {
-						s.metricsBuilder.RecordOracledbEnqueueResourcesLimitDataPoint(pcommon.NewTimestampFromTime(time.Now()), maxUtilization)
+						scrapeErrors = append(scrapeErrors, err)
 					}
 				}
 			case "transactions":
 				if s.metricsSettings.OracledbTransactionsUsage.Enabled {
-					currentUtilization, err := strconv.ParseInt(row["CURRENT_UTILIZATION"], 10, 64)
+					err := s.metricsBuilder.RecordOracledbTransactionsUsageDataPoint(pcommon.NewTimestampFromTime(time.Now()), row["CURRENT_UTILIZATION"])
 					if err != nil {
-						scrapeErrors = append(scrapeErrors, fmt.Errorf("current utilization for %q: %q, %s, %w", resourceName, row["CURRENT_UTILIZATION"], systemResourceLimitsSQL, err))
-					} else {
-						s.metricsBuilder.RecordOracledbTransactionsUsageDataPoint(pcommon.NewTimestampFromTime(time.Now()), currentUtilization)
+						scrapeErrors = append(scrapeErrors, err)
 					}
 				}
 				if s.metricsSettings.OracledbTransactionsLimit.Enabled {
-					maxUtilization, err := strconv.ParseInt(row["LIMIT_VALUE"], 10, 64)
+					err := s.metricsBuilder.RecordOracledbTransactionsLimitDataPoint(pcommon.NewTimestampFromTime(time.Now()), row["LIMIT_VALUE"])
 					if err != nil {
-						scrapeErrors = append(scrapeErrors, fmt.Errorf("max utilization for %q: %q, %s, %w", resourceName, row["LIMIT_VALUE"], systemResourceLimitsSQL, err))
-					} else {
-						s.metricsBuilder.RecordOracledbTransactionsLimitDataPoint(pcommon.NewTimestampFromTime(time.Now()), maxUtilization)
+						scrapeErrors = append(scrapeErrors, err)
 					}
 				}
 			}
@@ -346,11 +307,9 @@ func (s *scraper) Scrape(ctx context.Context) (pmetric.Metrics, error) {
 			now := pcommon.NewTimestampFromTime(time.Now())
 			for _, row := range rows {
 				tablespaceName := row["TABLESPACE_NAME"]
-				value, err := strconv.ParseInt(row["BYTES"], 10, 64)
+				err := s.metricsBuilder.RecordOracledbTablespaceSizeUsageDataPoint(now, row["BYTES"], tablespaceName)
 				if err != nil {
-					scrapeErrors = append(scrapeErrors, fmt.Errorf("bytes for %q: %q, %s, %w", tablespaceName, row["BYTES"], tablespaceUsageSQL, err))
-				} else {
-					s.metricsBuilder.RecordOracledbTablespaceSizeUsageDataPoint(now, value, tablespaceName)
+					scrapeErrors = append(scrapeErrors, err)
 				}
 			}
 		}
@@ -363,19 +322,9 @@ func (s *scraper) Scrape(ctx context.Context) (pmetric.Metrics, error) {
 			now := pcommon.NewTimestampFromTime(time.Now())
 			for _, row := range rows {
 				tablespaceName := row["TABLESPACE_NAME"]
-				var value int64
-				ok := true
-				if row["VALUE"] == "" {
-					value = 0
-				} else {
-					value, err = strconv.ParseInt(row["VALUE"], 10, 64)
-					if err != nil {
-						ok = false
-						scrapeErrors = append(scrapeErrors, fmt.Errorf("value for %q: %q, %s, %w", tablespaceName, row["VALUE"], tablespaceMaxSpaceSQL, err))
-					}
-				}
-				if ok {
-					s.metricsBuilder.RecordOracledbTablespaceSizeLimitDataPoint(now, value, tablespaceName)
+				err := s.metricsBuilder.RecordOracledbTablespaceSizeLimitDataPoint(now, row["VALUE"], tablespaceName)
+				if err != nil {
+					scrapeErrors = append(scrapeErrors, err)
 				}
 			}
 		}
@@ -389,6 +338,9 @@ func (s *scraper) Scrape(ctx context.Context) (pmetric.Metrics, error) {
 	return out, nil
 }
 
-func (s *scraper) Shutdown(ctx context.Context) error {
+func (s *scraper) shutdown(ctx context.Context) error {
+	if s.db == nil {
+		return nil
+	}
 	return s.db.Close()
 }
