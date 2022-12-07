@@ -3,8 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xr
 go 1.18
 
 require (
-	github.com/aws/aws-sdk-go v1.44.153
-	github.com/aws/aws-xray-sdk-go v1.7.1
+	github.com/aws/aws-sdk-go v1.44.155
+	github.com/aws/aws-xray-sdk-go v1.8.0
 )
 
 require (
