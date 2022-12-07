@@ -21,7 +21,7 @@ func TestDefaultMetrics(t *testing.T) {
 	enabledMetrics := make(map[string]bool)
 	{{- range $name, $metric := .Metrics }}
 
-	{{ if $metric.IsEnabled }}enabledMetrics["{{ $name }}"] = true{{ end }}
+	{{ if $metric.Enabled }}enabledMetrics["{{ $name }}"] = true{{ end }}
 	mb.Record{{ $name.Render }}DataPoint(ts, {{ if $metric.Data.HasMetricInputType }}"1"{{ else }}1{{ end }}
 	{{- range $metric.Attributes -}}
 	, {{ if (attributeInfo .).Enum }}Attribute{{ .Render }}(1){{ else }}{{ (attributeInfo .).Type.TestValue }}{{ end }}
