@@ -881,23 +881,23 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, options ...metricBuilderOption) *MetricsBuilder {
+func NewMetricsBuilder(ms MetricsSettings, settings component.ReceiverCreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                      pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                  pmetric.NewMetrics(),
-		buildInfo:                      buildInfo,
-		metricApacheCPULoad:            newMetricApacheCPULoad(settings.ApacheCPULoad),
-		metricApacheCPUTime:            newMetricApacheCPUTime(settings.ApacheCPUTime),
-		metricApacheCurrentConnections: newMetricApacheCurrentConnections(settings.ApacheCurrentConnections),
-		metricApacheLoad1:              newMetricApacheLoad1(settings.ApacheLoad1),
-		metricApacheLoad15:             newMetricApacheLoad15(settings.ApacheLoad15),
-		metricApacheLoad5:              newMetricApacheLoad5(settings.ApacheLoad5),
-		metricApacheRequestTime:        newMetricApacheRequestTime(settings.ApacheRequestTime),
-		metricApacheRequests:           newMetricApacheRequests(settings.ApacheRequests),
-		metricApacheScoreboard:         newMetricApacheScoreboard(settings.ApacheScoreboard),
-		metricApacheTraffic:            newMetricApacheTraffic(settings.ApacheTraffic),
-		metricApacheUptime:             newMetricApacheUptime(settings.ApacheUptime),
-		metricApacheWorkers:            newMetricApacheWorkers(settings.ApacheWorkers),
+		buildInfo:                      settings.BuildInfo,
+		metricApacheCPULoad:            newMetricApacheCPULoad(ms.ApacheCPULoad),
+		metricApacheCPUTime:            newMetricApacheCPUTime(ms.ApacheCPUTime),
+		metricApacheCurrentConnections: newMetricApacheCurrentConnections(ms.ApacheCurrentConnections),
+		metricApacheLoad1:              newMetricApacheLoad1(ms.ApacheLoad1),
+		metricApacheLoad15:             newMetricApacheLoad15(ms.ApacheLoad15),
+		metricApacheLoad5:              newMetricApacheLoad5(ms.ApacheLoad5),
+		metricApacheRequestTime:        newMetricApacheRequestTime(ms.ApacheRequestTime),
+		metricApacheRequests:           newMetricApacheRequests(ms.ApacheRequests),
+		metricApacheScoreboard:         newMetricApacheScoreboard(ms.ApacheScoreboard),
+		metricApacheTraffic:            newMetricApacheTraffic(ms.ApacheTraffic),
+		metricApacheUptime:             newMetricApacheUptime(ms.ApacheUptime),
+		metricApacheWorkers:            newMetricApacheWorkers(ms.ApacheWorkers),
 	}
 	for _, op := range options {
 		op(mb)

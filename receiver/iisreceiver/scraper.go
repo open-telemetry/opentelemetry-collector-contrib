@@ -58,7 +58,7 @@ func newIisReceiver(settings component.ReceiverCreateSettings, cfg *Config, cons
 		params:        settings.TelemetrySettings,
 		config:        cfg,
 		consumer:      consumer,
-		metricBuilder: metadata.NewMetricsBuilder(cfg.Metrics, settings.BuildInfo),
+		metricBuilder: metadata.NewMetricsBuilder(cfg.Metrics, settings),
 		newWatcher:    winperfcounters.NewWatcher,
 	}
 }

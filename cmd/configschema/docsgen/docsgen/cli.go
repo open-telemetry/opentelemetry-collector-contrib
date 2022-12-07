@@ -126,7 +126,7 @@ func writeConfigDoc(
 		mdBytes = append(mdBytes, durationBlock...)
 	}
 
-	dir := dr.TypeToProjectPath(v.Type().Elem())
+	dir := dr.ReflectValueToProjectPath(v)
 	if dir == "" {
 		log.Printf("writeConfigDoc: skipping, local path not found for component: %s %s", ci.Group, ci.Type)
 		return

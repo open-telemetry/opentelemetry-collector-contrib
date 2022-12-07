@@ -323,7 +323,7 @@ The amount of memory that is ballooned due to virtualization.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | false |
+| MiBy | Sum | Int | Cumulative | false |
 
 ### vcenter.vm.memory.usage
 

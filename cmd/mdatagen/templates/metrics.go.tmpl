@@ -184,13 +184,20 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, options ...metricBuilderOption) *MetricsBuilder {
+func NewMetricsBuilder(ms MetricsSettings, settings component.ReceiverCreateSettings, options ...metricBuilderOption) *MetricsBuilder {
+	{{- range $name, $metric := .Metrics }}
+	{{- if $metric.Warnings.IfEnabled }}
+	if ms.{{ $name.Render }}.Enabled {
+		settings.Logger.Warn("[WARNING] `{{ $name }}` should not be enabled: {{ $metric.Warnings.IfEnabled }}")
+	}
+	{{ end }}
+	{{- end }}
 	mb := &MetricsBuilder{
 		startTime:                pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:            pmetric.NewMetrics(),
-		buildInfo: 				  buildInfo,
+		buildInfo:                settings.BuildInfo,
 		{{- range $name, $metric := .Metrics }}
-		metric{{ $name.Render }}: newMetric{{ $name.Render }}(settings.{{ $name.Render }}),
+		metric{{ $name.Render }}: newMetric{{ $name.Render }}(ms.{{ $name.Render }}),
 		{{- end }}
 	}
 	for _, op := range options {

@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -74,6 +75,72 @@ func TestNew(t *testing.T) {
 	got, err = createExporter(config, zap.NewNop(), &buildInfo)
 	assert.Error(t, err)
 	require.Nil(t, got)
+}
+
+func TestNewWithHealthCheckSuccess(t *testing.T) {
+
+	rr := make(chan receivedRequest)
+	capture := CapturingData{receivedRequest: rr, statusCode: 200}
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		panic(err)
+	}
+	s := &http.Server{
+		Handler: &capture,
+	}
+	defer s.Close()
+	go func() {
+		if e := s.Serve(listener); e != http.ErrServerClosed {
+			require.NoError(t, e)
+		}
+	}()
+
+	endpoint := "http://" + listener.Addr().String() + "/services/collector"
+
+	config := &Config{
+		Token:                 "someToken",
+		Endpoint:              endpoint,
+		TimeoutSettings:       exporterhelper.TimeoutSettings{Timeout: 1 * time.Second},
+		HecHealthCheckEnabled: true,
+	}
+	buildInfo := component.NewDefaultBuildInfo()
+	got, err := createExporter(config, zap.NewNop(), &buildInfo)
+	assert.NoError(t, err)
+	require.NotNil(t, got)
+
+}
+
+func TestNewWithHealthCheckFail(t *testing.T) {
+
+	rr := make(chan receivedRequest)
+	capture := CapturingData{receivedRequest: rr, statusCode: 500}
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		panic(err)
+	}
+	s := &http.Server{
+		Handler: &capture,
+	}
+	defer s.Close()
+	go func() {
+		if e := s.Serve(listener); e != http.ErrServerClosed {
+			require.NoError(t, e)
+		}
+	}()
+
+	endpoint := "http://" + listener.Addr().String() + "/services/collector"
+
+	config := &Config{
+		Token:                 "someToken",
+		Endpoint:              endpoint,
+		TimeoutSettings:       exporterhelper.TimeoutSettings{Timeout: 1 * time.Second},
+		HecHealthCheckEnabled: true,
+	}
+	buildInfo := component.NewDefaultBuildInfo()
+	got, err := createExporter(config, zap.NewNop(), &buildInfo)
+	assert.Error(t, err)
+	require.Nil(t, got)
+
 }
 
 func TestConsumeMetricsData(t *testing.T) {

@@ -41,7 +41,7 @@ const (
 func init() {
 	featuregate.GetRegistry().MustRegisterID(
 		RenameCommands,
-		featuregate.StageAlpha,
+		featuregate.StageBeta,
 		featuregate.WithRegisterDescription("When enabled, the mysql.commands will be deprecated and additionally emitted as optional mysql.prepared_statements metric"),
 	)
 }
@@ -63,18 +63,17 @@ func newMySQLScraper(
 	ms := &mySQLScraper{
 		logger:         settings.Logger,
 		config:         config,
-		mb:             metadata.NewMetricsBuilder(config.Metrics, settings.BuildInfo),
+		mb:             metadata.NewMetricsBuilder(config.Metrics, settings),
 		renameCommands: featuregate.GetRegistry().IsEnabled(RenameCommands),
 	}
 
 	if !ms.renameCommands {
-		settings.Logger.Warn(fmt.Sprintf("[WARNING] Metric `mysql.commands` will be deprecated and duplicated as `mysql.prepared_statements` in %s. Metric `mysql.commands` will be removed and `mysql.prepared_statements` will be a default metric in %s. Enable a feature gate `%s` to apply and test the upcoming changes earlier", deprecationVersion, renameVersion, RenameCommands))
+		settings.Logger.Warn(fmt.Sprintf("[WARNING] Metric `mysql.commands` is deprecated and duplicated as `mysql.prepared_statements`. Metric `mysql.commands` will be removed and `mysql.prepared_statements` will be a default metric in %s. Disable a feature gate `%s` to keep previous behavior", renameVersion, RenameCommands))
 		ms.config.Metrics.MysqlPreparedStatements.Enabled = false
 	} else {
-		ms.mb.DeprecateMetrics()
-
 		if ms.config.Metrics.MysqlCommands.Enabled {
-			settings.Logger.Warn(fmt.Sprintf("[WARNING] Metric `mysql.commands` will be deprecated in %s and removed in %s. Please use `mysql.prepared_statements` instead", deprecationVersion, renameVersion))
+			ms.mb.DeprecateMetrics()
+			settings.Logger.Warn(fmt.Sprintf("[WARNING] Metric `mysql.commands` is deprecated and will be removed in %s. Please use `mysql.prepared_statements` instead", renameVersion))
 		}
 
 		if !ms.config.Metrics.MysqlPreparedStatements.Enabled {
@@ -222,6 +221,9 @@ func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererr
 		case "Connection_errors_tcpwrap":
 			addPartialIfError(errs, m.mb.RecordMysqlConnectionErrorsDataPoint(now, v,
 				metadata.AttributeConnectionErrorTcpwrap))
+		// connection
+		case "Connections":
+			addPartialIfError(errs, m.mb.RecordMysqlConnectionCountDataPoint(now, v))
 
 		// commands
 		case "Com_stmt_execute":

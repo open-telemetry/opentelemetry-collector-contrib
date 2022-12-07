@@ -48,7 +48,7 @@ func newflinkScraper(config *Config, settings component.ReceiverCreateSettings) 
 	return &flinkmetricsScraper{
 		settings: settings.TelemetrySettings,
 		cfg:      config,
-		mb:       metadata.NewMetricsBuilder(config.Metrics, settings.BuildInfo),
+		mb:       metadata.NewMetricsBuilder(config.Metrics, settings),
 	}
 }
 

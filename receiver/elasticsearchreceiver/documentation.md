@@ -775,6 +775,20 @@ metrics:
     enabled: true
 ```
 
+### elasticsearch.cluster.indices.cache.evictions
+
+The number of evictions from the cache for indices in cluster.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {evictions} | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| cache_name | The name of cache. | Str: ``fielddata``, ``query`` |
+
 ### elasticsearch.index.cache.evictions
 
 The number of evictions from the cache for an index.

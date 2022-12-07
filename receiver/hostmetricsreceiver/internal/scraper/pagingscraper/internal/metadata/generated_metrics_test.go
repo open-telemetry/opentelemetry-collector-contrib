@@ -7,15 +7,17 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 func TestDefaultMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	mb := NewMetricsBuilder(DefaultMetricsSettings(), component.BuildInfo{}, WithStartTime(start))
+	mb := NewMetricsBuilder(DefaultMetricsSettings(), componenttest.NewNopReceiverCreateSettings(), WithStartTime(start))
 	enabledMetrics := make(map[string]bool)
 
 	enabledMetrics["system.paging.faults"] = true
@@ -47,13 +49,18 @@ func TestDefaultMetrics(t *testing.T) {
 func TestAllMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	settings := MetricsSettings{
+	metricsSettings := MetricsSettings{
 		SystemPagingFaults:      MetricSettings{Enabled: true},
 		SystemPagingOperations:  MetricSettings{Enabled: true},
 		SystemPagingUsage:       MetricSettings{Enabled: true},
 		SystemPagingUtilization: MetricSettings{Enabled: true},
 	}
-	mb := NewMetricsBuilder(settings, component.BuildInfo{}, WithStartTime(start))
+	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+	settings := componenttest.NewNopReceiverCreateSettings()
+	settings.Logger = zap.New(observedZapCore)
+	mb := NewMetricsBuilder(metricsSettings, settings, WithStartTime(start))
+
+	assert.Equal(t, 0, observedLogs.Len())
 
 	mb.RecordSystemPagingFaultsDataPoint(ts, 1, AttributeType(1))
 	mb.RecordSystemPagingOperationsDataPoint(ts, 1, AttributeDirection(1), AttributeType(1))
@@ -153,13 +160,18 @@ func TestAllMetrics(t *testing.T) {
 func TestNoMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	settings := MetricsSettings{
+	metricsSettings := MetricsSettings{
 		SystemPagingFaults:      MetricSettings{Enabled: false},
 		SystemPagingOperations:  MetricSettings{Enabled: false},
 		SystemPagingUsage:       MetricSettings{Enabled: false},
 		SystemPagingUtilization: MetricSettings{Enabled: false},
 	}
-	mb := NewMetricsBuilder(settings, component.BuildInfo{}, WithStartTime(start))
+	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+	settings := componenttest.NewNopReceiverCreateSettings()
+	settings.Logger = zap.New(observedZapCore)
+	mb := NewMetricsBuilder(metricsSettings, settings, WithStartTime(start))
+
+	assert.Equal(t, 0, observedLogs.Len())
 	mb.RecordSystemPagingFaultsDataPoint(ts, 1, AttributeType(1))
 	mb.RecordSystemPagingOperationsDataPoint(ts, 1, AttributeDirection(1), AttributeType(1))
 	mb.RecordSystemPagingUsageDataPoint(ts, 1, "attr-val", AttributeState(1))

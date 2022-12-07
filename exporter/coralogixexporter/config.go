@@ -27,8 +27,7 @@ import (
 const (
 	typeStr = "coralogix"
 	// The stability level of the exporter.
-	// Marked as unmantained on 2022-11-30, will be removed from official builds on 2023-05-30.
-	stability = component.StabilityLevelUnmaintained
+	stability = component.StabilityLevelBeta
 )
 
 // Config defines by Coralogix.

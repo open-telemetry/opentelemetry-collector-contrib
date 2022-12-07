@@ -281,7 +281,7 @@ metrics:
   vcenter.vm.memory.ballooned:
     enabled: true
     description: The amount of memory that is ballooned due to virtualization.
-    unit: By
+    unit: MiBy
     sum:
       monotonic: false
       value_type: int

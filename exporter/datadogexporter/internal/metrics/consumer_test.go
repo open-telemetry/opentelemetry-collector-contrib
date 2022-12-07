@@ -69,7 +69,7 @@ func TestRunningMetrics(t *testing.T) {
 	tr := newTranslator(t, logger)
 
 	ctx := context.Background()
-	consumer := NewConsumer()
+	consumer := NewZorkianConsumer()
 	assert.NoError(t, tr.MapMetrics(ctx, ms, consumer))
 
 	var runningHostnames []string
@@ -113,7 +113,7 @@ func TestTagsMetrics(t *testing.T) {
 	tr := newTranslator(t, logger)
 
 	ctx := context.Background()
-	consumer := NewConsumer()
+	consumer := NewZorkianConsumer()
 	assert.NoError(t, tr.MapMetrics(ctx, ms, consumer))
 
 	runningMetrics := consumer.runningMetrics(0, component.BuildInfo{})

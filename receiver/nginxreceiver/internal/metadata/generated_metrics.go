@@ -322,15 +322,15 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, options ...metricBuilderOption) *MetricsBuilder {
+func NewMetricsBuilder(ms MetricsSettings, settings component.ReceiverCreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                      pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                  pmetric.NewMetrics(),
-		buildInfo:                      buildInfo,
-		metricNginxConnectionsAccepted: newMetricNginxConnectionsAccepted(settings.NginxConnectionsAccepted),
-		metricNginxConnectionsCurrent:  newMetricNginxConnectionsCurrent(settings.NginxConnectionsCurrent),
-		metricNginxConnectionsHandled:  newMetricNginxConnectionsHandled(settings.NginxConnectionsHandled),
-		metricNginxRequests:            newMetricNginxRequests(settings.NginxRequests),
+		buildInfo:                      settings.BuildInfo,
+		metricNginxConnectionsAccepted: newMetricNginxConnectionsAccepted(ms.NginxConnectionsAccepted),
+		metricNginxConnectionsCurrent:  newMetricNginxConnectionsCurrent(ms.NginxConnectionsCurrent),
+		metricNginxConnectionsHandled:  newMetricNginxConnectionsHandled(ms.NginxConnectionsHandled),
+		metricNginxRequests:            newMetricNginxRequests(ms.NginxRequests),
 	}
 	for _, op := range options {
 		op(mb)

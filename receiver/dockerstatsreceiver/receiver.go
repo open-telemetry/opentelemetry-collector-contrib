@@ -48,7 +48,7 @@ func newReceiver(set component.ReceiverCreateSettings, config *Config) *receiver
 	return &receiver{
 		config:   config,
 		settings: set,
-		mb:       metadata.NewMetricsBuilder(config.MetricsConfig, set.BuildInfo),
+		mb:       metadata.NewMetricsBuilder(config.MetricsConfig, set),
 	}
 }
 

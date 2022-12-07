@@ -7,15 +7,17 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 func TestDefaultMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	mb := NewMetricsBuilder(DefaultMetricsSettings(), component.BuildInfo{}, WithStartTime(start))
+	mb := NewMetricsBuilder(DefaultMetricsSettings(), componenttest.NewNopReceiverCreateSettings(), WithStartTime(start))
 	enabledMetrics := make(map[string]bool)
 
 	mb.RecordProcessContextSwitchesDataPoint(ts, 1, AttributeContextSwitchType(1))
@@ -64,7 +66,7 @@ func TestDefaultMetrics(t *testing.T) {
 func TestAllMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	settings := MetricsSettings{
+	metricsSettings := MetricsSettings{
 		ProcessContextSwitches:     MetricSettings{Enabled: true},
 		ProcessCPUTime:             MetricSettings{Enabled: true},
 		ProcessCPUUtilization:      MetricSettings{Enabled: true},
@@ -78,7 +80,12 @@ func TestAllMetrics(t *testing.T) {
 		ProcessSignalsPending:      MetricSettings{Enabled: true},
 		ProcessThreads:             MetricSettings{Enabled: true},
 	}
-	mb := NewMetricsBuilder(settings, component.BuildInfo{}, WithStartTime(start))
+	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+	settings := componenttest.NewNopReceiverCreateSettings()
+	settings.Logger = zap.New(observedZapCore)
+	mb := NewMetricsBuilder(metricsSettings, settings, WithStartTime(start))
+
+	assert.Equal(t, 0+1+1, observedLogs.Len())
 
 	mb.RecordProcessContextSwitchesDataPoint(ts, 1, AttributeContextSwitchType(1))
 	mb.RecordProcessCPUTimeDataPoint(ts, 1, AttributeState(1))
@@ -312,7 +319,7 @@ func TestAllMetrics(t *testing.T) {
 func TestNoMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	settings := MetricsSettings{
+	metricsSettings := MetricsSettings{
 		ProcessContextSwitches:     MetricSettings{Enabled: false},
 		ProcessCPUTime:             MetricSettings{Enabled: false},
 		ProcessCPUUtilization:      MetricSettings{Enabled: false},
@@ -326,7 +333,12 @@ func TestNoMetrics(t *testing.T) {
 		ProcessSignalsPending:      MetricSettings{Enabled: false},
 		ProcessThreads:             MetricSettings{Enabled: false},
 	}
-	mb := NewMetricsBuilder(settings, component.BuildInfo{}, WithStartTime(start))
+	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+	settings := componenttest.NewNopReceiverCreateSettings()
+	settings.Logger = zap.New(observedZapCore)
+	mb := NewMetricsBuilder(metricsSettings, settings, WithStartTime(start))
+
+	assert.Equal(t, 0, observedLogs.Len())
 	mb.RecordProcessContextSwitchesDataPoint(ts, 1, AttributeContextSwitchType(1))
 	mb.RecordProcessCPUTimeDataPoint(ts, 1, AttributeState(1))
 	mb.RecordProcessCPUUtilizationDataPoint(ts, 1, AttributeState(1))

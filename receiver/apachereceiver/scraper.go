@@ -77,7 +77,7 @@ func newApacheScraper(
 	a := &apacheScraper{
 		settings:   settings.TelemetrySettings,
 		cfg:        cfg,
-		mb:         metadata.NewMetricsBuilder(cfg.Metrics, settings.BuildInfo),
+		mb:         metadata.NewMetricsBuilder(cfg.Metrics, settings),
 		serverName: serverName,
 		port:       port,
 		emitMetricsWithServerNameAsResourceAttribute: featuregate.GetRegistry().IsEnabled(EmitServerNameAsResourceAttribute),

@@ -22,6 +22,7 @@ import (
 
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/exemplar"
+	"github.com/prometheus/prometheus/model/histogram"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/metadata"
 	"github.com/prometheus/prometheus/model/value"
@@ -182,6 +183,11 @@ func (t *transaction) AppendExemplar(ref storage.SeriesRef, l labels.Labels, e e
 	mf := t.getOrCreateMetricFamily(mn)
 	mf.addExemplar(t.getSeriesRef(l, mf.mtype), e)
 
+	return 0, nil
+}
+
+func (t *transaction) AppendHistogram(ref storage.SeriesRef, l labels.Labels, atMs int64, h *histogram.Histogram) (storage.SeriesRef, error) {
+	//TODO: implement this func
 	return 0, nil
 }
 

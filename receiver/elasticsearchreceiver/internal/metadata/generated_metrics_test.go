@@ -7,15 +7,17 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 func TestDefaultMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	mb := NewMetricsBuilder(DefaultMetricsSettings(), component.BuildInfo{}, WithStartTime(start))
+	mb := NewMetricsBuilder(DefaultMetricsSettings(), componenttest.NewNopReceiverCreateSettings(), WithStartTime(start))
 	enabledMetrics := make(map[string]bool)
 
 	enabledMetrics["elasticsearch.breaker.memory.estimated"] = true
@@ -35,6 +37,8 @@ func TestDefaultMetrics(t *testing.T) {
 
 	enabledMetrics["elasticsearch.cluster.in_flight_fetch"] = true
 	mb.RecordElasticsearchClusterInFlightFetchDataPoint(ts, 1)
+
+	mb.RecordElasticsearchClusterIndicesCacheEvictionsDataPoint(ts, 1, AttributeCacheName(1))
 
 	enabledMetrics["elasticsearch.cluster.nodes"] = true
 	mb.RecordElasticsearchClusterNodesDataPoint(ts, 1)
@@ -276,13 +280,14 @@ func TestDefaultMetrics(t *testing.T) {
 func TestAllMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	settings := MetricsSettings{
+	metricsSettings := MetricsSettings{
 		ElasticsearchBreakerMemoryEstimated:                       MetricSettings{Enabled: true},
 		ElasticsearchBreakerMemoryLimit:                           MetricSettings{Enabled: true},
 		ElasticsearchBreakerTripped:                               MetricSettings{Enabled: true},
 		ElasticsearchClusterDataNodes:                             MetricSettings{Enabled: true},
 		ElasticsearchClusterHealth:                                MetricSettings{Enabled: true},
 		ElasticsearchClusterInFlightFetch:                         MetricSettings{Enabled: true},
+		ElasticsearchClusterIndicesCacheEvictions:                 MetricSettings{Enabled: true},
 		ElasticsearchClusterNodes:                                 MetricSettings{Enabled: true},
 		ElasticsearchClusterPendingTasks:                          MetricSettings{Enabled: true},
 		ElasticsearchClusterPublishedStatesDifferences:            MetricSettings{Enabled: true},
@@ -363,7 +368,12 @@ func TestAllMetrics(t *testing.T) {
 		JvmMemoryPoolUsed:                                         MetricSettings{Enabled: true},
 		JvmThreadsCount:                                           MetricSettings{Enabled: true},
 	}
-	mb := NewMetricsBuilder(settings, component.BuildInfo{}, WithStartTime(start))
+	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+	settings := componenttest.NewNopReceiverCreateSettings()
+	settings.Logger = zap.New(observedZapCore)
+	mb := NewMetricsBuilder(metricsSettings, settings, WithStartTime(start))
+
+	assert.Equal(t, 0, observedLogs.Len())
 
 	mb.RecordElasticsearchBreakerMemoryEstimatedDataPoint(ts, 1, "attr-val")
 	mb.RecordElasticsearchBreakerMemoryLimitDataPoint(ts, 1, "attr-val")
@@ -371,6 +381,7 @@ func TestAllMetrics(t *testing.T) {
 	mb.RecordElasticsearchClusterDataNodesDataPoint(ts, 1)
 	mb.RecordElasticsearchClusterHealthDataPoint(ts, 1, AttributeHealthStatus(1))
 	mb.RecordElasticsearchClusterInFlightFetchDataPoint(ts, 1)
+	mb.RecordElasticsearchClusterIndicesCacheEvictionsDataPoint(ts, 1, AttributeCacheName(1))
 	mb.RecordElasticsearchClusterNodesDataPoint(ts, 1)
 	mb.RecordElasticsearchClusterPendingTasksDataPoint(ts, 1)
 	mb.RecordElasticsearchClusterPublishedStatesDifferencesDataPoint(ts, 1, AttributeClusterPublishedDifferenceState(1))
@@ -565,6 +576,22 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 			assert.Equal(t, int64(1), dp.IntValue())
 			validatedMetrics["elasticsearch.cluster.in_flight_fetch"] = struct{}{}
+		case "elasticsearch.cluster.indices.cache.evictions":
+			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+			assert.Equal(t, "The number of evictions from the cache for indices in cluster.", ms.At(i).Description())
+			assert.Equal(t, "{evictions}", ms.At(i).Unit())
+			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+			dp := ms.At(i).Sum().DataPoints().At(0)
+			assert.Equal(t, start, dp.StartTimestamp())
+			assert.Equal(t, ts, dp.Timestamp())
+			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+			assert.Equal(t, int64(1), dp.IntValue())
+			attrVal, ok := dp.Attributes().Get("cache_name")
+			assert.True(t, ok)
+			assert.Equal(t, "fielddata", attrVal.Str())
+			validatedMetrics["elasticsearch.cluster.indices.cache.evictions"] = struct{}{}
 		case "elasticsearch.cluster.nodes":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
@@ -1718,13 +1745,14 @@ func TestAllMetrics(t *testing.T) {
 func TestNoMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	settings := MetricsSettings{
+	metricsSettings := MetricsSettings{
 		ElasticsearchBreakerMemoryEstimated:                       MetricSettings{Enabled: false},
 		ElasticsearchBreakerMemoryLimit:                           MetricSettings{Enabled: false},
 		ElasticsearchBreakerTripped:                               MetricSettings{Enabled: false},
 		ElasticsearchClusterDataNodes:                             MetricSettings{Enabled: false},
 		ElasticsearchClusterHealth:                                MetricSettings{Enabled: false},
 		ElasticsearchClusterInFlightFetch:                         MetricSettings{Enabled: false},
+		ElasticsearchClusterIndicesCacheEvictions:                 MetricSettings{Enabled: false},
 		ElasticsearchClusterNodes:                                 MetricSettings{Enabled: false},
 		ElasticsearchClusterPendingTasks:                          MetricSettings{Enabled: false},
 		ElasticsearchClusterPublishedStatesDifferences:            MetricSettings{Enabled: false},
@@ -1805,13 +1833,19 @@ func TestNoMetrics(t *testing.T) {
 		JvmMemoryPoolUsed:                                         MetricSettings{Enabled: false},
 		JvmThreadsCount:                                           MetricSettings{Enabled: false},
 	}
-	mb := NewMetricsBuilder(settings, component.BuildInfo{}, WithStartTime(start))
+	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+	settings := componenttest.NewNopReceiverCreateSettings()
+	settings.Logger = zap.New(observedZapCore)
+	mb := NewMetricsBuilder(metricsSettings, settings, WithStartTime(start))
+
+	assert.Equal(t, 0, observedLogs.Len())
 	mb.RecordElasticsearchBreakerMemoryEstimatedDataPoint(ts, 1, "attr-val")
 	mb.RecordElasticsearchBreakerMemoryLimitDataPoint(ts, 1, "attr-val")
 	mb.RecordElasticsearchBreakerTrippedDataPoint(ts, 1, "attr-val")
 	mb.RecordElasticsearchClusterDataNodesDataPoint(ts, 1)
 	mb.RecordElasticsearchClusterHealthDataPoint(ts, 1, AttributeHealthStatus(1))
 	mb.RecordElasticsearchClusterInFlightFetchDataPoint(ts, 1)
+	mb.RecordElasticsearchClusterIndicesCacheEvictionsDataPoint(ts, 1, AttributeCacheName(1))
 	mb.RecordElasticsearchClusterNodesDataPoint(ts, 1)
 	mb.RecordElasticsearchClusterPendingTasksDataPoint(ts, 1)
 	mb.RecordElasticsearchClusterPublishedStatesDifferencesDataPoint(ts, 1, AttributeClusterPublishedDifferenceState(1))

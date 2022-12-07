@@ -486,18 +486,18 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, options ...metricBuilderOption) *MetricsBuilder {
+func NewMetricsBuilder(ms MetricsSettings, settings component.ReceiverCreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:            pmetric.NewMetrics(),
-		buildInfo:                buildInfo,
-		metricNtpFrequencyOffset: newMetricNtpFrequencyOffset(settings.NtpFrequencyOffset),
-		metricNtpSkew:            newMetricNtpSkew(settings.NtpSkew),
-		metricNtpStratum:         newMetricNtpStratum(settings.NtpStratum),
-		metricNtpTimeCorrection:  newMetricNtpTimeCorrection(settings.NtpTimeCorrection),
-		metricNtpTimeLastOffset:  newMetricNtpTimeLastOffset(settings.NtpTimeLastOffset),
-		metricNtpTimeRmsOffset:   newMetricNtpTimeRmsOffset(settings.NtpTimeRmsOffset),
-		metricNtpTimeRootDelay:   newMetricNtpTimeRootDelay(settings.NtpTimeRootDelay),
+		buildInfo:                settings.BuildInfo,
+		metricNtpFrequencyOffset: newMetricNtpFrequencyOffset(ms.NtpFrequencyOffset),
+		metricNtpSkew:            newMetricNtpSkew(ms.NtpSkew),
+		metricNtpStratum:         newMetricNtpStratum(ms.NtpStratum),
+		metricNtpTimeCorrection:  newMetricNtpTimeCorrection(ms.NtpTimeCorrection),
+		metricNtpTimeLastOffset:  newMetricNtpTimeLastOffset(ms.NtpTimeLastOffset),
+		metricNtpTimeRmsOffset:   newMetricNtpTimeRmsOffset(ms.NtpTimeRmsOffset),
+		metricNtpTimeRootDelay:   newMetricNtpTimeRootDelay(ms.NtpTimeRootDelay),
 	}
 	for _, op := range options {
 		op(mb)
