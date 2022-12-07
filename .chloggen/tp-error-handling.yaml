@@ -1,11 +1,11 @@
 # One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
-change_type: breaking
+change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
-component: processor/transform
+component: transformprocessor
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Reduces the strictness of errors returned while processing.  Instead of stopping the processing of the entire batch will instead skip to the next transform context.  The result is more data that can be processed is processed.
+note: improve error logging.
 
 # One or more tracking issues related to the change
 issues: [16524]
