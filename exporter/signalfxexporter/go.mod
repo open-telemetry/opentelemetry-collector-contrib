@@ -93,3 +93,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experiment
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx => ../../pkg/translator/signalfx
 
 retract v0.65.0
+
+// https://github.com/go-openapi/spec/issues/156
+replace github.com/go-openapi/spec v0.20.5 => github.com/go-openapi/spec v0.20.6
