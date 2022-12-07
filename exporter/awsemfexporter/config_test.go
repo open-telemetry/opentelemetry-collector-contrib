@@ -84,6 +84,31 @@ func TestLoadConfig(t *testing.T) {
 				ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
 			},
 		},
+		{
+			id: component.NewIDWithName(typeStr, "metric_descriptors"),
+			expected: &Config{
+				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
+				AWSSessionSettings: awsutil.AWSSessionSettings{
+					NumberOfWorkers:       8,
+					Endpoint:              "",
+					RequestTimeoutSeconds: 30,
+					MaxRetries:            2,
+					NoVerifySSL:           false,
+					ProxyAddress:          "",
+					Region:                "",
+					RoleARN:               "",
+				},
+				LogGroupName:          "",
+				LogStreamName:         "",
+				DimensionRollupOption: "ZeroAndSingleDimensionRollup",
+				OutputDestination:     "cloudwatch",
+				MetricDescriptors: []MetricDescriptor{{
+					MetricName: "memcached_current_items",
+					Unit:       "Count",
+					Overwrite:  true,
+				}},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -103,10 +128,10 @@ func TestLoadConfig(t *testing.T) {
 
 func TestConfigValidate(t *testing.T) {
 	incorrectDescriptor := []MetricDescriptor{
-		{metricName: ""},
-		{unit: "Count", metricName: "apiserver_total", overwrite: true},
-		{unit: "INVALID", metricName: "404"},
-		{unit: "Megabytes", metricName: "memory_usage"},
+		{MetricName: ""},
+		{Unit: "Count", MetricName: "apiserver_total", Overwrite: true},
+		{Unit: "INVALID", MetricName: "404"},
+		{Unit: "Megabytes", MetricName: "memory_usage"},
 	}
 	cfg := &Config{
 		ExporterSettings: config.NewExporterSettings(component.NewIDWithName(typeStr, "1")),
@@ -123,8 +148,8 @@ func TestConfigValidate(t *testing.T) {
 
 	assert.Equal(t, 2, len(cfg.MetricDescriptors))
 	assert.Equal(t, []MetricDescriptor{
-		{unit: "Count", metricName: "apiserver_total", overwrite: true},
-		{unit: "Megabytes", metricName: "memory_usage"},
+		{Unit: "Count", MetricName: "apiserver_total", Overwrite: true},
+		{Unit: "Megabytes", MetricName: "memory_usage"},
 	}, cfg.MetricDescriptors)
 }
 

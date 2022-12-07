@@ -90,7 +90,7 @@ type metricTranslator struct {
 func newMetricTranslator(config Config) metricTranslator {
 	mt := map[string]MetricDescriptor{}
 	for _, descriptor := range config.MetricDescriptors {
-		mt[descriptor.metricName] = descriptor
+		mt[descriptor.MetricName] = descriptor
 	}
 	return metricTranslator{
 		metricDescriptor: mt,
