@@ -171,7 +171,6 @@ func (b *BearerTokenAuth) bearerToken() string {
 	b.muTokenString.RLock()
 	token := fmt.Sprintf("%s %s", b.scheme, b.tokenString)
 	b.muTokenString.RUnlock()
-	b.logger.Info("token fetched")
 	return token
 }
 
