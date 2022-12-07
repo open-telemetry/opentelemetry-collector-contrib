@@ -495,6 +495,9 @@ jobs:
       - name: Build ${{ matrix.package_type }} ppc64le package
         run: ./internal/buildscripts/packaging/fpm/${{ matrix.package_type }}/build.sh "${{ steps.github_tag.outputs.tag }}" "ppc64le" "./dist/"
       - name: Test ${{ matrix.package_type }} package
+        with:
+          retry_on: error
+          max_attempts: 2  # Deb build is flaky, retry only once
         run: |
           if [[ "${{ matrix.package_type }}" = "deb" ]]; then
               ./internal/buildscripts/packaging/fpm/test.sh dist/otel-contrib-collector*amd64.deb examples/tracing/otel-collector-config.yml
