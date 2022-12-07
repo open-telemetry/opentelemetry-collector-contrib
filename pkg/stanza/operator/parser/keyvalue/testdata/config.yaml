@@ -9,6 +9,9 @@ on_error_drop:
 pair_delimiter:
   type: key_value_parser
   pair_delimiter: ";"
+pair_delimiter_multiline:
+  type: key_value_parser
+  pair_delimiter: "^\n"
 parse_from_simple:
   type: key_value_parser
   parse_from: body.from
