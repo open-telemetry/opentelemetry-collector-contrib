@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscon
 go 1.18
 
 require (
-	github.com/aws/aws-sdk-go v1.44.153
+	github.com/aws/aws-sdk-go v1.44.155
 	github.com/google/cadvisor v0.46.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.66.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.66.0
@@ -153,3 +153,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubel
 exclude github.com/docker/distribution v2.8.0+incompatible
 
 retract v0.65.0
+
+// see https://github.com/shirou/gopsutil/pull/1386
+exclude github.com/shirou/gopsutil/v3 v3.22.11

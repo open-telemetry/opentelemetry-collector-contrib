@@ -99,3 +99,6 @@ require (
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent => ../../internal/sharedcomponent
 
 retract v0.65.0
+
+// see https://github.com/shirou/gopsutil/pull/1386
+exclude github.com/shirou/gopsutil/v3 v3.22.11

@@ -96,3 +96,6 @@ retract v0.65.0
 
 // https://github.com/go-openapi/spec/issues/156
 replace github.com/go-openapi/spec v0.20.5 => github.com/go-openapi/spec v0.20.6
+
+// see https://github.com/shirou/gopsutil/pull/1386
+exclude github.com/shirou/gopsutil/v3 v3.22.11
