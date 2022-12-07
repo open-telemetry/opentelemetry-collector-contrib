@@ -23,6 +23,14 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/cmd/otelcontribcol"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/cmd/oteltestbedcol"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/cmd/telemetrygen"
     schedule:
       interval: "weekly"
@@ -140,6 +148,10 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/exporter/loadbalancingexporter"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/exporter/logicmonitorexporter"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -716,6 +728,10 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/receiver/prometheusreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/promtailreceiver"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"

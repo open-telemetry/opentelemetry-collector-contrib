@@ -22,7 +22,8 @@
 
 cmd/configschema/                                    @open-telemetry/collector-contrib-approvers @mx-psi @dmitryax @pmcollins
 cmd/mdatagen/                                        @open-telemetry/collector-contrib-approvers @dmitryax
-cmd/otelcontribcol/                                  @open-telemetry/collector-contrib-approvers @codeboten
+cmd/otelcontribcol/                                  @open-telemetry/collector-contrib-approvers
+cmd/oteltestbedcol/                                  @open-telemetry/collector-contrib-approvers
 cmd/telemetrygen/                                    @open-telemetry/collector-contrib-approvers @mx-psi @amenasria @codeboten
 cmd/tracegen/                                        @open-telemetry/collector-contrib-approvers @jpkrohling
 

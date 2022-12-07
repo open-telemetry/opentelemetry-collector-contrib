@@ -174,7 +174,6 @@ require (
 	go.opentelemetry.io/collector/processor/batchprocessor v0.66.1-0.20221202005155-1c54042beb70
 	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.66.1-0.20221202005155-1c54042beb70
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.66.1-0.20221202005155-1c54042beb70
-	go.uber.org/multierr v1.8.0
 	golang.org/x/sys v0.3.0
 )
 
@@ -640,6 +639,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.11.1 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/goleak v1.2.0 // indirect
+	go.uber.org/multierr v1.8.0 // indirect
 	go.uber.org/zap v1.24.0 // indirect
 	go4.org/intern v0.0.0-20211027215823-ae77deb06f29 // indirect
 	go4.org/unsafe/assume-no-moving-gc v0.0.0-20220617031537-928513b29760 // indirect
@@ -709,6 +709,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/commo
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ./internal/coreinternal
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker => ./internal/docker
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter => ./internal/filter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig => ./internal/k8sconfig
 
@@ -1078,8 +1080,6 @@ exclude github.com/docker/distribution v2.8.0+incompatible
 
 // see https://github.com/mattn/go-ieproxy/issues/45
 replace github.com/mattn/go-ieproxy => github.com/mattn/go-ieproxy v0.0.1
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter => ./internal/filter
 
 // loki needs grafana fork to be used
 replace github.com/hpcloud/tail => github.com/grafana/tail v0.0.0-20220426200921-98e8eb28ea4c

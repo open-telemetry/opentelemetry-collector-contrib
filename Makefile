@@ -63,7 +63,7 @@ all-common:
 	@$(MAKE) $(FOR_GROUP_TARGET) TARGET="common"
 
 .PHONY: e2e-test
-e2e-test: otelcontribcol otelcontribcol-testbed
+e2e-test: otelcontribcol oteltestbedcol
 	$(MAKE) -C testbed run-tests
 
 .PHONY: unit-tests-with-cover
@@ -267,14 +267,14 @@ chlog-update: chlog-install
 # Build the Collector executable.
 .PHONY: otelcontribcol
 otelcontribcol:
-	GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ./bin/otelcontribcol_$(GOOS)_$(GOARCH)$(EXTENSION) \
-		$(BUILD_INFO) -tags $(GO_BUILD_TAGS) ./cmd/otelcontribcol
+	cd ./cmd/otelcontribcol && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/otelcontribcol_$(GOOS)_$(GOARCH)$(EXTENSION) \
+		$(BUILD_INFO) -tags $(GO_BUILD_TAGS) .
 
 # Build the Collector executable, with only components used in testbed.
-.PHONY: otelcontribcol-testbed
-otelcontribcol-testbed:
-	GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ./bin/otelcontribcol_testbed_$(GOOS)_$(GOARCH)$(EXTENSION) \
-		$(BUILD_INFO) -tags $(GO_BUILD_TAGS),testbed ./cmd/otelcontribcol
+.PHONY: oteltestbedcol
+oteltestbedcol:
+	cd ./cmd/oteltestbedcol && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/oteltestbedcol_$(GOOS)_$(GOARCH)$(EXTENSION) \
+		$(BUILD_INFO) -tags $(GO_BUILD_TAGS) .
 
 .PHONY: update-dep
 update-dep:

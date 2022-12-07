@@ -226,4 +226,6 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/tracegen
 
 excluded-modules:
+  - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/otelcontribcol
+  - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/oteltestbedcol
   - github.com/open-telemetry/opentelemetry-collector-contrib/internal/tools
