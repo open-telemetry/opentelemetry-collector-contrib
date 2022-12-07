@@ -26,13 +26,11 @@ import (
 func Test_loadMetadata(t *testing.T) {
 	tests := []struct {
 		name    string
-		yml     string
 		want    metadata
 		wantErr string
 	}{
 		{
-			name: "all options",
-			yml:  "all_options.yaml",
+			name: "all_options.yaml",
 			want: metadata{
 				Name:           "metricreceiver",
 				SemConvVersion: "1.9.0",
@@ -68,7 +66,7 @@ func Test_loadMetadata(t *testing.T) {
 					}},
 				Metrics: map[metricName]metric{
 					"system.cpu.time": {
-						Enabled:               (func() *bool { t := true; return &t })(),
+						Enabled:               true,
 						Description:           "Total CPU seconds broken down by different states.",
 						ExtendedDocumentation: "Additional information on CPU Time can be found [here](https://en.wikipedia.org/wiki/CPU_time).",
 						Unit:                  "s",
@@ -80,7 +78,7 @@ func Test_loadMetadata(t *testing.T) {
 						Attributes: []attributeName{"freeFormAttribute", "freeFormAttributeWithValue", "enumAttribute", "booleanValueType"},
 					},
 					"system.cpu.utilization": {
-						Enabled:     (func() *bool { f := false; return &f })(),
+						Enabled:     false,
 						Description: "Percentage of CPU time broken down by different states.",
 						Unit:        "1",
 						Gauge: &gauge{
@@ -92,43 +90,43 @@ func Test_loadMetadata(t *testing.T) {
 			},
 		},
 		{
-			name: "unknown metric attribute",
-			yml:  "unknown_metric_attribute.yaml",
-			want: metadata{},
-			wantErr: "error validating struct:\n\tmetadata.Metrics[system.cpu.time]." +
-				"Attributes[missing]: unknown attribute value\n",
+			name:    "unknown_metric_attribute.yaml",
+			want:    metadata{},
+			wantErr: "metric \"system.cpu.time\" refers to undefined attributes: [missing]",
 		},
 		{
-			name: "no metric type",
-			yml:  "no_metric_type.yaml",
+			name: "no_metric_type.yaml",
 			want: metadata{},
 			wantErr: "metric system.cpu.time doesn't have a metric type key, " +
 				"one of the following has to be specified: sum, gauge",
 		},
 		{
-			name:    "no enabled",
-			yml:     "no_enabled.yaml",
+			name:    "no_enabled.yaml",
 			want:    metadata{},
-			wantErr: "error validating struct:\n\tmetadata.Metrics[system.cpu.time].Enabled: Enabled is a required field\n",
+			wantErr: "1 error(s) decoding:\n\n* error decoding 'metrics[system.cpu.time]': missing required field: `enabled`",
 		},
 		{
-			name: "two metric types",
-			yml:  "two_metric_types.yaml",
+			name: "two_metric_types.yaml",
 			want: metadata{},
 			wantErr: "metric system.cpu.time has more than one metric type keys, " +
 				"only one of the following has to be specified: sum, gauge",
 		},
 		{
-			name: "no number types",
-			yml:  "no_value_type.yaml",
+			name: "no_value_type.yaml",
 			want: metadata{},
-			wantErr: "error validating struct:\n\tmetadata.Metrics[system.cpu.time].Sum.MetricValueType.ValueType: " +
-				"ValueType is a required field\n",
+			wantErr: "1 error(s) decoding:\n\n* error decoding 'metrics[system.cpu.time]': 1 error(s) decoding:\n\n" +
+				"* error decoding 'sum': missing required field: `value_type`",
+		},
+		{
+			name: "unknown_value_type.yaml",
+			want: metadata{},
+			wantErr: "1 error(s) decoding:\n\n* error decoding 'metrics[system.cpu.time]': 1 error(s) decoding:\n\n" +
+				"* error decoding 'sum': 1 error(s) decoding:\n\n* error decoding 'value_type': invalid value_type: \"unknown\"",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := loadMetadata(filepath.Join("testdata", tt.yml))
+			got, err := loadMetadata(filepath.Join("testdata", tt.name))
 			if tt.wantErr != "" {
 				require.Error(t, err)
 				require.EqualError(t, err, tt.wantErr)
