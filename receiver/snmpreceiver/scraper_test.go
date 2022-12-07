@@ -28,8 +28,8 @@ import (
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest/golden"
 )
 
 type MockClient struct {
@@ -264,7 +264,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = comparetest.CompareMetrics(expectedMetrics, metrics)
 				require.NoError(t, err)
 			},
 		},
@@ -311,7 +311,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = comparetest.CompareMetrics(expectedMetrics, metrics)
 				require.NoError(t, err)
 			},
 		},
@@ -360,7 +360,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = comparetest.CompareMetrics(expectedMetrics, metrics)
 				require.NoError(t, err)
 			},
 		},
@@ -409,7 +409,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = comparetest.CompareMetrics(expectedMetrics, metrics)
 				require.NoError(t, err)
 			},
 		},
@@ -473,7 +473,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = comparetest.CompareMetrics(expectedMetrics, metrics)
 				require.NoError(t, err)
 			},
 		},
@@ -539,7 +539,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = comparetest.CompareMetrics(expectedMetrics, metrics)
 				require.NoError(t, err)
 			},
 		},
@@ -611,7 +611,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = comparetest.CompareMetrics(expectedMetrics, metrics)
 				require.NoError(t, err)
 			},
 		},
@@ -757,7 +757,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = comparetest.CompareMetrics(expectedMetrics, metrics)
 				require.NoError(t, err)
 			},
 		},
@@ -821,7 +821,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = comparetest.CompareMetrics(expectedMetrics, metrics)
 				require.NoError(t, err)
 			},
 		},
@@ -887,7 +887,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = comparetest.CompareMetrics(expectedMetrics, metrics)
 				require.NoError(t, err)
 			},
 		},
@@ -953,7 +953,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = comparetest.CompareMetrics(expectedMetrics, metrics)
 				require.NoError(t, err)
 			},
 		},
@@ -1035,7 +1035,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = comparetest.CompareMetrics(expectedMetrics, metrics)
 				require.NoError(t, err)
 			},
 		},
@@ -1128,7 +1128,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = comparetest.CompareMetrics(expectedMetrics, metrics)
 				require.NoError(t, err)
 			},
 		},
@@ -1219,7 +1219,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = comparetest.CompareMetrics(expectedMetrics, metrics)
 				require.NoError(t, err)
 			},
 		},
@@ -1451,7 +1451,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = comparetest.CompareMetrics(expectedMetrics, metrics)
 				require.NoError(t, err)
 			},
 		},
@@ -1528,7 +1528,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = comparetest.CompareMetrics(expectedMetrics, metrics)
 				require.NoError(t, err)
 			},
 		},
@@ -1605,7 +1605,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = comparetest.CompareMetrics(expectedMetrics, metrics)
 				require.NoError(t, err)
 			},
 		},
@@ -1682,7 +1682,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = comparetest.CompareMetrics(expectedMetrics, metrics)
 				require.NoError(t, err)
 			},
 		},
@@ -1767,7 +1767,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = comparetest.CompareMetrics(expectedMetrics, metrics)
 				require.NoError(t, err)
 			},
 		},
@@ -2012,7 +2012,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = comparetest.CompareMetrics(expectedMetrics, metrics)
 				require.NoError(t, err)
 			},
 		},
@@ -2110,7 +2110,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = comparetest.CompareMetrics(expectedMetrics, metrics)
 				require.NoError(t, err)
 			},
 		},
@@ -2186,7 +2186,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = comparetest.CompareMetrics(expectedMetrics, metrics)
 				require.NoError(t, err)
 			},
 		},

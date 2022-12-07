@@ -30,8 +30,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/service/servicetest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest/golden"
 )
 
 func TestSnmpReceiverIntegration(t *testing.T) {
@@ -84,7 +84,7 @@ func TestSnmpReceiverIntegration(t *testing.T) {
 			expectedFile := filepath.Join("testdata", "integration", testCase.expectedResultsFilename)
 			expectedMetrics, err := golden.ReadMetrics(expectedFile)
 			require.NoError(t, err)
-			err = scrapertest.CompareMetrics(expectedMetrics, actualMetrics)
+			err = comparetest.CompareMetrics(expectedMetrics, actualMetrics)
 			require.NoError(t, err)
 		})
 	}
