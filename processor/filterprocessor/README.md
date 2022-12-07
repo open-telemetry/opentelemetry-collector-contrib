@@ -290,7 +290,7 @@ processors:
 ## OTTL
 The [OpenTelemetry Transformation Language](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/README.md) is a language for interacting with telemetry within the collector in generic ways.
 The filterprocessor can be configured to use OTTL conditions to determine when to drop telemetry.
-If any condition is met, the telemetry is dropped.
+If any condition is met, the telemetry is dropped (each condition is ORed together).
 Each configuration option corresponds with a different type of telemetry and OTTL Context.
 See the table below for details on each context and the fields it exposes.
 
