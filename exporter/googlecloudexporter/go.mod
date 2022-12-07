@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/google
 go 1.18
 
 require (
-	cloud.google.com/go/monitoring v1.8.0
+	cloud.google.com/go/monitoring v1.9.0
 	contrib.go.opencensus.io/exporter/stackdriver v0.13.14
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector v0.34.3-0.20221202192616-0186b89ba914
 	github.com/census-instrumentation/opencensus-proto v0.4.1
@@ -18,22 +18,22 @@ require (
 	go.opentelemetry.io/collector/pdata v0.66.1-0.20221202005155-1c54042beb70
 	go.opentelemetry.io/collector/semconv v0.66.1-0.20221202005155-1c54042beb70
 	google.golang.org/api v0.103.0
-	google.golang.org/genproto v0.0.0-20221114212237-e4508ebdbee1
+	google.golang.org/genproto v0.0.0-20221202195650-67e5cbc046fd
 	google.golang.org/grpc v1.51.0
 	google.golang.org/protobuf v1.28.1
 )
 
 require (
 	cloud.google.com/go v0.105.0 // indirect
-	cloud.google.com/go/compute v1.12.1 // indirect
+	cloud.google.com/go/compute v1.14.0 // indirect
 	cloud.google.com/go/compute/metadata v0.2.1 // indirect
-	cloud.google.com/go/logging v1.5.0 // indirect
+	cloud.google.com/go/logging v1.6.1 // indirect
 	cloud.google.com/go/longrunning v0.3.0 // indirect
 	cloud.google.com/go/trace v1.4.0 // indirect
 	contrib.go.opencensus.io/exporter/prometheus v0.4.2 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.10.2 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.34.3-0.20221202192616-0186b89ba914 // indirect
-	github.com/aws/aws-sdk-go v1.44.153 // indirect
+	github.com/aws/aws-sdk-go v1.44.155 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
@@ -70,7 +70,7 @@ require (
 	github.com/prometheus/procfs v0.8.0 // indirect
 	github.com/prometheus/prometheus v0.40.5 // indirect
 	github.com/prometheus/statsd_exporter v0.22.7 // indirect
-	github.com/shirou/gopsutil/v3 v3.22.10 // indirect
+	github.com/shirou/gopsutil/v3 v3.22.11 // indirect
 	github.com/spf13/cobra v1.6.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/tklauser/go-sysconf v0.3.11 // indirect

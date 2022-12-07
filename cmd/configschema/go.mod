@@ -19,13 +19,13 @@ require (
 require (
 	bitbucket.org/atlassian/go-asap/v2 v2.6.0 // indirect
 	cloud.google.com/go v0.105.0 // indirect
-	cloud.google.com/go/compute v1.12.1 // indirect
+	cloud.google.com/go/compute v1.14.0 // indirect
 	cloud.google.com/go/compute/metadata v0.2.1 // indirect
 	cloud.google.com/go/iam v0.7.0 // indirect
-	cloud.google.com/go/logging v1.5.0 // indirect
+	cloud.google.com/go/logging v1.6.1 // indirect
 	cloud.google.com/go/longrunning v0.3.0 // indirect
-	cloud.google.com/go/monitoring v1.8.0 // indirect
-	cloud.google.com/go/pubsub v1.26.0 // indirect
+	cloud.google.com/go/monitoring v1.9.0 // indirect
+	cloud.google.com/go/pubsub v1.28.0 // indirect
 	cloud.google.com/go/spanner v1.41.0 // indirect
 	cloud.google.com/go/trace v1.4.0 // indirect
 	code.cloudfoundry.org/clock v1.0.0 // indirect
@@ -84,7 +84,7 @@ require (
 	github.com/Masterminds/sprig/v3 v3.2.2 // indirect
 	github.com/Microsoft/go-winio v0.5.2 // indirect
 	github.com/ReneKroon/ttlcache/v2 v2.11.0 // indirect
-	github.com/SAP/go-hdb v0.111.4 // indirect
+	github.com/SAP/go-hdb v0.111.5 // indirect
 	github.com/SermoDigital/jose v0.9.2-0.20161205224733-f6df55f235c2 // indirect
 	github.com/Shopify/sarama v1.37.2 // indirect
 	github.com/Showmax/go-fqdn v1.0.0 // indirect
@@ -101,7 +101,7 @@ require (
 	github.com/ardielle/ardielle-go v1.5.2 // indirect
 	github.com/armon/go-metrics v0.4.0 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d // indirect
-	github.com/aws/aws-sdk-go v1.44.153 // indirect
+	github.com/aws/aws-sdk-go v1.44.155 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.17.2 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.4.9 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.18.4 // indirect
@@ -134,7 +134,7 @@ require (
 	github.com/cenkalti/backoff/v4 v4.2.0 // indirect
 	github.com/census-instrumentation/opencensus-proto v0.4.1 // indirect
 	github.com/cespare/xxhash v1.1.0 // indirect
-	github.com/cespare/xxhash/v2 v2.1.2 // indirect
+	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/checkpoint-restore/go-criu/v5 v5.3.0 // indirect
 	github.com/cihub/seelog v0.0.0-20170130134532-f561c5e57575 // indirect
 	github.com/cilium/ebpf v0.8.1 // indirect
@@ -184,7 +184,7 @@ require (
 	github.com/form3tech-oss/jwt-go v3.2.5+incompatible // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.1 // indirect
-	github.com/getsentry/sentry-go v0.14.0 // indirect
+	github.com/getsentry/sentry-go v0.16.0 // indirect
 	github.com/go-faster/city v1.0.1 // indirect
 	github.com/go-faster/errors v0.6.1 // indirect
 	github.com/go-kit/kit v0.12.0 // indirect
@@ -560,7 +560,7 @@ require (
 	github.com/secure-systems-lab/go-securesystemslib v0.4.0 // indirect
 	github.com/segmentio/asm v1.2.0 // indirect
 	github.com/sercand/kuberesolver v2.4.0+incompatible // indirect
-	github.com/shirou/gopsutil/v3 v3.22.10 // indirect
+	github.com/shirou/gopsutil/v3 v3.22.11 // indirect
 	github.com/shopspring/decimal v1.3.1 // indirect
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3 // indirect
 	github.com/signalfx/gohistogram v0.0.0-20160107210732-1ccfd2ff5083 // indirect
@@ -578,7 +578,7 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
 	github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635 // indirect
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.551 // indirect
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.553 // indirect
 	github.com/tg123/go-htpasswd v1.2.0 // indirect
 	github.com/thanos-io/thanos v0.28.0 // indirect
 	github.com/theupdateframework/go-tuf v0.3.0 // indirect
@@ -599,7 +599,7 @@ require (
 	github.com/vmware/go-vmware-nsxt v0.0.0-20220328155605-f49a14c1ef5f // indirect
 	github.com/vmware/govmomi v0.29.0 // indirect
 	github.com/vultr/govultr/v2 v2.17.2 // indirect
-	github.com/wavefronthq/wavefront-sdk-go v0.10.4 // indirect
+	github.com/wavefronthq/wavefront-sdk-go v0.11.0 // indirect
 	github.com/weaveworks/common v0.0.0-20221201103051-7c2720a9024d // indirect
 	github.com/weaveworks/promrus v1.2.0 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
@@ -654,7 +654,7 @@ require (
 	gonum.org/v1/gonum v0.12.0 // indirect
 	google.golang.org/api v0.103.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto v0.0.0-20221201164419-0e50fba7f41c // indirect
+	google.golang.org/genproto v0.0.0-20221202195650-67e5cbc046fd // indirect
 	google.golang.org/grpc v1.51.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/fsnotify.v1 v1.4.7 // indirect
