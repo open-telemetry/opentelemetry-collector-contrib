@@ -496,7 +496,6 @@ jobs:
         run: ./internal/buildscripts/packaging/fpm/${{ matrix.package_type }}/build.sh "${{ steps.github_tag.outputs.tag }}" "ppc64le" "./dist/"
       - name: Test ${{ matrix.package_type }} package
         with:
-          retry_on: error
           max_attempts: 2  # Deb build is flaky, retry only once
         run: |
           if [[ "${{ matrix.package_type }}" = "deb" ]]; then
