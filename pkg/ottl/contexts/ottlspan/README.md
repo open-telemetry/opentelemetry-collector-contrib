@@ -1,4 +1,4 @@
-___# Span Context
+# Span Context
 
 The Span Context is a Context implementation for [pdata Spans](https://github.com/open-telemetry/opentelemetry-collector/tree/main/pdata/ptrace), the collector's internal representation for OTLP span data.  This Context should be used when interacted with OTLP spans.
 

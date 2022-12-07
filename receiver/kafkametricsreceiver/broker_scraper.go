@@ -41,7 +41,7 @@ func (s *brokerScraper) Name() string {
 }
 
 func (s *brokerScraper) start(_ context.Context, _ component.Host) error {
-	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, s.settings.BuildInfo)
+	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, s.settings)
 	return nil
 }
 

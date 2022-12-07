@@ -38,7 +38,7 @@ func NewFactory() component.ReceiverFactory {
 	)
 }
 
-func createDefaultConfig() component.ReceiverConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 			ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),

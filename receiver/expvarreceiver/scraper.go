@@ -46,7 +46,7 @@ func newExpVarScraper(cfg *Config, set component.ReceiverCreateSettings) *expVar
 	return &expVarScraper{
 		cfg: cfg,
 		set: &set,
-		mb:  metadata.NewMetricsBuilder(cfg.MetricsConfig, set.BuildInfo),
+		mb:  metadata.NewMetricsBuilder(cfg.MetricsConfig, set),
 	}
 }
 

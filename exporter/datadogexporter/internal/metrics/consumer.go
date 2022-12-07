@@ -20,33 +20,33 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/otlp/model/translator"
 	"github.com/DataDog/datadog-agent/pkg/quantile"
 	"go.opentelemetry.io/collector/component"
-	"gopkg.in/zorkian/go-datadog-api.v2"
+	zorkian "gopkg.in/zorkian/go-datadog-api.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics/sketches"
 )
 
-var _ translator.Consumer = (*Consumer)(nil)
-var _ translator.HostConsumer = (*Consumer)(nil)
-var _ translator.TagsConsumer = (*Consumer)(nil)
+var _ translator.Consumer = (*ZorkianConsumer)(nil)
+var _ translator.HostConsumer = (*ZorkianConsumer)(nil)
+var _ translator.TagsConsumer = (*ZorkianConsumer)(nil)
 
-// Consumer is the metrics Consumer.
-type Consumer struct {
-	ms        []datadog.Metric
+// ZorkianConsumer is the metrics Consumer using Zorkian APIs.
+type ZorkianConsumer struct {
+	ms        []zorkian.Metric
 	sl        sketches.SketchSeriesList
 	seenHosts map[string]struct{}
 	seenTags  map[string]struct{}
 }
 
-// NewConsumer creates a new zorkian consumer.
-func NewConsumer() *Consumer {
-	return &Consumer{
+// NewZorkianConsumer creates a new Zorkian Datadog consumer.
+func NewZorkianConsumer() *ZorkianConsumer {
+	return &ZorkianConsumer{
 		seenHosts: make(map[string]struct{}),
 		seenTags:  make(map[string]struct{}),
 	}
 }
 
-// toDataType maps translator datatypes to zorkian's datatypes.
-func (c *Consumer) toDataType(dt translator.MetricDataType) (out MetricType) {
+// toDataType maps translator datatypes to Zorkian's datatypes.
+func (c *ZorkianConsumer) toDataType(dt translator.MetricDataType) (out MetricType) {
 	out = MetricType("unknown")
 
 	switch dt {
@@ -60,15 +60,15 @@ func (c *Consumer) toDataType(dt translator.MetricDataType) (out MetricType) {
 }
 
 // runningMetrics gets the running metrics for the exporter.
-func (c *Consumer) runningMetrics(timestamp uint64, buildInfo component.BuildInfo) (series []datadog.Metric) {
+func (c *ZorkianConsumer) runningMetrics(timestamp uint64, buildInfo component.BuildInfo) (series []zorkian.Metric) {
 	for host := range c.seenHosts {
 		// Report the host as running
-		runningMetric := DefaultMetrics("metrics", host, timestamp, buildInfo)
+		runningMetric := DefaultZorkianMetrics("metrics", host, timestamp, buildInfo)
 		series = append(series, runningMetric...)
 	}
 
 	for tag := range c.seenTags {
-		runningMetrics := DefaultMetrics("metrics", "", timestamp, buildInfo)
+		runningMetrics := DefaultZorkianMetrics("metrics", "", timestamp, buildInfo)
 		for i := range runningMetrics {
 			runningMetrics[i].Tags = append(runningMetrics[i].Tags, tag)
 		}
@@ -79,7 +79,7 @@ func (c *Consumer) runningMetrics(timestamp uint64, buildInfo component.BuildInf
 }
 
 // All gets all metrics (consumed metrics and running metrics).
-func (c *Consumer) All(timestamp uint64, buildInfo component.BuildInfo, tags []string) ([]datadog.Metric, sketches.SketchSeriesList) {
+func (c *ZorkianConsumer) All(timestamp uint64, buildInfo component.BuildInfo, tags []string) ([]zorkian.Metric, sketches.SketchSeriesList) {
 	series := c.ms
 	series = append(series, c.runningMetrics(timestamp, buildInfo)...)
 	if len(tags) == 0 {
@@ -95,7 +95,7 @@ func (c *Consumer) All(timestamp uint64, buildInfo component.BuildInfo, tags []s
 }
 
 // ConsumeTimeSeries implements the translator.Consumer interface.
-func (c *Consumer) ConsumeTimeSeries(
+func (c *ZorkianConsumer) ConsumeTimeSeries(
 	_ context.Context,
 	dims *translator.Dimensions,
 	typ translator.MetricDataType,
@@ -103,13 +103,13 @@ func (c *Consumer) ConsumeTimeSeries(
 	value float64,
 ) {
 	dt := c.toDataType(typ)
-	met := NewMetric(dims.Name(), dt, timestamp, value, dims.Tags())
+	met := NewZorkianMetric(dims.Name(), dt, timestamp, value, dims.Tags())
 	met.SetHost(dims.Host())
 	c.ms = append(c.ms, met)
 }
 
 // ConsumeSketch implements the translator.Consumer interface.
-func (c *Consumer) ConsumeSketch(
+func (c *ZorkianConsumer) ConsumeSketch(
 	_ context.Context,
 	dims *translator.Dimensions,
 	timestamp uint64,
@@ -128,11 +128,11 @@ func (c *Consumer) ConsumeSketch(
 }
 
 // ConsumeHost implements the translator.HostConsumer interface.
-func (c *Consumer) ConsumeHost(host string) {
+func (c *ZorkianConsumer) ConsumeHost(host string) {
 	c.seenHosts[host] = struct{}{}
 }
 
 // ConsumeTag implements the translator.TagsConsumer interface.
-func (c *Consumer) ConsumeTag(tag string) {
+func (c *ZorkianConsumer) ConsumeTag(tag string) {
 	c.seenTags[tag] = struct{}{}
 }

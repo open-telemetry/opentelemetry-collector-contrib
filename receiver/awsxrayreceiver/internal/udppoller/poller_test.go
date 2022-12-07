@@ -123,15 +123,14 @@ func TestCloseStopsPoller(t *testing.T) {
 }
 
 func TestSuccessfullyPollPacket(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry()
+	receiverID := component.NewID("TestSuccessfullyPollPacket")
+	tt, err := obsreporttest.SetupTelemetryWithID(receiverID)
 	assert.NoError(t, err, "SetupTelemetry should succeed")
 	defer func() {
 		assert.NoError(t, tt.Shutdown(context.Background()))
 	}()
 
-	receiverID := component.NewID("TestSuccessfullyPollPacket")
-
-	addr, p, _ := createAndOptionallyStartPoller(t, receiverID, true, tt.ToReceiverCreateSettings())
+	addr, p, _ := createAndOptionallyStartPoller(t, true, tt.ToReceiverCreateSettings())
 	defer p.Close()
 
 	randString, _ := uuid.NewRandom()
@@ -160,15 +159,14 @@ func TestSuccessfullyPollPacket(t *testing.T) {
 }
 
 func TestIncompletePacketNoSeparator(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry()
+	receiverID := component.NewID("TestIncompletePacketNoSeparator")
+	tt, err := obsreporttest.SetupTelemetryWithID(receiverID)
 	assert.NoError(t, err, "SetupTelemetry should succeed")
 	defer func() {
 		assert.NoError(t, tt.Shutdown(context.Background()))
 	}()
 
-	receiverID := component.NewID("TestIncompletePacketNoSeparator")
-
-	addr, p, recordedLogs := createAndOptionallyStartPoller(t, receiverID, true, tt.ToReceiverCreateSettings())
+	addr, p, recordedLogs := createAndOptionallyStartPoller(t, true, tt.ToReceiverCreateSettings())
 	defer p.Close()
 
 	rawData := []byte(`{"format": "json", "version": 1}`) // no separator
@@ -191,15 +189,14 @@ func TestIncompletePacketNoSeparator(t *testing.T) {
 }
 
 func TestIncompletePacketNoBody(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry()
+	receiverID := component.NewID("TestIncompletePacketNoBody")
+	tt, err := obsreporttest.SetupTelemetryWithID(receiverID)
 	assert.NoError(t, err, "SetupTelemetry should succeed")
 	defer func() {
 		assert.NoError(t, tt.Shutdown(context.Background()))
 	}()
 
-	receiverID := component.NewID("TestIncompletePacketNoBody")
-
-	addr, p, recordedLogs := createAndOptionallyStartPoller(t, receiverID, true, tt.ToReceiverCreateSettings())
+	addr, p, recordedLogs := createAndOptionallyStartPoller(t, true, tt.ToReceiverCreateSettings())
 	defer p.Close()
 
 	rawData := []byte(`{"format": "json", "version": 1}` + "\n") // no body
@@ -217,15 +214,14 @@ func TestIncompletePacketNoBody(t *testing.T) {
 }
 
 func TestNonJsonHeader(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry()
+	receiverID := component.NewID("TestNonJsonHeader")
+	tt, err := obsreporttest.SetupTelemetryWithID(receiverID)
 	assert.NoError(t, err, "SetupTelemetry should succeed")
 	defer func() {
 		assert.NoError(t, tt.Shutdown(context.Background()))
 	}()
 
-	receiverID := component.NewID("TestNonJsonHeader")
-
-	addr, p, recordedLogs := createAndOptionallyStartPoller(t, receiverID, true, tt.ToReceiverCreateSettings())
+	addr, p, recordedLogs := createAndOptionallyStartPoller(t, true, tt.ToReceiverCreateSettings())
 	defer p.Close()
 
 	// the header (i.e. the portion before \n) is invalid
@@ -248,15 +244,14 @@ func TestNonJsonHeader(t *testing.T) {
 }
 
 func TestJsonInvalidHeader(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry()
+	receiverID := component.NewID("TestJsonInvalidHeader")
+	tt, err := obsreporttest.SetupTelemetryWithID(receiverID)
 	assert.NoError(t, err, "SetupTelemetry should succeed")
 	defer func() {
 		assert.NoError(t, tt.Shutdown(context.Background()))
 	}()
 
-	receiverID := component.NewID("TestJsonInvalidHeader")
-
-	addr, p, recordedLogs := createAndOptionallyStartPoller(t, receiverID, true, tt.ToReceiverCreateSettings())
+	addr, p, recordedLogs := createAndOptionallyStartPoller(t, true, tt.ToReceiverCreateSettings())
 	defer p.Close()
 
 	randString, _ := uuid.NewRandom()
@@ -285,15 +280,14 @@ func TestJsonInvalidHeader(t *testing.T) {
 }
 
 func TestSocketReadIrrecoverableNetError(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry()
+	receiverID := component.NewID("TestSocketReadIrrecoverableNetError")
+	tt, err := obsreporttest.SetupTelemetryWithID(receiverID)
 	assert.NoError(t, err, "SetupTelemetry should succeed")
 	defer func() {
 		assert.NoError(t, tt.Shutdown(context.Background()))
 	}()
 
-	receiverID := component.NewID("TestSocketReadIrrecoverableNetError")
-
-	_, p, recordedLogs := createAndOptionallyStartPoller(t, receiverID, false, tt.ToReceiverCreateSettings())
+	_, p, recordedLogs := createAndOptionallyStartPoller(t, false, tt.ToReceiverCreateSettings())
 	// close the actual socket because we are going to mock it out below
 	p.(*poller).udpSock.Close()
 
@@ -322,15 +316,14 @@ func TestSocketReadIrrecoverableNetError(t *testing.T) {
 }
 
 func TestSocketReadTimeOutNetError(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry()
+	receiverID := component.NewID("TestSocketReadTimeOutNetError")
+	tt, err := obsreporttest.SetupTelemetryWithID(receiverID)
 	assert.NoError(t, err, "SetupTelemetry should succeed")
 	defer func() {
 		assert.NoError(t, tt.Shutdown(context.Background()))
 	}()
 
-	receiverID := component.NewID("TestSocketReadTimeOutNetError")
-
-	_, p, recordedLogs := createAndOptionallyStartPoller(t, receiverID, false, tt.ToReceiverCreateSettings())
+	_, p, recordedLogs := createAndOptionallyStartPoller(t, false, tt.ToReceiverCreateSettings())
 	// close the actual socket because we are going to mock it out below
 	p.(*poller).udpSock.Close()
 
@@ -360,15 +353,14 @@ func TestSocketReadTimeOutNetError(t *testing.T) {
 }
 
 func TestSocketGenericReadError(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry()
+	receiverID := component.NewID("TestSocketGenericReadError")
+	tt, err := obsreporttest.SetupTelemetryWithID(receiverID)
 	assert.NoError(t, err, "SetupTelemetry should succeed")
 	defer func() {
 		assert.NoError(t, tt.Shutdown(context.Background()))
 	}()
 
-	receiverID := component.NewID("TestSocketGenericReadError")
-
-	_, p, recordedLogs := createAndOptionallyStartPoller(t, receiverID, false, tt.ToReceiverCreateSettings())
+	_, p, recordedLogs := createAndOptionallyStartPoller(t, false, tt.ToReceiverCreateSettings())
 	// close the actual socket because we are going to mock it out below
 	p.(*poller).udpSock.Close()
 
@@ -444,7 +436,6 @@ func (m *mockSocketConn) Close() error { return nil }
 
 func createAndOptionallyStartPoller(
 	t *testing.T,
-	receiverID component.ID,
 	start bool,
 	set component.ReceiverCreateSettings) (string, Poller, *observer.ObservedLogs) {
 	addr, err := findAvailableAddress()
@@ -453,7 +444,6 @@ func createAndOptionallyStartPoller(
 	logger, recorded := logSetup()
 	set.Logger = logger
 	poller, err := New(&Config{
-		ReceiverID:         receiverID,
 		Transport:          Transport,
 		Endpoint:           addr,
 		NumOfPollerToStart: 2,

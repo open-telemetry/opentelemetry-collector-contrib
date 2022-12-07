@@ -27,7 +27,7 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
-func newLogsExporter(cfg component.ExporterConfig, set component.ExporterCreateSettings) (*logsExporter, error) {
+func newLogsExporter(cfg component.Config, set component.ExporterCreateSettings) (*logsExporter, error) {
 	oCfg := cfg.(*Config)
 
 	if oCfg.Logs.Endpoint == "" || oCfg.Logs.Endpoint == "https://" || oCfg.Logs.Endpoint == "http://" {

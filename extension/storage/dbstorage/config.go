@@ -15,7 +15,7 @@
 package dbstorage // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/dbstorage"
 
 import (
-	"fmt"
+	"errors"
 
 	"go.opentelemetry.io/collector/config"
 )
@@ -29,10 +29,10 @@ type Config struct {
 
 func (cfg *Config) Validate() error {
 	if cfg.DataSource == "" {
-		return fmt.Errorf(fmt.Sprintf("missing datasource for %s", cfg.ID()))
+		return errors.New("missing datasource")
 	}
 	if cfg.DriverName == "" {
-		return fmt.Errorf(fmt.Sprintf("missing driver name for %s", cfg.ID()))
+		return errors.New("missing driver name")
 	}
 
 	return nil

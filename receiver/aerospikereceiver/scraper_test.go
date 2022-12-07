@@ -73,7 +73,7 @@ func TestScrape_CollectClusterMetrics(t *testing.T) {
 	require.NoError(t, err)
 	now := pcommon.NewTimestampFromTime(time.Now().UTC())
 
-	expectedMB := metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), component.NewDefaultBuildInfo())
+	expectedMB := metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), componenttest.NewNopReceiverCreateSettings())
 
 	require.NoError(t, expectedMB.RecordAerospikeNodeConnectionOpenDataPoint(now, "22", metadata.AttributeConnectionTypeClient))
 	expectedMB.EmitForResource(metadata.WithAerospikeNodeName("BB990C28F270008"))
@@ -139,7 +139,7 @@ func TestScrape_CollectClusterMetrics(t *testing.T) {
 
 	receiver := &aerospikeReceiver{
 		clientFactory: clientFactory,
-		mb:            metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), component.NewDefaultBuildInfo()),
+		mb:            metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), componenttest.NewNopReceiverCreateSettings()),
 		logger:        logger.Sugar(),
 		config: &Config{
 			CollectClusterMetrics: true,
@@ -160,7 +160,7 @@ func TestScrape_CollectClusterMetrics(t *testing.T) {
 
 	receiverConnErr := &aerospikeReceiver{
 		clientFactory: clientFactoryNeg,
-		mb:            metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), component.NewDefaultBuildInfo()),
+		mb:            metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), componenttest.NewNopReceiverCreateSettings()),
 		logger:        logger.Sugar(),
 		config: &Config{
 			CollectClusterMetrics: true,

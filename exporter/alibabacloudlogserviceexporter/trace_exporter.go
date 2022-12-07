@@ -24,7 +24,7 @@ import (
 )
 
 // newTracesExporter return a new LogSerice trace exporter.
-func newTracesExporter(set component.ExporterCreateSettings, cfg component.ExporterConfig) (component.TracesExporter, error) {
+func newTracesExporter(set component.ExporterCreateSettings, cfg component.Config) (component.TracesExporter, error) {
 
 	l := &logServiceTraceSender{
 		logger: set.Logger,

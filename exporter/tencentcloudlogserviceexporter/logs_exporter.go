@@ -24,7 +24,7 @@ import (
 )
 
 // newLogsExporter return a new LogService logs exporter.
-func newLogsExporter(set component.ExporterCreateSettings, cfg component.ExporterConfig) (component.LogsExporter, error) {
+func newLogsExporter(set component.ExporterCreateSettings, cfg component.Config) (component.LogsExporter, error) {
 	l := &logServiceLogsSender{
 		logger: set.Logger,
 	}

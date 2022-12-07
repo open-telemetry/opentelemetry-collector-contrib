@@ -29,7 +29,7 @@ import (
 
 const (
 	typeStr   = "snmp"
-	stability = component.StabilityLevelDevelopment
+	stability = component.StabilityLevelAlpha
 )
 
 var errConfigNotSNMP = errors.New("config was not a SNMP receiver config")
@@ -43,7 +43,7 @@ func NewFactory() component.ReceiverFactory {
 }
 
 // createDefaultConfig creates a config for SNMP with as many default values as possible
-func createDefaultConfig() component.ReceiverConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 			ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
@@ -62,7 +62,7 @@ func createDefaultConfig() component.ReceiverConfig {
 func createMetricsReceiver(
 	_ context.Context,
 	params component.ReceiverCreateSettings,
-	config component.ReceiverConfig,
+	config component.Config,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	snmpConfig, ok := config.(*Config)

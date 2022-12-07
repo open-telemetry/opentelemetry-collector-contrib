@@ -56,7 +56,7 @@ func NewFactory() component.ReceiverFactory {
 }
 
 // createDefaultConfig returns a default config for the receiver.
-func createDefaultConfig() component.ReceiverConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ReceiverSettings:          config.NewReceiverSettings(component.NewID(typeStr)),
 		CollectionInterval:        defaultCollectionInterval,
@@ -71,7 +71,7 @@ func createDefaultConfig() component.ReceiverConfig {
 func createMetricsReceiver(
 	_ context.Context,
 	params component.ReceiverCreateSettings,
-	baseCfg component.ReceiverConfig,
+	baseCfg component.Config,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 

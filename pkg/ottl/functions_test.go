@@ -418,6 +418,48 @@ func Test_NewFunctionCall(t *testing.T) {
 									Enum: (*EnumSymbol)(ottltest.Strp("TEST_ENUM")),
 								},
 								{
+									List: &list{
+										Values: []value{
+											{
+												String: ottltest.Strp("test"),
+											},
+											{
+												String: ottltest.Strp("test"),
+											},
+										},
+									},
+								},
+								{
+									List: &list{
+										Values: []value{
+											{
+												String: ottltest.Strp("test"),
+											},
+											{
+												List: &list{
+													Values: []value{
+														{
+															String: ottltest.Strp("test"),
+														},
+														{
+															List: &list{
+																Values: []value{
+																	{
+																		String: ottltest.Strp("test"),
+																	},
+																	{
+																		String: ottltest.Strp("test"),
+																	},
+																},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+								{
 									Literal: &mathExprLiteral{
 										Invocation: &invocation{
 											Function: "testing_getter",
@@ -442,8 +484,9 @@ func Test_NewFunctionCall(t *testing.T) {
 					},
 				},
 			},
-			want: 7,
-		}, {
+			want: 9,
+		},
+		{
 			name: "setter arg",
 			inv: invocation{
 				Function: "testing_setter",
@@ -510,6 +553,71 @@ func Test_NewFunctionCall(t *testing.T) {
 				Arguments: []value{
 					{
 						IsNil: (*isNil)(ottltest.Boolp(true)),
+					},
+				},
+			},
+			want: nil,
+		},
+		{
+			name: "getter arg with list",
+			inv: invocation{
+				Function: "testing_getter",
+				Arguments: []value{
+					{
+						List: &list{
+							Values: []value{
+								{
+									String: ottltest.Strp("test"),
+								},
+								{
+									Literal: &mathExprLiteral{
+										Int: ottltest.Intp(1),
+									},
+								},
+								{
+									Literal: &mathExprLiteral{
+										Float: ottltest.Floatp(1.1),
+									},
+								},
+								{
+									Bool: (*boolean)(ottltest.Boolp(true)),
+								},
+								{
+									Bytes: (*byteSlice)(&[]byte{1, 2, 3, 4, 5, 6, 7, 8}),
+								},
+								{
+									Literal: &mathExprLiteral{
+										Path: &Path{
+											Fields: []Field{
+												{
+													Name: "name",
+												},
+											},
+										},
+									},
+								},
+								{
+									Literal: &mathExprLiteral{
+										Invocation: &invocation{
+											Function: "testing_getter",
+											Arguments: []value{
+												{
+													Literal: &mathExprLiteral{
+														Path: &Path{
+															Fields: []Field{
+																{
+																	Name: "name",
+																},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
 					},
 				},
 			},

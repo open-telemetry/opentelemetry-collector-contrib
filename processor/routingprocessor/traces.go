@@ -38,7 +38,7 @@ type tracesProcessor struct {
 	router    router[component.TracesExporter, ottlspan.TransformContext]
 }
 
-func newTracesProcessor(settings component.TelemetrySettings, config component.ProcessorConfig) *tracesProcessor {
+func newTracesProcessor(settings component.TelemetrySettings, config component.Config) *tracesProcessor {
 	cfg := rewriteRoutingEntriesToOTTL(config.(*Config))
 
 	return &tracesProcessor{

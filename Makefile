@@ -56,14 +56,14 @@ all-groups:
 	@echo "\nother: $(OTHER_MODS)"
 
 .PHONY: all
-all: install-tools all-common goporto multimod-verify gotest otelcontribcol otelcontribcol-unstable
+all: install-tools all-common goporto multimod-verify gotest otelcontribcol
 
 .PHONY: all-common
 all-common:
 	@$(MAKE) $(FOR_GROUP_TARGET) TARGET="common"
 
 .PHONY: e2e-test
-e2e-test: otelcontribcol otelcontribcol-unstable otelcontribcol-testbed
+e2e-test: otelcontribcol otelcontribcol-testbed
 	$(MAKE) -C testbed run-tests
 
 .PHONY: unit-tests-with-cover
@@ -120,35 +120,16 @@ for-all:
 	 	$${CMD} ); \
 	done
 
-.PHONY: add-tag
-add-tag:
-	@[ "${TAG}" ] || ( echo ">> env var TAG is not set"; exit 1 )
-	@echo "Adding tag ${TAG}"
-	@git tag -a ${TAG} -s -m "Version ${TAG}"
-	@set -e; for dir in $(NONROOT_MODS); do \
-	  (echo Adding tag "$${dir:2}/$${TAG}" && \
-	 	git tag -a "$${dir:2}/$${TAG}" -s -m "Version ${dir:2}/${TAG}" ); \
-	done
-
-.PHONY: push-tag
-push-tag:
-	@[ "${TAG}" ] || ( echo ">> env var TAG is not set"; exit 1 )
-	@echo "Pushing tag ${TAG}"
-	@git push git@github.com:open-telemetry/opentelemetry-collector-contrib.git ${TAG}
-	@set -e; for dir in $(NONROOT_MODS); do \
-	  (echo Pushing tag "$${dir:2}/$${TAG}" && \
-	 	git push git@github.com:open-telemetry/opentelemetry-collector-contrib.git "$${dir:2}/$${TAG}"); \
-	done
-
-.PHONY: delete-tag
-delete-tag:
-	@[ "${TAG}" ] || ( echo ">> env var TAG is not set"; exit 1 )
-	@echo "Deleting tag ${TAG}"
-	@git tag -d ${TAG}
-	@set -e; for dir in $(NONROOT_MODS); do \
-	  (echo Deleting tag "$${dir:2}/$${TAG}" && \
-	 	git tag -d "$${dir:2}/$${TAG}" ); \
-	done
+COMMIT?=HEAD
+MODSET?=contrib-core
+REMOTE?=git@github.com:open-telemetry/opentelemetry-collector-contrib.git
+.PHONY: push-tags
+push-tags:
+	multimod verify
+	set -e; for tag in `multimod tag -m ${MODSET} -c ${COMMIT} --print-tags | grep -v "Using" `; do \
+		echo "pushing tag $${tag}"; \
+		git push ${REMOTE} $${tag}; \
+	done;
 
 DEPENDABOT_PATH=".github/dependabot.yml"
 .PHONY: gendependabot
@@ -288,12 +269,6 @@ chlog-update: chlog-install
 otelcontribcol:
 	GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ./bin/otelcontribcol_$(GOOS)_$(GOARCH)$(EXTENSION) \
 		$(BUILD_INFO) -tags $(GO_BUILD_TAGS) ./cmd/otelcontribcol
-
-# Build the Collector executable, including unstable functionality.
-.PHONY: otelcontribcol-unstable
-otelcontribcol-unstable:
-	GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ./bin/otelcontribcol_unstable_$(GOOS)_$(GOARCH)$(EXTENSION) \
-		$(BUILD_INFO) -tags $(GO_BUILD_TAGS),enable_unstable ./cmd/otelcontribcol
 
 # Build the Collector executable, with only components used in testbed.
 .PHONY: otelcontribcol-testbed

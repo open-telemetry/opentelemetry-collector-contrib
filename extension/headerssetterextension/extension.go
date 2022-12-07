@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"go.opentelemetry.io/collector/config/configauth"
+	"go.opentelemetry.io/collector/extension/auth"
 	"google.golang.org/grpc/credentials"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension/internal/source"
@@ -31,7 +31,7 @@ type Header struct {
 	source source.Source
 }
 
-func newHeadersSetterExtension(cfg *Config) (configauth.ClientAuthenticator, error) {
+func newHeadersSetterExtension(cfg *Config) (auth.Client, error) {
 	if cfg == nil {
 		return nil, errors.New("extension configuration is not provided")
 	}
@@ -51,15 +51,15 @@ func newHeadersSetterExtension(cfg *Config) (configauth.ClientAuthenticator, err
 		headers = append(headers, Header{key: *header.Key, source: s})
 	}
 
-	return configauth.NewClientAuthenticator(
-		configauth.WithClientRoundTripper(
+	return auth.NewClient(
+		auth.WithClientRoundTripper(
 			func(base http.RoundTripper) (http.RoundTripper, error) {
 				return &headersRoundTripper{
 					base:    base,
 					headers: headers,
 				}, nil
 			}),
-		configauth.WithPerRPCCredentials(func() (credentials.PerRPCCredentials, error) {
+		auth.WithClientPerRPCCredentials(func() (credentials.PerRPCCredentials, error) {
 			return &headersPerRPC{headers: headers}, nil
 		}),
 	), nil
@@ -89,9 +89,11 @@ func (h *headersPerRPC) GetRequestMetadata(
 	return metadata, nil
 }
 
-// RequireTransportSecurity always returns true for this implementation.
+// RequireTransportSecurity always returns false for this implementation.
+// The header setter is not sending auth data, so it should not require
+// a transport security.
 func (h *headersPerRPC) RequireTransportSecurity() bool {
-	return true
+	return false
 }
 
 // headersRoundTripper intercepts downstream requests and sets headers with

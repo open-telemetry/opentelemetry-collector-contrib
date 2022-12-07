@@ -231,13 +231,13 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, options ...metricBuilderOption) *MetricsBuilder {
+func NewMetricsBuilder(ms MetricsSettings, settings component.ReceiverCreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                  pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:              pmetric.NewMetrics(),
-		buildInfo:                  buildInfo,
-		metricSystemCPUTime:        newMetricSystemCPUTime(settings.SystemCPUTime),
-		metricSystemCPUUtilization: newMetricSystemCPUUtilization(settings.SystemCPUUtilization),
+		buildInfo:                  settings.BuildInfo,
+		metricSystemCPUTime:        newMetricSystemCPUTime(ms.SystemCPUTime),
+		metricSystemCPUUtilization: newMetricSystemCPUUtilization(ms.SystemCPUUtilization),
 	}
 	for _, op := range options {
 		op(mb)

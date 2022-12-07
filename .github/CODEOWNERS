@@ -55,6 +55,7 @@ exporter/jaegerexporter/                             @open-telemetry/collector-c
 exporter/jaegerthrifthttpexporter/                   @open-telemetry/collector-contrib-approvers @jpkrohling @pavolloffay
 exporter/kafkaexporter/                              @open-telemetry/collector-contrib-approvers @pavolloffay @MovieStoreGuy
 exporter/loadbalancingexporter/                      @open-telemetry/collector-contrib-approvers @jpkrohling
+exporter/logicmonitorexporter/                       @open-telemetry/collector-contrib-approvers @bogdandrutu @khyatigandhi6 @avadhut123pisal
 exporter/logzioexporter/                             @open-telemetry/collector-contrib-approvers @jkowall @Doron-Bargo @yotamloe
 exporter/lokiexporter/                               @open-telemetry/collector-contrib-approvers @gramidt @gouthamve @jpkrohling @kovrus @mar4uk
 exporter/mezmoexporter/                              @open-telemetry/collector-contrib-approvers @dashpole @billmeyer @gjanco @jsumners
@@ -103,6 +104,7 @@ internal/scrapertest/                                @open-telemetry/collector-c
 internal/splunk/                                     @open-telemetry/collector-contrib-approvers @pmcollins @dmitryax
 internal/tools/                                      @open-telemetry/collector-contrib-approvers
 internal/coreinternal/                               @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
+internal/filter/                                     @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 internal/sharedcomponent/                            @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 
 pkg/batchpersignal/                                  @open-telemetry/collector-contrib-approvers @jpkrohling
@@ -123,7 +125,7 @@ pkg/experimentalmetricmetadata/                      @open-telemetry/collector-c
 processor/attributesprocessor/                       @open-telemetry/collector-contrib-approvers @boostchicken
 processor/cumulativetodeltaprocessor/                @open-telemetry/collector-contrib-approvers @TylerHelmuth
 processor/deltatorateprocessor/                      @open-telemetry/collector-contrib-approvers @Aneurysm9
-processor/filterprocessor/                           @open-telemetry/collector-contrib-approvers @boostchicken
+processor/filterprocessor/                           @open-telemetry/collector-contrib-approvers @TylerHelmuth @boostchicken
 processor/groupbyattrsprocessor/                     @open-telemetry/collector-contrib-approvers
 processor/groupbytraceprocessor/                     @open-telemetry/collector-contrib-approvers @jpkrohling
 processor/k8sattributesprocessor/                    @open-telemetry/collector-contrib-approvers @owais @dmitryax
@@ -193,8 +195,10 @@ receiver/otlpjsonfilereceiver/                       @open-telemetry/collector-c
 receiver/postgresqlreceiver/                         @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/prometheusexecreceiver/                     @open-telemetry/collector-contrib-approvers @dmitryax
 receiver/prometheusreceiver/                         @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole
+receiver/promtailreceiver/                           @open-telemetry/collector-contrib-approvers @mar4uk @kovrus @jpkrohling @gouthamve
 receiver/rabbitmqreceiver/                           @open-telemetry/collector-contrib-approvers @djaglowski @cpheps
 receiver/pulsarreceiver/                             @open-telemetry/collector-contrib-approvers @dmitryax @tjiuming
+receiver/purefareceiver/                             @open-telemetry/collector-contrib-approvers @jpkrohling @dgoscn @chrroberts-pure
 receiver/receivercreator/                            @open-telemetry/collector-contrib-approvers @jrcamp
 receiver/redisreceiver/                              @open-telemetry/collector-contrib-approvers @pmcollins @dmitryax
 receiver/riakreceiver/                               @open-telemetry/collector-contrib-approvers @djaglowski @armstrmi

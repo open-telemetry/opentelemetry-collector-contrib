@@ -829,22 +829,22 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, options ...metricBuilderOption) *MetricsBuilder {
+func NewMetricsBuilder(ms MetricsSettings, settings component.ReceiverCreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                         pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                     pmetric.NewMetrics(),
-		buildInfo:                         buildInfo,
-		metricMemcachedBytes:              newMetricMemcachedBytes(settings.MemcachedBytes),
-		metricMemcachedCommands:           newMetricMemcachedCommands(settings.MemcachedCommands),
-		metricMemcachedConnectionsCurrent: newMetricMemcachedConnectionsCurrent(settings.MemcachedConnectionsCurrent),
-		metricMemcachedConnectionsTotal:   newMetricMemcachedConnectionsTotal(settings.MemcachedConnectionsTotal),
-		metricMemcachedCPUUsage:           newMetricMemcachedCPUUsage(settings.MemcachedCPUUsage),
-		metricMemcachedCurrentItems:       newMetricMemcachedCurrentItems(settings.MemcachedCurrentItems),
-		metricMemcachedEvictions:          newMetricMemcachedEvictions(settings.MemcachedEvictions),
-		metricMemcachedNetwork:            newMetricMemcachedNetwork(settings.MemcachedNetwork),
-		metricMemcachedOperationHitRatio:  newMetricMemcachedOperationHitRatio(settings.MemcachedOperationHitRatio),
-		metricMemcachedOperations:         newMetricMemcachedOperations(settings.MemcachedOperations),
-		metricMemcachedThreads:            newMetricMemcachedThreads(settings.MemcachedThreads),
+		buildInfo:                         settings.BuildInfo,
+		metricMemcachedBytes:              newMetricMemcachedBytes(ms.MemcachedBytes),
+		metricMemcachedCommands:           newMetricMemcachedCommands(ms.MemcachedCommands),
+		metricMemcachedConnectionsCurrent: newMetricMemcachedConnectionsCurrent(ms.MemcachedConnectionsCurrent),
+		metricMemcachedConnectionsTotal:   newMetricMemcachedConnectionsTotal(ms.MemcachedConnectionsTotal),
+		metricMemcachedCPUUsage:           newMetricMemcachedCPUUsage(ms.MemcachedCPUUsage),
+		metricMemcachedCurrentItems:       newMetricMemcachedCurrentItems(ms.MemcachedCurrentItems),
+		metricMemcachedEvictions:          newMetricMemcachedEvictions(ms.MemcachedEvictions),
+		metricMemcachedNetwork:            newMetricMemcachedNetwork(ms.MemcachedNetwork),
+		metricMemcachedOperationHitRatio:  newMetricMemcachedOperationHitRatio(ms.MemcachedOperationHitRatio),
+		metricMemcachedOperations:         newMetricMemcachedOperations(ms.MemcachedOperations),
+		metricMemcachedThreads:            newMetricMemcachedThreads(ms.MemcachedThreads),
 	}
 	for _, op := range options {
 		op(mb)

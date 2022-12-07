@@ -18,7 +18,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
 )
 
 // Config is the configuration for the span processor.
@@ -93,7 +93,7 @@ type Status struct {
 	Description string `mapstructure:"description"`
 }
 
-var _ component.ProcessorConfig = (*Config)(nil)
+var _ component.Config = (*Config)(nil)
 
 // Validate checks if the processor configuration is valid
 func (cfg *Config) Validate() error {

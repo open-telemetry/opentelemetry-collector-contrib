@@ -20,7 +20,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
@@ -41,7 +40,7 @@ func NewFactory() component.ExporterFactory {
 		component.WithMetricsExporter(createMetricsExporter, stability))
 }
 
-func createDefaultConfig() component.ExporterConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ExporterSettings:  config.NewExporterSettings(component.NewID(typeStr)),
 		ConstLabels:       map[string]string{},
@@ -54,7 +53,7 @@ func createDefaultConfig() component.ExporterConfig {
 func createMetricsExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
-	cfg component.ExporterConfig,
+	cfg component.Config,
 ) (component.MetricsExporter, error) {
 	pcfg := cfg.(*Config)
 
@@ -68,7 +67,6 @@ func createMetricsExporter(
 		set,
 		cfg,
 		prometheus.ConsumeMetrics,
-		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithStart(prometheus.Start),
 		exporterhelper.WithShutdown(prometheus.Shutdown),
 	)

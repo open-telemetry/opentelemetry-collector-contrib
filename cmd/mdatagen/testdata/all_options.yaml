@@ -1,21 +1,26 @@
 name: metricreceiver
+
 sem_conv_version: 1.9.0
+
 attributes:
   freeFormAttribute:
     description: Attribute that can take on any value.
+    type: string
 
   freeFormAttributeWithValue:
-    value: state
+    name_override: state
     description: Attribute that has alternate value set.
+    type: string
 
   enumAttribute:
     description: Attribute with a known set of values.
+    type: string
     enum: [red, green, blue]
 
   booleanValueType:
+    name_override: false
     description: Attribute with a boolean value.
     type: bool
-    value: false
 
 metrics:
   # A metric enabled by default.

@@ -48,13 +48,13 @@ func TestLoadConfig(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalExporterConfig(sub, cfg))
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	assert.Equal(t, sanitize(cfg.(*Config)), sanitize(factory.CreateDefaultConfig().(*Config)))
 
 	sub, err = cm.Sub(component.NewIDWithName(typeStr, "customname").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalExporterConfig(sub, cfg))
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	assert.Equal(t, sanitize(cfg.(*Config)),
 		&Config{

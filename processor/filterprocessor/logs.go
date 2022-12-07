@@ -18,79 +18,79 @@ import (
 	"context"
 	"fmt"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/processor/processorhelper"
-	"go.uber.org/zap"
+	"go.uber.org/multierr"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterlog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/expr"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterlog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/common"
 )
 
 type filterLogProcessor struct {
-	cfg            *Config
-	excludeMatcher filterlog.Matcher
-	includeMatcher filterlog.Matcher
-	logger         *zap.Logger
+	skipExpr expr.BoolExpr[ottllog.TransformContext]
 }
 
-func newFilterLogsProcessor(logger *zap.Logger, cfg *Config) (*filterLogProcessor, error) {
-	var includeMatcher filterlog.Matcher
-	var excludeMatcher filterlog.Matcher
-
-	if cfg.Logs.Include != nil && !cfg.Logs.Include.isEmpty() {
-		var err error
-		includeMatcher, err = filterlog.NewMatcher(cfg.Logs.Include.matchProperties())
+func newFilterLogsProcessor(set component.TelemetrySettings, cfg *Config) (*filterLogProcessor, error) {
+	if cfg.Logs.LogConditions != nil {
+		skipExpr, err := common.ParseLog(cfg.Logs.LogConditions, set)
 		if err != nil {
-			return nil, fmt.Errorf("failed to build include matcher: %w", err)
+			return nil, err
 		}
+
+		return &filterLogProcessor{skipExpr: skipExpr}, nil
+	}
+
+	cfgMatch := filterconfig.MatchConfig{}
+	if cfg.Logs.Include != nil && !cfg.Logs.Include.isEmpty() {
+		cfgMatch.Include = cfg.Logs.Include.matchProperties()
 	}
 
 	if cfg.Logs.Exclude != nil && !cfg.Logs.Exclude.isEmpty() {
-		var err error
-		excludeMatcher, err = filterlog.NewMatcher(cfg.Logs.Exclude.matchProperties())
-		if err != nil {
-			return nil, fmt.Errorf("failed to build exclude matcher: %w", err)
-		}
+		cfgMatch.Exclude = cfg.Logs.Exclude.matchProperties()
 	}
 
-	return &filterLogProcessor{
-		cfg:            cfg,
-		excludeMatcher: excludeMatcher,
-		includeMatcher: includeMatcher,
-		logger:         logger,
-	}, nil
+	skipExpr, err := filterlog.NewSkipExpr(&cfgMatch)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build skip matcher: %w", err)
+	}
+
+	return &filterLogProcessor{skipExpr: skipExpr}, nil
 }
 
-func (flp *filterLogProcessor) ProcessLogs(_ context.Context, logs plog.Logs) (plog.Logs, error) {
-	rLogs := logs.ResourceLogs()
+func (flp *filterLogProcessor) processLogs(ctx context.Context, ld plog.Logs) (plog.Logs, error) {
+	if flp.skipExpr == nil {
+		return ld, nil
+	}
 
-	// Filter out logs
-	rLogs.RemoveIf(func(rl plog.ResourceLogs) bool {
+	var errors error
+	ld.ResourceLogs().RemoveIf(func(rl plog.ResourceLogs) bool {
 		resource := rl.Resource()
 		rl.ScopeLogs().RemoveIf(func(sl plog.ScopeLogs) bool {
 			scope := sl.Scope()
 			lrs := sl.LogRecords()
+			lrs.RemoveIf(func(lr plog.LogRecord) bool {
+				skip, err := flp.skipExpr.Eval(ctx, ottllog.NewTransformContext(lr, scope, resource))
+				if err != nil {
+					errors = multierr.Append(errors, err)
+					return false
+				}
+				return skip
+			})
 
-			if flp.includeMatcher != nil {
-				// If includeMatcher exists, remove all records that do not match the filter.
-				lrs.RemoveIf(func(lr plog.LogRecord) bool {
-					return !flp.includeMatcher.MatchLogRecord(lr, resource, scope)
-				})
-			}
-
-			if flp.excludeMatcher != nil {
-				// If excludeMatcher exists, remove all records that match the filter.
-				lrs.RemoveIf(func(lr plog.LogRecord) bool {
-					return flp.excludeMatcher.MatchLogRecord(lr, resource, scope)
-				})
-			}
 			return sl.LogRecords().Len() == 0
 		})
 		return rl.ScopeLogs().Len() == 0
 	})
 
-	if rLogs.Len() == 0 {
-		return logs, processorhelper.ErrSkipProcessingData
+	if errors != nil {
+		return ld, errors
 	}
-
-	return logs, nil
+	if ld.ResourceLogs().Len() == 0 {
+		return ld, processorhelper.ErrSkipProcessingData
+	}
+	return ld, nil
 }

@@ -34,22 +34,29 @@ type MetricData interface {
 }
 
 // Aggregated defines a metric aggregation type.
+// TODO: Rename to AggregationTemporality
 type Aggregated struct {
 	// Aggregation describes if the aggregator reports delta changes
 	// since last report time, or cumulative changes since a fixed start time.
-	Aggregation string `mapstructure:"aggregation" validate:"oneof=delta cumulative"`
+	Aggregation pmetric.AggregationTemporality `validate:"required"`
 }
 
-// Type gets the metric aggregation type.
-func (agg Aggregated) Type() string {
-	switch agg.Aggregation {
-	case "delta":
-		return "pmetric.AggregationTemporalityDelta"
+// UnmarshalText implements the encoding.TextUnmarshaler interface.
+func (agg *Aggregated) UnmarshalText(text []byte) error {
+	switch vtStr := string(text); vtStr {
 	case "cumulative":
-		return "pmetric.AggregationTemporalityCumulative"
+		agg.Aggregation = pmetric.AggregationTemporalityCumulative
+	case "delta":
+		agg.Aggregation = pmetric.AggregationTemporalityDelta
 	default:
-		return "pmetric.AggregationTemporalityUnknown"
+		return fmt.Errorf("invalid aggregation: %q", vtStr)
 	}
+	return nil
+}
+
+// String returns string representation of the aggregation temporality.
+func (agg *Aggregated) String() string {
+	return agg.Aggregation.String()
 }
 
 // Mono defines the metric monotonicity.
@@ -127,7 +134,7 @@ func (d gauge) HasMetricInputType() bool {
 }
 
 type sum struct {
-	Aggregated      `mapstructure:",squash"`
+	Aggregated      `mapstructure:"aggregation"`
 	Mono            `mapstructure:",squash"`
 	MetricValueType `mapstructure:"value_type"`
 	MetricInputType `mapstructure:",squash"`

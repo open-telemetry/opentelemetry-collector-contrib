@@ -42,7 +42,7 @@ func NewFactory() component.ExporterFactory {
 }
 
 // createDefaultConfig creates the default exporter configuration
-func createDefaultConfig() component.ExporterConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		HTTPClientSettings: confighttp.HTTPClientSettings{
@@ -55,7 +55,7 @@ func createDefaultConfig() component.ExporterConfig {
 }
 
 // createTracesExporter creates a trace exporter based on this configuration
-func createTracesExporter(ctx context.Context, set component.ExporterCreateSettings, config component.ExporterConfig) (component.TracesExporter, error) {
+func createTracesExporter(ctx context.Context, set component.ExporterCreateSettings, config component.Config) (component.TracesExporter, error) {
 	cfg := config.(*Config)
 
 	ctx, cancel := context.WithCancel(ctx)

@@ -52,7 +52,7 @@ func NewFactory() component.ExporterFactory {
 }
 
 // Create default configurations
-func createDefaultConfig() component.ExporterConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		Database:         otelDb,
@@ -66,7 +66,7 @@ func createDefaultConfig() component.ExporterConfig {
 func createMetricsExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
-	config component.ExporterConfig,
+	config component.Config,
 ) (component.MetricsExporter, error) {
 	if config == nil {
 		return nil, errors.New("nil config")
@@ -99,7 +99,7 @@ func createMetricsExporter(
 func createTracesExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
-	config component.ExporterConfig,
+	config component.Config,
 ) (component.TracesExporter, error) {
 	adxCfg := config.(*Config)
 	setDefaultIngestionType(adxCfg, set.Logger)
@@ -129,7 +129,7 @@ func createTracesExporter(
 func createLogsExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
-	config component.ExporterConfig,
+	config component.Config,
 ) (exp component.LogsExporter, err error) {
 	adxCfg := config.(*Config)
 	setDefaultIngestionType(adxCfg, set.Logger)

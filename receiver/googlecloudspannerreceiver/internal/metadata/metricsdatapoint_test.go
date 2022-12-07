@@ -15,6 +15,8 @@
 package metadata
 
 import (
+	"fmt"
+	"hash/fnv"
 	"testing"
 	"time"
 
@@ -109,6 +111,56 @@ func TestMetricsDataPoint_CopyTo(t *testing.T) {
 		assertDefaultLabels(t, attributesMap, databaseID)
 		assertNonDefaultLabels(t, attributesMap, labelValues)
 	}
+}
+
+func TestMetricsDataPoint_HideLockStatsRowrangestartkeyPII(t *testing.T) {
+	btSliceLabelValueMetadata, _ := NewLabelValueMetadata("row_range_start_key", "byteSliceLabelColumnName", StringValueType)
+	labelValue1 := byteSliceLabelValue{metadata: btSliceLabelValueMetadata, value: "table1.s(23,hello,23+)"}
+	labelValue2 := byteSliceLabelValue{metadata: btSliceLabelValueMetadata, value: "table2(23,hello)"}
+	metricValues := allPossibleMetricValues(metricDataType)
+	labelValues := []LabelValue{labelValue1, labelValue2}
+	timestamp := time.Now().UTC()
+	metricsDataPoint := &MetricsDataPoint{
+		metricName:  metricName,
+		timestamp:   timestamp,
+		databaseID:  databaseID(),
+		labelValues: labelValues,
+		metricValue: metricValues[0],
+	}
+	hashFunction := fnv.New32a()
+	hashFunction.Reset()
+	hashFunction.Write([]byte("23"))
+	hashOf23 := fmt.Sprint(hashFunction.Sum32())
+	hashFunction.Reset()
+	hashFunction.Write([]byte("hello"))
+	hashOfHello := fmt.Sprint(hashFunction.Sum32())
+
+	metricsDataPoint.HideLockStatsRowrangestartkeyPII()
+
+	assert.Equal(t, len(metricsDataPoint.labelValues), 2)
+	assert.Equal(t, metricsDataPoint.labelValues[0].Value(), "table1.s("+hashOf23+","+hashOfHello+","+hashOf23+"+)")
+	assert.Equal(t, metricsDataPoint.labelValues[1].Value(), "table2("+hashOf23+","+hashOfHello+")")
+}
+
+func TestMetricsDataPoint_HideLockStatsRowrangestartkeyPIIWithInvalidLabelValue(t *testing.T) {
+	// We are checking that function HideLockStatsRowrangestartkeyPII() does not panic for invalid label values.
+	btSliceLabelValueMetadata, _ := NewLabelValueMetadata("row_range_start_key", "byteSliceLabelColumnName", StringValueType)
+	labelValue1 := byteSliceLabelValue{metadata: btSliceLabelValueMetadata, value: ""}
+	labelValue2 := byteSliceLabelValue{metadata: btSliceLabelValueMetadata, value: "table22(hello"}
+	labelValue3 := byteSliceLabelValue{metadata: btSliceLabelValueMetadata, value: "table22,hello"}
+	labelValue4 := byteSliceLabelValue{metadata: btSliceLabelValueMetadata, value: "("}
+	metricValues := allPossibleMetricValues(metricDataType)
+	labelValues := []LabelValue{labelValue1, labelValue2, labelValue3, labelValue4}
+	timestamp := time.Now().UTC()
+	metricsDataPoint := &MetricsDataPoint{
+		metricName:  metricName,
+		timestamp:   timestamp,
+		databaseID:  databaseID(),
+		labelValues: labelValues,
+		metricValue: metricValues[0],
+	}
+	metricsDataPoint.HideLockStatsRowrangestartkeyPII()
+	assert.Equal(t, len(metricsDataPoint.labelValues), 4)
 }
 
 func allPossibleLabelValues() []LabelValue {

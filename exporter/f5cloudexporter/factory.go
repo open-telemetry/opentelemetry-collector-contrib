@@ -51,7 +51,7 @@ func (f *f5cloudFactory) Type() component.Type {
 func (f *f5cloudFactory) CreateMetricsExporter(
 	ctx context.Context,
 	params component.ExporterCreateSettings,
-	config component.ExporterConfig) (component.MetricsExporter, error) {
+	config component.Config) (component.MetricsExporter, error) {
 
 	cfg := config.(*Config)
 
@@ -67,7 +67,7 @@ func (f *f5cloudFactory) CreateMetricsExporter(
 func (f *f5cloudFactory) CreateTracesExporter(
 	ctx context.Context,
 	params component.ExporterCreateSettings,
-	config component.ExporterConfig) (component.TracesExporter, error) {
+	config component.Config) (component.TracesExporter, error) {
 
 	cfg := config.(*Config)
 
@@ -83,7 +83,7 @@ func (f *f5cloudFactory) CreateTracesExporter(
 func (f *f5cloudFactory) CreateLogsExporter(
 	ctx context.Context,
 	params component.ExporterCreateSettings,
-	config component.ExporterConfig) (component.LogsExporter, error) {
+	config component.Config) (component.LogsExporter, error) {
 
 	cfg := config.(*Config)
 
@@ -96,7 +96,7 @@ func (f *f5cloudFactory) CreateLogsExporter(
 	return f.ExporterFactory.CreateLogsExporter(ctx, params, &cfg.Config)
 }
 
-func (f *f5cloudFactory) CreateDefaultConfig() component.ExporterConfig {
+func (f *f5cloudFactory) CreateDefaultConfig() component.Config {
 	cfg := &Config{
 		Config: *f.ExporterFactory.CreateDefaultConfig().(*otlphttp.Config),
 		AuthConfig: AuthConfig{

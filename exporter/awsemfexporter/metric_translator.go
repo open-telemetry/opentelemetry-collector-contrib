@@ -69,19 +69,18 @@ type cWMetricStats struct {
 }
 
 type groupedMetricMetadata struct {
-	namespace   string
-	timestampMs int64
-	logGroup    string
-	logStream   string
+	namespace      string
+	timestampMs    int64
+	logGroup       string
+	logStream      string
+	metricDataType pmetric.MetricType
 }
 
 // cWMetricMetadata represents the metadata associated with a given CloudWatch metric
 type cWMetricMetadata struct {
 	groupedMetricMetadata
 	instrumentationLibraryName string
-
-	receiver       string
-	metricDataType pmetric.MetricType
+	receiver                   string
 }
 
 type metricTranslator struct {
@@ -123,14 +122,14 @@ func (mt metricTranslator) translateOTelToGroupedMetric(rm pmetric.ResourceMetri
 			metric := metrics.At(k)
 			metadata := cWMetricMetadata{
 				groupedMetricMetadata: groupedMetricMetadata{
-					namespace:   cWNamespace,
-					timestampMs: timestamp,
-					logGroup:    logGroup,
-					logStream:   logStream,
+					namespace:      cWNamespace,
+					timestampMs:    timestamp,
+					logGroup:       logGroup,
+					logStream:      logStream,
+					metricDataType: metric.Type(),
 				},
 				instrumentationLibraryName: instrumentationLibName,
 				receiver:                   metricReceiver,
-				metricDataType:             metric.Type(),
 			}
 			err := addToGroupedMetric(metric, groupedMetrics, metadata, patternReplaceSucceeded, config.logger, mt.metricDescriptor, config)
 			if err != nil {

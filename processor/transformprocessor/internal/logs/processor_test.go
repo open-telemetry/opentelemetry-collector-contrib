@@ -266,6 +266,15 @@ func Test_ProcessLogs_LogContext(t *testing.T) {
 			want:      func(td plog.Logs) {},
 		},
 		{
+			statement: `set(attributes["test"], ["A", "B", "C"]) where body == "operationA"`,
+			want: func(td plog.Logs) {
+				v1 := td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutEmptySlice("test")
+				v1.AppendEmpty().SetStr("A")
+				v1.AppendEmpty().SetStr("B")
+				v1.AppendEmpty().SetStr("C")
+			},
+		},
+		{
 			statement: `set(attributes["test"], ConvertCase(body, "lower")) where body == "operationA"`,
 			want: func(td plog.Logs) {
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("test", "operationa")
@@ -287,6 +296,12 @@ func Test_ProcessLogs_LogContext(t *testing.T) {
 			statement: `set(attributes["test"], ConvertCase(body, "camel")) where body == "operationA"`,
 			want: func(td plog.Logs) {
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("test", "OperationA")
+			},
+		},
+		{
+			statement: `merge_maps(attributes, ParseJSON("{\"json_test\":\"pass\"}"), "insert") where body == "operationA"`,
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("json_test", "pass")
 			},
 		},
 	}

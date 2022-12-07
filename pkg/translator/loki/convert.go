@@ -42,6 +42,11 @@ var defaultExporterLabels = model.LabelSet{"exporter": "OTLP"}
 func convertAttributesAndMerge(logAttrs pcommon.Map, resAttrs pcommon.Map) model.LabelSet {
 	out := defaultExporterLabels
 
+	if resourcesToLabel, found := resAttrs.Get(hintResources); found {
+		labels := convertAttributesToLabels(resAttrs, resourcesToLabel)
+		out = out.Merge(labels)
+	}
+
 	// get the hint from the log attributes, not from the resource
 	// the value can be a single resource name to use as label
 	// or a slice of string values

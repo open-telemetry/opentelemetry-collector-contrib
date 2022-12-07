@@ -1360,6 +1360,37 @@ func TestSubLogs(t *testing.T) {
 	assert.Equal(t, "1_1_9", val.AsString())
 }
 
+func TestHecHealthCheckFailed(t *testing.T) {
+	c := client{
+		url:    &url.URL{Scheme: "http", Host: "splunk"},
+		config: NewFactory().CreateDefaultConfig().(*Config),
+		logger: zaptest.NewLogger(t),
+		gzipWriterPool: &sync.Pool{New: func() interface{} {
+			return gzip.NewWriter(nil)
+		}},
+		healthCheckURL: &url.URL{Scheme: "http", Host: "splunk", Path: "/services/collector/health"},
+	}
+	c.client, _ = newTestClient(503, "NOK")
+	err := c.checkHecHealth()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "503")
+}
+
+func TestHecHealthCheckSucceded(t *testing.T) {
+	c := client{
+		url:    &url.URL{Scheme: "http", Host: "splunk"},
+		config: NewFactory().CreateDefaultConfig().(*Config),
+		logger: zaptest.NewLogger(t),
+		gzipWriterPool: &sync.Pool{New: func() interface{} {
+			return gzip.NewWriter(nil)
+		}},
+		healthCheckURL: &url.URL{Scheme: "http", Host: "splunk", Path: "/services/collector/health"},
+	}
+	c.client, _ = newTestClient(200, "OK")
+	err := c.checkHecHealth()
+	assert.NoError(t, err)
+}
+
 // validateCompressedEqual validates that GZipped `got` contains `expected` strings
 func validateCompressedContains(t *testing.T, expected []string, got []byte) {
 	z, err := gzip.NewReader(bytes.NewReader(got))

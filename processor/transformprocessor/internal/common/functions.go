@@ -29,6 +29,7 @@ func Functions[K any]() map[string]interface{} {
 		"Split":                ottlfuncs.Split[K],
 		"Int":                  ottlfuncs.Int[K],
 		"ConvertCase":          ottlfuncs.ConvertCase[K],
+		"ParseJSON":            ottlfuncs.ParseJSON[K],
 		"keep_keys":            ottlfuncs.KeepKeys[K],
 		"set":                  ottlfuncs.Set[K],
 		"truncate_all":         ottlfuncs.TruncateAll[K],
@@ -39,6 +40,7 @@ func Functions[K any]() map[string]interface{} {
 		"replace_all_patterns": ottlfuncs.ReplaceAllPatterns[K],
 		"delete_key":           ottlfuncs.DeleteKey[K],
 		"delete_matching_keys": ottlfuncs.DeleteMatchingKeys[K],
+		"merge_maps":           ottlfuncs.MergeMaps[K],
 	}
 }
 

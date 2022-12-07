@@ -42,7 +42,7 @@ func newScraper(cfg *Config, settings component.ReceiverCreateSettings) *scraper
 	return &scraper{
 		config:   cfg,
 		settings: settings.TelemetrySettings,
-		mb:       metadata.NewMetricsBuilder(cfg.Metrics, settings.BuildInfo),
+		mb:       metadata.NewMetricsBuilder(cfg.Metrics, settings),
 	}
 }
 

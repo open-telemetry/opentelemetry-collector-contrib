@@ -44,7 +44,7 @@ func NewFactory() component.ReceiverFactory {
 		component.WithMetricsReceiver(createMetricsReceiver, stability))
 }
 
-func createDefaultConfig() component.ReceiverConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 		TCPAddr: confignet.TCPAddr{
@@ -57,7 +57,7 @@ func createDefaultConfig() component.ReceiverConfig {
 func createMetricsReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateSettings,
-	cfg component.ReceiverConfig,
+	cfg component.Config,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 

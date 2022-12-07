@@ -47,15 +47,10 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	// Default config doesn't have default endpoint so creating from it should
 	// fail.
 	set := componenttest.NewNopExporterCreateSettings()
-	exp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
-	assert.NotNil(t, err)
-	assert.Equal(t, "\"jaeger\" config requires a non-empty \"endpoint\"", err.Error())
-	assert.Nil(t, exp)
-
 	// Endpoint doesn't have a default value so set it directly.
 	expCfg := cfg.(*Config)
 	expCfg.Endpoint = "some.target.org:12345"
-	exp, err = factory.CreateTracesExporter(context.Background(), set, cfg)
+	exp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
 

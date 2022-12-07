@@ -50,5 +50,5 @@ func TestFactoryCanParseServiceDiscoveryConfigs(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
 	require.NoError(t, err)
-	assert.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
+	assert.NoError(t, component.UnmarshalConfig(sub, cfg))
 }

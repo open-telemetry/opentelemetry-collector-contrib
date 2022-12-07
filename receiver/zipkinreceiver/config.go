@@ -30,7 +30,7 @@ type Config struct {
 	ParseStringTags bool `mapstructure:"parse_string_tags"`
 }
 
-var _ component.ReceiverConfig = (*Config)(nil)
+var _ component.Config = (*Config)(nil)
 
 // Validate checks the receiver configuration is valid
 func (cfg *Config) Validate() error {

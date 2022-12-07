@@ -41,7 +41,7 @@ type router[E component.Component, K any] struct {
 }
 
 // newRouter creates a new router instance with its type parameter constrained
-// to component.Exporter.
+// to component.Component.
 func newRouter[E component.Component, K any](
 	table []RoutingTableItem,
 	defaultExporterIDs []string,

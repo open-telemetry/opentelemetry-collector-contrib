@@ -44,7 +44,7 @@ func NewFactory() component.ExporterFactory {
 
 }
 
-func createDefaultConfig() component.ExporterConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		Region:           "",
 		Token:            "",
@@ -101,12 +101,12 @@ func generateEndpoint(cfg *Config) (string, error) {
 	}
 }
 
-func createTracesExporter(_ context.Context, params component.ExporterCreateSettings, cfg component.ExporterConfig) (component.TracesExporter, error) {
+func createTracesExporter(_ context.Context, params component.ExporterCreateSettings, cfg component.Config) (component.TracesExporter, error) {
 	exporterConfig := cfg.(*Config)
 	return newLogzioTracesExporter(exporterConfig, params)
 }
 
-func createLogsExporter(_ context.Context, params component.ExporterCreateSettings, cfg component.ExporterConfig) (component.LogsExporter, error) {
+func createLogsExporter(_ context.Context, params component.ExporterCreateSettings, cfg component.Config) (component.LogsExporter, error) {
 	exporterConfig := cfg.(*Config)
 	return newLogzioLogsExporter(exporterConfig, params)
 }

@@ -1,4 +1,0 @@
-change_type: bug_fix
-component: receiver/jaeger
-note: Fix an error message in thrift HTTP message decoder
-issues: [16372]

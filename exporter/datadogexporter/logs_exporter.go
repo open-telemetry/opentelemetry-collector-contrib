@@ -45,13 +45,13 @@ type logsExporter struct {
 func newLogsExporter(ctx context.Context, params component.ExporterCreateSettings, cfg *Config, onceMetadata *sync.Once, sourceProvider source.Provider) (*logsExporter, error) {
 	// create Datadog client
 	// validation endpoint is provided by Metrics
-	client := clientutil.CreateClient(cfg.API.Key, cfg.Metrics.TCPAddr.Endpoint)
+	client := clientutil.CreateZorkianClient(cfg.API.Key, cfg.Metrics.TCPAddr.Endpoint)
 	// validate the apiKey
-	if err := clientutil.ValidateAPIKey(params.Logger, client); err != nil && cfg.API.FailOnInvalidKey {
+	if err := clientutil.ValidateAPIKeyZorkian(params.Logger, client); err != nil && cfg.API.FailOnInvalidKey {
 		return nil, err
 	}
 
-	s := logs.NewSender(cfg.Logs.TCPAddr.Endpoint, params.Logger, cfg.TimeoutSettings, cfg.LimitedHTTPClientSettings.TLSSetting.InsecureSkipVerify, cfg.API.Key)
+	s := logs.NewSender(cfg.Logs.TCPAddr.Endpoint, params.Logger, cfg.TimeoutSettings, cfg.LimitedHTTPClientSettings.TLSSetting.InsecureSkipVerify, cfg.Logs.DumpPayloads, cfg.API.Key)
 
 	return &logsExporter{
 		params:         params,

@@ -20,7 +20,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/extension/extensiontest"
 	framework "k8s.io/client-go/tools/cache/testing"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
@@ -43,7 +45,7 @@ func TestNewExtension(t *testing.T) {
 	config := factory.CreateDefaultConfig().(*Config)
 	mockServiceHost(t, config)
 
-	ext, err := newObserver(config, componenttest.NewNopTelemetrySettings())
+	ext, err := newObserver(config, extensiontest.NewNopCreateSettings())
 	require.NoError(t, err)
 	require.NotNil(t, ext)
 }
@@ -53,7 +55,9 @@ func TestExtensionObservePods(t *testing.T) {
 	config := factory.CreateDefaultConfig().(*Config)
 	mockServiceHost(t, config)
 
-	ext, err := newObserver(config, componenttest.NewNopTelemetrySettings())
+	set := extensiontest.NewNopCreateSettings()
+	set.ID = component.NewID(typeStr)
+	ext, err := newObserver(config, set)
 	require.NoError(t, err)
 	require.NotNil(t, ext)
 
@@ -133,7 +137,9 @@ func TestExtensionObserveNodes(t *testing.T) {
 	config := factory.CreateDefaultConfig().(*Config)
 	mockServiceHost(t, config)
 
-	ext, err := newObserver(config, componenttest.NewNopTelemetrySettings())
+	set := extensiontest.NewNopCreateSettings()
+	set.ID = component.NewID(typeStr)
+	ext, err := newObserver(config, set)
 	require.NoError(t, err)
 	require.NotNil(t, ext)
 

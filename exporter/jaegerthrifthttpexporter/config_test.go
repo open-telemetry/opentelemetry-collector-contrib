@@ -39,7 +39,7 @@ func TestLoadConfig(t *testing.T) {
 
 	tests := []struct {
 		id       component.ID
-		expected component.ExporterConfig
+		expected component.Config
 	}{
 		{
 			id:       component.NewIDWithName(typeStr, ""),
@@ -68,10 +68,52 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalExporterConfig(sub, cfg))
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
+		})
+	}
+}
+
+func TestValidateConfig(t *testing.T) {
+	tests := []struct {
+		name         string
+		config       *Config
+		errorMessage string
+	}{
+		{
+			name: "empty_url",
+			config: &Config{
+				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
+			},
+			errorMessage: "invalid \"endpoint\": parse \"\": empty url",
+		},
+		{
+			name: "invalid_url",
+			config: &Config{
+				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: ".example:123",
+				},
+			},
+			errorMessage: "invalid \"endpoint\": parse \".example:123\": invalid URI for request",
+		},
+		{
+			name: "negative_duration",
+			config: &Config{
+				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: "example.com:123",
+					Timeout:  -2 * time.Second,
+				},
+			},
+			errorMessage: "invalid negative value for \"timeout\"",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.EqualError(t, tt.config.Validate(), tt.errorMessage)
 		})
 	}
 }

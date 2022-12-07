@@ -16,6 +16,7 @@ package processscraper // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"strings"
+	"time"
 
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/process"
@@ -88,6 +89,7 @@ type processHandle interface {
 	Cmdline() (string, error)
 	CmdlineSlice() ([]string, error)
 	Times() (*cpu.TimesStat, error)
+	Percent(time.Duration) (float64, error)
 	MemoryInfo() (*process.MemoryInfoStat, error)
 	IOCounters() (*process.IOCountersStat, error)
 	NumThreads() (int32, error)
@@ -96,6 +98,8 @@ type processHandle interface {
 	PageFaults() (*process.PageFaultsStat, error)
 	NumCtxSwitches() (*process.NumCtxSwitchesStat, error)
 	NumFDs() (int32, error)
+	// If gatherUsed is true, the currently used value will be gathered and added to the resulting RlimitStat.
+	RlimitUsage(gatherUsed bool) ([]process.RlimitStat, error)
 }
 
 type gopsProcessHandles struct {

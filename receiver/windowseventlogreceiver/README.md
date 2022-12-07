@@ -19,7 +19,7 @@ Tails and parses logs from windows event log API using the [opentelemetry-log-co
 | `attributes`    | {}                       | A map of `key: value` pairs to add to the entry's attributes. |
 | `resource`      | {}                       | A map of `key: value` pairs to add to the entry's resource. |
 | `operators`            | []               | An array of [operators](https://github.com/open-telemetry/opentelemetry-log-collection/blob/main/docs/operators/README.md#what-operators-are-available). See below for more details |
-| `converter`            | <pre lang="jsonp">{<br>  max_flush_count: 100,<br>  flush_interval: 100ms,<br>  worker_count: max(1,runtime.NumCPU()/4)<br>}</pre> | A map of `key: value` pairs to configure the [`entry.Entry`][entry_link] to [`pdata.LogRecord`][pdata_logrecord_link] converter, more info can be found [here][converter_link] |
+| `storage`       | none             | The ID of a storage extension to be used to store bookmarks. Bookmarks allow the receiver to pick up where it left off in the case of a collector restart. If no storage extension is used, the receiver will manage bookmarks in memory only. |
 
 ### Operators
 

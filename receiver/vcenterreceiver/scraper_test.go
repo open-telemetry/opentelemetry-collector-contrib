@@ -20,7 +20,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.uber.org/zap"
 
@@ -84,7 +83,7 @@ func TestScrape_NoClient(t *testing.T) {
 		config: &Config{
 			Endpoint: "http://vcsa.localnet",
 		},
-		mb:     metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), component.NewDefaultBuildInfo()),
+		mb:     metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), componenttest.NewNopReceiverCreateSettings()),
 		logger: zap.NewNop(),
 	}
 	metrics, err := scraper.scrape(ctx)

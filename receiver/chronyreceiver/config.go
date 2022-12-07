@@ -42,12 +42,12 @@ type Config struct {
 }
 
 var (
-	_ component.ReceiverConfig = (*Config)(nil)
+	_ component.Config = (*Config)(nil)
 
 	errInvalidValue = errors.New("invalid value")
 )
 
-func newDefaultCongfig() component.ReceiverConfig {
+func newDefaultCongfig() component.Config {
 	return &Config{
 		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(typeStr),
 		MetricsSettings:           metadata.DefaultMetricsSettings(),

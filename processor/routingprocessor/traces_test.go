@@ -45,8 +45,9 @@ func TestTraces_RegisterExportersForValidRoute(t *testing.T) {
 	})
 
 	otlpExpFactory := otlpexporter.NewFactory()
+	otlpID := component.NewID("otlp")
 	otlpConfig := &otlpexporter.Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID("otlp")),
+		ExporterSettings: config.NewExporterSettings(otlpID),
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: "example.com:1234",
 		},
@@ -56,7 +57,7 @@ func TestTraces_RegisterExportersForValidRoute(t *testing.T) {
 
 	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
 		component.DataTypeTraces: {
-			otlpConfig.ID(): otlpExp,
+			otlpID: otlpExp,
 		},
 	})
 

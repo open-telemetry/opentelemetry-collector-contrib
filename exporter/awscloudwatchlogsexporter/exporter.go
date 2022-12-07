@@ -78,7 +78,7 @@ func newCwLogsPusher(expConfig *Config, params component.ExporterCreateSettings)
 	return logsExporter, nil
 }
 
-func newCwLogsExporter(config component.ExporterConfig, params component.ExporterCreateSettings) (component.LogsExporter, error) {
+func newCwLogsExporter(config component.Config, params component.ExporterCreateSettings) (component.LogsExporter, error) {
 	expConfig := config.(*Config)
 	logsExporter, err := newCwLogsPusher(expConfig, params)
 	if err != nil {

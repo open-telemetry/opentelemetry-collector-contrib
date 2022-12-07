@@ -1,6 +1,0 @@
-change_type: bug_fix
-component: receiver/hostmetrics
-note: Remove "Deprecated" label from network metrics
-issues: [16227]
-subtext: |
-  Replacement of the metrics was rejected some time ago, but the labels were not updated.

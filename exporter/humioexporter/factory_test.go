@@ -42,7 +42,7 @@ func TestCreateTracesExporter(t *testing.T) {
 	factory := newHumioFactory(t)
 	testCases := []struct {
 		desc              string
-		cfg               component.ExporterConfig
+		cfg               component.Config
 		wantErrorOnCreate bool
 		wantErrorOnStart  bool
 	}{

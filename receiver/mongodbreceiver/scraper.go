@@ -43,7 +43,7 @@ func newMongodbScraper(settings component.ReceiverCreateSettings, config *Config
 	return &mongodbScraper{
 		logger: settings.Logger,
 		config: config,
-		mb:     metadata.NewMetricsBuilder(config.Metrics, settings.BuildInfo),
+		mb:     metadata.NewMetricsBuilder(config.Metrics, settings),
 	}
 }
 

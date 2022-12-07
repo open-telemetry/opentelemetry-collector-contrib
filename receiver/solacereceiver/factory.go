@@ -16,6 +16,7 @@ package solacereceiver // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
@@ -44,7 +45,7 @@ func NewFactory() component.ReceiverFactory {
 }
 
 // createDefaultConfig creates the default configuration for receiver.
-func createDefaultConfig() component.ReceiverConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ReceiverSettings: config.NewReceiverSettings(component.NewID(componentType)),
 		Broker:           []string{defaultHost},
@@ -54,6 +55,11 @@ func createDefaultConfig() component.ReceiverConfig {
 			InsecureSkipVerify: false,
 			Insecure:           false,
 		},
+		Flow: FlowControl{
+			DelayedRetry: &FlowControlDelayedRetry{
+				Delay: 10 * time.Millisecond,
+			},
+		},
 	}
 }
 
@@ -61,7 +67,7 @@ func createDefaultConfig() component.ReceiverConfig {
 func createTracesReceiver(
 	_ context.Context,
 	params component.ReceiverCreateSettings,
-	receiverConfig component.ReceiverConfig,
+	receiverConfig component.Config,
 	nextConsumer consumer.Traces,
 ) (component.TracesReceiver, error) {
 	cfg, ok := receiverConfig.(*Config)

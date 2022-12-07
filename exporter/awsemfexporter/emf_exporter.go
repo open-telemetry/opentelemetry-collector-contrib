@@ -47,7 +47,7 @@ type emfExporter struct {
 	// Each (log group, log stream) keeps a separate pusher because of each (log group, log stream) requires separate stream token.
 	groupStreamToPusherMap map[string]map[string]cwlogs.Pusher
 	svcStructuredLog       *cwlogs.Client
-	config                 component.ExporterConfig
+	config                 component.Config
 	logger                 *zap.Logger
 
 	metricTranslator metricTranslator
@@ -59,7 +59,7 @@ type emfExporter struct {
 
 // newEmfPusher func creates an EMF Exporter instance with data push callback func
 func newEmfPusher(
-	config component.ExporterConfig,
+	config component.Config,
 	params component.ExporterCreateSettings,
 ) (component.MetricsExporter, error) {
 	if config == nil {
@@ -95,7 +95,7 @@ func newEmfPusher(
 
 // newEmfExporter creates a new exporter using exporterhelper
 func newEmfExporter(
-	config component.ExporterConfig,
+	config component.Config,
 	set component.ExporterCreateSettings,
 ) (component.MetricsExporter, error) {
 	exp, err := newEmfPusher(config, set)

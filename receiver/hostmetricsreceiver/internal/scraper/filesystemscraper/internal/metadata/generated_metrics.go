@@ -278,14 +278,14 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, options ...metricBuilderOption) *MetricsBuilder {
+func NewMetricsBuilder(ms MetricsSettings, settings component.ReceiverCreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                         pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                     pmetric.NewMetrics(),
-		buildInfo:                         buildInfo,
-		metricSystemFilesystemInodesUsage: newMetricSystemFilesystemInodesUsage(settings.SystemFilesystemInodesUsage),
-		metricSystemFilesystemUsage:       newMetricSystemFilesystemUsage(settings.SystemFilesystemUsage),
-		metricSystemFilesystemUtilization: newMetricSystemFilesystemUtilization(settings.SystemFilesystemUtilization),
+		buildInfo:                         settings.BuildInfo,
+		metricSystemFilesystemInodesUsage: newMetricSystemFilesystemInodesUsage(ms.SystemFilesystemInodesUsage),
+		metricSystemFilesystemUsage:       newMetricSystemFilesystemUsage(ms.SystemFilesystemUsage),
+		metricSystemFilesystemUtilization: newMetricSystemFilesystemUtilization(ms.SystemFilesystemUtilization),
 	}
 	for _, op := range options {
 		op(mb)

@@ -83,6 +83,12 @@ func Test_lexer(t *testing.T) {
 			{"OpOr", "or"},
 			{"Lowercase", "but"},
 		}},
+		{"not", "true and not false", false, []result{
+			{"Boolean", "true"},
+			{"OpAnd", "and"},
+			{"OpNot", "not"},
+			{"Boolean", "false"},
+		}},
 		{"nothing_recognizable", "{}", true, []result{
 			{"", ""},
 		}},

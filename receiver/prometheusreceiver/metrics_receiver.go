@@ -273,7 +273,6 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, host component
 		gcInterval(r.cfg.PrometheusConfig),
 		r.cfg.UseStartTimeMetric,
 		startTimeMetricRegex,
-		r.cfg.ID(),
 		r.cfg.PrometheusConfig.GlobalConfig.ExternalLabels,
 		r.registry,
 	)
@@ -312,8 +311,12 @@ func gcInterval(cfg *config.Config) time.Duration {
 
 // Shutdown stops and cancels the underlying Prometheus scrapers.
 func (r *pReceiver) Shutdown(context.Context) error {
-	r.cancelFunc()
-	r.scrapeManager.Stop()
+	if r.cancelFunc != nil {
+		r.cancelFunc()
+	}
+	if r.scrapeManager != nil {
+		r.scrapeManager.Stop()
+	}
 	close(r.targetAllocatorStop)
 	return nil
 }

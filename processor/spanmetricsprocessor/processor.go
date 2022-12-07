@@ -113,7 +113,7 @@ type histogramData struct {
 	exemplarsData []exemplarData
 }
 
-func newProcessor(logger *zap.Logger, config component.ProcessorConfig, nextConsumer consumer.Traces) (*processorImp, error) {
+func newProcessor(logger *zap.Logger, config component.Config, nextConsumer consumer.Traces) (*processorImp, error) {
 	logger.Info("Building spanmetricsprocessor")
 	pConfig := config.(*Config)
 

@@ -29,7 +29,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
@@ -43,8 +42,6 @@ func TestScraper(t *testing.T) {
 	require.NoError(t, component.ValidateConfig(cfg))
 
 	// Let this test check if it works with the feature enabled and the integration test will test the feature disabled.
-	err := featuregate.GetRegistry().Apply(map[string]bool{EmitServerNameAsResourceAttribute: true, EmitPortAsResourceAttribute: true})
-	require.NoError(t, err)
 
 	serverName, port, err := parseResourseAttributes(cfg.Endpoint)
 	require.NoError(t, err)

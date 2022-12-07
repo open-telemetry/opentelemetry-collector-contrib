@@ -38,7 +38,7 @@ func TestLoadConfig(t *testing.T) {
 
 	tests := []struct {
 		id       component.ID
-		expected component.ReceiverConfig
+		expected component.Config
 	}{
 		{
 			id: component.NewIDWithName(typeStr, "customname"),
@@ -158,7 +158,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
@@ -174,17 +174,17 @@ func TestFailedLoadConfig(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(typeStr, "typo_default_proto_config").String())
 	require.NoError(t, err)
-	err = component.UnmarshalReceiverConfig(sub, cfg)
+	err = component.UnmarshalConfig(sub, cfg)
 	assert.EqualError(t, err, "1 error(s) decoding:\n\n* 'protocols' has invalid keys: thrift_htttp")
 
 	sub, err = cm.Sub(component.NewIDWithName(typeStr, "bad_proto_config").String())
 	require.NoError(t, err)
-	err = component.UnmarshalReceiverConfig(sub, cfg)
+	err = component.UnmarshalConfig(sub, cfg)
 	assert.EqualError(t, err, "1 error(s) decoding:\n\n* 'protocols' has invalid keys: thrift_htttp")
 
 	sub, err = cm.Sub(component.NewIDWithName(typeStr, "empty").String())
 	require.NoError(t, err)
-	err = component.UnmarshalReceiverConfig(sub, cfg)
+	err = component.UnmarshalConfig(sub, cfg)
 	assert.EqualError(t, err, "empty config for Jaeger receiver")
 }
 

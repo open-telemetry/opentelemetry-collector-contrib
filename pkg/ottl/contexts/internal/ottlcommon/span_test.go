@@ -307,6 +307,23 @@ func TestSpanPathGetSetter(t *testing.T) {
 			},
 		},
 		{
+			name: "attributes array empty",
+			path: []ottl.Field{
+				{
+					Name:   "attributes",
+					MapKey: ottltest.Strp("arr_empty"),
+				},
+			},
+			orig: func() pcommon.Slice {
+				val, _ := refSpan.Attributes().Get("arr_empty")
+				return val.Slice()
+			}(),
+			newVal: []any{},
+			modified: func(span ptrace.Span) {
+				// no-op
+			},
+		},
+		{
 			name: "attributes array string",
 			path: []ottl.Field{
 				{
@@ -545,6 +562,8 @@ func createSpan() ptrace.Span {
 	span.Attributes().PutInt("int", 10)
 	span.Attributes().PutDouble("double", 1.2)
 	span.Attributes().PutEmptyBytes("bytes").FromRaw([]byte{1, 3, 2})
+
+	span.Attributes().PutEmptySlice("arr_empty")
 
 	arrStr := span.Attributes().PutEmptySlice("arr_str")
 	arrStr.AppendEmpty().SetStr("one")

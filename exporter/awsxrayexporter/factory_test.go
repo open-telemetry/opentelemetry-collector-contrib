@@ -58,7 +58,7 @@ func TestCreateTracesExporter(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(typeStr, "customname").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalExporterConfig(sub, cfg))
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	ctx := context.Background()
 	exporter, err := factory.CreateTracesExporter(ctx, componenttest.NewNopExporterCreateSettings(), cfg)
@@ -74,7 +74,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(typeStr, "customname").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalExporterConfig(sub, cfg))
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	ctx := context.Background()
 	exporter, err := factory.CreateMetricsExporter(ctx, componenttest.NewNopExporterCreateSettings(), cfg)

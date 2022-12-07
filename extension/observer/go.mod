@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/stretchr/testify v1.8.1
-	go.uber.org/zap v1.23.0
+	go.uber.org/zap v1.24.0
 )
 
 require (
@@ -16,3 +16,5 @@ require (
 	go.uber.org/multierr v1.6.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+retract v0.65.0
