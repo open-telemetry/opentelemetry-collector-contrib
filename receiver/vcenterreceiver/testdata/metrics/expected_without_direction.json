@@ -1681,7 +1681,7 @@
                             }
                         },
                         {
-                            "name": "vcenter.vm.memory.ssdswapped",
+                            "name": "vcenter.vm.memory.swapped_ssd",
                             "description": "The amount of memory swapped to fast disk device such as SSD.",
                             "unit": "KiBy",
                             "sum": {

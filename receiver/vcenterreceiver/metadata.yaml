@@ -305,7 +305,7 @@ metrics:
       value_type: int
       aggregation: cumulative
     attributes: []
-  vcenter.vm.memory.ssdswapped:
+  vcenter.vm.memory.swapped_ssd:
     enabled: true
     description: The amount of memory swapped to fast disk device such as SSD.
     unit: KiBy
