@@ -110,6 +110,12 @@ func TestDefaultMetrics(t *testing.T) {
 	enabledMetrics["vcenter.vm.memory.ballooned"] = true
 	mb.RecordVcenterVMMemoryBalloonedDataPoint(ts, 1)
 
+	enabledMetrics["vcenter.vm.memory.swapped"] = true
+	mb.RecordVcenterVMMemorySwappedDataPoint(ts, 1)
+
+	enabledMetrics["vcenter.vm.memory.swapped_ssd"] = true
+	mb.RecordVcenterVMMemorySwappedSsdDataPoint(ts, 1)
+
 	enabledMetrics["vcenter.vm.memory.usage"] = true
 	mb.RecordVcenterVMMemoryUsageDataPoint(ts, 1)
 
@@ -171,6 +177,8 @@ func TestAllMetrics(t *testing.T) {
 		VcenterVMDiskUsage:              MetricSettings{Enabled: true},
 		VcenterVMDiskUtilization:        MetricSettings{Enabled: true},
 		VcenterVMMemoryBallooned:        MetricSettings{Enabled: true},
+		VcenterVMMemorySwapped:          MetricSettings{Enabled: true},
+		VcenterVMMemorySwappedSsd:       MetricSettings{Enabled: true},
 		VcenterVMMemoryUsage:            MetricSettings{Enabled: true},
 		VcenterVMNetworkPacketCount:     MetricSettings{Enabled: true},
 		VcenterVMNetworkThroughput:      MetricSettings{Enabled: true},
@@ -213,6 +221,8 @@ func TestAllMetrics(t *testing.T) {
 	mb.RecordVcenterVMDiskUsageDataPoint(ts, 1, AttributeDiskState(1))
 	mb.RecordVcenterVMDiskUtilizationDataPoint(ts, 1)
 	mb.RecordVcenterVMMemoryBalloonedDataPoint(ts, 1)
+	mb.RecordVcenterVMMemorySwappedDataPoint(ts, 1)
+	mb.RecordVcenterVMMemorySwappedSsdDataPoint(ts, 1)
 	mb.RecordVcenterVMMemoryUsageDataPoint(ts, 1)
 	mb.RecordVcenterVMNetworkPacketCountDataPoint(ts, 1, AttributeThroughputDirection(1))
 	mb.RecordVcenterVMNetworkThroughputDataPoint(ts, 1, AttributeThroughputDirection(1))
@@ -663,6 +673,32 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 			assert.Equal(t, int64(1), dp.IntValue())
 			validatedMetrics["vcenter.vm.memory.ballooned"] = struct{}{}
+		case "vcenter.vm.memory.swapped":
+			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+			assert.Equal(t, "The portion of memory that is granted to this VM from the host's swap space.", ms.At(i).Description())
+			assert.Equal(t, "MiBy", ms.At(i).Unit())
+			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+			dp := ms.At(i).Sum().DataPoints().At(0)
+			assert.Equal(t, start, dp.StartTimestamp())
+			assert.Equal(t, ts, dp.Timestamp())
+			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+			assert.Equal(t, int64(1), dp.IntValue())
+			validatedMetrics["vcenter.vm.memory.swapped"] = struct{}{}
+		case "vcenter.vm.memory.swapped_ssd":
+			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+			assert.Equal(t, "The amount of memory swapped to fast disk device such as SSD.", ms.At(i).Description())
+			assert.Equal(t, "KiBy", ms.At(i).Unit())
+			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+			dp := ms.At(i).Sum().DataPoints().At(0)
+			assert.Equal(t, start, dp.StartTimestamp())
+			assert.Equal(t, ts, dp.Timestamp())
+			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+			assert.Equal(t, int64(1), dp.IntValue())
+			validatedMetrics["vcenter.vm.memory.swapped_ssd"] = struct{}{}
 		case "vcenter.vm.memory.usage":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
@@ -760,6 +796,8 @@ func TestNoMetrics(t *testing.T) {
 		VcenterVMDiskUsage:              MetricSettings{Enabled: false},
 		VcenterVMDiskUtilization:        MetricSettings{Enabled: false},
 		VcenterVMMemoryBallooned:        MetricSettings{Enabled: false},
+		VcenterVMMemorySwapped:          MetricSettings{Enabled: false},
+		VcenterVMMemorySwappedSsd:       MetricSettings{Enabled: false},
 		VcenterVMMemoryUsage:            MetricSettings{Enabled: false},
 		VcenterVMNetworkPacketCount:     MetricSettings{Enabled: false},
 		VcenterVMNetworkThroughput:      MetricSettings{Enabled: false},
@@ -801,6 +839,8 @@ func TestNoMetrics(t *testing.T) {
 	mb.RecordVcenterVMDiskUsageDataPoint(ts, 1, AttributeDiskState(1))
 	mb.RecordVcenterVMDiskUtilizationDataPoint(ts, 1)
 	mb.RecordVcenterVMMemoryBalloonedDataPoint(ts, 1)
+	mb.RecordVcenterVMMemorySwappedDataPoint(ts, 1)
+	mb.RecordVcenterVMMemorySwappedSsdDataPoint(ts, 1)
 	mb.RecordVcenterVMMemoryUsageDataPoint(ts, 1)
 	mb.RecordVcenterVMNetworkPacketCountDataPoint(ts, 1, AttributeThroughputDirection(1))
 	mb.RecordVcenterVMNetworkThroughputDataPoint(ts, 1, AttributeThroughputDirection(1))

@@ -296,6 +296,24 @@ metrics:
       value_type: int
       aggregation: cumulative
     attributes: []
+  vcenter.vm.memory.swapped:
+    enabled: true
+    description: The portion of memory that is granted to this VM from the host's swap space.
+    unit: MiBy
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation: cumulative
+    attributes: []
+  vcenter.vm.memory.swapped_ssd:
+    enabled: true
+    description: The amount of memory swapped to fast disk device such as SSD.
+    unit: KiBy
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation: cumulative
+    attributes: []
   vcenter.vm.disk.usage:
     enabled: true
     description: The amount of storage space used by the virtual machine.
