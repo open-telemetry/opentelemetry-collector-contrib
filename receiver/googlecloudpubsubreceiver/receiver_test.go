@@ -19,6 +19,7 @@ import (
 	"testing"
 	"time"
 
+	pb "cloud.google.com/go/pubsub/apiv1/pubsubpb"
 	"cloud.google.com/go/pubsub/pstest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -29,7 +30,6 @@ import (
 	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
-	pb "google.golang.org/genproto/googleapis/pubsub/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver/testdata"
 )

@@ -6,7 +6,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.66.0
 	github.com/stretchr/testify v1.8.1
-	github.com/wavefronthq/wavefront-sdk-go v0.10.4
+	github.com/wavefronthq/wavefront-sdk-go v0.11.0
 	go.opentelemetry.io/collector v0.66.1-0.20221202005155-1c54042beb70
 	go.opentelemetry.io/collector/component v0.66.1-0.20221202005155-1c54042beb70
 	go.opentelemetry.io/collector/pdata v0.66.1-0.20221202005155-1c54042beb70
@@ -54,7 +54,7 @@ require (
 	github.com/prometheus/statsd_exporter v0.22.7 // indirect
 	github.com/rogpeppe/go-internal v1.6.1 // indirect
 	github.com/rs/cors v1.8.2 // indirect
-	github.com/shirou/gopsutil/v3 v3.22.10 // indirect
+	github.com/shirou/gopsutil/v3 v3.22.11 // indirect
 	github.com/spf13/cobra v1.6.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/tklauser/go-sysconf v0.3.11 // indirect
