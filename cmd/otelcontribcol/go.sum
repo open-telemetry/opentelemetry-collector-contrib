@@ -1402,8 +1402,8 @@ github.com/grafana/go-gelf/v2 v2.0.1 h1:BOChP0h/jLeD+7F9mL7tq10xVkDG15he3T1zHuQa
 github.com/grafana/go-gelf/v2 v2.0.1/go.mod h1:lexHie0xzYGwCgiRGcvZ723bSNyNI8ZRD4s0CLobh90=
 github.com/grafana/gomemcache v0.0.0-20220812141859-1e3ae89e91a7 h1:EKJ/x3CNzKFtppRriAk0PlWD513f+5YOx4aHSbWm1Y8=
 github.com/grafana/gomemcache v0.0.0-20220812141859-1e3ae89e91a7/go.mod h1:H0wQNHz2YrLsuXOZozoeDmnHXkNCRmMW0gwFWDfEZDA=
-github.com/grafana/loki v1.6.2-0.20221206154352-fee23745328c h1:WfrjoGZffQ508jBJmI7AAHWGdlJlYPd1Bet04FHClXg=
-github.com/grafana/loki v1.6.2-0.20221206154352-fee23745328c/go.mod h1:VArTqN8uZ+Pfr7Fimx1TNji2I6qz3xRzZhgnqAV6YZ4=
+github.com/grafana/loki v1.6.2-0.20221121081917-d3111bcaa774 h1:j6s8cB4PXfq7NogpGJ78WJgaBD6ZrBgg0tqg1hIUQSs=
+github.com/grafana/loki v1.6.2-0.20221121081917-d3111bcaa774/go.mod h1:/M7jZVGsH/zuxWkjkFkCWXGa+t5hUOqj6ss9EE+x5d0=
 github.com/grafana/regexp v0.0.0-20221005093135-b4c2bcb0a4b6 h1:A3dhViTeFDSQcGOXuUi6ukCQSMyDtDISBp2z6OOo2YM=
 github.com/grafana/regexp v0.0.0-20221005093135-b4c2bcb0a4b6/go.mod h1:M5qHK+eWfAv8VR/265dIuEpL3fNfeC21tXXp9itM24A=
 github.com/grafana/tail v0.0.0-20220426200921-98e8eb28ea4c h1:qIsCzNln5YzuXfXbJgXhpfM+4gY7qi3mED3eYQS4Fls=
@@ -2066,8 +2066,6 @@ github.com/openzipkin/zipkin-go v0.4.1/go.mod h1:qY0VqDSN1pOBN94dBc6w2GJlWLiovAy
 github.com/openzipkin/zipkin-go-opentracing v0.3.4/go.mod h1:js2AbwmHW0YD9DwIw2JhQWmbfFi/UnWyYwdVhqbCDOE=
 github.com/ory/go-acc v0.2.6/go.mod h1:4Kb/UnPcT8qRAk3IAxta+hvVapdxTLWtrr7bFLlEgpw=
 github.com/ory/viper v1.7.5/go.mod h1:ypOuyJmEUb3oENywQZRgeAMwqgOyDqwboO1tj3DjTaM=
-github.com/ovh/go-ovh v1.3.0 h1:mvZaddk4E4kLcXhzb+cxBsMPYp2pHqiQpWYkInsuZPQ=
-github.com/ovh/go-ovh v1.3.0/go.mod h1:AxitLZ5HBRPyUd+Zl60Ajaag+rNTdVXWIkzfrVuTXWA=
 github.com/pact-foundation/pact-go v1.0.4/go.mod h1:uExwJY4kCzNPcHRj+hCR/HBbOOIwwtUjcrb0b5/5kLM=
 github.com/pascaldekloe/goe v0.0.0-20180627143212-57f6aae5913c/go.mod h1:lzWF7FIEvWOWxwDKqyGYQf6ZUaNfKdP144TG7ZOy1lc=
 github.com/pascaldekloe/goe v0.1.0 h1:cBOtyMzM9HTpWjXfbbunk26uA6nG3a8n06Wieeh0MwY=
@@ -2198,8 +2196,8 @@ github.com/prometheus/procfs v0.6.0/go.mod h1:cz+aTbrPOrUb4q7XlbU9ygM+/jj0fzG6c1
 github.com/prometheus/procfs v0.7.3/go.mod h1:cz+aTbrPOrUb4q7XlbU9ygM+/jj0fzG6c1xBZuNvfVA=
 github.com/prometheus/procfs v0.8.0 h1:ODq8ZFEaYeCaZOJlZZdJA2AbQR98dSHSM1KW/You5mo=
 github.com/prometheus/procfs v0.8.0/go.mod h1:z7EfXMXOkbkqb9IINtpCn86r/to3BnA0uaxHdg830/4=
-github.com/prometheus/prometheus v0.40.5 h1:wmk5yNrQlkQ2OvZucMhUB4k78AVfG34szb1UtopS8Vc=
-github.com/prometheus/prometheus v0.40.5/go.mod h1:bxgdmtoSNLmmIVPGmeTJ3OiP67VmuY4yalE4ZP6L/j8=
+github.com/prometheus/prometheus v0.39.1 h1:abZM6A+sKAv2eKTbRIaHq4amM/nT07MuxRm0+QTaTj0=
+github.com/prometheus/prometheus v0.39.1/go.mod h1:GjQjgLhHMc0oo4Ko7qt/yBSJMY4hUoiAZwsYQgjaePA=
 github.com/prometheus/statsd_exporter v0.21.0/go.mod h1:rbT83sZq2V+p73lHhPZfMc3MLCHmSHelCh9hSGYNLTQ=
 github.com/prometheus/statsd_exporter v0.22.7 h1:7Pji/i2GuhK6Lu7DHrtTkFmNBCudCPT1pX2CziuyQR0=
 github.com/prometheus/statsd_exporter v0.22.7/go.mod h1:N/TevpjkIh9ccs6nuzY3jQn9dFqnUakOjnEuMPJJJnI=
