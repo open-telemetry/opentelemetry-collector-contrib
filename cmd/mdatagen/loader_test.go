@@ -15,7 +15,6 @@
 package main
 
 import (
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -30,108 +29,125 @@ func Test_loadMetadata(t *testing.T) {
 		wantErr string
 	}{
 		{
-			name: "all_options.yaml",
+			name: "metadata.yaml",
 			want: metadata{
-				Name:           "metricreceiver",
+				Name:           "testreceiver",
 				SemConvVersion: "1.9.0",
+				ResourceAttributes: map[attributeName]attribute{
+					"string.resource.attr": {
+						Description: "Resource attribute with any string value.",
+						Type: ValueType{
+							ValueType: pcommon.ValueTypeStr,
+						},
+					},
+					"string.enum.resource.attr": {
+						Description: "Resource attribute with a known set of string values.",
+						Enum:        []string{"one", "two"},
+						Type: ValueType{
+							ValueType: pcommon.ValueTypeStr,
+						},
+					},
+				},
 				Attributes: map[attributeName]attribute{
-					"enumAttribute": {
-						Description:  "Attribute with a known set of values.",
+					"enum_attr": {
+						Description:  "Attribute with a known set of string values.",
 						NameOverride: "",
 						Enum:         []string{"red", "green", "blue"},
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
 						},
 					},
-					"freeFormAttribute": {
-						Description:  "Attribute that can take on any value.",
+					"string_attr": {
+						Description:  "Attribute with any string value.",
 						NameOverride: "",
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
 						},
 					},
-					"freeFormAttributeWithValue": {
-						Description:  "Attribute that has alternate value set.",
+					"overridden_int_attr": {
+						Description:  "Integer attribute with overridden name.",
 						NameOverride: "state",
 						Type: ValueType{
-							ValueType: pcommon.ValueTypeStr,
+							ValueType: pcommon.ValueTypeInt,
 						},
 					},
-					"booleanValueType": {
-						Description:  "Attribute with a boolean value.",
-						NameOverride: "0",
+					"boolean_attr": {
+						Description: "Attribute with a boolean value.",
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeBool,
 						},
 					}},
 				Metrics: map[metricName]metric{
-					"system.cpu.time": {
+					"default.metric": {
 						Enabled:               true,
-						Description:           "Total CPU seconds broken down by different states.",
-						ExtendedDocumentation: "Additional information on CPU Time can be found [here](https://en.wikipedia.org/wiki/CPU_time).",
+						Description:           "Monotonic cumulative sum int metric enabled by default.",
+						ExtendedDocumentation: "Additional information.",
 						Unit:                  "s",
 						Sum: &sum{
-							MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeDouble},
+							MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeInt},
 							Aggregated:      Aggregated{Aggregation: pmetric.AggregationTemporalityCumulative},
 							Mono:            Mono{Monotonic: true},
 						},
-						Attributes: []attributeName{"freeFormAttribute", "freeFormAttributeWithValue", "enumAttribute", "booleanValueType"},
+						Attributes: []attributeName{"string_attr", "overridden_int_attr", "enum_attr"},
 					},
-					"system.cpu.utilization": {
+					"optional.metric": {
 						Enabled:     false,
-						Description: "Percentage of CPU time broken down by different states.",
-						Unit:        "1",
+						Description: "[DEPRECATED] Gauge double metric disabled by default.",
+						Warnings: warnings{
+							IfEnabled: "This metric is deprecated and will be removed soon.",
+						},
+						Unit: "1",
 						Gauge: &gauge{
 							MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeDouble},
 						},
-						Attributes: []attributeName{"enumAttribute", "booleanValueType"},
+						Attributes: []attributeName{"string_attr", "boolean_attr"},
 					},
 				},
 			},
 		},
 		{
-			name:    "unknown_metric_attribute.yaml",
+			name:    "testdata/unknown_metric_attribute.yaml",
 			want:    metadata{},
 			wantErr: "metric \"system.cpu.time\" refers to undefined attributes: [missing]",
 		},
 		{
-			name: "no_metric_type.yaml",
+			name: "testdata/no_metric_type.yaml",
 			want: metadata{},
 			wantErr: "metric system.cpu.time doesn't have a metric type key, " +
 				"one of the following has to be specified: sum, gauge",
 		},
 		{
-			name:    "no_enabled.yaml",
+			name:    "testdata/no_enabled.yaml",
 			want:    metadata{},
 			wantErr: "1 error(s) decoding:\n\n* error decoding 'metrics[system.cpu.time]': missing required field: `enabled`",
 		},
 		{
-			name: "two_metric_types.yaml",
+			name: "testdata/two_metric_types.yaml",
 			want: metadata{},
 			wantErr: "metric system.cpu.time has more than one metric type keys, " +
 				"only one of the following has to be specified: sum, gauge",
 		},
 		{
-			name: "no_value_type.yaml",
+			name: "testdata/no_value_type.yaml",
 			want: metadata{},
 			wantErr: "1 error(s) decoding:\n\n* error decoding 'metrics[system.cpu.time]': 1 error(s) decoding:\n\n" +
 				"* error decoding 'sum': missing required field: `value_type`",
 		},
 		{
-			name: "unknown_value_type.yaml",
+			name: "testdata/unknown_value_type.yaml",
 			want: metadata{},
 			wantErr: "1 error(s) decoding:\n\n* error decoding 'metrics[system.cpu.time]': 1 error(s) decoding:\n\n" +
 				"* error decoding 'sum': 1 error(s) decoding:\n\n* error decoding 'value_type': invalid value_type: \"unknown\"",
 		},
 		{
-			name:    "unused_attribute.yaml",
+			name:    "testdata/unused_attribute.yaml",
 			want:    metadata{},
 			wantErr: "unused attributes: [unused_attr]",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := loadMetadata(filepath.Join("testdata", tt.name))
+			got, err := loadMetadata(tt.name)
 			if tt.wantErr != "" {
 				require.Error(t, err)
 				require.EqualError(t, err, tt.wantErr)
