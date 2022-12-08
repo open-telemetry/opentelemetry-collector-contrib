@@ -30,8 +30,8 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver/internal/metadata"
 )
 
@@ -62,7 +62,7 @@ func TestScraper(t *testing.T) {
 	expectedMetrics.ResourceMetrics().At(0).Resource().Attributes().PutStr("apache.server.port", url.Port())
 
 	// The port is random, so we shouldn't check if this value matches.
-	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
+	require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics))
 }
 
 func TestScraperFailedStart(t *testing.T) {

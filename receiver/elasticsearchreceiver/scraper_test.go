@@ -29,8 +29,8 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/mocks"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/model"
 )
@@ -94,7 +94,7 @@ func TestScraper(t *testing.T) {
 	actualMetrics, err := sc.scrape(context.Background())
 	require.NoError(t, err)
 
-	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
+	require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics))
 }
 
 func TestScraperSkipClusterMetrics(t *testing.T) {
@@ -123,7 +123,7 @@ func TestScraperSkipClusterMetrics(t *testing.T) {
 	actualMetrics, err := sc.scrape(context.Background())
 	require.NoError(t, err)
 
-	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
+	require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics))
 }
 
 func TestScraperNoNodesMetrics(t *testing.T) {
@@ -152,7 +152,7 @@ func TestScraperNoNodesMetrics(t *testing.T) {
 	actualMetrics, err := sc.scrape(context.Background())
 	require.NoError(t, err)
 
-	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
+	require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics))
 }
 
 func TestScraperFailedStart(t *testing.T) {

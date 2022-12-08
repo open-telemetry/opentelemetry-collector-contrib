@@ -26,8 +26,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/expvarreceiver/internal/metadata"
 )
 
@@ -123,7 +123,7 @@ func TestAllMetrics(t *testing.T) {
 	expectedFile := filepath.Join("testdata", "metrics", "expected_all_metrics.json")
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
-	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
+	require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics))
 }
 
 func TestNoMetrics(t *testing.T) {
@@ -139,7 +139,7 @@ func TestNoMetrics(t *testing.T) {
 	expectedMetrics := pmetric.NewMetrics() // empty
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err)
-	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
+	require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics))
 }
 
 func TestNotFoundResponse(t *testing.T) {
@@ -191,5 +191,5 @@ func TestEmptyResponseBodyError(t *testing.T) {
 	expectedMetrics := pmetric.NewMetrics() // empty
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.EqualError(t, err, "could not decode response body to JSON: EOF")
-	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
+	require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics))
 }

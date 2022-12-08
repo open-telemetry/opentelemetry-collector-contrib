@@ -1,4 +1,4 @@
-# scrapertest
+# comparetest
 
 This module provides a mechanism for capturing and comparing expected metric results.
 
@@ -23,7 +23,7 @@ func TestScraper(t *testing.T) {
   expectedMetrics, err := golden.ReadMetrics(expectedFile)
   require.NoError(t, err)
 
-  require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
+  require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics))
 }
 ```
 
@@ -60,6 +60,6 @@ func TestScraper(t *testing.T) {
   expectedMetrics, err := golden.ReadMetrics(expectedFile)
   require.NoError(t, err)
 
-  require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
+  require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics))
 }
 ```
