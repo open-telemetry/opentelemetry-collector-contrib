@@ -53,7 +53,16 @@ type PerformanceTestResult struct {
 	ramMibMax         uint32
 	sentSpanCount     uint64
 	receivedSpanCount uint64
+	received          *NetStats
+	exported          *NetStats
 	errorCause        string
+}
+
+type NetStats struct {
+	sentBytes     float64
+	sentWireBytes float64
+	recvBytes     float64
+	recvWireBytes float64
 }
 
 func (r *PerformanceResults) Init(resultsDir string) {
@@ -74,8 +83,8 @@ func (r *PerformanceResults) Init(resultsDir string) {
 	_, _ = io.WriteString(r.resultsFile,
 		"# Test PerformanceResults\n"+
 			fmt.Sprintf("Started: %s\n\n", time.Now().Format(time.RFC1123Z))+
-			"Test                                    |Result|Duration|CPU Avg%|CPU Max%|RAM Avg MiB|RAM Max MiB|Sent Items|Received Items|\n"+
-			"----------------------------------------|------|-------:|-------:|-------:|----------:|----------:|---------:|-------------:|\n")
+			"Test                                    |Result|Duration|CPU Avg%|CPU Max%|RAM Avg MiB|RAM Max MiB|Sent Items|Received Items|MiB/sec in  |MiB/sec out |I/O Comp    |In Comp     |Out Comp    \n"+
+			"----------------------------------------|------|-------:|-------:|-------:|----------:|----------:|---------:|-------------:|-----------:|-----------:|-----------:|-----------:|----------:|\n")
 }
 
 // Save the total results and close the file.
@@ -91,8 +100,33 @@ func (r *PerformanceResults) Add(_ string, result interface{}) {
 	if !ok {
 		return
 	}
+	var ioComp string
+	var inWire string
+	var outWire string
+	var inMiBsec string
+	var outMiBsec string
+
+	fmtFloat := func(x float64) string { return fmt.Sprintf("%.4f", x) }
+
+	if testResult.exported != nil && testResult.received != nil {
+		eio := testResult.exported.recvWireBytes + testResult.exported.sentWireBytes
+		rio := testResult.received.recvWireBytes + testResult.received.sentWireBytes
+		if eio != 0 && rio != 0 {
+			ioComp = fmtFloat(eio / rio)
+		}
+	}
+	if testResult.exported != nil && testResult.exported.sentBytes != 0 {
+		comp := testResult.exported.sentWireBytes / testResult.exported.sentBytes
+		outWire = fmtFloat(comp)
+		outMiBsec = fmtFloat(float64(testResult.exported.sentWireBytes) / mibibyte)
+	}
+	if testResult.received != nil && testResult.received.recvBytes != 0 {
+		comp := testResult.received.recvWireBytes / testResult.received.recvBytes
+		inWire = fmtFloat(comp)
+		inMiBsec = fmtFloat(float64(testResult.received.recvWireBytes) / mibibyte)
+	}
 	_, _ = io.WriteString(r.resultsFile,
-		fmt.Sprintf("%-40s|%-6s|%7.0fs|%8.1f|%8.1f|%11d|%11d|%10d|%14d|%s\n",
+		fmt.Sprintf("%-40s|%-6s|%7.0fs|%8.1f|%8.1f|%11d|%11d|%10d|%14d|%12s|%12s|%12s|%12s|%12s|%12s\n",
 			testResult.testName,
 			testResult.result,
 			testResult.duration.Seconds(),
@@ -102,6 +136,11 @@ func (r *PerformanceResults) Add(_ string, result interface{}) {
 			testResult.ramMibMax,
 			testResult.sentSpanCount,
 			testResult.receivedSpanCount,
+			inMiBsec,
+			outMiBsec,
+			ioComp,
+			inWire,
+			outWire,
 			testResult.errorCause,
 		),
 	)

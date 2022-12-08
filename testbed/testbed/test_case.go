@@ -18,12 +18,16 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"net/http"
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
+	io_prometheus_client "github.com/prometheus/client_model/go"
+	"github.com/prometheus/common/expfmt"
 	"github.com/stretchr/testify/require"
 )
 
@@ -43,12 +47,25 @@ type TestCase struct {
 	// Agent process.
 	agentProc OtelcolRunner
 
-	Sender   DataSender
+	// Sender corresponds to the receiver under test.
+	Sender DataSender
+
+	// receiver corresponds to the exporter under test.
 	receiver DataReceiver
 
+	// LoadGenerator sends data to a receiver under test using the DataSender.
 	LoadGenerator *LoadGenerator
-	MockBackend   *MockBackend
-	validator     TestCaseValidator
+
+	// MockBackend receives data from an exporter under test using the DataReceiver.
+	MockBackend *MockBackend
+
+	// validator checks the data received by the mock backend.
+	validator TestCaseValidator
+
+	// metricsPort is the local port of the prometheus exporter,
+	// used to obtain send/received metrics when the exporter and
+	// receiver under test support them.
+	metricsPort int
 
 	startTime time.Time
 
@@ -59,9 +76,22 @@ type TestCase struct {
 	// Duration is the requested duration of the tests. Configured via TESTBED_DURATION
 	// env variable and defaults to 15 seconds if env variable is unspecified.
 	Duration       time.Duration
-	doneSignal     chan struct{}
-	errorCause     string
 	resultsSummary TestResultsSummary
+
+	// doneSignal is used to stop the test (especially due to an error).
+	doneSignal chan struct{}
+
+	// errorCause will be set when an error interrupts the test.
+	errorCause string
+
+	// agentStopped is true when StopAgent() was called and final metrics are available.
+	agentStopped bool
+
+	// exporterStats are the final scrape of the collector under test's metrics.
+	exporterStats *NetStats
+
+	// receiverStats are the final scrape of the collector under test's metrics.
+	receiverStats *NetStats
 }
 
 const mibibyte = 1024 * 1024
@@ -139,6 +169,8 @@ func (tc *TestCase) composeTestResultFileName(fileName string) string {
 func (tc *TestCase) StartAgent(args ...string) {
 	logFileName := tc.composeTestResultFileName("agent.log")
 
+	args = append(args, "--feature-gates=telemetry.useOtelForInternalMetrics")
+
 	startParams := StartParams{
 		Name:         "Agent",
 		LogFilePath:  logFileName,
@@ -174,10 +206,78 @@ func (tc *TestCase) StartAgent(args ...string) {
 	}
 }
 
+func (tc *TestCase) scrapeMetrics() (map[string]*io_prometheus_client.MetricFamily, error) {
+	resp, err := http.Get(fmt.Sprintf("http://127.0.0.1:%d/metrics", tc.metricsPort))
+	if err != nil {
+		return nil, err
+	}
+
+	var parser expfmt.TextParser
+	return parser.TextToMetricFamilies(resp.Body)
+}
+
 // StopAgent stops agent process.
 func (tc *TestCase) StopAgent() {
+	if tc.agentStopped {
+		return
+	}
+	tc.agentStopped = true
+
+	if tc.metricsPort != 0 {
+		tc.gatherAgentMetrics()
+	}
+
 	if _, err := tc.agentProc.Stop(); err != nil {
 		tc.indicateError(err)
+	}
+}
+
+func (tc *TestCase) gatherAgentMetrics() {
+	// Final metric scrape.
+	data, err := tc.scrapeMetrics()
+	if err != nil {
+		tc.indicateError(err)
+	}
+	// Scan for network stats.
+	for key, val := range data {
+		if len(val.Metric) == 0 {
+			continue
+		}
+		if val.Metric[0].Counter == nil {
+			continue
+		}
+
+		var ns *NetStats
+		if strings.HasPrefix(key, "otelcol_exporter_") {
+			if tc.exporterStats == nil {
+				tc.exporterStats = &NetStats{}
+			}
+			ns = tc.exporterStats
+		} else if strings.HasPrefix(key, "otelcol_receiver_") {
+			if tc.receiverStats == nil {
+				tc.receiverStats = &NetStats{}
+			}
+			ns = tc.receiverStats
+		} else {
+			continue
+		}
+
+		require.Equal(tc.t, 1, len(val.Metric), "for %v: %v", key)
+
+		cnt := val.Metric[0].GetCounter()
+		val := cnt.GetValue()
+
+		if strings.HasSuffix(key, "_sent_wire_bytes_total") {
+			ns.sentWireBytes = val
+		} else if strings.HasSuffix(key, "_sent_bytes_total") {
+			ns.sentBytes = val
+		} else if strings.HasSuffix(key, "_recv_wire_bytes_total") {
+			ns.recvWireBytes = val
+		} else if strings.HasSuffix(key, "_recv_bytes_total") {
+			ns.recvBytes = val
+		} else {
+			continue
+		}
 	}
 }
 
@@ -296,13 +396,20 @@ func (tc *TestCase) WaitFor(cond func() bool, errMsg interface{}) bool {
 }
 
 func (tc *TestCase) indicateError(err error) {
+	// this ensures the cause string is not empty, used to prevent
+	// double-close on the error signal channel.
+	cause := fmt.Sprint("testbed error: ", err)
+
 	// Print to log for visibility
-	log.Print(err.Error())
+	log.Print(cause)
 
 	// Indicate error for the test
-	tc.t.Error(err.Error())
+	tc.t.Error(cause)
 
-	tc.errorCause = err.Error()
+	if tc.errorCause == "" {
+		return
+	}
+	tc.errorCause = cause
 
 	// Signal the error via channel
 	close(tc.errorSignal)

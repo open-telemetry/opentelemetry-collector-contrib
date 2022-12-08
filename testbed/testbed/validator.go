@@ -69,6 +69,8 @@ func (v *PerfTestValidator) RecordResults(tc *TestCase) {
 		cpuPercentageMax:  rc.CPUPercentMax,
 		ramMibAvg:         rc.RAMMiBAvg,
 		ramMibMax:         rc.RAMMiBMax,
+		exported:          tc.exporterStats,
+		received:          tc.receiverStats,
 		errorCause:        tc.errorCause,
 	})
 }

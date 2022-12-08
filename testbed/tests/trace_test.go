@@ -27,6 +27,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
@@ -39,6 +40,14 @@ import (
 // TestMain is used to initiate setup, execution and tear down of testbed.
 func TestMain(m *testing.M) {
 	testbed.DoTestMain(m, performanceResultsSummary)
+}
+
+func inputWithGzip(cfg *otlpexporter.Config) {
+	cfg.GRPCClientSettings.Compression = "gzip"
+}
+
+func inputNoCompression(cfg *otlpexporter.Config) {
+	cfg.GRPCClientSettings.Compression = "none"
 }
 
 func TestTrace10kSPS(t *testing.T) {
@@ -67,21 +76,58 @@ func TestTrace10kSPS(t *testing.T) {
 			},
 		},
 		{
-			"OTLP-gRPC",
-			testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
-			testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
+			"OTLP-gRPC-gzipIn-plainOut",
+			testbed.NewOTLPTraceDataSender(
+				testbed.DefaultHost, testbed.GetAvailablePort(t), inputWithGzip),
+			testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)).WithCompression("none"),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 20,
 				ExpectedMaxRAM: 100,
 			},
 		},
 		{
-			"OTLP-gRPC-gzip",
-			testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
+			"OTLP-gRPC-plainIn-plainOut",
+			testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t), inputNoCompression),
+			testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)).WithCompression("none"),
+			testbed.ResourceSpec{
+				ExpectedMaxCPU: 20,
+				ExpectedMaxRAM: 100,
+			},
+		},
+		{
+			"OTLP-gRPC-gzipIn-gzipOut",
+			testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t), inputWithGzip),
 			testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)).WithCompression("gzip"),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 30,
 				ExpectedMaxRAM: 100,
+			},
+		},
+		{
+			"OTLP-gRPC-plainIn-gzipOut",
+			testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t), inputNoCompression),
+			testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)).WithCompression("gzip"),
+			testbed.ResourceSpec{
+				ExpectedMaxCPU: 30,
+				ExpectedMaxRAM: 100,
+			},
+		},
+		{
+			"OTLP-gRPC-plainIn-zstdOut",
+			testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t), inputNoCompression),
+			testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)).WithCompression("zstd"),
+			testbed.ResourceSpec{
+				ExpectedMaxCPU: 30,
+				ExpectedMaxRAM: 175,
+			},
+		},
+		{
+			"OTLP-gRPC-gzipIn-zstdOut",
+			testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t), inputWithGzip),
+			testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)).WithCompression("zstd"),
+			testbed.ResourceSpec{
+				ExpectedMaxCPU: 30,
+				ExpectedMaxRAM: 200,
 			},
 		},
 		{
@@ -422,7 +468,7 @@ func TestTraceAttributesProcessor(t *testing.T) {
 			}
 
 			agentProc := testbed.NewChildProcessCollector()
-			configStr := createConfigYaml(t, test.sender, test.receiver, resultDir, processors, nil)
+			configStr, _ := createConfigYaml(t, test.sender, test.receiver, resultDir, processors, nil)
 			configCleanup, err := agentProc.PrepareConfig(configStr)
 			require.NoError(t, err)
 			defer configCleanup()

@@ -46,12 +46,14 @@ func createConfigYaml(
 	resultDir string,
 	processors map[string]string,
 	extensions map[string]string,
-) string {
+) (string, int) {
 
 	// Create a config. Note that our DataSender is used to generate a config for Collector's
 	// receiver and our DataReceiver is used to generate a config for Collector's exporter.
 	// This is because our DataSender sends to Collector's receiver and our DataReceiver
 	// receives from Collector's exporter.
+
+	metricsPort := testbed.GetAvailablePort(t)
 
 	// Prepare extra processor config section and comma-separated list of extra processor
 	// names to use in corresponding "processors" settings.
@@ -111,6 +113,10 @@ extensions:
 
 service:
   extensions: [pprof, %s]
+  telemetry:
+    metrics:
+      level: detailed
+      address: 127.0.0.1:%d
   pipelines:
     %s:
       receivers: [%v]
@@ -127,11 +133,12 @@ service:
 		resultDir,
 		extensionsSections,
 		extensionsList,
+		metricsPort,
 		pipeline,
 		sender.ProtocolName(),
 		processorsList,
 		receiver.ProtocolName(),
-	)
+	), metricsPort
 }
 
 // Scenario10kItemsPerSecond runs 10k data items/sec test using specified sender and receiver protocols.
@@ -154,7 +161,7 @@ func Scenario10kItemsPerSecond(
 	}
 	agentProc := testbed.NewChildProcessCollector()
 
-	configStr := createConfigYaml(t, sender, receiver, resultDir, processors, extensions)
+	configStr, metricsPort := createConfigYaml(t, sender, receiver, resultDir, processors, extensions)
 	configCleanup, err := agentProc.PrepareConfig(configStr)
 	require.NoError(t, err)
 	defer configCleanup()
@@ -169,6 +176,7 @@ func Scenario10kItemsPerSecond(
 		&testbed.PerfTestValidator{},
 		resultsSummary,
 		testbed.WithResourceLimits(resourceSpec),
+		testbed.WithMetricsPort(metricsPort),
 	)
 	defer tc.Stop()
 
@@ -228,7 +236,7 @@ func Scenario1kSPSWithAttrs(t *testing.T, args []string, tests []TestCase, proce
 			receiver := testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t))
 
 			// Prepare config.
-			configStr := createConfigYaml(t, sender, receiver, resultDir, processors, extensions)
+			configStr, metricsPort := createConfigYaml(t, sender, receiver, resultDir, processors, extensions)
 			configCleanup, err := agentProc.PrepareConfig(configStr)
 			require.NoError(t, err)
 			defer configCleanup()
@@ -242,6 +250,7 @@ func Scenario1kSPSWithAttrs(t *testing.T, args []string, tests []TestCase, proce
 				&testbed.PerfTestValidator{},
 				test.resultsSummary,
 				testbed.WithResourceLimits(testbed.ResourceSpec{ExpectedMaxCPU: test.expectedMaxCPU, ExpectedMaxRAM: test.expectedMaxRAM}),
+				testbed.WithMetricsPort(metricsPort),
 			)
 			defer tc.Stop()
 
@@ -287,7 +296,7 @@ func ScenarioTestTraceNoBackend10kSPS(
 
 	options := testbed.LoadOptions{DataItemsPerSecond: 10000, ItemsPerBatch: 10}
 	agentProc := testbed.NewChildProcessCollector()
-	configStr := createConfigYaml(t, sender, receiver, resultDir, configuration.Processor, nil)
+	configStr, metricsPort := createConfigYaml(t, sender, receiver, resultDir, configuration.Processor, nil)
 	configCleanup, err := agentProc.PrepareConfig(configStr)
 	require.NoError(t, err)
 	defer configCleanup()
@@ -302,6 +311,7 @@ func ScenarioTestTraceNoBackend10kSPS(
 		&testbed.PerfTestValidator{},
 		resultsSummary,
 		testbed.WithResourceLimits(resourceSpec),
+		testbed.WithMetricsPort(metricsPort),
 	)
 
 	defer tc.Stop()

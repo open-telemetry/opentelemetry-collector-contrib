@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"net"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
@@ -71,9 +72,17 @@ type LogDataSender interface {
 	consumer.Logs
 }
 
+// DataSenderBase is an abstract base that simplifies many of the testbed senders.
 type DataSenderBase struct {
 	Port int
 	Host string
+}
+
+// ExporterCreateSettings creates standard exporter settings for the testbed.
+func ExporterCreateSettings() component.ExporterCreateSettings {
+	params := componenttest.NewNopExporterCreateSettings()
+	params.Logger = zap.L()
+	return params
 }
 
 func (dsb *DataSenderBase) GetEndpoint() net.Addr {
@@ -87,6 +96,7 @@ func (dsb *DataSenderBase) Flush() {
 
 type otlpHTTPDataSender struct {
 	DataSenderBase
+	options []func(*otlphttpexporter.Config)
 }
 
 func (ods *otlpHTTPDataSender) fillConfig(cfg *otlphttpexporter.Config) *otlphttpexporter.Config {
@@ -97,6 +107,9 @@ func (ods *otlpHTTPDataSender) fillConfig(cfg *otlphttpexporter.Config) *otlphtt
 	cfg.QueueSettings.Enabled = false
 	cfg.TLSSetting = configtls.TLSClientSetting{
 		Insecure: true,
+	}
+	for _, opt := range ods.options {
+		opt(cfg)
 	}
 	return cfg
 }
@@ -121,13 +134,16 @@ type otlpHTTPTraceDataSender struct {
 }
 
 // NewOTLPHTTPTraceDataSender creates a new TraceDataSender for OTLP/HTTP traces exporter.
-func NewOTLPHTTPTraceDataSender(host string, port int) TraceDataSender {
+//
+// This object configures a test OTLP Receiver with the specified options applied.
+func NewOTLPHTTPTraceDataSender(host string, port int, options ...func(*otlphttpexporter.Config)) TraceDataSender {
 	return &otlpHTTPTraceDataSender{
 		otlpHTTPDataSender: otlpHTTPDataSender{
 			DataSenderBase: DataSenderBase{
 				Port: port,
 				Host: host,
 			},
+			options: options,
 		},
 	}
 }
@@ -135,10 +151,8 @@ func NewOTLPHTTPTraceDataSender(host string, port int) TraceDataSender {
 func (ote *otlpHTTPTraceDataSender) Start() error {
 	factory := otlphttpexporter.NewFactory()
 	cfg := ote.fillConfig(factory.CreateDefaultConfig().(*otlphttpexporter.Config))
-	params := componenttest.NewNopExporterCreateSettings()
-	params.Logger = zap.L()
 
-	exp, err := factory.CreateTracesExporter(context.Background(), params, cfg)
+	exp, err := factory.CreateTracesExporter(context.Background(), ExporterCreateSettings(), cfg)
 	if err != nil {
 		return err
 	}
@@ -155,13 +169,16 @@ type otlpHTTPMetricsDataSender struct {
 
 // NewOTLPHTTPMetricDataSender creates a new OTLP/HTTP metrics exporter sender that will send
 // to the specified port after Start is called.
-func NewOTLPHTTPMetricDataSender(host string, port int) MetricDataSender {
+//
+// This object configures a OTLP Receiver with the specified options applied.
+func NewOTLPHTTPMetricDataSender(host string, port int, options ...func(*otlphttpexporter.Config)) MetricDataSender {
 	return &otlpHTTPMetricsDataSender{
 		otlpHTTPDataSender: otlpHTTPDataSender{
 			DataSenderBase: DataSenderBase{
 				Port: port,
 				Host: host,
 			},
+			options: options,
 		},
 	}
 }
@@ -169,10 +186,8 @@ func NewOTLPHTTPMetricDataSender(host string, port int) MetricDataSender {
 func (ome *otlpHTTPMetricsDataSender) Start() error {
 	factory := otlphttpexporter.NewFactory()
 	cfg := ome.fillConfig(factory.CreateDefaultConfig().(*otlphttpexporter.Config))
-	params := componenttest.NewNopExporterCreateSettings()
-	params.Logger = zap.L()
 
-	exp, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
+	exp, err := factory.CreateMetricsExporter(context.Background(), ExporterCreateSettings(), cfg)
 	if err != nil {
 		return err
 	}
@@ -189,13 +204,14 @@ type otlpHTTPLogsDataSender struct {
 
 // NewOTLPHTTPLogsDataSender creates a new OTLP/HTTP logs exporter sender that will send
 // to the specified port after Start is called.
-func NewOTLPHTTPLogsDataSender(host string, port int) LogDataSender {
+func NewOTLPHTTPLogsDataSender(host string, port int, options ...func(*otlphttpexporter.Config)) LogDataSender {
 	return &otlpHTTPLogsDataSender{
 		otlpHTTPDataSender: otlpHTTPDataSender{
 			DataSenderBase: DataSenderBase{
 				Port: port,
 				Host: host,
 			},
+			options: options,
 		},
 	}
 }
@@ -203,10 +219,8 @@ func NewOTLPHTTPLogsDataSender(host string, port int) LogDataSender {
 func (olds *otlpHTTPLogsDataSender) Start() error {
 	factory := otlphttpexporter.NewFactory()
 	cfg := olds.fillConfig(factory.CreateDefaultConfig().(*otlphttpexporter.Config))
-	params := componenttest.NewNopExporterCreateSettings()
-	params.Logger = zap.L()
 
-	exp, err := factory.CreateLogsExporter(context.Background(), params, cfg)
+	exp, err := factory.CreateLogsExporter(context.Background(), ExporterCreateSettings(), cfg)
 	if err != nil {
 		return err
 	}
@@ -217,6 +231,7 @@ func (olds *otlpHTTPLogsDataSender) Start() error {
 
 type otlpDataSender struct {
 	DataSenderBase
+	options []func(*otlpexporter.Config)
 }
 
 func (ods *otlpDataSender) fillConfig(cfg *otlpexporter.Config) *otlpexporter.Config {
@@ -227,6 +242,9 @@ func (ods *otlpDataSender) fillConfig(cfg *otlpexporter.Config) *otlpexporter.Co
 	cfg.QueueSettings.Enabled = false
 	cfg.TLSSetting = configtls.TLSClientSetting{
 		Insecure: true,
+	}
+	for _, opt := range ods.options {
+		opt(cfg)
 	}
 	return cfg
 }
@@ -251,13 +269,14 @@ type otlpTraceDataSender struct {
 }
 
 // NewOTLPTraceDataSender creates a new TraceDataSender for OTLP traces exporter.
-func NewOTLPTraceDataSender(host string, port int) TraceDataSender {
+func NewOTLPTraceDataSender(host string, port int, options ...func(*otlpexporter.Config)) TraceDataSender {
 	return &otlpTraceDataSender{
 		otlpDataSender: otlpDataSender{
 			DataSenderBase: DataSenderBase{
 				Port: port,
 				Host: host,
 			},
+			options: options,
 		},
 	}
 }
@@ -265,10 +284,8 @@ func NewOTLPTraceDataSender(host string, port int) TraceDataSender {
 func (ote *otlpTraceDataSender) Start() error {
 	factory := otlpexporter.NewFactory()
 	cfg := ote.fillConfig(factory.CreateDefaultConfig().(*otlpexporter.Config))
-	params := componenttest.NewNopExporterCreateSettings()
-	params.Logger = zap.L()
 
-	exp, err := factory.CreateTracesExporter(context.Background(), params, cfg)
+	exp, err := factory.CreateTracesExporter(context.Background(), ExporterCreateSettings(), cfg)
 	if err != nil {
 		return err
 	}
@@ -285,13 +302,14 @@ type otlpMetricsDataSender struct {
 
 // NewOTLPMetricDataSender creates a new OTLP metric exporter sender that will send
 // to the specified port after Start is called.
-func NewOTLPMetricDataSender(host string, port int) MetricDataSender {
+func NewOTLPMetricDataSender(host string, port int, options ...func(*otlpexporter.Config)) MetricDataSender {
 	return &otlpMetricsDataSender{
 		otlpDataSender: otlpDataSender{
 			DataSenderBase: DataSenderBase{
 				Port: port,
 				Host: host,
 			},
+			options: options,
 		},
 	}
 }
@@ -299,10 +317,8 @@ func NewOTLPMetricDataSender(host string, port int) MetricDataSender {
 func (ome *otlpMetricsDataSender) Start() error {
 	factory := otlpexporter.NewFactory()
 	cfg := ome.fillConfig(factory.CreateDefaultConfig().(*otlpexporter.Config))
-	params := componenttest.NewNopExporterCreateSettings()
-	params.Logger = zap.L()
 
-	exp, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
+	exp, err := factory.CreateMetricsExporter(context.Background(), ExporterCreateSettings(), cfg)
 	if err != nil {
 		return err
 	}
@@ -319,13 +335,14 @@ type otlpLogsDataSender struct {
 
 // NewOTLPLogsDataSender creates a new OTLP logs exporter sender that will send
 // to the specified port after Start is called.
-func NewOTLPLogsDataSender(host string, port int) LogDataSender {
+func NewOTLPLogsDataSender(host string, port int, options ...func(*otlpexporter.Config)) LogDataSender {
 	return &otlpLogsDataSender{
 		otlpDataSender: otlpDataSender{
 			DataSenderBase: DataSenderBase{
 				Port: port,
 				Host: host,
 			},
+			options: options,
 		},
 	}
 }
@@ -333,10 +350,8 @@ func NewOTLPLogsDataSender(host string, port int) LogDataSender {
 func (olds *otlpLogsDataSender) Start() error {
 	factory := otlpexporter.NewFactory()
 	cfg := olds.fillConfig(factory.CreateDefaultConfig().(*otlpexporter.Config))
-	params := componenttest.NewNopExporterCreateSettings()
-	params.Logger = zap.L()
 
-	exp, err := factory.CreateLogsExporter(context.Background(), params, cfg)
+	exp, err := factory.CreateLogsExporter(context.Background(), ExporterCreateSettings(), cfg)
 	if err != nil {
 		return err
 	}

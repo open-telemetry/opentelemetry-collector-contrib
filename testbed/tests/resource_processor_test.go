@@ -122,7 +122,7 @@ func TestMetricResourceProcessor(t *testing.T) {
 			processors := map[string]string{
 				"resource": test.resourceProcessorConfig,
 			}
-			configStr := createConfigYaml(t, sender, receiver, resultDir, processors, nil)
+			configStr, metricsPort := createConfigYaml(t, sender, receiver, resultDir, processors, nil)
 			configCleanup, err := agentProc.PrepareConfig(configStr)
 			require.NoError(t, err)
 			defer configCleanup()
@@ -137,6 +137,7 @@ func TestMetricResourceProcessor(t *testing.T) {
 				agentProc,
 				&testbed.PerfTestValidator{},
 				performanceResultsSummary,
+				testbed.WithMetricsPort(metricsPort),
 			)
 			defer tc.Stop()
 

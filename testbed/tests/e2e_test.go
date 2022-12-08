@@ -39,7 +39,7 @@ func TestIdleMode(t *testing.T) {
 
 	sender := testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
 	receiver := testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t))
-	cfg := createConfigYaml(t, sender, receiver, resultDir, nil, nil)
+	cfg, metricsPort := createConfigYaml(t, sender, receiver, resultDir, nil, nil)
 	cp := testbed.NewChildProcessCollector()
 	cleanup, err := cp.PrepareConfig(cfg)
 	require.NoError(t, err)
@@ -54,6 +54,7 @@ func TestIdleMode(t *testing.T) {
 		&testbed.PerfTestValidator{},
 		performanceResultsSummary,
 		testbed.WithResourceLimits(testbed.ResourceSpec{ExpectedMaxCPU: 20, ExpectedMaxRAM: 83}),
+		testbed.WithMetricsPort(metricsPort),
 	)
 	tc.StartAgent()
 
@@ -86,7 +87,7 @@ func TestBallastMemory(t *testing.T) {
 		t.Run(fmt.Sprintf("ballast-size-%d", test.ballastSize), func(t *testing.T) {
 			sender := testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
 			receiver := testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t))
-			ballastCfg := createConfigYaml(
+			ballastCfg, metricsPort := createConfigYaml(
 				t, sender, receiver, resultDir, nil,
 				map[string]string{"memory_ballast": fmt.Sprintf(ballastConfig, test.ballastSize)})
 			cp := testbed.NewChildProcessCollector()
@@ -108,6 +109,7 @@ func TestBallastMemory(t *testing.T) {
 						MaxConsecutiveFailures: 5,
 					},
 				),
+				testbed.WithMetricsPort(metricsPort),
 			)
 			tc.StartAgent()
 

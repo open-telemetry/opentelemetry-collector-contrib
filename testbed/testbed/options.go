@@ -77,3 +77,14 @@ func WithResourceLimits(resourceSpec ResourceSpec) TestCaseOption {
 		}
 	}
 }
+
+// WithMetricsPort allows allows the testbed to gather obsreport
+// metrics from the system under test.  The same portt should have
+// been configured in the agent's test config.yaml.  If this option is
+// not used, the testbed skips reporting MiB/sec transfered and
+// compression ratios.
+func WithMetricsPort(port int) TestCaseOption {
+	return func(tc *TestCase) {
+		tc.metricsPort = port
+	}
+}

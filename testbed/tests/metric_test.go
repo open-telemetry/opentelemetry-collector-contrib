@@ -127,7 +127,7 @@ func TestMetricsFromFile(t *testing.T) {
 	sender := testbed.NewOTLPMetricDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
 	receiver := testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t))
 
-	configStr := createConfigYaml(t, sender, receiver, resultDir, nil, nil)
+	configStr, metricsPort := createConfigYaml(t, sender, receiver, resultDir, nil, nil)
 	configCleanup, err := agentProc.PrepareConfig(configStr)
 	require.NoError(t, err)
 	defer configCleanup()
@@ -141,6 +141,7 @@ func TestMetricsFromFile(t *testing.T) {
 		&testbed.PerfTestValidator{},
 		performanceResultsSummary,
 		testbed.WithResourceLimits(testbed.ResourceSpec{ExpectedMaxCPU: 120, ExpectedMaxRAM: 110}),
+		testbed.WithMetricsPort(metricsPort),
 	)
 	defer tc.Stop()
 
