@@ -282,8 +282,8 @@ go.etcd.io/etcd/client/pkg/v3 v3.5.4/go.mod h1:IJHfcCEKxYu1Os13ZdwCwIUTUVGYTSAM3
 go.etcd.io/etcd/client/v3 v3.5.4/go.mod h1:ZaRkVgBZC+L+dLCjTcF1hRXpgZXQPOvnA/Ak/gq3kiY=
 go.opentelemetry.io/collector/confmap v0.0.0-20221201172708-2bdff61fa52a h1:2TscCXAQASO2kU9xHcMIUM/FP29fiQIRTilZmliq/7I=
 go.opentelemetry.io/collector/confmap v0.0.0-20221201172708-2bdff61fa52a/go.mod h1:qJ3e8bA8h4wz/jYlbeEUafVHdrU7DkpStnmIUAz6VTQ=
-go.opentelemetry.io/collector/featuregate v0.66.1-0.20221202005155-1c54042beb70 h1:V0tf4ebciqIs07jFATfLGdUpLRaEsi+AiWuA/in0G8Y=
-go.opentelemetry.io/collector/featuregate v0.66.1-0.20221202005155-1c54042beb70/go.mod h1:tewuFKJYalWBU0bmNKg++MC1ipINXUr6szYzOw2p1GI=
+go.opentelemetry.io/collector/featuregate v0.66.1-0.20221208222614-a470d8a8f344 h1:43xZiAXgKl7UQnsyMcaNBqnVuhBqxjt+NFfiHafhGjE=
+go.opentelemetry.io/collector/featuregate v0.66.1-0.20221208222614-a470d8a8f344/go.mod h1:tewuFKJYalWBU0bmNKg++MC1ipINXUr6szYzOw2p1GI=
 go.uber.org/atomic v1.7.0/go.mod h1:fEN4uk6kAWBTFdckzkM89CLk9XfWZrxpCo0nPH17wJc=
 go.uber.org/atomic v1.10.0 h1:9qC72Qh0+3MqyJbAn8YU5xVq1frD8bn3JtD2oXtafVQ=
 go.uber.org/atomic v1.10.0/go.mod h1:LUxbIzbOniOlMKjJjyPfpl4v+PKK2cNJn91OQbhoJI0=

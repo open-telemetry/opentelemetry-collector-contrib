@@ -2,7 +2,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/otelcontrib
 
 go 1.18
 
-require github.com/open-telemetry/opentelemetry-collector-contrib v0.66.0
+require github.com/open-telemetry/opentelemetry-collector-contrib v0.0.0-00010101000000-000000000000
 
 require (
 	bitbucket.org/atlassian/go-asap/v2 v2.6.0 // indirect
@@ -610,21 +610,21 @@ require (
 	go.mongodb.org/atlas v0.19.0 // indirect
 	go.mongodb.org/mongo-driver v1.10.3 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector v0.66.1-0.20221202005155-1c54042beb70 // indirect
-	go.opentelemetry.io/collector/component v0.66.1-0.20221202005155-1c54042beb70 // indirect
+	go.opentelemetry.io/collector v0.66.1-0.20221208222614-a470d8a8f344 // indirect
+	go.opentelemetry.io/collector/component v0.66.1-0.20221208222614-a470d8a8f344 // indirect
 	go.opentelemetry.io/collector/confmap v0.0.0-20221201172708-2bdff61fa52a // indirect
-	go.opentelemetry.io/collector/consumer v0.66.1-0.20221202005155-1c54042beb70 // indirect
-	go.opentelemetry.io/collector/exporter/loggingexporter v0.66.1-0.20221202005155-1c54042beb70 // indirect
-	go.opentelemetry.io/collector/exporter/otlpexporter v0.66.1-0.20221202005155-1c54042beb70 // indirect
-	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.66.1-0.20221202005155-1c54042beb70 // indirect
-	go.opentelemetry.io/collector/extension/ballastextension v0.66.1-0.20221202005155-1c54042beb70 // indirect
-	go.opentelemetry.io/collector/extension/zpagesextension v0.66.1-0.20221202005155-1c54042beb70 // indirect
-	go.opentelemetry.io/collector/featuregate v0.66.1-0.20221202005155-1c54042beb70 // indirect
-	go.opentelemetry.io/collector/pdata v0.66.1-0.20221202005155-1c54042beb70 // indirect
-	go.opentelemetry.io/collector/processor/batchprocessor v0.66.1-0.20221202005155-1c54042beb70 // indirect
-	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.66.1-0.20221202005155-1c54042beb70 // indirect
-	go.opentelemetry.io/collector/receiver/otlpreceiver v0.66.1-0.20221202005155-1c54042beb70 // indirect
-	go.opentelemetry.io/collector/semconv v0.66.1-0.20221202005155-1c54042beb70 // indirect
+	go.opentelemetry.io/collector/consumer v0.66.1-0.20221208222614-a470d8a8f344 // indirect
+	go.opentelemetry.io/collector/exporter/loggingexporter v0.66.1-0.20221208222614-a470d8a8f344 // indirect
+	go.opentelemetry.io/collector/exporter/otlpexporter v0.66.1-0.20221208222614-a470d8a8f344 // indirect
+	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.66.1-0.20221208222614-a470d8a8f344 // indirect
+	go.opentelemetry.io/collector/extension/ballastextension v0.66.1-0.20221208222614-a470d8a8f344 // indirect
+	go.opentelemetry.io/collector/extension/zpagesextension v0.66.1-0.20221208222614-a470d8a8f344 // indirect
+	go.opentelemetry.io/collector/featuregate v0.66.1-0.20221208222614-a470d8a8f344 // indirect
+	go.opentelemetry.io/collector/pdata v1.0.0-rc1.0.20221208222614-a470d8a8f344 // indirect
+	go.opentelemetry.io/collector/processor/batchprocessor v0.66.1-0.20221208222614-a470d8a8f344 // indirect
+	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.66.1-0.20221208222614-a470d8a8f344 // indirect
+	go.opentelemetry.io/collector/receiver/otlpreceiver v0.66.1-0.20221208222614-a470d8a8f344 // indirect
+	go.opentelemetry.io/collector/semconv v0.66.1-0.20221208222614-a470d8a8f344 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.36.4 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.36.4 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.11.1 // indirect

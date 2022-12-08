@@ -31,7 +31,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	go.opentelemetry.io/collector/featuregate v0.66.1-0.20221202005155-1c54042beb70 // indirect
+	go.opentelemetry.io/collector/featuregate v0.66.1-0.20221208222614-a470d8a8f344 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
 	golang.org/x/sys v0.3.0 // indirect
