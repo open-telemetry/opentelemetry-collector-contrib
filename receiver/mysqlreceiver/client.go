@@ -18,8 +18,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"time"
 	"strings"
+	"time"
 
 	// registers the mysql driver
 	"github.com/go-sql-driver/mysql"
@@ -331,14 +331,14 @@ func (c *mySQLClient) getTableLockWaitEventStats() ([]tableLockWaitEventStats, e
 			&s.countWriteAllowWrite, &s.countWriteConcurrentInsert, &s.countWriteLowPriority, &s.countWriteNormal, &s.countWriteExternal,
 			&s.sumTimerReadNormal, &s.sumTimerReadWithSharedLocks, &s.sumTimerReadHighPriority, &s.sumTimerReadNoInsert, &s.sumTimerReadExternal,
 			&s.sumTimerWriteAllowWrite, &s.sumTimerWriteConcurrentInsert, &s.sumTimerWriteLowPriority, &s.sumTimerWriteNormal, &s.sumTimerWriteExternal)
-			if err != nil {
-				return nil, err
-			}
-			stats = append(stats, s)
+		if err != nil {
+			return nil, err
 		}
-	
-		return stats, nil
+		stats = append(stats, s)
 	}
+
+	return stats, nil
+}
 
 func (c *mySQLClient) getReplicaStatusStats() ([]ReplicaStatusStats, error) {
 	query := "SHOW REPLICA STATUS"
