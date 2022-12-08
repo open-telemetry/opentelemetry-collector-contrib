@@ -20,52 +20,32 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-)
+	"go.opentelemetry.io/collector/component/componenttest"
 
-const (
-	validMetadata = `
-name: metricreceiver
-attributes:
-  cpu_type:
-    name_override: type
-    description: The type of CPU consumption
-    type: string
-    enum:
-    - user
-    - io_wait
-    - system
-  host:
-    description: The type of CPU consumption
-    type: string
-metrics:
-  system.cpu.time:
-    enabled: true
-    description: Total CPU seconds broken down by different states.
-    extended_documentation: Additional information on CPU Time can be found [here](https://en.wikipedia.org/wiki/CPU_time).
-    unit: s
-    sum:
-      aggregation: cumulative
-      value_type: double
-    attributes: [host, cpu_type]
-`
+	md "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/mdatagen/internal/metadata"
 )
 
 func Test_runContents(t *testing.T) {
-	type args struct {
-		yml string
-	}
 	tests := []struct {
 		name    string
-		args    args
+		yml     string
 		wantErr bool
 	}{
 		{
 			name: "valid metadata",
-			args: args{validMetadata},
+			yml: `
+name: metricreceiver
+metrics:
+  metric:
+    enabled: true
+    description: Description.
+    unit: s
+    gauge:
+      value_type: double`,
 		},
 		{
 			name:    "invalid yaml",
-			args:    args{"invalid"},
+			yml:     "invalid",
 			wantErr: true,
 		},
 	}
@@ -74,7 +54,7 @@ func Test_runContents(t *testing.T) {
 			tmpdir := t.TempDir()
 
 			metadataFile := filepath.Join(tmpdir, "metadata.yaml")
-			require.NoError(t, os.WriteFile(metadataFile, []byte(tt.args.yml), 0600))
+			require.NoError(t, os.WriteFile(metadataFile, []byte(tt.yml), 0600))
 
 			err := run(metadataFile)
 			if tt.wantErr {
@@ -116,4 +96,11 @@ func Test_run(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestGenerated verifies that the internal/metadata API is generated correctly.
+func TestGenerated(t *testing.T) {
+	mb := md.NewMetricsBuilder(md.DefaultMetricsSettings(), componenttest.NewNopReceiverCreateSettings())
+	m := mb.Emit()
+	require.Equal(t, 0, m.ResourceMetrics().Len())
 }

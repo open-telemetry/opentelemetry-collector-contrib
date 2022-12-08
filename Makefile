@@ -243,6 +243,11 @@ generate:
 	cd cmd/mdatagen && $(GOCMD) install .
 	$(MAKE) for-all CMD="$(GOCMD) generate ./..."
 
+.PHONY: mdatagen-test
+mdatagen-test:
+	cd cmd/mdatagen && $(GOCMD) install .
+	cd cmd/mdatagen && $(GOCMD) generate ./...
+
 .PHONY: chlog-install
 chlog-install:
 	cd $(TOOLS_MOD_DIR) && $(GOCMD) install go.opentelemetry.io/build-tools/chloggen
