@@ -35,6 +35,7 @@ import (
 
 	tcpop "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/tcp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver"
@@ -97,11 +98,12 @@ func TestDefaultReceivers(t *testing.T) {
 		{
 			receiver: "azureblob",
 			getConfigFn: func() component.Config {
-				cfg := rcvrFactories["azureeventhub"].CreateDefaultConfig().(*azureeventhubreceiver.Config)
-				cfg.Connection = "DefaultEndpointsProtocol=https;AccountName=accountName;AccountKey=accountKey==;EndpointSuffix=core.windows.net"
+				cfg := rcvrFactories["azureblob"].CreateDefaultConfig().(*azureblobreceiver.Config)
+				cfg.ConnectionString = "DefaultEndpointsProtocol=http;AccountName=accountName;AccountKey=accountKey==;BlobEndpoint=test"
+				cfg.EventHub.EndPoint = "DefaultEndpointsProtocol=http;SharedAccessKeyName=secret;SharedAccessKey=secret;Endpoint=test.test"
 				return cfg
 			},
-			skipLifecyle: true, // Requires Azure blob store to run
+			skipLifecyle: true, // Requires Azure event hub to run
 		},
 		{
 			receiver: "azureeventhub",
