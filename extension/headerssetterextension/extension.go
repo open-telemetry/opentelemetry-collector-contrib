@@ -23,11 +23,12 @@ import (
 	"go.opentelemetry.io/collector/extension/auth"
 	"google.golang.org/grpc/credentials"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension/internal/action"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension/internal/source"
 )
 
 type Header struct {
-	key    string
+	action action.Action
 	source source.Source
 }
 
@@ -48,7 +49,21 @@ func newHeadersSetterExtension(cfg *Config) (auth.Client, error) {
 				Key: *header.FromContext,
 			}
 		}
-		headers = append(headers, Header{key: *header.Key, source: s})
+
+		var a action.Action
+		switch header.Action {
+		case INSERT:
+			a = action.Insert{Key: *header.Key}
+		case UPSERT:
+			a = action.Upsert{Key: *header.Key}
+		case UPDATE:
+			a = action.Update{Key: *header.Key}
+		case DELETE:
+			a = action.Delete{Key: *header.Key}
+		default:
+			return nil, errors.New("header action is not provided")
+		}
+		headers = append(headers, Header{action: a, source: s})
 	}
 
 	return auth.NewClient(
@@ -84,7 +99,7 @@ func (h *headersPerRPC) GetRequestMetadata(
 		if err != nil {
 			return nil, fmt.Errorf("failed to determine the source: %w", err)
 		}
-		metadata[header.key] = value
+		header.action.ApplyOnMetadata(metadata, value)
 	}
 	return metadata, nil
 }
@@ -115,7 +130,7 @@ func (h *headersRoundTripper) RoundTrip(req *http.Request) (*http.Response, erro
 		if err != nil {
 			return nil, fmt.Errorf("failed to determine the source: %w", err)
 		}
-		req2.Header.Set(header.key, value)
+		header.action.ApplyOnHeaders(req2.Header, value)
 	}
 	return h.base.RoundTrip(req2)
 }

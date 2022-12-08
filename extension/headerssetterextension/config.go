@@ -19,6 +19,7 @@ import (
 )
 
 var (
+	errMissingAction        = fmt.Errorf("missing header action, must be 'insert', 'update', 'upsert', or 'delete'")
 	errMissingHeader        = fmt.Errorf("missing header name")
 	errMissingHeadersConfig = fmt.Errorf("missing headers configuration")
 	errMissingSource        = fmt.Errorf("missing header source, must be 'from_context' or 'value'")
@@ -30,10 +31,29 @@ type Config struct {
 }
 
 type HeaderConfig struct {
-	Key         *string `mapstructure:"key"`
-	Value       *string `mapstructure:"value"`
-	FromContext *string `mapstructure:"from_context"`
+	Action      actionValue `mapstructure:"action"`
+	Key         *string     `mapstructure:"key"`
+	Value       *string     `mapstructure:"value"`
+	FromContext *string     `mapstructure:"from_context"`
 }
+
+// actionValue is the enum to capture the four types of actions to perform on a header
+type actionValue string
+
+const (
+	// INSERT inserts the new header if it does not exist
+	INSERT actionValue = "insert"
+
+	// UPDATE updates the header value if it exists
+	UPDATE actionValue = "update"
+
+	// UPSERT inserts a header if it does not exist and updates the header
+	// if it exists
+	UPSERT actionValue = "upsert"
+
+	// DELETE deletes the header
+	DELETE actionValue = "delete"
+)
 
 // Validate checks if the extension configuration is valid
 func (cfg *Config) Validate() error {
@@ -41,14 +61,21 @@ func (cfg *Config) Validate() error {
 		return errMissingHeadersConfig
 	}
 	for _, header := range cfg.HeadersConfig {
+		if header.Action == "" {
+			return errMissingAction
+		}
+
 		if header.Key == nil || *header.Key == "" {
 			return errMissingHeader
 		}
-		if header.FromContext == nil && header.Value == nil {
-			return errMissingSource
-		}
-		if header.FromContext != nil && header.Value != nil {
-			return errConflictingSources
+
+		if header.Action != DELETE {
+			if header.FromContext == nil && header.Value == nil {
+				return errMissingSource
+			}
+			if header.FromContext != nil && header.Value != nil {
+				return errConflictingSources
+			}
 		}
 	}
 	return nil
