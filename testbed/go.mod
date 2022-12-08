@@ -25,7 +25,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatareceivers/mockawsxrayreceiver v0.66.0
 	github.com/prometheus/common v0.37.0
 	github.com/prometheus/prometheus v0.40.5
-	github.com/shirou/gopsutil/v3 v3.22.11
+	github.com/shirou/gopsutil/v3 v3.22.10
 	github.com/stretchr/testify v1.8.1
 	go.opentelemetry.io/collector v0.66.1-0.20221202005155-1c54042beb70
 	go.opentelemetry.io/collector/component v0.66.1-0.20221202005155-1c54042beb70
