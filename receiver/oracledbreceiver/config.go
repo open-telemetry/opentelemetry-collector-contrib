@@ -14,8 +14,42 @@
 
 package oracledbreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver"
 
-import "go.opentelemetry.io/collector/config"
+import (
+	"errors"
+	"fmt"
+	"net/url"
+	"time"
+
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver/internal/metadata"
+)
 
 type Config struct {
-	config.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+	config.ReceiverSettings                 `mapstructure:",squash"`
+	DataSource                              string `mapstructure:"datasource"`
+	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
+	MetricsSettings                         metadata.MetricsSettings `mapstructure:"metrics"`
+}
+
+func (c Config) Validate() error {
+	if c.DataSource == "" {
+		return errors.New("'datasource' cannot be empty")
+	}
+	if _, err := url.Parse(c.DataSource); err != nil {
+		return fmt.Errorf("'datasource' is invalid: %w", err)
+	}
+	return nil
+}
+
+func CreateDefaultConfig() component.Config {
+	return &Config{
+		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+			ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
+			CollectionInterval: 10 * time.Second,
+		},
+		MetricsSettings: metadata.DefaultMetricsSettings(),
+	}
 }

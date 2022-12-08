@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest
+module github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest
 
 go 1.18
 

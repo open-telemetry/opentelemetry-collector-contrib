@@ -3,6 +3,8 @@
 package metadata
 
 import (
+	"fmt"
+	"strconv"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -1582,123 +1584,243 @@ func (mb *MetricsBuilder) RecordOracledbCPUTimeDataPoint(ts pcommon.Timestamp, v
 }
 
 // RecordOracledbDmlLocksLimitDataPoint adds a data point to oracledb.dml_locks.limit metric.
-func (mb *MetricsBuilder) RecordOracledbDmlLocksLimitDataPoint(ts pcommon.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordOracledbDmlLocksLimitDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for OracledbDmlLocksLimit, value was %s: %w", inputVal, err)
+	}
 	mb.metricOracledbDmlLocksLimit.recordDataPoint(mb.startTime, ts, val)
+	return nil
 }
 
 // RecordOracledbDmlLocksUsageDataPoint adds a data point to oracledb.dml_locks.usage metric.
-func (mb *MetricsBuilder) RecordOracledbDmlLocksUsageDataPoint(ts pcommon.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordOracledbDmlLocksUsageDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for OracledbDmlLocksUsage, value was %s: %w", inputVal, err)
+	}
 	mb.metricOracledbDmlLocksUsage.recordDataPoint(mb.startTime, ts, val)
+	return nil
 }
 
 // RecordOracledbEnqueueDeadlocksDataPoint adds a data point to oracledb.enqueue_deadlocks metric.
-func (mb *MetricsBuilder) RecordOracledbEnqueueDeadlocksDataPoint(ts pcommon.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordOracledbEnqueueDeadlocksDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for OracledbEnqueueDeadlocks, value was %s: %w", inputVal, err)
+	}
 	mb.metricOracledbEnqueueDeadlocks.recordDataPoint(mb.startTime, ts, val)
+	return nil
 }
 
 // RecordOracledbEnqueueLocksLimitDataPoint adds a data point to oracledb.enqueue_locks.limit metric.
-func (mb *MetricsBuilder) RecordOracledbEnqueueLocksLimitDataPoint(ts pcommon.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordOracledbEnqueueLocksLimitDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for OracledbEnqueueLocksLimit, value was %s: %w", inputVal, err)
+	}
 	mb.metricOracledbEnqueueLocksLimit.recordDataPoint(mb.startTime, ts, val)
+	return nil
 }
 
 // RecordOracledbEnqueueLocksUsageDataPoint adds a data point to oracledb.enqueue_locks.usage metric.
-func (mb *MetricsBuilder) RecordOracledbEnqueueLocksUsageDataPoint(ts pcommon.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordOracledbEnqueueLocksUsageDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for OracledbEnqueueLocksUsage, value was %s: %w", inputVal, err)
+	}
 	mb.metricOracledbEnqueueLocksUsage.recordDataPoint(mb.startTime, ts, val)
+	return nil
 }
 
 // RecordOracledbEnqueueResourcesLimitDataPoint adds a data point to oracledb.enqueue_resources.limit metric.
-func (mb *MetricsBuilder) RecordOracledbEnqueueResourcesLimitDataPoint(ts pcommon.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordOracledbEnqueueResourcesLimitDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for OracledbEnqueueResourcesLimit, value was %s: %w", inputVal, err)
+	}
 	mb.metricOracledbEnqueueResourcesLimit.recordDataPoint(mb.startTime, ts, val)
+	return nil
 }
 
 // RecordOracledbEnqueueResourcesUsageDataPoint adds a data point to oracledb.enqueue_resources.usage metric.
-func (mb *MetricsBuilder) RecordOracledbEnqueueResourcesUsageDataPoint(ts pcommon.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordOracledbEnqueueResourcesUsageDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for OracledbEnqueueResourcesUsage, value was %s: %w", inputVal, err)
+	}
 	mb.metricOracledbEnqueueResourcesUsage.recordDataPoint(mb.startTime, ts, val)
+	return nil
 }
 
 // RecordOracledbExchangeDeadlocksDataPoint adds a data point to oracledb.exchange_deadlocks metric.
-func (mb *MetricsBuilder) RecordOracledbExchangeDeadlocksDataPoint(ts pcommon.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordOracledbExchangeDeadlocksDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for OracledbExchangeDeadlocks, value was %s: %w", inputVal, err)
+	}
 	mb.metricOracledbExchangeDeadlocks.recordDataPoint(mb.startTime, ts, val)
+	return nil
 }
 
 // RecordOracledbExecutionsDataPoint adds a data point to oracledb.executions metric.
-func (mb *MetricsBuilder) RecordOracledbExecutionsDataPoint(ts pcommon.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordOracledbExecutionsDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for OracledbExecutions, value was %s: %w", inputVal, err)
+	}
 	mb.metricOracledbExecutions.recordDataPoint(mb.startTime, ts, val)
+	return nil
 }
 
 // RecordOracledbHardParsesDataPoint adds a data point to oracledb.hard_parses metric.
-func (mb *MetricsBuilder) RecordOracledbHardParsesDataPoint(ts pcommon.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordOracledbHardParsesDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for OracledbHardParses, value was %s: %w", inputVal, err)
+	}
 	mb.metricOracledbHardParses.recordDataPoint(mb.startTime, ts, val)
+	return nil
 }
 
 // RecordOracledbLogicalReadsDataPoint adds a data point to oracledb.logical_reads metric.
-func (mb *MetricsBuilder) RecordOracledbLogicalReadsDataPoint(ts pcommon.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordOracledbLogicalReadsDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for OracledbLogicalReads, value was %s: %w", inputVal, err)
+	}
 	mb.metricOracledbLogicalReads.recordDataPoint(mb.startTime, ts, val)
+	return nil
 }
 
 // RecordOracledbParseCallsDataPoint adds a data point to oracledb.parse_calls metric.
-func (mb *MetricsBuilder) RecordOracledbParseCallsDataPoint(ts pcommon.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordOracledbParseCallsDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for OracledbParseCalls, value was %s: %w", inputVal, err)
+	}
 	mb.metricOracledbParseCalls.recordDataPoint(mb.startTime, ts, val)
+	return nil
 }
 
 // RecordOracledbPgaMemoryDataPoint adds a data point to oracledb.pga_memory metric.
-func (mb *MetricsBuilder) RecordOracledbPgaMemoryDataPoint(ts pcommon.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordOracledbPgaMemoryDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for OracledbPgaMemory, value was %s: %w", inputVal, err)
+	}
 	mb.metricOracledbPgaMemory.recordDataPoint(mb.startTime, ts, val)
+	return nil
 }
 
 // RecordOracledbPhysicalReadsDataPoint adds a data point to oracledb.physical_reads metric.
-func (mb *MetricsBuilder) RecordOracledbPhysicalReadsDataPoint(ts pcommon.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordOracledbPhysicalReadsDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for OracledbPhysicalReads, value was %s: %w", inputVal, err)
+	}
 	mb.metricOracledbPhysicalReads.recordDataPoint(mb.startTime, ts, val)
+	return nil
 }
 
 // RecordOracledbProcessesLimitDataPoint adds a data point to oracledb.processes.limit metric.
-func (mb *MetricsBuilder) RecordOracledbProcessesLimitDataPoint(ts pcommon.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordOracledbProcessesLimitDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for OracledbProcessesLimit, value was %s: %w", inputVal, err)
+	}
 	mb.metricOracledbProcessesLimit.recordDataPoint(mb.startTime, ts, val)
+	return nil
 }
 
 // RecordOracledbProcessesUsageDataPoint adds a data point to oracledb.processes.usage metric.
-func (mb *MetricsBuilder) RecordOracledbProcessesUsageDataPoint(ts pcommon.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordOracledbProcessesUsageDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for OracledbProcessesUsage, value was %s: %w", inputVal, err)
+	}
 	mb.metricOracledbProcessesUsage.recordDataPoint(mb.startTime, ts, val)
+	return nil
 }
 
 // RecordOracledbSessionsLimitDataPoint adds a data point to oracledb.sessions.limit metric.
-func (mb *MetricsBuilder) RecordOracledbSessionsLimitDataPoint(ts pcommon.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordOracledbSessionsLimitDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for OracledbSessionsLimit, value was %s: %w", inputVal, err)
+	}
 	mb.metricOracledbSessionsLimit.recordDataPoint(mb.startTime, ts, val)
+	return nil
 }
 
 // RecordOracledbSessionsUsageDataPoint adds a data point to oracledb.sessions.usage metric.
-func (mb *MetricsBuilder) RecordOracledbSessionsUsageDataPoint(ts pcommon.Timestamp, val int64, sessionTypeAttributeValue string, sessionStatusAttributeValue string) {
+func (mb *MetricsBuilder) RecordOracledbSessionsUsageDataPoint(ts pcommon.Timestamp, inputVal string, sessionTypeAttributeValue string, sessionStatusAttributeValue string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for OracledbSessionsUsage, value was %s: %w", inputVal, err)
+	}
 	mb.metricOracledbSessionsUsage.recordDataPoint(mb.startTime, ts, val, sessionTypeAttributeValue, sessionStatusAttributeValue)
+	return nil
 }
 
 // RecordOracledbTablespaceSizeLimitDataPoint adds a data point to oracledb.tablespace_size.limit metric.
-func (mb *MetricsBuilder) RecordOracledbTablespaceSizeLimitDataPoint(ts pcommon.Timestamp, val int64, tablespaceNameAttributeValue string) {
+func (mb *MetricsBuilder) RecordOracledbTablespaceSizeLimitDataPoint(ts pcommon.Timestamp, inputVal string, tablespaceNameAttributeValue string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for OracledbTablespaceSizeLimit, value was %s: %w", inputVal, err)
+	}
 	mb.metricOracledbTablespaceSizeLimit.recordDataPoint(mb.startTime, ts, val, tablespaceNameAttributeValue)
+	return nil
 }
 
 // RecordOracledbTablespaceSizeUsageDataPoint adds a data point to oracledb.tablespace_size.usage metric.
-func (mb *MetricsBuilder) RecordOracledbTablespaceSizeUsageDataPoint(ts pcommon.Timestamp, val int64, tablespaceNameAttributeValue string) {
+func (mb *MetricsBuilder) RecordOracledbTablespaceSizeUsageDataPoint(ts pcommon.Timestamp, inputVal string, tablespaceNameAttributeValue string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for OracledbTablespaceSizeUsage, value was %s: %w", inputVal, err)
+	}
 	mb.metricOracledbTablespaceSizeUsage.recordDataPoint(mb.startTime, ts, val, tablespaceNameAttributeValue)
+	return nil
 }
 
 // RecordOracledbTransactionsLimitDataPoint adds a data point to oracledb.transactions.limit metric.
-func (mb *MetricsBuilder) RecordOracledbTransactionsLimitDataPoint(ts pcommon.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordOracledbTransactionsLimitDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for OracledbTransactionsLimit, value was %s: %w", inputVal, err)
+	}
 	mb.metricOracledbTransactionsLimit.recordDataPoint(mb.startTime, ts, val)
+	return nil
 }
 
 // RecordOracledbTransactionsUsageDataPoint adds a data point to oracledb.transactions.usage metric.
-func (mb *MetricsBuilder) RecordOracledbTransactionsUsageDataPoint(ts pcommon.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordOracledbTransactionsUsageDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for OracledbTransactionsUsage, value was %s: %w", inputVal, err)
+	}
 	mb.metricOracledbTransactionsUsage.recordDataPoint(mb.startTime, ts, val)
+	return nil
 }
 
 // RecordOracledbUserCommitsDataPoint adds a data point to oracledb.user_commits metric.
-func (mb *MetricsBuilder) RecordOracledbUserCommitsDataPoint(ts pcommon.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordOracledbUserCommitsDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for OracledbUserCommits, value was %s: %w", inputVal, err)
+	}
 	mb.metricOracledbUserCommits.recordDataPoint(mb.startTime, ts, val)
+	return nil
 }
 
 // RecordOracledbUserRollbacksDataPoint adds a data point to oracledb.user_rollbacks metric.
-func (mb *MetricsBuilder) RecordOracledbUserRollbacksDataPoint(ts pcommon.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordOracledbUserRollbacksDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for OracledbUserRollbacks, value was %s: %w", inputVal, err)
+	}
 	mb.metricOracledbUserRollbacks.recordDataPoint(mb.startTime, ts, val)
+	return nil
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

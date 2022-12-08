@@ -521,14 +521,14 @@ func TestTranslateUnit(t *testing.T) {
 	translator := &metricTranslator{
 		metricDescriptor: map[string]MetricDescriptor{
 			"writeIfNotExist": {
-				metricName: "writeIfNotExist",
-				unit:       "Count",
-				overwrite:  false,
+				MetricName: "writeIfNotExist",
+				Unit:       "Count",
+				Overwrite:  false,
 			},
 			"forceOverwrite": {
-				metricName: "forceOverwrite",
-				unit:       "Count",
-				overwrite:  true,
+				MetricName: "forceOverwrite",
+				Unit:       "Count",
+				Overwrite:  true,
 			},
 		},
 	}

@@ -34,4 +34,3 @@ splunk_hec/allsettings:
   otel_to_hec_fields:
     severity_text: "myseverityfield"
     severity_number: "myseveritynumfield"
-    name: "mynamefield"

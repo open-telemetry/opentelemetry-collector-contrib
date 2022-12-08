@@ -49,7 +49,7 @@ jobs:
       - name: Install Tools
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make install-tools
-      - run: make otelcontribcol-testbed
+      - run: make oteltestbedcol
       - name: Upload Collector Binaries
         uses: actions/upload-artifact@v3
         with:
