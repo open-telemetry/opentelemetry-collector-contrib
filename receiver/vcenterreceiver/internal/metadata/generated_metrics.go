@@ -266,32 +266,6 @@ var MapAttributeDiskType = map[string]AttributeDiskType{
 	"physical": AttributeDiskTypePhysical,
 }
 
-// AttributeLatencyType specifies the a value latency_type attribute.
-type AttributeLatencyType int
-
-const (
-	_ AttributeLatencyType = iota
-	AttributeLatencyTypeKernel
-	AttributeLatencyTypeDevice
-)
-
-// String returns the string representation of the AttributeLatencyType.
-func (av AttributeLatencyType) String() string {
-	switch av {
-	case AttributeLatencyTypeKernel:
-		return "kernel"
-	case AttributeLatencyTypeDevice:
-		return "device"
-	}
-	return ""
-}
-
-// MapAttributeLatencyType is a helper map of string to AttributeLatencyType attribute value.
-var MapAttributeLatencyType = map[string]AttributeLatencyType{
-	"kernel": AttributeLatencyTypeKernel,
-	"device": AttributeLatencyTypeDevice,
-}
-
 // AttributeThroughputDirection specifies the a value throughput_direction attribute.
 type AttributeThroughputDirection int
 

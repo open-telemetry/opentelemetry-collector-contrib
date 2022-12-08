@@ -44,13 +44,6 @@ attributes:
     enum:
       - read
       - write
-  latency_type:
-    name_override: type
-    description: The type of disk latency being reported.
-    type: string
-    enum:
-      - kernel
-      - device
   throughput_direction:
     name_override: direction
     description: The direction of network throughput.

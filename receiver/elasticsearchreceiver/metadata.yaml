@@ -18,13 +18,6 @@ attributes:
     enum:
     - fielddata
     - query
-  fs_direction:
-    name_override: direction
-    description: The direction of filesystem IO.
-    type: string
-    enum:
-    - read
-    - write
   collector_name:
     name_override: name
     description: The name of the garbage collector.
@@ -109,13 +102,6 @@ attributes:
     enum:
       - free
       - used
-  indexing_memory_state:
-    name_override: state
-    description: State of the indexing memory
-    type: string
-    enum:
-      - current
-      - total
   cluster_published_difference_state:
     name_override: state
     description: State of the published differences
