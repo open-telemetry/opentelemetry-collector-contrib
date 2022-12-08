@@ -560,32 +560,6 @@ var MapAttributeDocumentState = map[string]AttributeDocumentState{
 	"deleted": AttributeDocumentStateDeleted,
 }
 
-// AttributeFsDirection specifies the a value fs_direction attribute.
-type AttributeFsDirection int
-
-const (
-	_ AttributeFsDirection = iota
-	AttributeFsDirectionRead
-	AttributeFsDirectionWrite
-)
-
-// String returns the string representation of the AttributeFsDirection.
-func (av AttributeFsDirection) String() string {
-	switch av {
-	case AttributeFsDirectionRead:
-		return "read"
-	case AttributeFsDirectionWrite:
-		return "write"
-	}
-	return ""
-}
-
-// MapAttributeFsDirection is a helper map of string to AttributeFsDirection attribute value.
-var MapAttributeFsDirection = map[string]AttributeFsDirection{
-	"read":  AttributeFsDirectionRead,
-	"write": AttributeFsDirectionWrite,
-}
-
 // AttributeGetResult specifies the a value get_result attribute.
 type AttributeGetResult int
 
@@ -666,32 +640,6 @@ func (av AttributeIndexAggregationType) String() string {
 var MapAttributeIndexAggregationType = map[string]AttributeIndexAggregationType{
 	"primary_shards": AttributeIndexAggregationTypePrimaryShards,
 	"total":          AttributeIndexAggregationTypeTotal,
-}
-
-// AttributeIndexingMemoryState specifies the a value indexing_memory_state attribute.
-type AttributeIndexingMemoryState int
-
-const (
-	_ AttributeIndexingMemoryState = iota
-	AttributeIndexingMemoryStateCurrent
-	AttributeIndexingMemoryStateTotal
-)
-
-// String returns the string representation of the AttributeIndexingMemoryState.
-func (av AttributeIndexingMemoryState) String() string {
-	switch av {
-	case AttributeIndexingMemoryStateCurrent:
-		return "current"
-	case AttributeIndexingMemoryStateTotal:
-		return "total"
-	}
-	return ""
-}
-
-// MapAttributeIndexingMemoryState is a helper map of string to AttributeIndexingMemoryState attribute value.
-var MapAttributeIndexingMemoryState = map[string]AttributeIndexingMemoryState{
-	"current": AttributeIndexingMemoryStateCurrent,
-	"total":   AttributeIndexingMemoryStateTotal,
 }
 
 // AttributeIndexingPressureStage specifies the a value indexing_pressure_stage attribute.

@@ -123,6 +123,11 @@ func Test_loadMetadata(t *testing.T) {
 			wantErr: "1 error(s) decoding:\n\n* error decoding 'metrics[system.cpu.time]': 1 error(s) decoding:\n\n" +
 				"* error decoding 'sum': 1 error(s) decoding:\n\n* error decoding 'value_type': invalid value_type: \"unknown\"",
 		},
+		{
+			name:    "unused_attribute.yaml",
+			want:    metadata{},
+			wantErr: "unused attributes: [unused_attr]",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
