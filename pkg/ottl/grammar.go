@@ -121,13 +121,13 @@ type comparison struct {
 	Right value     `parser:"@@"`
 }
 
-// invocation represents a function call.
+// invocation represents the function call of a statement.
 type invocation struct {
 	Function  string  `parser:"@(Lowercase(Uppercase | Lowercase)*)"`
 	Arguments []value `parser:"'(' ( @@ ( ',' @@ )* )? ')'"`
 }
 
-// invocation represents a function call.
+// factoryFunction represents a factory function call.
 type factoryFunction struct {
 	Function  string  `parser:"@(Uppercase(Uppercase | Lowercase)*)"`
 	Arguments []value `parser:"'(' ( @@ ( ',' @@ )* )? ')'"`
