@@ -347,6 +347,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/internal/comparetest"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/internal/coreinternal"
     schedule:
       interval: "weekly"
@@ -368,10 +372,6 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/internal/metadataproviders"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/internal/scrapertest"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"

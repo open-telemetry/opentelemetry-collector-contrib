@@ -34,8 +34,8 @@ import (
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver/internal/metadata"
 )
 
@@ -59,7 +59,7 @@ func TestScrape(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
+		require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics))
 	})
 
 	t.Run("scrape from couchdb 3.12", func(t *testing.T) {
@@ -75,7 +75,7 @@ func TestScrape(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
+		require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics))
 	})
 
 	t.Run("scrape returns nothing", func(t *testing.T) {
@@ -176,7 +176,7 @@ func TestMetricSettings(t *testing.T) {
 	expected, err := golden.ReadMetrics(filepath.Join("testdata", "scraper", "only_db_ops.json"))
 	require.NoError(t, err)
 
-	require.NoError(t, scrapertest.CompareMetrics(expected, metrics))
+	require.NoError(t, comparetest.CompareMetrics(expected, metrics))
 	require.Equal(t, metrics.MetricCount(), 1)
 }
 
