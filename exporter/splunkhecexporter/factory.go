@@ -84,7 +84,6 @@ func createDefaultConfig() component.Config {
 		HecFields: OtelToHecFields{
 			SeverityText:   splunk.DefaultSeverityTextLabel,
 			SeverityNumber: splunk.DefaultSeverityNumberLabel,
-			Name:           splunk.DefaultNameLabel,
 		},
 		HealthPath:            splunk.DefaultHealthPath,
 		HecHealthCheckEnabled: false,
