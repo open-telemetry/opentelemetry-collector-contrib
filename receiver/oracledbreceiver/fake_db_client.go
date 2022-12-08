@@ -13,19 +13,22 @@
 // limitations under the License.
 
 package oracledbreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver"
+
 import (
 	"context"
-
-	"go.opentelemetry.io/collector/component"
 )
 
-type oracledbreceiver struct {
+type fakeDbClient struct {
+	Err            error
+	Responses      [][]metricRow
+	RequestCounter int
 }
 
-func (o oracledbreceiver) Start(_ context.Context, host component.Host) error {
-	return nil
-}
-
-func (o oracledbreceiver) Shutdown(_ context.Context) error {
-	return nil
+func (c *fakeDbClient) metricRows(context.Context) ([]metricRow, error) {
+	if c.Err != nil {
+		return nil, c.Err
+	}
+	idx := c.RequestCounter
+	c.RequestCounter++
+	return c.Responses[idx], nil
 }
