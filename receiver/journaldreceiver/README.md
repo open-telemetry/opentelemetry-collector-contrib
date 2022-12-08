@@ -19,6 +19,7 @@ Journald receiver is dependent on `journalctl` binary to be present and must be 
 | `units`     | `[ssh, kubelet, docker, containerd]` | A list of units to read entries from |
 | `priority`  | `info`                               | Filter output by message priorities or priority ranges |
 | `storage`   | none                                 | The ID of a storage extension to be used to store cursors. Cursors allow the receiver to pick up where it left off in the case of a collector restart. If no storage extension is used, the receiver will manage cursors in memory only. |
+| `operators` | `[]`                                 | An array of [operators]. |
 
 ### Example Configurations
 
@@ -36,3 +37,4 @@ receivers:
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[operators]: (../../pkg/stanza/docs/operators/README.md#what-operators-are-available)
