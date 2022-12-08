@@ -16,6 +16,7 @@ package ottl // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/alecthomas/participle/v2"
 	"go.opentelemetry.io/collector/component"
@@ -101,9 +102,22 @@ var parser = newParser[parsedStatement]()
 func parseStatement(raw string) (*parsedStatement, error) {
 	parsed, err := parser.ParseString("", raw)
 	if err != nil {
-		return nil, err
+		return nil, handleParseError(err)
 	}
 	return parsed, nil
+}
+
+func handleParseError(err error) error {
+	switch parserErr := err.(type) {
+	case *participle.UnexpectedTokenError:
+		if parserErr.Unexpected.Pos.Offset == 0 {
+			return multierr.Append(err, fmt.Errorf("invocation names must start with a lowercase letter but got %v", parserErr.Unexpected.Value))
+		}
+		if parserErr.Unexpected.Value == "(" {
+			return multierr.Append(err, fmt.Errorf("ensure all functions being used as parameters or within conditions start with an uppercase letter"))
+		}
+	}
+	return multierr.Append(err, fmt.Errorf("unable to parse OTTL statement. Enurse the grammar's syntax is correct.  Common mistakes include missing parentheses, missing double quotes, and incorrect function name case."))
 }
 
 // newParser returns a parser that can be used to read a string into a parsedStatement. An error will be returned if the string
