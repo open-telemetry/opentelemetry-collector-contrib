@@ -183,7 +183,7 @@ require (
 	github.com/prometheus/common v0.37.0 // indirect
 	github.com/prometheus/common/sigv4 v0.1.0 // indirect
 	github.com/prometheus/procfs v0.8.0 // indirect
-	github.com/prometheus/prometheus v0.40.5 // indirect
+	github.com/prometheus/prometheus v1.8.2-0.20220303173753-edfe657b5405 // indirect
 	github.com/prometheus/statsd_exporter v0.22.7 // indirect
 	github.com/rs/cors v1.8.2 // indirect
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.9 // indirect
@@ -630,3 +630,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/prob
 
 // see https://github.com/shirou/gopsutil/pull/1386
 exclude github.com/shirou/gopsutil/v3 v3.22.11
+
+replace github.com/prometheus/prometheus v1.8.2-0.20220303173753-edfe657b5405 => github.com/prometheus/prometheus v0.40.5
