@@ -33,18 +33,18 @@ import (
 
 type receiver struct {
 	config        *Config
-	set           component.ReceiverCreateSettings
+	set           receiver.CreateSettings
 	clientFactory clientFactory
 	scraper       *ContainerScraper
 }
 
 func newReceiver(
 	_ context.Context,
-	set component.ReceiverCreateSettings,
+	set receiver.CreateSettings,
 	config *Config,
 	nextConsumer consumer.Metrics,
 	clientFactory clientFactory,
-) (component.MetricsReceiver, error) {
+) (receiver.Metrics, error) {
 	err := config.Validate()
 	if err != nil {
 		return nil, err

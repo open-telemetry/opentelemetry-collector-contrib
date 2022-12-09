@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/pipeline"
@@ -34,8 +35,8 @@ type LogReceiverType interface {
 }
 
 // NewFactory creates a factory for a Stanza-based receiver
-func NewFactory(logReceiverType LogReceiverType, sl component.StabilityLevel) component.ReceiverFactory {
-	return component.NewReceiverFactory(
+func NewFactory(logReceiverType LogReceiverType, sl component.StabilityLevel) receiver.Factory {
+	return receiver.NewFactory(
 		logReceiverType.Type(),
 		logReceiverType.CreateDefaultConfig,
 		component.WithLogsReceiver(createLogsReceiver(logReceiverType), sl),
@@ -45,7 +46,7 @@ func NewFactory(logReceiverType LogReceiverType, sl component.StabilityLevel) co
 func createLogsReceiver(logReceiverType LogReceiverType) component.CreateLogsReceiverFunc {
 	return func(
 		ctx context.Context,
-		params component.ReceiverCreateSettings,
+		params receiver.CreateSettings,
 		cfg component.Config,
 		nextConsumer consumer.Logs,
 	) (component.LogsReceiver, error) {

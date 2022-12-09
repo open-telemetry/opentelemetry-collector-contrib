@@ -21,7 +21,6 @@ import (
 	"time"
 
 	"go.mongodb.org/atlas/mongodbatlas"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
@@ -45,7 +44,7 @@ type timeconstraints struct {
 	resolution string
 }
 
-func newMongoDBAtlasReceiver(settings component.ReceiverCreateSettings, cfg *Config) *receiver {
+func newMongoDBAtlasReceiver(settings receiver.CreateSettings, cfg *Config) *receiver {
 	client := internal.NewMongoDBAtlasClient(cfg.PublicKey, cfg.PrivateKey, cfg.RetrySettings, settings.Logger)
 	return &receiver{
 		log:         settings.Logger,

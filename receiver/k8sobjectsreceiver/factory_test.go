@@ -21,9 +21,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
@@ -52,7 +52,7 @@ func TestCreateReceiver(t *testing.T) {
 
 	// Fails with bad K8s Config.
 	r, err := createLogsReceiver(
-		context.Background(), componenttest.NewNopReceiverCreateSettings(),
+		context.Background(), receivertest.NewNopCreateSettings(),
 		rCfg, consumertest.NewNop(),
 	)
 	assert.Error(t, err)
@@ -63,7 +63,7 @@ func TestCreateReceiver(t *testing.T) {
 
 	r, err = createLogsReceiver(
 		context.Background(),
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 		rCfg, consumertest.NewNop(),
 	)
 	assert.NoError(t, err)

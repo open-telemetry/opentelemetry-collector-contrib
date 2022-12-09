@@ -33,6 +33,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
+	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -65,7 +67,7 @@ func TestConsumerCantBeNil(t *testing.T) {
 			},
 		},
 		nil,
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 	)
 	assert.True(t, errors.Is(err, component.ErrNilNextConsumer), "consumer is nil should be detected")
 }
@@ -88,7 +90,7 @@ func TestProxyCreationFailed(t *testing.T) {
 			},
 		},
 		sink,
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 	)
 	assert.Error(t, err, "receiver creation should fail due to failure to create TCP proxy")
 }
@@ -103,7 +105,7 @@ func TestPollerCreationFailed(t *testing.T) {
 			},
 		},
 		sink,
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 	)
 	assert.Error(t, err, "receiver creation should fail due to failure to create UCP poller")
 }
@@ -292,7 +294,7 @@ func createAndOptionallyStartReceiver(
 	t *testing.T,
 	csu consumer.Traces,
 	start bool,
-	set component.ReceiverCreateSettings) (string, component.TracesReceiver, *observer.ObservedLogs) {
+	set receiver.CreateSettings) (string, component.TracesReceiver, *observer.ObservedLogs) {
 	addr, err := findAvailableUDPAddress()
 	assert.NoError(t, err, "there should be address available")
 	tcpAddr := testutil.GetAvailableLocalAddress(t)

@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper/internal/metadata"
@@ -33,7 +34,7 @@ const metricsLen = 2
 
 // scraper for CPU Metrics
 type scraper struct {
-	settings component.ReceiverCreateSettings
+	settings receiver.CreateSettings
 	config   *Config
 	mb       *metadata.MetricsBuilder
 	ucal     *ucal.CPUUtilizationCalculator
@@ -45,7 +46,7 @@ type scraper struct {
 }
 
 // newCPUScraper creates a set of CPU related metrics
-func newCPUScraper(_ context.Context, settings component.ReceiverCreateSettings, cfg *Config) *scraper {
+func newCPUScraper(_ context.Context, settings receiver.CreateSettings, cfg *Config) *scraper {
 	return &scraper{settings: settings, config: cfg, bootTime: host.BootTime, times: cpu.Times, ucal: &ucal.CPUUtilizationCalculator{}, now: time.Now}
 }
 

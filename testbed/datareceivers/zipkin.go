@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
@@ -43,7 +44,7 @@ func (zr *zipkinDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics, _ co
 	cfg := factory.CreateDefaultConfig().(*zipkinreceiver.Config)
 	cfg.Endpoint = fmt.Sprintf("127.0.0.1:%d", zr.Port)
 
-	set := componenttest.NewNopReceiverCreateSettings()
+	set := receivertest.NewNopCreateSettings()
 	var err error
 	zr.receiver, err = factory.CreateTracesReceiver(context.Background(), set, cfg, tc)
 

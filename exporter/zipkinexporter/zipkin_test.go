@@ -33,6 +33,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver"
@@ -82,7 +83,7 @@ func TestZipkinExporter_roundtripJSON(t *testing.T) {
 			Endpoint: addr,
 		},
 	}
-	zi, err := zipkinreceiver.NewFactory().CreateTracesReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), recvCfg, zexp)
+	zi, err := zipkinreceiver.NewFactory().CreateTracesReceiver(context.Background(), receivertest.NewNopCreateSettings(), recvCfg, zexp)
 	assert.NoError(t, err)
 	require.NotNil(t, zi)
 
@@ -331,7 +332,7 @@ func TestZipkinExporter_roundtripProto(t *testing.T) {
 			Endpoint: addr,
 		},
 	}
-	zi, err := zipkinreceiver.NewFactory().CreateTracesReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), recvCfg, zexp)
+	zi, err := zipkinreceiver.NewFactory().CreateTracesReceiver(context.Background(), receivertest.NewNopCreateSettings(), recvCfg, zexp)
 	require.NoError(t, err)
 
 	err = zi.Start(context.Background(), componenttest.NewNopHost())

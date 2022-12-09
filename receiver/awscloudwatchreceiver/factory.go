@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
 )
 
 const (
@@ -28,8 +29,8 @@ const (
 )
 
 // NewFactory returns the component factory for the awscloudwatchreceiver
-func NewFactory() component.ReceiverFactory {
-	return component.NewReceiverFactory(
+func NewFactory() receiver.Factory {
+	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
 		component.WithLogsReceiver(createLogsReceiver, stabilityLevel),
@@ -38,7 +39,7 @@ func NewFactory() component.ReceiverFactory {
 
 func createLogsReceiver(
 	ctx context.Context,
-	params component.ReceiverCreateSettings,
+	params receiver.CreateSettings,
 	rConf component.Config,
 	consumer consumer.Logs,
 ) (component.LogsReceiver, error) {

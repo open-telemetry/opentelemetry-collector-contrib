@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 	"go.opentelemetry.io/collector/service/servicetest"
 	"gopkg.in/yaml.v2"
@@ -94,7 +95,7 @@ func newTestComponents(t *testing.T) component.Factories {
 		err       error
 	)
 	factories.Receivers, err = component.MakeReceiverFactoryMap(
-		[]component.ReceiverFactory{
+		[]receiver.Factory{
 			otlpreceiver.NewFactory(),
 			hostmetricsreceiver.NewFactory(),
 			filelogreceiver.NewFactory(),

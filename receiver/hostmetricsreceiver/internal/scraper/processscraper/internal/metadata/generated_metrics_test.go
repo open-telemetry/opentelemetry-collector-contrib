@@ -7,9 +7,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 )
@@ -17,7 +17,7 @@ import (
 func TestDefaultMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	mb := NewMetricsBuilder(DefaultMetricsSettings(), componenttest.NewNopReceiverCreateSettings(), WithStartTime(start))
+	mb := NewMetricsBuilder(DefaultMetricsSettings(), receivertest.NewNopCreateSettings(), WithStartTime(start))
 	enabledMetrics := make(map[string]bool)
 
 	mb.RecordProcessContextSwitchesDataPoint(ts, 1, AttributeContextSwitchType(1))
@@ -81,7 +81,7 @@ func TestAllMetrics(t *testing.T) {
 		ProcessThreads:             MetricSettings{Enabled: true},
 	}
 	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
-	settings := componenttest.NewNopReceiverCreateSettings()
+	settings := receivertest.NewNopCreateSettings()
 	settings.Logger = zap.New(observedZapCore)
 	mb := NewMetricsBuilder(metricsSettings, settings, WithStartTime(start))
 
@@ -334,7 +334,7 @@ func TestNoMetrics(t *testing.T) {
 		ProcessThreads:             MetricSettings{Enabled: false},
 	}
 	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
-	settings := componenttest.NewNopReceiverCreateSettings()
+	settings := receivertest.NewNopCreateSettings()
 	settings.Logger = zap.New(observedZapCore)
 	mb := NewMetricsBuilder(metricsSettings, settings, WithStartTime(start))
 

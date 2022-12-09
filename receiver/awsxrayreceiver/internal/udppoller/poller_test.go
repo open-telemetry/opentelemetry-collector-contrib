@@ -28,9 +28,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
+	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -46,7 +47,7 @@ func TestNonUDPTransport(t *testing.T) {
 			Transport:          "tcp",
 			NumOfPollerToStart: 2,
 		},
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 	)
 	assert.EqualError(t, err,
 		"X-Ray receiver only supports ingesting spans through UDP, provided: tcp")
@@ -59,7 +60,7 @@ func TestInvalidEndpoint(t *testing.T) {
 			Transport:          "udp",
 			NumOfPollerToStart: 2,
 		},
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 	)
 	assert.EqualError(t, err, "address invalidAddr: missing port in address")
 }
@@ -79,7 +80,7 @@ func TestUDPPortUnavailable(t *testing.T) {
 			Endpoint:           address,
 			NumOfPollerToStart: 2,
 		},
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 	)
 
 	assert.Error(t, err, "should have failed to create a new receiver")
@@ -98,7 +99,7 @@ func TestCloseStopsPoller(t *testing.T) {
 			Endpoint:           addr,
 			NumOfPollerToStart: 2,
 		},
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 	)
 	assert.NoError(t, err, "poller should be created")
 
@@ -437,7 +438,7 @@ func (m *mockSocketConn) Close() error { return nil }
 func createAndOptionallyStartPoller(
 	t *testing.T,
 	start bool,
-	set component.ReceiverCreateSettings) (string, Poller, *observer.ObservedLogs) {
+	set receiver.CreateSettings) (string, Poller, *observer.ObservedLogs) {
 	addr, err := findAvailableAddress()
 	assert.NoError(t, err, "there should be address available")
 

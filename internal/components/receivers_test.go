@@ -34,8 +34,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	tcpop "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/tcp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchreceiver"
@@ -454,10 +455,10 @@ type getReceiverConfigFn func() component.Config
 // verifyReceiverLifecycle is used to test if a receiver type can handle the typical
 // lifecycle of a component. The getConfigFn parameter only need to be specified if
 // the test can't be done with the default configuration for the component.
-func verifyReceiverLifecycle(t *testing.T, factory component.ReceiverFactory, getConfigFn getReceiverConfigFn) {
+func verifyReceiverLifecycle(t *testing.T, factory receiver.Factory, getConfigFn getReceiverConfigFn) {
 	ctx := context.Background()
 	host := newAssertNoErrorHost(t)
-	receiverCreateSet := componenttest.NewNopReceiverCreateSettings()
+	receiverCreateSet := receivertest.NewNopCreateSettings()
 
 	if getConfigFn == nil {
 		getConfigFn = factory.CreateDefaultConfig
@@ -488,24 +489,24 @@ func verifyReceiverLifecycle(t *testing.T, factory component.ReceiverFactory, ge
 // assertNoErrorHost implements a component.Host that asserts that there were no errors.
 type createReceiverFn func(
 	ctx context.Context,
-	set component.ReceiverCreateSettings,
+	set receiver.CreateSettings,
 	cfg component.Config,
 ) (component.Component, error)
 
-func wrapCreateLogsRcvr(factory component.ReceiverFactory) createReceiverFn {
-	return func(ctx context.Context, set component.ReceiverCreateSettings, cfg component.Config) (component.Component, error) {
+func wrapCreateLogsRcvr(factory receiver.Factory) createReceiverFn {
+	return func(ctx context.Context, set receiver.CreateSettings, cfg component.Config) (component.Component, error) {
 		return factory.CreateLogsReceiver(ctx, set, cfg, consumertest.NewNop())
 	}
 }
 
-func wrapCreateMetricsRcvr(factory component.ReceiverFactory) createReceiverFn {
-	return func(ctx context.Context, set component.ReceiverCreateSettings, cfg component.Config) (component.Component, error) {
+func wrapCreateMetricsRcvr(factory receiver.Factory) createReceiverFn {
+	return func(ctx context.Context, set receiver.CreateSettings, cfg component.Config) (component.Component, error) {
 		return factory.CreateMetricsReceiver(ctx, set, cfg, consumertest.NewNop())
 	}
 }
 
-func wrapCreateTracesRcvr(factory component.ReceiverFactory) createReceiverFn {
-	return func(ctx context.Context, set component.ReceiverCreateSettings, cfg component.Config) (component.Component, error) {
+func wrapCreateTracesRcvr(factory receiver.Factory) createReceiverFn {
+	return func(ctx context.Context, set receiver.CreateSettings, cfg component.Config) (component.Component, error) {
 		return factory.CreateTracesReceiver(ctx, set, cfg, consumertest.NewNop())
 	}
 }

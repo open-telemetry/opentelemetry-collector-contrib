@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest/golden"
@@ -113,7 +114,7 @@ func TestAllMetrics(t *testing.T) {
 	cfg.Endpoint = ms.URL + defaultPath
 	cfg.MetricsConfig = allMetricsEnabled
 
-	scraper := newExpVarScraper(cfg, componenttest.NewNopReceiverCreateSettings())
+	scraper := newExpVarScraper(cfg, receivertest.NewNopCreateSettings())
 	err := scraper.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
@@ -132,7 +133,7 @@ func TestNoMetrics(t *testing.T) {
 	cfg := newDefaultConfig().(*Config)
 	cfg.Endpoint = ms.URL + defaultPath
 	cfg.MetricsConfig = allMetricsDisabled
-	scraper := newExpVarScraper(cfg, componenttest.NewNopReceiverCreateSettings())
+	scraper := newExpVarScraper(cfg, receivertest.NewNopCreateSettings())
 	err := scraper.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
@@ -147,7 +148,7 @@ func TestNotFoundResponse(t *testing.T) {
 	defer ms.Close()
 	cfg := newDefaultConfig().(*Config)
 	cfg.Endpoint = ms.URL + "/nonexistent/path"
-	scraper := newExpVarScraper(cfg, componenttest.NewNopReceiverCreateSettings())
+	scraper := newExpVarScraper(cfg, receivertest.NewNopCreateSettings())
 	err := scraper.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	_, err = scraper.scrape(context.Background())
@@ -159,7 +160,7 @@ func TestBadTypeInReturnedData(t *testing.T) {
 	defer ms.Close()
 	cfg := newDefaultConfig().(*Config)
 	cfg.Endpoint = ms.URL + defaultPath
-	scraper := newExpVarScraper(cfg, componenttest.NewNopReceiverCreateSettings())
+	scraper := newExpVarScraper(cfg, receivertest.NewNopCreateSettings())
 	err := scraper.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	_, err = scraper.scrape(context.Background())
@@ -171,7 +172,7 @@ func TestJSONParseError(t *testing.T) {
 	defer ms.Close()
 	cfg := newDefaultConfig().(*Config)
 	cfg.Endpoint = ms.URL + defaultPath
-	scraper := newExpVarScraper(cfg, componenttest.NewNopReceiverCreateSettings())
+	scraper := newExpVarScraper(cfg, receivertest.NewNopCreateSettings())
 	err := scraper.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	_, err = scraper.scrape(context.Background())
@@ -184,7 +185,7 @@ func TestEmptyResponseBodyError(t *testing.T) {
 	cfg := newDefaultConfig().(*Config)
 	cfg.Endpoint = ms.URL + defaultPath
 	cfg.MetricsConfig = allMetricsDisabled
-	scraper := newExpVarScraper(cfg, componenttest.NewNopReceiverCreateSettings())
+	scraper := newExpVarScraper(cfg, receivertest.NewNopCreateSettings())
 	err := scraper.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 

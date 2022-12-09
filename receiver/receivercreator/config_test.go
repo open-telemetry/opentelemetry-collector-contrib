@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/service/servicetest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
@@ -162,13 +163,13 @@ type nopWithEndpointConfig struct {
 }
 
 type nopWithEndpointFactory struct {
-	component.ReceiverFactory
+	receiver.Factory
 }
 
 type nopWithEndpointReceiver struct {
 	component.Component
 	consumer.Metrics
-	component.ReceiverCreateSettings
+	receiver.CreateSettings
 }
 
 func (*nopWithEndpointFactory) CreateDefaultConfig() component.Config {
@@ -184,9 +185,9 @@ type mockComponent struct {
 
 func (*nopWithEndpointFactory) CreateMetricsReceiver(
 	ctx context.Context,
-	rcs component.ReceiverCreateSettings,
+	rcs receiver.CreateSettings,
 	_ component.Config,
-	nextConsumer consumer.Metrics) (component.MetricsReceiver, error) {
+	nextConsumer consumer.Metrics) (receiver.Metrics, error) {
 	return &nopWithEndpointReceiver{
 		Component:              mockComponent{},
 		Metrics:                nextConsumer,

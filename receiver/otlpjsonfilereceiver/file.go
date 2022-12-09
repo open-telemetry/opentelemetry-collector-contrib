@@ -36,11 +36,11 @@ const (
 )
 
 // NewFactory creates a factory for file receiver
-func NewFactory() component.ReceiverFactory {
-	return component.NewReceiverFactory(
+func NewFactory() receiver.Factory {
+	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver, stability),
+		receiver.WithMetrics(createMetricsReceiver, stability),
 		component.WithLogsReceiver(createLogsReceiver, stability),
 		component.WithTracesReceiver(createTracesReceiver, stability))
 }
@@ -76,7 +76,7 @@ func (f *receiver) Shutdown(ctx context.Context) error {
 	return f.input.Stop()
 }
 
-func createLogsReceiver(_ context.Context, settings component.ReceiverCreateSettings, configuration component.Config, logs consumer.Logs) (component.LogsReceiver, error) {
+func createLogsReceiver(_ context.Context, settings receiver.CreateSettings, configuration component.Config, logs consumer.Logs) (component.LogsReceiver, error) {
 	logsUnmarshaler := &plog.JSONUnmarshaler{}
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
 		ReceiverID:             settings.ID,
@@ -105,7 +105,7 @@ func createLogsReceiver(_ context.Context, settings component.ReceiverCreateSett
 	return &receiver{input: input, id: settings.ID, storageID: cfg.StorageID}, nil
 }
 
-func createMetricsReceiver(_ context.Context, settings component.ReceiverCreateSettings, configuration component.Config, metrics consumer.Metrics) (component.MetricsReceiver, error) {
+func createMetricsReceiver(_ context.Context, settings receiver.CreateSettings, configuration component.Config, metrics consumer.Metrics) (receiver.Metrics, error) {
 	metricsUnmarshaler := &pmetric.JSONUnmarshaler{}
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
 		ReceiverID:             settings.ID,
@@ -134,7 +134,7 @@ func createMetricsReceiver(_ context.Context, settings component.ReceiverCreateS
 	return &receiver{input: input, id: settings.ID, storageID: cfg.StorageID}, nil
 }
 
-func createTracesReceiver(ctx context.Context, settings component.ReceiverCreateSettings, configuration component.Config, traces consumer.Traces) (component.TracesReceiver, error) {
+func createTracesReceiver(ctx context.Context, settings receiver.CreateSettings, configuration component.Config, traces consumer.Traces) (component.TracesReceiver, error) {
 	tracesUnmarshaler := &ptrace.JSONUnmarshaler{}
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
 		ReceiverID:             settings.ID,

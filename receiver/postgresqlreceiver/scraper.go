@@ -21,10 +21,10 @@ import (
 	"sync"
 	"time"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 
@@ -85,7 +85,7 @@ func (d *defaultClientFactory) getClient(c *Config, database string) (client, er
 }
 
 func newPostgreSQLScraper(
-	settings component.ReceiverCreateSettings,
+	settings receiver.CreateSettings,
 	config *Config,
 	clientFactory postgreSQLClientFactory,
 ) *postgreSQLScraper {

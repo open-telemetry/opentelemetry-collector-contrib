@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 )
@@ -80,7 +81,7 @@ func WithLogsUnmarshalers(logsUnmarshalers ...LogsUnmarshaler) FactoryOption {
 }
 
 // NewFactory creates Kafka receiver factory.
-func NewFactory(options ...FactoryOption) component.ReceiverFactory {
+func NewFactory(options ...FactoryOption) receiver.Factory {
 	_ = view.Register(MetricViews()...)
 
 	f := &kafkaReceiverFactory{
@@ -91,11 +92,11 @@ func NewFactory(options ...FactoryOption) component.ReceiverFactory {
 	for _, o := range options {
 		o(f)
 	}
-	return component.NewReceiverFactory(
+	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
 		component.WithTracesReceiver(f.createTracesReceiver, stability),
-		component.WithMetricsReceiver(f.createMetricsReceiver, stability),
+		receiver.WithMetrics(f.createMetricsReceiver, stability),
 		component.WithLogsReceiver(f.createLogsReceiver, stability),
 	)
 }
@@ -134,7 +135,7 @@ type kafkaReceiverFactory struct {
 
 func (f *kafkaReceiverFactory) createTracesReceiver(
 	_ context.Context,
-	set component.ReceiverCreateSettings,
+	set receiver.CreateSettings,
 	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (component.TracesReceiver, error) {
@@ -148,10 +149,10 @@ func (f *kafkaReceiverFactory) createTracesReceiver(
 
 func (f *kafkaReceiverFactory) createMetricsReceiver(
 	_ context.Context,
-	set component.ReceiverCreateSettings,
+	set receiver.CreateSettings,
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
-) (component.MetricsReceiver, error) {
+) (receiver.Metrics, error) {
 	c := cfg.(*Config)
 	r, err := newMetricsReceiver(*c, set, f.metricsUnmarshalers, nextConsumer)
 	if err != nil {
@@ -162,7 +163,7 @@ func (f *kafkaReceiverFactory) createMetricsReceiver(
 
 func (f *kafkaReceiverFactory) createLogsReceiver(
 	_ context.Context,
-	set component.ReceiverCreateSettings,
+	set receiver.CreateSettings,
 	cfg component.Config,
 	nextConsumer consumer.Logs,
 ) (component.LogsReceiver, error) {

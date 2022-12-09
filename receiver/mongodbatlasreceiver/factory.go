@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/metadata"
@@ -36,21 +37,21 @@ const (
 )
 
 // NewFactory creates a factory for MongoDB Atlas receiver
-func NewFactory() component.ReceiverFactory {
-	return component.NewReceiverFactory(
+func NewFactory() receiver.Factory {
+	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver, stability),
+		receiver.WithMetrics(createMetricsReceiver, stability),
 		component.WithLogsReceiver(createCombinedLogReceiver, stability))
 
 }
 
 func createMetricsReceiver(
 	_ context.Context,
-	params component.ReceiverCreateSettings,
+	params receiver.CreateSettings,
 	rConf component.Config,
 	consumer consumer.Metrics,
-) (component.MetricsReceiver, error) {
+) (receiver.Metrics, error) {
 	cfg := rConf.(*Config)
 	recv := newMongoDBAtlasReceiver(params, cfg)
 	ms, err := newMongoDBAtlasScraper(recv)
@@ -63,7 +64,7 @@ func createMetricsReceiver(
 
 func createCombinedLogReceiver(
 	ctx context.Context,
-	params component.ReceiverCreateSettings,
+	params receiver.CreateSettings,
 	rConf component.Config,
 	consumer consumer.Logs,
 ) (component.LogsReceiver, error) {

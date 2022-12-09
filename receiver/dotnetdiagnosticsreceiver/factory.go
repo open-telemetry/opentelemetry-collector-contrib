@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver/network"
@@ -35,11 +36,11 @@ const (
 	stability = component.StabilityLevelAlpha
 )
 
-func NewFactory() component.ReceiverFactory {
-	return component.NewReceiverFactory(
+func NewFactory() receiver.Factory {
+	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver, stability),
+		receiver.WithMetrics(createMetricsReceiver, stability),
 	)
 }
 
@@ -55,10 +56,10 @@ func createDefaultConfig() component.Config {
 
 func createMetricsReceiver(
 	ctx context.Context,
-	params component.ReceiverCreateSettings,
+	params receiver.CreateSettings,
 	baseConfig component.Config,
 	consumer consumer.Metrics,
-) (component.MetricsReceiver, error) {
+) (receiver.Metrics, error) {
 	cfg := baseConfig.(*Config)
 	bw := network.NewBlobWriter(cfg.LocalDebugDir, cfg.MaxLocalDebugFiles, params.Logger)
 	sec := int(math.Round(cfg.CollectionInterval.Seconds()))

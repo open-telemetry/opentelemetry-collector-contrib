@@ -19,8 +19,8 @@ import (
 	"fmt"
 
 	"github.com/Shopify/sarama"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
@@ -32,7 +32,7 @@ const (
 	consumersScraperName = "consumers"
 )
 
-type createKafkaScraper func(context.Context, Config, *sarama.Config, component.ReceiverCreateSettings) (scraperhelper.Scraper, error)
+type createKafkaScraper func(context.Context, Config, *sarama.Config, receiver.CreateSettings) (scraperhelper.Scraper, error)
 
 var (
 	allScrapers = map[string]createKafkaScraper{
@@ -45,9 +45,9 @@ var (
 var newMetricsReceiver = func(
 	ctx context.Context,
 	config Config,
-	params component.ReceiverCreateSettings,
+	params receiver.CreateSettings,
 	consumer consumer.Metrics,
-) (component.MetricsReceiver, error) {
+) (receiver.Metrics, error) {
 	sc := sarama.NewConfig()
 	sc.ClientID = config.ClientID
 	if config.ProtocolVersion != "" {

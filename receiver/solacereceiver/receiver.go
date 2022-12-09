@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/atomic"
 	"go.uber.org/zap"
 )
@@ -34,7 +35,7 @@ type solaceTracesReceiver struct {
 	config *Config
 
 	nextConsumer consumer.Traces
-	settings     component.ReceiverCreateSettings
+	settings     receiver.CreateSettings
 	metrics      *opencensusMetrics
 	unmarshaller tracesUnmarshaller
 	// cancel is the function that will cancel the context associated with the main worker loop
@@ -49,7 +50,7 @@ type solaceTracesReceiver struct {
 }
 
 // newTracesReceiver creates a new solaceTraceReceiver as a component.TracesReceiver
-func newTracesReceiver(config *Config, set component.ReceiverCreateSettings, nextConsumer consumer.Traces) (component.TracesReceiver, error) {
+func newTracesReceiver(config *Config, set receiver.CreateSettings, nextConsumer consumer.Traces) (component.TracesReceiver, error) {
 	if nextConsumer == nil {
 		set.Logger.Warn("Next consumer in pipeline is null, stopping receiver")
 		return nil, component.ErrNilNextConsumer

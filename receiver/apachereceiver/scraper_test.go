@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest/golden"
@@ -45,7 +46,7 @@ func TestScraper(t *testing.T) {
 
 	serverName, port, err := parseResourseAttributes(cfg.Endpoint)
 	require.NoError(t, err)
-	scraper := newApacheScraper(componenttest.NewNopReceiverCreateSettings(), cfg, serverName, port)
+	scraper := newApacheScraper(receivertest.NewNopCreateSettings(), cfg, serverName, port)
 
 	err = scraper.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -66,7 +67,7 @@ func TestScraper(t *testing.T) {
 }
 
 func TestScraperFailedStart(t *testing.T) {
-	sc := newApacheScraper(componenttest.NewNopReceiverCreateSettings(), &Config{
+	sc := newApacheScraper(receivertest.NewNopCreateSettings(), &Config{
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "localhost:8080",
 			TLSSetting: configtls.TLSClientSetting{
@@ -168,7 +169,7 @@ BytesPerSec: 73.12
 
 func TestScraperError(t *testing.T) {
 	t.Run("no client", func(t *testing.T) {
-		sc := newApacheScraper(componenttest.NewNopReceiverCreateSettings(), &Config{}, "", "")
+		sc := newApacheScraper(receivertest.NewNopCreateSettings(), &Config{}, "", "")
 		sc.httpClient = nil
 
 		_, err := sc.scrape(context.Background())

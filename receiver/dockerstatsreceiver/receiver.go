@@ -36,12 +36,12 @@ const (
 
 type receiver struct {
 	config   *Config
-	settings component.ReceiverCreateSettings
+	settings receiver.CreateSettings
 	client   *docker.Client
 	mb       *metadata.MetricsBuilder
 }
 
-func newReceiver(set component.ReceiverCreateSettings, config *Config) *receiver {
+func newReceiver(set receiver.CreateSettings, config *Config) *receiver {
 	if config.ProvidePerCoreCPUMetrics {
 		config.MetricsConfig.ContainerCPUUsagePercpu.Enabled = config.ProvidePerCoreCPUMetrics
 	}

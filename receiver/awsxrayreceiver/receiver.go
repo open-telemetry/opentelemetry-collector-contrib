@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -41,14 +42,14 @@ const (
 type xrayReceiver struct {
 	poller   udppoller.Poller
 	server   proxy.Server
-	settings component.ReceiverCreateSettings
+	settings receiver.CreateSettings
 	consumer consumer.Traces
 	obsrecv  *obsreport.Receiver
 }
 
 func newReceiver(config *Config,
 	consumer consumer.Traces,
-	set component.ReceiverCreateSettings) (component.TracesReceiver, error) {
+	set receiver.CreateSettings) (component.TracesReceiver, error) {
 
 	if consumer == nil {
 		return nil, component.ErrNilNextConsumer

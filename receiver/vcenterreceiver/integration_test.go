@@ -30,6 +30,7 @@ import (
 	"github.com/vmware/govmomi/vim25"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
@@ -47,7 +48,7 @@ func TestEndtoEnd_ESX(t *testing.T) {
 		}
 		s := session.NewManager(c)
 
-		scraper := newVmwareVcenterScraper(zap.NewNop(), cfg, componenttest.NewNopReceiverCreateSettings())
+		scraper := newVmwareVcenterScraper(zap.NewNop(), cfg, receivertest.NewNopCreateSettings())
 		scraper.client.moClient = &govmomi.Client{
 			Client:         c,
 			SessionManager: s,

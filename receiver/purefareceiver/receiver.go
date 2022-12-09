@@ -20,22 +20,23 @@ import (
 	"github.com/prometheus/prometheus/config"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver/internal"
 )
 
-var _ component.MetricsReceiver = (*purefaReceiver)(nil)
+var _ receiver.Metrics = (*purefaReceiver)(nil)
 
 type purefaReceiver struct {
 	cfg  *Config
-	set  component.ReceiverCreateSettings
+	set  receiver.CreateSettings
 	next consumer.Metrics
 
-	wrapped component.MetricsReceiver
+	wrapped receiver.Metrics
 }
 
-func newReceiver(cfg *Config, set component.ReceiverCreateSettings, next consumer.Metrics) *purefaReceiver {
+func newReceiver(cfg *Config, set receiver.CreateSettings, next consumer.Metrics) *purefaReceiver {
 	return &purefaReceiver{
 		cfg:  cfg,
 		set:  set,

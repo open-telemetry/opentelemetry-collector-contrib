@@ -50,7 +50,7 @@ func NewReceiver(
 	intervalSec int,
 	logger *zap.Logger,
 	bw network.BlobWriter,
-) (component.MetricsReceiver, error) {
+) (receiver.Metrics, error) {
 	return &receiver{
 		nextConsumer: mc,
 		connect:      connect,

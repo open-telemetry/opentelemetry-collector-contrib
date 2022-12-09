@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/service/servicetest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
@@ -71,7 +72,7 @@ func TestSnmpReceiverIntegration(t *testing.T) {
 			snmpConfig := cfg.Receivers[component.NewID(typeStr)].(*Config)
 
 			consumer := new(consumertest.MetricsSink)
-			settings := componenttest.NewNopReceiverCreateSettings()
+			settings := receivertest.NewNopCreateSettings()
 			rcvr, err := factory.CreateMetricsReceiver(context.Background(), settings, snmpConfig, consumer)
 			require.NoError(t, err, "failed creating metrics receiver")
 			require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
