@@ -155,8 +155,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
-
-	// "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/promtailreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pulsarreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver"
