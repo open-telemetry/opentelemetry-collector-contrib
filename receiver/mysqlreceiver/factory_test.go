@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -39,7 +40,7 @@ func TestValidConfig(t *testing.T) {
 	cfg.Username = "otel"
 	cfg.Password = "otel"
 	cfg.Endpoint = "localhost:3306"
-	require.NoError(t, cfg.Validate())
+	require.NoError(t, component.ValidateConfig(cfg))
 }
 
 func TestCreateMetricsReceiver(t *testing.T) {
@@ -49,7 +50,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 		componenttest.NewNopReceiverCreateSettings(),
 		&Config{
 			ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-				ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID("mysql")),
+				ReceiverSettings:   config.NewReceiverSettings(component.NewID("mysql")),
 				CollectionInterval: 10 * time.Second,
 			},
 			Username: "otel",

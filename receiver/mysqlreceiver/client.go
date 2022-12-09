@@ -30,6 +30,7 @@ type client interface {
 	getTableIoWaitsStats() ([]TableIoWaitsStats, error)
 	getIndexIoWaitsStats() ([]IndexIoWaitsStats, error)
 	getStatementEventsStats() ([]StatementEventStats, error)
+	getTableLockWaitEventStats() ([]tableLockWaitEventStats, error)
 	Close() error
 }
 
@@ -78,6 +79,31 @@ type StatementEventStats struct {
 	countSortMergePasses      int64
 	countSortRows             int64
 	countNoIndexUsed          int64
+}
+
+type tableLockWaitEventStats struct {
+	schema                        string
+	name                          string
+	countReadNormal               int64
+	countReadWithSharedLocks      int64
+	countReadHighPriority         int64
+	countReadNoInsert             int64
+	countReadExternal             int64
+	countWriteAllowWrite          int64
+	countWriteConcurrentInsert    int64
+	countWriteLowPriority         int64
+	countWriteNormal              int64
+	countWriteExternal            int64
+	sumTimerReadNormal            int64
+	sumTimerReadWithSharedLocks   int64
+	sumTimerReadHighPriority      int64
+	sumTimerReadNoInsert          int64
+	sumTimerReadExternal          int64
+	sumTimerWriteAllowWrite       int64
+	sumTimerWriteConcurrentInsert int64
+	sumTimerWriteLowPriority      int64
+	sumTimerWriteNormal           int64
+	sumTimerWriteExternal         int64
 }
 
 var _ client = (*mySQLClient)(nil)
@@ -205,6 +231,40 @@ func (c *mySQLClient) getStatementEventsStats() ([]StatementEventStats, error) {
 			&s.sumTimerWait, &s.countErrors, &s.countWarnings,
 			&s.countRowsAffected, &s.countRowsSent, &s.countRowsExamined, &s.countCreatedTmpDiskTables,
 			&s.countCreatedTmpTables, &s.countSortMergePasses, &s.countSortRows, &s.countNoIndexUsed)
+		if err != nil {
+			return nil, err
+		}
+		stats = append(stats, s)
+	}
+
+	return stats, nil
+}
+
+func (c *mySQLClient) getTableLockWaitEventStats() ([]tableLockWaitEventStats, error) {
+	query := "SELECT OBJECT_SCHEMA, OBJECT_NAME, COUNT_READ_NORMAL, COUNT_READ_WITH_SHARED_LOCKS," +
+		"COUNT_READ_HIGH_PRIORITY, COUNT_READ_NO_INSERT, COUNT_READ_EXTERNAL, COUNT_WRITE_ALLOW_WRITE," +
+		"COUNT_WRITE_CONCURRENT_INSERT, COUNT_WRITE_LOW_PRIORITY, COUNT_WRITE_NORMAL," +
+		"COUNT_WRITE_EXTERNAL, SUM_TIMER_READ_NORMAL, SUM_TIMER_READ_WITH_SHARED_LOCKS," +
+		"SUM_TIMER_READ_HIGH_PRIORITY, SUM_TIMER_READ_NO_INSERT, SUM_TIMER_READ_EXTERNAL," +
+		"SUM_TIMER_WRITE_ALLOW_WRITE, SUM_TIMER_WRITE_CONCURRENT_INSERT, SUM_TIMER_WRITE_LOW_PRIORITY," +
+		"SUM_TIMER_WRITE_NORMAL, SUM_TIMER_WRITE_EXTERNAL " +
+		"FROM performance_schema.table_lock_waits_summary_by_table " +
+		"WHERE OBJECT_SCHEMA NOT IN ('mysql', 'performance_schema', 'information_schema')"
+
+	rows, err := c.client.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var stats []tableLockWaitEventStats
+	for rows.Next() {
+		var s tableLockWaitEventStats
+		err := rows.Scan(&s.schema, &s.name,
+			&s.countReadNormal, &s.countReadWithSharedLocks, &s.countReadHighPriority, &s.countReadNoInsert, &s.countReadExternal,
+			&s.countWriteAllowWrite, &s.countWriteConcurrentInsert, &s.countWriteLowPriority, &s.countWriteNormal, &s.countWriteExternal,
+			&s.sumTimerReadNormal, &s.sumTimerReadWithSharedLocks, &s.sumTimerReadHighPriority, &s.sumTimerReadNoInsert, &s.sumTimerReadExternal,
+			&s.sumTimerWriteAllowWrite, &s.sumTimerWriteConcurrentInsert, &s.sumTimerWriteLowPriority, &s.sumTimerWriteNormal, &s.sumTimerWriteExternal)
 		if err != nil {
 			return nil, err
 		}

@@ -162,6 +162,14 @@ func makeAws(attributes map[string]pcommon.Value, resource pcommon.Resource) (ma
 		return filtered, nil // not AWS so return nil
 	}
 
+	// Favor Semantic Conventions for specific SQS and DynamoDB attributes.
+	if value, ok := attributes[conventions.AttributeMessagingURL]; ok {
+		queueURL = value.Str()
+	}
+	if value, ok := attributes[conventions.AttributeAWSDynamoDBTableNames]; ok {
+		tableName = value.Str()
+	}
+
 	// EC2 - add ec2 metadata to xray request if
 	//       1. cloud.platfrom is set to "aws_ec2" or
 	//       2. there is an non-blank host/instance id found

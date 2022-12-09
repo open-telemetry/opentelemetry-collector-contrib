@@ -24,11 +24,11 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	testcontainers "github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/containertest"
 )
 
 const (
@@ -51,9 +51,33 @@ func (h *testHost) ReportFatalError(err error) {
 var _ component.Host = (*testHost)(nil)
 
 func TestIntegrationSingleNode(t *testing.T) {
-	docker := containertest.New(t)
-	container := docker.StartImage(kafkaZkImage, containertest.WithPortReady(kafkaPort), containertest.WithPortReady(zkPort))
-	kafkaAddress := container.AddrForPort(kafkaPort)
+	ctx := context.Background()
+
+	req := testcontainers.ContainerRequest{
+		Image: kafkaZkImage,
+		ExposedPorts: []string{
+			fmt.Sprintf("%d/tcp", kafkaPort),
+			fmt.Sprintf("%d/tcp", zkPort),
+		},
+		WaitingFor: wait.ForAll(
+			wait.ForListeningPort("2181/tcp").WithStartupTimeout(time.Minute*2),
+			wait.ForListeningPort("9092/tcp").WithStartupTimeout(time.Minute*2),
+		).WithStartupTimeout(time.Minute * 2),
+	}
+	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	require.Nil(t, err)
+
+	mappedKafkaPort, err := container.MappedPort(ctx, "9092")
+	require.Nil(t, err)
+
+	hostIP, err := container.Host(ctx)
+	require.Nil(t, err)
+
+	kafkaAddress := fmt.Sprintf("%s:%s", hostIP, mappedKafkaPort.Port())
+
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Scrapers = []string{
@@ -66,7 +90,7 @@ func TestIntegrationSingleNode(t *testing.T) {
 	consumer := new(consumertest.MetricsSink)
 
 	var receiver component.MetricsReceiver
-	var err error
+
 	receiver, err = f.CreateMetricsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, consumer)
 	require.NoError(t, err, "failed to create receiver")
 	require.Eventuallyf(t, func() bool {

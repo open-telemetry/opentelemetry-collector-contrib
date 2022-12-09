@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"sync"
 	"testing"
 	"time"
 
@@ -29,11 +30,19 @@ import (
 
 func newMockConn(tb testing.TB, handler func(net.Conn) error) net.Conn {
 	client, server := net.Pipe()
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+
 	tb.Cleanup(func() {
+		wg.Wait()
 		assert.NoError(tb, server.Close(), "Must not error when closing server connection")
 	})
 	assert.NoError(tb, server.SetDeadline(time.Now().Add(time.Second)), "Must not error when assigning deadline")
+
 	go func() {
+		defer wg.Done()
+
 		assert.NoError(tb, binary.Read(server, binary.BigEndian, &requestTrackingContent{}), "Must not error when reading binary data")
 		assert.NoError(tb, handler(server), "Must not error when processing request")
 	}()

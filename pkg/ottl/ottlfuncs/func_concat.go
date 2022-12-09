@@ -15,6 +15,7 @@
 package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -22,10 +23,10 @@ import (
 )
 
 func Concat[K any](vals []ottl.Getter[K], delimiter string) (ottl.ExprFunc[K], error) {
-	return func(ctx K) (interface{}, error) {
+	return func(ctx context.Context, tCtx K) (interface{}, error) {
 		builder := strings.Builder{}
 		for i, rv := range vals {
-			val, err := rv.Get(ctx)
+			val, err := rv.Get(ctx, tCtx)
 			if err != nil {
 				return nil, err
 			}

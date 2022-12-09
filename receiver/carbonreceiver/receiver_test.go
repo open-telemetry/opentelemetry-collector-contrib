@@ -80,7 +80,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 			name: "empty_endpoint",
 			args: args{
 				config: Config{
-					ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+					ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 				},
 				nextConsumer: consumertest.NewNop(),
 			},
@@ -90,7 +90,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 			name: "invalid_transport",
 			args: args{
 				config: Config{
-					ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "invalid_transport_rcv")),
+					ReceiverSettings: config.NewReceiverSettings(component.NewIDWithName(typeStr, "invalid_transport_rcv")),
 					NetAddr: confignet.NetAddr{
 						Endpoint:  "localhost:2003",
 						Transport: "unknown_transp",
@@ -102,13 +102,13 @@ func Test_carbonreceiver_New(t *testing.T) {
 				},
 				nextConsumer: consumertest.NewNop(),
 			},
-			wantErr: errors.New("unsupported transport \"unknown_transp\" for receiver carbon/invalid_transport_rcv"),
+			wantErr: errors.New("unsupported transport \"unknown_transp\""),
 		},
 		{
 			name: "regex_parser",
 			args: args{
 				config: Config{
-					ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+					ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 					NetAddr: confignet.NetAddr{
 						Endpoint:  "localhost:2003",
 						Transport: "tcp",
@@ -131,7 +131,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 			name: "negative_tcp_idle_timeout",
 			args: args{
 				config: Config{
-					ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+					ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 					NetAddr: confignet.NetAddr{
 						Endpoint:  "localhost:2003",
 						Transport: "tcp",

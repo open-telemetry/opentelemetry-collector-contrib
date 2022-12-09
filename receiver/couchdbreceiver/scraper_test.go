@@ -26,6 +26,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
@@ -33,8 +34,8 @@ import (
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver/internal/metadata"
 )
 
@@ -43,7 +44,7 @@ func TestScrape(t *testing.T) {
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Username = "otelu"
 	cfg.Password = "otelp"
-	require.NoError(t, cfg.Validate())
+	require.NoError(t, component.ValidateConfig(cfg))
 
 	t.Run("scrape from couchdb version 2.31", func(t *testing.T) {
 		mockClient := new(MockClient)
@@ -58,7 +59,7 @@ func TestScrape(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
+		require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics))
 	})
 
 	t.Run("scrape from couchdb 3.12", func(t *testing.T) {
@@ -74,7 +75,7 @@ func TestScrape(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
+		require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics))
 	})
 
 	t.Run("scrape returns nothing", func(t *testing.T) {
@@ -130,7 +131,7 @@ func TestStart(t *testing.T) {
 		cfg := f.CreateDefaultConfig().(*Config)
 		cfg.Username = "otelu"
 		cfg.Password = "otelp"
-		require.NoError(t, cfg.Validate())
+		require.NoError(t, component.ValidateConfig(cfg))
 
 		scraper := newCouchdbScraper(componenttest.NewNopReceiverCreateSettings(), cfg)
 		err := scraper.start(context.Background(), componenttest.NewNopHost())
@@ -142,7 +143,7 @@ func TestStart(t *testing.T) {
 		cfg.HTTPClientSettings.TLSSetting.CAFile = "/non/existent"
 		cfg.Username = "otelu"
 		cfg.Password = "otelp"
-		require.NoError(t, cfg.Validate())
+		require.NoError(t, component.ValidateConfig(cfg))
 
 		scraper := newCouchdbScraper(componenttest.NewNopReceiverCreateSettings(), cfg)
 		err := scraper.start(context.Background(), componenttest.NewNopHost())
@@ -175,7 +176,7 @@ func TestMetricSettings(t *testing.T) {
 	expected, err := golden.ReadMetrics(filepath.Join("testdata", "scraper", "only_db_ops.json"))
 	require.NoError(t, err)
 
-	require.NoError(t, scrapertest.CompareMetrics(expected, metrics))
+	require.NoError(t, comparetest.CompareMetrics(expected, metrics))
 	require.Equal(t, metrics.MetricCount(), 1)
 }
 

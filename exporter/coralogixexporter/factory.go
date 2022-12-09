@@ -36,9 +36,9 @@ func NewFactory() component.ExporterFactory {
 	)
 }
 
-func createDefaultConfig() config.Exporter {
+func createDefaultConfig() component.Config {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
 		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
 		TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),
@@ -63,29 +63,8 @@ func createDefaultConfig() config.Exporter {
 	}
 }
 
-func createTraceExporter(ctx context.Context, set component.ExporterCreateSettings, config config.Exporter) (component.TracesExporter, error) {
+func createTraceExporter(ctx context.Context, set component.ExporterCreateSettings, config component.Config) (component.TracesExporter, error) {
 	cfg := config.(*Config)
-
-	// Use deprecated jaeger endpoint if it's not empty
-	if !isEmpty(cfg.Endpoint) {
-		set.Logger.Warn("endpoint field is deprecated.Please use the new `traces.endpoint` field with OpenTelemtry endpoint.")
-
-		exporter, err := newCoralogixExporter(cfg, set)
-		if err != nil {
-			return nil, err
-		}
-
-		return exporterhelper.NewTracesExporter(
-			ctx,
-			set,
-			config,
-			exporter.tracesPusher,
-			exporterhelper.WithQueue(cfg.QueueSettings),
-			exporterhelper.WithRetry(cfg.RetrySettings),
-			exporterhelper.WithTimeout(cfg.TimeoutSettings),
-			exporterhelper.WithStart(exporter.client.startConnection),
-		)
-	}
 
 	exporter, err := newTracesExporter(cfg, set)
 	if err != nil {
@@ -109,7 +88,7 @@ func createTraceExporter(ctx context.Context, set component.ExporterCreateSettin
 func createMetricsExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
-	cfg config.Exporter,
+	cfg component.Config,
 ) (component.MetricsExporter, error) {
 	oce, err := newMetricsExporter(cfg, set)
 	if err != nil {
@@ -133,7 +112,7 @@ func createMetricsExporter(
 func createLogsExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
-	cfg config.Exporter,
+	cfg component.Config,
 ) (component.LogsExporter, error) {
 	oce, err := newLogsExporter(cfg, set)
 	if err != nil {

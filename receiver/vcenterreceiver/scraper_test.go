@@ -20,19 +20,18 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver/internal/metadata"
 	mock "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver/internal/mockserver"
 )
 
 func TestScrape(t *testing.T) {
 	ctx := context.Background()
-	mockServer := mock.MockServer(t)
+	mockServer := mock.MockServer(t, false)
 
 	cfg := &Config{
 		Metrics:  metadata.DefaultMetricsSettings(),
@@ -40,6 +39,28 @@ func TestScrape(t *testing.T) {
 		Username: mock.MockUsername,
 		Password: mock.MockPassword,
 	}
+
+	testScrape(ctx, t, cfg)
+}
+
+func TestScrape_TLS(t *testing.T) {
+	ctx := context.Background()
+	mockServer := mock.MockServer(t, true)
+
+	cfg := &Config{
+		Metrics:  metadata.DefaultMetricsSettings(),
+		Endpoint: mockServer.URL,
+		Username: mock.MockUsername,
+		Password: mock.MockPassword,
+	}
+
+	cfg.Insecure = true
+	cfg.InsecureSkipVerify = true
+
+	testScrape(ctx, t, cfg)
+}
+
+func testScrape(ctx context.Context, t *testing.T, cfg *Config) {
 	scraper := newVmwareVcenterScraper(zap.NewNop(), cfg, componenttest.NewNopReceiverCreateSettings())
 
 	metrics, err := scraper.scrape(ctx)
@@ -50,7 +71,7 @@ func TestScrape(t *testing.T) {
 	expectedMetrics, err := golden.ReadMetrics(goldenPath)
 	require.NoError(t, err)
 
-	err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+	err = comparetest.CompareMetrics(expectedMetrics, metrics)
 	require.NoError(t, err)
 	require.NoError(t, scraper.Shutdown(ctx))
 }
@@ -62,7 +83,7 @@ func TestScrape_NoClient(t *testing.T) {
 		config: &Config{
 			Endpoint: "http://vcsa.localnet",
 		},
-		mb:     metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), component.NewDefaultBuildInfo()),
+		mb:     metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), componenttest.NewNopReceiverCreateSettings()),
 		logger: zap.NewNop(),
 	}
 	metrics, err := scraper.scrape(ctx)

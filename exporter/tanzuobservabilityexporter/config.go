@@ -23,8 +23,6 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
 type TracesConfig struct {
@@ -33,7 +31,10 @@ type TracesConfig struct {
 
 type MetricsConfig struct {
 	confighttp.HTTPClientSettings `mapstructure:",squash"`
-	ResourceAttributes            resourcetotelemetry.Settings `mapstructure:"resource_attributes"`
+	ResourceAttrsIncluded         bool `mapstructure:"resource_attrs_included"`
+	// AppTagsExcluded will exclude the Resource Attributes `application`, `service.name` -> (service),
+	// `cluster`, and `shard` from the transformed TObs metric if set to true.
+	AppTagsExcluded bool `mapstructure:"app_tags_excluded"`
 }
 
 // Config defines configuration options for the exporter.

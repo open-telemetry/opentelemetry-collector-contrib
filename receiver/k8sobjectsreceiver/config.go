@@ -100,7 +100,7 @@ func (c *Config) Validate() error {
 
 		object.gvr = gvr
 	}
-	return c.ReceiverSettings.Validate()
+	return nil
 }
 
 func (c *Config) getDiscoveryClient() (discovery.ServerResourcesInterface, error) {

@@ -60,10 +60,9 @@ func newMetricsReceiver(
 	}
 
 	return &firehoseReceiver{
-		instanceID: config.ID(),
-		settings:   set,
-		config:     config,
-		consumer:   mc,
+		settings: set,
+		config:   config,
+		consumer: mc,
 	}, nil
 }
 

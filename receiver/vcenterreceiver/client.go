@@ -65,7 +65,9 @@ func (vc *vcenterClient) EnsureConnection(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	client.DefaultTransport().TLSClientConfig = tlsCfg
+	if tlsCfg != nil {
+		client.DefaultTransport().TLSClientConfig = tlsCfg
+	}
 	user := url.UserPassword(vc.cfg.Username, vc.cfg.Password)
 	err = client.Login(ctx, user)
 	if err != nil {

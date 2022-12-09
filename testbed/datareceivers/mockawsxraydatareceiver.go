@@ -63,7 +63,7 @@ func (ar *MockAwsXrayDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics,
 	}
 
 	mockDatareceiverCFG := mockawsxrayreceiver.Config{
-		Endpoint: fmt.Sprintf("localhost:%d", ar.Port),
+		Endpoint: fmt.Sprintf("127.0.0.1:%d", ar.Port),
 		TLSCredentials: &configtls.TLSSetting{
 			CertFile: "../mockdatareceivers/mockawsxrayreceiver/server.crt",
 			KeyFile:  "../mockdatareceivers/mockawsxrayreceiver/server.key",
@@ -87,7 +87,7 @@ func (ar *MockAwsXrayDataReceiver) GenConfigYAMLStr() string {
 	return fmt.Sprintf(`
   awsxray:
     local_mode: true
-    endpoint: localhost:%d
+    endpoint: 127.0.0.1:%d
     no_verify_ssl: true
     region: us-west-2`, ar.Port)
 }

@@ -15,6 +15,7 @@
 package loki // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki"
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -22,6 +23,8 @@ import (
 	"github.com/go-logfmt/logfmt"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
 // JSON representation of the LogRecord as described by https://developers.google.com/protocol-buffers/docs/proto3#json
@@ -50,8 +53,8 @@ func Encode(lr plog.LogRecord, res pcommon.Resource) (string, error) {
 	}
 	logRecord = lokiEntry{
 		Body:       body,
-		TraceID:    lr.TraceID().HexString(),
-		SpanID:     lr.SpanID().HexString(),
+		TraceID:    traceutil.TraceIDToHexOrEmptyString(lr.TraceID()),
+		SpanID:     traceutil.SpanIDToHexOrEmptyString(lr.SpanID()),
 		Severity:   lr.SeverityText(),
 		Attributes: lr.Attributes().AsRaw(),
 		Resources:  res.Attributes().AsRaw(),
@@ -70,14 +73,12 @@ func Encode(lr plog.LogRecord, res pcommon.Resource) (string, error) {
 func EncodeLogfmt(lr plog.LogRecord, res pcommon.Resource) (string, error) {
 	keyvals := bodyToKeyvals(lr.Body())
 
-	traceID := lr.TraceID().HexString()
-	if traceID != "" {
-		keyvals = keyvalsReplaceOrAppend(keyvals, "traceID", traceID)
+	if traceID := lr.TraceID(); !traceID.IsEmpty() {
+		keyvals = keyvalsReplaceOrAppend(keyvals, "traceID", hex.EncodeToString(traceID[:]))
 	}
 
-	spanID := lr.SpanID().HexString()
-	if spanID != "" {
-		keyvals = keyvalsReplaceOrAppend(keyvals, "spanID", spanID)
+	if spanID := lr.SpanID(); !spanID.IsEmpty() {
+		keyvals = keyvalsReplaceOrAppend(keyvals, "spanID", hex.EncodeToString(spanID[:]))
 	}
 
 	severity := lr.SeverityText()

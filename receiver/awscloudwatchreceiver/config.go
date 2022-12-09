@@ -89,7 +89,6 @@ func (c *Config) Validate() error {
 	}
 
 	var errs error
-	errs = multierr.Append(errs, c.ReceiverSettings.Validate())
 	errs = multierr.Append(errs, c.validateLogsConfig())
 	return errs
 }

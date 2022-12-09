@@ -18,7 +18,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"gopkg.in/zorkian/go-datadog-api.v2"
+	zorkian "gopkg.in/zorkian/go-datadog-api.v2"
 )
 
 type MetricType string
@@ -30,43 +30,43 @@ const (
 	Count MetricType = "count"
 )
 
-// newMetric creates a new Datadog metric given a name, a Unix nanoseconds timestamp
+// newZorkianMetric creates a new Zorkian Datadog metric given a name, a Unix nanoseconds timestamp
 // a value and a slice of tags
-func newMetric(name string, ts uint64, value float64, tags []string) datadog.Metric {
+func newZorkianMetric(name string, ts uint64, value float64, tags []string) zorkian.Metric {
 	// Transform UnixNano timestamp into Unix timestamp
 	// 1 second = 1e9 ns
 	timestamp := float64(ts / 1e9)
 
-	metric := datadog.Metric{
-		Points: []datadog.DataPoint{[2]*float64{&timestamp, &value}},
+	metric := zorkian.Metric{
+		Points: []zorkian.DataPoint{[2]*float64{&timestamp, &value}},
 		Tags:   tags,
 	}
 	metric.SetMetric(name)
 	return metric
 }
 
-// NewMetric creates a new Datadog metric given a name, a type, a Unix nanoseconds timestamp
+// NewZorkianMetric creates a new Zorkian Datadog metric given a name, a type, a Unix nanoseconds timestamp
 // a value and a slice of tags
-func NewMetric(name string, dt MetricType, ts uint64, value float64, tags []string) datadog.Metric {
-	metric := newMetric(name, ts, value, tags)
+func NewZorkianMetric(name string, dt MetricType, ts uint64, value float64, tags []string) zorkian.Metric {
+	metric := newZorkianMetric(name, ts, value, tags)
 	metric.SetType(string(dt))
 	return metric
 }
 
-// NewGauge creates a new Datadog Gauge metric given a name, a Unix nanoseconds timestamp
+// NewZorkianGauge creates a new Datadog Gauge metric given a name, a Unix nanoseconds timestamp
 // a value and a slice of tags
-func NewGauge(name string, ts uint64, value float64, tags []string) datadog.Metric {
-	return NewMetric(name, Gauge, ts, value, tags)
+func NewZorkianGauge(name string, ts uint64, value float64, tags []string) zorkian.Metric {
+	return NewZorkianMetric(name, Gauge, ts, value, tags)
 }
 
-// NewCount creates a new Datadog count metric given a name, a Unix nanoseconds timestamp
+// NewZorkianCount creates a new Datadog count metric given a name, a Unix nanoseconds timestamp
 // a value and a slice of tags
-func NewCount(name string, ts uint64, value float64, tags []string) datadog.Metric {
-	return NewMetric(name, Count, ts, value, tags)
+func NewZorkianCount(name string, ts uint64, value float64, tags []string) zorkian.Metric {
+	return NewZorkianMetric(name, Count, ts, value, tags)
 }
 
-// DefaultMetrics creates built-in metrics to report that an exporter is running
-func DefaultMetrics(exporterType string, hostname string, timestamp uint64, buildInfo component.BuildInfo) []datadog.Metric {
+// DefaultZorkianMetrics creates built-in metrics to report that an exporter is running
+func DefaultZorkianMetrics(exporterType string, hostname string, timestamp uint64, buildInfo component.BuildInfo) []zorkian.Metric {
 	var tags []string
 
 	if buildInfo.Version != "" {
@@ -77,8 +77,8 @@ func DefaultMetrics(exporterType string, hostname string, timestamp uint64, buil
 		tags = append(tags, "command:"+buildInfo.Command)
 	}
 
-	metrics := []datadog.Metric{
-		NewGauge(fmt.Sprintf("otel.datadog_exporter.%s.running", exporterType), timestamp, 1.0, tags),
+	metrics := []zorkian.Metric{
+		NewZorkianGauge(fmt.Sprintf("otel.datadog_exporter.%s.running", exporterType), timestamp, 1.0, tags),
 	}
 
 	for i := range metrics {

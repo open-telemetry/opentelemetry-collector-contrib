@@ -17,9 +17,11 @@ package solacereceiver // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -32,14 +34,14 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	tests := []struct {
-		id          config.ComponentID
-		expected    config.Receiver
+		id          component.ID
+		expected    component.Config
 		expectedErr error
 	}{
 		{
-			id: config.NewComponentIDWithName(componentType, "primary"),
+			id: component.NewIDWithName(componentType, "primary"),
 			expected: &Config{
-				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(componentType)),
+				ReceiverSettings: config.NewReceiverSettings(component.NewID(componentType)),
 				Broker:           []string{"myHost:5671"},
 				Auth: Authentication{
 					PlainText: &SaslPlainTextConfig{
@@ -53,14 +55,19 @@ func TestLoadConfig(t *testing.T) {
 					Insecure:           false,
 					InsecureSkipVerify: false,
 				},
+				Flow: FlowControl{
+					DelayedRetry: &FlowControlDelayedRetry{
+						Delay: 1 * time.Second,
+					},
+				},
 			},
 		},
 		{
-			id:          config.NewComponentIDWithName(componentType, "noauth"),
+			id:          component.NewIDWithName(componentType, "noauth"),
 			expectedErr: errMissingAuthDetails,
 		},
 		{
-			id:          config.NewComponentIDWithName(componentType, "noqueue"),
+			id:          component.NewIDWithName(componentType, "noqueue"),
 			expectedErr: errMissingQueueName,
 		},
 	}
@@ -72,13 +79,13 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 			if tt.expectedErr != nil {
-				assert.ErrorIs(t, cfg.Validate(), tt.expectedErr)
+				assert.ErrorIs(t, component.ValidateConfig(cfg), tt.expectedErr)
 				return
 			}
-			assert.NoError(t, cfg.Validate())
+			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -87,15 +94,36 @@ func TestLoadConfig(t *testing.T) {
 func TestConfigValidateMissingAuth(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Queue = "someQueue"
-	err := cfg.Validate()
+	err := component.ValidateConfig(cfg)
 	assert.Equal(t, errMissingAuthDetails, err)
 }
 
 func TestConfigValidateMissingQueue(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Auth.PlainText = &SaslPlainTextConfig{"Username", "Password"}
-	err := cfg.Validate()
+	err := component.ValidateConfig(cfg)
 	assert.Equal(t, errMissingQueueName, err)
+}
+
+func TestConfigValidateMissingFlowControl(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Queue = "someQueue"
+	cfg.Auth.PlainText = &SaslPlainTextConfig{"Username", "Password"}
+	// this should never happen in reality, test validation anyway
+	cfg.Flow.DelayedRetry = nil
+	err := cfg.Validate()
+	assert.Equal(t, errMissingFlowControl, err)
+}
+
+func TestConfigValidateInvalidFlowControlDelayedRetryDelay(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Queue = "someQueue"
+	cfg.Auth.PlainText = &SaslPlainTextConfig{"Username", "Password"}
+	cfg.Flow.DelayedRetry = &FlowControlDelayedRetry{
+		Delay: -30 * time.Second,
+	}
+	err := cfg.Validate()
+	assert.Equal(t, errInvalidDelayedRetryDelay, err)
 }
 
 func TestConfigValidateSuccess(t *testing.T) {
@@ -119,7 +147,7 @@ func TestConfigValidateSuccess(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
 			cfg.Queue = "someQueue"
 			configure(cfg)
-			err := cfg.Validate()
+			err := component.ValidateConfig(cfg)
 			assert.NoError(t, err)
 		})
 	}

@@ -3,6 +3,7 @@ name: nginxreceiver
 attributes:
   state:
     description: The state of a connection
+    type: string
     enum:
     - active
     - reading

@@ -504,3 +504,84 @@ func TestBuild(t *testing.T) {
 		})
 	}
 }
+
+func TestBuildWithSplitFunc(t *testing.T) {
+	t.Parallel()
+
+	basicConfig := func() *Config {
+		cfg := NewConfig()
+		cfg.Include = []string{"/var/log/testpath.*"}
+		cfg.Exclude = []string{"/var/log/testpath.ex*"}
+		cfg.PollInterval = 10 * time.Millisecond
+		return cfg
+	}
+
+	cases := []struct {
+		name             string
+		modifyBaseConfig func(*Config)
+		errorRequirement require.ErrorAssertionFunc
+		validate         func(*testing.T, *Manager)
+	}{
+		{
+			"Basic",
+			func(f *Config) {},
+			require.NoError,
+			func(t *testing.T, f *Manager) {
+				require.Equal(t, f.finder.Include, []string{"/var/log/testpath.*"})
+				require.Equal(t, f.pollInterval, 10*time.Millisecond)
+			},
+		},
+		{
+			"BadIncludeGlob",
+			func(f *Config) {
+				f.Include = []string{"["}
+			},
+			require.Error,
+			nil,
+		},
+		{
+			"BadExcludeGlob",
+			func(f *Config) {
+				f.Include = []string{"["}
+			},
+			require.Error,
+			nil,
+		},
+		{
+			"InvalidEncoding",
+			func(f *Config) {
+				f.Splitter.EncodingConfig = helper.EncodingConfig{Encoding: "UTF-3233"}
+			},
+			require.Error,
+			nil,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			tc := tc
+			t.Parallel()
+			cfg := basicConfig()
+			tc.modifyBaseConfig(cfg)
+
+			nopEmit := func(_ context.Context, _ *FileAttributes, _ []byte) {}
+			splitNone := func(data []byte, atEOF bool) (advance int, token []byte, err error) {
+				if !atEOF {
+					return 0, nil, nil
+				}
+				if len(data) == 0 {
+					return 0, nil, nil
+				}
+				return len(data), data, nil
+			}
+
+			input, err := cfg.BuildWithSplitFunc(testutil.Logger(t), nopEmit, splitNone)
+			tc.errorRequirement(t, err)
+			if err != nil {
+				return
+			}
+
+			tc.validate(t, input)
+		})
+	}
+}

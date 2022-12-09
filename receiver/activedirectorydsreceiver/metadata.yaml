@@ -3,44 +3,51 @@ name: activedirectorydsreceiver
 attributes:
   direction:
     description: The direction of data flow.
+    type: string
     enum:
       - sent
       - received
   network_data_type:
-    value: type
+    name_override: type
     description: The type of network data sent.
+    type: string
     enum:
       - compressed
       - uncompressed
   value_type:
-    value: type
+    name_override: type
     description: The type of value sent.
+    type: string
     enum:
       - distingushed_names
       - other
   operation_type:
-    value: type
+    name_override: type
     description: The type of operation.
+    type: string
     enum:
       - read
       - write
       - search
   suboperation_type:
-    value: type
+    name_override: type
     description: The type of suboperation.
+    type: string
     enum:
       - security_descriptor_propagations_event
       - search
   sync_result:
-    value: result
+    name_override: result
     description: The result status of the sync request.
+    type: string
     enum:
       - success
       - schema_mismatch
       - other
   bind_type:
-    value: type
+    name_override: type
     description: The type of bind to the domain server.
+    type: string
     enum:
       - server
       - client

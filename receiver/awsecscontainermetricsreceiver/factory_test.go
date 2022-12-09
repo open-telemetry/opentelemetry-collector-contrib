@@ -20,14 +20,13 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil/endpoints"
 )
 
 func TestValidConfig(t *testing.T) {
-	err := configtest.CheckConfigStruct(createDefaultConfig())
+	err := componenttest.CheckConfigStruct(createDefaultConfig())
 	require.NoError(t, err)
 }
 

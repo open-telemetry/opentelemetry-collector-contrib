@@ -50,7 +50,7 @@ type curriedRecorder func(*metadata.MetricsBuilder, pcommon.Timestamp)
 
 // newSqlServerScraper returns a new sqlServerScraper.
 func newSqlServerScraper(params component.ReceiverCreateSettings, cfg *Config) *sqlServerScraper {
-	metricsBuilder := metadata.NewMetricsBuilder(cfg.Metrics, params.BuildInfo)
+	metricsBuilder := metadata.NewMetricsBuilder(cfg.Metrics, params)
 	return &sqlServerScraper{logger: params.Logger, config: cfg, metricsBuilder: metricsBuilder}
 }
 

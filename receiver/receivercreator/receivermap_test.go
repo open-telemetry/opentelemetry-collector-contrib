@@ -38,7 +38,7 @@ func TestReceiverMap(t *testing.T) {
 	rm.Put("b", r3)
 	assert.Equal(t, 3, rm.Size())
 
-	assert.Equal(t, []component.Receiver{r1, r2}, rm.Get("a"))
+	assert.Equal(t, []component.Component{r1, r2}, rm.Get("a"))
 	assert.Nil(t, rm.Get("missing"))
 
 	rm.RemoveAll("missing")
@@ -53,5 +53,5 @@ func TestReceiverMap(t *testing.T) {
 	rm.Put("a", r1)
 	rm.Put("b", r2)
 	assert.Equal(t, 2, rm.Size())
-	assert.Equal(t, []component.Receiver{r1, r2}, rm.Values())
+	assert.Equal(t, []component.Component{r1, r2}, rm.Values())
 }

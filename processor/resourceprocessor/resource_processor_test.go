@@ -20,6 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -33,7 +34,7 @@ import (
 
 var (
 	cfg = &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
+		ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 		AttributesActions: []attraction.ActionKeyValue{
 			{Key: "cloud.availability_zone", Value: "zone-1", Action: attraction.UPSERT},
 			{Key: "k8s.cluster.name", FromAttribute: "k8s-cluster", Action: attraction.INSERT},
@@ -82,7 +83,7 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 		{
 			name: "config_attributes_replacement",
 			config: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
+				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 				AttributesActions: []attraction.ActionKeyValue{
 					{Key: "k8s.cluster.name", FromAttribute: "k8s-cluster", Action: attraction.INSERT},
 					{Key: "k8s-cluster", Action: attraction.DELETE},
@@ -147,29 +148,6 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 			assert.EqualValues(t, wantLogData, logs[0])
 		})
 	}
-}
-
-func TestResourceProcessorError(t *testing.T) {
-	badCfg := &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
-		AttributesActions: nil,
-	}
-
-	// Test traces consumer
-	factory := NewFactory()
-	rtp, err := factory.CreateTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), badCfg, consumertest.NewNop())
-	require.Error(t, err)
-	require.Nil(t, rtp)
-
-	// Test metrics consumer
-	rmp, err := factory.CreateMetricsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), badCfg, consumertest.NewNop())
-	require.Error(t, err)
-	require.Nil(t, rmp)
-
-	// Test logs consumer
-	rlp, err := factory.CreateLogsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), badCfg, consumertest.NewNop())
-	require.Error(t, err)
-	require.Nil(t, rlp)
 }
 
 func generateTraceData(attributes map[string]string) ptrace.Traces {

@@ -27,6 +27,8 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 
+	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/stretchr/testify/assert"
@@ -40,7 +42,6 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/durationpb"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -72,7 +73,7 @@ type mockTracesReceiver struct {
 	lastRequest ptrace.Traces
 }
 
-func (r *mockTracesReceiver) Export(ctx context.Context, req ptraceotlp.Request) (ptraceotlp.Response, error) {
+func (r *mockTracesReceiver) Export(ctx context.Context, req ptraceotlp.ExportRequest) (ptraceotlp.ExportResponse, error) {
 	r.requestCount.Inc()
 	td := req.Traces()
 	r.totalItems.Add(int32(td.SpanCount()))
@@ -80,7 +81,7 @@ func (r *mockTracesReceiver) Export(ctx context.Context, req ptraceotlp.Request)
 	defer r.mux.Unlock()
 	r.lastRequest = td
 	r.metadata, _ = metadata.FromIncomingContext(ctx)
-	return ptraceotlp.NewResponse(), r.exportError
+	return ptraceotlp.NewExportResponse(), r.exportError
 }
 
 func (r *mockTracesReceiver) GetLastRequest() ptrace.Traces {
@@ -127,7 +128,7 @@ type mockLogsReceiver struct {
 	lastRequest plog.Logs
 }
 
-func (r *mockLogsReceiver) Export(ctx context.Context, req plogotlp.Request) (plogotlp.Response, error) {
+func (r *mockLogsReceiver) Export(ctx context.Context, req plogotlp.ExportRequest) (plogotlp.ExportResponse, error) {
 	r.requestCount.Inc()
 	ld := req.Logs()
 	r.totalItems.Add(int32(ld.LogRecordCount()))
@@ -135,7 +136,7 @@ func (r *mockLogsReceiver) Export(ctx context.Context, req plogotlp.Request) (pl
 	defer r.mux.Unlock()
 	r.lastRequest = ld
 	r.metadata, _ = metadata.FromIncomingContext(ctx)
-	return plogotlp.NewResponse(), nil
+	return plogotlp.NewExportResponse(), nil
 }
 
 func (r *mockLogsReceiver) GetLastRequest() plog.Logs {
@@ -167,7 +168,7 @@ type mockMetricsReceiver struct {
 	lastRequest pmetric.Metrics
 }
 
-func (r *mockMetricsReceiver) Export(ctx context.Context, req pmetricotlp.Request) (pmetricotlp.Response, error) {
+func (r *mockMetricsReceiver) Export(ctx context.Context, req pmetricotlp.ExportRequest) (pmetricotlp.ExportResponse, error) {
 	md := req.Metrics()
 	r.requestCount.Inc()
 	r.totalItems.Add(int32(md.DataPointCount()))
@@ -175,7 +176,7 @@ func (r *mockMetricsReceiver) Export(ctx context.Context, req pmetricotlp.Reques
 	defer r.mux.Unlock()
 	r.lastRequest = md
 	r.metadata, _ = metadata.FromIncomingContext(ctx)
-	return pmetricotlp.NewResponse(), nil
+	return pmetricotlp.NewExportResponse(), nil
 }
 
 func (r *mockMetricsReceiver) GetLastRequest() pmetric.Metrics {
@@ -227,7 +228,7 @@ func TestSendTraces(t *testing.T) {
 		ClientId:        "mamRxRJB796HYtWYxqeDzeEXCKSswnsr",
 		ClientSecret:    "Da2achZqvHF7tKDaSP3FCkHE2PKcY6twRxwZEnEYQHc5GADgHy5VZDBxdeKhNbrw",
 	}
-	set := componenttest.NewNopExporterCreateSettings()
+	set := exportertest.NewNopCreateSettings()
 	set.BuildInfo.Description = "Collector"
 	set.BuildInfo.Version = "1.2.3test"
 	exp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
@@ -328,7 +329,7 @@ func TestSendTracesWhenEndpointHasHttpScheme(t *testing.T) {
 			if test.useTLS {
 				cfg.GRPCClientSettings.TLSSetting.InsecureSkipVerify = true
 			}
-			set := componenttest.NewNopExporterCreateSettings()
+			set := exportertest.NewNopCreateSettings()
 			exp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
 			require.NoError(t, err)
 			require.NotNil(t, exp)
@@ -383,7 +384,7 @@ func TestSendMetrics(t *testing.T) {
 		ClientId:        "mamRxRJB796HYtWYxqeDzeEXCKSswnsr",
 		ClientSecret:    "Da2achZqvHF7tKDaSP3FCkHE2PKcY6twRxwZEnEYQHc5GADgHy5VZDBxdeKhNbrw",
 	}
-	set := componenttest.NewNopExporterCreateSettings()
+	set := exportertest.NewNopCreateSettings()
 	set.BuildInfo.Description = "Collector"
 	set.BuildInfo.Version = "1.2.3test"
 	exp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
@@ -462,7 +463,7 @@ func TestSendTraceDataServerDownAndUp(t *testing.T) {
 		ClientSecret:    "Da2achZqvHF7tKDaSP3FCkHE2PKcY6twRxwZEnEYQHc5GADgHy5VZDBxdeKhNbrw",
 	}
 
-	set := componenttest.NewNopExporterCreateSettings()
+	set := exportertest.NewNopCreateSettings()
 	exp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
@@ -524,7 +525,7 @@ func TestSendTraceDataServerStartWhileRequest(t *testing.T) {
 		ClientId:        "mamRxRJB796HYtWYxqeDzeEXCKSswnsr",
 		ClientSecret:    "Da2achZqvHF7tKDaSP3FCkHE2PKcY6twRxwZEnEYQHc5GADgHy5VZDBxdeKhNbrw",
 	}
-	set := componenttest.NewNopExporterCreateSettings()
+	set := exportertest.NewNopCreateSettings()
 	exp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
@@ -580,7 +581,7 @@ func TestSendTracesOnResourceExhaustion(t *testing.T) {
 		ClientId:        "mamRxRJB796HYtWYxqeDzeEXCKSswnsr",
 		ClientSecret:    "Da2achZqvHF7tKDaSP3FCkHE2PKcY6twRxwZEnEYQHc5GADgHy5VZDBxdeKhNbrw",
 	}
-	set := componenttest.NewNopExporterCreateSettings()
+	set := exportertest.NewNopCreateSettings()
 	exp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
@@ -616,7 +617,7 @@ func TestSendTracesOnResourceExhaustion(t *testing.T) {
 	}, 10*time.Second, 5*time.Millisecond, "Should retry if RetryInfo is included into status details by the server.")
 }
 
-func startServerAndMakeRequest(t *testing.T, exp component.TracesExporter, td ptrace.Traces, ln net.Listener) {
+func startServerAndMakeRequest(t *testing.T, exp exporter.Traces, td ptrace.Traces, ln net.Listener) {
 	rcv, _ := otlpTracesReceiverOnGRPCServer(ln, false)
 	defer rcv.srv.GracefulStop()
 	// Ensure that initially there is no data in the receiver.
@@ -663,7 +664,7 @@ func TestSendLogData(t *testing.T) {
 		ClientId:        "mamRxRJB796HYtWYxqeDzeEXCKSswnsr",
 		ClientSecret:    "Da2achZqvHF7tKDaSP3FCkHE2PKcY6twRxwZEnEYQHc5GADgHy5VZDBxdeKhNbrw",
 	}
-	set := componenttest.NewNopExporterCreateSettings()
+	set := exportertest.NewNopCreateSettings()
 	set.BuildInfo.Description = "Collector"
 	set.BuildInfo.Version = "1.2.3test"
 	exp, err := factory.CreateLogsExporter(context.Background(), set, cfg)
@@ -765,7 +766,7 @@ func TestSkipExpiredLogs(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ld := generateTestEntries()
-			e := exporter{config: &Config{ExpirationSkip: tt.expiration}}
+			e := opsrampOTLPExporter{config: &Config{ExpirationSkip: tt.expiration}}
 			e.skipExpired(ld)
 			assert.Equal(t, ld.LogRecordCount(), tt.expected)
 		})

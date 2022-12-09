@@ -21,6 +21,7 @@ import (
 	"regexp"
 	"strings"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/confmap"
@@ -247,6 +248,9 @@ type LogsConfig struct {
 	// TCPAddr.Endpoint is the host of the Datadog intake server to send logs to.
 	// If unset, the value is obtained from the Site.
 	confignet.TCPAddr `mapstructure:",squash"`
+
+	// DumpPayloads report whether payloads should be dumped when logging level is debug.
+	DumpPayloads bool `mapstructure:"dump_payloads"`
 }
 
 // TagsConfig defines the tag-related configuration
@@ -362,9 +366,9 @@ type Config struct {
 	OnlyMetadata bool `mapstructure:"only_metadata"`
 }
 
-var _ config.Exporter = (*Config)(nil)
+var _ component.Config = (*Config)(nil)
 
-// Validate the configuration for errors. This is required by config.Exporter.
+// Validate the configuration for errors. This is required by component.Config.
 func (c *Config) Validate() error {
 	if c.OnlyMetadata && (!c.HostMetadata.Enabled || c.HostMetadata.HostnameSource != HostnameSourceFirstResource) {
 		return errNoMetadata

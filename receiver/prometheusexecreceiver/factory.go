@@ -54,9 +54,9 @@ func logDeprecation(logger *zap.Logger) {
 }
 
 // createDefaultConfig returns a default config
-func createDefaultConfig() config.Receiver {
+func createDefaultConfig() component.Config {
 	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+		ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 		ScrapeInterval:   defaultCollectionInterval,
 		ScrapeTimeout:    defaultTimeoutInterval,
 		SubprocessConfig: subprocessmanager.SubprocessConfig{
@@ -69,10 +69,10 @@ func createDefaultConfig() config.Receiver {
 func createMetricsReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateSettings,
-	cfg config.Receiver,
+	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	logDeprecation(params.Logger)
 	rCfg := cfg.(*Config)
-	return newPromExecReceiver(params, rCfg, nextConsumer)
+	return newPromExecReceiver(params, rCfg, nextConsumer), nil
 }

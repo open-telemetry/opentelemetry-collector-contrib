@@ -15,10 +15,11 @@
 //go:build integration
 // +build integration
 
-package aerospikereceiver_test
+package aerospikereceiver
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"os"
 	"path/filepath"
@@ -28,13 +29,12 @@ import (
 
 	as "github.com/aerospike/aerospike-client-go/v6"
 	"github.com/stretchr/testify/require"
+	testcontainers "github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/containertest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest/golden"
 )
 
 type doneCheckable interface {
@@ -262,11 +262,28 @@ func populateMetrics(t *testing.T, host *as.Host) {
 func TestAerospikeIntegration(t *testing.T) {
 	t.Parallel()
 
-	ct := containertest.New(t)
-	container := ct.StartImage("aerospike:ce-6.1.0.1", containertest.WithPortReady(3000))
+	ctx := context.Background()
+	req := testcontainers.ContainerRequest{
+		Image:        "aerospike/aerospike-server:6.2.0.0",
+		ExposedPorts: []string{"3000/tcp"},
+		WaitingFor:   wait.ForListeningPort("3000/tcp"),
+	}
+	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	require.Nil(t, err)
+	require.NotNil(t, container)
+
+	mappedPort, err := container.MappedPort(ctx, "3000")
+	require.Nil(t, err)
+
+	hostIP, err := container.Host(ctx)
+	require.Nil(t, err)
+
 	time.Sleep(time.Second * 2)
 
-	host := container.AddrForPort(3000)
+	host := fmt.Sprintf("%s:%s", hostIP, mappedPort.Port())
 	ip, portStr, err := net.SplitHostPort(host)
 	require.NoError(t, err)
 
@@ -276,8 +293,8 @@ func TestAerospikeIntegration(t *testing.T) {
 	asHost := as.NewHost(ip, port)
 	populateMetrics(t, asHost)
 
-	f := aerospikereceiver.NewFactory()
-	cfg := f.CreateDefaultConfig().(*aerospikereceiver.Config)
+	f := NewFactory()
+	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Endpoint = host
 	cfg.ScraperControllerSettings.CollectionInterval = 100 * time.Millisecond
 
@@ -298,7 +315,7 @@ func TestAerospikeIntegration(t *testing.T) {
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err, "failed reading expected metrics")
 
-	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics, scrapertest.IgnoreMetricValues(), scrapertest.IgnoreResourceAttributeValue("aerospike.node.name")))
+	require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics, comparetest.IgnoreMetricValues(), comparetest.IgnoreResourceAttributeValue("aerospike.node.name")))
 
 	// now do a run in cluster mode
 	cfg.CollectClusterMetrics = true
@@ -320,6 +337,6 @@ func TestAerospikeIntegration(t *testing.T) {
 	expectedMetrics, err = golden.ReadMetrics(expectedFile)
 	require.NoError(t, err, "failed reading expected metrics")
 
-	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics, scrapertest.IgnoreMetricValues(), scrapertest.IgnoreResourceAttributeValue("aerospike.node.name")))
+	require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics, comparetest.IgnoreMetricValues(), comparetest.IgnoreResourceAttributeValue("aerospike.node.name")))
 
 }

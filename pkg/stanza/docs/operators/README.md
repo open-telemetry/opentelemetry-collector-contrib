@@ -36,6 +36,7 @@ General purpose:
 - [filter](./filter.md)
 - [flatten](./flatten.md)
 - [move](./move.md)
+- [noop](./noop.md)
 - [recombine](./recombine.md)
 - [remove](./remove.md)
 - [retain](./retain.md)

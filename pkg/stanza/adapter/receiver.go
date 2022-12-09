@@ -20,7 +20,6 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.opentelemetry.io/collector/obsreport"
@@ -31,7 +30,7 @@ import (
 )
 
 type receiver struct {
-	id     config.ComponentID
+	id     component.ID
 	wg     sync.WaitGroup
 	cancel context.CancelFunc
 
@@ -42,7 +41,7 @@ type receiver struct {
 	logger    *zap.Logger
 	obsrecv   *obsreport.Receiver
 
-	storageID     *config.ComponentID
+	storageID     *component.ID
 	storageClient storage.Client
 }
 
@@ -149,6 +148,9 @@ func (r *receiver) Shutdown(ctx context.Context) error {
 	r.cancel()
 	r.wg.Wait()
 
-	clientErr := r.storageClient.Close(ctx)
-	return multierr.Combine(pipelineErr, clientErr)
+	if r.storageClient != nil {
+		clientErr := r.storageClient.Close(ctx)
+		return multierr.Combine(pipelineErr, clientErr)
+	}
+	return pipelineErr
 }

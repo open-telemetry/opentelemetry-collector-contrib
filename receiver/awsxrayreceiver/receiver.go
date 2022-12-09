@@ -19,7 +19,6 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/multierr"
@@ -40,12 +39,11 @@ const (
 // xrayReceiver implements the component.TracesReceiver interface for converting
 // AWS X-Ray segment document into the OT internal trace format.
 type xrayReceiver struct {
-	instanceID config.ComponentID
-	poller     udppoller.Poller
-	server     proxy.Server
-	settings   component.ReceiverCreateSettings
-	consumer   consumer.Traces
-	obsrecv    *obsreport.Receiver
+	poller   udppoller.Poller
+	server   proxy.Server
+	settings component.ReceiverCreateSettings
+	consumer consumer.Traces
+	obsrecv  *obsreport.Receiver
 }
 
 func newReceiver(config *Config,
@@ -59,7 +57,6 @@ func newReceiver(config *Config,
 	set.Logger.Info("Going to listen on endpoint for X-Ray segments",
 		zap.String(udppoller.Transport, config.Endpoint))
 	poller, err := udppoller.New(&udppoller.Config{
-		ReceiverID:         config.ID(),
 		Transport:          config.Transport,
 		Endpoint:           config.Endpoint,
 		NumOfPollerToStart: maxPollerCount,
@@ -76,17 +73,21 @@ func newReceiver(config *Config,
 		return nil, err
 	}
 
+	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+		ReceiverID:             set.ID,
+		Transport:              udppoller.Transport,
+		ReceiverCreateSettings: set,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	return &xrayReceiver{
-		instanceID: config.ID(),
-		poller:     poller,
-		server:     srv,
-		settings:   set,
-		consumer:   consumer,
-		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
-			ReceiverID:             config.ID(),
-			Transport:              udppoller.Transport,
-			ReceiverCreateSettings: set,
-		}),
+		poller:   poller,
+		server:   srv,
+		settings: set,
+		consumer: consumer,
+		obsrecv:  obsrecv,
 	}, nil
 }
 

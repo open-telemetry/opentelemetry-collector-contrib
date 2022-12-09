@@ -46,7 +46,7 @@ func NewSplunkHECDataReceiver(port int) *SplunkHECDataReceiver {
 func (sr *SplunkHECDataReceiver) Start(_ consumer.Traces, _ consumer.Metrics, lc consumer.Logs) error {
 	config := splunkhecreceiver.Config{
 		HTTPServerSettings: confighttp.HTTPServerSettings{
-			Endpoint: fmt.Sprintf("localhost:%d", sr.Port),
+			Endpoint: fmt.Sprintf("127.0.0.1:%d", sr.Port),
 		},
 	}
 	var err error
@@ -69,7 +69,7 @@ func (sr *SplunkHECDataReceiver) GenConfigYAMLStr() string {
 	// Note that this generates an exporter config for agent.
 	return fmt.Sprintf(`
     splunk_hec:
-      endpoint: "http://localhost:%d"
+      endpoint: "http://127.0.0.1:%d"
       token: "token"`, sr.Port)
 }
 

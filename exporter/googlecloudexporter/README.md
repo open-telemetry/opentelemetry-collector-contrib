@@ -99,7 +99,7 @@ These instructions are to get you up and running quickly with the GCP exporter i
     ```sh
     docker run \
       --volume ~/.config/gcloud/application_default_credentials.json:/etc/otel/key.json \
-      --volume $(pwd)/config.yaml:/etc/otel/config.yaml \
+      --volume $(pwd)/config.yaml:/etc/otelcol-contrib/config.yaml \
       --env GOOGLE_APPLICATION_CREDENTIALS=/etc/otel/key.json \
       -p 4317:4317 \
       -p 4318:4318 \

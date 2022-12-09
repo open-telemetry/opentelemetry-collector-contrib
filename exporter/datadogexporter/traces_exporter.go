@@ -31,7 +31,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
-	"gopkg.in/zorkian/go-datadog-api.v2"
+	zorkian "gopkg.in/zorkian/go-datadog-api.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/clientutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
@@ -43,7 +43,7 @@ type traceExporter struct {
 	params         component.ExporterCreateSettings
 	cfg            *Config
 	ctx            context.Context // ctx triggers shutdown upon cancellation
-	client         *datadog.Client // client sends runnimg metrics to backend & performs API validation
+	client         *zorkian.Client // client sends runnimg metrics to backend & performs API validation
 	scrubber       scrub.Scrubber  // scrubber scrubs sensitive information from error messages
 	onceMetadata   *sync.Once      // onceMetadata ensures that metadata is sent only once across all exporters
 	wg             sync.WaitGroup  // wg waits for graceful shutdown
@@ -53,8 +53,8 @@ type traceExporter struct {
 
 func newTracesExporter(ctx context.Context, params component.ExporterCreateSettings, cfg *Config, onceMetadata *sync.Once, sourceProvider source.Provider) (*traceExporter, error) {
 	// client to send running metric to the backend & perform API key validation
-	client := clientutil.CreateClient(cfg.API.Key, cfg.Metrics.TCPAddr.Endpoint)
-	if err := clientutil.ValidateAPIKey(params.Logger, client); err != nil && cfg.API.FailOnInvalidKey {
+	client := clientutil.CreateZorkianClient(cfg.API.Key, cfg.Metrics.TCPAddr.Endpoint)
+	if err := clientutil.ValidateAPIKeyZorkian(params.Logger, client); err != nil && cfg.API.FailOnInvalidKey {
 		return nil, err
 	}
 	acfg := traceconfig.New()
@@ -130,12 +130,12 @@ func (exp *traceExporter) consumeTraces(
 			tags[src.Tag()] = struct{}{}
 		}
 	}
-	series := make([]datadog.Metric, 0, len(hosts)+len(tags))
+	series := make([]zorkian.Metric, 0, len(hosts)+len(tags))
 	for host := range hosts {
-		series = append(series, metrics.DefaultMetrics("traces", host, uint64(now), exp.params.BuildInfo)...)
+		series = append(series, metrics.DefaultZorkianMetrics("traces", host, uint64(now), exp.params.BuildInfo)...)
 	}
 	for tag := range tags {
-		ms := metrics.DefaultMetrics("traces", "", uint64(now), exp.params.BuildInfo)
+		ms := metrics.DefaultZorkianMetrics("traces", "", uint64(now), exp.params.BuildInfo)
 		for i := range ms {
 			ms[i].Tags = append(ms[i].Tags, tag)
 		}

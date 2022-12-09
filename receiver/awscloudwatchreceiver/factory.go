@@ -39,7 +39,7 @@ func NewFactory() component.ReceiverFactory {
 func createLogsReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateSettings,
-	rConf config.Receiver,
+	rConf component.Config,
 	consumer consumer.Logs,
 ) (component.LogsReceiver, error) {
 	cfg := rConf.(*Config)
@@ -47,9 +47,9 @@ func createLogsReceiver(
 	return rcvr, nil
 }
 
-func createDefaultConfig() config.Receiver {
+func createDefaultConfig() component.Config {
 	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+		ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 		Logs: &LogsConfig{
 			PollInterval:        defaultPollInterval,
 			MaxEventsPerRequest: defaultEventLimit,

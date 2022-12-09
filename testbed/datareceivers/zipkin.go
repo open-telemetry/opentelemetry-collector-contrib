@@ -41,7 +41,7 @@ func NewZipkinDataReceiver(port int) testbed.DataReceiver {
 func (zr *zipkinDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics, _ consumer.Logs) error {
 	factory := zipkinreceiver.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*zipkinreceiver.Config)
-	cfg.Endpoint = fmt.Sprintf("localhost:%d", zr.Port)
+	cfg.Endpoint = fmt.Sprintf("127.0.0.1:%d", zr.Port)
 
 	set := componenttest.NewNopReceiverCreateSettings()
 	var err error
@@ -62,7 +62,7 @@ func (zr *zipkinDataReceiver) GenConfigYAMLStr() string {
 	// Note that this generates an exporter config for agent.
 	return fmt.Sprintf(`
   zipkin:
-    endpoint: http://localhost:%d/api/v2/spans
+    endpoint: http://127.0.0.1:%d/api/v2/spans
     format: json`, zr.Port)
 }
 

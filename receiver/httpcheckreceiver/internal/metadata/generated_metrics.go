@@ -240,14 +240,14 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, options ...metricBuilderOption) *MetricsBuilder {
+func NewMetricsBuilder(ms MetricsSettings, settings component.ReceiverCreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:               pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:           pmetric.NewMetrics(),
-		buildInfo:               buildInfo,
-		metricHttpcheckDuration: newMetricHttpcheckDuration(settings.HttpcheckDuration),
-		metricHttpcheckError:    newMetricHttpcheckError(settings.HttpcheckError),
-		metricHttpcheckStatus:   newMetricHttpcheckStatus(settings.HttpcheckStatus),
+		buildInfo:               settings.BuildInfo,
+		metricHttpcheckDuration: newMetricHttpcheckDuration(ms.HttpcheckDuration),
+		metricHttpcheckError:    newMetricHttpcheckError(ms.HttpcheckError),
+		metricHttpcheckStatus:   newMetricHttpcheckStatus(ms.HttpcheckStatus),
 	}
 	for _, op := range options {
 		op(mb)

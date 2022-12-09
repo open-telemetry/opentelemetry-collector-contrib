@@ -18,14 +18,13 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoints"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor/internal/common"
 )
 
@@ -36,10 +35,10 @@ type metricsProcessor struct {
 	config *Config
 
 	extractor extractor
-	router    router[component.MetricsExporter, ottldatapoints.TransformContext]
+	router    router[component.MetricsExporter, ottldatapoint.TransformContext]
 }
 
-func newMetricProcessor(settings component.TelemetrySettings, config config.Processor) *metricsProcessor {
+func newMetricProcessor(settings component.TelemetrySettings, config component.Config) *metricsProcessor {
 	cfg := rewriteRoutingEntriesToOTTL(config.(*Config))
 
 	return &metricsProcessor{
@@ -49,14 +48,14 @@ func newMetricProcessor(settings component.TelemetrySettings, config config.Proc
 			cfg.Table,
 			cfg.DefaultExporters,
 			settings,
-			ottldatapoints.NewParser(common.Functions[ottldatapoints.TransformContext](), settings),
+			ottldatapoint.NewParser(common.Functions[ottldatapoint.TransformContext](), settings),
 		),
 		extractor: newExtractor(cfg.FromAttribute, settings.Logger),
 	}
 }
 
 func (p *metricsProcessor) Start(_ context.Context, host component.Host) error {
-	err := p.router.registerExporters(host.GetExporters()[config.MetricsDataType])
+	err := p.router.registerExporters(host.GetExporters()[component.DataTypeMetrics])
 	if err != nil {
 		return err
 	}
@@ -93,7 +92,7 @@ func (p *metricsProcessor) route(ctx context.Context, tm pmetric.Metrics) error 
 
 	for i := 0; i < tm.ResourceMetrics().Len(); i++ {
 		rmetrics := tm.ResourceMetrics().At(i)
-		mtx := ottldatapoints.NewTransformContext(
+		mtx := ottldatapoint.NewTransformContext(
 			nil,
 			pmetric.Metric{},
 			pmetric.MetricSlice{},
@@ -103,7 +102,7 @@ func (p *metricsProcessor) route(ctx context.Context, tm pmetric.Metrics) error 
 
 		matchCount := len(p.router.routes)
 		for key, route := range p.router.routes {
-			_, isMatch, err := route.statement.Execute(mtx)
+			_, isMatch, err := route.statement.Execute(ctx, mtx)
 			if err != nil {
 				return err
 			}

@@ -241,6 +241,18 @@ func TestAwsWithSqsAlternateAttribute(t *testing.T) {
 	assert.Equal(t, queueURL, *awsData.QueueURL)
 }
 
+func TestAwsWithAwsSqsSemConvAttributes(t *testing.T) {
+	queueURL := "https://sqs.use1.amazonaws.com/Meltdown-Alerts"
+	attributes := make(map[string]pcommon.Value)
+	attributes[conventions.AttributeMessagingURL] = pcommon.NewValueStr(queueURL)
+
+	filtered, awsData := makeAws(attributes, pcommon.NewResource())
+
+	assert.NotNil(t, filtered)
+	assert.NotNil(t, awsData)
+	assert.Equal(t, queueURL, *awsData.QueueURL)
+}
+
 func TestAwsWithAwsDynamoDbResources(t *testing.T) {
 	instanceID := "i-00f7c0bcb26da2a99"
 	containerName := "signup_aggregator-x82ufje83"
@@ -282,6 +294,18 @@ func TestAwsWithDynamoDbAlternateAttribute(t *testing.T) {
 	tableName := "MyTable"
 	attributes := make(map[string]pcommon.Value)
 	attributes[awsxray.AWSTableNameAttribute2] = pcommon.NewValueStr(tableName)
+
+	filtered, awsData := makeAws(attributes, pcommon.NewResource())
+
+	assert.NotNil(t, filtered)
+	assert.NotNil(t, awsData)
+	assert.Equal(t, tableName, *awsData.TableName)
+}
+
+func TestAwsWithDynamoDbSemConvAttributes(t *testing.T) {
+	tableName := "MyTable"
+	attributes := make(map[string]pcommon.Value)
+	attributes[conventions.AttributeAWSDynamoDBTableNames] = pcommon.NewValueStr(tableName)
 
 	filtered, awsData := makeAws(attributes, pcommon.NewResource())
 

@@ -17,7 +17,6 @@ package adapter
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -31,7 +30,7 @@ import (
 
 func TestCreateReceiver(t *testing.T) {
 	t.Run("Success", func(t *testing.T) {
-		factory := NewFactory(TestReceiverType{}, component.StabilityLevelInDevelopment)
+		factory := NewFactory(TestReceiverType{}, component.StabilityLevelDevelopment)
 		cfg := factory.CreateDefaultConfig().(*TestConfig)
 		cfg.Operators = []operator.Config{
 			{
@@ -43,20 +42,8 @@ func TestCreateReceiver(t *testing.T) {
 		require.NotNil(t, receiver, "receiver creation failed")
 	})
 
-	t.Run("Success with ConverterConfig", func(t *testing.T) {
-		factory := NewFactory(TestReceiverType{}, component.StabilityLevelInDevelopment)
-		cfg := factory.CreateDefaultConfig().(*TestConfig)
-		cfg.Converter = ConverterConfig{
-			MaxFlushCount: 1,
-			FlushInterval: 3 * time.Second,
-		}
-		receiver, err := factory.CreateLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, consumertest.NewNop())
-		require.NoError(t, err, "receiver creation failed")
-		require.NotNil(t, receiver, "receiver creation failed")
-	})
-
 	t.Run("DecodeOperatorConfigsFailureMissingFields", func(t *testing.T) {
-		factory := NewFactory(TestReceiverType{}, component.StabilityLevelInDevelopment)
+		factory := NewFactory(TestReceiverType{}, component.StabilityLevelDevelopment)
 		badCfg := factory.CreateDefaultConfig().(*TestConfig)
 		badCfg.Operators = []operator.Config{
 			{

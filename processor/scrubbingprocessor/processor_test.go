@@ -218,8 +218,19 @@ func Test_applyMasking(t *testing.T) {
 				config: tt.fields.config,
 			}
 			sp.applyMasking(tt.args.ld)
-			assert.EqualValues(t, tt.args.ld.ResourceLogs().At(0).Resource().Attributes().Sort(), tt.expected.ResourceLogs().At(0).Resource().Attributes().Sort())
-			assert.EqualValues(t, tt.args.ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Sort(), tt.expected.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Sort())
+
+			expected := tt.args.ld.ResourceLogs().At(0).Resource().Attributes()
+			expected.Sort()
+			actual := tt.expected.ResourceLogs().At(0).Resource().Attributes()
+			actual.Sort()
+			assert.EqualValues(t, expected, actual)
+
+			expected = tt.args.ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes()
+			expected.Sort()
+			actual = tt.expected.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes()
+			actual.Sort()
+			assert.EqualValues(t, expected, actual)
+
 			assert.EqualValues(t, tt.args.ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().AsString(), tt.expected.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().AsString())
 		})
 	}

@@ -1,8 +1,8 @@
 # Schema Transformer Processor
 
 | Status                   |                       |
-| ------------------------ | --------------------- |
-| Stability                | [in development]      |
+| ------------------------ |-----------------------|
+| Stability                | [development]         |
 | Supported pipeline types | metrics, traces, logs |
 | Distributions            | none                  |
 
@@ -55,4 +55,4 @@ processors:
 
 For more complete examples, please refer to [config.yml](./testdata/config.yml).
 
-[in development]:https://github.com/open-telemetry/opentelemetry-collector#in-development
+[development]: https://github.com/open-telemetry/opentelemetry-collector#development

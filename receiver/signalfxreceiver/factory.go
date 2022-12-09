@@ -48,9 +48,9 @@ func NewFactory() component.ReceiverFactory {
 		component.WithLogsReceiver(createLogsReceiver, stability))
 }
 
-func createDefaultConfig() config.Receiver {
+func createDefaultConfig() component.Config {
 	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+		ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: defaultEndpoint,
 		},
@@ -91,7 +91,7 @@ func (rCfg *Config) validate() error {
 func createMetricsReceiver(
 	_ context.Context,
 	params component.ReceiverCreateSettings,
-	cfg config.Receiver,
+	cfg component.Config,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	rCfg := cfg.(*Config)
@@ -104,7 +104,10 @@ func createMetricsReceiver(
 	receiverLock.Lock()
 	r := receivers[rCfg]
 	if r == nil {
-		r = newReceiver(params, *rCfg)
+		r, err = newReceiver(params, *rCfg)
+		if err != nil {
+			return nil, err
+		}
 		receivers[rCfg] = r
 	}
 	receiverLock.Unlock()
@@ -118,7 +121,7 @@ func createMetricsReceiver(
 func createLogsReceiver(
 	_ context.Context,
 	params component.ReceiverCreateSettings,
-	cfg config.Receiver,
+	cfg component.Config,
 	consumer consumer.Logs,
 ) (component.LogsReceiver, error) {
 	rCfg := cfg.(*Config)
@@ -131,7 +134,10 @@ func createLogsReceiver(
 	receiverLock.Lock()
 	r := receivers[rCfg]
 	if r == nil {
-		r = newReceiver(params, *rCfg)
+		r, err = newReceiver(params, *rCfg)
+		if err != nil {
+			return nil, err
+		}
 		receivers[rCfg] = r
 	}
 	receiverLock.Unlock()

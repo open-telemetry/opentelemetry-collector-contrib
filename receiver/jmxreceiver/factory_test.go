@@ -20,14 +20,14 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 )
 
 func TestWithInvalidConfig(t *testing.T) {
 	f := NewFactory()
-	assert.Equal(t, config.Type("jmx"), f.Type())
+	assert.Equal(t, component.Type("jmx"), f.Type())
 
 	cfg := f.CreateDefaultConfig()
 	require.NotNil(t, cfg)
@@ -38,7 +38,7 @@ func TestWithInvalidConfig(t *testing.T) {
 		cfg, consumertest.NewNop(),
 	)
 	require.Error(t, err)
-	assert.Equal(t, "jmx missing required fields: `endpoint`, `target_system`", err.Error())
+	assert.Equal(t, "missing required field(s): `endpoint`, `target_system`", err.Error())
 	require.Nil(t, r)
 }
 
@@ -47,7 +47,7 @@ func TestWithValidConfig(t *testing.T) {
 	defer unmockJarVersions()
 
 	f := NewFactory()
-	assert.Equal(t, config.Type("jmx"), f.Type())
+	assert.Equal(t, component.Type("jmx"), f.Type())
 
 	cfg := f.CreateDefaultConfig()
 	cfg.(*Config).Endpoint = "myendpoint:12345"

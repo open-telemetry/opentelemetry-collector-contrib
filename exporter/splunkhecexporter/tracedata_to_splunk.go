@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
@@ -117,8 +118,8 @@ func toHecSpan(logger *zap.Logger, span ptrace.Span) hecSpan {
 		})
 		links[i] = hecLink{
 			Attributes: linkAttributes,
-			TraceID:    link.TraceID().HexString(),
-			SpanID:     link.SpanID().HexString(),
+			TraceID:    traceutil.TraceIDToHexOrEmptyString(link.TraceID()),
+			SpanID:     traceutil.SpanIDToHexOrEmptyString(link.SpanID()),
 			TraceState: link.TraceState().AsRaw(),
 		}
 	}
@@ -138,17 +139,17 @@ func toHecSpan(logger *zap.Logger, span ptrace.Span) hecSpan {
 	}
 	status := hecSpanStatus{
 		Message: span.Status().Message(),
-		Code:    span.Status().Code().String(),
+		Code:    traceutil.StatusCodeStr(span.Status().Code()),
 	}
 	return hecSpan{
-		TraceID:    span.TraceID().HexString(),
-		SpanID:     span.SpanID().HexString(),
-		ParentSpan: span.ParentSpanID().HexString(),
+		TraceID:    traceutil.TraceIDToHexOrEmptyString(span.TraceID()),
+		SpanID:     traceutil.SpanIDToHexOrEmptyString(span.SpanID()),
+		ParentSpan: traceutil.SpanIDToHexOrEmptyString(span.ParentSpanID()),
 		Name:       span.Name(),
 		Attributes: attributes,
 		StartTime:  span.StartTimestamp(),
 		EndTime:    span.EndTimestamp(),
-		Kind:       span.Kind().String(),
+		Kind:       traceutil.SpanKindStr(span.Kind()),
 		Status:     status,
 		Links:      links,
 		Events:     events,

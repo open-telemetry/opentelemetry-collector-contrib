@@ -20,9 +20,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
@@ -33,14 +32,14 @@ func TestType(t *testing.T) {
 	t.Parallel()
 
 	factory := NewFactory()
-	assert.Equal(t, config.Type("chrony"), factory.Type(), "Must match the expected type")
+	assert.Equal(t, component.Type("chrony"), factory.Type(), "Must match the expected type")
 }
 
 func TestValidConfig(t *testing.T) {
 	t.Parallel()
 
 	factory := NewFactory()
-	assert.NoError(t, configtest.CheckConfigStruct(factory.CreateDefaultConfig()))
+	assert.NoError(t, componenttest.CheckConfigStruct(factory.CreateDefaultConfig()))
 }
 
 func TestCreatingMetricsReceiver(t *testing.T) {

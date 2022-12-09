@@ -59,28 +59,29 @@ func verifyPushMetricsData(t *testing.T, errorOnSend bool) error {
 
 func createMockMetricsExporter(
 	sender *mockMetricSender) (component.MetricsExporter, error) {
-	cfg := createDefaultConfig()
-	ourConfig := cfg.(*Config)
-	ourConfig.Metrics.Endpoint = "http://localhost:2878"
+	exporterConfig := createDefaultConfig()
+	tobsConfig := exporterConfig.(*Config)
+	tobsConfig.Metrics.Endpoint = "http://localhost:2878"
 	creator := func(
-		endpoint string, settings component.TelemetrySettings, otelVersion string) (*metricsConsumer, error) {
+		metricsConfig MetricsConfig, settings component.TelemetrySettings, otelVersion string) (*metricsConsumer, error) {
 		return newMetricsConsumer(
 			[]typedMetricConsumer{
 				newGaugeConsumer(sender, settings),
 			},
 			sender,
 			false,
+			tobsConfig.Metrics,
 		), nil
 	}
 
-	exp, err := newMetricsExporter(componenttest.NewNopExporterCreateSettings(), cfg, creator)
+	exp, err := newMetricsExporter(componenttest.NewNopExporterCreateSettings(), exporterConfig, creator)
 	if err != nil {
 		return nil, err
 	}
 	return exporterhelper.NewMetricsExporter(
 		context.Background(),
 		componenttest.NewNopExporterCreateSettings(),
-		cfg,
+		exporterConfig,
 		exp.pushMetricsData,
 		exporterhelper.WithShutdown(exp.shutdown),
 	)

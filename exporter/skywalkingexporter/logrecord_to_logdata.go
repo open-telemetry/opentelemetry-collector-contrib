@@ -15,6 +15,7 @@
 package skywalkingexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/skywalkingexporter"
 
 import (
+	"encoding/hex"
 	"strconv"
 	"time"
 
@@ -141,14 +142,14 @@ func mapLogRecordToLogData(lr plog.LogRecord, logData *logpb.LogData) {
 		})
 	}
 
-	if traceID := lr.TraceID().HexString(); traceID != "" {
-		logData.TraceContext = &logpb.TraceContext{TraceId: traceID}
+	if traceID := lr.TraceID(); !traceID.IsEmpty() {
+		logData.TraceContext = &logpb.TraceContext{TraceId: hex.EncodeToString(traceID[:])}
 	}
 
-	if spanID := lr.SpanID().HexString(); spanID != "" {
+	if spanID := lr.SpanID(); !spanID.IsEmpty() {
 		logData.Tags.Data = append(logData.Tags.Data, &common.KeyStringValuePair{
 			Key:   spanIDField,
-			Value: spanID,
+			Value: hex.EncodeToString(spanID[:]),
 		})
 	}
 }

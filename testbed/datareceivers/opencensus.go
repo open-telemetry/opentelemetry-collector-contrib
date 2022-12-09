@@ -43,7 +43,7 @@ func NewOCDataReceiver(port int) testbed.DataReceiver {
 func (or *ocDataReceiver) Start(tc consumer.Traces, mc consumer.Metrics, _ consumer.Logs) error {
 	factory := opencensusreceiver.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*opencensusreceiver.Config)
-	cfg.NetAddr = confignet.NetAddr{Endpoint: fmt.Sprintf("localhost:%d", or.Port), Transport: "tcp"}
+	cfg.NetAddr = confignet.NetAddr{Endpoint: fmt.Sprintf("127.0.0.1:%d", or.Port), Transport: "tcp"}
 	var err error
 	set := componenttest.NewNopReceiverCreateSettings()
 	if or.traceReceiver, err = factory.CreateTracesReceiver(context.Background(), set, cfg, tc); err != nil {
@@ -69,7 +69,7 @@ func (or *ocDataReceiver) GenConfigYAMLStr() string {
 	// Note that this generates an exporter config for agent.
 	return fmt.Sprintf(`
   opencensus:
-    endpoint: "localhost:%d"
+    endpoint: "127.0.0.1:%d"
     tls:
       insecure: true`, or.Port)
 }

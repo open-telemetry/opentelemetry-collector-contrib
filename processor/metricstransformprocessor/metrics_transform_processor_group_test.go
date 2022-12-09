@@ -22,14 +22,15 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest/golden"
 )
 
 type metricsGroupingTest struct {
@@ -83,7 +84,7 @@ func TestMetricsGrouping(t *testing.T) {
 					context.Background(),
 					componenttest.NewNopProcessorCreateSettings(),
 					&Config{
-						ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
+						ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 					},
 					next, p.processMetrics, processorhelper.WithCapabilities(consumerCapabilities))
 				require.NoError(t, err)
@@ -101,7 +102,7 @@ func TestMetricsGrouping(t *testing.T) {
 
 				got := next.AllMetrics()
 				require.Equal(t, 1, len(got))
-				require.NoError(t, scrapertest.CompareMetrics(expected, got[0], scrapertest.IgnoreMetricValues()))
+				require.NoError(t, comparetest.CompareMetrics(expected, got[0], comparetest.IgnoreMetricValues()))
 
 				assert.NoError(t, mtp.Shutdown(context.Background()))
 			})

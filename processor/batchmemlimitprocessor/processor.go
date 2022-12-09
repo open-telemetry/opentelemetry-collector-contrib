@@ -12,8 +12,6 @@ import (
 	"go.uber.org/zap"
 )
 
-var sizer = plog.NewProtoMarshaler().(plog.Sizer)
-
 type batchMemoryLimitProcessor struct {
 	logger *zap.Logger
 
@@ -140,7 +138,7 @@ func newBatchLogs(nextConsumer consumer.Logs) *batchLogs {
 	return &batchLogs{
 		nextConsumer: nextConsumer,
 		logData:      plog.NewLogs(),
-		sizer:        plog.NewProtoMarshaler().(plog.Sizer),
+		sizer:        plog.MarshalSizer(&plog.ProtoMarshaler{}).(plog.Sizer),
 	}
 }
 

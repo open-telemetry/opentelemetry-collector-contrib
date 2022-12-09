@@ -21,7 +21,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/xray"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -38,9 +37,9 @@ const (
 // newTracesExporter creates an component.TracesExporter that converts to an X-Ray PutTraceSegments
 // request and then posts the request to the configured region's X-Ray endpoint.
 func newTracesExporter(
-	config config.Exporter, set component.ExporterCreateSettings, cn awsutil.ConnAttr) (component.TracesExporter, error) {
-	typeLog := zap.String("type", string(config.ID().Type()))
-	nameLog := zap.String("name", config.ID().String())
+	config component.Config, set component.ExporterCreateSettings, cn awsutil.ConnAttr) (component.TracesExporter, error) {
+	typeLog := zap.String("type", string(set.ID.Type()))
+	nameLog := zap.String("name", set.ID.String())
 	logger := set.Logger
 	awsConfig, session, err := awsutil.GetAWSConfigSession(logger, cn, &config.(*Config).AWSSessionSettings)
 	if err != nil {
@@ -87,7 +86,7 @@ func newTracesExporter(
 	)
 }
 
-func extractResourceSpans(config config.Exporter, logger *zap.Logger, td ptrace.Traces) []*string {
+func extractResourceSpans(config component.Config, logger *zap.Logger, td ptrace.Traces) []*string {
 	documents := make([]*string, 0, td.SpanCount())
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rspans := td.ResourceSpans().At(i)

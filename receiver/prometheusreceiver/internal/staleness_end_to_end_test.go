@@ -192,7 +192,7 @@ service:
 	for notYetStarted := true; notYetStarted; {
 		state := app.GetState()
 		switch state {
-		case service.Running, service.Closed, service.Closing:
+		case service.StateRunning, service.StateClosed, service.StateClosing:
 			notYetStarted = false
 		}
 		time.Sleep(10 * time.Millisecond)

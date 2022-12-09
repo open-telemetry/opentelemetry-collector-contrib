@@ -31,6 +31,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
 const (
@@ -273,7 +275,7 @@ func convertToSentrySpan(span ptrace.Span, library pcommon.InstrumentationScope,
 	}
 
 	if spanKind != ptrace.SpanKindUnspecified {
-		tags["span_kind"] = spanKind.String()
+		tags["span_kind"] = traceutil.SpanKindStr(spanKind)
 	}
 
 	tags["library_name"] = library.Name()

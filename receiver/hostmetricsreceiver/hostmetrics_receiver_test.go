@@ -93,6 +93,22 @@ var factories = map[string]internal.ScraperFactory{
 	processscraper.TypeStr:    &processscraper.Factory{},
 }
 
+type testEnv struct {
+	env map[string]string
+}
+
+var _ environment = (*testEnv)(nil)
+
+func (e *testEnv) Lookup(k string) (string, bool) {
+	v, ok := e.env[k]
+	return v, ok
+}
+
+func (e *testEnv) Set(k, v string) error {
+	e.env[k] = v
+	return nil
+}
+
 func TestGatherMetrics_EndToEnd(t *testing.T) {
 	scraperFactories = factories
 
@@ -100,7 +116,7 @@ func TestGatherMetrics_EndToEnd(t *testing.T) {
 
 	cfg := &Config{
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
+			ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 			CollectionInterval: 100 * time.Millisecond,
 		},
 		Scrapers: map[string]internal.Config{
@@ -208,6 +224,8 @@ const mockTypeStr = "mock"
 
 type mockConfig struct{}
 
+func (m *mockConfig) SetRootPath(_ string) {}
+
 type mockFactory struct{ mock.Mock }
 type mockScraper struct{ mock.Mock }
 
@@ -217,7 +235,7 @@ func (m *mockFactory) CreateMetricsScraper(context.Context, component.ReceiverCr
 	return args.Get(0).(scraperhelper.Scraper), args.Error(1)
 }
 
-func (m *mockScraper) ID() config.ComponentID                      { return config.NewComponentID("") }
+func (m *mockScraper) ID() component.ID                            { return component.NewID("") }
 func (m *mockScraper) Start(context.Context, component.Host) error { return nil }
 func (m *mockScraper) Shutdown(context.Context) error              { return nil }
 func (m *mockScraper) Scrape(context.Context) (pmetric.Metrics, error) {

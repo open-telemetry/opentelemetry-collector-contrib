@@ -54,9 +54,9 @@ func NewFactory() component.ExporterFactory {
 		component.WithLogsExporter(createLogsExporter, stability))
 }
 
-func createDefaultConfig() config.Exporter {
+func createDefaultConfig() component.Config {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		FormatType:       formatTypeJSON,
 		Rotation:         &Rotation{MaxBackups: defaultMaxBackups},
 	}
@@ -65,7 +65,7 @@ func createDefaultConfig() config.Exporter {
 func createTracesExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
-	cfg config.Exporter,
+	cfg component.Config,
 ) (component.TracesExporter, error) {
 	conf := cfg.(*Config)
 	writer, err := buildFileWriter(conf)
@@ -73,15 +73,7 @@ func createTracesExporter(
 		return nil, err
 	}
 	fe := exporters.GetOrAdd(cfg, func() component.Component {
-		return &fileExporter{
-			path:            conf.Path,
-			formatType:      conf.FormatType,
-			file:            writer,
-			tracesMarshaler: tracesMarshalers[conf.FormatType],
-			exporter:        buildExportFunc(conf),
-			compression:     conf.Compression,
-			compressor:      buildCompressor(conf.Compression),
-		}
+		return newFileExporter(conf, writer)
 	})
 	return exporterhelper.NewTracesExporter(
 		ctx,
@@ -96,7 +88,7 @@ func createTracesExporter(
 func createMetricsExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
-	cfg config.Exporter,
+	cfg component.Config,
 ) (component.MetricsExporter, error) {
 	conf := cfg.(*Config)
 	writer, err := buildFileWriter(conf)
@@ -104,15 +96,7 @@ func createMetricsExporter(
 		return nil, err
 	}
 	fe := exporters.GetOrAdd(cfg, func() component.Component {
-		return &fileExporter{
-			path:             conf.Path,
-			formatType:       conf.FormatType,
-			file:             writer,
-			metricsMarshaler: metricsMarshalers[conf.FormatType],
-			exporter:         buildExportFunc(conf),
-			compression:      conf.Compression,
-			compressor:       buildCompressor(conf.Compression),
-		}
+		return newFileExporter(conf, writer)
 	})
 	return exporterhelper.NewMetricsExporter(
 		ctx,
@@ -127,7 +111,7 @@ func createMetricsExporter(
 func createLogsExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
-	cfg config.Exporter,
+	cfg component.Config,
 ) (component.LogsExporter, error) {
 	conf := cfg.(*Config)
 	writer, err := buildFileWriter(conf)
@@ -135,15 +119,7 @@ func createLogsExporter(
 		return nil, err
 	}
 	fe := exporters.GetOrAdd(cfg, func() component.Component {
-		return &fileExporter{
-			path:          conf.Path,
-			formatType:    conf.FormatType,
-			file:          writer,
-			logsMarshaler: logsMarshalers[conf.FormatType],
-			exporter:      buildExportFunc(conf),
-			compression:   conf.Compression,
-			compressor:    buildCompressor(conf.Compression),
-		}
+		return newFileExporter(conf, writer)
 	})
 	return exporterhelper.NewLogsExporter(
 		ctx,
@@ -153,6 +129,20 @@ func createLogsExporter(
 		exporterhelper.WithStart(fe.Start),
 		exporterhelper.WithShutdown(fe.Shutdown),
 	)
+}
+
+func newFileExporter(conf *Config, writer io.WriteCloser) *fileExporter {
+	return &fileExporter{
+		path:             conf.Path,
+		formatType:       conf.FormatType,
+		file:             writer,
+		tracesMarshaler:  tracesMarshalers[conf.FormatType],
+		metricsMarshaler: metricsMarshalers[conf.FormatType],
+		logsMarshaler:    logsMarshalers[conf.FormatType],
+		exporter:         buildExportFunc(conf),
+		compression:      conf.Compression,
+		compressor:       buildCompressor(conf.Compression),
+	}
 }
 
 func buildFileWriter(cfg *Config) (io.WriteCloser, error) {

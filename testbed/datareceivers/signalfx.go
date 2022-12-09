@@ -46,7 +46,7 @@ func NewSFxMetricsDataReceiver(port int) *SFxMetricsDataReceiver {
 func (sr *SFxMetricsDataReceiver) Start(_ consumer.Traces, mc consumer.Metrics, _ consumer.Logs) error {
 	config := signalfxreceiver.Config{
 		HTTPServerSettings: confighttp.HTTPServerSettings{
-			Endpoint: fmt.Sprintf("localhost:%d", sr.Port),
+			Endpoint: fmt.Sprintf("127.0.0.1:%d", sr.Port),
 		},
 	}
 	var err error
@@ -69,8 +69,8 @@ func (sr *SFxMetricsDataReceiver) GenConfigYAMLStr() string {
 	// Note that this generates an exporter config for agent.
 	return fmt.Sprintf(`
     signalfx:
-      ingest_url: "http://localhost:%d"
-      api_url: "http://localhost/"
+      ingest_url: "http://127.0.0.1:%d"
+      api_url: "http://127.0.0.1/"
       access_token: "access_token"`, sr.Port)
 }
 

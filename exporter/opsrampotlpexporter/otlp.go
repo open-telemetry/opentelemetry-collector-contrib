@@ -27,8 +27,6 @@ import (
 	"runtime"
 	"time"
 
-	"go.opentelemetry.io/collector/config"
-
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -37,6 +35,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
@@ -46,7 +45,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 )
 
-type exporter struct {
+type opsrampOTLPExporter struct {
 	// Input configuration.
 	config *Config
 
@@ -67,7 +66,7 @@ type exporter struct {
 
 // Crete new exporter and start it. The exporter will begin connecting but
 // this function may return before the connection is established.
-func newExporter(cfg config.Exporter, set component.ExporterCreateSettings) (*exporter, error) {
+func newExporter(cfg component.Config, set exporter.CreateSettings) (*opsrampOTLPExporter, error) {
 	oCfg := cfg.(*Config)
 
 	accessToken, err := getAuthToken(oCfg.Security)
@@ -82,7 +81,7 @@ func newExporter(cfg config.Exporter, set component.ExporterCreateSettings) (*ex
 	userAgent := fmt.Sprintf("%s/%s (%s/%s)",
 		set.BuildInfo.Description, set.BuildInfo.Version, runtime.GOOS, runtime.GOARCH)
 
-	return &exporter{config: oCfg, settings: set.TelemetrySettings, userAgent: userAgent, accessToken: accessToken}, nil
+	return &opsrampOTLPExporter{config: oCfg, settings: set.TelemetrySettings, userAgent: userAgent, accessToken: accessToken}, nil
 }
 
 type Creds struct {
@@ -131,20 +130,15 @@ func getAuthToken(cfg SecuritySettings) (string, error) {
 
 // start actually creates the gRPC connection. The client construction is deferred till this point as this
 // is the only place we get hold of Extensions which are required to construct auth round tripper.
-func (e *exporter) start(ctx context.Context, host component.Host) (err error) {
-	dialOpts, err := e.config.GRPCClientSettings.ToDialOptions(host, e.settings)
-	if err != nil {
-		return err
-	}
-	dialOpts = append(dialOpts, grpc.WithUserAgent(e.userAgent))
+func (e *opsrampOTLPExporter) start(ctx context.Context, host component.Host) (err error) {
 
-	if e.clientConn, err = grpc.DialContext(ctx, e.config.GRPCClientSettings.SanitizedEndpoint(), dialOpts...); err != nil {
+	if e.clientConn, err = e.config.GRPCClientSettings.ToClientConn(ctx, host, e.settings, grpc.WithUserAgent(e.userAgent)); err != nil {
 		return err
 	}
 
-	e.traceExporter = ptraceotlp.NewClient(e.clientConn)
-	e.metricExporter = pmetricotlp.NewClient(e.clientConn)
-	e.logExporter = plogotlp.NewClient(e.clientConn)
+	e.traceExporter = ptraceotlp.NewGRPCClient(e.clientConn)
+	e.metricExporter = pmetricotlp.NewGRPCClient(e.clientConn)
+	e.logExporter = plogotlp.NewGRPCClient(e.clientConn)
 	e.metadata = metadata.New(e.config.GRPCClientSettings.Headers)
 	e.metadata.Set("Authorization", fmt.Sprintf("Bearer %s", e.accessToken))
 	e.callOptions = []grpc.CallOption{
@@ -154,23 +148,23 @@ func (e *exporter) start(ctx context.Context, host component.Host) (err error) {
 	return
 }
 
-func (e *exporter) shutdown(context.Context) error {
+func (e *opsrampOTLPExporter) shutdown(context.Context) error {
 	return e.clientConn.Close()
 }
 
-func (e *exporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
-	req := ptraceotlp.NewRequestFromTraces(td)
+func (e *opsrampOTLPExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
+	req := ptraceotlp.NewExportRequestFromTraces(td)
 	_, err := e.traceExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
 	return processError(err)
 }
 
-func (e *exporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
-	req := pmetricotlp.NewRequestFromMetrics(md)
+func (e *opsrampOTLPExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
+	req := pmetricotlp.NewExportRequestFromMetrics(md)
 	_, err := e.metricExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
 	return processError(err)
 }
 
-func (e *exporter) pushLogs(ctx context.Context, ld plog.Logs) error {
+func (e *opsrampOTLPExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 	if e.config.Masking != nil {
 		e.applyMasking(ld)
 	}
@@ -178,7 +172,7 @@ func (e *exporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 		e.skipExpired(ld)
 	}
 
-	req := plogotlp.NewRequestFromLogs(ld)
+	req := plogotlp.NewExportRequestFromLogs(ld)
 
 	_, err := e.logExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
 
@@ -200,7 +194,7 @@ func (e *exporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 	return nil
 }
 
-func (e *exporter) updateExpiredToken() error {
+func (e *opsrampOTLPExporter) updateExpiredToken() error {
 	accessToken, err := getAuthToken(e.config.Security)
 	if err != nil {
 		return err
@@ -210,7 +204,7 @@ func (e *exporter) updateExpiredToken() error {
 	return nil
 }
 
-func (e *exporter) enhanceContext(ctx context.Context) context.Context {
+func (e *opsrampOTLPExporter) enhanceContext(ctx context.Context) context.Context {
 	if e.metadata.Len() > 0 {
 		return metadata.NewOutgoingContext(ctx, e.metadata)
 	}
@@ -293,7 +287,7 @@ func getThrottleDuration(t *errdetails.RetryInfo) time.Duration {
 	return 0
 }
 
-func (e *exporter) applyMasking(ld plog.Logs) {
+func (e *opsrampOTLPExporter) applyMasking(ld plog.Logs) {
 
 	for i := 0; i < ld.ResourceLogs().Len(); i++ {
 		resLogs := ld.ResourceLogs().At(i)
@@ -311,7 +305,7 @@ func (e *exporter) applyMasking(ld plog.Logs) {
 
 }
 
-func (e *exporter) skipExpired(ld plog.Logs) {
+func (e *opsrampOTLPExporter) skipExpired(ld plog.Logs) {
 	for i := 0; i < ld.ResourceLogs().Len(); i++ {
 		resLogs := ld.ResourceLogs().At(i)
 

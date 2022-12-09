@@ -50,7 +50,7 @@ exporters:
 ```
 ### Tracing deprecation 
 
-The v0.60 version deprecates old Jaeger based tracing endpoint in favour of Opentelemetry based one.
+The v0.67 version removed old Jaeger based tracing endpoint in favour of Opentelemetry based one.
 
 To migrate, please remove the old endpoint field, and change the configuration to `traces.endpoint` using the new Tracing endpoint.
 
@@ -163,6 +163,22 @@ processors:
       tags:
         - ^ec2.tag.name$
         - ^ec2.tag.subsystem$
+```
+
+**_NOTE:_** In order to fetch EC2 tags, the IAM role assigned to the EC2 instance must have a policy that includes the `ec2:DescribeTags` permission.
+
+```
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "VisualEditor0",
+            "Effect": "Allow",
+            "Action": "ec2:DescribeTags",
+            "Resource": "*"
+        }
+    ]
+}
 ```
 
 You can configure Coralogix Exporter:

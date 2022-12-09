@@ -13,14 +13,15 @@
 // limitations under the License.
 
 package azureeventhubreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver"
+
 import (
 	"context"
+	"fmt"
 
 	eventhub "github.com/Azure/azure-event-hubs-go/v3"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 
@@ -28,17 +29,22 @@ import (
 )
 
 type client struct {
-	logger   *zap.Logger
+	settings component.ReceiverCreateSettings
 	consumer consumer.Logs
 	config   *Config
 	obsrecv  *obsreport.Receiver
 	hub      hubWrapper
+	convert  eventConverter
 }
 
 type hubWrapper interface {
 	GetRuntimeInformation(ctx context.Context) (*eventhub.HubRuntimeInformation, error)
 	Receive(ctx context.Context, partitionID string, handler eventhub.Handler, opts ...eventhub.ReceiveOption) (listerHandleWrapper, error)
 	Close(ctx context.Context) error
+}
+
+type eventConverter interface {
+	ToLogs(event *eventhub.Event) (plog.Logs, error)
 }
 
 type listerHandleWrapper interface {
@@ -64,7 +70,7 @@ func (h *hubWrapperImpl) Close(ctx context.Context) error {
 }
 
 func (c *client) Start(ctx context.Context, host component.Host) error {
-	storageClient, err := adapter.GetStorageClient(ctx, host, c.config.StorageID, c.config.ID())
+	storageClient, err := adapter.GetStorageClient(ctx, host, c.config.StorageID, c.settings.ID)
 	if err != nil {
 		return err
 	}
@@ -115,7 +121,7 @@ func (c *client) setUpOnePartition(ctx context.Context, partitionID string, appl
 		<-handle.Done()
 		err := handle.Err()
 		if err != nil {
-			c.logger.Error("Error reported by event hub", zap.Error(err))
+			c.settings.Logger.Error("Error reported by event hub", zap.Error(err))
 		}
 	}()
 
@@ -123,17 +129,13 @@ func (c *client) setUpOnePartition(ctx context.Context, partitionID string, appl
 }
 
 func (c *client) handle(ctx context.Context, event *eventhub.Event) error {
-	c.obsrecv.StartLogsOp(ctx)
-	l := plog.NewLogs()
-	lr := l.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
-	slice := lr.Body().SetEmptyBytes()
-	slice.Append(event.Data...)
-	lr.Attributes().FromRaw(event.Properties)
-	if event.SystemProperties.EnqueuedTime != nil {
-		lr.SetTimestamp(pcommon.NewTimestampFromTime(*event.SystemProperties.EnqueuedTime))
+	logs, err := c.convert.ToLogs(event)
+	if err != nil {
+		return fmt.Errorf("failed to convert logs: %w", err)
 	}
-	consumerErr := c.consumer.ConsumeLogs(ctx, l)
-	c.obsrecv.EndLogsOp(ctx, "azureeventhub", 1, consumerErr)
+	c.obsrecv.StartLogsOp(ctx)
+	consumerErr := c.consumer.ConsumeLogs(ctx, logs)
+	c.obsrecv.EndLogsOp(ctx, "azureeventhub", logs.LogRecordCount(), consumerErr)
 	return consumerErr
 }
 

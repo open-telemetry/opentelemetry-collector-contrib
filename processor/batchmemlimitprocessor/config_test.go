@@ -6,8 +6,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/service/servicetest"
 )
 
@@ -21,7 +21,7 @@ func TestConfigLoad(t *testing.T) {
 	assert.Nil(t, err)
 	require.NotNil(t, cfg)
 
-	id := config.NewComponentIDWithName(typeStr, "")
+	id := component.NewIDWithName(typeStr, "")
 	component, ok := cfg.Processors[id]
 	assert.True(t, ok)
 	assert.Equal(t, component.(*Config).SendMemorySize, uint32(128))

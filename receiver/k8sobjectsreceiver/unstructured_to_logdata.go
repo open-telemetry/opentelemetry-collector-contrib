@@ -60,6 +60,7 @@ func unstructuredListToLogData(event *unstructured.UnstructuredList) plog.Logs {
 
 		dest := record.Body()
 		destMap := dest.SetEmptyMap()
+		//nolint:errcheck
 		destMap.FromRaw(e.Object)
 	}
 	return out

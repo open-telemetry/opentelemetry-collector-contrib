@@ -6,6 +6,8 @@
 | Supported pipeline types | traces    |
 | Distributions            | [contrib] |
 
+> note: The labels of service graph metrics emitted by this processor have a breaking change, the previous labels set will deprecate in the next release, refer [Edge loss attributes from client-side or server-side](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16002)
+
 The service graphs processor is a traces processor that builds a map representing the interrelationships between various services in a system.
 The processor will analyse trace data and generate metrics describing the relationship between the services.
 These metrics can be used by data visualization apps (e.g. Grafana) to draw a service graph.
@@ -60,7 +62,9 @@ Duration is measured both from the client and the server sides.
 
 Possible values for `connection_type`: unset, `messaging_system`, or `database`.
 
-Additional labels can be included using the `dimensions` configuration option.
+Additional labels can be included using the `dimensions` configuration option. Those labels will have a prefix to mark where they originate (client or server span kinds).
+The `client_` prefix relates to the dimensions coming from spans with `SPAN_KIND_CLIENT`, and the `server_` prefix relates to the
+dimensions coming from spans with `SPAN_KIND_SERVER`.
 
 Since the service graph processor has to process both sides of an edge,
 it needs to process all spans of a trace to function properly.
@@ -113,7 +117,7 @@ processors:
     latency_histogram_buckets: [100us, 1ms, 2ms, 6ms, 10ms, 100ms, 250ms] # Buckets for latency histogram
     dimensions: [cluster, namespace] # Additional dimensions (labels) to be added to the metrics extracted from the resource and span attributes
     store: # Configuration for the in-memory store
-      wait: 2s # Value to wait for an edge to be completed
+      ttl: 2s # Value to wait for an edge to be completed
       max_items: 200 # Amount of edges that will be stored in the storeMap      
 
 exporters:
@@ -135,3 +139,5 @@ service:
       exporters: [prometheus/servicegraph]
 ```
 
+[alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

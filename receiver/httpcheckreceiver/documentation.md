@@ -2,31 +2,58 @@
 
 # httpcheckreceiver
 
-## Metrics
+## Default Metrics
 
-These are the metrics available for this scraper.
-
-| Name | Description | Unit | Type | Attributes |
-| ---- | ----------- | ---- | ---- | ---------- |
-| **httpcheck.duration** | Measures the duration of the HTTP check. | ms | Gauge(Int) | <ul> <li>http.url</li> </ul> |
-| **httpcheck.error** | Records errors occurring during HTTP check. | {error} | Sum(Int) | <ul> <li>http.url</li> <li>error.message</li> </ul> |
-| **httpcheck.status** | 1 if the check resulted in status_code matching the status_class, otherwise 0. | 1 | Sum(Int) | <ul> <li>http.url</li> <li>http.status_code</li> <li>http.method</li> <li>http.status_class</li> </ul> |
-
-**Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
-Any metric can be enabled or disabled with the following scraper configuration:
+The following metrics are emitted by default. Each of them can be disabled by applying the following configuration:
 
 ```yaml
 metrics:
   <metric_name>:
-    enabled: <true|false>
+    enabled: false
 ```
 
-## Metric attributes
+### httpcheck.duration
+
+Measures the duration of the HTTP check.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| ms | Gauge | Int |
+
+#### Attributes
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| error.message | Error message recorded during check |  |
-| http.method | HTTP request method |  |
-| http.status_class | HTTP response status class |  |
-| http.status_code | HTTP response status code |  |
-| http.url | Full HTTP request URL. |  |
+| http.url | Full HTTP request URL. | Any Str |
+
+### httpcheck.error
+
+Records errors occurring during HTTP check.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {error} | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| http.url | Full HTTP request URL. | Any Str |
+| error.message | Error message recorded during check | Any Str |
+
+### httpcheck.status
+
+1 if the check resulted in status_code matching the status_class, otherwise 0.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| 1 | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| http.url | Full HTTP request URL. | Any Str |
+| http.status_code | HTTP response status code | Any Int |
+| http.method | HTTP request method | Any Str |
+| http.status_class | HTTP response status class | Any Str |

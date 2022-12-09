@@ -31,8 +31,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/featuregate"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest/golden"
 )
 
 type configFunc func(hostname string) *Config
@@ -153,7 +153,11 @@ func TestPostgreSQLIntegration(t *testing.T) {
 
 			actualMetrics := consumer.AllMetrics()[0]
 
-			require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics, scrapertest.IgnoreMetricValues()))
+			require.NoError(t, comparetest.CompareMetrics(
+				expectedMetrics, actualMetrics,
+				comparetest.IgnoreMetricValues(),
+				comparetest.IgnoreSubsequentDataPoints("postgresql.backends"),
+			))
 		})
 	}
 }

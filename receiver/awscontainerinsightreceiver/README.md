@@ -273,8 +273,8 @@ spec:
               mountPath: /var/lib/docker
               readOnly: true
             - name: containerdsock
-               mountPath: /run/containerd/containerd.sock
-               readOnly: true
+              mountPath: /run/containerd/containerd.sock
+              readOnly: true
             - name: sys
               mountPath: /sys
               readOnly: true
@@ -307,8 +307,8 @@ spec:
           hostPath:
             path: /var/lib/docker
         - name: containerdsock
-           hostPath:
-             path: /run/containerd/containerd.sock
+          hostPath:
+            path: /run/containerd/containerd.sock
         - name: sys
           hostPath:
             path: /sys

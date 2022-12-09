@@ -15,6 +15,7 @@
 package prometheusremotewrite // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite"
 
 import (
+	"encoding/hex"
 	"fmt"
 	"log"
 	"math"
@@ -364,8 +365,8 @@ func getPromExemplars(pt pmetric.HistogramDataPoint) []prompb.Exemplar {
 			Value:     exemplar.DoubleValue(),
 			Timestamp: timestamp.FromTime(exemplar.Timestamp().AsTime()),
 		}
-		if !exemplar.TraceID().IsEmpty() {
-			val := exemplar.TraceID().HexString()
+		if traceID := exemplar.TraceID(); !traceID.IsEmpty() {
+			val := hex.EncodeToString(traceID[:])
 			exemplarRunes += utf8.RuneCountInString(traceIDKey) + utf8.RuneCountInString(val)
 			promLabel := prompb.Label{
 				Name:  traceIDKey,
@@ -373,8 +374,8 @@ func getPromExemplars(pt pmetric.HistogramDataPoint) []prompb.Exemplar {
 			}
 			promExemplar.Labels = append(promExemplar.Labels, promLabel)
 		}
-		if !exemplar.SpanID().IsEmpty() {
-			val := exemplar.SpanID().HexString()
+		if spanID := exemplar.SpanID(); !spanID.IsEmpty() {
+			val := hex.EncodeToString(spanID[:])
 			exemplarRunes += utf8.RuneCountInString(spanIDKey) + utf8.RuneCountInString(val)
 			promLabel := prompb.Label{
 				Name:  spanIDKey,

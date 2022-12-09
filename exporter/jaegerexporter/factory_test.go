@@ -21,14 +21,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configtest"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
-	assert.NoError(t, configtest.CheckConfigStruct(cfg))
+	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
 func TestCreateMetricsExporter(t *testing.T) {
@@ -48,15 +47,10 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	// Default config doesn't have default endpoint so creating from it should
 	// fail.
 	set := componenttest.NewNopExporterCreateSettings()
-	exp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
-	assert.NotNil(t, err)
-	assert.Equal(t, "\"jaeger\" config requires a non-empty \"endpoint\"", err.Error())
-	assert.Nil(t, exp)
-
 	// Endpoint doesn't have a default value so set it directly.
 	expCfg := cfg.(*Config)
 	expCfg.Endpoint = "some.target.org:12345"
-	exp, err = factory.CreateTracesExporter(context.Background(), set, cfg)
+	exp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
 
