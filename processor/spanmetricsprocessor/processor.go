@@ -26,6 +26,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -66,7 +67,7 @@ type processorImp struct {
 	logger *zap.Logger
 	config Config
 
-	metricsExporter component.MetricsExporter
+	metricsExporter exporter.Metrics
 	nextConsumer    consumer.Traces
 
 	// Additional dimensions to add to metrics.
@@ -202,7 +203,7 @@ func (p *processorImp) Start(ctx context.Context, host component.Host) error {
 
 	// The available list of exporters come from any configured metrics pipelines' exporters.
 	for k, exp := range exporters[component.DataTypeMetrics] {
-		metricsExp, ok := exp.(component.MetricsExporter)
+		metricsExp, ok := exp.(exporter.Metrics)
 		if !ok {
 			return fmt.Errorf("the exporter %q isn't a metrics exporter", k.String())
 		}
