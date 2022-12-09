@@ -25,7 +25,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 

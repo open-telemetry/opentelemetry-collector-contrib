@@ -26,7 +26,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 

@@ -25,7 +25,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy"
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/udppoller"
 )
 
