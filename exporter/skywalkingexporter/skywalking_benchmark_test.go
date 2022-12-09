@@ -32,6 +32,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.uber.org/atomic"
 	"google.golang.org/grpc"
 	v3 "skywalking.apache.org/repo/goapi/collect/common/v3"
@@ -150,7 +151,7 @@ func doInit(numStream int, t *testing.T) (*swExporter, *grpc.Server, *mockLogHan
 	oce := newLogsExporter(context.Background(), tt, componenttest.NewNopTelemetrySettings())
 	got, err := exporterhelper.NewLogsExporter(
 		context.Background(),
-		componenttest.NewNopExporterCreateSettings(),
+		exportertest.NewNopCreateSettings(),
 		tt,
 		oce.pushLogs,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),

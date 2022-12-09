@@ -21,6 +21,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -68,8 +69,8 @@ func initExporter(cfg *Config, settings component.TelemetrySettings) (*sumologic
 
 func newLogsExporter(
 	cfg *Config,
-	set component.ExporterCreateSettings,
-) (component.LogsExporter, error) {
+	set exporter.CreateSettings,
+) (exporter.Logs, error) {
 	se, err := initExporter(cfg, set.TelemetrySettings)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize the logs exporter: %w", err)
@@ -91,8 +92,8 @@ func newLogsExporter(
 
 func newMetricsExporter(
 	cfg *Config,
-	set component.ExporterCreateSettings,
-) (component.MetricsExporter, error) {
+	set exporter.CreateSettings,
+) (exporter.Metrics, error) {
 	se, err := initExporter(cfg, set.TelemetrySettings)
 	if err != nil {
 		return nil, err

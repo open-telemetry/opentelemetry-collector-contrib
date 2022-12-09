@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -31,12 +32,12 @@ const (
 )
 
 // NewFactory creates a LogicMonitor exporter factory
-func NewFactory() component.ExporterFactory {
-	return component.NewExporterFactory(
+func NewFactory() exporter.Factory {
+	return exporter.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporter(createTracesExporter, stability),
-		component.WithLogsExporter(createLogsExporter, stability),
+		exporter.WithTraces(createTracesExporter, stability),
+		exporter.WithLogs(createLogsExporter, stability),
 	)
 }
 
@@ -50,9 +51,9 @@ func createDefaultConfig() component.Config {
 
 func createTracesExporter(
 	ctx context.Context,
-	set component.ExporterCreateSettings,
+	set exporter.CreateSettings,
 	c component.Config,
-) (component.TracesExporter, error) {
+) (exporter.Traces, error) {
 	cfg := c.(*Config)
 	// TODO: Lines commented out until implementation is available
 	// lmexpCfg, err := newTracesExporter(cfg, set)
@@ -73,7 +74,7 @@ func createTracesExporter(
 		exporterhelper.WithQueue(cfg.QueueSettings))
 }
 
-func createLogsExporter(ctx context.Context, set component.ExporterCreateSettings, cfg component.Config) (component.LogsExporter, error) {
+func createLogsExporter(ctx context.Context, set exporter.CreateSettings, cfg component.Config) (exporter.Logs, error) {
 	// TODO: Lines commented out until implementation is available
 	// lmexpCfg, err := newLogsExporter(cfg, set.Logger)
 	// if err != nil {

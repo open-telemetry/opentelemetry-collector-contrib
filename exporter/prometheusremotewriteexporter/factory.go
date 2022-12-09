@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
@@ -35,15 +36,15 @@ const (
 )
 
 // NewFactory creates a new Prometheus Remote Write exporter.
-func NewFactory() component.ExporterFactory {
-	return component.NewExporterFactory(
+func NewFactory() exporter.Factory {
+	return exporter.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsExporter(createMetricsExporter, stability))
+		exporter.WithMetrics(createMetricsExporter, stability))
 }
 
-func createMetricsExporter(ctx context.Context, set component.ExporterCreateSettings,
-	cfg component.Config) (component.MetricsExporter, error) {
+func createMetricsExporter(ctx context.Context, set exporter.CreateSettings,
+	cfg component.Config) (exporter.Metrics, error) {
 
 	prwCfg, ok := cfg.(*Config)
 	if !ok {

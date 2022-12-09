@@ -20,6 +20,7 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 )
 
@@ -31,14 +32,14 @@ const (
 )
 
 // NewFactory creates a factory for the exporter.
-func NewFactory() component.ExporterFactory {
+func NewFactory() exporter.Factory {
 	_ = view.Register(MetricViews()...)
 
-	return component.NewExporterFactory(
+	return exporter.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporter(createTracesExporter, stability),
-		component.WithLogsExporter(createLogsExporter, stability),
+		exporter.WithTraces(createTracesExporter, stability),
+		exporter.WithLogs(createLogsExporter, stability),
 	)
 }
 
@@ -54,10 +55,10 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func createTracesExporter(_ context.Context, params component.ExporterCreateSettings, cfg component.Config) (component.TracesExporter, error) {
+func createTracesExporter(_ context.Context, params exporter.CreateSettings, cfg component.Config) (exporter.Traces, error) {
 	return newTracesExporter(params, cfg)
 }
 
-func createLogsExporter(_ context.Context, params component.ExporterCreateSettings, cfg component.Config) (component.LogsExporter, error) {
+func createLogsExporter(_ context.Context, params exporter.CreateSettings, cfg component.Config) (exporter.Logs, error) {
 	return newLogsExporter(params, cfg)
 }

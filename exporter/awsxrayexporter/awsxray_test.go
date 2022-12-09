@@ -24,7 +24,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -84,10 +85,10 @@ func BenchmarkForTracesExporter(b *testing.B) {
 	}
 }
 
-func initializeTracesExporter(t testing.TB) component.TracesExporter {
+func initializeTracesExporter(t testing.TB) exporter.Traces {
 	exporterConfig := generateConfig(t)
 	mconn := new(awsutil.Conn)
-	traceExporter, err := newTracesExporter(exporterConfig, componenttest.NewNopExporterCreateSettings(), mconn)
+	traceExporter, err := newTracesExporter(exporterConfig, exportertest.NewNopCreateSettings(), mconn)
 	if err != nil {
 		panic(err)
 	}

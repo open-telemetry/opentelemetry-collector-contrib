@@ -23,6 +23,7 @@ import (
 	"github.com/Shopify/sarama"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -130,7 +131,7 @@ func TestCreateMetricExporter(t *testing.T) {
 			f := NewFactory(WithMetricsMarshalers(tc.marshalers...))
 			exporter, err := f.CreateMetricsExporter(
 				context.Background(),
-				componenttest.NewNopExporterCreateSettings(),
+				exportertest.NewNopCreateSettings(),
 				tc.conf,
 			)
 			if tc.err != nil {
@@ -204,7 +205,7 @@ func TestCreateLogExporter(t *testing.T) {
 			f := NewFactory(WithLogsMarshalers(tc.marshalers...))
 			exporter, err := f.CreateLogsExporter(
 				context.Background(),
-				componenttest.NewNopExporterCreateSettings(),
+				exportertest.NewNopCreateSettings(),
 				tc.conf,
 			)
 			if tc.err != nil {
@@ -278,7 +279,7 @@ func TestCreateTraceExporter(t *testing.T) {
 			f := NewFactory(WithTracesMarshalers(tc.marshalers...))
 			exporter, err := f.CreateTracesExporter(
 				context.Background(),
-				componenttest.NewNopExporterCreateSettings(),
+				exportertest.NewNopCreateSettings(),
 				tc.conf,
 			)
 			if tc.err != nil {

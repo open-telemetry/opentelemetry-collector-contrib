@@ -40,17 +40,19 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
+	metadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/dimensions"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation/dpfilters"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
-	metadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 )
 
 func TestNew(t *testing.T) {
@@ -425,7 +427,7 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 			cfg.Headers["test_header_"] = tt.name
 			cfg.AccessToken = fromHeaders
 			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
-			sfxExp, err := NewFactory().CreateMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
+			sfxExp, err := NewFactory().CreateMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
 			require.NoError(t, err)
 			require.NoError(t, sfxExp.Start(context.Background(), componenttest.NewNopHost()))
 			defer func() {
@@ -675,7 +677,7 @@ func TestConsumeLogsDataWithAccessTokenPassthrough(t *testing.T) {
 			cfg.Headers["test_header_"] = tt.name
 			cfg.AccessToken = fromHeaders
 			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
-			sfxExp, err := NewFactory().CreateLogsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
+			sfxExp, err := NewFactory().CreateLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
 			require.NoError(t, err)
 			require.NoError(t, sfxExp.Start(context.Background(), componenttest.NewNopHost()))
 			defer func() {
@@ -1044,7 +1046,7 @@ func TestSignalFxExporterConsumeMetadata(t *testing.T) {
 	rCfg := cfg.(*Config)
 	rCfg.AccessToken = "token"
 	rCfg.Realm = "realm"
-	exp, err := f.CreateMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), rCfg)
+	exp, err := f.CreateMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), rCfg)
 	require.NoError(t, err)
 
 	kme, ok := exp.(metadata.MetadataExporter)
