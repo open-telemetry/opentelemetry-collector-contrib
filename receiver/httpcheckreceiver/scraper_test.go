@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest/golden"
@@ -157,7 +158,7 @@ func TestScaperScrape(t *testing.T) {
 				defer ms.Close()
 				cfg.Endpoint = ms.URL
 			}
-			scraper := newScraper(cfg, componenttest.NewNopReceiverCreateSettings())
+			scraper := newScraper(cfg, receivertest.NewNopCreateSettings())
 			require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()))
 
 			actualMetrics, err := scraper.scrape(context.Background())
@@ -175,7 +176,7 @@ func TestScaperScrape(t *testing.T) {
 }
 
 func TestNilClient(t *testing.T) {
-	scraper := newScraper(createDefaultConfig().(*Config), componenttest.NewNopReceiverCreateSettings())
+	scraper := newScraper(createDefaultConfig().(*Config), receivertest.NewNopCreateSettings())
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.EqualError(t, err, errClientNotInit.Error())
 	require.NoError(t, comparetest.CompareMetrics(pmetric.NewMetrics(), actualMetrics))

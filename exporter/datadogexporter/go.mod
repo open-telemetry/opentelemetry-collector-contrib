@@ -12,26 +12,26 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v0.34.3-0.20221202192616-0186b89ba914
 	github.com/aws/aws-sdk-go v1.44.155
 	github.com/cenkalti/backoff/v4 v4.2.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.66.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.66.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.66.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.66.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.66.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor v0.66.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.66.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.66.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.66.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.67.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.67.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.67.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.67.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.67.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor v0.67.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.67.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.67.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.67.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.66.1-0.20221202005155-1c54042beb70
-	go.opentelemetry.io/collector/component v0.66.1-0.20221202005155-1c54042beb70
-	go.opentelemetry.io/collector/confmap v0.0.0-20221201172708-2bdff61fa52a
-	go.opentelemetry.io/collector/consumer v0.66.1-0.20221202005155-1c54042beb70
-	go.opentelemetry.io/collector/featuregate v0.66.1-0.20221202005155-1c54042beb70
-	go.opentelemetry.io/collector/pdata v0.66.1-0.20221202005155-1c54042beb70
-	go.opentelemetry.io/collector/processor/batchprocessor v0.66.1-0.20221202005155-1c54042beb70
-	go.opentelemetry.io/collector/receiver/otlpreceiver v0.66.1-0.20221202005155-1c54042beb70
-	go.opentelemetry.io/collector/semconv v0.66.1-0.20221202005155-1c54042beb70
+	go.opentelemetry.io/collector v0.67.0
+	go.opentelemetry.io/collector/component v0.67.0
+	go.opentelemetry.io/collector/confmap v0.67.0
+	go.opentelemetry.io/collector/consumer v0.67.0
+	go.opentelemetry.io/collector/featuregate v0.67.0
+	go.opentelemetry.io/collector/pdata v1.0.0-rc1
+	go.opentelemetry.io/collector/processor/batchprocessor v0.67.0
+	go.opentelemetry.io/collector/receiver/otlpreceiver v0.67.0
+	go.opentelemetry.io/collector/semconv v0.67.0
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.24.0
 	gopkg.in/yaml.v2 v2.4.0
@@ -126,9 +126,9 @@ require (
 	github.com/mostynb/go-grpc-compression v1.1.17 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/observiq/ctimefmt v1.0.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.66.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.66.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.66.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.67.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.67.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.67.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/opencontainers/runtime-spec v1.0.3-0.20210326190908-1c3f411f0417 // indirect

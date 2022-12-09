@@ -24,8 +24,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"google.golang.org/api/option"
@@ -95,7 +95,7 @@ func TestGoogleCloudMetricExport(t *testing.T) {
 		option.WithTelemetryDisabled(),
 	}
 
-	creationParams := componenttest.NewNopExporterCreateSettings()
+	creationParams := exportertest.NewNopCreateSettings()
 	creationParams.BuildInfo = component.BuildInfo{
 		Version: "v0.0.1",
 	}

@@ -358,6 +358,11 @@ multimod-prerelease: install-tools
 	multimod prerelease -s=true -b=false -v ./versions.yaml -m contrib-base
 	$(MAKE) gotidy
 
+.PHONY: multimod-sync
+multimod-sync: install-tools
+	multimod sync -a=true -s=true -o ../opentelemetry-collector
+	$(MAKE) gotidy
+
 .PHONY: crosslink
 crosslink: install-tools
 	@echo "Executing crosslink"

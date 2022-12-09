@@ -22,8 +22,8 @@ import (
 
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest/golden"
@@ -34,7 +34,7 @@ func TestUnsuccessfulScrape(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Endpoint = "fake:11111"
 
-	scraper := newPostgreSQLScraper(componenttest.NewNopReceiverCreateSettings(), cfg, &defaultClientFactory{})
+	scraper := newPostgreSQLScraper(receivertest.NewNopCreateSettings(), cfg, &defaultClientFactory{})
 	scraper.emitMetricsWithResourceAttributes = false
 	scraper.emitMetricsWithoutResourceAttributes = true
 
@@ -50,7 +50,7 @@ func TestScraper(t *testing.T) {
 
 	cfg := createDefaultConfig().(*Config)
 	cfg.Databases = []string{"otel"}
-	scraper := newPostgreSQLScraper(componenttest.NewNopReceiverCreateSettings(), cfg, factory)
+	scraper := newPostgreSQLScraper(receivertest.NewNopCreateSettings(), cfg, factory)
 	scraper.emitMetricsWithResourceAttributes = false
 	scraper.emitMetricsWithoutResourceAttributes = true
 
@@ -69,7 +69,7 @@ func TestScraperNoDatabaseSingle(t *testing.T) {
 	factory.initMocks([]string{"otel"})
 
 	cfg := createDefaultConfig().(*Config)
-	scraper := newPostgreSQLScraper(componenttest.NewNopReceiverCreateSettings(), cfg, factory)
+	scraper := newPostgreSQLScraper(receivertest.NewNopCreateSettings(), cfg, factory)
 	scraper.emitMetricsWithResourceAttributes = false
 	scraper.emitMetricsWithoutResourceAttributes = true
 
@@ -88,7 +88,7 @@ func TestScraperNoDatabaseMultiple(t *testing.T) {
 	factory.initMocks([]string{"otel", "open", "telemetry"})
 
 	cfg := createDefaultConfig().(*Config)
-	scraper := newPostgreSQLScraper(componenttest.NewNopReceiverCreateSettings(), cfg, &factory)
+	scraper := newPostgreSQLScraper(receivertest.NewNopCreateSettings(), cfg, &factory)
 	scraper.emitMetricsWithResourceAttributes = false
 	scraper.emitMetricsWithoutResourceAttributes = true
 
@@ -107,7 +107,7 @@ func TestScraperWithResourceAttributeFeatureGate(t *testing.T) {
 	factory.initMocks([]string{"otel", "open", "telemetry"})
 
 	cfg := createDefaultConfig().(*Config)
-	scraper := newPostgreSQLScraper(componenttest.NewNopReceiverCreateSettings(), cfg, &factory)
+	scraper := newPostgreSQLScraper(receivertest.NewNopCreateSettings(), cfg, &factory)
 
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err)
@@ -124,7 +124,7 @@ func TestScraperWithResourceAttributeFeatureGateSingle(t *testing.T) {
 	factory.initMocks([]string{"otel"})
 
 	cfg := createDefaultConfig().(*Config)
-	scraper := newPostgreSQLScraper(componenttest.NewNopReceiverCreateSettings(), cfg, &factory)
+	scraper := newPostgreSQLScraper(receivertest.NewNopCreateSettings(), cfg, &factory)
 
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err)

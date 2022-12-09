@@ -27,8 +27,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -47,7 +47,7 @@ func TestCreateTracesExporter(t *testing.T) {
 			AccessTokenPassthrough: true,
 		},
 	}
-	params := componenttest.NewNopExporterCreateSettings()
+	params := exportertest.NewNopCreateSettings()
 
 	te, err := newSAPMTracesExporter(cfg, params)
 	assert.Nil(t, err)
@@ -58,7 +58,7 @@ func TestCreateTracesExporter(t *testing.T) {
 
 func TestCreateTracesExporterWithInvalidConfig(t *testing.T) {
 	cfg := &Config{}
-	params := componenttest.NewNopExporterCreateSettings()
+	params := exportertest.NewNopCreateSettings()
 	te, err := newSAPMTracesExporter(cfg, params)
 	require.Error(t, err)
 	assert.Nil(t, te)
@@ -210,7 +210,7 @@ func TestSAPMClientTokenUsageAndErrorMarshalling(t *testing.T) {
 					AccessTokenPassthrough: tt.accessTokenPassthrough,
 				},
 			}
-			params := componenttest.NewNopExporterCreateSettings()
+			params := exportertest.NewNopCreateSettings()
 
 			se, err := newSAPMExporter(cfg, params)
 			assert.Nil(t, err)

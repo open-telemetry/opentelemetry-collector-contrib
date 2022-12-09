@@ -21,6 +21,7 @@ import (
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -33,11 +34,11 @@ const (
 )
 
 // NewFactory creates a factory for the googlemanagedprometheus exporter
-func NewFactory() component.ExporterFactory {
-	return component.NewExporterFactory(
+func NewFactory() exporter.Factory {
+	return exporter.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsExporter(createMetricsExporter, stability),
+		exporter.WithMetrics(createMetricsExporter, stability),
 	)
 }
 
@@ -54,8 +55,8 @@ func createDefaultConfig() component.Config {
 // createMetricsExporter creates a metrics exporter based on this config.
 func createMetricsExporter(
 	ctx context.Context,
-	params component.ExporterCreateSettings,
-	cfg component.Config) (component.MetricsExporter, error) {
+	params exporter.CreateSettings,
+	cfg component.Config) (exporter.Metrics, error) {
 	eCfg := cfg.(*Config)
 	mExp, err := collector.NewGoogleCloudMetricsExporter(ctx, eCfg.GMPConfig.toCollectorConfig(), params.TelemetrySettings.Logger, params.BuildInfo.Version, eCfg.Timeout)
 	if err != nil {

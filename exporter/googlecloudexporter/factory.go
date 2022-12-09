@@ -21,6 +21,7 @@ import (
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/featuregate"
 )
@@ -44,13 +45,13 @@ func init() {
 }
 
 // NewFactory creates a factory for the googlecloud exporter
-func NewFactory() component.ExporterFactory {
-	return component.NewExporterFactory(
+func NewFactory() exporter.Factory {
+	return exporter.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporter(createTracesExporter, stability),
-		component.WithMetricsExporter(createMetricsExporter, stability),
-		component.WithLogsExporter(createLogsExporter, stability),
+		exporter.WithTraces(createTracesExporter, stability),
+		exporter.WithMetrics(createMetricsExporter, stability),
+		exporter.WithLogs(createLogsExporter, stability),
 	)
 }
 
@@ -76,8 +77,8 @@ func createDefaultConfig() component.Config {
 
 func createLogsExporter(
 	ctx context.Context,
-	params component.ExporterCreateSettings,
-	cfg component.Config) (component.LogsExporter, error) {
+	params exporter.CreateSettings,
+	cfg component.Config) (exporter.Logs, error) {
 	var eCfg *Config
 	if !featuregate.GetRegistry().IsEnabled(pdataExporterFeatureGate) {
 		eCfg = toNewConfig(cfg.(*LegacyConfig))
@@ -104,8 +105,8 @@ func createLogsExporter(
 // createTracesExporter creates a trace exporter based on this config.
 func createTracesExporter(
 	ctx context.Context,
-	params component.ExporterCreateSettings,
-	cfg component.Config) (component.TracesExporter, error) {
+	params exporter.CreateSettings,
+	cfg component.Config) (exporter.Traces, error) {
 	var eCfg *Config
 	if !featuregate.GetRegistry().IsEnabled(pdataExporterFeatureGate) {
 		eCfg = toNewConfig(cfg.(*LegacyConfig))
@@ -132,8 +133,8 @@ func createTracesExporter(
 // createMetricsExporter creates a metrics exporter based on this config.
 func createMetricsExporter(
 	ctx context.Context,
-	params component.ExporterCreateSettings,
-	cfg component.Config) (component.MetricsExporter, error) {
+	params exporter.CreateSettings,
+	cfg component.Config) (exporter.Metrics, error) {
 	if !featuregate.GetRegistry().IsEnabled(pdataExporterFeatureGate) {
 		eCfg := cfg.(*LegacyConfig)
 		return newLegacyGoogleCloudMetricsExporter(eCfg, params)

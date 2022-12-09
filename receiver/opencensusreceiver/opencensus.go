@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
@@ -56,7 +57,7 @@ type ocReceiver struct {
 	startTracesReceiverOnce  sync.Once
 	startMetricsReceiverOnce sync.Once
 
-	settings component.ReceiverCreateSettings
+	settings receiver.CreateSettings
 }
 
 // newOpenCensusReceiver just creates the OpenCensus receiver services. It is the caller's
@@ -67,7 +68,7 @@ func newOpenCensusReceiver(
 	addr string,
 	tc consumer.Traces,
 	mc consumer.Metrics,
-	settings component.ReceiverCreateSettings,
+	settings receiver.CreateSettings,
 	opts ...ocOption,
 ) (*ocReceiver, error) {
 	// TODO: (@odeke-em) use options to enable address binding changes.

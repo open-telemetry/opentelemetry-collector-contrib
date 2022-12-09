@@ -21,14 +21,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
 
 func TestNewMetricsExporter(t *testing.T) {
-	got, err := newMetricsExporter(componenttest.NewNopExporterCreateSettings(), &Config{
+	got, err := newMetricsExporter(exportertest.NewNopCreateSettings(), &Config{
 		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		Endpoint:         "us-west-1.log.aliyuncs.com",
 		Project:          "demo-project",
@@ -43,7 +43,7 @@ func TestNewMetricsExporter(t *testing.T) {
 }
 
 func TestNewFailsWithEmptyMetricsExporterName(t *testing.T) {
-	got, err := newMetricsExporter(componenttest.NewNopExporterCreateSettings(), &Config{})
+	got, err := newMetricsExporter(exportertest.NewNopCreateSettings(), &Config{})
 	assert.Error(t, err)
 	require.Nil(t, got)
 }

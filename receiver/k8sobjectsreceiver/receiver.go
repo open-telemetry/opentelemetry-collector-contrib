@@ -22,13 +22,14 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/dynamic"
 )
 
 type k8sobjectsreceiver struct {
-	setting         component.ReceiverCreateSettings
+	setting         receiver.CreateSettings
 	objects         []*K8sObjectsConfig
 	stopperChanList []chan struct{}
 	client          dynamic.Interface
@@ -37,7 +38,7 @@ type k8sobjectsreceiver struct {
 	mu              sync.Mutex
 }
 
-func newReceiver(params component.ReceiverCreateSettings, config *Config, consumer consumer.Logs) (component.LogsReceiver, error) {
+func newReceiver(params receiver.CreateSettings, config *Config, consumer consumer.Logs) (receiver.Logs, error) {
 	transport := "http"
 	client, err := config.getDynamicClient()
 	if err != nil {

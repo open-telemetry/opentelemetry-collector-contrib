@@ -32,6 +32,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 	zapObserver "go.uber.org/zap/zaptest/observer"
 
@@ -72,7 +73,7 @@ func TestMockedEndToEnd(t *testing.T) {
 	require.NoError(t, err)
 
 	factories, _ := componenttest.NopFactories()
-	factories.Receivers[("nop")] = &nopWithEndpointFactory{ReceiverFactory: componenttest.NewNopReceiverFactory()}
+	factories.Receivers[("nop")] = &nopWithEndpointFactory{Factory: receivertest.NewNopFactory()}
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
 
@@ -87,7 +88,7 @@ func TestMockedEndToEnd(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-	params := componenttest.NewNopReceiverCreateSettings()
+	params := receivertest.NewNopCreateSettings()
 	mockConsumer := new(consumertest.MetricsSink)
 
 	rcvr, err := factory.CreateMetricsReceiver(context.Background(), params, cfg, mockConsumer)

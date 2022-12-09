@@ -28,8 +28,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/exporter/otlphttpexporter"
 
@@ -474,10 +475,10 @@ type getExporterConfigFn func() component.Config
 // verifyExporterLifecycle is used to test if an exporter type can handle the typical
 // lifecycle of a component. The getConfigFn parameter only need to be specified if
 // the test can't be done with the default configuration for the component.
-func verifyExporterLifecycle(t *testing.T, factory component.ExporterFactory, getConfigFn getExporterConfigFn) {
+func verifyExporterLifecycle(t *testing.T, factory exporter.Factory, getConfigFn getExporterConfigFn) {
 	ctx := context.Background()
 	host := newAssertNoErrorHost(t)
-	expCreateSettings := componenttest.NewNopExporterCreateSettings()
+	expCreateSettings := exportertest.NewNopCreateSettings()
 
 	cfg := factory.CreateDefaultConfig()
 	if getConfigFn != nil {
@@ -509,24 +510,24 @@ func verifyExporterLifecycle(t *testing.T, factory component.ExporterFactory, ge
 
 type createExporterFn func(
 	ctx context.Context,
-	set component.ExporterCreateSettings,
+	set exporter.CreateSettings,
 	cfg component.Config,
 ) (component.Component, error)
 
-func wrapCreateLogsExp(factory component.ExporterFactory) createExporterFn {
-	return func(ctx context.Context, set component.ExporterCreateSettings, cfg component.Config) (component.Component, error) {
+func wrapCreateLogsExp(factory exporter.Factory) createExporterFn {
+	return func(ctx context.Context, set exporter.CreateSettings, cfg component.Config) (component.Component, error) {
 		return factory.CreateLogsExporter(ctx, set, cfg)
 	}
 }
 
-func wrapCreateTracesExp(factory component.ExporterFactory) createExporterFn {
-	return func(ctx context.Context, set component.ExporterCreateSettings, cfg component.Config) (component.Component, error) {
+func wrapCreateTracesExp(factory exporter.Factory) createExporterFn {
+	return func(ctx context.Context, set exporter.CreateSettings, cfg component.Config) (component.Component, error) {
 		return factory.CreateTracesExporter(ctx, set, cfg)
 	}
 }
 
-func wrapCreateMetricsExp(factory component.ExporterFactory) createExporterFn {
-	return func(ctx context.Context, set component.ExporterCreateSettings, cfg component.Config) (component.Component, error) {
+func wrapCreateMetricsExp(factory exporter.Factory) createExporterFn {
+	return func(ctx context.Context, set exporter.CreateSettings, cfg component.Config) (component.Component, error) {
 		return factory.CreateMetricsExporter(ctx, set, cfg)
 	}
 }

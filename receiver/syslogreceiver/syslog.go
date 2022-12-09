@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -32,7 +33,7 @@ const (
 )
 
 // NewFactory creates a factory for syslog receiver
-func NewFactory() component.ReceiverFactory {
+func NewFactory() receiver.Factory {
 	return adapter.NewFactory(ReceiverType{}, stability)
 }
 
