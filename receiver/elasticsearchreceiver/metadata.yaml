@@ -7,6 +7,9 @@ resource_attributes:
   elasticsearch.node.name:
     description: The name of the elasticsearch node.
     type: string
+  elasticsearch.node.version:
+    description: The version of the elasticsearch node.
+    type: string
   elasticsearch.index.name:
     description: The name of the elasticsearch index.
     type: string

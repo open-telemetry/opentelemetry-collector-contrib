@@ -5884,6 +5884,13 @@ func WithElasticsearchNodeName(val string) ResourceMetricsOption {
 	}
 }
 
+// WithElasticsearchNodeVersion sets provided value as "elasticsearch.node.version" attribute for current resource.
+func WithElasticsearchNodeVersion(val string) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		rm.Resource().Attributes().PutStr("elasticsearch.node.version", val)
+	}
+}
+
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {

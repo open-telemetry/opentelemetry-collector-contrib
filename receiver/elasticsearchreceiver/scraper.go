@@ -357,7 +357,7 @@ func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pcommo
 		)
 
 		r.mb.EmitForResource(metadata.WithElasticsearchClusterName(nodeStats.ClusterName),
-			metadata.WithElasticsearchNodeName(info.Name))
+			metadata.WithElasticsearchNodeName(info.Name), metadata.WithElasticsearchNodeVersion(info.Version))
 	}
 }
 
