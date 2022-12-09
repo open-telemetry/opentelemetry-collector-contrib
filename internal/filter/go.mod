@@ -5,8 +5,8 @@ go 1.18
 require (
 	github.com/antonmedv/expr v1.9.0
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.66.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.66.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.67.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.67.0
 	github.com/stretchr/testify v1.8.1
 	go.opentelemetry.io/collector/confmap v0.0.0-20221201172708-2bdff61fa52a
 	go.opentelemetry.io/collector/pdata v1.0.0-rc1.0.20221208222614-a470d8a8f344

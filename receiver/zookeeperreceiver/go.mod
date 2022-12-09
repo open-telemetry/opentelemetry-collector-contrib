@@ -3,8 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookee
 go 1.18
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.66.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest v0.66.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.67.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest v0.67.0
 	github.com/stretchr/testify v1.8.1
 	github.com/testcontainers/testcontainers-go v0.15.0
 	go.opentelemetry.io/collector v0.66.1-0.20221208222614-a470d8a8f344

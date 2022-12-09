@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/basgys/goxml2json v1.1.0
 	github.com/google/go-cmp v0.5.9
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest v0.66.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest v0.67.0
 	github.com/stretchr/testify v1.8.1
 	github.com/vmware/govmomi v0.29.0
 	go.opentelemetry.io/collector v0.66.1-0.20221208222614-a470d8a8f344

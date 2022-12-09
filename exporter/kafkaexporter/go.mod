@@ -7,8 +7,8 @@ require (
 	github.com/aws/aws-sdk-go v1.44.155
 	github.com/gogo/protobuf v1.3.2
 	github.com/jaegertracing/jaeger v1.39.1-0.20221110195127-14c11365a856
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.66.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.66.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.67.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.67.0
 	github.com/stretchr/testify v1.8.1
 	github.com/xdg-go/scram v1.1.1
 	go.opentelemetry.io/collector v0.66.1-0.20221208222614-a470d8a8f344
