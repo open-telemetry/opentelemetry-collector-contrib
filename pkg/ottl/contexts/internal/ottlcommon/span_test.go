@@ -56,6 +56,7 @@ func TestSpanPathGetSetter(t *testing.T) {
 		orig     interface{}
 		newVal   interface{}
 		modified func(span ptrace.Span)
+		err      bool
 	}{
 		{
 			name: "trace_id",
@@ -524,6 +525,20 @@ func TestSpanPathGetSetter(t *testing.T) {
 				span.Status().SetMessage("bad span")
 			},
 		},
+		{
+			name: "attribute heterogeneous array",
+			path: []ottl.Field{
+				{
+					Name:   "attributes",
+					MapKey: ottltest.Strp("arr_heterogeneous"),
+				},
+			},
+			orig:   nil,
+			newVal: []interface{}{1, "string1"},
+			modified: func(span ptrace.Span) {
+			},
+			err: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -537,6 +552,10 @@ func TestSpanPathGetSetter(t *testing.T) {
 			assert.Equal(t, tt.orig, got)
 
 			err = accessor.Set(context.Background(), newSpanContext(span), tt.newVal)
+			if tt.err {
+				assert.Error(t, err)
+				return
+			}
 			assert.NoError(t, err)
 
 			expectedSpan := createSpan()

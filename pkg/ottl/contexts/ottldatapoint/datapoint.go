@@ -180,6 +180,9 @@ func accessAttributes() ottl.StandardGetSetter[TransformContext] {
 			return nil, nil
 		},
 		Setter: func(ctx context.Context, tCtx TransformContext, val interface{}) error {
+			if error := ottlcommon.CheckValuesHomogeneous(val); error != nil {
+				return error
+			}
 			switch tCtx.GetDataPoint().(type) {
 			case pmetric.NumberDataPoint:
 				if attrs, ok := val.(pcommon.Map); ok {

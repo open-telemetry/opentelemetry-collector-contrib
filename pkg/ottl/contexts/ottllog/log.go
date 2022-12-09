@@ -225,6 +225,9 @@ func accessAttributes() ottl.StandardGetSetter[TransformContext] {
 			return tCtx.GetLogRecord().Attributes(), nil
 		},
 		Setter: func(ctx context.Context, tCtx TransformContext, val interface{}) error {
+			if error := ottlcommon.CheckValuesHomogeneous(val); error != nil {
+				return error
+			}
 			if attrs, ok := val.(pcommon.Map); ok {
 				attrs.CopyTo(tCtx.GetLogRecord().Attributes())
 			}

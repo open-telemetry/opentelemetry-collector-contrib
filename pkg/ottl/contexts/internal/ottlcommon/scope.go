@@ -70,6 +70,9 @@ func accessInstrumentationScopeAttributes[K InstrumentationScopeContext]() ottl.
 			return tCtx.GetInstrumentationScope().Attributes(), nil
 		},
 		Setter: func(ctx context.Context, tCtx K, val interface{}) error {
+			if error := CheckValuesHomogeneous(val); error != nil {
+				return error
+			}
 			if attrs, ok := val.(pcommon.Map); ok {
 				attrs.CopyTo(tCtx.GetInstrumentationScope().Attributes())
 			}

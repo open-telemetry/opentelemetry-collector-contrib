@@ -339,6 +339,9 @@ func accessAttributesKey[K SpanContext](mapKey *string) ottl.StandardGetSetter[K
 			return GetMapValue(tCtx.GetSpan().Attributes(), *mapKey), nil
 		},
 		Setter: func(ctx context.Context, tCtx K, val interface{}) error {
+			if error := CheckValuesHomogeneous(val); error != nil {
+				return error
+			}
 			SetMapValue(tCtx.GetSpan().Attributes(), *mapKey, val)
 			return nil
 		},
