@@ -127,8 +127,8 @@ type invocation struct {
 	Arguments []value `parser:"'(' ( @@ ( ',' @@ )* )? ')'"`
 }
 
-// factoryFunction represents a factory function call.
-type factoryFunction struct {
+// converter represents a factory function call.
+type converter struct {
 	Function  string  `parser:"@(Uppercase(Uppercase | Lowercase)*)"`
 	Arguments []value `parser:"'(' ( @@ ( ',' @@ )* )? ')'"`
 }
@@ -191,10 +191,10 @@ func (n *isNil) Capture(_ []string) error {
 }
 
 type mathExprLiteral struct {
-	Invocation *factoryFunction `parser:"( @@"`
-	Float      *float64         `parser:"| @Float"`
-	Int        *int64           `parser:"| @Int"`
-	Path       *Path            `parser:"| @@ )"`
+	Invocation *converter `parser:"( @@"`
+	Float      *float64   `parser:"| @Float"`
+	Int        *int64     `parser:"| @Int"`
+	Path       *Path      `parser:"| @@ )"`
 }
 
 type mathValue struct {

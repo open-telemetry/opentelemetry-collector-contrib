@@ -73,7 +73,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 				Arguments: []value{
 					{
 						Literal: &mathExprLiteral{
-							Invocation: &factoryFunction{
+							Invocation: &converter{
 								Function: "Unknownfunc",
 							},
 						},
@@ -461,7 +461,7 @@ func Test_NewFunctionCall(t *testing.T) {
 								},
 								{
 									Literal: &mathExprLiteral{
-										Invocation: &factoryFunction{
+										Invocation: &converter{
 											Function: "Testing_getter",
 											Arguments: []value{
 												{
@@ -598,7 +598,7 @@ func Test_NewFunctionCall(t *testing.T) {
 								},
 								{
 									Literal: &mathExprLiteral{
-										Invocation: &factoryFunction{
+										Invocation: &converter{
 											Function: "Testing_getter",
 											Arguments: []value{
 												{

@@ -102,7 +102,7 @@ func Test_newGetter(t *testing.T) {
 			name: "function call",
 			val: value{
 				Literal: &mathExprLiteral{
-					Invocation: &factoryFunction{
+					Invocation: &converter{
 						Function: "Hello",
 					},
 				},
@@ -242,7 +242,7 @@ func Test_newGetter(t *testing.T) {
 					Values: []value{
 						{
 							Literal: &mathExprLiteral{
-								Invocation: &factoryFunction{
+								Invocation: &converter{
 									Function: "Hello",
 								},
 							},

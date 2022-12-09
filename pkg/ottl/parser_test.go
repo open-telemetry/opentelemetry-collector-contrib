@@ -98,7 +98,7 @@ func Test_parse(t *testing.T) {
 						},
 						{
 							Literal: &mathExprLiteral{
-								Invocation: &factoryFunction{
+								Invocation: &converter{
 									Function: "GetSomething",
 									Arguments: []value{
 										{
@@ -576,7 +576,7 @@ func Test_parse(t *testing.T) {
 								Values: []value{
 									{
 										Literal: &mathExprLiteral{
-											Invocation: &factoryFunction{
+											Invocation: &converter{
 												Function: "Concat",
 												Arguments: []value{
 													{
@@ -741,7 +741,7 @@ func Test_parse(t *testing.T) {
 													Operator: DIV,
 													Value: &mathValue{
 														Literal: &mathExprLiteral{
-															Invocation: &factoryFunction{
+															Invocation: &converter{
 																Function: "One",
 															},
 														},
