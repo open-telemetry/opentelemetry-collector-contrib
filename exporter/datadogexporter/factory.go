@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -58,19 +59,19 @@ func (f *factory) SourceProvider(set component.TelemetrySettings, configHostname
 	return f.sourceProvider, f.providerErr
 }
 
-func newFactoryWithRegistry(registry *featuregate.Registry) component.ExporterFactory {
+func newFactoryWithRegistry(registry *featuregate.Registry) exporter.Factory {
 	f := &factory{registry: registry}
-	return component.NewExporterFactory(
+	return exporter.NewFactory(
 		typeStr,
 		f.createDefaultConfig,
-		component.WithMetricsExporter(f.createMetricsExporter, component.StabilityLevelBeta),
-		component.WithTracesExporter(f.createTracesExporter, component.StabilityLevelBeta),
-		component.WithLogsExporter(f.createLogsExporter, component.StabilityLevelAlpha),
+		exporter.WithMetrics(f.createMetricsExporter, component.StabilityLevelBeta),
+		exporter.WithTraces(f.createTracesExporter, component.StabilityLevelBeta),
+		exporter.WithLogs(f.createLogsExporter, component.StabilityLevelAlpha),
 	)
 }
 
 // NewFactory creates a Datadog exporter factory
-func NewFactory() component.ExporterFactory {
+func NewFactory() exporter.Factory {
 	return newFactoryWithRegistry(featuregate.GetRegistry())
 }
 
@@ -151,9 +152,9 @@ func checkAndCastConfig(c component.Config) *Config {
 // createMetricsExporter creates a metrics exporter based on this config.
 func (f *factory) createMetricsExporter(
 	ctx context.Context,
-	set component.ExporterCreateSettings,
+	set exporter.CreateSettings,
 	c component.Config,
-) (component.MetricsExporter, error) {
+) (exporter.Metrics, error) {
 	cfg := checkAndCastConfig(c)
 
 	hostProvider, err := f.SourceProvider(set.TelemetrySettings, cfg.Hostname)
@@ -211,9 +212,9 @@ func (f *factory) createMetricsExporter(
 // createTracesExporter creates a trace exporter based on this config.
 func (f *factory) createTracesExporter(
 	ctx context.Context,
-	set component.ExporterCreateSettings,
+	set exporter.CreateSettings,
 	c component.Config,
-) (component.TracesExporter, error) {
+) (exporter.Traces, error) {
 	cfg := checkAndCastConfig(c)
 
 	var (
@@ -274,9 +275,9 @@ func (f *factory) createTracesExporter(
 // createLogsExporter creates a logs exporter based on the config.
 func (f *factory) createLogsExporter(
 	ctx context.Context,
-	set component.ExporterCreateSettings,
+	set exporter.CreateSettings,
 	c component.Config,
-) (component.LogsExporter, error) {
+) (exporter.Logs, error) {
 	cfg := checkAndCastConfig(c)
 
 	var pusher consumer.ConsumeLogsFunc

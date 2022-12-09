@@ -18,16 +18,16 @@ import (
 	"context"
 	"fmt"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
 )
 
 func newReceiver(
 	_ context.Context,
-	settings component.ReceiverCreateSettings,
+	settings receiver.CreateSettings,
 	config *Config,
 	nextConsumer consumer.Metrics,
 	clientFactory interface{},
-) (component.MetricsReceiver, error) {
+) (receiver.Metrics, error) {
 	return nil, fmt.Errorf("podman receiver is not supported on windows")
 }

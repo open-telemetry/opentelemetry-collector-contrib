@@ -20,8 +20,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
@@ -49,7 +49,7 @@ var _ runner = (*mockRunner)(nil)
 func TestOnAdd(t *testing.T) {
 	runner := &mockRunner{}
 
-	set := componenttest.NewNopReceiverCreateSettings()
+	set := receivertest.NewNopCreateSettings()
 	set.ID = component.NewIDWithName("name", "1")
 	rcvrCfg := receiverConfig{id: set.ID, config: userConfigMap{"foo": "bar"}, endpointID: portEndpoint.ID}
 	cfg := createDefaultConfig().(*Config)
@@ -82,7 +82,7 @@ func TestOnAdd(t *testing.T) {
 func TestOnRemove(t *testing.T) {
 	runner := &mockRunner{}
 	rcvr := &nopWithEndpointReceiver{}
-	set := componenttest.NewNopReceiverCreateSettings()
+	set := receivertest.NewNopCreateSettings()
 	set.ID = component.NewID(typeStr)
 	handler := &observerHandler{
 		params:                set,
@@ -103,7 +103,7 @@ func TestOnRemove(t *testing.T) {
 
 func TestOnChange(t *testing.T) {
 	runner := &mockRunner{}
-	set := componenttest.NewNopReceiverCreateSettings()
+	set := receivertest.NewNopCreateSettings()
 	set.ID = component.NewIDWithName("name", "1")
 	rcvrCfg := receiverConfig{id: set.ID, config: userConfigMap{"foo": "bar"}, endpointID: portEndpoint.ID}
 	oldRcvr := &nopWithEndpointReceiver{}
@@ -138,7 +138,7 @@ func TestOnChange(t *testing.T) {
 
 func TestDynamicConfig(t *testing.T) {
 	runner := &mockRunner{}
-	set := componenttest.NewNopReceiverCreateSettings()
+	set := receivertest.NewNopCreateSettings()
 	set.ID = component.NewIDWithName("name", "1")
 	cfg := createDefaultConfig().(*Config)
 	cfg.receiverTemplates = map[string]receiverTemplate{

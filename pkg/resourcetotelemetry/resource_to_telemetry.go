@@ -17,8 +17,8 @@ package resourcetotelemetry // import "github.com/open-telemetry/opentelemetry-c
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
@@ -36,11 +36,11 @@ type Settings struct {
 }
 
 type wrapperMetricsExporter struct {
-	component.MetricsExporter
+	exporter.Metrics
 }
 
 func (wme *wrapperMetricsExporter) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
-	return wme.MetricsExporter.ConsumeMetrics(ctx, convertToMetricsAttributes(md))
+	return wme.Metrics.ConsumeMetrics(ctx, convertToMetricsAttributes(md))
 }
 
 func (wme *wrapperMetricsExporter) Capabilities() consumer.Capabilities {
@@ -48,13 +48,13 @@ func (wme *wrapperMetricsExporter) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
-// WrapMetricsExporter wraps a given component.MetricsExporter and based on the given settings
+// WrapMetricsExporter wraps a given exporter.Metrics and based on the given settings
 // converts incoming resource attributes to metrics attributes.
-func WrapMetricsExporter(set Settings, exporter component.MetricsExporter) component.MetricsExporter {
+func WrapMetricsExporter(set Settings, exporter exporter.Metrics) exporter.Metrics {
 	if !set.Enabled {
 		return exporter
 	}
-	return &wrapperMetricsExporter{MetricsExporter: exporter}
+	return &wrapperMetricsExporter{Metrics: exporter}
 }
 
 func convertToMetricsAttributes(md pmetric.Metrics) pmetric.Metrics {

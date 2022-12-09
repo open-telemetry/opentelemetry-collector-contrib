@@ -18,8 +18,8 @@ import (
 	"fmt"
 	"sync"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -34,7 +34,7 @@ var (
 type observerHandler struct {
 	sync.Mutex
 	config *Config
-	params component.ReceiverCreateSettings
+	params receiver.CreateSettings
 	// receiversByEndpointID is a map of endpoint IDs to a receiver instance.
 	receiversByEndpointID receiverMap
 	// nextConsumer is the receiver_creator's own consumer

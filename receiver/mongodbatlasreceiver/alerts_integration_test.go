@@ -42,6 +42,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 )
@@ -67,7 +68,7 @@ func TestAlertsReceiver(t *testing.T) {
 
 			recv, err := fact.CreateLogsReceiver(
 				context.Background(),
-				componenttest.NewNopReceiverCreateSettings(),
+				receivertest.NewNopCreateSettings(),
 				&Config{
 					Alerts: AlertConfig{
 						Enabled:  true,
@@ -131,7 +132,7 @@ func TestAlertsReceiverTLS(t *testing.T) {
 
 			recv, err := fact.CreateLogsReceiver(
 				context.Background(),
-				componenttest.NewNopReceiverCreateSettings(),
+				receivertest.NewNopCreateSettings(),
 				&Config{
 					Alerts: AlertConfig{
 						Enabled:  true,
@@ -217,7 +218,7 @@ func TestAtlasPoll(t *testing.T) {
 
 	recv, err := fact.CreateLogsReceiver(
 		context.Background(),
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 		&Config{
 			Alerts: AlertConfig{
 				Enabled: true,

@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -34,7 +35,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 func TestCreateInstanceViaFactory(t *testing.T) {
 	cfg := createDefaultConfig()
-	params := componenttest.NewNopExporterCreateSettings()
+	params := exportertest.NewNopCreateSettings()
 	// Endpoint doesn't have a default value so set it directly.
 	expCfg := cfg.(*Config)
 	expCfg.HTTPClientSettings.Endpoint = "http://jaeger.example.com:12345/api/traces"
@@ -58,7 +59,7 @@ func TestFactory_CreateTracesExporter(t *testing.T) {
 		},
 	}
 
-	params := componenttest.NewNopExporterCreateSettings()
+	params := exportertest.NewNopCreateSettings()
 	te, err := createTracesExporter(context.Background(), params, config)
 	assert.NoError(t, err)
 	assert.NotNil(t, te)

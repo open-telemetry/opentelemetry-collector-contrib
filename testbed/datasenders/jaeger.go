@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter"
@@ -55,7 +56,7 @@ func (je *jaegerGRPCDataSender) Start() error {
 	cfg.TLSSetting = configtls.TLSClientSetting{
 		Insecure: true,
 	}
-	params := componenttest.NewNopExporterCreateSettings()
+	params := exportertest.NewNopCreateSettings()
 	params.Logger = zap.L()
 
 	exp, err := factory.CreateTracesExporter(context.Background(), params, cfg)

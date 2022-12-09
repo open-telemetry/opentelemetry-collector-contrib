@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 )
 
 func TestType(t *testing.T) {
@@ -56,7 +57,7 @@ func TestIngestUrlMustConform(t *testing.T) {
 	cfg.IngestURL = "https://example.com:8088/services/collector"
 	cfg.IngestKey = "1234-1234"
 
-	params := componenttest.NewNopExporterCreateSettings()
+	params := exportertest.NewNopCreateSettings()
 	_, err := createLogsExporter(context.Background(), params, cfg)
 	assert.Error(t, err, `"ingest_url" must end with "/otel/ingest/rest"`)
 }
@@ -66,13 +67,13 @@ func TestCreateLogsExporter(t *testing.T) {
 	cfg.IngestURL = "https://example.com:8088/otel/ingest/rest"
 	cfg.IngestKey = "1234-1234"
 
-	params := componenttest.NewNopExporterCreateSettings()
+	params := exportertest.NewNopCreateSettings()
 	_, err := createLogsExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 }
 
 func TestCreateLogsExporterNoConfig(t *testing.T) {
-	params := componenttest.NewNopExporterCreateSettings()
+	params := exportertest.NewNopCreateSettings()
 	_, err := createLogsExporter(context.Background(), params, nil)
 	assert.Error(t, err)
 }
@@ -80,7 +81,7 @@ func TestCreateLogsExporterNoConfig(t *testing.T) {
 func TestCreateLogsExporterInvalidEndpoint(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.IngestURL = "urn:something:12345"
-	params := componenttest.NewNopExporterCreateSettings()
+	params := exportertest.NewNopCreateSettings()
 	_, err := createLogsExporter(context.Background(), params, cfg)
 	assert.Error(t, err)
 }
@@ -91,7 +92,7 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.IngestURL = "https://example.com:8088/otel/ingest/rest"
 	cfg.IngestKey = "1234-1234"
-	params := componenttest.NewNopExporterCreateSettings()
+	params := exportertest.NewNopCreateSettings()
 	exp, err := factory.CreateLogsExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)

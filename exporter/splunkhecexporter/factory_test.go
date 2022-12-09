@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -36,13 +37,13 @@ func TestCreateMetricsExporter(t *testing.T) {
 	cfg.Endpoint = "https://example.com:8088/services/collector"
 	cfg.Token = "1234-1234"
 
-	params := componenttest.NewNopExporterCreateSettings()
+	params := exportertest.NewNopCreateSettings()
 	_, err := createMetricsExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 }
 
 func TestCreateMetricsExporterNoConfig(t *testing.T) {
-	params := componenttest.NewNopExporterCreateSettings()
+	params := exportertest.NewNopCreateSettings()
 	_, err := createMetricsExporter(context.Background(), params, nil)
 	assert.Error(t, err)
 }
@@ -52,13 +53,13 @@ func TestCreateTracesExporter(t *testing.T) {
 	cfg.Endpoint = "https://example.com:8088/services/collector"
 	cfg.Token = "1234-1234"
 
-	params := componenttest.NewNopExporterCreateSettings()
+	params := exportertest.NewNopCreateSettings()
 	_, err := createTracesExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 }
 
 func TestCreateTracesExporterNoConfig(t *testing.T) {
-	params := componenttest.NewNopExporterCreateSettings()
+	params := exportertest.NewNopCreateSettings()
 	_, err := createTracesExporter(context.Background(), params, nil)
 	assert.Error(t, err)
 }
@@ -66,7 +67,7 @@ func TestCreateTracesExporterNoConfig(t *testing.T) {
 func TestCreateTracesExporterInvalidEndpoint(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = "urn:something:12345"
-	params := componenttest.NewNopExporterCreateSettings()
+	params := exportertest.NewNopCreateSettings()
 	_, err := createTracesExporter(context.Background(), params, cfg)
 	assert.Error(t, err)
 }
@@ -76,13 +77,13 @@ func TestCreateLogsExporter(t *testing.T) {
 	cfg.Endpoint = "https://example.com:8088/services/collector"
 	cfg.Token = "1234-1234"
 
-	params := componenttest.NewNopExporterCreateSettings()
+	params := exportertest.NewNopCreateSettings()
 	_, err := createLogsExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 }
 
 func TestCreateLogsExporterNoConfig(t *testing.T) {
-	params := componenttest.NewNopExporterCreateSettings()
+	params := exportertest.NewNopCreateSettings()
 	_, err := createLogsExporter(context.Background(), params, nil)
 	assert.Error(t, err)
 }
@@ -90,7 +91,7 @@ func TestCreateLogsExporterNoConfig(t *testing.T) {
 func TestCreateLogsExporterInvalidEndpoint(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = "urn:something:12345"
-	params := componenttest.NewNopExporterCreateSettings()
+	params := exportertest.NewNopCreateSettings()
 	_, err := createLogsExporter(context.Background(), params, cfg)
 	assert.Error(t, err)
 }
@@ -101,7 +102,7 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Endpoint = "https://example.com:8088/services/collector"
 	cfg.Token = "1234-1234"
-	params := componenttest.NewNopExporterCreateSettings()
+	params := exportertest.NewNopCreateSettings()
 	exp, err := factory.CreateMetricsExporter(
 		context.Background(), params,
 		cfg)
@@ -127,7 +128,7 @@ func TestFactory_CreateMetricsExporter(t *testing.T) {
 		Endpoint:         "https://example.com:8000",
 	}
 
-	params := componenttest.NewNopExporterCreateSettings()
+	params := exportertest.NewNopCreateSettings()
 	te, err := createMetricsExporter(context.Background(), params, config)
 	assert.NoError(t, err)
 	assert.NotNil(t, te)
@@ -158,7 +159,7 @@ func TestFactory_CreateMetricsExporterFails(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			params := componenttest.NewNopExporterCreateSettings()
+			params := exportertest.NewNopCreateSettings()
 			te, err := createMetricsExporter(context.Background(), params, tt.config)
 			assert.EqualError(t, err, tt.errorMessage)
 			assert.Nil(t, te)

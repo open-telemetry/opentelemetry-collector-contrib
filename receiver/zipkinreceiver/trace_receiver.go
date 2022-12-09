@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv1"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv2"
@@ -57,14 +58,14 @@ type zipkinReceiver struct {
 	protobufUnmarshaler      ptrace.Unmarshaler
 	protobufDebugUnmarshaler ptrace.Unmarshaler
 
-	settings  component.ReceiverCreateSettings
+	settings  receiver.CreateSettings
 	obsrecvrs map[string]*obsreport.Receiver
 }
 
 var _ http.Handler = (*zipkinReceiver)(nil)
 
 // newReceiver creates a new zipkinReceiver reference.
-func newReceiver(config *Config, nextConsumer consumer.Traces, settings component.ReceiverCreateSettings) (*zipkinReceiver, error) {
+func newReceiver(config *Config, nextConsumer consumer.Traces, settings receiver.CreateSettings) (*zipkinReceiver, error) {
 	if nextConsumer == nil {
 		return nil, component.ErrNilNextConsumer
 	}

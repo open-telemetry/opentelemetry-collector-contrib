@@ -29,6 +29,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest/golden"
@@ -51,7 +52,7 @@ func TestMySqlIntegration(t *testing.T) {
 		cfg.Password = "otel"
 
 		consumer := new(consumertest.MetricsSink)
-		settings := componenttest.NewNopReceiverCreateSettings()
+		settings := receivertest.NewNopCreateSettings()
 		rcvr, err := f.CreateMetricsReceiver(context.Background(), settings, cfg, consumer)
 		require.NoError(t, err, "failed creating metrics receiver")
 		require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))

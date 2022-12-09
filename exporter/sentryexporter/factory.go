@@ -20,6 +20,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/exporter"
 )
 
 const (
@@ -29,11 +30,11 @@ const (
 )
 
 // NewFactory creates a factory for Sentry exporter.
-func NewFactory() component.ExporterFactory {
-	return component.NewExporterFactory(
+func NewFactory() exporter.Factory {
+	return exporter.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporter(createTracesExporter, stability),
+		exporter.WithTraces(createTracesExporter, stability),
 	)
 }
 
@@ -45,9 +46,9 @@ func createDefaultConfig() component.Config {
 
 func createTracesExporter(
 	_ context.Context,
-	params component.ExporterCreateSettings,
+	params exporter.CreateSettings,
 	config component.Config,
-) (component.TracesExporter, error) {
+) (exporter.Traces, error) {
 	sentryConfig, ok := config.(*Config)
 	if !ok {
 		return nil, fmt.Errorf("unexpected config type: %T", config)

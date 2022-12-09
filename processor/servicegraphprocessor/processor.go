@@ -26,6 +26,7 @@ import (
 	"go.opencensus.io/stats"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -110,7 +111,7 @@ func (p *processor) Start(_ context.Context, host component.Host) error {
 
 	// The available list of exporters come from any configured metrics pipelines' exporters.
 	for k, exp := range exporters[component.DataTypeMetrics] {
-		metricsExp, ok := exp.(component.MetricsExporter)
+		metricsExp, ok := exp.(exporter.Metrics)
 		if k.String() == p.config.MetricsExporter && ok {
 			p.metricsExporter = metricsExp
 			break

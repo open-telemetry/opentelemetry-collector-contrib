@@ -18,8 +18,8 @@ import (
 	"context"
 
 	"go.opencensus.io/trace"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/transport"
@@ -35,7 +35,7 @@ type reporter struct {
 
 var _ transport.Reporter = (*reporter)(nil)
 
-func newReporter(set component.ReceiverCreateSettings) (transport.Reporter, error) {
+func newReporter(set receiver.CreateSettings) (transport.Reporter, error) {
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
 		ReceiverID:             set.ID,
 		Transport:              "tcp",

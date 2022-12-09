@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/receiver"
 )
 
 const (
@@ -30,11 +31,11 @@ const (
 	otlpEndpoint = "0.0.0.0:0"
 )
 
-func NewFactory() component.ReceiverFactory {
-	return component.NewReceiverFactory(
+func NewFactory() receiver.Factory {
+	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createReceiver, stability))
+		receiver.WithMetrics(createReceiver, stability))
 }
 
 func createDefaultConfig() component.Config {
@@ -53,10 +54,10 @@ func createDefaultConfig() component.Config {
 
 func createReceiver(
 	_ context.Context,
-	params component.ReceiverCreateSettings,
+	params receiver.CreateSettings,
 	cfg component.Config,
 	consumer consumer.Metrics,
-) (component.MetricsReceiver, error) {
+) (receiver.Metrics, error) {
 	jmxConfig := cfg.(*Config)
 	if err := jmxConfig.Validate(); err != nil {
 		return nil, err

@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
@@ -385,7 +386,7 @@ func TestCreateAPIMetricsExporter(t *testing.T) {
 	ctx := context.Background()
 	exp, err := factory.CreateMetricsExporter(
 		ctx,
-		componenttest.NewNopExporterCreateSettings(),
+		exportertest.NewNopCreateSettings(),
 		cfg,
 	)
 
@@ -417,7 +418,7 @@ func TestCreateAPIExporterFailOnInvalidKey(t *testing.T) {
 		// metrics exporter
 		mexp, err := factory.CreateMetricsExporter(
 			ctx,
-			componenttest.NewNopExporterCreateSettings(),
+			exportertest.NewNopCreateSettings(),
 			cfg,
 		)
 		assert.EqualError(t, err, "API Key validation failed")
@@ -425,7 +426,7 @@ func TestCreateAPIExporterFailOnInvalidKey(t *testing.T) {
 
 		texp, err := factory.CreateTracesExporter(
 			ctx,
-			componenttest.NewNopExporterCreateSettings(),
+			exportertest.NewNopCreateSettings(),
 			cfg,
 		)
 		assert.EqualError(t, err, "API Key validation failed")
@@ -433,7 +434,7 @@ func TestCreateAPIExporterFailOnInvalidKey(t *testing.T) {
 
 		lexp, err := factory.CreateLogsExporter(
 			ctx,
-			componenttest.NewNopExporterCreateSettings(),
+			exportertest.NewNopCreateSettings(),
 			cfg,
 		)
 		assert.EqualError(t, err, "API Key validation failed")
@@ -444,7 +445,7 @@ func TestCreateAPIExporterFailOnInvalidKey(t *testing.T) {
 		ctx := context.Background()
 		exp, err := factory.CreateMetricsExporter(
 			ctx,
-			componenttest.NewNopExporterCreateSettings(),
+			exportertest.NewNopCreateSettings(),
 			cfg,
 		)
 		assert.Nil(t, err)
@@ -452,7 +453,7 @@ func TestCreateAPIExporterFailOnInvalidKey(t *testing.T) {
 
 		texp, err := factory.CreateTracesExporter(
 			ctx,
-			componenttest.NewNopExporterCreateSettings(),
+			exportertest.NewNopCreateSettings(),
 			cfg,
 		)
 		assert.Nil(t, err)
@@ -460,7 +461,7 @@ func TestCreateAPIExporterFailOnInvalidKey(t *testing.T) {
 
 		lexp, err := factory.CreateLogsExporter(
 			ctx,
-			componenttest.NewNopExporterCreateSettings(),
+			exportertest.NewNopCreateSettings(),
 			cfg,
 		)
 		assert.Nil(t, err)
@@ -488,7 +489,7 @@ func TestCreateAPILogsExporter(t *testing.T) {
 	ctx := context.Background()
 	exp, err := factory.CreateLogsExporter(
 		ctx,
-		componenttest.NewNopExporterCreateSettings(),
+		exportertest.NewNopCreateSettings(),
 		cfg,
 	)
 
@@ -526,7 +527,7 @@ func TestOnlyMetadata(t *testing.T) {
 
 	expTraces, err := factory.CreateTracesExporter(
 		ctx,
-		componenttest.NewNopExporterCreateSettings(),
+		exportertest.NewNopCreateSettings(),
 		cfg,
 	)
 	assert.NoError(t, err)
@@ -534,7 +535,7 @@ func TestOnlyMetadata(t *testing.T) {
 
 	expMetrics, err := factory.CreateMetricsExporter(
 		ctx,
-		componenttest.NewNopExporterCreateSettings(),
+		exportertest.NewNopCreateSettings(),
 		cfg,
 	)
 	assert.NoError(t, err)

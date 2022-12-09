@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper/internal/metadata"
@@ -37,7 +38,7 @@ const (
 
 // scraper for FileSystem Metrics
 type scraper struct {
-	settings component.ReceiverCreateSettings
+	settings receiver.CreateSettings
 	config   *Config
 	mb       *metadata.MetricsBuilder
 	fsFilter fsFilter
@@ -54,7 +55,7 @@ type deviceUsage struct {
 }
 
 // newFileSystemScraper creates a FileSystem Scraper
-func newFileSystemScraper(_ context.Context, settings component.ReceiverCreateSettings, cfg *Config) (*scraper, error) {
+func newFileSystemScraper(_ context.Context, settings receiver.CreateSettings, cfg *Config) (*scraper, error) {
 	fsFilter, err := cfg.createFilter()
 	if err != nil {
 		return nil, err

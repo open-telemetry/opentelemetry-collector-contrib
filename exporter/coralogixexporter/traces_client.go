@@ -21,6 +21,7 @@ import (
 	"runtime"
 
 	"go.opentelemetry.io/collector/component"
+	exp "go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 	"google.golang.org/grpc"
@@ -41,7 +42,7 @@ type tracesExporter struct {
 	userAgent string
 }
 
-func newTracesExporter(cfg component.Config, set component.ExporterCreateSettings) (*tracesExporter, error) {
+func newTracesExporter(cfg component.Config, set exp.CreateSettings) (*tracesExporter, error) {
 	oCfg, ok := cfg.(*Config)
 	if !ok {
 		return nil, fmt.Errorf("invalid config exporter, expect type: %T, got: %T", &Config{}, cfg)

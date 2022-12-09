@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
 type mockHubWrapper struct {
@@ -67,7 +68,7 @@ func TestClient_Start(t *testing.T) {
 	config.(*Config).Connection = "Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName"
 
 	c := &client{
-		settings: componenttest.NewNopReceiverCreateSettings(),
+		settings: receivertest.NewNopCreateSettings(),
 		consumer: consumertest.NewNop(),
 		config:   config.(*Config),
 		convert:  &rawConverter{},
@@ -88,11 +89,11 @@ func TestClient_handle(t *testing.T) {
 		ReceiverID:             component.NewID(typeStr),
 		Transport:              "",
 		LongLivedCtx:           false,
-		ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings(),
+		ReceiverCreateSettings: receivertest.NewNopCreateSettings(),
 	})
 	require.NoError(t, err)
 	c := &client{
-		settings: componenttest.NewNopReceiverCreateSettings(),
+		settings: receivertest.NewNopCreateSettings(),
 		consumer: sink,
 		config:   config.(*Config),
 		obsrecv:  obsrecv,

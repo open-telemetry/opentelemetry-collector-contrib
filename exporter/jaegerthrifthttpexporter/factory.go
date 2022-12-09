@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -31,11 +32,11 @@ const (
 )
 
 // NewFactory creates a factory for Jaeger Thrift over HTTP exporter.
-func NewFactory() component.ExporterFactory {
-	return component.NewExporterFactory(
+func NewFactory() exporter.Factory {
+	return exporter.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporter(createTracesExporter, stability))
+		exporter.WithTraces(createTracesExporter, stability))
 }
 
 func createDefaultConfig() component.Config {
@@ -49,9 +50,9 @@ func createDefaultConfig() component.Config {
 
 func createTracesExporter(
 	_ context.Context,
-	set component.ExporterCreateSettings,
+	set exporter.CreateSettings,
 	config component.Config,
-) (component.TracesExporter, error) {
+) (exporter.Traces, error) {
 
 	expCfg := config.(*Config)
 

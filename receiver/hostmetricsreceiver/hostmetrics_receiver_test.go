@@ -30,6 +30,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 
@@ -230,7 +232,7 @@ type mockFactory struct{ mock.Mock }
 type mockScraper struct{ mock.Mock }
 
 func (m *mockFactory) CreateDefaultConfig() internal.Config { return &mockConfig{} }
-func (m *mockFactory) CreateMetricsScraper(context.Context, component.ReceiverCreateSettings, internal.Config) (scraperhelper.Scraper, error) {
+func (m *mockFactory) CreateMetricsScraper(context.Context, receiver.CreateSettings, internal.Config) (scraperhelper.Scraper, error) {
 	args := m.MethodCalled("CreateMetricsScraper")
 	return args.Get(0).(scraperhelper.Scraper), args.Error(1)
 }
@@ -288,11 +290,11 @@ func benchmarkScrapeMetrics(b *testing.B, cfg *Config) {
 	sink := &notifyingSink{ch: make(chan int, 10)}
 	tickerCh := make(chan time.Time)
 
-	options, err := createAddScraperOptions(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, scraperFactories)
+	options, err := createAddScraperOptions(context.Background(), receivertest.NewNopCreateSettings(), cfg, scraperFactories)
 	require.NoError(b, err)
 	options = append(options, scraperhelper.WithTickerChannel(tickerCh))
 
-	receiver, err := scraperhelper.NewScraperControllerReceiver(&cfg.ScraperControllerSettings, componenttest.NewNopReceiverCreateSettings(), sink, options...)
+	receiver, err := scraperhelper.NewScraperControllerReceiver(&cfg.ScraperControllerSettings, receivertest.NewNopCreateSettings(), sink, options...)
 	require.NoError(b, err)
 
 	require.NoError(b, receiver.Start(context.Background(), componenttest.NewNopHost()))

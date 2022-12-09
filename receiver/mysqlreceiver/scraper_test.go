@@ -25,9 +25,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
@@ -66,7 +66,7 @@ func TestScrape(t *testing.T) {
 
 		cfg.Metrics.MysqlConnectionCount.Enabled = true
 
-		scraper := newMySQLScraper(componenttest.NewNopReceiverCreateSettings(), cfg)
+		scraper := newMySQLScraper(receivertest.NewNopCreateSettings(), cfg)
 		scraper.sqlclient = &mockClient{
 			globalStatsFile:             "global_stats",
 			innodbStatsFile:             "innodb_stats",
@@ -99,7 +99,7 @@ func TestScrape(t *testing.T) {
 		cfg.Metrics.MysqlTableLockWaitWriteCount.Enabled = true
 		cfg.Metrics.MysqlTableLockWaitWriteTime.Enabled = true
 
-		scraper := newMySQLScraper(componenttest.NewNopReceiverCreateSettings(), cfg)
+		scraper := newMySQLScraper(receivertest.NewNopCreateSettings(), cfg)
 		scraper.sqlclient = &mockClient{
 			globalStatsFile:             "global_stats_partial",
 			innodbStatsFile:             "innodb_stats_empty",
