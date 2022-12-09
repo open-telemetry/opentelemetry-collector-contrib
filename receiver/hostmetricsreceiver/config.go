@@ -38,7 +38,7 @@ type Config struct {
 	RootPath string `mapstructure:"root_path"`
 }
 
-var _ component.ReceiverConfig = (*Config)(nil)
+var _ component.Config = (*Config)(nil)
 var _ confmap.Unmarshaler = (*Config)(nil)
 
 // Validate checks the receiver configuration is valid

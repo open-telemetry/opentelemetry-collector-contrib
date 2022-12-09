@@ -39,7 +39,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
-	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal"
@@ -72,12 +71,12 @@ func TestPayloadToLogRecord(t *testing.T) {
 				rl := logs.ResourceLogs().AppendEmpty()
 				lr := rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
-				rl.Resource().Attributes().FromRaw(map[string]interface{}{
+				assert.NoError(t, rl.Resource().Attributes().FromRaw(map[string]interface{}{
 					"mongodbatlas.group.id":        "some-group-id",
 					"mongodbatlas.alert.config.id": "123",
-				})
+				}))
 
-				lr.Attributes().FromRaw(map[string]interface{}{
+				assert.NoError(t, lr.Attributes().FromRaw(map[string]interface{}{
 					"created":      "2022-06-03T22:30:31Z",
 					"message":      "Some event happened",
 					"event.domain": "mongodbatlas",
@@ -85,7 +84,7 @@ func TestPayloadToLogRecord(t *testing.T) {
 					"updated":      "2022-06-03T22:30:31Z",
 					"status":       "STATUS",
 					"id":           "some-id",
-				})
+				}))
 
 				lr.SetObservedTimestamp(pcommon.NewTimestampFromTime(now))
 				lr.SetTimestamp(pcommon.NewTimestampFromTime(time.Date(2022, time.June, 3, 22, 30, 31, 0, time.UTC)))
@@ -129,14 +128,14 @@ func TestPayloadToLogRecord(t *testing.T) {
 				rl := logs.ResourceLogs().AppendEmpty()
 				lr := rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
-				rl.Resource().Attributes().FromRaw(map[string]interface{}{
+				assert.NoError(t, rl.Resource().Attributes().FromRaw(map[string]interface{}{
 					"mongodbatlas.group.id":         "some-group-id",
 					"mongodbatlas.alert.config.id":  "123",
 					"mongodbatlas.cluster.name":     "cluster-name",
 					"mongodbatlas.replica_set.name": "replica-set",
-				})
+				}))
 
-				lr.Attributes().FromRaw(map[string]interface{}{
+				assert.NoError(t, lr.Attributes().FromRaw(map[string]interface{}{
 					"acknowledgement.comment":  "Scheduled maintenance",
 					"acknowledgement.until":    "2022-06-03T22:32:34Z",
 					"acknowledgement.username": "devops",
@@ -156,7 +155,7 @@ func TestPayloadToLogRecord(t *testing.T) {
 					"type_name":                "type-name",
 					"updated":                  "2022-06-03T22:30:35Z",
 					"user_alias":               "user-alias",
-				})
+				}))
 
 				lr.SetObservedTimestamp(pcommon.NewTimestampFromTime(now))
 				lr.SetTimestamp(pcommon.NewTimestampFromTime(time.Date(2022, time.June, 3, 22, 30, 35, 0, time.UTC)))
@@ -411,13 +410,9 @@ func TestHandleRequest(t *testing.T) {
 				consumer = &consumertest.LogsSink{}
 			}
 
-			ar, err := newAlertsReceiver(zaptest.NewLogger(t),
-				&Config{
-					Alerts: AlertConfig{
-						Secret: "some_secret",
-					},
-				}, consumer)
-
+			set := componenttest.NewNopReceiverCreateSettings()
+			set.Logger = zaptest.NewLogger(t)
+			ar, err := newAlertsReceiver(set, &Config{Alerts: AlertConfig{Secret: "some_secret"}}, consumer)
 			require.NoError(t, err, "Failed to create alerts receiver")
 
 			rec := httptest.NewRecorder()
@@ -731,7 +726,7 @@ func TestAlertsRetrieval(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			logSink := &consumertest.LogsSink{}
-			alertsRcvr, err := newAlertsReceiver(zap.NewNop(), tc.config(), logSink)
+			alertsRcvr, err := newAlertsReceiver(componenttest.NewNopReceiverCreateSettings(), tc.config(), logSink)
 			require.NoError(t, err)
 			alertsRcvr.client = tc.client()
 
@@ -752,7 +747,7 @@ func TestAlertsRetrieval(t *testing.T) {
 
 func TestAlertPollingExclusions(t *testing.T) {
 	logSink := &consumertest.LogsSink{}
-	alertsRcvr, err := newAlertsReceiver(zap.NewNop(), &Config{
+	alertsRcvr, err := newAlertsReceiver(componenttest.NewNopReceiverCreateSettings(), &Config{
 		Alerts: AlertConfig{
 			Enabled: true,
 			Mode:    alertModePoll,

@@ -29,7 +29,7 @@ import (
 func createMetricsReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateSettings,
-	cfg component.ReceiverConfig,
+	cfg component.Config,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	return nil, errors.New("the sqlserver receiver is only supported on Windows")

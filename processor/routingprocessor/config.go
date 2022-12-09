@@ -70,6 +70,7 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("invalid routing table: %w", errNoTableItems)
 	}
 
+	ottlRoutingOnly := true
 	// validate that every route has a value for the routing attribute and has
 	// at least one exporter
 	for _, item := range c.Table {
@@ -84,10 +85,17 @@ func (c *Config) Validate() error {
 		if len(item.Exporters) == 0 {
 			return fmt.Errorf("invalid route %s: %w", item.Value, errNoExporters)
 		}
+
+		if item.Value != "" {
+			ottlRoutingOnly = false
+		}
 	}
 
-	// we also need a "FromAttribute" value
-	if len(c.FromAttribute) == 0 {
+	if ottlRoutingOnly {
+		c.AttributeSource = ""
+		c.FromAttribute = ""
+	} else if len(c.FromAttribute) == 0 {
+		// we also need a "FromAttribute" value
 		return fmt.Errorf(
 			"invalid attribute to read the route's value from: %w",
 			errNoMissingFromAttribute,

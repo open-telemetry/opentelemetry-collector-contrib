@@ -1451,6 +1451,7 @@ func addDataPoint(
 		setDataPointValue(value, dataPoint)
 	}
 	setDataPointTimestamp(ts, dataPoint)
+	//nolint:errcheck
 	dataPoint.Attributes().FromRaw(tags)
 }
 

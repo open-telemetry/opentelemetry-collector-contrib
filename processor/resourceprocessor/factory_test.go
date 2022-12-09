@@ -52,17 +52,6 @@ func TestCreateProcessor(t *testing.T) {
 	assert.NotNil(t, mp)
 }
 
-func TestInvalidEmptyActions(t *testing.T) {
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
-
-	_, err := factory.CreateTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
-	assert.Error(t, err)
-
-	_, err = factory.CreateMetricsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
-	assert.Error(t, err)
-}
-
 func TestInvalidAttributeActions(t *testing.T) {
 	factory := NewFactory()
 	cfg := &Config{

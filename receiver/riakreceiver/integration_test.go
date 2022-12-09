@@ -31,8 +31,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest/golden"
 )
 
 func riakContainer(t *testing.T) testcontainers.Container {
@@ -86,5 +86,5 @@ func TestRiakIntegration(t *testing.T) {
 
 	actualMetrics := consumer.AllMetrics()[0]
 
-	scrapertest.CompareMetrics(expectedMetrics, actualMetrics, scrapertest.IgnoreMetricValues())
+	comparetest.CompareMetrics(expectedMetrics, actualMetrics, comparetest.IgnoreMetricValues())
 }

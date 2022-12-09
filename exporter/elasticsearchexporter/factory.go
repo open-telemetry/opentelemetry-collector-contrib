@@ -43,7 +43,7 @@ func NewFactory() component.ExporterFactory {
 	)
 }
 
-func createDefaultConfig() component.ExporterConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		HTTPClientSettings: HTTPClientSettings{
@@ -72,7 +72,7 @@ func createDefaultConfig() component.ExporterConfig {
 func createLogsExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
-	cfg component.ExporterConfig,
+	cfg component.Config,
 ) (component.LogsExporter, error) {
 	if cfg.(*Config).Index != "" {
 		set.Logger.Warn("index option are deprecated and replaced with logs_index and traces_index.")
@@ -94,7 +94,7 @@ func createLogsExporter(
 
 func createTracesExporter(ctx context.Context,
 	set component.ExporterCreateSettings,
-	cfg component.ExporterConfig) (component.TracesExporter, error) {
+	cfg component.Config) (component.TracesExporter, error) {
 
 	exporter, err := newTracesExporter(set.Logger, cfg.(*Config))
 	if err != nil {

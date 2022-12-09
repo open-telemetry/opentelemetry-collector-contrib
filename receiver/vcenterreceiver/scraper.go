@@ -30,7 +30,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver/internal/metadata"
 )
 
-var _ component.Receiver = (*vcenterMetricScraper)(nil)
+var _ component.MetricsReceiver = (*vcenterMetricScraper)(nil)
 
 type vcenterMetricScraper struct {
 	client *vcenterClient
@@ -49,7 +49,7 @@ func newVmwareVcenterScraper(
 		client: client,
 		config: config,
 		logger: logger,
-		mb:     metadata.NewMetricsBuilder(config.Metrics, settings.BuildInfo),
+		mb:     metadata.NewMetricsBuilder(config.Metrics, settings),
 	}
 }
 

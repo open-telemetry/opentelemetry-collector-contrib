@@ -18,10 +18,11 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/grafana/loki/pkg/logproto"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki/logproto"
 )
 
 func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
@@ -340,7 +341,7 @@ func TestLogsToLokiRequestWithoutTenant(t *testing.T) {
 			}
 
 			if len(tt.res) > 0 {
-				ld.ResourceLogs().At(0).Resource().Attributes().FromRaw(tt.res)
+				assert.NoError(t, ld.ResourceLogs().At(0).Resource().Attributes().FromRaw(tt.res))
 			}
 
 			rlogs := ld.ResourceLogs()
@@ -351,7 +352,7 @@ func TestLogsToLokiRequestWithoutTenant(t *testing.T) {
 					for k := 0; k < logs.Len(); k++ {
 						log := logs.At(k)
 						if len(tt.attrs) > 0 {
-							log.Attributes().FromRaw(tt.attrs)
+							assert.NoError(t, log.Attributes().FromRaw(tt.attrs))
 						}
 						for k, v := range tt.hints {
 							log.Attributes().PutStr(k, fmt.Sprintf("%v", v))
@@ -480,12 +481,12 @@ func TestLogsToLoki(t *testing.T) {
 
 			// copy the attributes from the test case to the log entry
 			if len(tC.attrs) > 0 {
-				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().FromRaw(tC.attrs)
-				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().FromRaw(tC.attrs)
-				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(2).Attributes().FromRaw(tC.attrs)
+				assert.NoError(t, ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().FromRaw(tC.attrs))
+				assert.NoError(t, ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().FromRaw(tC.attrs))
+				assert.NoError(t, ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(2).Attributes().FromRaw(tC.attrs))
 			}
 			if len(tC.res) > 0 {
-				ld.ResourceLogs().At(0).Resource().Attributes().FromRaw(tC.res)
+				assert.NoError(t, ld.ResourceLogs().At(0).Resource().Attributes().FromRaw(tC.res))
 			}
 			if len(tC.levelAttribute) > 0 {
 				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr(levelAttributeName, tC.levelAttribute)

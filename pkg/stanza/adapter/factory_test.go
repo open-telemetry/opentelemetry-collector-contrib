@@ -30,7 +30,7 @@ import (
 
 func TestCreateReceiver(t *testing.T) {
 	t.Run("Success", func(t *testing.T) {
-		factory := NewFactory(TestReceiverType{}, component.StabilityLevelInDevelopment)
+		factory := NewFactory(TestReceiverType{}, component.StabilityLevelDevelopment)
 		cfg := factory.CreateDefaultConfig().(*TestConfig)
 		cfg.Operators = []operator.Config{
 			{
@@ -43,7 +43,7 @@ func TestCreateReceiver(t *testing.T) {
 	})
 
 	t.Run("DecodeOperatorConfigsFailureMissingFields", func(t *testing.T) {
-		factory := NewFactory(TestReceiverType{}, component.StabilityLevelInDevelopment)
+		factory := NewFactory(TestReceiverType{}, component.StabilityLevelDevelopment)
 		badCfg := factory.CreateDefaultConfig().(*TestConfig)
 		badCfg.Operators = []operator.Config{
 			{

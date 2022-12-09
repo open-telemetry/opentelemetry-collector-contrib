@@ -29,7 +29,7 @@ import (
 
 const (
 	typeStr   = "zookeeper"
-	stability = component.StabilityLevelInDevelopment
+	stability = component.StabilityLevelDevelopment
 
 	defaultCollectionInterval = 10 * time.Second
 	defaultTimeout            = 10 * time.Second
@@ -43,7 +43,7 @@ func NewFactory() component.ReceiverFactory {
 	)
 }
 
-func createDefaultConfig() component.ReceiverConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 			ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
@@ -61,7 +61,7 @@ func createDefaultConfig() component.ReceiverConfig {
 func createMetricsReceiver(
 	_ context.Context,
 	params component.ReceiverCreateSettings,
-	config component.ReceiverConfig,
+	config component.Config,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	rConfig := config.(*Config)

@@ -78,7 +78,7 @@ func (s spanEventStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces
 				span := spans.At(k)
 				spanEvents := span.Events()
 				for n := 0; n < spanEvents.Len(); n++ {
-					tCtx := ottlspanevent.NewTransformContext(spanEvents.At(k), span, sspans.Scope(), rspans.Resource())
+					tCtx := ottlspanevent.NewTransformContext(spanEvents.At(n), span, sspans.Scope(), rspans.Resource())
 					for _, statement := range s {
 						_, _, err := statement.Execute(ctx, tCtx)
 						if err != nil {

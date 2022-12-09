@@ -328,7 +328,7 @@ func TestDocument_Serialize_Flat(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			var buf strings.Builder
 			m := pcommon.NewMap()
-			m.FromRaw(test.attrs)
+			assert.NoError(t, m.FromRaw(test.attrs))
 			doc := DocumentFromAttributes(m)
 			doc.Dedup()
 			err := doc.Serialize(&buf, false)
@@ -389,7 +389,7 @@ func TestDocument_Serialize_Dedot(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			var buf strings.Builder
 			m := pcommon.NewMap()
-			m.FromRaw(test.attrs)
+			assert.NoError(t, m.FromRaw(test.attrs))
 			doc := DocumentFromAttributes(m)
 			doc.Dedup()
 			err := doc.Serialize(&buf, true)

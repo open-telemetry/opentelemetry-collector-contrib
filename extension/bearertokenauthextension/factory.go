@@ -19,6 +19,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/extension"
 )
 
 const (
@@ -29,8 +30,8 @@ const (
 )
 
 // NewFactory creates a factory for the static bearer token Authenticator extension.
-func NewFactory() component.ExtensionFactory {
-	return component.NewExtensionFactory(
+func NewFactory() extension.Factory {
+	return extension.NewFactory(
 		typeStr,
 		createDefaultConfig,
 		createExtension,
@@ -38,13 +39,13 @@ func NewFactory() component.ExtensionFactory {
 	)
 }
 
-func createDefaultConfig() component.ExtensionConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
 		Scheme:            defaultScheme,
 	}
 }
 
-func createExtension(_ context.Context, set component.ExtensionCreateSettings, cfg component.ExtensionConfig) (component.Extension, error) {
+func createExtension(_ context.Context, set extension.CreateSettings, cfg component.Config) (extension.Extension, error) {
 	return newBearerTokenAuth(cfg.(*Config), set.Logger), nil
 }

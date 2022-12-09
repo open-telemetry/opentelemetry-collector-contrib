@@ -42,7 +42,7 @@ func TestCreateProcessor(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalProcessorConfig(sub, cfg))
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	params := componenttest.NewNopProcessorCreateSettings()
 	tp, err := factory.CreateTracesProcessor(context.Background(), params, cfg, consumertest.NewNop())

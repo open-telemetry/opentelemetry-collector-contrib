@@ -38,7 +38,7 @@ import (
 func TestStart(t *testing.T) {
 	mockConsumer := &consumertest.LogsSink{}
 
-	factory := NewFactory(TestReceiverType{}, component.StabilityLevelInDevelopment)
+	factory := NewFactory(TestReceiverType{}, component.StabilityLevelDevelopment)
 
 	logsReceiver, err := factory.CreateLogsReceiver(
 		context.Background(),
@@ -67,7 +67,7 @@ func TestStart(t *testing.T) {
 func TestHandleStartError(t *testing.T) {
 	mockConsumer := &consumertest.LogsSink{}
 
-	factory := NewFactory(TestReceiverType{}, component.StabilityLevelInDevelopment)
+	factory := NewFactory(TestReceiverType{}, component.StabilityLevelDevelopment)
 
 	cfg := factory.CreateDefaultConfig().(*TestConfig)
 	cfg.Input = NewUnstartableConfig()
@@ -81,7 +81,7 @@ func TestHandleStartError(t *testing.T) {
 
 func TestHandleConsumeError(t *testing.T) {
 	mockConsumer := &mockLogsRejecter{}
-	factory := NewFactory(TestReceiverType{}, component.StabilityLevelInDevelopment)
+	factory := NewFactory(TestReceiverType{}, component.StabilityLevelDevelopment)
 
 	logsReceiver, err := factory.CreateLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), factory.CreateDefaultConfig(), mockConsumer)
 	require.NoError(t, err, "receiver should successfully build")

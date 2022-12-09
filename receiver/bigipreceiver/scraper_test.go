@@ -30,8 +30,8 @@ import (
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver/internal/mocks"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver/internal/models"
 )
@@ -271,7 +271,7 @@ func TestScaperScrape(t *testing.T) {
 
 			expectedMetrics := tc.expectedMetricGen(t)
 
-			err = scrapertest.CompareMetrics(expectedMetrics, actualMetrics)
+			err = comparetest.CompareMetrics(expectedMetrics, actualMetrics)
 			require.NoError(t, err)
 		})
 	}

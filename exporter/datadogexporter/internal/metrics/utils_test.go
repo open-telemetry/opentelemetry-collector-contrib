@@ -21,13 +21,13 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-func TestNewMetric(t *testing.T) {
+func TestNewZorkianMetric(t *testing.T) {
 	name := "test.metric"
 	ts := uint64(1e9)
 	value := 2.0
 	tags := []string{"tag:value"}
 
-	metric := newMetric(name, ts, value, tags)
+	metric := newZorkianMetric(name, ts, value, tags)
 
 	assert.Equal(t, "test.metric", *metric.Metric)
 	// Assert timestamp conversion from uint64 ns to float64 s
@@ -38,27 +38,27 @@ func TestNewMetric(t *testing.T) {
 	assert.Equal(t, []string{"tag:value"}, metric.Tags)
 }
 
-func TestNewType(t *testing.T) {
+func TestNewZorkianType(t *testing.T) {
 	name := "test.metric"
 	ts := uint64(1e9)
 	value := 2.0
 	tags := []string{"tag:value"}
 
-	gauge := NewGauge(name, ts, value, tags)
+	gauge := NewZorkianGauge(name, ts, value, tags)
 	assert.Equal(t, gauge.GetType(), string(Gauge))
 
-	count := NewCount(name, ts, value, tags)
+	count := NewZorkianCount(name, ts, value, tags)
 	assert.Equal(t, count.GetType(), string(Count))
 
 }
 
-func TestDefaultMetrics(t *testing.T) {
+func TestDefaultZorkianMetrics(t *testing.T) {
 	buildInfo := component.BuildInfo{
 		Version: "1.0",
 		Command: "otelcontribcol",
 	}
 
-	ms := DefaultMetrics("metrics", "test-host", uint64(2e9), buildInfo)
+	ms := DefaultZorkianMetrics("metrics", "test-host", uint64(2e9), buildInfo)
 
 	assert.Equal(t, "otel.datadog_exporter.metrics.running", *ms[0].Metric)
 	// Assert metrics list length (should be 1)

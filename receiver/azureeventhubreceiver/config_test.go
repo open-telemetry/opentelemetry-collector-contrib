@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package azureeventhubreceiver
+package azureeventhubreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver"
 
 import (
 	"path/filepath"
@@ -42,17 +42,19 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, "Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName", r0.(*Config).Connection)
 	assert.Equal(t, "", r0.(*Config).Offset)
 	assert.Equal(t, "", r0.(*Config).Partition)
+	assert.Equal(t, defaultLogFormat, logFormat(r0.(*Config).Format))
 
 	r1 := cfg.Receivers[component.NewIDWithName(typeStr, "all")]
 	assert.Equal(t, "Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName", r1.(*Config).Connection)
 	assert.Equal(t, "1234-5566", r1.(*Config).Offset)
 	assert.Equal(t, "foo", r1.(*Config).Partition)
+	assert.Equal(t, rawLogFormat, logFormat(r1.(*Config).Format))
 }
 
 func TestMissingConnection(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	err := cfg.Validate()
+	err := component.ValidateConfig(cfg)
 	assert.EqualError(t, err, "missing connection")
 }
 
@@ -60,6 +62,22 @@ func TestInvalidConnectionString(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	cfg.(*Config).Connection = "foo"
-	err := cfg.Validate()
+	err := component.ValidateConfig(cfg)
 	assert.EqualError(t, err, "failed parsing connection string due to unmatched key value separated by '='")
+}
+
+func TestIsValidFormat(t *testing.T) {
+	for _, format := range []logFormat{defaultLogFormat, rawLogFormat, azureLogFormat} {
+		assert.True(t, isValidFormat(string(format)))
+	}
+	assert.False(t, isValidFormat("invalid-format"))
+}
+
+func TestInvalidFormat(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	cfg.(*Config).Connection = "Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName"
+	cfg.(*Config).Format = "invalid"
+	err := component.ValidateConfig(cfg)
+	assert.ErrorContains(t, err, "invalid format; must be one of")
 }

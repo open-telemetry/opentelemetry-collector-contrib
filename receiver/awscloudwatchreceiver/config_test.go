@@ -157,7 +157,7 @@ func TestLoadConfig(t *testing.T) {
 
 	cases := []struct {
 		name           string
-		expectedConfig component.ReceiverConfig
+		expectedConfig component.Config
 	}{
 		{
 			name: "default",
@@ -275,9 +275,9 @@ func TestLoadConfig(t *testing.T) {
 
 			loaded, err := cm.Sub(component.NewIDWithName(typeStr, tc.name).String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalReceiverConfig(loaded, cfg))
+			require.NoError(t, component.UnmarshalConfig(loaded, cfg))
 			require.Equal(t, cfg, tc.expectedConfig)
-			require.NoError(t, cfg.Validate())
+			require.NoError(t, component.ValidateConfig(cfg))
 		})
 	}
 }

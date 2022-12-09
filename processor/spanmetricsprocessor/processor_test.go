@@ -85,11 +85,11 @@ type span struct {
 
 func TestProcessorStart(t *testing.T) {
 	// Create otlp exporters.
-	otlpConfig, mexp, texp := newOTLPExporters(t)
+	otlpID, mexp, texp := newOTLPExporters(t)
 
 	for _, tc := range []struct {
 		name            string
-		exporter        component.Exporter
+		exporter        component.Component
 		metricsExporter string
 		wantErrorMsg    string
 	}{
@@ -99,9 +99,9 @@ func TestProcessorStart(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			// Prepare
-			exporters := map[component.DataType]map[component.ID]component.Exporter{
+			exporters := map[component.DataType]map[component.ID]component.Component{
 				component.DataTypeMetrics: {
-					otlpConfig.ID(): tc.exporter,
+					otlpID: tc.exporter,
 				},
 			}
 			mhost := &mocks.Host{}
@@ -620,10 +620,11 @@ func initSpan(span span, s ptrace.Span) {
 	s.SetSpanID(pcommon.SpanID([8]byte{byte(42)}))
 }
 
-func newOTLPExporters(t *testing.T) (*otlpexporter.Config, component.MetricsExporter, component.TracesExporter) {
+func newOTLPExporters(t *testing.T) (component.ID, component.MetricsExporter, component.TracesExporter) {
 	otlpExpFactory := otlpexporter.NewFactory()
+	otlpID := component.NewID("otlp")
 	otlpConfig := &otlpexporter.Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID("otlp")),
+		ExporterSettings: config.NewExporterSettings(otlpID),
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: "example.com:1234",
 		},
@@ -633,7 +634,7 @@ func newOTLPExporters(t *testing.T) (*otlpexporter.Config, component.MetricsExpo
 	require.NoError(t, err)
 	texp, err := otlpExpFactory.CreateTracesExporter(context.Background(), expCreationParams, otlpConfig)
 	require.NoError(t, err)
-	return otlpConfig, mexp, texp
+	return otlpID, mexp, texp
 }
 
 func TestBuildKeySameServiceOperationCharSequence(t *testing.T) {
@@ -715,9 +716,9 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			resAttr := pcommon.NewMap()
-			resAttr.FromRaw(tc.resourceAttrMap)
+			assert.NoError(t, resAttr.FromRaw(tc.resourceAttrMap))
 			span0 := ptrace.NewSpan()
-			span0.Attributes().FromRaw(tc.spanAttrMap)
+			assert.NoError(t, span0.Attributes().FromRaw(tc.spanAttrMap))
 			span0.SetName("c")
 			buf := &bytes.Buffer{}
 			buildKey(buf, "ab", span0, tc.optionalDims, resAttr)

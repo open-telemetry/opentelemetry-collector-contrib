@@ -810,23 +810,23 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, options ...metricBuilderOption) *MetricsBuilder {
+func NewMetricsBuilder(ms MetricsSettings, settings component.ReceiverCreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                       pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                   pmetric.NewMetrics(),
-		buildInfo:                       buildInfo,
-		metricIisConnectionActive:       newMetricIisConnectionActive(settings.IisConnectionActive),
-		metricIisConnectionAnonymous:    newMetricIisConnectionAnonymous(settings.IisConnectionAnonymous),
-		metricIisConnectionAttemptCount: newMetricIisConnectionAttemptCount(settings.IisConnectionAttemptCount),
-		metricIisNetworkBlocked:         newMetricIisNetworkBlocked(settings.IisNetworkBlocked),
-		metricIisNetworkFileCount:       newMetricIisNetworkFileCount(settings.IisNetworkFileCount),
-		metricIisNetworkIo:              newMetricIisNetworkIo(settings.IisNetworkIo),
-		metricIisRequestCount:           newMetricIisRequestCount(settings.IisRequestCount),
-		metricIisRequestQueueAgeMax:     newMetricIisRequestQueueAgeMax(settings.IisRequestQueueAgeMax),
-		metricIisRequestQueueCount:      newMetricIisRequestQueueCount(settings.IisRequestQueueCount),
-		metricIisRequestRejected:        newMetricIisRequestRejected(settings.IisRequestRejected),
-		metricIisThreadActive:           newMetricIisThreadActive(settings.IisThreadActive),
-		metricIisUptime:                 newMetricIisUptime(settings.IisUptime),
+		buildInfo:                       settings.BuildInfo,
+		metricIisConnectionActive:       newMetricIisConnectionActive(ms.IisConnectionActive),
+		metricIisConnectionAnonymous:    newMetricIisConnectionAnonymous(ms.IisConnectionAnonymous),
+		metricIisConnectionAttemptCount: newMetricIisConnectionAttemptCount(ms.IisConnectionAttemptCount),
+		metricIisNetworkBlocked:         newMetricIisNetworkBlocked(ms.IisNetworkBlocked),
+		metricIisNetworkFileCount:       newMetricIisNetworkFileCount(ms.IisNetworkFileCount),
+		metricIisNetworkIo:              newMetricIisNetworkIo(ms.IisNetworkIo),
+		metricIisRequestCount:           newMetricIisRequestCount(ms.IisRequestCount),
+		metricIisRequestQueueAgeMax:     newMetricIisRequestQueueAgeMax(ms.IisRequestQueueAgeMax),
+		metricIisRequestQueueCount:      newMetricIisRequestQueueCount(ms.IisRequestQueueCount),
+		metricIisRequestRejected:        newMetricIisRequestRejected(ms.IisRequestRejected),
+		metricIisThreadActive:           newMetricIisThreadActive(ms.IisThreadActive),
+		metricIisUptime:                 newMetricIisUptime(ms.IisUptime),
 	}
 	for _, op := range options {
 		op(mb)

@@ -52,7 +52,6 @@ type configuration struct {
 // This receiver is basically a Skywalking collector.
 type swReceiver struct {
 	nextConsumer consumer.Traces
-	id           component.ID
 
 	config *configuration
 
@@ -77,14 +76,13 @@ const (
 
 // newSkywalkingReceiver creates a TracesReceiver that receives traffic as a Skywalking collector
 func newSkywalkingReceiver(
-	id component.ID,
 	config *configuration,
 	nextConsumer consumer.Traces,
 	set component.ReceiverCreateSettings,
 ) (*swReceiver, error) {
 
 	grpcObsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
-		ReceiverID:             id,
+		ReceiverID:             set.ID,
 		Transport:              grpcTransport,
 		ReceiverCreateSettings: set,
 	})
@@ -92,7 +90,7 @@ func newSkywalkingReceiver(
 		return nil, err
 	}
 	httpObsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
-		ReceiverID:             id,
+		ReceiverID:             set.ID,
 		Transport:              collectorHTTPTransport,
 		ReceiverCreateSettings: set,
 	})
@@ -103,7 +101,6 @@ func newSkywalkingReceiver(
 	return &swReceiver{
 		config:       config,
 		nextConsumer: nextConsumer,
-		id:           id,
 		settings:     set,
 		grpcObsrecv:  grpcObsrecv,
 		httpObsrecv:  httpObsrecv,

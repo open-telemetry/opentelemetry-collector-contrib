@@ -24,7 +24,7 @@ import (
 )
 
 // newMetricsExporter return a new LogSerice metrics exporter.
-func newMetricsExporter(set component.ExporterCreateSettings, cfg component.ExporterConfig) (component.MetricsExporter, error) {
+func newMetricsExporter(set component.ExporterCreateSettings, cfg component.Config) (component.MetricsExporter, error) {
 
 	l := &logServiceMetricsSender{
 		logger: set.Logger,

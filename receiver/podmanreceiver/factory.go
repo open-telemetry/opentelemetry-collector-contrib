@@ -26,7 +26,7 @@ import (
 
 const (
 	typeStr           = "podman_stats"
-	stability         = component.StabilityLevelInDevelopment
+	stability         = component.StabilityLevelDevelopment
 	defaultAPIVersion = "3.3.1"
 )
 
@@ -49,14 +49,14 @@ func createDefaultConfig() *Config {
 	}
 }
 
-func createDefaultReceiverConfig() component.ReceiverConfig {
+func createDefaultReceiverConfig() component.Config {
 	return createDefaultConfig()
 }
 
 func createMetricsReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateSettings,
-	config component.ReceiverConfig,
+	config component.Config,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	podmanConfig := config.(*Config)

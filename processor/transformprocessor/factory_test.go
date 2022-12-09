@@ -61,7 +61,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 func TestFactoryCreateProcessor_Empty(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	err := cfg.Validate()
+	err := component.ValidateConfig(cfg)
 	assert.NoError(t, err)
 }
 

@@ -51,5 +51,5 @@ func (cfg *Config) Validate() error {
 	default:
 		return fmt.Errorf("\"%s\" is not a supported distribution. Must be one of: \"openshift\", \"kubernetes\"", cfg.Distribution)
 	}
-	return cfg.APIConfig.Validate()
+	return nil
 }

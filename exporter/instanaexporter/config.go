@@ -35,7 +35,7 @@ type Config struct {
 	confighttp.HTTPClientSettings `mapstructure:",squash"`
 }
 
-var _ component.ExporterConfig = (*Config)(nil)
+var _ component.Config = (*Config)(nil)
 
 // Validate checks if the exporter configuration is valid
 func (cfg *Config) Validate() error {
@@ -48,8 +48,8 @@ func (cfg *Config) Validate() error {
 		return errors.New("no Instana agent key set")
 	}
 
-	if !(strings.HasPrefix(cfg.Endpoint, "http://") || strings.HasPrefix(cfg.Endpoint, "https://")) {
-		return errors.New("endpoint must start with http:// or https://")
+	if !strings.HasPrefix(cfg.Endpoint, "https://") {
+		return errors.New("endpoint must start with https://")
 	}
 	_, err := url.Parse(cfg.Endpoint)
 	if err != nil {

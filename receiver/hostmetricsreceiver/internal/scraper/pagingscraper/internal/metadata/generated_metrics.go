@@ -380,15 +380,15 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, options ...metricBuilderOption) *MetricsBuilder {
+func NewMetricsBuilder(ms MetricsSettings, settings component.ReceiverCreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                     pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                 pmetric.NewMetrics(),
-		buildInfo:                     buildInfo,
-		metricSystemPagingFaults:      newMetricSystemPagingFaults(settings.SystemPagingFaults),
-		metricSystemPagingOperations:  newMetricSystemPagingOperations(settings.SystemPagingOperations),
-		metricSystemPagingUsage:       newMetricSystemPagingUsage(settings.SystemPagingUsage),
-		metricSystemPagingUtilization: newMetricSystemPagingUtilization(settings.SystemPagingUtilization),
+		buildInfo:                     settings.BuildInfo,
+		metricSystemPagingFaults:      newMetricSystemPagingFaults(ms.SystemPagingFaults),
+		metricSystemPagingOperations:  newMetricSystemPagingOperations(ms.SystemPagingOperations),
+		metricSystemPagingUsage:       newMetricSystemPagingUsage(ms.SystemPagingUsage),
+		metricSystemPagingUtilization: newMetricSystemPagingUtilization(ms.SystemPagingUtilization),
 	}
 	for _, op := range options {
 		op(mb)

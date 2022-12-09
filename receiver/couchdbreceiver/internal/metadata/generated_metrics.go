@@ -616,19 +616,19 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, options ...metricBuilderOption) *MetricsBuilder {
+func NewMetricsBuilder(ms MetricsSettings, settings component.ReceiverCreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                       pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                   pmetric.NewMetrics(),
-		buildInfo:                       buildInfo,
-		metricCouchdbAverageRequestTime: newMetricCouchdbAverageRequestTime(settings.CouchdbAverageRequestTime),
-		metricCouchdbDatabaseOpen:       newMetricCouchdbDatabaseOpen(settings.CouchdbDatabaseOpen),
-		metricCouchdbDatabaseOperations: newMetricCouchdbDatabaseOperations(settings.CouchdbDatabaseOperations),
-		metricCouchdbFileDescriptorOpen: newMetricCouchdbFileDescriptorOpen(settings.CouchdbFileDescriptorOpen),
-		metricCouchdbHttpdBulkRequests:  newMetricCouchdbHttpdBulkRequests(settings.CouchdbHttpdBulkRequests),
-		metricCouchdbHttpdRequests:      newMetricCouchdbHttpdRequests(settings.CouchdbHttpdRequests),
-		metricCouchdbHttpdResponses:     newMetricCouchdbHttpdResponses(settings.CouchdbHttpdResponses),
-		metricCouchdbHttpdViews:         newMetricCouchdbHttpdViews(settings.CouchdbHttpdViews),
+		buildInfo:                       settings.BuildInfo,
+		metricCouchdbAverageRequestTime: newMetricCouchdbAverageRequestTime(ms.CouchdbAverageRequestTime),
+		metricCouchdbDatabaseOpen:       newMetricCouchdbDatabaseOpen(ms.CouchdbDatabaseOpen),
+		metricCouchdbDatabaseOperations: newMetricCouchdbDatabaseOperations(ms.CouchdbDatabaseOperations),
+		metricCouchdbFileDescriptorOpen: newMetricCouchdbFileDescriptorOpen(ms.CouchdbFileDescriptorOpen),
+		metricCouchdbHttpdBulkRequests:  newMetricCouchdbHttpdBulkRequests(ms.CouchdbHttpdBulkRequests),
+		metricCouchdbHttpdRequests:      newMetricCouchdbHttpdRequests(ms.CouchdbHttpdRequests),
+		metricCouchdbHttpdResponses:     newMetricCouchdbHttpdResponses(ms.CouchdbHttpdResponses),
+		metricCouchdbHttpdViews:         newMetricCouchdbHttpdViews(ms.CouchdbHttpdViews),
 	}
 	for _, op := range options {
 		op(mb)

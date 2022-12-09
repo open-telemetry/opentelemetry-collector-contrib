@@ -108,8 +108,9 @@ func (r *googleCloudSpannerReceiver) initializeProjectReaders(ctx context.Contex
 	parsedMetadata []*metadata.MetricsMetadata) error {
 
 	readerConfig := statsreader.ReaderConfig{
-		BackfillEnabled:        r.config.BackfillEnabled,
-		TopMetricsQueryMaxRows: r.config.TopMetricsQueryMaxRows,
+		BackfillEnabled:                   r.config.BackfillEnabled,
+		TopMetricsQueryMaxRows:            r.config.TopMetricsQueryMaxRows,
+		HideTopnLockstatsRowrangestartkey: r.config.HideTopnLockstatsRowrangestartkey,
 	}
 
 	for _, project := range r.config.Projects {

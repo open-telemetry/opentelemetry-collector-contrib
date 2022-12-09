@@ -38,7 +38,7 @@ type Config struct {
 	CheckCollectorPipeline checkCollectorPipelineSettings `mapstructure:"check_collector_pipeline"`
 }
 
-var _ component.ExtensionConfig = (*Config)(nil)
+var _ component.Config = (*Config)(nil)
 var (
 	errNoEndpointProvided                      = errors.New("bad config: endpoint must be specified")
 	errInvalidExporterFailureThresholdProvided = errors.New("bad config: exporter_failure_threshold expects a positive number")

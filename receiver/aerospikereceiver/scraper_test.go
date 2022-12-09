@@ -28,7 +28,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver/mocks"
 )
@@ -73,7 +73,7 @@ func TestScrape_CollectClusterMetrics(t *testing.T) {
 	require.NoError(t, err)
 	now := pcommon.NewTimestampFromTime(time.Now().UTC())
 
-	expectedMB := metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), component.NewDefaultBuildInfo())
+	expectedMB := metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), componenttest.NewNopReceiverCreateSettings())
 
 	require.NoError(t, expectedMB.RecordAerospikeNodeConnectionOpenDataPoint(now, "22", metadata.AttributeConnectionTypeClient))
 	expectedMB.EmitForResource(metadata.WithAerospikeNodeName("BB990C28F270008"))
@@ -139,7 +139,7 @@ func TestScrape_CollectClusterMetrics(t *testing.T) {
 
 	receiver := &aerospikeReceiver{
 		clientFactory: clientFactory,
-		mb:            metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), component.NewDefaultBuildInfo()),
+		mb:            metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), componenttest.NewNopReceiverCreateSettings()),
 		logger:        logger.Sugar(),
 		config: &Config{
 			CollectClusterMetrics: true,
@@ -152,7 +152,7 @@ func TestScrape_CollectClusterMetrics(t *testing.T) {
 	require.EqualError(t, err, "failed to parse int64 for AerospikeNamespaceMemoryUsage, value was badval: strconv.ParseInt: parsing \"badval\": invalid syntax")
 
 	expectedMetrics := expectedMB.Emit()
-	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
+	require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics))
 
 	require.NoError(t, receiver.shutdown(context.Background()))
 
@@ -160,7 +160,7 @@ func TestScrape_CollectClusterMetrics(t *testing.T) {
 
 	receiverConnErr := &aerospikeReceiver{
 		clientFactory: clientFactoryNeg,
-		mb:            metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), component.NewDefaultBuildInfo()),
+		mb:            metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), componenttest.NewNopReceiverCreateSettings()),
 		logger:        logger.Sugar(),
 		config: &Config{
 			CollectClusterMetrics: true,

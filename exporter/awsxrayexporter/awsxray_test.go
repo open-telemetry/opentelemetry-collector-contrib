@@ -94,7 +94,7 @@ func initializeTracesExporter(t testing.TB) component.TracesExporter {
 	return traceExporter
 }
 
-func generateConfig(t testing.TB) component.ExporterConfig {
+func generateConfig(t testing.TB) component.Config {
 	t.Setenv("AWS_ACCESS_KEY_ID", "AKIASSWVJUY4PZXXXXXX")
 	t.Setenv("AWS_SECRET_ACCESS_KEY", "XYrudg2H87u+ADAAq19Wqx3D41a09RsTXXXXXXXX")
 	t.Setenv("AWS_DEFAULT_REGION", "us-east-1")

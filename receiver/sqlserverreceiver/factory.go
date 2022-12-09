@@ -26,7 +26,7 @@ import (
 
 const (
 	typeStr   = "sqlserver"
-	stability = component.StabilityLevelInDevelopment
+	stability = component.StabilityLevelDevelopment
 )
 
 // NewFactory creates a factory for SQL Server receiver.
@@ -37,7 +37,7 @@ func NewFactory() component.ReceiverFactory {
 		component.WithMetricsReceiver(createMetricsReceiver, stability))
 }
 
-func createDefaultConfig() component.ReceiverConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 			ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),

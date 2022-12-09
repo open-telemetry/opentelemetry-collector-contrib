@@ -455,7 +455,8 @@ func TestZipkinAnnotationsToSpanStatus(t *testing.T) {
 			td, err := jsonBatchToTraces(zBytes, true)
 			require.NoError(t, err)
 			gs := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
-			require.Equal(t, c.wantAttributes.Sort(), gs.Attributes().Sort(), "Unsuccessful conversion %d", i)
+			gs.Attributes().Sort()
+			require.Equal(t, c.wantAttributes, gs.Attributes(), "Unsuccessful conversion %d", i)
 			require.Equal(t, c.wantStatus, gs.Status(), "Unsuccessful conversion %d", i)
 		})
 	}
@@ -586,6 +587,7 @@ var tracesFromZipkinV1 = func() ptrace.Traces {
 	span.SetKind(ptrace.SpanKindServer)
 	span.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(1544805927, 454487000)))
 	span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Unix(1544805927, 457320000)))
+	//nolint:errcheck
 	span.Attributes().FromRaw(map[string]interface{}{
 		"http.status_code": 200,
 		"http.url":         "http://localhost:9000/trace/2",

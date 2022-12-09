@@ -39,6 +39,7 @@ const (
 	messagingSpanType spanType = 4
 	faasSpanType      spanType = 5
 
+	exceptionSpanEventName        string = "exception"
 	instrumentationLibraryName    string = "instrumentationlibrary.name"
 	instrumentationLibraryVersion string = "instrumentationlibrary.version"
 )
@@ -51,13 +52,14 @@ var (
 // Used to identify the type of a received Span
 type spanType int8
 
-// Transforms a tuple of pcommon.Resource, pcommon.InstrumentationScope, ptrace.Span into an AppInsights contracts.Envelope
+// Transforms a tuple of pcommon.Resource, pcommon.InstrumentationScope, ptrace.Span into one or more of AppInsights contracts.Envelope
 // This is the only method that should be targeted in the unit tests
-func spanToEnvelope(
+func spanToEnvelopes(
 	resource pcommon.Resource,
 	instrumentationScope pcommon.InstrumentationScope,
 	span ptrace.Span,
-	logger *zap.Logger) (*contracts.Envelope, error) {
+	spanEventsEnabled bool,
+	logger *zap.Logger) ([]*contracts.Envelope, error) {
 
 	spanKind := span.Kind()
 
@@ -75,15 +77,14 @@ func spanToEnvelope(
 		return nil, errUnsupportedSpanType
 	}
 
-	envelope := contracts.NewEnvelope()
-	envelope.Tags = make(map[string]string)
-	envelope.Time = toTime(span.StartTimestamp()).Format(time.RFC3339Nano)
-	envelope.Tags[contracts.OperationId] = traceutil.TraceIDToHexOrEmptyString(span.TraceID())
-	envelope.Tags[contracts.OperationParentId] = traceutil.SpanIDToHexOrEmptyString(span.ParentSpanID())
-
-	data := contracts.NewData()
+	var envelopes []*contracts.Envelope
 	var dataSanitizeFunc func() []string
 	var dataProperties map[string]string
+
+	// First map the span itself
+	envelope := newEnvelope(span, toTime(span.StartTimestamp()).Format(time.RFC3339Nano))
+
+	data := contracts.NewData()
 
 	if spanKind == ptrace.SpanKindServer || spanKind == ptrace.SpanKindConsumer {
 		requestData := spanToRequestData(span, incomingSpanType)
@@ -116,23 +117,88 @@ func spanToEnvelope(
 	}
 
 	envelope.Data = data
-	resourceAttributes := resource.Attributes()
 
+	resourceAttributes := resource.Attributes()
+	applyResourcesToDataProperties(dataProperties, resourceAttributes)
+	applyInstrumentationScopeValueToDataProperties(dataProperties, instrumentationScope)
+	applyCloudTagsToEnvelope(envelope, resourceAttributes)
+
+	// Sanitize the base data, the envelope and envelope tags
+	sanitize(dataSanitizeFunc, logger)
+	sanitize(func() []string { return envelope.Sanitize() }, logger)
+	sanitize(func() []string { return contracts.SanitizeTags(envelope.Tags) }, logger)
+
+	envelopes = append(envelopes, envelope)
+
+	// Now add the span events. We always export exception events.
+	for i := 0; i < span.Events().Len(); i++ {
+		spanEvent := span.Events().At(i)
+
+		// skip non-exception events if configured
+		if spanEvent.Name() != exceptionSpanEventName && !spanEventsEnabled {
+			continue
+		}
+
+		spanEventEnvelope := newEnvelope(span, toTime(spanEvent.Timestamp()).Format(time.RFC3339Nano))
+
+		data := contracts.NewData()
+
+		// Exceptions are a special case of span event.
+		// See https://opentelemetry.io/docs/reference/specification/trace/semantic_conventions/exceptions/#recording-an-exception
+		if spanEvent.Name() == exceptionSpanEventName {
+			exceptionData := spanEventToExceptionData(spanEvent)
+			dataSanitizeFunc = exceptionData.Sanitize
+			dataProperties = exceptionData.Properties
+			data.BaseData = exceptionData
+			data.BaseType = exceptionData.BaseType()
+			spanEventEnvelope.Name = exceptionData.EnvelopeName("")
+		} else {
+			messageData := spanEventToMessageData(spanEvent)
+			dataSanitizeFunc = messageData.Sanitize
+			dataProperties = messageData.Properties
+			data.BaseData = messageData
+			data.BaseType = messageData.BaseType()
+			spanEventEnvelope.Name = messageData.EnvelopeName("")
+		}
+
+		spanEventEnvelope.Data = data
+
+		applyResourcesToDataProperties(dataProperties, resourceAttributes)
+		applyInstrumentationScopeValueToDataProperties(dataProperties, instrumentationScope)
+		applyCloudTagsToEnvelope(spanEventEnvelope, resourceAttributes)
+
+		// Sanitize the base data, the envelope and envelope tags
+		sanitize(dataSanitizeFunc, logger)
+		sanitize(func() []string { return spanEventEnvelope.Sanitize() }, logger)
+		sanitize(func() []string { return contracts.SanitizeTags(spanEventEnvelope.Tags) }, logger)
+
+		envelopes = append(envelopes, spanEventEnvelope)
+	}
+
+	return envelopes, nil
+}
+
+// Creates a new envelope with some basic tags populated
+func newEnvelope(span ptrace.Span, time string) *contracts.Envelope {
+	envelope := contracts.NewEnvelope()
+	envelope.Tags = make(map[string]string)
+	envelope.Time = time
+	envelope.Tags[contracts.OperationId] = traceutil.TraceIDToHexOrEmptyString(span.TraceID())
+	envelope.Tags[contracts.OperationParentId] = traceutil.SpanIDToHexOrEmptyString(span.ParentSpanID())
+	return envelope
+}
+
+// Applies resource attributes values to data properties
+func applyResourcesToDataProperties(dataProperties map[string]string, resourceAttributes pcommon.Map) {
 	// Copy all the resource labels into the base data properties. Resource values are always strings
 	resourceAttributes.Range(func(k string, v pcommon.Value) bool {
 		dataProperties[k] = v.Str()
 		return true
 	})
+}
 
-	// Copy the instrumentation properties
-	if instrumentationScope.Name() != "" {
-		dataProperties[instrumentationLibraryName] = instrumentationScope.Name()
-	}
-
-	if instrumentationScope.Version() != "" {
-		dataProperties[instrumentationLibraryVersion] = instrumentationScope.Version()
-	}
-
+// Sets important ai.cloud.* tags on the envelope
+func applyCloudTagsToEnvelope(envelope *contracts.Envelope, resourceAttributes pcommon.Map) {
 	// Extract key service.* labels from the Resource labels and construct CloudRole and CloudRoleInstance envelope tags
 	// https://github.com/open-telemetry/opentelemetry-specification/tree/main/specification/resource/semantic_conventions
 	if serviceName, serviceNameExists := resourceAttributes.Get(conventions.AttributeServiceName); serviceNameExists {
@@ -148,13 +214,18 @@ func spanToEnvelope(
 	if serviceInstance, exists := resourceAttributes.Get(conventions.AttributeServiceInstanceID); exists {
 		envelope.Tags[contracts.CloudRoleInstance] = serviceInstance.Str()
 	}
+}
 
-	// Sanitize the base data, the envelope and envelope tags
-	sanitize(dataSanitizeFunc, logger)
-	sanitize(func() []string { return envelope.Sanitize() }, logger)
-	sanitize(func() []string { return contracts.SanitizeTags(envelope.Tags) }, logger)
+// Applies instrumentation values to data properties
+func applyInstrumentationScopeValueToDataProperties(dataProperties map[string]string, instrumentationScope pcommon.InstrumentationScope) {
+	// Copy the instrumentation properties
+	if instrumentationScope.Name() != "" {
+		dataProperties[instrumentationLibraryName] = instrumentationScope.Name()
+	}
 
-	return envelope, nil
+	if instrumentationScope.Version() != "" {
+		dataProperties[instrumentationLibraryVersion] = instrumentationScope.Version()
+	}
 }
 
 // Maps Server/Consumer Span to AppInsights RequestData
@@ -208,6 +279,36 @@ func spanToRemoteDependencyData(span ptrace.Span, incomingSpanType spanType) *co
 		copyAttributesWithoutMapping(span.Attributes(), data.Properties, data.Measurements)
 	}
 
+	return data
+}
+
+// Maps SpanEvent to AppInsights ExceptionData
+func spanEventToExceptionData(spanEvent ptrace.SpanEvent) *contracts.ExceptionData {
+	data := contracts.NewExceptionData()
+	data.Properties = make(map[string]string)
+	data.Measurements = make(map[string]float64)
+
+	attrs := copyAndExtractExceptionAttributes(spanEvent.Attributes(), data.Properties, data.Measurements)
+
+	details := contracts.NewExceptionDetails()
+	details.TypeName = attrs.ExceptionType
+	details.Message = attrs.ExceptionMessage
+	details.Stack = attrs.ExceptionStackTrace
+	details.HasFullStack = details.Stack != ""
+	details.ParsedStack = []*contracts.StackFrame{}
+
+	data.Exceptions = []*contracts.ExceptionDetails{details}
+	data.SeverityLevel = contracts.Error
+	return data
+}
+
+// Maps SpanEvent to AppInsights MessageData
+func spanEventToMessageData(spanEvent ptrace.SpanEvent) *contracts.MessageData {
+	data := contracts.NewMessageData()
+	data.Message = spanEvent.Name()
+	data.Properties = make(map[string]string)
+
+	copyAttributesWithoutMapping(spanEvent.Attributes(), data.Properties, nil)
 	return data
 }
 
@@ -583,6 +684,22 @@ func copyAndExtractMessagingAttributes(
 	return attrs
 }
 
+// Attribute extraction logic for Span event exception attributes
+func copyAndExtractExceptionAttributes(
+	attributeMap pcommon.Map,
+	properties map[string]string,
+	measurements map[string]float64) *ExceptionAttributes {
+
+	attrs := &ExceptionAttributes{}
+	copyAndMapAttributes(
+		attributeMap,
+		properties,
+		measurements,
+		func(k string, v pcommon.Value) { attrs.MapAttribute(k, v) })
+
+	return attrs
+}
+
 func formatSpanDuration(span ptrace.Span) string {
 	startTime := toTime(span.StartTimestamp())
 	endTime := toTime(span.EndTimestamp())
@@ -644,6 +761,8 @@ func writeFormattedPeerAddressFromNetworkAttributes(networkAttributes *NetworkAt
 	}
 }
 
+// Sets the attribute value as a property or measurement.
+// Int and floats go to measurements if measurements is not nil, otherwise everything goes to properties.
 func setAttributeValueAsPropertyOrMeasurement(
 	key string,
 	attributeValue pcommon.Value,
@@ -658,10 +777,18 @@ func setAttributeValueAsPropertyOrMeasurement(
 		properties[key] = attributeValue.Str()
 
 	case pcommon.ValueTypeInt:
-		measurements[key] = float64(attributeValue.Int())
+		if measurements == nil {
+			properties[key] = strconv.FormatInt(attributeValue.Int(), 10)
+		} else {
+			measurements[key] = float64(attributeValue.Int())
+		}
 
 	case pcommon.ValueTypeDouble:
-		measurements[key] = attributeValue.Double()
+		if measurements == nil {
+			properties[key] = strconv.FormatFloat(attributeValue.Double(), 'f', -1, 64)
+		} else {
+			measurements[key] = attributeValue.Double()
+		}
 	}
 }
 

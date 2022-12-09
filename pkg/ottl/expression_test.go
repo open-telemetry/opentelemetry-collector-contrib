@@ -34,6 +34,7 @@ func Test_newGetter(t *testing.T) {
 	tests := []struct {
 		name string
 		val  value
+		ctx  interface{}
 		want interface{}
 	}{
 		{
@@ -83,7 +84,7 @@ func Test_newGetter(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "path mathExpression",
+			name: "path expression",
 			val: value{
 				Literal: &mathExprLiteral{
 					Path: &Path{
@@ -115,6 +116,176 @@ func Test_newGetter(t *testing.T) {
 			},
 			want: int64(1),
 		},
+		{
+			name: "empty list",
+			val: value{
+				List: &list{
+					Values: []value{},
+				},
+			},
+			want: []any{},
+		},
+		{
+			name: "string list",
+			val: value{
+				List: &list{
+					Values: []value{
+						{
+							String: ottltest.Strp("test0"),
+						},
+						{
+							String: ottltest.Strp("test1"),
+						},
+					},
+				},
+			},
+			want: []any{"test0", "test1"},
+		},
+		{
+			name: "int list",
+			val: value{
+				List: &list{
+					Values: []value{
+						{
+							Literal: &mathExprLiteral{
+								Int: ottltest.Intp(1),
+							},
+						},
+						{
+							Literal: &mathExprLiteral{
+								Int: ottltest.Intp(2),
+							},
+						},
+					},
+				},
+			},
+			want: []any{int64(1), int64(2)},
+		},
+		{
+			name: "float list",
+			val: value{
+				List: &list{
+					Values: []value{
+						{
+							Literal: &mathExprLiteral{
+								Float: ottltest.Floatp(1.2),
+							},
+						},
+						{
+							Literal: &mathExprLiteral{
+								Float: ottltest.Floatp(2.4),
+							},
+						},
+					},
+				},
+			},
+			want: []any{1.2, 2.4},
+		},
+		{
+			name: "bool list",
+			val: value{
+				List: &list{
+					Values: []value{
+						{
+							Bool: (*boolean)(ottltest.Boolp(true)),
+						},
+						{
+							Bool: (*boolean)(ottltest.Boolp(false)),
+						},
+					},
+				},
+			},
+			want: []any{true, false},
+		},
+		{
+			name: "byte slice list",
+			val: value{
+				List: &list{
+					Values: []value{
+						{
+							Bytes: (*byteSlice)(&[]byte{1, 2, 3, 4, 5, 6, 7, 8}),
+						},
+						{
+							Bytes: (*byteSlice)(&[]byte{9, 8, 7, 6, 5, 4, 3, 2}),
+						},
+					},
+				},
+			},
+			want: []any{[]byte{1, 2, 3, 4, 5, 6, 7, 8}, []byte{9, 8, 7, 6, 5, 4, 3, 2}},
+		},
+		{
+			name: "path expression",
+			val: value{
+				List: &list{
+					Values: []value{
+						{
+							Literal: &mathExprLiteral{
+								Path: &Path{
+									Fields: []Field{
+										{
+											Name: "name",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			ctx:  "bear",
+			want: []any{"bear"},
+		},
+		{
+			name: "function call",
+			val: value{
+				List: &list{
+					Values: []value{
+						{
+							Literal: &mathExprLiteral{
+								Invocation: &invocation{
+									Function: "hello",
+								},
+							},
+						},
+					},
+				},
+			},
+			want: []any{"world"},
+		},
+		{
+			name: "nil slice",
+			val: value{
+				List: &list{
+					Values: []value{
+						{
+							IsNil: (*isNil)(ottltest.Boolp(true)),
+						},
+						{
+							IsNil: (*isNil)(ottltest.Boolp(true)),
+						},
+					},
+				},
+			},
+			want: []any{nil, nil},
+		},
+		{
+			name: "heterogeneous slice",
+			val: value{
+				List: &list{
+					Values: []value{
+						{
+							String: ottltest.Strp("test0"),
+						},
+						{
+							Literal: &mathExprLiteral{
+								Int: ottltest.Intp(1),
+							},
+						},
+					},
+				},
+			},
+			want: []any{"test0", int64(1)},
+		},
 	}
 
 	functions := map[string]interface{}{"hello": hello[interface{}]}
@@ -130,7 +301,14 @@ func Test_newGetter(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			reader, err := p.newGetter(tt.val)
 			assert.NoError(t, err)
-			val, _ := reader.Get(context.Background(), tt.want)
+
+			tCtx := tt.want
+
+			if tt.ctx != nil {
+				tCtx = tt.ctx
+			}
+
+			val, _ := reader.Get(context.Background(), tCtx)
 			assert.Equal(t, tt.want, val)
 		})
 	}

@@ -156,7 +156,7 @@ func TestCreateTracesExporter(t *testing.T) {
 	}
 }
 
-func checkErrorsAndStartAndShutdown(t *testing.T, exporter component.Exporter, err error, mustFailOnCreate, mustFailOnStart bool) {
+func checkErrorsAndStartAndShutdown(t *testing.T, exporter component.Component, err error, mustFailOnCreate, mustFailOnStart bool) {
 	if mustFailOnCreate {
 		assert.NotNil(t, err)
 		return

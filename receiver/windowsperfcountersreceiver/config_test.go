@@ -60,7 +60,7 @@ func TestLoadConfig(t *testing.T) {
 
 	tests := []struct {
 		id          component.ID
-		expected    component.ReceiverConfig
+		expected    component.Config
 		expectedErr string
 	}{
 		{
@@ -229,13 +229,13 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 			if tt.expectedErr != "" {
-				assert.Equal(t, cfg.Validate().Error(), tt.expectedErr)
+				assert.Equal(t, component.ValidateConfig(cfg).Error(), tt.expectedErr)
 				return
 			}
-			assert.NoError(t, cfg.Validate())
+			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

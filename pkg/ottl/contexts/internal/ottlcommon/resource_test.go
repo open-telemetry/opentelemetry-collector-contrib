@@ -131,6 +131,23 @@ func TestResourcePathGetSetter(t *testing.T) {
 			},
 		},
 		{
+			name: "attributes array empty",
+			path: []ottl.Field{
+				{
+					Name:   "attributes",
+					MapKey: ottltest.Strp("arr_empty"),
+				},
+			},
+			orig: func() pcommon.Slice {
+				val, _ := refResource.Attributes().Get("arr_empty")
+				return val.Slice()
+			}(),
+			newVal: []any{},
+			modified: func(resource pcommon.Resource) {
+				// no-op
+			},
+		},
+		{
 			name: "attributes array string",
 			path: []ottl.Field{
 				{
@@ -258,6 +275,8 @@ func createResource() pcommon.Resource {
 	resource.Attributes().PutInt("int", 10)
 	resource.Attributes().PutDouble("double", 1.2)
 	resource.Attributes().PutEmptyBytes("bytes").FromRaw([]byte{1, 3, 2})
+
+	resource.Attributes().PutEmptySlice("arr_empty")
 
 	arrStr := resource.Attributes().PutEmptySlice("arr_str")
 	arrStr.AppendEmpty().SetStr("one")

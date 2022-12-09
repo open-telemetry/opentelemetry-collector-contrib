@@ -55,6 +55,7 @@ var authTypes = map[AuthType]bool{
 	AuthTypeNone:           true,
 	AuthTypeServiceAccount: true,
 	AuthTypeKubeConfig:     true,
+	AuthTypeTLS:            true,
 }
 
 // APIConfig contains options relevant to connecting to the K8s API

@@ -31,7 +31,7 @@ func TestLoadConfig(t *testing.T) {
 
 	tests := []struct {
 		id           component.ID
-		expected     component.ProcessorConfig
+		expected     component.Config
 		errorMessage string
 	}{
 		{
@@ -164,13 +164,13 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			assert.NoError(t, err)
-			assert.NoError(t, component.UnmarshalProcessorConfig(sub, cfg))
+			assert.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 			if tt.expected == nil {
-				assert.EqualError(t, cfg.Validate(), tt.errorMessage)
+				assert.EqualError(t, component.ValidateConfig(cfg), tt.errorMessage)
 				return
 			}
-			assert.NoError(t, cfg.Validate())
+			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -187,5 +187,5 @@ func Test_UnknownContextID(t *testing.T) {
 
 	sub, err := cm.Sub(id.String())
 	assert.NoError(t, err)
-	assert.Error(t, component.UnmarshalProcessorConfig(sub, cfg))
+	assert.Error(t, component.UnmarshalConfig(sub, cfg))
 }

@@ -73,19 +73,21 @@ func createExporter(
 		config.SplunkAppVersion = buildinfo.Version
 	}
 
-	if config.HecFields.Name != "" {
-		logger.Warn("otel_to_hec_fields.name setting is deprecated and will be removed soon.")
-	}
-
 	options, err := config.getOptionsFromConfig()
 	if err != nil {
-		return nil,
-			fmt.Errorf("failed to process %q config: %w", config.ID().String(), err)
+		return nil, err
 	}
 
 	client, err := buildClient(options, config, logger)
 	if err != nil {
 		return nil, err
+	}
+
+	if config.HecHealthCheckEnabled {
+		err = client.checkHecHealth()
+		if err != nil {
+			return nil, fmt.Errorf("health check failed: %w", err)
+		}
 	}
 
 	return &splunkExporter{
@@ -102,8 +104,11 @@ func buildClient(options *exporterOptions, config *Config, logger *zap.Logger) (
 	if err != nil {
 		return nil, fmt.Errorf("could not retrieve TLS config for Splunk HEC Exporter: %w", err)
 	}
+	healthCheckURLPath := *options.url
+	healthCheckURLPath.Path = config.HealthPath
 	return &client{
-		url: options.url,
+		url:            options.url,
+		healthCheckURL: &healthCheckURLPath,
 		client: &http.Client{
 			Timeout: config.Timeout,
 			Transport: &http.Transport{

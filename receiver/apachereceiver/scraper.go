@@ -43,13 +43,15 @@ const (
 func init() {
 	featuregate.GetRegistry().MustRegisterID(
 		EmitServerNameAsResourceAttribute,
-		featuregate.StageAlpha,
+		featuregate.StageBeta,
 		featuregate.WithRegisterDescription("When enabled, the name of the server will be sent as an apache.server.name resource attribute instead of a metric-level server_name attribute."),
+		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/14791"),
 	)
 	featuregate.GetRegistry().MustRegisterID(
 		EmitPortAsResourceAttribute,
-		featuregate.StageAlpha,
+		featuregate.StageBeta,
 		featuregate.WithRegisterDescription("When enabled, the port of the server will be sent as an apache.server.port resource attribute."),
+		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/14791"),
 	)
 }
 
@@ -75,7 +77,7 @@ func newApacheScraper(
 	a := &apacheScraper{
 		settings:   settings.TelemetrySettings,
 		cfg:        cfg,
-		mb:         metadata.NewMetricsBuilder(cfg.Metrics, settings.BuildInfo),
+		mb:         metadata.NewMetricsBuilder(cfg.Metrics, settings),
 		serverName: serverName,
 		port:       port,
 		emitMetricsWithServerNameAsResourceAttribute: featuregate.GetRegistry().IsEnabled(EmitServerNameAsResourceAttribute),

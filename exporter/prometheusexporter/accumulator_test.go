@@ -509,6 +509,16 @@ func TestAccumulateDroppedMetrics(t *testing.T) {
 	}
 }
 
+func TestTimeseriesSignatureNotMutating(t *testing.T) {
+	attrs := pcommon.NewMap()
+	attrs.PutStr("label_2", "2")
+	attrs.PutStr("label_1", "1")
+	origAttrs := pcommon.NewMap()
+	attrs.CopyTo(origAttrs)
+	timeseriesSignature("test_il", pmetric.NewMetric(), attrs, attrs)
+	require.Equal(t, origAttrs, attrs) // make sure attrs are not mutated
+}
+
 func getMetricProperties(metric pmetric.Metric) (
 	attributes pcommon.Map,
 	ts time.Time,

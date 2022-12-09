@@ -25,13 +25,13 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/featuregate"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver/internal/metadata"
 )
 
@@ -39,11 +39,9 @@ func TestScraper(t *testing.T) {
 	apacheMock := newMockServer(t)
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = fmt.Sprintf("%s%s", apacheMock.URL, "/server-status?auto")
-	require.NoError(t, cfg.Validate())
+	require.NoError(t, component.ValidateConfig(cfg))
 
 	// Let this test check if it works with the feature enabled and the integration test will test the feature disabled.
-	err := featuregate.GetRegistry().Apply(map[string]bool{EmitServerNameAsResourceAttribute: true, EmitPortAsResourceAttribute: true})
-	require.NoError(t, err)
 
 	serverName, port, err := parseResourseAttributes(cfg.Endpoint)
 	require.NoError(t, err)
@@ -64,7 +62,7 @@ func TestScraper(t *testing.T) {
 	expectedMetrics.ResourceMetrics().At(0).Resource().Attributes().PutStr("apache.server.port", url.Port())
 
 	// The port is random, so we shouldn't check if this value matches.
-	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
+	require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics))
 }
 
 func TestScraperFailedStart(t *testing.T) {

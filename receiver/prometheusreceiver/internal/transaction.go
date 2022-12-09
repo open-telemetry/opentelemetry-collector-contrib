@@ -22,6 +22,7 @@ import (
 
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/exemplar"
+	"github.com/prometheus/prometheus/model/histogram"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/metadata"
 	"github.com/prometheus/prometheus/model/value"
@@ -29,10 +30,13 @@ import (
 	"github.com/prometheus/prometheus/storage"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
+
+	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 const (
@@ -51,7 +55,8 @@ type transaction struct {
 	metricAdjuster MetricsAdjuster
 	obsrecv        *obsreport.Receiver
 	// Used as buffer to calculate series ref hash.
-	bufBytes []byte
+	bufBytes   []byte
+	normalizer *prometheustranslator.Normalizer
 }
 
 func newTransaction(
@@ -60,7 +65,8 @@ func newTransaction(
 	sink consumer.Metrics,
 	externalLabels labels.Labels,
 	settings component.ReceiverCreateSettings,
-	obsrecv *obsreport.Receiver) *transaction {
+	obsrecv *obsreport.Receiver,
+	registry *featuregate.Registry) *transaction {
 	return &transaction{
 		ctx:            ctx,
 		families:       make(map[string]*metricFamily),
@@ -71,6 +77,7 @@ func newTransaction(
 		logger:         settings.Logger,
 		obsrecv:        obsrecv,
 		bufBytes:       make([]byte, 0, 1024),
+		normalizer:     prometheustranslator.NewNormalizer(registry),
 	}
 }
 
@@ -179,6 +186,11 @@ func (t *transaction) AppendExemplar(ref storage.SeriesRef, l labels.Labels, e e
 	return 0, nil
 }
 
+func (t *transaction) AppendHistogram(ref storage.SeriesRef, l labels.Labels, atMs int64, h *histogram.Histogram) (storage.SeriesRef, error) {
+	//TODO: implement this func
+	return 0, nil
+}
+
 func (t *transaction) getSeriesRef(ls labels.Labels, mtype pmetric.MetricType) uint64 {
 	var hash uint64
 	hash, t.bufBytes = getSeriesRef(t.bufBytes, ls, mtype)
@@ -198,7 +210,7 @@ func (t *transaction) getMetrics(resource pcommon.Resource) (pmetric.Metrics, er
 	metrics := rms.ScopeMetrics().AppendEmpty().Metrics()
 
 	for _, mf := range t.families {
-		mf.appendMetric(metrics)
+		mf.appendMetric(metrics, t.normalizer)
 	}
 
 	return md, nil

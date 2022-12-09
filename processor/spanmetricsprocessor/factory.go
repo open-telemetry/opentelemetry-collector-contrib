@@ -27,7 +27,7 @@ const (
 	// The value of "type" key in configuration.
 	typeStr = "spanmetrics"
 	// The stability level of the processor.
-	stability = component.StabilityLevelInDevelopment
+	stability = component.StabilityLevelDevelopment
 )
 
 // NewFactory creates a factory for the spanmetrics processor.
@@ -39,7 +39,7 @@ func NewFactory() component.ProcessorFactory {
 	)
 }
 
-func createDefaultConfig() component.ProcessorConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ProcessorSettings:      config.NewProcessorSettings(component.NewID(typeStr)),
 		AggregationTemporality: "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -48,6 +48,6 @@ func createDefaultConfig() component.ProcessorConfig {
 	}
 }
 
-func createTracesProcessor(_ context.Context, params component.ProcessorCreateSettings, cfg component.ProcessorConfig, nextConsumer consumer.Traces) (component.TracesProcessor, error) {
+func createTracesProcessor(_ context.Context, params component.ProcessorCreateSettings, cfg component.Config, nextConsumer consumer.Traces) (component.TracesProcessor, error) {
 	return newProcessor(params.Logger, cfg, nextConsumer)
 }

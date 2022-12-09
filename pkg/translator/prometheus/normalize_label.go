@@ -28,6 +28,7 @@ func init() {
 		dropSanitizationGate,
 		featuregate.StageAlpha,
 		featuregate.WithRegisterDescription("Controls whether to change labels starting with '_' to 'key_'."),
+		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/8950"),
 	)
 }
 

@@ -31,7 +31,7 @@ type Config struct {
 	MetricsConfig                           metadata.MetricsSettings `mapstructure:"metrics"`
 }
 
-var _ component.ReceiverConfig = (*Config)(nil)
+var _ component.Config = (*Config)(nil)
 
 func (c *Config) Validate() error {
 	u, err := url.Parse(c.Endpoint)

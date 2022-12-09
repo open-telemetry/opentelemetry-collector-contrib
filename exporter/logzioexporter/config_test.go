@@ -38,7 +38,7 @@ func TestLoadConfig(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(typeStr, "2").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalExporterConfig(sub, cfg))
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	expected := &Config{
 		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
@@ -69,7 +69,7 @@ func TestDefaultLoadConfig(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(typeStr, "2").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalExporterConfig(sub, cfg))
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	expected := &Config{
 		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),

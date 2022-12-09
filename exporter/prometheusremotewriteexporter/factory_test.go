@@ -49,7 +49,7 @@ func Test_createMetricsExporter(t *testing.T) {
 	}
 	tests := []struct {
 		name                string
-		cfg                 component.ExporterConfig
+		cfg                 component.Config
 		set                 component.ExporterCreateSettings
 		returnErrorOnCreate bool
 		returnErrorOnStart  bool

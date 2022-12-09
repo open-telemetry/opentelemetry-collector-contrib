@@ -39,7 +39,7 @@ func NewFactory() component.ExporterFactory {
 }
 
 // CreateDefaultConfig creates the default configuration for exporter.
-func createDefaultConfig() component.ExporterConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 	}
@@ -48,7 +48,7 @@ func createDefaultConfig() component.ExporterConfig {
 func createTracesExporter(
 	_ context.Context,
 	set component.ExporterCreateSettings,
-	cfg component.ExporterConfig,
+	cfg component.Config,
 ) (component.TracesExporter, error) {
 	return newTracesExporter(set, cfg)
 }
@@ -56,7 +56,7 @@ func createTracesExporter(
 func createMetricsExporter(
 	_ context.Context,
 	set component.ExporterCreateSettings,
-	cfg component.ExporterConfig,
+	cfg component.Config,
 ) (exp component.MetricsExporter, err error) {
 	return newMetricsExporter(set, cfg)
 }
@@ -64,7 +64,7 @@ func createMetricsExporter(
 func createLogsExporter(
 	_ context.Context,
 	set component.ExporterCreateSettings,
-	cfg component.ExporterConfig,
+	cfg component.Config,
 ) (exp component.LogsExporter, err error) {
 	return newLogsExporter(set, cfg)
 }

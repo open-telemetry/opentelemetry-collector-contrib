@@ -31,7 +31,7 @@ import (
 )
 
 // Helper method to handle boilerplate of loading exporter configuration from file
-func loadExporterConfig(t *testing.T, file string, id component.ID) (component.ExporterConfig, *Config) {
+func loadExporterConfig(t *testing.T, file string, id component.ID) (component.Config, *Config) {
 	// Initialize exporter factory
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", file))
 	require.NoError(t, err)
@@ -40,7 +40,7 @@ func loadExporterConfig(t *testing.T, file string, id component.ID) (component.E
 
 	sub, err := cm.Sub(id.String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalExporterConfig(sub, cfg))
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	def := factory.CreateDefaultConfig().(*Config)
 	require.NotNil(t, def)
@@ -61,7 +61,7 @@ func TestLoadWithDefaults(t *testing.T) {
 func TestLoadInvalidCompression(t *testing.T) {
 	// Act
 	cfg, _ := loadExporterConfig(t, "invalid-compression.yaml", component.NewIDWithName(typeStr, ""))
-	err := cfg.Validate()
+	err := component.ValidateConfig(cfg)
 	// Assert
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "the Content-Encoding header must")
@@ -70,7 +70,7 @@ func TestLoadInvalidCompression(t *testing.T) {
 func TestLoadInvalidTagStrategy(t *testing.T) {
 	// Act
 	cfg, _ := loadExporterConfig(t, "invalid-tag.yaml", component.NewIDWithName(typeStr, ""))
-	err := cfg.Validate()
+	err := component.ValidateConfig(cfg)
 
 	// Assert
 	require.Error(t, err)

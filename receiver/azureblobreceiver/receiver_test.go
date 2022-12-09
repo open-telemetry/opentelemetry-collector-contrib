@@ -66,13 +66,12 @@ func TestConsumeTracesJSON(t *testing.T) {
 	assert.Equal(t, tracesSink.SpanCount(), 2)
 }
 
-func getBlobReceiver(t *testing.T) (component.Receiver, error) {
+func getBlobReceiver(t *testing.T) (component.Component, error) {
 	set := componenttest.NewNopReceiverCreateSettings()
-	cfg := getConfig().(*Config)
 
 	blobClient := newMockBlobClient()
 	blobEventHandler := getBlobEventHandler(t, blobClient)
 
 	getBlobEventHandler(t, blobClient)
-	return newReceiver(*cfg, set, blobEventHandler)
+	return newReceiver(set, blobEventHandler)
 }

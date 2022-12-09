@@ -35,20 +35,24 @@ func Test_loadAndCreateRuntimeReceiver(t *testing.T) {
 	template, err := newReceiverTemplate("nop/1", nil)
 	require.NoError(t, err)
 
-	loadedConfig, err := run.loadRuntimeReceiverConfig(exampleFactory, template.receiverConfig, userConfigMap{
+	loadedConfig, endpoint, err := run.loadRuntimeReceiverConfig(exampleFactory, template.receiverConfig, userConfigMap{
 		endpointConfigKey: "localhost:12345",
 	})
 	require.NoError(t, err)
+	assert.Equal(t, "localhost:12345", endpoint)
 	assert.NotNil(t, loadedConfig)
 	nopConfig := loadedConfig.(*nopWithEndpointConfig)
 	// Verify that the overridden endpoint is used instead of the one in the config file.
 	assert.Equal(t, "localhost:12345", nopConfig.Endpoint)
 	expectedID := `nop/1/receiver_creator/1{endpoint="localhost:12345"}/endpoint.id`
-	assert.Equal(t, expectedID, nopConfig.ID().String())
 
 	// Test that metric receiver can be created from loaded config and it logs its id for the "name" field.
 	t.Run("test create receiver from loaded config", func(t *testing.T) {
-		recvr, err := run.createRuntimeReceiver(exampleFactory, loadedConfig, nil)
+		recvr, err := run.createRuntimeReceiver(
+			exampleFactory,
+			component.NewIDWithName("nop", "1/receiver_creator/1{endpoint=\"localhost:12345\"}/endpoint.id"),
+			loadedConfig,
+			nil)
 		require.NoError(t, err)
 		assert.NotNil(t, recvr)
 		assert.IsType(t, &nopWithEndpointReceiver{}, recvr)

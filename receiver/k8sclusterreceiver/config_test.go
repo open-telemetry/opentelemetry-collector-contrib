@@ -36,7 +36,7 @@ func TestLoadConfig(t *testing.T) {
 
 	tests := []struct {
 		id          component.ID
-		expected    component.ReceiverConfig
+		expected    component.Config
 		expectedErr error
 	}{
 		{
@@ -78,9 +78,9 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-			assert.NoError(t, cfg.Validate())
+			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -93,17 +93,18 @@ func TestInvalidConfig(t *testing.T) {
 		Distribution:       distributionKubernetes,
 		CollectionInterval: 30 * time.Second,
 	}
-	err := cfg.Validate()
+	err := component.ValidateConfig(cfg)
 	assert.NotNil(t, err)
 	assert.Equal(t, "invalid authType for kubernetes: ", err.Error())
 
 	// Wrong distro
 	cfg = &Config{
 		ReceiverSettings:   config.NewReceiverSettings(component.NewIDWithName(typeStr, "all_settings")),
+		APIConfig:          k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeNone},
 		Distribution:       "wrong",
 		CollectionInterval: 30 * time.Second,
 	}
-	err = cfg.Validate()
+	err = component.ValidateConfig(cfg)
 	assert.NotNil(t, err)
 	assert.Equal(t, "\"wrong\" is not a supported distribution. Must be one of: \"openshift\", \"kubernetes\"", err.Error())
 }

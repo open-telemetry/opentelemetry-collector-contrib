@@ -102,7 +102,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 				},
 				nextConsumer: consumertest.NewNop(),
 			},
-			wantErr: errors.New("unsupported transport \"unknown_transp\" for receiver carbon/invalid_transport_rcv"),
+			wantErr: errors.New("unsupported transport \"unknown_transp\""),
 		},
 		{
 			name: "regex_parser",

@@ -39,7 +39,7 @@ func TestLoadConfig(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(typeStr, "with-all-options").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalProcessorConfig(sub, cfg))
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	assert.Equal(t, &Config{
 		ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
@@ -95,6 +95,6 @@ func TestConfigurationValidation(t *testing.T) {
 			Targets: tc.target,
 		}
 
-		assert.ErrorIs(t, cfg.Validate(), tc.expectError, tc.scenario)
+		assert.ErrorIs(t, component.ValidateConfig(cfg), tc.expectError, tc.scenario)
 	}
 }

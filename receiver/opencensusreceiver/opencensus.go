@@ -56,7 +56,6 @@ type ocReceiver struct {
 	startTracesReceiverOnce  sync.Once
 	startMetricsReceiverOnce sync.Once
 
-	id       component.ID
 	settings component.ReceiverCreateSettings
 }
 
@@ -64,7 +63,6 @@ type ocReceiver struct {
 // responsibility to invoke the respective Start*Reception methods as well
 // as the various Stop*Reception methods to end it.
 func newOpenCensusReceiver(
-	id component.ID,
 	transport string,
 	addr string,
 	tc consumer.Traces,
@@ -79,7 +77,6 @@ func newOpenCensusReceiver(
 	}
 
 	ocr := &ocReceiver{
-		id:              id,
 		ln:              ln,
 		corsOrigins:     []string{}, // Disable CORS by default.
 		gatewayMux:      gatewayruntime.NewServeMux(),
@@ -130,7 +127,7 @@ func (ocr *ocReceiver) registerTraceConsumer(host component.Host) error {
 	var err error
 
 	ocr.startTracesReceiverOnce.Do(func() {
-		ocr.traceReceiver, err = octrace.New(ocr.id, ocr.traceConsumer, ocr.settings)
+		ocr.traceReceiver, err = octrace.New(ocr.traceConsumer, ocr.settings)
 		if err != nil {
 			return
 		}
@@ -152,7 +149,7 @@ func (ocr *ocReceiver) registerMetricsConsumer(host component.Host) error {
 	var err error
 
 	ocr.startMetricsReceiverOnce.Do(func() {
-		ocr.metricsReceiver, err = ocmetrics.New(ocr.id, ocr.metricsConsumer, ocr.settings)
+		ocr.metricsReceiver, err = ocmetrics.New(ocr.metricsConsumer, ocr.settings)
 		if err != nil {
 			return
 		}

@@ -50,7 +50,7 @@ func makeClient(t *testing.T, host string, compression bool) exporterClient {
 			IngestToken: "traces-token",
 		},
 	}
-	err := cfg.Validate()
+	err := component.ValidateConfig(cfg)
 	require.NoError(t, err)
 
 	err = cfg.sanitize()

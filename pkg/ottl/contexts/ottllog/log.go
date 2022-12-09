@@ -17,7 +17,6 @@ package ottllog // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"context"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"time"
 
@@ -25,7 +24,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ottlcommon"
 )
@@ -292,13 +290,16 @@ func accessTraceID() ottl.StandardGetSetter[TransformContext] {
 func accessStringTraceID() ottl.StandardGetSetter[TransformContext] {
 	return ottl.StandardGetSetter[TransformContext]{
 		Getter: func(ctx context.Context, tCtx TransformContext) (interface{}, error) {
-			return traceutil.TraceIDToHexOrEmptyString(tCtx.GetLogRecord().TraceID()), nil
+			id := tCtx.GetLogRecord().TraceID()
+			return hex.EncodeToString(id[:]), nil
 		},
 		Setter: func(ctx context.Context, tCtx TransformContext, val interface{}) error {
 			if str, ok := val.(string); ok {
-				if traceID, err := parseTraceID(str); err == nil {
-					tCtx.GetLogRecord().SetTraceID(traceID)
+				id, err := ottlcommon.ParseTraceID(str)
+				if err != nil {
+					return err
 				}
+				tCtx.GetLogRecord().SetTraceID(id)
 			}
 			return nil
 		},
@@ -322,41 +323,18 @@ func accessSpanID() ottl.StandardGetSetter[TransformContext] {
 func accessStringSpanID() ottl.StandardGetSetter[TransformContext] {
 	return ottl.StandardGetSetter[TransformContext]{
 		Getter: func(ctx context.Context, tCtx TransformContext) (interface{}, error) {
-			return traceutil.SpanIDToHexOrEmptyString(tCtx.GetLogRecord().SpanID()), nil
+			id := tCtx.GetLogRecord().SpanID()
+			return hex.EncodeToString(id[:]), nil
 		},
 		Setter: func(ctx context.Context, tCtx TransformContext, val interface{}) error {
 			if str, ok := val.(string); ok {
-				if spanID, err := parseSpanID(str); err == nil {
-					tCtx.GetLogRecord().SetSpanID(spanID)
+				id, err := ottlcommon.ParseSpanID(str)
+				if err != nil {
+					return err
 				}
+				tCtx.GetLogRecord().SetSpanID(id)
 			}
 			return nil
 		},
 	}
-}
-
-func parseSpanID(spanIDStr string) (pcommon.SpanID, error) {
-	id, err := hex.DecodeString(spanIDStr)
-	if err != nil {
-		return pcommon.SpanID{}, err
-	}
-	if len(id) != 8 {
-		return pcommon.SpanID{}, errors.New("span ids must be 8 bytes")
-	}
-	var idArr [8]byte
-	copy(idArr[:8], id)
-	return pcommon.SpanID(idArr), nil
-}
-
-func parseTraceID(traceIDStr string) (pcommon.TraceID, error) {
-	id, err := hex.DecodeString(traceIDStr)
-	if err != nil {
-		return pcommon.TraceID{}, err
-	}
-	if len(id) != 16 {
-		return pcommon.TraceID{}, errors.New("traces ids must be 16 bytes")
-	}
-	var idArr [16]byte
-	copy(idArr[:16], id)
-	return pcommon.TraceID(idArr), nil
 }

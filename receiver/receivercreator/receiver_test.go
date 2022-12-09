@@ -31,6 +31,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/extension"
 	"go.uber.org/zap"
 	zapObserver "go.uber.org/zap/zaptest/observer"
 
@@ -56,7 +57,7 @@ func (m *mockObserver) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-var _ component.Extension = (*mockObserver)(nil)
+var _ extension.Extension = (*mockObserver)(nil)
 
 func (m *mockObserver) ListAndWatch(notify observer.Notify) {
 	notify.OnAdd([]observer.Endpoint{portEndpoint})
@@ -76,7 +77,7 @@ func TestMockedEndToEnd(t *testing.T) {
 	factories.Receivers[typeStr] = factory
 
 	host := &mockHostFactories{Host: componenttest.NewNopHost(), factories: factories}
-	host.extensions = map[component.ID]component.Extension{
+	host.extensions = map[component.ID]component.Component{
 		component.NewID("mock_observer"):                      &mockObserver{},
 		component.NewIDWithName("mock_observer", "with_name"): &mockObserver{},
 	}
@@ -84,7 +85,7 @@ func TestMockedEndToEnd(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	sub, err := cm.Sub(component.NewIDWithName(typeStr, "1").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	params := componenttest.NewNopReceiverCreateSettings()
 	mockConsumer := new(consumertest.MetricsSink)

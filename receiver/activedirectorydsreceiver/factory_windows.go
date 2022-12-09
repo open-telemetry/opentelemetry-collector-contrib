@@ -31,7 +31,7 @@ var errConfigNotActiveDirectory = fmt.Errorf("config is not valid for the '%s' r
 func createMetricsReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateSettings,
-	rConf component.ReceiverConfig,
+	rConf component.Config,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	c, ok := rConf.(*Config)

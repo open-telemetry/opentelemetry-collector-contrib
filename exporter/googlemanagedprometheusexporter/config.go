@@ -71,9 +71,6 @@ func (c *GMPConfig) toCollectorConfig() collector.Config {
 }
 
 func (cfg *Config) Validate() error {
-	if err := cfg.ExporterSettings.Validate(); err != nil {
-		return fmt.Errorf("exporter settings are invalid :%w", err)
-	}
 	if err := collector.ValidateConfig(cfg.toCollectorConfig()); err != nil {
 		return fmt.Errorf("exporter settings are invalid :%w", err)
 	}

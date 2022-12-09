@@ -48,7 +48,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 		},
 	}
 
-	assert.NoError(t, cfg.Validate())
+	assert.NoError(t, component.ValidateConfig(cfg))
 }
 
 func TestCreateTracesReceiver(t *testing.T) {

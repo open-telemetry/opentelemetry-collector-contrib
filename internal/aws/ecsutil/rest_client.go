@@ -36,8 +36,8 @@ type nopHost struct {
 	component.Host
 }
 
-func (nh *nopHost) GetExtensions() map[component.ID]component.Extension {
-	return map[component.ID]component.Extension{}
+func (nh *nopHost) GetExtensions() map[component.ID]component.Component {
+	return map[component.ID]component.Component{}
 }
 
 // RestClient is swappable for testing.

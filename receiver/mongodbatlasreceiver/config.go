@@ -30,7 +30,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/metadata"
 )
 
-var _ component.ReceiverConfig = (*Config)(nil)
+var _ component.Config = (*Config)(nil)
 
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
@@ -107,7 +107,6 @@ var (
 func (c *Config) Validate() error {
 	var errs error
 
-	errs = multierr.Append(errs, c.ScraperControllerSettings.Validate())
 	errs = multierr.Append(errs, c.Alerts.validate())
 	errs = multierr.Append(errs, c.Logs.validate())
 

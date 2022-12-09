@@ -39,7 +39,7 @@ func NewFactory() component.ExporterFactory {
 }
 
 // Create a default Memzo config
-func createDefaultConfig() component.ExporterConfig {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ExporterSettings:   config.NewExporterSettings(component.NewID(typeStr)),
 		HTTPClientSettings: createDefaultHTTPClientSettings(),
@@ -50,7 +50,7 @@ func createDefaultConfig() component.ExporterConfig {
 }
 
 // Create a log exporter for exporting to Mezmo
-func createLogsExporter(ctx context.Context, settings component.ExporterCreateSettings, exporterConfig component.ExporterConfig) (component.LogsExporter, error) {
+func createLogsExporter(ctx context.Context, settings component.ExporterCreateSettings, exporterConfig component.Config) (component.LogsExporter, error) {
 	log := settings.Logger
 
 	if exporterConfig == nil {

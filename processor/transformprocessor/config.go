@@ -51,7 +51,7 @@ type SignalConfig struct {
 	Statements []string `mapstructure:"statements"`
 }
 
-var _ component.ProcessorConfig = (*Config)(nil)
+var _ component.Config = (*Config)(nil)
 
 func (c *Config) Validate() error {
 	if (len(c.Traces.Statements) > 0 || len(c.Metrics.Statements) > 0 || len(c.Logs.Statements) > 0) &&

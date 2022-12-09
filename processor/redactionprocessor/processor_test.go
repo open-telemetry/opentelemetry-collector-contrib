@@ -363,7 +363,7 @@ func TestProcessAttrsAppliedTwice(t *testing.T) {
 	require.NoError(t, err)
 
 	attrs := pcommon.NewMap()
-	attrs.FromRaw(map[string]interface{}{
+	assert.NoError(t, attrs.FromRaw(map[string]interface{}{
 		"id":             5,
 		"redundant":      1.2,
 		"mystery":        "mystery ****",
@@ -372,7 +372,7 @@ func TestProcessAttrsAppliedTwice(t *testing.T) {
 		redactedKeyCount: 2,
 		maskedValues:     "mystery",
 		maskedValueCount: 1,
-	})
+	}))
 	processor.processAttrs(context.TODO(), attrs)
 
 	assert.Equal(t, 7, attrs.Len())

@@ -15,4 +15,4 @@ else
 fi
 done
 MATRIX+=",{\"test\":\"$curr\"}]}"
-echo "::set-output name=loadtest_matrix::$MATRIX"
+echo "loadtest_matrix=$MATRIX" >> $GITHUB_OUTPUT

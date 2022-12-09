@@ -41,7 +41,7 @@ type tracesExporter struct {
 	userAgent string
 }
 
-func newTracesExporter(cfg component.ExporterConfig, set component.ExporterCreateSettings) (*tracesExporter, error) {
+func newTracesExporter(cfg component.Config, set component.ExporterCreateSettings) (*tracesExporter, error) {
 	oCfg, ok := cfg.(*Config)
 	if !ok {
 		return nil, fmt.Errorf("invalid config exporter, expect type: %T, got: %T", &Config{}, cfg)

@@ -38,7 +38,7 @@ func TestValidConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Username = "otel"
 	cfg.Password = "otel"
-	require.NoError(t, cfg.Validate())
+	require.NoError(t, component.ValidateConfig(cfg))
 }
 
 func TestCreateMetricsReceiver(t *testing.T) {

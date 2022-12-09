@@ -37,7 +37,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(componentType, "primary").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	receiver, err := factory.CreateTracesReceiver(
 		context.Background(),
@@ -104,7 +104,7 @@ func TestCreateTracesReceiverBadMetrics(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(componentType, "primary").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalReceiverConfig(sub, cfg))
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	receiver, err := factory.CreateTracesReceiver(
 		context.Background(),
