@@ -24,6 +24,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
@@ -93,7 +94,7 @@ func (e *instanaExporter) pushConvertedTraces(ctx context.Context, td ptrace.Tra
 	return e.export(ctx, e.config.Endpoint, headers, req)
 }
 
-func newInstanaExporter(cfg component.Config, set component.ExporterCreateSettings) *instanaExporter {
+func newInstanaExporter(cfg component.Config, set exporter.CreateSettings) *instanaExporter {
 	iCfg := cfg.(*Config)
 	userAgent := fmt.Sprintf("%s/%s (%s/%s)", set.BuildInfo.Description, set.BuildInfo.Version, runtime.GOOS, runtime.GOARCH)
 	return &instanaExporter{

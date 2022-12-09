@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 )
 
 // MetricSettings provides common settings for a particular metric.
@@ -264,32 +265,6 @@ func (av AttributeDiskType) String() string {
 var MapAttributeDiskType = map[string]AttributeDiskType{
 	"virtual":  AttributeDiskTypeVirtual,
 	"physical": AttributeDiskTypePhysical,
-}
-
-// AttributeLatencyType specifies the a value latency_type attribute.
-type AttributeLatencyType int
-
-const (
-	_ AttributeLatencyType = iota
-	AttributeLatencyTypeKernel
-	AttributeLatencyTypeDevice
-)
-
-// String returns the string representation of the AttributeLatencyType.
-func (av AttributeLatencyType) String() string {
-	switch av {
-	case AttributeLatencyTypeKernel:
-		return "kernel"
-	case AttributeLatencyTypeDevice:
-		return "device"
-	}
-	return ""
-}
-
-// MapAttributeLatencyType is a helper map of string to AttributeLatencyType attribute value.
-var MapAttributeLatencyType = map[string]AttributeLatencyType{
-	"kernel": AttributeLatencyTypeKernel,
-	"device": AttributeLatencyTypeDevice,
 }
 
 // AttributeThroughputDirection specifies the a value throughput_direction attribute.
@@ -2245,7 +2220,7 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func NewMetricsBuilder(ms MetricsSettings, settings component.ReceiverCreateSettings, options ...metricBuilderOption) *MetricsBuilder {
+func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                             pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                         pmetric.NewMetrics(),

@@ -33,7 +33,9 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest/golden"
 )
 
@@ -299,7 +301,7 @@ func TestAerospikeIntegration(t *testing.T) {
 	cfg.ScraperControllerSettings.CollectionInterval = 100 * time.Millisecond
 
 	consumer := new(consumertest.MetricsSink)
-	settings := componenttest.NewNopReceiverCreateSettings()
+	settings := receivertest.NewNopCreateSettings()
 	receiver, err := f.CreateMetricsReceiver(context.Background(), settings, cfg, consumer)
 	require.NoError(t, err, "failed creating metrics receiver")
 	require.NoError(t, receiver.Start(context.Background(), componenttest.NewNopHost()), "failed starting metrics receiver")
@@ -321,7 +323,7 @@ func TestAerospikeIntegration(t *testing.T) {
 	cfg.CollectClusterMetrics = true
 
 	consumer = new(consumertest.MetricsSink)
-	settings = componenttest.NewNopReceiverCreateSettings()
+	settings = receivertest.NewNopCreateSettings()
 	receiver, err = f.CreateMetricsReceiver(context.Background(), settings, cfg, consumer)
 	require.NoError(t, err, "failed creating metrics receiver")
 	time.Sleep(time.Second / 2)

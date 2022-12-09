@@ -31,6 +31,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"google.golang.org/grpc"
@@ -148,7 +149,7 @@ func TestNew(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := newTracesExporter(&tt.config, componenttest.NewNopExporterCreateSettings())
+			got, err := newTracesExporter(&tt.config, exportertest.NewNopCreateSettings())
 			assert.NoError(t, err)
 			assert.NotNil(t, got)
 			t.Cleanup(func() {
@@ -223,7 +224,7 @@ func TestMutualTLS(t *testing.T) {
 			ServerName: "localhost",
 		},
 	}
-	exporter, err := factory.CreateTracesExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
+	exporter, err := factory.CreateTracesExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
 	require.NoError(t, err)
 	err = exporter.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)

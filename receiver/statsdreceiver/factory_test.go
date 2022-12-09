@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
 )
@@ -51,7 +52,7 @@ func TestCreateReceiver(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.NetAddr.Endpoint = "localhost:0" // Endpoint is required, not going to be used here.
 
-	params := componenttest.NewNopReceiverCreateSettings()
+	params := receivertest.NewNopCreateSettings()
 	tReceiver, err := createMetricsReceiver(context.Background(), params, cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, tReceiver, "receiver creation failed")
@@ -66,7 +67,7 @@ func TestCreateReceiverWithConfigErr(t *testing.T) {
 	}
 	receiver, err := createMetricsReceiver(
 		context.Background(),
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 		cfg,
 		consumertest.NewNop(),
 	)
@@ -91,7 +92,7 @@ func TestCreateReceiverWithHistogramConfigError(t *testing.T) {
 		}
 		receiver, err := createMetricsReceiver(
 			context.Background(),
-			componenttest.NewNopReceiverCreateSettings(),
+			receivertest.NewNopCreateSettings(),
 			cfg,
 			consumertest.NewNop(),
 		)
@@ -117,7 +118,7 @@ func TestCreateReceiverWithHistogramGoodConfig(t *testing.T) {
 		}
 		receiver, err := createMetricsReceiver(
 			context.Background(),
-			componenttest.NewNopReceiverCreateSettings(),
+			receivertest.NewNopCreateSettings(),
 			cfg,
 			consumertest.NewNop(),
 		)
@@ -143,7 +144,7 @@ func TestCreateReceiverWithInvalidHistogramConfig(t *testing.T) {
 	}
 	receiver, err := createMetricsReceiver(
 		context.Background(),
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 		cfg,
 		consumertest.NewNop(),
 	)
@@ -155,7 +156,7 @@ func TestCreateReceiverWithInvalidHistogramConfig(t *testing.T) {
 func TestCreateMetricsReceiverWithNilConsumer(t *testing.T) {
 	receiver, err := createMetricsReceiver(
 		context.Background(),
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 		createDefaultConfig(),
 		nil,
 	)

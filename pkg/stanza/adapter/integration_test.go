@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -49,7 +50,7 @@ func createNoopReceiver(nextConsumer consumer.Logs) (*receiver, error) {
 	receiverID := component.NewID("test")
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
 		ReceiverID:             receiverID,
-		ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings(),
+		ReceiverCreateSettings: receivertest.NewNopCreateSettings(),
 	})
 	if err != nil {
 		return nil, err

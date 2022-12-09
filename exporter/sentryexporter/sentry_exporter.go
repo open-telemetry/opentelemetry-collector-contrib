@@ -26,7 +26,7 @@ import (
 	"strings"
 
 	"github.com/getsentry/sentry-go"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -476,7 +476,7 @@ func generateEventID() sentry.EventID {
 }
 
 // CreateSentryExporter returns a new Sentry Exporter.
-func CreateSentryExporter(config *Config, set component.ExporterCreateSettings) (component.TracesExporter, error) {
+func CreateSentryExporter(config *Config, set exporter.CreateSettings) (exporter.Traces, error) {
 	transport := newSentryTransport()
 
 	clientOptions := sentry.ClientOptions{

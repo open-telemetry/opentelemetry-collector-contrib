@@ -19,6 +19,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/multierr"
@@ -35,7 +36,7 @@ type logProcessor struct {
 	config *Config
 
 	extractor extractor
-	router    router[component.LogsExporter, ottllog.TransformContext]
+	router    router[exporter.Logs, ottllog.TransformContext]
 }
 
 func newLogProcessor(settings component.TelemetrySettings, config component.Config) *logProcessor {
@@ -44,7 +45,7 @@ func newLogProcessor(settings component.TelemetrySettings, config component.Conf
 	return &logProcessor{
 		logger: settings.Logger,
 		config: cfg,
-		router: newRouter[component.LogsExporter, ottllog.TransformContext](
+		router: newRouter[exporter.Logs, ottllog.TransformContext](
 			cfg.Table,
 			cfg.DefaultExporters,
 			settings,
@@ -78,7 +79,7 @@ func (p *logProcessor) ConsumeLogs(ctx context.Context, l plog.Logs) error {
 }
 
 type logsGroup struct {
-	exporters []component.LogsExporter
+	exporters []exporter.Logs
 	logs      plog.Logs
 }
 
@@ -127,7 +128,7 @@ func (p *logProcessor) route(ctx context.Context, l plog.Logs) error {
 func (p *logProcessor) group(
 	key string,
 	groups map[string]logsGroup,
-	exporters []component.LogsExporter,
+	exporters []exporter.Logs,
 	spans plog.ResourceLogs,
 ) {
 	group, ok := groups[key]

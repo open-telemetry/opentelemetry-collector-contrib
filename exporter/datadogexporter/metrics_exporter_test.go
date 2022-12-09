@@ -27,8 +27,8 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -59,7 +59,7 @@ func TestNewExporter(t *testing.T) {
 			},
 		},
 	}
-	params := componenttest.NewNopExporterCreateSettings()
+	params := exportertest.NewNopCreateSettings()
 	f := NewFactory()
 
 	// The client should have been created correctly
@@ -300,7 +300,7 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 			var once sync.Once
 			exp, err := newMetricsExporter(
 				context.Background(),
-				componenttest.NewNopExporterCreateSettings(),
+				exportertest.NewNopCreateSettings(),
 				newTestConfig(t, server.URL, tt.hostTags, tt.histogramMode),
 				&once,
 				&testutil.MockSourceProvider{Src: tt.source},

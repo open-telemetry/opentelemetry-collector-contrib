@@ -243,6 +243,11 @@ generate:
 	cd cmd/mdatagen && $(GOCMD) install .
 	$(MAKE) for-all CMD="$(GOCMD) generate ./..."
 
+.PHONY: mdatagen-test
+mdatagen-test:
+	cd cmd/mdatagen && $(GOCMD) install .
+	cd cmd/mdatagen && $(GOCMD) generate ./...
+
 .PHONY: chlog-install
 chlog-install:
 	cd $(TOOLS_MOD_DIR) && $(GOCMD) install go.opentelemetry.io/build-tools/chloggen
@@ -351,6 +356,11 @@ multimod-verify: install-tools
 .PHONY: multimod-prerelease
 multimod-prerelease: install-tools
 	multimod prerelease -s=true -b=false -v ./versions.yaml -m contrib-base
+	$(MAKE) gotidy
+
+.PHONY: multimod-sync
+multimod-sync: install-tools
+	multimod sync -a=true -s=true -o ../opentelemetry-collector
 	$(MAKE) gotidy
 
 .PHONY: crosslink

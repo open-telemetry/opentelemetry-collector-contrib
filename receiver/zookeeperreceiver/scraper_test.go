@@ -27,8 +27,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -227,7 +227,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			}
 
 			core, observedLogs := observer.New(zap.DebugLevel)
-			settings := componenttest.NewNopReceiverCreateSettings()
+			settings := receivertest.NewNopCreateSettings()
 			settings.Logger = zap.New(core)
 			z, err := newZookeeperMetricsScraper(settings, cfg)
 			require.NoError(t, err)
@@ -277,7 +277,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 
 func TestZookeeperShutdownBeforeScrape(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	z, err := newZookeeperMetricsScraper(componenttest.NewNopReceiverCreateSettings(), cfg)
+	z, err := newZookeeperMetricsScraper(receivertest.NewNopCreateSettings(), cfg)
 	require.NoError(t, err)
 	require.NoError(t, z.shutdown(context.Background()))
 }

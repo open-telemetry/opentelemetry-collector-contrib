@@ -32,6 +32,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver/subprocessmanager"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
@@ -57,7 +58,7 @@ func TestEndToEnd(t *testing.T) {
 // endToEndScrapeTest creates a receiver that invokes `go run test_prometheus_exporter.go` and waits until it has scraped the /metrics endpoint twice - the application will crash between each scrape
 func endToEndScrapeTest(t *testing.T, receiverConfig component.Config, testName string) { //nolint
 	sink := new(consumertest.MetricsSink)
-	wrapper := newPromExecReceiver(componenttest.NewNopReceiverCreateSettings(), receiverConfig.(*Config), sink)
+	wrapper := newPromExecReceiver(receivertest.NewNopCreateSettings(), receiverConfig.(*Config), sink)
 
 	ctx := context.Background()
 	err := wrapper.Start(ctx, componenttest.NewNopHost())

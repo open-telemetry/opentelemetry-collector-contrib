@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
 )
 
 // NewFactory creates a factory for Pure Storage FlashArray receiver.
@@ -32,11 +33,11 @@ const (
 	stability = component.StabilityLevelDevelopment
 )
 
-func NewFactory() component.ReceiverFactory {
-	return component.NewReceiverFactory(
+func NewFactory() receiver.Factory {
+	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver, stability))
+		receiver.WithMetrics(createMetricsReceiver, stability))
 }
 
 func createDefaultConfig() component.Config {
@@ -53,10 +54,10 @@ func createDefaultConfig() component.Config {
 
 func createMetricsReceiver(
 	_ context.Context,
-	set component.ReceiverCreateSettings,
+	set receiver.CreateSettings,
 	rCfg component.Config,
 	next consumer.Metrics,
-) (component.MetricsReceiver, error) {
+) (receiver.Metrics, error) {
 	cfg, ok := rCfg.(*Config)
 	if !ok {
 		return nil, fmt.Errorf("a purefa receiver config was expected by the receiver factory, but got %T", rCfg)

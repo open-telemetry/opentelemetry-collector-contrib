@@ -20,9 +20,9 @@ import (
 	"fmt"
 	"time"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
@@ -32,13 +32,13 @@ import (
 // Runs intermittently, fetching info from SAP HANA, creating metrics/datapoints,
 // and feeding them to a metricsConsumer.
 type sapHanaScraper struct {
-	settings component.ReceiverCreateSettings
+	settings receiver.CreateSettings
 	cfg      *Config
 	mbs      map[string]*metadata.MetricsBuilder
 	factory  sapHanaConnectionFactory
 }
 
-func newSapHanaScraper(settings component.ReceiverCreateSettings, cfg *Config, factory sapHanaConnectionFactory) (scraperhelper.Scraper, error) {
+func newSapHanaScraper(settings receiver.CreateSettings, cfg *Config, factory sapHanaConnectionFactory) (scraperhelper.Scraper, error) {
 	rs := &sapHanaScraper{
 		settings: settings,
 		cfg:      cfg,

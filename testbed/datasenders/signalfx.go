@@ -19,9 +19,9 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter"
@@ -57,7 +57,7 @@ func (sf *SFxMetricsDataSender) Start() error {
 		APIURL:           "http://127.0.0.1",
 		AccessToken:      "access_token",
 	}
-	params := componenttest.NewNopExporterCreateSettings()
+	params := exportertest.NewNopCreateSettings()
 	params.Logger = zap.L()
 
 	exporter, err := factory.CreateMetricsExporter(context.Background(), params, cfg)

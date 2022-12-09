@@ -18,9 +18,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/grafana/loki/pkg/logproto"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki/logproto"
 )
 
 type PushRequest struct {

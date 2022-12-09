@@ -24,6 +24,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
 func TestDefaultConfigFailure(t *testing.T) {
@@ -34,7 +35,7 @@ func TestDefaultConfigFailure(t *testing.T) {
 
 	receiver, err := factory.CreateLogsReceiver(
 		context.Background(),
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 		cfg,
 		new(consumertest.LogsSink),
 	)

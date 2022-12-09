@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 )
 
 func TestLoadLegacyConfig(t *testing.T) {
@@ -33,7 +33,7 @@ func TestLoadLegacyConfig(t *testing.T) {
 	assert.Nil(t, err)
 	factory := NewFactory()
 	factories.Exporters[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "legacyconfig.yaml"), factories)
+	cfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "legacyconfig.yaml"), factories)
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 	assert.Equal(t, len(cfg.Exporters), 2)

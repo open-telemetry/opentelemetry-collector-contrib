@@ -7,15 +7,15 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v0.34.3-0.20221202192616-0186b89ba914
 	github.com/aws/aws-sdk-go v1.44.155
 	github.com/hashicorp/consul/api v1.18.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.66.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.66.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.67.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.67.0
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.66.1-0.20221202005155-1c54042beb70
-	go.opentelemetry.io/collector/component v0.66.1-0.20221202005155-1c54042beb70
-	go.opentelemetry.io/collector/confmap v0.0.0-20221201172708-2bdff61fa52a
-	go.opentelemetry.io/collector/consumer v0.66.1-0.20221202005155-1c54042beb70
-	go.opentelemetry.io/collector/pdata v0.66.1-0.20221202005155-1c54042beb70
-	go.opentelemetry.io/collector/semconv v0.66.1-0.20221202005155-1c54042beb70
+	go.opentelemetry.io/collector v0.67.0
+	go.opentelemetry.io/collector/component v0.67.0
+	go.opentelemetry.io/collector/confmap v0.67.0
+	go.opentelemetry.io/collector/consumer v0.67.0
+	go.opentelemetry.io/collector/pdata v1.0.0-rc1
+	go.opentelemetry.io/collector/semconv v0.67.0
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.24.0
 	k8s.io/apimachinery v0.25.4
@@ -69,7 +69,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.66.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.67.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
@@ -79,7 +79,7 @@ require (
 	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/featuregate v0.66.1-0.20221202005155-1c54042beb70 // indirect
+	go.opentelemetry.io/collector/featuregate v0.67.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.36.4 // indirect
 	go.opentelemetry.io/otel v1.11.1 // indirect
 	go.opentelemetry.io/otel/metric v0.33.0 // indirect

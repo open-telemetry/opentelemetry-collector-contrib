@@ -24,6 +24,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest/golden"
@@ -39,7 +40,7 @@ func TestIntegration(t *testing.T) {
 	fact := NewFactory()
 
 	consumer := &consumertest.MetricsSink{}
-	recv, err := fact.CreateMetricsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), fact.CreateDefaultConfig(), consumer)
+	recv, err := fact.CreateMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), fact.CreateDefaultConfig(), consumer)
 
 	require.NoError(t, err)
 

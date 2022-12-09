@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/consumer"
+	rcvr "go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 )
 
@@ -35,7 +36,7 @@ type runner interface {
 
 // receiverRunner handles starting/stopping of a concrete subreceiver instance.
 type receiverRunner struct {
-	params      component.ReceiverCreateSettings
+	params      rcvr.CreateSettings
 	idNamespace component.ID
 	host        component.Host
 }
@@ -54,7 +55,7 @@ func (run *receiverRunner) start(
 		return nil, fmt.Errorf("unable to lookup factory for receiver %q", receiver.id.String())
 	}
 
-	receiverFactory := factory.(component.ReceiverFactory)
+	receiverFactory := factory.(rcvr.Factory)
 
 	cfg, endpoint, err := run.loadRuntimeReceiverConfig(receiverFactory, receiver, discoveredConfig)
 	if err != nil {
@@ -85,7 +86,7 @@ func (run *receiverRunner) shutdown(rcvr component.Component) error {
 // loadRuntimeReceiverConfig loads the given receiverTemplate merged with config values
 // that may have been discovered at runtime.
 func (run *receiverRunner) loadRuntimeReceiverConfig(
-	factory component.ReceiverFactory,
+	factory rcvr.Factory,
 	receiver receiverConfig,
 	discoveredConfig userConfigMap,
 ) (component.Config, string, error) {
@@ -106,11 +107,11 @@ func (run *receiverRunner) loadRuntimeReceiverConfig(
 
 // createRuntimeReceiver creates a receiver that is discovered at runtime.
 func (run *receiverRunner) createRuntimeReceiver(
-	factory component.ReceiverFactory,
+	factory rcvr.Factory,
 	id component.ID,
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
-) (component.MetricsReceiver, error) {
+) (rcvr.Metrics, error) {
 	runParams := run.params
 	runParams.Logger = runParams.Logger.With(zap.String("name", id.String()))
 	runParams.ID = id

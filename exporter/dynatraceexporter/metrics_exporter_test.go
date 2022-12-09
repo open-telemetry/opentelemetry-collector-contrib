@@ -32,6 +32,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
@@ -660,7 +661,7 @@ func Test_exporter_start_InvalidHTTPClientSettings(t *testing.T) {
 		},
 	}
 
-	exp := newMetricsExporter(componenttest.NewNopExporterCreateSettings(), cfg)
+	exp := newMetricsExporter(exportertest.NewNopCreateSettings(), cfg)
 
 	err := exp.start(context.Background(), componenttest.NewNopHost())
 	if err == nil {
@@ -674,7 +675,7 @@ func Test_exporter_new_with_tags(t *testing.T) {
 		DefaultDimensions: map[string]string{"test_tag": "value"},
 	}
 
-	exp := newMetricsExporter(componenttest.NewNopExporterCreateSettings(), cfg)
+	exp := newMetricsExporter(exportertest.NewNopCreateSettings(), cfg)
 
 	assert.Equal(t, dimensions.NewNormalizedDimensionList(dimensions.NewDimension("test_tag", "value")), exp.defaultDimensions)
 }
@@ -684,7 +685,7 @@ func Test_exporter_new_with_default_dimensions(t *testing.T) {
 		DefaultDimensions: map[string]string{"test_dimension": "value"},
 	}
 
-	exp := newMetricsExporter(componenttest.NewNopExporterCreateSettings(), cfg)
+	exp := newMetricsExporter(exportertest.NewNopCreateSettings(), cfg)
 
 	assert.Equal(t, dimensions.NewNormalizedDimensionList(dimensions.NewDimension("test_dimension", "value")), exp.defaultDimensions)
 }
@@ -695,7 +696,7 @@ func Test_exporter_new_with_default_dimensions_override_tag(t *testing.T) {
 		DefaultDimensions: map[string]string{"from": "default_dimensions"},
 	}
 
-	exp := newMetricsExporter(componenttest.NewNopExporterCreateSettings(), cfg)
+	exp := newMetricsExporter(exportertest.NewNopCreateSettings(), cfg)
 
 	assert.Equal(t, dimensions.NewNormalizedDimensionList(dimensions.NewDimension("from", "default_dimensions")), exp.defaultDimensions)
 }
@@ -723,7 +724,7 @@ func Test_LineTooLong(t *testing.T) {
 	intGaugeDataPoint := intGaugeDataPoints.AppendEmpty()
 	intGaugeDataPoint.SetIntValue(10)
 	intGaugeDataPoint.SetTimestamp(testTimestamp)
-	exp := newMetricsExporter(componenttest.NewNopExporterCreateSettings(), &config.Config{DefaultDimensions: dims})
+	exp := newMetricsExporter(exportertest.NewNopCreateSettings(), &config.Config{DefaultDimensions: dims})
 
 	assert.Empty(t, exp.serializeMetrics(md))
 }

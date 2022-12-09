@@ -35,7 +35,10 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
+	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/otelcol"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/service"
 	"go.uber.org/atomic"
 	"go.uber.org/zap"
@@ -141,9 +144,9 @@ service:
 	_, err = confFile.Write([]byte(cfg))
 	require.Nil(t, err)
 	// 4. Run the OpenTelemetry Collector.
-	receivers, err := component.MakeReceiverFactoryMap(prometheusreceiver.NewFactory())
+	receivers, err := receiver.MakeFactoryMap(prometheusreceiver.NewFactory())
 	require.Nil(t, err)
-	exporters, err := component.MakeExporterFactoryMap(prometheusremotewriteexporter.NewFactory())
+	exporters, err := exporter.MakeFactoryMap(prometheusremotewriteexporter.NewFactory())
 	require.Nil(t, err)
 	processors, err := component.MakeProcessorFactoryMap(batchprocessor.NewFactory())
 	require.Nil(t, err)
@@ -192,7 +195,7 @@ service:
 	for notYetStarted := true; notYetStarted; {
 		state := app.GetState()
 		switch state {
-		case service.StateRunning, service.StateClosed, service.StateClosing:
+		case otelcol.StateRunning, otelcol.StateClosed, otelcol.StateClosing:
 			notYetStarted = false
 		}
 		time.Sleep(10 * time.Millisecond)
