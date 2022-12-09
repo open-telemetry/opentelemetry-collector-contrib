@@ -46,7 +46,7 @@ func NewFactory() receiver.Factory {
 		typeStr,
 		createDefaultConfig,
 		receiver.WithMetrics(createMetricsReceiver, stability),
-		component.WithLogsReceiver(createLogsReceiver, stability))
+		receiver.WithLogs(createLogsReceiver, stability))
 }
 
 func createDefaultConfig() component.Config {
@@ -124,7 +124,7 @@ func createLogsReceiver(
 	params receiver.CreateSettings,
 	cfg component.Config,
 	consumer consumer.Logs,
-) (component.LogsReceiver, error) {
+) (receiver.Logs, error) {
 	rCfg := cfg.(*Config)
 
 	err := rCfg.validate()

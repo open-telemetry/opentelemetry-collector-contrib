@@ -21,7 +21,6 @@ import (
 	"log"
 	"os"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
@@ -34,7 +33,7 @@ import (
 // MockAwsXrayDataReceiver implements AwsXray format receiver.
 type MockAwsXrayDataReceiver struct {
 	testbed.DataReceiverBase
-	receiver component.TracesReceiver
+	receiver receiver.Traces
 }
 
 // NewMockAwsXrayDataReceiver creates a new  MockDataReceiver

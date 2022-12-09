@@ -138,7 +138,7 @@ func newLogsReceiver(
 	settings receiver.CreateSettings,
 	config Config,
 	nextConsumer consumer.Logs,
-) (component.LogsReceiver, error) {
+) (receiver.Logs, error) {
 	if nextConsumer == nil {
 		return nil, errNilNextLogsConsumer
 	}

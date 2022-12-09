@@ -57,7 +57,7 @@ func createDefaultConfig() component.Config {
 
 type sqlOpenerFunc func(dataSourceName string) (*sql.DB, error)
 
-func createReceiverFunc(sqlOpenerFunc sqlOpenerFunc, clientProviderFunc clientProviderFunc) component.CreateMetricsReceiverFunc {
+func createReceiverFunc(sqlOpenerFunc sqlOpenerFunc, clientProviderFunc clientProviderFunc) receiver.CreateMetricsFunc {
 	return func(
 		ctx context.Context,
 		settings receiver.CreateSettings,

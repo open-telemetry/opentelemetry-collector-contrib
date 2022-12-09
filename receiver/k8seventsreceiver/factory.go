@@ -37,7 +37,7 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithLogsReceiver(createLogsReceiver, stability))
+		receiver.WithLogs(createLogsReceiver, stability))
 }
 
 func createDefaultConfig() component.Config {
@@ -54,7 +54,7 @@ func createLogsReceiver(
 	params receiver.CreateSettings,
 	cfg component.Config,
 	consumer consumer.Logs,
-) (component.LogsReceiver, error) {
+) (receiver.Logs, error) {
 	rCfg := cfg.(*Config)
 
 	k8sInterface, err := rCfg.getK8sClient()

@@ -27,6 +27,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy"
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/translator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/udppoller"
 )
@@ -37,7 +38,7 @@ const (
 	maxPollerCount = 2
 )
 
-// xrayReceiver implements the component.TracesReceiver interface for converting
+// xrayReceiver implements the receiver.Traces interface for converting
 // AWS X-Ray segment document into the OT internal trace format.
 type xrayReceiver struct {
 	poller   udppoller.Poller
@@ -49,7 +50,7 @@ type xrayReceiver struct {
 
 func newReceiver(config *Config,
 	consumer consumer.Traces,
-	set receiver.CreateSettings) (component.TracesReceiver, error) {
+	set receiver.CreateSettings) (receiver.Traces, error) {
 
 	if consumer == nil {
 		return nil, component.ErrNilNextConsumer

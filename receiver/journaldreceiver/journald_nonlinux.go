@@ -40,7 +40,7 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithLogsReceiver(createLogsReceiver, stability))
+		receiver.WithLogs(createLogsReceiver, stability))
 }
 
 type JournaldConfig struct {
@@ -61,6 +61,6 @@ func createLogsReceiver(
 	params receiver.CreateSettings,
 	cfg component.Config,
 	consumer consumer.Logs,
-) (component.LogsReceiver, error) {
+) (receiver.Logs, error) {
 	return nil, fmt.Errorf("journald is only supported on linux")
 }

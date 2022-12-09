@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
@@ -32,7 +31,7 @@ import (
 // SapmDataReceiver implements Sapm format receiver.
 type SapmDataReceiver struct {
 	testbed.DataReceiverBase
-	receiver component.TracesReceiver
+	receiver receiver.Traces
 }
 
 // NewSapmDataReceiver creates a new SapmDataReceiver.

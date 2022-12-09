@@ -39,7 +39,7 @@ import (
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	"go.opentelemetry.io/collector/receiver"
+	rcvr "go.opentelemetry.io/collector/receiver"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -96,7 +96,7 @@ type alertsReceiver struct {
 	storageClient storage.Client
 }
 
-func newAlertsReceiver(params receiver.CreateSettings, baseConfig *Config, consumer consumer.Logs) (*alertsReceiver, error) {
+func newAlertsReceiver(params rcvr.CreateSettings, baseConfig *Config, consumer consumer.Logs) (*alertsReceiver, error) {
 	cfg := baseConfig.Alerts
 	var tlsConfig *tls.Config
 

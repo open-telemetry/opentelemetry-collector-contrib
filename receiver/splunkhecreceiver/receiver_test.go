@@ -36,6 +36,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -555,7 +556,7 @@ func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 			}()
 
 			if tt.metric {
-				exporter, err := factory.CreateMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), exporterConfig)
+				exporter, err := factory.CreateMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), exporterConfig)
 				assert.NoError(t, exporter.Start(context.Background(), nil))
 				assert.NoError(t, err)
 				rcv, err := newMetricsReceiver(receivertest.NewNopCreateSettings(), *config, exporter)
@@ -567,7 +568,7 @@ func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 				_, err = io.ReadAll(resp.Body)
 				assert.NoError(t, err)
 			} else {
-				exporter, err := factory.CreateLogsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), exporterConfig)
+				exporter, err := factory.CreateLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), exporterConfig)
 				assert.NoError(t, exporter.Start(context.Background(), nil))
 				assert.NoError(t, err)
 				rcv, err := newLogsReceiver(receivertest.NewNopCreateSettings(), *config, exporter)
@@ -632,7 +633,7 @@ func Test_Logs_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 			exporterConfig.Index = "defaultindex"
 			exporterConfig.DisableCompression = true
 			exporterConfig.Endpoint = endServer.URL
-			exporter, err := factory.CreateLogsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), exporterConfig)
+			exporter, err := factory.CreateLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), exporterConfig)
 			assert.NoError(t, exporter.Start(context.Background(), nil))
 			assert.NoError(t, err)
 			rcv, err := newLogsReceiver(receivertest.NewNopCreateSettings(), *cfg, exporter)
@@ -726,7 +727,7 @@ func Test_Metrics_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 			exporterConfig.DisableCompression = true
 			exporterConfig.Endpoint = endServer.URL
 
-			exporter, err := factory.CreateMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), exporterConfig)
+			exporter, err := factory.CreateMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), exporterConfig)
 			assert.NoError(t, exporter.Start(context.Background(), nil))
 			assert.NoError(t, err)
 			rcv, err := newMetricsReceiver(receivertest.NewNopCreateSettings(), *cfg, exporter)

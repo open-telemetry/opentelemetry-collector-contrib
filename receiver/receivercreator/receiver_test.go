@@ -73,7 +73,7 @@ func TestMockedEndToEnd(t *testing.T) {
 	require.NoError(t, err)
 
 	factories, _ := componenttest.NopFactories()
-	factories.Receivers[("nop")] = &nopWithEndpointFactory{ReceiverFactory: componenttest.NewNopReceiverFactory()}
+	factories.Receivers[("nop")] = &nopWithEndpointFactory{Factory: receivertest.NewNopFactory()}
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
 

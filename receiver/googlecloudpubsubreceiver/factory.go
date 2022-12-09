@@ -39,9 +39,9 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		typeStr,
 		f.CreateDefaultConfig,
-		component.WithTracesReceiver(f.CreateTracesReceiver, stability),
+		receiver.WithTraces(f.CreateTracesReceiver, stability),
 		receiver.WithMetrics(f.CreateMetricsReceiver, stability),
-		component.WithLogsReceiver(f.CreateLogsReceiver, stability),
+		receiver.WithLogs(f.CreateLogsReceiver, stability),
 	)
 }
 
@@ -83,7 +83,7 @@ func (factory *pubsubReceiverFactory) CreateTracesReceiver(
 	_ context.Context,
 	params receiver.CreateSettings,
 	cfg component.Config,
-	consumer consumer.Traces) (component.TracesReceiver, error) {
+	consumer consumer.Traces) (receiver.Traces, error) {
 
 	if consumer == nil {
 		return nil, component.ErrNilNextConsumer
@@ -125,7 +125,7 @@ func (factory *pubsubReceiverFactory) CreateLogsReceiver(
 	_ context.Context,
 	params receiver.CreateSettings,
 	cfg component.Config,
-	consumer consumer.Logs) (component.LogsReceiver, error) {
+	consumer consumer.Logs) (receiver.Logs, error) {
 
 	if consumer == nil {
 		return nil, component.ErrNilNextConsumer

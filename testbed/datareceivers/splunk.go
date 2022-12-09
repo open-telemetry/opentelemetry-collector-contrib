@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
@@ -31,7 +30,7 @@ import (
 // SplunkHECDataReceiver implements Splunk HEC format receiver.
 type SplunkHECDataReceiver struct {
 	testbed.DataReceiverBase
-	receiver component.LogsReceiver
+	receiver receiver.Logs
 }
 
 // Ensure SplunkHECDataReceiver implements LogDataSender.

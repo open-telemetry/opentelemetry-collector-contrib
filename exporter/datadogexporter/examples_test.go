@@ -22,10 +22,10 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
-	"go.opentelemetry.io/collector/service/servicetest"
 	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor"
@@ -53,7 +53,7 @@ func TestExamples(t *testing.T) {
 		t.Run(filepath.Base(f.Name()), func(t *testing.T) {
 			t.Setenv("DD_API_KEY", "testvalue")
 			name := filepath.Join(folder, f.Name())
-			_, err := servicetest.LoadConfigAndValidate(name, factories)
+			_, err := otelcoltest.LoadConfigAndValidate(name, factories)
 			require.NoError(t, err, "All yaml config must validate. Please ensure that all necessary component factories are added in newTestComponents()")
 		})
 	}
@@ -82,7 +82,7 @@ func TestExamples(t *testing.T) {
 		require.NoError(t, f.Close())
 		defer os.RemoveAll(f.Name())
 
-		_, err = servicetest.LoadConfigAndValidate(f.Name(), factories)
+		_, err = otelcoltest.LoadConfigAndValidate(f.Name(), factories)
 		require.NoError(t, err, "All yaml config must validate. Please ensure that all necessary component factories are added in newTestComponents()")
 	})
 }

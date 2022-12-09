@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/featuregate"
-	"go.opentelemetry.io/collector/receiver"
+	rcvr "go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver/internal/metadata"
@@ -42,11 +42,11 @@ func init() {
 	)
 }
 
-func NewFactory() receiver.Factory {
-	return receiver.NewFactory(
+func NewFactory() rcvr.Factory {
+	return rcvr.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, stability))
+		rcvr.WithMetrics(createMetricsReceiver, stability))
 }
 
 func createDefaultConfig() component.Config {
@@ -63,10 +63,10 @@ func createDefaultConfig() component.Config {
 
 func createMetricsReceiver(
 	_ context.Context,
-	params receiver.CreateSettings,
+	params rcvr.CreateSettings,
 	config component.Config,
 	consumer consumer.Metrics,
-) (receiver.Metrics, error) {
+) (rcvr.Metrics, error) {
 	dockerConfig := config.(*Config)
 	dsr := newReceiver(params, dockerConfig)
 

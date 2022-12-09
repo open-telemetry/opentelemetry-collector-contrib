@@ -32,7 +32,7 @@ type dbProviderFunc func() (*sql.DB, error)
 
 type clientProviderFunc func(*sql.DB, string, *zap.Logger) dbClient
 
-func createReceiverFunc(sqlOpenerFunc sqlOpenerFunc, clientProviderFunc clientProviderFunc) component.CreateMetricsReceiverFunc {
+func createReceiverFunc(sqlOpenerFunc sqlOpenerFunc, clientProviderFunc clientProviderFunc) receiver.CreateMetricsFunc {
 	return func(
 		ctx context.Context,
 		settings receiver.CreateSettings,

@@ -33,7 +33,7 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithLogsReceiver(createLogsReceiver, stabilityLevel),
+		receiver.WithLogs(createLogsReceiver, stabilityLevel),
 	)
 }
 
@@ -42,7 +42,7 @@ func createLogsReceiver(
 	params receiver.CreateSettings,
 	rConf component.Config,
 	consumer consumer.Logs,
-) (component.LogsReceiver, error) {
+) (receiver.Logs, error) {
 	cfg := rConf.(*Config)
 	rcvr := newLogsReceiver(cfg, params.Logger, consumer)
 	return rcvr, nil

@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
@@ -32,7 +31,7 @@ import (
 // ocDataReceiver implements OpenCensus format receiver.
 type ocDataReceiver struct {
 	testbed.DataReceiverBase
-	traceReceiver   component.TracesReceiver
+	traceReceiver   receiver.Traces
 	metricsReceiver receiver.Metrics
 }
 

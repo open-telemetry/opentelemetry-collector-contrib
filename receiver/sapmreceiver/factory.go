@@ -44,7 +44,7 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesReceiver(createTracesReceiver, stability))
+		receiver.WithTraces(createTracesReceiver, stability))
 }
 
 func createDefaultConfig() component.Config {
@@ -89,7 +89,7 @@ func createTracesReceiver(
 	params receiver.CreateSettings,
 	cfg component.Config,
 	nextConsumer consumer.Traces,
-) (component.TracesReceiver, error) {
+) (receiver.Traces, error) {
 	// assert config is SAPM config
 	rCfg := cfg.(*Config)
 

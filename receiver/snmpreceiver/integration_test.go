@@ -29,7 +29,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest/golden"
@@ -68,7 +68,7 @@ func TestSnmpReceiverIntegration(t *testing.T) {
 			factory := NewFactory()
 			factories.Receivers[typeStr] = factory
 			configFile := filepath.Join("testdata", "integration", testCase.configFilename)
-			cfg, err := servicetest.LoadConfigAndValidate(configFile, factories)
+			cfg, err := otelcoltest.LoadConfigAndValidate(configFile, factories)
 			snmpConfig := cfg.Receivers[component.NewID(typeStr)].(*Config)
 
 			consumer := new(consumertest.MetricsSink)

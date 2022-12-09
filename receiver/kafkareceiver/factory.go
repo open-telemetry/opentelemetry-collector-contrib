@@ -95,9 +95,9 @@ func NewFactory(options ...FactoryOption) receiver.Factory {
 	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesReceiver(f.createTracesReceiver, stability),
+		receiver.WithTraces(f.createTracesReceiver, stability),
 		receiver.WithMetrics(f.createMetricsReceiver, stability),
-		component.WithLogsReceiver(f.createLogsReceiver, stability),
+		receiver.WithLogs(f.createLogsReceiver, stability),
 	)
 }
 
@@ -138,7 +138,7 @@ func (f *kafkaReceiverFactory) createTracesReceiver(
 	set receiver.CreateSettings,
 	cfg component.Config,
 	nextConsumer consumer.Traces,
-) (component.TracesReceiver, error) {
+) (receiver.Traces, error) {
 	c := cfg.(*Config)
 	r, err := newTracesReceiver(*c, set, f.tracesUnmarshalers, nextConsumer)
 	if err != nil {
@@ -166,7 +166,7 @@ func (f *kafkaReceiverFactory) createLogsReceiver(
 	set receiver.CreateSettings,
 	cfg component.Config,
 	nextConsumer consumer.Logs,
-) (component.LogsReceiver, error) {
+) (receiver.Logs, error) {
 	c := cfg.(*Config)
 	r, err := newLogsReceiver(*c, set, f.logsUnmarshalers, nextConsumer)
 	if err != nil {

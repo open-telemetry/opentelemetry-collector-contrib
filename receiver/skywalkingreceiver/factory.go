@@ -49,7 +49,7 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesReceiver(createTracesReceiver, stability))
+		receiver.WithTraces(createTracesReceiver, stability))
 }
 
 // CreateDefaultConfig creates the default configuration for Skywalking receiver.
@@ -76,7 +76,7 @@ func createTracesReceiver(
 	set receiver.CreateSettings,
 	cfg component.Config,
 	nextConsumer consumer.Traces,
-) (component.TracesReceiver, error) {
+) (receiver.Traces, error) {
 
 	// Convert settings in the source c to configuration struct
 	// that Skywalking receiver understands.

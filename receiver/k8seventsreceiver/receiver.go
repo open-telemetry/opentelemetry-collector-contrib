@@ -46,7 +46,7 @@ func newReceiver(
 	config *Config,
 	consumer consumer.Logs,
 	client k8s.Interface,
-) (component.LogsReceiver, error) {
+) (receiver.Logs, error) {
 	transport := "http"
 
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{

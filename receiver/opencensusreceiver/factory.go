@@ -37,7 +37,7 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesReceiver(createTracesReceiver, stability),
+		receiver.WithTraces(createTracesReceiver, stability),
 		receiver.WithMetrics(createMetricsReceiver, stability))
 }
 
@@ -60,7 +60,7 @@ func createTracesReceiver(
 	set receiver.CreateSettings,
 	cfg component.Config,
 	nextConsumer consumer.Traces,
-) (component.TracesReceiver, error) {
+) (receiver.Traces, error) {
 	var err error
 	r := receivers.GetOrAdd(cfg, func() component.Component {
 		rCfg := cfg.(*Config)

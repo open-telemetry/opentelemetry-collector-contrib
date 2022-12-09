@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
-	"go.opentelemetry.io/collector/receiver"
+	rcvr "go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/pipeline"
@@ -35,21 +35,21 @@ type LogReceiverType interface {
 }
 
 // NewFactory creates a factory for a Stanza-based receiver
-func NewFactory(logReceiverType LogReceiverType, sl component.StabilityLevel) receiver.Factory {
-	return receiver.NewFactory(
+func NewFactory(logReceiverType LogReceiverType, sl component.StabilityLevel) rcvr.Factory {
+	return rcvr.NewFactory(
 		logReceiverType.Type(),
 		logReceiverType.CreateDefaultConfig,
-		component.WithLogsReceiver(createLogsReceiver(logReceiverType), sl),
+		rcvr.WithLogs(createLogsReceiver(logReceiverType), sl),
 	)
 }
 
 func createLogsReceiver(logReceiverType LogReceiverType) component.CreateLogsReceiverFunc {
 	return func(
 		ctx context.Context,
-		params receiver.CreateSettings,
+		params rcvr.CreateSettings,
 		cfg component.Config,
 		nextConsumer consumer.Logs,
-	) (component.LogsReceiver, error) {
+	) (rcvr.Logs, error) {
 		inputCfg := logReceiverType.InputConfig(cfg)
 		baseCfg := logReceiverType.BaseConfig(cfg)
 

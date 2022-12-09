@@ -36,14 +36,14 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithLogsReceiver(createLogsReceiver, stability))
+		receiver.WithLogs(createLogsReceiver, stability))
 }
 
 func createDefaultConfig() component.Config {
 	return &Config{ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr))}
 }
 
-func createLogsReceiver(_ context.Context, settings receiver.CreateSettings, cfg component.Config, logs consumer.Logs) (component.LogsReceiver, error) {
+func createLogsReceiver(_ context.Context, settings receiver.CreateSettings, cfg component.Config, logs consumer.Logs) (receiver.Logs, error) {
 
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
 		ReceiverID:             settings.ID,

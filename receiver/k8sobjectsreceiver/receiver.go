@@ -38,7 +38,7 @@ type k8sobjectsreceiver struct {
 	mu              sync.Mutex
 }
 
-func newReceiver(params receiver.CreateSettings, config *Config, consumer consumer.Logs) (component.LogsReceiver, error) {
+func newReceiver(params receiver.CreateSettings, config *Config, consumer consumer.Logs) (receiver.Logs, error) {
 	transport := "http"
 	client, err := config.getDynamicClient()
 	if err != nil {

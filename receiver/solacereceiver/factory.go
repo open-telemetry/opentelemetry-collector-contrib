@@ -41,7 +41,7 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		componentType,
 		createDefaultConfig,
-		component.WithTracesReceiver(createTracesReceiver, stability),
+		receiver.WithTraces(createTracesReceiver, stability),
 	)
 }
 
@@ -70,7 +70,7 @@ func createTracesReceiver(
 	params receiver.CreateSettings,
 	receiverConfig component.Config,
 	nextConsumer consumer.Traces,
-) (component.TracesReceiver, error) {
+) (receiver.Traces, error) {
 	cfg, ok := receiverConfig.(*Config)
 	if !ok {
 		return nil, component.ErrDataTypeIsNotSupported

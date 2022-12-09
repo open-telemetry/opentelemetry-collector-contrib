@@ -36,7 +36,7 @@ import (
 
 func TestCreateTraceAndMetricsReceiver(t *testing.T) {
 	var (
-		traceReceiver  component.TracesReceiver
+		traceReceiver  receiver.Traces
 		metricReceiver receiver.Metrics
 	)
 

@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -30,7 +29,7 @@ import (
 // zipkinDataReceiver implements Zipkin format receiver.
 type zipkinDataReceiver struct {
 	testbed.DataReceiverBase
-	receiver component.TracesReceiver
+	receiver receiver.Traces
 }
 
 // NewZipkinDataReceiver creates a new Zipkin DataReceiver that will listen on the specified port after Start

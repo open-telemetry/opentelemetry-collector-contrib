@@ -50,7 +50,7 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesReceiver(createTracesReceiver, stability))
+		receiver.WithTraces(createTracesReceiver, stability))
 }
 
 // CreateDefaultConfig creates the default configuration for Jaeger receiver.
@@ -85,7 +85,7 @@ func createTracesReceiver(
 	set receiver.CreateSettings,
 	cfg component.Config,
 	nextConsumer consumer.Traces,
-) (component.TracesReceiver, error) {
+) (receiver.Traces, error) {
 
 	// Convert settings in the source config to configuration struct
 	// that Jaeger receiver understands.

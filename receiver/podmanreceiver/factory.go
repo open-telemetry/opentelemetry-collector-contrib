@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/receiver"
+	rcvr "go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
@@ -31,11 +31,11 @@ const (
 	defaultAPIVersion = "3.3.1"
 )
 
-func NewFactory() receiver.Factory {
-	return receiver.NewFactory(
+func NewFactory() rcvr.Factory {
+	return rcvr.NewFactory(
 		typeStr,
 		createDefaultReceiverConfig,
-		receiver.WithMetrics(createMetricsReceiver, stability))
+		rcvr.WithMetrics(createMetricsReceiver, stability))
 }
 
 func createDefaultConfig() *Config {
@@ -56,10 +56,10 @@ func createDefaultReceiverConfig() component.Config {
 
 func createMetricsReceiver(
 	ctx context.Context,
-	params receiver.CreateSettings,
+	params rcvr.CreateSettings,
 	config component.Config,
 	consumer consumer.Metrics,
-) (receiver.Metrics, error) {
+) (rcvr.Metrics, error) {
 	podmanConfig := config.(*Config)
 	dsr, err := newReceiver(ctx, params, podmanConfig, consumer, nil)
 	if err != nil {

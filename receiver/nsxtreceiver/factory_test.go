@@ -21,7 +21,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
@@ -60,7 +59,7 @@ func TestCreateMetricsReceiverNotNSX(t *testing.T) {
 	_, err := factory.CreateMetricsReceiver(
 		context.Background(),
 		receivertest.NewNopCreateSettings(),
-		componenttest.NewNopReceiverFactory().CreateDefaultConfig(),
+		receivertest.NewNopFactory().CreateDefaultConfig(),
 		consumertest.NewNop(),
 	)
 	require.Error(t, err)

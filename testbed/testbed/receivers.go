@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
@@ -61,9 +60,9 @@ type BaseOTLPDataReceiver struct {
 	DataReceiverBase
 	// One of the "otlp" for OTLP over gRPC or "otlphttp" for OTLP over HTTP.
 	exporterType    string
-	traceReceiver   component.TracesReceiver
+	traceReceiver   receiver.Traces
 	metricsReceiver receiver.Metrics
-	logReceiver     component.LogsReceiver
+	logReceiver     receiver.Logs
 	compression     string
 }
 

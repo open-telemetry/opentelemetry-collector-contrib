@@ -79,9 +79,9 @@ func NewFactory(options ...FactoryOption) receiver.Factory {
 	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesReceiver(f.createTracesReceiver, stability),
+		receiver.WithTraces(f.createTracesReceiver, stability),
 		receiver.WithMetrics(f.createMetricsReceiver, stability),
-		component.WithLogsReceiver(f.createLogsReceiver, stability),
+		receiver.WithLogs(f.createLogsReceiver, stability),
 	)
 }
 
@@ -96,7 +96,7 @@ func (f *pulsarReceiverFactory) createTracesReceiver(
 	set receiver.CreateSettings,
 	cfg component.Config,
 	nextConsumer consumer.Traces,
-) (component.TracesReceiver, error) {
+) (receiver.Traces, error) {
 	c := *(cfg.(*Config))
 	if len(c.Topic) == 0 {
 		c.Topic = defaultTraceTopic
@@ -130,7 +130,7 @@ func (f *pulsarReceiverFactory) createLogsReceiver(
 	set receiver.CreateSettings,
 	cfg component.Config,
 	nextConsumer consumer.Logs,
-) (component.LogsReceiver, error) {
+) (receiver.Logs, error) {
 	c := *(cfg.(*Config))
 	if len(c.Topic) == 0 {
 		c.Topic = defaultLogsTopic

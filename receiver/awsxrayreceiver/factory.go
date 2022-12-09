@@ -25,6 +25,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy"
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/udppoller"
 )
 
@@ -33,7 +34,7 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		awsxray.TypeStr,
 		createDefaultConfig,
-		component.WithTracesReceiver(createTracesReceiver, component.StabilityLevelBeta))
+		receiver.WithTraces(createTracesReceiver, component.StabilityLevelBeta))
 }
 
 func createDefaultConfig() component.Config {
@@ -56,7 +57,7 @@ func createTracesReceiver(
 	ctx context.Context,
 	params receiver.CreateSettings,
 	cfg component.Config,
-	consumer consumer.Traces) (component.TracesReceiver, error) {
+	consumer consumer.Traces) (receiver.Traces, error) {
 	rcfg := cfg.(*Config)
 	return newReceiver(rcfg, consumer, params)
 }

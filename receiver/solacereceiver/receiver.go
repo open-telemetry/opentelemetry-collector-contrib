@@ -29,7 +29,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// solaceTracesReceiver uses azure AMQP to consume and handle telemetry data from SOlace. Implements component.TracesReceiver
+// solaceTracesReceiver uses azure AMQP to consume and handle telemetry data from SOlace. Implements receiver.Traces
 type solaceTracesReceiver struct {
 	// config is the receiver.Config instance used to build the receiver
 	config *Config
@@ -49,8 +49,8 @@ type solaceTracesReceiver struct {
 	retryTimeout time.Duration
 }
 
-// newTracesReceiver creates a new solaceTraceReceiver as a component.TracesReceiver
-func newTracesReceiver(config *Config, set receiver.CreateSettings, nextConsumer consumer.Traces) (component.TracesReceiver, error) {
+// newTracesReceiver creates a new solaceTraceReceiver as a receiver.Traces
+func newTracesReceiver(config *Config, set receiver.CreateSettings, nextConsumer consumer.Traces) (receiver.Traces, error) {
 	if nextConsumer == nil {
 		set.Logger.Warn("Next consumer in pipeline is null, stopping receiver")
 		return nil, component.ErrNilNextConsumer
