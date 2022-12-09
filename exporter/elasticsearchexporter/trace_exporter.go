@@ -27,8 +27,8 @@ import (
 )
 
 const (
-	tracesPrefixKey = "elasticsearchexporter.traces_index_prefix"
-	tracesSuffixKey = "elasticsearchexporter.traces_index_suffix"
+	tracesPrefixKey = "traces_index_prefix"
+	tracesSuffixKey = "traces_index_suffix"
 )
 
 type elasticsearchTracesExporter struct {

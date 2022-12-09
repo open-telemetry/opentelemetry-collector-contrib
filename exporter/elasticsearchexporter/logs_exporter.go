@@ -27,8 +27,8 @@ import (
 )
 
 const (
-	logsPrefixKey = "elasticsearchexporter.logs_index_prefix"
-	logsSuffixKey = "elasticsearchexporter.logs_index_suffix"
+	logsPrefixKey = "logs_index_prefix"
+	logsSuffixKey = "logs_index_suffix"
 )
 
 type elasticsearchLogsExporter struct {
