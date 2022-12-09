@@ -43,7 +43,7 @@ func NewFactory(logReceiverType LogReceiverType, sl component.StabilityLevel) rc
 	)
 }
 
-func createLogsReceiver(logReceiverType LogReceiverType) component.CreateLogsReceiverFunc {
+func createLogsReceiver(logReceiverType LogReceiverType) rcvr.CreateLogsFunc {
 	return func(
 		ctx context.Context,
 		params rcvr.CreateSettings,
