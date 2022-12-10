@@ -322,6 +322,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/rout
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter => ../../exporter/azuredataexplorerexporter
 
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/haproxyreceiver => ../../receiver/haproxyreceiver
+
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver => ../../receiver/hostmetricsreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension => ../../extension/bearertokenauthextension

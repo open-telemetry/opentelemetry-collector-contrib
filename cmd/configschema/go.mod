@@ -430,6 +430,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver v0.67.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver v0.67.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver v0.67.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/haproxyreceiver v0.67.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.67.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpcheckreceiver v0.67.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver v0.67.0 // indirect
@@ -894,6 +895,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluen
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver => ../../receiver/googlecloudpubsubreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver => ../../receiver/googlecloudspannerreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/haproxyreceiver => ../../receiver/haproxyreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver => ../../receiver/hostmetricsreceiver
 
