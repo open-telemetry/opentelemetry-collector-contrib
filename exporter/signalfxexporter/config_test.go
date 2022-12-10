@@ -15,6 +15,7 @@
 package signalfxexporter
 
 import (
+	"go.opentelemetry.io/collector/config/configopaque"
 	"net/url"
 	"path/filepath"
 	"testing"
@@ -61,12 +62,11 @@ func TestLoadConfig(t *testing.T) {
 				AccessToken:    "testToken",
 				Realm:          "us1",
 				MaxConnections: 70,
-				Headers: map[string]string{
-					"added-entry": "added value",
-					"dot.test":    "test",
-				},
-				TimeoutSettings: exporterhelper.TimeoutSettings{
-					Timeout: 2 * time.Second,
+				HTTPClientSettings: confighttp.HTTPClientSettings{Timeout: 2 * time.Second,
+					Headers: map[string]configopaque.String{
+						"added-entry": "added value",
+						"dot.test":    "test",
+					},
 				},
 				RetrySettings: exporterhelper.RetrySettings{
 					Enabled:         true,
@@ -207,7 +207,7 @@ func TestConfig_getOptionsFromConfig(t *testing.T) {
 		IngestURL        string
 		APIURL           string
 		Timeout          time.Duration
-		Headers          map[string]string
+		Headers          map[string]configopaque.String
 		TranslationRules []translation.Rule
 		SyncHostMetadata bool
 	}
@@ -323,10 +323,10 @@ func TestConfig_getOptionsFromConfig(t *testing.T) {
 				Realm:       tt.fields.Realm,
 				IngestURL:   tt.fields.IngestURL,
 				APIURL:      tt.fields.APIURL,
-				TimeoutSettings: exporterhelper.TimeoutSettings{
+				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Timeout: tt.fields.Timeout,
+					Headers: tt.fields.Headers,
 				},
-				Headers:             tt.fields.Headers,
 				TranslationRules:    tt.fields.TranslationRules,
 				SyncHostMetadata:    tt.fields.SyncHostMetadata,
 				DeltaTranslationTTL: 3600,

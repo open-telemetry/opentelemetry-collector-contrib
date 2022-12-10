@@ -17,6 +17,7 @@ package datasenders // import "github.com/open-telemetry/opentelemetry-collector
 import (
 	"context"
 	"fmt"
+	"go.opentelemetry.io/collector/component/componenttest"
 
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -58,6 +59,11 @@ func (sf *SFxMetricsDataSender) Start() error {
 	params.Logger = zap.L()
 
 	exporter, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
+	if err != nil {
+		return err
+	}
+
+	err = exporter.Start(context.Background(), componenttest.NewNopHost())
 	if err != nil {
 		return err
 	}
