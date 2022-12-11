@@ -23,6 +23,7 @@ import (
 	"github.com/apache/pulsar-client-go/pulsar"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 )
 
@@ -37,11 +38,11 @@ type pulsarTracesConsumer struct {
 	cancel          context.CancelFunc
 	consumer        pulsar.Consumer
 	unmarshaler     TracesUnmarshaler
-	settings        component.ReceiverCreateSettings
+	settings        receiver.CreateSettings
 	consumerOptions pulsar.ConsumerOptions
 }
 
-func newTracesReceiver(config Config, set component.ReceiverCreateSettings, unmarshalers map[string]TracesUnmarshaler, nextConsumer consumer.Traces) (*pulsarTracesConsumer, error) {
+func newTracesReceiver(config Config, set receiver.CreateSettings, unmarshalers map[string]TracesUnmarshaler, nextConsumer consumer.Traces) (*pulsarTracesConsumer, error) {
 	unmarshaler := unmarshalers[config.Encoding]
 	if nil == unmarshaler {
 		return nil, errUnrecognizedEncoding
@@ -132,11 +133,11 @@ type pulsarMetricsConsumer struct {
 	client          pulsar.Client
 	consumer        pulsar.Consumer
 	cancel          context.CancelFunc
-	settings        component.ReceiverCreateSettings
+	settings        receiver.CreateSettings
 	consumerOptions pulsar.ConsumerOptions
 }
 
-func newMetricsReceiver(config Config, set component.ReceiverCreateSettings, unmarshalers map[string]MetricsUnmarshaler, nextConsumer consumer.Metrics) (*pulsarMetricsConsumer, error) {
+func newMetricsReceiver(config Config, set receiver.CreateSettings, unmarshalers map[string]MetricsUnmarshaler, nextConsumer consumer.Metrics) (*pulsarMetricsConsumer, error) {
 	unmarshaler := unmarshalers[config.Encoding]
 	if nil == unmarshaler {
 		return nil, errUnrecognizedEncoding
@@ -230,11 +231,11 @@ type pulsarLogsConsumer struct {
 	client          pulsar.Client
 	consumer        pulsar.Consumer
 	cancel          context.CancelFunc
-	settings        component.ReceiverCreateSettings
+	settings        receiver.CreateSettings
 	consumerOptions pulsar.ConsumerOptions
 }
 
-func newLogsReceiver(config Config, set component.ReceiverCreateSettings, unmarshalers map[string]LogsUnmarshaler, nextConsumer consumer.Logs) (*pulsarLogsConsumer, error) {
+func newLogsReceiver(config Config, set receiver.CreateSettings, unmarshalers map[string]LogsUnmarshaler, nextConsumer consumer.Logs) (*pulsarLogsConsumer, error) {
 	unmarshaler := unmarshalers[config.Encoding]
 	if nil == unmarshaler {
 		return nil, errUnrecognizedEncoding

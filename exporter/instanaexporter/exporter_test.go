@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
@@ -45,7 +46,7 @@ func TestPushConvertedTraces(t *testing.T) {
 		ExporterSettings:   config.NewExporterSettings(component.NewIDWithName(typeStr, "valid")),
 	}
 
-	instanaExporter := newInstanaExporter(&cfg, componenttest.NewNopExporterCreateSettings())
+	instanaExporter := newInstanaExporter(&cfg, exportertest.NewNopCreateSettings())
 	ctx := context.Background()
 	err := instanaExporter.start(ctx, componenttest.NewNopHost())
 	assert.NoError(t, err)
@@ -109,7 +110,7 @@ func TestSelfSignedBackend(t *testing.T) {
 
 	ctx := context.Background()
 
-	instanaExporter := newInstanaExporter(&cfg, componenttest.NewNopExporterCreateSettings())
+	instanaExporter := newInstanaExporter(&cfg, exportertest.NewNopCreateSettings())
 	err = instanaExporter.start(ctx, componenttest.NewNopHost())
 
 	if err != nil {
@@ -136,7 +137,7 @@ func TestSelfSignedBackendCAFileNotFound(t *testing.T) {
 
 	ctx := context.Background()
 
-	instanaExporter := newInstanaExporter(&cfg, componenttest.NewNopExporterCreateSettings())
+	instanaExporter := newInstanaExporter(&cfg, exportertest.NewNopCreateSettings())
 
 	assert.Error(t, instanaExporter.start(ctx, componenttest.NewNopHost()), "expect not to find the ca file")
 }

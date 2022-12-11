@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 
@@ -69,7 +70,7 @@ type apacheScraper struct {
 }
 
 func newApacheScraper(
-	settings component.ReceiverCreateSettings,
+	settings receiver.CreateSettings,
 	cfg *Config,
 	serverName string,
 	port string,

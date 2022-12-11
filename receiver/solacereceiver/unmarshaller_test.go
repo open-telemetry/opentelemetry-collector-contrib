@@ -845,8 +845,13 @@ func compareSpans(t *testing.T, expected, actual ptrace.Span) {
 		lessFunc := func(a, b ptrace.SpanEvent) bool {
 			return a.Name() < b.Name() // choose any comparison here
 		}
-		expectedEvent := expected.Events().Sort(lessFunc).At(i)
-		actualEvent := actual.Events().Sort(lessFunc).At(i)
+		ee := expected.Events()
+		ee.Sort(lessFunc)
+		expectedEvent := ee.At(i)
+
+		ae := actual.Events()
+		ae.Sort(lessFunc)
+		actualEvent := ae.At(i)
 		assert.Equal(t, expectedEvent.Name(), actualEvent.Name())
 		assert.Equal(t, expectedEvent.Timestamp(), actualEvent.Timestamp())
 		assert.Equal(t, expectedEvent.Attributes().AsRaw(), actualEvent.Attributes().AsRaw())
@@ -964,7 +969,9 @@ func TestUnmarshallerBaggageString(t *testing.T) {
 			if testCase.expected != nil {
 				expected := pcommon.NewMap()
 				testCase.expected(expected)
-				assert.Equal(t, expected.Sort(), actual.Sort())
+				expected.Sort()
+				actual.Sort()
+				assert.Equal(t, expected, actual)
 			} else {
 				// assert we didn't add anything if we don't have a result map
 				assert.Equal(t, 0, actual.Len())

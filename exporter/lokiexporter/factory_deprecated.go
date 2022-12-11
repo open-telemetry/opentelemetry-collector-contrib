@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -39,7 +40,7 @@ func createDefaultLegacyConfig() component.Config {
 	}
 }
 
-func createLegacyLogsExporter(ctx context.Context, set component.ExporterCreateSettings, cfg *Config) (component.LogsExporter, error) {
+func createLegacyLogsExporter(ctx context.Context, set exporter.CreateSettings, cfg *Config) (exporter.Logs, error) {
 	exp := newLegacyExporter(cfg, set.TelemetrySettings)
 
 	return exporterhelper.NewLogsExporter(

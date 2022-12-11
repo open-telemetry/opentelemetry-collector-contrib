@@ -24,7 +24,7 @@ import (
 
 	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
 	"github.com/DataDog/datadog-agent/pkg/otlp/model/translator"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -40,7 +40,7 @@ import (
 )
 
 type metricsExporter struct {
-	params         component.ExporterCreateSettings
+	params         exporter.CreateSettings
 	cfg            *Config
 	ctx            context.Context
 	client         *zorkian.Client
@@ -96,7 +96,7 @@ func translatorFromConfig(logger *zap.Logger, cfg *Config, sourceProvider source
 	return translator.New(logger, options...)
 }
 
-func newMetricsExporter(ctx context.Context, params component.ExporterCreateSettings, cfg *Config, onceMetadata *sync.Once, sourceProvider source.Provider) (*metricsExporter, error) {
+func newMetricsExporter(ctx context.Context, params exporter.CreateSettings, cfg *Config, onceMetadata *sync.Once, sourceProvider source.Provider) (*metricsExporter, error) {
 	client := clientutil.CreateZorkianClient(cfg.API.Key, cfg.Metrics.TCPAddr.Endpoint)
 	client.ExtraHeader["User-Agent"] = clientutil.UserAgent(params.BuildInfo)
 	client.HttpClient = clientutil.NewHTTPClient(cfg.TimeoutSettings, cfg.LimitedHTTPClientSettings.TLSSetting.InsecureSkipVerify)

@@ -35,6 +35,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"google.golang.org/grpc"
 
@@ -61,7 +62,7 @@ func TestJaegerAgentUDP_ThriftCompact_InvalidPort(t *testing.T) {
 			ServerConfigUDP: DefaultServerConfigUDP(),
 		},
 	}
-	set := componenttest.NewNopReceiverCreateSettings()
+	set := receivertest.NewNopCreateSettings()
 	jr, err := newJaegerReceiver(jaegerAgent, config, nil, set)
 	require.NoError(t, err)
 
@@ -90,7 +91,7 @@ func TestJaegerAgentUDP_ThriftBinary_PortInUse(t *testing.T) {
 			ServerConfigUDP: DefaultServerConfigUDP(),
 		},
 	}
-	set := componenttest.NewNopReceiverCreateSettings()
+	set := receivertest.NewNopCreateSettings()
 	jr, err := newJaegerReceiver(jaegerAgent, config, nil, set)
 	require.NoError(t, err)
 
@@ -112,7 +113,7 @@ func TestJaegerAgentUDP_ThriftBinary_InvalidPort(t *testing.T) {
 			ServerConfigUDP: DefaultServerConfigUDP(),
 		},
 	}
-	set := componenttest.NewNopReceiverCreateSettings()
+	set := receivertest.NewNopCreateSettings()
 	jr, err := newJaegerReceiver(jaegerAgent, config, nil, set)
 	require.NoError(t, err)
 
@@ -150,7 +151,7 @@ func TestJaegerHTTP(t *testing.T) {
 	config := &configuration{
 		AgentHTTPEndpoint: endpoint,
 	}
-	set := componenttest.NewNopReceiverCreateSettings()
+	set := receivertest.NewNopCreateSettings()
 	jr, err := newJaegerReceiver(jaegerAgent, config, nil, set)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
@@ -180,7 +181,7 @@ func TestJaegerHTTP(t *testing.T) {
 func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *configuration) {
 	// 1. Create the Jaeger receiver aka "server"
 	sink := new(consumertest.TracesSink)
-	set := componenttest.NewNopReceiverCreateSettings()
+	set := receivertest.NewNopCreateSettings()
 	jr, err := newJaegerReceiver(jaegerAgent, receiverConfig, sink, set)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })

@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -60,8 +61,8 @@ type emfExporter struct {
 // newEmfPusher func creates an EMF Exporter instance with data push callback func
 func newEmfPusher(
 	config component.Config,
-	params component.ExporterCreateSettings,
-) (component.MetricsExporter, error) {
+	params exporter.CreateSettings,
+) (exporter.Metrics, error) {
 	if config == nil {
 		return nil, errors.New("emf exporter config is nil")
 	}
@@ -96,8 +97,8 @@ func newEmfPusher(
 // newEmfExporter creates a new exporter using exporterhelper
 func newEmfExporter(
 	config component.Config,
-	set component.ExporterCreateSettings,
-) (component.MetricsExporter, error) {
+	set exporter.CreateSettings,
+) (exporter.Metrics, error) {
 	exp, err := newEmfPusher(config, set)
 	if err != nil {
 		return nil, err

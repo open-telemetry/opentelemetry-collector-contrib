@@ -229,6 +229,7 @@ func (md *metadata) Unmarshal(parser *confmap.Conf) error {
 func (md *metadata) Validate() error {
 	var errs error
 
+	usedAttrs := map[attributeName]bool{}
 	for mn, m := range md.Metrics {
 		if m.Sum == nil && m.Gauge == nil {
 			errs = multierr.Append(errs, fmt.Errorf("metric %v doesn't have a metric type key, "+
@@ -246,15 +247,27 @@ func (md *metadata) Validate() error {
 			continue
 		}
 
-		unknownAttrs := make([]attributeName, 0, len(md.Attributes))
+		unknownAttrs := make([]attributeName, 0, len(m.Attributes))
 		for _, attr := range m.Attributes {
-			if _, ok := md.Attributes[attr]; !ok {
+			if _, ok := md.Attributes[attr]; ok {
+				usedAttrs[attr] = true
+			} else {
 				unknownAttrs = append(unknownAttrs, attr)
 			}
 		}
 		if len(unknownAttrs) > 0 {
 			errs = multierr.Append(errs, fmt.Errorf(`metric "%v" refers to undefined attributes: %v`, mn, unknownAttrs))
 		}
+	}
+
+	unusedAttrs := make([]attributeName, 0, len(md.Attributes))
+	for attr := range md.Attributes {
+		if !usedAttrs[attr] {
+			unusedAttrs = append(unusedAttrs, attr)
+		}
+	}
+	if len(unusedAttrs) > 0 {
+		errs = multierr.Append(errs, fmt.Errorf("unused attributes: %v", unusedAttrs))
 	}
 
 	return errs

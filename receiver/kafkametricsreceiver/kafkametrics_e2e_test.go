@@ -27,8 +27,9 @@ import (
 	testcontainers "github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
 const (
@@ -89,9 +90,9 @@ func TestIntegrationSingleNode(t *testing.T) {
 	cfg.CollectionInterval = 5 * time.Second
 	consumer := new(consumertest.MetricsSink)
 
-	var receiver component.MetricsReceiver
+	var receiver receiver.Metrics
 
-	receiver, err = f.CreateMetricsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, consumer)
+	receiver, err = f.CreateMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, consumer)
 	require.NoError(t, err, "failed to create receiver")
 	require.Eventuallyf(t, func() bool {
 		err = receiver.Start(context.Background(), &testHost{t: t})

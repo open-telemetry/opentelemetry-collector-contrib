@@ -26,7 +26,7 @@ get_collector_version() {
    main_mod_file="$2"
 
    if grep -q "$collector_module" "$main_mod_file"; then
-      grep "$collector_module" "$main_mod_file" | (read mod version;
+      grep "$collector_module" "$main_mod_file" | (read mod version rest;
          echo $version)
    else
       echo "Error: failed to retrieve the \"$collector_module\" version from \"$main_mod_file\"."
@@ -72,14 +72,16 @@ check_collector_versions_correct() {
 # Note space at end of string. This is so it filters for the exact string
 # only and does not return string which contains this string as a substring.
 COLLECTOR_MODULE="go.opentelemetry.io/collector "
+PDATA_MODULE="go.opentelemetry.io/collector/pdata "
 
 MAIN_MOD_FILE="./go.mod"
 COLLECTOR_MOD_VERSION=$(get_collector_version "$COLLECTOR_MODULE" "$MAIN_MOD_FILE")
+PDATA_MOD_VERSION=$(get_collector_version "$PDATA_MODULE" "$MAIN_MOD_FILE")
 
 # Check the collector module version in each of the module files
 check_collector_versions_correct "$COLLECTOR_MODULE" "$COLLECTOR_MOD_VERSION"
 check_collector_versions_correct "go.opentelemetry.io/collector/component" "$COLLECTOR_MOD_VERSION"
 check_collector_versions_correct "go.opentelemetry.io/collector/consumer" "$COLLECTOR_MOD_VERSION"
 check_collector_versions_correct "go.opentelemetry.io/collector/featuregate" "$COLLECTOR_MOD_VERSION"
-check_collector_versions_correct "go.opentelemetry.io/collector/pdata" "$COLLECTOR_MOD_VERSION"
+check_collector_versions_correct "go.opentelemetry.io/collector/pdata" "$PDATA_MOD_VERSION"
 check_collector_versions_correct "go.opentelemetry.io/collector/semconv" "$COLLECTOR_MOD_VERSION"

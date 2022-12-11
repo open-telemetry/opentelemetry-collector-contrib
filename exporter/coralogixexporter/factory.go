@@ -22,17 +22,18 @@ import (
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/consumer"
+	exp "go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 // NewFactory by Coralogix
-func NewFactory() component.ExporterFactory {
-	return component.NewExporterFactory(
+func NewFactory() exp.Factory {
+	return exp.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporter(createTraceExporter, stability),
-		component.WithMetricsExporter(createMetricsExporter, stability),
-		component.WithLogsExporter(createLogsExporter, component.StabilityLevelAlpha),
+		exp.WithTraces(createTraceExporter, stability),
+		exp.WithMetrics(createMetricsExporter, stability),
+		exp.WithLogs(createLogsExporter, component.StabilityLevelAlpha),
 	)
 }
 
@@ -63,7 +64,7 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func createTraceExporter(ctx context.Context, set component.ExporterCreateSettings, config component.Config) (component.TracesExporter, error) {
+func createTraceExporter(ctx context.Context, set exp.CreateSettings, config component.Config) (exp.Traces, error) {
 	cfg := config.(*Config)
 
 	exporter, err := newTracesExporter(cfg, set)
@@ -87,9 +88,9 @@ func createTraceExporter(ctx context.Context, set component.ExporterCreateSettin
 
 func createMetricsExporter(
 	ctx context.Context,
-	set component.ExporterCreateSettings,
+	set exp.CreateSettings,
 	cfg component.Config,
-) (component.MetricsExporter, error) {
+) (exp.Metrics, error) {
 	oce, err := newMetricsExporter(cfg, set)
 	if err != nil {
 		return nil, err
@@ -111,9 +112,9 @@ func createMetricsExporter(
 
 func createLogsExporter(
 	ctx context.Context,
-	set component.ExporterCreateSettings,
+	set exp.CreateSettings,
 	cfg component.Config,
-) (component.LogsExporter, error) {
+) (exp.Logs, error) {
 	oce, err := newLogsExporter(cfg, set)
 	if err != nil {
 		return nil, err

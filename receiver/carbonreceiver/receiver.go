@@ -22,6 +22,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/transport"
@@ -31,10 +32,10 @@ var (
 	errEmptyEndpoint = errors.New("empty endpoint")
 )
 
-// carbonreceiver implements a component.MetricsReceiver for Carbon plaintext, aka "line", protocol.
+// carbonreceiver implements a receiver.Metrics for Carbon plaintext, aka "line", protocol.
 // see https://graphite.readthedocs.io/en/latest/feeding-carbon.html#the-plaintext-protocol.
 type carbonReceiver struct {
-	settings component.ReceiverCreateSettings
+	settings receiver.CreateSettings
 	config   *Config
 
 	server       transport.Server
@@ -43,14 +44,14 @@ type carbonReceiver struct {
 	nextConsumer consumer.Metrics
 }
 
-var _ component.MetricsReceiver = (*carbonReceiver)(nil)
+var _ receiver.Metrics = (*carbonReceiver)(nil)
 
 // New creates the Carbon receiver with the given configuration.
 func New(
-	set component.ReceiverCreateSettings,
+	set receiver.CreateSettings,
 	config Config,
 	nextConsumer consumer.Metrics,
-) (component.MetricsReceiver, error) {
+) (receiver.Metrics, error) {
 
 	if nextConsumer == nil {
 		return nil, component.ErrNilNextConsumer
