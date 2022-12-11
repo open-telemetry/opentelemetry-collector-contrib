@@ -3,10 +3,14 @@
 package metadata
 
 import (
+	"path/filepath"
 	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -17,7 +21,13 @@ import (
 func TestDefaultMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	mb := NewMetricsBuilder(DefaultMetricsSettings(), receivertest.NewNopCreateSettings(), WithStartTime(start))
+	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+	settings := receivertest.NewNopCreateSettings()
+	settings.Logger = zap.New(observedZapCore)
+	mb := NewMetricsBuilder(loadConfig(t, "default"), settings, WithStartTime(start))
+
+	assert.Equal(t, 0, observedLogs.Len())
+
 	enabledMetrics := make(map[string]bool)
 
 	enabledMetrics["mongodbatlas.db.counts"] = true
@@ -227,75 +237,10 @@ func TestDefaultMetrics(t *testing.T) {
 func TestAllMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	metricsSettings := MetricsSettings{
-		MongodbatlasDbCounts:                                  MetricSettings{Enabled: true},
-		MongodbatlasDbSize:                                    MetricSettings{Enabled: true},
-		MongodbatlasDiskPartitionIopsAverage:                  MetricSettings{Enabled: true},
-		MongodbatlasDiskPartitionIopsMax:                      MetricSettings{Enabled: true},
-		MongodbatlasDiskPartitionLatencyAverage:               MetricSettings{Enabled: true},
-		MongodbatlasDiskPartitionLatencyMax:                   MetricSettings{Enabled: true},
-		MongodbatlasDiskPartitionSpaceAverage:                 MetricSettings{Enabled: true},
-		MongodbatlasDiskPartitionSpaceMax:                     MetricSettings{Enabled: true},
-		MongodbatlasDiskPartitionUsageAverage:                 MetricSettings{Enabled: true},
-		MongodbatlasDiskPartitionUsageMax:                     MetricSettings{Enabled: true},
-		MongodbatlasDiskPartitionUtilizationAverage:           MetricSettings{Enabled: true},
-		MongodbatlasDiskPartitionUtilizationMax:               MetricSettings{Enabled: true},
-		MongodbatlasProcessAsserts:                            MetricSettings{Enabled: true},
-		MongodbatlasProcessBackgroundFlush:                    MetricSettings{Enabled: true},
-		MongodbatlasProcessCacheIo:                            MetricSettings{Enabled: true},
-		MongodbatlasProcessCacheSize:                          MetricSettings{Enabled: true},
-		MongodbatlasProcessConnections:                        MetricSettings{Enabled: true},
-		MongodbatlasProcessCPUChildrenNormalizedUsageAverage:  MetricSettings{Enabled: true},
-		MongodbatlasProcessCPUChildrenNormalizedUsageMax:      MetricSettings{Enabled: true},
-		MongodbatlasProcessCPUChildrenUsageAverage:            MetricSettings{Enabled: true},
-		MongodbatlasProcessCPUChildrenUsageMax:                MetricSettings{Enabled: true},
-		MongodbatlasProcessCPUNormalizedUsageAverage:          MetricSettings{Enabled: true},
-		MongodbatlasProcessCPUNormalizedUsageMax:              MetricSettings{Enabled: true},
-		MongodbatlasProcessCPUUsageAverage:                    MetricSettings{Enabled: true},
-		MongodbatlasProcessCPUUsageMax:                        MetricSettings{Enabled: true},
-		MongodbatlasProcessCursors:                            MetricSettings{Enabled: true},
-		MongodbatlasProcessDbDocumentRate:                     MetricSettings{Enabled: true},
-		MongodbatlasProcessDbOperationsRate:                   MetricSettings{Enabled: true},
-		MongodbatlasProcessDbOperationsTime:                   MetricSettings{Enabled: true},
-		MongodbatlasProcessDbQueryExecutorScanned:             MetricSettings{Enabled: true},
-		MongodbatlasProcessDbQueryTargetingScannedPerReturned: MetricSettings{Enabled: true},
-		MongodbatlasProcessDbStorage:                          MetricSettings{Enabled: true},
-		MongodbatlasProcessFtsCPUUsage:                        MetricSettings{Enabled: true},
-		MongodbatlasProcessGlobalLock:                         MetricSettings{Enabled: true},
-		MongodbatlasProcessIndexBtreeMissRatio:                MetricSettings{Enabled: true},
-		MongodbatlasProcessIndexCounters:                      MetricSettings{Enabled: true},
-		MongodbatlasProcessJournalingCommits:                  MetricSettings{Enabled: true},
-		MongodbatlasProcessJournalingDataFiles:                MetricSettings{Enabled: true},
-		MongodbatlasProcessJournalingWritten:                  MetricSettings{Enabled: true},
-		MongodbatlasProcessMemoryUsage:                        MetricSettings{Enabled: true},
-		MongodbatlasProcessNetworkIo:                          MetricSettings{Enabled: true},
-		MongodbatlasProcessNetworkRequests:                    MetricSettings{Enabled: true},
-		MongodbatlasProcessOplogRate:                          MetricSettings{Enabled: true},
-		MongodbatlasProcessOplogTime:                          MetricSettings{Enabled: true},
-		MongodbatlasProcessPageFaults:                         MetricSettings{Enabled: true},
-		MongodbatlasProcessRestarts:                           MetricSettings{Enabled: true},
-		MongodbatlasProcessTickets:                            MetricSettings{Enabled: true},
-		MongodbatlasSystemCPUNormalizedUsageAverage:           MetricSettings{Enabled: true},
-		MongodbatlasSystemCPUNormalizedUsageMax:               MetricSettings{Enabled: true},
-		MongodbatlasSystemCPUUsageAverage:                     MetricSettings{Enabled: true},
-		MongodbatlasSystemCPUUsageMax:                         MetricSettings{Enabled: true},
-		MongodbatlasSystemFtsCPUNormalizedUsage:               MetricSettings{Enabled: true},
-		MongodbatlasSystemFtsCPUUsage:                         MetricSettings{Enabled: true},
-		MongodbatlasSystemFtsDiskUsed:                         MetricSettings{Enabled: true},
-		MongodbatlasSystemFtsMemoryUsage:                      MetricSettings{Enabled: true},
-		MongodbatlasSystemMemoryUsageAverage:                  MetricSettings{Enabled: true},
-		MongodbatlasSystemMemoryUsageMax:                      MetricSettings{Enabled: true},
-		MongodbatlasSystemNetworkIoAverage:                    MetricSettings{Enabled: true},
-		MongodbatlasSystemNetworkIoMax:                        MetricSettings{Enabled: true},
-		MongodbatlasSystemPagingIoAverage:                     MetricSettings{Enabled: true},
-		MongodbatlasSystemPagingIoMax:                         MetricSettings{Enabled: true},
-		MongodbatlasSystemPagingUsageAverage:                  MetricSettings{Enabled: true},
-		MongodbatlasSystemPagingUsageMax:                      MetricSettings{Enabled: true},
-	}
 	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 	settings := receivertest.NewNopCreateSettings()
 	settings.Logger = zap.New(observedZapCore)
-	mb := NewMetricsBuilder(metricsSettings, settings, WithStartTime(start))
+	mb := NewMetricsBuilder(loadConfig(t, "all_metrics"), settings, WithStartTime(start))
 
 	assert.Equal(t, 0, observedLogs.Len())
 
@@ -1286,77 +1231,13 @@ func TestAllMetrics(t *testing.T) {
 func TestNoMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	metricsSettings := MetricsSettings{
-		MongodbatlasDbCounts:                                  MetricSettings{Enabled: false},
-		MongodbatlasDbSize:                                    MetricSettings{Enabled: false},
-		MongodbatlasDiskPartitionIopsAverage:                  MetricSettings{Enabled: false},
-		MongodbatlasDiskPartitionIopsMax:                      MetricSettings{Enabled: false},
-		MongodbatlasDiskPartitionLatencyAverage:               MetricSettings{Enabled: false},
-		MongodbatlasDiskPartitionLatencyMax:                   MetricSettings{Enabled: false},
-		MongodbatlasDiskPartitionSpaceAverage:                 MetricSettings{Enabled: false},
-		MongodbatlasDiskPartitionSpaceMax:                     MetricSettings{Enabled: false},
-		MongodbatlasDiskPartitionUsageAverage:                 MetricSettings{Enabled: false},
-		MongodbatlasDiskPartitionUsageMax:                     MetricSettings{Enabled: false},
-		MongodbatlasDiskPartitionUtilizationAverage:           MetricSettings{Enabled: false},
-		MongodbatlasDiskPartitionUtilizationMax:               MetricSettings{Enabled: false},
-		MongodbatlasProcessAsserts:                            MetricSettings{Enabled: false},
-		MongodbatlasProcessBackgroundFlush:                    MetricSettings{Enabled: false},
-		MongodbatlasProcessCacheIo:                            MetricSettings{Enabled: false},
-		MongodbatlasProcessCacheSize:                          MetricSettings{Enabled: false},
-		MongodbatlasProcessConnections:                        MetricSettings{Enabled: false},
-		MongodbatlasProcessCPUChildrenNormalizedUsageAverage:  MetricSettings{Enabled: false},
-		MongodbatlasProcessCPUChildrenNormalizedUsageMax:      MetricSettings{Enabled: false},
-		MongodbatlasProcessCPUChildrenUsageAverage:            MetricSettings{Enabled: false},
-		MongodbatlasProcessCPUChildrenUsageMax:                MetricSettings{Enabled: false},
-		MongodbatlasProcessCPUNormalizedUsageAverage:          MetricSettings{Enabled: false},
-		MongodbatlasProcessCPUNormalizedUsageMax:              MetricSettings{Enabled: false},
-		MongodbatlasProcessCPUUsageAverage:                    MetricSettings{Enabled: false},
-		MongodbatlasProcessCPUUsageMax:                        MetricSettings{Enabled: false},
-		MongodbatlasProcessCursors:                            MetricSettings{Enabled: false},
-		MongodbatlasProcessDbDocumentRate:                     MetricSettings{Enabled: false},
-		MongodbatlasProcessDbOperationsRate:                   MetricSettings{Enabled: false},
-		MongodbatlasProcessDbOperationsTime:                   MetricSettings{Enabled: false},
-		MongodbatlasProcessDbQueryExecutorScanned:             MetricSettings{Enabled: false},
-		MongodbatlasProcessDbQueryTargetingScannedPerReturned: MetricSettings{Enabled: false},
-		MongodbatlasProcessDbStorage:                          MetricSettings{Enabled: false},
-		MongodbatlasProcessFtsCPUUsage:                        MetricSettings{Enabled: false},
-		MongodbatlasProcessGlobalLock:                         MetricSettings{Enabled: false},
-		MongodbatlasProcessIndexBtreeMissRatio:                MetricSettings{Enabled: false},
-		MongodbatlasProcessIndexCounters:                      MetricSettings{Enabled: false},
-		MongodbatlasProcessJournalingCommits:                  MetricSettings{Enabled: false},
-		MongodbatlasProcessJournalingDataFiles:                MetricSettings{Enabled: false},
-		MongodbatlasProcessJournalingWritten:                  MetricSettings{Enabled: false},
-		MongodbatlasProcessMemoryUsage:                        MetricSettings{Enabled: false},
-		MongodbatlasProcessNetworkIo:                          MetricSettings{Enabled: false},
-		MongodbatlasProcessNetworkRequests:                    MetricSettings{Enabled: false},
-		MongodbatlasProcessOplogRate:                          MetricSettings{Enabled: false},
-		MongodbatlasProcessOplogTime:                          MetricSettings{Enabled: false},
-		MongodbatlasProcessPageFaults:                         MetricSettings{Enabled: false},
-		MongodbatlasProcessRestarts:                           MetricSettings{Enabled: false},
-		MongodbatlasProcessTickets:                            MetricSettings{Enabled: false},
-		MongodbatlasSystemCPUNormalizedUsageAverage:           MetricSettings{Enabled: false},
-		MongodbatlasSystemCPUNormalizedUsageMax:               MetricSettings{Enabled: false},
-		MongodbatlasSystemCPUUsageAverage:                     MetricSettings{Enabled: false},
-		MongodbatlasSystemCPUUsageMax:                         MetricSettings{Enabled: false},
-		MongodbatlasSystemFtsCPUNormalizedUsage:               MetricSettings{Enabled: false},
-		MongodbatlasSystemFtsCPUUsage:                         MetricSettings{Enabled: false},
-		MongodbatlasSystemFtsDiskUsed:                         MetricSettings{Enabled: false},
-		MongodbatlasSystemFtsMemoryUsage:                      MetricSettings{Enabled: false},
-		MongodbatlasSystemMemoryUsageAverage:                  MetricSettings{Enabled: false},
-		MongodbatlasSystemMemoryUsageMax:                      MetricSettings{Enabled: false},
-		MongodbatlasSystemNetworkIoAverage:                    MetricSettings{Enabled: false},
-		MongodbatlasSystemNetworkIoMax:                        MetricSettings{Enabled: false},
-		MongodbatlasSystemPagingIoAverage:                     MetricSettings{Enabled: false},
-		MongodbatlasSystemPagingIoMax:                         MetricSettings{Enabled: false},
-		MongodbatlasSystemPagingUsageAverage:                  MetricSettings{Enabled: false},
-		MongodbatlasSystemPagingUsageMax:                      MetricSettings{Enabled: false},
-	}
 	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 	settings := receivertest.NewNopCreateSettings()
 	settings.Logger = zap.New(observedZapCore)
-	mb := NewMetricsBuilder(metricsSettings, settings, WithStartTime(start))
+	mb := NewMetricsBuilder(loadConfig(t, "no_metrics"), settings, WithStartTime(start))
 
 	assert.Equal(t, 0, observedLogs.Len())
+
 	mb.RecordMongodbatlasDbCountsDataPoint(ts, 1, AttributeObjectType(1))
 	mb.RecordMongodbatlasDbSizeDataPoint(ts, 1, AttributeObjectType(1))
 	mb.RecordMongodbatlasDiskPartitionIopsAverageDataPoint(ts, 1, AttributeDiskDirection(1))
@@ -1424,4 +1305,14 @@ func TestNoMetrics(t *testing.T) {
 	metrics := mb.Emit()
 
 	assert.Equal(t, 0, metrics.ResourceMetrics().Len())
+}
+
+func loadConfig(t *testing.T, name string) MetricsSettings {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+	sub, err := cm.Sub(name)
+	require.NoError(t, err)
+	cfg := DefaultMetricsSettings()
+	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
+	return cfg
 }

@@ -3,10 +3,14 @@
 package metadata
 
 import (
+	"path/filepath"
 	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -17,7 +21,13 @@ import (
 func TestDefaultMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	mb := NewMetricsBuilder(DefaultMetricsSettings(), receivertest.NewNopCreateSettings(), WithStartTime(start))
+	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+	settings := receivertest.NewNopCreateSettings()
+	settings.Logger = zap.New(observedZapCore)
+	mb := NewMetricsBuilder(loadConfig(t, "default"), settings, WithStartTime(start))
+
+	assert.Equal(t, 0, observedLogs.Len())
+
 	enabledMetrics := make(map[string]bool)
 
 	enabledMetrics["mysql.buffer_pool.data_pages"] = true
@@ -150,55 +160,10 @@ func TestDefaultMetrics(t *testing.T) {
 func TestAllMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	metricsSettings := MetricsSettings{
-		MysqlBufferPoolDataPages:     MetricSettings{Enabled: true},
-		MysqlBufferPoolLimit:         MetricSettings{Enabled: true},
-		MysqlBufferPoolOperations:    MetricSettings{Enabled: true},
-		MysqlBufferPoolPageFlushes:   MetricSettings{Enabled: true},
-		MysqlBufferPoolPages:         MetricSettings{Enabled: true},
-		MysqlBufferPoolUsage:         MetricSettings{Enabled: true},
-		MysqlClientNetworkIo:         MetricSettings{Enabled: true},
-		MysqlCommands:                MetricSettings{Enabled: true},
-		MysqlConnectionCount:         MetricSettings{Enabled: true},
-		MysqlConnectionErrors:        MetricSettings{Enabled: true},
-		MysqlDoubleWrites:            MetricSettings{Enabled: true},
-		MysqlHandlers:                MetricSettings{Enabled: true},
-		MysqlIndexIoWaitCount:        MetricSettings{Enabled: true},
-		MysqlIndexIoWaitTime:         MetricSettings{Enabled: true},
-		MysqlJoins:                   MetricSettings{Enabled: true},
-		MysqlLockedConnects:          MetricSettings{Enabled: true},
-		MysqlLocks:                   MetricSettings{Enabled: true},
-		MysqlLogOperations:           MetricSettings{Enabled: true},
-		MysqlMysqlxConnections:       MetricSettings{Enabled: true},
-		MysqlMysqlxWorkerThreads:     MetricSettings{Enabled: true},
-		MysqlOpenedResources:         MetricSettings{Enabled: true},
-		MysqlOperations:              MetricSettings{Enabled: true},
-		MysqlPageOperations:          MetricSettings{Enabled: true},
-		MysqlPreparedStatements:      MetricSettings{Enabled: true},
-		MysqlQueryClientCount:        MetricSettings{Enabled: true},
-		MysqlQueryCount:              MetricSettings{Enabled: true},
-		MysqlQuerySlowCount:          MetricSettings{Enabled: true},
-		MysqlReplicaSQLDelay:         MetricSettings{Enabled: true},
-		MysqlReplicaTimeBehindSource: MetricSettings{Enabled: true},
-		MysqlRowLocks:                MetricSettings{Enabled: true},
-		MysqlRowOperations:           MetricSettings{Enabled: true},
-		MysqlSorts:                   MetricSettings{Enabled: true},
-		MysqlStatementEventCount:     MetricSettings{Enabled: true},
-		MysqlStatementEventWaitTime:  MetricSettings{Enabled: true},
-		MysqlTableIoWaitCount:        MetricSettings{Enabled: true},
-		MysqlTableIoWaitTime:         MetricSettings{Enabled: true},
-		MysqlTableLockWaitReadCount:  MetricSettings{Enabled: true},
-		MysqlTableLockWaitReadTime:   MetricSettings{Enabled: true},
-		MysqlTableLockWaitWriteCount: MetricSettings{Enabled: true},
-		MysqlTableLockWaitWriteTime:  MetricSettings{Enabled: true},
-		MysqlTableOpenCache:          MetricSettings{Enabled: true},
-		MysqlThreads:                 MetricSettings{Enabled: true},
-		MysqlTmpResources:            MetricSettings{Enabled: true},
-	}
 	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 	settings := receivertest.NewNopCreateSettings()
 	settings.Logger = zap.New(observedZapCore)
-	mb := NewMetricsBuilder(metricsSettings, settings, WithStartTime(start))
+	mb := NewMetricsBuilder(loadConfig(t, "all_metrics"), settings, WithStartTime(start))
 
 	assert.Equal(t, 0, observedLogs.Len())
 
@@ -1002,57 +967,13 @@ func TestAllMetrics(t *testing.T) {
 func TestNoMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	metricsSettings := MetricsSettings{
-		MysqlBufferPoolDataPages:     MetricSettings{Enabled: false},
-		MysqlBufferPoolLimit:         MetricSettings{Enabled: false},
-		MysqlBufferPoolOperations:    MetricSettings{Enabled: false},
-		MysqlBufferPoolPageFlushes:   MetricSettings{Enabled: false},
-		MysqlBufferPoolPages:         MetricSettings{Enabled: false},
-		MysqlBufferPoolUsage:         MetricSettings{Enabled: false},
-		MysqlClientNetworkIo:         MetricSettings{Enabled: false},
-		MysqlCommands:                MetricSettings{Enabled: false},
-		MysqlConnectionCount:         MetricSettings{Enabled: false},
-		MysqlConnectionErrors:        MetricSettings{Enabled: false},
-		MysqlDoubleWrites:            MetricSettings{Enabled: false},
-		MysqlHandlers:                MetricSettings{Enabled: false},
-		MysqlIndexIoWaitCount:        MetricSettings{Enabled: false},
-		MysqlIndexIoWaitTime:         MetricSettings{Enabled: false},
-		MysqlJoins:                   MetricSettings{Enabled: false},
-		MysqlLockedConnects:          MetricSettings{Enabled: false},
-		MysqlLocks:                   MetricSettings{Enabled: false},
-		MysqlLogOperations:           MetricSettings{Enabled: false},
-		MysqlMysqlxConnections:       MetricSettings{Enabled: false},
-		MysqlMysqlxWorkerThreads:     MetricSettings{Enabled: false},
-		MysqlOpenedResources:         MetricSettings{Enabled: false},
-		MysqlOperations:              MetricSettings{Enabled: false},
-		MysqlPageOperations:          MetricSettings{Enabled: false},
-		MysqlPreparedStatements:      MetricSettings{Enabled: false},
-		MysqlQueryClientCount:        MetricSettings{Enabled: false},
-		MysqlQueryCount:              MetricSettings{Enabled: false},
-		MysqlQuerySlowCount:          MetricSettings{Enabled: false},
-		MysqlReplicaSQLDelay:         MetricSettings{Enabled: false},
-		MysqlReplicaTimeBehindSource: MetricSettings{Enabled: false},
-		MysqlRowLocks:                MetricSettings{Enabled: false},
-		MysqlRowOperations:           MetricSettings{Enabled: false},
-		MysqlSorts:                   MetricSettings{Enabled: false},
-		MysqlStatementEventCount:     MetricSettings{Enabled: false},
-		MysqlStatementEventWaitTime:  MetricSettings{Enabled: false},
-		MysqlTableIoWaitCount:        MetricSettings{Enabled: false},
-		MysqlTableIoWaitTime:         MetricSettings{Enabled: false},
-		MysqlTableLockWaitReadCount:  MetricSettings{Enabled: false},
-		MysqlTableLockWaitReadTime:   MetricSettings{Enabled: false},
-		MysqlTableLockWaitWriteCount: MetricSettings{Enabled: false},
-		MysqlTableLockWaitWriteTime:  MetricSettings{Enabled: false},
-		MysqlTableOpenCache:          MetricSettings{Enabled: false},
-		MysqlThreads:                 MetricSettings{Enabled: false},
-		MysqlTmpResources:            MetricSettings{Enabled: false},
-	}
 	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 	settings := receivertest.NewNopCreateSettings()
 	settings.Logger = zap.New(observedZapCore)
-	mb := NewMetricsBuilder(metricsSettings, settings, WithStartTime(start))
+	mb := NewMetricsBuilder(loadConfig(t, "no_metrics"), settings, WithStartTime(start))
 
 	assert.Equal(t, 0, observedLogs.Len())
+
 	mb.RecordMysqlBufferPoolDataPagesDataPoint(ts, 1, AttributeBufferPoolData(1))
 	mb.RecordMysqlBufferPoolLimitDataPoint(ts, "1")
 	mb.RecordMysqlBufferPoolOperationsDataPoint(ts, "1", AttributeBufferPoolOperations(1))
@@ -1100,4 +1021,14 @@ func TestNoMetrics(t *testing.T) {
 	metrics := mb.Emit()
 
 	assert.Equal(t, 0, metrics.ResourceMetrics().Len())
+}
+
+func loadConfig(t *testing.T, name string) MetricsSettings {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+	sub, err := cm.Sub(name)
+	require.NoError(t, err)
+	cfg := DefaultMetricsSettings()
+	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
+	return cfg
 }

@@ -3,10 +3,14 @@
 package metadata
 
 import (
+	"path/filepath"
 	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -17,7 +21,13 @@ import (
 func TestDefaultMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	mb := NewMetricsBuilder(DefaultMetricsSettings(), receivertest.NewNopCreateSettings(), WithStartTime(start))
+	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+	settings := receivertest.NewNopCreateSettings()
+	settings.Logger = zap.New(observedZapCore)
+	mb := NewMetricsBuilder(loadConfig(t, "default"), settings, WithStartTime(start))
+
+	assert.Equal(t, 0, observedLogs.Len())
+
 	enabledMetrics := make(map[string]bool)
 
 	enabledMetrics["container.cpu.time"] = true
@@ -164,54 +174,10 @@ func TestDefaultMetrics(t *testing.T) {
 func TestAllMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	metricsSettings := MetricsSettings{
-		ContainerCPUTime:               MetricSettings{Enabled: true},
-		ContainerCPUUtilization:        MetricSettings{Enabled: true},
-		ContainerFilesystemAvailable:   MetricSettings{Enabled: true},
-		ContainerFilesystemCapacity:    MetricSettings{Enabled: true},
-		ContainerFilesystemUsage:       MetricSettings{Enabled: true},
-		ContainerMemoryAvailable:       MetricSettings{Enabled: true},
-		ContainerMemoryMajorPageFaults: MetricSettings{Enabled: true},
-		ContainerMemoryPageFaults:      MetricSettings{Enabled: true},
-		ContainerMemoryRss:             MetricSettings{Enabled: true},
-		ContainerMemoryUsage:           MetricSettings{Enabled: true},
-		ContainerMemoryWorkingSet:      MetricSettings{Enabled: true},
-		K8sNodeCPUTime:                 MetricSettings{Enabled: true},
-		K8sNodeCPUUtilization:          MetricSettings{Enabled: true},
-		K8sNodeFilesystemAvailable:     MetricSettings{Enabled: true},
-		K8sNodeFilesystemCapacity:      MetricSettings{Enabled: true},
-		K8sNodeFilesystemUsage:         MetricSettings{Enabled: true},
-		K8sNodeMemoryAvailable:         MetricSettings{Enabled: true},
-		K8sNodeMemoryMajorPageFaults:   MetricSettings{Enabled: true},
-		K8sNodeMemoryPageFaults:        MetricSettings{Enabled: true},
-		K8sNodeMemoryRss:               MetricSettings{Enabled: true},
-		K8sNodeMemoryUsage:             MetricSettings{Enabled: true},
-		K8sNodeMemoryWorkingSet:        MetricSettings{Enabled: true},
-		K8sNodeNetworkErrors:           MetricSettings{Enabled: true},
-		K8sNodeNetworkIo:               MetricSettings{Enabled: true},
-		K8sPodCPUTime:                  MetricSettings{Enabled: true},
-		K8sPodCPUUtilization:           MetricSettings{Enabled: true},
-		K8sPodFilesystemAvailable:      MetricSettings{Enabled: true},
-		K8sPodFilesystemCapacity:       MetricSettings{Enabled: true},
-		K8sPodFilesystemUsage:          MetricSettings{Enabled: true},
-		K8sPodMemoryAvailable:          MetricSettings{Enabled: true},
-		K8sPodMemoryMajorPageFaults:    MetricSettings{Enabled: true},
-		K8sPodMemoryPageFaults:         MetricSettings{Enabled: true},
-		K8sPodMemoryRss:                MetricSettings{Enabled: true},
-		K8sPodMemoryUsage:              MetricSettings{Enabled: true},
-		K8sPodMemoryWorkingSet:         MetricSettings{Enabled: true},
-		K8sPodNetworkErrors:            MetricSettings{Enabled: true},
-		K8sPodNetworkIo:                MetricSettings{Enabled: true},
-		K8sVolumeAvailable:             MetricSettings{Enabled: true},
-		K8sVolumeCapacity:              MetricSettings{Enabled: true},
-		K8sVolumeInodes:                MetricSettings{Enabled: true},
-		K8sVolumeInodesFree:            MetricSettings{Enabled: true},
-		K8sVolumeInodesUsed:            MetricSettings{Enabled: true},
-	}
 	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 	settings := receivertest.NewNopCreateSettings()
 	settings.Logger = zap.New(observedZapCore)
-	mb := NewMetricsBuilder(metricsSettings, settings, WithStartTime(start))
+	mb := NewMetricsBuilder(loadConfig(t, "all_metrics"), settings, WithStartTime(start))
 
 	assert.Equal(t, 0, observedLogs.Len())
 
@@ -840,56 +806,13 @@ func TestAllMetrics(t *testing.T) {
 func TestNoMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	metricsSettings := MetricsSettings{
-		ContainerCPUTime:               MetricSettings{Enabled: false},
-		ContainerCPUUtilization:        MetricSettings{Enabled: false},
-		ContainerFilesystemAvailable:   MetricSettings{Enabled: false},
-		ContainerFilesystemCapacity:    MetricSettings{Enabled: false},
-		ContainerFilesystemUsage:       MetricSettings{Enabled: false},
-		ContainerMemoryAvailable:       MetricSettings{Enabled: false},
-		ContainerMemoryMajorPageFaults: MetricSettings{Enabled: false},
-		ContainerMemoryPageFaults:      MetricSettings{Enabled: false},
-		ContainerMemoryRss:             MetricSettings{Enabled: false},
-		ContainerMemoryUsage:           MetricSettings{Enabled: false},
-		ContainerMemoryWorkingSet:      MetricSettings{Enabled: false},
-		K8sNodeCPUTime:                 MetricSettings{Enabled: false},
-		K8sNodeCPUUtilization:          MetricSettings{Enabled: false},
-		K8sNodeFilesystemAvailable:     MetricSettings{Enabled: false},
-		K8sNodeFilesystemCapacity:      MetricSettings{Enabled: false},
-		K8sNodeFilesystemUsage:         MetricSettings{Enabled: false},
-		K8sNodeMemoryAvailable:         MetricSettings{Enabled: false},
-		K8sNodeMemoryMajorPageFaults:   MetricSettings{Enabled: false},
-		K8sNodeMemoryPageFaults:        MetricSettings{Enabled: false},
-		K8sNodeMemoryRss:               MetricSettings{Enabled: false},
-		K8sNodeMemoryUsage:             MetricSettings{Enabled: false},
-		K8sNodeMemoryWorkingSet:        MetricSettings{Enabled: false},
-		K8sNodeNetworkErrors:           MetricSettings{Enabled: false},
-		K8sNodeNetworkIo:               MetricSettings{Enabled: false},
-		K8sPodCPUTime:                  MetricSettings{Enabled: false},
-		K8sPodCPUUtilization:           MetricSettings{Enabled: false},
-		K8sPodFilesystemAvailable:      MetricSettings{Enabled: false},
-		K8sPodFilesystemCapacity:       MetricSettings{Enabled: false},
-		K8sPodFilesystemUsage:          MetricSettings{Enabled: false},
-		K8sPodMemoryAvailable:          MetricSettings{Enabled: false},
-		K8sPodMemoryMajorPageFaults:    MetricSettings{Enabled: false},
-		K8sPodMemoryPageFaults:         MetricSettings{Enabled: false},
-		K8sPodMemoryRss:                MetricSettings{Enabled: false},
-		K8sPodMemoryUsage:              MetricSettings{Enabled: false},
-		K8sPodMemoryWorkingSet:         MetricSettings{Enabled: false},
-		K8sPodNetworkErrors:            MetricSettings{Enabled: false},
-		K8sPodNetworkIo:                MetricSettings{Enabled: false},
-		K8sVolumeAvailable:             MetricSettings{Enabled: false},
-		K8sVolumeCapacity:              MetricSettings{Enabled: false},
-		K8sVolumeInodes:                MetricSettings{Enabled: false},
-		K8sVolumeInodesFree:            MetricSettings{Enabled: false},
-		K8sVolumeInodesUsed:            MetricSettings{Enabled: false},
-	}
 	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 	settings := receivertest.NewNopCreateSettings()
 	settings.Logger = zap.New(observedZapCore)
-	mb := NewMetricsBuilder(metricsSettings, settings, WithStartTime(start))
+	mb := NewMetricsBuilder(loadConfig(t, "no_metrics"), settings, WithStartTime(start))
 
 	assert.Equal(t, 0, observedLogs.Len())
+
 	mb.RecordContainerCPUTimeDataPoint(ts, 1)
 	mb.RecordContainerCPUUtilizationDataPoint(ts, 1)
 	mb.RecordContainerFilesystemAvailableDataPoint(ts, 1)
@@ -936,4 +859,14 @@ func TestNoMetrics(t *testing.T) {
 	metrics := mb.Emit()
 
 	assert.Equal(t, 0, metrics.ResourceMetrics().Len())
+}
+
+func loadConfig(t *testing.T, name string) MetricsSettings {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+	sub, err := cm.Sub(name)
+	require.NoError(t, err)
+	cfg := DefaultMetricsSettings()
+	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
+	return cfg
 }
