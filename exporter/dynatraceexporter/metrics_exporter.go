@@ -28,6 +28,7 @@ import (
 	"github.com/dynatrace-oss/dynatrace-metric-utils-go/metric/dimensions"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	exp "go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
@@ -42,7 +43,7 @@ const (
 )
 
 // NewExporter exports to a Dynatrace Metrics v2 API
-func newMetricsExporter(params component.ExporterCreateSettings, cfg *config.Config) *exporter {
+func newMetricsExporter(params exp.CreateSettings, cfg *config.Config) *exporter {
 	var confDefaultDims []dimensions.Dimension
 	for key, value := range cfg.DefaultDimensions {
 		confDefaultDims = append(confDefaultDims, dimensions.NewDimension(key, value))

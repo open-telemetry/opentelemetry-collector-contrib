@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
@@ -50,7 +51,7 @@ type baseLogsExporter struct {
 }
 
 type signalfMetadataExporter struct {
-	component.MetricsExporter
+	exporter.Metrics
 	pushMetadata func(metadata []*metadata.MetadataUpdate) error
 }
 

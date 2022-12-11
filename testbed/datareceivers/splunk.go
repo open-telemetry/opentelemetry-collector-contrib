@@ -18,10 +18,11 @@ import (
 	"context"
 	"fmt"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
@@ -30,7 +31,7 @@ import (
 // SplunkHECDataReceiver implements Splunk HEC format receiver.
 type SplunkHECDataReceiver struct {
 	testbed.DataReceiverBase
-	receiver component.LogsReceiver
+	receiver receiver.Logs
 }
 
 // Ensure SplunkHECDataReceiver implements LogDataSender.
@@ -51,7 +52,7 @@ func (sr *SplunkHECDataReceiver) Start(_ consumer.Traces, _ consumer.Metrics, lc
 	}
 	var err error
 	f := splunkhecreceiver.NewFactory()
-	sr.receiver, err = f.CreateLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), &config, lc)
+	sr.receiver, err = f.CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), &config, lc)
 	if err != nil {
 		return err
 	}

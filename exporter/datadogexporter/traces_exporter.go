@@ -25,8 +25,8 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/trace/agent"
 	traceconfig "github.com/DataDog/datadog-agent/pkg/trace/config"
 	tracelog "github.com/DataDog/datadog-agent/pkg/trace/log"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -40,7 +40,7 @@ import (
 )
 
 type traceExporter struct {
-	params         component.ExporterCreateSettings
+	params         exporter.CreateSettings
 	cfg            *Config
 	ctx            context.Context // ctx triggers shutdown upon cancellation
 	client         *zorkian.Client // client sends runnimg metrics to backend & performs API validation
@@ -51,7 +51,7 @@ type traceExporter struct {
 	sourceProvider source.Provider // is able to source the origin of a trace (hostname, container, etc)
 }
 
-func newTracesExporter(ctx context.Context, params component.ExporterCreateSettings, cfg *Config, onceMetadata *sync.Once, sourceProvider source.Provider) (*traceExporter, error) {
+func newTracesExporter(ctx context.Context, params exporter.CreateSettings, cfg *Config, onceMetadata *sync.Once, sourceProvider source.Provider) (*traceExporter, error) {
 	// client to send running metric to the backend & perform API key validation
 	client := clientutil.CreateZorkianClient(cfg.API.Key, cfg.Metrics.TCPAddr.Endpoint)
 	if err := clientutil.ValidateAPIKeyZorkian(params.Logger, client); err != nil && cfg.API.FailOnInvalidKey {

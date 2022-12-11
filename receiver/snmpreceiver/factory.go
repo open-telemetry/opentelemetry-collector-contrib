@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
@@ -35,11 +36,11 @@ const (
 var errConfigNotSNMP = errors.New("config was not a SNMP receiver config")
 
 // NewFactory creates a new receiver factory for SNMP
-func NewFactory() component.ReceiverFactory {
-	return component.NewReceiverFactory(
+func NewFactory() receiver.Factory {
+	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver, stability))
+		receiver.WithMetrics(createMetricsReceiver, stability))
 }
 
 // createDefaultConfig creates a config for SNMP with as many default values as possible
@@ -61,10 +62,10 @@ func createDefaultConfig() component.Config {
 // createMetricsReceiver creates the metric receiver for SNMP
 func createMetricsReceiver(
 	_ context.Context,
-	params component.ReceiverCreateSettings,
+	params receiver.CreateSettings,
 	config component.Config,
 	consumer consumer.Metrics,
-) (component.MetricsReceiver, error) {
+) (receiver.Metrics, error) {
 	snmpConfig, ok := config.(*Config)
 	if !ok {
 		return nil, errConfigNotSNMP

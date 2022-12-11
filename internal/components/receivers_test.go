@@ -24,18 +24,14 @@ import (
 	"path/filepath"
 	"runtime"
 	"testing"
-	"time"
 
-	"github.com/grafana/loki/clients/pkg/promtail/scrapeconfig"
-	"github.com/grafana/loki/clients/pkg/promtail/targets/file"
-	"github.com/prometheus/common/model"
 	promconfig "github.com/prometheus/prometheus/config"
-	"github.com/prometheus/prometheus/discovery"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	tcpop "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/tcp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchreceiver"
@@ -46,7 +42,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otlpjsonfilereceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/promtailreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver"
@@ -284,35 +279,35 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver:     "prometheus_exec",
 			skipLifecyle: true, // Requires running a subproccess that can not be easily set across platforms
 		},
-		{
-			receiver: "promtail",
-			getConfigFn: func() component.Config {
-				cfg := rcvrFactories["promtail"].CreateDefaultConfig().(*promtailreceiver.PromtailConfig)
-				cfg.InputConfig = *promtailreceiver.NewConfigWithID("testconfig")
-				cfg.InputConfig.Input = promtailreceiver.PromtailInputConfig{
-					ScrapeConfig: []scrapeconfig.Config{
-						{
-							JobName:        "test",
-							PipelineStages: []interface{}{},
-							ServiceDiscoveryConfig: scrapeconfig.ServiceDiscoveryConfig{
-								StaticConfigs: discovery.StaticConfig{
-									{
-										Labels: model.LabelSet{
-											"job": "varlogs",
-										},
-										Targets: []model.LabelSet{},
-									},
-								},
-							},
-						},
-					},
-					TargetConfig: file.Config{
-						SyncPeriod: 10 * time.Second,
-					},
-				}
-				return cfg
-			},
-		},
+		// {
+		// 	receiver: "promtail",
+		// 	getConfigFn: func() component.Config {
+		// 		cfg := rcvrFactories["promtail"].CreateDefaultConfig().(*promtailreceiver.PromtailConfig)
+		// 		cfg.InputConfig = *promtailreceiver.NewConfigWithID("testconfig")
+		// 		cfg.InputConfig.Input = promtailreceiver.PromtailInputConfig{
+		// 			ScrapeConfig: []scrapeconfig.Config{
+		// 				{
+		// 					JobName:        "test",
+		// 					PipelineStages: []interface{}{},
+		// 					ServiceDiscoveryConfig: scrapeconfig.ServiceDiscoveryConfig{
+		// 						StaticConfigs: discovery.StaticConfig{
+		// 							{
+		// 								Labels: model.LabelSet{
+		// 									"job": "varlogs",
+		// 								},
+		// 								Targets: []model.LabelSet{},
+		// 							},
+		// 						},
+		// 					},
+		// 				},
+		// 			},
+		// 			TargetConfig: file.Config{
+		// 				SyncPeriod: 10 * time.Second,
+		// 			},
+		// 		}
+		// 		return cfg
+		// 	},
+		// },
 		{
 			receiver:     "pulsar",
 			skipLifecyle: true, // TODO It requires a running pulsar instance to start successfully.
@@ -454,10 +449,10 @@ type getReceiverConfigFn func() component.Config
 // verifyReceiverLifecycle is used to test if a receiver type can handle the typical
 // lifecycle of a component. The getConfigFn parameter only need to be specified if
 // the test can't be done with the default configuration for the component.
-func verifyReceiverLifecycle(t *testing.T, factory component.ReceiverFactory, getConfigFn getReceiverConfigFn) {
+func verifyReceiverLifecycle(t *testing.T, factory receiver.Factory, getConfigFn getReceiverConfigFn) {
 	ctx := context.Background()
 	host := newAssertNoErrorHost(t)
-	receiverCreateSet := componenttest.NewNopReceiverCreateSettings()
+	receiverCreateSet := receivertest.NewNopCreateSettings()
 
 	if getConfigFn == nil {
 		getConfigFn = factory.CreateDefaultConfig
@@ -488,24 +483,24 @@ func verifyReceiverLifecycle(t *testing.T, factory component.ReceiverFactory, ge
 // assertNoErrorHost implements a component.Host that asserts that there were no errors.
 type createReceiverFn func(
 	ctx context.Context,
-	set component.ReceiverCreateSettings,
+	set receiver.CreateSettings,
 	cfg component.Config,
 ) (component.Component, error)
 
-func wrapCreateLogsRcvr(factory component.ReceiverFactory) createReceiverFn {
-	return func(ctx context.Context, set component.ReceiverCreateSettings, cfg component.Config) (component.Component, error) {
+func wrapCreateLogsRcvr(factory receiver.Factory) createReceiverFn {
+	return func(ctx context.Context, set receiver.CreateSettings, cfg component.Config) (component.Component, error) {
 		return factory.CreateLogsReceiver(ctx, set, cfg, consumertest.NewNop())
 	}
 }
 
-func wrapCreateMetricsRcvr(factory component.ReceiverFactory) createReceiverFn {
-	return func(ctx context.Context, set component.ReceiverCreateSettings, cfg component.Config) (component.Component, error) {
+func wrapCreateMetricsRcvr(factory receiver.Factory) createReceiverFn {
+	return func(ctx context.Context, set receiver.CreateSettings, cfg component.Config) (component.Component, error) {
 		return factory.CreateMetricsReceiver(ctx, set, cfg, consumertest.NewNop())
 	}
 }
 
-func wrapCreateTracesRcvr(factory component.ReceiverFactory) createReceiverFn {
-	return func(ctx context.Context, set component.ReceiverCreateSettings, cfg component.Config) (component.Component, error) {
+func wrapCreateTracesRcvr(factory receiver.Factory) createReceiverFn {
+	return func(ctx context.Context, set receiver.CreateSettings, cfg component.Config) (component.Component, error) {
 		return factory.CreateTracesReceiver(ctx, set, cfg, consumertest.NewNop())
 	}
 }

@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
+	"go.opentelemetry.io/collector/otelcol"
 	"go.opentelemetry.io/collector/service"
 )
 
@@ -103,9 +104,9 @@ func (ipp *inProcessCollector) Start(args StartParams) error {
 
 	for {
 		switch state := ipp.svc.GetState(); state {
-		case service.StateStarting:
+		case otelcol.StateStarting:
 			time.Sleep(time.Second)
-		case service.StateRunning:
+		case otelcol.StateRunning:
 			return nil
 		default:
 			return fmt.Errorf("unable to start, otelcol state is %d", state)

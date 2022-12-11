@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
@@ -41,7 +42,7 @@ func TestCreateMetricsExporterError(t *testing.T) {
 	}
 	_, err := createMetricsExporter(
 		context.Background(),
-		componenttest.NewNopExporterCreateSettings(),
+		exportertest.NewNopCreateSettings(),
 		cfg)
 	assert.Error(t, err)
 }
@@ -54,7 +55,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 	}
 	exp, err := createMetricsExporter(
 		context.Background(),
-		componenttest.NewNopExporterCreateSettings(),
+		exportertest.NewNopCreateSettings(),
 		cfg)
 	assert.NoError(t, err)
 	require.NotNil(t, exp)
@@ -68,7 +69,7 @@ func TestCreateTracesExporter(t *testing.T) {
 	}
 	exp, err := createTracesExporter(
 		context.Background(),
-		componenttest.NewNopExporterCreateSettings(),
+		exportertest.NewNopCreateSettings(),
 		cfg)
 	assert.NoError(t, err)
 	require.NotNil(t, exp)
@@ -81,7 +82,7 @@ func TestCreateTracesExporterError(t *testing.T) {
 	}
 	_, err := createTracesExporter(
 		context.Background(),
-		componenttest.NewNopExporterCreateSettings(),
+		exportertest.NewNopCreateSettings(),
 		cfg)
 	assert.Error(t, err)
 }
@@ -94,7 +95,7 @@ func TestCreateLogsExporter(t *testing.T) {
 	}
 	exp, err := createLogsExporter(
 		context.Background(),
-		componenttest.NewNopExporterCreateSettings(),
+		exportertest.NewNopCreateSettings(),
 		cfg)
 	assert.NoError(t, err)
 	require.NotNil(t, exp)
@@ -107,7 +108,7 @@ func TestCreateLogsExporterError(t *testing.T) {
 	}
 	_, err := createLogsExporter(
 		context.Background(),
-		componenttest.NewNopExporterCreateSettings(),
+		exportertest.NewNopCreateSettings(),
 		cfg)
 	assert.Error(t, err)
 }

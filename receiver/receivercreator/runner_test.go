@@ -20,7 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 )
@@ -28,7 +28,7 @@ import (
 func Test_loadAndCreateRuntimeReceiver(t *testing.T) {
 	logCore, logs := observer.New(zap.DebugLevel)
 	logger := zap.New(logCore).With(zap.String("name", "receiver_creator"))
-	rcs := componenttest.NewNopReceiverCreateSettings()
+	rcs := receivertest.NewNopCreateSettings()
 	rcs.Logger = logger
 	run := &receiverRunner{params: rcs, idNamespace: component.NewIDWithName(typeStr, "1")}
 	exampleFactory := &nopWithEndpointFactory{}

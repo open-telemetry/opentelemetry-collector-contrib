@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter"
 )
 
 const (
@@ -27,15 +28,15 @@ const (
 )
 
 // NewFactory creates a factory for the legacy Loki exporter.
-func NewFactory() component.ExporterFactory {
-	return component.NewExporterFactory(
+func NewFactory() exporter.Factory {
+	return exporter.NewFactory(
 		typeStr,
 		createDefaultLegacyConfig,
-		component.WithLogsExporter(createLogsExporter, stability),
+		exporter.WithLogs(createLogsExporter, stability),
 	)
 }
 
-func createLogsExporter(ctx context.Context, set component.ExporterCreateSettings, config component.Config) (component.LogsExporter, error) {
+func createLogsExporter(ctx context.Context, set exporter.CreateSettings, config component.Config) (exporter.Logs, error) {
 	expCfg := config.(*Config)
 
 	// this should go away once the legacy code is removed, as the config validation happens during the loading
