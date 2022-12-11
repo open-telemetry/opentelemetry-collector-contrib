@@ -19,6 +19,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"net/url"
 	"sync"
 	"time"
@@ -122,21 +123,7 @@ func (se *signalfxExporter) start(_ context.Context, host component.Host) (err e
 		return err
 	}
 
-	headers := buildHeaders(se.config)
-	se.config.Headers = nil
-	se.config.HTTPClientSettings.TLSSetting = se.config.IngestTLSSettings
-	if se.config.MaxIdleConns == nil {
-		se.config.MaxIdleConns = &se.config.MaxConnections
-	}
-	if se.config.MaxIdleConnsPerHost == nil {
-		se.config.MaxIdleConnsPerHost = &se.config.MaxConnections
-	}
-	if se.config.IdleConnTimeout == nil {
-		defaultIdleConnTimeout := 30 * time.Second
-		se.config.IdleConnTimeout = &defaultIdleConnTimeout
-	}
-
-	client, err := se.config.ToClient(host, se.telemetrySettings)
+	client, err := se.createClient(host)
 	if err != nil {
 		return err
 	}
@@ -144,7 +131,7 @@ func (se *signalfxExporter) start(_ context.Context, host component.Host) (err e
 	dpClient := &sfxDPClient{
 		sfxClientBase: sfxClientBase{
 			ingestURL: options.ingestURL,
-			headers:   headers,
+			headers:   buildHeaders(se.config),
 			client:    client,
 			zippers:   newGzipPool(),
 		},
@@ -217,8 +204,29 @@ func (se *signalfxExporter) startLogs(_ context.Context, host component.Host) er
 		return fmt.Errorf("failed to process config: %w", err)
 	}
 
-	headers := buildHeaders(se.config)
-	se.config.Headers = nil
+	client, err := se.createClient(host)
+	if err != nil {
+		return err
+	}
+
+	eventClient := &sfxEventClient{
+		sfxClientBase: sfxClientBase{
+			ingestURL: options.ingestURL,
+			headers:   buildHeaders(se.config),
+			client:    client,
+			zippers:   newGzipPool(),
+		},
+		logger:                 se.logger,
+		accessTokenPassthrough: se.config.AccessTokenPassthrough,
+	}
+
+	se.pushLogsData = eventClient.pushLogsData
+	return nil
+}
+
+func (se *signalfxExporter) createClient(host component.Host) (*http.Client, error) {
+
+	se.config.HTTPClientSettings.Headers = nil
 	se.config.HTTPClientSettings.TLSSetting = se.config.IngestTLSSettings
 
 	if se.config.MaxIdleConns == nil {
@@ -232,24 +240,7 @@ func (se *signalfxExporter) startLogs(_ context.Context, host component.Host) er
 		se.config.IdleConnTimeout = &defaultIdleConnTimeout
 	}
 
-	client, err := se.config.ToClient(host, se.telemetrySettings)
-	if err != nil {
-		return err
-	}
-
-	eventClient := &sfxEventClient{
-		sfxClientBase: sfxClientBase{
-			ingestURL: options.ingestURL,
-			headers:   headers,
-			client:    client,
-			zippers:   newGzipPool(),
-		},
-		logger:                 se.logger,
-		accessTokenPassthrough: se.config.AccessTokenPassthrough,
-	}
-
-	se.pushLogsData = eventClient.pushLogsData
-	return nil
+	return se.config.ToClient(host, se.telemetrySettings)
 }
 
 func (se *signalfxExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
