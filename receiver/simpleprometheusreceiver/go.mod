@@ -4,8 +4,8 @@ go 1.18
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.67.0
-	github.com/prometheus/common v0.37.0
-	github.com/prometheus/prometheus v0.40.5
+	github.com/prometheus/common v0.37.1
+	github.com/prometheus/prometheus v0.40.6
 	github.com/stretchr/testify v1.8.1
 	go.opentelemetry.io/collector v0.67.0
 	go.opentelemetry.io/collector/component v0.67.0
@@ -137,7 +137,7 @@ require (
 	golang.org/x/crypto v0.1.0 // indirect
 	golang.org/x/exp v0.0.0-20221031165847-c99f073a8326 // indirect
 	golang.org/x/mod v0.7.0 // indirect
-	golang.org/x/net v0.3.0 // indirect
+	golang.org/x/net v0.4.0 // indirect
 	golang.org/x/oauth2 v0.1.0 // indirect
 	golang.org/x/sys v0.3.0 // indirect
 	golang.org/x/term v0.3.0 // indirect
