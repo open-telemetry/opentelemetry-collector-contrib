@@ -94,7 +94,6 @@ func (p *processor) Start(ctx context.Context, host component.Host) error {
 
 // Shutdown implements the component.Component interface.
 func (p *processor) Shutdown(context.Context) error {
-	p.logger.Info("Shutting down datadogprocessor")
 	if !p.started {
 		return nil
 	}

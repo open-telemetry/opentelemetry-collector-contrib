@@ -25,3 +25,8 @@ processors:
 The default value for `metrics_exporter` is `datadog`. Any configured metrics exporter must exist as part of a metrics pipeline.
 
 When using in conjunction with the Datadog Agent's OTLP Ingest, the minimum required Datadog Agent version that supports this processor is 7.42.0.
+
+If not using the Datadog backend, the processor will still create valid RED metrics, but in that situation you may prefer to use the [spanmetricsprocessor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/spanmetricsprocessor) instead.
+
+[development]: https://github.com/open-telemetry/opentelemetry-collector#development
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
