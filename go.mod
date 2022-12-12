@@ -195,11 +195,11 @@ require (
 	github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4 // indirect
 	github.com/99designs/keyring v1.2.1 // indirect
 	github.com/AthenZ/athenz v1.10.39 // indirect
-	github.com/Azure/azure-amqp-common-go/v3 v3.2.3 // indirect
-	github.com/Azure/azure-event-hubs-go/v3 v3.3.20 // indirect
+	github.com/Azure/azure-amqp-common-go/v4 v4.0.0 // indirect
+	github.com/Azure/azure-event-hubs-go/v3 v3.4.0 // indirect
 	github.com/Azure/azure-kusto-go v0.9.2 // indirect
 	github.com/Azure/azure-pipeline-go v0.2.3 // indirect
-	github.com/Azure/azure-sdk-for-go v65.0.0+incompatible // indirect
+	github.com/Azure/azure-sdk-for-go v67.1.0+incompatible // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v0.21.1 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/internal v0.8.3 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v0.3.0 // indirect
@@ -352,7 +352,7 @@ require (
 	github.com/gogo/googleapis v1.4.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
-	github.com/golang-jwt/jwt/v4 v4.4.2 // indirect
+	github.com/golang-jwt/jwt/v4 v4.4.3 // indirect
 	github.com/golang-sql/civil v0.0.0-20190719163853-cb61b32ac6fe // indirect
 	github.com/golang-sql/sqlexp v0.1.0 // indirect
 	github.com/golang/glog v1.0.0 // indirect
@@ -589,10 +589,10 @@ require (
 	go.uber.org/goleak v1.2.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
 	go.uber.org/zap v1.24.0 // indirect
-	golang.org/x/crypto v0.3.0 // indirect
+	golang.org/x/crypto v0.4.0 // indirect
 	golang.org/x/exp v0.0.0-20221205204356-47842c84f3db // indirect
 	golang.org/x/mod v0.7.0 // indirect
-	golang.org/x/net v0.3.0 // indirect
+	golang.org/x/net v0.4.0 // indirect
 	golang.org/x/oauth2 v0.2.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
 	golang.org/x/term v0.3.0 // indirect

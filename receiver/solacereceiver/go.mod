@@ -58,5 +58,3 @@ require (
 )
 
 retract v0.65.0
-
-replace github.com/Azure/go-amqp v0.17.5 => github.com/Azure/go-amqp v0.17.6-0.20221130234719-dd5083052614
