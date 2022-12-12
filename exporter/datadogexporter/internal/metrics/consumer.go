@@ -19,6 +19,7 @@ import (
 
 	"github.com/DataDog/datadog-agent/pkg/otlp/model/translator"
 	"github.com/DataDog/datadog-agent/pkg/quantile"
+	"github.com/DataDog/datadog-agent/pkg/trace/pb"
 	"go.opentelemetry.io/collector/component"
 	zorkian "gopkg.in/zorkian/go-datadog-api.v2"
 
@@ -28,16 +29,19 @@ import (
 var _ translator.Consumer = (*ZorkianConsumer)(nil)
 var _ translator.HostConsumer = (*ZorkianConsumer)(nil)
 var _ translator.TagsConsumer = (*ZorkianConsumer)(nil)
+var _ translator.APMStatsConsumer = (*ZorkianConsumer)(nil)
 
-// ZorkianConsumer is the metrics Consumer using Zorkian APIs.
+// ZorkianConsumer implements translator.Consumer. It records consumed metrics, sketches and
+// APM stats payloads. It provides them to the caller using the All method.
 type ZorkianConsumer struct {
 	ms        []zorkian.Metric
 	sl        sketches.SketchSeriesList
+	as        []pb.ClientStatsPayload
 	seenHosts map[string]struct{}
 	seenTags  map[string]struct{}
 }
 
-// NewZorkianConsumer creates a new Zorkian Datadog consumer.
+// NewZorkianConsumer creates a new ZorkianConsumer. It implements translator.Consumer.
 func NewZorkianConsumer() *ZorkianConsumer {
 	return &ZorkianConsumer{
 		seenHosts: make(map[string]struct{}),
@@ -79,19 +83,27 @@ func (c *ZorkianConsumer) runningMetrics(timestamp uint64, buildInfo component.B
 }
 
 // All gets all metrics (consumed metrics and running metrics).
-func (c *ZorkianConsumer) All(timestamp uint64, buildInfo component.BuildInfo, tags []string) ([]zorkian.Metric, sketches.SketchSeriesList) {
+func (c *ZorkianConsumer) All(timestamp uint64, buildInfo component.BuildInfo, tags []string) ([]zorkian.Metric, sketches.SketchSeriesList, []pb.ClientStatsPayload) {
 	series := c.ms
 	series = append(series, c.runningMetrics(timestamp, buildInfo)...)
 	if len(tags) == 0 {
-		return series, c.sl
+		return series, c.sl, c.as
 	}
-	for i := 0; i < len(series); i++ {
+	for i := range series {
 		series[i].Tags = append(series[i].Tags, tags...)
 	}
-	for i := 0; i < len(c.sl); i++ {
+	for i := range c.sl {
 		c.sl[i].Tags = append(c.sl[i].Tags, tags...)
 	}
-	return series, c.sl
+	for i := range c.as {
+		c.as[i].Tags = append(c.as[i].Tags, tags...)
+	}
+	return series, c.sl, c.as
+}
+
+// ConsumeAPMStats implements translator.APMStatsConsumer.
+func (c *ZorkianConsumer) ConsumeAPMStats(s pb.ClientStatsPayload) {
+	c.as = append(c.as, s)
 }
 
 // ConsumeTimeSeries implements the translator.Consumer interface.
