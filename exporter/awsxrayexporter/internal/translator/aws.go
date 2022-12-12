@@ -221,11 +221,12 @@ func makeAws(attributes map[string]pcommon.Value, resource pcommon.Resource, log
 	// Since we must couple log group ARNs and Log Group Names in the same CWLogs object, we first try to derive the
 	// names from the ARN, then fall back to recording the names, if they do not exist in the resource
 	// then pull from them from config.
-	if logGroupArns != (pcommon.Slice{}) && logGroupArns.Len() > 0 {
+	switch {
+	case logGroupArns != (pcommon.Slice{}) && logGroupArns.Len() > 0:
 		cwl = getLogGroupMetadata(logGroupArns, true)
-	} else if logGroups != (pcommon.Slice{}) && logGroups.Len() > 0 {
+	case logGroups != (pcommon.Slice{}) && logGroups.Len() > 0:
 		cwl = getLogGroupMetadata(logGroups, false)
-	} else if logGroupNames != nil {
+	case logGroupNames != nil:
 		var configSlice = pcommon.NewSlice()
 		configSlice.EnsureCapacity(len(logGroupNames))
 
