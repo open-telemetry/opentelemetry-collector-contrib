@@ -10,7 +10,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.67.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.67.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite v0.67.0
-	github.com/prometheus/prometheus v0.40.5
+	github.com/prometheus/prometheus v0.40.6
 	github.com/stretchr/testify v1.8.1
 	github.com/tidwall/wal v1.1.7
 	go.opentelemetry.io/collector v0.67.0
@@ -39,7 +39,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/prometheus/common v0.37.0 // indirect
+	github.com/prometheus/common v0.37.1 // indirect
 	github.com/rs/cors v1.8.2 // indirect
 	github.com/tidwall/gjson v1.10.2 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
@@ -52,7 +52,7 @@ require (
 	go.opentelemetry.io/otel v1.11.1 // indirect
 	go.opentelemetry.io/otel/metric v0.33.0 // indirect
 	go.opentelemetry.io/otel/trace v1.11.1 // indirect
-	golang.org/x/net v0.3.0 // indirect
+	golang.org/x/net v0.4.0 // indirect
 	golang.org/x/sys v0.3.0 // indirect
 	golang.org/x/text v0.5.0 // indirect
 	google.golang.org/genproto v0.0.0-20221027153422-115e99e71e1c // indirect
