@@ -25,7 +25,6 @@ type NodeStats struct {
 type NodeStatsNodesInfo struct {
 	TimestampMsSinceEpoch int64                          `json:"timestamp"`
 	Name                  string                         `json:"name"`
-	Version               string                         `json:"version"`
 	Indices               NodeStatsNodesInfoIndices      `json:"indices"`
 	ProcessStats          ProcessStats                   `json:"process"`
 	JVMInfo               JVMInfo                        `json:"jvm"`
