@@ -21,6 +21,7 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/otlp/model/attributes"
 	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
 	"github.com/DataDog/datadog-agent/pkg/otlp/model/translator"
+	"github.com/DataDog/datadog-agent/pkg/trace/pb"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -129,4 +130,22 @@ func TestTagsMetrics(t *testing.T) {
 	assert.ElementsMatch(t, runningHostnames, []string{"", "", ""})
 	assert.Len(t, runningMetrics, 3)
 	assert.ElementsMatch(t, runningTags, []string{"task_arn:task-arn-1", "task_arn:task-arn-2", "task_arn:task-arn-3"})
+}
+
+func TestConsumeAPMStats(t *testing.T) {
+	c := NewZorkianConsumer()
+	for _, sp := range testutil.StatsPayloads {
+		c.ConsumeAPMStats(sp)
+	}
+	require.Len(t, c.as, len(testutil.StatsPayloads))
+	require.ElementsMatch(t, c.as, testutil.StatsPayloads)
+	_, _, out := c.All(0, component.BuildInfo{}, []string{})
+	require.ElementsMatch(t, out, testutil.StatsPayloads)
+	_, _, out = c.All(0, component.BuildInfo{}, []string{"extra:key"})
+	var copies []pb.ClientStatsPayload
+	for _, sp := range testutil.StatsPayloads {
+		sp.Tags = append(sp.Tags, "extra:key")
+		copies = append(copies, sp)
+	}
+	require.ElementsMatch(t, out, copies)
 }
