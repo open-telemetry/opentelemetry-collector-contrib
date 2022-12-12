@@ -14,7 +14,7 @@
 
 module-sets:
   contrib-base:
-    version: v0.66.0
+    version: v0.67.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema
@@ -103,7 +103,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders
-      - github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest
+      - github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr
@@ -226,4 +226,6 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/tracegen
 
 excluded-modules:
+  - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/otelcontribcol
+  - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/oteltestbedcol
   - github.com/open-telemetry/opentelemetry-collector-contrib/internal/tools

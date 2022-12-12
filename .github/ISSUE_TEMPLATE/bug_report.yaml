@@ -21,6 +21,7 @@ body:
       - cmd/configschema
       - cmd/mdatagen
       - cmd/otelcontribcol
+      - cmd/oteltestbedcol
       - cmd/telemetrygen
       - cmd/tracegen
       - confmap/provider/s3provider
@@ -88,13 +89,13 @@ body:
       - extension/storage/dbstorage
       - extension/storage/filestorage
       - internal/aws
+      - internal/comparetest
       - internal/core
       - internal/docker
       - internal/filter
       - internal/k8sconfig
       - internal/kubelet
       - internal/metadataproviders
-      - internal/scrapertest
       - internal/sharedcomponent
       - internal/splunk
       - internal/tools

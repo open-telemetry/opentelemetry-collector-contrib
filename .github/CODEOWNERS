@@ -22,7 +22,8 @@
 
 cmd/configschema/                                    @open-telemetry/collector-contrib-approvers @mx-psi @dmitryax @pmcollins
 cmd/mdatagen/                                        @open-telemetry/collector-contrib-approvers @dmitryax
-cmd/otelcontribcol/                                  @open-telemetry/collector-contrib-approvers @codeboten
+cmd/otelcontribcol/                                  @open-telemetry/collector-contrib-approvers
+cmd/oteltestbedcol/                                  @open-telemetry/collector-contrib-approvers
 cmd/telemetrygen/                                    @open-telemetry/collector-contrib-approvers @mx-psi @amenasria @codeboten
 cmd/tracegen/                                        @open-telemetry/collector-contrib-approvers @jpkrohling
 
@@ -100,7 +101,7 @@ internal/docker/                                     @open-telemetry/collector-c
 internal/k8sconfig/                                  @open-telemetry/collector-contrib-approvers @pmcollins @dmitryax
 internal/kubelet/                                    @open-telemetry/collector-contrib-approvers @dmitryax
 internal/metadataproviders/                          @open-telemetry/collector-contrib-approvers @jrcamp @Aneurysm9 @dashpole
-internal/scrapertest/                                @open-telemetry/collector-contrib-approvers @djaglowski
+internal/comparetest/                                @open-telemetry/collector-contrib-approvers @djaglowski
 internal/splunk/                                     @open-telemetry/collector-contrib-approvers @pmcollins @dmitryax
 internal/tools/                                      @open-telemetry/collector-contrib-approvers
 internal/coreinternal/                               @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers

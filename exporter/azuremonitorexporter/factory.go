@@ -22,6 +22,7 @@ import (
 	"github.com/microsoft/ApplicationInsights-Go/appinsights"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/exporter"
 	"go.uber.org/zap"
 )
 
@@ -38,13 +39,13 @@ var (
 )
 
 // NewFactory returns a factory for Azure Monitor exporter.
-func NewFactory() component.ExporterFactory {
+func NewFactory() exporter.Factory {
 	f := &factory{}
-	return component.NewExporterFactory(
+	return exporter.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporter(f.createTracesExporter, stability),
-		component.WithLogsExporter(f.createLogsExporter, stability))
+		exporter.WithTraces(f.createTracesExporter, stability),
+		exporter.WithLogs(f.createLogsExporter, stability))
 }
 
 // Implements the interface from go.opentelemetry.io/collector/exporter/factory.go
@@ -64,9 +65,9 @@ func createDefaultConfig() component.Config {
 
 func (f *factory) createTracesExporter(
 	ctx context.Context,
-	set component.ExporterCreateSettings,
+	set exporter.CreateSettings,
 	cfg component.Config,
-) (component.TracesExporter, error) {
+) (exporter.Traces, error) {
 	exporterConfig, ok := cfg.(*Config)
 
 	if !ok {
@@ -79,9 +80,9 @@ func (f *factory) createTracesExporter(
 
 func (f *factory) createLogsExporter(
 	ctx context.Context,
-	set component.ExporterCreateSettings,
+	set exporter.CreateSettings,
 	cfg component.Config,
-) (component.LogsExporter, error) {
+) (exporter.Logs, error) {
 	exporterConfig, ok := cfg.(*Config)
 
 	if !ok {

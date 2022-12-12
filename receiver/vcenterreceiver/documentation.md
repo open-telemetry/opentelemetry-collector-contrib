@@ -323,7 +323,23 @@ The amount of memory that is ballooned due to virtualization.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | false |
+| MiBy | Sum | Int | Cumulative | false |
+
+### vcenter.vm.memory.swapped
+
+The portion of memory that is granted to this VM from the host's swap space.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| MiBy | Sum | Int | Cumulative | false |
+
+### vcenter.vm.memory.swapped_ssd
+
+The amount of memory swapped to fast disk device such as SSD.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| KiBy | Sum | Int | Cumulative | false |
 
 ### vcenter.vm.memory.usage
 

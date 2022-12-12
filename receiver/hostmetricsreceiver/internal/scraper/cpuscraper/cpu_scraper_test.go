@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
@@ -85,7 +86,7 @@ func TestScrape(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper := newCPUScraper(context.Background(), componenttest.NewNopReceiverCreateSettings(), &Config{Metrics: test.metricsConfig})
+			scraper := newCPUScraper(context.Background(), receivertest.NewNopCreateSettings(), &Config{Metrics: test.metricsConfig})
 			if test.bootTimeFunc != nil {
 				scraper.bootTime = test.bootTimeFunc
 			}
@@ -189,7 +190,7 @@ func TestScrape_CpuUtilization(t *testing.T) {
 				}
 			}
 
-			scraper := newCPUScraper(context.Background(), componenttest.NewNopReceiverCreateSettings(), &Config{Metrics: settings})
+			scraper := newCPUScraper(context.Background(), receivertest.NewNopCreateSettings(), &Config{Metrics: settings})
 			err := scraper.start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, err, "Failed to initialize cpu scraper: %v", err)
 
@@ -226,7 +227,7 @@ func TestScrape_CpuUtilization(t *testing.T) {
 
 // Error in calculation should be returned as PartialScrapeError
 func TestScrape_CpuUtilizationError(t *testing.T) {
-	scraper := newCPUScraper(context.Background(), componenttest.NewNopReceiverCreateSettings(), &Config{Metrics: metadata.DefaultMetricsSettings()})
+	scraper := newCPUScraper(context.Background(), receivertest.NewNopCreateSettings(), &Config{Metrics: metadata.DefaultMetricsSettings()})
 	// mock times function to force an error in next scrape
 	scraper.times = func(bool) ([]cpu.TimesStat, error) {
 		return []cpu.TimesStat{{CPU: "1", System: 1, User: 2}}, nil
@@ -296,7 +297,7 @@ func TestScrape_CpuUtilizationStandard(t *testing.T) {
 		},
 	}
 
-	cpuScraper := newCPUScraper(context.Background(), componenttest.NewNopReceiverCreateSettings(), &Config{Metrics: metricSettings})
+	cpuScraper := newCPUScraper(context.Background(), receivertest.NewNopCreateSettings(), &Config{Metrics: metricSettings})
 	for _, scrapeData := range scrapesData {
 		// mock TimeStats and Now
 		cpuScraper.times = func(_ bool) ([]cpu.TimesStat, error) {

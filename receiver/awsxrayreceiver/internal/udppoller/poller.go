@@ -21,8 +21,8 @@ import (
 	"net"
 	"sync"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
@@ -87,7 +87,7 @@ type poller struct {
 }
 
 // New creates a new UDP poller
-func New(cfg *Config, set component.ReceiverCreateSettings) (Poller, error) {
+func New(cfg *Config, set receiver.CreateSettings) (Poller, error) {
 	if cfg.Transport != Transport {
 		return nil, fmt.Errorf(
 			"X-Ray receiver only supports ingesting spans through UDP, provided: %s",

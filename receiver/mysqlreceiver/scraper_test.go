@@ -25,13 +25,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest/golden"
 )
 
 func TestScrape(t *testing.T) {
@@ -64,7 +64,9 @@ func TestScrape(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		scraper := newMySQLScraper(componenttest.NewNopReceiverCreateSettings(), cfg)
+		cfg.Metrics.MysqlConnectionCount.Enabled = true
+
+		scraper := newMySQLScraper(receivertest.NewNopCreateSettings(), cfg)
 		scraper.sqlclient = &mockClient{
 			globalStatsFile:             "global_stats",
 			innodbStatsFile:             "innodb_stats",
@@ -83,7 +85,7 @@ func TestScrape(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		require.NoError(t, scrapertest.CompareMetrics(actualMetrics, expectedMetrics))
+		require.NoError(t, comparetest.CompareMetrics(actualMetrics, expectedMetrics))
 	})
 
 	t.Run("scrape has partial failure", func(t *testing.T) {
@@ -97,7 +99,7 @@ func TestScrape(t *testing.T) {
 		cfg.Metrics.MysqlTableLockWaitWriteCount.Enabled = true
 		cfg.Metrics.MysqlTableLockWaitWriteTime.Enabled = true
 
-		scraper := newMySQLScraper(componenttest.NewNopReceiverCreateSettings(), cfg)
+		scraper := newMySQLScraper(receivertest.NewNopCreateSettings(), cfg)
 		scraper.sqlclient = &mockClient{
 			globalStatsFile:             "global_stats_partial",
 			innodbStatsFile:             "innodb_stats_empty",
@@ -113,7 +115,7 @@ func TestScrape(t *testing.T) {
 		expectedFile := filepath.Join("testdata", "scraper", "expected_partial.json")
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
-		assert.NoError(t, scrapertest.CompareMetrics(actualMetrics, expectedMetrics))
+		assert.NoError(t, comparetest.CompareMetrics(actualMetrics, expectedMetrics))
 
 		var partialError scrapererror.PartialScrapeError
 		require.True(t, errors.As(scrapeErr, &partialError), "returned error was not PartialScrapeError")

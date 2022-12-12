@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 )
 
 // MetricSettings provides common settings for a particular metric.
@@ -240,14 +241,14 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, options ...metricBuilderOption) *MetricsBuilder {
+func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:               pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:           pmetric.NewMetrics(),
-		buildInfo:               buildInfo,
-		metricHttpcheckDuration: newMetricHttpcheckDuration(settings.HttpcheckDuration),
-		metricHttpcheckError:    newMetricHttpcheckError(settings.HttpcheckError),
-		metricHttpcheckStatus:   newMetricHttpcheckStatus(settings.HttpcheckStatus),
+		buildInfo:               settings.BuildInfo,
+		metricHttpcheckDuration: newMetricHttpcheckDuration(ms.HttpcheckDuration),
+		metricHttpcheckError:    newMetricHttpcheckError(ms.HttpcheckError),
+		metricHttpcheckStatus:   newMetricHttpcheckStatus(ms.HttpcheckStatus),
 	}
 	for _, op := range options {
 		op(mb)

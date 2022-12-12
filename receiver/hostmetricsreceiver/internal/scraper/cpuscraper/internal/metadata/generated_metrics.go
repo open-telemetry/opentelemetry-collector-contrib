@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 )
 
@@ -231,13 +232,13 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, options ...metricBuilderOption) *MetricsBuilder {
+func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                  pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:              pmetric.NewMetrics(),
-		buildInfo:                  buildInfo,
-		metricSystemCPUTime:        newMetricSystemCPUTime(settings.SystemCPUTime),
-		metricSystemCPUUtilization: newMetricSystemCPUUtilization(settings.SystemCPUUtilization),
+		buildInfo:                  settings.BuildInfo,
+		metricSystemCPUTime:        newMetricSystemCPUTime(ms.SystemCPUTime),
+		metricSystemCPUUtilization: newMetricSystemCPUUtilization(ms.SystemCPUUtilization),
 	}
 	for _, op := range options {
 		op(mb)

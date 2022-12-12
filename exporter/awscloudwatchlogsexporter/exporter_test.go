@@ -24,7 +24,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 
@@ -234,7 +234,7 @@ func TestConsumeLogs(t *testing.T) {
 	expCfg.LogGroupName = "testGroup"
 	expCfg.LogStreamName = "testStream"
 	expCfg.MaxRetries = 0
-	exp, err := newCwLogsPusher(expCfg, componenttest.NewNopExporterCreateSettings())
+	exp, err := newCwLogsPusher(expCfg, exportertest.NewNopCreateSettings())
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
 	ld := plog.NewLogs()
@@ -257,7 +257,7 @@ func TestNewExporterWithoutRegionErr(t *testing.T) {
 	factory := NewFactory()
 	expCfg := factory.CreateDefaultConfig().(*Config)
 	expCfg.MaxRetries = 0
-	exp, err := newCwLogsExporter(expCfg, componenttest.NewNopExporterCreateSettings())
+	exp, err := newCwLogsExporter(expCfg, exportertest.NewNopCreateSettings())
 	assert.Nil(t, exp)
 	assert.NotNil(t, err)
 }

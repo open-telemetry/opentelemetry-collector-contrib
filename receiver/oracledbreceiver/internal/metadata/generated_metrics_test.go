@@ -7,91 +7,93 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 func TestDefaultMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	mb := NewMetricsBuilder(DefaultMetricsSettings(), component.BuildInfo{}, WithStartTime(start))
+	mb := NewMetricsBuilder(DefaultMetricsSettings(), receivertest.NewNopCreateSettings(), WithStartTime(start))
 	enabledMetrics := make(map[string]bool)
 
 	enabledMetrics["oracledb.cpu_time"] = true
 	mb.RecordOracledbCPUTimeDataPoint(ts, 1)
 
 	enabledMetrics["oracledb.dml_locks.limit"] = true
-	mb.RecordOracledbDmlLocksLimitDataPoint(ts, 1)
+	mb.RecordOracledbDmlLocksLimitDataPoint(ts, "1")
 
 	enabledMetrics["oracledb.dml_locks.usage"] = true
-	mb.RecordOracledbDmlLocksUsageDataPoint(ts, 1)
+	mb.RecordOracledbDmlLocksUsageDataPoint(ts, "1")
 
 	enabledMetrics["oracledb.enqueue_deadlocks"] = true
-	mb.RecordOracledbEnqueueDeadlocksDataPoint(ts, 1)
+	mb.RecordOracledbEnqueueDeadlocksDataPoint(ts, "1")
 
 	enabledMetrics["oracledb.enqueue_locks.limit"] = true
-	mb.RecordOracledbEnqueueLocksLimitDataPoint(ts, 1)
+	mb.RecordOracledbEnqueueLocksLimitDataPoint(ts, "1")
 
 	enabledMetrics["oracledb.enqueue_locks.usage"] = true
-	mb.RecordOracledbEnqueueLocksUsageDataPoint(ts, 1)
+	mb.RecordOracledbEnqueueLocksUsageDataPoint(ts, "1")
 
 	enabledMetrics["oracledb.enqueue_resources.limit"] = true
-	mb.RecordOracledbEnqueueResourcesLimitDataPoint(ts, 1)
+	mb.RecordOracledbEnqueueResourcesLimitDataPoint(ts, "1")
 
 	enabledMetrics["oracledb.enqueue_resources.usage"] = true
-	mb.RecordOracledbEnqueueResourcesUsageDataPoint(ts, 1)
+	mb.RecordOracledbEnqueueResourcesUsageDataPoint(ts, "1")
 
 	enabledMetrics["oracledb.exchange_deadlocks"] = true
-	mb.RecordOracledbExchangeDeadlocksDataPoint(ts, 1)
+	mb.RecordOracledbExchangeDeadlocksDataPoint(ts, "1")
 
 	enabledMetrics["oracledb.executions"] = true
-	mb.RecordOracledbExecutionsDataPoint(ts, 1)
+	mb.RecordOracledbExecutionsDataPoint(ts, "1")
 
 	enabledMetrics["oracledb.hard_parses"] = true
-	mb.RecordOracledbHardParsesDataPoint(ts, 1)
+	mb.RecordOracledbHardParsesDataPoint(ts, "1")
 
 	enabledMetrics["oracledb.logical_reads"] = true
-	mb.RecordOracledbLogicalReadsDataPoint(ts, 1)
+	mb.RecordOracledbLogicalReadsDataPoint(ts, "1")
 
 	enabledMetrics["oracledb.parse_calls"] = true
-	mb.RecordOracledbParseCallsDataPoint(ts, 1)
+	mb.RecordOracledbParseCallsDataPoint(ts, "1")
 
 	enabledMetrics["oracledb.pga_memory"] = true
-	mb.RecordOracledbPgaMemoryDataPoint(ts, 1)
+	mb.RecordOracledbPgaMemoryDataPoint(ts, "1")
 
 	enabledMetrics["oracledb.physical_reads"] = true
-	mb.RecordOracledbPhysicalReadsDataPoint(ts, 1)
+	mb.RecordOracledbPhysicalReadsDataPoint(ts, "1")
 
 	enabledMetrics["oracledb.processes.limit"] = true
-	mb.RecordOracledbProcessesLimitDataPoint(ts, 1)
+	mb.RecordOracledbProcessesLimitDataPoint(ts, "1")
 
 	enabledMetrics["oracledb.processes.usage"] = true
-	mb.RecordOracledbProcessesUsageDataPoint(ts, 1)
+	mb.RecordOracledbProcessesUsageDataPoint(ts, "1")
 
 	enabledMetrics["oracledb.sessions.limit"] = true
-	mb.RecordOracledbSessionsLimitDataPoint(ts, 1)
+	mb.RecordOracledbSessionsLimitDataPoint(ts, "1")
 
 	enabledMetrics["oracledb.sessions.usage"] = true
-	mb.RecordOracledbSessionsUsageDataPoint(ts, 1, "attr-val", "attr-val")
+	mb.RecordOracledbSessionsUsageDataPoint(ts, "1", "attr-val", "attr-val")
 
 	enabledMetrics["oracledb.tablespace_size.limit"] = true
-	mb.RecordOracledbTablespaceSizeLimitDataPoint(ts, 1, "attr-val")
+	mb.RecordOracledbTablespaceSizeLimitDataPoint(ts, "1", "attr-val")
 
 	enabledMetrics["oracledb.tablespace_size.usage"] = true
-	mb.RecordOracledbTablespaceSizeUsageDataPoint(ts, 1, "attr-val")
+	mb.RecordOracledbTablespaceSizeUsageDataPoint(ts, "1", "attr-val")
 
 	enabledMetrics["oracledb.transactions.limit"] = true
-	mb.RecordOracledbTransactionsLimitDataPoint(ts, 1)
+	mb.RecordOracledbTransactionsLimitDataPoint(ts, "1")
 
 	enabledMetrics["oracledb.transactions.usage"] = true
-	mb.RecordOracledbTransactionsUsageDataPoint(ts, 1)
+	mb.RecordOracledbTransactionsUsageDataPoint(ts, "1")
 
 	enabledMetrics["oracledb.user_commits"] = true
-	mb.RecordOracledbUserCommitsDataPoint(ts, 1)
+	mb.RecordOracledbUserCommitsDataPoint(ts, "1")
 
 	enabledMetrics["oracledb.user_rollbacks"] = true
-	mb.RecordOracledbUserRollbacksDataPoint(ts, 1)
+	mb.RecordOracledbUserRollbacksDataPoint(ts, "1")
 
 	metrics := mb.Emit()
 
@@ -111,7 +113,7 @@ func TestDefaultMetrics(t *testing.T) {
 func TestAllMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	settings := MetricsSettings{
+	metricsSettings := MetricsSettings{
 		OracledbCPUTime:               MetricSettings{Enabled: true},
 		OracledbDmlLocksLimit:         MetricSettings{Enabled: true},
 		OracledbDmlLocksUsage:         MetricSettings{Enabled: true},
@@ -138,33 +140,38 @@ func TestAllMetrics(t *testing.T) {
 		OracledbUserCommits:           MetricSettings{Enabled: true},
 		OracledbUserRollbacks:         MetricSettings{Enabled: true},
 	}
-	mb := NewMetricsBuilder(settings, component.BuildInfo{}, WithStartTime(start))
+	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+	settings := receivertest.NewNopCreateSettings()
+	settings.Logger = zap.New(observedZapCore)
+	mb := NewMetricsBuilder(metricsSettings, settings, WithStartTime(start))
+
+	assert.Equal(t, 0, observedLogs.Len())
 
 	mb.RecordOracledbCPUTimeDataPoint(ts, 1)
-	mb.RecordOracledbDmlLocksLimitDataPoint(ts, 1)
-	mb.RecordOracledbDmlLocksUsageDataPoint(ts, 1)
-	mb.RecordOracledbEnqueueDeadlocksDataPoint(ts, 1)
-	mb.RecordOracledbEnqueueLocksLimitDataPoint(ts, 1)
-	mb.RecordOracledbEnqueueLocksUsageDataPoint(ts, 1)
-	mb.RecordOracledbEnqueueResourcesLimitDataPoint(ts, 1)
-	mb.RecordOracledbEnqueueResourcesUsageDataPoint(ts, 1)
-	mb.RecordOracledbExchangeDeadlocksDataPoint(ts, 1)
-	mb.RecordOracledbExecutionsDataPoint(ts, 1)
-	mb.RecordOracledbHardParsesDataPoint(ts, 1)
-	mb.RecordOracledbLogicalReadsDataPoint(ts, 1)
-	mb.RecordOracledbParseCallsDataPoint(ts, 1)
-	mb.RecordOracledbPgaMemoryDataPoint(ts, 1)
-	mb.RecordOracledbPhysicalReadsDataPoint(ts, 1)
-	mb.RecordOracledbProcessesLimitDataPoint(ts, 1)
-	mb.RecordOracledbProcessesUsageDataPoint(ts, 1)
-	mb.RecordOracledbSessionsLimitDataPoint(ts, 1)
-	mb.RecordOracledbSessionsUsageDataPoint(ts, 1, "attr-val", "attr-val")
-	mb.RecordOracledbTablespaceSizeLimitDataPoint(ts, 1, "attr-val")
-	mb.RecordOracledbTablespaceSizeUsageDataPoint(ts, 1, "attr-val")
-	mb.RecordOracledbTransactionsLimitDataPoint(ts, 1)
-	mb.RecordOracledbTransactionsUsageDataPoint(ts, 1)
-	mb.RecordOracledbUserCommitsDataPoint(ts, 1)
-	mb.RecordOracledbUserRollbacksDataPoint(ts, 1)
+	mb.RecordOracledbDmlLocksLimitDataPoint(ts, "1")
+	mb.RecordOracledbDmlLocksUsageDataPoint(ts, "1")
+	mb.RecordOracledbEnqueueDeadlocksDataPoint(ts, "1")
+	mb.RecordOracledbEnqueueLocksLimitDataPoint(ts, "1")
+	mb.RecordOracledbEnqueueLocksUsageDataPoint(ts, "1")
+	mb.RecordOracledbEnqueueResourcesLimitDataPoint(ts, "1")
+	mb.RecordOracledbEnqueueResourcesUsageDataPoint(ts, "1")
+	mb.RecordOracledbExchangeDeadlocksDataPoint(ts, "1")
+	mb.RecordOracledbExecutionsDataPoint(ts, "1")
+	mb.RecordOracledbHardParsesDataPoint(ts, "1")
+	mb.RecordOracledbLogicalReadsDataPoint(ts, "1")
+	mb.RecordOracledbParseCallsDataPoint(ts, "1")
+	mb.RecordOracledbPgaMemoryDataPoint(ts, "1")
+	mb.RecordOracledbPhysicalReadsDataPoint(ts, "1")
+	mb.RecordOracledbProcessesLimitDataPoint(ts, "1")
+	mb.RecordOracledbProcessesUsageDataPoint(ts, "1")
+	mb.RecordOracledbSessionsLimitDataPoint(ts, "1")
+	mb.RecordOracledbSessionsUsageDataPoint(ts, "1", "attr-val", "attr-val")
+	mb.RecordOracledbTablespaceSizeLimitDataPoint(ts, "1", "attr-val")
+	mb.RecordOracledbTablespaceSizeUsageDataPoint(ts, "1", "attr-val")
+	mb.RecordOracledbTransactionsLimitDataPoint(ts, "1")
+	mb.RecordOracledbTransactionsUsageDataPoint(ts, "1")
+	mb.RecordOracledbUserCommitsDataPoint(ts, "1")
+	mb.RecordOracledbUserRollbacksDataPoint(ts, "1")
 
 	metrics := mb.Emit(WithOracledbInstanceName("attr-val"))
 
@@ -501,7 +508,7 @@ func TestAllMetrics(t *testing.T) {
 func TestNoMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	settings := MetricsSettings{
+	metricsSettings := MetricsSettings{
 		OracledbCPUTime:               MetricSettings{Enabled: false},
 		OracledbDmlLocksLimit:         MetricSettings{Enabled: false},
 		OracledbDmlLocksUsage:         MetricSettings{Enabled: false},
@@ -528,32 +535,37 @@ func TestNoMetrics(t *testing.T) {
 		OracledbUserCommits:           MetricSettings{Enabled: false},
 		OracledbUserRollbacks:         MetricSettings{Enabled: false},
 	}
-	mb := NewMetricsBuilder(settings, component.BuildInfo{}, WithStartTime(start))
+	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+	settings := receivertest.NewNopCreateSettings()
+	settings.Logger = zap.New(observedZapCore)
+	mb := NewMetricsBuilder(metricsSettings, settings, WithStartTime(start))
+
+	assert.Equal(t, 0, observedLogs.Len())
 	mb.RecordOracledbCPUTimeDataPoint(ts, 1)
-	mb.RecordOracledbDmlLocksLimitDataPoint(ts, 1)
-	mb.RecordOracledbDmlLocksUsageDataPoint(ts, 1)
-	mb.RecordOracledbEnqueueDeadlocksDataPoint(ts, 1)
-	mb.RecordOracledbEnqueueLocksLimitDataPoint(ts, 1)
-	mb.RecordOracledbEnqueueLocksUsageDataPoint(ts, 1)
-	mb.RecordOracledbEnqueueResourcesLimitDataPoint(ts, 1)
-	mb.RecordOracledbEnqueueResourcesUsageDataPoint(ts, 1)
-	mb.RecordOracledbExchangeDeadlocksDataPoint(ts, 1)
-	mb.RecordOracledbExecutionsDataPoint(ts, 1)
-	mb.RecordOracledbHardParsesDataPoint(ts, 1)
-	mb.RecordOracledbLogicalReadsDataPoint(ts, 1)
-	mb.RecordOracledbParseCallsDataPoint(ts, 1)
-	mb.RecordOracledbPgaMemoryDataPoint(ts, 1)
-	mb.RecordOracledbPhysicalReadsDataPoint(ts, 1)
-	mb.RecordOracledbProcessesLimitDataPoint(ts, 1)
-	mb.RecordOracledbProcessesUsageDataPoint(ts, 1)
-	mb.RecordOracledbSessionsLimitDataPoint(ts, 1)
-	mb.RecordOracledbSessionsUsageDataPoint(ts, 1, "attr-val", "attr-val")
-	mb.RecordOracledbTablespaceSizeLimitDataPoint(ts, 1, "attr-val")
-	mb.RecordOracledbTablespaceSizeUsageDataPoint(ts, 1, "attr-val")
-	mb.RecordOracledbTransactionsLimitDataPoint(ts, 1)
-	mb.RecordOracledbTransactionsUsageDataPoint(ts, 1)
-	mb.RecordOracledbUserCommitsDataPoint(ts, 1)
-	mb.RecordOracledbUserRollbacksDataPoint(ts, 1)
+	mb.RecordOracledbDmlLocksLimitDataPoint(ts, "1")
+	mb.RecordOracledbDmlLocksUsageDataPoint(ts, "1")
+	mb.RecordOracledbEnqueueDeadlocksDataPoint(ts, "1")
+	mb.RecordOracledbEnqueueLocksLimitDataPoint(ts, "1")
+	mb.RecordOracledbEnqueueLocksUsageDataPoint(ts, "1")
+	mb.RecordOracledbEnqueueResourcesLimitDataPoint(ts, "1")
+	mb.RecordOracledbEnqueueResourcesUsageDataPoint(ts, "1")
+	mb.RecordOracledbExchangeDeadlocksDataPoint(ts, "1")
+	mb.RecordOracledbExecutionsDataPoint(ts, "1")
+	mb.RecordOracledbHardParsesDataPoint(ts, "1")
+	mb.RecordOracledbLogicalReadsDataPoint(ts, "1")
+	mb.RecordOracledbParseCallsDataPoint(ts, "1")
+	mb.RecordOracledbPgaMemoryDataPoint(ts, "1")
+	mb.RecordOracledbPhysicalReadsDataPoint(ts, "1")
+	mb.RecordOracledbProcessesLimitDataPoint(ts, "1")
+	mb.RecordOracledbProcessesUsageDataPoint(ts, "1")
+	mb.RecordOracledbSessionsLimitDataPoint(ts, "1")
+	mb.RecordOracledbSessionsUsageDataPoint(ts, "1", "attr-val", "attr-val")
+	mb.RecordOracledbTablespaceSizeLimitDataPoint(ts, "1", "attr-val")
+	mb.RecordOracledbTablespaceSizeUsageDataPoint(ts, "1", "attr-val")
+	mb.RecordOracledbTransactionsLimitDataPoint(ts, "1")
+	mb.RecordOracledbTransactionsUsageDataPoint(ts, "1")
+	mb.RecordOracledbUserCommitsDataPoint(ts, "1")
+	mb.RecordOracledbUserRollbacksDataPoint(ts, "1")
 
 	metrics := mb.Emit()
 

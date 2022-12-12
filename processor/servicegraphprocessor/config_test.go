@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -35,7 +35,7 @@ func TestLoadConfig(t *testing.T) {
 	factories.Processors[typeStr] = NewFactory()
 
 	// Test
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "service-graph-config.yaml"), factories)
+	cfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "service-graph-config.yaml"), factories)
 
 	// Verify
 	require.NoError(t, err)

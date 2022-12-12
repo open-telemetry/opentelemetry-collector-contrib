@@ -26,6 +26,7 @@ import (
 	"go.opencensus.io/stats"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -37,6 +38,8 @@ import (
 
 const (
 	metricKeySeparator = string(byte(0))
+	clientKind         = "client"
+	serverKind         = "server"
 )
 
 var (
@@ -108,7 +111,7 @@ func (p *processor) Start(_ context.Context, host component.Host) error {
 
 	// The available list of exporters come from any configured metrics pipelines' exporters.
 	for k, exp := range exporters[component.DataTypeMetrics] {
-		metricsExp, ok := exp.(component.MetricsExporter)
+		metricsExp, ok := exp.(exporter.Metrics)
 		if k.String() == p.config.MetricsExporter && ok {
 			p.metricsExporter = metricsExp
 			break
@@ -203,7 +206,7 @@ func (p *processor) aggregateMetrics(ctx context.Context, td ptrace.Traces) (err
 						e.ClientService = serviceName
 						e.ClientLatencySec = float64(span.EndTimestamp()-span.StartTimestamp()) / float64(time.Millisecond.Nanoseconds())
 						e.Failed = e.Failed || span.Status().Code() == ptrace.StatusCodeError
-						p.upsertDimensions(e.Dimensions, rAttributes, span.Attributes())
+						p.upsertDimensions(clientKind, e.Dimensions, rAttributes, span.Attributes())
 
 						// A database request will only have one span, we don't wait for the server
 						// span but just copy details from the client span
@@ -226,7 +229,7 @@ func (p *processor) aggregateMetrics(ctx context.Context, td ptrace.Traces) (err
 						e.ServerService = serviceName
 						e.ServerLatencySec = float64(span.EndTimestamp()-span.StartTimestamp()) / float64(time.Millisecond.Nanoseconds())
 						e.Failed = e.Failed || span.Status().Code() == ptrace.StatusCodeError
-						p.upsertDimensions(e.Dimensions, rAttributes, span.Attributes())
+						p.upsertDimensions(serverKind, e.Dimensions, rAttributes, span.Attributes())
 					})
 				default:
 					// this span is not part of an edge
@@ -253,9 +256,12 @@ func (p *processor) aggregateMetrics(ctx context.Context, td ptrace.Traces) (err
 	return nil
 }
 
-func (p *processor) upsertDimensions(m map[string]string, resourceAttr pcommon.Map, spanAttr pcommon.Map) {
+func (p *processor) upsertDimensions(kind string, m map[string]string, resourceAttr pcommon.Map, spanAttr pcommon.Map) {
 	for _, dim := range p.config.Dimensions {
 		if v, ok := findAttributeValue(dim, resourceAttr, spanAttr); ok {
+			m[kind+"_"+dim] = v
+
+			// next release will remove those dimensions
 			m[dim] = v
 		}
 	}

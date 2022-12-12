@@ -20,8 +20,8 @@ import (
 
 	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 
@@ -32,7 +32,7 @@ import (
 )
 
 type logsExporter struct {
-	params         component.ExporterCreateSettings
+	params         exporter.CreateSettings
 	cfg            *Config
 	ctx            context.Context // ctx triggers shutdown upon cancellation
 	scrubber       scrub.Scrubber  // scrubber scrubs sensitive information from error messages
@@ -42,7 +42,7 @@ type logsExporter struct {
 }
 
 // newLogsExporter creates a new instance of logsExporter
-func newLogsExporter(ctx context.Context, params component.ExporterCreateSettings, cfg *Config, onceMetadata *sync.Once, sourceProvider source.Provider) (*logsExporter, error) {
+func newLogsExporter(ctx context.Context, params exporter.CreateSettings, cfg *Config, onceMetadata *sync.Once, sourceProvider source.Provider) (*logsExporter, error) {
 	// create Datadog client
 	// validation endpoint is provided by Metrics
 	client := clientutil.CreateZorkianClient(cfg.API.Key, cfg.Metrics.TCPAddr.Endpoint)

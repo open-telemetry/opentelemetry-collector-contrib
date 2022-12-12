@@ -21,6 +21,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"gopkg.in/natefinch/lumberjack.v2"
 
@@ -45,13 +46,13 @@ const (
 )
 
 // NewFactory creates a factory for OTLP exporter.
-func NewFactory() component.ExporterFactory {
-	return component.NewExporterFactory(
+func NewFactory() exporter.Factory {
+	return exporter.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporter(createTracesExporter, stability),
-		component.WithMetricsExporter(createMetricsExporter, stability),
-		component.WithLogsExporter(createLogsExporter, stability))
+		exporter.WithTraces(createTracesExporter, stability),
+		exporter.WithMetrics(createMetricsExporter, stability),
+		exporter.WithLogs(createLogsExporter, stability))
 }
 
 func createDefaultConfig() component.Config {
@@ -64,24 +65,16 @@ func createDefaultConfig() component.Config {
 
 func createTracesExporter(
 	ctx context.Context,
-	set component.ExporterCreateSettings,
+	set exporter.CreateSettings,
 	cfg component.Config,
-) (component.TracesExporter, error) {
+) (exporter.Traces, error) {
 	conf := cfg.(*Config)
 	writer, err := buildFileWriter(conf)
 	if err != nil {
 		return nil, err
 	}
 	fe := exporters.GetOrAdd(cfg, func() component.Component {
-		return &fileExporter{
-			path:            conf.Path,
-			formatType:      conf.FormatType,
-			file:            writer,
-			tracesMarshaler: tracesMarshalers[conf.FormatType],
-			exporter:        buildExportFunc(conf),
-			compression:     conf.Compression,
-			compressor:      buildCompressor(conf.Compression),
-		}
+		return newFileExporter(conf, writer)
 	})
 	return exporterhelper.NewTracesExporter(
 		ctx,
@@ -95,24 +88,16 @@ func createTracesExporter(
 
 func createMetricsExporter(
 	ctx context.Context,
-	set component.ExporterCreateSettings,
+	set exporter.CreateSettings,
 	cfg component.Config,
-) (component.MetricsExporter, error) {
+) (exporter.Metrics, error) {
 	conf := cfg.(*Config)
 	writer, err := buildFileWriter(conf)
 	if err != nil {
 		return nil, err
 	}
 	fe := exporters.GetOrAdd(cfg, func() component.Component {
-		return &fileExporter{
-			path:             conf.Path,
-			formatType:       conf.FormatType,
-			file:             writer,
-			metricsMarshaler: metricsMarshalers[conf.FormatType],
-			exporter:         buildExportFunc(conf),
-			compression:      conf.Compression,
-			compressor:       buildCompressor(conf.Compression),
-		}
+		return newFileExporter(conf, writer)
 	})
 	return exporterhelper.NewMetricsExporter(
 		ctx,
@@ -126,24 +111,16 @@ func createMetricsExporter(
 
 func createLogsExporter(
 	ctx context.Context,
-	set component.ExporterCreateSettings,
+	set exporter.CreateSettings,
 	cfg component.Config,
-) (component.LogsExporter, error) {
+) (exporter.Logs, error) {
 	conf := cfg.(*Config)
 	writer, err := buildFileWriter(conf)
 	if err != nil {
 		return nil, err
 	}
 	fe := exporters.GetOrAdd(cfg, func() component.Component {
-		return &fileExporter{
-			path:          conf.Path,
-			formatType:    conf.FormatType,
-			file:          writer,
-			logsMarshaler: logsMarshalers[conf.FormatType],
-			exporter:      buildExportFunc(conf),
-			compression:   conf.Compression,
-			compressor:    buildCompressor(conf.Compression),
-		}
+		return newFileExporter(conf, writer)
 	})
 	return exporterhelper.NewLogsExporter(
 		ctx,
@@ -153,6 +130,20 @@ func createLogsExporter(
 		exporterhelper.WithStart(fe.Start),
 		exporterhelper.WithShutdown(fe.Shutdown),
 	)
+}
+
+func newFileExporter(conf *Config, writer io.WriteCloser) *fileExporter {
+	return &fileExporter{
+		path:             conf.Path,
+		formatType:       conf.FormatType,
+		file:             writer,
+		tracesMarshaler:  tracesMarshalers[conf.FormatType],
+		metricsMarshaler: metricsMarshalers[conf.FormatType],
+		logsMarshaler:    logsMarshalers[conf.FormatType],
+		exporter:         buildExportFunc(conf),
+		compression:      conf.Compression,
+		compressor:       buildCompressor(conf.Compression),
+	}
 }
 
 func buildFileWriter(cfg *Config) (io.WriteCloser, error) {
