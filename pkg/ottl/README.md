@@ -95,7 +95,7 @@ Literals are literal interpretations of the Value into a Go value.  Accepted lit
 Example Literals
 - `"a string"`
 - `1`, `-1`
-- `1.5`, `-.5`z
+- `1.5`, `-.5`
 - `true`, `false`
 - `nil`,
 - `0x0001`
