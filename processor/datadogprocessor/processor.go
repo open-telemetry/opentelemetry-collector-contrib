@@ -22,6 +22,7 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/trace/pb"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 )
@@ -34,7 +35,7 @@ type processor struct {
 
 	// metricsExporter specifies the metrics exporter used to exporter APM Stats
 	// as metrics through
-	metricsExporter component.MetricsExporter
+	metricsExporter exporter.Metrics
 
 	// agent specifies the agent used to ingest traces and output APM Stats.
 	// It is implemented by the traceagent structure; replaced in tests.
@@ -73,7 +74,7 @@ func newProcessor(ctx context.Context, logger *zap.Logger, config component.Conf
 // Start implements the component.Component interface.
 func (p *processor) Start(ctx context.Context, host component.Host) error {
 	for k, exp := range host.GetExporters()[component.DataTypeMetrics] {
-		mexp, ok := exp.(component.MetricsExporter)
+		mexp, ok := exp.(exporter.Metrics)
 		if !ok {
 			return fmt.Errorf("the exporter %q isn't a metrics exporter", k.String())
 		}

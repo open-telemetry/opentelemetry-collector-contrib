@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -42,7 +43,7 @@ func TestProcessorStart(t *testing.T) {
 
 	t.Run("fail", func(t *testing.T) {
 		err := p.Start(ctx, &mockHost{
-			Exporters: exporters(map[string]component.MetricsExporter{
+			Exporters: exporters(map[string]exporter.Metrics{
 				"test-exporter": &mockMetricsExporter{},
 			}),
 		})
@@ -51,7 +52,7 @@ func TestProcessorStart(t *testing.T) {
 
 	t.Run("fail/2", func(t *testing.T) {
 		err := p.Start(ctx, &mockHost{
-			Exporters: exporters(map[string]component.MetricsExporter{
+			Exporters: exporters(map[string]exporter.Metrics{
 				"test-exporter": &mockMetricsExporter{},
 				"datadog/2":     &mockMetricsExporter{},
 			}),
@@ -61,7 +62,7 @@ func TestProcessorStart(t *testing.T) {
 
 	t.Run("succeed", func(t *testing.T) {
 		err := p.Start(ctx, &mockHost{
-			Exporters: exporters(map[string]component.MetricsExporter{
+			Exporters: exporters(map[string]exporter.Metrics{
 				"test-exporter": &mockMetricsExporter{},
 				"datadog":       &mockMetricsExporter{},
 			}),
@@ -74,7 +75,7 @@ func TestProcessorStart(t *testing.T) {
 		require.NoError(t, err)
 		defer lp.Shutdown(ctx) //nolint:errcheck
 		err = lp.Start(ctx, &mockHost{
-			Exporters: exporters(map[string]component.MetricsExporter{
+			Exporters: exporters(map[string]exporter.Metrics{
 				"test-exporter": &mockMetricsExporter{},
 				"datadog/2":     &mockMetricsExporter{},
 			}),
@@ -90,7 +91,7 @@ func TestProcessorIngest(t *testing.T) {
 	require.NoError(t, err)
 	mexporter := &mockMetricsExporter{}
 	err = p.Start(ctx, &mockHost{
-		Exporters: exporters(map[string]component.MetricsExporter{
+		Exporters: exporters(map[string]exporter.Metrics{
 			"test-exporter": &mockMetricsExporter{},
 			"datadog":       mexporter,
 		}),
@@ -121,7 +122,7 @@ loop:
 	}
 }
 
-func exporters(names map[string]component.MetricsExporter) map[component.DataType]map[component.ID]component.Component {
+func exporters(names map[string]exporter.Metrics) map[component.DataType]map[component.ID]component.Component {
 	out := map[component.DataType]map[component.ID]component.Component{
 		component.DataTypeTraces: {
 			component.NewID("trace-exporter-a"): &mockTracesExporter{},
@@ -207,17 +208,17 @@ func (m *mockComponent) Shutdown(_ context.Context) error {
 	return nil
 }
 
-var _ component.MetricsExporter = (*mockMetricsExporter)(nil)
+var _ exporter.Metrics = (*mockMetricsExporter)(nil)
 
-// mockMetricsExporter implements component.MetricsExporter.
+// mockMetricsExporter implements exporter.Metrics.
 type mockMetricsExporter struct {
 	mockComponent
 	mockMetricsConsumer
 }
 
-var _ component.TracesExporter = (*mockTracesExporter)(nil)
+var _ exporter.Traces = (*mockTracesExporter)(nil)
 
-// mockTracesExporter implements component.TracesExporter.
+// mockTracesExporter implements exporter.Traces.
 type mockTracesExporter struct {
 	mockComponent
 	mockTracesConsumer
