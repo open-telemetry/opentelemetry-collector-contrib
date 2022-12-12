@@ -13,7 +13,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.11.1
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.24.0
-	golang.org/x/exp v0.0.0-20220722155223-a9213eeb770e
+	golang.org/x/exp v0.0.0-20221205204356-47842c84f3db
 )
 
 require (
