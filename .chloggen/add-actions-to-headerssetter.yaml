@@ -14,4 +14,9 @@ issues: [16581, 7596]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Update the existing headers setter configuration with `action: insert`.
+  Update the existing headers setter configuration:
+        - `insert`: Inserts the new header if it does not exist.
+        - `update`: Updates the header value if it exists.
+        - `upsert`: Inserts a header if it does not exist and updates the header
+          if it exists.
+        - `delete`: Deletes the header.
