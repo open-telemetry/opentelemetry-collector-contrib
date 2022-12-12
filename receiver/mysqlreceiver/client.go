@@ -16,7 +16,6 @@ package mysqlreceiver // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -342,23 +341,10 @@ func (c *mySQLClient) getTableLockWaitEventStats() ([]tableLockWaitEventStats, e
 
 func (c *mySQLClient) getReplicaStatusStats() ([]ReplicaStatusStats, error) {
 	query := "SHOW REPLICA STATUS"
-	var me *mysql.MySQLError
 	rows, err := c.client.Query(query)
+
 	if err != nil {
-		if !errors.As(err, &me) {
-			return nil, err
-		}
-
-		if me.Number != 1064 {
-			return nil, err
-		}
-
-		// fallback to deprecated command for older versions
-		query = "SHOW SLAVE STATUS"
-		rows, err = c.client.Query(query)
-		if err != nil {
-			return nil, err
-		}
+		return nil, err
 	}
 
 	defer rows.Close()
@@ -374,46 +360,28 @@ func (c *mySQLClient) getReplicaStatusStats() ([]ReplicaStatusStats, error) {
 		for _, col := range cols {
 			switch strings.ToLower(col) {
 			case "replica_io_state":
-				fallthrough
-			case "slave_io_state":
 				dest = append(dest, &s.replicaIOState)
 			case "source_host":
-				fallthrough
-			case "master_host":
 				dest = append(dest, &s.sourceHost)
 			case "source_user":
-				fallthrough
-			case "master_user":
 				dest = append(dest, &s.sourceUser)
 			case "source_port":
-				fallthrough
-			case "master_port":
 				dest = append(dest, &s.sourcePort)
 			case "connect_retry":
 				dest = append(dest, &s.connectRetry)
 			case "source_log_file":
-				fallthrough
-			case "master_log_file":
 				dest = append(dest, &s.sourceLogFile)
 			case "read_source_log_pos":
-				fallthrough
-			case "read_master_log_pos":
 				dest = append(dest, &s.readSourceLogPos)
 			case "relay_log_file":
 				dest = append(dest, &s.relayLogFile)
 			case "relay_log_pos":
 				dest = append(dest, &s.relayLogPos)
 			case "relay_source_log_file":
-				fallthrough
-			case "relay_master_log_file":
 				dest = append(dest, &s.relaySourceLogFile)
 			case "replica_io_running":
-				fallthrough
-			case "slave_io_running":
 				dest = append(dest, &s.replicaIORunning)
 			case "replica_sql_running":
-				fallthrough
-			case "slave_sql_running":
 				dest = append(dest, &s.replicaSQLRunning)
 			case "replicate_do_db":
 				dest = append(dest, &s.replicateDoDB)
@@ -434,8 +402,6 @@ func (c *mySQLClient) getReplicaStatusStats() ([]ReplicaStatusStats, error) {
 			case "skip_counter":
 				dest = append(dest, &s.skipCounter)
 			case "exec_source_log_pos":
-				fallthrough
-			case "exec_master_log_pos":
 				dest = append(dest, &s.execSourceLogPos)
 			case "relay_log_space":
 				dest = append(dest, &s.relayLogSpace)
@@ -446,36 +412,20 @@ func (c *mySQLClient) getReplicaStatusStats() ([]ReplicaStatusStats, error) {
 			case "until_log_pos":
 				dest = append(dest, &s.untilLogPos)
 			case "source_ssl_allowed":
-				fallthrough
-			case "master_ssl_allowed":
 				dest = append(dest, &s.sourceSSLAllowed)
 			case "source_ssl_ca_file":
-				fallthrough
-			case "master_ssl_ca_file":
 				dest = append(dest, &s.sourceSSLCAFile)
 			case "source_ssl_ca_path":
-				fallthrough
-			case "master_ssl_ca_path":
 				dest = append(dest, &s.sourceSSLCAPath)
 			case "source_ssl_cert":
-				fallthrough
-			case "master_ssl_cert":
 				dest = append(dest, &s.sourceSSLCert)
 			case "source_ssl_cipher":
-				fallthrough
-			case "master_ssl_cipher":
 				dest = append(dest, &s.sourceSSLCipher)
 			case "source_ssl_key":
-				fallthrough
-			case "master_ssl_key":
 				dest = append(dest, &s.sourceSSLKey)
 			case "seconds_behind_source":
-				fallthrough
-			case "seconds_behind_master":
 				dest = append(dest, &s.secondsBehindSource)
 			case "source_ssl_verify_server_cert":
-				fallthrough
-			case "master_ssl_verify_server_cert":
 				dest = append(dest, &s.sourceSSLVerifyServerCert)
 			case "last_io_errno":
 				dest = append(dest, &s.lastIOErrno)
@@ -488,44 +438,28 @@ func (c *mySQLClient) getReplicaStatusStats() ([]ReplicaStatusStats, error) {
 			case "replicate_ignore_server_ids":
 				dest = append(dest, &s.replicateIgnoreServerIds)
 			case "source_server_id":
-				fallthrough
-			case "master_server_id":
 				dest = append(dest, &s.sourceServerID)
 			case "source_uuid":
-				fallthrough
-			case "master_uuid":
 				dest = append(dest, &s.sourceUUID)
 			case "source_info_file":
-				fallthrough
-			case "master_info_file":
 				dest = append(dest, &s.sourceInfoFile)
 			case "sql_delay":
 				dest = append(dest, &s.sqlDelay)
 			case "sql_remaining_delay":
 				dest = append(dest, &s.sqlRemainingDelay)
 			case "replica_sql_running_state":
-				fallthrough
-			case "slave_sql_running_state":
 				dest = append(dest, &s.replicaSQLRunningState)
 			case "source_retry_count":
-				fallthrough
-			case "master_retry_count":
 				dest = append(dest, &s.sourceRetryCount)
 			case "source_bind":
-				fallthrough
-			case "master_bind":
 				dest = append(dest, &s.sourceBind)
 			case "last_io_error_timestamp":
 				dest = append(dest, &s.lastIOErrorTimestamp)
 			case "last_sql_error_timestamp":
 				dest = append(dest, &s.lastSQLErrorTimestamp)
 			case "source_ssl_crl":
-				fallthrough
-			case "master_ssl_crl":
 				dest = append(dest, &s.sourceSSLCrl)
 			case "source_ssl_crlpath":
-				fallthrough
-			case "master_ssl_crlpath":
 				dest = append(dest, &s.sourceSSLCrlpath)
 			case "retrieved_gtid_set":
 				dest = append(dest, &s.retrievedGtidSet)
@@ -538,8 +472,6 @@ func (c *mySQLClient) getReplicaStatusStats() ([]ReplicaStatusStats, error) {
 			case "channel_name":
 				dest = append(dest, &s.channelName)
 			case "source_tls_version":
-				fallthrough
-			case "master_tls_version":
 				dest = append(dest, &s.sourceTLSVersion)
 			case "source_public_key_path":
 				dest = append(dest, &s.sourcePublicKeyPath)
