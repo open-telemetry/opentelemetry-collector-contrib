@@ -50,10 +50,10 @@ require (
 	github.com/ClickHouse/clickhouse-go/v2 v2.4.3 // indirect
 	github.com/DataDog/agent-payload/v5 v5.0.43 // indirect
 	github.com/DataDog/datadog-agent/pkg/obfuscate v0.41.0-rc.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/otlp/model v0.41.0-rc.3.0.20221114173638-98b8cd5ae742 // indirect
+	github.com/DataDog/datadog-agent/pkg/otlp/model v0.41.0-rc.3.0.20221207140548-a500ba1a95be // indirect
 	github.com/DataDog/datadog-agent/pkg/quantile v0.41.0-rc.3.0.20221114173638-98b8cd5ae742 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.41.0-rc.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace v0.41.0-rc.3.0.20221114173638-98b8cd5ae742 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.41.0-rc.3.0.20221207140548-a500ba1a95be // indirect
+	github.com/DataDog/datadog-agent/pkg/trace v0.41.0-rc.3.0.20221207140548-a500ba1a95be // indirect
 	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.41.0-rc.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/log v0.41.0-rc.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.41.0-rc.3 // indirect
@@ -187,6 +187,7 @@ require (
 	github.com/golang-sql/sqlexp v0.1.0 // indirect
 	github.com/golang/glog v1.0.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
+	github.com/golang/mock v1.6.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/cadvisor v0.46.0 // indirect
