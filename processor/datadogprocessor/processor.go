@@ -30,6 +30,7 @@ type processor struct {
 	logger       *zap.Logger
 	nextConsumer consumer.Traces
 	cfg          *Config
+	started      bool
 
 	// metricsExporter specifies the metrics exporter used to exporter APM Stats
 	// as metrics through
@@ -84,6 +85,7 @@ func (p *processor) Start(ctx context.Context, host component.Host) error {
 	if p.metricsExporter == nil {
 		return fmt.Errorf("failed to find metrics exporter %q; please specify a valid datadog::metrics_exporter", p.cfg.MetricsExporter)
 	}
+	p.started = true
 	p.agent.Start()
 	go p.run()
 	p.logger.Debug("Started datadogprocessor", zap.String("metrics_exporter", p.cfg.MetricsExporter))
@@ -93,6 +95,9 @@ func (p *processor) Start(ctx context.Context, host component.Host) error {
 // Shutdown implements the component.Component interface.
 func (p *processor) Shutdown(context.Context) error {
 	p.logger.Info("Shutting down datadogprocessor")
+	if !p.started {
+		return nil
+	}
 	p.agent.Stop()
 	p.exit <- struct{}{} // signal exit
 	<-p.exit             // wait for close
