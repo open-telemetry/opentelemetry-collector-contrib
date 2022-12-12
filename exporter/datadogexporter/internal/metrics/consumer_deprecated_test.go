@@ -87,7 +87,7 @@ func TestRunningMetrics(t *testing.T) {
 
 }
 
-func TestTagsMetrics(t *testing.T) {
+func TestZorkianTagsMetrics(t *testing.T) {
 	ms := pmetric.NewMetrics()
 	rms := ms.ResourceMetrics()
 
@@ -132,7 +132,7 @@ func TestTagsMetrics(t *testing.T) {
 	assert.ElementsMatch(t, runningTags, []string{"task_arn:task-arn-1", "task_arn:task-arn-2", "task_arn:task-arn-3"})
 }
 
-func TestConsumeAPMStats(t *testing.T) {
+func TestZorkianConsumeAPMStats(t *testing.T) {
 	c := NewZorkianConsumer()
 	for _, sp := range testutil.StatsPayloads {
 		c.ConsumeAPMStats(sp)
