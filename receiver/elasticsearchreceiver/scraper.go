@@ -47,6 +47,7 @@ const (
 	readmeURL                               = "https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/elasticsearchreceiver/README.md"
 	emitClusterHealthDetailedShardMetricsID = "receiver.elasticsearch.emitClusterHealthDetailedShardMetrics"
 	emitAllIndexOperationMetricsID          = "receiver.elasticsearch.emitAllIndexOperationMetrics"
+	emitNodeVersionResourceAttrID           = "receiver.elasticsearch.emitNodeVersionResourceAttr"
 )
 
 func init() {
@@ -61,6 +62,12 @@ func init() {
 		featuregate.StageBeta,
 		featuregate.WithRegisterDescription("When enabled, the elasticsearch.index.operation.* metrics will be emitted with all possible datapoints."),
 		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/14635"),
+	)
+	featuregate.GetRegistry().MustRegisterID(
+		emitNodeVersionResourceAttrID,
+		featuregate.StageAlpha,
+		featuregate.WithRegisterDescription("When enabled, all node metrics will be enriched with the node version resource attribute."),
+		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16847"),
 	)
 }
 
@@ -77,6 +84,7 @@ type elasticsearchScraper struct {
 	// Feature gates
 	emitClusterHealthDetailedShardMetrics bool
 	emitAllIndexOperationMetrics          bool
+	emitNodeVersionResourceAttr           bool
 }
 
 func newElasticSearchScraper(
@@ -89,6 +97,7 @@ func newElasticSearchScraper(
 		mb:                                    metadata.NewMetricsBuilder(cfg.Metrics, settings),
 		emitClusterHealthDetailedShardMetrics: featuregate.GetRegistry().IsEnabled(emitClusterHealthDetailedShardMetricsID),
 		emitAllIndexOperationMetrics:          featuregate.GetRegistry().IsEnabled(emitAllIndexOperationMetricsID),
+		emitNodeVersionResourceAttr:           featuregate.GetRegistry().IsEnabled(emitNodeVersionResourceAttrID),
 	}
 
 	if !e.emitClusterHealthDetailedShardMetrics {
@@ -100,6 +109,12 @@ func newElasticSearchScraper(
 	if !e.emitAllIndexOperationMetrics {
 		settings.Logger.Warn(
 			fmt.Sprintf("Feature gate %s is not enabled. Please see the README for more information: %s", emitAllIndexOperationMetricsID, readmeURL),
+		)
+	}
+
+	if !e.emitNodeVersionResourceAttr {
+		settings.Logger.Warn(
+			fmt.Sprintf("Feature gate %s is not enabled. Please see the README for more information: %s", emitNodeVersionResourceAttrID, readmeURL),
 		)
 	}
 
@@ -356,8 +371,13 @@ func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pcommo
 			now, info.Indices.SegmentsStats.TermsMemoryInBy, metadata.AttributeSegmentsMemoryObjectTypeTerm,
 		)
 
-		r.mb.EmitForResource(metadata.WithElasticsearchClusterName(nodeStats.ClusterName),
-			metadata.WithElasticsearchNodeName(info.Name), metadata.WithElasticsearchNodeVersion(info.Version))
+		if r.emitNodeVersionResourceAttr {
+			r.mb.EmitForResource(metadata.WithElasticsearchClusterName(nodeStats.ClusterName),
+				metadata.WithElasticsearchNodeName(info.Name), metadata.WithElasticsearchNodeVersion(info.Version))
+		} else {
+			r.mb.EmitForResource(metadata.WithElasticsearchClusterName(nodeStats.ClusterName),
+				metadata.WithElasticsearchNodeName(info.Name))
+		}
 	}
 }
 
