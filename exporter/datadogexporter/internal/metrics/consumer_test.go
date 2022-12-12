@@ -19,6 +19,8 @@ import (
 	"testing"
 
 	"github.com/DataDog/datadog-agent/pkg/otlp/model/attributes"
+	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
+	"github.com/DataDog/datadog-agent/pkg/otlp/model/translator"
 	"github.com/DataDog/datadog-agent/pkg/trace/pb"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -30,7 +32,23 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
 )
 
-func TestZorkianRunningMetrics(t *testing.T) {
+type testProvider string
+
+func (t testProvider) Source(context.Context) (source.Source, error) {
+	return source.Source{Kind: source.HostnameKind, Identifier: string(t)}, nil
+}
+
+func newTranslator(t *testing.T, logger *zap.Logger) *translator.Translator {
+	tr, err := translator.New(logger,
+		translator.WithHistogramMode(translator.HistogramModeDistributions),
+		translator.WithNumberMode(translator.NumberModeCumulativeToDelta),
+		translator.WithFallbackSourceProvider(testProvider("fallbackHostname")),
+	)
+	require.NoError(t, err)
+	return tr
+}
+
+func TestRunningMetrics(t *testing.T) {
 	ms := pmetric.NewMetrics()
 	rms := ms.ResourceMetrics()
 
@@ -52,13 +70,13 @@ func TestZorkianRunningMetrics(t *testing.T) {
 	tr := newTranslator(t, logger)
 
 	ctx := context.Background()
-	consumer := NewZorkianConsumer()
+	consumer := NewConsumer()
 	assert.NoError(t, tr.MapMetrics(ctx, ms, consumer))
 
 	var runningHostnames []string
 	for _, metric := range consumer.runningMetrics(0, component.BuildInfo{}) {
-		if metric.Host != nil {
-			runningHostnames = append(runningHostnames, *metric.Host)
+		for _, res := range metric.Resources {
+			runningHostnames = append(runningHostnames, *res.Name)
 		}
 	}
 
@@ -66,10 +84,9 @@ func TestZorkianRunningMetrics(t *testing.T) {
 		runningHostnames,
 		[]string{"fallbackHostname", "resource-hostname-1", "resource-hostname-2"},
 	)
-
 }
 
-func TestZorkianTagsMetrics(t *testing.T) {
+func TestTagsMetrics(t *testing.T) {
 	ms := pmetric.NewMetrics()
 	rms := ms.ResourceMetrics()
 
@@ -96,7 +113,7 @@ func TestZorkianTagsMetrics(t *testing.T) {
 	tr := newTranslator(t, logger)
 
 	ctx := context.Background()
-	consumer := NewZorkianConsumer()
+	consumer := NewConsumer()
 	assert.NoError(t, tr.MapMetrics(ctx, ms, consumer))
 
 	runningMetrics := consumer.runningMetrics(0, component.BuildInfo{})
@@ -104,8 +121,8 @@ func TestZorkianTagsMetrics(t *testing.T) {
 	var runningHostnames []string
 	for _, metric := range runningMetrics {
 		runningTags = append(runningTags, metric.Tags...)
-		if metric.Host != nil {
-			runningHostnames = append(runningHostnames, *metric.Host)
+		for _, res := range metric.Resources {
+			runningHostnames = append(runningHostnames, *res.Name)
 		}
 	}
 
@@ -114,8 +131,8 @@ func TestZorkianTagsMetrics(t *testing.T) {
 	assert.ElementsMatch(t, runningTags, []string{"task_arn:task-arn-1", "task_arn:task-arn-2", "task_arn:task-arn-3"})
 }
 
-func TestZorkianConsumeAPMStats(t *testing.T) {
-	c := NewZorkianConsumer()
+func TestConsumeAPMStats(t *testing.T) {
+	c := NewConsumer()
 	for _, sp := range testutil.StatsPayloads {
 		c.ConsumeAPMStats(sp)
 	}

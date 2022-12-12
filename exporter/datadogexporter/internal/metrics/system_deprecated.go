@@ -47,13 +47,6 @@ func copyZorkianSystemMetric(src zorkian.Metric, name string, div float64) zorki
 	return cp
 }
 
-const (
-	// divMebibytes specifies the number of bytes in a mebibyte.
-	divMebibytes = 1024 * 1024
-	// divPercentage specifies the division necessary for converting fractions to percentages.
-	divPercentage = 0.01
-)
-
 // extractZorkianSystemMetric takes an OpenTelemetry metric m and extracts Datadog system metrics from it,
 // if m is a valid system metric. The boolean argument reports whether any system metrics were extractd.
 func extractZorkianSystemMetric(m zorkian.Metric) []zorkian.Metric {
@@ -111,9 +104,6 @@ func extractZorkianSystemMetric(m zorkian.Metric) []zorkian.Metric {
 	}
 	return series
 }
-
-// otelNamespacePrefix specifies the namespace used for OpenTelemetry host metrics.
-const otelNamespacePrefix = "otel."
 
 // PrepareZorkianSystemMetrics prepends system hosts metrics with the otel.* prefix to identify
 // them as part of the Datadog OpenTelemetry Integration. It also extracts Datadog compatible
