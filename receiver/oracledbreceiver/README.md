@@ -1,10 +1,10 @@
 # Oracle DB receiver
 
-| Status                   |               |
-| ------------------------ |---------------|
-| Stability                | [development] |
-| Supported pipeline types | metrics       |
-| Distributions            | [contrib]     |
+| Status                   |           |
+| ------------------------ |-----------|
+| Stability                | [alpha]   |
+| Supported pipeline types | metrics   |
+| Distributions            | [contrib] |
 
 This receiver collects metrics from an Oracle Database.
 
@@ -56,5 +56,5 @@ receivers:
         enabled: true
 ```
 
-[development]: https://github.com/open-telemetry/opentelemetry-collector#development
+[alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 
