@@ -38,7 +38,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter v0.67.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter v0.67.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter v0.67.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter v0.67.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/skywalkingexporter v0.67.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter v0.67.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter v0.67.0
@@ -140,7 +139,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/riakreceiver v0.67.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver v0.67.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver v0.67.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver v0.67.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver v0.67.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver v0.67.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver v0.67.0
@@ -528,7 +526,6 @@ require (
 	github.com/signalfx/gohistogram v0.0.0-20160107210732-1ccfd2ff5083 // indirect
 	github.com/signalfx/golib/v3 v3.3.46 // indirect
 	github.com/signalfx/sapm-proto v0.12.0 // indirect
-	github.com/signalfx/signalfx-agent/pkg/apm v0.0.0-20220920175102-539ae8d8ba8e // indirect
 	github.com/sijms/go-ora/v2 v2.5.17 // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
 	github.com/snowflakedb/gosnowflake v1.6.15 // indirect
@@ -590,6 +587,7 @@ require (
 	go.uber.org/zap v1.24.0 // indirect
 	golang.org/x/crypto v0.3.0 // indirect
 	golang.org/x/exp v0.0.0-20221205204356-47842c84f3db // indirect
+	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616 // indirect
 	golang.org/x/mod v0.7.0 // indirect
 	golang.org/x/net v0.3.0 // indirect
 	golang.org/x/oauth2 v0.2.0 // indirect
@@ -597,7 +595,7 @@ require (
 	golang.org/x/term v0.3.0 // indirect
 	golang.org/x/text v0.5.0 // indirect
 	golang.org/x/time v0.1.0 // indirect
-	golang.org/x/tools v0.2.0 // indirect
+	golang.org/x/tools v0.4.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	gonum.org/v1/gonum v0.12.0 // indirect
 	google.golang.org/api v0.104.0 // indirect
