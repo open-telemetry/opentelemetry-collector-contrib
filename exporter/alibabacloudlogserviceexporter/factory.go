@@ -19,6 +19,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/exporter"
 )
 
 const (
@@ -29,13 +30,13 @@ const (
 )
 
 // NewFactory creates a factory for AlibabaCloud LogService exporter.
-func NewFactory() component.ExporterFactory {
-	return component.NewExporterFactory(
+func NewFactory() exporter.Factory {
+	return exporter.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporter(createTracesExporter, stability),
-		component.WithMetricsExporter(createMetricsExporter, stability),
-		component.WithLogsExporter(createLogsExporter, stability))
+		exporter.WithTraces(createTracesExporter, stability),
+		exporter.WithMetrics(createMetricsExporter, stability),
+		exporter.WithLogs(createLogsExporter, stability))
 }
 
 // CreateDefaultConfig creates the default configuration for exporter.
@@ -47,24 +48,24 @@ func createDefaultConfig() component.Config {
 
 func createTracesExporter(
 	_ context.Context,
-	set component.ExporterCreateSettings,
+	set exporter.CreateSettings,
 	cfg component.Config,
-) (component.TracesExporter, error) {
+) (exporter.Traces, error) {
 	return newTracesExporter(set, cfg)
 }
 
 func createMetricsExporter(
 	_ context.Context,
-	set component.ExporterCreateSettings,
+	set exporter.CreateSettings,
 	cfg component.Config,
-) (exp component.MetricsExporter, err error) {
+) (exp exporter.Metrics, err error) {
 	return newMetricsExporter(set, cfg)
 }
 
 func createLogsExporter(
 	_ context.Context,
-	set component.ExporterCreateSettings,
+	set exporter.CreateSettings,
 	cfg component.Config,
-) (exp component.LogsExporter, err error) {
+) (exp exporter.Logs, err error) {
 	return newLogsExporter(set, cfg)
 }

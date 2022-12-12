@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 
@@ -51,7 +52,7 @@ func TestFactory(t *testing.T) {
 	}, rCfg)
 
 	r, err := f.CreateTracesReceiver(
-		context.Background(), componenttest.NewNopReceiverCreateSettings(),
+		context.Background(), receivertest.NewNopCreateSettings(),
 		&config.ReceiverSettings{}, consumertest.NewNop(),
 	)
 	require.Error(t, err)
@@ -92,7 +93,7 @@ func TestFactoryDistributions(t *testing.T) {
 }
 
 func newTestReceiver(t *testing.T, cfg *Config) *kubernetesReceiver {
-	r, err := newReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, consumertest.NewNop())
+	r, err := newReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, r)
 	rcvr, ok := r.(*kubernetesReceiver)

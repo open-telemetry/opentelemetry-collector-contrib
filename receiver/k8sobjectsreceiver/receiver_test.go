@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
 func TestNewReceiver(t *testing.T) {
@@ -31,7 +32,7 @@ func TestNewReceiver(t *testing.T) {
 	rCfg := createDefaultConfig().(*Config)
 	rCfg.makeDynamicClient = newMockDynamicClient().getMockDynamicClient
 	r, err := newReceiver(
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 		rCfg,
 		consumertest.NewNop(),
 	)
@@ -76,7 +77,7 @@ func TestPullObject(t *testing.T) {
 
 	consumer := newMockLogConsumer()
 	r, err := newReceiver(
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 		rCfg,
 		consumer,
 	)
@@ -111,7 +112,7 @@ func TestWatchObject(t *testing.T) {
 
 	consumer := newMockLogConsumer()
 	r, err := newReceiver(
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 		rCfg,
 		consumer,
 	)

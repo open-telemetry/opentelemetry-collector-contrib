@@ -32,6 +32,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
 func TestPostgresIntegration(t *testing.T) {
@@ -134,7 +135,7 @@ func TestPostgresIntegration(t *testing.T) {
 	consumer := &consumertest.MetricsSink{}
 	receiver, err := factory.CreateMetricsReceiver(
 		ctx,
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 		config,
 		consumer,
 	)
@@ -219,7 +220,7 @@ func TestOracleDBIntegration(t *testing.T) {
 	consumer := &consumertest.MetricsSink{}
 	receiver, err := factory.CreateMetricsReceiver(
 		ctx,
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 		config,
 		consumer,
 	)

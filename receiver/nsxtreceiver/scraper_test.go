@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest/golden"
@@ -60,7 +61,7 @@ func TestScrape(t *testing.T) {
 		&Config{
 			Metrics: metadata.DefaultMetricsSettings(),
 		},
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 	)
 	scraper.client = mockClient
 
@@ -81,7 +82,7 @@ func TestScrapeTransportNodeErrors(t *testing.T) {
 		&Config{
 			Metrics: metadata.DefaultMetricsSettings(),
 		},
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 	)
 	scraper.client = mockClient
 
@@ -99,7 +100,7 @@ func TestScrapeClusterNodeErrors(t *testing.T) {
 		&Config{
 			Metrics: metadata.DefaultMetricsSettings(),
 		},
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 	)
 	scraper.client = mockClient
 
@@ -117,7 +118,7 @@ func TestStartClientAlreadySet(t *testing.T) {
 				Endpoint: mockClient.URL,
 			},
 		},
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 	)
 	_ = scraper.start(context.Background(), componenttest.NewNopHost())
 	require.NotNil(t, scraper.client)
@@ -131,7 +132,7 @@ func TestStartBadUrl(t *testing.T) {
 				Endpoint: "\x00",
 			},
 		},
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 	)
 
 	_ = scraper.start(context.Background(), componenttest.NewNopHost())
@@ -146,7 +147,7 @@ func TestScraperRecordNoStat(t *testing.T) {
 			},
 			Metrics: metadata.DefaultMetricsSettings(),
 		},
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 	)
 	scraper.host = componenttest.NewNopHost()
 	scraper.recordNode(pcommon.NewTimestampFromTime(time.Now()), &nodeInfo{stats: nil})

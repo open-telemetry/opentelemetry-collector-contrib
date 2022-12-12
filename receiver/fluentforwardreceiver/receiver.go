@@ -21,6 +21,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 )
 
@@ -37,7 +38,7 @@ type fluentReceiver struct {
 	cancel    context.CancelFunc
 }
 
-func newFluentReceiver(logger *zap.Logger, conf *Config, next consumer.Logs) (component.LogsReceiver, error) {
+func newFluentReceiver(logger *zap.Logger, conf *Config, next consumer.Logs) (receiver.Logs, error) {
 	eventCh := make(chan Event, eventChannelLength)
 
 	collector := newCollector(eventCh, next, logger)

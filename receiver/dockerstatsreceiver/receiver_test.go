@@ -31,6 +31,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
@@ -117,7 +118,7 @@ func TestNewReceiver(t *testing.T) {
 		Endpoint:         "unix:///run/some.sock",
 		DockerAPIVersion: defaultDockerAPIVersion,
 	}
-	mr := newReceiver(componenttest.NewNopReceiverCreateSettings(), cfg)
+	mr := newReceiver(receivertest.NewNopCreateSettings(), cfg)
 	assert.NotNil(t, mr)
 }
 
@@ -130,7 +131,7 @@ func TestErrorsInStart(t *testing.T) {
 		Endpoint:         unreachable,
 		DockerAPIVersion: defaultDockerAPIVersion,
 	}
-	recv := newReceiver(componenttest.NewNopReceiverCreateSettings(), cfg)
+	recv := newReceiver(receivertest.NewNopCreateSettings(), cfg)
 	assert.NotNil(t, recv)
 
 	cfg.Endpoint = "..not/a/valid/endpoint"
@@ -194,7 +195,7 @@ func TestScrapeV2(t *testing.T) {
 			cfg.ProvidePerCoreCPUMetrics = true
 			cfg.MetricsConfig = allMetricsEnabled
 
-			receiver := newReceiver(componenttest.NewNopReceiverCreateSettings(), cfg)
+			receiver := newReceiver(receivertest.NewNopCreateSettings(), cfg)
 			err := receiver.start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, err)
 

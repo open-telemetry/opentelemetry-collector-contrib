@@ -30,6 +30,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/integration/mtest"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 
@@ -41,7 +42,7 @@ func TestNewMongodbScraper(t *testing.T) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
 
-	scraper := newMongodbScraper(componenttest.NewNopReceiverCreateSettings(), cfg)
+	scraper := newMongodbScraper(receivertest.NewNopCreateSettings(), cfg)
 	require.NotEmpty(t, scraper.config.hostlist())
 }
 
@@ -50,7 +51,7 @@ func TestScraperLifecycle(t *testing.T) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
 
-	scraper := newMongodbScraper(componenttest.NewNopReceiverCreateSettings(), cfg)
+	scraper := newMongodbScraper(receivertest.NewNopCreateSettings(), cfg)
 	require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, scraper.shutdown(context.Background()))
 
@@ -279,7 +280,7 @@ func TestScraperScrape(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			scraper := newMongodbScraper(componenttest.NewNopReceiverCreateSettings(), createDefaultConfig().(*Config))
+			scraper := newMongodbScraper(receivertest.NewNopCreateSettings(), createDefaultConfig().(*Config))
 			scraper.client = tc.setupMockClient(t)
 			actualMetrics, err := scraper.scrape(context.Background())
 			if tc.expectedErr == nil {

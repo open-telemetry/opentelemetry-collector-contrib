@@ -20,13 +20,13 @@ import (
 	"sync"
 	"time"
 
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 // newCarbonExporter returns a new Carbon exporter.
-func newCarbonExporter(cfg *Config, set component.ExporterCreateSettings) (component.MetricsExporter, error) {
+func newCarbonExporter(cfg *Config, set exporter.CreateSettings) (exporter.Metrics, error) {
 	sender := carbonSender{
 		connPool: newTCPConnPool(cfg.Endpoint, cfg.Timeout),
 	}

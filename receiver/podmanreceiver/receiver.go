@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	rcvr "go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
@@ -33,18 +34,18 @@ import (
 
 type receiver struct {
 	config        *Config
-	set           component.ReceiverCreateSettings
+	set           rcvr.CreateSettings
 	clientFactory clientFactory
 	scraper       *ContainerScraper
 }
 
 func newReceiver(
 	_ context.Context,
-	set component.ReceiverCreateSettings,
+	set rcvr.CreateSettings,
 	config *Config,
 	nextConsumer consumer.Metrics,
 	clientFactory clientFactory,
-) (component.MetricsReceiver, error) {
+) (rcvr.Metrics, error) {
 	err := config.Validate()
 	if err != nil {
 		return nil, err

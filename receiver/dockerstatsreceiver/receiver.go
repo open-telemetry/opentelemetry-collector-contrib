@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	rcvr "go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/multierr"
 
@@ -36,12 +37,12 @@ const (
 
 type receiver struct {
 	config   *Config
-	settings component.ReceiverCreateSettings
+	settings rcvr.CreateSettings
 	client   *docker.Client
 	mb       *metadata.MetricsBuilder
 }
 
-func newReceiver(set component.ReceiverCreateSettings, config *Config) *receiver {
+func newReceiver(set rcvr.CreateSettings, config *Config) *receiver {
 	if config.ProvidePerCoreCPUMetrics {
 		config.MetricsConfig.ContainerCPUUsagePercpu.Enabled = config.ProvidePerCoreCPUMetrics
 	}
