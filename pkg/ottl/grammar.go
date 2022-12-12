@@ -209,7 +209,7 @@ func (i *invocation) checkForCustomError() error {
 	return nil
 }
 
-// converter represents a factory function call.
+// converter represents a converter function call.
 type converter struct {
 	Function  string  `parser:"@(Uppercase(Uppercase | Lowercase)*)"`
 	Arguments []value `parser:"'(' ( @@ ( ',' @@ )* )? ')'"`
