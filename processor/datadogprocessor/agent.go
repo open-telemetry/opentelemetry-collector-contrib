@@ -57,7 +57,7 @@ func newAgentWithConfig(ctx context.Context, cfg *traceconfig.AgentConfig, out c
 	cfg.ReceiverPort = 0
 	// set the API key to succeed startup; it is never used nor needed
 	cfg.Endpoints[0].APIKey = "skip_check"
-	// set the default hostname to the tranlator's placeholder; in the case where no hostname
+	// set the default hostname to the translator's placeholder; in the case where no hostname
 	// can be deduced from incoming traces, we don't know the default hostname (because it is set
 	// in the exporter). In order to avoid duplicating the hostname setting in the processor and
 	// exporter, we use a placeholder and fill it in later (in the Datadog Exporter or Agent OTLP
@@ -125,13 +125,12 @@ func (p *traceagent) goDrain() {
 	p.wg.Add(1)
 	go func() {
 		defer p.wg.Done()
-	loop:
 		for {
 			select {
 			case <-p.TraceWriter.In:
 				// we don't write these traces anywhere; drain the channel
 			case <-p.exit:
-				break loop
+				return
 			}
 		}
 	}()
@@ -156,7 +155,6 @@ func (p *traceagent) goProcess() {
 		p.wg.Add(1)
 		go func() {
 			defer p.wg.Done()
-		loop:
 			for {
 				select {
 				case payload := <-p.pchan:
@@ -164,7 +162,7 @@ func (p *traceagent) goProcess() {
 					// ...the call processes the payload and outputs stats via the 'out' channel
 					// provided to newAgent
 				case <-p.exit:
-					break loop
+					return
 				}
 			}
 		}()

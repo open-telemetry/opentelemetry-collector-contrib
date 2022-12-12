@@ -2,17 +2,17 @@
 
 | Status                   |               |
 |--------------------------|---------------|
-| Stability                | [beta] |
+| Stability                | [development] |
 | Supported pipeline types | traces        |
 | Distributions            | [contrib]     |
 
 ## Description
 
-The Datadog Processor can be used to compute APM Stats pre-sampling. For example, when using the [tailsamplingprocessor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/tailsamplingprocessor#tail-sampling-processor) or [probabilisticsamplerprocessor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/probabilisticsamplerprocessor) components, the `datadogprocessor` can be prepended into the pipeline to ensure that APM Stats are accurate and include the dropped traces.
+The Datadog Processor can be used to compute Datadog APM Stats pre-sampling. For example, when using the [tailsamplingprocessor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/tailsamplingprocessor#tail-sampling-processor) or [probabilisticsamplerprocessor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/probabilisticsamplerprocessor) components, the `datadogprocessor` can be prepended into the pipeline to ensure that Datadog APM Stats are accurate and include the dropped traces.
 
 ## Configuration
 
-By default, when used in conjunction with the Datadog Exporter, the processor should detect its presence (as long as it is configured within a pipeline), and use it to export the APM Stats.
+By default, when used in conjunction with the Datadog Exporter, the processor should detect its presence (as long as it is configured within a pipeline), and use it to export the Datadog APM Stats.
 
 If using within a gateway deployment or alongside the Datadog Agent, where the Datadog Exporter is not present, and, for example, an OTLP exporter might be, you need to specify the metrics exporter to the processor:
 

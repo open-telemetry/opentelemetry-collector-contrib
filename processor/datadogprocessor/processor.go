@@ -117,7 +117,6 @@ func (p *processor) ConsumeTraces(ctx context.Context, traces ptrace.Traces) err
 // to metrics and flushes them using the configured metrics exporter.
 func (p *processor) run() {
 	defer close(p.exit)
-loop:
 	for {
 		select {
 		case stats := <-p.in:
@@ -131,7 +130,7 @@ loop:
 				p.logger.Error("Error exporting metrics.", zap.Error(err))
 			}
 		case <-p.exit:
-			break loop
+			return
 		}
 	}
 }
