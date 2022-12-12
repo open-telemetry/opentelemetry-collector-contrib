@@ -12,7 +12,7 @@ require (
 	github.com/tcnksm/ghr v0.16.0
 	go.opentelemetry.io/build-tools/checkdoc v0.3.0
 	go.opentelemetry.io/build-tools/chloggen v0.3.0
-	go.opentelemetry.io/build-tools/crosslink v0.2.0
+	go.opentelemetry.io/build-tools/crosslink v0.3.0
 	go.opentelemetry.io/build-tools/issuegenerator v0.3.0
 	go.opentelemetry.io/build-tools/multimod v0.2.0
 	golang.org/x/tools v0.2.0
@@ -189,7 +189,7 @@ require (
 	github.com/yagipy/maintidx v1.0.0 // indirect
 	github.com/yeya24/promlinter v0.2.0 // indirect
 	gitlab.com/bosi/decorder v0.2.3 // indirect
-	go.opentelemetry.io/build-tools v0.2.0 // indirect
+	go.opentelemetry.io/build-tools v0.3.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
 	go.uber.org/zap v1.24.0 // indirect
