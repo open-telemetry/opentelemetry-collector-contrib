@@ -309,6 +309,26 @@
 			"$numberInt": "0"
 		}
 	},
+	"opcountersRepl": {
+		"command": {
+			"$numberInt": "27"
+		},
+		"delete": {
+			"$numberInt": "1"
+		},
+		"getmore": {
+			"$numberInt": "2"
+		},
+		"insert": {
+			"$numberInt": "3"
+		},
+		"query": {
+			"$numberInt": "4"
+		},
+		"update": {
+			"$numberInt": "5"
+		}
+	},
 	"metrics": {
 		"cursor": {
             "timedOut": {

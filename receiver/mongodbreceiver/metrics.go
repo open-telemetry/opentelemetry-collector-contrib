@@ -230,6 +230,19 @@ func (s *mongodbScraper) recordOperations(now pcommon.Timestamp, doc bson.M, err
 	}
 }
 
+func (s *mongodbScraper) recordOperationsRepl(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+	for operationVal, operation := range metadata.MapAttributeOperation {
+		metricPath := []string{"opcountersRepl", operationVal}
+		metricName := "mongodb.operation.repl.count"
+		val, err := collectMetric(doc, metricPath)
+		if err != nil {
+			errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, operationVal, err))
+			continue
+		}
+		s.mb.RecordMongodbOperationReplCountDataPoint(now, val, operation)
+	}
+}
+
 func (s *mongodbScraper) recordCacheOperations(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
 	storageEngine, err := dig(doc, []string{"storageEngine", "name"})
 	if err != nil {

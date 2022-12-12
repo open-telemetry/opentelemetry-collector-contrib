@@ -283,6 +283,7 @@ func TestScraperScrape(t *testing.T) {
 			scraper := newMongodbScraper(receivertest.NewNopCreateSettings(), createDefaultConfig().(*Config))
 			scraper.client = tc.setupMockClient(t)
 			actualMetrics, err := scraper.scrape(context.Background())
+			golden.WriteMetrics("actual_metrics", actualMetrics)
 			if tc.expectedErr == nil {
 				require.NoError(t, err)
 			} else {

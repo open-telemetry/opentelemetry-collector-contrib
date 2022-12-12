@@ -164,6 +164,15 @@ metrics:
       value_type: int
       monotonic: true
     attributes: [operation]
+  mongodb.operation.repl.count:
+    description: The number of replicated operations executed.
+    unit: "{operations}"
+    enabled: false
+    sum:
+      aggregation: cumulative
+      value_type: int
+      monotonic: true
+    attributes: [ operation ]
   mongodb.storage.size:
     description: The total amount of storage allocated to this collection.
     extended_documentation: If collection data is compressed it reflects the compressed size. 
