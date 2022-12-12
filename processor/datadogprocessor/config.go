@@ -25,11 +25,11 @@ type Config struct {
 
 	// MetricsExporter specifies the name of the metrics exporter to be used when
 	// exporting stats metrics.
-	MetricsExporter string `mapstructure:"metrics_exporter"`
+	MetricsExporter component.ID `mapstructure:"metrics_exporter"`
 }
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		MetricsExporter: "datadog",
+		MetricsExporter: component.NewID(component.Type("datadog")),
 	}
 }

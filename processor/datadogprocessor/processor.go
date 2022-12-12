@@ -77,7 +77,7 @@ func (p *processor) Start(ctx context.Context, host component.Host) error {
 		if !ok {
 			return fmt.Errorf("the exporter %q isn't a metrics exporter", k.String())
 		}
-		if k.String() == p.cfg.MetricsExporter {
+		if k == p.cfg.MetricsExporter {
 			p.metricsExporter = mexp
 			break
 		}
@@ -88,7 +88,7 @@ func (p *processor) Start(ctx context.Context, host component.Host) error {
 	p.started = true
 	p.agent.Start()
 	go p.run()
-	p.logger.Debug("Started datadogprocessor", zap.String("metrics_exporter", p.cfg.MetricsExporter))
+	p.logger.Debug("Started datadogprocessor", zap.Stringer("metrics_exporter", p.cfg.MetricsExporter))
 	return nil
 }
 

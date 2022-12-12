@@ -70,7 +70,7 @@ func TestProcessorStart(t *testing.T) {
 	})
 
 	t.Run("succeed/2", func(t *testing.T) {
-		lp, err := newProcessor(ctx, zap.NewNop(), &Config{MetricsExporter: "datadog/2"}, &mockConsumer)
+		lp, err := newProcessor(ctx, zap.NewNop(), &Config{MetricsExporter: component.NewIDWithName("datadog", "2")}, &mockConsumer)
 		require.NoError(t, err)
 		defer lp.Shutdown(ctx) //nolint:errcheck
 		err = lp.Start(ctx, &mockHost{
