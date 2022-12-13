@@ -482,6 +482,24 @@ metrics:
       monotonic: true
       aggregation: cumulative
     attributes: [tmp_resource]
+  mysql.replica.time_behind_source:
+    enabled: false
+    description: This field is an indication of how “late” the replica is.
+    unit: s
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation: cumulative
+    attributes: []
+  mysql.replica.sql_delay:
+    enabled: false
+    description: The number of seconds that the replica must lag the source.
+    unit: s
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation: cumulative
+    attributes: []
   mysql.statement_event.count:
     enabled: false
     description: Summary of current and recent statement events.
