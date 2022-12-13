@@ -25,6 +25,8 @@ import (
 
 	"github.com/DataDog/agent-payload/v5/gogen"
 	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
+	"github.com/DataDog/datadog-agent/pkg/otlp/model/translator"
+	"github.com/DataDog/datadog-agent/pkg/trace/pb"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -32,6 +34,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
@@ -98,6 +101,7 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 		expectedSeries        map[string]interface{}
 		expectedSketchPayload *gogen.SketchPayload
 		expectedErr           error
+		expectedStats         []pb.ClientStatsPayload
 	}{
 		{
 			metrics: createTestMetrics(attrs),
@@ -164,8 +168,6 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 					},
 				},
 			},
-			expectedSketchPayload: nil,
-			expectedErr:           nil,
 		},
 		{
 			metrics: createTestMetrics(attrs),
@@ -226,7 +228,6 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 					},
 				},
 			},
-			expectedErr: nil,
 		},
 		{
 			metrics: createTestMetrics(attrs),
@@ -286,6 +287,67 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 			expectedSketchPayload: nil,
 			expectedErr:           nil,
 		},
+		{
+			metrics: createTestMetricsWithStats(),
+			source: source.Source{
+				Kind:       source.HostnameKind,
+				Identifier: "test-host",
+			},
+			histogramMode: HistogramModeDistributions,
+			hostTags:      []string{"key1:value1", "key2:value2"},
+			expectedSeries: map[string]interface{}{
+				"series": []interface{}{
+					map[string]interface{}{
+						"metric": "int.gauge",
+						"points": []interface{}{[]interface{}{float64(0), float64(222)}},
+						"type":   "gauge",
+						"host":   "test-host",
+						"tags":   []interface{}{"env:dev"},
+					},
+					map[string]interface{}{
+						"metric": "otel.system.filesystem.utilization",
+						"points": []interface{}{[]interface{}{float64(0), float64(333)}},
+						"type":   "gauge",
+						"host":   "test-host",
+						"tags":   []interface{}{"env:dev"},
+					},
+					map[string]interface{}{
+						"metric": "otel.datadog_exporter.metrics.running",
+						"points": []interface{}{[]interface{}{float64(0), float64(1)}},
+						"type":   "gauge",
+						"host":   "test-host",
+						"tags":   []interface{}{"version:latest", "command:otelcol"},
+					},
+					map[string]interface{}{
+						"metric":   "system.disk.in_use",
+						"points":   []interface{}{[]interface{}{float64(0), float64(333)}},
+						"type":     "gauge",
+						"host":     "test-host",
+						"interval": float64(1),
+						"tags":     []interface{}{"env:dev"},
+					},
+				},
+			},
+			expectedSketchPayload: &gogen.SketchPayload{
+				Sketches: []gogen.SketchPayload_Sketch{
+					{
+						Metric: "double.histogram",
+						Host:   "test-host",
+						Tags:   []string{"env:dev"},
+						Dogsketches: []gogen.SketchPayload_Sketch_Dogsketch{
+							{
+								Cnt: 20,
+								Avg: 0.3,
+								Sum: 6,
+								K:   []int32{0},
+								N:   []uint32{20},
+							},
+						},
+					},
+				},
+			},
+			expectedStats: testutil.StatsPayloads,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("kind=%s,histgramMode=%s", tt.source.Kind, tt.histogramMode), func(t *testing.T) {
@@ -297,13 +359,17 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 			)
 			defer server.Close()
 
-			var once sync.Once
+			var (
+				once          sync.Once
+				statsRecorder testutil.MockStatsProcessor
+			)
 			exp, err := newMetricsExporter(
 				context.Background(),
 				exportertest.NewNopCreateSettings(),
 				newTestConfig(t, server.URL, tt.hostTags, tt.histogramMode),
 				&once,
 				&testutil.MockSourceProvider{Src: tt.source},
+				&statsRecorder,
 			)
 			if tt.expectedErr == nil {
 				assert.NoError(t, err, "unexpected error")
@@ -340,8 +406,31 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 				assert.NoError(t, err)
 				assert.Equal(t, expected, sketchRecorder.ByteBody)
 			}
+			if tt.expectedStats == nil {
+				assert.Len(t, statsRecorder.In, 0)
+			} else {
+				assert.ElementsMatch(t, statsRecorder.In, tt.expectedStats)
+			}
 		})
 	}
+}
+
+func createTestMetricsWithStats() pmetric.Metrics {
+	md := createTestMetrics(map[string]string{
+		conventions.AttributeDeploymentEnvironment: "dev",
+		"custom_attribute":                         "custom_value",
+	})
+	dest := md.ResourceMetrics()
+	logger, _ := zap.NewDevelopment()
+	trans, err := translator.New(logger)
+	if err != nil {
+		panic(err)
+	}
+	src := trans.
+		StatsPayloadToMetrics(pb.StatsPayload{Stats: testutil.StatsPayloads}).
+		ResourceMetrics()
+	src.MoveAndAppendTo(dest)
+	return md
 }
 
 func createTestMetrics(additionalAttributes map[string]string) pmetric.Metrics {
