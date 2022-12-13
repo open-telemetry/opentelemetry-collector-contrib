@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibab
 go 1.18
 
 require (
-	github.com/aliyun/aliyun-log-go-sdk v0.1.41
+	github.com/aliyun/aliyun-log-go-sdk v0.1.42
 	github.com/gogo/protobuf v1.3.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.67.0
 	github.com/stretchr/testify v1.8.1
@@ -36,12 +36,12 @@ require (
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/collector/consumer v0.67.0 // indirect
 	go.opentelemetry.io/collector/featuregate v0.67.0 // indirect
-	go.opentelemetry.io/otel v1.11.1 // indirect
-	go.opentelemetry.io/otel/metric v0.33.0 // indirect
-	go.opentelemetry.io/otel/trace v1.11.1 // indirect
+	go.opentelemetry.io/otel v1.11.2 // indirect
+	go.opentelemetry.io/otel/metric v0.34.0 // indirect
+	go.opentelemetry.io/otel/trace v1.11.2 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
-	go.uber.org/multierr v1.8.0 // indirect
-	golang.org/x/net v0.3.0 // indirect
+	go.uber.org/multierr v1.9.0 // indirect
+	golang.org/x/net v0.4.0 // indirect
 	golang.org/x/sys v0.3.0 // indirect
 	golang.org/x/text v0.5.0 // indirect
 	google.golang.org/genproto v0.0.0-20220822174746-9e6da59bd2fc // indirect

@@ -11,7 +11,7 @@ require (
 	go.opentelemetry.io/collector/consumer v0.67.0
 	go.opentelemetry.io/collector/pdata v1.0.0-rc1
 	go.opentelemetry.io/collector/semconv v0.67.0
-	go.uber.org/multierr v1.8.0
+	go.uber.org/multierr v1.9.0
 )
 
 require (
