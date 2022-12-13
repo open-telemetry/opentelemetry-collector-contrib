@@ -423,6 +423,7 @@ The time since the pod started
 | k8s.container.name | Container name used by container runtime | Any Str | true |
 | k8s.namespace.name | The name of the namespace that the pod is running in | Any Str | true |
 | k8s.node.name | The name of the Node | Any Str | true |
+| k8s.node.uid | The UID of the Node | Any Str | false |
 | k8s.persistentvolumeclaim.name | The name of the Persistent Volume Claim | Any Str | true |
 | k8s.pod.name | The name of the Pod | Any Str | true |
 | k8s.pod.uid | The UID of the Pod | Any Str | true |

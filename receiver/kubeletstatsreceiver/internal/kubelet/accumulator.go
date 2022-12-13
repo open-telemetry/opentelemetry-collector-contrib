@@ -4,6 +4,7 @@
 package kubelet // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/kubelet"
 
 import (
+	"log"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -66,7 +67,19 @@ func (a *metricDataAccumulator) nodeStats(s stats.NodeStats) {
 	a.m = append(a.m, a.mbs.NodeMetricsBuilder.Emit(
 		metadata.WithStartTimeOverride(pcommon.NewTimestampFromTime(s.StartTime.Time)),
 		metadata.WithResource(rb.Emit()),
+		metadata.WithK8sNodeName(s.NodeName),
+		metadata.WithK8sNodeUID(a.getNodeUID(s.NodeName)),
 	))
+}
+
+// getch k8s node uid from metadata
+func (a *metricDataAccumulator) getNodeUID(nodeName string) string {
+	uid, err := a.metadata.getNodeUID(nodeName)
+	if err != nil {
+		log.Println(err.Error())
+		return ""
+	}
+	return uid
 }
 
 func (a *metricDataAccumulator) podStats(s stats.PodStats) {

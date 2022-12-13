@@ -49,14 +49,16 @@ func ValidateMetadataLabelsConfig(labels []MetadataLabel) error {
 type Metadata struct {
 	Labels                    map[MetadataLabel]bool
 	PodsMetadata              *v1.PodList
-	DetailedPVCResourceSetter func(rb *metadata.ResourceBuilder, volCacheID, volumeClaim, namespace string) error
+	NodesMetadata             *v1.NodeList
+	DetailedPVCResourceSetter func(rb *metadata.ResourceBuilder, volCacheID, volumeClaim, namespace string) ([]metadata.ResourceMetricsOption, error)
 }
 
-func NewMetadata(labels []MetadataLabel, podsMetadata *v1.PodList,
-	detailedPVCResourceSetter func(rb *metadata.ResourceBuilder, volCacheID, volumeClaim, namespace string) error) Metadata {
+func NewMetadata(labels []MetadataLabel, podsMetadata *v1.PodList, nodesMetadata *v1.NodeList,
+	detailedPVCResourceSetter func(rb *metadata.ResourceBuilder, volCacheID, volumeClaim, namespace string) ([]metadata.ResourceMetricsOption, error)) Metadata {
 	return Metadata{
 		Labels:                    getLabelsMap(labels),
 		PodsMetadata:              podsMetadata,
+		NodesMetadata:             nodesMetadata,
 		DetailedPVCResourceSetter: detailedPVCResourceSetter,
 	}
 }
@@ -80,6 +82,11 @@ func (m *Metadata) setExtraResources(rb *metadata.ResourceBuilder, podRef stats.
 	// Cannot proceed, if metadata is unavailable.
 	if m.PodsMetadata == nil {
 		return errors.New("pods metadata were not fetched")
+	}
+
+	// Cannot proceed, if metadata is unavailable.
+	if m.NodesMetadata == nil {
+		return nil, errors.New("nodes metadata were not fetched")
 	}
 
 	switch extraMetadataLabel {
@@ -107,6 +114,19 @@ func (m *Metadata) setExtraResources(rb *metadata.ResourceBuilder, podRef stats.
 		}
 	}
 	return nil
+}
+
+// getNodeUID retrieves k8s.node.uid from metadata for given pod UID and container name,
+// returns an error if no container found in the metadata that matches the requirements.
+func (m *Metadata) getNodeUID(nodeName string) (string, error) {
+	if m.NodesMetadata != nil {
+		for _, node := range m.NodesMetadata.Items {
+			if node.ObjectMeta.Name == nodeName {
+				return string(node.ObjectMeta.UID), nil
+			}
+		}
+	}
+	return "", nil
 }
 
 // getContainerID retrieves container id from metadata for given pod UID and container name,

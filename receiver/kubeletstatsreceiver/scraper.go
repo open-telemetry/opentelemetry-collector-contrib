@@ -6,6 +6,7 @@ package kubeletstatsreceiver // import "github.com/open-telemetry/opentelemetry-
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -79,8 +80,20 @@ func (r *kubletScraper) scrape(context.Context) (pmetric.Metrics, error) {
 		}
 	}
 
-	metadata := kubelet.NewMetadata(r.extraMetadataLabels, podsMetadata, r.detailedPVCLabelsSetter())
-	mds := kubelet.MetricsData(r.logger, summary, metadata, r.metricGroupsToCollect, r.mbs)
+	var nodesMetadata *v1.NodeList
+
+	if r.k8sAPIClient != nil {
+		corev1 := r.k8sAPIClient.CoreV1()
+		nodes := corev1.Nodes()
+		nodesMetadata, err = nodes.List(context.Background(), metav1.ListOptions{})
+		if err != nil {
+			log.Println("nodesMetadata err", err.Error())
+			return pmetric.Metrics{}, nil
+		}
+	}
+
+	metadata := kubelet.NewMetadata(r.extraMetadataLabels, podsMetadata, nodesMetadata, r.detailedPVCLabelsSetter())
+	mds := kubelet.MetricsData(r.logger, summary, metadata, r.metricGroupsToCollect, r.mbs, r.emitMetricsWithDirectionAttribute, r.emitMetricsWithoutDirectionAttribute)
 	md := pmetric.NewMetrics()
 	for i := range mds {
 		mds[i].ResourceMetrics().MoveAndAppendTo(md.ResourceMetrics())
