@@ -23,6 +23,7 @@ import (
 	semconv "go.opentelemetry.io/collector/semconv/v1.9.0"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/watch"
 )
 
 func TestUnstructuredListToLogData(t *testing.T) {
@@ -59,22 +60,10 @@ func TestUnstructuredListToLogData(t *testing.T) {
 		for i, namespace := range namespaces {
 			rl := resourceLogs.At(i)
 			resourceAttributes := rl.Resource().Attributes()
-			logRecords := rl.ScopeLogs().At(0).LogRecords()
 			ns, _ := resourceAttributes.Get(semconv.AttributeK8SNamespaceName)
 			assert.Equal(t, ns.AsString(), namespace)
 			assert.Equal(t, rl.ScopeLogs().Len(), 1)
 			assert.Equal(t, rl.ScopeLogs().At(0).LogRecords().Len(), 2)
-			// valiadte event.domain and event.name attribute
-			for j := 0; j < logRecords.Len(); j++ {
-				domain, ok := logRecords.At(j).Attributes().Get("event.domain")
-				require.Equal(t, true, ok)
-				assert.Equal(t, "k8s", domain.AsString())
-
-				name, ok := logRecords.At(j).Attributes().Get("event.name")
-				require.Equal(t, true, ok)
-				assert.Equal(t, "Pull pods", name.AsString())
-			}
-
 		}
 	})
 
@@ -111,16 +100,44 @@ func TestUnstructuredListToLogData(t *testing.T) {
 		assert.Equal(t, rl.ScopeLogs().Len(), 1)
 		assert.Equal(t, logRecords.Len(), 3)
 
-		// valiadte event.domain and event.name attribute
-		for i := 0; i < logRecords.Len(); i++ {
-			domain, ok := logRecords.At(i).Attributes().Get("event.domain")
-			require.Equal(t, true, ok)
-			assert.Equal(t, "k8s", domain.AsString())
+	})
 
-			name, ok := logRecords.At(i).Attributes().Get("event.name")
-			require.Equal(t, true, ok)
-			assert.Equal(t, "Pull nodes", name.AsString())
+	t.Run("Test event.name in watch events", func(t *testing.T) {
+		config := &K8sObjectsConfig{
+			gvr: &schema.GroupVersionResource{
+				Group:    "",
+				Version:  "v1",
+				Resource: "events",
+			},
 		}
+		event := &watch.Event{
+			Type: watch.Added,
+			Object: &unstructured.Unstructured{
+				Object: map[string]interface{}{
+					"kind":       "Event",
+					"apiVersion": "v1",
+					"metadata": map[string]interface{}{
+						"name": "generic-name",
+					},
+				},
+			},
+		}
+
+		logs := watchObjectsToLogData(event, config)
+
+		assert.Equal(t, logs.LogRecordCount(), 1)
+
+		resourceLogs := logs.ResourceLogs()
+		assert.Equal(t, resourceLogs.Len(), 1)
+		rl := resourceLogs.At(0)
+		logRecords := rl.ScopeLogs().At(0).LogRecords()
+		assert.Equal(t, rl.ScopeLogs().Len(), 1)
+		assert.Equal(t, logRecords.Len(), 1)
+
+		attrs := logRecords.At(0).Attributes()
+		eventName, ok := attrs.Get("event.name")
+		require.True(t, ok)
+		assert.EqualValues(t, "generic-name", eventName.AsRaw())
 
 	})
 

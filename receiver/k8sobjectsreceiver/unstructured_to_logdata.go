@@ -15,13 +15,14 @@
 package k8sobjectsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver"
 
 import (
-	"fmt"
-
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	semconv "go.opentelemetry.io/collector/semconv/v1.9.0"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/watch"
 )
+
+type attrUpdaterFunc func(pcommon.Map)
 
 func watchObjectsToLogData(event *watch.Event, config *K8sObjectsConfig) plog.Logs {
 	udata := event.Object.(*unstructured.Unstructured)
@@ -33,15 +34,22 @@ func watchObjectsToLogData(event *watch.Event, config *K8sObjectsConfig) plog.Lo
 			},
 		}},
 	}
-	eventName := fmt.Sprintf("Watch %s", config.gvr.Resource)
-	return unstructuredListToLogData(&ul, config, eventName)
+
+	return unstructuredListToLogData(&ul, config, func(attrs pcommon.Map) {
+		objectMeta := udata.Object["metadata"].(map[string]interface{})
+		name := objectMeta["name"].(string)
+		if name != "" {
+			attrs.PutStr("event.domain", "k8s")
+			attrs.PutStr("event.name", name)
+		}
+	})
 }
 
 func pullObjectsToLogData(event *unstructured.UnstructuredList, config *K8sObjectsConfig) plog.Logs {
-	eventName := fmt.Sprintf("Pull %s", config.gvr.Resource)
-	return unstructuredListToLogData(event, config, eventName)
+	return unstructuredListToLogData(event, config)
 }
-func unstructuredListToLogData(event *unstructured.UnstructuredList, config *K8sObjectsConfig, eventName string) plog.Logs {
+
+func unstructuredListToLogData(event *unstructured.UnstructuredList, config *K8sObjectsConfig, attrUpdaters ...attrUpdaterFunc) plog.Logs {
 	out := plog.NewLogs()
 	resourceLogs := out.ResourceLogs()
 	namespaceResourceMap := make(map[string]plog.LogRecordSlice)
@@ -61,10 +69,11 @@ func unstructuredListToLogData(event *unstructured.UnstructuredList, config *K8s
 		record := logSlice.AppendEmpty()
 
 		attrs := record.Attributes()
-		attrs.EnsureCapacity(2)
-		attrs.PutStr("event.domain", "k8s")
-		attrs.PutStr("event.name", eventName)
 		attrs.PutStr("k8s.resource.name", config.gvr.Resource)
+
+		for _, attrUpdate := range attrUpdaters {
+			attrUpdate(attrs)
+		}
 
 		dest := record.Body()
 		destMap := dest.SetEmptyMap()
