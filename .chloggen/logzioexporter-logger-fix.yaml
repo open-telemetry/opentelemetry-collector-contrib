@@ -5,7 +5,7 @@ change_type: bug_fix
 component: logzioexporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Omplemented `GetLevel` method for `go-hclog` logger
+note: Implemented `GetLevel` method for `go-hclog` logger
 
 
 # One or more tracking issues related to the change
