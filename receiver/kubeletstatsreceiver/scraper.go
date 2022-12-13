@@ -112,6 +112,18 @@ func (r *kubletScraper) scrape(context.Context) (pmetric.Metrics, error) {
 		}
 	}
 
+    var nodesMetadata *v1.NodeList
+
+	if r.k8sAPIClient != nil {
+		corev1 := r.k8sAPIClient.CoreV1()
+		nodes := corev1.Nodes()
+		nodesMetadata, err = nodes.List(context.Background(), metav1.ListOptions{})
+		if err != nil {
+			r.logger.Error("nodesMetadata err", zap.Error(err))
+			return pmetric.Metrics{}, nil
+		}
+	}
+
 	var node kubelet.NodeLimits
 	if r.nodeInformer != nil {
 		node = r.node()
