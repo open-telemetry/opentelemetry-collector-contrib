@@ -25,23 +25,12 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 )
 
-func newHumioFactory(t *testing.T) exporter.Factory {
-	factories, err := componenttest.NopFactories()
-	require.NoError(t, err)
-
-	factory := NewFactory()
-	factories.Exporters[typeStr] = factory
-
-	return factory
-}
-
 func TestCreateTracesExporter(t *testing.T) {
 	// Arrange
-	factory := newHumioFactory(t)
+	factory := NewFactory()
 	testCases := []struct {
 		desc              string
 		cfg               component.Config
@@ -140,7 +129,7 @@ func TestCreateTracesExporter(t *testing.T) {
 }
 
 func TestCreateMetricsExporter(t *testing.T) {
-	factory := newHumioFactory(t)
+	factory := NewFactory()
 	mExp, err := factory.CreateMetricsExporter(
 		context.Background(),
 		exportertest.NewNopCreateSettings(),
@@ -152,7 +141,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 }
 
 func TestCreateLogsExporter(t *testing.T) {
-	factory := newHumioFactory(t)
+	factory := NewFactory()
 	lExp, err := factory.CreateLogsExporter(
 		context.Background(),
 		exportertest.NewNopCreateSettings(),
