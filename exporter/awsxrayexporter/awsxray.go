@@ -17,7 +17,7 @@ package awsxrayexporter // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"context"
 	"errors"
-	
+
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/xray"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/internal/translator"
