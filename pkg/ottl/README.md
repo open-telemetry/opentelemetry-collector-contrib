@@ -14,7 +14,7 @@ The OTTL grammar includes Invocations, Values and Boolean Expressions.
 
 Invocations represent a function call that transform the underlying telemetry payload. Invocations are made up of 2 parts:
 
-- a string identifier. The string identifier must start with a lowercase letter or an underscore (`_`).
+- a string identifier. The string identifier must start with a lowercase letter.
 - zero or more Values (comma separated) surrounded by parentheses (`()`).
 
 **The OTTL does not define any function implementations.**
@@ -113,7 +113,7 @@ When defining a function that will be used as an Invocation by the OTTL, if the 
 Converters are special functions that convert data to a new format before being passed to an Invocation or Boolean Expression.
 Like Invocations, Converters are made up of 2 parts:
 
-- a string identifier. The string identifier must start with an uppercase letter or an underscore (`_`).
+- a string identifier. The string identifier must start with an uppercase letter.
 - zero or more Values (comma separated) surrounded by parentheses (`()`).
 
 **The OTTL does not define any converter implementations.**
