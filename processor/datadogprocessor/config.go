@@ -30,6 +30,10 @@ type Config struct {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		MetricsExporter: component.NewID(component.Type("datadog")),
+		MetricsExporter: datadogComponent,
 	}
 }
+
+// datadogComponent defines the default component that will be used for
+// exporting metrics.
+var datadogComponent = component.NewID(component.Type("datadog"))
