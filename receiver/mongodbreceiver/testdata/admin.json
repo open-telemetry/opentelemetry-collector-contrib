@@ -289,6 +289,40 @@
 	"uptimeMillis": {
 		"$numberLong": "58965"
 	},
+	"opLatencies": {
+		"commands": {
+			"latency": {
+				"$numberLong": "8631"
+			},
+			"ops": {
+				"$numberLong": "23"
+			}
+		},
+		"reads": {
+			"latency": {
+				"$numberLong": "0"
+			},
+			"ops": {
+				"$numberLong": "0"
+			}
+		},
+		"transactions": {
+			"latency": {
+				"$numberLong": "0"
+			},
+			"ops": {
+				"$numberLong": "0"
+			}
+		},
+		"writes": {
+			"latency": {
+				"$numberLong": "0"
+			},
+			"ops": {
+				"$numberLong": "0"
+			}
+		}
+	},
 	"opcounters": {
 		"command": {
 			"$numberInt": "20"

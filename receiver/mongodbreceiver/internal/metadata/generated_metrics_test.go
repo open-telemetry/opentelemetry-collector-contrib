@@ -85,6 +85,8 @@ func TestDefaultMetrics(t *testing.T) {
 	enabledMetrics["mongodb.operation.count"] = true
 	mb.RecordMongodbOperationCountDataPoint(ts, 1, AttributeOperation(1))
 
+	mb.RecordMongodbOperationLatencyTimeDataPoint(ts, 1, AttributeOperationLatency(1))
+
 	mb.RecordMongodbOperationReplCountDataPoint(ts, 1, AttributeOperation(1))
 
 	enabledMetrics["mongodb.operation.time"] = true
@@ -138,6 +140,7 @@ func TestAllMetrics(t *testing.T) {
 		MongodbNetworkRequestCount:    MetricSettings{Enabled: true},
 		MongodbObjectCount:            MetricSettings{Enabled: true},
 		MongodbOperationCount:         MetricSettings{Enabled: true},
+		MongodbOperationLatencyTime:   MetricSettings{Enabled: true},
 		MongodbOperationReplCount:     MetricSettings{Enabled: true},
 		MongodbOperationTime:          MetricSettings{Enabled: true},
 		MongodbSessionCount:           MetricSettings{Enabled: true},
@@ -173,6 +176,7 @@ func TestAllMetrics(t *testing.T) {
 	mb.RecordMongodbNetworkRequestCountDataPoint(ts, 1)
 	mb.RecordMongodbObjectCountDataPoint(ts, 1, "attr-val")
 	mb.RecordMongodbOperationCountDataPoint(ts, 1, AttributeOperation(1))
+	mb.RecordMongodbOperationLatencyTimeDataPoint(ts, 1, AttributeOperationLatency(1))
 	mb.RecordMongodbOperationReplCountDataPoint(ts, 1, AttributeOperation(1))
 	mb.RecordMongodbOperationTimeDataPoint(ts, 1, AttributeOperation(1))
 	mb.RecordMongodbSessionCountDataPoint(ts, 1)
@@ -579,6 +583,20 @@ func TestAllMetrics(t *testing.T) {
 			assert.True(t, ok)
 			assert.Equal(t, "insert", attrVal.Str())
 			validatedMetrics["mongodb.operation.count"] = struct{}{}
+		case "mongodb.operation.latency.time":
+			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+			assert.Equal(t, "The latency of operations.", ms.At(i).Description())
+			assert.Equal(t, "us", ms.At(i).Unit())
+			dp := ms.At(i).Gauge().DataPoints().At(0)
+			assert.Equal(t, start, dp.StartTimestamp())
+			assert.Equal(t, ts, dp.Timestamp())
+			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+			assert.Equal(t, int64(1), dp.IntValue())
+			attrVal, ok := dp.Attributes().Get("operation")
+			assert.True(t, ok)
+			assert.Equal(t, "read", attrVal.Str())
+			validatedMetrics["mongodb.operation.latency.time"] = struct{}{}
 		case "mongodb.operation.repl.count":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
@@ -672,6 +690,7 @@ func TestNoMetrics(t *testing.T) {
 		MongodbNetworkRequestCount:    MetricSettings{Enabled: false},
 		MongodbObjectCount:            MetricSettings{Enabled: false},
 		MongodbOperationCount:         MetricSettings{Enabled: false},
+		MongodbOperationLatencyTime:   MetricSettings{Enabled: false},
 		MongodbOperationReplCount:     MetricSettings{Enabled: false},
 		MongodbOperationTime:          MetricSettings{Enabled: false},
 		MongodbSessionCount:           MetricSettings{Enabled: false},
@@ -706,6 +725,7 @@ func TestNoMetrics(t *testing.T) {
 	mb.RecordMongodbNetworkRequestCountDataPoint(ts, 1)
 	mb.RecordMongodbObjectCountDataPoint(ts, 1, "attr-val")
 	mb.RecordMongodbOperationCountDataPoint(ts, 1, AttributeOperation(1))
+	mb.RecordMongodbOperationLatencyTimeDataPoint(ts, 1, AttributeOperationLatency(1))
 	mb.RecordMongodbOperationReplCountDataPoint(ts, 1, AttributeOperation(1))
 	mb.RecordMongodbOperationTimeDataPoint(ts, 1, AttributeOperation(1))
 	mb.RecordMongodbSessionCountDataPoint(ts, 1)

@@ -352,6 +352,20 @@ Number of times the lock acquisitions encountered deadlocks.
 | lock_type | The Resource over which the Lock controls access | Str: ``parallel_batch_write_mode``, ``replication_state_transition``, ``global``, ``database``, ``collection``, ``mutex``, ``metadata``, ``oplog`` |
 | lock_mode | The mode of Lock which denotes the degree of access | Str: ``shared``, ``exclusive``, ``intent_shared``, ``intent_exclusive`` |
 
+### mongodb.operation.latency.time
+
+The latency of operations.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| us | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| operation | The MongoDB operation with regards to latency | Str: ``read``, ``write``, ``command`` |
+
 ### mongodb.operation.repl.count
 
 The number of replicated operations executed.
