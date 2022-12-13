@@ -291,7 +291,7 @@ func TestDefaultReceivers(t *testing.T) {
 		// {
 		// 	receiver: "promtail",
 		// 	getConfigFn: func() component.Config {
-		// 		cfg := rcvrFactories["promtail"].CreateDefaultConfig().(*promtailreceiver.PromtailConfig)
+		// 		cfg := rcvrFactories["promtail"].newDefaultConfig().(*promtailreceiver.PromtailConfig)
 		// 		cfg.InputConfig = *promtailreceiver.NewConfigWithID("testconfig")
 		// 		cfg.InputConfig.Input = promtailreceiver.PromtailInputConfig{
 		// 			ScrapeConfig: []scrapeconfig.Config{

@@ -36,11 +36,11 @@ const (
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		typeStr,
-		CreateDefaultConfig,
+		newDefaultConfig,
 		receiver.WithMetrics(createReceiverFunc(), stability))
 }
 
-func CreateDefaultConfig() component.Config {
+func newDefaultConfig() component.Config {
 	return &Config{
 		ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
