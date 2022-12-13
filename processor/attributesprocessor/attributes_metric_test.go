@@ -17,12 +17,14 @@ package attributesprocessor
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
@@ -45,7 +47,8 @@ func runIndividualMetricTestCase(t *testing.T, mt metricTestCase, mp component.M
 		assert.NoError(t, mp.ConsumeMetrics(context.Background(), md))
 		// Ensure that the modified `md` has the attributes sorted:
 		sortMetricAttributes(md)
-		require.Equal(t, generateMetricData(mt.name, mt.expectedAttributes), md)
+		expectedMetricData := generateMetricData(mt.name, mt.expectedAttributes)
+		require.Equal(t, expectedMetricData, md)
 	})
 }
 
@@ -55,6 +58,11 @@ func generateMetricData(resourceName string, attrs map[string]interface{}) pmetr
 	res.Resource().Attributes().PutStr("name", resourceName)
 	sl := res.ScopeMetrics().AppendEmpty()
 	m := sl.Metrics().AppendEmpty()
+
+	g := m.SetEmptyGauge()
+	dp := g.DataPoints().AppendEmpty()
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMicro(0)))
+	dp.SetIntValue(7)
 
 	switch m.Type() {
 	case pmetric.MetricTypeGauge:
@@ -193,7 +201,8 @@ func TestMetricProcessor_NilEmptyData(t *testing.T) {
 func TestAttributes_FilterMetrics(t *testing.T) {
 	testCases := []metricTestCase{
 		{
-			name:            "apply processor",
+			name: "apply processor",
+			// this metric matches the rules, so it should be modified
 			inputAttributes: map[string]interface{}{},
 			expectedAttributes: map[string]interface{}{
 				"attribute1": 123,
@@ -201,6 +210,7 @@ func TestAttributes_FilterMetrics(t *testing.T) {
 		},
 		{
 			name: "apply processor with different value for exclude property",
+			// the exclude rule should not match, and the metric should be modified
 			inputAttributes: map[string]interface{}{
 				"NoModification": false,
 			},
@@ -210,12 +220,14 @@ func TestAttributes_FilterMetrics(t *testing.T) {
 			},
 		},
 		{
-			name:               "incorrect name for include property",
+			name: "incorrect name for include property",
+			// the include rule should not match, and the metric should remain unmodified
 			inputAttributes:    map[string]interface{}{},
 			expectedAttributes: map[string]interface{}{},
 		},
 		{
 			name: "attribute match for exclude property",
+			// the include rule should match, but because the exclude rule also matches, the metric should remain unmodified
 			inputAttributes: map[string]interface{}{
 				"NoModification": true,
 			},
@@ -232,6 +244,7 @@ func TestAttributes_FilterMetrics(t *testing.T) {
 		{Key: "attribute1", Action: attraction.INSERT, Value: 123},
 	}
 	oCfg.Include = &filterconfig.MatchProperties{
+		// This rule is meant to match everything but the "incorrect name for include property" case
 		Resources: []filterconfig.Attribute{{Key: "name", Value: "^[^i].*"}},
 		Config:    *createConfig(filterset.Regexp),
 	}

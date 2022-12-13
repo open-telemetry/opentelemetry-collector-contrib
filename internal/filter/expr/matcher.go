@@ -63,3 +63,31 @@ func Or[K any](matchers ...BoolExpr[K]) BoolExpr[K] {
 		return orMatcher[K]{matchers: matchers}
 	}
 }
+
+type andMatcher[K any] struct {
+	matchers []BoolExpr[K]
+}
+
+func (am andMatcher[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
+	for i := range am.matchers {
+		ret, err := am.matchers[i].Eval(ctx, tCtx)
+		if err != nil {
+			return false, err
+		}
+		if !ret {
+			return false, nil
+		}
+	}
+	return true, nil
+}
+
+func And[K any](matchers ...BoolExpr[K]) BoolExpr[K] {
+	switch len(matchers) {
+	case 0:
+		return nil
+	case 1:
+		return matchers[0]
+	default:
+		return andMatcher[K]{matchers: matchers}
+	}
+}

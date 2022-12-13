@@ -17,6 +17,7 @@ package attributesprocessor // import "github.com/open-telemetry/opentelemetry-c
 import (
 	"context"
 
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
@@ -26,19 +27,21 @@ import (
 )
 
 type metricAttributesProcessor struct {
-	logger   *zap.Logger
-	attrProc *attraction.AttrProc
-	skipExpr expr.BoolExpr[ottlmetric.TransformContext]
+	logger          *zap.Logger
+	attrProc        *attraction.AttrProc
+	skipExpr        expr.BoolExpr[ottlmetric.TransformContext]
+	dataPointFilter func(attrs pcommon.Map) bool
 }
 
 // newMetricAttributesProcessor returns a processor that modifies attributes of a
 // metric record. To construct the attributes processors, the use of the factory
 // methods are required in order to validate the inputs.
-func newMetricAttributesProcessor(logger *zap.Logger, attrProc *attraction.AttrProc, skipExpr expr.BoolExpr[ottlmetric.TransformContext]) *metricAttributesProcessor {
+func newMetricAttributesProcessor(logger *zap.Logger, attrProc *attraction.AttrProc, skipExpr expr.BoolExpr[ottlmetric.TransformContext], dataPointFilter func(attrs pcommon.Map) bool) *metricAttributesProcessor {
 	return &metricAttributesProcessor{
-		logger:   logger,
-		attrProc: attrProc,
-		skipExpr: skipExpr,
+		logger:          logger,
+		attrProc:        attrProc,
+		skipExpr:        skipExpr,
+		dataPointFilter: dataPointFilter,
 	}
 }
 
@@ -80,27 +83,42 @@ func (a *metricAttributesProcessor) processMetricAttributes(ctx context.Context,
 	case pmetric.MetricTypeGauge:
 		dps := m.Gauge().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
-			a.attrProc.Process(ctx, a.logger, dps.At(i).Attributes())
+			dataPointAttributes := dps.At(i).Attributes()
+			if a.dataPointFilter(dataPointAttributes) {
+				a.attrProc.Process(ctx, a.logger, dataPointAttributes)
+			}
 		}
 	case pmetric.MetricTypeSum:
 		dps := m.Sum().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
-			a.attrProc.Process(ctx, a.logger, dps.At(i).Attributes())
+			dataPointAttributes := dps.At(i).Attributes()
+			if a.dataPointFilter(dataPointAttributes) {
+				a.attrProc.Process(ctx, a.logger, dataPointAttributes)
+			}
 		}
 	case pmetric.MetricTypeHistogram:
 		dps := m.Histogram().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
-			a.attrProc.Process(ctx, a.logger, dps.At(i).Attributes())
+			dataPointAttributes := dps.At(i).Attributes()
+			if a.dataPointFilter(dataPointAttributes) {
+				a.attrProc.Process(ctx, a.logger, dataPointAttributes)
+			}
 		}
 	case pmetric.MetricTypeExponentialHistogram:
 		dps := m.ExponentialHistogram().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
-			a.attrProc.Process(ctx, a.logger, dps.At(i).Attributes())
+			dataPointAttributes := dps.At(i).Attributes()
+			if a.dataPointFilter(dataPointAttributes) {
+				a.attrProc.Process(ctx, a.logger, dataPointAttributes)
+			}
 		}
 	case pmetric.MetricTypeSummary:
 		dps := m.Summary().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
-			a.attrProc.Process(ctx, a.logger, dps.At(i).Attributes())
+			dataPointAttributes := dps.At(i).Attributes()
+			if a.dataPointFilter(dataPointAttributes) {
+				a.attrProc.Process(ctx, a.logger, dataPointAttributes)
+			}
 		}
 	}
 }

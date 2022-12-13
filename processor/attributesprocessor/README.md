@@ -6,8 +6,8 @@
 | Supported pipeline types | traces, metrics, logs |
 | Distributions            | [core], [contrib]     |
 
-The attributes processor modifies attributes of a span, log, or metric. Please refer to
-[config.go](./config.go) for the config spec.
+The attributes processor modifies attributes of a metric data point, log record or span event.
+Please refer to [config.go](./config.go) for the config spec.
 
 This processor also supports the ability to filter and match input data to determine
 if they should be [included or excluded](#includeexclude-filtering) for specified actions.
@@ -49,11 +49,11 @@ For the actions `insert`, `update` and `upsert`,
   # Key specifies the attribute to act upon.
 - key: <key>
   action: {insert, update, upsert}
-  # FromContext specifies the context value to use to populate the attribute value. 
+  # FromContext specifies the context value to use to populate the attribute value.
   # If the key is prefixed with `metadata.`, the values are searched
-  # in the receiver's transport protocol additional information like gRPC Metadata or HTTP Headers. 
+  # in the receiver's transport protocol additional information like gRPC Metadata or HTTP Headers.
   # If the key is prefixed with `auth.`, the values are searched
-  # in the authentication information set by the server authenticator. 
+  # in the authentication information set by the server authenticator.
   # Refer to the server authenticator's documentation part of your pipeline for more information about which attributes are available.
   # If the key doesn't exist, no action is performed.
   # If the key has multiple values the values will be joined with `;` separator.
@@ -214,8 +214,8 @@ attributes:
       # This is an optional field.
       services: [<item1>, ..., <itemN>]
 
-      # resources specify an array of items to match the resources against.
-      # A match occurs if the input data resources matches at least one of the items.
+      # resources specify an array of items to match the resource attributes against.
+      # A match occurs if at least one of the input data resource attributes matches at least one of the items.
       resources: [<item1>, ..., <itemN>]
 
       # libraries specify an array of items to match the implementation library against.
@@ -239,7 +239,7 @@ attributes:
       # This is an optional field.
       metric_names: [<item1>, ..., <itemN>]
 
-      # Attributes specifies the list of attributes to match against.
+      # Attributes specifies the list of data point / log record / span event attributes to match against.
       # All of these attributes must match exactly for a match to occur.
       # This is an optional field.
       attributes:

@@ -85,7 +85,7 @@ type MatchProperties struct {
 	// For logs, one of LogNames, Attributes, Resources or Libraries must be specified with a
 	// non-empty value for a valid configuration.
 
-	// For metrics, one of MetricNames, Expressions, or ResourceAttributes must be specified with a
+	// For metrics, one of MetricNames or ResourceAttributes must be specified with a
 	// non-empty value for a valid configuration.
 
 	// Services specify the list of items to match service name against.
