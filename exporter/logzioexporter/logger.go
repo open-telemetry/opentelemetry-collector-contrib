@@ -104,6 +104,12 @@ func (l *hclog2ZapLogger) SetLevel(level hclog.Level) {
 	// no need to implement that as go-plugin doesn't use this method.
 }
 
+// GetLevel implementation.
+func (l *hclog2ZapLogger) GetLevel() hclog.Level {
+	// no need to implement that as go-plugin doesn't use this method.
+	return hclog.NoLevel
+}
+
 // StandardLogger implementation.
 func (l *hclog2ZapLogger) StandardLogger(opts *hclog.StandardLoggerOptions) *log.Logger {
 	// no need to implement that as go-plugin doesn't use this method.
