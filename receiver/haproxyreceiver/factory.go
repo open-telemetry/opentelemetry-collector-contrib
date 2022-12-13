@@ -37,7 +37,7 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		typeStr,
 		newDefaultConfig,
-		receiver.WithMetrics(createReceiverFunc(), stability))
+		receiver.WithMetrics(newReceiver, stability))
 }
 
 func newDefaultConfig() component.Config {
@@ -51,31 +51,29 @@ func newDefaultConfig() component.Config {
 	}
 }
 
-func createReceiverFunc() receiver.CreateMetricsFunc {
-	return func(
-		ctx context.Context,
-		settings receiver.CreateSettings,
-		cfg component.Config,
-		consumer consumer.Metrics,
-	) (receiver.Metrics, error) {
-		haProxyCfg := cfg.(*Config)
-		metricsBuilder := metadata.NewMetricsBuilder(haProxyCfg.MetricsSettings, settings)
+func newReceiver(
+	_ context.Context,
+	settings receiver.CreateSettings,
+	cfg component.Config,
+	consumer consumer.Metrics,
+) (receiver.Metrics, error) {
+	haProxyCfg := cfg.(*Config)
+	metricsBuilder := metadata.NewMetricsBuilder(haProxyCfg.MetricsSettings, settings)
 
-		mp, err := newScraper(settings.ID, metricsBuilder, haProxyCfg, settings.TelemetrySettings.Logger)
-		if err != nil {
-			return nil, err
-		}
-		s, err := scraperhelper.NewScraper(settings.ID.Name(), mp.Scrape)
-		if err != nil {
-			return nil, err
-		}
-		opt := scraperhelper.AddScraper(s)
-
-		return scraperhelper.NewScraperControllerReceiver(
-			&haProxyCfg.ScraperControllerSettings,
-			settings,
-			consumer,
-			opt,
-		)
+	mp, err := newScraper(settings.ID, metricsBuilder, haProxyCfg, settings.TelemetrySettings.Logger)
+	if err != nil {
+		return nil, err
 	}
+	s, err := scraperhelper.NewScraper(settings.ID.Name(), mp.Scrape)
+	if err != nil {
+		return nil, err
+	}
+	opt := scraperhelper.AddScraper(s)
+
+	return scraperhelper.NewScraperControllerReceiver(
+		&haProxyCfg.ScraperControllerSettings,
+		settings,
+		consumer,
+		opt,
+	)
 }
