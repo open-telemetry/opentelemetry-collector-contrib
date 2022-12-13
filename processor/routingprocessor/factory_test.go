@@ -145,16 +145,7 @@ func TestShouldNotFailWhenNextIsProcessor(t *testing.T) {
 }
 
 func TestProcessorDoesNotFailToBuildExportersWithMultiplePipelines(t *testing.T) {
-	// prepare
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
-
-	processorFactory := NewFactory()
-	factories.Processors[typeStr] = processorFactory
-
 	otlpExporterFactory := otlpexporter.NewFactory()
-	factories.Exporters["otlp"] = otlpExporterFactory
-
 	otlpConfig := &otlpexporter.Config{
 		ExporterSettings: config.NewExporterSettings(component.NewID("otlp")),
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
@@ -183,7 +174,7 @@ func TestProcessorDoesNotFailToBuildExportersWithMultiplePipelines(t *testing.T)
 	for k := range cm.ToStringMap() {
 		// Check if all processor variations that are defined in test config can be actually created
 		t.Run(k, func(t *testing.T) {
-			cfg := factories.Processors[typeStr].CreateDefaultConfig()
+			cfg := createDefaultConfig()
 
 			sub, err := cm.Sub(k)
 			require.NoError(t, err)
