@@ -114,17 +114,12 @@ func parsePath(val *ottl.Path) (ottl.GetSetter[TransformContext], error) {
 
 func newPathGetSetter(path []ottl.Field) (ottl.GetSetter[TransformContext], error) {
 	switch path[0].Name {
-	case "ottl":
-		if len(path) == 1 {
-			return nil, fmt.Errorf("the ottl path cannot be accessed directly")
+	case "tmp":
+		mapKey := path[0].MapKey
+		if mapKey == nil {
+			return accessStorage(), nil
 		}
-		if path[1].Name == "storage" {
-			mapKey := path[1].MapKey
-			if mapKey == nil {
-				return accessStorage(), nil
-			}
-			return accessStorageKey(mapKey), nil
-		}
+		return accessStorageKey(mapKey), nil
 	case "resource":
 		return ottlcommon.ResourcePathGetSetter[TransformContext](path[1:])
 	case "instrumentation_scope":

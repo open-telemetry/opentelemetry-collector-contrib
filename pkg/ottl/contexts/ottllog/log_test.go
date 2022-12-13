@@ -197,13 +197,10 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 		},
 		{
-			name: "ottl.storage",
+			name: "tmp",
 			path: []ottl.Field{
 				{
-					Name: "ottl",
-				},
-				{
-					Name: "storage",
+					Name: "tmp",
 				},
 			},
 			orig:   refStorage,
@@ -213,13 +210,10 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 		},
 		{
-			name: "ottl.storage access",
+			name: "tmp access",
 			path: []ottl.Field{
 				{
-					Name: "ottl",
-				},
-				{
-					Name:   "storage",
+					Name:   "tmp",
 					MapKey: ottltest.Strp("temp"),
 				},
 			},
