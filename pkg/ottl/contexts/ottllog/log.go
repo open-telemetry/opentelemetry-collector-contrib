@@ -118,8 +118,7 @@ func newPathGetSetter(path []ottl.Field) (ottl.GetSetter[TransformContext], erro
 		if len(path) == 1 {
 			return nil, fmt.Errorf("the ottl path cannot be accessed directly")
 		}
-		switch path[1].Name {
-		case "storage":
+		if path[1].Name == "storage" {
 			mapKey := path[1].MapKey
 			if mapKey == nil {
 				return accessStorage(), nil
