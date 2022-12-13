@@ -109,6 +109,7 @@ body:
       - pkg/winperfcounters
       - processor/attributes
       - processor/cumulativetodelta
+      - processor/datadog
       - processor/deltatorate
       - processor/filter
       - processor/groupbyattrs
