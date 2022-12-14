@@ -13,7 +13,9 @@
 // limitations under the License.
 
 package ottlresource // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
+
 import (
+	"context"
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
@@ -27,16 +29,22 @@ var _ ottlcommon.ResourceContext = TransformContext{}
 
 type TransformContext struct {
 	resource pcommon.Resource
+	storage  pcommon.Map
 }
 
 func NewTransformContext(resource pcommon.Resource) TransformContext {
 	return TransformContext{
 		resource: resource,
+		storage:  pcommon.NewMap(),
 	}
 }
 
 func (tCtx TransformContext) GetResource() pcommon.Resource {
 	return tCtx.resource
+}
+
+func (tCtx TransformContext) getStorage() pcommon.Map {
+	return tCtx.storage
 }
 
 func NewParser(functions map[string]interface{}, telemetrySettings component.TelemetrySettings) ottl.Parser[TransformContext] {
@@ -55,5 +63,40 @@ func parsePath(val *ottl.Path) (ottl.GetSetter[TransformContext], error) {
 }
 
 func newPathGetSetter(path []ottl.Field) (ottl.GetSetter[TransformContext], error) {
-	return ottlcommon.ResourcePathGetSetter[TransformContext](path)
+	switch path[0].Name {
+	case "tmp":
+		mapKey := path[0].MapKey
+		if mapKey == nil {
+			return accessStorage(), nil
+		}
+		return accessStorageKey(mapKey), nil
+	default:
+		return ottlcommon.ResourcePathGetSetter[TransformContext](path)
+	}
+}
+
+func accessStorage() ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx context.Context, tCtx TransformContext) (interface{}, error) {
+			return tCtx.getStorage(), nil
+		},
+		Setter: func(ctx context.Context, tCtx TransformContext, val interface{}) error {
+			if m, ok := val.(pcommon.Map); ok {
+				m.CopyTo(tCtx.getStorage())
+			}
+			return nil
+		},
+	}
+}
+
+func accessStorageKey(mapKey *string) ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx context.Context, tCtx TransformContext) (interface{}, error) {
+			return ottlcommon.GetMapValue(tCtx.getStorage(), *mapKey), nil
+		},
+		Setter: func(ctx context.Context, tCtx TransformContext, val interface{}) error {
+			ottlcommon.SetMapValue(tCtx.getStorage(), *mapKey, val)
+			return nil
+		},
+	}
 }
