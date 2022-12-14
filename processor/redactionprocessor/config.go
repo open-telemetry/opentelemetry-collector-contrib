@@ -14,13 +14,7 @@
 
 package redactionprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor"
 
-import (
-	"go.opentelemetry.io/collector/config"
-)
-
 type Config struct {
-	config.ProcessorSettings `mapstructure:",squash"`
-
 	// AllowAllKeys is a flag to allow all span attribute keys. Setting this
 	// to true disables the AllowedKeys list. The list of BlockedValues is
 	// applied regardless. If you just want to block values, set this to true.

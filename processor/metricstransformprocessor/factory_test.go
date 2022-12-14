@@ -25,9 +25,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/processor/processortest"
 )
 
 func TestType(t *testing.T) {
@@ -39,9 +39,7 @@ func TestType(t *testing.T) {
 func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.Equal(t, cfg, &Config{
-		ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
-	})
+	assert.Equal(t, cfg, &Config{})
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
@@ -135,7 +133,7 @@ func TestCreateProcessors(t *testing.T) {
 
 				tp, tErr := factory.CreateTracesProcessor(
 					context.Background(),
-					componenttest.NewNopProcessorCreateSettings(),
+					processortest.NewNopCreateSettings(),
 					cfg,
 					consumertest.NewNop())
 				// Not implemented error
@@ -144,7 +142,7 @@ func TestCreateProcessors(t *testing.T) {
 
 				mp, mErr := factory.CreateMetricsProcessor(
 					context.Background(),
-					componenttest.NewNopProcessorCreateSettings(),
+					processortest.NewNopCreateSettings(),
 					cfg,
 					consumertest.NewNop())
 				if tt.succeed {
