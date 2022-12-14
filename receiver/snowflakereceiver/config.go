@@ -13,3 +13,45 @@
 // limitations under the License.
 
 package snowflakereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snowflakereceiver"
+
+import (
+	"errors"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snowflakereceiver/internal/metadata"
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.uber.org/multierr"
+)
+
+type Config struct {
+    scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
+    Metrics   metadata.MetricsSettings      `mapstructure:"metrics"`
+    Username  string                        `mapstructure:"username"`
+    Password  string                        `mapstructure:"password"`
+    Account   string                        `mapstructure:"account"`
+    Schema    string                        `mapstructure:"schema"`
+    Warehouse string                        `mapstructure:"warehouse"`
+    Database  string                        `mapstructure:"database"`
+    Role      string                        `mapstructure:"role"`
+}
+
+func (cfg *Config) Validate() error {
+    var errs error
+    if (cfg.Username == "") {
+        errs = multierr.Append(errs, errors.New("You must provide a valid snowflake username"))
+    }
+
+    if (cfg.Password == "") {
+        errs = multierr.Append(errs, errors.New("You must provide a password for the snowflake username"))
+    }
+
+    if (cfg.Account == "") {
+        errs = multierr.Append(errs, errors.New("You must provide a valid account name"))
+    }
+
+    if (cfg.Warehouse == "") {
+        errs = multierr.Append(errs, errors.New("You must provide a valid warehouse name"))
+    }
+
+    return errs
+}
