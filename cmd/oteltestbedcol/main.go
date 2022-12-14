@@ -19,7 +19,6 @@
 package main
 
 import (
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/loggingexporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
@@ -27,10 +26,12 @@ import (
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/ballastextension"
 	"go.opentelemetry.io/collector/extension/zpagesextension"
+	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/processor/memorylimiterprocessor"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
+	"go.opentelemetry.io/collector/service"
 	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter"
@@ -68,7 +69,7 @@ func main() {
 
 // Components returns the set of components for tests
 func Components() (
-	component.Factories,
+	service.Factories,
 	error,
 ) {
 	var errs error
@@ -115,7 +116,7 @@ func Components() (
 	)
 	errs = multierr.Append(errs, err)
 
-	processors, err := component.MakeProcessorFactoryMap(
+	processors, err := processor.MakeFactoryMap(
 		attributesprocessor.NewFactory(),
 		batchprocessor.NewFactory(),
 		memorylimiterprocessor.NewFactory(),
@@ -123,7 +124,7 @@ func Components() (
 	)
 	errs = multierr.Append(errs, err)
 
-	factories := component.Factories{
+	factories := service.Factories{
 		Extensions: extensions,
 		Receivers:  receivers,
 		Processors: processors,

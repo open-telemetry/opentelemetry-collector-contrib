@@ -24,9 +24,8 @@ import (
 	"strings"
 	"text/template"
 
-	"go.opentelemetry.io/collector/component"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema"
+	"go.opentelemetry.io/collector/service"
 )
 
 const mdFileName = "config.md"
@@ -34,7 +33,7 @@ const mdFileName = "config.md"
 // CLI is the entrypoint for this package's functionality. It handles command-
 // line arguments for the docsgen executable and produces config documentation
 // for the specified components.
-func CLI(factories component.Factories, dr configschema.DirResolver) {
+func CLI(factories service.Factories, dr configschema.DirResolver) {
 	tableTmpl, err := tableTemplate()
 	if err != nil {
 		panic(err)
@@ -44,7 +43,7 @@ func CLI(factories component.Factories, dr configschema.DirResolver) {
 }
 
 func handleCLI(
-	factories component.Factories,
+	factories service.Factories,
 	dr configschema.DirResolver,
 	tableTmpl *template.Template,
 	writeFile writeFileFunc,
@@ -74,7 +73,7 @@ func printLines(wr io.Writer, lines ...string) {
 func allComponents(
 	dr configschema.DirResolver,
 	tableTmpl *template.Template,
-	factories component.Factories,
+	factories service.Factories,
 	writeFile writeFileFunc,
 ) {
 	configs := configschema.GetAllCfgInfos(factories)
@@ -86,7 +85,7 @@ func allComponents(
 func singleComponent(
 	dr configschema.DirResolver,
 	tableTmpl *template.Template,
-	factories component.Factories,
+	factories service.Factories,
 	componentType, componentName string,
 	writeFile writeFileFunc,
 ) {
