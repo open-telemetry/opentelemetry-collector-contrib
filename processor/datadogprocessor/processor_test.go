@@ -17,6 +17,7 @@ package datadogprocessor // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"context"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -34,15 +35,14 @@ import (
 )
 
 func TestProcessorStart(t *testing.T) {
-	var mockConsumer mockTracesConsumer
 	ctx := context.Background()
-	p, err := newProcessor(ctx, zap.NewNop(), createDefaultConfig(), &mockConsumer)
-	require.NoError(t, err)
-	defer p.Shutdown(ctx) //nolint:errcheck
-	require.True(t, p.Capabilities().MutatesData)
 
 	t.Run("fail", func(t *testing.T) {
-		err := p.Start(ctx, &mockHost{
+		p, err := newProcessor(ctx, zap.NewNop(), createDefaultConfig(), &mockTracesConsumer{})
+		require.NoError(t, err)
+		defer p.Shutdown(ctx) //nolint:errcheck
+		require.True(t, p.Capabilities().MutatesData)
+		err = p.Start(ctx, &mockHost{
 			Exporters: exporters(map[string]exporter.Metrics{
 				"test-exporter": &mockMetricsExporter{},
 			}),
@@ -51,17 +51,24 @@ func TestProcessorStart(t *testing.T) {
 	})
 
 	t.Run("fail/2", func(t *testing.T) {
-		err := p.Start(ctx, &mockHost{
+		p, err := newProcessor(ctx, zap.NewNop(), createDefaultConfig(), &mockTracesConsumer{})
+		require.NoError(t, err)
+		defer p.Shutdown(ctx) //nolint:errcheck
+		err = p.Start(ctx, &mockHost{
 			Exporters: exporters(map[string]exporter.Metrics{
 				"test-exporter": &mockMetricsExporter{},
+				"datadog/1":     &mockMetricsExporter{},
 				"datadog/2":     &mockMetricsExporter{},
 			}),
 		})
-		require.ErrorContains(t, err, `failed to find metrics exporter "datadog"`)
+		require.ErrorContains(t, err, `too many exporters of type "datadog"`)
 	})
 
-	t.Run("succeed", func(t *testing.T) {
-		err := p.Start(ctx, &mockHost{
+	t.Run("succeed/0", func(t *testing.T) {
+		p, err := newProcessor(ctx, zap.NewNop(), createDefaultConfig(), &mockTracesConsumer{})
+		require.NoError(t, err)
+		defer p.Shutdown(ctx) //nolint:errcheck
+		err = p.Start(ctx, &mockHost{
 			Exporters: exporters(map[string]exporter.Metrics{
 				"test-exporter": &mockMetricsExporter{},
 				"datadog":       &mockMetricsExporter{},
@@ -70,13 +77,27 @@ func TestProcessorStart(t *testing.T) {
 		require.NoError(t, err)
 	})
 
+	t.Run("succeed/1", func(t *testing.T) {
+		p, err := newProcessor(ctx, zap.NewNop(), createDefaultConfig(), &mockTracesConsumer{})
+		require.NoError(t, err)
+		defer p.Shutdown(ctx) //nolint:errcheck
+		err = p.Start(ctx, &mockHost{
+			Exporters: exporters(map[string]exporter.Metrics{
+				"test-exporter": &mockMetricsExporter{},
+				"datadog/2":     &mockMetricsExporter{},
+			}),
+		})
+		require.NoError(t, err)
+	})
+
 	t.Run("succeed/2", func(t *testing.T) {
-		lp, err := newProcessor(ctx, zap.NewNop(), &Config{MetricsExporter: component.NewIDWithName("datadog", "2")}, &mockConsumer)
+		lp, err := newProcessor(ctx, zap.NewNop(), &Config{MetricsExporter: component.NewIDWithName("datadog", "2")}, &mockTracesConsumer{})
 		require.NoError(t, err)
 		defer lp.Shutdown(ctx) //nolint:errcheck
 		err = lp.Start(ctx, &mockHost{
 			Exporters: exporters(map[string]exporter.Metrics{
 				"test-exporter": &mockMetricsExporter{},
+				"datadog/1":     &mockMetricsExporter{},
 				"datadog/2":     &mockMetricsExporter{},
 			}),
 		})
@@ -89,6 +110,10 @@ func TestProcessorIngest(t *testing.T) {
 	ctx := context.Background()
 	p, err := newProcessor(ctx, zap.NewNop(), createDefaultConfig(), &mockConsumer)
 	require.NoError(t, err)
+	out := make(chan pb.StatsPayload, 1)
+	ing := &mockIngester{Out: out}
+	p.agent = ing
+	p.in = out
 	mexporter := &mockMetricsExporter{}
 	err = p.Start(ctx, &mockHost{
 		Exporters: exporters(map[string]exporter.Metrics{
@@ -98,15 +123,11 @@ func TestProcessorIngest(t *testing.T) {
 	})
 	require.NoError(t, err)
 	defer p.Shutdown(ctx) //nolint:errcheck
-	out := make(chan pb.StatsPayload, 1)
-	ing := &mockIngester{Out: out}
-	p.agent = ing
-	p.in = out
 	tracesin := ptrace.NewTraces()
 	err = p.ConsumeTraces(ctx, tracesin)
 	require.NoError(t, err)
-	require.Equal(t, ing.ingested, tracesin)       // ingester has ingested the consumed traces
-	require.Equal(t, mockConsumer.In[0], tracesin) // the consumed traces are sent to the next consumer
+	require.Equal(t, ing.ingested, tracesin)         // ingester has ingested the consumed traces
+	require.Equal(t, mockConsumer.In()[0], tracesin) // the consumed traces are sent to the next consumer
 	timeout := time.After(time.Second)
 loop:
 	for {
@@ -114,7 +135,7 @@ loop:
 		case <-timeout:
 			t.Fatal("metrics exporter should have received metrics")
 		default:
-			if len(mexporter.In) > 0 {
+			if len(mexporter.In()) > 0 {
 				break loop // the exporter has consumed the generated metrics
 			}
 			time.Sleep(5 * time.Millisecond)
@@ -146,7 +167,8 @@ var _ consumer.Traces = (*mockTracesConsumer)(nil)
 
 // mockTracesConsumer implements consumer.Traces.
 type mockTracesConsumer struct {
-	In []ptrace.Traces
+	mu sync.RWMutex
+	in []ptrace.Traces
 }
 
 func (m *mockTracesConsumer) Capabilities() consumer.Capabilities {
@@ -154,15 +176,24 @@ func (m *mockTracesConsumer) Capabilities() consumer.Capabilities {
 }
 
 func (m *mockTracesConsumer) ConsumeTraces(_ context.Context, td ptrace.Traces) error {
-	m.In = append(m.In, td)
+	m.mu.Lock()
+	m.in = append(m.in, td)
+	m.mu.Unlock()
 	return nil
+}
+
+func (m *mockTracesConsumer) In() []ptrace.Traces {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	return m.in
 }
 
 var _ consumer.Metrics = (*mockMetricsConsumer)(nil)
 
 // mockMetricsConsumer implements consumer.Traces.
 type mockMetricsConsumer struct {
-	In []pmetric.Metrics
+	mu sync.RWMutex
+	in []pmetric.Metrics
 }
 
 func (m *mockMetricsConsumer) Capabilities() consumer.Capabilities {
@@ -170,8 +201,16 @@ func (m *mockMetricsConsumer) Capabilities() consumer.Capabilities {
 }
 
 func (m *mockMetricsConsumer) ConsumeMetrics(_ context.Context, td pmetric.Metrics) error {
-	m.In = append(m.In, td)
+	m.mu.Lock()
+	m.in = append(m.in, td)
+	m.mu.Unlock()
 	return nil
+}
+
+func (m *mockMetricsConsumer) In() []pmetric.Metrics {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	return m.in
 }
 
 var _ component.Host = (*mockHost)(nil)
