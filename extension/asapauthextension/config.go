@@ -18,7 +18,6 @@ import (
 	"errors"
 	"time"
 
-	"go.opentelemetry.io/collector/config"
 	"go.uber.org/multierr"
 )
 
@@ -31,8 +30,6 @@ var (
 )
 
 type Config struct {
-	config.ExtensionSettings `mapstructure:",squash"`
-
 	KeyID string `mapstructure:"key_id"`
 
 	TTL time.Duration `mapstructure:"ttl"`

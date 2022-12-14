@@ -22,7 +22,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -46,12 +45,11 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewID(typeStr),
 			expected: &Config{
-				ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
-				TTL:               60 * time.Second,
-				Audience:          []string{"test_service1", "test_service2"},
-				Issuer:            "test_issuer",
-				KeyID:             "test_issuer/test_kid",
-				PrivateKey:        privateKey,
+				TTL:        60 * time.Second,
+				Audience:   []string{"test_service1", "test_service2"},
+				Issuer:     "test_issuer",
+				KeyID:      "test_issuer/test_kid",
+				PrivateKey: privateKey,
 			},
 		},
 		{
