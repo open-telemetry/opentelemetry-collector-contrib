@@ -27,6 +27,71 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
+func Test_newPathGetSetter_Tmp(t *testing.T) {
+	newStorage := pcommon.NewMap()
+	newStorage.PutStr("temp", "value")
+
+	tests := []struct {
+		name      string
+		path      []ottl.Field
+		orig      interface{}
+		newVal    interface{}
+		modified  func(storage pcommon.Map)
+		valueType pmetric.NumberDataPointValueType
+	}{
+
+		{
+			name: "tmp",
+			path: []ottl.Field{
+				{
+					Name: "tmp",
+				},
+			},
+			orig:   pcommon.NewMap(),
+			newVal: newStorage,
+			modified: func(storage pcommon.Map) {
+				newStorage.CopyTo(storage)
+			},
+		},
+		{
+			name: "tmp access",
+			path: []ottl.Field{
+				{
+					Name:   "tmp",
+					MapKey: ottltest.Strp("temp"),
+				},
+			},
+			orig:   nil,
+			newVal: "new value",
+			modified: func(storage pcommon.Map) {
+				storage.PutStr("temp", "new value")
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			accessor, err := newPathGetSetter(tt.path)
+			assert.NoError(t, err)
+
+			numberDataPoint := createNumberDataPointTelemetry(tt.valueType)
+
+			ctx := NewTransformContext(numberDataPoint, pmetric.NewMetric(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource())
+
+			got, err := accessor.Get(context.Background(), ctx)
+			assert.Nil(t, err)
+			assert.Equal(t, tt.orig, got)
+
+			err = accessor.Set(context.Background(), ctx, tt.newVal)
+			assert.Nil(t, err)
+
+			exStorage := pcommon.NewMap()
+			tt.modified(exStorage)
+
+			assert.Equal(t, exStorage, ctx.getStorage())
+		})
+	}
+}
+
 func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 	refNumberDataPoint := createNumberDataPointTelemetry(pmetric.NumberDataPointValueTypeInt)
 
@@ -1571,6 +1636,7 @@ func createSummaryDataPointTelemetry() pmetric.SummaryDataPoint {
 
 	return summaryDataPoint
 }
+
 func createAttributeTelemetry(attributes pcommon.Map) {
 	attributes.PutStr("str", "val")
 	attributes.PutBool("bool", true)
