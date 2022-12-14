@@ -27,8 +27,6 @@ type Config struct {
 	confighttp.HTTPServerSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	splunk.AccessTokenPassthroughConfig `mapstructure:",squash"`
-	// Path was used to map the receiver to a specific subset of the path. Now ignored as we match all incoming requests.
-	Path string `mapstructure:"path"`
 	// RawPath for raw data collection, default is '/services/collector/raw'
 	RawPath string `mapstructure:"raw_path"`
 	// HealthPath for health API, default is '/services/collector/health'

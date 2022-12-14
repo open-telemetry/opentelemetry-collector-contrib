@@ -27,7 +27,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
@@ -198,7 +197,7 @@ func TestAtlasPoll(t *testing.T) {
 
 	alerts := []mongodbatlas.Alert{}
 	for _, pl := range testPayloads {
-		payloadFile, err := ioutil.ReadFile(filepath.Join("testdata", "alerts", "sample-payloads", pl))
+		payloadFile, err := os.ReadFile(filepath.Join("testdata", "alerts", "sample-payloads", pl))
 		require.NoError(t, err)
 
 		alert := mongodbatlas.Alert{}

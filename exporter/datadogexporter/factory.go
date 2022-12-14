@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
+	"github.com/DataDog/datadog-agent/pkg/trace/agent"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -49,6 +50,11 @@ type factory struct {
 	sourceProvider source.Provider
 	providerErr    error
 
+	onceAgent sync.Once      // ensures agent only gets instantiated once
+	wg        sync.WaitGroup // waits for agent to exit
+	agent     *agent.Agent   // agent processes incoming traces and stats
+	agentErr  error          // specifies any error occurred while instantiating agent
+
 	registry *featuregate.Registry
 }
 
@@ -57,6 +63,23 @@ func (f *factory) SourceProvider(set component.TelemetrySettings, configHostname
 		f.sourceProvider, f.providerErr = metadata.GetSourceProvider(set, configHostname)
 	})
 	return f.sourceProvider, f.providerErr
+}
+
+func (f *factory) TraceAgent(ctx context.Context, params exporter.CreateSettings, cfg *Config, sourceProvider source.Provider) (*agent.Agent, error) {
+	f.onceAgent.Do(func() {
+		agnt, err := newTraceAgent(ctx, params, cfg, sourceProvider)
+		if err != nil {
+			f.agentErr = err
+			return
+		}
+		f.wg.Add(1)
+		go func() {
+			defer f.wg.Done()
+			agnt.Run()
+		}()
+		f.agent = agnt
+	})
+	return f.agent, f.agentErr
 }
 
 func newFactoryWithRegistry(registry *featuregate.Registry) exporter.Factory {
@@ -163,8 +186,13 @@ func (f *factory) createMetricsExporter(
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
+	// cancel() runs on shutdown
 	var pushMetricsFn consumer.ConsumeMetricsFunc
-
+	traceagent, err := f.TraceAgent(ctx, set, cfg, hostProvider)
+	if err != nil {
+		cancel()
+		return nil, fmt.Errorf("failed to start trace-agent: %w", err)
+	}
 	if cfg.OnlyMetadata {
 		pushMetricsFn = func(_ context.Context, md pmetric.Metrics) error {
 			// only sending metadata use only metrics
@@ -179,9 +207,10 @@ func (f *factory) createMetricsExporter(
 			return nil
 		}
 	} else {
-		exp, metricsErr := newMetricsExporter(ctx, set, cfg, &f.onceMetadata, hostProvider)
+		exp, metricsErr := newMetricsExporter(ctx, set, cfg, &f.onceMetadata, hostProvider, traceagent)
 		if metricsErr != nil {
-			cancel()
+			cancel()    // first cancel context
+			f.wg.Wait() // then wait for shutdown
 			return nil, metricsErr
 		}
 		pushMetricsFn = exp.PushMetricsDataScrubbed
@@ -226,8 +255,13 @@ func (f *factory) createTracesExporter(
 	if err != nil {
 		return nil, fmt.Errorf("failed to build hostname provider: %w", err)
 	}
-	ctx, cancel := context.WithCancel(ctx) // nolint:govet
+	ctx, cancel := context.WithCancel(ctx)
 	// cancel() runs on shutdown
+	traceagent, err := f.TraceAgent(ctx, set, cfg, hostProvider)
+	if err != nil {
+		cancel()
+		return nil, fmt.Errorf("failed to start trace-agent: %w", err)
+	}
 	if cfg.OnlyMetadata {
 		// only host metadata needs to be sent, once.
 		pusher = func(_ context.Context, td ptrace.Traces) error {
@@ -245,15 +279,15 @@ func (f *factory) createTracesExporter(
 			return nil
 		}
 	} else {
-		tracex, err2 := newTracesExporter(ctx, set, cfg, &f.onceMetadata, hostProvider)
+		tracex, err2 := newTracesExporter(ctx, set, cfg, &f.onceMetadata, hostProvider, traceagent)
 		if err2 != nil {
 			cancel()
 			return nil, err2
 		}
 		pusher = tracex.consumeTraces
 		stop = func(context.Context) error {
-			cancel()              // first cancel context
-			tracex.waitShutdown() // then wait for shutdown
+			cancel()    // first cancel context
+			f.wg.Wait() // then wait for shutdown
 			return nil
 		}
 	}
