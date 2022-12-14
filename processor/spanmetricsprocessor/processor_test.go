@@ -201,6 +201,53 @@ func TestProcessorShutdown(t *testing.T) {
 	mexp.AssertNumberOfCalls(t, "ConsumeMetrics", 1)
 }
 
+func TestProcessorConcurrentShutdown(t *testing.T) {
+	// Prepare
+	exporters := map[component.DataType]map[component.ID]component.Component{}
+	mhost := &mocks.Host{}
+	mhost.On("GetExporters").Return(exporters)
+
+	ctx := context.Background()
+
+	core, observedLogs := observer.New(zapcore.InfoLevel)
+	logger := zap.New(core)
+
+	mexp := &mocks.MetricsExporter{}
+	tcon := &mocks.TracesConsumer{}
+
+	mockClock := clock.NewMock(time.Now())
+	ticker := mockClock.NewTicker(time.Nanosecond)
+
+	// Test
+	p := newProcessorImp(mexp, tcon, nil, cumulative, logger, ticker)
+	err := p.Start(ctx, mhost)
+	require.NoError(t, err)
+
+	// Allow goroutines time to start.
+	time.Sleep(time.Millisecond)
+
+	// Simulate many goroutines trying to concurrently shutdown.
+	var wg sync.WaitGroup
+	const concurrency = 1000
+	wg.Add(concurrency)
+	for i := 0; i < concurrency; i++ {
+		go func() {
+			err = p.Shutdown(ctx)
+			require.NoError(t, err)
+			wg.Done()
+		}()
+	}
+	wg.Wait()
+	allLogs := observedLogs.All()
+	require.NotEmpty(t, allLogs)
+
+	// Starting spanmetricsprocessor...
+	// Started spanmetricsprocessor...
+	// Shutting down spanmetricsprocessor...
+	// Stopping ticker.
+	assert.Len(t, allLogs, 4)
+}
+
 func TestConfigureLatencyBounds(t *testing.T) {
 	// Prepare
 	factory := NewFactory()

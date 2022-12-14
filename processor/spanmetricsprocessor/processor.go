@@ -87,6 +87,8 @@ type processorImp struct {
 	ticker  *clock.Ticker
 	done    chan bool
 	started bool
+
+	once sync.Once
 }
 
 type dimension struct {
@@ -249,13 +251,15 @@ func (p *processorImp) Start(ctx context.Context, host component.Host) error {
 
 // Shutdown implements the component.Component interface.
 func (p *processorImp) Shutdown(context.Context) error {
-	p.logger.Info("Shutting down spanmetricsprocessor")
-	if p.started {
-		p.logger.Info("Stopping ticker")
-		p.ticker.Stop()
-		p.done <- true
-		p.started = false
-	}
+	p.once.Do(func() {
+		p.logger.Info("Shutting down spanmetricsprocessor")
+		if p.started {
+			p.logger.Info("Stopping ticker")
+			p.ticker.Stop()
+			p.done <- true
+			p.started = false
+		}
+	})
 	return nil
 }
 
