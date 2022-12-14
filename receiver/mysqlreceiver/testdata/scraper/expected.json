@@ -3033,7 +3033,38 @@
                         ],
                         "isMonotonic": true
                      },
-                     "unit": "1"
+                     "unit": "1"                  },
+                  {
+                     "description": "This field is an indication of how “late” the replica is.",
+                     "name": "mysql.replica.time_behind_source",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "isMonotonic": false,
+                        "dataPoints": [
+                           {
+                              "asInt": "5",
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           }
+                        ]
+                     },
+                     "unit": "s"
+                  },
+                  {
+                     "description": "The number of seconds that the replica must lag the source.",
+                     "name": "mysql.replica.sql_delay",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "isMonotonic": false,
+                        "dataPoints": [
+                           {
+                              "asInt": "8",
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           }
+                        ]
+                     },
+                     "unit": "s"
                   }
                ]
             }

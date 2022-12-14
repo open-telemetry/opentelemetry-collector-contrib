@@ -18,9 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"time"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
@@ -42,14 +40,4 @@ func (c Config) Validate() error {
 		return fmt.Errorf("'datasource' is invalid: %w", err)
 	}
 	return nil
-}
-
-func CreateDefaultConfig() component.Config {
-	return &Config{
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
-			CollectionInterval: 10 * time.Second,
-		},
-		MetricsSettings: metadata.DefaultMetricsSettings(),
-	}
 }

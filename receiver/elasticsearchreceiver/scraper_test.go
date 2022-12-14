@@ -61,6 +61,8 @@ func TestScraper(t *testing.T) {
 
 	config.Metrics.JvmMemoryHeapUtilization.Enabled = true
 
+	config.Metrics.ElasticsearchNodeOperationsCurrent.Enabled = true
+
 	config.Metrics.ElasticsearchIndexOperationsMergeSize.Enabled = true
 	config.Metrics.ElasticsearchIndexOperationsMergeDocsCount.Enabled = true
 	config.Metrics.ElasticsearchIndexSegmentsCount.Enabled = true
@@ -74,6 +76,11 @@ func TestScraper(t *testing.T) {
 	config.Metrics.ElasticsearchIndexDocuments.Enabled = true
 
 	config.Metrics.ElasticsearchClusterIndicesCacheEvictions.Enabled = true
+
+	config.Metrics.ElasticsearchNodeCacheSize.Enabled = true
+	config.Metrics.ElasticsearchProcessCPUUsage.Enabled = true
+	config.Metrics.ElasticsearchProcessCPUTime.Enabled = true
+	config.Metrics.ElasticsearchProcessMemoryVirtual.Enabled = true
 
 	sc := newElasticSearchScraper(receivertest.NewNopCreateSettings(), config)
 
