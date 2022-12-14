@@ -15,17 +15,15 @@ package googlecloudexporter // import "github.com/open-telemetry/opentelemetry-c
 
 import (
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"google.golang.org/api/option"
 )
 
 // LegacyConfig defines configuration for Google Cloud exporter.
 type LegacyConfig struct {
-	config.ExporterSettings `mapstructure:",squash"`
-	ProjectID               string `mapstructure:"project"`
-	UserAgent               string `mapstructure:"user_agent"`
-	Endpoint                string `mapstructure:"endpoint"`
+	ProjectID string `mapstructure:"project"`
+	UserAgent string `mapstructure:"user_agent"`
+	Endpoint  string `mapstructure:"endpoint"`
 	// Only has effect if Endpoint is not ""
 	UseInsecure bool `mapstructure:"use_insecure"`
 
@@ -71,11 +69,10 @@ type LabelMapping struct {
 
 func toNewConfig(cfg *LegacyConfig) *Config {
 	newCfg := &Config{
-		ExporterSettings: cfg.ExporterSettings,
-		TimeoutSettings:  cfg.TimeoutSettings,
-		QueueSettings:    cfg.QueueSettings,
-		RetrySettings:    cfg.RetrySettings,
-		Config:           collector.DefaultConfig(),
+		TimeoutSettings: cfg.TimeoutSettings,
+		QueueSettings:   cfg.QueueSettings,
+		RetrySettings:   cfg.RetrySettings,
+		Config:          collector.DefaultConfig(),
 	}
 	newCfg.Config.ProjectID = cfg.ProjectID
 	newCfg.Config.UserAgent = cfg.UserAgent

@@ -21,7 +21,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
@@ -39,7 +38,6 @@ func TestCreateDefaultConfig(t *testing.T) {
 	qs.Enabled = false
 
 	assert.Equal(t, cfg, &Config{
-		ExporterSettings:   config.NewExporterSettings(component.NewID(typeStr)),
 		CompressEncoding:   "gzip",
 		MaxRequestBodySize: 1_048_576,
 		LogFormat:          "json",

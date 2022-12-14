@@ -17,7 +17,6 @@ package awsemfexporter // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"errors"
 
-	"go.opentelemetry.io/collector/config"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
@@ -32,7 +31,6 @@ var (
 
 // Config defines configuration for AWS EMF exporter.
 type Config struct {
-	config.ExporterSettings `mapstructure:",squash"`
 	// AWSSessionSettings contains the common configuration options
 	// for creating AWS session to communicate with backend
 	awsutil.AWSSessionSettings `mapstructure:",squash"`

@@ -19,14 +19,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 )
 
 // An inappropriate config
-type badConfig struct {
-	config.ExporterSettings `mapstructure:",squash"`
-}
+type badConfig struct{}
 
 func TestCreateTracesExporterUsingSpecificTransportChannel(t *testing.T) {
 	// mock transport channel creation

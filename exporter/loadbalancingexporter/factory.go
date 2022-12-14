@@ -19,7 +19,6 @@ import (
 
 	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 )
@@ -48,7 +47,6 @@ func createDefaultConfig() component.Config {
 	otlpDefaultCfg := otlpFactory.CreateDefaultConfig().(*otlpexporter.Config)
 
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		Protocol: Protocol{
 			OTLP: *otlpDefaultCfg,
 		},

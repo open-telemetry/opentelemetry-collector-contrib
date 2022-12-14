@@ -22,7 +22,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -40,8 +39,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		{
 			desc: "Valid trace configuration",
 			cfg: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				Tag:              TagNone,
+				Tag: TagNone,
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "http://localhost:8080",
 				},
@@ -54,8 +52,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		{
 			desc: "Unsanitizable trace configuration",
 			cfg: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				Tag:              TagNone,
+				Tag: TagNone,
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "\n",
 				},
@@ -65,8 +62,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		{
 			desc: "Missing ingest token",
 			cfg: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				Tag:              TagNone,
+				Tag: TagNone,
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "http://localhost:8080",
 				},
@@ -76,8 +72,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		{
 			desc: "Invalid client configuration",
 			cfg: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				Tag:              TagNone,
+				Tag: TagNone,
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "http://localhost:8080",
 					TLSSetting: configtls.TLSClientSetting{

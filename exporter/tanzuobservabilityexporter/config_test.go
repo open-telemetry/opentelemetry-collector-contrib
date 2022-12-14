@@ -22,15 +22,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
+	"go.opentelemetry.io/collector/service/servicetest"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
+	factories, err := servicetest.NopFactories()
 	require.NoError(t, err)
 
 	factory := NewFactory()
@@ -43,7 +42,6 @@ func TestLoadConfig(t *testing.T) {
 	actual, ok := cfg.Exporters[component.NewID("tanzuobservability")]
 	require.True(t, ok)
 	expected := &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID("tanzuobservability")),
 		Traces: TracesConfig{
 			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: "http://localhost:40001"},
 		},

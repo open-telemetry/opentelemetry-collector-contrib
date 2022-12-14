@@ -22,7 +22,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
@@ -50,11 +49,10 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "full"),
 			expected: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				DSN:              defaultDSN,
-				TTLDays:          3,
-				LogsTableName:    "otel_logs",
-				TracesTableName:  "otel_traces",
+				DSN:             defaultDSN,
+				TTLDays:         3,
+				LogsTableName:   "otel_logs",
+				TracesTableName: "otel_traces",
 				TimeoutSettings: exporterhelper.TimeoutSettings{
 					Timeout: 5 * time.Second,
 				},

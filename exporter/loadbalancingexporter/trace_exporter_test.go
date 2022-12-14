@@ -29,7 +29,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
@@ -39,6 +38,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
+	"go.opentelemetry.io/collector/service/servicetest"
 	"go.uber.org/atomic"
 	"go.uber.org/zap"
 )
@@ -302,7 +302,7 @@ func TestConsumeTracesUnexpectedExporterType(t *testing.T) {
 
 func TestBuildExporterConfig(t *testing.T) {
 	// prepare
-	factories, err := componenttest.NopFactories()
+	factories, err := servicetest.NopFactories()
 	require.NoError(t, err)
 
 	factories.Exporters[typeStr] = NewFactory()
@@ -323,7 +323,6 @@ func TestBuildExporterConfig(t *testing.T) {
 	grpcSettings.Endpoint = "the-endpoint"
 	assert.Equal(t, grpcSettings, exporterCfg.GRPCClientSettings)
 
-	assert.Equal(t, defaultCfg.ExporterSettings, exporterCfg.ExporterSettings)
 	assert.Equal(t, defaultCfg.TimeoutSettings, exporterCfg.TimeoutSettings)
 	assert.Equal(t, defaultCfg.QueueSettings, exporterCfg.QueueSettings)
 	assert.Equal(t, defaultCfg.RetrySettings, exporterCfg.RetrySettings)
@@ -454,7 +453,6 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 	res.resInterval = 10 * time.Millisecond
 
 	cfg := &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		Resolver: ResolverSettings{
 			DNS: &DNSResolver{Hostname: "service-1", Port: ""},
 		},
@@ -587,7 +585,6 @@ func appendSimpleTraceWithID(dest ptrace.ResourceSpans, id pcommon.TraceID) {
 
 func simpleConfig() *Config {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		Resolver: ResolverSettings{
 			Static: &StaticResolver{Hostnames: []string{"endpoint-1"}},
 		},
@@ -596,7 +593,6 @@ func simpleConfig() *Config {
 
 func serviceBasedRoutingConfig() *Config {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		Resolver: ResolverSettings{
 			Static: &StaticResolver{Hostnames: []string{"endpoint-1"}},
 		},

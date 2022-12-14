@@ -21,12 +21,13 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
+	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
+	"go.opentelemetry.io/collector/service"
 	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor"
@@ -90,9 +91,9 @@ func TestExamples(t *testing.T) {
 
 // newTestComponents returns the minimum amount of components necessary for
 // running a collector with any of the examples/* yaml configuration files.
-func newTestComponents(t *testing.T) component.Factories {
+func newTestComponents(t *testing.T) service.Factories {
 	var (
-		factories component.Factories
+		factories service.Factories
 		err       error
 	)
 	factories.Receivers, err = receiver.MakeFactoryMap(
@@ -103,8 +104,8 @@ func newTestComponents(t *testing.T) component.Factories {
 		}...,
 	)
 	require.NoError(t, err)
-	factories.Processors, err = component.MakeProcessorFactoryMap(
-		[]component.ProcessorFactory{
+	factories.Processors, err = processor.MakeFactoryMap(
+		[]processor.Factory{
 			batchprocessor.NewFactory(),
 			k8sattributesprocessor.NewFactory(),
 			resourcedetectionprocessor.NewFactory(),
