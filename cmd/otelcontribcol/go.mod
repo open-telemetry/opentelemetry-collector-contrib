@@ -998,14 +998,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5clo
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver => ../../receiver/kubeletstatsreceiver
 
-// loki needs grafana fork to be used
-replace github.com/hpcloud/tail => github.com/grafana/tail v0.0.0-20220426200921-98e8eb28ea4c
-
 // using fork for support LogpullReceived and LogpullFields for loki - see https://github.com/cloudflare/cloudflare-go/pull/743
 replace github.com/cloudflare/cloudflare-go => github.com/cyriltovena/cloudflare-go v0.27.1-0.20211118103540-ff77400bcb93
-
-// using fork for custom dialer support for loki - see https://github.com/bradfitz/gomemcache/pull/86
-replace github.com/bradfitz/gomemcache => github.com/grafana/gomemcache v0.0.0-20220812141859-1e3ae89e91a7
 
 // fork containing a line-buffered logger which should improve logging performance for loki
 replace github.com/go-kit/log => github.com/dannykopping/go-kit-log v0.2.2-0.20221002180827-5591c1641b6b
