@@ -34,7 +34,7 @@ haproxy:
 
 ## Enabling metrics.
 
-See [documentation.md].
+See [documentation.md](./documentation.md).
 
 You can enable or disable selective metrics.
 
