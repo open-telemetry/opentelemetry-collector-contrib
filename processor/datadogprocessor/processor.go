@@ -73,18 +73,42 @@ func newProcessor(ctx context.Context, logger *zap.Logger, config component.Conf
 
 // Start implements the component.Component interface.
 func (p *processor) Start(ctx context.Context, host component.Host) error {
+	var datadogs []exporter.Metrics
+loop:
 	for k, exp := range host.GetExporters()[component.DataTypeMetrics] {
 		mexp, ok := exp.(exporter.Metrics)
 		if !ok {
 			return fmt.Errorf("the exporter %q isn't a metrics exporter", k.String())
 		}
-		if k == p.cfg.MetricsExporter {
+		switch p.cfg.MetricsExporter {
+		case k:
+			// we found exactly the configured metrics exporter
 			p.metricsExporter = mexp
-			break
+			break loop
+		case datadogComponent:
+			// we are looking for the default "datadog" component
+			if k.Type() == datadogComponent.Type() {
+				// and k has the type, but not the name, so it's not an exact match. Store
+				// it for later; if we discover that k was the only Datadog component, we will
+				// will conclude that it is safe to use. Otherwise, we will fail and force the
+				// user to choose.
+				datadogs = append(datadogs, mexp)
+			}
 		}
 	}
 	if p.metricsExporter == nil {
-		return fmt.Errorf("failed to find metrics exporter %q; please specify a valid datadog::metrics_exporter", p.cfg.MetricsExporter)
+		// the exact component was not found
+		switch len(datadogs) {
+		case 0:
+			// no valid defaults to fall back to
+			return fmt.Errorf("failed to find metrics exporter %q; please specify a valid processor::datadog::metrics_exporter", p.cfg.MetricsExporter)
+		case 1:
+			// exactly one valid default to fall back to; use it
+			p.metricsExporter = datadogs[0]
+		default:
+			// too many defaults to fall back to; ambiguous situation; force the user to choose:
+			return fmt.Errorf("too many exporters of type %q; please choose one using processor::datadog::metrics_exporter", p.cfg.MetricsExporter)
+		}
 	}
 	p.started = true
 	p.agent.Start()
@@ -98,6 +122,7 @@ func (p *processor) Shutdown(context.Context) error {
 	if !p.started {
 		return nil
 	}
+	p.started = false
 	p.agent.Stop()
 	p.exit <- struct{}{} // signal exit
 	<-p.exit             // wait for close
