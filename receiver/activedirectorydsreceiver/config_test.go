@@ -51,7 +51,6 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(typeStr, ""),
 			expected: &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-					ReceiverSettings:   config.NewReceiverSettings(component.NewIDWithName(typeStr, "")),
 					CollectionInterval: 2 * time.Minute,
 				},
 				Metrics: defaultMetricsSettings,

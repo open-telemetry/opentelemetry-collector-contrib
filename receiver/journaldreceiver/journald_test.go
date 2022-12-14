@@ -53,8 +53,7 @@ func TestInputConfigFailure(t *testing.T) {
 	factory := NewFactory()
 	badCfg := &JournaldConfig{
 		BaseConfig: adapter.BaseConfig{
-			ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
-			Operators:        []operator.Config{},
+			Operators: []operator.Config{},
 		},
 		InputConfig: func() journald.Config {
 			c := journald.NewConfig()
@@ -70,8 +69,7 @@ func TestInputConfigFailure(t *testing.T) {
 func testdataConfigYaml() *JournaldConfig {
 	return &JournaldConfig{
 		BaseConfig: adapter.BaseConfig{
-			ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
-			Operators:        []operator.Config{},
+			Operators: []operator.Config{},
 		},
 		InputConfig: func() journald.Config {
 			c := journald.NewConfig()

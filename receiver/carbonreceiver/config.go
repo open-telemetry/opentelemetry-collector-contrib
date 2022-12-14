@@ -18,7 +18,6 @@ import (
 	"fmt"
 	"time"
 
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/confmap"
 
@@ -36,8 +35,6 @@ var _ confmap.Unmarshaler = (*Config)(nil)
 
 // Config defines configuration for the Carbon receiver.
 type Config struct {
-	config.ReceiverSettings `mapstructure:",squash"`
-
 	confignet.NetAddr `mapstructure:",squash"`
 
 	// TCPIdleTimeout is the timout for idle TCP connections, it is ignored
