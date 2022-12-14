@@ -35,7 +35,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
@@ -159,10 +158,9 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 	}
 
 	expCfg := &signalfxexporter.Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID("signalfx")),
-		IngestURL:        "http://" + addr,
-		APIURL:           "http://localhost",
-		AccessToken:      "access_token",
+		IngestURL:   "http://" + addr,
+		APIURL:      "http://localhost",
+		AccessToken: "access_token",
 	}
 	exp, err := signalfxexporter.NewFactory().CreateMetricsExporter(
 		context.Background(),

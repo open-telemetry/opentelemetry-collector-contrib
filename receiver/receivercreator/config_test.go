@@ -22,12 +22,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 	rcvr "go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/collector/service"
 	"go.opentelemetry.io/collector/service/servicetest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
@@ -35,7 +35,7 @@ import (
 
 type mockHostFactories struct {
 	component.Host
-	factories  component.Factories
+	factories  service.Factories
 	extensions map[component.ID]component.Component
 }
 
@@ -75,7 +75,6 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "1"),
 			expected: &Config{
-				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 				receiverTemplates: map[string]receiverTemplate{
 					"examplereceiver/1": {
 						receiverConfig: receiverConfig{
@@ -159,8 +158,7 @@ func TestInvalidReceiverResourceAttributeValueType(t *testing.T) {
 }
 
 type nopWithEndpointConfig struct {
-	config.ReceiverSettings `mapstructure:",squash"`
-	Endpoint                string `mapstructure:"endpoint"`
+	Endpoint string `mapstructure:"endpoint"`
 }
 
 type nopWithEndpointFactory struct {
@@ -174,9 +172,7 @@ type nopWithEndpointReceiver struct {
 }
 
 func (*nopWithEndpointFactory) CreateDefaultConfig() component.Config {
-	return &nopWithEndpointConfig{
-		ReceiverSettings: config.NewReceiverSettings(component.NewID("nop")),
-	}
+	return &nopWithEndpointConfig{}
 }
 
 type mockComponent struct {

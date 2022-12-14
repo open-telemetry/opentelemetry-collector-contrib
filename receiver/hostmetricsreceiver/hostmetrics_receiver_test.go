@@ -26,7 +26,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -118,7 +117,6 @@ func TestGatherMetrics_EndToEnd(t *testing.T) {
 
 	cfg := &Config{
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 			CollectionInterval: 100 * time.Millisecond,
 		},
 		Scrapers: map[string]internal.Config{

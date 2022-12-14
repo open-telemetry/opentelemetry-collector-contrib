@@ -47,8 +47,6 @@ const (
 	zipkinV1SingleBatch = "../../pkg/translator/zipkin/zipkinv1/testdata/zipkin_v1_single_batch.json"
 )
 
-var zipkinReceiverID = component.NewIDWithName(typeStr, "receiver_test")
-
 func TestNew(t *testing.T) {
 	type args struct {
 		address      string

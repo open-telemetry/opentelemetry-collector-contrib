@@ -137,8 +137,7 @@ func TestReadWindowsEventLogger(t *testing.T) {
 func createTestConfig() *WindowsLogConfig {
 	return &WindowsLogConfig{
 		BaseConfig: adapter.BaseConfig{
-			ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
-			Operators:        []operator.Config{},
+			Operators: []operator.Config{},
 		},
 		InputConfig: func() windows.Config {
 			c := windows.NewConfig()

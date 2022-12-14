@@ -18,7 +18,6 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -47,15 +46,13 @@ func NewFactory() rcvr.Factory {
 }
 
 type Config struct {
-	config.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-	fileconsumer.Config     `mapstructure:",squash"`
-	StorageID               *component.ID `mapstructure:"storage"`
+	fileconsumer.Config `mapstructure:",squash"`
+	StorageID           *component.ID `mapstructure:"storage"`
 }
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		Config:           *fileconsumer.NewConfig(),
-		ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
+		Config: *fileconsumer.NewConfig(),
 	}
 }
 

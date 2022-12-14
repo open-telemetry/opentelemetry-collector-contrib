@@ -18,7 +18,6 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
@@ -51,7 +50,6 @@ func NewFactory() receiver.Factory {
 // CreateDefaultConfig creates the default configuration for Splunk HEC receiver.
 func createDefaultConfig() component.Config {
 	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: defaultEndpoint,
 		},
