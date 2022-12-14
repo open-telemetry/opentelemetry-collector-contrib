@@ -9,6 +9,8 @@ The following fields are the exception.
 
 | path                              | field accessed                                                                            | type                                                                    |
 |-----------------------------------|-------------------------------------------------------------------------------------------|-------------------------------------------------------------------------|
+| tmp                               | the value of the current transform context's temporary storage                            | pcommon.Map                                                             |
+| tmp\[""\]                         | the value of an item in storage                                                           | string, bool, int64, float64, pcommon.Map, pcommon.Slice, []byte or nil |
 | resource                          | resource of the instrumentation scope being processed                                     | pcommon.Resource                                                        |
 | resource.attributes               | resource attributes of the instrumentation scope being processed                          | pcommon.Map                                                             |
 | resource.attributes\[""\]         | the value of the resource attribute of the instrumentation scope being processed          | string, bool, int64, float64, pcommon.Map, pcommon.Slice, []byte or nil |
