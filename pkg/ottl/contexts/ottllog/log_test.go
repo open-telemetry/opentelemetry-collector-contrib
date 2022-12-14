@@ -36,7 +36,7 @@ var (
 )
 
 func Test_newPathGetSetter(t *testing.T) {
-	refLog, refIS, refResource, refStorage := createTelemetry()
+	refLog, refIS, refResource := createTelemetry()
 
 	newAttrs := pcommon.NewMap()
 	newAttrs.PutStr("hello", "world")
@@ -203,7 +203,7 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "tmp",
 				},
 			},
-			orig:   refStorage,
+			orig:   pcommon.NewMap(),
 			newVal: newStorage,
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, storage pcommon.Map) {
 				newStorage.CopyTo(storage)
@@ -474,7 +474,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			accessor, err := newPathGetSetter(tt.path)
 			assert.NoError(t, err)
 
-			log, il, resource, _ := createTelemetry()
+			log, il, resource := createTelemetry()
 
 			tCtx := NewTransformContext(log, il, resource)
 			got, err := accessor.Get(context.Background(), tCtx)
@@ -485,7 +485,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			err = accessor.Set(context.Background(), tCtx, tt.newVal)
 			assert.Nil(t, err)
 
-			exSpan, exIl, exRes, exStorage := createTelemetry()
+			exSpan, exIl, exRes := createTelemetry()
+			exStorage := pcommon.NewMap()
 			tt.modified(exSpan, exIl, exRes, exStorage)
 
 			assert.Equal(t, exSpan, log)
@@ -496,7 +497,7 @@ func Test_newPathGetSetter(t *testing.T) {
 	}
 }
 
-func createTelemetry() (plog.LogRecord, pcommon.InstrumentationScope, pcommon.Resource, pcommon.Map) {
+func createTelemetry() (plog.LogRecord, pcommon.InstrumentationScope, pcommon.Resource) {
 	log := plog.NewLogRecord()
 	log.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(100)))
 	log.SetObservedTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(500)))
@@ -549,7 +550,7 @@ func createTelemetry() (plog.LogRecord, pcommon.InstrumentationScope, pcommon.Re
 	resource := pcommon.NewResource()
 	log.Attributes().CopyTo(resource.Attributes())
 
-	return log, il, resource, pcommon.NewMap()
+	return log, il, resource
 }
 
 func Test_ParseEnum(t *testing.T) {
