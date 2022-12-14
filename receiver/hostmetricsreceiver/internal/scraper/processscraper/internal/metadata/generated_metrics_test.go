@@ -35,6 +35,8 @@ func TestDefaultMetrics(t *testing.T) {
 
 	mb.RecordProcessMemoryUsageDataPoint(ts, 1)
 
+	mb.RecordProcessMemoryUtilizationDataPoint(ts, 1)
+
 	mb.RecordProcessMemoryVirtualDataPoint(ts, 1)
 
 	enabledMetrics["process.memory.virtual_usage"] = true
@@ -73,6 +75,7 @@ func TestAllMetrics(t *testing.T) {
 		ProcessDiskIo:              MetricSettings{Enabled: true},
 		ProcessMemoryPhysicalUsage: MetricSettings{Enabled: true},
 		ProcessMemoryUsage:         MetricSettings{Enabled: true},
+		ProcessMemoryUtilization:   MetricSettings{Enabled: true},
 		ProcessMemoryVirtual:       MetricSettings{Enabled: true},
 		ProcessMemoryVirtualUsage:  MetricSettings{Enabled: true},
 		ProcessOpenFileDescriptors: MetricSettings{Enabled: true},
@@ -93,6 +96,7 @@ func TestAllMetrics(t *testing.T) {
 	mb.RecordProcessDiskIoDataPoint(ts, 1, AttributeDirection(1))
 	mb.RecordProcessMemoryPhysicalUsageDataPoint(ts, 1)
 	mb.RecordProcessMemoryUsageDataPoint(ts, 1)
+	mb.RecordProcessMemoryUtilizationDataPoint(ts, 1)
 	mb.RecordProcessMemoryVirtualDataPoint(ts, 1)
 	mb.RecordProcessMemoryVirtualUsageDataPoint(ts, 1)
 	mb.RecordProcessOpenFileDescriptorsDataPoint(ts, 1)
@@ -230,6 +234,17 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 			assert.Equal(t, int64(1), dp.IntValue())
 			validatedMetrics["process.memory.usage"] = struct{}{}
+		case "process.memory.utilization":
+			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+			assert.Equal(t, "Percentage of total physical memory that is used by the process.", ms.At(i).Description())
+			assert.Equal(t, "1", ms.At(i).Unit())
+			dp := ms.At(i).Gauge().DataPoints().At(0)
+			assert.Equal(t, start, dp.StartTimestamp())
+			assert.Equal(t, ts, dp.Timestamp())
+			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+			assert.Equal(t, float64(1), dp.DoubleValue())
+			validatedMetrics["process.memory.utilization"] = struct{}{}
 		case "process.memory.virtual":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
@@ -326,6 +341,7 @@ func TestNoMetrics(t *testing.T) {
 		ProcessDiskIo:              MetricSettings{Enabled: false},
 		ProcessMemoryPhysicalUsage: MetricSettings{Enabled: false},
 		ProcessMemoryUsage:         MetricSettings{Enabled: false},
+		ProcessMemoryUtilization:   MetricSettings{Enabled: false},
 		ProcessMemoryVirtual:       MetricSettings{Enabled: false},
 		ProcessMemoryVirtualUsage:  MetricSettings{Enabled: false},
 		ProcessOpenFileDescriptors: MetricSettings{Enabled: false},
@@ -345,6 +361,7 @@ func TestNoMetrics(t *testing.T) {
 	mb.RecordProcessDiskIoDataPoint(ts, 1, AttributeDirection(1))
 	mb.RecordProcessMemoryPhysicalUsageDataPoint(ts, 1)
 	mb.RecordProcessMemoryUsageDataPoint(ts, 1)
+	mb.RecordProcessMemoryUtilizationDataPoint(ts, 1)
 	mb.RecordProcessMemoryVirtualDataPoint(ts, 1)
 	mb.RecordProcessMemoryVirtualUsageDataPoint(ts, 1)
 	mb.RecordProcessOpenFileDescriptorsDataPoint(ts, 1)
