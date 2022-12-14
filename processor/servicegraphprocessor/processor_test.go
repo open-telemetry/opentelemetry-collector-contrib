@@ -33,6 +33,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/processor/processortest"
 	semconv "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap/zaptest"
 )
@@ -64,12 +65,12 @@ func TestProcessorStart(t *testing.T) {
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.MetricsExporter = tc.metricsExporter
 
-			procCreationParams := componenttest.NewNopProcessorCreateSettings()
+			procCreationParams := processortest.NewNopCreateSettings()
 			traceProcessor, err := factory.CreateTracesProcessor(context.Background(), procCreationParams, cfg, consumertest.NewNop())
 			require.NoError(t, err)
 
 			// Test
-			smp := traceProcessor.(*processor)
+			smp := traceProcessor.(*serviceGraphProcessor)
 			err = smp.Start(context.Background(), newMockHost(exporters))
 
 			// Verify
@@ -281,7 +282,7 @@ func (m *mockMetricsExporter) ConsumeMetrics(_ context.Context, md pmetric.Metri
 }
 
 func TestUpdateDurationMetrics(t *testing.T) {
-	p := processor{
+	p := serviceGraphProcessor{
 		reqTotal:                       make(map[string]int64),
 		reqFailedTotal:                 make(map[string]int64),
 		reqDurationSecondsSum:          make(map[string]float64),

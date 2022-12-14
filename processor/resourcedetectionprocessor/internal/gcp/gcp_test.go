@@ -21,7 +21,7 @@ import (
 
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/processor/processortest"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
@@ -441,7 +441,7 @@ func TestDeduplicateDetectors(t *testing.T) {
 		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
-			out := DeduplicateDetectors(componenttest.NewNopProcessorCreateSettings(), tc.in)
+			out := DeduplicateDetectors(processortest.NewNopCreateSettings(), tc.in)
 			assert.Equal(t, tc.expected, out)
 		})
 	}

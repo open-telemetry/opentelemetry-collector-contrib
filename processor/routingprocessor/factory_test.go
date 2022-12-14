@@ -31,13 +31,14 @@ import (
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processorhelper"
+	"go.opentelemetry.io/collector/processor/processortest"
 	"go.uber.org/zap"
 )
 
 func TestProcessorGetsCreatedWithValidConfiguration(t *testing.T) {
 	// prepare
 	factory := NewFactory()
-	creationParams := componenttest.NewNopProcessorCreateSettings()
+	creationParams := processortest.NewNopCreateSettings()
 	cfg := &Config{
 		ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 		DefaultExporters:  []string{"otlp"},
@@ -119,7 +120,7 @@ func TestProcessorFailsWithNoFromAttribute(t *testing.T) {
 func TestShouldNotFailWhenNextIsProcessor(t *testing.T) {
 	// prepare
 	factory := NewFactory()
-	creationParams := componenttest.NewNopProcessorCreateSettings()
+	creationParams := processortest.NewNopCreateSettings()
 	cfg := &Config{
 		ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 		DefaultExporters:  []string{"otlp"},
@@ -133,7 +134,7 @@ func TestShouldNotFailWhenNextIsProcessor(t *testing.T) {
 	}
 	mp := &mockProcessor{}
 
-	next, err := processorhelper.NewTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop(), mp.processTraces)
+	next, err := processorhelper.NewTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop(), mp.processTraces)
 	require.NoError(t, err)
 
 	// test
@@ -192,7 +193,7 @@ func TestProcessorDoesNotFailToBuildExportersWithMultiplePipelines(t *testing.T)
 func TestShutdown(t *testing.T) {
 	// prepare
 	factory := NewFactory()
-	creationParams := componenttest.NewNopProcessorCreateSettings()
+	creationParams := processortest.NewNopCreateSettings()
 	cfg := &Config{
 		ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 		DefaultExporters:  []string{"otlp"},

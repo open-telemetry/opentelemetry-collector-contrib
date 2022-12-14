@@ -20,8 +20,8 @@ import (
 
 	"cloud.google.com/go/compute/metadata"
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/processor"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -44,7 +44,7 @@ const (
 // * Google App Engine (GAE).
 // * Cloud Run.
 // * Cloud Functions.
-func NewDetector(set component.ProcessorCreateSettings, _ internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(set processor.CreateSettings, _ internal.DetectorConfig) (internal.Detector, error) {
 	return &detector{
 		logger:   set.Logger,
 		detector: gcp.NewDetector(),
@@ -170,7 +170,7 @@ func (r *resourceBuilder) addZoneOrRegion(detect func() (string, gcp.LocationTyp
 // when running on GKE. Resource merge would fail in this case if we don't
 // deduplicate, which would break users.
 // TODO(#10348): Remove this function after the v0.54.0 release.
-func DeduplicateDetectors(set component.ProcessorCreateSettings, detectors []string) []string {
+func DeduplicateDetectors(set processor.CreateSettings, detectors []string) []string {
 	var out []string
 	var found bool
 	for _, d := range detectors {
