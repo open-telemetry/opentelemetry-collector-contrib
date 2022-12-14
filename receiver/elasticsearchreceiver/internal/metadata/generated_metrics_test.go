@@ -116,6 +116,8 @@ func TestDefaultMetrics(t *testing.T) {
 	enabledMetrics["elasticsearch.node.cache.memory.usage"] = true
 	mb.RecordElasticsearchNodeCacheMemoryUsageDataPoint(ts, 1, AttributeCacheName(1))
 
+	mb.RecordElasticsearchNodeCacheSizeDataPoint(ts, 1)
+
 	enabledMetrics["elasticsearch.node.cluster.connections"] = true
 	mb.RecordElasticsearchNodeClusterConnectionsDataPoint(ts, 1)
 
@@ -157,6 +159,8 @@ func TestDefaultMetrics(t *testing.T) {
 
 	enabledMetrics["elasticsearch.node.operations.completed"] = true
 	mb.RecordElasticsearchNodeOperationsCompletedDataPoint(ts, 1, AttributeOperation(1))
+
+	mb.RecordElasticsearchNodeOperationsCurrentDataPoint(ts, 1, AttributeOperation(1))
 
 	mb.RecordElasticsearchNodeOperationsGetCompletedDataPoint(ts, 1, AttributeGetResult(1))
 
@@ -226,6 +230,12 @@ func TestDefaultMetrics(t *testing.T) {
 
 	enabledMetrics["elasticsearch.os.memory"] = true
 	mb.RecordElasticsearchOsMemoryDataPoint(ts, 1, AttributeMemoryState(1))
+
+	mb.RecordElasticsearchProcessCPUTimeDataPoint(ts, 1)
+
+	mb.RecordElasticsearchProcessCPUUsageDataPoint(ts, 1)
+
+	mb.RecordElasticsearchProcessMemoryVirtualDataPoint(ts, 1)
 
 	enabledMetrics["jvm.classes.loaded"] = true
 	mb.RecordJvmClassesLoadedDataPoint(ts, 1)
@@ -317,6 +327,7 @@ func TestAllMetrics(t *testing.T) {
 		ElasticsearchNodeCacheCount:                               MetricSettings{Enabled: true},
 		ElasticsearchNodeCacheEvictions:                           MetricSettings{Enabled: true},
 		ElasticsearchNodeCacheMemoryUsage:                         MetricSettings{Enabled: true},
+		ElasticsearchNodeCacheSize:                                MetricSettings{Enabled: true},
 		ElasticsearchNodeClusterConnections:                       MetricSettings{Enabled: true},
 		ElasticsearchNodeClusterIo:                                MetricSettings{Enabled: true},
 		ElasticsearchNodeDiskIoRead:                               MetricSettings{Enabled: true},
@@ -331,6 +342,7 @@ func TestAllMetrics(t *testing.T) {
 		ElasticsearchNodeIngestOperationsFailed:                   MetricSettings{Enabled: true},
 		ElasticsearchNodeOpenFiles:                                MetricSettings{Enabled: true},
 		ElasticsearchNodeOperationsCompleted:                      MetricSettings{Enabled: true},
+		ElasticsearchNodeOperationsCurrent:                        MetricSettings{Enabled: true},
 		ElasticsearchNodeOperationsGetCompleted:                   MetricSettings{Enabled: true},
 		ElasticsearchNodeOperationsGetTime:                        MetricSettings{Enabled: true},
 		ElasticsearchNodeOperationsTime:                           MetricSettings{Enabled: true},
@@ -355,6 +367,9 @@ func TestAllMetrics(t *testing.T) {
 		ElasticsearchOsCPULoadAvg5m:                               MetricSettings{Enabled: true},
 		ElasticsearchOsCPUUsage:                                   MetricSettings{Enabled: true},
 		ElasticsearchOsMemory:                                     MetricSettings{Enabled: true},
+		ElasticsearchProcessCPUTime:                               MetricSettings{Enabled: true},
+		ElasticsearchProcessCPUUsage:                              MetricSettings{Enabled: true},
+		ElasticsearchProcessMemoryVirtual:                         MetricSettings{Enabled: true},
 		JvmClassesLoaded:                                          MetricSettings{Enabled: true},
 		JvmGcCollectionsCount:                                     MetricSettings{Enabled: true},
 		JvmGcCollectionsElapsed:                                   MetricSettings{Enabled: true},
@@ -411,6 +426,7 @@ func TestAllMetrics(t *testing.T) {
 	mb.RecordElasticsearchNodeCacheCountDataPoint(ts, 1, AttributeQueryCacheCountType(1))
 	mb.RecordElasticsearchNodeCacheEvictionsDataPoint(ts, 1, AttributeCacheName(1))
 	mb.RecordElasticsearchNodeCacheMemoryUsageDataPoint(ts, 1, AttributeCacheName(1))
+	mb.RecordElasticsearchNodeCacheSizeDataPoint(ts, 1)
 	mb.RecordElasticsearchNodeClusterConnectionsDataPoint(ts, 1)
 	mb.RecordElasticsearchNodeClusterIoDataPoint(ts, 1, AttributeDirection(1))
 	mb.RecordElasticsearchNodeDiskIoReadDataPoint(ts, 1)
@@ -425,6 +441,7 @@ func TestAllMetrics(t *testing.T) {
 	mb.RecordElasticsearchNodeIngestOperationsFailedDataPoint(ts, 1)
 	mb.RecordElasticsearchNodeOpenFilesDataPoint(ts, 1)
 	mb.RecordElasticsearchNodeOperationsCompletedDataPoint(ts, 1, AttributeOperation(1))
+	mb.RecordElasticsearchNodeOperationsCurrentDataPoint(ts, 1, AttributeOperation(1))
 	mb.RecordElasticsearchNodeOperationsGetCompletedDataPoint(ts, 1, AttributeGetResult(1))
 	mb.RecordElasticsearchNodeOperationsGetTimeDataPoint(ts, 1, AttributeGetResult(1))
 	mb.RecordElasticsearchNodeOperationsTimeDataPoint(ts, 1, AttributeOperation(1))
@@ -449,6 +466,9 @@ func TestAllMetrics(t *testing.T) {
 	mb.RecordElasticsearchOsCPULoadAvg5mDataPoint(ts, 1)
 	mb.RecordElasticsearchOsCPUUsageDataPoint(ts, 1)
 	mb.RecordElasticsearchOsMemoryDataPoint(ts, 1, AttributeMemoryState(1))
+	mb.RecordElasticsearchProcessCPUTimeDataPoint(ts, 1)
+	mb.RecordElasticsearchProcessCPUUsageDataPoint(ts, 1)
+	mb.RecordElasticsearchProcessMemoryVirtualDataPoint(ts, 1)
 	mb.RecordJvmClassesLoadedDataPoint(ts, 1)
 	mb.RecordJvmGcCollectionsCountDataPoint(ts, 1, "attr-val")
 	mb.RecordJvmGcCollectionsElapsedDataPoint(ts, 1, "attr-val")
@@ -1057,6 +1077,19 @@ func TestAllMetrics(t *testing.T) {
 			assert.True(t, ok)
 			assert.Equal(t, "fielddata", attrVal.Str())
 			validatedMetrics["elasticsearch.node.cache.memory.usage"] = struct{}{}
+		case "elasticsearch.node.cache.size":
+			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+			assert.Equal(t, "Total amount of memory used for the query cache across all shards assigned to the node.", ms.At(i).Description())
+			assert.Equal(t, "By", ms.At(i).Unit())
+			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+			dp := ms.At(i).Sum().DataPoints().At(0)
+			assert.Equal(t, start, dp.StartTimestamp())
+			assert.Equal(t, ts, dp.Timestamp())
+			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+			assert.Equal(t, int64(1), dp.IntValue())
+			validatedMetrics["elasticsearch.node.cache.size"] = struct{}{}
 		case "elasticsearch.node.cluster.connections":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
@@ -1248,6 +1281,20 @@ func TestAllMetrics(t *testing.T) {
 			assert.True(t, ok)
 			assert.Equal(t, "index", attrVal.Str())
 			validatedMetrics["elasticsearch.node.operations.completed"] = struct{}{}
+		case "elasticsearch.node.operations.current":
+			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+			assert.Equal(t, "Number of query operations currently running.", ms.At(i).Description())
+			assert.Equal(t, "{operations}", ms.At(i).Unit())
+			dp := ms.At(i).Gauge().DataPoints().At(0)
+			assert.Equal(t, start, dp.StartTimestamp())
+			assert.Equal(t, ts, dp.Timestamp())
+			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+			assert.Equal(t, int64(1), dp.IntValue())
+			attrVal, ok := dp.Attributes().Get("operation")
+			assert.True(t, ok)
+			assert.Equal(t, "index", attrVal.Str())
+			validatedMetrics["elasticsearch.node.operations.current"] = struct{}{}
 		case "elasticsearch.node.operations.get.completed":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
@@ -1589,6 +1636,43 @@ func TestAllMetrics(t *testing.T) {
 			assert.True(t, ok)
 			assert.Equal(t, "free", attrVal.Str())
 			validatedMetrics["elasticsearch.os.memory"] = struct{}{}
+		case "elasticsearch.process.cpu.time":
+			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+			assert.Equal(t, "CPU time used by the process on which the Java virtual machine is running.", ms.At(i).Description())
+			assert.Equal(t, "ms", ms.At(i).Unit())
+			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+			dp := ms.At(i).Sum().DataPoints().At(0)
+			assert.Equal(t, start, dp.StartTimestamp())
+			assert.Equal(t, ts, dp.Timestamp())
+			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+			assert.Equal(t, int64(1), dp.IntValue())
+			validatedMetrics["elasticsearch.process.cpu.time"] = struct{}{}
+		case "elasticsearch.process.cpu.usage":
+			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+			assert.Equal(t, "CPU usage in percent.", ms.At(i).Description())
+			assert.Equal(t, "1", ms.At(i).Unit())
+			dp := ms.At(i).Gauge().DataPoints().At(0)
+			assert.Equal(t, start, dp.StartTimestamp())
+			assert.Equal(t, ts, dp.Timestamp())
+			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+			assert.Equal(t, float64(1), dp.DoubleValue())
+			validatedMetrics["elasticsearch.process.cpu.usage"] = struct{}{}
+		case "elasticsearch.process.memory.virtual":
+			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+			assert.Equal(t, "Size of virtual memory that is guaranteed to be available to the running process.", ms.At(i).Description())
+			assert.Equal(t, "By", ms.At(i).Unit())
+			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+			dp := ms.At(i).Sum().DataPoints().At(0)
+			assert.Equal(t, start, dp.StartTimestamp())
+			assert.Equal(t, ts, dp.Timestamp())
+			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+			assert.Equal(t, int64(1), dp.IntValue())
+			validatedMetrics["elasticsearch.process.memory.virtual"] = struct{}{}
 		case "jvm.classes.loaded":
 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
@@ -1782,6 +1866,7 @@ func TestNoMetrics(t *testing.T) {
 		ElasticsearchNodeCacheCount:                               MetricSettings{Enabled: false},
 		ElasticsearchNodeCacheEvictions:                           MetricSettings{Enabled: false},
 		ElasticsearchNodeCacheMemoryUsage:                         MetricSettings{Enabled: false},
+		ElasticsearchNodeCacheSize:                                MetricSettings{Enabled: false},
 		ElasticsearchNodeClusterConnections:                       MetricSettings{Enabled: false},
 		ElasticsearchNodeClusterIo:                                MetricSettings{Enabled: false},
 		ElasticsearchNodeDiskIoRead:                               MetricSettings{Enabled: false},
@@ -1796,6 +1881,7 @@ func TestNoMetrics(t *testing.T) {
 		ElasticsearchNodeIngestOperationsFailed:                   MetricSettings{Enabled: false},
 		ElasticsearchNodeOpenFiles:                                MetricSettings{Enabled: false},
 		ElasticsearchNodeOperationsCompleted:                      MetricSettings{Enabled: false},
+		ElasticsearchNodeOperationsCurrent:                        MetricSettings{Enabled: false},
 		ElasticsearchNodeOperationsGetCompleted:                   MetricSettings{Enabled: false},
 		ElasticsearchNodeOperationsGetTime:                        MetricSettings{Enabled: false},
 		ElasticsearchNodeOperationsTime:                           MetricSettings{Enabled: false},
@@ -1820,6 +1906,9 @@ func TestNoMetrics(t *testing.T) {
 		ElasticsearchOsCPULoadAvg5m:                               MetricSettings{Enabled: false},
 		ElasticsearchOsCPUUsage:                                   MetricSettings{Enabled: false},
 		ElasticsearchOsMemory:                                     MetricSettings{Enabled: false},
+		ElasticsearchProcessCPUTime:                               MetricSettings{Enabled: false},
+		ElasticsearchProcessCPUUsage:                              MetricSettings{Enabled: false},
+		ElasticsearchProcessMemoryVirtual:                         MetricSettings{Enabled: false},
 		JvmClassesLoaded:                                          MetricSettings{Enabled: false},
 		JvmGcCollectionsCount:                                     MetricSettings{Enabled: false},
 		JvmGcCollectionsElapsed:                                   MetricSettings{Enabled: false},
@@ -1875,6 +1964,7 @@ func TestNoMetrics(t *testing.T) {
 	mb.RecordElasticsearchNodeCacheCountDataPoint(ts, 1, AttributeQueryCacheCountType(1))
 	mb.RecordElasticsearchNodeCacheEvictionsDataPoint(ts, 1, AttributeCacheName(1))
 	mb.RecordElasticsearchNodeCacheMemoryUsageDataPoint(ts, 1, AttributeCacheName(1))
+	mb.RecordElasticsearchNodeCacheSizeDataPoint(ts, 1)
 	mb.RecordElasticsearchNodeClusterConnectionsDataPoint(ts, 1)
 	mb.RecordElasticsearchNodeClusterIoDataPoint(ts, 1, AttributeDirection(1))
 	mb.RecordElasticsearchNodeDiskIoReadDataPoint(ts, 1)
@@ -1889,6 +1979,7 @@ func TestNoMetrics(t *testing.T) {
 	mb.RecordElasticsearchNodeIngestOperationsFailedDataPoint(ts, 1)
 	mb.RecordElasticsearchNodeOpenFilesDataPoint(ts, 1)
 	mb.RecordElasticsearchNodeOperationsCompletedDataPoint(ts, 1, AttributeOperation(1))
+	mb.RecordElasticsearchNodeOperationsCurrentDataPoint(ts, 1, AttributeOperation(1))
 	mb.RecordElasticsearchNodeOperationsGetCompletedDataPoint(ts, 1, AttributeGetResult(1))
 	mb.RecordElasticsearchNodeOperationsGetTimeDataPoint(ts, 1, AttributeGetResult(1))
 	mb.RecordElasticsearchNodeOperationsTimeDataPoint(ts, 1, AttributeOperation(1))
@@ -1913,6 +2004,9 @@ func TestNoMetrics(t *testing.T) {
 	mb.RecordElasticsearchOsCPULoadAvg5mDataPoint(ts, 1)
 	mb.RecordElasticsearchOsCPUUsageDataPoint(ts, 1)
 	mb.RecordElasticsearchOsMemoryDataPoint(ts, 1, AttributeMemoryState(1))
+	mb.RecordElasticsearchProcessCPUTimeDataPoint(ts, 1)
+	mb.RecordElasticsearchProcessCPUUsageDataPoint(ts, 1)
+	mb.RecordElasticsearchProcessMemoryVirtualDataPoint(ts, 1)
 	mb.RecordJvmClassesLoadedDataPoint(ts, 1)
 	mb.RecordJvmGcCollectionsCountDataPoint(ts, 1, "attr-val")
 	mb.RecordJvmGcCollectionsElapsedDataPoint(ts, 1, "attr-val")
