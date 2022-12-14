@@ -205,12 +205,14 @@ func Test_ProcessTraces_TraceContext(t *testing.T) {
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("http.path", "/health")
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("url", "http://localhost/health")
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("flags", "A|B|C")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("total.string", "123456789")
 
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().Clear()
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutStr("http.method", "get")
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutStr("http.path", "/health")
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutStr("url", "http://localhost/health")
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutStr("flags", "C|D")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutStr("total.string", "345678")
 			},
 		},
 		{
@@ -232,6 +234,7 @@ func Test_ProcessTraces_TraceContext(t *testing.T) {
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().Clear()
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("http.method", "get")
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("http.path", "/health")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("total.string", "123456789")
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("flags", "A|B|C")
 			},
 		},
@@ -241,6 +244,7 @@ func Test_ProcessTraces_TraceContext(t *testing.T) {
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().Clear()
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("http.url", "http://localhost/health")
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("flags", "A|B|C")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("total.string", "123456789")
 			},
 		},
 		{
@@ -304,6 +308,23 @@ func Test_ProcessTraces_TraceContext(t *testing.T) {
 		},
 		{
 			statement: `set(attributes["test"], Split(attributes["not_exist"], "|"))`,
+			want:      func(td ptrace.Traces) {},
+		},
+		{
+			statement: `set(attributes["test"], Substring(attributes["total.string"], 3, 3))`,
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("test", "456")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutStr("test", "678")
+			},
+		},
+		{
+			statement: `set(attributes["test"], Substring(attributes["total.string"], 3, 3)) where name == "operationA"`,
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("test", "456")
+			},
+		},
+		{
+			statement: `set(attributes["test"], Substring(attributes["not_exist"], 3, 3))`,
 			want:      func(td ptrace.Traces) {},
 		},
 		{
@@ -644,6 +665,7 @@ func fillSpanOne(span ptrace.Span) {
 	span.Attributes().PutStr("http.path", "/health")
 	span.Attributes().PutStr("http.url", "http://localhost/health")
 	span.Attributes().PutStr("flags", "A|B|C")
+	span.Attributes().PutStr("total.string", "123456789")
 	status := span.Status()
 	status.SetCode(ptrace.StatusCodeError)
 	status.SetMessage("status-cancelled")
@@ -659,6 +681,7 @@ func fillSpanTwo(span ptrace.Span) {
 	span.Attributes().PutStr("http.path", "/health")
 	span.Attributes().PutStr("http.url", "http://localhost/health")
 	span.Attributes().PutStr("flags", "C|D")
+	span.Attributes().PutStr("total.string", "345678")
 	link0 := span.Links().AppendEmpty()
 	link0.SetDroppedAttributesCount(4)
 	link1 := span.Links().AppendEmpty()
