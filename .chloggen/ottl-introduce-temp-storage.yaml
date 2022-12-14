@@ -5,7 +5,7 @@ change_type: enhancement
 component: pkg/ottl
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add new `ottl.storage` path to all contexts which can be used as temporary storage during complex transformations
+note: Add new `tmp` path to all contexts which can be used as temporary storage during complex transformations
 
 # One or more tracking issues related to the change
 issues: [16994]
