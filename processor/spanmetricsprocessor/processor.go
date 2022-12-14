@@ -142,7 +142,7 @@ func newProcessor(logger *zap.Logger, config component.Config, nextConsumer cons
 		return nil, err
 	}
 
-	p := &processorImp{
+	return &processorImp{
 		logger:                logger,
 		config:                *pConfig,
 		startTimestamp:        pcommon.NewTimestampFromTime(time.Now()),
@@ -154,9 +154,7 @@ func newProcessor(logger *zap.Logger, config component.Config, nextConsumer cons
 		metricKeyToDimensions: metricKeyToDimensionsCache,
 		ticker:                ticker,
 		done:                  make(chan bool),
-	}
-
-	return p, nil
+	}, nil
 }
 
 // durationToMillis converts the given duration to the number of milliseconds it represents.
