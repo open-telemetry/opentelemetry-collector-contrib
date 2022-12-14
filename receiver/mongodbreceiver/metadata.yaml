@@ -29,6 +29,14 @@ attributes:
       - delete
       - getmore
       - command
+  operation_latency:
+    name_override: operation
+    description: The MongoDB operation with regards to latency
+    type: string
+    enum:
+      - read
+      - write
+      - command
   connection_type:
     name_override: type
     description: The status of the connection.
@@ -155,6 +163,13 @@ metrics:
       value_type: int
       monotonic: false
     attributes: [database]
+  mongodb.operation.latency.time:
+    description: The latency of operations.
+    unit: us
+    enabled: false
+    gauge:
+      value_type: int
+    attributes: [ operation_latency ]
   mongodb.operation.count:
     description: The number of operations executed.
     unit: "{operations}"
@@ -164,6 +179,15 @@ metrics:
       value_type: int
       monotonic: true
     attributes: [operation]
+  mongodb.operation.repl.count:
+    description: The number of replicated operations executed.
+    unit: "{operations}"
+    enabled: false
+    sum:
+      aggregation: cumulative
+      value_type: int
+      monotonic: true
+    attributes: [ operation ]
   mongodb.storage.size:
     description: The total amount of storage allocated to this collection.
     extended_documentation: If collection data is compressed it reflects the compressed size. 
