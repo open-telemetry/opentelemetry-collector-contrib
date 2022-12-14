@@ -55,10 +55,14 @@ type cWMetrics struct {
 	fields       map[string]interface{}
 }
 
+// cWMeasurement represents the CloudWatch Embedded metric format
+// https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch_Embedded_Metric_Format_Specification.html
+// The namespace must be at the end of the struct to avoid overwriting a `Namespace`
+// key given in a `Metrics` `Dimensions` which should use labels instead.
 type cWMeasurement struct {
-	Namespace  string
 	Dimensions [][]string
 	Metrics    []map[string]string
+	Namespace  string
 }
 
 type cWMetricStats struct {
@@ -227,9 +231,9 @@ func groupedMetricToCWMeasurement(groupedMetric *groupedMetric, config *Config) 
 	}
 
 	return cWMeasurement{
-		Namespace:  groupedMetric.metadata.namespace,
 		Dimensions: dimensions,
 		Metrics:    metrics,
+		Namespace:  groupedMetric.metadata.namespace,
 	}
 }
 
@@ -326,9 +330,9 @@ func groupedMetricToCWMeasurementsWithFilters(groupedMetric *groupedMetric, conf
 		// Export metrics only with non-empty dimensions list
 		if len(dimensions) > 0 {
 			cwm := cWMeasurement{
-				Namespace:  groupedMetric.metadata.namespace,
 				Dimensions: dimensions,
 				Metrics:    group.metrics,
+				Namespace:  groupedMetric.metadata.namespace,
 			}
 			cWMeasurements = append(cWMeasurements, cwm)
 		}
