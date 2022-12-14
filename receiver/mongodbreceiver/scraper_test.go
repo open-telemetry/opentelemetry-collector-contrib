@@ -103,6 +103,8 @@ var (
 				"failed to collect metric mongodb.operation.repl.count with attribute(s) insert: could not find key for metric",
 				"failed to collect metric mongodb.operation.repl.count with attribute(s) query: could not find key for metric",
 				"failed to collect metric mongodb.operation.repl.count with attribute(s) update: could not find key for metric",
+				"failed to collect metric mongodb.health: could not find key for metric",
+				"failed to collect metric mongodb.uptime: could not find key for metric",
 			}, "; "))
 	errAllClientFailedFetch = errors.New(
 		strings.Join(
@@ -293,6 +295,8 @@ func TestScraperScrape(t *testing.T) {
 			// Enable any metrics set to `false` by default
 			scraperCfg.Metrics.MongodbOperationLatencyTime.Enabled = true
 			scraperCfg.Metrics.MongodbOperationReplCount.Enabled = true
+			scraperCfg.Metrics.MongodbUptime.Enabled = true
+			scraperCfg.Metrics.MongodbHealth.Enabled = true
 
 			scraper := newMongodbScraper(receivertest.NewNopCreateSettings(), scraperCfg)
 			scraper.client = tc.setupMockClient(t)
