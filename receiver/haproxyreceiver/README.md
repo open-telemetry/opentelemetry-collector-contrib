@@ -26,7 +26,7 @@ Default: 1 minute
 
 ```yaml
 haproxy:
-  endpoint: file:/var/run/haproxy.ipc
+  endpoint: file:///var/run/haproxy.ipc
   collection_interval: 1m
   metrics:
     
