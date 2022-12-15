@@ -390,6 +390,14 @@ The number of replicated operations executed.
 | ---- | ----------- | ------ |
 | operation | The MongoDB operation being counted. | Str: ``insert``, ``query``, ``update``, ``delete``, ``getmore``, ``command`` |
 
+### mongodb.oplog.size
+
+The size of the oplog in bytes.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | true |
+
 ### mongodb.uptime
 
 The amount of time that the server has been running.

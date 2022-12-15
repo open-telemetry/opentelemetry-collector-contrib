@@ -8,7 +8,7 @@
 
 This receiver fetches stats from a MongoDB instance using the [golang
 mongo driver](https://github.com/mongodb/mongo-go-driver). Stats are collected
-via MongoDB's `dbStats` and `serverStatus` commands.
+via MongoDB's `dbStats`, `serverStatus`, and `getDiagnosticData` commands.
 
 ## Purpose
 

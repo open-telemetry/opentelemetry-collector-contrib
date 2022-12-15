@@ -60,6 +60,7 @@ type MetricsSettings struct {
 	MongodbOperationLatencyTime   MetricSettings `mapstructure:"mongodb.operation.latency.time"`
 	MongodbOperationReplCount     MetricSettings `mapstructure:"mongodb.operation.repl.count"`
 	MongodbOperationTime          MetricSettings `mapstructure:"mongodb.operation.time"`
+	MongodbOplogSize              MetricSettings `mapstructure:"mongodb.oplog.size"`
 	MongodbSessionCount           MetricSettings `mapstructure:"mongodb.session.count"`
 	MongodbStorageSize            MetricSettings `mapstructure:"mongodb.storage.size"`
 	MongodbUptime                 MetricSettings `mapstructure:"mongodb.uptime"`
@@ -147,6 +148,9 @@ func DefaultMetricsSettings() MetricsSettings {
 		},
 		MongodbOperationTime: MetricSettings{
 			Enabled: true,
+		},
+		MongodbOplogSize: MetricSettings{
+			Enabled: false,
 		},
 		MongodbSessionCount: MetricSettings{
 			Enabled: true,
@@ -1853,6 +1857,57 @@ func newMetricMongodbOperationTime(settings MetricSettings) metricMongodbOperati
 	return m
 }
 
+type metricMongodbOplogSize struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mongodb.oplog.size metric with initial data.
+func (m *metricMongodbOplogSize) init() {
+	m.data.SetName("mongodb.oplog.size")
+	m.data.SetDescription("The size of the oplog in bytes.")
+	m.data.SetUnit("By")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMongodbOplogSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMongodbOplogSize) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMongodbOplogSize) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMongodbOplogSize(settings MetricSettings) metricMongodbOplogSize {
+	m := metricMongodbOplogSize{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricMongodbSessionCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -2044,6 +2099,7 @@ type MetricsBuilder struct {
 	metricMongodbOperationLatencyTime   metricMongodbOperationLatencyTime
 	metricMongodbOperationReplCount     metricMongodbOperationReplCount
 	metricMongodbOperationTime          metricMongodbOperationTime
+	metricMongodbOplogSize              metricMongodbOplogSize
 	metricMongodbSessionCount           metricMongodbSessionCount
 	metricMongodbStorageSize            metricMongodbStorageSize
 	metricMongodbUptime                 metricMongodbUptime
@@ -2099,6 +2155,7 @@ func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, opt
 		metricMongodbOperationLatencyTime:   newMetricMongodbOperationLatencyTime(ms.MongodbOperationLatencyTime),
 		metricMongodbOperationReplCount:     newMetricMongodbOperationReplCount(ms.MongodbOperationReplCount),
 		metricMongodbOperationTime:          newMetricMongodbOperationTime(ms.MongodbOperationTime),
+		metricMongodbOplogSize:              newMetricMongodbOplogSize(ms.MongodbOplogSize),
 		metricMongodbSessionCount:           newMetricMongodbSessionCount(ms.MongodbSessionCount),
 		metricMongodbStorageSize:            newMetricMongodbStorageSize(ms.MongodbStorageSize),
 		metricMongodbUptime:                 newMetricMongodbUptime(ms.MongodbUptime),
@@ -2190,6 +2247,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricMongodbOperationLatencyTime.emit(ils.Metrics())
 	mb.metricMongodbOperationReplCount.emit(ils.Metrics())
 	mb.metricMongodbOperationTime.emit(ils.Metrics())
+	mb.metricMongodbOplogSize.emit(ils.Metrics())
 	mb.metricMongodbSessionCount.emit(ils.Metrics())
 	mb.metricMongodbStorageSize.emit(ils.Metrics())
 	mb.metricMongodbUptime.emit(ils.Metrics())
@@ -2346,6 +2404,11 @@ func (mb *MetricsBuilder) RecordMongodbOperationReplCountDataPoint(ts pcommon.Ti
 // RecordMongodbOperationTimeDataPoint adds a data point to mongodb.operation.time metric.
 func (mb *MetricsBuilder) RecordMongodbOperationTimeDataPoint(ts pcommon.Timestamp, val int64, operationAttributeValue AttributeOperation) {
 	mb.metricMongodbOperationTime.recordDataPoint(mb.startTime, ts, val, operationAttributeValue.String())
+}
+
+// RecordMongodbOplogSizeDataPoint adds a data point to mongodb.oplog.size metric.
+func (mb *MetricsBuilder) RecordMongodbOplogSizeDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMongodbOplogSize.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordMongodbSessionCountDataPoint adds a data point to mongodb.session.count metric.

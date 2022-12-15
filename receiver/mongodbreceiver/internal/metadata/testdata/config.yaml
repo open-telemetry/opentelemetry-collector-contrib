@@ -54,6 +54,8 @@ all_metrics:
     enabled: true
   mongodb.operation.time:
     enabled: true
+  mongodb.oplog.size:
+    enabled: true
   mongodb.session.count:
     enabled: true
   mongodb.storage.size:
@@ -114,6 +116,8 @@ no_metrics:
   mongodb.operation.repl.count:
     enabled: false
   mongodb.operation.time:
+    enabled: false
+  mongodb.oplog.size:
     enabled: false
   mongodb.session.count:
     enabled: false

@@ -419,6 +419,22 @@
                         "isMonotonic": true
                      },
                      "unit": "ms"
+                  },
+                  {
+                     "description": "The size of the oplog in bytes.",
+                     "name": "mongodb.oplog.size",
+                     "sum": {
+                        "aggregationTemporality": 2,
+                        "dataPoints": [
+                           {
+                              "asInt": "184320",
+                              "startTimeUnixNano": "1671089291247034000",
+                              "timeUnixNano": "1671089291251470000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "By"
                   }
                ],
                "scope": {

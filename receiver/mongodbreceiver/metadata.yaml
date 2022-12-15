@@ -344,3 +344,12 @@ metrics:
       monotonic: true
       aggregation: cumulative
     attributes: [ ]
+  mongodb.oplog.size:
+    enabled: false
+    description: The size of the oplog in bytes.
+    unit: By
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation: cumulative
+    attributes: [ ]

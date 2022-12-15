@@ -339,6 +339,18 @@ func (s *mongodbScraper) recordNetworkCount(now pcommon.Timestamp, doc bson.M, e
 	}
 }
 
+// DiagnosticData
+func (s *mongodbScraper) recordOplog(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+	metricPath := []string{"data", "local.oplog.rs.stats", "storageSize"}
+	metricName := "mongodb.oplog.size"
+	val, err := collectMetric(doc, metricPath)
+	if err != nil {
+		errs.AddPartial(1, fmt.Errorf(collectMetricError, metricName, err))
+		return
+	}
+	s.mb.RecordMongodbOplogSizeDataPoint(now, val)
+}
+
 func (s *mongodbScraper) recordUptime(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
 	metricPath := []string{"uptimeMillis"}
 	metricName := "mongodb.uptime"

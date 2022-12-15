@@ -135,6 +135,14 @@ func (s *mongodbScraper) collectAdminDatabase(ctx context.Context, now pcommon.T
 		return
 	}
 	s.recordAdminStats(now, serverStatus, errs)
+
+	diagnosticData, err := s.client.DiagnosticData(ctx, "admin")
+	if err != nil {
+		errs.AddPartial(1, fmt.Errorf("failed to fetch admin diagnostic data metrics: %w", err))
+		return
+	}
+	s.recordDiagnosticDataStats(now, diagnosticData, errs)
+
 	s.mb.EmitForResource()
 }
 
@@ -190,6 +198,10 @@ func (s *mongodbScraper) recordAdminStats(now pcommon.Timestamp, document bson.M
 	s.recordLatencyTime(now, document, errs)
 	s.recordUptime(now, document, errs)
 	s.recordHealth(now, document, errs)
+}
+
+func (s *mongodbScraper) recordDiagnosticDataStats(now pcommon.Timestamp, document bson.M, errs *scrapererror.ScrapeErrors) {
+	s.recordOplog(now, document, errs)
 }
 
 func (s *mongodbScraper) recordIndexStats(now pcommon.Timestamp, indexStats []bson.M, databaseName string, collectionName string, errs *scrapererror.ScrapeErrors) {

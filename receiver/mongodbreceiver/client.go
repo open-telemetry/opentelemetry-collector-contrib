@@ -34,6 +34,7 @@ type client interface {
 	Disconnect(context.Context) error
 	GetVersion(context.Context) (*version.Version, error)
 	ServerStatus(ctx context.Context, DBName string) (bson.M, error)
+	DiagnosticData(ctx context.Context, DBName string) (bson.M, error)
 	DBStats(ctx context.Context, DBName string) (bson.M, error)
 	TopStats(ctx context.Context) (bson.M, error)
 	IndexStats(ctx context.Context, DBName, collectionName string) ([]bson.M, error)
@@ -69,6 +70,11 @@ func (c *mongodbClient) RunCommand(ctx context.Context, database string, command
 	var document bson.M
 	err := result.Decode(&document)
 	return document, err
+}
+
+// DiagnosticData returns the result of db.runCommand({ getDiagnosticData: 1 })
+func (c *mongodbClient) DiagnosticData(ctx context.Context, database string) (bson.M, error) {
+	return c.RunCommand(ctx, database, bson.M{"getDiagnosticData": 1})
 }
 
 // ServerStatus returns the result of db.runCommand({ serverStatus: 1 })

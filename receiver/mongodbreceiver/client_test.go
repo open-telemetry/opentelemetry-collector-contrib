@@ -64,6 +64,11 @@ func (fc *fakeClient) ServerStatus(ctx context.Context, dbName string) (bson.M, 
 	return args.Get(0).(bson.M), args.Error(1)
 }
 
+func (fc *fakeClient) DiagnosticData(ctx context.Context, dbName string) (bson.M, error) {
+	args := fc.Called(ctx, dbName)
+	return args.Get(0).(bson.M), args.Error(1)
+}
+
 func (fc *fakeClient) DBStats(ctx context.Context, dbName string) (bson.M, error) {
 	args := fc.Called(ctx, dbName)
 	return args.Get(0).(bson.M), args.Error(1)
@@ -301,6 +306,10 @@ func loadBuildInfo() (bson.D, error) {
 
 func loadAdminStatusAsMap() (bson.M, error) {
 	return loadTestFileAsMap("./testdata/admin.json")
+}
+
+func loadDiagnosticDataAsMap() (bson.M, error) {
+	return loadTestFileAsMap("./testdata/diagnostic_data.json")
 }
 
 func loadOnlyStorageEngineAsMap() (bson.M, error) {

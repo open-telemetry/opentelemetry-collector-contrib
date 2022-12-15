@@ -105,6 +105,7 @@ var (
 				"failed to collect metric mongodb.operation.repl.count with attribute(s) update: could not find key for metric",
 				"failed to collect metric mongodb.health: could not find key for metric",
 				"failed to collect metric mongodb.uptime: could not find key for metric",
+				"failed to collect metric mongodb.oplog.size: could not find key for metric",
 			}, "; "))
 	errAllClientFailedFetch = errors.New(
 		strings.Join(
@@ -238,6 +239,7 @@ func TestScraperScrape(t *testing.T) {
 				fc.On("ListCollectionNames", mock.Anything, fakeDatabaseName).Return([]string{"products", "orders"}, nil)
 				fc.On("IndexStats", mock.Anything, fakeDatabaseName, "products").Return(indexStats, nil)
 				fc.On("IndexStats", mock.Anything, fakeDatabaseName, "orders").Return(indexStats, nil)
+				fc.On("DiagnosticData", mock.Anything, "admin").Return(bson.M{}, nil)
 				return fc
 			},
 			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
@@ -254,6 +256,8 @@ func TestScraperScrape(t *testing.T) {
 			setupMockClient: func(t *testing.T) client {
 				fc := &fakeClient{}
 				adminStatus, err := loadAdminStatusAsMap()
+				require.NoError(t, err)
+				diagnosticData, err := loadDiagnosticDataAsMap()
 				require.NoError(t, err)
 				ss, err := loadServerStatusAsMap()
 				require.NoError(t, err)
@@ -277,6 +281,7 @@ func TestScraperScrape(t *testing.T) {
 				fc.On("ListCollectionNames", mock.Anything, fakeDatabaseName).Return([]string{"products", "orders"}, nil)
 				fc.On("IndexStats", mock.Anything, fakeDatabaseName, "products").Return(productsIndexStats, nil)
 				fc.On("IndexStats", mock.Anything, fakeDatabaseName, "orders").Return(ordersIndexStats, nil)
+				fc.On("DiagnosticData", mock.Anything, "admin").Return(diagnosticData, nil)
 				return fc
 			},
 			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
@@ -297,6 +302,7 @@ func TestScraperScrape(t *testing.T) {
 			scraperCfg.Metrics.MongodbOperationReplCount.Enabled = true
 			scraperCfg.Metrics.MongodbUptime.Enabled = true
 			scraperCfg.Metrics.MongodbHealth.Enabled = true
+			scraperCfg.Metrics.MongodbOplogSize.Enabled = true
 
 			scraper := newMongodbScraper(receivertest.NewNopCreateSettings(), scraperCfg)
 			scraper.client = tc.setupMockClient(t)
