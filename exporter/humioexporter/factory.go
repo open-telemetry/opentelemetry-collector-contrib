@@ -29,7 +29,7 @@ const (
 	// The key used to refer to this exporter
 	typeStr = "humio"
 	// The stability level of the exporter.
-	stability = component.StabilityLevelBeta
+	stability = component.StabilityLevelDeprecated
 )
 
 // NewFactory creates an exporter factory for Humio

@@ -4,9 +4,9 @@ go 1.18
 
 require (
 	github.com/DataDog/agent-payload/v5 v5.0.46
-	github.com/DataDog/datadog-agent/pkg/otlp/model v0.41.0-rc.3.0.20221207140548-a500ba1a95be
-	github.com/DataDog/datadog-agent/pkg/quantile v0.41.0-rc.3.0.20221114173638-98b8cd5ae742
-	github.com/DataDog/datadog-agent/pkg/trace v0.41.0-rc.3.0.20221207140548-a500ba1a95be
+	github.com/DataDog/datadog-agent/pkg/otlp/model v0.42.0-rc.2.0.20221215161218-ae4a2b6bc233
+	github.com/DataDog/datadog-agent/pkg/quantile v0.42.0-rc.2.0.20221215161218-ae4a2b6bc233
+	github.com/DataDog/datadog-agent/pkg/trace v0.42.0-rc.2.0.20221215161218-ae4a2b6bc233
 	github.com/DataDog/datadog-api-client-go/v2 v2.5.0
 	github.com/DataDog/gohai v0.0.0-20220718130825-1776f9beb9cc
 	github.com/DataDog/sketches-go v1.4.1
@@ -46,12 +46,13 @@ require (
 	cloud.google.com/go/compute v1.14.0 // indirect
 	cloud.google.com/go/compute/metadata v0.2.2 // indirect
 	contrib.go.opencensus.io/exporter/prometheus v0.4.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.41.0-rc.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.41.0-rc.3.0.20221207140548-a500ba1a95be // indirect
-	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.41.0-rc.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.41.0-rc.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.41.0-rc.3 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.42.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.42.0-rc.2.0.20221215161218-ae4a2b6bc233 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.42.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.42.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.42.0-rc.2 // indirect
 	github.com/DataDog/datadog-go/v5 v5.1.1 // indirect
+	github.com/DataDog/go-tuf v0.3.0--fix-localmeta-fork // indirect
 	github.com/DataDog/zstd v1.5.0 // indirect
 	github.com/Microsoft/go-winio v0.5.2 // indirect
 	github.com/Showmax/go-fqdn v1.0.0 // indirect
@@ -150,7 +151,6 @@ require (
 	github.com/spf13/cobra v1.6.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
-	github.com/theupdateframework/go-tuf v0.3.0 // indirect
 	github.com/tinylib/msgp v1.1.7 // indirect
 	github.com/tklauser/go-sysconf v0.3.11 // indirect
 	github.com/tklauser/numcpus v0.6.0 // indirect
