@@ -26,8 +26,8 @@ func TestValidateConfig(t *testing.T) {
 
     var multierror error 
 
-    multierror = multierr.Append(multierror, missingPasswordError)
-    multierror = multierr.Append(multierror, missingWarehouseError)
+    multierror = multierr.Append(multierror, errMissingPassword)
+    multierror = multierr.Append(multierror, errMissingWarehouse)
     
     tests := []struct {
         desc   string 
@@ -36,7 +36,7 @@ func TestValidateConfig(t *testing.T) {
     }{
         {
             desc: "Missing username all else present",
-            expect: missingUsernameError,
+            expect: errMissingUsername,
             conf: Config{
                 Username: "",
                 Password: "password",
@@ -46,7 +46,7 @@ func TestValidateConfig(t *testing.T) {
         },
         {
             desc: "Missing password all else present",
-            expect: missingPasswordError,
+            expect: errMissingPassword,
             conf: Config{
                 Username: "username",
                 Password: "",
@@ -56,7 +56,7 @@ func TestValidateConfig(t *testing.T) {
         },
         {
             desc: "Missing account all else present",
-            expect: missingAccountError,
+            expect: errMissingAccount,
             conf: Config{
                 Username: "username",
                 Password: "password",
@@ -66,7 +66,7 @@ func TestValidateConfig(t *testing.T) {
         },
         {
             desc: "Missing warehouse all else present",
-            expect: missingWarehouseError,
+            expect: errMissingWarehouse,
             conf: Config{
                 Username: "username",
                 Password: "password",

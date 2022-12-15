@@ -369,7 +369,7 @@ func (c defaultSnowflakeClient) GetSessionMetrics(ctx context.Context) (*[]sessi
         }
         res = append(res, sessionMetric{
             userName: userName, 
-            distinctSessionId: distinctSessionID,
+            distinctSessionID: distinctSessionID,
         })
     }
 

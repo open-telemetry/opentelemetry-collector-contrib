@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package snowflakereceiver
+package snowflakereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snowflakereceiver"
 
 import "database/sql"
 
@@ -32,7 +32,7 @@ type billingMetric struct {
 type whBillingMetric struct {
     warehouseName         sql.NullString
     totalCloudService     float64 
-    totalCredit      float64 
+    totalCredit           float64 
     totalVirtualWarehouse float64
 }
 
@@ -91,7 +91,7 @@ type dbMetricAttributes struct {
 
 type sessionMetric struct {
     userName          sql.NullString
-    distinctSessionId int64
+    distinctSessionID int64
 }
 
 type snowpipeMetric struct {

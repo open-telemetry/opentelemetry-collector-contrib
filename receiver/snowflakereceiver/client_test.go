@@ -26,6 +26,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
 func TestDefaultClientCreation(t *testing.T) {
@@ -55,7 +56,7 @@ func TestClientReadDB(t *testing.T) {
 
     client := defaultSnowflakeClient{
         client: db,
-        logger: componenttest.NewNopReceiverCreateSettings().Logger,
+        logger: receivertest.NewNopCreateSettings().Logger,
     }
 
     ctx := context.Background()
@@ -231,7 +232,7 @@ func TestMetricQueries(t *testing.T) {
                     String: "t",
                     Valid: true,
                 },
-                distinctSessionId: 3.0,
+                distinctSessionID: 3.0,
             },
         },
         {
@@ -276,7 +277,7 @@ func TestMetricQueries(t *testing.T) {
             
             client := defaultSnowflakeClient{
                 client: db,
-                logger: componenttest.NewNopReceiverCreateSettings().Logger,
+                logger: receivertest.NewNopCreateSettings().Logger, 
             }
             ctx := context.Background()
 

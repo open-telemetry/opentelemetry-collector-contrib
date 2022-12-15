@@ -23,10 +23,10 @@ import (
 )
 
 var(
-        missingUsernameError  = errors.New("You must provide a valid snowflake username")
-        missingPasswordError  = errors.New("You must provide a password for the snowflake username")
-        missingAccountError   = errors.New("You must provide a valid account name")
-        missingWarehouseError = errors.New("You must provide a valid warehouse name")
+        errMissingUsername  = errors.New("You must provide a valid snowflake username")
+        errMissingPassword  = errors.New("You must provide a password for the snowflake username")
+        errMissingAccount   = errors.New("You must provide a valid account name")
+        errMissingWarehouse = errors.New("You must provide a valid warehouse name")
     )
 
 type Config struct {
@@ -44,19 +44,19 @@ type Config struct {
 func (cfg *Config) Validate() error {
     var errs error
     if (cfg.Username == "") {
-        errs = multierr.Append(errs, missingUsernameError)
+        errs = multierr.Append(errs, errMissingUsername)
     }
 
     if (cfg.Password == "") {
-        errs = multierr.Append(errs, missingPasswordError)
+        errs = multierr.Append(errs, errMissingPassword)
     }
 
     if (cfg.Account == "") {
-        errs = multierr.Append(errs, missingAccountError)
+        errs = multierr.Append(errs, errMissingAccount)
     }
 
     if (cfg.Warehouse == "") {
-        errs = multierr.Append(errs, missingWarehouseError)
+        errs = multierr.Append(errs, errMissingWarehouse)
     }
 
     return errs
