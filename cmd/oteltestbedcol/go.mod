@@ -207,7 +207,7 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	go.etcd.io/bbolt v1.3.6 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/confmap v0.67.0 // indirect
+	go.opentelemetry.io/collector/confmap v0.67.1-0.20221212050940-28cd74963b9d // indirect
 	go.opentelemetry.io/collector/consumer v0.67.1-0.20221212050940-28cd74963b9d // indirect
 	go.opentelemetry.io/collector/featuregate v0.67.1-0.20221212050940-28cd74963b9d // indirect
 	go.opentelemetry.io/collector/pdata v1.0.0-rc1.0.20221212050940-28cd74963b9d // indirect
