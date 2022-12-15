@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
+	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
@@ -103,8 +104,8 @@ func newTestComponents(t *testing.T) component.Factories {
 		}...,
 	)
 	require.NoError(t, err)
-	factories.Processors, err = component.MakeProcessorFactoryMap(
-		[]component.ProcessorFactory{
+	factories.Processors, err = processor.MakeFactoryMap(
+		[]processor.Factory{
 			batchprocessor.NewFactory(),
 			k8sattributesprocessor.NewFactory(),
 			resourcedetectionprocessor.NewFactory(),

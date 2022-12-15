@@ -27,9 +27,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/memorylimiterprocessor"
+	"go.opentelemetry.io/collector/processor/processortest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor"
@@ -163,10 +164,10 @@ type getProcessorConfigFn func() component.Config
 // verifyProcessorLifecycle is used to test if an processor type can handle the typical
 // lifecycle of a component. The getConfigFn parameter only need to be specified if
 // the test can't be done with the default configuration for the component.
-func verifyProcessorLifecycle(t *testing.T, factory component.ProcessorFactory, getConfigFn getProcessorConfigFn) {
+func verifyProcessorLifecycle(t *testing.T, factory processor.Factory, getConfigFn getProcessorConfigFn) {
 	ctx := context.Background()
 	host := newAssertNoErrorHost(t)
-	processorCreationSet := componenttest.NewNopProcessorCreateSettings()
+	processorCreationSet := processortest.NewNopCreateSettings()
 
 	if getConfigFn == nil {
 		getConfigFn = factory.CreateDefaultConfig
@@ -196,24 +197,24 @@ func verifyProcessorLifecycle(t *testing.T, factory component.ProcessorFactory, 
 
 type createProcessorFn func(
 	ctx context.Context,
-	set component.ProcessorCreateSettings,
+	set processor.CreateSettings,
 	cfg component.Config,
 ) (component.Component, error)
 
-func wrapCreateLogsProc(factory component.ProcessorFactory) createProcessorFn {
-	return func(ctx context.Context, set component.ProcessorCreateSettings, cfg component.Config) (component.Component, error) {
+func wrapCreateLogsProc(factory processor.Factory) createProcessorFn {
+	return func(ctx context.Context, set processor.CreateSettings, cfg component.Config) (component.Component, error) {
 		return factory.CreateLogsProcessor(ctx, set, cfg, consumertest.NewNop())
 	}
 }
 
-func wrapCreateMetricsProc(factory component.ProcessorFactory) createProcessorFn {
-	return func(ctx context.Context, set component.ProcessorCreateSettings, cfg component.Config) (component.Component, error) {
+func wrapCreateMetricsProc(factory processor.Factory) createProcessorFn {
+	return func(ctx context.Context, set processor.CreateSettings, cfg component.Config) (component.Component, error) {
 		return factory.CreateMetricsProcessor(ctx, set, cfg, consumertest.NewNop())
 	}
 }
 
-func wrapCreateTracesProc(factory component.ProcessorFactory) createProcessorFn {
-	return func(ctx context.Context, set component.ProcessorCreateSettings, cfg component.Config) (component.Component, error) {
+func wrapCreateTracesProc(factory processor.Factory) createProcessorFn {
+	return func(ctx context.Context, set processor.CreateSettings, cfg component.Config) (component.Component, error) {
 		return factory.CreateTracesProcessor(ctx, set, cfg, consumertest.NewNop())
 	}
 }

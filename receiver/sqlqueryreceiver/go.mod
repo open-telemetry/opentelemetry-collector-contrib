@@ -3,21 +3,21 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlque
 go 1.18
 
 require (
-	github.com/SAP/go-hdb v0.111.5
+	github.com/SAP/go-hdb v0.111.7
 	github.com/denisenkom/go-mssqldb v0.12.2
 	github.com/docker/go-connections v0.4.0
 	github.com/go-sql-driver/mysql v1.7.0
 	github.com/lib/pq v1.10.7
-	github.com/sijms/go-ora/v2 v2.5.17
+	github.com/sijms/go-ora/v2 v2.5.18
 	github.com/snowflakedb/gosnowflake v1.6.15
 	github.com/stretchr/testify v1.8.1
 	github.com/testcontainers/testcontainers-go v0.15.0
-	go.opentelemetry.io/collector v0.67.0
-	go.opentelemetry.io/collector/component v0.67.0
+	go.opentelemetry.io/collector v0.67.1-0.20221212050940-28cd74963b9d
+	go.opentelemetry.io/collector/component v0.67.1-0.20221212050940-28cd74963b9d
 	go.opentelemetry.io/collector/confmap v0.67.0
-	go.opentelemetry.io/collector/consumer v0.67.0
-	go.opentelemetry.io/collector/pdata v1.0.0-rc1
-	go.uber.org/multierr v1.8.0
+	go.opentelemetry.io/collector/consumer v0.67.1-0.20221212050940-28cd74963b9d
+	go.opentelemetry.io/collector/pdata v1.0.0-rc1.0.20221212050940-28cd74963b9d
+	go.uber.org/multierr v1.9.0
 	go.uber.org/zap v1.24.0
 )
 
@@ -65,7 +65,7 @@ require (
 	github.com/gsterjov/go-libsecret v0.0.0-20161001094733-a6f4afe4910c // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.15.12 // indirect
+	github.com/klauspost/compress v1.15.13 // indirect
 	github.com/knadh/koanf v1.4.4 // indirect
 	github.com/kr/pretty v0.3.0 // indirect
 	github.com/magiconair/properties v1.8.6 // indirect
@@ -91,14 +91,14 @@ require (
 	github.com/rogpeppe/go-internal v1.8.1 // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/featuregate v0.67.0 // indirect
-	go.opentelemetry.io/otel v1.11.1 // indirect
-	go.opentelemetry.io/otel/metric v0.33.0 // indirect
-	go.opentelemetry.io/otel/trace v1.11.1 // indirect
+	go.opentelemetry.io/collector/featuregate v0.67.1-0.20221212050940-28cd74963b9d // indirect
+	go.opentelemetry.io/otel v1.11.2 // indirect
+	go.opentelemetry.io/otel/metric v0.34.0 // indirect
+	go.opentelemetry.io/otel/trace v1.11.2 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
-	golang.org/x/crypto v0.3.0 // indirect
-	golang.org/x/exp v0.0.0-20221205204356-47842c84f3db // indirect
-	golang.org/x/net v0.3.0 // indirect
+	golang.org/x/crypto v0.4.0 // indirect
+	golang.org/x/exp v0.0.0-20221208152030-732eee02a75a // indirect
+	golang.org/x/net v0.4.0 // indirect
 	golang.org/x/sys v0.3.0 // indirect
 	golang.org/x/term v0.3.0 // indirect
 	golang.org/x/text v0.5.0 // indirect

@@ -501,12 +501,7 @@ func TestOnlyMetadata(t *testing.T) {
 	server := testutil.DatadogServerMock()
 	defer server.Close()
 
-	factories, err := componenttest.NopFactories()
-	require.NoError(t, err)
-
 	factory := NewFactory()
-	factories.Exporters[typeStr] = factory
-
 	ctx := context.Background()
 	cfg := &Config{
 		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),

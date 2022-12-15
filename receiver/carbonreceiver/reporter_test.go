@@ -26,7 +26,7 @@ import (
 
 func TestReporterObservability(t *testing.T) {
 	receiverID := component.NewIDWithName(typeStr, "fake_receiver")
-	tt, err := obsreporttest.SetupTelemetryWithID(receiverID)
+	tt, err := obsreporttest.SetupTelemetry(receiverID)
 	require.NoError(t, err)
 	defer func() {
 		require.NoError(t, tt.Shutdown(context.Background()))

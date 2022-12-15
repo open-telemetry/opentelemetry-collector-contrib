@@ -125,6 +125,7 @@ pkg/experimentalmetricmetadata/                      @open-telemetry/collector-c
 
 processor/attributesprocessor/                       @open-telemetry/collector-contrib-approvers @boostchicken
 processor/cumulativetodeltaprocessor/                @open-telemetry/collector-contrib-approvers @TylerHelmuth
+processor/datadogprocessor/                          @open-telemetry/collector-contrib-approvers @mx-psi @gbbr @dineshg13
 processor/deltatorateprocessor/                      @open-telemetry/collector-contrib-approvers @Aneurysm9
 processor/filterprocessor/                           @open-telemetry/collector-contrib-approvers @TylerHelmuth @boostchicken
 processor/groupbyattrsprocessor/                     @open-telemetry/collector-contrib-approvers

@@ -93,6 +93,10 @@ func TestDefaultMetrics(t *testing.T) {
 
 	mb.RecordMysqlQuerySlowCountDataPoint(ts, "1")
 
+	mb.RecordMysqlReplicaSQLDelayDataPoint(ts, 1)
+
+	mb.RecordMysqlReplicaTimeBehindSourceDataPoint(ts, 1)
+
 	enabledMetrics["mysql.row_locks"] = true
 	mb.RecordMysqlRowLocksDataPoint(ts, "1", AttributeRowLocks(1))
 
@@ -174,6 +178,8 @@ func TestAllMetrics(t *testing.T) {
 		MysqlQueryClientCount:        MetricSettings{Enabled: true},
 		MysqlQueryCount:              MetricSettings{Enabled: true},
 		MysqlQuerySlowCount:          MetricSettings{Enabled: true},
+		MysqlReplicaSQLDelay:         MetricSettings{Enabled: true},
+		MysqlReplicaTimeBehindSource: MetricSettings{Enabled: true},
 		MysqlRowLocks:                MetricSettings{Enabled: true},
 		MysqlRowOperations:           MetricSettings{Enabled: true},
 		MysqlSorts:                   MetricSettings{Enabled: true},
@@ -223,6 +229,8 @@ func TestAllMetrics(t *testing.T) {
 	mb.RecordMysqlQueryClientCountDataPoint(ts, "1")
 	mb.RecordMysqlQueryCountDataPoint(ts, "1")
 	mb.RecordMysqlQuerySlowCountDataPoint(ts, "1")
+	mb.RecordMysqlReplicaSQLDelayDataPoint(ts, 1)
+	mb.RecordMysqlReplicaTimeBehindSourceDataPoint(ts, 1)
 	mb.RecordMysqlRowLocksDataPoint(ts, "1", AttributeRowLocks(1))
 	mb.RecordMysqlRowOperationsDataPoint(ts, "1", AttributeRowOperations(1))
 	mb.RecordMysqlSortsDataPoint(ts, "1", AttributeSorts(1))
@@ -685,6 +693,32 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 			assert.Equal(t, int64(1), dp.IntValue())
 			validatedMetrics["mysql.query.slow.count"] = struct{}{}
+		case "mysql.replica.sql_delay":
+			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+			assert.Equal(t, "The number of seconds that the replica must lag the source.", ms.At(i).Description())
+			assert.Equal(t, "s", ms.At(i).Unit())
+			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+			dp := ms.At(i).Sum().DataPoints().At(0)
+			assert.Equal(t, start, dp.StartTimestamp())
+			assert.Equal(t, ts, dp.Timestamp())
+			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+			assert.Equal(t, int64(1), dp.IntValue())
+			validatedMetrics["mysql.replica.sql_delay"] = struct{}{}
+		case "mysql.replica.time_behind_source":
+			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+			assert.Equal(t, "This field is an indication of how “late” the replica is.", ms.At(i).Description())
+			assert.Equal(t, "s", ms.At(i).Unit())
+			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+			dp := ms.At(i).Sum().DataPoints().At(0)
+			assert.Equal(t, start, dp.StartTimestamp())
+			assert.Equal(t, ts, dp.Timestamp())
+			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+			assert.Equal(t, int64(1), dp.IntValue())
+			validatedMetrics["mysql.replica.time_behind_source"] = struct{}{}
 		case "mysql.row_locks":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
@@ -996,6 +1030,8 @@ func TestNoMetrics(t *testing.T) {
 		MysqlQueryClientCount:        MetricSettings{Enabled: false},
 		MysqlQueryCount:              MetricSettings{Enabled: false},
 		MysqlQuerySlowCount:          MetricSettings{Enabled: false},
+		MysqlReplicaSQLDelay:         MetricSettings{Enabled: false},
+		MysqlReplicaTimeBehindSource: MetricSettings{Enabled: false},
 		MysqlRowLocks:                MetricSettings{Enabled: false},
 		MysqlRowOperations:           MetricSettings{Enabled: false},
 		MysqlSorts:                   MetricSettings{Enabled: false},
@@ -1044,6 +1080,8 @@ func TestNoMetrics(t *testing.T) {
 	mb.RecordMysqlQueryClientCountDataPoint(ts, "1")
 	mb.RecordMysqlQueryCountDataPoint(ts, "1")
 	mb.RecordMysqlQuerySlowCountDataPoint(ts, "1")
+	mb.RecordMysqlReplicaSQLDelayDataPoint(ts, 1)
+	mb.RecordMysqlReplicaTimeBehindSourceDataPoint(ts, 1)
 	mb.RecordMysqlRowLocksDataPoint(ts, "1", AttributeRowLocks(1))
 	mb.RecordMysqlRowOperationsDataPoint(ts, "1", AttributeRowOperations(1))
 	mb.RecordMysqlSortsDataPoint(ts, "1", AttributeSorts(1))
