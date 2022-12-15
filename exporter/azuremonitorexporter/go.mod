@@ -6,12 +6,12 @@ require (
 	github.com/microsoft/ApplicationInsights-Go v0.4.4
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.67.0
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.67.1-0.20221209160927-fdef8b181a06
-	go.opentelemetry.io/collector/component v0.67.1-0.20221209160927-fdef8b181a06
+	go.opentelemetry.io/collector v0.67.1-0.20221212050940-28cd74963b9d
+	go.opentelemetry.io/collector/component v0.67.1-0.20221212050940-28cd74963b9d
 	go.opentelemetry.io/collector/confmap v0.67.0
-	go.opentelemetry.io/collector/consumer v0.67.1-0.20221209160927-fdef8b181a06
-	go.opentelemetry.io/collector/pdata v1.0.0-rc1.0.20221209160927-fdef8b181a06
-	go.opentelemetry.io/collector/semconv v0.67.1-0.20221209160927-fdef8b181a06
+	go.opentelemetry.io/collector/consumer v0.67.1-0.20221212050940-28cd74963b9d
+	go.opentelemetry.io/collector/pdata v1.0.0-rc1.0.20221212050940-28cd74963b9d
+	go.opentelemetry.io/collector/semconv v0.67.1-0.20221212050940-28cd74963b9d
 	go.uber.org/zap v1.24.0
 	golang.org/x/net v0.4.0
 )
@@ -35,7 +35,7 @@ require (
 	github.com/rogpeppe/go-internal v1.6.1 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/featuregate v0.67.1-0.20221209160927-fdef8b181a06 // indirect
+	go.opentelemetry.io/collector/featuregate v0.67.1-0.20221212050940-28cd74963b9d // indirect
 	go.opentelemetry.io/otel v1.11.2 // indirect
 	go.opentelemetry.io/otel/metric v0.34.0 // indirect
 	go.opentelemetry.io/otel/trace v1.11.2 // indirect
