@@ -59,6 +59,11 @@ func newReceiver(
 func (kr *k8seventsReceiver) Start(ctx context.Context, _ component.Host) error {
 	kr.ctx, kr.cancel = context.WithCancel(ctx)
 
+	// Adding a log entry to indicate that the receiver has started successfully.
+    ld := logk8sClusterSuccessMessage(kr.settings.Logger)
+    consumerErr := kr.logsConsumer.ConsumeLogs(ctx, ld)
+    kr.obsrecv.EndLogsOp(ctx, typeStr, 1, consumerErr)
+
 	k8sInterface, err := kr.config.getK8sClient()
 	if err != nil {
 		return err
