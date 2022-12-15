@@ -22,79 +22,79 @@ import (
 )
 
 func TestValidateConfig(t *testing.T) {
-    t.Parallel()
+	t.Parallel()
 
-    var multierror error 
+	var multierror error
 
-    multierror = multierr.Append(multierror, errMissingPassword)
-    multierror = multierr.Append(multierror, errMissingWarehouse)
-    
-    tests := []struct {
-        desc   string 
-        expect error
-        conf   Config
-    }{
-        {
-            desc: "Missing username all else present",
-            expect: errMissingUsername,
-            conf: Config{
-                Username: "",
-                Password: "password",
-                Account: "account",
-                Warehouse: "warehouse",
-            },
-        },
-        {
-            desc: "Missing password all else present",
-            expect: errMissingPassword,
-            conf: Config{
-                Username: "username",
-                Password: "",
-                Account: "account",
-                Warehouse: "warehouse",
-            },
-        },
-        {
-            desc: "Missing account all else present",
-            expect: errMissingAccount,
-            conf: Config{
-                Username: "username",
-                Password: "password",
-                Account: "",
-                Warehouse: "warehouse",
-            },
-        },
-        {
-            desc: "Missing warehouse all else present",
-            expect: errMissingWarehouse,
-            conf: Config{
-                Username: "username",
-                Password: "password",
-                Account: "account",
-                Warehouse: "",
-            },
-        },
-        {
-            desc: "Missing multiple check multierror",
-            expect: multierror,
-            conf: Config{
-                Username: "username",
-                Password: "",
-                Account: "account",
-                Warehouse: "",
-            },
-        },
-    }
-    
-    for i := range tests {
-        test := tests[i]
+	multierror = multierr.Append(multierror, errMissingPassword)
+	multierror = multierr.Append(multierror, errMissingWarehouse)
 
-        t.Run(test.desc, func(t *testing.T) {
-            t.Parallel()
+	tests := []struct {
+		desc   string
+		expect error
+		conf   Config
+	}{
+		{
+			desc:   "Missing username all else present",
+			expect: errMissingUsername,
+			conf: Config{
+				Username:  "",
+				Password:  "password",
+				Account:   "account",
+				Warehouse: "warehouse",
+			},
+		},
+		{
+			desc:   "Missing password all else present",
+			expect: errMissingPassword,
+			conf: Config{
+				Username:  "username",
+				Password:  "",
+				Account:   "account",
+				Warehouse: "warehouse",
+			},
+		},
+		{
+			desc:   "Missing account all else present",
+			expect: errMissingAccount,
+			conf: Config{
+				Username:  "username",
+				Password:  "password",
+				Account:   "",
+				Warehouse: "warehouse",
+			},
+		},
+		{
+			desc:   "Missing warehouse all else present",
+			expect: errMissingWarehouse,
+			conf: Config{
+				Username:  "username",
+				Password:  "password",
+				Account:   "account",
+				Warehouse: "",
+			},
+		},
+		{
+			desc:   "Missing multiple check multierror",
+			expect: multierror,
+			conf: Config{
+				Username:  "username",
+				Password:  "",
+				Account:   "account",
+				Warehouse: "",
+			},
+		},
+	}
 
-            err := test.conf.Validate()
-            require.Error(t, err)
-            require.Contains(t, err.Error(), test.expect.Error())
-        })
-    }
+	for i := range tests {
+		test := tests[i]
+
+		t.Run(test.desc, func(t *testing.T) {
+			t.Parallel()
+
+			err := test.conf.Validate()
+			require.Error(t, err)
+			require.Contains(t, err.Error(), test.expect.Error())
+		})
+	}
 }
