@@ -905,23 +905,23 @@ func TestLoadingConfigOTTL(t *testing.T) {
 		},
 		{
 			id:           component.NewIDWithName(typeStr, "bad_syntax_span"),
-			errorMessage: "1:24: unexpected token \"[\" (expected <opcomparison> Value)",
+			errorMessage: "unable to parse OTTL statement: 1:24: unexpected token \"[\" (expected <opcomparison> Value)",
 		},
 		{
 			id:           component.NewIDWithName(typeStr, "bad_syntax_spanevent"),
-			errorMessage: "1:24: unexpected token \"[\" (expected <opcomparison> Value)",
+			errorMessage: "unable to parse OTTL statement: 1:24: unexpected token \"[\" (expected <opcomparison> Value)",
 		},
 		{
 			id:           component.NewIDWithName(typeStr, "bad_syntax_metric"),
-			errorMessage: "1:33: unexpected token \"[\" (expected <opcomparison> Value)",
+			errorMessage: "unable to parse OTTL statement: 1:33: unexpected token \"[\" (expected <opcomparison> Value)",
 		},
 		{
 			id:           component.NewIDWithName(typeStr, "bad_syntax_datapoint"),
-			errorMessage: "1:24: unexpected token \"[\" (expected <opcomparison> Value)",
+			errorMessage: "unable to parse OTTL statement: 1:24: unexpected token \"[\" (expected <opcomparison> Value)",
 		},
 		{
 			id:           component.NewIDWithName(typeStr, "bad_syntax_log"),
-			errorMessage: "1:24: unexpected token \"[\" (expected <opcomparison> Value)",
+			errorMessage: "unable to parse OTTL statement: 1:24: unexpected token \"[\" (expected <opcomparison> Value)",
 		},
 	}
 
