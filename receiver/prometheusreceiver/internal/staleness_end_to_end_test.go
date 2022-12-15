@@ -40,7 +40,6 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/service"
 	"go.uber.org/atomic"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -159,8 +158,8 @@ service:
 	}
 
 	fmp := fileprovider.New()
-	configProvider, err := service.NewConfigProvider(
-		service.ConfigProviderSettings{
+	configProvider, err := otelcol.NewConfigProvider(
+		otelcol.ConfigProviderSettings{
 			ResolverSettings: confmap.ResolverSettings{
 				URIs:      []string{confFile.Name()},
 				Providers: map[string]confmap.Provider{fmp.Scheme(): fmp},
@@ -168,7 +167,7 @@ service:
 		})
 	require.NoError(t, err)
 
-	appSettings := service.CollectorSettings{
+	appSettings := otelcol.CollectorSettings{
 		Factories:      factories,
 		ConfigProvider: configProvider,
 		BuildInfo: component.BuildInfo{
@@ -184,7 +183,7 @@ service:
 		},
 	}
 
-	app, err := service.New(appSettings)
+	app, err := otelcol.NewCollector(appSettings)
 	require.Nil(t, err)
 
 	go func() {
