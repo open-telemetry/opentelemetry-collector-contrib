@@ -297,7 +297,7 @@ func TestConsumeTracesUnexpectedExporterType(t *testing.T) {
 
 	// verify
 	assert.Error(t, res)
-	assert.EqualError(t, res, fmt.Sprintf("expected *exporter.Traces but got %T", newNopMockExporter()))
+	assert.EqualError(t, res, fmt.Sprintf("unable to export traces, unexpected exporter type: expected exporter.Traces but got %T", newNopMockExporter()))
 }
 
 func TestBuildExporterConfig(t *testing.T) {
