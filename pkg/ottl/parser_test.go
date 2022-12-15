@@ -88,7 +88,7 @@ func Test_parse(t *testing.T) {
 		},
 		{
 			name:      "complex invocation",
-			statement: `set("foo", getSomething(bear.honey))`,
+			statement: `set("foo", GetSomething(bear.honey))`,
 			expected: &parsedStatement{
 				Invocation: invocation{
 					Function: "set",
@@ -98,8 +98,8 @@ func Test_parse(t *testing.T) {
 						},
 						{
 							Literal: &mathExprLiteral{
-								Invocation: &invocation{
-									Function: "getSomething",
+								Converter: &converter{
+									Function: "GetSomething",
 									Arguments: []value{
 										{
 											Literal: &mathExprLiteral{
@@ -455,7 +455,7 @@ func Test_parse(t *testing.T) {
 			},
 		},
 		{
-			name:      "Invocation with empty list",
+			name:      "Converter with empty list",
 			statement: `set(attributes["test"], [])`,
 			expected: &parsedStatement{
 				Invocation: invocation{
@@ -484,7 +484,7 @@ func Test_parse(t *testing.T) {
 			},
 		},
 		{
-			name:      "Invocation with single-value list",
+			name:      "Converter with single-value list",
 			statement: `set(attributes["test"], ["value0"])`,
 			expected: &parsedStatement{
 				Invocation: invocation{
@@ -517,7 +517,7 @@ func Test_parse(t *testing.T) {
 			},
 		},
 		{
-			name:      "Invocation with multi-value list",
+			name:      "Converter with multi-value list",
 			statement: `set(attributes["test"], ["value1", "value2"])`,
 			expected: &parsedStatement{
 				Invocation: invocation{
@@ -553,7 +553,7 @@ func Test_parse(t *testing.T) {
 			},
 		},
 		{
-			name:      "Invocation with nested heterogeneous types",
+			name:      "Converter with nested heterogeneous types",
 			statement: `set(attributes["test"], [Concat(["a", "b"], "+"), ["1", 2, 3.0], nil, attributes["test"]])`,
 			expected: &parsedStatement{
 				Invocation: invocation{
@@ -576,7 +576,7 @@ func Test_parse(t *testing.T) {
 								Values: []value{
 									{
 										Literal: &mathExprLiteral{
-											Invocation: &invocation{
+											Converter: &converter{
 												Function: "Concat",
 												Arguments: []value{
 													{
@@ -641,8 +641,8 @@ func Test_parse(t *testing.T) {
 			},
 		},
 		{
-			name:      "Invocation math mathExpression",
-			statement: `set(attributes["test"], 1000 - 600) where 1 + 1 * 2 == three / one()`,
+			name:      "Converter math mathExpression",
+			statement: `set(attributes["test"], 1000 - 600) where 1 + 1 * 2 == three / One()`,
 			expected: &parsedStatement{
 				Invocation: invocation{
 					Function: "set",
@@ -741,8 +741,8 @@ func Test_parse(t *testing.T) {
 													Operator: DIV,
 													Value: &mathValue{
 														Literal: &mathExprLiteral{
-															Invocation: &invocation{
-																Function: "one",
+															Converter: &converter{
+																Function: "One",
 															},
 														},
 													},
@@ -764,37 +764,6 @@ func Test_parse(t *testing.T) {
 			parsed, err := parseStatement(tt.statement)
 			assert.NoError(t, err)
 			assert.EqualValues(t, tt.expected, parsed)
-		})
-	}
-}
-
-func Test_parse_failure(t *testing.T) {
-	tests := []string{
-		`set(`,
-		`set("foo)`,
-		`set(name.)`,
-		`("foo")`,
-		`set("foo") where name =||= "fido"`,
-		`set(span_id, SpanIDWrapper{not a hex string})`,
-		`set(span_id, SpanIDWrapper{01})`,
-		`set(span_id, SpanIDWrapper{010203040506070809})`,
-		`set(trace_id, TraceIDWrapper{not a hex string})`,
-		`set(trace_id, TraceIDWrapper{0102030405060708090a0b0c0d0e0f})`,
-		`set(trace_id, TraceIDWrapper{0102030405060708090a0b0c0d0e0f1011})`,
-		`set("foo") where name = "fido"`,
-		`set("foo") where name or "fido"`,
-		`set("foo") where name and "fido"`,
-		`set("foo") where name and`,
-		`set("foo") where name or`,
-		`set("foo") where (`,
-		`set("foo") where )`,
-		`set("foo") where (name == "fido"))`,
-		`set("foo") where ((name == "fido")`,
-	}
-	for _, tt := range tests {
-		t.Run(tt, func(t *testing.T) {
-			_, err := parseStatement(tt)
-			assert.Error(t, err)
 		})
 	}
 }
@@ -1227,23 +1196,56 @@ func Test_parseStatement(t *testing.T) {
 		statement string
 		wantErr   bool
 	}{
+		{`set(`, true},
+		{`set("foo)`, true},
+		{`set(name.)`, true},
+		{`("foo")`, true},
+		{`set("foo") where name =||= "fido"`, true},
+		{`set(span_id, SpanIDWrapper{not a hex string})`, true},
+		{`set(span_id, SpanIDWrapper{01})`, true},
+		{`set(span_id, SpanIDWrapper{010203040506070809})`, true},
+		{`set(trace_id, TraceIDWrapper{not a hex string})`, true},
+		{`set(trace_id, TraceIDWrapper{0102030405060708090a0b0c0d0e0f})`, true},
+		{`set(trace_id, TraceIDWrapper{0102030405060708090a0b0c0d0e0f1011})`, true},
+		{`set("foo") where name = "fido"`, true},
+		{`set("foo") where name or "fido"`, true},
+		{`set("foo") where name and "fido"`, true},
+		{`set("foo") where name and`, true},
+		{`set("foo") where name or`, true},
+		{`set("foo") where (`, true},
+		{`set("foo") where )`, true},
+		{`set("foo") where (name == "fido"))`, true},
+		{`set("foo") where ((name == "fido")`, true},
+		{`Set()`, true},
+		{`set(int())`, true},
+		{`set(1 + int())`, true},
+		{`set(int() + 1)`, true},
+		{`set(1 * int())`, true},
+		{`set(1 * 1 + (2 * int()))`, true},
+		{`set() where int() == 1`, true},
+		{`set() where 1 == int()`, true},
+		{`set() where true and 1 == int() `, true},
+		{`set() where false or 1 == int() `, true},
 		{`set(foo.attributes["bar"].cat, "dog")`, false},
 		{`set(foo.attributes["animal"], "dog") where animal == "cat"`, false},
-		{`drop() where service == "pinger" or foo.attributes["endpoint"] == "/x/alive"`, false},
-		{`drop() where service == "pinger" or foo.attributes["verb"] == "GET" and foo.attributes["endpoint"] == "/x/alive"`, false},
-		{`drop() where animal > "cat"`, false},
-		{`drop() where animal >= "cat"`, false},
-		{`drop() where animal <= "cat"`, false},
-		{`drop() where animal < "cat"`, false},
-		{`drop() where animal =< "dog"`, true},
-		{`drop() where animal => "dog"`, true},
-		{`drop() where animal <> "dog"`, true},
-		{`drop() where animal = "dog"`, true},
-		{`drop() where animal`, true},
-		{`drop() where animal ==`, true},
-		{`drop() where ==`, true},
-		{`drop() where == animal`, true},
-		{`drop() where attributes["path"] == "/healthcheck"`, false},
+		{`test() where service == "pinger" or foo.attributes["endpoint"] == "/x/alive"`, false},
+		{`test() where service == "pinger" or foo.attributes["verb"] == "GET" and foo.attributes["endpoint"] == "/x/alive"`, false},
+		{`test() where animal > "cat"`, false},
+		{`test() where animal >= "cat"`, false},
+		{`test() where animal <= "cat"`, false},
+		{`test() where animal < "cat"`, false},
+		{`test() where animal =< "dog"`, true},
+		{`test() where animal => "dog"`, true},
+		{`test() where animal <> "dog"`, true},
+		{`test() where animal = "dog"`, true},
+		{`test() where animal`, true},
+		{`test() where animal ==`, true},
+		{`test() where ==`, true},
+		{`test() where == animal`, true},
+		{`test() where attributes["path"] == "/healthcheck"`, false},
+		{`test() where one() == 1`, true},
+		{`test(fail())`, true},
+		{`Test()`, true},
 	}
 	pat := regexp.MustCompile("[^a-zA-Z0-9]+")
 	for _, tt := range tests {
