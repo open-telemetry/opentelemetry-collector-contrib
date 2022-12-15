@@ -47,6 +47,9 @@ const (
 	doNotSampleSpan
 
 	// The constants help translate user friendly percentages to numbers direct used in sampling.
+	//numHashBuckets        = 0x4000 // Using a power of 2 to avoid division.
+	//numHashBuckets        = math.MaxInt32
+	//bitMaskHashBuckets    = math.MaxInt32
 	numHashBuckets        = 0x4000 // Using a power of 2 to avoid division.
 	bitMaskHashBuckets    = numHashBuckets - 1
 	percentageScaleFactor = numHashBuckets / 100.0
@@ -105,21 +108,13 @@ func (tsp *traceSamplerProcessor) processTraces(ctx context.Context, td ptrace.T
 				// Hashing here prevents bias due to such systems.
 				tidBytes := s.TraceID()
 				sampled := sp == mustSampleSpan ||
-					hash(tidBytes[:], tsp.hashSeed)&bitMaskHashBuckets < tsp.scaledSamplingRate
+					computeHash(tidBytes[:], tsp.hashSeed)&bitMaskHashBuckets < tsp.scaledSamplingRate
 
-				if sampled {
-					_ = stats.RecordWithTags(
-						ctx,
-						[]tag.Mutator{tag.Upsert(tagPolicyKey, "trace_id_hash"), tag.Upsert(tagSampledKey, "true")},
-						statCountTracesSampled.M(int64(1)),
-					)
-				} else {
-					_ = stats.RecordWithTags(
-						ctx,
-						[]tag.Mutator{tag.Upsert(tagPolicyKey, "trace_id_hash"), tag.Upsert(tagSampledKey, "false")},
-						statCountTracesSampled.M(int64(1)),
-					)
-				}
+				_ = stats.RecordWithTags(
+					ctx,
+					[]tag.Mutator{tag.Upsert(tagPolicyKey, "trace_id_hash"), tag.Upsert(tagSampledKey, strconv.FormatBool(sampled))},
+					statCountTracesSampled.M(int64(1)),
+				)
 				return !sampled
 			})
 			// Filter out empty ScopeMetrics
