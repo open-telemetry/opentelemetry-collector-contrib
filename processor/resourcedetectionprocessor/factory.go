@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
@@ -59,7 +60,7 @@ type factory struct {
 }
 
 // NewFactory creates a new factory for ResourceDetection processor.
-func NewFactory() component.ProcessorFactory {
+func NewFactory() processor.Factory {
 	resourceProviderFactory := internal.NewProviderFactory(map[internal.DetectorType]internal.DetectorFactory{
 		aks.TypeStr:              aks.NewDetector,
 		azure.TypeStr:            azure.NewDetector,
@@ -82,12 +83,12 @@ func NewFactory() component.ProcessorFactory {
 		providers:               map[component.ID]*internal.ResourceProvider{},
 	}
 
-	return component.NewProcessorFactory(
+	return processor.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesProcessor(f.createTracesProcessor, stability),
-		component.WithMetricsProcessor(f.createMetricsProcessor, stability),
-		component.WithLogsProcessor(f.createLogsProcessor, stability))
+		processor.WithTraces(f.createTracesProcessor, stability),
+		processor.WithMetrics(f.createMetricsProcessor, stability),
+		processor.WithLogs(f.createLogsProcessor, stability))
 }
 
 // Type gets the type of the Option config created by this factory.
@@ -115,10 +116,10 @@ func defaultHTTPClientSettings() confighttp.HTTPClientSettings {
 
 func (f *factory) createTracesProcessor(
 	ctx context.Context,
-	set component.ProcessorCreateSettings,
+	set processor.CreateSettings,
 	cfg component.Config,
 	nextConsumer consumer.Traces,
-) (component.TracesProcessor, error) {
+) (processor.Traces, error) {
 	rdp, err := f.getResourceDetectionProcessor(set, cfg)
 	if err != nil {
 		return nil, err
@@ -136,10 +137,10 @@ func (f *factory) createTracesProcessor(
 
 func (f *factory) createMetricsProcessor(
 	ctx context.Context,
-	set component.ProcessorCreateSettings,
+	set processor.CreateSettings,
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
-) (component.MetricsProcessor, error) {
+) (processor.Metrics, error) {
 	rdp, err := f.getResourceDetectionProcessor(set, cfg)
 	if err != nil {
 		return nil, err
@@ -157,10 +158,10 @@ func (f *factory) createMetricsProcessor(
 
 func (f *factory) createLogsProcessor(
 	ctx context.Context,
-	set component.ProcessorCreateSettings,
+	set processor.CreateSettings,
 	cfg component.Config,
 	nextConsumer consumer.Logs,
-) (component.LogsProcessor, error) {
+) (processor.Logs, error) {
 	rdp, err := f.getResourceDetectionProcessor(set, cfg)
 	if err != nil {
 		return nil, err
@@ -177,7 +178,7 @@ func (f *factory) createLogsProcessor(
 }
 
 func (f *factory) getResourceDetectionProcessor(
-	params component.ProcessorCreateSettings,
+	params processor.CreateSettings,
 	cfg component.Config,
 ) (*resourceDetectionProcessor, error) {
 	oCfg := cfg.(*Config)
@@ -196,7 +197,7 @@ func (f *factory) getResourceDetectionProcessor(
 }
 
 func (f *factory) getResourceProvider(
-	params component.ProcessorCreateSettings,
+	params processor.CreateSettings,
 	timeout time.Duration,
 	configuredDetectors []string,
 	detectorConfigs DetectorConfig,

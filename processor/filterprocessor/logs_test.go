@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/processor/processorhelper"
+	"go.opentelemetry.io/collector/processor/processortest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
 )
@@ -593,7 +594,7 @@ func TestFilterLogProcessor(t *testing.T) {
 			factory := NewFactory()
 			flp, err := factory.CreateLogsProcessor(
 				context.Background(),
-				componenttest.NewNopProcessorCreateSettings(),
+				processortest.NewNopCreateSettings(),
 				cfg,
 				next,
 			)
@@ -689,7 +690,7 @@ func requireNotPanicsLogs(t *testing.T, logs plog.Logs) {
 	ctx := context.Background()
 	proc, _ := factory.CreateLogsProcessor(
 		ctx,
-		componenttest.NewNopProcessorCreateSettings(),
+		processortest.NewNopCreateSettings(),
 		cfg,
 		consumertest.NewNop(),
 	)

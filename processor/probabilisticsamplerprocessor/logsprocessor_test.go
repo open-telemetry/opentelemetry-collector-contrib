@@ -22,12 +22,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/processor/processortest"
 )
 
 func TestNewLogsProcessor(t *testing.T) {
@@ -65,7 +65,7 @@ func TestNewLogsProcessor(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := newLogsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), tt.nextConsumer, tt.cfg)
+			got, err := newLogsProcessor(context.Background(), processortest.NewNopCreateSettings(), tt.nextConsumer, tt.cfg)
 			if tt.wantErr {
 				assert.Nil(t, got)
 				assert.Error(t, err)
@@ -162,7 +162,7 @@ func TestLogsSampling(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.LogsSink)
-			processor, err := newLogsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), sink, tt.cfg)
+			processor, err := newLogsProcessor(context.Background(), processortest.NewNopCreateSettings(), sink, tt.cfg)
 			require.NoError(t, err)
 			logs := plog.NewLogs()
 			lr := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()

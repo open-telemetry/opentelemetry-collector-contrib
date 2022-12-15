@@ -129,6 +129,13 @@ metrics:
       aggregation: cumulative
       monotonic: false
 
+  process.memory.utilization:
+    enabled: false
+    description: Percentage of total physical memory that is used by the process.
+    unit: 1
+    gauge:
+      value_type: double
+
   process.disk.io:
     enabled: true
     description: Disk bytes transferred.

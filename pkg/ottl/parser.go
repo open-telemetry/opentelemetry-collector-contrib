@@ -16,6 +16,7 @@ package ottl // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/alecthomas/participle/v2"
 	"go.opentelemetry.io/collector/component"
@@ -100,9 +101,15 @@ var parser = newParser[parsedStatement]()
 
 func parseStatement(raw string) (*parsedStatement, error) {
 	parsed, err := parser.ParseString("", raw)
+
+	if err != nil {
+		return nil, multierr.Append(err, fmt.Errorf("unable to parse OTTL statement, ensure the statement's syntax is correct; common mistakes include missing parentheses, missing double quotes and incorrect function name case"))
+	}
+	err = parsed.checkForCustomError()
 	if err != nil {
 		return nil, err
 	}
+
 	return parsed, nil
 }
 

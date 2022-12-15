@@ -24,16 +24,16 @@ List of available Functions:
 - [set](#set)
 - [truncate_all](#truncate_all)
 
-## Factory Functions
+## Converters
 
-Factory Functions are functions that help translate between the OTTL grammar and the underlying pdata structure.
+Converters are functions that help translate between the OTTL grammar and the underlying pdata structure.
 They manipulate the OTTL grammar value into a form that will make working with the telemetry easier or more efficient.
 
-Factory Functions:
+Converters:
 - Are pure functions.  They should never change the underlying telemetry and the same inputs should always result in the same output.
 - Always return something.  
 
-List of available Factory Functions:
+List of available Converters:
 - [Concat](#concat)
 - [ConvertCase](#convertcase)
 - [Int](#int)

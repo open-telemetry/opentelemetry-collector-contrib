@@ -1,12 +1,16 @@
-# Humio Exporter
+# Deprecated Humio Exporter
 
-| Status                   |           |
-| ------------------------ |-----------|
-| Stability                | [beta]    |
-| Supported pipeline types | traces    |
-| Distributions            | [contrib] |
+| Status                   |              |
+|--------------------------|--------------|
+| Stability                | [deprecated] |
+| Supported pipeline types | traces       |
+| Distributions            | [contrib]    |
 
 Exports data to Humio using JSON over the HTTP [Ingest API](https://library.humio.com/humio-server/api-ingest.html).
+
+**Humio now known as LogScale beginning with version 1.68 supports OTLP using HTTP and no longer requires a product specific exporter.**
+
+See [#17013](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/17013) for more information.
 
 ## Getting Started
 
@@ -145,6 +149,6 @@ curl $YOUR_HUMIO_URL/api/v1/repositories/$REPOSITORY_NAME/taggrouping \
   -d '[ {"field": "trace_id","modulus": 16} ]'
 ```
 
-[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[deprecated]:https://github.com/open-telemetry/opentelemetry-collector#deprecated
 
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

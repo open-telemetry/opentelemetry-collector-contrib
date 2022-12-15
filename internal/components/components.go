@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/ballastextension"
 	"go.opentelemetry.io/collector/extension/zpagesextension"
+	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/processor/memorylimiterprocessor"
 	"go.opentelemetry.io/collector/receiver"
@@ -349,7 +350,7 @@ func Components() (component.Factories, error) {
 		return component.Factories{}, err
 	}
 
-	processors := []component.ProcessorFactory{
+	processors := []processor.Factory{
 		attributesprocessor.NewFactory(),
 		batchprocessor.NewFactory(),
 		filterprocessor.NewFactory(),
@@ -371,7 +372,7 @@ func Components() (component.Factories, error) {
 		deltatorateprocessor.NewFactory(),
 		transformprocessor.NewFactory(),
 	}
-	factories.Processors, err = component.MakeProcessorFactoryMap(processors...)
+	factories.Processors, err = processor.MakeFactoryMap(processors...)
 	if err != nil {
 		return component.Factories{}, err
 	}

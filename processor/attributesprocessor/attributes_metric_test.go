@@ -21,11 +21,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/processor/processortest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
@@ -41,7 +41,7 @@ type metricTestCase struct {
 }
 
 // runIndividualMetricTestCase is the common logic of passing metric data through a configured attributes processor.
-func runIndividualMetricTestCase(t *testing.T, mt metricTestCase, mp component.MetricsProcessor) {
+func runIndividualMetricTestCase(t *testing.T, mt metricTestCase, mp processor.Metrics) {
 	t.Run(mt.name, func(t *testing.T) {
 		md := generateMetricData(mt.name, mt.inputAttributes)
 		assert.NoError(t, mp.ConsumeMetrics(context.Background(), md))
@@ -186,7 +186,7 @@ func TestMetricProcessor_NilEmptyData(t *testing.T) {
 		{Key: "attribute1", Action: attraction.DELETE},
 	}
 
-	mp, err := factory.CreateMetricsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), oCfg, consumertest.NewNop())
+	mp, err := factory.CreateMetricsProcessor(context.Background(), processortest.NewNopCreateSettings(), oCfg, consumertest.NewNop())
 	require.Nil(t, err)
 	require.NotNil(t, mp)
 	for i := range metricTestCases {
@@ -254,7 +254,7 @@ func TestAttributes_FilterMetrics(t *testing.T) {
 		},
 		Config: *createConfig(filterset.Strict),
 	}
-	mp, err := factory.CreateMetricsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
+	mp, err := factory.CreateMetricsProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, mp)
 
@@ -317,7 +317,7 @@ func TestAttributes_FilterMetricsByNameStrict(t *testing.T) {
 		Resources: []filterconfig.Attribute{{Key: "name", Value: "dont_apply"}},
 		Config:    *createConfig(filterset.Strict),
 	}
-	mp, err := factory.CreateMetricsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
+	mp, err := factory.CreateMetricsProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop())
 	require.Nil(t, err)
 	require.NotNil(t, mp)
 
@@ -380,7 +380,7 @@ func TestAttributes_FilterMetricsByNameRegexp(t *testing.T) {
 		Resources: []filterconfig.Attribute{{Key: "name", Value: ".*dont_apply$"}},
 		Config:    *createConfig(filterset.Regexp),
 	}
-	mp, err := factory.CreateMetricsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
+	mp, err := factory.CreateMetricsProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop())
 	require.Nil(t, err)
 	require.NotNil(t, mp)
 
@@ -439,7 +439,7 @@ func TestMetricAttributes_Hash(t *testing.T) {
 		{Key: "user.authenticated", Action: attraction.HASH},
 	}
 
-	mp, err := factory.CreateMetricsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
+	mp, err := factory.CreateMetricsProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop())
 	require.Nil(t, err)
 	require.NotNil(t, mp)
 
@@ -496,7 +496,7 @@ func TestMetricAttributes_Convert(t *testing.T) {
 		{Key: "to.string", Action: attraction.CONVERT, ConvertedType: "string"},
 	}
 
-	tp, err := factory.CreateMetricsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
+	tp, err := factory.CreateMetricsProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop())
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 
@@ -541,7 +541,7 @@ func BenchmarkAttributes_FilterMetricsByName(b *testing.B) {
 		Config:    *createConfig(filterset.Regexp),
 		Resources: []filterconfig.Attribute{{Key: "name", Value: "^apply.*"}},
 	}
-	mp, err := factory.CreateMetricsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
+	mp, err := factory.CreateMetricsProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop())
 	require.NoError(b, err)
 	require.NotNil(b, mp)
 
