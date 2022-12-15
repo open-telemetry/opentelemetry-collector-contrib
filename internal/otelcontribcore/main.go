@@ -22,7 +22,7 @@ import (
 	"log"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/service"
+	"go.opentelemetry.io/collector/otelcol"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelcontribcore/internal/version"
 )
@@ -41,13 +41,13 @@ func RunWithComponents(componentsFunc ComponentsFunc) {
 		Version:     version.Version,
 	}
 
-	if err = run(service.CollectorSettings{BuildInfo: info, Factories: factories}); err != nil {
+	if err = run(otelcol.CollectorSettings{BuildInfo: info, Factories: factories}); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func runInteractive(params service.CollectorSettings) error {
-	cmd := service.NewCommand(params)
+func runInteractive(params otelcol.CollectorSettings) error {
+	cmd := otelcol.NewCommand(params)
 	if err := cmd.Execute(); err != nil {
 		return fmt.Errorf("collector server run finished with error: %w", err)
 	}
