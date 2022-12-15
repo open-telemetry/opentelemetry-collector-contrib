@@ -21,7 +21,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -84,9 +83,8 @@ func ensureExporter(params exporter.CreateSettings, pCfg *Config) *pubsubExporte
 // createDefaultConfig creates the default configuration for exporter.
 func createDefaultConfig() component.Config {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		UserAgent:        "opentelemetry-collector-contrib {{version}}",
-		TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: defaultTimeout},
+		UserAgent:       "opentelemetry-collector-contrib {{version}}",
+		TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: defaultTimeout},
 		Watermark: WatermarkConfig{
 			Behavior:     "current",
 			AllowedDrift: 0,

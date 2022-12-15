@@ -21,7 +21,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor"
@@ -98,7 +97,6 @@ func (*factory) Type() component.Type {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
 		Detectors:          []string{env.TypeStr},
 		HTTPClientSettings: defaultHTTPClientSettings(),
 		Override:           true,

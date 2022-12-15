@@ -18,12 +18,10 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 )
 
 // Config specifies how the Per-RPC bearer token based authentication data should be obtained.
 type Config struct {
-	config.ExtensionSettings `mapstructure:",squash"`
 
 	// Scheme specifies the auth-scheme for the token. Defaults to "Bearer"
 	Scheme string `mapstructure:"scheme,omitempty"`

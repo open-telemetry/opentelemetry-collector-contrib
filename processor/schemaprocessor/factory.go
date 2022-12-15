@@ -18,7 +18,6 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor"
@@ -40,7 +39,6 @@ type factory struct{}
 // with the default values being used throughout it
 func newDefaultConfiguration() component.Config {
 	return &Config{
-		ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
 		HTTPClientSettings: confighttp.NewDefaultHTTPClientSettings(),
 	}
 }

@@ -25,9 +25,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
@@ -133,8 +131,7 @@ func test(nGoroutine int, nStream int, t *testing.T) {
 func doInit(numStream int, t *testing.T) (*swExporter, *grpc.Server, *mockLogHandler2) {
 	server, addr, m := initializeGRPC(grpc.MaxConcurrentStreams(100))
 	tt := &Config{
-		NumStreams:       numStream,
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
+		NumStreams: numStream,
 		QueueSettings: exporterhelper.QueueSettings{
 			Enabled:      true,
 			NumConsumers: 1,

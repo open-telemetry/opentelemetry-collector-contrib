@@ -21,7 +21,6 @@ import (
 	"net/url"
 	"path"
 
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
@@ -53,7 +52,6 @@ type TracesConfig struct {
 // Config represents the Humio configuration settings
 type Config struct {
 	// Inherited settings
-	config.ExporterSettings       `mapstructure:",squash"`
 	confighttp.HTTPClientSettings `mapstructure:",squash"`
 	exporterhelper.QueueSettings  `mapstructure:"sending_queue"`
 	exporterhelper.RetrySettings  `mapstructure:"retry_on_failure"`

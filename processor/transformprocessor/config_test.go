@@ -20,7 +20,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
@@ -37,7 +36,6 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, ""),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 				OTTLConfig: OTTLConfig{
 					Traces: SignalConfig{
 						Statements: []string{},
@@ -99,7 +97,6 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "deprecated_format"),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewIDWithName(typeStr, "")),
 				OTTLConfig: OTTLConfig{
 					Traces: SignalConfig{
 						Statements: []string{

@@ -26,7 +26,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -96,8 +95,7 @@ func TestLoadConfig(t *testing.T) {
 func testdataConfigYaml() *UDPLogConfig {
 	return &UDPLogConfig{
 		BaseConfig: adapter.BaseConfig{
-			ReceiverSettings: config.NewReceiverSettings(component.NewID("udplog")),
-			Operators:        []operator.Config{},
+			Operators: []operator.Config{},
 		},
 		InputConfig: func() udp.Config {
 			c := udp.NewConfig()
@@ -112,8 +110,7 @@ func TestDecodeInputConfigFailure(t *testing.T) {
 	factory := NewFactory()
 	badCfg := &UDPLogConfig{
 		BaseConfig: adapter.BaseConfig{
-			ReceiverSettings: config.NewReceiverSettings(component.NewID("udplog")),
-			Operators:        []operator.Config{},
+			Operators: []operator.Config{},
 		},
 		InputConfig: func() udp.Config {
 			c := udp.NewConfig()

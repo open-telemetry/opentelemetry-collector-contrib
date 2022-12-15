@@ -23,7 +23,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -40,9 +39,8 @@ func TestProcessorGetsCreatedWithValidConfiguration(t *testing.T) {
 	factory := NewFactory()
 	creationParams := processortest.NewNopCreateSettings()
 	cfg := &Config{
-		ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
-		DefaultExporters:  []string{"otlp"},
-		FromAttribute:     "X-Tenant",
+		DefaultExporters: []string{"otlp"},
+		FromAttribute:    "X-Tenant",
 		Table: []RoutingTableItem{
 			{
 				Value:     "acme",
@@ -81,9 +79,8 @@ func TestFailOnEmptyConfiguration(t *testing.T) {
 func TestProcessorFailsToBeCreatedWhenRouteHasNoExporters(t *testing.T) {
 	// prepare
 	cfg := &Config{
-		ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
-		DefaultExporters:  []string{"otlp"},
-		FromAttribute:     "X-Tenant",
+		DefaultExporters: []string{"otlp"},
+		FromAttribute:    "X-Tenant",
 		Table: []RoutingTableItem{
 			{
 				Value: "acme",
@@ -95,18 +92,16 @@ func TestProcessorFailsToBeCreatedWhenRouteHasNoExporters(t *testing.T) {
 
 func TestProcessorFailsToBeCreatedWhenNoRoutesExist(t *testing.T) {
 	cfg := &Config{
-		ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
-		DefaultExporters:  []string{"otlp"},
-		FromAttribute:     "X-Tenant",
-		Table:             []RoutingTableItem{},
+		DefaultExporters: []string{"otlp"},
+		FromAttribute:    "X-Tenant",
+		Table:            []RoutingTableItem{},
 	}
 	assert.ErrorIs(t, component.ValidateConfig(cfg), errNoTableItems)
 }
 
 func TestProcessorFailsWithNoFromAttribute(t *testing.T) {
 	cfg := &Config{
-		ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
-		DefaultExporters:  []string{"otlp"},
+		DefaultExporters: []string{"otlp"},
 		Table: []RoutingTableItem{
 			{
 				Value:     "acme",
@@ -122,9 +117,8 @@ func TestShouldNotFailWhenNextIsProcessor(t *testing.T) {
 	factory := NewFactory()
 	creationParams := processortest.NewNopCreateSettings()
 	cfg := &Config{
-		ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
-		DefaultExporters:  []string{"otlp"},
-		FromAttribute:     "X-Tenant",
+		DefaultExporters: []string{"otlp"},
+		FromAttribute:    "X-Tenant",
 		Table: []RoutingTableItem{
 			{
 				Value:     "acme",
@@ -148,7 +142,6 @@ func TestShouldNotFailWhenNextIsProcessor(t *testing.T) {
 func TestProcessorDoesNotFailToBuildExportersWithMultiplePipelines(t *testing.T) {
 	otlpExporterFactory := otlpexporter.NewFactory()
 	otlpConfig := &otlpexporter.Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID("otlp")),
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: "example.com:1234",
 		},
@@ -195,9 +188,8 @@ func TestShutdown(t *testing.T) {
 	factory := NewFactory()
 	creationParams := processortest.NewNopCreateSettings()
 	cfg := &Config{
-		ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
-		DefaultExporters:  []string{"otlp"},
-		FromAttribute:     "X-Tenant",
+		DefaultExporters: []string{"otlp"},
+		FromAttribute:    "X-Tenant",
 		Table: []RoutingTableItem{
 			{
 				Value:     "acme",

@@ -21,7 +21,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.uber.org/zap"
 
@@ -46,7 +45,6 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "1"),
 			expected: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				AWSSessionSettings: awsutil.AWSSessionSettings{
 					NumberOfWorkers:       8,
 					Endpoint:              "",
@@ -66,7 +64,6 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "resource_attr_to_label"),
 			expected: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				AWSSessionSettings: awsutil.AWSSessionSettings{
 					NumberOfWorkers:       8,
 					Endpoint:              "",
@@ -87,7 +84,6 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "metric_descriptors"),
 			expected: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				AWSSessionSettings: awsutil.AWSSessionSettings{
 					NumberOfWorkers:       8,
 					Endpoint:              "",
@@ -134,7 +130,6 @@ func TestConfigValidate(t *testing.T) {
 		{Unit: "Megabytes", MetricName: "memory_usage"},
 	}
 	cfg := &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewIDWithName(typeStr, "1")),
 		AWSSessionSettings: awsutil.AWSSessionSettings{
 			RequestTimeoutSeconds: 30,
 			MaxRetries:            1,
@@ -155,7 +150,6 @@ func TestConfigValidate(t *testing.T) {
 
 func TestRetentionValidateCorrect(t *testing.T) {
 	cfg := &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewIDWithName(typeStr, "1")),
 		AWSSessionSettings: awsutil.AWSSessionSettings{
 			RequestTimeoutSeconds: 30,
 			MaxRetries:            1,
@@ -171,7 +165,6 @@ func TestRetentionValidateCorrect(t *testing.T) {
 
 func TestRetentionValidateWrong(t *testing.T) {
 	wrongcfg := &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewIDWithName(typeStr, "2")),
 		AWSSessionSettings: awsutil.AWSSessionSettings{
 			RequestTimeoutSeconds: 30,
 			MaxRetries:            1,

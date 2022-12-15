@@ -27,7 +27,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -137,8 +136,7 @@ func TestReadWindowsEventLogger(t *testing.T) {
 func createTestConfig() *WindowsLogConfig {
 	return &WindowsLogConfig{
 		BaseConfig: adapter.BaseConfig{
-			ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
-			Operators:        []operator.Config{},
+			Operators: []operator.Config{},
 		},
 		InputConfig: func() windows.Config {
 			c := windows.NewConfig()

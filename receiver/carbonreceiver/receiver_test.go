@@ -25,7 +25,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -60,7 +59,6 @@ func Test_carbonreceiver_New(t *testing.T) {
 			name: "zero_value_parser",
 			args: args{
 				config: Config{
-					ReceiverSettings: defaultConfig.ReceiverSettings,
 					NetAddr: confignet.NetAddr{
 						Endpoint:  defaultConfig.Endpoint,
 						Transport: defaultConfig.Transport,
@@ -80,9 +78,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 		{
 			name: "empty_endpoint",
 			args: args{
-				config: Config{
-					ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
-				},
+				config:       Config{},
 				nextConsumer: consumertest.NewNop(),
 			},
 			wantErr: errEmptyEndpoint,
@@ -91,7 +87,6 @@ func Test_carbonreceiver_New(t *testing.T) {
 			name: "invalid_transport",
 			args: args{
 				config: Config{
-					ReceiverSettings: config.NewReceiverSettings(component.NewIDWithName(typeStr, "invalid_transport_rcv")),
 					NetAddr: confignet.NetAddr{
 						Endpoint:  "localhost:2003",
 						Transport: "unknown_transp",
@@ -109,7 +104,6 @@ func Test_carbonreceiver_New(t *testing.T) {
 			name: "regex_parser",
 			args: args{
 				config: Config{
-					ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 					NetAddr: confignet.NetAddr{
 						Endpoint:  "localhost:2003",
 						Transport: "tcp",
@@ -132,7 +126,6 @@ func Test_carbonreceiver_New(t *testing.T) {
 			name: "negative_tcp_idle_timeout",
 			args: args{
 				config: Config{
-					ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 					NetAddr: confignet.NetAddr{
 						Endpoint:  "localhost:2003",
 						Transport: "tcp",

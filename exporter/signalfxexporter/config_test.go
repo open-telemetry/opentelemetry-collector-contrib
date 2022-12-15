@@ -24,7 +24,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -59,10 +58,9 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "allsettings"),
 			expected: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				AccessToken:      "testToken",
-				Realm:            "us1",
-				MaxConnections:   70,
+				AccessToken:    "testToken",
+				Realm:          "us1",
+				MaxConnections: 70,
 				Headers: map[string]string{
 					"added-entry": "added value",
 					"dot.test":    "test",
@@ -321,11 +319,10 @@ func TestConfig_getOptionsFromConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				AccessToken:      tt.fields.AccessToken,
-				Realm:            tt.fields.Realm,
-				IngestURL:        tt.fields.IngestURL,
-				APIURL:           tt.fields.APIURL,
+				AccessToken: tt.fields.AccessToken,
+				Realm:       tt.fields.Realm,
+				IngestURL:   tt.fields.IngestURL,
+				APIURL:      tt.fields.APIURL,
 				TimeoutSettings: exporterhelper.TimeoutSettings{
 					Timeout: tt.fields.Timeout,
 				},

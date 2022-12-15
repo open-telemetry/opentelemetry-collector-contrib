@@ -20,7 +20,6 @@ import (
 
 	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor"
 )
@@ -46,7 +45,6 @@ func NewFactory() processor.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 		Store: StoreConfig{
 			TTL:      2 * time.Second,
 			MaxItems: 1000,

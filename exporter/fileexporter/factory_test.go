@@ -22,9 +22,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
@@ -37,8 +35,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 func TestCreateMetricsExporterError(t *testing.T) {
 	cfg := &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		FormatType:       formatTypeJSON,
+		FormatType: formatTypeJSON,
 	}
 	_, err := createMetricsExporter(
 		context.Background(),
@@ -49,9 +46,8 @@ func TestCreateMetricsExporterError(t *testing.T) {
 
 func TestCreateMetricsExporter(t *testing.T) {
 	cfg := &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		FormatType:       formatTypeJSON,
-		Path:             tempFileName(t),
+		FormatType: formatTypeJSON,
+		Path:       tempFileName(t),
 	}
 	exp, err := createMetricsExporter(
 		context.Background(),
@@ -63,9 +59,8 @@ func TestCreateMetricsExporter(t *testing.T) {
 
 func TestCreateTracesExporter(t *testing.T) {
 	cfg := &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		FormatType:       formatTypeJSON,
-		Path:             tempFileName(t),
+		FormatType: formatTypeJSON,
+		Path:       tempFileName(t),
 	}
 	exp, err := createTracesExporter(
 		context.Background(),
@@ -77,8 +72,7 @@ func TestCreateTracesExporter(t *testing.T) {
 
 func TestCreateTracesExporterError(t *testing.T) {
 	cfg := &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		FormatType:       formatTypeJSON,
+		FormatType: formatTypeJSON,
 	}
 	_, err := createTracesExporter(
 		context.Background(),
@@ -89,9 +83,8 @@ func TestCreateTracesExporterError(t *testing.T) {
 
 func TestCreateLogsExporter(t *testing.T) {
 	cfg := &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		FormatType:       formatTypeJSON,
-		Path:             tempFileName(t),
+		FormatType: formatTypeJSON,
+		Path:       tempFileName(t),
 	}
 	exp, err := createLogsExporter(
 		context.Background(),
@@ -103,8 +96,7 @@ func TestCreateLogsExporter(t *testing.T) {
 
 func TestCreateLogsExporterError(t *testing.T) {
 	cfg := &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		FormatType:       formatTypeJSON,
+		FormatType: formatTypeJSON,
 	}
 	_, err := createLogsExporter(
 		context.Background(),

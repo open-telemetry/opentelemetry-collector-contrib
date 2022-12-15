@@ -20,7 +20,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -85,10 +84,9 @@ func createMetricsExporter(ctx context.Context, set exporter.CreateSettings,
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		Namespace:        "",
-		ExternalLabels:   map[string]string{},
-		TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),
+		Namespace:       "",
+		ExternalLabels:  map[string]string{},
+		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
 		RetrySettings: exporterhelper.RetrySettings{
 			Enabled:         true,
 			InitialInterval: 50 * time.Millisecond,

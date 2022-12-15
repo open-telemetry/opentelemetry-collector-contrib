@@ -20,7 +20,6 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter"
 	otlphttp "go.opentelemetry.io/collector/exporter/otlphttpexporter"
 	"golang.org/x/oauth2"
@@ -105,8 +104,6 @@ func (f *f5cloudFactory) CreateDefaultConfig() component.Config {
 			Audience:       "",
 		},
 	}
-
-	cfg.ExporterSettings = config.NewExporterSettings(component.NewID(typeStr))
 
 	cfg.Headers["User-Agent"] = "opentelemetry-collector-contrib {{version}}"
 
