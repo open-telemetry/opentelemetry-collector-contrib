@@ -7,10 +7,10 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v0.3.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.67.0
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.67.0
-	go.opentelemetry.io/collector/component v0.67.0
-	go.opentelemetry.io/collector/consumer v0.67.0
-	go.opentelemetry.io/collector/pdata v1.0.0-rc1
+	go.opentelemetry.io/collector v0.67.1-0.20221209160927-fdef8b181a06
+	go.opentelemetry.io/collector/component v0.67.1-0.20221209160927-fdef8b181a06
+	go.opentelemetry.io/collector/consumer v0.67.1-0.20221209160927-fdef8b181a06
+	go.opentelemetry.io/collector/pdata v1.0.0-rc1.0.20221209160927-fdef8b181a06
 	go.uber.org/zap v1.24.0
 )
 
@@ -73,9 +73,9 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/collector/confmap v0.67.0 // indirect
-	go.opentelemetry.io/collector/featuregate v0.67.0 // indirect
-	go.opentelemetry.io/collector/processor/batchprocessor v0.67.0 // indirect
-	go.opentelemetry.io/collector/semconv v0.67.0 // indirect
+	go.opentelemetry.io/collector/featuregate v0.67.1-0.20221209160927-fdef8b181a06 // indirect
+	go.opentelemetry.io/collector/processor/batchprocessor v0.67.1-0.20221209160927-fdef8b181a06 // indirect
+	go.opentelemetry.io/collector/semconv v0.67.1-0.20221209160927-fdef8b181a06 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.11.1 // indirect
 	go.opentelemetry.io/otel v1.11.2 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.33.0 // indirect

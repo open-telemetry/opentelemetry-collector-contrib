@@ -37,6 +37,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/otelcol"
+	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/service"
@@ -148,7 +149,7 @@ service:
 	require.Nil(t, err)
 	exporters, err := exporter.MakeFactoryMap(prometheusremotewriteexporter.NewFactory())
 	require.Nil(t, err)
-	processors, err := component.MakeProcessorFactoryMap(batchprocessor.NewFactory())
+	processors, err := processor.MakeFactoryMap(batchprocessor.NewFactory())
 	require.Nil(t, err)
 
 	factories := component.Factories{
