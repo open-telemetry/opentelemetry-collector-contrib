@@ -114,8 +114,7 @@ func (e *traceExporterImp) consumeTrace(ctx context.Context, td ptrace.Traces) e
 
 		te, ok := exp.(exporter.Traces)
 		if !ok {
-			expectType := (*exporter.Traces)(nil)
-			return fmt.Errorf("expected %T but got %T", expectType, exp)
+			return fmt.Errorf("unable to export traces, unexpected exporter type: expected exporter.Traces but got %T", exp)
 		}
 
 		start := time.Now()
