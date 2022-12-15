@@ -20,8 +20,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/processor/processortest"
 )
 
 func TestNewProcessor(t *testing.T) {
@@ -50,13 +50,13 @@ func TestNewProcessor(t *testing.T) {
 			// Prepare
 			factory := NewFactory()
 
-			creationParams := componenttest.NewNopProcessorCreateSettings()
+			creationParams := processortest.NewNopCreateSettings()
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.LatencyHistogramBuckets = tc.latencyHistogramBuckets
 
 			// Test
 			traceProcessor, err := factory.CreateTracesProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
-			smp := traceProcessor.(*processor)
+			smp := traceProcessor.(*serviceGraphProcessor)
 
 			// Verify
 			assert.NoError(t, err)

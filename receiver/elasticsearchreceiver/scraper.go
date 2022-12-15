@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/metadata"
@@ -79,13 +80,13 @@ type elasticsearchScraper struct {
 }
 
 func newElasticSearchScraper(
-	settings component.ReceiverCreateSettings,
+	settings receiver.CreateSettings,
 	cfg *Config,
 ) *elasticsearchScraper {
 	e := &elasticsearchScraper{
 		settings:                              settings.TelemetrySettings,
 		cfg:                                   cfg,
-		mb:                                    metadata.NewMetricsBuilder(cfg.Metrics, settings.BuildInfo),
+		mb:                                    metadata.NewMetricsBuilder(cfg.Metrics, settings),
 		emitClusterHealthDetailedShardMetrics: featuregate.GetRegistry().IsEnabled(emitClusterHealthDetailedShardMetricsID),
 		emitAllIndexOperationMetrics:          featuregate.GetRegistry().IsEnabled(emitAllIndexOperationMetricsID),
 	}
@@ -164,6 +165,8 @@ func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pcommo
 		r.mb.RecordElasticsearchNodeCacheCountDataPoint(now, info.Indices.QueryCache.HitCount, metadata.AttributeQueryCacheCountTypeHit)
 		r.mb.RecordElasticsearchNodeCacheCountDataPoint(now, info.Indices.QueryCache.MissCount, metadata.AttributeQueryCacheCountTypeMiss)
 
+		r.mb.RecordElasticsearchNodeCacheSizeDataPoint(now, info.Indices.QueryCache.MemorySizeInBy)
+
 		r.mb.RecordElasticsearchNodeFsDiskAvailableDataPoint(now, info.FS.Total.AvailableBytes)
 		r.mb.RecordElasticsearchNodeFsDiskFreeDataPoint(now, info.FS.Total.FreeBytes)
 		r.mb.RecordElasticsearchNodeFsDiskTotalDataPoint(now, info.FS.Total.TotalBytes)
@@ -177,6 +180,8 @@ func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pcommo
 		r.mb.RecordElasticsearchNodeClusterConnectionsDataPoint(now, info.TransportStats.OpenConnections)
 
 		r.mb.RecordElasticsearchNodeHTTPConnectionsDataPoint(now, info.HTTPStats.OpenConnections)
+
+		r.mb.RecordElasticsearchNodeOperationsCurrentDataPoint(now, info.Indices.SearchOperations.QueryCurrent, metadata.AttributeOperationQuery)
 
 		r.mb.RecordElasticsearchNodeOperationsCompletedDataPoint(now, info.Indices.IndexingOperations.IndexTotal, metadata.AttributeOperationIndex)
 		r.mb.RecordElasticsearchNodeOperationsCompletedDataPoint(now, info.Indices.IndexingOperations.DeleteTotal, metadata.AttributeOperationDelete)
@@ -247,6 +252,17 @@ func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pcommo
 		r.mb.RecordElasticsearchOsCPULoadAvg1mDataPoint(now, info.OS.CPU.LoadAvg.OneMinute)
 		r.mb.RecordElasticsearchOsCPULoadAvg5mDataPoint(now, info.OS.CPU.LoadAvg.FiveMinutes)
 		r.mb.RecordElasticsearchOsCPULoadAvg15mDataPoint(now, info.OS.CPU.LoadAvg.FifteenMinutes)
+
+		// Elasticsearch sends this data in percent, but we want to represent it as a number between 0 and 1, so we need to divide.
+		// Additionally, if the usage is not known, ES will send '-1'. We do not want to report the metric in this case.
+		if info.ProcessStats.CPU.Percent != -1 {
+			r.mb.RecordElasticsearchProcessCPUUsageDataPoint(now, float64(info.ProcessStats.CPU.Percent)/100)
+		}
+		if info.ProcessStats.CPU.TotalInMs != -1 {
+			r.mb.RecordElasticsearchProcessCPUTimeDataPoint(now, info.ProcessStats.CPU.TotalInMs)
+		}
+
+		r.mb.RecordElasticsearchProcessMemoryVirtualDataPoint(now, info.ProcessStats.Memory.TotalVirtualInBy)
 
 		r.mb.RecordElasticsearchOsMemoryDataPoint(now, info.OS.Memory.UsedInBy, metadata.AttributeMemoryStateUsed)
 		r.mb.RecordElasticsearchOsMemoryDataPoint(now, info.OS.Memory.FreeInBy, metadata.AttributeMemoryStateFree)

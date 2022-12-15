@@ -16,14 +16,17 @@ package components // import "github.com/open-telemetry/opentelemetry-collector-
 
 import (
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/loggingexporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/exporter/otlphttpexporter"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/ballastextension"
 	"go.opentelemetry.io/collector/extension/zpagesextension"
+	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/processor/memorylimiterprocessor"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter"
@@ -153,7 +156,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/promtailreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pulsarreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver"
@@ -211,7 +213,7 @@ func Components() (component.Factories, error) {
 		return component.Factories{}, err
 	}
 
-	receivers := []component.ReceiverFactory{
+	receivers := []receiver.Factory{
 		activedirectorydsreceiver.NewFactory(),
 		aerospikereceiver.NewFactory(),
 		apachereceiver.NewFactory(),
@@ -263,7 +265,7 @@ func Components() (component.Factories, error) {
 		postgresqlreceiver.NewFactory(),
 		prometheusexecreceiver.NewFactory(),
 		prometheusreceiver.NewFactory(),
-		promtailreceiver.NewFactory(),
+		// promtailreceiver.NewFactory(),
 		pulsarreceiver.NewFactory(),
 		purefareceiver.NewFactory(),
 		rabbitmqreceiver.NewFactory(),
@@ -291,13 +293,12 @@ func Components() (component.Factories, error) {
 		vcenterreceiver.NewFactory(),
 		zipkinreceiver.NewFactory(),
 	}
-	receivers = append(receivers, extraReceivers()...)
-	factories.Receivers, err = component.MakeReceiverFactoryMap(receivers...)
+	factories.Receivers, err = receiver.MakeFactoryMap(receivers...)
 	if err != nil {
 		return component.Factories{}, err
 	}
 
-	exporters := []component.ExporterFactory{
+	exporters := []exporter.Factory{
 		alibabacloudlogserviceexporter.NewFactory(),
 		awscloudwatchlogsexporter.NewFactory(),
 		awsemfexporter.NewFactory(),
@@ -344,12 +345,12 @@ func Components() (component.Factories, error) {
 		tencentcloudlogserviceexporter.NewFactory(),
 		zipkinexporter.NewFactory(),
 	}
-	factories.Exporters, err = component.MakeExporterFactoryMap(exporters...)
+	factories.Exporters, err = exporter.MakeFactoryMap(exporters...)
 	if err != nil {
 		return component.Factories{}, err
 	}
 
-	processors := []component.ProcessorFactory{
+	processors := []processor.Factory{
 		attributesprocessor.NewFactory(),
 		batchprocessor.NewFactory(),
 		filterprocessor.NewFactory(),
@@ -371,7 +372,7 @@ func Components() (component.Factories, error) {
 		deltatorateprocessor.NewFactory(),
 		transformprocessor.NewFactory(),
 	}
-	factories.Processors, err = component.MakeProcessorFactoryMap(processors...)
+	factories.Processors, err = processor.MakeFactoryMap(processors...)
 	if err != nil {
 		return component.Factories{}, err
 	}

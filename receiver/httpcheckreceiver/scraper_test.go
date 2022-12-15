@@ -26,9 +26,10 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest/golden"
 )
 
 func newMockServer(t *testing.T, responseCode int) *httptest.Server {
@@ -98,7 +99,7 @@ func TestScaperScrape(t *testing.T) {
 		expectedMetricGen func(t *testing.T) pmetric.Metrics
 		expectedErr       error
 		endpoint          string
-		compareOptions    []scrapertest.CompareOption
+		compareOptions    []comparetest.CompareOption
 	}{
 		{
 			desc:             "Successful Collection",
@@ -110,9 +111,9 @@ func TestScaperScrape(t *testing.T) {
 				return expectedMetrics
 			},
 			expectedErr: nil,
-			compareOptions: []scrapertest.CompareOption{
-				scrapertest.IgnoreMetricAttributeValue("http.url"),
-				scrapertest.IgnoreMetricValues("httpcheck.duration"),
+			compareOptions: []comparetest.CompareOption{
+				comparetest.IgnoreMetricAttributeValue("http.url"),
+				comparetest.IgnoreMetricValues("httpcheck.duration"),
 			},
 		},
 		{
@@ -125,9 +126,9 @@ func TestScaperScrape(t *testing.T) {
 				return expectedMetrics
 			},
 			expectedErr: nil,
-			compareOptions: []scrapertest.CompareOption{
-				scrapertest.IgnoreMetricAttributeValue("http.url"),
-				scrapertest.IgnoreMetricValues("httpcheck.duration"),
+			compareOptions: []comparetest.CompareOption{
+				comparetest.IgnoreMetricAttributeValue("http.url"),
+				comparetest.IgnoreMetricValues("httpcheck.duration"),
 			},
 		},
 		{
@@ -140,9 +141,9 @@ func TestScaperScrape(t *testing.T) {
 				return expectedMetrics
 			},
 			expectedErr: nil,
-			compareOptions: []scrapertest.CompareOption{
-				scrapertest.IgnoreMetricValues("httpcheck.duration"),
-				scrapertest.IgnoreMetricAttributeValue("error.message"),
+			compareOptions: []comparetest.CompareOption{
+				comparetest.IgnoreMetricValues("httpcheck.duration"),
+				comparetest.IgnoreMetricAttributeValue("error.message"),
 			},
 		},
 	}
@@ -157,7 +158,7 @@ func TestScaperScrape(t *testing.T) {
 				defer ms.Close()
 				cfg.Endpoint = ms.URL
 			}
-			scraper := newScraper(cfg, componenttest.NewNopReceiverCreateSettings())
+			scraper := newScraper(cfg, receivertest.NewNopCreateSettings())
 			require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()))
 
 			actualMetrics, err := scraper.scrape(context.Background())
@@ -169,15 +170,15 @@ func TestScaperScrape(t *testing.T) {
 
 			expectedMetrics := tc.expectedMetricGen(t)
 
-			require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics, tc.compareOptions...))
+			require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics, tc.compareOptions...))
 		})
 	}
 }
 
 func TestNilClient(t *testing.T) {
-	scraper := newScraper(createDefaultConfig().(*Config), componenttest.NewNopReceiverCreateSettings())
+	scraper := newScraper(createDefaultConfig().(*Config), receivertest.NewNopCreateSettings())
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.EqualError(t, err, errClientNotInit.Error())
-	require.NoError(t, scrapertest.CompareMetrics(pmetric.NewMetrics(), actualMetrics))
+	require.NoError(t, comparetest.CompareMetrics(pmetric.NewMetrics(), actualMetrics))
 
 }

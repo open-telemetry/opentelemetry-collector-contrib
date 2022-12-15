@@ -21,8 +21,8 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
@@ -40,12 +40,12 @@ const (
 )
 
 // NewFactory creates a factory for Splunk HEC receiver.
-func NewFactory() component.ReceiverFactory {
-	return component.NewReceiverFactory(
+func NewFactory() receiver.Factory {
+	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver, stability),
-		component.WithLogsReceiver(createLogsReceiver, stability))
+		receiver.WithMetrics(createMetricsReceiver, stability),
+		receiver.WithLogs(createLogsReceiver, stability))
 }
 
 // CreateDefaultConfig creates the default configuration for Splunk HEC receiver.
@@ -70,16 +70,12 @@ func createDefaultConfig() component.Config {
 // CreateMetricsReceiver creates a metrics receiver based on provided config.
 func createMetricsReceiver(
 	_ context.Context,
-	params component.ReceiverCreateSettings,
+	params receiver.CreateSettings,
 	cfg component.Config,
 	consumer consumer.Metrics,
-) (component.MetricsReceiver, error) {
+) (receiver.Metrics, error) {
 
 	rCfg := cfg.(*Config)
-
-	if rCfg.Path != "" {
-		params.Logger.Warn("splunk_hec receiver path is deprecated", zap.String("path", rCfg.Path))
-	}
 
 	return newMetricsReceiver(params, *rCfg, consumer)
 }
@@ -87,16 +83,12 @@ func createMetricsReceiver(
 // createLogsReceiver creates a logs receiver based on provided config.
 func createLogsReceiver(
 	_ context.Context,
-	params component.ReceiverCreateSettings,
+	params receiver.CreateSettings,
 	cfg component.Config,
 	consumer consumer.Logs,
-) (component.LogsReceiver, error) {
+) (receiver.Logs, error) {
 
 	rCfg := cfg.(*Config)
-
-	if rCfg.Path != "" {
-		params.Logger.Warn("splunk_hec receiver path is deprecated", zap.String("path", rCfg.Path))
-	}
 
 	return newLogsReceiver(params, *rCfg, consumer)
 }

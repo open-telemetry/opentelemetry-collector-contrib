@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -181,7 +182,7 @@ func TestTraceExporter(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-	params := componenttest.NewNopExporterCreateSettings()
+	params := exportertest.NewNopCreateSettings()
 	te, err := newTracesExporter(cfg, params)
 	assert.NoError(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")

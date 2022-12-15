@@ -35,6 +35,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 )
@@ -149,7 +150,7 @@ func (suite *JMXIntegrationSuite) TestJMXReceiverHappyPath() {
 			defer getLogsOnFailure(t, logObserver)
 
 			logger := zap.New(logCore)
-			params := componenttest.NewNopReceiverCreateSettings()
+			params := receivertest.NewNopCreateSettings()
 			params.Logger = logger
 
 			cfg := &Config{
@@ -238,7 +239,7 @@ func (suite *JMXIntegrationSuite) TestJMXReceiverHappyPath() {
 }
 
 func TestJMXReceiverInvalidOTLPEndpointIntegration(t *testing.T) {
-	params := componenttest.NewNopReceiverCreateSettings()
+	params := receivertest.NewNopCreateSettings()
 	cfg := &Config{
 		CollectionInterval: 100 * time.Millisecond,
 		Endpoint:           fmt.Sprintf("service:jmx:rmi:///jndi/rmi://localhost:7199/jmxrmi"),

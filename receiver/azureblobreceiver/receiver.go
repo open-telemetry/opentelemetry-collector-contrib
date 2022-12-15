@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 )
 
@@ -104,7 +105,7 @@ func (b *blobReceiver) consumeTracesJSON(ctx context.Context, json []byte) error
 }
 
 // Returns a new instance of the log receiver
-func newReceiver(set component.ReceiverCreateSettings, blobEventHandler blobEventHandler) (component.Component, error) {
+func newReceiver(set receiver.CreateSettings, blobEventHandler blobEventHandler) (component.Component, error) {
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
 		ReceiverID:             set.ID,
 		Transport:              "event",

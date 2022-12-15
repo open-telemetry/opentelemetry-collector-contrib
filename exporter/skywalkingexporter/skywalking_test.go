@@ -31,6 +31,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"google.golang.org/grpc"
 	v3 "skywalking.apache.org/repo/goapi/collect/common/v3"
 	metricpb "skywalking.apache.org/repo/goapi/collect/language/agent/v3"
@@ -55,7 +56,7 @@ func TestSwExporter(t *testing.T) {
 	oce := newLogsExporter(context.Background(), tt, componenttest.NewNopTelemetrySettings())
 	got, err := exporterhelper.NewLogsExporter(
 		context.Background(),
-		componenttest.NewNopExporterCreateSettings(),
+		exportertest.NewNopCreateSettings(),
 		tt,
 		oce.pushLogs,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
@@ -129,7 +130,7 @@ func TestSwExporter(t *testing.T) {
 	oce = newMetricsExporter(context.Background(), tt, componenttest.NewNopTelemetrySettings())
 	got2, err2 := exporterhelper.NewMetricsExporter(
 		context.Background(),
-		componenttest.NewNopExporterCreateSettings(),
+		exportertest.NewNopCreateSettings(),
 		tt,
 		oce.pushMetrics,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),

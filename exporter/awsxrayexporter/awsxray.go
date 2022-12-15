@@ -22,6 +22,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/xray"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
@@ -34,10 +35,10 @@ const (
 	maxSegmentsPerPut = int(50) // limit imposed by PutTraceSegments API
 )
 
-// newTracesExporter creates an component.TracesExporter that converts to an X-Ray PutTraceSegments
+// newTracesExporter creates an exporter.Traces that converts to an X-Ray PutTraceSegments
 // request and then posts the request to the configured region's X-Ray endpoint.
 func newTracesExporter(
-	config component.Config, set component.ExporterCreateSettings, cn awsutil.ConnAttr) (component.TracesExporter, error) {
+	config component.Config, set exporter.CreateSettings, cn awsutil.ConnAttr) (exporter.Traces, error) {
 	typeLog := zap.String("type", string(set.ID.Type()))
 	nameLog := zap.String("name", set.ID.String())
 	logger := set.Logger

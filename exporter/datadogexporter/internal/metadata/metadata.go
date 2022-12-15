@@ -29,7 +29,7 @@ import (
 	ec2Attributes "github.com/DataDog/datadog-agent/pkg/otlp/model/attributes/ec2"
 	"github.com/DataDog/datadog-agent/pkg/otlp/model/attributes/gcp"
 	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -140,7 +140,7 @@ func metadataFromAttributesWithRegistry(registry *featuregate.Registry, attrs pc
 	return hm
 }
 
-func fillHostMetadata(params component.ExporterCreateSettings, pcfg PusherConfig, p source.Provider, hm *HostMetadata) {
+func fillHostMetadata(params exporter.CreateSettings, pcfg PusherConfig, p source.Provider, hm *HostMetadata) {
 	// Could not get hostname from attributes
 	if hm.InternalHostname == "" {
 		if src, err := p.Source(context.TODO()); err == nil && src.Kind == source.HostnameKind {
@@ -171,7 +171,7 @@ func fillHostMetadata(params component.ExporterCreateSettings, pcfg PusherConfig
 	}
 }
 
-func pushMetadata(pcfg PusherConfig, params component.ExporterCreateSettings, metadata *HostMetadata) error {
+func pushMetadata(pcfg PusherConfig, params exporter.CreateSettings, metadata *HostMetadata) error {
 	if metadata.Meta.Hostname == "" {
 		// if the hostname is empty, don't send metadata; we don't need it.
 		params.Logger.Debug("Skipping host metadata since the hostname is empty")
@@ -203,7 +203,7 @@ func pushMetadata(pcfg PusherConfig, params component.ExporterCreateSettings, me
 	return nil
 }
 
-func pushMetadataWithRetry(retrier *clientutil.Retrier, params component.ExporterCreateSettings, pcfg PusherConfig, hostMetadata *HostMetadata) {
+func pushMetadataWithRetry(retrier *clientutil.Retrier, params exporter.CreateSettings, pcfg PusherConfig, hostMetadata *HostMetadata) {
 	params.Logger.Debug("Sending host metadata payload", zap.Any("payload", hostMetadata))
 
 	err := retrier.DoWithRetries(context.Background(), func(context.Context) error {
@@ -219,7 +219,7 @@ func pushMetadataWithRetry(retrier *clientutil.Retrier, params component.Exporte
 }
 
 // Pusher pushes host metadata payloads periodically to Datadog intake
-func Pusher(ctx context.Context, params component.ExporterCreateSettings, pcfg PusherConfig, p source.Provider, attrs pcommon.Map) {
+func Pusher(ctx context.Context, params exporter.CreateSettings, pcfg PusherConfig, p source.Provider, attrs pcommon.Map) {
 	// Push metadata every 30 minutes
 	ticker := time.NewTicker(30 * time.Minute)
 	defer ticker.Stop()

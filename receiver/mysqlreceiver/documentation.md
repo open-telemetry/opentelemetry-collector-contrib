@@ -394,6 +394,14 @@ The number of transmitted bytes between server and clients.
 | ---- | ----------- | ------ |
 | kind | The name of the transmission direction. | Str: ``received``, ``sent`` |
 
+### mysql.connection.count
+
+The number of connection attempts (successful or not) to the MySQL server.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| 1 | Sum | Int | Cumulative | true |
+
 ### mysql.connection.errors
 
 Errors that occur during the client connection process.
@@ -461,6 +469,22 @@ The number of slow queries.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | 1 | Sum | Int | Cumulative | true |
+
+### mysql.replica.sql_delay
+
+The number of seconds that the replica must lag the source.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| s | Sum | Int | Cumulative | false |
+
+### mysql.replica.time_behind_source
+
+This field is an indication of how “late” the replica is.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| s | Sum | Int | Cumulative | false |
 
 ### mysql.statement_event.count
 

@@ -16,14 +16,17 @@ package testbed // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/loggingexporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/exporter/otlphttpexporter"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/ballastextension"
 	"go.opentelemetry.io/collector/extension/zpagesextension"
+	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/processor/memorylimiterprocessor"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 	"go.uber.org/multierr"
 
@@ -48,7 +51,7 @@ func Components() (
 	)
 	errs = multierr.Append(errs, err)
 
-	receivers, err := component.MakeReceiverFactoryMap(
+	receivers, err := receiver.MakeFactoryMap(
 		jaegerreceiver.NewFactory(),
 		opencensusreceiver.NewFactory(),
 		otlpreceiver.NewFactory(),
@@ -56,7 +59,7 @@ func Components() (
 	)
 	errs = multierr.Append(errs, err)
 
-	exporters, err := component.MakeExporterFactoryMap(
+	exporters, err := exporter.MakeFactoryMap(
 		jaegerexporter.NewFactory(),
 		loggingexporter.NewFactory(),
 		opencensusexporter.NewFactory(),
@@ -66,7 +69,7 @@ func Components() (
 	)
 	errs = multierr.Append(errs, err)
 
-	processors, err := component.MakeProcessorFactoryMap(
+	processors, err := processor.MakeFactoryMap(
 		batchprocessor.NewFactory(),
 		memorylimiterprocessor.NewFactory(),
 	)

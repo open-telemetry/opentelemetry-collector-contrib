@@ -102,6 +102,14 @@ The amount of physical memory in use.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | By | Sum | Int | Cumulative | false |
 
+### process.memory.utilization
+
+Percentage of total physical memory that is used by the process.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
+
 ### process.memory.virtual
 
 Virtual memory size.

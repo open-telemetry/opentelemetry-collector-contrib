@@ -7,15 +7,17 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 func TestDefaultMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	mb := NewMetricsBuilder(DefaultMetricsSettings(), component.BuildInfo{}, WithStartTime(start))
+	mb := NewMetricsBuilder(DefaultMetricsSettings(), receivertest.NewNopCreateSettings(), WithStartTime(start))
 	enabledMetrics := make(map[string]bool)
 
 	enabledMetrics["mysql.buffer_pool.data_pages"] = true
@@ -40,6 +42,8 @@ func TestDefaultMetrics(t *testing.T) {
 
 	enabledMetrics["mysql.commands"] = true
 	mb.RecordMysqlCommandsDataPoint(ts, "1", AttributePreparedStatementsCommand(1))
+
+	mb.RecordMysqlConnectionCountDataPoint(ts, "1")
 
 	mb.RecordMysqlConnectionErrorsDataPoint(ts, "1", AttributeConnectionError(1))
 
@@ -88,6 +92,10 @@ func TestDefaultMetrics(t *testing.T) {
 	mb.RecordMysqlQueryCountDataPoint(ts, "1")
 
 	mb.RecordMysqlQuerySlowCountDataPoint(ts, "1")
+
+	mb.RecordMysqlReplicaSQLDelayDataPoint(ts, 1)
+
+	mb.RecordMysqlReplicaTimeBehindSourceDataPoint(ts, 1)
 
 	enabledMetrics["mysql.row_locks"] = true
 	mb.RecordMysqlRowLocksDataPoint(ts, "1", AttributeRowLocks(1))
@@ -142,7 +150,7 @@ func TestDefaultMetrics(t *testing.T) {
 func TestAllMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	settings := MetricsSettings{
+	metricsSettings := MetricsSettings{
 		MysqlBufferPoolDataPages:     MetricSettings{Enabled: true},
 		MysqlBufferPoolLimit:         MetricSettings{Enabled: true},
 		MysqlBufferPoolOperations:    MetricSettings{Enabled: true},
@@ -151,6 +159,7 @@ func TestAllMetrics(t *testing.T) {
 		MysqlBufferPoolUsage:         MetricSettings{Enabled: true},
 		MysqlClientNetworkIo:         MetricSettings{Enabled: true},
 		MysqlCommands:                MetricSettings{Enabled: true},
+		MysqlConnectionCount:         MetricSettings{Enabled: true},
 		MysqlConnectionErrors:        MetricSettings{Enabled: true},
 		MysqlDoubleWrites:            MetricSettings{Enabled: true},
 		MysqlHandlers:                MetricSettings{Enabled: true},
@@ -169,6 +178,8 @@ func TestAllMetrics(t *testing.T) {
 		MysqlQueryClientCount:        MetricSettings{Enabled: true},
 		MysqlQueryCount:              MetricSettings{Enabled: true},
 		MysqlQuerySlowCount:          MetricSettings{Enabled: true},
+		MysqlReplicaSQLDelay:         MetricSettings{Enabled: true},
+		MysqlReplicaTimeBehindSource: MetricSettings{Enabled: true},
 		MysqlRowLocks:                MetricSettings{Enabled: true},
 		MysqlRowOperations:           MetricSettings{Enabled: true},
 		MysqlSorts:                   MetricSettings{Enabled: true},
@@ -184,7 +195,12 @@ func TestAllMetrics(t *testing.T) {
 		MysqlThreads:                 MetricSettings{Enabled: true},
 		MysqlTmpResources:            MetricSettings{Enabled: true},
 	}
-	mb := NewMetricsBuilder(settings, component.BuildInfo{}, WithStartTime(start))
+	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+	settings := receivertest.NewNopCreateSettings()
+	settings.Logger = zap.New(observedZapCore)
+	mb := NewMetricsBuilder(metricsSettings, settings, WithStartTime(start))
+
+	assert.Equal(t, 0, observedLogs.Len())
 
 	mb.RecordMysqlBufferPoolDataPagesDataPoint(ts, 1, AttributeBufferPoolData(1))
 	mb.RecordMysqlBufferPoolLimitDataPoint(ts, "1")
@@ -194,6 +210,7 @@ func TestAllMetrics(t *testing.T) {
 	mb.RecordMysqlBufferPoolUsageDataPoint(ts, 1, AttributeBufferPoolData(1))
 	mb.RecordMysqlClientNetworkIoDataPoint(ts, "1", AttributeDirection(1))
 	mb.RecordMysqlCommandsDataPoint(ts, "1", AttributePreparedStatementsCommand(1))
+	mb.RecordMysqlConnectionCountDataPoint(ts, "1")
 	mb.RecordMysqlConnectionErrorsDataPoint(ts, "1", AttributeConnectionError(1))
 	mb.RecordMysqlDoubleWritesDataPoint(ts, "1", AttributeDoubleWrites(1))
 	mb.RecordMysqlHandlersDataPoint(ts, "1", AttributeHandler(1))
@@ -212,6 +229,8 @@ func TestAllMetrics(t *testing.T) {
 	mb.RecordMysqlQueryClientCountDataPoint(ts, "1")
 	mb.RecordMysqlQueryCountDataPoint(ts, "1")
 	mb.RecordMysqlQuerySlowCountDataPoint(ts, "1")
+	mb.RecordMysqlReplicaSQLDelayDataPoint(ts, 1)
+	mb.RecordMysqlReplicaTimeBehindSourceDataPoint(ts, 1)
 	mb.RecordMysqlRowLocksDataPoint(ts, "1", AttributeRowLocks(1))
 	mb.RecordMysqlRowOperationsDataPoint(ts, "1", AttributeRowOperations(1))
 	mb.RecordMysqlSortsDataPoint(ts, "1", AttributeSorts(1))
@@ -367,6 +386,19 @@ func TestAllMetrics(t *testing.T) {
 			assert.True(t, ok)
 			assert.Equal(t, "execute", attrVal.Str())
 			validatedMetrics["mysql.commands"] = struct{}{}
+		case "mysql.connection.count":
+			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+			assert.Equal(t, "The number of connection attempts (successful or not) to the MySQL server.", ms.At(i).Description())
+			assert.Equal(t, "1", ms.At(i).Unit())
+			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+			dp := ms.At(i).Sum().DataPoints().At(0)
+			assert.Equal(t, start, dp.StartTimestamp())
+			assert.Equal(t, ts, dp.Timestamp())
+			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+			assert.Equal(t, int64(1), dp.IntValue())
+			validatedMetrics["mysql.connection.count"] = struct{}{}
 		case "mysql.connection.errors":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
@@ -661,6 +693,32 @@ func TestAllMetrics(t *testing.T) {
 			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 			assert.Equal(t, int64(1), dp.IntValue())
 			validatedMetrics["mysql.query.slow.count"] = struct{}{}
+		case "mysql.replica.sql_delay":
+			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+			assert.Equal(t, "The number of seconds that the replica must lag the source.", ms.At(i).Description())
+			assert.Equal(t, "s", ms.At(i).Unit())
+			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+			dp := ms.At(i).Sum().DataPoints().At(0)
+			assert.Equal(t, start, dp.StartTimestamp())
+			assert.Equal(t, ts, dp.Timestamp())
+			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+			assert.Equal(t, int64(1), dp.IntValue())
+			validatedMetrics["mysql.replica.sql_delay"] = struct{}{}
+		case "mysql.replica.time_behind_source":
+			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+			assert.Equal(t, "This field is an indication of how “late” the replica is.", ms.At(i).Description())
+			assert.Equal(t, "s", ms.At(i).Unit())
+			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+			dp := ms.At(i).Sum().DataPoints().At(0)
+			assert.Equal(t, start, dp.StartTimestamp())
+			assert.Equal(t, ts, dp.Timestamp())
+			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+			assert.Equal(t, int64(1), dp.IntValue())
+			validatedMetrics["mysql.replica.time_behind_source"] = struct{}{}
 		case "mysql.row_locks":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
@@ -944,7 +1002,7 @@ func TestAllMetrics(t *testing.T) {
 func TestNoMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	settings := MetricsSettings{
+	metricsSettings := MetricsSettings{
 		MysqlBufferPoolDataPages:     MetricSettings{Enabled: false},
 		MysqlBufferPoolLimit:         MetricSettings{Enabled: false},
 		MysqlBufferPoolOperations:    MetricSettings{Enabled: false},
@@ -953,6 +1011,7 @@ func TestNoMetrics(t *testing.T) {
 		MysqlBufferPoolUsage:         MetricSettings{Enabled: false},
 		MysqlClientNetworkIo:         MetricSettings{Enabled: false},
 		MysqlCommands:                MetricSettings{Enabled: false},
+		MysqlConnectionCount:         MetricSettings{Enabled: false},
 		MysqlConnectionErrors:        MetricSettings{Enabled: false},
 		MysqlDoubleWrites:            MetricSettings{Enabled: false},
 		MysqlHandlers:                MetricSettings{Enabled: false},
@@ -971,6 +1030,8 @@ func TestNoMetrics(t *testing.T) {
 		MysqlQueryClientCount:        MetricSettings{Enabled: false},
 		MysqlQueryCount:              MetricSettings{Enabled: false},
 		MysqlQuerySlowCount:          MetricSettings{Enabled: false},
+		MysqlReplicaSQLDelay:         MetricSettings{Enabled: false},
+		MysqlReplicaTimeBehindSource: MetricSettings{Enabled: false},
 		MysqlRowLocks:                MetricSettings{Enabled: false},
 		MysqlRowOperations:           MetricSettings{Enabled: false},
 		MysqlSorts:                   MetricSettings{Enabled: false},
@@ -986,7 +1047,12 @@ func TestNoMetrics(t *testing.T) {
 		MysqlThreads:                 MetricSettings{Enabled: false},
 		MysqlTmpResources:            MetricSettings{Enabled: false},
 	}
-	mb := NewMetricsBuilder(settings, component.BuildInfo{}, WithStartTime(start))
+	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+	settings := receivertest.NewNopCreateSettings()
+	settings.Logger = zap.New(observedZapCore)
+	mb := NewMetricsBuilder(metricsSettings, settings, WithStartTime(start))
+
+	assert.Equal(t, 0, observedLogs.Len())
 	mb.RecordMysqlBufferPoolDataPagesDataPoint(ts, 1, AttributeBufferPoolData(1))
 	mb.RecordMysqlBufferPoolLimitDataPoint(ts, "1")
 	mb.RecordMysqlBufferPoolOperationsDataPoint(ts, "1", AttributeBufferPoolOperations(1))
@@ -995,6 +1061,7 @@ func TestNoMetrics(t *testing.T) {
 	mb.RecordMysqlBufferPoolUsageDataPoint(ts, 1, AttributeBufferPoolData(1))
 	mb.RecordMysqlClientNetworkIoDataPoint(ts, "1", AttributeDirection(1))
 	mb.RecordMysqlCommandsDataPoint(ts, "1", AttributePreparedStatementsCommand(1))
+	mb.RecordMysqlConnectionCountDataPoint(ts, "1")
 	mb.RecordMysqlConnectionErrorsDataPoint(ts, "1", AttributeConnectionError(1))
 	mb.RecordMysqlDoubleWritesDataPoint(ts, "1", AttributeDoubleWrites(1))
 	mb.RecordMysqlHandlersDataPoint(ts, "1", AttributeHandler(1))
@@ -1013,6 +1080,8 @@ func TestNoMetrics(t *testing.T) {
 	mb.RecordMysqlQueryClientCountDataPoint(ts, "1")
 	mb.RecordMysqlQueryCountDataPoint(ts, "1")
 	mb.RecordMysqlQuerySlowCountDataPoint(ts, "1")
+	mb.RecordMysqlReplicaSQLDelayDataPoint(ts, 1)
+	mb.RecordMysqlReplicaTimeBehindSourceDataPoint(ts, 1)
 	mb.RecordMysqlRowLocksDataPoint(ts, "1", AttributeRowLocks(1))
 	mb.RecordMysqlRowOperationsDataPoint(ts, "1", AttributeRowOperations(1))
 	mb.RecordMysqlSortsDataPoint(ts, "1", AttributeSorts(1))

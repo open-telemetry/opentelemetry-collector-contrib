@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
 	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
@@ -32,13 +33,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/stores"
 )
 
-var _ component.MetricsReceiver = (*awsContainerInsightReceiver)(nil)
+var _ receiver.Metrics = (*awsContainerInsightReceiver)(nil)
 
 type metricsProvider interface {
 	GetMetrics() []pmetric.Metrics
 }
 
-// awsContainerInsightReceiver implements the component.MetricsReceiver
+// awsContainerInsightReceiver implements the receiver.Metrics
 type awsContainerInsightReceiver struct {
 	settings     component.TelemetrySettings
 	nextConsumer consumer.Metrics
@@ -52,7 +53,7 @@ type awsContainerInsightReceiver struct {
 func newAWSContainerInsightReceiver(
 	settings component.TelemetrySettings,
 	config *Config,
-	nextConsumer consumer.Metrics) (component.MetricsReceiver, error) {
+	nextConsumer consumer.Metrics) (receiver.Metrics, error) {
 	if nextConsumer == nil {
 		return nil, component.ErrNilNextConsumer
 	}

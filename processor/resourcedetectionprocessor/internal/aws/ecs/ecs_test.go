@@ -19,8 +19,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/processor/processortest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil/endpoints"
@@ -59,14 +59,14 @@ func (md *mockMetaDataProvider) FetchContainerMetadata() (*ecsutil.ContainerMeta
 
 func Test_ecsNewDetector(t *testing.T) {
 	t.Setenv(endpoints.TaskMetadataEndpointV4EnvVar, "endpoint")
-	d, err := NewDetector(componenttest.NewNopProcessorCreateSettings(), nil)
+	d, err := NewDetector(processortest.NewNopCreateSettings(), nil)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, d)
 }
 
 func Test_detectorReturnsIfNoEnvVars(t *testing.T) {
-	d, _ := NewDetector(componenttest.NewNopProcessorCreateSettings(), nil)
+	d, _ := NewDetector(processortest.NewNopCreateSettings(), nil)
 	res, _, err := d.Detect(context.TODO())
 
 	assert.Nil(t, err)

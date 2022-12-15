@@ -16,14 +16,14 @@ package azureeventhubreceiver // import "github.com/open-telemetry/opentelemetry
 
 import (
 	eventhub "github.com/Azure/azure-event-hubs-go/v3"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/receiver"
 )
 
 type rawConverter struct{}
 
-func newRawConverter(_ component.ReceiverCreateSettings) *rawConverter {
+func newRawConverter(_ receiver.CreateSettings) *rawConverter {
 	return &rawConverter{}
 }
 

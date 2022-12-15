@@ -27,16 +27,18 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processorhelper"
+	"go.opentelemetry.io/collector/processor/processortest"
 	"go.uber.org/zap"
 )
 
 func TestProcessorGetsCreatedWithValidConfiguration(t *testing.T) {
 	// prepare
 	factory := NewFactory()
-	creationParams := componenttest.NewNopProcessorCreateSettings()
+	creationParams := processortest.NewNopCreateSettings()
 	cfg := &Config{
 		ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 		DefaultExporters:  []string{"otlp"},
@@ -118,7 +120,7 @@ func TestProcessorFailsWithNoFromAttribute(t *testing.T) {
 func TestShouldNotFailWhenNextIsProcessor(t *testing.T) {
 	// prepare
 	factory := NewFactory()
-	creationParams := componenttest.NewNopProcessorCreateSettings()
+	creationParams := processortest.NewNopCreateSettings()
 	cfg := &Config{
 		ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 		DefaultExporters:  []string{"otlp"},
@@ -132,7 +134,7 @@ func TestShouldNotFailWhenNextIsProcessor(t *testing.T) {
 	}
 	mp := &mockProcessor{}
 
-	next, err := processorhelper.NewTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop(), mp.processTraces)
+	next, err := processorhelper.NewTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop(), mp.processTraces)
 	require.NoError(t, err)
 
 	// test
@@ -144,16 +146,7 @@ func TestShouldNotFailWhenNextIsProcessor(t *testing.T) {
 }
 
 func TestProcessorDoesNotFailToBuildExportersWithMultiplePipelines(t *testing.T) {
-	// prepare
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
-
-	processorFactory := NewFactory()
-	factories.Processors[typeStr] = processorFactory
-
 	otlpExporterFactory := otlpexporter.NewFactory()
-	factories.Exporters["otlp"] = otlpExporterFactory
-
 	otlpConfig := &otlpexporter.Config{
 		ExporterSettings: config.NewExporterSettings(component.NewID("otlp")),
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
@@ -161,10 +154,10 @@ func TestProcessorDoesNotFailToBuildExportersWithMultiplePipelines(t *testing.T)
 		},
 	}
 
-	otlpTracesExporter, err := otlpExporterFactory.CreateTracesExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), otlpConfig)
+	otlpTracesExporter, err := otlpExporterFactory.CreateTracesExporter(context.Background(), exportertest.NewNopCreateSettings(), otlpConfig)
 	require.NoError(t, err)
 
-	otlpMetricsExporter, err := otlpExporterFactory.CreateMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), otlpConfig)
+	otlpMetricsExporter, err := otlpExporterFactory.CreateMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), otlpConfig)
 	require.NoError(t, err)
 
 	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
@@ -182,7 +175,7 @@ func TestProcessorDoesNotFailToBuildExportersWithMultiplePipelines(t *testing.T)
 	for k := range cm.ToStringMap() {
 		// Check if all processor variations that are defined in test config can be actually created
 		t.Run(k, func(t *testing.T) {
-			cfg := factories.Processors[typeStr].CreateDefaultConfig()
+			cfg := createDefaultConfig()
 
 			sub, err := cm.Sub(k)
 			require.NoError(t, err)
@@ -200,7 +193,7 @@ func TestProcessorDoesNotFailToBuildExportersWithMultiplePipelines(t *testing.T)
 func TestShutdown(t *testing.T) {
 	// prepare
 	factory := NewFactory()
-	creationParams := componenttest.NewNopProcessorCreateSettings()
+	creationParams := processortest.NewNopCreateSettings()
 	cfg := &Config{
 		ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 		DefaultExporters:  []string{"otlp"},

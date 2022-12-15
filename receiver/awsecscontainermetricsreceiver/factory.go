@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil/endpoints"
@@ -41,11 +42,11 @@ const (
 )
 
 // NewFactory creates a factory for AWS ECS Container Metrics receiver.
-func NewFactory() component.ReceiverFactory {
-	return component.NewReceiverFactory(
+func NewFactory() receiver.Factory {
+	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver, stability))
+		receiver.WithMetrics(createMetricsReceiver, stability))
 }
 
 // createDefaultConfig returns a default config for the receiver.
@@ -59,10 +60,10 @@ func createDefaultConfig() component.Config {
 // CreateMetricsReceiver creates an AWS ECS Container Metrics receiver.
 func createMetricsReceiver(
 	ctx context.Context,
-	params component.ReceiverCreateSettings,
+	params receiver.CreateSettings,
 	baseCfg component.Config,
 	consumer consumer.Metrics,
-) (component.MetricsReceiver, error) {
+) (receiver.Metrics, error) {
 	endpoint, err := endpoints.GetTMEV4FromEnv()
 	if err != nil || endpoint == nil {
 		return nil, fmt.Errorf("unable to detect task metadata endpoint: %w", err)

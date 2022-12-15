@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	common "skywalking.apache.org/repo/goapi/collect/common/v3"
@@ -38,7 +39,7 @@ var (
 )
 
 func TestTraceSource(t *testing.T) {
-	set := componenttest.NewNopReceiverCreateSettings()
+	set := receivertest.NewNopCreateSettings()
 	set.ID = skywalkingReceiver
 	jr, err := newSkywalkingReceiver(&configuration{}, nil, set)
 	require.NoError(t, err)
@@ -55,7 +56,7 @@ func TestStartAndShutdown(t *testing.T) {
 	}
 	sink := new(consumertest.TracesSink)
 
-	set := componenttest.NewNopReceiverCreateSettings()
+	set := receivertest.NewNopCreateSettings()
 	set.ID = skywalkingReceiver
 	sr, err := newSkywalkingReceiver(config, sink, set)
 	require.NoError(t, err)
@@ -72,7 +73,7 @@ func TestGRPCReception(t *testing.T) {
 
 	sink := new(consumertest.TracesSink)
 
-	set := componenttest.NewNopReceiverCreateSettings()
+	set := receivertest.NewNopCreateSettings()
 	set.ID = skywalkingReceiver
 	swReceiver, err := newSkywalkingReceiver(config, sink, set)
 	require.NoError(t, err)

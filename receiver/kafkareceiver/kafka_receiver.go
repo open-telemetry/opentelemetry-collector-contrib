@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
@@ -44,7 +45,7 @@ type kafkaTracesConsumer struct {
 	cancelConsumeLoop context.CancelFunc
 	unmarshaler       TracesUnmarshaler
 
-	settings component.ReceiverCreateSettings
+	settings receiver.CreateSettings
 
 	autocommitEnabled bool
 	messageMarking    MessageMarking
@@ -58,7 +59,7 @@ type kafkaMetricsConsumer struct {
 	cancelConsumeLoop context.CancelFunc
 	unmarshaler       MetricsUnmarshaler
 
-	settings component.ReceiverCreateSettings
+	settings receiver.CreateSettings
 
 	autocommitEnabled bool
 	messageMarking    MessageMarking
@@ -72,17 +73,17 @@ type kafkaLogsConsumer struct {
 	cancelConsumeLoop context.CancelFunc
 	unmarshaler       LogsUnmarshaler
 
-	settings component.ReceiverCreateSettings
+	settings receiver.CreateSettings
 
 	autocommitEnabled bool
 	messageMarking    MessageMarking
 }
 
-var _ component.TracesReceiver = (*kafkaTracesConsumer)(nil)
-var _ component.MetricsReceiver = (*kafkaMetricsConsumer)(nil)
-var _ component.LogsReceiver = (*kafkaLogsConsumer)(nil)
+var _ receiver.Traces = (*kafkaTracesConsumer)(nil)
+var _ receiver.Metrics = (*kafkaMetricsConsumer)(nil)
+var _ receiver.Logs = (*kafkaLogsConsumer)(nil)
 
-func newTracesReceiver(config Config, set component.ReceiverCreateSettings, unmarshalers map[string]TracesUnmarshaler, nextConsumer consumer.Traces) (*kafkaTracesConsumer, error) {
+func newTracesReceiver(config Config, set receiver.CreateSettings, unmarshalers map[string]TracesUnmarshaler, nextConsumer consumer.Traces) (*kafkaTracesConsumer, error) {
 	unmarshaler := unmarshalers[config.Encoding]
 	if unmarshaler == nil {
 		return nil, errUnrecognizedEncoding
@@ -168,7 +169,7 @@ func (c *kafkaTracesConsumer) Shutdown(context.Context) error {
 	return c.consumerGroup.Close()
 }
 
-func newMetricsReceiver(config Config, set component.ReceiverCreateSettings, unmarshalers map[string]MetricsUnmarshaler, nextConsumer consumer.Metrics) (*kafkaMetricsConsumer, error) {
+func newMetricsReceiver(config Config, set receiver.CreateSettings, unmarshalers map[string]MetricsUnmarshaler, nextConsumer consumer.Metrics) (*kafkaMetricsConsumer, error) {
 	unmarshaler := unmarshalers[config.Encoding]
 	if unmarshaler == nil {
 		return nil, errUnrecognizedEncoding
@@ -257,7 +258,7 @@ func (c *kafkaMetricsConsumer) Shutdown(context.Context) error {
 	return c.consumerGroup.Close()
 }
 
-func newLogsReceiver(config Config, set component.ReceiverCreateSettings, unmarshalers map[string]LogsUnmarshaler, nextConsumer consumer.Logs) (*kafkaLogsConsumer, error) {
+func newLogsReceiver(config Config, set receiver.CreateSettings, unmarshalers map[string]LogsUnmarshaler, nextConsumer consumer.Logs) (*kafkaLogsConsumer, error) {
 	unmarshaler := unmarshalers[config.Encoding]
 	if unmarshaler == nil {
 		return nil, errUnrecognizedEncoding

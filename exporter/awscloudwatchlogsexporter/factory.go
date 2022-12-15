@@ -22,6 +22,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	exp "go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
@@ -33,11 +34,11 @@ const (
 	stability = component.StabilityLevelBeta
 )
 
-func NewFactory() component.ExporterFactory {
-	return component.NewExporterFactory(
+func NewFactory() exp.Factory {
+	return exp.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithLogsExporter(createLogsExporter, stability))
+		exp.WithLogs(createLogsExporter, stability))
 }
 
 func createDefaultConfig() component.Config {
@@ -51,7 +52,7 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func createLogsExporter(_ context.Context, params component.ExporterCreateSettings, config component.Config) (component.LogsExporter, error) {
+func createLogsExporter(_ context.Context, params exp.CreateSettings, config component.Config) (exp.Logs, error) {
 	expConfig, ok := config.(*Config)
 	if !ok {
 		return nil, errors.New("invalid configuration type; can't cast to awscloudwatchlogsexporter.Config")

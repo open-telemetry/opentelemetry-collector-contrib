@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 )
@@ -57,7 +58,7 @@ func TestReceiver(t *testing.T) {
 
 			r, err := f.CreateMetricsReceiver(
 				context.Background(),
-				componenttest.NewNopReceiverCreateSettings(),
+				receivertest.NewNopCreateSettings(),
 				cfg,
 				consumertest.NewNop(),
 			)
@@ -411,7 +412,7 @@ func TestGetPrometheusConfigWrapper(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := getPrometheusConfigWrapper(tt.config, componenttest.NewNopReceiverCreateSettings())
+			got, err := getPrometheusConfigWrapper(tt.config, receivertest.NewNopCreateSettings())
 			if (err != nil) != tt.wantErr {
 				t.Errorf("getPrometheusConfigWrapper() error = %v, wantErr %v", err, tt.wantErr)
 				return

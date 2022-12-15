@@ -38,6 +38,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap/zaptest"
 
@@ -410,7 +411,7 @@ func TestHandleRequest(t *testing.T) {
 				consumer = &consumertest.LogsSink{}
 			}
 
-			set := componenttest.NewNopReceiverCreateSettings()
+			set := receivertest.NewNopCreateSettings()
 			set.Logger = zaptest.NewLogger(t)
 			ar, err := newAlertsReceiver(set, &Config{Alerts: AlertConfig{Secret: "some_secret"}}, consumer)
 			require.NoError(t, err, "Failed to create alerts receiver")
@@ -726,7 +727,7 @@ func TestAlertsRetrieval(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			logSink := &consumertest.LogsSink{}
-			alertsRcvr, err := newAlertsReceiver(componenttest.NewNopReceiverCreateSettings(), tc.config(), logSink)
+			alertsRcvr, err := newAlertsReceiver(receivertest.NewNopCreateSettings(), tc.config(), logSink)
 			require.NoError(t, err)
 			alertsRcvr.client = tc.client()
 
@@ -747,7 +748,7 @@ func TestAlertsRetrieval(t *testing.T) {
 
 func TestAlertPollingExclusions(t *testing.T) {
 	logSink := &consumertest.LogsSink{}
-	alertsRcvr, err := newAlertsReceiver(componenttest.NewNopReceiverCreateSettings(), &Config{
+	alertsRcvr, err := newAlertsReceiver(receivertest.NewNopCreateSettings(), &Config{
 		Alerts: AlertConfig{
 			Enabled: true,
 			Mode:    alertModePoll,

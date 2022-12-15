@@ -21,10 +21,10 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver/internal/metadata"
@@ -69,7 +69,7 @@ func TestNewFactory(t *testing.T) {
 				cfg := factory.CreateDefaultConfig()
 				_, err := factory.CreateMetricsReceiver(
 					context.Background(),
-					componenttest.NewNopReceiverCreateSettings(),
+					receivertest.NewNopCreateSettings(),
 					cfg,
 					consumertest.NewNop(),
 				)
@@ -82,7 +82,7 @@ func TestNewFactory(t *testing.T) {
 				factory := NewFactory()
 				_, err := factory.CreateMetricsReceiver(
 					context.Background(),
-					componenttest.NewNopReceiverCreateSettings(),
+					receivertest.NewNopCreateSettings(),
 					nil,
 					consumertest.NewNop(),
 				)

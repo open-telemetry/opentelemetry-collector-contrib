@@ -19,10 +19,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/grafana/loki/pkg/logproto"
 	"github.com/prometheus/common/model"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki/logproto"
 )
 
 const (
@@ -81,13 +82,34 @@ func convertAttributesToLabels(attributes pcommon.Map, attrsToSelect pcommon.Val
 	attrs := parseAttributeNames(attrsToSelect)
 	for _, attr := range attrs {
 		attr = strings.TrimSpace(attr)
-		av, ok := attributes.Get(attr) // do we need to trim this?
+
+		av, ok := attributes.Get(attr)
+		if !ok {
+			// couldn't find the attribute under the given name directly
+			// perhaps it's a nested attribute?
+			av, ok = getNestedAttribute(attr, attributes) // shadows the OK from above on purpose
+		}
+
 		if ok {
 			out[model.LabelName(attr)] = model.LabelValue(av.AsString())
 		}
 	}
 
 	return out
+}
+
+func getNestedAttribute(attr string, attributes pcommon.Map) (pcommon.Value, bool) {
+	left, right, _ := strings.Cut(attr, ".")
+	av, ok := attributes.Get(left)
+	if !ok {
+		return pcommon.Value{}, false
+	}
+
+	if len(right) == 0 {
+		return av, ok
+	}
+
+	return getNestedAttribute(right, av.Map())
 }
 
 func parseAttributeNames(attrsToSelect pcommon.Value) []string {

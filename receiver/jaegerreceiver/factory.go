@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
 )
 
 const (
@@ -45,11 +46,11 @@ const (
 )
 
 // NewFactory creates a new Jaeger receiver factory.
-func NewFactory() component.ReceiverFactory {
-	return component.NewReceiverFactory(
+func NewFactory() receiver.Factory {
+	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesReceiver(createTracesReceiver, stability))
+		receiver.WithTraces(createTracesReceiver, stability))
 }
 
 // CreateDefaultConfig creates the default configuration for Jaeger receiver.
@@ -81,10 +82,10 @@ func createDefaultConfig() component.Config {
 // createTracesReceiver creates a trace receiver based on provided config.
 func createTracesReceiver(
 	_ context.Context,
-	set component.ReceiverCreateSettings,
+	set receiver.CreateSettings,
 	cfg component.Config,
 	nextConsumer consumer.Traces,
-) (component.TracesReceiver, error) {
+) (receiver.Traces, error) {
 
 	// Convert settings in the source config to configuration struct
 	// that Jaeger receiver understands.

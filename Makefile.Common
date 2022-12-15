@@ -56,7 +56,7 @@ common: checklicense impi lint misspell
 .PHONY: test
 test:
 	if [ "$(RUNNING_ON_GITHUB_ACTION)" = "true" ]; then \
-		$(GOTEST) $(GOTEST_OPT) ./... -json > ./foresight-test-report.json; \
+		$(GOTEST) $(GOTEST_OPT) -v ./... 2>&1 | tee -a ./foresight-test-report.txt; \
 	else \
 		$(GOTEST) $(GOTEST_OPT) ./...; \
 	fi
@@ -65,7 +65,7 @@ test:
 do-unit-tests-with-cover:
 	@echo "running $(GOCMD) unit test ./... + coverage in `pwd`"
 	@if [ "$(RUNNING_ON_GITHUB_ACTION)" = "true" ]; then \
-		$(GOTEST) $(GOTEST_OPT_WITH_COVERAGE) ./... -json > ./foresight-test-report-unit-tests-with-cover.json; \
+		$(GOTEST) $(GOTEST_OPT_WITH_COVERAGE) -v ./... 2>&1 | tee -a ./foresight-test-report-unit-tests-with-cover.txt; \
 	else \
 		$(GOTEST) $(GOTEST_OPT_WITH_COVERAGE) ./...; \
 	fi
@@ -75,7 +75,7 @@ do-unit-tests-with-cover:
 do-integration-tests-with-cover:
 	@echo "running $(GOCMD) integration test ./... + coverage in `pwd`"
 	@if [ "$(RUNNING_ON_GITHUB_ACTION)" = "true" ]; then \
-		$(GOTEST) $(GOTEST_OPT_WITH_INTEGRATION) ./... -json > ./foresight-test-report-integration-tests-with-cover.json; \
+		$(GOTEST) $(GOTEST_OPT_WITH_INTEGRATION) -v ./... 2>&1 | tee -a ./foresight-test-report-integration-tests-with-cover.txt; \
 	else \
 		$(GOTEST) $(GOTEST_OPT_WITH_INTEGRATION) ./...; \
 	fi

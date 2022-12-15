@@ -7,15 +7,17 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 func TestDefaultMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	mb := NewMetricsBuilder(DefaultMetricsSettings(), component.BuildInfo{}, WithStartTime(start))
+	mb := NewMetricsBuilder(DefaultMetricsSettings(), receivertest.NewNopCreateSettings(), WithStartTime(start))
 	enabledMetrics := make(map[string]bool)
 
 	enabledMetrics["mongodb.cache.operations"] = true
@@ -83,6 +85,10 @@ func TestDefaultMetrics(t *testing.T) {
 	enabledMetrics["mongodb.operation.count"] = true
 	mb.RecordMongodbOperationCountDataPoint(ts, 1, AttributeOperation(1))
 
+	mb.RecordMongodbOperationLatencyTimeDataPoint(ts, 1, AttributeOperationLatency(1))
+
+	mb.RecordMongodbOperationReplCountDataPoint(ts, 1, AttributeOperation(1))
+
 	enabledMetrics["mongodb.operation.time"] = true
 	mb.RecordMongodbOperationTimeDataPoint(ts, 1, AttributeOperation(1))
 
@@ -110,7 +116,7 @@ func TestDefaultMetrics(t *testing.T) {
 func TestAllMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	settings := MetricsSettings{
+	metricsSettings := MetricsSettings{
 		MongodbCacheOperations:        MetricSettings{Enabled: true},
 		MongodbCollectionCount:        MetricSettings{Enabled: true},
 		MongodbConnectionCount:        MetricSettings{Enabled: true},
@@ -134,11 +140,18 @@ func TestAllMetrics(t *testing.T) {
 		MongodbNetworkRequestCount:    MetricSettings{Enabled: true},
 		MongodbObjectCount:            MetricSettings{Enabled: true},
 		MongodbOperationCount:         MetricSettings{Enabled: true},
+		MongodbOperationLatencyTime:   MetricSettings{Enabled: true},
+		MongodbOperationReplCount:     MetricSettings{Enabled: true},
 		MongodbOperationTime:          MetricSettings{Enabled: true},
 		MongodbSessionCount:           MetricSettings{Enabled: true},
 		MongodbStorageSize:            MetricSettings{Enabled: true},
 	}
-	mb := NewMetricsBuilder(settings, component.BuildInfo{}, WithStartTime(start))
+	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+	settings := receivertest.NewNopCreateSettings()
+	settings.Logger = zap.New(observedZapCore)
+	mb := NewMetricsBuilder(metricsSettings, settings, WithStartTime(start))
+
+	assert.Equal(t, 0, observedLogs.Len())
 
 	mb.RecordMongodbCacheOperationsDataPoint(ts, 1, AttributeType(1))
 	mb.RecordMongodbCollectionCountDataPoint(ts, 1, "attr-val")
@@ -163,6 +176,8 @@ func TestAllMetrics(t *testing.T) {
 	mb.RecordMongodbNetworkRequestCountDataPoint(ts, 1)
 	mb.RecordMongodbObjectCountDataPoint(ts, 1, "attr-val")
 	mb.RecordMongodbOperationCountDataPoint(ts, 1, AttributeOperation(1))
+	mb.RecordMongodbOperationLatencyTimeDataPoint(ts, 1, AttributeOperationLatency(1))
+	mb.RecordMongodbOperationReplCountDataPoint(ts, 1, AttributeOperation(1))
 	mb.RecordMongodbOperationTimeDataPoint(ts, 1, AttributeOperation(1))
 	mb.RecordMongodbSessionCountDataPoint(ts, 1)
 	mb.RecordMongodbStorageSizeDataPoint(ts, 1, "attr-val")
@@ -568,6 +583,36 @@ func TestAllMetrics(t *testing.T) {
 			assert.True(t, ok)
 			assert.Equal(t, "insert", attrVal.Str())
 			validatedMetrics["mongodb.operation.count"] = struct{}{}
+		case "mongodb.operation.latency.time":
+			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+			assert.Equal(t, "The latency of operations.", ms.At(i).Description())
+			assert.Equal(t, "us", ms.At(i).Unit())
+			dp := ms.At(i).Gauge().DataPoints().At(0)
+			assert.Equal(t, start, dp.StartTimestamp())
+			assert.Equal(t, ts, dp.Timestamp())
+			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+			assert.Equal(t, int64(1), dp.IntValue())
+			attrVal, ok := dp.Attributes().Get("operation")
+			assert.True(t, ok)
+			assert.Equal(t, "read", attrVal.Str())
+			validatedMetrics["mongodb.operation.latency.time"] = struct{}{}
+		case "mongodb.operation.repl.count":
+			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+			assert.Equal(t, "The number of replicated operations executed.", ms.At(i).Description())
+			assert.Equal(t, "{operations}", ms.At(i).Unit())
+			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+			dp := ms.At(i).Sum().DataPoints().At(0)
+			assert.Equal(t, start, dp.StartTimestamp())
+			assert.Equal(t, ts, dp.Timestamp())
+			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+			assert.Equal(t, int64(1), dp.IntValue())
+			attrVal, ok := dp.Attributes().Get("operation")
+			assert.True(t, ok)
+			assert.Equal(t, "insert", attrVal.Str())
+			validatedMetrics["mongodb.operation.repl.count"] = struct{}{}
 		case "mongodb.operation.time":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
@@ -621,7 +666,7 @@ func TestAllMetrics(t *testing.T) {
 func TestNoMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	settings := MetricsSettings{
+	metricsSettings := MetricsSettings{
 		MongodbCacheOperations:        MetricSettings{Enabled: false},
 		MongodbCollectionCount:        MetricSettings{Enabled: false},
 		MongodbConnectionCount:        MetricSettings{Enabled: false},
@@ -645,11 +690,18 @@ func TestNoMetrics(t *testing.T) {
 		MongodbNetworkRequestCount:    MetricSettings{Enabled: false},
 		MongodbObjectCount:            MetricSettings{Enabled: false},
 		MongodbOperationCount:         MetricSettings{Enabled: false},
+		MongodbOperationLatencyTime:   MetricSettings{Enabled: false},
+		MongodbOperationReplCount:     MetricSettings{Enabled: false},
 		MongodbOperationTime:          MetricSettings{Enabled: false},
 		MongodbSessionCount:           MetricSettings{Enabled: false},
 		MongodbStorageSize:            MetricSettings{Enabled: false},
 	}
-	mb := NewMetricsBuilder(settings, component.BuildInfo{}, WithStartTime(start))
+	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+	settings := receivertest.NewNopCreateSettings()
+	settings.Logger = zap.New(observedZapCore)
+	mb := NewMetricsBuilder(metricsSettings, settings, WithStartTime(start))
+
+	assert.Equal(t, 0, observedLogs.Len())
 	mb.RecordMongodbCacheOperationsDataPoint(ts, 1, AttributeType(1))
 	mb.RecordMongodbCollectionCountDataPoint(ts, 1, "attr-val")
 	mb.RecordMongodbConnectionCountDataPoint(ts, 1, "attr-val", AttributeConnectionType(1))
@@ -673,6 +725,8 @@ func TestNoMetrics(t *testing.T) {
 	mb.RecordMongodbNetworkRequestCountDataPoint(ts, 1)
 	mb.RecordMongodbObjectCountDataPoint(ts, 1, "attr-val")
 	mb.RecordMongodbOperationCountDataPoint(ts, 1, AttributeOperation(1))
+	mb.RecordMongodbOperationLatencyTimeDataPoint(ts, 1, AttributeOperationLatency(1))
+	mb.RecordMongodbOperationReplCountDataPoint(ts, 1, AttributeOperation(1))
 	mb.RecordMongodbOperationTimeDataPoint(ts, 1, AttributeOperation(1))
 	mb.RecordMongodbSessionCountDataPoint(ts, 1)
 	mb.RecordMongodbStorageSizeDataPoint(ts, 1, "attr-val")

@@ -48,6 +48,7 @@ const minCompressionLen = 1500
 type client struct {
 	config         *Config
 	url            *url.URL
+	healthCheckURL *url.URL
 	client         *http.Client
 	logger         *zap.Logger
 	wg             sync.WaitGroup
@@ -200,6 +201,32 @@ type index struct {
 	library int
 	// Index in Logs list (i.e. the log record index).
 	record int
+}
+
+func (c *client) checkHecHealth() error {
+
+	req, err := http.NewRequest("GET", c.healthCheckURL.String(), nil)
+	if err != nil {
+		return consumererror.NewPermanent(err)
+	}
+
+	// Set the headers configured for the client
+	for k, v := range c.headers {
+		req.Header.Set(k, v)
+	}
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	err = splunk.HandleHTTPCode(resp)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (c *client) pushMetricsData(

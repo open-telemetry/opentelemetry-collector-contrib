@@ -31,6 +31,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
@@ -51,7 +52,7 @@ func TestFileTracesReceiver(t *testing.T) {
 	cfg.Config.Include = []string{filepath.Join(tempFolder, "*")}
 	cfg.Config.StartAt = "beginning"
 	sink := new(consumertest.TracesSink)
-	receiver, err := factory.CreateTracesReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, sink)
+	receiver, err := factory.CreateTracesReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, sink)
 	assert.NoError(t, err)
 	err = receiver.Start(context.Background(), nil)
 	require.NoError(t, err)
@@ -77,7 +78,7 @@ func TestFileMetricsReceiver(t *testing.T) {
 	cfg.Config.Include = []string{filepath.Join(tempFolder, "*")}
 	cfg.Config.StartAt = "beginning"
 	sink := new(consumertest.MetricsSink)
-	receiver, err := factory.CreateMetricsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, sink)
+	receiver, err := factory.CreateMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, sink)
 	assert.NoError(t, err)
 	err = receiver.Start(context.Background(), nil)
 	assert.NoError(t, err)
@@ -103,7 +104,7 @@ func TestFileLogsReceiver(t *testing.T) {
 	cfg.Config.Include = []string{filepath.Join(tempFolder, "*")}
 	cfg.Config.StartAt = "beginning"
 	sink := new(consumertest.LogsSink)
-	receiver, err := factory.CreateLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, sink)
+	receiver, err := factory.CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, sink)
 	assert.NoError(t, err)
 	err = receiver.Start(context.Background(), nil)
 	assert.NoError(t, err)

@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 )
 
@@ -380,15 +381,15 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, options ...metricBuilderOption) *MetricsBuilder {
+func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                     pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                 pmetric.NewMetrics(),
-		buildInfo:                     buildInfo,
-		metricSystemPagingFaults:      newMetricSystemPagingFaults(settings.SystemPagingFaults),
-		metricSystemPagingOperations:  newMetricSystemPagingOperations(settings.SystemPagingOperations),
-		metricSystemPagingUsage:       newMetricSystemPagingUsage(settings.SystemPagingUsage),
-		metricSystemPagingUtilization: newMetricSystemPagingUtilization(settings.SystemPagingUtilization),
+		buildInfo:                     settings.BuildInfo,
+		metricSystemPagingFaults:      newMetricSystemPagingFaults(ms.SystemPagingFaults),
+		metricSystemPagingOperations:  newMetricSystemPagingOperations(ms.SystemPagingOperations),
+		metricSystemPagingUsage:       newMetricSystemPagingUsage(ms.SystemPagingUsage),
+		metricSystemPagingUtilization: newMetricSystemPagingUtilization(ms.SystemPagingUtilization),
 	}
 	for _, op := range options {
 		op(mb)

@@ -65,6 +65,30 @@ func TestNewCache(t *testing.T) {
 	}
 }
 
+func TestCache_GetReviveEvicted(t *testing.T) {
+	cache, _ := NewCache[string, string](1)
+	cache.Add("key0", "val_from_LRU")
+	cache.evictedItems["key1"] = "val_from_evicted_items"
+
+	gotValue, gotOk := cache.Get("key0")
+	assert.True(t, gotOk)
+	assert.Equal(t, "val_from_LRU", gotValue)
+
+	// Should revive the evicted key back into the main LRU cache.
+	gotValue, gotOk = cache.Get("key1")
+	assert.True(t, gotOk)
+	assert.Equal(t, "val_from_evicted_items", gotValue)
+
+	cache.RemoveEvictedItems()
+
+	_, gotOk = cache.Get("key0")
+	assert.False(t, gotOk, "key0 should be removed from evicted items")
+
+	gotValue, gotOk = cache.Get("key1")
+	assert.True(t, gotOk)
+	assert.Equal(t, "val_from_evicted_items", gotValue, "key1 should be in the main LRU cache")
+}
+
 func TestCache_Get(t *testing.T) {
 	tests := []struct {
 		name         string

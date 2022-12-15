@@ -5,14 +5,14 @@ go 1.18
 require (
 	github.com/docker/docker v20.10.21+incompatible
 	github.com/docker/go-connections v0.4.1-0.20210727194412-58542c764a11
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.66.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.66.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.66.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.67.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.67.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.67.0
 	github.com/stretchr/testify v1.8.1
 	github.com/testcontainers/testcontainers-go v0.15.0
-	go.opentelemetry.io/collector v0.66.1-0.20221202005155-1c54042beb70
-	go.opentelemetry.io/collector/component v0.66.1-0.20221202005155-1c54042beb70
-	go.opentelemetry.io/collector/confmap v0.0.0-20221201172708-2bdff61fa52a
+	go.opentelemetry.io/collector v0.67.1-0.20221212050940-28cd74963b9d
+	go.opentelemetry.io/collector/component v0.67.1-0.20221212050940-28cd74963b9d
+	go.opentelemetry.io/collector/confmap v0.67.0
 	go.uber.org/zap v1.24.0
 )
 
@@ -53,17 +53,17 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/consumer v0.66.1-0.20221202005155-1c54042beb70 // indirect
-	go.opentelemetry.io/collector/featuregate v0.66.1-0.20221202005155-1c54042beb70 // indirect
-	go.opentelemetry.io/collector/pdata v0.66.1-0.20221202005155-1c54042beb70 // indirect
-	go.opentelemetry.io/otel v1.11.1 // indirect
-	go.opentelemetry.io/otel/metric v0.33.0 // indirect
-	go.opentelemetry.io/otel/trace v1.11.1 // indirect
+	go.opentelemetry.io/collector/consumer v0.67.1-0.20221212050940-28cd74963b9d // indirect
+	go.opentelemetry.io/collector/featuregate v0.67.1-0.20221212050940-28cd74963b9d // indirect
+	go.opentelemetry.io/collector/pdata v1.0.0-rc1.0.20221212050940-28cd74963b9d // indirect
+	go.opentelemetry.io/otel v1.11.2 // indirect
+	go.opentelemetry.io/otel/metric v0.34.0 // indirect
+	go.opentelemetry.io/otel/trace v1.11.2 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
-	go.uber.org/multierr v1.8.0 // indirect
-	golang.org/x/net v0.0.0-20220722155237-a158d28d115b // indirect
-	golang.org/x/sys v0.2.0 // indirect
-	golang.org/x/text v0.4.0 // indirect
+	go.uber.org/multierr v1.9.0 // indirect
+	golang.org/x/net v0.4.0 // indirect
+	golang.org/x/sys v0.3.0 // indirect
+	golang.org/x/text v0.5.0 // indirect
 	golang.org/x/time v0.0.0-20220210224613-90d013bbcef8 // indirect
 	google.golang.org/genproto v0.0.0-20220617124728-180714bec0ad // indirect
 	google.golang.org/grpc v1.51.0 // indirect

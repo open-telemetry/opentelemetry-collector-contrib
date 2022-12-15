@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 )
@@ -98,7 +99,7 @@ func TestFactory_CreateLogsExporter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			factory := NewFactory()
-			creationParams := componenttest.NewNopExporterCreateSettings()
+			creationParams := exportertest.NewNopCreateSettings()
 			exp, err := factory.CreateLogsExporter(context.Background(), creationParams, &tt.config)
 			if (err != nil) != tt.shouldError {
 				t.Errorf("CreateLogsExporter() error = %v, shouldError %v", err, tt.shouldError)

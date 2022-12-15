@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
@@ -32,21 +33,22 @@ import (
 )
 
 const (
-	cpuMetricsLen            = 1
-	memoryMetricsLen         = 2
-	diskMetricsLen           = 1
-	pagingMetricsLen         = 1
-	threadMetricsLen         = 1
-	contextSwitchMetricsLen  = 1
-	fileDescriptorMetricsLen = 1
-	signalMetricsLen         = 1
+	cpuMetricsLen               = 1
+	memoryMetricsLen            = 2
+	memoryUtilizationMetricsLen = 1
+	diskMetricsLen              = 1
+	pagingMetricsLen            = 1
+	threadMetricsLen            = 1
+	contextSwitchMetricsLen     = 1
+	fileDescriptorMetricsLen    = 1
+	signalMetricsLen            = 1
 
-	metricsLen = cpuMetricsLen + memoryMetricsLen + diskMetricsLen + pagingMetricsLen + threadMetricsLen + contextSwitchMetricsLen + fileDescriptorMetricsLen + signalMetricsLen
+	metricsLen = cpuMetricsLen + memoryMetricsLen + diskMetricsLen + memoryUtilizationMetricsLen + pagingMetricsLen + threadMetricsLen + contextSwitchMetricsLen + fileDescriptorMetricsLen + signalMetricsLen
 )
 
 // scraper for Process Metrics
 type scraper struct {
-	settings           component.ReceiverCreateSettings
+	settings           receiver.CreateSettings
 	config             *Config
 	mb                 *metadata.MetricsBuilder
 	includeFS          filterset.FilterSet
@@ -59,7 +61,7 @@ type scraper struct {
 }
 
 // newProcessScraper creates a Process Scraper
-func newProcessScraper(settings component.ReceiverCreateSettings, cfg *Config) (*scraper, error) {
+func newProcessScraper(settings receiver.CreateSettings, cfg *Config) (*scraper, error) {
 	scraper := &scraper{
 		settings:             settings,
 		config:               cfg,
@@ -89,7 +91,7 @@ func newProcessScraper(settings component.ReceiverCreateSettings, cfg *Config) (
 }
 
 func (s *scraper) start(context.Context, component.Host) error {
-	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, s.settings.BuildInfo)
+	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, s.settings)
 	return nil
 }
 
@@ -115,6 +117,10 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 
 		if err = s.scrapeAndAppendMemoryUsageMetrics(now, md.handle); err != nil {
 			errs.AddPartial(memoryMetricsLen, fmt.Errorf("error reading memory info for process %q (pid %v): %w", md.executable.name, md.pid, err))
+		}
+
+		if err = s.scrapeAndAppendMemoryUtilizationMetric(now, md.handle); err != nil {
+			errs.AddPartial(memoryUtilizationMetricsLen, fmt.Errorf("error reading memory utilization for process %q (pid %v): %w", md.executable.name, md.pid, err))
 		}
 
 		if err = s.scrapeAndAppendDiskIOMetric(now, md.handle); err != nil {
@@ -250,6 +256,21 @@ func (s *scraper) scrapeAndAppendMemoryUsageMetrics(now pcommon.Timestamp, handl
 	s.mb.RecordProcessMemoryVirtualUsageDataPoint(now, int64(mem.VMS))
 	s.mb.RecordProcessMemoryUsageDataPoint(now, int64(mem.RSS))
 	s.mb.RecordProcessMemoryVirtualDataPoint(now, int64(mem.VMS))
+	return nil
+}
+
+func (s *scraper) scrapeAndAppendMemoryUtilizationMetric(now pcommon.Timestamp, handle processHandle) error {
+	if !s.config.Metrics.ProcessMemoryUtilization.Enabled {
+		return nil
+	}
+
+	memoryPercent, err := handle.MemoryPercent()
+	if err != nil {
+		return err
+	}
+
+	s.mb.RecordProcessMemoryUtilizationDataPoint(now, float64(memoryPercent))
+
 	return nil
 }
 

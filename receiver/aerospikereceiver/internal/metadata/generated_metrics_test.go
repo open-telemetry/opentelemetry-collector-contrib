@@ -7,15 +7,17 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 func TestDefaultMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	mb := NewMetricsBuilder(DefaultMetricsSettings(), component.BuildInfo{}, WithStartTime(start))
+	mb := NewMetricsBuilder(DefaultMetricsSettings(), receivertest.NewNopCreateSettings(), WithStartTime(start))
 	enabledMetrics := make(map[string]bool)
 
 	enabledMetrics["aerospike.namespace.disk.available"] = true
@@ -78,7 +80,7 @@ func TestDefaultMetrics(t *testing.T) {
 func TestAllMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	settings := MetricsSettings{
+	metricsSettings := MetricsSettings{
 		AerospikeNamespaceDiskAvailable:                   MetricSettings{Enabled: true},
 		AerospikeNamespaceGeojsonRegionQueryCells:         MetricSettings{Enabled: true},
 		AerospikeNamespaceGeojsonRegionQueryFalsePositive: MetricSettings{Enabled: true},
@@ -94,7 +96,12 @@ func TestAllMetrics(t *testing.T) {
 		AerospikeNodeMemoryFree:                           MetricSettings{Enabled: true},
 		AerospikeNodeQueryTracked:                         MetricSettings{Enabled: true},
 	}
-	mb := NewMetricsBuilder(settings, component.BuildInfo{}, WithStartTime(start))
+	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+	settings := receivertest.NewNopCreateSettings()
+	settings.Logger = zap.New(observedZapCore)
+	mb := NewMetricsBuilder(metricsSettings, settings, WithStartTime(start))
+
+	assert.Equal(t, 0, observedLogs.Len())
 
 	mb.RecordAerospikeNamespaceDiskAvailableDataPoint(ts, "1")
 	mb.RecordAerospikeNamespaceGeojsonRegionQueryCellsDataPoint(ts, "1")
@@ -350,7 +357,7 @@ func TestAllMetrics(t *testing.T) {
 func TestNoMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	settings := MetricsSettings{
+	metricsSettings := MetricsSettings{
 		AerospikeNamespaceDiskAvailable:                   MetricSettings{Enabled: false},
 		AerospikeNamespaceGeojsonRegionQueryCells:         MetricSettings{Enabled: false},
 		AerospikeNamespaceGeojsonRegionQueryFalsePositive: MetricSettings{Enabled: false},
@@ -366,7 +373,12 @@ func TestNoMetrics(t *testing.T) {
 		AerospikeNodeMemoryFree:                           MetricSettings{Enabled: false},
 		AerospikeNodeQueryTracked:                         MetricSettings{Enabled: false},
 	}
-	mb := NewMetricsBuilder(settings, component.BuildInfo{}, WithStartTime(start))
+	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+	settings := receivertest.NewNopCreateSettings()
+	settings.Logger = zap.New(observedZapCore)
+	mb := NewMetricsBuilder(metricsSettings, settings, WithStartTime(start))
+
+	assert.Equal(t, 0, observedLogs.Len())
 	mb.RecordAerospikeNamespaceDiskAvailableDataPoint(ts, "1")
 	mb.RecordAerospikeNamespaceGeojsonRegionQueryCellsDataPoint(ts, "1")
 	mb.RecordAerospikeNamespaceGeojsonRegionQueryFalsePositiveDataPoint(ts, "1")

@@ -20,6 +20,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 
@@ -42,11 +43,11 @@ var defaultMetricGroups = []kubelet.MetricGroup{
 }
 
 // NewFactory creates a factory for kubeletstats receiver.
-func NewFactory() component.ReceiverFactory {
-	return component.NewReceiverFactory(
+func NewFactory() receiver.Factory {
+	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver, stability))
+		receiver.WithMetrics(createMetricsReceiver, stability))
 }
 
 func createDefaultConfig() component.Config {
@@ -66,10 +67,10 @@ func createDefaultConfig() component.Config {
 
 func createMetricsReceiver(
 	ctx context.Context,
-	set component.ReceiverCreateSettings,
+	set receiver.CreateSettings,
 	baseCfg component.Config,
 	consumer consumer.Metrics,
-) (component.MetricsReceiver, error) {
+) (receiver.Metrics, error) {
 	cfg := baseCfg.(*Config)
 	rOptions, err := cfg.getReceiverOptions()
 	if err != nil {

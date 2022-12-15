@@ -20,9 +20,9 @@ import (
 	"strings"
 	"time"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 )
 
 // generalResourceKey is the resource key for the no general "no attribute" resource
@@ -89,11 +89,11 @@ type otelMetricHelper struct {
 	// This is the timestamp that should be added to all created data points
 	dataPointTime pcommon.Timestamp
 	// This is used so that we can put the proper version on the scope metrics
-	settings component.ReceiverCreateSettings
+	settings receiver.CreateSettings
 }
 
 // newOtelMetricHelper returns a new otelMetricHelper with an initialized master Metrics
-func newOTELMetricHelper(settings component.ReceiverCreateSettings) *otelMetricHelper {
+func newOTELMetricHelper(settings receiver.CreateSettings) *otelMetricHelper {
 	metrics := pmetric.NewMetrics()
 	omh := otelMetricHelper{
 		metrics:              metrics,
