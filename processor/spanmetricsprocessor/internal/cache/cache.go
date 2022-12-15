@@ -65,13 +65,6 @@ func (c *Cache[K, V]) Get(key K) (V, bool) {
 		return val.(V), ok
 	}
 	val, ok := c.evictedItems[key]
-
-	// Revive from evicted items back into the main cache if a fetch was attempted.
-	if ok {
-		delete(c.evictedItems, key)
-		c.Add(key, val)
-	}
-
 	return val, ok
 }
 
