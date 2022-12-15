@@ -89,7 +89,11 @@ func (lsp *logSamplerProcessor) processLogs(ctx context.Context, ld plog.Logs) (
 					}
 				}
 
-				sampled := hash(lidBytes, lsp.hashSeed)&bitMaskHashBuckets < priority
+				//hash1 := hash(lidBytes, lsp.hashSeed)
+				hash2 := computeHash(lidBytes, lsp.hashSeed)
+
+				//sampled := hash1&bitMaskHashBuckets < priority
+				sampled := hash2&bitMaskHashBuckets < priority
 				var err error
 				if sampled {
 					err = stats.RecordWithTags(
