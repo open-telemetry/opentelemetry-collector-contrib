@@ -24,7 +24,7 @@ type billingMetric struct {
     serviceType                  sql.NullString
     serviceName                  sql.NullString
     totalCloudService            float64 
-    totalTotalCredits            float64 
+    totalCredits                 float64 
     totalVirtualWarehouseCredits float64
 }
 
@@ -32,7 +32,7 @@ type billingMetric struct {
 type whBillingMetric struct {
     warehouseName         sql.NullString
     totalCloudService     float64 
-    totalTotalCredit      float64 
+    totalCredit      float64 
     totalVirtualWarehouse float64
 }
 

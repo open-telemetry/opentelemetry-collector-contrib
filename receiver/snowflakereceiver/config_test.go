@@ -15,24 +15,15 @@
 package snowflakereceiver
 
 import (
-	"errors"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.uber.org/multierr"
 )
 
 func TestValidateConfig(t *testing.T) {
     t.Parallel()
 
-    var(
-        missingUsernameError  = errors.New("You must provide a valid snowflake username")
-        missingPasswordError  = errors.New("You must provide a password for the snowflake username")
-        missingAccountError   = errors.New("You must provide a valid account name")
-        missingWarehouseError = errors.New("You must provide a valid warehouse name")
-    )
     var multierror error 
 
     multierror = multierr.Append(multierror, missingPasswordError)
@@ -44,7 +35,7 @@ func TestValidateConfig(t *testing.T) {
         conf   Config
     }{
         {
-            desc: "Missing username, all else present",
+            desc: "Missing username all else present",
             expect: missingUsernameError,
             conf: Config{
                 Username: "",
@@ -54,7 +45,7 @@ func TestValidateConfig(t *testing.T) {
             },
         },
         {
-            desc: "Missing password, all else present",
+            desc: "Missing password all else present",
             expect: missingPasswordError,
             conf: Config{
                 Username: "username",
@@ -64,7 +55,7 @@ func TestValidateConfig(t *testing.T) {
             },
         },
         {
-            desc: "Missing account, all else present",
+            desc: "Missing account all else present",
             expect: missingAccountError,
             conf: Config{
                 Username: "username",
@@ -74,7 +65,7 @@ func TestValidateConfig(t *testing.T) {
             },
         },
         {
-            desc: "Missing warehouse, all else present",
+            desc: "Missing warehouse all else present",
             expect: missingWarehouseError,
             conf: Config{
                 Username: "username",
@@ -84,7 +75,7 @@ func TestValidateConfig(t *testing.T) {
             },
         },
         {
-            desc: "Missing multiple, check multierror",
+            desc: "Missing multiple check multierror",
             expect: multierror,
             conf: Config{
                 Username: "username",
@@ -95,8 +86,15 @@ func TestValidateConfig(t *testing.T) {
         },
     }
     
-    for _, test := range tests {
-        err := test.conf.Validate()
-        require.ErrorIs(t, err, test.expect)
+    for i := range tests {
+        test := tests[i]
+
+        t.Run(test.desc, func(t *testing.T) {
+            t.Parallel()
+
+            err := test.conf.Validate()
+            require.Error(t, err)
+            require.Contains(t, err.Error(), test.expect.Error())
+        })
     }
 }

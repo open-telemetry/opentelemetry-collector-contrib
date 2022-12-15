@@ -18,10 +18,16 @@ import (
 	"errors"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snowflakereceiver/internal/metadata"
-	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
 )
+
+var(
+        missingUsernameError  = errors.New("You must provide a valid snowflake username")
+        missingPasswordError  = errors.New("You must provide a password for the snowflake username")
+        missingAccountError   = errors.New("You must provide a valid account name")
+        missingWarehouseError = errors.New("You must provide a valid warehouse name")
+    )
 
 type Config struct {
     scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
@@ -38,19 +44,19 @@ type Config struct {
 func (cfg *Config) Validate() error {
     var errs error
     if (cfg.Username == "") {
-        errs = multierr.Append(errs, errors.New("You must provide a valid snowflake username"))
+        errs = multierr.Append(errs, missingUsernameError)
     }
 
     if (cfg.Password == "") {
-        errs = multierr.Append(errs, errors.New("You must provide a password for the snowflake username"))
+        errs = multierr.Append(errs, missingPasswordError)
     }
 
     if (cfg.Account == "") {
-        errs = multierr.Append(errs, errors.New("You must provide a valid account name"))
+        errs = multierr.Append(errs, missingAccountError)
     }
 
     if (cfg.Warehouse == "") {
-        errs = multierr.Append(errs, errors.New("You must provide a valid warehouse name"))
+        errs = multierr.Append(errs, missingWarehouseError)
     }
 
     return errs
