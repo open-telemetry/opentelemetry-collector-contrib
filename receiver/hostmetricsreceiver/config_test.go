@@ -109,7 +109,7 @@ func TestLoadInvalidConfig_NoScrapers(t *testing.T) {
 	factories.Receivers[typeStr] = factory
 	_, err = otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "config-noscrapers.yaml"), factories)
 
-	require.Contains(t, err.Error(), "receiver \"hostmetrics\" has invalid configuration: must specify at least one scraper when using hostmetrics receiver")
+	require.Contains(t, err.Error(), "must specify at least one scraper when using hostmetrics receiver")
 }
 
 func TestLoadInvalidConfig_InvalidScraperKey(t *testing.T) {
