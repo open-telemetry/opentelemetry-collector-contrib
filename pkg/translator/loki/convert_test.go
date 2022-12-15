@@ -19,6 +19,7 @@ import (
 
 	"github.com/prometheus/common/model"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -231,11 +232,12 @@ func TestRemoveAttributes(t *testing.T) {
 func TestGetNestedAttribute(t *testing.T) {
 	// prepare
 	attrs := pcommon.NewMap()
-	attrs.FromRaw(map[string]interface{}{
+	err := attrs.FromRaw(map[string]interface{}{
 		"host": map[string]interface{}{
 			"name": "guarana",
 		},
 	})
+	require.NoError(t, err)
 
 	// test
 	attr, ok := getNestedAttribute("host.name", attrs)
