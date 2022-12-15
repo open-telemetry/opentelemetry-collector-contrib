@@ -220,16 +220,17 @@ require (
 	github.com/ClickHouse/ch-go v0.50.0 // indirect
 	github.com/ClickHouse/clickhouse-go/v2 v2.4.3 // indirect
 	github.com/DataDog/agent-payload/v5 v5.0.46 // indirect
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.41.0-rc.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/otlp/model v0.41.0-rc.3.0.20221207140548-a500ba1a95be // indirect
-	github.com/DataDog/datadog-agent/pkg/quantile v0.41.0-rc.3.0.20221114173638-98b8cd5ae742 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.41.0-rc.3.0.20221207140548-a500ba1a95be // indirect
-	github.com/DataDog/datadog-agent/pkg/trace v0.41.0-rc.3.0.20221207140548-a500ba1a95be // indirect
-	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.41.0-rc.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.41.0-rc.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.41.0-rc.3 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.42.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/otlp/model v0.42.0-rc.2.0.20221215161218-ae4a2b6bc233 // indirect
+	github.com/DataDog/datadog-agent/pkg/quantile v0.42.0-rc.2.0.20221215161218-ae4a2b6bc233 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.42.0-rc.2.0.20221215161218-ae4a2b6bc233 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace v0.42.0-rc.2.0.20221215161218-ae4a2b6bc233 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.42.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.42.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.42.0-rc.2 // indirect
 	github.com/DataDog/datadog-api-client-go/v2 v2.5.0 // indirect
 	github.com/DataDog/datadog-go/v5 v5.1.1 // indirect
+	github.com/DataDog/go-tuf v0.3.0--fix-localmeta-fork // indirect
 	github.com/DataDog/gohai v0.0.0-20220718130825-1776f9beb9cc // indirect
 	github.com/DataDog/sketches-go v1.4.1 // indirect
 	github.com/DataDog/zstd v1.5.2 // indirect
@@ -543,7 +544,6 @@ require (
 	github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635 // indirect
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.557 // indirect
 	github.com/tg123/go-htpasswd v1.2.0 // indirect
-	github.com/theupdateframework/go-tuf v0.3.0 // indirect
 	github.com/tidwall/gjson v1.14.3 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect
