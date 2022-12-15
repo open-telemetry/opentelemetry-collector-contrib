@@ -572,7 +572,7 @@ require (
 	go.mongodb.org/atlas v0.19.0 // indirect
 	go.mongodb.org/mongo-driver v1.11.1 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/confmap v0.67.0 // indirect
+	go.opentelemetry.io/collector/confmap v0.67.1-0.20221212050940-28cd74963b9d // indirect
 	go.opentelemetry.io/collector/featuregate v0.67.1-0.20221212050940-28cd74963b9d // indirect
 	go.opentelemetry.io/collector/pdata v1.0.0-rc1.0.20221212050940-28cd74963b9d // indirect
 	go.opentelemetry.io/collector/semconv v0.67.1-0.20221212050940-28cd74963b9d // indirect
