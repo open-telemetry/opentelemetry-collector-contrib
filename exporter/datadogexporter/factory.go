@@ -57,13 +57,13 @@ func isMetricExportV2Enabled() bool {
 }
 
 // enableNativeMetricExport switches metric export to call native Datadog APIs instead of Zorkian APIs.
-func enableNativeMetricExport() {
-	featuregate.GetRegistry().Apply(map[string]bool{mertricExportNativeClientFeatureGate: true})
+func enableNativeMetricExport() error {
+	return featuregate.GetRegistry().Apply(map[string]bool{mertricExportNativeClientFeatureGate: true})
 }
 
 // enableZorkianMetricExport switches metric export to call Zorkian APIs instead of native Datadog APIs.
-func enableZorkianMetricExport() {
-	featuregate.GetRegistry().Apply(map[string]bool{mertricExportNativeClientFeatureGate: false})
+func enableZorkianMetricExport() error {
+	return featuregate.GetRegistry().Apply(map[string]bool{mertricExportNativeClientFeatureGate: false})
 }
 
 type factory struct {

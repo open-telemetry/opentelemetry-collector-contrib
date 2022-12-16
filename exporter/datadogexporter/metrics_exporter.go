@@ -47,7 +47,7 @@ type metricsExporter struct {
 	cfg            *Config
 	ctx            context.Context
 	client         *zorkian.Client
-	metricsApi     *datadogV2.MetricsApi
+	metricsAPI     *datadogV2.MetricsApi
 	tr             *translator.Translator
 	scrubber       scrub.Scrubber
 	retrier        *clientutil.Retrier
@@ -129,7 +129,7 @@ func newMetricsExporter(ctx context.Context, params exporter.CreateSettings, cfg
 		if err := clientutil.ValidateAPIKey(ctx, cfg.API.Key, params.Logger, apiClient); err != nil && cfg.API.FailOnInvalidKey {
 			return nil, err
 		}
-		exporter.metricsApi = datadogV2.NewMetricsApi(apiClient)
+		exporter.metricsAPI = datadogV2.NewMetricsApi(apiClient)
 	} else {
 		client := clientutil.CreateZorkianClient(cfg.API.Key, cfg.Metrics.TCPAddr.Endpoint)
 		client.ExtraHeader["User-Agent"] = clientutil.UserAgent(params.BuildInfo)
@@ -162,7 +162,7 @@ func (exp *metricsExporter) pushSketches(ctx context.Context, sl sketches.Sketch
 	clientutil.SetExtraHeaders(req.Header, clientutil.ProtobufHeaders)
 	var resp *http.Response
 	if isMetricExportV2Enabled() {
-		resp, err = exp.metricsApi.Client.Cfg.HTTPClient.Do(req)
+		resp, err = exp.metricsAPI.Client.Cfg.HTTPClient.Do(req)
 	} else {
 		resp, err = exp.client.HttpClient.Do(req)
 	}
@@ -227,8 +227,8 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metr
 				err,
 				exp.retrier.DoWithRetries(ctx, func(context.Context) error {
 					ctx = clientutil.GetRequestContext(ctx, exp.cfg.API.Key)
-					_, _, err := exp.metricsApi.SubmitMetrics(ctx, datadogV2.MetricPayload{Series: ms}, *datadogV2.NewSubmitMetricsOptionalParameters())
-					return err
+					_, _, merr := exp.metricsAPI.SubmitMetrics(ctx, datadogV2.MetricPayload{Series: ms}, *datadogV2.NewSubmitMetricsOptionalParameters())
+					return merr
 				}),
 			)
 		}

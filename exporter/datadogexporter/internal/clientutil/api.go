@@ -47,8 +47,8 @@ func CreateAPIClient(buildInfo component.BuildInfo, endpoint string, settings ex
 // ValidateAPIKey checks if the API key (not the APP key) is valid
 func ValidateAPIKey(ctx context.Context, apiKey string, logger *zap.Logger, apiClient *datadog.APIClient) error {
 	logger.Info("Validating API key.")
-	authApi := datadogV1.NewAuthenticationApi(apiClient)
-	resp, _, err := authApi.Validate(GetRequestContext(ctx, apiKey))
+	authAPI := datadogV1.NewAuthenticationApi(apiClient)
+	resp, _, err := authAPI.Validate(GetRequestContext(ctx, apiKey))
 	if err == nil && *resp.Valid {
 		logger.Info("API key validation successful.")
 		return nil

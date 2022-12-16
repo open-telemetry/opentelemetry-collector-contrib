@@ -45,7 +45,7 @@ type traceExporter struct {
 	cfg            *Config
 	ctx            context.Context       // ctx triggers shutdown upon cancellation
 	client         *zorkian.Client       // client sends runnimg metrics to backend & performs API validation
-	metricsApi     *datadogV2.MetricsApi // client sends runnimg metrics to backend
+	metricsAPI     *datadogV2.MetricsApi // client sends runnimg metrics to backend
 	scrubber       scrub.Scrubber        // scrubber scrubs sensitive information from error messages
 	onceMetadata   *sync.Once            // onceMetadata ensures that metadata is sent only once across all exporters
 	agent          *agent.Agent          // agent processes incoming traces
@@ -77,7 +77,7 @@ func newTracesExporter(ctx context.Context, params exporter.CreateSettings, cfg 
 		if err := clientutil.ValidateAPIKey(ctx, cfg.API.Key, params.Logger, apiClient); err != nil && cfg.API.FailOnInvalidKey {
 			return nil, err
 		}
-		exp.metricsApi = datadogV2.NewMetricsApi(apiClient)
+		exp.metricsAPI = datadogV2.NewMetricsApi(apiClient)
 	} else {
 		client := clientutil.CreateZorkianClient(cfg.API.Key, cfg.Metrics.TCPAddr.Endpoint)
 		if err := clientutil.ValidateAPIKeyZorkian(params.Logger, client); err != nil && cfg.API.FailOnInvalidKey {
@@ -140,7 +140,7 @@ func (exp *traceExporter) exportTraceMetrics(ctx context.Context, hosts map[stri
 			series = append(series, ms...)
 		}
 		ctx = clientutil.GetRequestContext(ctx, exp.cfg.API.Key)
-		_, _, err = exp.metricsApi.SubmitMetrics(ctx, datadogV2.MetricPayload{Series: series}, *datadogV2.NewSubmitMetricsOptionalParameters())
+		_, _, err = exp.metricsAPI.SubmitMetrics(ctx, datadogV2.MetricPayload{Series: series}, *datadogV2.NewSubmitMetricsOptionalParameters())
 	} else {
 		series := make([]zorkian.Metric, 0, len(hosts)+len(tags))
 		for host := range hosts {

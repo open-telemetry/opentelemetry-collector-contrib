@@ -45,6 +45,7 @@ type DatadogServer struct {
 	MetadataChan chan []byte
 }
 
+/* #nosec G101 */
 const (
 	ValidateAPIKeyEndpoint = "/api/v1/validate"
 	MetricV1Endpoint       = "/api/v1/series"
