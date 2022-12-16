@@ -15,7 +15,6 @@
 package components // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/components"
 
 import (
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/loggingexporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
@@ -23,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/ballastextension"
 	"go.opentelemetry.io/collector/extension/zpagesextension"
+	"go.opentelemetry.io/collector/otelcol"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/processor/memorylimiterprocessor"
@@ -184,9 +184,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver"
 )
 
-func Components() (component.Factories, error) {
+func Components() (otelcol.Factories, error) {
 	var err error
-	factories := component.Factories{}
+	factories := otelcol.Factories{}
 	extensions := []extension.Factory{
 		asapauthextension.NewFactory(),
 		awsproxy.NewFactory(),
@@ -210,7 +210,7 @@ func Components() (component.Factories, error) {
 	}
 	factories.Extensions, err = extension.MakeFactoryMap(extensions...)
 	if err != nil {
-		return component.Factories{}, err
+		return otelcol.Factories{}, err
 	}
 
 	receivers := []receiver.Factory{
@@ -295,7 +295,7 @@ func Components() (component.Factories, error) {
 	}
 	factories.Receivers, err = receiver.MakeFactoryMap(receivers...)
 	if err != nil {
-		return component.Factories{}, err
+		return otelcol.Factories{}, err
 	}
 
 	exporters := []exporter.Factory{
@@ -347,7 +347,7 @@ func Components() (component.Factories, error) {
 	}
 	factories.Exporters, err = exporter.MakeFactoryMap(exporters...)
 	if err != nil {
-		return component.Factories{}, err
+		return otelcol.Factories{}, err
 	}
 
 	processors := []processor.Factory{
@@ -374,7 +374,7 @@ func Components() (component.Factories, error) {
 	}
 	factories.Processors, err = processor.MakeFactoryMap(processors...)
 	if err != nil {
-		return component.Factories{}, err
+		return otelcol.Factories{}, err
 	}
 
 	return factories, nil

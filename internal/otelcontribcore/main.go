@@ -27,7 +27,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelcontribcore/internal/version"
 )
 
-type ComponentsFunc func() (component.Factories, error)
+type ComponentsFunc func() (otelcol.Factories, error)
 
 func RunWithComponents(componentsFunc ComponentsFunc) {
 	factories, err := componentsFunc()
