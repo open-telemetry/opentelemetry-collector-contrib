@@ -415,7 +415,7 @@ func TestOCReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 	for _, exporter := range exporters {
 		for _, tt := range tests {
 			t.Run(tt.name+"/"+exporter.receiverID.String(), func(t *testing.T) {
-				testTel, err := obsreporttest.SetupTelemetryWithID(exporter.receiverID)
+				testTel, err := obsreporttest.SetupTelemetry(exporter.receiverID)
 				require.NoError(t, err)
 				defer func() {
 					require.NoError(t, testTel.Shutdown(context.Background()))
@@ -566,7 +566,7 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 	for _, exporter := range exporters {
 		for _, tt := range tests {
 			t.Run(tt.name+"/"+exporter.receiverID.String(), func(t *testing.T) {
-				testTel, err := obsreporttest.SetupTelemetryWithID(exporter.receiverID)
+				testTel, err := obsreporttest.SetupTelemetry(exporter.receiverID)
 				require.NoError(t, err)
 				defer func() {
 					require.NoError(t, testTel.Shutdown(context.Background()))

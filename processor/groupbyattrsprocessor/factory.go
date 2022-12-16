@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.uber.org/zap"
 )
@@ -40,18 +41,18 @@ var (
 var once sync.Once
 
 // NewFactory returns a new factory for the Filter processor.
-func NewFactory() component.ProcessorFactory {
+func NewFactory() processor.Factory {
 	once.Do(func() {
 		// TODO: as with other -contrib factories registering metrics, this is causing the error being ignored
 		_ = view.Register(MetricViews()...)
 	})
 
-	return component.NewProcessorFactory(
+	return processor.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesProcessor(createTracesProcessor, stability),
-		component.WithLogsProcessor(createLogsProcessor, stability),
-		component.WithMetricsProcessor(createMetricsProcessor, stability))
+		processor.WithTraces(createTracesProcessor, stability),
+		processor.WithLogs(createLogsProcessor, stability),
+		processor.WithMetrics(createMetricsProcessor, stability))
 }
 
 // createDefaultConfig creates the default configuration for the processor.
@@ -84,9 +85,9 @@ func createGroupByAttrsProcessor(logger *zap.Logger, attributes []string) *group
 // createTracesProcessor creates a trace processor based on this config.
 func createTracesProcessor(
 	ctx context.Context,
-	set component.ProcessorCreateSettings,
+	set processor.CreateSettings,
 	cfg component.Config,
-	nextConsumer consumer.Traces) (component.TracesProcessor, error) {
+	nextConsumer consumer.Traces) (processor.Traces, error) {
 
 	oCfg := cfg.(*Config)
 	gap := createGroupByAttrsProcessor(set.Logger, oCfg.GroupByKeys)
@@ -103,9 +104,9 @@ func createTracesProcessor(
 // createLogsProcessor creates a logs processor based on this config.
 func createLogsProcessor(
 	ctx context.Context,
-	set component.ProcessorCreateSettings,
+	set processor.CreateSettings,
 	cfg component.Config,
-	nextConsumer consumer.Logs) (component.LogsProcessor, error) {
+	nextConsumer consumer.Logs) (processor.Logs, error) {
 
 	oCfg := cfg.(*Config)
 	gap := createGroupByAttrsProcessor(set.Logger, oCfg.GroupByKeys)
@@ -122,9 +123,9 @@ func createLogsProcessor(
 // createMetricsProcessor creates a metrics processor based on this config.
 func createMetricsProcessor(
 	ctx context.Context,
-	set component.ProcessorCreateSettings,
+	set processor.CreateSettings,
 	cfg component.Config,
-	nextConsumer consumer.Metrics) (component.MetricsProcessor, error) {
+	nextConsumer consumer.Metrics) (processor.Metrics, error) {
 
 	oCfg := cfg.(*Config)
 	gap := createGroupByAttrsProcessor(set.Logger, oCfg.GroupByKeys)

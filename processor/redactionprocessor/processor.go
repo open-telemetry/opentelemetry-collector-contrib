@@ -25,12 +25,13 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/processor"
 	"go.uber.org/zap"
 )
 
 const attrValuesSeparator = ","
 
-var _ component.TracesProcessor = (*redaction)(nil)
+var _ processor.Traces = (*redaction)(nil)
 
 type redaction struct {
 	// Attribute keys allowed in a span

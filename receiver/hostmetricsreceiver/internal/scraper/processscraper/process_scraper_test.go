@@ -77,6 +77,12 @@ func TestScrape(t *testing.T) {
 				enableLinuxOnlyMetrics(ms)
 			},
 		},
+		{
+			name: "Enable memory utilization",
+			mutateMetricsSettings: func(t *testing.T, ms *metadata.MetricsSettings) {
+				ms.ProcessMemoryUtilization.Enabled = true
+			},
+		},
 	}
 
 	const createTime = 100
@@ -129,6 +135,9 @@ func TestScrape(t *testing.T) {
 			}
 			if metricsSettings.ProcessSignalsPending.Enabled {
 				assertSignalsPendingMetricValid(t, md.ResourceMetrics(), expectedStartTime)
+			}
+			if metricsSettings.ProcessMemoryUtilization.Enabled {
+				assertMemoryUtilizationMetricValid(t, md.ResourceMetrics(), expectedStartTime)
 			}
 			if metricsSettings.ProcessThreads.Enabled {
 				assertThreadsCountValid(t, md.ResourceMetrics(), expectedStartTime)
@@ -218,6 +227,14 @@ func assertSignalsPendingMetricValid(t *testing.T, resourceMetrics pmetric.Resou
 	signalsPendingMetric := getMetric(t, "process.signals_pending", resourceMetrics)
 	if startTime != 0 {
 		internal.AssertSumMetricStartTimeEquals(t, signalsPendingMetric, startTime)
+	}
+}
+
+func assertMemoryUtilizationMetricValid(t *testing.T, resourceMetrics pmetric.ResourceMetricsSlice, startTime pcommon.Timestamp) {
+	memoryUtilizationMetric := getMetric(t, "process.memory.utilization", resourceMetrics)
+
+	if startTime != 0 {
+		internal.AssertGaugeMetricStartTimeEquals(t, memoryUtilizationMetric, startTime)
 	}
 }
 
@@ -396,6 +413,11 @@ func (p *processHandleMock) MemoryInfo() (*process.MemoryInfoStat, error) {
 	return args.Get(0).(*process.MemoryInfoStat), args.Error(1)
 }
 
+func (p *processHandleMock) MemoryPercent() (float32, error) {
+	args := p.MethodCalled("MemoryPercent")
+	return args.Get(0).(float32), args.Error(1)
+}
+
 func (p *processHandleMock) IOCounters() (*process.IOCountersStat, error) {
 	args := p.MethodCalled("IOCounters")
 	return args.Get(0).(*process.IOCountersStat), args.Error(1)
@@ -444,6 +466,7 @@ func newDefaultHandleMock() *processHandleMock {
 	handleMock.On("Times").Return(&cpu.TimesStat{}, nil)
 	handleMock.On("Percent").Return(float64(0), nil)
 	handleMock.On("MemoryInfo").Return(&process.MemoryInfoStat{}, nil)
+	handleMock.On("MemoryPercent").Return(float32(0), nil)
 	handleMock.On("IOCounters").Return(&process.IOCountersStat{}, nil)
 	handleMock.On("Parent").Return(&process.Process{Pid: 2}, nil)
 	handleMock.On("NumThreads").Return(int32(0), nil)
@@ -583,6 +606,7 @@ func TestScrapeMetrics_Filtered(t *testing.T) {
 }
 
 func enableOptionalMetrics(ms *metadata.MetricsSettings) {
+	ms.ProcessMemoryUtilization.Enabled = true
 	ms.ProcessThreads.Enabled = true
 	ms.ProcessPagingFaults.Enabled = true
 	ms.ProcessContextSwitches.Enabled = true
@@ -602,6 +626,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 		cmdlineError        error
 		timesError          error
 		memoryInfoError     error
+		memoryPercentError  error
 		ioCountersError     error
 		createTimeError     error
 		parentPidError      error
@@ -651,6 +676,11 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			expectedError:   `error reading memory info for process "test" (pid 1): err6`,
 		},
 		{
+			name:               "Memory Percent Error",
+			memoryPercentError: errors.New("err-mem-percent"),
+			expectedError:      `error reading memory utilization for process "test" (pid 1): err-mem-percent`,
+		},
+		{
 			name:            "IO Counters Error",
 			ioCountersError: errors.New("err7"),
 			expectedError:   `error reading disk usage for process "test" (pid 1): err7`,
@@ -692,6 +722,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			createTimeError:     errors.New("err4"),
 			timesError:          errors.New("err5"),
 			memoryInfoError:     errors.New("err6"),
+			memoryPercentError:  errors.New("err-mem-percent"),
 			ioCountersError:     errors.New("err7"),
 			pageFaultsError:     errors.New("err-paging"),
 			numThreadsError:     errors.New("err8"),
@@ -703,6 +734,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 				`error reading create time for process "test" (pid 1): err4; ` +
 				`error reading cpu times for process "test" (pid 1): err5; ` +
 				`error reading memory info for process "test" (pid 1): err6; ` +
+				`error reading memory utilization for process "test" (pid 1): err-mem-percent; ` +
 				`error reading disk usage for process "test" (pid 1): err7; ` +
 				`error reading memory paging info for process "test" (pid 1): err-paging; ` +
 				`error reading thread info for process "test" (pid 1): err8; ` +
@@ -740,6 +772,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			handleMock.On("Times").Return(&cpu.TimesStat{}, test.timesError)
 			handleMock.On("Percent").Return(float64(0), nil)
 			handleMock.On("MemoryInfo").Return(&process.MemoryInfoStat{}, test.memoryInfoError)
+			handleMock.On("MemoryPercent").Return(float32(0), test.memoryPercentError)
 			handleMock.On("IOCounters").Return(&process.IOCountersStat{}, test.ioCountersError)
 			handleMock.On("CreateTime").Return(int64(0), test.createTimeError)
 			handleMock.On("Parent").Return(&process.Process{Pid: 2}, test.parentPidError)
@@ -760,7 +793,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 
 			md, err := scraper.scrape(context.Background())
 
-			expectedResourceMetricsLen, expectedMetricsLen := getExpectedLengthOfReturnedMetrics(test.nameError, test.exeError, test.timesError, test.memoryInfoError, test.ioCountersError, test.pageFaultsError, test.numThreadsError, test.numCtxSwitchesError, test.numFDsError, test.rlimitError)
+			expectedResourceMetricsLen, expectedMetricsLen := getExpectedLengthOfReturnedMetrics(test.nameError, test.exeError, test.timesError, test.memoryInfoError, test.memoryPercentError, test.ioCountersError, test.pageFaultsError, test.numThreadsError, test.numCtxSwitchesError, test.numFDsError, test.rlimitError)
 			assert.Equal(t, expectedResourceMetricsLen, md.ResourceMetrics().Len())
 			assert.Equal(t, expectedMetricsLen, md.MetricCount())
 
@@ -768,7 +801,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			isPartial := scrapererror.IsPartialScrapeError(err)
 			assert.True(t, isPartial)
 			if isPartial {
-				expectedFailures := getExpectedScrapeFailures(test.nameError, test.exeError, test.timesError, test.memoryInfoError, test.ioCountersError, test.pageFaultsError, test.numThreadsError, test.numCtxSwitchesError, test.numFDsError, test.rlimitError)
+				expectedFailures := getExpectedScrapeFailures(test.nameError, test.exeError, test.timesError, test.memoryInfoError, test.memoryPercentError, test.ioCountersError, test.pageFaultsError, test.numThreadsError, test.numCtxSwitchesError, test.numFDsError, test.rlimitError)
 				var scraperErr scrapererror.PartialScrapeError
 				require.ErrorAs(t, err, &scraperErr)
 				assert.Equal(t, expectedFailures, scraperErr.Failed)
@@ -777,7 +810,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 	}
 }
 
-func getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError, diskError, pageFaultsError, threadError, contextSwitchError, fileDescriptorError error, rlimitError error) (int, int) {
+func getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError, memPercentError, diskError, pageFaultsError, threadError, contextSwitchError, fileDescriptorError error, rlimitError error) (int, int) {
 	if nameError != nil || exeError != nil {
 		return 0, 0
 	}
@@ -788,6 +821,9 @@ func getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError
 	}
 	if memError == nil {
 		expectedLen += memoryMetricsLen
+	}
+	if memPercentError == nil {
+		expectedLen += memoryUtilizationMetricsLen
 	}
 	if diskError == nil {
 		expectedLen += diskMetricsLen
@@ -814,11 +850,11 @@ func getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError
 	return 1, expectedLen
 }
 
-func getExpectedScrapeFailures(nameError, exeError, timeError, memError, diskError, pageFaultsError, threadError, contextSwitchError, fileDescriptorError error, rlimitError error) int {
+func getExpectedScrapeFailures(nameError, exeError, timeError, memError, memPercentError, diskError, pageFaultsError, threadError, contextSwitchError, fileDescriptorError error, rlimitError error) int {
 	if nameError != nil || exeError != nil {
 		return 1
 	}
-	_, expectedMetricsLen := getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError, diskError, pageFaultsError, threadError, contextSwitchError, fileDescriptorError, rlimitError)
+	_, expectedMetricsLen := getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError, memPercentError, diskError, pageFaultsError, threadError, contextSwitchError, fileDescriptorError, rlimitError)
 	return metricsLen - expectedMetricsLen
 }
 

@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/processor/processortest"
 )
 
 func TestType(t *testing.T) {
@@ -98,12 +99,12 @@ func TestCreateProcessors(t *testing.T) {
 
 				tp, tErr := factory.CreateTracesProcessor(
 					context.Background(),
-					componenttest.NewNopProcessorCreateSettings(),
+					processortest.NewNopCreateSettings(),
 					cfg, consumertest.NewNop(),
 				)
 				mp, mErr := factory.CreateMetricsProcessor(
 					context.Background(),
-					componenttest.NewNopProcessorCreateSettings(),
+					processortest.NewNopCreateSettings(),
 					cfg,
 					consumertest.NewNop(),
 				)

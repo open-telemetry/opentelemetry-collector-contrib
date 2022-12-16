@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/processor"
 	"go.uber.org/zap"
 )
 
@@ -33,7 +34,7 @@ type transformer struct {
 func newTransformer(
 	_ context.Context,
 	conf component.Config,
-	set component.ProcessorCreateSettings,
+	set processor.CreateSettings,
 ) (*transformer, error) {
 	cfg, ok := conf.(*Config)
 	if !ok {

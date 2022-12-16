@@ -12,15 +12,18 @@ The OTTL grammar includes Invocations, Values and Boolean Expressions.
 
 ### Invocations
 
-Invocations represent a function call. Invocations are made up of 2 parts:
+Invocations represent a function call that transform the underlying telemetry payload. Invocations are made up of 2 parts:
 
-- a string identifier. The string identifier must start with a letter or an underscore (`_`).
+- a string identifier. The string identifier must start with a lowercase letter.
 - zero or more Values (comma separated) surrounded by parentheses (`()`).
 
-**The OTTL does not define any function implementations.** Users must supply a map between string identifiers and the actual function implementation.  The OTTL will use this map and reflection to generate Invocations, that can then be invoked by the user.
+**The OTTL does not define any function implementations.**
+Users must supply a map between string identifiers and the actual function implementation.
+The OTTL will use this map and reflection to generate Invocations, that can then be invoked by the user.
+See [ottlfuncs](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/ottlfuncs) for pre-made, usable functions.
 
 Example Invocations
-- `drop()`
+- `route()`
 - `set(field, 1)`
 
 #### Invocation parameters
@@ -47,14 +50,12 @@ For slice parameters, the following types are supported:
 ### Values
 
 Values are passed as input to an Invocation or are used in a Boolean Expression. Values can take the form of:
-- [Paths](#paths).
-- [Lists](#lists).
-- [Literals](#literals).
-- [Enums](#enums).
-- [Invocations](#invocations).
+- [Paths](#paths)
+- [Lists](#lists)
+- [Literals](#literals)
+- [Enums](#enums)
+- [Converters](#converters)
 - [Math Expressions](#math_expressions)
-
-Invocations as Values allows calling functions as parameters to other functions. See [Invocations](#invocations) for details on Invocation syntax.
 
 #### Paths
 
@@ -106,6 +107,24 @@ Enums are uppercase identifiers that get interpreted during parsing and converte
 Within the grammar Enums are always used as `int64`.  As a result, the Enum's symbol can be used as if it is an Int value.
 
 When defining a function that will be used as an Invocation by the OTTL, if the function needs to take an Enum then the function must use the `Enum` type for that argument, not an `int64`.
+
+#### Converters
+
+Converters are special functions that convert data to a new format before being passed to an Invocation or Boolean Expression.
+Like Invocations, Converters are made up of 2 parts:
+
+- a string identifier. The string identifier must start with an uppercase letter.
+- zero or more Values (comma separated) surrounded by parentheses (`()`).
+
+**The OTTL does not define any converter implementations.**
+Users must include converters in the same map that invocations are supplied.
+The OTTL will use this map and reflection to generate Converters that can then be invoked by the user.
+See [ottlfuncs](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/ottlfuncs#converters) for pre-made, usable Converters.
+
+Example Converters
+- `Int()`
+- `IsMatch(field, ".*")`
+
 
 #### Math Expressions
 
@@ -176,7 +195,7 @@ A `not equal` notation in the table below means that the "!=" operator returns t
 
 
 | base type | bool        | int64               | float64             | string                          | Bytes                    | nil                    |
-| --------- | ----------- | ------------------- | ------------------- | ------------------------------- | ------------------------ | ---------------------- |
+|-----------|-------------|---------------------|---------------------|---------------------------------|--------------------------|------------------------|
 | bool      | normal, T>F | not equal           | not equal           | not equal                       | not equal                | not equal              |
 | int64     | not equal   | compared as largest | compared as float64 | not equal                       | not equal                | not equal              |
 | float64   | not equal   | compared as float64 | compared as largest | not equal                       | not equal                | not equal              |

@@ -71,9 +71,6 @@ type Config struct {
 
 	// skipSanitizeLabel if enabled, labels that start with _ are not sanitized
 	skipSanitizeLabel bool
-
-	// MetricsEmitInterval is the time period between when metrics are flushed or emitted to the configured MetricsExporter.
-	MetricsFlushInterval time.Duration `mapstructure:"metrics_flush_interval"`
 }
 
 // GetAggregationTemporality converts the string value given in the config into a AggregationTemporality.

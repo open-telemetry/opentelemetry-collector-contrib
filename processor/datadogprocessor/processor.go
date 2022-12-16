@@ -27,7 +27,7 @@ import (
 	"go.uber.org/zap"
 )
 
-type processor struct {
+type datadogProcessor struct {
 	logger       *zap.Logger
 	nextConsumer consumer.Traces
 	cfg          *Config
@@ -53,14 +53,14 @@ type processor struct {
 	exit chan struct{}
 }
 
-func newProcessor(ctx context.Context, logger *zap.Logger, config component.Config, nextConsumer consumer.Traces) (*processor, error) {
+func newProcessor(ctx context.Context, logger *zap.Logger, config component.Config, nextConsumer consumer.Traces) (*datadogProcessor, error) {
 	cfg := config.(*Config)
 	in := make(chan pb.StatsPayload, 100)
 	trans, err := translator.New(logger)
 	if err != nil {
 		return nil, err
 	}
-	return &processor{
+	return &datadogProcessor{
 		logger:       logger,
 		nextConsumer: nextConsumer,
 		agent:        newAgent(ctx, in),
@@ -72,7 +72,7 @@ func newProcessor(ctx context.Context, logger *zap.Logger, config component.Conf
 }
 
 // Start implements the component.Component interface.
-func (p *processor) Start(ctx context.Context, host component.Host) error {
+func (p *datadogProcessor) Start(ctx context.Context, host component.Host) error {
 	var datadogs []exporter.Metrics
 loop:
 	for k, exp := range host.GetExporters()[component.DataTypeMetrics] {
@@ -118,7 +118,7 @@ loop:
 }
 
 // Shutdown implements the component.Component interface.
-func (p *processor) Shutdown(context.Context) error {
+func (p *datadogProcessor) Shutdown(context.Context) error {
 	if !p.started {
 		return nil
 	}
@@ -130,14 +130,14 @@ func (p *processor) Shutdown(context.Context) error {
 }
 
 // Capabilities implements the consumer interface.
-func (p *processor) Capabilities() consumer.Capabilities {
+func (p *datadogProcessor) Capabilities() consumer.Capabilities {
 	// A resource attribute is added to traces to specify that stats have already
 	// been computed for them; thus, we end up mutating the data:
 	return consumer.Capabilities{MutatesData: true}
 }
 
 // ConsumeTraces implements consumer.Traces.
-func (p *processor) ConsumeTraces(ctx context.Context, traces ptrace.Traces) error {
+func (p *datadogProcessor) ConsumeTraces(ctx context.Context, traces ptrace.Traces) error {
 	p.logger.Debug("Received traces.", zap.Int("spans", traces.SpanCount()))
 	p.agent.Ingest(ctx, traces)
 	return p.nextConsumer.ConsumeTraces(ctx, traces)
@@ -145,7 +145,7 @@ func (p *processor) ConsumeTraces(ctx context.Context, traces ptrace.Traces) err
 
 // run awaits incoming stats resulting from the agent's ingestion, converts them
 // to metrics and flushes them using the configured metrics exporter.
-func (p *processor) run() {
+func (p *datadogProcessor) run() {
 	defer close(p.exit)
 	for {
 		select {
