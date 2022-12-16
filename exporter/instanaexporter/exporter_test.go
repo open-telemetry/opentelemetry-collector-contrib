@@ -24,9 +24,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -43,7 +41,6 @@ func TestPushConvertedTraces(t *testing.T) {
 		AgentKey:           "key11",
 		HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: traceServer.URL},
 		Endpoint:           traceServer.URL,
-		ExporterSettings:   config.NewExporterSettings(component.NewIDWithName(typeStr, "valid")),
 	}
 
 	instanaExporter := newInstanaExporter(&cfg, exportertest.NewNopCreateSettings())
@@ -104,8 +101,7 @@ func TestSelfSignedBackend(t *testing.T) {
 				},
 			},
 		},
-		Endpoint:         server.URL,
-		ExporterSettings: config.NewExporterSettings(component.NewIDWithName(typeStr, "valid")),
+		Endpoint: server.URL,
 	}
 
 	ctx := context.Background()
@@ -131,8 +127,7 @@ func TestSelfSignedBackendCAFileNotFound(t *testing.T) {
 				},
 			},
 		},
-		Endpoint:         "",
-		ExporterSettings: config.NewExporterSettings(component.NewIDWithName(typeStr, "valid")),
+		Endpoint: "",
 	}
 
 	ctx := context.Background()

@@ -18,7 +18,6 @@ import (
 	"errors"
 	"fmt"
 
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/translation"
@@ -31,7 +30,6 @@ var (
 
 // Config defines the user provided values for the Schema Processor
 type Config struct {
-	config.ProcessorSettings      `mapstructure:",squash"`
 	confighttp.HTTPClientSettings `mapstructure:",squash"`
 
 	// PreCache is a list of schema URLs that are downloaded

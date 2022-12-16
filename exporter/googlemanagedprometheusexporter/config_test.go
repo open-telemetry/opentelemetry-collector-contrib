@@ -23,7 +23,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 )
@@ -47,7 +46,6 @@ func TestLoadConfig(t *testing.T) {
 	r1 := cfg.Exporters[component.NewIDWithName(typeStr, "customname")].(*Config)
 	assert.Equal(t, r1,
 		&Config{
-			ExporterSettings: config.NewExporterSettings(component.NewIDWithName(typeStr, "customname")),
 			TimeoutSettings: exporterhelper.TimeoutSettings{
 				Timeout: 20 * time.Second,
 			},
@@ -70,7 +68,6 @@ func TestLoadConfig(t *testing.T) {
 
 	r2 := cfg.Exporters[component.NewIDWithName(typeStr, "customprefix")].(*Config)
 	r2Expected := factory.CreateDefaultConfig().(*Config)
-	r2Expected.ExporterSettings = config.NewExporterSettings(component.NewIDWithName(typeStr, "customprefix"))
 	r2Expected.GMPConfig.MetricConfig.Prefix = "my-metric-domain.com"
 	assert.Equal(t, r2, r2Expected)
 }

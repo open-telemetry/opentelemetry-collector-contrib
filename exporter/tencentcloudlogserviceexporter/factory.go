@@ -18,7 +18,6 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter"
 )
 
@@ -39,9 +38,7 @@ func NewFactory() exporter.Factory {
 
 // CreateDefaultConfig creates the default configuration for exporter.
 func createDefaultConfig() component.Config {
-	return &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-	}
+	return &Config{}
 }
 
 func createLogsExporter(

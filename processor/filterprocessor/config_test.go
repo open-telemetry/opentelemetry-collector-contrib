@@ -21,7 +21,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/pdata/plog"
 
@@ -53,7 +52,6 @@ func TestLoadingConfigStrict(t *testing.T) {
 		{
 			id: component.NewIDWithName("filter", "empty"),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 				Metrics: MetricFilters{
 					Include: &filtermetric.MatchProperties{
 						MatchType: filtermetric.Strict,
@@ -63,7 +61,6 @@ func TestLoadingConfigStrict(t *testing.T) {
 		}, {
 			id: component.NewIDWithName("filter", "include"),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 				Metrics: MetricFilters{
 					Include: testDataMetricProperties,
 				},
@@ -71,7 +68,6 @@ func TestLoadingConfigStrict(t *testing.T) {
 		}, {
 			id: component.NewIDWithName("filter", "exclude"),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 				Metrics: MetricFilters{
 					Exclude: testDataMetricProperties,
 				},
@@ -79,7 +75,6 @@ func TestLoadingConfigStrict(t *testing.T) {
 		}, {
 			id: component.NewIDWithName("filter", "includeexclude"),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 				Metrics: MetricFilters{
 					Include: testDataMetricProperties,
 					Exclude: &filtermetric.MatchProperties{
@@ -139,7 +134,6 @@ func TestLoadingConfigStrictLogs(t *testing.T) {
 		{
 			id: component.NewIDWithName("filter", "empty"),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 				Logs: LogFilters{
 					Include: &LogMatchProperties{
 						LogMatchType: Strict,
@@ -149,7 +143,6 @@ func TestLoadingConfigStrictLogs(t *testing.T) {
 		}, {
 			id: component.NewIDWithName("filter", "include"),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 				Logs: LogFilters{
 					Include: testDataLogPropertiesInclude,
 				},
@@ -157,7 +150,6 @@ func TestLoadingConfigStrictLogs(t *testing.T) {
 		}, {
 			id: component.NewIDWithName("filter", "exclude"),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 				Logs: LogFilters{
 					Exclude: testDataLogPropertiesExclude,
 				},
@@ -165,7 +157,6 @@ func TestLoadingConfigStrictLogs(t *testing.T) {
 		}, {
 			id: component.NewIDWithName("filter", "includeexclude"),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 				Logs: LogFilters{
 					Include: testDataLogPropertiesInclude,
 					Exclude: testDataLogPropertiesExclude,
@@ -212,7 +203,6 @@ func TestLoadingConfigSeverityLogsStrict(t *testing.T) {
 		{
 			id: component.NewIDWithName("filter", "include"),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 				Logs: LogFilters{
 					Include: testDataLogPropertiesInclude,
 				},
@@ -220,7 +210,6 @@ func TestLoadingConfigSeverityLogsStrict(t *testing.T) {
 		}, {
 			id: component.NewIDWithName("filter", "exclude"),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 				Logs: LogFilters{
 					Exclude: testDataLogPropertiesExclude,
 				},
@@ -228,7 +217,6 @@ func TestLoadingConfigSeverityLogsStrict(t *testing.T) {
 		}, {
 			id: component.NewIDWithName("filter", "includeexclude"),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 				Logs: LogFilters{
 					Include: testDataLogPropertiesInclude,
 					Exclude: testDataLogPropertiesExclude,
@@ -274,7 +262,6 @@ func TestLoadingConfigSeverityLogsRegexp(t *testing.T) {
 		{
 			id: component.NewIDWithName("filter", "include"),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 				Logs: LogFilters{
 					Include: testDataLogPropertiesInclude,
 				},
@@ -282,7 +269,6 @@ func TestLoadingConfigSeverityLogsRegexp(t *testing.T) {
 		}, {
 			id: component.NewIDWithName("filter", "exclude"),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 				Logs: LogFilters{
 					Exclude: testDataLogPropertiesExclude,
 				},
@@ -290,7 +276,6 @@ func TestLoadingConfigSeverityLogsRegexp(t *testing.T) {
 		}, {
 			id: component.NewIDWithName("filter", "includeexclude"),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 				Logs: LogFilters{
 					Include: testDataLogPropertiesInclude,
 					Exclude: testDataLogPropertiesExclude,
@@ -337,7 +322,6 @@ func TestLoadingConfigBodyLogsStrict(t *testing.T) {
 		{
 			id: component.NewIDWithName("filter", "include"),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 				Logs: LogFilters{
 					Include: testDataLogPropertiesInclude,
 				},
@@ -345,7 +329,6 @@ func TestLoadingConfigBodyLogsStrict(t *testing.T) {
 		}, {
 			id: component.NewIDWithName("filter", "exclude"),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 				Logs: LogFilters{
 					Exclude: testDataLogPropertiesExclude,
 				},
@@ -353,7 +336,6 @@ func TestLoadingConfigBodyLogsStrict(t *testing.T) {
 		}, {
 			id: component.NewIDWithName("filter", "includeexclude"),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 				Logs: LogFilters{
 					Include: testDataLogPropertiesInclude,
 					Exclude: testDataLogPropertiesExclude,
@@ -400,7 +382,6 @@ func TestLoadingConfigBodyLogsRegexp(t *testing.T) {
 		{
 			id: component.NewIDWithName("filter", "include"),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 				Logs: LogFilters{
 					Include: testDataLogPropertiesInclude,
 				},
@@ -408,7 +389,6 @@ func TestLoadingConfigBodyLogsRegexp(t *testing.T) {
 		}, {
 			id: component.NewIDWithName("filter", "exclude"),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 				Logs: LogFilters{
 					Exclude: testDataLogPropertiesExclude,
 				},
@@ -416,7 +396,6 @@ func TestLoadingConfigBodyLogsRegexp(t *testing.T) {
 		}, {
 			id: component.NewIDWithName("filter", "includeexclude"),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 				Logs: LogFilters{
 					Include: testDataLogPropertiesInclude,
 					Exclude: testDataLogPropertiesExclude,
@@ -465,7 +444,6 @@ func TestLoadingConfigMinSeverityNumberLogs(t *testing.T) {
 		{
 			id: component.NewIDWithName("filter", "include"),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 				Logs: LogFilters{
 					Include: testDataLogPropertiesInclude,
 				},
@@ -473,7 +451,6 @@ func TestLoadingConfigMinSeverityNumberLogs(t *testing.T) {
 		}, {
 			id: component.NewIDWithName("filter", "exclude"),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 				Logs: LogFilters{
 					Exclude: testDataLogPropertiesExclude,
 				},
@@ -481,7 +458,6 @@ func TestLoadingConfigMinSeverityNumberLogs(t *testing.T) {
 		}, {
 			id: component.NewIDWithName("filter", "includeexclude"),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 				Logs: LogFilters{
 					Include: testDataLogPropertiesInclude,
 					Exclude: testDataLogPropertiesExclude,
@@ -534,7 +510,6 @@ func TestLoadingConfigRegexp(t *testing.T) {
 		{
 			id: component.NewIDWithName("filter", "include"),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 				Metrics: MetricFilters{
 					Include: testDataMetricProperties,
 				},
@@ -542,7 +517,6 @@ func TestLoadingConfigRegexp(t *testing.T) {
 		}, {
 			id: component.NewIDWithName("filter", "exclude"),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 				Metrics: MetricFilters{
 					Exclude: testDataMetricProperties,
 				},
@@ -550,7 +524,6 @@ func TestLoadingConfigRegexp(t *testing.T) {
 		}, {
 			id: component.NewIDWithName("filter", "unlimitedcache"),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 				Metrics: MetricFilters{
 					Include: &filtermetric.MatchProperties{
 						MatchType: filtermetric.Regexp,
@@ -564,7 +537,6 @@ func TestLoadingConfigRegexp(t *testing.T) {
 		}, {
 			id: component.NewIDWithName("filter", "limitedcache"),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 				Metrics: MetricFilters{
 					Exclude: &filtermetric.MatchProperties{
 						MatchType: filtermetric.Regexp,
@@ -605,7 +577,6 @@ func TestLoadingSpans(t *testing.T) {
 		{
 			id: component.NewIDWithName("filter", "spans"),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 				Spans: filterconfig.MatchConfig{
 					Include: &filterconfig.MatchProperties{
 						Config: filterset.Config{
@@ -655,7 +626,6 @@ func TestLoadingConfigExpr(t *testing.T) {
 		{
 			id: component.NewIDWithName("filter", "empty"),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 				Metrics: MetricFilters{
 					Include: &filtermetric.MatchProperties{
 						MatchType: filtermetric.Expr,
@@ -666,7 +636,6 @@ func TestLoadingConfigExpr(t *testing.T) {
 		{
 			id: component.NewIDWithName("filter", "include"),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 				Metrics: MetricFilters{
 					Include: &filtermetric.MatchProperties{
 						MatchType: filtermetric.Expr,
@@ -681,7 +650,6 @@ func TestLoadingConfigExpr(t *testing.T) {
 		{
 			id: component.NewIDWithName("filter", "exclude"),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 				Metrics: MetricFilters{
 					Exclude: &filtermetric.MatchProperties{
 						MatchType: filtermetric.Expr,
@@ -696,7 +664,6 @@ func TestLoadingConfigExpr(t *testing.T) {
 		{
 			id: component.NewIDWithName("filter", "includeexclude"),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 				Metrics: MetricFilters{
 					Include: &filtermetric.MatchProperties{
 						MatchType: filtermetric.Expr,
@@ -855,7 +822,6 @@ func TestLoadingConfigOTTL(t *testing.T) {
 		{
 			id: component.NewIDWithName("filter", "ottl"),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 				Traces: TraceFilters{
 					SpanConditions: []string{
 						`attributes["test"] == "pass"`,
@@ -882,7 +848,6 @@ func TestLoadingConfigOTTL(t *testing.T) {
 		{
 			id: component.NewIDWithName("filter", "multiline"),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 				Traces: TraceFilters{
 					SpanConditions: []string{
 						`attributes["test"] == "pass"`,
