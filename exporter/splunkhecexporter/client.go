@@ -107,6 +107,10 @@ func (b *bufferState) accept(data []byte) (bool, error) {
 			gzipWriterPool: b.gzipWriterPool,
 		}
 
+		if b.bufferMaxLen == 0 {
+			zipWriter.maxCapacity = 0
+		}
+
 		// the new data is so big, even with a zip writer, we are over the max limit.
 		// abandon and return false, so we can send what is already in our buffer.
 		if _, err2 := zipWriter.Write(b.buf.Bytes()); err2 != nil {
