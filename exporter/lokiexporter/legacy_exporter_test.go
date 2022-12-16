@@ -567,6 +567,10 @@ func TestExporter_convertLogBodyToEntry(t *testing.T) {
 	res.Attributes().PutStr("host.name", "something")
 	res.Attributes().PutStr("pod.name", "something123")
 
+	scope := pcommon.NewInstrumentationScope()
+	scope.SetName("example-logger-name")
+	scope.SetVersion("v1")
+
 	lr := plog.NewLogRecord()
 	lr.Body().SetStr("Payment succeeded")
 	lr.SetTraceID([16]byte{1, 2, 3, 4})
@@ -584,11 +588,11 @@ func TestExporter_convertLogBodyToEntry(t *testing.T) {
 			ResourceAttributes: map[string]string{"pod.name": "pod.name"},
 		},
 	}, componenttest.NewNopTelemetrySettings())
-	entry, _ := exp.convertLogBodyToEntry(lr, res)
+	entry, _ := exp.convertLogBodyToEntry(lr, res, scope)
 
 	expEntry := &logproto.Entry{
 		Timestamp: time.Unix(0, int64(lr.Timestamp())),
-		Line:      "severity=DEBUG severityN=5 traceID=01020304000000000000000000000000 spanID=0506070800000000 host.name=something Payment succeeded",
+		Line:      "severity=DEBUG severityN=5 traceID=01020304000000000000000000000000 spanID=0506070800000000 host.name=something instrumentation_scope_name=example-logger-name instrumentation_scope_version=v1 Payment succeeded",
 	}
 	require.NotNil(t, entry)
 	require.Equal(t, expEntry, entry)
@@ -690,12 +694,15 @@ func TestExporter_convertLogtoJSONEntry(t *testing.T) {
 	lr.SetTimestamp(ts)
 	res := pcommon.NewResource()
 	res.Attributes().PutStr("host.name", "something")
+	scope := pcommon.NewInstrumentationScope()
+	scope.SetName("example-logger-name")
+	scope.SetVersion("v1")
 
 	exp := newLegacyExporter(&Config{}, componenttest.NewNopTelemetrySettings())
-	entry, err := exp.convertLogToJSONEntry(lr, res)
+	entry, err := exp.convertLogToJSONEntry(lr, res, scope)
 	expEntry := &logproto.Entry{
 		Timestamp: time.Unix(0, int64(lr.Timestamp())),
-		Line:      `{"body":"log message","resources":{"host.name":"something"}}`,
+		Line:      `{"body":"log message","resources":{"host.name":"something"},"instrumentation_scope":{"name":"example-logger-name","version":"v1"}}`,
 	}
 	require.Nil(t, err)
 	require.NotNil(t, entry)

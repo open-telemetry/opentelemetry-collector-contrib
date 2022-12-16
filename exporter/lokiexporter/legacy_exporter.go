@@ -53,7 +53,7 @@ type lokiExporter struct {
 	settings     component.TelemetrySettings
 	client       *http.Client
 	wg           sync.WaitGroup
-	convert      func(plog.LogRecord, pcommon.Resource) (*logproto.Entry, error)
+	convert      func(plog.LogRecord, pcommon.Resource, pcommon.InstrumentationScope) (*logproto.Entry, error)
 	tenantSource tenant.Source
 }
 
@@ -209,6 +209,7 @@ func (l *lokiExporter) logDataToLoki(ld plog.Logs) (pr *logproto.PushRequest, nu
 		resource := rls.At(i).Resource()
 		for j := 0; j < ills.Len(); j++ {
 			logs := ills.At(j).LogRecords()
+			scope := ills.At(j).Scope()
 			for k := 0; k < logs.Len(); k++ {
 				log := logs.At(k)
 
@@ -225,7 +226,7 @@ func (l *lokiExporter) logDataToLoki(ld plog.Logs) (pr *logproto.PushRequest, nu
 				labels := mergedLabels.String()
 				var entry *logproto.Entry
 				var err error
-				entry, err = l.convert(log, resource)
+				entry, err = l.convert(log, resource, scope)
 				if err != nil {
 					// Couldn't convert so dropping log.
 					numDroppedLogs++
@@ -326,7 +327,7 @@ func (l *lokiExporter) convertRecordAttributesToLabels(log plog.LogRecord) model
 	return ls
 }
 
-func (l *lokiExporter) convertLogBodyToEntry(lr plog.LogRecord, res pcommon.Resource) (*logproto.Entry, error) {
+func (l *lokiExporter) convertLogBodyToEntry(lr plog.LogRecord, res pcommon.Resource, scope pcommon.InstrumentationScope) (*logproto.Entry, error) {
 	var b strings.Builder
 
 	if _, ok := l.config.Labels.RecordAttributes["severity"]; !ok && len(lr.SeverityText()) > 0 {
@@ -377,6 +378,21 @@ func (l *lokiExporter) convertLogBodyToEntry(lr plog.LogRecord, res pcommon.Reso
 		return true
 	})
 
+	scopeName := scope.Name()
+	scopeVersion := scope.Version()
+	if scopeName != "" {
+		b.WriteString("instrumentation_scope_name")
+		b.WriteString("=")
+		b.WriteString(scopeName)
+		b.WriteRune(' ')
+		if scopeVersion != "" {
+			b.WriteString("instrumentation_scope_version")
+			b.WriteString("=")
+			b.WriteString(scopeVersion)
+			b.WriteRune(' ')
+		}
+	}
+
 	b.WriteString(lr.Body().Str())
 
 	return &logproto.Entry{
@@ -385,8 +401,8 @@ func (l *lokiExporter) convertLogBodyToEntry(lr plog.LogRecord, res pcommon.Reso
 	}, nil
 }
 
-func (l *lokiExporter) convertLogToJSONEntry(lr plog.LogRecord, res pcommon.Resource) (*logproto.Entry, error) {
-	line, err := loki.Encode(lr, res)
+func (l *lokiExporter) convertLogToJSONEntry(lr plog.LogRecord, res pcommon.Resource, scope pcommon.InstrumentationScope) (*logproto.Entry, error) {
+	line, err := loki.Encode(lr, res, scope)
 	if err != nil {
 		return nil, err
 	}
