@@ -21,6 +21,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
@@ -99,7 +100,7 @@ func createDefaultConfig() component.Config {
 			ReadBufferSize:  0,
 			WriteBufferSize: 512 * 1024,
 			Timeout:         exporterhelper.NewDefaultTimeoutSettings().Timeout,
-			Headers:         map[string]string{},
+			Headers:         map[string]configopaque.String{},
 		},
 		// TODO(jbd): Adjust the default queue size.
 		RemoteWriteQueue: RemoteWriteQueue{

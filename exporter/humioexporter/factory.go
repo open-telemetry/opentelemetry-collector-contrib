@@ -20,6 +20,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
@@ -49,7 +50,7 @@ func createDefaultConfig() component.Config {
 		RetrySettings: exporterhelper.NewDefaultRetrySettings(),
 
 		HTTPClientSettings: confighttp.HTTPClientSettings{
-			Headers: map[string]string{},
+			Headers: map[string]configopaque.String{},
 		},
 
 		// Settings specific to the Humio exporter

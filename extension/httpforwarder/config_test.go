@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -45,7 +46,7 @@ func TestLoadConfig(t *testing.T) {
 				},
 				Egress: confighttp.HTTPClientSettings{
 					Endpoint: "http://target/",
-					Headers: map[string]string{
+					Headers: map[string]configopaque.String{
 						"otel_http_forwarder": "dev",
 					},
 					Timeout: 5 * time.Second,

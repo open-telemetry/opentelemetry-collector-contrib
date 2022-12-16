@@ -24,6 +24,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -94,7 +95,7 @@ func TestLoadAllSettings(t *testing.T) {
 
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint:        "http://localhost:8080/",
-			Headers:         map[string]string{},
+			Headers:         map[string]configopaque.String{},
 			Timeout:         10 * time.Second,
 			ReadBufferSize:  4096,
 			WriteBufferSize: 4096,
@@ -152,7 +153,7 @@ func TestValidate(t *testing.T) {
 				Tag: TagNone,
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "http://localhost:8080",
-					Headers: map[string]string{
+					Headers: map[string]configopaque.String{
 						"user-agent":       "Humio",
 						"content-type":     "application/json",
 						"content-encoding": "gzip",
@@ -221,7 +222,7 @@ func TestValidate(t *testing.T) {
 				Tag: TagNone,
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "e",
-					Headers: map[string]string{
+					Headers: map[string]configopaque.String{
 						"content-type": "text/plain",
 					},
 				},
@@ -234,7 +235,7 @@ func TestValidate(t *testing.T) {
 				Tag: TagNone,
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "e",
-					Headers: map[string]string{
+					Headers: map[string]configopaque.String{
 						"authorization": "Bearer mytoken",
 					},
 				},
@@ -247,7 +248,7 @@ func TestValidate(t *testing.T) {
 				Tag: TagNone,
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "e",
-					Headers: map[string]string{
+					Headers: map[string]configopaque.String{
 						"content-encoding": "compress",
 					},
 				},
@@ -261,7 +262,7 @@ func TestValidate(t *testing.T) {
 				Tag:                TagNone,
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "e",
-					Headers: map[string]string{
+					Headers: map[string]configopaque.String{
 						"content-encoding": "gzip",
 					},
 				},
@@ -313,7 +314,7 @@ func TestSanitizeCustomHeaders(t *testing.T) {
 	cfg := &Config{
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "http://localhost:8080",
-			Headers: map[string]string{
+			Headers: map[string]configopaque.String{
 				"user-agent":       "Humio",
 				"content-type":     "application/json",
 				"content-encoding": "gzip",
