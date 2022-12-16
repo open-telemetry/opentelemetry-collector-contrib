@@ -17,7 +17,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/Azure/azure-amqp-common-go/v3/conn"
+	"github.com/Azure/azure-amqp-common-go/v4/conn"
 	"go.opentelemetry.io/collector/component"
 )
 
