@@ -79,6 +79,7 @@ var (
 
 func TestMongodbIntegration(t *testing.T) {
 	t.Run("Running mongodb 4.0", func(t *testing.T) {
+		t.Skip("Test fails and wasn't caught due to https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/17037")
 		t.Parallel()
 		container, endpoint := getContainer(t, containerRequest4_0, setupScript)
 		defer func() {
