@@ -24,6 +24,7 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/trace/pb"
 	"github.com/DataDog/datadog-agent/pkg/trace/testutil"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 func TestTraceAgentConfig(t *testing.T) {
@@ -47,7 +48,7 @@ func TestTraceAgent(t *testing.T) {
 	a.Start()
 	defer a.Stop()
 
-	rspanss := testutil.NewOTLPTracesRequest([]testutil.OTLPResourceSpan{
+	traces := testutil.NewOTLPTracesRequest([]testutil.OTLPResourceSpan{
 		{
 			LibName:    "libname",
 			LibVersion: "1.2",
@@ -69,7 +70,7 @@ func TestTraceAgent(t *testing.T) {
 		},
 	}).Traces()
 
-	a.Ingest(ctx, rspanss)
+	a.Ingest(ctx, traces)
 	var stats pb.StatsPayload
 	timeout := time.After(500 * time.Millisecond)
 loop:
@@ -87,6 +88,28 @@ loop:
 	require.Len(t, stats.Stats[0].Stats, 1)
 	// considering all spans in rspans have distinct aggregations, we should have an equal amount
 	// of groups
-	require.Len(t, stats.Stats[0].Stats[0].Stats, rspanss.SpanCount())
+	require.Len(t, stats.Stats[0].Stats[0].Stats, traces.SpanCount())
 	require.Len(t, a.TraceWriter.In, 0) // the trace writer channel should've been drained
+
+	// Check that the payload is labeled
+	val, ok := traces.ResourceSpans().At(0).Resource().Attributes().Get(keyStatsComputed)
+	require.True(t, ok)
+	require.Equal(t, pcommon.ValueTypeBool, val.Type())
+	require.True(t, val.Bool())
+
+	// Ingest again
+	a.Ingest(ctx, traces)
+	timeout = time.After(500 * time.Millisecond)
+loop2:
+	for {
+		select {
+		case stats = <-out:
+			if len(stats.Stats) != 0 {
+				t.Fatal("got payload when none was expected")
+			}
+		case <-timeout:
+			// We got no stats (expected), thus we end the test
+			break loop2
+		}
+	}
 }
