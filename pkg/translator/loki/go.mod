@@ -9,7 +9,7 @@ require (
 	github.com/prometheus/common v0.38.0
 	github.com/prometheus/prometheus v0.40.6
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector/pdata v1.0.0-rc1.0.20221213235724-812f462b3182
+	go.opentelemetry.io/collector/pdata v1.0.0-rc1.0.20221216193913-557c077e3cc3
 	google.golang.org/grpc v1.51.0
 )
 
