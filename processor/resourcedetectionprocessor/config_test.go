@@ -80,7 +80,6 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "heroku"),
 			expected: &Config{
-				ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
 				Detectors:          []string{"env", "heroku"},
 				HTTPClientSettings: cfg,
 				Override:           false,

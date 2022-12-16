@@ -19,8 +19,8 @@ import (
 	"errors"
 	"os"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/processor"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
@@ -50,7 +50,7 @@ var (
 )
 
 // NewDetector returns a detector which can detect resource attributes on Heroku
-func NewDetector(set component.ProcessorCreateSettings, _ internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(set processor.CreateSettings, _ internal.DetectorConfig) (internal.Detector, error) {
 	return &detector{
 		logger: set.Logger,
 	}, nil
