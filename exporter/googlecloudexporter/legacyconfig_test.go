@@ -21,14 +21,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 )
 
 func TestLoadLegacyConfig(t *testing.T) {
 	defer setPdataFeatureGateForTest(t, false)()
-	factories, err := componenttest.NopFactories()
+	factories, err := otelcoltest.NopFactories()
 	assert.Nil(t, err)
 	factory := NewFactory()
 	factories.Exporters[typeStr] = factory

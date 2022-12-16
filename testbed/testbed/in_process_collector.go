@@ -31,7 +31,7 @@ import (
 // inProcessCollector implements the OtelcolRunner interfaces running a single otelcol as a go routine within the
 // same process as the test executor.
 type inProcessCollector struct {
-	factories  component.Factories
+	factories  otelcol.Factories
 	configStr  string
 	svc        *otelcol.Collector
 	stopped    bool
@@ -40,7 +40,7 @@ type inProcessCollector struct {
 }
 
 // NewInProcessCollector creates a new inProcessCollector using the supplied component factories.
-func NewInProcessCollector(factories component.Factories) OtelcolRunner {
+func NewInProcessCollector(factories otelcol.Factories) OtelcolRunner {
 	return &inProcessCollector{
 		factories: factories,
 	}

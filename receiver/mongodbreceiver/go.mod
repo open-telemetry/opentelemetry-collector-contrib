@@ -8,11 +8,11 @@ require (
 	github.com/stretchr/testify v1.8.1
 	github.com/testcontainers/testcontainers-go v0.15.0
 	go.mongodb.org/mongo-driver v1.11.1
-	go.opentelemetry.io/collector v0.67.1-0.20221212223545-7cb2d7622deb
-	go.opentelemetry.io/collector/component v0.67.1-0.20221212223545-7cb2d7622deb
+	go.opentelemetry.io/collector v0.67.1-0.20221213235724-812f462b3182
+	go.opentelemetry.io/collector/component v0.67.1-0.20221213235724-812f462b3182
 	go.opentelemetry.io/collector/confmap v0.67.0
-	go.opentelemetry.io/collector/consumer v0.67.1-0.20221212223545-7cb2d7622deb
-	go.opentelemetry.io/collector/pdata v1.0.0-rc1.0.20221212223545-7cb2d7622deb
+	go.opentelemetry.io/collector/consumer v0.67.1-0.20221213235724-812f462b3182
+	go.opentelemetry.io/collector/pdata v1.0.0-rc1.0.20221213235724-812f462b3182
 	go.uber.org/multierr v1.9.0
 	go.uber.org/zap v1.24.0
 )
@@ -63,7 +63,7 @@ require (
 	github.com/xdg-go/stringprep v1.0.4 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20181117223130-1be2e3e5546d // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/featuregate v0.67.1-0.20221212223545-7cb2d7622deb // indirect
+	go.opentelemetry.io/collector/featuregate v0.67.1-0.20221213235724-812f462b3182 // indirect
 	go.opentelemetry.io/otel v1.11.2 // indirect
 	go.opentelemetry.io/otel/metric v0.34.0 // indirect
 	go.opentelemetry.io/otel/trace v1.11.2 // indirect

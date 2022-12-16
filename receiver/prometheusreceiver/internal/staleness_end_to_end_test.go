@@ -151,7 +151,7 @@ service:
 	processors, err := processor.MakeFactoryMap(batchprocessor.NewFactory())
 	require.Nil(t, err)
 
-	factories := component.Factories{
+	factories := otelcol.Factories{
 		Receivers:  receivers,
 		Exporters:  exporters,
 		Processors: processors,
