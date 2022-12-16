@@ -25,14 +25,12 @@ import (
 	"strings"
 	"time"
 
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
 type Config struct {
-	config.ReceiverSettings `mapstructure:",squash"`
 	// The path for the JMX Metric Gatherer uber JAR (/opt/opentelemetry-java-contrib-jmx-metrics.jar by default).
 	JARPath string `mapstructure:"jar_path"`
 	// The Service URL or host:port for the target coerced to one of form: service:jmx:rmi:///jndi/rmi://<host>:<port>/jmxrmi.

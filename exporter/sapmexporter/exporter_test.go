@@ -26,8 +26,6 @@ import (
 	"github.com/jaegertracing/jaeger/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
@@ -37,7 +35,6 @@ import (
 
 func TestCreateTracesExporter(t *testing.T) {
 	cfg := &Config{
-		ExporterSettings:   config.NewExporterSettings(component.NewIDWithName(typeStr, "customname")),
 		Endpoint:           "test-endpoint",
 		AccessToken:        "abcd1234",
 		NumWorkers:         3,

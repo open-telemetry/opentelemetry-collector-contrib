@@ -17,7 +17,6 @@ package haproxyreceiver // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"errors"
 
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
@@ -25,7 +24,6 @@ import (
 )
 
 type Config struct {
-	config.ReceiverSettings                 `mapstructure:",squash"`
 	confighttp.HTTPClientSettings           `mapstructure:",squash"`
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	MetricsSettings                         metadata.MetricsSettings `mapstructure:"metrics"`

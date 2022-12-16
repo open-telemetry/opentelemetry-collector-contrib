@@ -22,8 +22,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -44,7 +42,6 @@ func TestNewTracesProcessor(t *testing.T) {
 		{
 			name: "nil_nextConsumer",
 			cfg: &Config{
-				ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
 				SamplingPercentage: 15.5,
 			},
 			wantErr: true,
@@ -53,7 +50,6 @@ func TestNewTracesProcessor(t *testing.T) {
 			name:         "happy_path",
 			nextConsumer: consumertest.NewNop(),
 			cfg: &Config{
-				ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
 				SamplingPercentage: 15.5,
 			},
 		},
@@ -61,7 +57,6 @@ func TestNewTracesProcessor(t *testing.T) {
 			name:         "happy_path_hash_seed",
 			nextConsumer: consumertest.NewNop(),
 			cfg: &Config{
-				ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
 				SamplingPercentage: 13.33,
 				HashSeed:           4321,
 			},
@@ -93,7 +88,6 @@ func Test_tracesamplerprocessor_SamplingPercentageRange(t *testing.T) {
 		{
 			name: "random_sampling_tiny",
 			cfg: &Config{
-				ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
 				SamplingPercentage: 0.03,
 			},
 			numBatches:        1e5,
@@ -103,7 +97,6 @@ func Test_tracesamplerprocessor_SamplingPercentageRange(t *testing.T) {
 		{
 			name: "random_sampling_small",
 			cfg: &Config{
-				ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
 				SamplingPercentage: 5,
 			},
 			numBatches:        1e5,
@@ -113,7 +106,6 @@ func Test_tracesamplerprocessor_SamplingPercentageRange(t *testing.T) {
 		{
 			name: "random_sampling_medium",
 			cfg: &Config{
-				ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
 				SamplingPercentage: 50.0,
 			},
 			numBatches:        1e5,
@@ -123,7 +115,6 @@ func Test_tracesamplerprocessor_SamplingPercentageRange(t *testing.T) {
 		{
 			name: "random_sampling_high",
 			cfg: &Config{
-				ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
 				SamplingPercentage: 90.0,
 			},
 			numBatches:        1e5,
@@ -133,7 +124,6 @@ func Test_tracesamplerprocessor_SamplingPercentageRange(t *testing.T) {
 		{
 			name: "random_sampling_all",
 			cfg: &Config{
-				ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
 				SamplingPercentage: 100.0,
 			},
 			numBatches:        1e5,
@@ -182,7 +172,6 @@ func Test_tracesamplerprocessor_SamplingPercentageRange_MultipleResourceSpans(t 
 		{
 			name: "single_batch_single_trace_two_resource_spans",
 			cfg: &Config{
-				ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
 				SamplingPercentage: 100.0,
 			},
 			numBatches:           1,
@@ -193,7 +182,6 @@ func Test_tracesamplerprocessor_SamplingPercentageRange_MultipleResourceSpans(t 
 		{
 			name: "single_batch_two_traces_two_resource_spans",
 			cfg: &Config{
-				ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
 				SamplingPercentage: 100.0,
 			},
 			numBatches:           1,
@@ -238,7 +226,6 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 		{
 			name: "must_sample",
 			cfg: &Config{
-				ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
 				SamplingPercentage: 0.0,
 			},
 			td: singleSpanWithAttrib(
@@ -249,7 +236,6 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 		{
 			name: "must_sample_double",
 			cfg: &Config{
-				ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
 				SamplingPercentage: 0.0,
 			},
 			td: singleSpanWithAttrib(
@@ -260,7 +246,6 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 		{
 			name: "must_sample_string",
 			cfg: &Config{
-				ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
 				SamplingPercentage: 0.0,
 			},
 			td: singleSpanWithAttrib(
@@ -271,7 +256,6 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 		{
 			name: "must_not_sample",
 			cfg: &Config{
-				ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
 				SamplingPercentage: 100.0,
 			},
 			td: singleSpanWithAttrib(
@@ -281,7 +265,6 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 		{
 			name: "must_not_sample_double",
 			cfg: &Config{
-				ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
 				SamplingPercentage: 100.0,
 			},
 			td: singleSpanWithAttrib(
@@ -291,7 +274,6 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 		{
 			name: "must_not_sample_string",
 			cfg: &Config{
-				ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
 				SamplingPercentage: 100.0,
 			},
 			td: singleSpanWithAttrib(
@@ -301,7 +283,6 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 		{
 			name: "defer_sample_expect_not_sampled",
 			cfg: &Config{
-				ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
 				SamplingPercentage: 0.0,
 			},
 			td: singleSpanWithAttrib(
@@ -311,7 +292,6 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 		{
 			name: "defer_sample_expect_sampled",
 			cfg: &Config{
-				ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
 				SamplingPercentage: 100.0,
 			},
 			td: singleSpanWithAttrib(

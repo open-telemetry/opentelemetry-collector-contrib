@@ -20,7 +20,6 @@ import (
 
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/featuregate"
@@ -59,19 +58,17 @@ func NewFactory() exporter.Factory {
 func createDefaultConfig() component.Config {
 	if !featuregate.GetRegistry().IsEnabled(pdataExporterFeatureGate) {
 		return &LegacyConfig{
-			ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-			TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: defaultTimeout},
-			RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
-			QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
-			UserAgent:        "opentelemetry-collector-contrib {{version}}",
+			TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: defaultTimeout},
+			RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
+			QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
+			UserAgent:       "opentelemetry-collector-contrib {{version}}",
 		}
 	}
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: defaultTimeout},
-		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
-		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
-		Config:           collector.DefaultConfig(),
+		TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: defaultTimeout},
+		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
+		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
+		Config:          collector.DefaultConfig(),
 	}
 }
 

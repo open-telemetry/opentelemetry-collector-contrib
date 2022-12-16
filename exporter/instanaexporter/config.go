@@ -20,14 +20,11 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 )
 
 // Config defines configuration for the Instana exporter
 type Config struct {
-	config.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-
 	Endpoint string `mapstructure:"endpoint"`
 
 	AgentKey string `mapstructure:"agent_key"`

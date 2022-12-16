@@ -18,7 +18,6 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -32,7 +31,6 @@ const (
 
 // Config defines by Coralogix.
 type Config struct {
-	config.ExporterSettings        `mapstructure:",squash"`
 	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
 	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
 	exporterhelper.TimeoutSettings `mapstructure:",squash"`

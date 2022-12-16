@@ -21,7 +21,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -40,7 +39,6 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.Equal(t, cfg, &Config{
-		ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 		OTTLConfig: OTTLConfig{
 			Traces: SignalConfig{
 				Statements: []string{},

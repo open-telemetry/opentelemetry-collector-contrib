@@ -16,7 +16,6 @@ package influxdbexporter // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
@@ -42,7 +41,6 @@ type V1Compatibility struct {
 
 // Config defines configuration for the InfluxDB exporter.
 type Config struct {
-	config.ExporterSettings       `mapstructure:",squash"`
 	confighttp.HTTPClientSettings `mapstructure:",squash"`
 	exporterhelper.QueueSettings  `mapstructure:"sending_queue"`
 	exporterhelper.RetrySettings  `mapstructure:"retry_on_failure"`

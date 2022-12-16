@@ -20,7 +20,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -65,7 +64,6 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		LogDataEnabled:       true,
 		ProfilingDataEnabled: true,
-		ExporterSettings:     config.NewExporterSettings(component.NewID(typeStr)),
 		TimeoutSettings: exporterhelper.TimeoutSettings{
 			Timeout: defaultHTTPTimeout,
 		},

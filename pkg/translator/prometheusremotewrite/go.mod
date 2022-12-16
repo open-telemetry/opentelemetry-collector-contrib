@@ -8,9 +8,9 @@ require (
 	github.com/prometheus/common v0.38.0
 	github.com/prometheus/prometheus v0.40.6
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector/consumer v0.67.1-0.20221212050940-28cd74963b9d
-	go.opentelemetry.io/collector/pdata v1.0.0-rc1.0.20221212050940-28cd74963b9d
-	go.opentelemetry.io/collector/semconv v0.67.1-0.20221212050940-28cd74963b9d
+	go.opentelemetry.io/collector/consumer v0.67.1-0.20221212223545-7cb2d7622deb
+	go.opentelemetry.io/collector/pdata v1.0.0-rc1.0.20221212223545-7cb2d7622deb
+	go.opentelemetry.io/collector/semconv v0.67.1-0.20221212223545-7cb2d7622deb
 	go.uber.org/multierr v1.9.0
 )
 
@@ -24,7 +24,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rogpeppe/go-internal v1.9.0 // indirect
-	go.opentelemetry.io/collector/featuregate v0.67.1-0.20221212050940-28cd74963b9d // indirect
+	go.opentelemetry.io/collector/featuregate v0.67.1-0.20221212223545-7cb2d7622deb // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	golang.org/x/net v0.4.0 // indirect
 	golang.org/x/sys v0.3.0 // indirect

@@ -23,7 +23,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -44,7 +43,6 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "allsettings"),
 			expected: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Headers: map[string]string{
 						"X-Custom-Header": "loki_rocks",
@@ -93,7 +91,6 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "json"),
 			expected: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Headers:  map[string]string{},
 					Endpoint: "https://loki:3100/loki/api/v1/push",
@@ -304,7 +301,6 @@ func TestConfig_validate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig().(*Config)
-			cfg.ExporterSettings = config.NewExporterSettings(component.NewID(typeStr))
 			cfg.Endpoint = tt.fields.Endpoint
 			cfg.Labels = tt.fields.Labels
 

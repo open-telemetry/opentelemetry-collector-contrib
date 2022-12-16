@@ -19,9 +19,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/processor/processortest"
 
@@ -42,7 +40,6 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestCreateProcessor(t *testing.T) {
 	factory := NewFactory()
 	cfg := &Config{
-		ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 		BaseConfig: adapter.BaseConfig{
 			Operators: []operator.Config{
 				{
@@ -73,7 +70,6 @@ func TestCreateProcessor(t *testing.T) {
 func TestInvalidOperators(t *testing.T) {
 	factory := NewFactory()
 	cfg := &Config{
-		ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 		BaseConfig: adapter.BaseConfig{
 			Operators: []operator.Config{
 				{

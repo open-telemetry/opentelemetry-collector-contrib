@@ -27,8 +27,6 @@ import (
 
 	"github.com/Azure/go-amqp"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.uber.org/zap"
 )
@@ -81,7 +79,6 @@ const (
 )
 
 func TestNewAMQPMessagingServiceFactory(t *testing.T) {
-	receiverSettings := config.NewReceiverSettings(component.NewID("someID"))
 	broker := "some-broker:1234"
 	queue := "someQueue"
 	maxUnacked := uint32(100)
@@ -96,12 +93,11 @@ func TestNewAMQPMessagingServiceFactory(t *testing.T) {
 		{
 			name: "expecting authentication errors",
 			cfg: &Config{ // no password
-				ReceiverSettings: receiverSettings,
-				Auth:             Authentication{PlainText: &SaslPlainTextConfig{Username: "set"}},
-				TLS:              configtls.TLSClientSetting{Insecure: false, InsecureSkipVerify: false},
-				Broker:           []string{broker},
-				Queue:            queue,
-				MaxUnacked:       maxUnacked,
+				Auth:       Authentication{PlainText: &SaslPlainTextConfig{Username: "set"}},
+				TLS:        configtls.TLSClientSetting{Insecure: false, InsecureSkipVerify: false},
+				Broker:     []string{broker},
+				Queue:      queue,
+				MaxUnacked: maxUnacked,
 			},
 			wantErr: true,
 		},
@@ -109,12 +105,11 @@ func TestNewAMQPMessagingServiceFactory(t *testing.T) {
 		{
 			name: "expecting tls errors",
 			cfg: &Config{ // invalid to only provide a key file
-				ReceiverSettings: receiverSettings,
-				Auth:             Authentication{PlainText: &SaslPlainTextConfig{Username: "user", Password: "password"}},
-				TLS:              configtls.TLSClientSetting{TLSSetting: configtls.TLSSetting{KeyFile: "someKeyFile"}, Insecure: false},
-				Broker:           []string{broker},
-				Queue:            queue,
-				MaxUnacked:       maxUnacked,
+				Auth:       Authentication{PlainText: &SaslPlainTextConfig{Username: "user", Password: "password"}},
+				TLS:        configtls.TLSClientSetting{TLSSetting: configtls.TLSSetting{KeyFile: "someKeyFile"}, Insecure: false},
+				Broker:     []string{broker},
+				Queue:      queue,
+				MaxUnacked: maxUnacked,
 			},
 			wantErr: true,
 		},
@@ -122,12 +117,11 @@ func TestNewAMQPMessagingServiceFactory(t *testing.T) {
 		{
 			name: "expecting success with TLS expecting an amqps connection",
 			cfg: &Config{ // invalid to only provide a key file
-				ReceiverSettings: receiverSettings,
-				Auth:             Authentication{PlainText: &SaslPlainTextConfig{Username: "user", Password: "password"}},
-				TLS:              configtls.TLSClientSetting{Insecure: false},
-				Broker:           []string{broker},
-				Queue:            queue,
-				MaxUnacked:       maxUnacked,
+				Auth:       Authentication{PlainText: &SaslPlainTextConfig{Username: "user", Password: "password"}},
+				TLS:        configtls.TLSClientSetting{Insecure: false},
+				Broker:     []string{broker},
+				Queue:      queue,
+				MaxUnacked: maxUnacked,
 			},
 			want: &amqpMessagingService{
 				connectConfig: &amqpConnectConfig{
@@ -146,12 +140,11 @@ func TestNewAMQPMessagingServiceFactory(t *testing.T) {
 		{
 			name: "expecting success without TLS expecting an amqp connection",
 			cfg: &Config{ // invalid to only provide a key file
-				ReceiverSettings: receiverSettings,
-				Auth:             Authentication{PlainText: &SaslPlainTextConfig{Username: "user", Password: "password"}},
-				TLS:              configtls.TLSClientSetting{Insecure: true},
-				Broker:           []string{broker},
-				Queue:            queue,
-				MaxUnacked:       maxUnacked,
+				Auth:       Authentication{PlainText: &SaslPlainTextConfig{Username: "user", Password: "password"}},
+				TLS:        configtls.TLSClientSetting{Insecure: true},
+				Broker:     []string{broker},
+				Queue:      queue,
+				MaxUnacked: maxUnacked,
 			},
 			want: &amqpMessagingService{
 				connectConfig: &amqpConnectConfig{

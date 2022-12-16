@@ -23,7 +23,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -53,7 +52,6 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "allsettings"),
 			expected: &Config{
-				ExporterSettings:        config.NewExporterSettings(component.NewID(typeStr)),
 				Token:                   "00000000-0000-0000-0000-0000000000000",
 				Endpoint:                "https://splunk:8088/services/collector",
 				Source:                  "otel",

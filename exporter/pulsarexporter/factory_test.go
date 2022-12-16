@@ -20,8 +20,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 )
@@ -29,11 +27,10 @@ import (
 func Test_createDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
 	assert.Equal(t, cfg, &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),
-		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
-		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
-		Endpoint:         defaultBroker,
+		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
+		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
+		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
+		Endpoint:        defaultBroker,
 		// using an empty topic to track when it has not been set by user, default is based on traces or metrics.
 		Topic:          "",
 		Encoding:       defaultEncoding,

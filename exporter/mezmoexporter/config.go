@@ -20,7 +20,6 @@ import (
 	"strings"
 	"time"
 
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
@@ -44,7 +43,6 @@ const (
 
 // Config defines configuration for Mezmo exporter.
 type Config struct {
-	config.ExporterSettings       `mapstructure:",squash"`
 	confighttp.HTTPClientSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	exporterhelper.QueueSettings  `mapstructure:"sending_queue"`
 	exporterhelper.RetrySettings  `mapstructure:"retry_on_failure"`

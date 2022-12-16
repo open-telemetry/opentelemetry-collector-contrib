@@ -18,7 +18,6 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 )
 
 type AttributeSource string
@@ -37,7 +36,6 @@ var validAttributeSource = map[AttributeSource]bool{
 
 // Config has the configuration guiding the sampler processor.
 type Config struct {
-	config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	// SamplingPercentage is the percentage rate at which traces or logs are going to be sampled. Defaults to zero, i.e.: no sample.
 	// Values greater or equal 100 are treated as "sample all traces/logs".

@@ -25,7 +25,6 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
@@ -626,7 +625,6 @@ func newOTLPExporters(t *testing.T) (component.ID, exporter.Metrics, exporter.Tr
 	otlpExpFactory := otlpexporter.NewFactory()
 	otlpID := component.NewID("otlp")
 	otlpConfig := &otlpexporter.Config{
-		ExporterSettings: config.NewExporterSettings(otlpID),
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: "example.com:1234",
 		},

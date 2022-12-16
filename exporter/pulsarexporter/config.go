@@ -17,14 +17,11 @@ package pulsarexporter // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"github.com/apache/pulsar-client-go/pulsar"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 // Config defines configuration for Pulsar exporter.
 type Config struct {
-	config.ExporterSettings `mapstructure:",squash"`
-
 	exporterhelper.TimeoutSettings `mapstructure:",squash"`
 	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
 	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`

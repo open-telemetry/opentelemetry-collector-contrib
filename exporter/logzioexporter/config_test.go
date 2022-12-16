@@ -22,7 +22,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -41,9 +40,8 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	expected := &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		Token:            "token",
-		Region:           "eu",
+		Token:  "token",
+		Region: "eu",
 	}
 	expected.RetrySettings = exporterhelper.NewDefaultRetrySettings()
 	expected.RetrySettings.MaxInterval = 5 * time.Second
@@ -72,8 +70,7 @@ func TestDefaultLoadConfig(t *testing.T) {
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	expected := &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		Token:            "logzioTESTtoken",
+		Token: "logzioTESTtoken",
 	}
 	expected.RetrySettings = exporterhelper.NewDefaultRetrySettings()
 	expected.QueueSettings = exporterhelper.NewDefaultQueueSettings()
@@ -92,13 +89,12 @@ func TestDefaultLoadConfig(t *testing.T) {
 func TestCheckAndWarnDeprecatedOptions(t *testing.T) {
 	// Config with legacy options
 	actualCfg := &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewIDWithName(typeStr, "2")),
-		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
-		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
-		Token:            "logzioTESTtoken",
-		CustomEndpoint:   "https://api.example.com",
-		QueueMaxLength:   10,
-		DrainInterval:    10,
+		QueueSettings:  exporterhelper.NewDefaultQueueSettings(),
+		RetrySettings:  exporterhelper.NewDefaultRetrySettings(),
+		Token:          "logzioTESTtoken",
+		CustomEndpoint: "https://api.example.com",
+		QueueMaxLength: 10,
+		DrainInterval:  10,
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "",
 			Timeout:  10 * time.Second,
@@ -117,13 +113,12 @@ func TestCheckAndWarnDeprecatedOptions(t *testing.T) {
 	actualCfg.checkAndWarnDeprecatedOptions(&logger)
 
 	expected := &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewIDWithName(typeStr, "2")),
-		Token:            "logzioTESTtoken",
-		CustomEndpoint:   "https://api.example.com",
-		QueueMaxLength:   10,
-		DrainInterval:    10,
-		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
-		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
+		Token:          "logzioTESTtoken",
+		CustomEndpoint: "https://api.example.com",
+		QueueMaxLength: 10,
+		DrainInterval:  10,
+		RetrySettings:  exporterhelper.NewDefaultRetrySettings(),
+		QueueSettings:  exporterhelper.NewDefaultQueueSettings(),
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "https://api.example.com",
 			Timeout:  10 * time.Second,

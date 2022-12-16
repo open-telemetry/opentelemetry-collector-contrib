@@ -19,7 +19,6 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
@@ -43,13 +42,12 @@ func NewFactory() exporter.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),
-		QueueSettings:    QueueSettings{QueueSize: exporterhelper.NewDefaultQueueSettings().QueueSize},
-		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
-		LogsTableName:    "otel_logs",
-		TracesTableName:  "otel_traces",
-		TTLDays:          7,
+		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
+		QueueSettings:   QueueSettings{QueueSize: exporterhelper.NewDefaultQueueSettings().QueueSize},
+		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
+		LogsTableName:   "otel_logs",
+		TracesTableName: "otel_traces",
+		TTLDays:         7,
 	}
 }
 

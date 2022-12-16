@@ -22,7 +22,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -39,7 +38,6 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewID(typeStr),
 			expected: &Config{
-				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 				Settings: &Settings{
 					ReloadIntervals: &ReloadIntervals{
 						Array: 15 * time.Second,

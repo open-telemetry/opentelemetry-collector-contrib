@@ -20,7 +20,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtls"
 )
 
@@ -32,7 +31,6 @@ var (
 
 // Config stores the configuration for OAuth2 Client Credentials (2-legged OAuth2 flow) setup.
 type Config struct {
-	config.ExtensionSettings `mapstructure:",squash"`
 
 	// ClientID is the application's ID.
 	// See https://datatracker.ietf.org/doc/html/rfc6749#section-2.2

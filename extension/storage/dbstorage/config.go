@@ -16,15 +16,12 @@ package dbstorage // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import (
 	"errors"
-
-	"go.opentelemetry.io/collector/config"
 )
 
 // Config defines configuration for dbstorage extension.
 type Config struct {
-	config.ExtensionSettings `mapstructure:",squash"`
-	DriverName               string `mapstructure:"driver,omitempty"`
-	DataSource               string `mapstructure:"datasource,omitempty"`
+	DriverName string `mapstructure:"driver,omitempty"`
+	DataSource string `mapstructure:"datasource,omitempty"`
 }
 
 func (cfg *Config) Validate() error {

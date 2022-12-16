@@ -21,7 +21,6 @@ import (
 
 	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor"
 )
@@ -58,10 +57,9 @@ func NewFactory() processor.Factory {
 // createDefaultConfig creates the default configuration for the processor.
 func createDefaultConfig() component.Config {
 	return &Config{
-		ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
-		NumTraces:         defaultNumTraces,
-		NumWorkers:        defaultNumWorkers,
-		WaitDuration:      defaultWaitDuration,
+		NumTraces:    defaultNumTraces,
+		NumWorkers:   defaultNumWorkers,
+		WaitDuration: defaultWaitDuration,
 
 		// not supported for now
 		DiscardOrphans: defaultDiscardOrphans,
