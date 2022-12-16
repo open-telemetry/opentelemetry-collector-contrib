@@ -375,6 +375,7 @@ clean:
 	find . -type f -name 'coverage.html' -delete
 	find . -type f -name 'integration-coverage.txt' -delete
 	find . -type f -name 'integration-coverage.html' -delete
+	find . -type f -name 'foresight-test-report.txt' -delete
 
 .PHONY: genconfigdocs
 genconfigdocs:
