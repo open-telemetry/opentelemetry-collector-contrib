@@ -39,7 +39,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/haproxyreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otlpjsonfilereceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
@@ -168,14 +167,6 @@ func TestDefaultReceivers(t *testing.T) {
 		{
 			receiver:     "googlecloudpubsub",
 			skipLifecyle: true, // Requires a pubsub subscription
-		},
-		{
-			receiver: "haproxy",
-			getConfigFn: func() component.Config {
-				cfg := rcvrFactories["haproxy"].CreateDefaultConfig().(*haproxyreceiver.Config)
-				cfg.Endpoint = "http://example.com"
-				return cfg
-			},
 		},
 		{
 			receiver: "hostmetrics",
