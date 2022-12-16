@@ -6,7 +6,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.67.0
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector/pdata v1.0.0-rc1.0.20221212223545-7cb2d7622deb
+	go.opentelemetry.io/collector/pdata v1.0.0-rc1.0.20221213235724-812f462b3182
 	go.uber.org/multierr v1.9.0
 )
 

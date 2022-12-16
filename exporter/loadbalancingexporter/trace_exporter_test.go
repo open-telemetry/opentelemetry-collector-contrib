@@ -301,7 +301,7 @@ func TestConsumeTracesUnexpectedExporterType(t *testing.T) {
 
 func TestBuildExporterConfig(t *testing.T) {
 	// prepare
-	factories, err := componenttest.NopFactories()
+	factories, err := otelcoltest.NopFactories()
 	require.NoError(t, err)
 
 	factories.Exporters[typeStr] = NewFactory()

@@ -22,9 +22,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/otelcol"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 	rcvr "go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -34,7 +34,7 @@ import (
 
 type mockHostFactories struct {
 	component.Host
-	factories  component.Factories
+	factories  otelcol.Factories
 	extensions map[component.ID]component.Component
 }
 
@@ -131,7 +131,7 @@ func TestLoadConfig(t *testing.T) {
 }
 
 func TestInvalidResourceAttributeEndpointType(t *testing.T) {
-	factories, err := componenttest.NopFactories()
+	factories, err := otelcoltest.NopFactories()
 	require.Nil(t, err)
 
 	factories.Receivers[("nop")] = &nopWithEndpointFactory{Factory: receivertest.NewNopFactory()}
@@ -144,7 +144,7 @@ func TestInvalidResourceAttributeEndpointType(t *testing.T) {
 }
 
 func TestInvalidReceiverResourceAttributeValueType(t *testing.T) {
-	factories, err := componenttest.NopFactories()
+	factories, err := otelcoltest.NopFactories()
 	require.Nil(t, err)
 
 	factories.Receivers[("nop")] = &nopWithEndpointFactory{Factory: receivertest.NewNopFactory()}
