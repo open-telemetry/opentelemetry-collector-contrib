@@ -31,6 +31,7 @@ func CreateAPIClient(buildInfo component.BuildInfo, endpoint string, settings ex
 	configuration := datadog.NewConfiguration()
 	configuration.UserAgent = UserAgent(buildInfo)
 	configuration.HTTPClient = NewHTTPClient(settings, insecureSkipVerify)
+	configuration.Compress = true
 	if endpoint != "" {
 		configuration.Servers = datadog.ServerConfigurations{
 			{
