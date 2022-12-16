@@ -18,6 +18,9 @@
 # verifies if the collector components are using the main core collector version
 # as a dependency.
 #
+
+source ./internal/buildscripts/modules
+
 set -eu -o pipefail
 
 # Return the collector main core version
@@ -80,8 +83,6 @@ PDATA_MOD_VERSION=$(get_collector_version "$PDATA_MODULE" "$MAIN_MOD_FILE")
 
 # Check the collector module version in each of the module files
 check_collector_versions_correct "$COLLECTOR_MODULE" "$COLLECTOR_MOD_VERSION"
-check_collector_versions_correct "go.opentelemetry.io/collector/component" "$COLLECTOR_MOD_VERSION"
-check_collector_versions_correct "go.opentelemetry.io/collector/consumer" "$COLLECTOR_MOD_VERSION"
-check_collector_versions_correct "go.opentelemetry.io/collector/featuregate" "$COLLECTOR_MOD_VERSION"
-check_collector_versions_correct "go.opentelemetry.io/collector/pdata" "$PDATA_MOD_VERSION"
-check_collector_versions_correct "go.opentelemetry.io/collector/semconv" "$COLLECTOR_MOD_VERSION"
+for mod in ${modules[@]}; do
+   check_collector_versions_correct "$mod" "$COLLECTOR_MOD_VERSION"
+done
