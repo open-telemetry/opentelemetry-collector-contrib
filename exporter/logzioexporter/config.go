@@ -18,14 +18,12 @@ import (
 	"errors"
 
 	"github.com/hashicorp/go-hclog"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 // Config contains Logz.io specific configuration such as Account TracesToken, Region, etc.
 type Config struct {
-	config.ExporterSettings       `mapstructure:",squash"`          // squash ensures fields are correctly decoded in embedded struct
 	confighttp.HTTPClientSettings `mapstructure:",squash"`          // confighttp client settings https://pkg.go.dev/go.opentelemetry.io/collector/config/confighttp#HTTPClientSettings
 	exporterhelper.QueueSettings  `mapstructure:"sending_queue"`    // exporter helper queue settings https://pkg.go.dev/go.opentelemetry.io/collector/exporter/exporterhelper#QueueSettings
 	exporterhelper.RetrySettings  `mapstructure:"retry_on_failure"` // exporter helper retry settings https://pkg.go.dev/go.opentelemetry.io/collector/exporter/exporterhelper#RetrySettings

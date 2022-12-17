@@ -1,3 +1,9 @@
+# In order to ensure make instructions fail if there is command that fails a pipe (ie: `go test ... | tee -a ./test_results.txt`)
+# the value `-o pipefail` (or `set -o pipefail`) is added to each shell command that make runs
+# otherwise in the example command pipe, only the exit code of `tee` is recorded instead of `go test` which can cause 
+# test to pass in CI when they should not.
+SHELL=/bin/bash -o pipefail
+
 # SRC_ROOT is the top of the source tree.
 SRC_ROOT := $(realpath $(dir $(lastword $(MAKEFILE_LIST))))
 

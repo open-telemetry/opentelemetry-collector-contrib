@@ -24,7 +24,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -101,11 +100,10 @@ func TestGoogleCloudMetricExport(t *testing.T) {
 	}
 
 	sde, err := newLegacyGoogleCloudMetricsExporter(&LegacyConfig{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		ProjectID:        "idk",
-		Endpoint:         "127.0.0.1:8080",
-		UserAgent:        "MyAgent {{version}}",
-		UseInsecure:      true,
+		ProjectID:   "idk",
+		Endpoint:    "127.0.0.1:8080",
+		UserAgent:   "MyAgent {{version}}",
+		UseInsecure: true,
 		GetClientOptions: func() []option.ClientOption {
 			return clientOptions
 		},

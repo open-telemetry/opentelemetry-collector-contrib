@@ -18,8 +18,6 @@ import (
 	"context"
 	"fmt"
 
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.uber.org/zap"
@@ -52,10 +50,9 @@ func NewSFxMetricDataSender(port int) *SFxMetricsDataSender {
 func (sf *SFxMetricsDataSender) Start() error {
 	factory := signalfxexporter.NewFactory()
 	cfg := &signalfxexporter.Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(factory.Type())),
-		IngestURL:        fmt.Sprintf("http://%s", sf.GetEndpoint()),
-		APIURL:           "http://127.0.0.1",
-		AccessToken:      "access_token",
+		IngestURL:   fmt.Sprintf("http://%s", sf.GetEndpoint()),
+		APIURL:      "http://127.0.0.1",
+		AccessToken: "access_token",
 	}
 	params := exportertest.NewNopCreateSettings()
 	params.Logger = zap.L()

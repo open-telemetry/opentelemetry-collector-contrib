@@ -15,14 +15,11 @@
 package awsxrayexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter"
 
 import (
-	"go.opentelemetry.io/collector/config"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 )
 
 // Config defines configuration for AWS X-Ray exporter.
 type Config struct {
-	config.ExporterSettings `mapstructure:",squash"`
 	// AWSSessionSettings contains the common configuration options
 	// for creating AWS session to communicate with backend
 	awsutil.AWSSessionSettings `mapstructure:",squash"`

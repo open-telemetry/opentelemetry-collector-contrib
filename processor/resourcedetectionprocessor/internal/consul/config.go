@@ -14,15 +14,10 @@
 
 package consul // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/consul"
 
-import (
-	"go.opentelemetry.io/collector/config"
-)
-
 // The struct requires no user-specified fields by default as consul agent's default
 // configuration will be provided to the API client.
 // See `consul.go#NewDetector` for more information.
 type Config struct {
-	config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	// Address is the address of the Consul server
 	Address string `mapstructure:"address"`

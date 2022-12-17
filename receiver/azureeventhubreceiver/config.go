@@ -17,9 +17,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/Azure/azure-amqp-common-go/v3/conn"
+	"github.com/Azure/azure-amqp-common-go/v4/conn"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 )
 
 type logFormat string
@@ -36,12 +35,11 @@ var (
 )
 
 type Config struct {
-	config.ReceiverSettings `mapstructure:",squash"`
-	Connection              string        `mapstructure:"connection"`
-	Partition               string        `mapstructure:"partition"`
-	Offset                  string        `mapstructure:"offset"`
-	StorageID               *component.ID `mapstructure:"storage"`
-	Format                  string        `mapstructure:"format"`
+	Connection string        `mapstructure:"connection"`
+	Partition  string        `mapstructure:"partition"`
+	Offset     string        `mapstructure:"offset"`
+	StorageID  *component.ID `mapstructure:"storage"`
+	Format     string        `mapstructure:"format"`
 }
 
 func isValidFormat(format string) bool {

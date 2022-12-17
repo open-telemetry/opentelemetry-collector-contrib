@@ -21,15 +21,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 )
 
 func TestLoadLegacyConfig(t *testing.T) {
 	defer setPdataFeatureGateForTest(t, false)()
-	factories, err := componenttest.NopFactories()
+	factories, err := otelcoltest.NopFactories()
 	assert.Nil(t, err)
 	factory := NewFactory()
 	factories.Exporters[typeStr] = factory
@@ -42,11 +40,10 @@ func TestLoadLegacyConfig(t *testing.T) {
 	r1 := cfg.Exporters[component.NewIDWithName(typeStr, "customname")].(*LegacyConfig)
 	assert.Equal(t, r1,
 		&LegacyConfig{
-			ExporterSettings: config.NewExporterSettings(component.NewIDWithName(typeStr, "customname")),
-			ProjectID:        "my-project",
-			UserAgent:        "opentelemetry-collector-contrib {{version}}",
-			Endpoint:         "test-endpoint",
-			UseInsecure:      true,
+			ProjectID:   "my-project",
+			UserAgent:   "opentelemetry-collector-contrib {{version}}",
+			Endpoint:    "test-endpoint",
+			UseInsecure: true,
 			TimeoutSettings: exporterhelper.TimeoutSettings{
 				Timeout: 20 * time.Second,
 			},

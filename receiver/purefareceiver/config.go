@@ -18,7 +18,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver/internal"
@@ -28,7 +27,6 @@ var _ component.Config = (*Config)(nil)
 
 // Config relating to Array Metric Scraper.
 type Config struct {
-	config.ReceiverSettings       `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 	confighttp.HTTPClientSettings `mapstructure:",squash"`
 
 	// Settings contains settings for the individual scrapers

@@ -39,7 +39,7 @@ import (
 )
 
 func TestReceiver(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetryWithID(component.NewID(typeStr))
+	tt, err := obsreporttest.SetupTelemetry(component.NewID(typeStr))
 	require.NoError(t, err)
 	defer func() {
 		require.NoError(t, tt.Shutdown(context.Background()))
@@ -89,7 +89,7 @@ func TestReceiver(t *testing.T) {
 }
 
 func TestReceiverTimesOutAfterStartup(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetryWithID(component.NewID(typeStr))
+	tt, err := obsreporttest.SetupTelemetry(component.NewID(typeStr))
 	require.NoError(t, err)
 	defer func() {
 		require.NoError(t, tt.Shutdown(context.Background()))
@@ -110,7 +110,7 @@ func TestReceiverTimesOutAfterStartup(t *testing.T) {
 }
 
 func TestReceiverWithManyResources(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetryWithID(component.NewID(typeStr))
+	tt, err := obsreporttest.SetupTelemetry(component.NewID(typeStr))
 	require.NoError(t, err)
 	defer func() {
 		require.NoError(t, tt.Shutdown(context.Background()))
@@ -148,7 +148,7 @@ var consumeMetadataInvocation = func() {
 }
 
 func TestReceiverWithMetadata(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetryWithID(component.NewID(typeStr))
+	tt, err := obsreporttest.SetupTelemetry(component.NewID(typeStr))
 	require.NoError(t, err)
 	defer func() {
 		require.NoError(t, tt.Shutdown(context.Background()))
