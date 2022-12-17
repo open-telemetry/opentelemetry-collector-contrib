@@ -21,7 +21,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor"
-	"go.opentelemetry.io/collector/processor/processorhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -68,16 +67,9 @@ func createLogsProcessor(
 	}
 
 	proc := &logsTransformProcessor{
-		logger: set.Logger,
-		config: pCfg,
+		logger:   set.Logger,
+		config:   pCfg,
+		consumer: nextConsumer,
 	}
-	return processorhelper.NewLogsProcessor(
-		ctx,
-		set,
-		cfg,
-		nextConsumer,
-		proc.processLogs,
-		processorhelper.WithStart(proc.Start),
-		processorhelper.WithShutdown(proc.Shutdown),
-		processorhelper.WithCapabilities(processorCapabilities))
+	return proc, nil
 }

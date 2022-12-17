@@ -17,12 +17,12 @@ package logstransformprocessor // import "github.com/open-telemetry/opentelemetr
 import (
 	"context"
 	"errors"
-	"fmt"
 	"math"
 	"runtime"
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
@@ -41,13 +41,18 @@ type logsTransformProcessor struct {
 	logger *zap.Logger
 	config *Config
 
+	consumer consumer.Logs
+
 	pipe          *pipeline.DirectedPipeline
 	firstOperator operator.Operator
 	emitter       *adapter.LogEmitter
 	converter     *adapter.Converter
 	fromConverter *adapter.FromPdataConverter
 	wg            sync.WaitGroup
-	outputChannel chan outputType
+}
+
+func (ltp *logsTransformProcessor) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: true}
 }
 
 func (ltp *logsTransformProcessor) Shutdown(ctx context.Context) error {
@@ -93,8 +98,6 @@ func (ltp *logsTransformProcessor) Start(ctx context.Context, host component.Hos
 	ltp.fromConverter = adapter.NewFromPdataConverter(wkrCount, ltp.logger)
 	ltp.fromConverter.Start()
 
-	ltp.outputChannel = make(chan outputType)
-
 	// Below we're starting 3 loops:
 	// * first which reads all the logs translated by the fromConverter and then forwards
 	//   them to pipeline
@@ -110,37 +113,16 @@ func (ltp *logsTransformProcessor) Start(ctx context.Context, host component.Hos
 
 	// ...
 	// * third which reads all the logs produced by the converter
-	//   (aggregated by Resource) and then places them on the outputChannel
+	//   (aggregated by Resource) and then places them on the next consumer
 	ltp.wg.Add(1)
 	go ltp.consumerLoop(ctx)
 
 	return nil
 }
 
-func (ltp *logsTransformProcessor) processLogs(ctx context.Context, ld plog.Logs) (plog.Logs, error) {
+func (ltp *logsTransformProcessor) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	// Add the logs to the chain
-	err := ltp.fromConverter.Batch(ld)
-	if err != nil {
-		return ld, err
-	}
-
-	doneChan := ctx.Done()
-	for {
-		select {
-		case <-doneChan:
-			ltp.logger.Debug("loop stopped")
-			return ld, errors.New("processor interrupted")
-		case output, ok := <-ltp.outputChannel:
-			if !ok {
-				return ld, errors.New("processor encountered an issue receiving logs from stanza operators pipeline")
-			}
-			if output.err != nil {
-				return ld, err
-			}
-
-			return output.logs, nil
-		}
-	}
+	return ltp.fromConverter.Batch(ld)
 }
 
 // converterLoop reads the log entries produced by the fromConverter and sends them
@@ -163,7 +145,7 @@ func (ltp *logsTransformProcessor) converterLoop(ctx context.Context) {
 			for _, e := range entries {
 				// Add item to the first operator of the pipeline manually
 				if err := ltp.firstOperator.Process(ctx, e); err != nil {
-					ltp.outputChannel <- outputType{err: fmt.Errorf("processor encountered an issue with the pipeline: %w", err)}
+					ltp.logger.Error("processor encountered an issue with the pipeline", zap.Error(err))
 					break
 				}
 			}
@@ -188,7 +170,7 @@ func (ltp *logsTransformProcessor) emitterLoop(ctx context.Context) {
 			}
 
 			if err := ltp.converter.Batch(e); err != nil {
-				ltp.outputChannel <- outputType{err: fmt.Errorf("processor encountered an issue with the converter: %w", err)}
+				ltp.logger.Error("processor encountered an issue with the converter", zap.Error(err))
 			}
 		}
 	}
@@ -210,7 +192,7 @@ func (ltp *logsTransformProcessor) consumerLoop(ctx context.Context) {
 				return
 			}
 
-			ltp.outputChannel <- outputType{logs: pLogs, err: nil}
+			ltp.consumer.ConsumeLogs(ctx, pLogs)
 		}
 	}
 }
