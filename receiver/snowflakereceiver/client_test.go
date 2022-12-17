@@ -53,7 +53,7 @@ func TestClientReadDB(t *testing.T) {
 	rows := mock.NewRows([]string{"row1", "row2"}).AddRow(1, 3)
 	mock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM mocktable`)).WillReturnRows(rows)
 
-	client := defaultSnowflakeClient{
+	client := snowflakeClient{
 		client: db,
 		logger: receivertest.NewNopCreateSettings().Logger,
 	}
@@ -79,7 +79,7 @@ func TestMetricQueries(t *testing.T) {
 		expect  interface{}
 	}{
 		{
-			desc:    "GetBillingMetrics",
+			desc:    "FetchBillingMetrics",
 			query:   billingMetricsQuery,
 			columns: []string{"service_type", "service_name", "virtualwarehouse_credit", "cloud_service", "totalcredit"},
 			params:  []driver.Value{"t", "n", 1.0, 2.0, 3.0},
@@ -98,7 +98,7 @@ func TestMetricQueries(t *testing.T) {
 			},
 		},
 		{
-			desc:    "GetWarehouseBillingMetrics",
+			desc:    "FetchWarehouseBillingMetrics",
 			query:   warehouseBillingMetricsQuery,
 			columns: []string{"wh_name", "virtual_wh", "cloud_service", "credit"},
 			params:  []driver.Value{"n", 1.0, 2.0, 3.0},
@@ -113,7 +113,7 @@ func TestMetricQueries(t *testing.T) {
 			},
 		},
 		{
-			desc:    "GetLoginMetrics",
+			desc:    "FetchLoginMetrics",
 			query:   loginMetricsQuery,
 			columns: []string{"username", "error_message", "client_type", "is_success", "login_total"},
 			params:  []driver.Value{"t", "n", "m", "l", 1},
@@ -138,7 +138,7 @@ func TestMetricQueries(t *testing.T) {
 			},
 		},
 		{
-			desc:    "GetHighLevelQueryMetrics",
+			desc:    "FetchHighLevelQueryMetrics",
 			query:   highLevelQueryMetricsQuery,
 			columns: []string{"wh_name", "query_executed", "queue_overload", "queue_provision", "query_blocked"},
 			params:  []driver.Value{"t", 0.0, 1.0, 2.0, 3.0},
@@ -154,7 +154,7 @@ func TestMetricQueries(t *testing.T) {
 			},
 		},
 		{
-			desc:  "GetDbMetrics",
+			desc:  "FetchDbMetrics",
 			query: dbMetricsQuery,
 			columns: []string{"schemaname", "execution_status", "error_message",
 				"query_type", "wh_name", "db_name", "wh_size", "username",
@@ -222,7 +222,7 @@ func TestMetricQueries(t *testing.T) {
 			},
 		},
 		{
-			desc:    "GetSessionMetrics",
+			desc:    "FetchSessionMetrics",
 			query:   sessionMetricsQuery,
 			columns: []string{"username", "disctinct_id"},
 			params:  []driver.Value{"t", 3.0},
@@ -235,7 +235,7 @@ func TestMetricQueries(t *testing.T) {
 			},
 		},
 		{
-			desc:    "GetSnowpipeMetrics",
+			desc:    "FetchSnowpipeMetrics",
 			query:   snowpipeMetricsQuery,
 			columns: []string{"pipe_name", "credits_used", "bytes_inserted", "files_inserted"},
 			params:  []driver.Value{"t", 1.0, 2.0, 3.0},
@@ -250,7 +250,7 @@ func TestMetricQueries(t *testing.T) {
 			},
 		},
 		{
-			desc:    "GetStorageMetrics",
+			desc:    "FetchStorageMetrics",
 			query:   storageMetricsQuery,
 			columns: []string{"storage_bytes", "stage_bytes", "failsafe_bytes"},
 			params:  []driver.Value{1, 2, 3},
@@ -274,7 +274,7 @@ func TestMetricQueries(t *testing.T) {
 			mock.ExpectQuery(test.query).WillReturnRows(rows)
 			defer db.Close()
 
-			client := defaultSnowflakeClient{
+			client := snowflakeClient{
 				client: db,
 				logger: receivertest.NewNopCreateSettings().Logger,
 			}

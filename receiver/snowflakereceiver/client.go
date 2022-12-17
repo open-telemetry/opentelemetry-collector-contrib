@@ -39,23 +39,10 @@ var (
 // snowflake client is comprised of a sql.DB (the proper 'client' in question),
 // a connection string (dsn), a collection of queries (built from which metrics are enabled),
 // and a logger
-type defaultSnowflakeClient struct {
+type snowflakeClient struct {
 	client *sql.DB
 	dsn    *string
 	logger *zap.Logger
-}
-
-var _ snowflakeClient = (*defaultSnowflakeClient)(nil)
-
-type snowflakeClient interface {
-	GetBillingMetrics(ctx context.Context) (*[]billingMetric, error)
-	GetWarehouseBillingMetrics(ctx context.Context) (*[]whBillingMetric, error)
-	GetLoginMetrics(ctx context.Context) (*[]loginMetric, error)
-	GetHighLevelQueryMetrics(ctx context.Context) (*[]hlQueryMetric, error)
-	GetDbMetrics(ctx context.Context) (*[]dbMetric, error)
-	GetSessionMetrics(ctx context.Context) (*[]sessionMetric, error)
-	GetSnowpipeMetrics(ctx context.Context) (*[]snowpipeMetric, error)
-	GetStorageMetrics(ctx context.Context) (*[]storageMetric, error)
 }
 
 // build snowflake db connection string
@@ -78,14 +65,14 @@ func buildDSN(cfg Config) string {
 	return dsn
 }
 
-func newDefaultClient(settings component.TelemetrySettings, c Config) (*defaultSnowflakeClient, error) {
+func newDefaultClient(settings component.TelemetrySettings, c Config) (*snowflakeClient, error) {
 	dsn := buildDSN(c)
 	db, err := sql.Open("snowflake", dsn)
 	if err != nil {
 		return nil, err
 	}
 
-	return &defaultSnowflakeClient{
+	return &snowflakeClient{
 		client: db,
 		dsn:    &dsn,
 		logger: settings.Logger,
@@ -93,7 +80,7 @@ func newDefaultClient(settings component.TelemetrySettings, c Config) (*defaultS
 }
 
 // queries database and returns resulting rows
-func (c defaultSnowflakeClient) readDB(ctx context.Context, q string) (*sql.Rows, error) {
+func (c snowflakeClient) readDB(ctx context.Context, q string) (*sql.Rows, error) {
 	rows, err := c.client.QueryContext(ctx, q)
 	if err != nil {
 		error := fmt.Sprintf("Query failed with %v", err)
@@ -107,7 +94,7 @@ func (c defaultSnowflakeClient) readDB(ctx context.Context, q string) (*sql.Rows
 // these wrap readDB and return the associated data type which the scraper will
 // use to generate and emit metrics. Which of these are called will be based on which metrics
 // are enabled in the Config (default is all of them)
-func (c defaultSnowflakeClient) GetBillingMetrics(ctx context.Context) (*[]billingMetric, error) {
+func (c snowflakeClient) FetchBillingMetrics(ctx context.Context) (*[]billingMetric, error) {
 	rows, err := c.readDB(ctx, billingMetricsQuery)
 	if err != nil {
 		return nil, err
@@ -140,7 +127,7 @@ func (c defaultSnowflakeClient) GetBillingMetrics(ctx context.Context) (*[]billi
 	return &res, nil
 }
 
-func (c defaultSnowflakeClient) GetWarehouseBillingMetrics(ctx context.Context) (*[]whBillingMetric, error) {
+func (c snowflakeClient) FetchWarehouseBillingMetrics(ctx context.Context) (*[]whBillingMetric, error) {
 	rows, err := c.readDB(ctx, warehouseBillingMetricsQuery)
 	if err != nil {
 		return nil, err
@@ -171,7 +158,7 @@ func (c defaultSnowflakeClient) GetWarehouseBillingMetrics(ctx context.Context) 
 	return &res, nil
 }
 
-func (c defaultSnowflakeClient) GetLoginMetrics(ctx context.Context) (*[]loginMetric, error) {
+func (c snowflakeClient) FetchLoginMetrics(ctx context.Context) (*[]loginMetric, error) {
 	rows, err := c.readDB(ctx, loginMetricsQuery)
 	if err != nil {
 		return nil, err
@@ -209,7 +196,7 @@ func (c defaultSnowflakeClient) GetLoginMetrics(ctx context.Context) (*[]loginMe
 	return &res, nil
 }
 
-func (c defaultSnowflakeClient) GetHighLevelQueryMetrics(ctx context.Context) (*[]hlQueryMetric, error) {
+func (c snowflakeClient) FetchHighLevelQueryMetrics(ctx context.Context) (*[]hlQueryMetric, error) {
 	rows, err := c.readDB(ctx, highLevelQueryMetricsQuery)
 	if err != nil {
 		return nil, err
@@ -250,7 +237,7 @@ func (c defaultSnowflakeClient) GetHighLevelQueryMetrics(ctx context.Context) (*
 	return &res, nil
 }
 
-func (c defaultSnowflakeClient) GetDbMetrics(ctx context.Context) (*[]dbMetric, error) {
+func (c snowflakeClient) FetchDbMetrics(ctx context.Context) (*[]dbMetric, error) {
 	rows, err := c.readDB(ctx, dbMetricsQuery)
 	if err != nil {
 		return nil, err
@@ -346,7 +333,7 @@ func (c defaultSnowflakeClient) GetDbMetrics(ctx context.Context) (*[]dbMetric, 
 	return &res, nil
 }
 
-func (c defaultSnowflakeClient) GetSessionMetrics(ctx context.Context) (*[]sessionMetric, error) {
+func (c snowflakeClient) FetchSessionMetrics(ctx context.Context) (*[]sessionMetric, error) {
 	rows, err := c.readDB(ctx, sessionMetricsQuery)
 	if err != nil {
 		return nil, err
@@ -376,7 +363,7 @@ func (c defaultSnowflakeClient) GetSessionMetrics(ctx context.Context) (*[]sessi
 	return &res, nil
 }
 
-func (c defaultSnowflakeClient) GetSnowpipeMetrics(ctx context.Context) (*[]snowpipeMetric, error) {
+func (c snowflakeClient) FetchSnowpipeMetrics(ctx context.Context) (*[]snowpipeMetric, error) {
 	rows, err := c.readDB(ctx, snowpipeMetricsQuery)
 	if err != nil {
 		return nil, err
@@ -409,7 +396,7 @@ func (c defaultSnowflakeClient) GetSnowpipeMetrics(ctx context.Context) (*[]snow
 	return &res, nil
 }
 
-func (c defaultSnowflakeClient) GetStorageMetrics(ctx context.Context) (*[]storageMetric, error) {
+func (c snowflakeClient) FetchStorageMetrics(ctx context.Context) (*[]storageMetric, error) {
 	rows, err := c.readDB(ctx, storageMetricsQuery)
 	if err != nil {
 		return nil, err
