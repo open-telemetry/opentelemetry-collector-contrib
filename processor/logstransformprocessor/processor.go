@@ -32,11 +32,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/pipeline"
 )
 
-type outputType struct {
-	logs plog.Logs
-	err  error
-}
-
 type logsTransformProcessor struct {
 	logger *zap.Logger
 	config *Config
@@ -49,6 +44,29 @@ type logsTransformProcessor struct {
 	converter     *adapter.Converter
 	fromConverter *adapter.FromPdataConverter
 	wg            sync.WaitGroup
+}
+
+func newProcessor(config *Config, nextConsumer consumer.Logs, logger *zap.Logger) (*logsTransformProcessor, error) {
+	p := &logsTransformProcessor{
+		logger:   logger,
+		config:   config,
+		consumer: nextConsumer,
+	}
+
+	baseCfg := p.config.BaseConfig
+
+	p.emitter = adapter.NewLogEmitter(p.logger.Sugar())
+	pipe, err := pipeline.Config{
+		Operators:     baseCfg.Operators,
+		DefaultOutput: p.emitter,
+	}.Build(p.logger.Sugar())
+	if err != nil {
+		return nil, err
+	}
+
+	p.pipe = pipe
+
+	return p, nil
 }
 
 func (ltp *logsTransformProcessor) Capabilities() consumer.Capabilities {
@@ -66,25 +84,14 @@ func (ltp *logsTransformProcessor) Shutdown(ctx context.Context) error {
 }
 
 func (ltp *logsTransformProcessor) Start(ctx context.Context, host component.Host) error {
-	baseCfg := ltp.config.BaseConfig
-
-	ltp.emitter = adapter.NewLogEmitter(ltp.logger.Sugar())
-	pipe, err := pipeline.Config{
-		Operators:     baseCfg.Operators,
-		DefaultOutput: ltp.emitter,
-	}.Build(ltp.logger.Sugar())
-	if err != nil {
-		return err
-	}
 
 	// There is no need for this processor to use storage
-	err = pipe.Start(storage.NewNopClient())
+	err := ltp.pipe.Start(storage.NewNopClient())
 	if err != nil {
 		return err
 	}
 
-	ltp.pipe = pipe
-	pipelineOperators := pipe.Operators()
+	pipelineOperators := ltp.pipe.Operators()
 	if len(pipelineOperators) == 0 {
 		return errors.New("processor requires at least one operator to be configured")
 	}
@@ -192,7 +199,9 @@ func (ltp *logsTransformProcessor) consumerLoop(ctx context.Context) {
 				return
 			}
 
-			ltp.consumer.ConsumeLogs(ctx, pLogs)
+			if err := ltp.consumer.ConsumeLogs(ctx, pLogs); err != nil {
+				ltp.logger.Error("processor encountered an issue with next consumer", zap.Error(err))
+			}
 		}
 	}
 }

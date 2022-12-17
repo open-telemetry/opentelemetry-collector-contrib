@@ -66,10 +66,5 @@ func createLogsProcessor(
 		return nil, errors.New("no operators were configured for this logs transform processor")
 	}
 
-	proc := &logsTransformProcessor{
-		logger:   set.Logger,
-		config:   pCfg,
-		consumer: nextConsumer,
-	}
-	return proc, nil
+	return newProcessor(pCfg, nextConsumer, set.Logger)
 }
