@@ -66,6 +66,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.67.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.67.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor v0.67.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogprocessor v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor v0.67.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor v0.67.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor v0.67.0
@@ -817,6 +818,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor => ./processor/attributesprocessor
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor => ./processor/cumulativetodeltaprocessor/
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogprocessor => ./processor/datadogprocessor
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor => ./processor/deltatorateprocessor/
 

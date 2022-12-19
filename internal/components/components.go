@@ -90,6 +90,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor"
@@ -369,6 +370,7 @@ func Components() (otelcol.Factories, error) {
 		spanmetricsprocessor.NewFactory(),
 		spanprocessor.NewFactory(),
 		cumulativetodeltaprocessor.NewFactory(),
+		datadogprocessor.NewFactory(),
 		deltatorateprocessor.NewFactory(),
 		transformprocessor.NewFactory(),
 	}
