@@ -117,5 +117,5 @@ func TestLoadInvalidConfig_InvalidScraperKey(t *testing.T) {
 	factories.Receivers[typeStr] = factory
 	_, err = otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "config-invalidscraperkey.yaml"), factories)
 
-	require.Contains(t, err.Error(), "error reading receivers configuration for \"hostmetrics\": invalid scraper key: invalidscraperkey")
+	require.Contains(t, err.Error(), "error reading configuration for \"hostmetrics\": invalid scraper key: invalidscraperkey")
 }
