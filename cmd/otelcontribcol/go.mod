@@ -383,6 +383,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters v0.67.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.67.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor v0.67.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogprocessor v0.0.0-00010101000000-000000000000 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor v0.67.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor v0.67.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor v0.67.0 // indirect
@@ -819,6 +820,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memca
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor => ../../processor/groupbytraceprocessor
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor => ../../processor/cumulativetodeltaprocessor
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogprocessor => ../../processor/datadogprocessor
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecstaskobserver => ../../extension/observer/ecstaskobserver
 

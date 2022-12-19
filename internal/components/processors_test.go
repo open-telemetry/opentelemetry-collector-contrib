@@ -63,6 +63,10 @@ func TestDefaultProcessors(t *testing.T) {
 			processor: "batch",
 		},
 		{
+			processor:     "datadog",
+			skipLifecycle: true, // requires external exporters to be configured to route data
+		},
+		{
 			processor: "deltatorate",
 		},
 		{
