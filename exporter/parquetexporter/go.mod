@@ -22,7 +22,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pelletier/go-toml v1.9.4 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/confmap v0.67.1-0.20221216193913-557c077e3cc3 // indirect
+	go.opentelemetry.io/collector/confmap v0.67.1-0.20221216200611-892d07dffbb8 // indirect
 	go.opentelemetry.io/collector/consumer v0.67.1-0.20221216200611-892d07dffbb8 // indirect
 	go.opentelemetry.io/collector/featuregate v0.67.1-0.20221216200611-892d07dffbb8 // indirect
 	go.opentelemetry.io/otel v1.11.2 // indirect
