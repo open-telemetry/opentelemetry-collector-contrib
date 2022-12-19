@@ -18,6 +18,7 @@ require (
 )
 
 require (
+	cloud.google.com/go/compute v1.14.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/go-logr/logr v1.2.3 // indirect
