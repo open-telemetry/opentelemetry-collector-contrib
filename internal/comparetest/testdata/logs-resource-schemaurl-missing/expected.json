@@ -1,0 +1,17 @@
+{
+    "resourceLogs": [
+        {
+            "resource": {
+                "attributes": [
+                    {
+                        "key": "type",
+                        "value": {
+                            "stringValue": "one"
+                        }
+                    }
+                ]
+            },
+            "schemaUrl": "https://opentelemetry.io/schemas/1.6.1"
+        }
+    ]
+}
