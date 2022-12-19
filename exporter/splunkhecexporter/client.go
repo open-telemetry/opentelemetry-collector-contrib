@@ -53,7 +53,6 @@ type client struct {
 	logger         *zap.Logger
 	wg             sync.WaitGroup
 	headers        map[string]string
-	gzipWriterPool *sync.Pool
 }
 
 // bufferState encapsulates intermediate buffer state when pushing data
@@ -66,7 +65,6 @@ type bufferState struct {
 	bufFront             *index
 	resource             int
 	library              int
-	gzipWriterPool       *sync.Pool
 }
 
 func (b *bufferState) reset() {
@@ -97,14 +95,13 @@ func (b *bufferState) accept(data []byte) (bool, error) {
 	if b.compressionAvailable && !b.compressionEnabled && bufLen > minCompressionLen {
 		// switch over to a zip buffer.
 		tmpBuf := bytes.NewBuffer(make([]byte, 0, b.bufferMaxLen+bufCapPadding))
-		writer := b.gzipWriterPool.Get().(*gzip.Writer)
+		writer := gzip.NewWriter(tmpBuf)
 		writer.Reset(tmpBuf)
 		zipWriter := &cancellableGzipWriter{
 			innerBuffer: tmpBuf,
 			innerWriter: writer,
 			// 8 bytes required for the zip footer.
-			maxCapacity:    b.bufferMaxLen - 8,
-			gzipWriterPool: b.gzipWriterPool,
+			maxCapacity: b.bufferMaxLen - 8,
 		}
 
 		if b.bufferMaxLen == 0 {
@@ -150,11 +147,10 @@ func (c *cancellableBytesWriter) Write(b []byte) (int, error) {
 }
 
 type cancellableGzipWriter struct {
-	innerBuffer    *bytes.Buffer
-	innerWriter    *gzip.Writer
-	maxCapacity    uint
-	gzipWriterPool *sync.Pool
-	len            int
+	innerBuffer *bytes.Buffer
+	innerWriter *gzip.Writer
+	maxCapacity uint
+	len         int
 }
 
 func (c *cancellableGzipWriter) Write(b []byte) (int, error) {
@@ -174,8 +170,7 @@ func (c *cancellableGzipWriter) Write(b []byte) (int, error) {
 		// so we create a copy of our content and add this new data, compressed, to check that it fits.
 		copyBuf := bytes.NewBuffer(make([]byte, 0, c.maxCapacity+bufCapPadding))
 		copyBuf.Write(c.innerBuffer.Bytes())
-		writerCopy := c.gzipWriterPool.Get().(*gzip.Writer)
-		defer c.gzipWriterPool.Put(writerCopy)
+		writerCopy := gzip.NewWriter(copyBuf)
 		writerCopy.Reset(copyBuf)
 		if _, err := writerCopy.Write(b); err != nil {
 			return 0, err
@@ -192,9 +187,7 @@ func (c *cancellableGzipWriter) Write(b []byte) (int, error) {
 }
 
 func (c *cancellableGzipWriter) close() error {
-	err := c.innerWriter.Close()
-	c.gzipWriterPool.Put(c.innerWriter)
-	return err
+	return c.innerWriter.Close()
 }
 
 // Composite index of a record.
@@ -323,7 +316,7 @@ func isProfilingData(sl plog.ScopeLogs) bool {
 	return sl.Scope().Name() == profilingLibraryName
 }
 
-func makeBlankBufferState(bufCap uint, compressionAvailable bool, pool *sync.Pool) *bufferState {
+func makeBlankBufferState(bufCap uint, compressionAvailable bool) *bufferState {
 	// Buffer of JSON encoded Splunk events, last record is expected to overflow bufCap, hence the padding
 	buf := bytes.NewBuffer(make([]byte, 0, bufCap+bufCapPadding))
 
@@ -336,7 +329,6 @@ func makeBlankBufferState(bufCap uint, compressionAvailable bool, pool *sync.Poo
 		bufFront:             nil, // Index of the log record of the first unsent event in buffer.
 		resource:             0,   // Index of currently processed Resource
 		library:              0,   // Index of currently processed Library
-		gzipWriterPool:       pool,
 	}
 }
 
@@ -346,8 +338,8 @@ func makeBlankBufferState(bufCap uint, compressionAvailable bool, pool *sync.Poo
 // The input data may contain both logs and profiling data.
 // They are batched separately and sent with different HTTP headers
 func (c *client) pushLogDataInBatches(ctx context.Context, ld plog.Logs, send func(context.Context, *bufferState, map[string]string) error) error {
-	var bufState = makeBlankBufferState(c.config.MaxContentLengthLogs, !c.config.DisableCompression, c.gzipWriterPool)
-	var profilingBufState = makeBlankBufferState(c.config.MaxContentLengthLogs, !c.config.DisableCompression, c.gzipWriterPool)
+	var bufState = makeBlankBufferState(c.config.MaxContentLengthLogs, !c.config.DisableCompression)
+	var profilingBufState = makeBlankBufferState(c.config.MaxContentLengthLogs, !c.config.DisableCompression)
 	var permanentErrors []error
 
 	var rls = ld.ResourceLogs()
@@ -602,7 +594,7 @@ func (c *client) pushTracesData(ctx context.Context, tds ptrace.ResourceSpansSli
 // The batch content length is restricted to MaxContentLengthMetrics.
 // md metrics are parsed to Splunk events.
 func (c *client) pushMetricsDataInBatches(ctx context.Context, md pmetric.Metrics, send func(context.Context, *bufferState) error) error {
-	var bufState = makeBlankBufferState(c.config.MaxContentLengthMetrics, !c.config.DisableCompression, c.gzipWriterPool)
+	var bufState = makeBlankBufferState(c.config.MaxContentLengthMetrics, !c.config.DisableCompression)
 	var permanentErrors []error
 
 	var rms = md.ResourceMetrics()
@@ -637,7 +629,7 @@ func (c *client) pushMetricsDataInBatches(ctx context.Context, md pmetric.Metric
 // The batch content length is restricted to MaxContentLengthMetrics.
 // td traces are parsed to Splunk events.
 func (c *client) pushTracesDataInBatches(ctx context.Context, td ptrace.Traces, send func(context.Context, *bufferState) error) error {
-	bufState := makeBlankBufferState(c.config.MaxContentLengthTraces, !c.config.DisableCompression, c.gzipWriterPool)
+	bufState := makeBlankBufferState(c.config.MaxContentLengthTraces, !c.config.DisableCompression)
 	var permanentErrors []error
 
 	var rts = td.ResourceSpans()
