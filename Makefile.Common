@@ -155,5 +155,5 @@ moddownload:
 
 .PHONY: updatedep
 updatedep:
-	TOPDIR=$(PWD) $(PWD)/internal/buildscripts/update-dep
+	$(PWD)/internal/buildscripts/update-dep
 	@$(MAKE) tidy
