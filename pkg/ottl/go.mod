@@ -31,7 +31,7 @@ require (
 	github.com/pelletier/go-toml v1.9.4 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/collector v0.67.1-0.20221216200611-892d07dffbb8 // indirect
-	go.opentelemetry.io/collector/confmap v0.67.1-0.20221216193913-557c077e3cc3 // indirect
+	go.opentelemetry.io/collector/confmap v0.67.1-0.20221216200611-892d07dffbb8 // indirect
 	go.opentelemetry.io/collector/consumer v0.67.1-0.20221216200611-892d07dffbb8 // indirect
 	go.opentelemetry.io/collector/featuregate v0.67.1-0.20221216200611-892d07dffbb8 // indirect
 	go.opentelemetry.io/otel v1.11.2 // indirect
