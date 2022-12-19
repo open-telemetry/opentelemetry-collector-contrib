@@ -8,7 +8,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.67.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.67.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki v0.67.0
-	github.com/prometheus/common v0.38.0
+	github.com/prometheus/common v0.39.0
 	github.com/stretchr/testify v1.8.1
 	go.opentelemetry.io/collector v0.67.1-0.20221216200611-892d07dffbb8
 	go.opentelemetry.io/collector/component v0.67.1-0.20221216200611-892d07dffbb8
@@ -39,7 +39,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
-	github.com/prometheus/prometheus v0.40.6 // indirect
+	github.com/prometheus/prometheus v0.40.7 // indirect
 	github.com/rs/cors v1.8.2 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/collector/featuregate v0.67.1-0.20221216200611-892d07dffbb8 // indirect

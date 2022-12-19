@@ -42,7 +42,7 @@ require (
 	github.com/klauspost/compress v1.15.13 // indirect
 	github.com/knadh/koanf v1.4.4 // indirect
 	github.com/linkedin/goavro/v2 v2.9.8 // indirect
-	github.com/matttproud/golang_protobuf_extensions v1.0.2 // indirect
+	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
@@ -57,7 +57,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_golang v1.14.0 // indirect
 	github.com/prometheus/client_model v0.3.0 // indirect
-	github.com/prometheus/common v0.38.0 // indirect
+	github.com/prometheus/common v0.39.0 // indirect
 	github.com/prometheus/procfs v0.8.0 // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
@@ -71,7 +71,7 @@ require (
 	go.uber.org/multierr v1.9.0 // indirect
 	golang.org/x/crypto v0.0.0-20221010152910-d6f0a8c073c2 // indirect
 	golang.org/x/net v0.4.0 // indirect
-	golang.org/x/oauth2 v0.0.0-20220822191816-0ebed06d0094 // indirect
+	golang.org/x/oauth2 v0.3.0 // indirect
 	golang.org/x/sys v0.3.0 // indirect
 	golang.org/x/term v0.3.0 // indirect
 	golang.org/x/text v0.5.0 // indirect

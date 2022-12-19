@@ -17,7 +17,7 @@ require (
 	go.opentelemetry.io/collector/featuregate v0.67.1-0.20221216200611-892d07dffbb8
 	go.opentelemetry.io/collector/pdata v1.0.0-rc1.0.20221216200611-892d07dffbb8
 	go.opentelemetry.io/collector/semconv v0.67.1-0.20221216200611-892d07dffbb8
-	google.golang.org/api v0.104.0
+	google.golang.org/api v0.105.0
 	google.golang.org/genproto v0.0.0-20221206210731-b1a01be3a5f6
 	google.golang.org/grpc v1.51.0
 	google.golang.org/protobuf v1.28.1
@@ -33,7 +33,7 @@ require (
 	contrib.go.opencensus.io/exporter/prometheus v0.4.2 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.10.2 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.34.3-0.20221202192616-0186b89ba914 // indirect
-	github.com/aws/aws-sdk-go v1.44.158 // indirect
+	github.com/aws/aws-sdk-go v1.44.162 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
@@ -56,7 +56,7 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/knadh/koanf v1.4.4 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
-	github.com/matttproud/golang_protobuf_extensions v1.0.2 // indirect
+	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
@@ -66,9 +66,9 @@ require (
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
 	github.com/prometheus/client_golang v1.14.0 // indirect
 	github.com/prometheus/client_model v0.3.0 // indirect
-	github.com/prometheus/common v0.38.0 // indirect
+	github.com/prometheus/common v0.39.0 // indirect
 	github.com/prometheus/procfs v0.8.0 // indirect
-	github.com/prometheus/prometheus v0.40.6 // indirect
+	github.com/prometheus/prometheus v0.40.7 // indirect
 	github.com/prometheus/statsd_exporter v0.22.7 // indirect
 	github.com/shirou/gopsutil/v3 v3.22.10 // indirect
 	github.com/spf13/cobra v1.6.1 // indirect
@@ -88,7 +88,7 @@ require (
 	go.uber.org/multierr v1.9.0 // indirect
 	go.uber.org/zap v1.24.0 // indirect
 	golang.org/x/net v0.4.0 // indirect
-	golang.org/x/oauth2 v0.2.0 // indirect
+	golang.org/x/oauth2 v0.3.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
 	golang.org/x/sys v0.3.0 // indirect
 	golang.org/x/text v0.5.0 // indirect
