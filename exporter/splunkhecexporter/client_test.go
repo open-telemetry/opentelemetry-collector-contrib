@@ -28,7 +28,6 @@ import (
 	"regexp"
 	"sort"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
@@ -1023,9 +1022,6 @@ func Test_pushLogData_nil_Logs(t *testing.T) {
 	c := client{
 		config: NewFactory().CreateDefaultConfig().(*Config),
 		logger: zaptest.NewLogger(t),
-		gzipWriterPool: &sync.Pool{New: func() interface{} {
-			return gzip.NewWriter(nil)
-		}},
 	}
 
 	for _, test := range tests {
@@ -1061,9 +1057,6 @@ func Test_pushLogData_PostError(t *testing.T) {
 		url:    &url.URL{Host: "in va lid"},
 		config: NewFactory().CreateDefaultConfig().(*Config),
 		logger: zaptest.NewLogger(t),
-		gzipWriterPool: &sync.Pool{New: func() interface{} {
-			return gzip.NewWriter(nil)
-		}},
 	}
 
 	// 2000 log records -> ~371888 bytes when JSON encoded.
@@ -1104,9 +1097,6 @@ func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
 		url:    &url.URL{Scheme: "http", Host: "splunk"},
 		config: NewFactory().CreateDefaultConfig().(*Config),
 		logger: zaptest.NewLogger(t),
-		gzipWriterPool: &sync.Pool{New: func() interface{} {
-			return gzip.NewWriter(nil)
-		}},
 	}
 	logs := createLogData(1, 1, 1)
 
@@ -1139,9 +1129,6 @@ func Test_pushLogData_ShouldReturnUnsentLogsOnly(t *testing.T) {
 		url:    &url.URL{Scheme: "http", Host: "splunk"},
 		config: config,
 		logger: zaptest.NewLogger(t),
-		gzipWriterPool: &sync.Pool{New: func() interface{} {
-			return gzip.NewWriter(nil)
-		}},
 	}
 
 	// Just two records
@@ -1169,9 +1156,6 @@ func Test_pushLogData_ShouldAddHeadersForProfilingData(t *testing.T) {
 		url:    &url.URL{Scheme: "http", Host: "splunk"},
 		config: NewFactory().CreateDefaultConfig().(*Config),
 		logger: zaptest.NewLogger(t),
-		gzipWriterPool: &sync.Pool{New: func() interface{} {
-			return gzip.NewWriter(nil)
-		}},
 	}
 
 	logs := createLogDataWithCustomLibraries(1, []string{"otel.logs", "otel.profiling"}, []int{10, 20})
@@ -1238,9 +1222,6 @@ func benchPushLogData(b *testing.B, numResources int, numProfiling int, numNonPr
 		url:    &url.URL{Scheme: "http", Host: "splunk"},
 		config: NewFactory().CreateDefaultConfig().(*Config),
 		logger: zaptest.NewLogger(b),
-		gzipWriterPool: &sync.Pool{New: func() interface{} {
-			return gzip.NewWriter(nil)
-		}},
 	}
 
 	c.client, _ = newTestClient(200, "OK")
@@ -1261,9 +1242,6 @@ func Test_pushLogData_Small_MaxContentLength(t *testing.T) {
 		logger: zaptest.NewLogger(t),
 		url:    &url.URL{Scheme: "http", Host: "splunk"},
 		client: http.DefaultClient,
-		gzipWriterPool: &sync.Pool{New: func() interface{} {
-			return gzip.NewWriter(nil)
-		}},
 	}
 	c.config.MaxContentLengthLogs = 1
 
@@ -1339,9 +1317,6 @@ func TestSubLogs(t *testing.T) {
 
 	c := client{
 		config: NewFactory().CreateDefaultConfig().(*Config),
-		gzipWriterPool: &sync.Pool{New: func() interface{} {
-			return gzip.NewWriter(nil)
-		}},
 	}
 
 	// Logs subset from leftmost index (resource 0, library 0, record 0).
@@ -1413,9 +1388,7 @@ func TestHecHealthCheckFailed(t *testing.T) {
 		url:    &url.URL{Scheme: "http", Host: "splunk"},
 		config: NewFactory().CreateDefaultConfig().(*Config),
 		logger: zaptest.NewLogger(t),
-		gzipWriterPool: &sync.Pool{New: func() interface{} {
-			return gzip.NewWriter(nil)
-		}},
+
 		healthCheckURL: &url.URL{Scheme: "http", Host: "splunk", Path: "/services/collector/health"},
 	}
 	c.client, _ = newTestClient(503, "NOK")
@@ -1429,9 +1402,7 @@ func TestHecHealthCheckSucceded(t *testing.T) {
 		url:    &url.URL{Scheme: "http", Host: "splunk"},
 		config: NewFactory().CreateDefaultConfig().(*Config),
 		logger: zaptest.NewLogger(t),
-		gzipWriterPool: &sync.Pool{New: func() interface{} {
-			return gzip.NewWriter(nil)
-		}},
+
 		healthCheckURL: &url.URL{Scheme: "http", Host: "splunk", Path: "/services/collector/health"},
 	}
 	c.client, _ = newTestClient(200, "OK")
@@ -1459,16 +1430,11 @@ func BenchmarkPushLogRecords(b *testing.B) {
 		url:    &url.URL{Scheme: "http", Host: "splunk"},
 		config: NewFactory().CreateDefaultConfig().(*Config),
 		logger: zap.NewNop(),
-		gzipWriterPool: &sync.Pool{New: func() interface{} {
-			return gzip.NewWriter(nil)
-		}},
 	}
 	sender := func(ctx context.Context, state *bufferState, headers map[string]string) error {
 		return nil
 	}
-	state := makeBlankBufferState(4096, true, &sync.Pool{New: func() interface{} {
-		return gzip.NewWriter(nil)
-	}})
+	state := makeBlankBufferState(4096, true)
 	for n := 0; n < b.N; n++ {
 		permanentErrs, sendingErr := c.pushLogRecords(context.Background(), logs.ResourceLogs(), state, map[string]string{}, sender)
 		assert.NoError(b, sendingErr)

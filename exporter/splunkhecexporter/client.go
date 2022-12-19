@@ -53,7 +53,6 @@ type client struct {
 	logger         *zap.Logger
 	wg             sync.WaitGroup
 	headers        map[string]string
-	gzipWriterPool *sync.Pool
 }
 
 // bufferState encapsulates intermediate buffer state when pushing data
@@ -317,7 +316,7 @@ func isProfilingData(sl plog.ScopeLogs) bool {
 	return sl.Scope().Name() == profilingLibraryName
 }
 
-func makeBlankBufferState(bufCap uint, compressionAvailable bool, pool *sync.Pool) *bufferState {
+func makeBlankBufferState(bufCap uint, compressionAvailable bool) *bufferState {
 	// Buffer of JSON encoded Splunk events, last record is expected to overflow bufCap, hence the padding
 	buf := bytes.NewBuffer(make([]byte, 0, bufCap+bufCapPadding))
 
@@ -339,8 +338,8 @@ func makeBlankBufferState(bufCap uint, compressionAvailable bool, pool *sync.Poo
 // The input data may contain both logs and profiling data.
 // They are batched separately and sent with different HTTP headers
 func (c *client) pushLogDataInBatches(ctx context.Context, ld plog.Logs, send func(context.Context, *bufferState, map[string]string) error) error {
-	var bufState = makeBlankBufferState(c.config.MaxContentLengthLogs, !c.config.DisableCompression, c.gzipWriterPool)
-	var profilingBufState = makeBlankBufferState(c.config.MaxContentLengthLogs, !c.config.DisableCompression, c.gzipWriterPool)
+	var bufState = makeBlankBufferState(c.config.MaxContentLengthLogs, !c.config.DisableCompression)
+	var profilingBufState = makeBlankBufferState(c.config.MaxContentLengthLogs, !c.config.DisableCompression)
 	var permanentErrors []error
 
 	var rls = ld.ResourceLogs()
@@ -595,7 +594,7 @@ func (c *client) pushTracesData(ctx context.Context, tds ptrace.ResourceSpansSli
 // The batch content length is restricted to MaxContentLengthMetrics.
 // md metrics are parsed to Splunk events.
 func (c *client) pushMetricsDataInBatches(ctx context.Context, md pmetric.Metrics, send func(context.Context, *bufferState) error) error {
-	var bufState = makeBlankBufferState(c.config.MaxContentLengthMetrics, !c.config.DisableCompression, c.gzipWriterPool)
+	var bufState = makeBlankBufferState(c.config.MaxContentLengthMetrics, !c.config.DisableCompression)
 	var permanentErrors []error
 
 	var rms = md.ResourceMetrics()
@@ -630,7 +629,7 @@ func (c *client) pushMetricsDataInBatches(ctx context.Context, md pmetric.Metric
 // The batch content length is restricted to MaxContentLengthMetrics.
 // td traces are parsed to Splunk events.
 func (c *client) pushTracesDataInBatches(ctx context.Context, td ptrace.Traces, send func(context.Context, *bufferState) error) error {
-	bufState := makeBlankBufferState(c.config.MaxContentLengthTraces, !c.config.DisableCompression, c.gzipWriterPool)
+	bufState := makeBlankBufferState(c.config.MaxContentLengthTraces, !c.config.DisableCompression)
 	var permanentErrors []error
 
 	var rts = td.ResourceSpans()
