@@ -26,8 +26,8 @@ github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZb
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/prometheus/common v0.38.0 h1:VTQitp6mXTdUoCmDMugDVOJ1opi6ADftKfp/yeqTR/E=
 github.com/prometheus/common v0.38.0/go.mod h1:MBXfmBQZrK5XpbCkjofnXs96LD2QQ7fEq4C0xjC/yec=
-github.com/prometheus/prometheus v0.40.6 h1:JP2Wbm4HJI9OlWbOzCGRL3zlOXFdSzC0TttI09+EodM=
-github.com/prometheus/prometheus v0.40.6/go.mod h1:nO+vI0cJo1ezp2DPGw5NEnTlYHGRpBFrqE4zb9O0g0U=
+github.com/prometheus/prometheus v0.40.7 h1:cYtp4YrR9M99YpTUfXbei/HjIJJ+En23NKsTCeZ2U2w=
+github.com/prometheus/prometheus v0.40.7/go.mod h1:nO+vI0cJo1ezp2DPGw5NEnTlYHGRpBFrqE4zb9O0g0U=
 github.com/rogpeppe/go-internal v1.9.0 h1:73kH8U+JUqXU8lRuOHeVHaa/SZPifC7BkcraZVejAe8=
 github.com/rogpeppe/go-internal v1.9.0/go.mod h1:WtVeX8xhTBvf0smdhujwtBcq4Qrzq/fJaraNFVN+nFs=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
