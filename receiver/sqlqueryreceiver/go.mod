@@ -8,7 +8,7 @@ require (
 	github.com/docker/go-connections v0.4.0
 	github.com/go-sql-driver/mysql v1.7.0
 	github.com/lib/pq v1.10.7
-	github.com/sijms/go-ora/v2 v2.5.18
+	github.com/sijms/go-ora/v2 v2.5.20
 	github.com/snowflakedb/gosnowflake v1.6.15
 	github.com/stretchr/testify v1.8.1
 	github.com/testcontainers/testcontainers-go v0.15.0
