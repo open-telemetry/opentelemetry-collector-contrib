@@ -22,6 +22,7 @@ import (
 	"path"
 
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -92,7 +93,7 @@ func (c *Config) Validate() error {
 
 	headers := http.Header{}
 	for k, v := range c.Headers {
-		headers.Set(k, v)
+		headers.Set(k, string(v))
 	}
 
 	// We require these headers, which should not be overwritten by the user
@@ -123,7 +124,7 @@ func (c *Config) sanitize() error {
 	c.unstructuredEndpoint = unstructured
 
 	if c.Headers == nil {
-		c.Headers = make(map[string]string)
+		c.Headers = make(map[string]configopaque.String)
 	}
 
 	c.Headers["content-type"] = "application/json"

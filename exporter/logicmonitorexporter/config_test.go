@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
@@ -126,7 +127,7 @@ func TestLoadConfig(t *testing.T) {
 				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "https://company.logicmonitor.com/rest",
-					Headers: map[string]string{
+					Headers: map[string]configopaque.String{
 						"Authorization": "Bearer <token>",
 					},
 				},

@@ -32,6 +32,7 @@ import (
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -118,7 +119,7 @@ func TestExporter_pushLogData(t *testing.T) {
 	genericConfig := &Config{
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "",
-			Headers: map[string]string{
+			Headers: map[string]configopaque.String{
 				"X-Custom-Header": "some_value",
 			},
 		},

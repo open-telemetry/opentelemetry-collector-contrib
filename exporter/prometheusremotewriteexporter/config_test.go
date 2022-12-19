@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -73,7 +74,7 @@ func TestLoadConfig(t *testing.T) {
 					ReadBufferSize:  0,
 					WriteBufferSize: 512 * 1024,
 					Timeout:         5 * time.Second,
-					Headers: map[string]string{
+					Headers: map[string]configopaque.String{
 						"Prometheus-Remote-Write-Version": "0.1.0",
 						"X-Scope-OrgID":                   "234"},
 				},

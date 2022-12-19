@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -37,7 +38,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint:        "",
 			Timeout:         30 * time.Second,
-			Headers:         map[string]string{},
+			Headers:         map[string]configopaque.String{},
 			WriteBufferSize: 512 * 1024,
 		},
 	}, cfg, "failed to create default config")
@@ -64,7 +65,7 @@ func TestLoadConfig(t *testing.T) {
 			HTTPClientSettings: confighttp.HTTPClientSettings{
 				Endpoint:        "https://example.com/api/",
 				Timeout:         30 * time.Second,
-				Headers:         map[string]string{},
+				Headers:         map[string]configopaque.String{},
 				WriteBufferSize: 512 * 1024,
 			},
 			Endpoint: "https://example.com/api/",
@@ -85,7 +86,7 @@ func TestLoadConfig(t *testing.T) {
 			HTTPClientSettings: confighttp.HTTPClientSettings{
 				Endpoint:        "https://example.com/api/",
 				Timeout:         30 * time.Second,
-				Headers:         map[string]string{},
+				Headers:         map[string]configopaque.String{},
 				WriteBufferSize: 512 * 1024,
 				TLSSetting: configtls.TLSClientSetting{
 					TLSSetting: configtls.TLSSetting{
@@ -111,7 +112,7 @@ func TestLoadConfig(t *testing.T) {
 			HTTPClientSettings: confighttp.HTTPClientSettings{
 				Endpoint:        "https://example.com/api/",
 				Timeout:         30 * time.Second,
-				Headers:         map[string]string{},
+				Headers:         map[string]configopaque.String{},
 				WriteBufferSize: 512 * 1024,
 			},
 			Endpoint: "https://example.com/api/",
