@@ -17,6 +17,7 @@ package clientutil // import "github.com/open-telemetry/opentelemetry-collector-
 import (
 	"context"
 	"errors"
+	"os"
 
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV1"
@@ -63,6 +64,9 @@ func ValidateAPIKey(ctx context.Context, apiKey string, logger *zap.Logger, apiC
 
 // GetRequestContext creates a new context with API key for DatadogV2 requests
 func GetRequestContext(ctx context.Context, apiKey string) context.Context {
+	if _, ok := os.LookupEnv("DD_API_KEY"); ok {
+		return datadog.NewDefaultContext(ctx)
+	}
 	if ctx == nil {
 		ctx = context.Background()
 	}

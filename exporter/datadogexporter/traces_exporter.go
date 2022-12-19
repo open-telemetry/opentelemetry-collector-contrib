@@ -53,21 +53,16 @@ type traceExporter struct {
 }
 
 func newTracesExporter(ctx context.Context, params exporter.CreateSettings, cfg *Config, onceMetadata *sync.Once, sourceProvider source.Provider, agent *agent.Agent) (*traceExporter, error) {
-	// client to send running metric to the backend & perform API key validation
-	client := clientutil.CreateZorkianClient(cfg.API.Key, cfg.Metrics.TCPAddr.Endpoint)
-	if err := clientutil.ValidateAPIKeyZorkian(params.Logger, client); err != nil && cfg.API.FailOnInvalidKey {
-		return nil, err
-	}
 	exp := &traceExporter{
 		params:         params,
 		cfg:            cfg,
 		ctx:            ctx,
-		client:         client,
 		agent:          agent,
 		onceMetadata:   onceMetadata,
 		scrubber:       scrub.NewScrubber(),
 		sourceProvider: sourceProvider,
 	}
+	// client to send running metric to the backend & perform API key validation
 	if isMetricExportV2Enabled() {
 		apiClient := clientutil.CreateAPIClient(
 			params.BuildInfo,
