@@ -302,7 +302,7 @@ func TestSanitizeValid(t *testing.T) {
 	assert.Equal(t, "localhost:8080", cfg.structuredEndpoint.Host)
 	assert.Equal(t, structuredPath, cfg.structuredEndpoint.Path)
 
-	assert.Equal(t, map[string]string{
+	assert.Equal(t, map[string]configopaque.String{
 		"content-type":     "application/json",
 		"content-encoding": "gzip",
 		"user-agent":       "opentelemetry-collector-contrib Humio",
@@ -327,7 +327,7 @@ func TestSanitizeCustomHeaders(t *testing.T) {
 
 	// Assert
 	require.NoError(t, err)
-	assert.Equal(t, map[string]string{
+	assert.Equal(t, map[string]configopaque.String{
 		"content-type":     "application/json",
 		"content-encoding": "gzip",
 		"user-agent":       "Humio",
@@ -348,7 +348,7 @@ func TestSanitizeNoCompression(t *testing.T) {
 
 	// Assert
 	require.NoError(t, err)
-	assert.Equal(t, map[string]string{
+	assert.Equal(t, map[string]configopaque.String{
 		"content-type": "application/json",
 		"user-agent":   "opentelemetry-collector-contrib Humio",
 	}, cfg.Headers)
