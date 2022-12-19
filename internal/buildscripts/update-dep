@@ -4,8 +4,6 @@
 
 source $TOPDIR/internal/buildscripts/modules
 
-echo $modules
-
 set -e
 
 if grep -q "$MODULE " go.mod; then
