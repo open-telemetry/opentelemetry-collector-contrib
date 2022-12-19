@@ -17,7 +17,7 @@ require (
 	go.opentelemetry.io/collector/featuregate v0.67.1-0.20221216200611-892d07dffbb8
 	go.opentelemetry.io/collector/pdata v1.0.0-rc1.0.20221216200611-892d07dffbb8
 	go.opentelemetry.io/collector/semconv v0.67.1-0.20221216200611-892d07dffbb8
-	google.golang.org/api v0.104.0
+	google.golang.org/api v0.105.0
 	google.golang.org/genproto v0.0.0-20221206210731-b1a01be3a5f6
 	google.golang.org/grpc v1.51.0
 	google.golang.org/protobuf v1.28.1
