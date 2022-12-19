@@ -72,17 +72,29 @@ check_collector_versions_correct() {
    fi
 }
 
+MAIN_MOD_FILE="./go.mod"
+
 # Note space at end of string. This is so it filters for the exact string
 # only and does not return string which contains this string as a substring.
-COLLECTOR_MODULE="go.opentelemetry.io/collector "
-PDATA_MODULE="go.opentelemetry.io/collector/pdata "
-
-MAIN_MOD_FILE="./go.mod"
-COLLECTOR_MOD_VERSION=$(get_collector_version "$COLLECTOR_MODULE" "$MAIN_MOD_FILE")
-PDATA_MOD_VERSION=$(get_collector_version "$PDATA_MODULE" "$MAIN_MOD_FILE")
-
-# Check the collector module version in each of the module files
-check_collector_versions_correct "$COLLECTOR_MODULE" "$COLLECTOR_MOD_VERSION"
-for mod in ${modules[@]}; do
-   check_collector_versions_correct "$mod" "$COLLECTOR_MOD_VERSION"
+BETA_MODULE="go.opentelemetry.io/collector "
+BETA_MOD_VERSION=$(get_collector_version "$BETA_MODULE" "$MAIN_MOD_FILE")
+check_collector_versions_correct "$BETA_MODULE" "$BETA_MOD_VERSION"
+for mod in ${beta_modules[@]}; do
+   check_collector_versions_correct "$mod" "$BETA_MOD_VERSION"
 done
+
+# Check RC modules
+RC_MODULE="go.opentelemetry.io/collector/pdata "
+RC_MOD_VERSION=$(get_collector_version "$RC_MODULE" "$MAIN_MOD_FILE")
+check_collector_versions_correct "$RC_MODULE" "$RC_MOD_VERSION"
+for mod in ${rc_modules[@]}; do
+   check_collector_versions_correct "$mod" "$RC_MOD_VERSION"
+done
+
+# Check stable modules, none currently exist, uncomment when pdata is 1.0.0
+# STABLE_MODULE="go.opentelemetry.io/collector/pdata "
+# STABLE_MOD_VERSION=$(get_collector_version "$STABLE_MODULE" "$MAIN_MOD_FILE")
+# check_collector_versions_correct "$STABLE_MODULE" "$STABLE_MOD_VERSION"
+# for mod in ${stable_modules[@]}; do
+#    check_collector_versions_correct "$mod" "$STABLE_MOD_VERSION"
+# done

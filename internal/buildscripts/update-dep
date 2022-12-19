@@ -12,7 +12,17 @@ fi
 
 # If MODULE is "go.opentelemetry.io/collector" need to update additional $modules as well
 if [ "$MODULE" == "go.opentelemetry.io/collector" ]; then
-  for mod in ${modules[@]}; do
+  for mod in ${beta_modules[@]}; do
+    if grep -q "$mod " go.mod; then
+      go get -d "$mod"@"$VERSION"
+    fi
+  done
+  for mod in ${rc_modules[@]}; do
+    if grep -q "$mod " go.mod; then
+      go get -d "$mod"@"$VERSION"
+    fi
+  done
+  for mod in ${stable_modules[@]}; do
     if grep -q "$mod " go.mod; then
       go get -d "$mod"@"$VERSION"
     fi
