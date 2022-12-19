@@ -66,7 +66,6 @@ type bufferState struct {
 	bufFront             *index
 	resource             int
 	library              int
-	gzipWriterPool       *sync.Pool
 }
 
 func (b *bufferState) reset() {
@@ -97,14 +96,13 @@ func (b *bufferState) accept(data []byte) (bool, error) {
 	if b.compressionAvailable && !b.compressionEnabled && bufLen > minCompressionLen {
 		// switch over to a zip buffer.
 		tmpBuf := bytes.NewBuffer(make([]byte, 0, b.bufferMaxLen+bufCapPadding))
-		writer := b.gzipWriterPool.Get().(*gzip.Writer)
+		writer := gzip.NewWriter(tmpBuf)
 		writer.Reset(tmpBuf)
 		zipWriter := &cancellableGzipWriter{
 			innerBuffer: tmpBuf,
 			innerWriter: writer,
 			// 8 bytes required for the zip footer.
-			maxCapacity:    b.bufferMaxLen - 8,
-			gzipWriterPool: b.gzipWriterPool,
+			maxCapacity: b.bufferMaxLen - 8,
 		}
 
 		if b.bufferMaxLen == 0 {
@@ -150,11 +148,10 @@ func (c *cancellableBytesWriter) Write(b []byte) (int, error) {
 }
 
 type cancellableGzipWriter struct {
-	innerBuffer    *bytes.Buffer
-	innerWriter    *gzip.Writer
-	maxCapacity    uint
-	gzipWriterPool *sync.Pool
-	len            int
+	innerBuffer *bytes.Buffer
+	innerWriter *gzip.Writer
+	maxCapacity uint
+	len         int
 }
 
 func (c *cancellableGzipWriter) Write(b []byte) (int, error) {
@@ -174,8 +171,7 @@ func (c *cancellableGzipWriter) Write(b []byte) (int, error) {
 		// so we create a copy of our content and add this new data, compressed, to check that it fits.
 		copyBuf := bytes.NewBuffer(make([]byte, 0, c.maxCapacity+bufCapPadding))
 		copyBuf.Write(c.innerBuffer.Bytes())
-		writerCopy := c.gzipWriterPool.Get().(*gzip.Writer)
-		defer c.gzipWriterPool.Put(writerCopy)
+		writerCopy := gzip.NewWriter(copyBuf)
 		writerCopy.Reset(copyBuf)
 		if _, err := writerCopy.Write(b); err != nil {
 			return 0, err
@@ -192,9 +188,7 @@ func (c *cancellableGzipWriter) Write(b []byte) (int, error) {
 }
 
 func (c *cancellableGzipWriter) close() error {
-	err := c.innerWriter.Close()
-	c.gzipWriterPool.Put(c.innerWriter)
-	return err
+	return c.innerWriter.Close()
 }
 
 // Composite index of a record.
@@ -336,7 +330,6 @@ func makeBlankBufferState(bufCap uint, compressionAvailable bool, pool *sync.Poo
 		bufFront:             nil, // Index of the log record of the first unsent event in buffer.
 		resource:             0,   // Index of currently processed Resource
 		library:              0,   // Index of currently processed Library
-		gzipWriterPool:       pool,
 	}
 }
 
