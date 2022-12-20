@@ -236,9 +236,6 @@ func (c *Config) Validate() error {
 	if c.TargetSystem == "" {
 		missingFields = append(missingFields, "`target_system`")
 	}
-	if c.JARPath == "" {
-		missingFields = append(missingFields, "`jar_path`")
-	}
 	if missingFields != nil {
 		return fmt.Errorf("missing required field(s): %v", strings.Join(missingFields, ", "))
 	}
