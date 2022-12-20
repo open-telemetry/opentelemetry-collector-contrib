@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadba
 go 1.18
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal v0.67.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal v0.68.0
 	github.com/stretchr/testify v1.8.1
 	go.opencensus.io v0.24.0
 	go.opentelemetry.io/collector v0.67.1-0.20221216200611-892d07dffbb8

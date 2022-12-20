@@ -4,8 +4,8 @@ go 1.18
 
 require (
 	github.com/observiq/nanojack v0.0.0-20201106172433-343928847ebc
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.67.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.67.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.68.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.68.0
 	github.com/stretchr/testify v1.8.1
 	go.opentelemetry.io/collector v0.67.1-0.20221216200611-892d07dffbb8
 	go.opentelemetry.io/collector/component v0.67.1-0.20221216200611-892d07dffbb8

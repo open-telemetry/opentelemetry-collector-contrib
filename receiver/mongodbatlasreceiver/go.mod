@@ -5,8 +5,8 @@ go 1.18
 require (
 	github.com/cenkalti/backoff/v4 v4.2.0
 	github.com/mongodb-forks/digest v1.0.4
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.67.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.67.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.68.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.68.0
 	github.com/stretchr/testify v1.8.1
 	go.mongodb.org/atlas v0.20.0
 	go.opentelemetry.io/collector v0.67.1-0.20221216200611-892d07dffbb8

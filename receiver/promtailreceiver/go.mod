@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/go-kit/log v0.2.1
 	github.com/grafana/loki v1.6.2-0.20221214135803-c71620ae9437
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.67.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.68.0
 	github.com/prometheus/client_golang v1.14.0
 	github.com/prometheus/common v0.39.0
 	github.com/prometheus/prometheus v0.40.7

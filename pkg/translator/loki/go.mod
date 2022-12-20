@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/go-logfmt/logfmt v0.5.1
 	github.com/gogo/protobuf v1.3.2
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.67.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.68.0
 	github.com/prometheus/common v0.39.0
 	github.com/prometheus/prometheus v0.40.7
 	github.com/stretchr/testify v1.8.1

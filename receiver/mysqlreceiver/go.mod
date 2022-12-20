@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/go-sql-driver/mysql v1.7.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest v0.67.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest v0.68.0
 	github.com/stretchr/testify v1.8.1
 	github.com/testcontainers/testcontainers-go v0.15.0
 	go.opentelemetry.io/collector v0.67.1-0.20221216200611-892d07dffbb8

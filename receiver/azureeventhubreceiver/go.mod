@@ -7,7 +7,7 @@ require (
 	github.com/Azure/azure-event-hubs-go/v3 v3.4.0
 	github.com/go-test/deep v1.1.0
 	github.com/json-iterator/go v1.1.12
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.67.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.68.0
 	github.com/relvacode/iso8601 v1.1.0
 	github.com/stretchr/testify v1.8.1
 	go.opentelemetry.io/collector v0.67.1-0.20221216200611-892d07dffbb8
