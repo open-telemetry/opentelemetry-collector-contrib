@@ -15,6 +15,7 @@
 package comparetest // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
 
 import (
+	"bytes"
 	"fmt"
 
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -62,7 +63,9 @@ func sortResourceMetrics(a, b pmetric.ResourceMetrics) bool {
 	if a.SchemaUrl() < b.SchemaUrl() {
 		return true
 	}
-	return pdatautil.MapHash(a.Resource().Attributes()) < pdatautil.MapHash(b.Resource().Attributes())
+	aAttrs := pdatautil.MapHash(a.Resource().Attributes())
+	bAttrs := pdatautil.MapHash(b.Resource().Attributes())
+	return bytes.Compare(aAttrs[:], bAttrs[:]) < 0
 }
 
 func sortMetricSlice(a, b pmetric.Metric) bool {
@@ -73,7 +76,9 @@ func sortResourceLogs(a, b plog.ResourceLogs) bool {
 	if a.SchemaUrl() < b.SchemaUrl() {
 		return true
 	}
-	return pdatautil.MapHash(a.Resource().Attributes()) < pdatautil.MapHash(b.Resource().Attributes())
+	aAttrs := pdatautil.MapHash(a.Resource().Attributes())
+	bAttrs := pdatautil.MapHash(b.Resource().Attributes())
+	return bytes.Compare(aAttrs[:], bAttrs[:]) < 0
 }
 
 func sortLogsInstrumentationLibrary(a, b plog.ScopeLogs) bool {
@@ -90,5 +95,7 @@ func sortLogsInstrumentationLibrary(a, b plog.ScopeLogs) bool {
 }
 
 func sortLogRecordSlice(a, b plog.LogRecord) bool {
-	return pdatautil.MapHash(a.Attributes()) < pdatautil.MapHash(b.Attributes())
+	aAttrs := pdatautil.MapHash(a.Attributes())
+	bAttrs := pdatautil.MapHash(b.Attributes())
+	return bytes.Compare(aAttrs[:], bAttrs[:]) < 0
 }
