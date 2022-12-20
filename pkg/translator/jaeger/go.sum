@@ -13,8 +13,8 @@ github.com/golang/protobuf v1.5.2/go.mod h1:XVQd3VNwM+JqD3oG2Ue2ip4fOMUkwXdXDdiu
 github.com/google/go-cmp v0.5.5/go.mod h1:v8dTdLbMG2kIc/vJvl+f65V22dbkXbowE6jgT/gNBxE=
 github.com/google/go-cmp v0.5.9 h1:O2Tfq5qg4qc4AmwVlvv0oLiVAGB7enBSJ2x2DqQFi38=
 github.com/google/gofuzz v1.0.0/go.mod h1:dBl0BpW6vV/+mYPU4Po3pmUjxk6FQPldtuIdl/M65Eg=
-github.com/jaegertracing/jaeger v1.39.1-0.20221110195127-14c11365a856 h1:YLZ10whw2OQWjHnjqklvXSpS6QY+xhPsUTUya8yQQvc=
-github.com/jaegertracing/jaeger v1.39.1-0.20221110195127-14c11365a856/go.mod h1:4UMLDc2yEm0f2Djlej2F7B/BMXRpSyVQX8CkuvtQ4nk=
+github.com/jaegertracing/jaeger v1.40.0 h1:JqqVD3xB1Fog+3SNkBdxzvreQfKy3t/9WGbMKUEBK/U=
+github.com/jaegertracing/jaeger v1.40.0/go.mod h1:xfiUocvyYe7CBX+GOCu3SYCKvQVCK947a3o0i7gTFwo=
 github.com/json-iterator/go v1.1.12 h1:PV8peI4a0ysnczrg+LtxykD8LfKY9ML6u2jnxaEnrnM=
 github.com/json-iterator/go v1.1.12/go.mod h1:e30LSqwooZae/UwlEbR2852Gd8hjQvJoHmT4TnhNGBo=
 github.com/kisielk/errcheck v1.5.0/go.mod h1:pFxgyoBC7bSaBwPgfKdkLd5X25qrDl4LWUI2bnpBCr8=
