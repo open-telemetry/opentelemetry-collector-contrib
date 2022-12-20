@@ -30,6 +30,8 @@ func TestDefaultMetrics(t *testing.T) {
 	enabledMetrics["process.disk.io"] = true
 	mb.RecordProcessDiskIoDataPoint(ts, 1, AttributeDirection(1))
 
+	mb.RecordProcessDiskOperationsDataPoint(ts, 1, AttributeDirection(1))
+
 	enabledMetrics["process.memory.physical_usage"] = true
 	mb.RecordProcessMemoryPhysicalUsageDataPoint(ts, 1)
 
@@ -73,6 +75,7 @@ func TestAllMetrics(t *testing.T) {
 		ProcessCPUTime:             MetricSettings{Enabled: true},
 		ProcessCPUUtilization:      MetricSettings{Enabled: true},
 		ProcessDiskIo:              MetricSettings{Enabled: true},
+		ProcessDiskOperations:      MetricSettings{Enabled: true},
 		ProcessMemoryPhysicalUsage: MetricSettings{Enabled: true},
 		ProcessMemoryUsage:         MetricSettings{Enabled: true},
 		ProcessMemoryUtilization:   MetricSettings{Enabled: true},
@@ -94,6 +97,7 @@ func TestAllMetrics(t *testing.T) {
 	mb.RecordProcessCPUTimeDataPoint(ts, 1, AttributeState(1))
 	mb.RecordProcessCPUUtilizationDataPoint(ts, 1, AttributeState(1))
 	mb.RecordProcessDiskIoDataPoint(ts, 1, AttributeDirection(1))
+	mb.RecordProcessDiskOperationsDataPoint(ts, 1, AttributeDirection(1))
 	mb.RecordProcessMemoryPhysicalUsageDataPoint(ts, 1)
 	mb.RecordProcessMemoryUsageDataPoint(ts, 1)
 	mb.RecordProcessMemoryUtilizationDataPoint(ts, 1)
@@ -208,6 +212,22 @@ func TestAllMetrics(t *testing.T) {
 			assert.True(t, ok)
 			assert.Equal(t, "read", attrVal.Str())
 			validatedMetrics["process.disk.io"] = struct{}{}
+		case "process.disk.operations":
+			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+			assert.Equal(t, "Number of disk operations performed by the process.", ms.At(i).Description())
+			assert.Equal(t, "{operations}", ms.At(i).Unit())
+			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+			dp := ms.At(i).Sum().DataPoints().At(0)
+			assert.Equal(t, start, dp.StartTimestamp())
+			assert.Equal(t, ts, dp.Timestamp())
+			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+			assert.Equal(t, int64(1), dp.IntValue())
+			attrVal, ok := dp.Attributes().Get("direction")
+			assert.True(t, ok)
+			assert.Equal(t, "read", attrVal.Str())
+			validatedMetrics["process.disk.operations"] = struct{}{}
 		case "process.memory.physical_usage":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
@@ -339,6 +359,7 @@ func TestNoMetrics(t *testing.T) {
 		ProcessCPUTime:             MetricSettings{Enabled: false},
 		ProcessCPUUtilization:      MetricSettings{Enabled: false},
 		ProcessDiskIo:              MetricSettings{Enabled: false},
+		ProcessDiskOperations:      MetricSettings{Enabled: false},
 		ProcessMemoryPhysicalUsage: MetricSettings{Enabled: false},
 		ProcessMemoryUsage:         MetricSettings{Enabled: false},
 		ProcessMemoryUtilization:   MetricSettings{Enabled: false},
@@ -359,6 +380,7 @@ func TestNoMetrics(t *testing.T) {
 	mb.RecordProcessCPUTimeDataPoint(ts, 1, AttributeState(1))
 	mb.RecordProcessCPUUtilizationDataPoint(ts, 1, AttributeState(1))
 	mb.RecordProcessDiskIoDataPoint(ts, 1, AttributeDirection(1))
+	mb.RecordProcessDiskOperationsDataPoint(ts, 1, AttributeDirection(1))
 	mb.RecordProcessMemoryPhysicalUsageDataPoint(ts, 1)
 	mb.RecordProcessMemoryUsageDataPoint(ts, 1)
 	mb.RecordProcessMemoryUtilizationDataPoint(ts, 1)
