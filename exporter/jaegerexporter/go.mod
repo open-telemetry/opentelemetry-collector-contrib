@@ -4,15 +4,15 @@ go 1.18
 
 require (
 	github.com/jaegertracing/jaeger v1.39.1-0.20221110195127-14c11365a856
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.67.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.67.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.68.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.68.0
 	github.com/stretchr/testify v1.8.1
 	go.opencensus.io v0.24.0
-	go.opentelemetry.io/collector v0.67.1-0.20221216200611-892d07dffbb8
-	go.opentelemetry.io/collector/component v0.67.1-0.20221216200611-892d07dffbb8
-	go.opentelemetry.io/collector/confmap v0.67.1-0.20221216200611-892d07dffbb8
-	go.opentelemetry.io/collector/consumer v0.67.1-0.20221216200611-892d07dffbb8
-	go.opentelemetry.io/collector/pdata v1.0.0-rc1.0.20221216200611-892d07dffbb8
+	go.opentelemetry.io/collector v0.68.0
+	go.opentelemetry.io/collector/component v0.68.0
+	go.opentelemetry.io/collector/confmap v0.68.0
+	go.opentelemetry.io/collector/consumer v0.68.0
+	go.opentelemetry.io/collector/pdata v1.0.0-rc2
 	go.uber.org/zap v1.24.0
 	google.golang.org/grpc v1.51.0
 )
@@ -41,8 +41,8 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/uber/jaeger-client-go v2.30.0+incompatible // indirect
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
-	go.opentelemetry.io/collector/featuregate v0.67.1-0.20221216200611-892d07dffbb8 // indirect
-	go.opentelemetry.io/collector/semconv v0.67.1-0.20221216200611-892d07dffbb8 // indirect
+	go.opentelemetry.io/collector/featuregate v0.68.0 // indirect
+	go.opentelemetry.io/collector/semconv v0.68.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.37.0 // indirect
 	go.opentelemetry.io/otel v1.11.2 // indirect
 	go.opentelemetry.io/otel/metric v0.34.0 // indirect
