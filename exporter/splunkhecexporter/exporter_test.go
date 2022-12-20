@@ -210,7 +210,7 @@ func TestConsumeMetricsData(t *testing.T) {
 				assert.Equal(t, "Splunk 1234", r.Header.Get("Authorization"))
 				assert.Equal(t, "gzip", r.Header.Get("Content-Encoding"))
 				zipReader, err := gzip.NewReader(bytes.NewReader(body))
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				bodyBytes, _ := io.ReadAll(zipReader)
 				firstPayload := strings.Split(string(bodyBytes), "}{")[0]
 				var metric splunk.Event

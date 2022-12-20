@@ -242,9 +242,6 @@ func (c *client) pushMetricsData(
 				localHeaders["Authorization"] = splunk.HECTokenHeader + " " + accessToken.Str()
 			}
 		}
-		if err := bufState.Close(); err != nil {
-			return err
-		}
 		return c.postEvents(ctx, bufState, localHeaders, bufState.compressionEnabled, bufState.buf.Len())
 	}
 
@@ -266,9 +263,6 @@ func (c *client) pushTraceData(
 			if found {
 				localHeaders["Authorization"] = splunk.HECTokenHeader + " " + accessToken.Str()
 			}
-		}
-		if err := bufState.Close(); err != nil {
-			return err
 		}
 		return c.postEvents(ctx, bufState, localHeaders, bufState.compressionEnabled, bufState.buf.Len())
 	}
@@ -292,9 +286,6 @@ func (c *client) pushLogData(ctx context.Context, ld plog.Logs) error {
 				}
 				localHeaders["Authorization"] = splunk.HECTokenHeader + " " + accessToken.Str()
 			}
-		}
-		if err := bufState.Close(); err != nil {
-			return err
 		}
 		return c.postEvents(ctx, bufState, localHeaders, bufState.compressionEnabled, bufState.buf.Len())
 	}
