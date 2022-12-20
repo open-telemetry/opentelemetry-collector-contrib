@@ -19,12 +19,12 @@ if [ "$MODULE" == "go.opentelemetry.io/collector" ]; then
   done
   for mod in ${rc_modules[@]}; do
     if grep -q "$mod " go.mod; then
-      go get -d "$mod"@"$VERSION"
+      go get -d "$mod"@"$RC_VERSION"
     fi
   done
   for mod in ${stable_modules[@]}; do
     if grep -q "$mod " go.mod; then
-      go get -d "$mod"@"$VERSION"
+      go get -d "$mod"@"$STABLE_VERSION"
     fi
   done
 fi
