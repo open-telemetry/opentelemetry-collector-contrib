@@ -54,8 +54,10 @@ func (m *mockRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) 
 }
 
 func TestBearerAuthenticatorHttp(t *testing.T) {
+	scheme := "TestScheme"
 	cfg := createDefaultConfig().(*Config)
 	cfg.BearerToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+	cfg.Scheme = scheme
 
 	bauth := newBearerTokenAuth(cfg, nil)
 	assert.NotNil(t, bauth)
@@ -69,7 +71,8 @@ func TestBearerAuthenticatorHttp(t *testing.T) {
 	resp, err := c.RoundTrip(request)
 	assert.NoError(t, err)
 	authHeaderValue := resp.Header.Get("Authorization")
-	assert.Equal(t, authHeaderValue, fmt.Sprintf("Bearer %s", cfg.BearerToken))
+	assert.Equal(t, authHeaderValue, fmt.Sprintf("%s %s", scheme, cfg.BearerToken))
+
 }
 
 func TestBearerAuthenticator(t *testing.T) {

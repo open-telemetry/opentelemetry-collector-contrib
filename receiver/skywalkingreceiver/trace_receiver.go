@@ -26,11 +26,11 @@ import (
 
 	"github.com/gorilla/mux"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/multierr"
 	"google.golang.org/grpc"
 	cds "skywalking.apache.org/repo/goapi/collect/agent/configuration/v3"
@@ -53,7 +53,6 @@ type configuration struct {
 // This receiver is basically a Skywalking collector.
 type swReceiver struct {
 	nextConsumer consumer.Traces
-	id           config.ComponentID
 
 	config *configuration
 
@@ -62,7 +61,7 @@ type swReceiver struct {
 
 	goroutines sync.WaitGroup
 
-	settings component.ReceiverCreateSettings
+	settings receiver.CreateSettings
 
 	grpcObsrecv          *obsreport.Receiver
 	httpObsrecv          *obsreport.Receiver
@@ -78,27 +77,35 @@ const (
 
 // newSkywalkingReceiver creates a TracesReceiver that receives traffic as a Skywalking collector
 func newSkywalkingReceiver(
-	id config.ComponentID,
 	config *configuration,
 	nextConsumer consumer.Traces,
-	set component.ReceiverCreateSettings,
-) *swReceiver {
+	set receiver.CreateSettings,
+) (*swReceiver, error) {
+
+	grpcObsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+		ReceiverID:             set.ID,
+		Transport:              grpcTransport,
+		ReceiverCreateSettings: set,
+	})
+	if err != nil {
+		return nil, err
+	}
+	httpObsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+		ReceiverID:             set.ID,
+		Transport:              collectorHTTPTransport,
+		ReceiverCreateSettings: set,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	return &swReceiver{
 		config:       config,
 		nextConsumer: nextConsumer,
-		id:           id,
 		settings:     set,
-		grpcObsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
-			ReceiverID:             id,
-			Transport:              grpcTransport,
-			ReceiverCreateSettings: set,
-		}),
-		httpObsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
-			ReceiverID:             id,
-			Transport:              collectorHTTPTransport,
-			ReceiverCreateSettings: set,
-		}),
-	}
+		grpcObsrecv:  grpcObsrecv,
+		httpObsrecv:  httpObsrecv,
+	}, nil
 }
 
 func (sr *swReceiver) collectorGRPCAddr() string {
@@ -166,12 +173,12 @@ func (sr *swReceiver) startCollector(host component.Host) error {
 	}
 
 	if sr.collectorGRPCEnabled() {
-		opts, err := sr.config.CollectorGRPCServerSettings.ToServerOption(host, sr.settings.TelemetrySettings)
+		var err error
+		sr.grpc, err = sr.config.CollectorGRPCServerSettings.ToServer(host, sr.settings.TelemetrySettings)
 		if err != nil {
 			return fmt.Errorf("failed to build the options for the Skywalking gRPC Collector: %w", err)
 		}
 
-		sr.grpc = grpc.NewServer(opts...)
 		gaddr := sr.collectorGRPCAddr()
 		gln, gerr := net.Listen("tcp", gaddr)
 		if gerr != nil {

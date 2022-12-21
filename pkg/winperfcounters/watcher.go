@@ -19,6 +19,7 @@ package winperfcounters // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters/internal/third_party/telegraf/win_perf_counters"
 )
@@ -104,9 +105,19 @@ func (pc *perfCounter) Path() string {
 }
 
 func (pc *perfCounter) ScrapeData() ([]CounterValue, error) {
-	err := pc.query.CollectData()
-	if err != nil {
-		return nil, fmt.Errorf("failed to collect data for performance counter '%s': %w", pc.path, err)
+	if err := pc.query.CollectData(); err != nil {
+		pdhErr, ok := err.(*win_perf_counters.PdhError)
+		if !ok || pdhErr.ErrorCode != win_perf_counters.PDH_CALC_NEGATIVE_DENOMINATOR {
+			return nil, fmt.Errorf("failed to collect data for performance counter '%s': %w", pc.path, err)
+		}
+
+		// A counter rolled over, so the value is invalid
+		// See https://support.microfocus.com/kb/doc.php?id=7010545
+		// Wait one second and retry once
+		time.Sleep(time.Second)
+		if retryErr := pc.query.CollectData(); retryErr != nil {
+			return nil, fmt.Errorf("failed retry for performance counter '%s': %w", pc.path, err)
+		}
 	}
 
 	vals, err := pc.query.GetFormattedCounterArrayDouble(pc.handle)

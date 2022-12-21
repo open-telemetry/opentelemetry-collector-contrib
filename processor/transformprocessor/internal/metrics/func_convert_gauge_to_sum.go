@@ -15,15 +15,16 @@
 package metrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics"
 
 import (
+	"context"
 	"fmt"
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoints"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 )
 
-func convertGaugeToSum(stringAggTemp string, monotonic bool) (ottl.ExprFunc[ottldatapoints.TransformContext], error) {
+func convertGaugeToSum(stringAggTemp string, monotonic bool) (ottl.ExprFunc[ottldatapoint.TransformContext], error) {
 	var aggTemp pmetric.AggregationTemporality
 	switch stringAggTemp {
 	case "delta":
@@ -34,10 +35,10 @@ func convertGaugeToSum(stringAggTemp string, monotonic bool) (ottl.ExprFunc[ottl
 		return nil, fmt.Errorf("unknown aggregation temporality: %s", stringAggTemp)
 	}
 
-	return func(ctx ottldatapoints.TransformContext) interface{} {
-		metric := ctx.GetMetric()
+	return func(_ context.Context, tCtx ottldatapoint.TransformContext) (interface{}, error) {
+		metric := tCtx.GetMetric()
 		if metric.Type() != pmetric.MetricTypeGauge {
-			return nil
+			return nil, nil
 		}
 
 		dps := metric.Gauge().DataPoints()
@@ -48,6 +49,6 @@ func convertGaugeToSum(stringAggTemp string, monotonic bool) (ottl.ExprFunc[ottl
 		// Setting the data type removed all the data points, so we must copy them back to the metric.
 		dps.CopyTo(metric.Sum().DataPoints())
 
-		return nil
+		return nil, nil
 	}, nil
 }

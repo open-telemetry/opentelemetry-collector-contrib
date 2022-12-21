@@ -21,6 +21,8 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/extension"
+	"go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/tools/cache"
@@ -29,7 +31,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
 
-var _ component.Extension = (*k8sObserver)(nil)
+var _ extension.Extension = (*k8sObserver)(nil)
 var _ observer.Observable = (*k8sObserver)(nil)
 
 type k8sObserver struct {
@@ -56,14 +58,18 @@ func (k *k8sObserver) Start(ctx context.Context, host component.Host) error {
 		if k.podListerWatcher != nil {
 			k.telemetry.Logger.Debug("creating and starting pod informer")
 			podInformer := cache.NewSharedInformer(k.podListerWatcher, &v1.Pod{}, 0)
-			podInformer.AddEventHandler(k.handler)
+			if _, err := podInformer.AddEventHandler(k.handler); err != nil {
+				k.telemetry.Logger.Error("error adding event handler to pod informer", zap.Error(err))
+			}
 			go podInformer.Run(k.stop)
 		}
 		if k.nodeListerWatcher != nil {
 			k.telemetry.Logger.Debug("creating and starting node informer")
 			nodeInformer := cache.NewSharedInformer(k.nodeListerWatcher, &v1.Node{}, 0)
 			go nodeInformer.Run(k.stop)
-			nodeInformer.AddEventHandler(k.handler)
+			if _, err := nodeInformer.AddEventHandler(k.handler); err != nil {
+				k.telemetry.Logger.Error("error adding event handler to node informer", zap.Error(err))
+			}
 		}
 	})
 	return nil
@@ -76,7 +82,7 @@ func (k *k8sObserver) Shutdown(ctx context.Context) error {
 }
 
 // newObserver creates a new k8s observer extension.
-func newObserver(config *Config, telemetrySettings component.TelemetrySettings) (component.Extension, error) {
+func newObserver(config *Config, set extension.CreateSettings) (extension.Extension, error) {
 	client, err := k8sconfig.MakeClient(config.APIConfig)
 	if err != nil {
 		return nil, err
@@ -91,7 +97,7 @@ func newObserver(config *Config, telemetrySettings component.TelemetrySettings) 
 		} else {
 			podSelector = fields.OneTermEqualSelector("spec.nodeName", config.Node)
 		}
-		telemetrySettings.Logger.Debug("observing pods")
+		set.Logger.Debug("observing pods")
 		podListerWatcher = cache.NewListWatchFromClient(restClient, "pods", v1.NamespaceAll, podSelector)
 	}
 
@@ -103,13 +109,13 @@ func newObserver(config *Config, telemetrySettings component.TelemetrySettings) 
 		} else {
 			nodeSelector = fields.OneTermEqualSelector("metadata.name", config.Node)
 		}
-		telemetrySettings.Logger.Debug("observing nodes")
+		set.Logger.Debug("observing nodes")
 		nodeListerWatcher = cache.NewListWatchFromClient(restClient, "nodes", v1.NamespaceAll, nodeSelector)
 	}
-	h := &handler{idNamespace: config.ID().String(), endpoints: &sync.Map{}, logger: telemetrySettings.Logger}
+	h := &handler{idNamespace: set.ID.String(), endpoints: &sync.Map{}, logger: set.TelemetrySettings.Logger}
 	obs := &k8sObserver{
-		EndpointsWatcher:  observer.NewEndpointsWatcher(h, time.Second, telemetrySettings.Logger),
-		telemetry:         telemetrySettings,
+		EndpointsWatcher:  observer.NewEndpointsWatcher(h, time.Second, set.TelemetrySettings.Logger),
+		telemetry:         set.TelemetrySettings,
 		podListerWatcher:  podListerWatcher,
 		nodeListerWatcher: nodeListerWatcher,
 		stop:              make(chan struct{}),

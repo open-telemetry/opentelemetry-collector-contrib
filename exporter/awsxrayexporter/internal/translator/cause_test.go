@@ -845,34 +845,24 @@ func TestParseExceptionWithInnerExceptionStacktrace(t *testing.T) {
 	message := "test"
 
 	// We ignore the exception type / message from the stacktrace
-	stacktrace := `System.Exception: test
-	at integration_test_app.Controllers.AppController.OutgoingHttp() in /Users/bhautip/Documents/otel-dotnet/aws-otel-dotnet/integration-test-app/integration-test-app/Controllers/AppController.cs:line 21
-	at lambda_method(Closure , Object , Object[] )
-	at Microsoft.Extensions.Internal.ObjectMethodExecutor.Execute(Object target, Object[] parameters)
-	at Microsoft.AspNetCore.Mvc.Infrastructure.ActionMethodExecutor.SyncObjectResultExecutor.Execute(IActionResultTypeMapper mapper, ObjectMethodExecutor executor, Object controller, Object[] arguments)
-	at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeActionMethodAsync>g__Logged|12_1(ControllerActionInvoker invoker)
-	at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.<InvokeNextActionFilterAsync>g__Awaited|10_0(ControllerActionInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
-	at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Rethrow(ActionExecutedContextSealed context)
-	at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.Next(State& next, Scope& scope, Object& state, Boolean& isCompleted)
-	at Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker.InvokeInnerFilterAsync()
-	--- End of stack trace from previous location where exception was thrown ---
-	at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|19_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)
-	at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeAsync>g__Logged|17_1(ResourceInvoker invoker)
-	at Microsoft.AspNetCore.Routing.EndpointMiddleware.<Invoke>g__AwaitRequestTask|6_0(Endpoint endpoint, Task requestTask, ILogger logger)
-	at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
-	at Microsoft.AspNetCore.Diagnostics.DeveloperExceptionPageMiddleware.Invoke(HttpContext context)`
+	stacktrace := "System.Exception: Second exception happened\r\n" +
+		" ---> System.Exception: Error happened when get weatherforecasts\r\n" +
+		"   at TestAppApi.Services.ForecastService.GetWeatherForecasts() in D:\\Users\\foobar\\test-app\\TestAppApi\\Services\\ForecastService.cs:line 9\r\n" +
+		"   --- End of inner exception stack trace ---\r\n" +
+		"   at TestAppApi.Services.ForecastService.GetWeatherForecasts() in D:\\Users\\foobar\\test-app\\TestAppApi\\Services\\ForecastService.cs:line 12\r\n" +
+		"   at TestAppApi.Controllers.WeatherForecastController.Get() in D:\\Users\\foobar\\test-app\\TestAppApi\\Controllers\\WeatherForecastController.cs:line 31"
 
 	exceptions := parseException(exceptionType, message, stacktrace, "dotnet")
 	assert.Len(t, exceptions, 1)
 	assert.Equal(t, "System.Exception", *exceptions[0].Type)
 	assert.Equal(t, "test", *exceptions[0].Message)
-	assert.Len(t, exceptions[0].Stack, 14)
-	assert.Equal(t, "integration_test_app.Controllers.AppController.OutgoingHttp()", *exceptions[0].Stack[0].Label)
-	assert.Equal(t, "/Users/bhautip/Documents/otel-dotnet/aws-otel-dotnet/integration-test-app/integration-test-app/Controllers/AppController.cs", *exceptions[0].Stack[0].Path)
-	assert.Equal(t, 21, *exceptions[0].Stack[0].Line)
-	assert.Equal(t, "Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.<InvokeFilterPipelineAsync>g__Awaited|19_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)", *exceptions[0].Stack[9].Label)
-	assert.Equal(t, "", *exceptions[0].Stack[9].Path)
-	assert.Equal(t, 0, *exceptions[0].Stack[9].Line)
+	assert.Len(t, exceptions[0].Stack, 3)
+	assert.Equal(t, "TestAppApi.Services.ForecastService.GetWeatherForecasts()", *exceptions[0].Stack[0].Label)
+	assert.Equal(t, "D:\\Users\\foobar\\test-app\\TestAppApi\\Services\\ForecastService.cs", *exceptions[0].Stack[0].Path)
+	assert.Equal(t, 9, *exceptions[0].Stack[0].Line)
+	assert.Equal(t, "TestAppApi.Controllers.WeatherForecastController.Get()", *exceptions[0].Stack[2].Label)
+	assert.Equal(t, "D:\\Users\\foobar\\test-app\\TestAppApi\\Controllers\\WeatherForecastController.cs", *exceptions[0].Stack[2].Path)
+	assert.Equal(t, 31, *exceptions[0].Stack[2].Line)
 }
 
 func TestParseExceptionWithMalformedStacktrace(t *testing.T) {

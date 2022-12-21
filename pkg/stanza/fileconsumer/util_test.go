@@ -33,6 +33,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
+func testEmitFunc(emitChan chan *emitParams) EmitFunc {
+	return func(_ context.Context, attrs *FileAttributes, token []byte) {
+		copied := make([]byte, len(token))
+		copy(copied, token)
+		emitChan <- &emitParams{attrs, copied}
+	}
+}
+
 // includeDir is a builder-like helper for quickly setting up a test config
 func (c *Config) includeDir(dir string) *Config {
 	c.Include = append(c.Include, fmt.Sprintf("%s/*", dir))
@@ -56,9 +64,7 @@ func buildTestManager(t *testing.T, cfg *Config) (*Manager, chan *emitParams) {
 }
 
 func buildTestManagerWithEmit(t *testing.T, cfg *Config, emitChan chan *emitParams) *Manager {
-	input, err := cfg.Build(testutil.Logger(t), func(_ context.Context, attrs *FileAttributes, token []byte) {
-		emitChan <- &emitParams{attrs, token}
-	})
+	input, err := cfg.Build(testutil.Logger(t), testEmitFunc(emitChan))
 	require.NoError(t, err)
 	return input
 }

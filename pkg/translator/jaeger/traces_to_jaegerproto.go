@@ -20,7 +20,7 @@ import (
 	"github.com/jaegertracing/jaeger/model"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
@@ -277,11 +277,7 @@ func makeJaegerProtoReferences(links ptrace.SpanLinkSlice, parentSpanID pcommon.
 		refs = append(refs, model.SpanRef{
 			TraceID: traceIDToJaegerProto(link.TraceID()),
 			SpanID:  spanIDToJaegerProto(link.SpanID()),
-
-			// Since Jaeger RefType is not captured in internal data,
-			// use SpanRefType_FOLLOWS_FROM by default.
-			// SpanRefType_CHILD_OF supposed to be set only from parentSpanID.
-			RefType: model.SpanRefType_FOLLOWS_FROM,
+			RefType: refTypeFromLink(link),
 		})
 	}
 
@@ -415,4 +411,21 @@ func getTagsFromInstrumentationLibrary(il pcommon.InstrumentationScope) ([]model
 	}
 
 	return keyValues, true
+}
+
+func refTypeFromLink(link ptrace.SpanLink) model.SpanRefType {
+	refTypeAttr, ok := link.Attributes().Get(conventions.AttributeOpentracingRefType)
+	if !ok {
+		return model.SpanRefType_FOLLOWS_FROM
+	}
+	return strToJRefType(refTypeAttr.Str())
+}
+
+func strToJRefType(attr string) model.SpanRefType {
+	if attr == conventions.AttributeOpentracingRefTypeChildOf {
+		return model.ChildOf
+	}
+	// There are only 2 types of SpanRefType we assume that everything
+	// that's not a model.ChildOf is a model.FollowsFrom
+	return model.FollowsFrom
 }

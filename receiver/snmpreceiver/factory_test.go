@@ -19,9 +19,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
@@ -42,9 +42,8 @@ func TestNewFactory(t *testing.T) {
 			testFunc: func(t *testing.T) {
 				factory := NewFactory()
 
-				var expectedCfg config.Receiver = &Config{
+				var expectedCfg component.Config = &Config{
 					ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-						ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
 						CollectionInterval: defaultCollectionInterval,
 					},
 					Endpoint:      defaultEndpoint,
@@ -75,7 +74,7 @@ func TestNewFactory(t *testing.T) {
 				}
 				_, err := factory.CreateMetricsReceiver(
 					context.Background(),
-					componenttest.NewNopReceiverCreateSettings(),
+					receivertest.NewNopCreateSettings(),
 					cfg,
 					consumertest.NewNop(),
 				)
@@ -88,7 +87,7 @@ func TestNewFactory(t *testing.T) {
 				factory := NewFactory()
 				_, err := factory.CreateMetricsReceiver(
 					context.Background(),
-					componenttest.NewNopReceiverCreateSettings(),
+					receivertest.NewNopCreateSettings(),
 					nil,
 					consumertest.NewNop(),
 				)
@@ -113,7 +112,7 @@ func TestNewFactory(t *testing.T) {
 				}
 				_, err := factory.CreateMetricsReceiver(
 					context.Background(),
-					componenttest.NewNopReceiverCreateSettings(),
+					receivertest.NewNopCreateSettings(),
 					cfg,
 					consumertest.NewNop(),
 				)
@@ -139,7 +138,7 @@ func TestNewFactory(t *testing.T) {
 				}
 				_, err := factory.CreateMetricsReceiver(
 					context.Background(),
-					componenttest.NewNopReceiverCreateSettings(),
+					receivertest.NewNopCreateSettings(),
 					cfg,
 					consumertest.NewNop(),
 				)
@@ -165,7 +164,7 @@ func TestNewFactory(t *testing.T) {
 				}
 				_, err := factory.CreateMetricsReceiver(
 					context.Background(),
-					componenttest.NewNopReceiverCreateSettings(),
+					receivertest.NewNopCreateSettings(),
 					cfg,
 					consumertest.NewNop(),
 				)
@@ -174,7 +173,7 @@ func TestNewFactory(t *testing.T) {
 			},
 		},
 		{
-			desc: "CreateMetricsReceiver adds missing metric gauge value type as float",
+			desc: "CreateMetricsReceiver adds missing metric gauge value type as double",
 			testFunc: func(t *testing.T) {
 				factory := NewFactory()
 				cfg := factory.CreateDefaultConfig()
@@ -189,16 +188,16 @@ func TestNewFactory(t *testing.T) {
 				}
 				_, err := factory.CreateMetricsReceiver(
 					context.Background(),
-					componenttest.NewNopReceiverCreateSettings(),
+					receivertest.NewNopCreateSettings(),
 					cfg,
 					consumertest.NewNop(),
 				)
 				require.NoError(t, err)
-				require.Equal(t, "float", snmpCfg.Metrics["m1"].Gauge.ValueType)
+				require.Equal(t, "double", snmpCfg.Metrics["m1"].Gauge.ValueType)
 			},
 		},
 		{
-			desc: "CreateMetricsReceiver adds missing metric sum value type as float",
+			desc: "CreateMetricsReceiver adds missing metric sum value type as double",
 			testFunc: func(t *testing.T) {
 				factory := NewFactory()
 				cfg := factory.CreateDefaultConfig()
@@ -213,12 +212,12 @@ func TestNewFactory(t *testing.T) {
 				}
 				_, err := factory.CreateMetricsReceiver(
 					context.Background(),
-					componenttest.NewNopReceiverCreateSettings(),
+					receivertest.NewNopCreateSettings(),
 					cfg,
 					consumertest.NewNop(),
 				)
 				require.NoError(t, err)
-				require.Equal(t, "float", snmpCfg.Metrics["m1"].Sum.ValueType)
+				require.Equal(t, "double", snmpCfg.Metrics["m1"].Sum.ValueType)
 			},
 		},
 		{
@@ -237,7 +236,7 @@ func TestNewFactory(t *testing.T) {
 				}
 				_, err := factory.CreateMetricsReceiver(
 					context.Background(),
-					componenttest.NewNopReceiverCreateSettings(),
+					receivertest.NewNopCreateSettings(),
 					cfg,
 					consumertest.NewNop(),
 				)
@@ -261,7 +260,7 @@ func TestNewFactory(t *testing.T) {
 				}
 				_, err := factory.CreateMetricsReceiver(
 					context.Background(),
-					componenttest.NewNopReceiverCreateSettings(),
+					receivertest.NewNopCreateSettings(),
 					cfg,
 					consumertest.NewNop(),
 				)

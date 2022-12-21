@@ -18,9 +18,8 @@ import (
 	"context"
 	"fmt"
 
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter"
@@ -51,12 +50,11 @@ func NewSapmDataSender(port int) *SapmDataSender {
 func (je *SapmDataSender) Start() error {
 	factory := sapmexporter.NewFactory()
 	cfg := &sapmexporter.Config{
-		ExporterSettings:   config.NewExporterSettings(config.NewComponentID(factory.Type())),
 		Endpoint:           fmt.Sprintf("http://%s/v2/trace", je.GetEndpoint()),
 		DisableCompression: true,
 		AccessToken:        "MyToken",
 	}
-	params := componenttest.NewNopExporterCreateSettings()
+	params := exportertest.NewNopCreateSettings()
 	params.Logger = zap.L()
 
 	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)

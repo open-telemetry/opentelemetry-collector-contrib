@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 	"go.uber.org/zap"
 
@@ -36,20 +37,20 @@ import (
 // jmxMainClass the class containing the main function for the JMX Metric Gatherer JAR
 const jmxMainClass = "io.opentelemetry.contrib.jmxmetrics.JmxMetrics"
 
-var _ component.MetricsReceiver = (*jmxMetricReceiver)(nil)
+var _ receiver.Metrics = (*jmxMetricReceiver)(nil)
 
 type jmxMetricReceiver struct {
 	logger       *zap.Logger
 	config       *Config
 	subprocess   *subprocess.Subprocess
-	params       component.ReceiverCreateSettings
-	otlpReceiver component.MetricsReceiver
+	params       receiver.CreateSettings
+	otlpReceiver receiver.Metrics
 	nextConsumer consumer.Metrics
 	configFile   string
 }
 
 func newJMXMetricReceiver(
-	params component.ReceiverCreateSettings,
+	params receiver.CreateSettings,
 	config *Config,
 	nextConsumer consumer.Metrics,
 ) *jmxMetricReceiver {
@@ -131,7 +132,7 @@ func (jmx *jmxMetricReceiver) Shutdown(ctx context.Context) error {
 	return removeErr
 }
 
-func (jmx *jmxMetricReceiver) buildOTLPReceiver() (component.MetricsReceiver, error) {
+func (jmx *jmxMetricReceiver) buildOTLPReceiver() (receiver.Metrics, error) {
 	endpoint := jmx.config.OTLPExporterConfig.Endpoint
 	host, port, err := net.SplitHostPort(endpoint)
 	if err != nil {

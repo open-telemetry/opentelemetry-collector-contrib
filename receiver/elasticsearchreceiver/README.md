@@ -19,7 +19,7 @@ See the [Elasticsearch docs](https://www.elastic.co/guide/en/elasticsearch/refer
 
 The following settings are optional:
 - `metrics` (default: see `DefaultMetricsSettings` [here](./internal/metadata/generated_metrics.go): Allows enabling and disabling specific metrics from being collected in this receiver.
-- `nodes` (default: `["_all"]`): Allows specifying node filters that define which nodes are scraped for node-level metrics. See [the Elasticsearch documentation](https://www.elastic.co/guide/en/elasticsearch/reference/7.9/cluster.html#cluster-nodes) for allowed filters. If this option is left explicitly empty, then no node-level metrics will be scraped.
+- `nodes` (default: `["_all"]`): Allows specifying node filters that define which nodes are scraped for node-level and cluster-level metrics. See [the Elasticsearch documentation](https://www.elastic.co/guide/en/elasticsearch/reference/7.9/cluster.html#cluster-nodes) for allowed filters. If this option is left explicitly empty, then no node-level metrics will be scraped and cluster-level metrics will scrape only metrics related to cluster's health.
 - `skip_cluster_metrics` (default: `false`): If true, cluster-level metrics will not be scraped.
 - `indices` (default: `["_all"]`): Allows specifying index filters that define which indices are scraped for index-level metrics. See [the Elasticsearch documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-stats.html#index-stats-api-path-params) for allowed filters. If this option is left explicitly empty, then no index-level metrics will be scraped.
 - `endpoint` (default = `http://localhost:9200`): The base URL of the Elasticsearch API for the cluster to monitor.
@@ -56,17 +56,33 @@ The following metric are available with versions:
 
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml)
 
-### Feature gate configurations
+## Feature gate configurations
 
-#### Transition from metrics with "direction" attribute
+See the [Collector feature gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) for an overview of feature gates in the collector.
 
-The proposal to change metrics from being reported with a `direction` attribute has been reverted in the specification. As a result, the
-following feature gates will be removed in v0.62.0:
+**BETA**: `receiver.elasticsearch.emitClusterHealthDetailedShardMetrics`
 
-- **receiver.elasticsearchreceiver.emitMetricsWithoutDirectionAttribute**
-- **receiver.elasticsearchreceiver.emitMetricsWithDirectionAttribute**
+The feature gate `receiver.elasticsearch.emitClusterHealthDetailedShardMetrics` once enabled starts emitting the metric `elasticsearch.cluster.shards`
+with two additional data points - one with `state` equal to `active_primary` and one with `state` equal to `unassigned_delayed`.
 
-For additional information, see https://github.com/open-telemetry/opentelemetry-specification/issues/2726.
+This is considered a breaking change for existing users of this receiver, and it is recommended to migrate to the new implementation when possible. Any new users planning to adopt this receiver should enable this feature gate to avoid having to migrate any visualisations or alerts.
+
+This feature gate is enabled by default, and eventually the old implementation will be removed. It aims
+to give users time to migrate to the new implementation. The target release for the old implementation to be removed
+is 0.71.0.
+
+**BETA**: `receiver.elasticsearch.emitAllIndexOperationMetrics`
+
+The feature gate `receiver.elasticsearch.emitAllIndexOperationMetrics` once enabled starts emitting metrics `elasticsearch.index.operation.count`
+and `elasticsearch.index.operation.time` with all possible data points - for every possible operation type and both shard aggregation types.
+
+Because of the amount of added data points, this change might affect performance for existing users of this receiver.
+It is recommended to migrate to the new implementation when possible.
+Any new users planning to adopt this receiver should enable this feature gate to avoid risking unexpected slowdowns.
+
+This feature gate is enabled by default, and eventually the old implementation will be removed. It aims
+to give users time to migrate to the new implementation. The target release for the old implementation to be removed
+is 0.71.0.
 
 [beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

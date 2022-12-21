@@ -21,6 +21,7 @@ import (
 	"github.com/prometheus/common/model"
 	promConfig "github.com/prometheus/prometheus/config"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -324,11 +325,11 @@ go_threads 18
 # HELP http_request_duration_seconds A histogram of the request duration.
 # TYPE http_request_duration_seconds histogram
 http_request_duration_seconds_bucket{method="post",code="200",le="1"} 8
-http_request_duration_seconds_bucket{method="post",code="200",le="+Inf"} 2
+http_request_duration_seconds_bucket{method="post",code="200",le="+Inf"} 10
 http_request_duration_seconds_sum{method="post",code="200"} 7
 http_request_duration_seconds_count{method="post",code="200"} 10
 http_request_duration_seconds_bucket{method="post",code="400",le="1"} 30
-http_request_duration_seconds_bucket{method="post",code="400",le="+Inf"} 20
+http_request_duration_seconds_bucket{method="post",code="400",le="+Inf"} 50
 http_request_duration_seconds_sum{method="post",code="400"} 25
 http_request_duration_seconds_count{method="post",code="400"} 50
 
@@ -355,15 +356,15 @@ go_threads 16
 # HELP http_request_duration_seconds A histogram of the request duration.
 # TYPE http_request_duration_seconds histogram
 http_request_duration_seconds_bucket{method="post",code="200",le="1"} 40
-http_request_duration_seconds_bucket{method="post",code="200",le="+Inf"} 10
+http_request_duration_seconds_bucket{method="post",code="200",le="+Inf"} 50
 http_request_duration_seconds_sum{method="post",code="200"} 43
 http_request_duration_seconds_count{method="post",code="200"} 50
 http_request_duration_seconds_bucket{method="post",code="300",le="1"} 3
-http_request_duration_seconds_bucket{method="post",code="300",le="+Inf"} 0
+http_request_duration_seconds_bucket{method="post",code="300",le="+Inf"} 3
 http_request_duration_seconds_sum{method="post",code="300"} 2
 http_request_duration_seconds_count{method="post",code="300"} 3
 http_request_duration_seconds_bucket{method="post",code="400",le="1"} 35
-http_request_duration_seconds_bucket{method="post",code="400",le="+Inf"} 25
+http_request_duration_seconds_bucket{method="post",code="400",le="+Inf"} 60
 http_request_duration_seconds_sum{method="post",code="400"} 30
 http_request_duration_seconds_count{method="post",code="400"} 60
 
@@ -394,15 +395,15 @@ go_threads 16
 # HELP http_request_duration_seconds A histogram of the request duration.
 # TYPE http_request_duration_seconds histogram
 http_request_duration_seconds_bucket{method="post",code="200",le="1"} 40
-http_request_duration_seconds_bucket{method="post",code="200",le="+Inf"} 10
+http_request_duration_seconds_bucket{method="post",code="200",le="+Inf"} 50
 http_request_duration_seconds_sum{method="post",code="200"} 43
 http_request_duration_seconds_count{method="post",code="200"} 50
 http_request_duration_seconds_bucket{method="post",code="300",le="1"} 3
-http_request_duration_seconds_bucket{method="post",code="300",le="+Inf"} 2
+http_request_duration_seconds_bucket{method="post",code="300",le="+Inf"} 5
 http_request_duration_seconds_sum{method="post",code="300"} 7
 http_request_duration_seconds_count{method="post",code="300"} 5
 http_request_duration_seconds_bucket{method="post",code="400",le="1"} 35
-http_request_duration_seconds_bucket{method="post",code="400",le="+Inf"} 25
+http_request_duration_seconds_bucket{method="post",code="400",le="+Inf"} 60
 http_request_duration_seconds_sum{method="post",code="400"} 30
 http_request_duration_seconds_count{method="post",code="400"} 60
 
@@ -433,15 +434,15 @@ go_threads 16
 # HELP http_request_duration_seconds A histogram of the request duration.
 # TYPE http_request_duration_seconds histogram
 http_request_duration_seconds_bucket{method="post",code="200",le="1"} 40
-http_request_duration_seconds_bucket{method="post",code="200",le="+Inf"} 9
+http_request_duration_seconds_bucket{method="post",code="200",le="+Inf"} 49
 http_request_duration_seconds_sum{method="post",code="200"} 42
 http_request_duration_seconds_count{method="post",code="200"} 49
 http_request_duration_seconds_bucket{method="post",code="300",le="1"} 2
-http_request_duration_seconds_bucket{method="post",code="300",le="+Inf"} 1
+http_request_duration_seconds_bucket{method="post",code="300",le="+Inf"} 3
 http_request_duration_seconds_sum{method="post",code="300"} 4
 http_request_duration_seconds_count{method="post",code="300"} 3
 http_request_duration_seconds_bucket{method="post",code="400",le="1"} 34
-http_request_duration_seconds_bucket{method="post",code="400",le="+Inf"} 25
+http_request_duration_seconds_bucket{method="post",code="400",le="+Inf"} 59
 http_request_duration_seconds_sum{method="post",code="400"} 29
 http_request_duration_seconds_count{method="post",code="400"} 59
 
@@ -472,15 +473,15 @@ go_threads 16
 # HELP http_request_duration_seconds A histogram of the request duration.
 # TYPE http_request_duration_seconds histogram
 http_request_duration_seconds_bucket{method="post",code="200",le="1"} 41
-http_request_duration_seconds_bucket{method="post",code="200",le="+Inf"} 9
+http_request_duration_seconds_bucket{method="post",code="200",le="+Inf"} 50
 http_request_duration_seconds_sum{method="post",code="200"} 43
 http_request_duration_seconds_count{method="post",code="200"} 50
 http_request_duration_seconds_bucket{method="post",code="300",le="1"} 4
-http_request_duration_seconds_bucket{method="post",code="300",le="+Inf"} 1
+http_request_duration_seconds_bucket{method="post",code="300",le="+Inf"} 5
 http_request_duration_seconds_sum{method="post",code="300"} 4
 http_request_duration_seconds_count{method="post",code="300"} 5
 http_request_duration_seconds_bucket{method="post",code="400",le="1"} 34
-http_request_duration_seconds_bucket{method="post",code="400",le="+Inf"} 25
+http_request_duration_seconds_bucket{method="post",code="400",le="+Inf"} 59
 http_request_duration_seconds_sum{method="post",code="400"} 29
 http_request_duration_seconds_count{method="post",code="400"} 59
 
@@ -524,7 +525,7 @@ func verifyTarget2(t *testing.T, td *testData, resourceMetrics []pmetric.Resourc
 					},
 				},
 			}),
-		assertMetricPresent("http_request_duration_seconds_bucket",
+		assertMetricPresent("http_request_duration_seconds",
 			compareMetricType(pmetric.MetricTypeHistogram),
 			[]dataPointExpectation{
 				{
@@ -604,7 +605,7 @@ func verifyTarget2(t *testing.T, td *testData, resourceMetrics []pmetric.Resourc
 					},
 				},
 			}),
-		assertMetricPresent("http_request_duration_seconds_bucket",
+		assertMetricPresent("http_request_duration_seconds",
 			compareMetricType(pmetric.MetricTypeHistogram),
 			[]dataPointExpectation{
 				{
@@ -708,7 +709,7 @@ func verifyTarget2(t *testing.T, td *testData, resourceMetrics []pmetric.Resourc
 					},
 				},
 			}),
-		assertMetricPresent("http_request_duration_seconds_bucket",
+		assertMetricPresent("http_request_duration_seconds",
 			compareMetricType(pmetric.MetricTypeHistogram),
 			[]dataPointExpectation{
 				{
@@ -812,7 +813,7 @@ func verifyTarget2(t *testing.T, td *testData, resourceMetrics []pmetric.Resourc
 					},
 				},
 			}),
-		assertMetricPresent("http_request_duration_seconds_bucket",
+		assertMetricPresent("http_request_duration_seconds",
 			compareMetricType(pmetric.MetricTypeHistogram),
 			[]dataPointExpectation{
 				{
@@ -916,7 +917,7 @@ func verifyTarget2(t *testing.T, td *testData, resourceMetrics []pmetric.Resourc
 					},
 				},
 			}),
-		assertMetricPresent("http_request_duration_seconds_bucket",
+		assertMetricPresent("http_request_duration_seconds",
 			compareMetricType(pmetric.MetricTypeHistogram),
 			[]dataPointExpectation{
 				{
@@ -1076,6 +1077,15 @@ rpc_duration_seconds_sum{foo="no_quantile"} 101
 rpc_duration_seconds_count{foo="no_quantile"} 55
 `
 
+var target4Page1 = `
+# A simple counter
+# TYPE foo counter
+foo 0
+# Another counter with the same name but also _total suffix
+# TYPE foo_total counter
+foo_total 1
+`
+
 func verifyTarget3(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {
 	verifyNumValidScrapeResults(t, td, resourceMetrics)
 	m1 := resourceMetrics[0]
@@ -1185,6 +1195,42 @@ func verifyTarget3(t *testing.T, td *testData, resourceMetrics []pmetric.Resourc
 	doCompare(t, "scrape2", wantAttributes, m2, e2)
 }
 
+func verifyTarget4(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {
+	verifyNumValidScrapeResults(t, td, resourceMetrics)
+	m1 := resourceMetrics[0]
+
+	// m1 has 2 metrics + 5 internal scraper metrics
+	assert.Equal(t, 7, metricsCount(m1))
+
+	wantAttributes := td.attributes
+
+	metrics1 := m1.ScopeMetrics().At(0).Metrics()
+	ts1 := getTS(metrics1)
+	e1 := []testExpectation{
+		assertMetricPresent("foo",
+			compareMetricIsMonotonic(true),
+			[]dataPointExpectation{
+				{
+					numberPointComparator: []numberPointComparator{
+						compareTimestamp(ts1),
+						compareDoubleValue(0),
+					},
+				},
+			}),
+		assertMetricPresent("foo_total",
+			compareMetricIsMonotonic(true),
+			[]dataPointExpectation{
+				{
+					numberPointComparator: []numberPointComparator{
+						compareTimestamp(ts1),
+						compareDoubleValue(1.0),
+					},
+				},
+			}),
+	}
+	doCompare(t, "scrape-infostatesetmetrics-1", wantAttributes, m1, e1)
+}
+
 // TestCoreMetricsEndToEnd end to end test executor
 func TestCoreMetricsEndToEnd(t *testing.T) {
 	// 1. setup input data
@@ -1221,8 +1267,16 @@ func TestCoreMetricsEndToEnd(t *testing.T) {
 			},
 			validateFunc: verifyTarget3,
 		},
+		{
+			name: "target4",
+			pages: []mockPrometheusResponse{
+				{code: 200, data: target4Page1, useOpenMetrics: false},
+			},
+			validateFunc:    verifyTarget4,
+			validateScrapes: true,
+		},
 	}
-	testComponent(t, targets, false, "")
+	testComponent(t, targets, false, "", featuregate.GetRegistry())
 }
 
 var startTimeMetricPage = `
@@ -1308,7 +1362,7 @@ func TestStartTimeMetric(t *testing.T) {
 			validateFunc: verifyStartTimeMetricPage,
 		},
 	}
-	testComponent(t, targets, true, "")
+	testComponent(t, targets, true, "", featuregate.GetRegistry())
 }
 
 var startTimeMetricRegexPage = `
@@ -1357,7 +1411,7 @@ func TestStartTimeMetricRegex(t *testing.T) {
 			validateFunc: verifyStartTimeMetricPage,
 		},
 	}
-	testComponent(t, targets, true, "^(.+_)*process_start_time_seconds$")
+	testComponent(t, targets, true, "^(.+_)*process_start_time_seconds$", featuregate.GetRegistry())
 }
 
 // metric type is defined as 'untyped' in the first metric
@@ -1386,7 +1440,7 @@ func TestUntypedMetrics(t *testing.T) {
 		},
 	}
 
-	testComponent(t, targets, false, "")
+	testComponent(t, targets, false, "", featuregate.GetRegistry())
 
 }
 

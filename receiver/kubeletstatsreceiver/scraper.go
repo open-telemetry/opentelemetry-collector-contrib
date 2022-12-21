@@ -19,10 +19,8 @@ import (
 	"fmt"
 	"time"
 
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
@@ -33,40 +31,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
-const (
-	emitMetricsWithDirectionAttributeFeatureGateID    = "receiver.kubeletstatsreceiver.emitMetricsWithDirectionAttribute"
-	emitMetricsWithoutDirectionAttributeFeatureGateID = "receiver.kubeletstatsreceiver.emitMetricsWithoutDirectionAttribute"
-)
-
-var (
-	emitMetricsWithDirectionAttributeFeatureGate = featuregate.Gate{
-		ID:      emitMetricsWithDirectionAttributeFeatureGateID,
-		Enabled: true,
-		Description: "Some kubeletstats metrics reported are transitioning from being reported with a direction " +
-			"attribute to being reported with the direction included in the metric name to adhere to the " +
-			"OpenTelemetry specification. This feature gate controls emitting the old metrics with the direction " +
-			"attribute. For more details, see: " +
-			"https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/kubeletstatsreceiver/README.md#feature-gate-configurations",
-	}
-
-	emitMetricsWithoutDirectionAttributeFeatureGate = featuregate.Gate{
-		ID:      emitMetricsWithoutDirectionAttributeFeatureGateID,
-		Enabled: false,
-		Description: "Some kubeletstats metrics reported are transitioning from being reported with a direction " +
-			"attribute to being reported with the direction included in the metric name to adhere to the " +
-			"OpenTelemetry specification. This feature gate controls emitting the new metrics without the direction " +
-			"attribute. For more details, see: " +
-			"https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/kubeletstatsreceiver/README.md#feature-gate-configurations",
-	}
-)
-
-func init() {
-	featuregate.GetRegistry().MustRegister(emitMetricsWithDirectionAttributeFeatureGate)
-	featuregate.GetRegistry().MustRegister(emitMetricsWithoutDirectionAttributeFeatureGate)
-}
-
 type scraperOptions struct {
-	id                    config.ComponentID
 	collectionInterval    time.Duration
 	extraMetadataLabels   []kubelet.MetadataLabel
 	metricGroupsToCollect map[kubelet.MetricGroup]bool
@@ -74,27 +39,19 @@ type scraperOptions struct {
 }
 
 type kubletScraper struct {
-	statsProvider                        *kubelet.StatsProvider
-	metadataProvider                     *kubelet.MetadataProvider
-	logger                               *zap.Logger
-	extraMetadataLabels                  []kubelet.MetadataLabel
-	metricGroupsToCollect                map[kubelet.MetricGroup]bool
-	k8sAPIClient                         kubernetes.Interface
-	cachedVolumeLabels                   map[string][]metadata.ResourceMetricsOption
-	mbs                                  *metadata.MetricsBuilders
-	emitMetricsWithDirectionAttribute    bool
-	emitMetricsWithoutDirectionAttribute bool
-}
-
-func logDeprecatedFeatureGateForDirection(log *zap.Logger, gate featuregate.Gate) {
-	log.Warn("WARNING: The " + gate.ID + " feature gate is deprecated and will be removed in the next release. The change to remove " +
-		"the direction attribute has been reverted in the specification. See https://github.com/open-telemetry/opentelemetry-specification/issues/2726 " +
-		"for additional details.")
+	statsProvider         *kubelet.StatsProvider
+	metadataProvider      *kubelet.MetadataProvider
+	logger                *zap.Logger
+	extraMetadataLabels   []kubelet.MetadataLabel
+	metricGroupsToCollect map[kubelet.MetricGroup]bool
+	k8sAPIClient          kubernetes.Interface
+	cachedVolumeLabels    map[string][]metadata.ResourceMetricsOption
+	mbs                   *metadata.MetricsBuilders
 }
 
 func newKubletScraper(
 	restClient kubelet.RestClient,
-	set component.ReceiverCreateSettings,
+	set receiver.CreateSettings,
 	rOptions *scraperOptions,
 	metricsConfig metadata.MetricsSettings,
 ) (scraperhelper.Scraper, error) {
@@ -107,20 +64,11 @@ func newKubletScraper(
 		k8sAPIClient:          rOptions.k8sAPIClient,
 		cachedVolumeLabels:    make(map[string][]metadata.ResourceMetricsOption),
 		mbs: &metadata.MetricsBuilders{
-			NodeMetricsBuilder:      metadata.NewMetricsBuilder(metricsConfig, set.BuildInfo),
-			PodMetricsBuilder:       metadata.NewMetricsBuilder(metricsConfig, set.BuildInfo),
-			ContainerMetricsBuilder: metadata.NewMetricsBuilder(metricsConfig, set.BuildInfo),
-			OtherMetricsBuilder:     metadata.NewMetricsBuilder(metricsConfig, set.BuildInfo),
+			NodeMetricsBuilder:      metadata.NewMetricsBuilder(metricsConfig, set),
+			PodMetricsBuilder:       metadata.NewMetricsBuilder(metricsConfig, set),
+			ContainerMetricsBuilder: metadata.NewMetricsBuilder(metricsConfig, set),
+			OtherMetricsBuilder:     metadata.NewMetricsBuilder(metricsConfig, set),
 		},
-		emitMetricsWithDirectionAttribute:    featuregate.GetRegistry().IsEnabled(emitMetricsWithDirectionAttributeFeatureGateID),
-		emitMetricsWithoutDirectionAttribute: featuregate.GetRegistry().IsEnabled(emitMetricsWithoutDirectionAttributeFeatureGateID),
-	}
-	if !ks.emitMetricsWithDirectionAttribute {
-		logDeprecatedFeatureGateForDirection(ks.logger, emitMetricsWithDirectionAttributeFeatureGate)
-	}
-
-	if ks.emitMetricsWithoutDirectionAttribute {
-		logDeprecatedFeatureGateForDirection(ks.logger, emitMetricsWithoutDirectionAttributeFeatureGate)
 	}
 	return scraperhelper.NewScraper(typeStr, ks.scrape)
 }
@@ -143,7 +91,7 @@ func (r *kubletScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	}
 
 	metadata := kubelet.NewMetadata(r.extraMetadataLabels, podsMetadata, r.detailedPVCLabelsSetter())
-	mds := kubelet.MetricsData(r.logger, summary, metadata, r.metricGroupsToCollect, r.mbs, r.emitMetricsWithDirectionAttribute, r.emitMetricsWithoutDirectionAttribute)
+	mds := kubelet.MetricsData(r.logger, summary, metadata, r.metricGroupsToCollect, r.mbs)
 	md := pmetric.NewMetrics()
 	for i := range mds {
 		mds[i].ResourceMetrics().MoveAndAppendTo(md.ResourceMetrics())

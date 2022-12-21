@@ -18,6 +18,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -29,7 +30,6 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
-	"github.com/grafana/loki/pkg/logproto"
 	"github.com/prometheus/common/model"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -39,7 +39,9 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter/internal/tenant"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki/logproto"
 )
 
 const (
@@ -51,7 +53,7 @@ type lokiExporter struct {
 	settings     component.TelemetrySettings
 	client       *http.Client
 	wg           sync.WaitGroup
-	convert      func(plog.LogRecord, pcommon.Resource) (*logproto.Entry, error)
+	convert      func(plog.LogRecord, pcommon.Resource, pcommon.InstrumentationScope) (*logproto.Entry, error)
 	tenantSource tenant.Source
 }
 
@@ -128,7 +130,7 @@ func (l *lokiExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
 	}
 
 	for k, v := range l.config.HTTPClientSettings.Headers {
-		req.Header.Set(k, v)
+		req.Header.Set(k, string(v))
 	}
 	req.Header.Set("Content-Type", "application/x-protobuf")
 
@@ -207,6 +209,7 @@ func (l *lokiExporter) logDataToLoki(ld plog.Logs) (pr *logproto.PushRequest, nu
 		resource := rls.At(i).Resource()
 		for j := 0; j < ills.Len(); j++ {
 			logs := ills.At(j).LogRecords()
+			scope := ills.At(j).Scope()
 			for k := 0; k < logs.Len(); k++ {
 				log := logs.At(k)
 
@@ -223,7 +226,7 @@ func (l *lokiExporter) logDataToLoki(ld plog.Logs) (pr *logproto.PushRequest, nu
 				labels := mergedLabels.String()
 				var entry *logproto.Entry
 				var err error
-				entry, err = l.convert(log, resource)
+				entry, err = l.convert(log, resource, scope)
 				if err != nil {
 					// Couldn't convert so dropping log.
 					numDroppedLogs++
@@ -306,11 +309,11 @@ func (l *lokiExporter) convertRecordAttributesToLabels(log plog.LogRecord) model
 	ls := model.LabelSet{}
 
 	if val, ok := l.config.Labels.RecordAttributes["traceID"]; ok {
-		ls[model.LabelName(val)] = model.LabelValue(log.TraceID().HexString())
+		ls[model.LabelName(val)] = model.LabelValue(traceutil.TraceIDToHexOrEmptyString(log.TraceID()))
 	}
 
 	if val, ok := l.config.Labels.RecordAttributes["spanID"]; ok {
-		ls[model.LabelName(val)] = model.LabelValue(log.SpanID().HexString())
+		ls[model.LabelName(val)] = model.LabelValue(traceutil.SpanIDToHexOrEmptyString(log.SpanID()))
 	}
 
 	if val, ok := l.config.Labels.RecordAttributes["severity"]; ok {
@@ -324,7 +327,7 @@ func (l *lokiExporter) convertRecordAttributesToLabels(log plog.LogRecord) model
 	return ls
 }
 
-func (l *lokiExporter) convertLogBodyToEntry(lr plog.LogRecord, res pcommon.Resource) (*logproto.Entry, error) {
+func (l *lokiExporter) convertLogBodyToEntry(lr plog.LogRecord, res pcommon.Resource, scope pcommon.InstrumentationScope) (*logproto.Entry, error) {
 	var b strings.Builder
 
 	if _, ok := l.config.Labels.RecordAttributes["severity"]; !ok && len(lr.SeverityText()) > 0 {
@@ -337,14 +340,16 @@ func (l *lokiExporter) convertLogBodyToEntry(lr plog.LogRecord, res pcommon.Reso
 		b.WriteString(strconv.Itoa(int(lr.SeverityNumber())))
 		b.WriteRune(' ')
 	}
-	if _, ok := l.config.Labels.RecordAttributes["traceID"]; !ok && !lr.TraceID().IsEmpty() {
+	traceID := lr.TraceID()
+	if _, ok := l.config.Labels.RecordAttributes["traceID"]; !ok && !traceID.IsEmpty() {
 		b.WriteString("traceID=")
-		b.WriteString(lr.TraceID().HexString())
+		b.WriteString(hex.EncodeToString(traceID[:]))
 		b.WriteRune(' ')
 	}
-	if _, ok := l.config.Labels.RecordAttributes["spanID"]; !ok && !lr.SpanID().IsEmpty() {
+	spanID := lr.SpanID()
+	if _, ok := l.config.Labels.RecordAttributes["spanID"]; !ok && !spanID.IsEmpty() {
 		b.WriteString("spanID=")
-		b.WriteString(lr.SpanID().HexString())
+		b.WriteString(hex.EncodeToString(spanID[:]))
 		b.WriteRune(' ')
 	}
 
@@ -373,6 +378,21 @@ func (l *lokiExporter) convertLogBodyToEntry(lr plog.LogRecord, res pcommon.Reso
 		return true
 	})
 
+	scopeName := scope.Name()
+	scopeVersion := scope.Version()
+	if scopeName != "" {
+		b.WriteString("instrumentation_scope_name")
+		b.WriteString("=")
+		b.WriteString(scopeName)
+		b.WriteRune(' ')
+		if scopeVersion != "" {
+			b.WriteString("instrumentation_scope_version")
+			b.WriteString("=")
+			b.WriteString(scopeVersion)
+			b.WriteRune(' ')
+		}
+	}
+
 	b.WriteString(lr.Body().Str())
 
 	return &logproto.Entry{
@@ -381,8 +401,8 @@ func (l *lokiExporter) convertLogBodyToEntry(lr plog.LogRecord, res pcommon.Reso
 	}, nil
 }
 
-func (l *lokiExporter) convertLogToJSONEntry(lr plog.LogRecord, res pcommon.Resource) (*logproto.Entry, error) {
-	line, err := loki.Encode(lr, res)
+func (l *lokiExporter) convertLogToJSONEntry(lr plog.LogRecord, res pcommon.Resource, scope pcommon.InstrumentationScope) (*logproto.Entry, error) {
+	line, err := loki.Encode(lr, res, scope)
 	if err != nil {
 		return nil, err
 	}

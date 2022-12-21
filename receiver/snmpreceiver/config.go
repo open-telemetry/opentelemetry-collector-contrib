@@ -44,8 +44,8 @@ var (
 	errMsgMetricNoUnit                     = `metric '%s' must have a unit`
 	errMsgMetricNoGaugeOrSum               = `metric '%s' must have one of either a gauge or sum`
 	errMsgMetricNoOIDs                     = `metric '%s' must have one of either scalar_oids or indexed_oids`
-	errMsgGaugeBadValueType                = `metric '%s' gauge value_type must be either int, float, or bool`
-	errMsgSumBadValueType                  = `metric '%s' sum value_type must be either int, float, or bool`
+	errMsgGaugeBadValueType                = `metric '%s' gauge value_type must be either int or double`
+	errMsgSumBadValueType                  = `metric '%s' sum value_type must be either int or double`
 	errMsgSumBadAggregation                = `metric '%s' sum aggregation value must be either cumulative or delta`
 	errMsgScalarOIDNoOID                   = `metric '%s' scalar_oid must contain an oid`
 	errMsgScalarAttributeNoName            = `metric '%s' scalar_oid attribute must contain a name`
@@ -192,7 +192,7 @@ type MetricConfig struct {
 
 // GaugeMetric contains info about the value of the gauge metric
 type GaugeMetric struct {
-	// ValueType is required can can be either int or float
+	// ValueType is required can can be either int or double
 	ValueType string `mapstructure:"value_type"`
 }
 
@@ -202,7 +202,7 @@ type SumMetric struct {
 	Aggregation string `mapstructure:"aggregation"`
 	// Monotonic is required and can be true or false
 	Monotonic bool `mapstructure:"monotonic"`
-	// ValueType is required can can be either int or float
+	// ValueType is required can can be either int or double
 	ValueType string `mapstructure:"value_type"`
 }
 
@@ -518,7 +518,7 @@ func validateScalarOID(metricName string, scalarOID ScalarOID, cfg *Config) erro
 func validateGauge(metricName string, gauge *GaugeMetric) error {
 	// Ensure valid values for ValueType
 	upperValType := strings.ToUpper(gauge.ValueType)
-	if upperValType != "INT" && upperValType != "FLOAT" {
+	if upperValType != "INT" && upperValType != "DOUBLE" {
 		return fmt.Errorf(errMsgGaugeBadValueType, metricName)
 	}
 
@@ -531,7 +531,7 @@ func validateSum(metricName string, sum *SumMetric) error {
 
 	// Ensure valid values for ValueType
 	upperValType := strings.ToUpper(sum.ValueType)
-	if upperValType != "INT" && upperValType != "FLOAT" {
+	if upperValType != "INT" && upperValType != "DOUBLE" {
 		combinedErr = multierr.Append(combinedErr, fmt.Errorf(errMsgSumBadValueType, metricName))
 	}
 

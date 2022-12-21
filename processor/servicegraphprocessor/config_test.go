@@ -21,27 +21,25 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 )
 
 func TestLoadConfig(t *testing.T) {
 	// Prepare
-	factories, err := componenttest.NopFactories()
+	factories, err := otelcoltest.NopFactories()
 	require.NoError(t, err)
 
 	factories.Processors[typeStr] = NewFactory()
 
 	// Test
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "service-graph-config.yaml"), factories)
+	cfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "service-graph-config.yaml"), factories)
 
 	// Verify
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 	assert.Equal(t,
 		&Config{
-			ProcessorSettings:       config.NewProcessorSettings(config.NewComponentID(typeStr)),
 			MetricsExporter:         "metrics",
 			LatencyHistogramBuckets: []time.Duration{1, 2, 3, 4, 5},
 			Dimensions:              []string{"dimension-1", "dimension-2"},
@@ -50,6 +48,6 @@ func TestLoadConfig(t *testing.T) {
 				MaxItems: 10,
 			},
 		},
-		cfg.Processors[config.NewComponentID(typeStr)],
+		cfg.Processors[component.NewID(typeStr)],
 	)
 }

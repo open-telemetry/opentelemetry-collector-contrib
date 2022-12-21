@@ -29,9 +29,8 @@ import (
 	tracelog "github.com/DataDog/datadog-agent/pkg/trace/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -131,7 +130,6 @@ func TestTracesSource(t *testing.T) {
 	defer tracesServer.Close()
 
 	cfg := Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		API: APIConfig{
 			Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 		},
@@ -148,9 +146,9 @@ func TestTracesSource(t *testing.T) {
 	}
 
 	assert := assert.New(t)
-	params := componenttest.NewNopExporterCreateSettings()
+	params := exportertest.NewNopCreateSettings()
 	reg := featuregate.NewRegistry()
-	reg.MustRegister(metadata.HostnamePreviewGate)
+	reg.MustRegisterID(metadata.HostnamePreviewFeatureGate, featuregate.StageBeta)
 	assert.NoError(reg.Apply(map[string]bool{
 		metadata.HostnamePreviewFeatureGate: true,
 	}))
@@ -233,7 +231,6 @@ func TestTraceExporter(t *testing.T) {
 
 	defer server.Close()
 	cfg := Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		API: APIConfig{
 			Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 		},
@@ -254,7 +251,7 @@ func TestTraceExporter(t *testing.T) {
 		},
 	}
 
-	params := componenttest.NewNopExporterCreateSettings()
+	params := exportertest.NewNopCreateSettings()
 	f := NewFactory()
 	exporter, err := f.CreateTracesExporter(context.Background(), params, &cfg)
 	assert.NoError(t, err)
@@ -279,7 +276,7 @@ func TestNewTracesExporter(t *testing.T) {
 	cfg := &Config{}
 	cfg.API.Key = "ddog_32_characters_long_api_key1"
 	cfg.Metrics.TCPAddr.Endpoint = metricsServer.URL
-	params := componenttest.NewNopExporterCreateSettings()
+	params := exportertest.NewNopCreateSettings()
 
 	// The client should have been created correctly
 	f := NewFactory()
@@ -311,7 +308,7 @@ func TestPushTraceData(t *testing.T) {
 		},
 	}
 
-	params := componenttest.NewNopExporterCreateSettings()
+	params := exportertest.NewNopCreateSettings()
 	f := NewFactory()
 	exp, err := f.CreateTracesExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
@@ -345,6 +342,7 @@ func genTraces(traceID pcommon.TraceID, attrs map[string]interface{}) ptrace.Tra
 	if attrs == nil {
 		return traces
 	}
+	//nolint:errcheck
 	rspans.Resource().Attributes().FromRaw(attrs)
 	return traces
 }

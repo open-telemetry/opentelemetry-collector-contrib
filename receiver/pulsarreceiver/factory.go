@@ -18,8 +18,8 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
 )
 
 const (
@@ -65,7 +65,7 @@ func WithLogsUnmarshalers(logsUnmarshalers ...LogsUnmarshaler) FactoryOption {
 }
 
 // NewFactory creates Pulsar receiver factory.
-func NewFactory(options ...FactoryOption) component.ReceiverFactory {
+func NewFactory(options ...FactoryOption) receiver.Factory {
 
 	f := &pulsarReceiverFactory{
 		tracesUnmarshalers:  defaultTracesUnmarshalers(),
@@ -75,12 +75,12 @@ func NewFactory(options ...FactoryOption) component.ReceiverFactory {
 	for _, o := range options {
 		o(f)
 	}
-	return component.NewReceiverFactory(
+	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesReceiver(f.createTracesReceiver, stability),
-		component.WithMetricsReceiver(f.createMetricsReceiver, stability),
-		component.WithLogsReceiver(f.createLogsReceiver, stability),
+		receiver.WithTraces(f.createTracesReceiver, stability),
+		receiver.WithMetrics(f.createMetricsReceiver, stability),
+		receiver.WithLogs(f.createLogsReceiver, stability),
 	)
 }
 
@@ -92,10 +92,10 @@ type pulsarReceiverFactory struct {
 
 func (f *pulsarReceiverFactory) createTracesReceiver(
 	_ context.Context,
-	set component.ReceiverCreateSettings,
-	cfg config.Receiver,
+	set receiver.CreateSettings,
+	cfg component.Config,
 	nextConsumer consumer.Traces,
-) (component.TracesReceiver, error) {
+) (receiver.Traces, error) {
 	c := *(cfg.(*Config))
 	if len(c.Topic) == 0 {
 		c.Topic = defaultTraceTopic
@@ -109,10 +109,10 @@ func (f *pulsarReceiverFactory) createTracesReceiver(
 
 func (f *pulsarReceiverFactory) createMetricsReceiver(
 	_ context.Context,
-	set component.ReceiverCreateSettings,
-	cfg config.Receiver,
+	set receiver.CreateSettings,
+	cfg component.Config,
 	nextConsumer consumer.Metrics,
-) (component.MetricsReceiver, error) {
+) (receiver.Metrics, error) {
 	c := *(cfg.(*Config))
 	if len(c.Topic) == 0 {
 		c.Topic = defaultMeticsTopic
@@ -126,10 +126,10 @@ func (f *pulsarReceiverFactory) createMetricsReceiver(
 
 func (f *pulsarReceiverFactory) createLogsReceiver(
 	_ context.Context,
-	set component.ReceiverCreateSettings,
-	cfg config.Receiver,
+	set receiver.CreateSettings,
+	cfg component.Config,
 	nextConsumer consumer.Logs,
-) (component.LogsReceiver, error) {
+) (receiver.Logs, error) {
 	c := *(cfg.(*Config))
 	if len(c.Topic) == 0 {
 		c.Topic = defaultLogsTopic
@@ -141,12 +141,11 @@ func (f *pulsarReceiverFactory) createLogsReceiver(
 	return r, nil
 }
 
-func createDefaultConfig() config.Receiver {
+func createDefaultConfig() component.Config {
 	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-		Encoding:         defaultEncoding,
-		ConsumerName:     defaultConsumerName,
-		Subscription:     defaultSubscription,
-		Endpoint:         defaultServiceURL,
+		Encoding:     defaultEncoding,
+		ConsumerName: defaultConsumerName,
+		Subscription: defaultSubscription,
+		Endpoint:     defaultServiceURL,
 	}
 }

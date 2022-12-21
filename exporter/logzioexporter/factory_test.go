@@ -21,30 +21,32 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configtest"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
-	assert.NoError(t, configtest.CheckConfigStruct(cfg))
+	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
 func TestCreateTracesExporter(t *testing.T) {
 
-	factories, err := componenttest.NopFactories()
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 	factory := NewFactory()
-	factories.Exporters[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-	require.NoError(t, err)
+	cfg := factory.CreateDefaultConfig()
 
-	params := componenttest.NewNopExporterCreateSettings()
-	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg.Exporters[config.NewComponentIDWithName(typeStr, "2")])
+	sub, err := cm.Sub(component.NewIDWithName(typeStr, "2").String())
+	require.NoError(t, err)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+	params := exportertest.NewNopCreateSettings()
+	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
 	assert.Nil(t, err)
 	assert.NotNil(t, exporter)
 }
@@ -68,9 +70,8 @@ func TestGenerateUrl(t *testing.T) {
 	}
 	for _, test := range generateURLTests {
 		cfg := &Config{
-			Region:           test.region,
-			Token:            "token",
-			ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+			Region: test.region,
+			Token:  "token",
 			HTTPClientSettings: confighttp.HTTPClientSettings{
 				Endpoint: test.endpoint,
 			},

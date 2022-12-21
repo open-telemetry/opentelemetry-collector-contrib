@@ -17,11 +17,10 @@ package logstransformprocessor
 import (
 	"path/filepath"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
@@ -36,11 +35,9 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.NoError(t, config.UnmarshalProcessor(cm, cfg))
+	assert.NoError(t, component.UnmarshalConfig(cm, cfg))
 	assert.Equal(t, &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 		BaseConfig: adapter.BaseConfig{
-			ReceiverSettings: config.ReceiverSettings{},
 			Operators: []operator.Config{
 				{
 					Builder: func() *regex.Config {
@@ -58,10 +55,6 @@ func TestLoadConfig(t *testing.T) {
 						return cfg
 					}(),
 				},
-			},
-			Converter: adapter.ConverterConfig{
-				MaxFlushCount: 100,
-				FlushInterval: 100 * time.Millisecond,
 			},
 		},
 	}, cfg)

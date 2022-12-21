@@ -24,11 +24,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver/internal/metadata"
 )
@@ -46,7 +46,7 @@ func TestScrape(t *testing.T) {
 		require.NoError(t, err)
 
 		scraper := &activeDirectoryDSScraper{
-			mb: metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), componenttest.NewNopReceiverCreateSettings().BuildInfo),
+			mb: metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), receivertest.NewNopCreateSettings()),
 			w:  mockWatchers,
 		}
 
@@ -56,7 +56,7 @@ func TestScrape(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(goldenScrapePath)
 		require.NoError(t, err)
 
-		err = scrapertest.CompareMetrics(expectedMetrics, scrapeData)
+		err = comparetest.CompareMetrics(expectedMetrics, scrapeData)
 		require.NoError(t, err)
 
 		err = scraper.shutdown(context.Background())
@@ -78,7 +78,7 @@ func TestScrape(t *testing.T) {
 		mockWatchers.counterNameToWatcher[draInboundValuesDNs].(*mockPerfCounterWatcher).scrapeErr = draInboundValuesDNErr
 
 		scraper := &activeDirectoryDSScraper{
-			mb: metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), componenttest.NewNopReceiverCreateSettings().BuildInfo),
+			mb: metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), receivertest.NewNopCreateSettings()),
 			w:  mockWatchers,
 		}
 
@@ -91,7 +91,7 @@ func TestScrape(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(partialScrapePath)
 		require.NoError(t, err)
 
-		err = scrapertest.CompareMetrics(expectedMetrics, scrapeData)
+		err = comparetest.CompareMetrics(expectedMetrics, scrapeData)
 		require.NoError(t, err)
 
 		err = scraper.shutdown(context.Background())
@@ -113,7 +113,7 @@ func TestScrape(t *testing.T) {
 		mockWatchers.counterNameToWatcher[draInboundValuesDNs].(*mockPerfCounterWatcher).closeErr = draInboundValuesDNErr
 
 		scraper := &activeDirectoryDSScraper{
-			mb: metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), componenttest.NewNopReceiverCreateSettings().BuildInfo),
+			mb: metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), receivertest.NewNopCreateSettings()),
 			w:  mockWatchers,
 		}
 
@@ -132,7 +132,7 @@ func TestScrape(t *testing.T) {
 		require.NoError(t, err)
 
 		scraper := &activeDirectoryDSScraper{
-			mb: metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), componenttest.NewNopReceiverCreateSettings().BuildInfo),
+			mb: metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), receivertest.NewNopCreateSettings()),
 			w:  mockWatchers,
 		}
 

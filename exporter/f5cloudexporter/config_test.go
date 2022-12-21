@@ -21,8 +21,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	otlphttp "go.opentelemetry.io/collector/exporter/otlphttpexporter"
@@ -34,14 +35,13 @@ func TestLoadConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "allsettings").String())
+	sub, err := cm.Sub(component.NewIDWithName(typeStr, "allsettings").String())
 	require.NoError(t, err)
-	require.NoError(t, config.UnmarshalExporter(sub, cfg))
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	actualCfg := cfg.(*Config)
 	expectedCfg := &Config{
 		Config: otlphttp.Config{
-			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "")),
 			RetrySettings: exporterhelper.RetrySettings{
 				Enabled:         true,
 				InitialInterval: 10 * time.Second,
@@ -58,7 +58,7 @@ func TestLoadConfig(t *testing.T) {
 				ReadBufferSize:  123,
 				WriteBufferSize: 345,
 				Timeout:         time.Second * 10,
-				Headers: map[string]string{
+				Headers: map[string]configopaque.String{
 					"User-Agent": "opentelemetry-collector-contrib {{version}}",
 				},
 				Compression: "gzip",
@@ -143,7 +143,6 @@ func TestConfig_sanitize(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig().(*Config)
-			cfg.ExporterSettings = config.NewExporterSettings(config.NewComponentID(typeStr))
 			cfg.Endpoint = tt.fields.Endpoint
 			cfg.Source = tt.fields.Source
 			cfg.AuthConfig = AuthConfig{

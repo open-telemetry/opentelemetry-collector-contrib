@@ -359,7 +359,7 @@ func epochMicrosecondsToTimestamp(msecs int64) pcommon.Timestamp {
 	if msecs <= 0 {
 		return pcommon.Timestamp(0)
 	}
-	return pcommon.Timestamp(uint64(msecs) * 1e6)
+	return pcommon.Timestamp(uint64(msecs) * 1e3)
 }
 
 func getOrCreateNodeRequest(m map[string]ptrace.SpanSlice, td ptrace.Traces, endpoint *endpoint) ptrace.SpanSlice {

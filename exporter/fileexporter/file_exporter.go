@@ -29,16 +29,16 @@ import (
 
 // Marshaler configuration used for marhsaling Protobuf
 var tracesMarshalers = map[string]ptrace.Marshaler{
-	formatTypeJSON:  ptrace.NewJSONMarshaler(),
-	formatTypeProto: ptrace.NewProtoMarshaler(),
+	formatTypeJSON:  &ptrace.JSONMarshaler{},
+	formatTypeProto: &ptrace.ProtoMarshaler{},
 }
 var metricsMarshalers = map[string]pmetric.Marshaler{
-	formatTypeJSON:  pmetric.NewJSONMarshaler(),
-	formatTypeProto: pmetric.NewProtoMarshaler(),
+	formatTypeJSON:  &pmetric.JSONMarshaler{},
+	formatTypeProto: &pmetric.ProtoMarshaler{},
 }
 var logsMarshalers = map[string]plog.Marshaler{
-	formatTypeJSON:  plog.NewJSONMarshaler(),
-	formatTypeProto: plog.NewProtoMarshaler(),
+	formatTypeJSON:  &plog.JSONMarshaler{},
+	formatTypeProto: &plog.ProtoMarshaler{},
 }
 
 // exportFunc defines how to export encoded telemetry data.

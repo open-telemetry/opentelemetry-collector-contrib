@@ -22,7 +22,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -43,15 +43,14 @@ func TestLoadConfig(t *testing.T) {
 	duration := 10 * time.Second
 
 	tests := []struct {
-		id          config.ComponentID
-		expected    config.Receiver
+		id          component.ID
+		expected    component.Config
 		expectedErr error
 	}{
 		{
-			id: config.NewComponentIDWithName(typeStr, "default"),
+			id: component.NewIDWithName(typeStr, "default"),
 			expected: &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-					ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
 					CollectionInterval: duration,
 				},
 				ClientConfig: kube.ClientConfig{
@@ -68,10 +67,9 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: config.NewComponentIDWithName(typeStr, "tls"),
+			id: component.NewIDWithName(typeStr, "tls"),
 			expected: &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-					ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
 					CollectionInterval: duration,
 				},
 				TCPAddr: confignet.TCPAddr{
@@ -97,10 +95,9 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: config.NewComponentIDWithName(typeStr, "sa"),
+			id: component.NewIDWithName(typeStr, "sa"),
 			expected: &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-					ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
 					CollectionInterval: duration,
 				},
 				ClientConfig: kube.ClientConfig{
@@ -118,10 +115,9 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: config.NewComponentIDWithName(typeStr, "metadata"),
+			id: component.NewIDWithName(typeStr, "metadata"),
 			expected: &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-					ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
 					CollectionInterval: duration,
 				},
 				ClientConfig: kube.ClientConfig{
@@ -142,10 +138,9 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: config.NewComponentIDWithName(typeStr, "metric_groups"),
+			id: component.NewIDWithName(typeStr, "metric_groups"),
 			expected: &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-					ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
 					CollectionInterval: 20 * time.Second,
 				},
 				ClientConfig: kube.ClientConfig{
@@ -162,10 +157,9 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: config.NewComponentIDWithName(typeStr, "metadata_with_k8s_api"),
+			id: component.NewIDWithName(typeStr, "metadata_with_k8s_api"),
 			expected: &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-					ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
 					CollectionInterval: duration,
 				},
 				ClientConfig: kube.ClientConfig{
@@ -194,9 +188,9 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-			assert.NoError(t, cfg.Validate())
+			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -226,7 +220,6 @@ func TestGetReceiverOptions(t *testing.T) {
 				},
 			},
 			want: &scraperOptions{
-				id: config.NewComponentID(typeStr),
 				extraMetadataLabels: []kubelet.MetadataLabel{
 					kubelet.MetadataLabelContainerID,
 				},
@@ -270,7 +263,6 @@ func TestGetReceiverOptions(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-					ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
 					CollectionInterval: 10 * time.Second,
 				},
 				ExtraMetadataLabels:   tt.fields.extraMetadataLabels,

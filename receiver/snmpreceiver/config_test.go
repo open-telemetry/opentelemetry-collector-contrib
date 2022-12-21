@@ -21,7 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -42,7 +42,7 @@ func TestLoadConfigConnectionConfigs(t *testing.T) {
 		"m3": {
 			Unit: "By",
 			Gauge: &GaugeMetric{
-				ValueType: "float",
+				ValueType: "double",
 			},
 			ScalarOIDs: []ScalarOID{
 				{
@@ -258,15 +258,15 @@ func TestLoadConfigConnectionConfigs(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, test.nameVal).String())
+			sub, err := cm.Sub(component.NewIDWithName(typeStr, test.nameVal).String())
 			require.NoError(t, err)
 
 			cfg := factory.CreateDefaultConfig()
-			require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 			if test.expectedErr == "" {
-				require.NoError(t, cfg.Validate())
+				require.NoError(t, component.ValidateConfig(cfg))
 			} else {
-				require.ErrorContains(t, cfg.Validate(), test.expectedErr)
+				require.ErrorContains(t, component.ValidateConfig(cfg), test.expectedErr)
 			}
 
 			require.Equal(t, test.expectedCfg, cfg)
@@ -283,13 +283,13 @@ func getBaseMetricConfig(gauge bool, scalar bool) map[string]*MetricConfig {
 
 	if gauge {
 		metricCfg["m3"].Gauge = &GaugeMetric{
-			ValueType: "float",
+			ValueType: "double",
 		}
 	} else {
 		metricCfg["m3"].Sum = &SumMetric{
 			Aggregation: "cumulative",
 			Monotonic:   true,
-			ValueType:   "float",
+			ValueType:   "double",
 		}
 	}
 
@@ -842,15 +842,15 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, test.nameVal).String())
+			sub, err := cm.Sub(component.NewIDWithName(typeStr, test.nameVal).String())
 			require.NoError(t, err)
 
 			cfg := factory.CreateDefaultConfig()
-			require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 			if test.expectedErr == "" {
-				require.NoError(t, cfg.Validate())
+				require.NoError(t, component.ValidateConfig(cfg))
 			} else {
-				require.ErrorContains(t, cfg.Validate(), test.expectedErr)
+				require.ErrorContains(t, component.ValidateConfig(cfg), test.expectedErr)
 			}
 
 			require.Equal(t, test.expectedCfg, cfg)
@@ -876,7 +876,7 @@ func TestValidate(t *testing.T) {
 					"m3": {
 						Unit: "By",
 						Gauge: &GaugeMetric{
-							ValueType: "float",
+							ValueType: "double",
 						},
 						ScalarOIDs: []ScalarOID{
 							{
@@ -897,7 +897,7 @@ func TestValidate(t *testing.T) {
 					"m3": {
 						Unit: "By",
 						Gauge: &GaugeMetric{
-							ValueType: "float",
+							ValueType: "double",
 						},
 						ScalarOIDs: []ScalarOID{
 							{
@@ -919,7 +919,7 @@ func TestValidate(t *testing.T) {
 					"m3": {
 						Unit: "By",
 						Gauge: &GaugeMetric{
-							ValueType: "float",
+							ValueType: "double",
 						},
 						ScalarOIDs: []ScalarOID{
 							{
@@ -943,7 +943,7 @@ func TestValidate(t *testing.T) {
 					"m3": {
 						Unit: "By",
 						Gauge: &GaugeMetric{
-							ValueType: "float",
+							ValueType: "double",
 						},
 						ScalarOIDs: []ScalarOID{
 							{
@@ -969,7 +969,7 @@ func TestValidate(t *testing.T) {
 					"m3": {
 						Unit: "By",
 						Gauge: &GaugeMetric{
-							ValueType: "float",
+							ValueType: "double",
 						},
 						ScalarOIDs: []ScalarOID{
 							{

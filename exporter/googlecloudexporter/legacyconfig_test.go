@@ -20,32 +20,30 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 )
 
 func TestLoadLegacyConfig(t *testing.T) {
 	defer setPdataFeatureGateForTest(t, false)()
-	factories, err := componenttest.NopFactories()
+	factories, err := otelcoltest.NopFactories()
 	assert.Nil(t, err)
 	factory := NewFactory()
 	factories.Exporters[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "legacyconfig.yaml"), factories)
+	cfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "legacyconfig.yaml"), factories)
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 	assert.Equal(t, len(cfg.Exporters), 2)
-	r0 := cfg.Exporters[config.NewComponentID(typeStr)]
+	r0 := cfg.Exporters[component.NewID(typeStr)]
 	assert.Equal(t, r0, factory.CreateDefaultConfig())
-	r1 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "customname")].(*LegacyConfig)
+	r1 := cfg.Exporters[component.NewIDWithName(typeStr, "customname")].(*LegacyConfig)
 	assert.Equal(t, r1,
 		&LegacyConfig{
-			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "customname")),
-			ProjectID:        "my-project",
-			UserAgent:        "opentelemetry-collector-contrib {{version}}",
-			Endpoint:         "test-endpoint",
-			UseInsecure:      true,
+			ProjectID:   "my-project",
+			UserAgent:   "opentelemetry-collector-contrib {{version}}",
+			Endpoint:    "test-endpoint",
+			UseInsecure: true,
 			TimeoutSettings: exporterhelper.TimeoutSettings{
 				Timeout: 20 * time.Second,
 			},

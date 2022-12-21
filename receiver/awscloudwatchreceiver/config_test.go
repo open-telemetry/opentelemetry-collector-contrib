@@ -22,7 +22,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -115,6 +115,27 @@ func TestValidate(t *testing.T) {
 			},
 			expectedErr: errors.New("unable to parse URI for imds_endpoint"),
 		},
+		{
+			name: "Both Logs Autodiscover and Named Set",
+			config: Config{
+				Region: "us-east-1",
+				Logs: &LogsConfig{
+					MaxEventsPerRequest: defaultEventLimit,
+					PollInterval:        defaultPollInterval,
+					Groups: GroupConfig{
+						AutodiscoverConfig: &AutodiscoverConfig{
+							Limit: defaultEventLimit,
+						},
+						NamedConfigs: map[string]StreamConfig{
+							"some-log-group": {
+								Names: []*string{aws.String("some-lg-name")},
+							},
+						},
+					},
+				},
+			},
+			expectedErr: errAutodiscoverAndNamedConfigured,
+		},
 	}
 
 	for _, tc := range cases {
@@ -135,13 +156,12 @@ func TestLoadConfig(t *testing.T) {
 
 	cases := []struct {
 		name           string
-		expectedConfig config.Receiver
+		expectedConfig component.Config
 	}{
 		{
 			name: "default",
 			expectedConfig: &Config{
-				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-				Region:           "us-west-1",
+				Region: "us-west-1",
 				Logs: &LogsConfig{
 					PollInterval:        time.Minute,
 					MaxEventsPerRequest: defaultEventLimit,
@@ -156,8 +176,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			name: "prefix-log-group-autodiscover",
 			expectedConfig: &Config{
-				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-				Region:           "us-west-1",
+				Region: "us-west-1",
 				Logs: &LogsConfig{
 					PollInterval:        time.Minute,
 					MaxEventsPerRequest: defaultEventLimit,
@@ -173,8 +192,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			name: "autodiscover-filter-streams",
 			expectedConfig: &Config{
-				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-				Region:           "us-west-1",
+				Region: "us-west-1",
 				Logs: &LogsConfig{
 					PollInterval:        time.Minute,
 					MaxEventsPerRequest: defaultEventLimit,
@@ -192,8 +210,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			name: "autodiscover-filter-streams",
 			expectedConfig: &Config{
-				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-				Region:           "us-west-1",
+				Region: "us-west-1",
 				Logs: &LogsConfig{
 					PollInterval:        time.Minute,
 					MaxEventsPerRequest: defaultEventLimit,
@@ -211,17 +228,12 @@ func TestLoadConfig(t *testing.T) {
 		{
 			name: "named-prefix",
 			expectedConfig: &Config{
-				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-				Profile:          "my-profile",
-				Region:           "us-west-1",
+				Profile: "my-profile",
+				Region:  "us-west-1",
 				Logs: &LogsConfig{
 					PollInterval:        5 * time.Minute,
 					MaxEventsPerRequest: defaultEventLimit,
 					Groups: GroupConfig{
-						// this is ignored since named configs are present
-						AutodiscoverConfig: &AutodiscoverConfig{
-							Limit: defaultLogGroupLimit,
-						},
 						NamedConfigs: map[string]StreamConfig{
 							"/aws/eks/dev-0/cluster": {},
 						},
@@ -232,17 +244,12 @@ func TestLoadConfig(t *testing.T) {
 		{
 			name: "named-prefix-with-streams",
 			expectedConfig: &Config{
-				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-				Profile:          "my-profile",
-				Region:           "us-west-1",
+				Profile: "my-profile",
+				Region:  "us-west-1",
 				Logs: &LogsConfig{
 					PollInterval:        5 * time.Minute,
 					MaxEventsPerRequest: defaultEventLimit,
 					Groups: GroupConfig{
-						// this is ignored since named configs are present
-						AutodiscoverConfig: &AutodiscoverConfig{
-							Limit: defaultLogGroupLimit,
-						},
 						NamedConfigs: map[string]StreamConfig{
 							"/aws/eks/dev-0/cluster": {
 								Names: []*string{aws.String("kube-apiserver-ea9c831555adca1815ae04b87661klasdj")},
@@ -259,10 +266,11 @@ func TestLoadConfig(t *testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig()
 
-			loaded, err := cm.Sub(config.NewComponentIDWithName(typeStr, tc.name).String())
+			loaded, err := cm.Sub(component.NewIDWithName(typeStr, tc.name).String())
 			require.NoError(t, err)
-			require.NoError(t, config.UnmarshalReceiver(loaded, cfg))
+			require.NoError(t, component.UnmarshalConfig(loaded, cfg))
 			require.Equal(t, cfg, tc.expectedConfig)
+			require.NoError(t, component.ValidateConfig(cfg))
 		})
 	}
 }

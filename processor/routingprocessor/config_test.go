@@ -20,22 +20,23 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
 func TestLoadConfig(t *testing.T) {
 	testcases := []struct {
 		configPath string
-		expected   config.Processor
+		id         component.ID
+		expected   component.Config
 	}{
 		{
 			configPath: "config_traces.yaml",
+			id:         component.NewIDWithName(typeStr, ""),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
-				DefaultExporters:  []string{"otlp"},
-				AttributeSource:   "context",
-				FromAttribute:     "X-Tenant",
+				DefaultExporters: []string{"otlp"},
+				AttributeSource:  "context",
+				FromAttribute:    "X-Tenant",
 				Table: []RoutingTableItem{
 					{
 						Value:     "acme",
@@ -50,11 +51,11 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			configPath: "config_metrics.yaml",
+			id:         component.NewIDWithName(typeStr, ""),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
-				DefaultExporters:  []string{"logging/default"},
-				AttributeSource:   "context",
-				FromAttribute:     "X-Custom-Metrics-Header",
+				DefaultExporters: []string{"logging/default"},
+				AttributeSource:  "context",
+				FromAttribute:    "X-Custom-Metrics-Header",
 				Table: []RoutingTableItem{
 					{
 						Value:     "acme",
@@ -69,11 +70,11 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			configPath: "config_logs.yaml",
+			id:         component.NewIDWithName(typeStr, ""),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
-				DefaultExporters:  []string{"logging/default"},
-				AttributeSource:   "context",
-				FromAttribute:     "X-Custom-Logs-Header",
+				DefaultExporters: []string{"logging/default"},
+				AttributeSource:  "context",
+				FromAttribute:    "X-Custom-Logs-Header",
 				Table: []RoutingTableItem{
 					{
 						Value:     "acme",
@@ -82,6 +83,38 @@ func TestLoadConfig(t *testing.T) {
 					{
 						Value:     "globex",
 						Exporters: []string{"logging/globex"},
+					},
+				},
+			},
+		},
+		{
+			configPath: "config.yaml",
+			id:         component.NewIDWithName(typeStr, ""),
+			expected: &Config{
+				DefaultExporters: []string{"jaeger"},
+				AttributeSource:  resourceAttributeSource,
+				FromAttribute:    "X-Tenant",
+				Table: []RoutingTableItem{
+					{
+						Value:     "acme",
+						Exporters: []string{"otlp/traces"},
+					},
+				},
+			},
+		},
+		{
+			configPath: "config.yaml",
+			id:         component.NewIDWithName(typeStr, "ottl"),
+			expected: &Config{
+				DefaultExporters: []string{"jaeger"},
+				Table: []RoutingTableItem{
+					{
+						Statement: "route() where resource.attributes[\"X-Tenant\"] == \"acme\"",
+						Exporters: []string{"jaeger/acme"},
+					},
+					{
+						Statement: "delete_key(resource.attributes, \"X-Tenant\") where IsMatch(resource.attributes[\"X-Tenant\"], \".*corp\") == true",
+						Exporters: []string{"jaeger/ecorp"},
 					},
 				},
 			},
@@ -96,11 +129,11 @@ func TestLoadConfig(t *testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig()
 
-			sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "").String())
+			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, config.UnmarshalProcessor(sub, cfg))
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-			assert.NoError(t, cfg.Validate())
+			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -109,26 +142,26 @@ func TestLoadConfig(t *testing.T) {
 func TestValidateConfig(t *testing.T) {
 	tests := []struct {
 		name   string
-		config config.Processor
+		config component.Config
 		error  string
 	}{
 		{
-			name: "both expression and value specified",
+			name: "both statement and value specified",
 			config: &Config{
 				FromAttribute:   "attr",
 				AttributeSource: resourceAttributeSource,
 				Table: []RoutingTableItem{
 					{
-						Exporters:  []string{"otlp"},
-						Value:      "acme",
-						Expression: `route() where resource.attributes["attr"] == "acme"`,
+						Exporters: []string{"otlp"},
+						Value:     "acme",
+						Statement: `route() where resource.attributes["attr"] == "acme"`,
 					},
 				},
 			},
-			error: "invalid route: both expression (route() where resource.attributes[\"attr\"] == \"acme\") and value (acme) provided",
+			error: "invalid route: both statement (route() where resource.attributes[\"attr\"] == \"acme\") and value (acme) provided",
 		},
 		{
-			name: "neither expression or value provided",
+			name: "neither statement or value provided",
 			config: &Config{
 				FromAttribute:   "attr",
 				AttributeSource: resourceAttributeSource,
@@ -159,7 +192,7 @@ func TestValidateConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.EqualError(t, tt.config.Validate(), tt.error)
+			assert.EqualError(t, component.ValidateConfig(tt.config), tt.error)
 		})
 	}
 }
@@ -185,8 +218,8 @@ func TestRewriteLegacyConfigToOTTL(t *testing.T) {
 			want: Config{
 				Table: []RoutingTableItem{
 					{
-						Exporters:  []string{"otlp"},
-						Expression: `route() where resource.attributes["attr"] == "acme"`,
+						Exporters: []string{"otlp"},
+						Statement: `route() where resource.attributes["attr"] == "acme"`,
 					},
 				},
 			},
@@ -210,12 +243,12 @@ func TestRewriteLegacyConfigToOTTL(t *testing.T) {
 			want: Config{
 				Table: []RoutingTableItem{
 					{
-						Exporters:  []string{"otlp"},
-						Expression: `route() where resource.attributes["attr"] == "acme"`,
+						Exporters: []string{"otlp"},
+						Statement: `route() where resource.attributes["attr"] == "acme"`,
 					},
 					{
-						Exporters:  []string{"otlp/2"},
-						Expression: `route() where resource.attributes["attr"] == "ecorp"`,
+						Exporters: []string{"otlp/2"},
+						Statement: `route() where resource.attributes["attr"] == "ecorp"`,
 					},
 				},
 			},
@@ -236,8 +269,8 @@ func TestRewriteLegacyConfigToOTTL(t *testing.T) {
 			want: Config{
 				Table: []RoutingTableItem{
 					{
-						Exporters:  []string{"otlp"},
-						Expression: `delete_key(resource.attributes, "attr") where resource.attributes["attr"] == "acme"`,
+						Exporters: []string{"otlp"},
+						Statement: `delete_key(resource.attributes, "attr") where resource.attributes["attr"] == "acme"`,
 					},
 				},
 			},
@@ -276,20 +309,20 @@ func TestRewriteLegacyConfigToOTTL(t *testing.T) {
 						Value:     "acme",
 					},
 					{
-						Exporters:  []string{"otlp/2"},
-						Expression: `route() where resource.attributes["attr"] == "ecorp"`,
+						Exporters: []string{"otlp/2"},
+						Statement: `route() where resource.attributes["attr"] == "ecorp"`,
 					},
 				},
 			},
 			want: Config{
 				Table: []RoutingTableItem{
 					{
-						Exporters:  []string{"otlp"},
-						Expression: `route() where resource.attributes["attr"] == "acme"`,
+						Exporters: []string{"otlp"},
+						Statement: `route() where resource.attributes["attr"] == "acme"`,
 					},
 					{
-						Exporters:  []string{"otlp/2"},
-						Expression: `route() where resource.attributes["attr"] == "ecorp"`,
+						Exporters: []string{"otlp/2"},
+						Statement: `route() where resource.attributes["attr"] == "ecorp"`,
 					},
 				},
 			},

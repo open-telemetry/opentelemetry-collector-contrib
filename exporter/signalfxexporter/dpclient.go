@@ -41,7 +41,7 @@ type sfxClientBase struct {
 	zippers   sync.Pool
 }
 
-var metricsMarshaler = pmetric.NewJSONMarshaler()
+var metricsMarshaler = &pmetric.JSONMarshaler{}
 
 // avoid attempting to compress things that fit into a single ethernet frame
 func (s *sfxClientBase) getReader(b []byte) (io.Reader, bool, error) {

@@ -150,7 +150,7 @@ func (h *humioClient) sendEvents(ctx context.Context, evts interface{}, url stri
 	}
 
 	for h, v := range h.cfg.Headers {
-		req.Header.Set(h, v)
+		req.Header.Set(h, string(v))
 	}
 	req.Header.Set("authorization", "Bearer "+token)
 

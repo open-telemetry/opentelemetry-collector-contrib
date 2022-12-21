@@ -33,8 +33,8 @@ import (
 	jaegerthrift "github.com/jaegertracing/jaeger/thrift-gen/jaeger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -42,6 +42,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -51,11 +52,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 )
 
-var jaegerReceiver = config.NewComponentIDWithName("jaeger", "receiver_test")
+var jaegerReceiver = component.NewIDWithName("jaeger", "receiver_test")
 
 func TestTraceSource(t *testing.T) {
-	set := componenttest.NewNopReceiverCreateSettings()
-	jr := newJaegerReceiver(jaegerReceiver, &configuration{}, nil, set)
+	set := receivertest.NewNopCreateSettings()
+	jr, err := newJaegerReceiver(jaegerReceiver, &configuration{}, nil, set)
+	require.NoError(t, err)
 	require.NotNil(t, jr)
 }
 
@@ -93,8 +95,9 @@ func TestReception(t *testing.T) {
 	}
 	sink := new(consumertest.TracesSink)
 
-	set := componenttest.NewNopReceiverCreateSettings()
-	jr := newJaegerReceiver(jaegerReceiver, config, sink, set)
+	set := receivertest.NewNopCreateSettings()
+	jr, err := newJaegerReceiver(jaegerReceiver, config, sink, set)
+	require.NoError(t, err)
 
 	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
@@ -123,8 +126,9 @@ func TestPortsNotOpen(t *testing.T) {
 
 	sink := new(consumertest.TracesSink)
 
-	set := componenttest.NewNopReceiverCreateSettings()
-	jr := newJaegerReceiver(jaegerReceiver, config, sink, set)
+	set := receivertest.NewNopCreateSettings()
+	jr, err := newJaegerReceiver(jaegerReceiver, config, sink, set)
+	require.NoError(t, err)
 
 	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
@@ -157,8 +161,9 @@ func TestGRPCReception(t *testing.T) {
 	}
 	sink := new(consumertest.TracesSink)
 
-	set := componenttest.NewNopReceiverCreateSettings()
-	jr := newJaegerReceiver(jaegerReceiver, config, sink, set)
+	set := receivertest.NewNopCreateSettings()
+	jr, err := newJaegerReceiver(jaegerReceiver, config, sink, set)
+	require.NoError(t, err)
 
 	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
@@ -176,7 +181,7 @@ func TestGRPCReception(t *testing.T) {
 	nowPlus10min2sec := now.Add(d10min).Add(d2sec)
 
 	// test
-	req := grpcFixture(now, d10min, d2sec)
+	req := grpcFixture(t, now, d10min, d2sec)
 	resp, err := cl.PostSpans(context.Background(), req, grpc.WaitForReady(true))
 
 	// verify
@@ -214,8 +219,9 @@ func TestGRPCReceptionWithTLS(t *testing.T) {
 	}
 	sink := new(consumertest.TracesSink)
 
-	set := componenttest.NewNopReceiverCreateSettings()
-	jr := newJaegerReceiver(jaegerReceiver, config, sink, set)
+	set := receivertest.NewNopCreateSettings()
+	jr, err := newJaegerReceiver(jaegerReceiver, config, sink, set)
+	require.NoError(t, err)
 
 	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
@@ -235,7 +241,7 @@ func TestGRPCReceptionWithTLS(t *testing.T) {
 	nowPlus10min2sec := now.Add(d10min).Add(d2sec)
 
 	// test
-	req := grpcFixture(now, d10min, d2sec)
+	req := grpcFixture(t, now, d10min, d2sec)
 	resp, err := cl.PostSpans(context.Background(), req, grpc.WaitForReady(true))
 
 	// verify
@@ -286,9 +292,10 @@ func expectedTraceData(t1, t2, t3 time.Time) ptrace.Traces {
 	return traces
 }
 
-func grpcFixture(t1 time.Time, d1, d2 time.Duration) *api_v2.PostSpansRequest {
+func grpcFixture(t *testing.T, t1 time.Time, d1, d2 time.Duration) *api_v2.PostSpansRequest {
 	traceID := model.TraceID{}
-	traceID.Unmarshal([]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80}) // nolint:errcheck
+	require.NoError(t, traceID.Unmarshal([]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80}))
+
 	parentSpanID := model.NewSpanID(binary.BigEndian.Uint64([]byte{0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x18}))
 	childSpanID := model.NewSpanID(binary.BigEndian.Uint64([]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8}))
 
@@ -348,8 +355,9 @@ func TestSampling(t *testing.T) {
 	}
 	sink := new(consumertest.TracesSink)
 
-	set := componenttest.NewNopReceiverCreateSettings()
-	jr := newJaegerReceiver(jaegerReceiver, config, sink, set)
+	set := receivertest.NewNopCreateSettings()
+	jr, err := newJaegerReceiver(jaegerReceiver, config, sink, set)
+	require.NoError(t, err)
 
 	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })

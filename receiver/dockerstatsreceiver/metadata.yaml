@@ -40,8 +40,9 @@ attributes:
 metrics:
   # CPU
   container.cpu.usage.system:
-    enabled: true
-    description: "System CPU usage."
+    enabled: false
+    description: "System CPU usage, as reported by docker."
+    extended_documentation: "Note this is the usage for the system, not the container."
     unit: ns
     sum:
       value_type: int

@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
@@ -322,6 +322,20 @@ func TestInternalTracesToJaegerProto(t *testing.T) {
 				},
 			},
 			err: nil,
+		},
+		{
+			name: "a-spans-with-two-parent",
+			jb: &model.Batch{
+				Process: &model.Process{
+					ServiceName: tracetranslator.ResourceNoServiceName,
+				},
+				Spans: []*model.Span{
+					generateProtoSpan(),
+					generateProtoFollowerSpan(),
+					generateProtoTwoParentsSpan(),
+				},
+			},
+			td: generateTracesSpanWithTwoParents(),
 		},
 	}
 

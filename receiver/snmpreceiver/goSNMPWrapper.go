@@ -37,18 +37,17 @@ type goSNMPWrapper interface {
 	// Get sends an SNMP GET request
 	Get(oids []string) (result *gosnmp.SnmpPacket, err error)
 
-	// Walk retrieves a subtree of values using GETNEXT - a request is made for each
-	// value, unlike BulkWalk which does this operation in batches. As the tree is
-	// walked walkFn is called for each new value. The function immediately returns
-	// an error if either there is an underlaying SNMP error (e.g. GetNext fails),
-	// or if walkFn returns an error.
-	Walk(rootOid string, walkFn gosnmp.WalkFunc) error
+	// WalkAll is similar to Walk but returns a filled array of all values rather
+	// than using a callback function to stream results. Caution: if you have set
+	// x.AppOpts to 'c', WalkAll may loop indefinitely and cause an Out Of Memory -
+	// use Walk instead.
+	WalkAll(rootOid string) (results []gosnmp.SnmpPDU, err error)
 
-	// BulkWalk retrieves a subtree of values using GETBULK. As the tree is
-	// walked walkFn is called for each new value. The function immediately returns
-	// an error if either there is an underlaying SNMP error (e.g. GetBulk fails),
-	// or if walkFn returns an error.
-	BulkWalk(rootOid string, walkFn gosnmp.WalkFunc) error
+	// BulkWalkAll is similar to BulkWalk but returns a filled array of all values
+	// rather than using a callback function to stream results. Caution: if you
+	// have set x.AppOpts to 'c', BulkWalkAll may loop indefinitely and cause an
+	// Out Of Memory - use BulkWalk instead.
+	BulkWalkAll(rootOid string) (results []gosnmp.SnmpPDU, err error)
 
 	// GetTransport gets the Transport
 	GetTransport() string

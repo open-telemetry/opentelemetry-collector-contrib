@@ -18,7 +18,7 @@
                      "description": "The number of pages in the InnoDB buffer pool.",
                      "name": "mysql.buffer_pool.pages",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "233",

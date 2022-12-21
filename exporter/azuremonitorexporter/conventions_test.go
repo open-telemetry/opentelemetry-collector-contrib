@@ -46,7 +46,7 @@ func TestHTTPAttributeMapping(t *testing.T) {
 	}
 
 	attributeMap := pcommon.NewMap()
-	attributeMap.FromRaw(httpAttributeValues)
+	assert.NoError(t, attributeMap.FromRaw(httpAttributeValues))
 
 	addNetworkAttributes(attributeMap)
 
@@ -81,7 +81,7 @@ func TestRPCPAttributeMapping(t *testing.T) {
 	}
 
 	attributeMap := pcommon.NewMap()
-	attributeMap.FromRaw(rpcAttributeValues)
+	assert.NoError(t, attributeMap.FromRaw(rpcAttributeValues))
 
 	addNetworkAttributes(attributeMap)
 
@@ -111,7 +111,7 @@ func TestDatabaseAttributeMapping(t *testing.T) {
 	}
 
 	attributeMap := pcommon.NewMap()
-	attributeMap.FromRaw(databaseAttributeValues)
+	assert.NoError(t, attributeMap.FromRaw(databaseAttributeValues))
 
 	addNetworkAttributes(attributeMap)
 
@@ -148,7 +148,7 @@ func TestMessagingAttributeMapping(t *testing.T) {
 	}
 
 	attributeMap := pcommon.NewMap()
-	attributeMap.FromRaw(messagingAttributeValues)
+	assert.NoError(t, attributeMap.FromRaw(messagingAttributeValues))
 
 	addNetworkAttributes(attributeMap)
 

@@ -23,9 +23,9 @@ import (
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
@@ -39,14 +39,13 @@ var errUnrecognizedEncoding = fmt.Errorf("unrecognized encoding")
 
 // kafkaTracesConsumer uses sarama to consume and handle messages from kafka.
 type kafkaTracesConsumer struct {
-	id                config.ComponentID
 	consumerGroup     sarama.ConsumerGroup
 	nextConsumer      consumer.Traces
 	topics            []string
 	cancelConsumeLoop context.CancelFunc
 	unmarshaler       TracesUnmarshaler
 
-	settings component.ReceiverCreateSettings
+	settings receiver.CreateSettings
 
 	autocommitEnabled bool
 	messageMarking    MessageMarking
@@ -54,14 +53,13 @@ type kafkaTracesConsumer struct {
 
 // kafkaMetricsConsumer uses sarama to consume and handle messages from kafka.
 type kafkaMetricsConsumer struct {
-	id                config.ComponentID
 	consumerGroup     sarama.ConsumerGroup
 	nextConsumer      consumer.Metrics
 	topics            []string
 	cancelConsumeLoop context.CancelFunc
 	unmarshaler       MetricsUnmarshaler
 
-	settings component.ReceiverCreateSettings
+	settings receiver.CreateSettings
 
 	autocommitEnabled bool
 	messageMarking    MessageMarking
@@ -69,24 +67,23 @@ type kafkaMetricsConsumer struct {
 
 // kafkaLogsConsumer uses sarama to consume and handle messages from kafka.
 type kafkaLogsConsumer struct {
-	id                config.ComponentID
 	consumerGroup     sarama.ConsumerGroup
 	nextConsumer      consumer.Logs
 	topics            []string
 	cancelConsumeLoop context.CancelFunc
 	unmarshaler       LogsUnmarshaler
 
-	settings component.ReceiverCreateSettings
+	settings receiver.CreateSettings
 
 	autocommitEnabled bool
 	messageMarking    MessageMarking
 }
 
-var _ component.Receiver = (*kafkaTracesConsumer)(nil)
-var _ component.Receiver = (*kafkaMetricsConsumer)(nil)
-var _ component.Receiver = (*kafkaLogsConsumer)(nil)
+var _ receiver.Traces = (*kafkaTracesConsumer)(nil)
+var _ receiver.Metrics = (*kafkaMetricsConsumer)(nil)
+var _ receiver.Logs = (*kafkaLogsConsumer)(nil)
 
-func newTracesReceiver(config Config, set component.ReceiverCreateSettings, unmarshalers map[string]TracesUnmarshaler, nextConsumer consumer.Traces) (*kafkaTracesConsumer, error) {
+func newTracesReceiver(config Config, set receiver.CreateSettings, unmarshalers map[string]TracesUnmarshaler, nextConsumer consumer.Traces) (*kafkaTracesConsumer, error) {
 	unmarshaler := unmarshalers[config.Encoding]
 	if unmarshaler == nil {
 		return nil, errUnrecognizedEncoding
@@ -112,7 +109,6 @@ func newTracesReceiver(config Config, set component.ReceiverCreateSettings, unma
 		return nil, err
 	}
 	return &kafkaTracesConsumer{
-		id:                config.ID(),
 		consumerGroup:     client,
 		topics:            []string{config.Topic},
 		nextConsumer:      nextConsumer,
@@ -123,24 +119,31 @@ func newTracesReceiver(config Config, set component.ReceiverCreateSettings, unma
 	}, nil
 }
 
-func (c *kafkaTracesConsumer) Start(context.Context, component.Host) error {
+func (c *kafkaTracesConsumer) Start(_ context.Context, host component.Host) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	c.cancelConsumeLoop = cancel
+	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+		ReceiverID:             c.settings.ID,
+		Transport:              transport,
+		ReceiverCreateSettings: c.settings,
+	})
+	if err != nil {
+		return err
+	}
 	consumerGroup := &tracesConsumerGroupHandler{
-		id:           c.id,
-		logger:       c.settings.Logger,
-		unmarshaler:  c.unmarshaler,
-		nextConsumer: c.nextConsumer,
-		ready:        make(chan bool),
-		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
-			ReceiverID:             c.id,
-			Transport:              transport,
-			ReceiverCreateSettings: c.settings,
-		}),
+		logger:            c.settings.Logger,
+		unmarshaler:       c.unmarshaler,
+		nextConsumer:      c.nextConsumer,
+		ready:             make(chan bool),
+		obsrecv:           obsrecv,
 		autocommitEnabled: c.autocommitEnabled,
 		messageMarking:    c.messageMarking,
 	}
-	go c.consumeLoop(ctx, consumerGroup) // nolint:errcheck
+	go func() {
+		if err := c.consumeLoop(ctx, consumerGroup); err != nil {
+			host.ReportFatalError(err)
+		}
+	}()
 	<-consumerGroup.ready
 	return nil
 }
@@ -166,7 +169,7 @@ func (c *kafkaTracesConsumer) Shutdown(context.Context) error {
 	return c.consumerGroup.Close()
 }
 
-func newMetricsReceiver(config Config, set component.ReceiverCreateSettings, unmarshalers map[string]MetricsUnmarshaler, nextConsumer consumer.Metrics) (*kafkaMetricsConsumer, error) {
+func newMetricsReceiver(config Config, set receiver.CreateSettings, unmarshalers map[string]MetricsUnmarshaler, nextConsumer consumer.Metrics) (*kafkaMetricsConsumer, error) {
 	unmarshaler := unmarshalers[config.Encoding]
 	if unmarshaler == nil {
 		return nil, errUnrecognizedEncoding
@@ -195,7 +198,6 @@ func newMetricsReceiver(config Config, set component.ReceiverCreateSettings, unm
 		return nil, err
 	}
 	return &kafkaMetricsConsumer{
-		id:                config.ID(),
 		consumerGroup:     client,
 		topics:            []string{config.Topic},
 		nextConsumer:      nextConsumer,
@@ -206,24 +208,31 @@ func newMetricsReceiver(config Config, set component.ReceiverCreateSettings, unm
 	}, nil
 }
 
-func (c *kafkaMetricsConsumer) Start(context.Context, component.Host) error {
+func (c *kafkaMetricsConsumer) Start(_ context.Context, host component.Host) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	c.cancelConsumeLoop = cancel
+	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+		ReceiverID:             c.settings.ID,
+		Transport:              transport,
+		ReceiverCreateSettings: c.settings,
+	})
+	if err != nil {
+		return err
+	}
 	metricsConsumerGroup := &metricsConsumerGroupHandler{
-		id:           c.id,
-		logger:       c.settings.Logger,
-		unmarshaler:  c.unmarshaler,
-		nextConsumer: c.nextConsumer,
-		ready:        make(chan bool),
-		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
-			ReceiverID:             c.id,
-			Transport:              transport,
-			ReceiverCreateSettings: c.settings,
-		}),
+		logger:            c.settings.Logger,
+		unmarshaler:       c.unmarshaler,
+		nextConsumer:      c.nextConsumer,
+		ready:             make(chan bool),
+		obsrecv:           obsrecv,
 		autocommitEnabled: c.autocommitEnabled,
 		messageMarking:    c.messageMarking,
 	}
-	go c.consumeLoop(ctx, metricsConsumerGroup) // nolint:errcheck
+	go func() {
+		if err := c.consumeLoop(ctx, metricsConsumerGroup); err != nil {
+			host.ReportFatalError(err)
+		}
+	}()
 	<-metricsConsumerGroup.ready
 	return nil
 }
@@ -249,7 +258,7 @@ func (c *kafkaMetricsConsumer) Shutdown(context.Context) error {
 	return c.consumerGroup.Close()
 }
 
-func newLogsReceiver(config Config, set component.ReceiverCreateSettings, unmarshalers map[string]LogsUnmarshaler, nextConsumer consumer.Logs) (*kafkaLogsConsumer, error) {
+func newLogsReceiver(config Config, set receiver.CreateSettings, unmarshalers map[string]LogsUnmarshaler, nextConsumer consumer.Logs) (*kafkaLogsConsumer, error) {
 	unmarshaler := unmarshalers[config.Encoding]
 	if unmarshaler == nil {
 		return nil, errUnrecognizedEncoding
@@ -275,7 +284,6 @@ func newLogsReceiver(config Config, set component.ReceiverCreateSettings, unmars
 		return nil, err
 	}
 	return &kafkaLogsConsumer{
-		id:                config.ID(),
 		consumerGroup:     client,
 		topics:            []string{config.Topic},
 		nextConsumer:      nextConsumer,
@@ -286,24 +294,32 @@ func newLogsReceiver(config Config, set component.ReceiverCreateSettings, unmars
 	}, nil
 }
 
-func (c *kafkaLogsConsumer) Start(context.Context, component.Host) error {
+func (c *kafkaLogsConsumer) Start(_ context.Context, host component.Host) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	c.cancelConsumeLoop = cancel
+	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+		ReceiverID:             c.settings.ID,
+		Transport:              transport,
+		ReceiverCreateSettings: c.settings,
+	})
+	if err != nil {
+		return err
+	}
+
 	logsConsumerGroup := &logsConsumerGroupHandler{
-		id:           c.id,
-		logger:       c.settings.Logger,
-		unmarshaler:  c.unmarshaler,
-		nextConsumer: c.nextConsumer,
-		ready:        make(chan bool),
-		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
-			ReceiverID:             c.id,
-			Transport:              transport,
-			ReceiverCreateSettings: c.settings,
-		}),
+		logger:            c.settings.Logger,
+		unmarshaler:       c.unmarshaler,
+		nextConsumer:      c.nextConsumer,
+		ready:             make(chan bool),
+		obsrecv:           obsrecv,
 		autocommitEnabled: c.autocommitEnabled,
 		messageMarking:    c.messageMarking,
 	}
-	go c.consumeLoop(ctx, logsConsumerGroup) // nolint:errcheck
+	go func() {
+		if err := c.consumeLoop(ctx, logsConsumerGroup); err != nil {
+			host.ReportFatalError(err)
+		}
+	}()
 	<-logsConsumerGroup.ready
 	return nil
 }
@@ -330,7 +346,7 @@ func (c *kafkaLogsConsumer) Shutdown(context.Context) error {
 }
 
 type tracesConsumerGroupHandler struct {
-	id           config.ComponentID
+	id           component.ID
 	unmarshaler  TracesUnmarshaler
 	nextConsumer consumer.Traces
 	ready        chan bool
@@ -345,7 +361,7 @@ type tracesConsumerGroupHandler struct {
 }
 
 type metricsConsumerGroupHandler struct {
-	id           config.ComponentID
+	id           component.ID
 	unmarshaler  MetricsUnmarshaler
 	nextConsumer consumer.Metrics
 	ready        chan bool
@@ -360,7 +376,7 @@ type metricsConsumerGroupHandler struct {
 }
 
 type logsConsumerGroupHandler struct {
-	id           config.ComponentID
+	id           component.ID
 	unmarshaler  LogsUnmarshaler
 	nextConsumer consumer.Logs
 	ready        chan bool

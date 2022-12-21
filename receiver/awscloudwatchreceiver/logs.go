@@ -247,10 +247,10 @@ func (l *logsReceiver) processEvents(now pcommon.Timestamp, logGroupName string,
 
 		rl := logs.ResourceLogs().AppendEmpty()
 		resourceAttributes := rl.Resource().Attributes()
-		resourceAttributes.PutString("aws.region", l.region)
-		resourceAttributes.PutString("cloudwatch.log.group.name", logGroupName)
+		resourceAttributes.PutStr("aws.region", l.region)
+		resourceAttributes.PutStr("cloudwatch.log.group.name", logGroupName)
 		if e.LogStreamName != nil {
-			resourceAttributes.PutString("cloudwatch.log.stream", *e.LogStreamName)
+			resourceAttributes.PutStr("cloudwatch.log.stream", *e.LogStreamName)
 		}
 
 		logRecord := rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
@@ -258,7 +258,7 @@ func (l *logsReceiver) processEvents(now pcommon.Timestamp, logGroupName string,
 		ts := time.UnixMilli(*e.Timestamp)
 		logRecord.SetTimestamp(pcommon.NewTimestampFromTime(ts))
 		logRecord.Body().SetStr(*e.Message)
-		logRecord.Attributes().PutString("id", *e.EventId)
+		logRecord.Attributes().PutStr("id", *e.EventId)
 	}
 	return logs
 }

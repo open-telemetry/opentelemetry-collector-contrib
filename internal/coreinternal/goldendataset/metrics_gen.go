@@ -192,6 +192,7 @@ func setDoubleHistogramBounds(hdp pmetric.HistogramDataPoint, bounds ...float64)
 func addDoubleHistogramVal(hdp pmetric.HistogramDataPoint, val float64) {
 	hdp.SetCount(hdp.Count() + 1)
 	hdp.SetSum(hdp.Sum() + val)
+	// TODO: HasSum, Min, HasMin, Max, HasMax are not covered in tests.
 	buckets := hdp.BucketCounts()
 	bounds := hdp.ExplicitBounds()
 	for i := 0; i < bounds.Len(); i++ {
@@ -225,10 +226,12 @@ func populateExpoHistogram(cfg MetricsCfg, dh pmetric.ExponentialHistogram) {
 		pt.SetTimestamp(ts)
 		populatePtAttributes(cfg, pt.Attributes())
 
-		pt.SetSum(100)
+		pt.SetSum(100 * float64(cfg.PtVal))
 		pt.SetCount(uint64(cfg.PtVal))
-		pt.SetScale(0)
-		pt.SetZeroCount(0)
+		pt.SetScale(int32(cfg.PtVal))
+		pt.SetZeroCount(uint64(cfg.PtVal))
+		pt.SetMin(float64(cfg.PtVal))
+		pt.SetMax(float64(cfg.PtVal))
 		pt.Positive().SetOffset(int32(cfg.PtVal))
 		pt.Positive().BucketCounts().FromRaw([]uint64{uint64(cfg.PtVal)})
 	}

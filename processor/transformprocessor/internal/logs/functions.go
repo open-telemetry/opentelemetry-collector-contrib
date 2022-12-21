@@ -15,11 +15,11 @@
 package logs // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/logs"
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllogs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
-func Functions() map[string]interface{} {
+func LogFunctions() map[string]interface{} {
 	// No logs-only functions yet.
-	return common.Functions[ottllogs.TransformContext]()
+	return common.Functions[ottllog.TransformContext]()
 }

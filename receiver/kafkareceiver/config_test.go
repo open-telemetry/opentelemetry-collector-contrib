@@ -21,7 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
@@ -35,19 +35,18 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	tests := []struct {
-		id          config.ComponentID
-		expected    config.Receiver
+		id          component.ID
+		expected    component.Config
 		expectedErr error
 	}{
 		{
-			id: config.NewComponentIDWithName(typeStr, ""),
+			id: component.NewIDWithName(typeStr, ""),
 			expected: &Config{
-				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-				Topic:            "spans",
-				Encoding:         "otlp_proto",
-				Brokers:          []string{"foo:123", "bar:456"},
-				ClientID:         "otel-collector",
-				GroupID:          "otel-collector",
+				Topic:    "spans",
+				Encoding: "otlp_proto",
+				Brokers:  []string{"foo:123", "bar:456"},
+				ClientID: "otel-collector",
+				GroupID:  "otel-collector",
 				Authentication: kafkaexporter.Authentication{
 					TLS: &configtls.TLSClientSetting{
 						TLSSetting: configtls.TLSSetting{
@@ -72,14 +71,13 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 
-			id: config.NewComponentIDWithName(typeStr, "logs"),
+			id: component.NewIDWithName(typeStr, "logs"),
 			expected: &Config{
-				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-				Topic:            "logs",
-				Encoding:         "direct",
-				Brokers:          []string{"coffee:123", "foobar:456"},
-				ClientID:         "otel-collector",
-				GroupID:          "otel-collector",
+				Topic:    "logs",
+				Encoding: "direct",
+				Brokers:  []string{"coffee:123", "foobar:456"},
+				ClientID: "otel-collector",
+				GroupID:  "otel-collector",
 				Authentication: kafkaexporter.Authentication{
 					TLS: &configtls.TLSClientSetting{
 						TLSSetting: configtls.TLSSetting{
@@ -111,9 +109,9 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-			assert.NoError(t, cfg.Validate())
+			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

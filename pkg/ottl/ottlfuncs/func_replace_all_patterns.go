@@ -15,6 +15,7 @@
 package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 
@@ -37,14 +38,17 @@ func ReplaceAllPatterns[K any](target ottl.GetSetter[K], mode string, regexPatte
 		return nil, fmt.Errorf("invalid mode %v, must be either 'key' or 'value'", mode)
 	}
 
-	return func(ctx K) interface{} {
-		val := target.Get(ctx)
+	return func(ctx context.Context, tCtx K) (interface{}, error) {
+		val, err := target.Get(ctx, tCtx)
+		if err != nil {
+			return nil, err
+		}
 		if val == nil {
-			return nil
+			return nil, nil
 		}
 		attrs, ok := val.(pcommon.Map)
 		if !ok {
-			return nil
+			return nil, nil
 		}
 		updated := pcommon.NewMap()
 		updated.EnsureCapacity(attrs.Len())
@@ -53,22 +57,25 @@ func ReplaceAllPatterns[K any](target ottl.GetSetter[K], mode string, regexPatte
 			case modeValue:
 				if compiledPattern.MatchString(originalValue.Str()) {
 					updatedString := compiledPattern.ReplaceAllLiteralString(originalValue.Str(), replacement)
-					updated.PutString(key, updatedString)
+					updated.PutStr(key, updatedString)
 				} else {
-					updated.PutString(key, originalValue.Str())
+					updated.PutStr(key, originalValue.Str())
 				}
 			case modeKey:
 				if compiledPattern.MatchString(key) {
 					updatedKey := compiledPattern.ReplaceAllLiteralString(key, replacement)
-					updated.PutString(updatedKey, originalValue.Str())
+					updated.PutStr(updatedKey, originalValue.Str())
 				} else {
-					updated.PutString(key, originalValue.Str())
+					updated.PutStr(key, originalValue.Str())
 				}
 			}
 			return true
 		})
-		target.Set(ctx, updated)
+		err = target.Set(ctx, tCtx, updated)
+		if err != nil {
+			return nil, err
+		}
 
-		return nil
+		return nil, nil
 	}, nil
 }

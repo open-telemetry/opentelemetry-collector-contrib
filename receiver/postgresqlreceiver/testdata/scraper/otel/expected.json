@@ -13,7 +13,7 @@
                      "name": "postgresql.blocks_read",
                      "unit": "1",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "24",
@@ -408,7 +408,7 @@
                      "name": "postgresql.commits",
                      "unit": "1",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "1",
@@ -431,7 +431,7 @@
                      "name": "postgresql.db_size",
                      "unit": "By",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "4",
@@ -453,7 +453,7 @@
                      "name": "postgresql.backends",
                      "unit": "1",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "3",
@@ -475,7 +475,7 @@
                      "name": "postgresql.rows",
                      "unit": "1",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "7",
@@ -581,7 +581,7 @@
                      "name": "postgresql.operations",
                      "unit": "1",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "39",
@@ -784,7 +784,7 @@
                      "name": "postgresql.rollbacks",
                      "unit": "1",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "2",

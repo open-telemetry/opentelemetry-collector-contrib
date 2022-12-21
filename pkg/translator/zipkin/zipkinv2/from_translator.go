@@ -29,6 +29,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/internal/zipkin"
 )
 
@@ -189,7 +190,7 @@ func populateStatus(status ptrace.Status, zs *zipkinmodel.SpanModel, tags map[st
 		return
 	}
 
-	tags[conventions.OtelStatusCode] = status.Code().String()
+	tags[conventions.OtelStatusCode] = traceutil.StatusCodeStr(status.Code())
 	if status.Message() != "" {
 		tags[conventions.OtelStatusDescription] = status.Message()
 		zs.Err = fmt.Errorf("%s", status.Message())
@@ -243,8 +244,8 @@ func spanLinksToZipkinTags(links ptrace.SpanLinkSlice, zTags map[string]string) 
 		if err != nil {
 			return err
 		}
-		zTags[key] = fmt.Sprintf(spanLinkDataFormat, link.TraceID().HexString(),
-			link.SpanID().HexString(), link.TraceState().AsRaw(), jsonStr, link.DroppedAttributesCount())
+		zTags[key] = fmt.Sprintf(spanLinkDataFormat, traceutil.TraceIDToHexOrEmptyString(link.TraceID()),
+			traceutil.SpanIDToHexOrEmptyString(link.SpanID()), link.TraceState().AsRaw(), jsonStr, link.DroppedAttributesCount())
 	}
 	return nil
 }

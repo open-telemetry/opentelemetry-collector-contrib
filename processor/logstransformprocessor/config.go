@@ -17,18 +17,17 @@ package logstransformprocessor // import "github.com/open-telemetry/opentelemetr
 import (
 	"errors"
 
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 )
 
 // Config defines configuration for Resource processor.
 type Config struct {
-	config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-	adapter.BaseConfig       `mapstructure:",squash"`
+	adapter.BaseConfig `mapstructure:",squash"`
 }
 
-var _ config.Processor = (*Config)(nil)
+var _ component.Config = (*Config)(nil)
 
 // Validate checks if the processor configuration is valid
 func (cfg *Config) Validate() error {

@@ -1,17 +1,3 @@
-receivers:
-  nop:
-
-processors:
-  nop:
-
-exporters:
-  sentry:
-  sentry/2:
-    dsn: https://key@host/path/42
-
-service:
-  pipelines:
-    traces:
-      receivers: [nop]
-      processors: [nop]
-      exporters: [sentry]
+sentry:
+sentry/2:
+  dsn: https://key@host/path/42

@@ -19,21 +19,34 @@ import (
 	"strings"
 	"time"
 
-	"github.com/grafana/loki/pkg/logproto"
 	"github.com/prometheus/common/model"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki/logproto"
 )
 
 const (
 	hintAttributes = "loki.attribute.labels"
 	hintResources  = "loki.resource.labels"
+	hintTenant     = "loki.tenant"
+	hintFormat     = "loki.format"
+)
+
+const (
+	formatJSON   string = "json"
+	formatLogfmt string = "logfmt"
 )
 
 var defaultExporterLabels = model.LabelSet{"exporter": "OTLP"}
 
 func convertAttributesAndMerge(logAttrs pcommon.Map, resAttrs pcommon.Map) model.LabelSet {
 	out := defaultExporterLabels
+
+	if resourcesToLabel, found := resAttrs.Get(hintResources); found {
+		labels := convertAttributesToLabels(resAttrs, resourcesToLabel)
+		out = out.Merge(labels)
+	}
 
 	// get the hint from the log attributes, not from the resource
 	// the value can be a single resource name to use as label
@@ -48,6 +61,18 @@ func convertAttributesAndMerge(logAttrs pcommon.Map, resAttrs pcommon.Map) model
 		out = out.Merge(labels)
 	}
 
+	// get tenant hint from resource attributes, fallback to record attributes
+	// if it is not found
+	if resourcesToLabel, found := resAttrs.Get(hintTenant); !found {
+		if attributesToLabel, found := logAttrs.Get(hintTenant); found {
+			labels := convertAttributesToLabels(logAttrs, attributesToLabel)
+			out = out.Merge(labels)
+		}
+	} else {
+		labels := convertAttributesToLabels(resAttrs, resourcesToLabel)
+		out = out.Merge(labels)
+	}
+
 	return out
 }
 
@@ -57,13 +82,34 @@ func convertAttributesToLabels(attributes pcommon.Map, attrsToSelect pcommon.Val
 	attrs := parseAttributeNames(attrsToSelect)
 	for _, attr := range attrs {
 		attr = strings.TrimSpace(attr)
-		av, ok := attributes.Get(attr) // do we need to trim this?
+
+		av, ok := attributes.Get(attr)
+		if !ok {
+			// couldn't find the attribute under the given name directly
+			// perhaps it's a nested attribute?
+			av, ok = getNestedAttribute(attr, attributes) // shadows the OK from above on purpose
+		}
+
 		if ok {
 			out[model.LabelName(attr)] = model.LabelValue(av.AsString())
 		}
 	}
 
 	return out
+}
+
+func getNestedAttribute(attr string, attributes pcommon.Map) (pcommon.Value, bool) {
+	left, right, _ := strings.Cut(attr, ".")
+	av, ok := attributes.Get(left)
+	if !ok {
+		return pcommon.Value{}, false
+	}
+
+	if len(right) == 0 {
+		return av, ok
+	}
+
+	return getNestedAttribute(right, av.Map())
 }
 
 func parseAttributeNames(attrsToSelect pcommon.Value) []string {
@@ -87,7 +133,7 @@ func parseAttributeNames(attrsToSelect pcommon.Value) []string {
 
 func removeAttributes(attrs pcommon.Map, labels model.LabelSet) {
 	attrs.RemoveIf(func(s string, v pcommon.Value) bool {
-		if s == hintAttributes || s == hintResources {
+		if s == hintAttributes || s == hintResources || s == hintTenant || s == hintFormat {
 			return true
 		}
 
@@ -96,8 +142,8 @@ func removeAttributes(attrs pcommon.Map, labels model.LabelSet) {
 	})
 }
 
-func convertLogToJSONEntry(lr plog.LogRecord, res pcommon.Resource) (*logproto.Entry, error) {
-	line, err := Encode(lr, res)
+func convertLogToJSONEntry(lr plog.LogRecord, res pcommon.Resource, scope pcommon.InstrumentationScope) (*logproto.Entry, error) {
+	line, err := Encode(lr, res, scope)
 	if err != nil {
 		return nil, err
 	}
@@ -105,6 +151,29 @@ func convertLogToJSONEntry(lr plog.LogRecord, res pcommon.Resource) (*logproto.E
 		Timestamp: timestampFromLogRecord(lr),
 		Line:      line,
 	}, nil
+}
+
+func convertLogToLogfmtEntry(lr plog.LogRecord, res pcommon.Resource, scope pcommon.InstrumentationScope) (*logproto.Entry, error) {
+	line, err := EncodeLogfmt(lr, res, scope)
+	if err != nil {
+		return nil, err
+	}
+	return &logproto.Entry{
+		Timestamp: timestampFromLogRecord(lr),
+		Line:      line,
+	}, nil
+}
+
+func convertLogToLokiEntry(lr plog.LogRecord, res pcommon.Resource, format string, scope pcommon.InstrumentationScope) (*logproto.Entry, error) {
+	switch format {
+	case formatJSON:
+		return convertLogToJSONEntry(lr, res, scope)
+	case formatLogfmt:
+		return convertLogToLogfmtEntry(lr, res, scope)
+	default:
+		return nil, fmt.Errorf("invalid format %s. Expected one of: %s, %s", format, formatJSON, formatLogfmt)
+	}
+
 }
 
 func timestampFromLogRecord(lr plog.LogRecord) time.Time {

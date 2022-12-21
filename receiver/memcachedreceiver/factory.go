@@ -19,12 +19,10 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver/internal/metadata"
 )
@@ -38,17 +36,16 @@ const (
 )
 
 // NewFactory creates a factory for memcached receiver.
-func NewFactory() component.ReceiverFactory {
-	return component.NewReceiverFactory(
+func NewFactory() receiver.Factory {
+	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver, stability))
+		receiver.WithMetrics(createMetricsReceiver, stability))
 }
 
-func createDefaultConfig() config.Receiver {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
 			CollectionInterval: defaultCollectionInterval,
 		},
 		Timeout: defaultTimeout,
@@ -59,29 +56,15 @@ func createDefaultConfig() config.Receiver {
 	}
 }
 
-func logDeprecatedFeatureGateForDirection(log *zap.Logger, gate featuregate.Gate) {
-	log.Warn("WARNING: The " + gate.ID + " feature gate is deprecated and will be removed in the next release. The change to remove " +
-		"the direction attribute has been reverted in the specification. See https://github.com/open-telemetry/opentelemetry-specification/issues/2726 " +
-		"for additional details.")
-}
-
 func createMetricsReceiver(
 	_ context.Context,
-	params component.ReceiverCreateSettings,
-	rConf config.Receiver,
+	params receiver.CreateSettings,
+	rConf component.Config,
 	consumer consumer.Metrics,
-) (component.MetricsReceiver, error) {
+) (receiver.Metrics, error) {
 	cfg := rConf.(*Config)
 
 	ms := newMemcachedScraper(params, cfg)
-
-	if !ms.emitMetricsWithDirectionAttribute {
-		logDeprecatedFeatureGateForDirection(ms.logger, emitMetricsWithDirectionAttributeFeatureGate)
-	}
-
-	if ms.emitMetricsWithoutDirectionAttribute {
-		logDeprecatedFeatureGateForDirection(ms.logger, emitMetricsWithoutDirectionAttributeFeatureGate)
-	}
 
 	scraper, err := scraperhelper.NewScraper(typeStr, ms.scrape)
 	if err != nil {

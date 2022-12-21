@@ -15,10 +15,10 @@
 package ottlfuncs
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -28,8 +28,9 @@ func Test_set(t *testing.T) {
 	input := pcommon.NewValueStr("original name")
 
 	target := &ottl.StandardGetSetter[pcommon.Value]{
-		Setter: func(ctx pcommon.Value, val interface{}) {
-			ctx.SetStr(val.(string))
+		Setter: func(ctx context.Context, tCtx pcommon.Value, val interface{}) error {
+			tCtx.SetStr(val.(string))
+			return nil
 		},
 	}
 
@@ -43,8 +44,8 @@ func Test_set(t *testing.T) {
 			name:   "set name",
 			setter: target,
 			getter: ottl.StandardGetSetter[pcommon.Value]{
-				Getter: func(ctx pcommon.Value) interface{} {
-					return "new name"
+				Getter: func(ctx context.Context, tCtx pcommon.Value) (interface{}, error) {
+					return "new name", nil
 				},
 			},
 			want: func(expectedValue pcommon.Value) {
@@ -55,8 +56,8 @@ func Test_set(t *testing.T) {
 			name:   "set nil value",
 			setter: target,
 			getter: ottl.StandardGetSetter[pcommon.Value]{
-				Getter: func(ctx pcommon.Value) interface{} {
-					return nil
+				Getter: func(ctx context.Context, tCtx pcommon.Value) (interface{}, error) {
+					return nil, nil
 				},
 			},
 			want: func(expectedValue pcommon.Value) {
@@ -69,8 +70,11 @@ func Test_set(t *testing.T) {
 			scenarioValue := pcommon.NewValueStr(input.Str())
 
 			exprFunc, err := Set(tt.setter, tt.getter)
-			require.NoError(t, err)
-			assert.Nil(t, exprFunc(scenarioValue))
+			assert.NoError(t, err)
+
+			result, err := exprFunc(nil, scenarioValue)
+			assert.NoError(t, err)
+			assert.Nil(t, result)
 
 			expected := pcommon.NewValueStr("")
 			tt.want(expected)
@@ -82,18 +86,22 @@ func Test_set(t *testing.T) {
 
 func Test_set_get_nil(t *testing.T) {
 	setter := &ottl.StandardGetSetter[interface{}]{
-		Setter: func(ctx interface{}, val interface{}) {
+		Setter: func(ctx context.Context, tCtx interface{}, val interface{}) error {
 			t.Errorf("nothing should be set in this scenario")
+			return nil
 		},
 	}
 
 	getter := &ottl.StandardGetSetter[interface{}]{
-		Getter: func(ctx interface{}) interface{} {
-			return ctx
+		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			return tCtx, nil
 		},
 	}
 
 	exprFunc, err := Set[interface{}](setter, getter)
-	require.NoError(t, err)
-	assert.Nil(t, exprFunc(nil))
+	assert.NoError(t, err)
+
+	result, err := exprFunc(nil, nil)
+	assert.NoError(t, err)
+	assert.Nil(t, result)
 }

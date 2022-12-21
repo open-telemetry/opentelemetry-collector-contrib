@@ -1,0 +1,19 @@
+{
+   "resourceMetrics": [
+      {
+         "scopeMetrics": [
+            {
+               "metrics": [
+                  {
+                     "name": "monotonic",
+                     "sum": {
+                        "aggregationTemporality": 2,
+                        "isMonotonic": false
+                     }
+                  }
+               ]
+            }
+         ]
+      }
+   ]
+}

@@ -25,10 +25,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
@@ -59,7 +59,6 @@ func Test_carbonreceiver_New(t *testing.T) {
 			name: "zero_value_parser",
 			args: args{
 				config: Config{
-					ReceiverSettings: defaultConfig.ReceiverSettings,
 					NetAddr: confignet.NetAddr{
 						Endpoint:  defaultConfig.Endpoint,
 						Transport: defaultConfig.Transport,
@@ -79,9 +78,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 		{
 			name: "empty_endpoint",
 			args: args{
-				config: Config{
-					ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-				},
+				config:       Config{},
 				nextConsumer: consumertest.NewNop(),
 			},
 			wantErr: errEmptyEndpoint,
@@ -90,7 +87,6 @@ func Test_carbonreceiver_New(t *testing.T) {
 			name: "invalid_transport",
 			args: args{
 				config: Config{
-					ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "invalid_transport_rcv")),
 					NetAddr: confignet.NetAddr{
 						Endpoint:  "localhost:2003",
 						Transport: "unknown_transp",
@@ -102,13 +98,12 @@ func Test_carbonreceiver_New(t *testing.T) {
 				},
 				nextConsumer: consumertest.NewNop(),
 			},
-			wantErr: errors.New("unsupported transport \"unknown_transp\" for receiver carbon/invalid_transport_rcv"),
+			wantErr: errors.New("unsupported transport \"unknown_transp\""),
 		},
 		{
 			name: "regex_parser",
 			args: args{
 				config: Config{
-					ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 					NetAddr: confignet.NetAddr{
 						Endpoint:  "localhost:2003",
 						Transport: "tcp",
@@ -131,7 +126,6 @@ func Test_carbonreceiver_New(t *testing.T) {
 			name: "negative_tcp_idle_timeout",
 			args: args{
 				config: Config{
-					ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 					NetAddr: confignet.NetAddr{
 						Endpoint:  "localhost:2003",
 						Transport: "tcp",
@@ -149,7 +143,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := New(componenttest.NewNopReceiverCreateSettings(), tt.args.config, tt.args.nextConsumer)
+			got, err := New(receivertest.NewNopCreateSettings(), tt.args.config, tt.args.nextConsumer)
 			assert.Equal(t, tt.wantErr, err)
 			if err == nil {
 				require.NotNil(t, got)
@@ -198,7 +192,7 @@ func Test_carbonreceiver_EndToEnd(t *testing.T) {
 			cfg := tt.configFn()
 			cfg.Endpoint = addr
 			sink := new(consumertest.MetricsSink)
-			rcv, err := New(componenttest.NewNopReceiverCreateSettings(), *cfg, sink)
+			rcv, err := New(receivertest.NewNopCreateSettings(), *cfg, sink)
 			require.NoError(t, err)
 			r := rcv.(*carbonReceiver)
 

@@ -15,6 +15,7 @@
 package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 
@@ -28,10 +29,13 @@ func DeleteMatchingKeys[K any](target ottl.Getter[K], pattern string) (ottl.Expr
 	if err != nil {
 		return nil, fmt.Errorf("the regex pattern supplied to delete_matching_keys is not a valid pattern: %w", err)
 	}
-	return func(ctx K) interface{} {
-		val := target.Get(ctx)
+	return func(ctx context.Context, tCtx K) (interface{}, error) {
+		val, err := target.Get(ctx, tCtx)
+		if err != nil {
+			return nil, err
+		}
 		if val == nil {
-			return nil
+			return nil, nil
 		}
 
 		if attrs, ok := val.(pcommon.Map); ok {
@@ -39,6 +43,6 @@ func DeleteMatchingKeys[K any](target ottl.Getter[K], pattern string) (ottl.Expr
 				return compiledPattern.MatchString(key)
 			})
 		}
-		return nil
+		return nil, nil
 	}, nil
 }

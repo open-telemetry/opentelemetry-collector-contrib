@@ -6,13 +6,34 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 )
 
 // MetricSettings provides common settings for a particular metric.
 type MetricSettings struct {
 	Enabled bool `mapstructure:"enabled"`
+
+	enabledProvidedByUser bool
+}
+
+// IsEnabledProvidedByUser returns true if `enabled` option is explicitly set in user settings to any value.
+func (ms *MetricSettings) IsEnabledProvidedByUser() bool {
+	return ms.enabledProvidedByUser
+}
+
+func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
+	if err != nil {
+		return err
+	}
+	ms.enabledProvidedByUser = parser.IsSet("enabled")
+	return nil
 }
 
 // MetricsSettings provides settings for rabbitmqreceiver metrics.
@@ -408,17 +429,17 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, options ...metricBuilderOption) *MetricsBuilder {
+func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                         pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                     pmetric.NewMetrics(),
-		buildInfo:                         buildInfo,
-		metricRabbitmqConsumerCount:       newMetricRabbitmqConsumerCount(settings.RabbitmqConsumerCount),
-		metricRabbitmqMessageAcknowledged: newMetricRabbitmqMessageAcknowledged(settings.RabbitmqMessageAcknowledged),
-		metricRabbitmqMessageCurrent:      newMetricRabbitmqMessageCurrent(settings.RabbitmqMessageCurrent),
-		metricRabbitmqMessageDelivered:    newMetricRabbitmqMessageDelivered(settings.RabbitmqMessageDelivered),
-		metricRabbitmqMessageDropped:      newMetricRabbitmqMessageDropped(settings.RabbitmqMessageDropped),
-		metricRabbitmqMessagePublished:    newMetricRabbitmqMessagePublished(settings.RabbitmqMessagePublished),
+		buildInfo:                         settings.BuildInfo,
+		metricRabbitmqConsumerCount:       newMetricRabbitmqConsumerCount(ms.RabbitmqConsumerCount),
+		metricRabbitmqMessageAcknowledged: newMetricRabbitmqMessageAcknowledged(ms.RabbitmqMessageAcknowledged),
+		metricRabbitmqMessageCurrent:      newMetricRabbitmqMessageCurrent(ms.RabbitmqMessageCurrent),
+		metricRabbitmqMessageDelivered:    newMetricRabbitmqMessageDelivered(ms.RabbitmqMessageDelivered),
+		metricRabbitmqMessageDropped:      newMetricRabbitmqMessageDropped(ms.RabbitmqMessageDropped),
+		metricRabbitmqMessagePublished:    newMetricRabbitmqMessagePublished(ms.RabbitmqMessagePublished),
 	}
 	for _, op := range options {
 		op(mb)

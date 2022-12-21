@@ -105,9 +105,7 @@ func testReaderFactory(t *testing.T) (*readerFactory, chan *emitParams) {
 		readerConfig: &readerConfig{
 			fingerprintSize: DefaultFingerprintSize,
 			maxLogSize:      defaultMaxLogSize,
-			emit: func(_ context.Context, attrs *FileAttributes, token []byte) {
-				emitChan <- &emitParams{attrs, token}
-			},
+			emit:            testEmitFunc(emitChan),
 		},
 		fromBeginning: true,
 		splitterFactory: newMultilineSplitterFactory(

@@ -17,7 +17,7 @@ package fileexporter // import "github.com/open-telemetry/opentelemetry-collecto
 import (
 	"errors"
 
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 )
 
@@ -28,7 +28,6 @@ const (
 
 // Config defines configuration for file exporter.
 type Config struct {
-	config.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	// Path of the file to write to. Path is relative to current directory.
 	Path string `mapstructure:"path"`
@@ -70,7 +69,7 @@ type Rotation struct {
 	LocalTime bool `mapstructure:"localtime"`
 }
 
-var _ config.Exporter = (*Config)(nil)
+var _ component.Config = (*Config)(nil)
 
 // Validate checks if the exporter configuration is valid
 func (cfg *Config) Validate() error {
@@ -100,21 +99,7 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 	// next manually search for protocols in the confmap.Conf,
 	// if rotation is not present it means it is disabled.
 	if !componentParser.IsSet(rotationFieldName) {
-		return nil
+		cfg.Rotation = nil
 	}
-	rotationConfmap, err := componentParser.Sub(rotationFieldName)
-	if err != nil {
-		return err
-	}
-	rotationCfg := newDefaultRotationConfig()
-	err = rotationConfmap.Unmarshal(rotationCfg, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	cfg.Rotation = rotationCfg
 	return nil
-}
-
-func newDefaultRotationConfig() *Rotation {
-	return &Rotation{MaxBackups: defaultMaxBackups}
 }

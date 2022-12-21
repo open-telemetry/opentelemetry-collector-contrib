@@ -1,0 +1,63 @@
+name: haproxyreceiver
+
+resource_attributes:
+  haproxy.url:
+    description: The path to the HAProxy socket or HTTP URL.
+    type: string
+  haproxy.proxy_name:
+    description: Proxy name
+    type: string
+  haproxy.service_name:
+    description: Service name (FRONTEND for frontend, BACKEND for backend, any name for server/listener)
+    type: string
+  haproxy.pid:
+    description: process id (0 for first instance, 1 for second, ...)
+    type: string
+  haproxy.sid:
+    description: server id (unique inside a proxy)
+    type: string
+  haproxy.iid:
+    description: unique proxy id
+    type: string
+  haproxy.type:
+    description: (0=frontend, 1=backend, 2=server, 3=socket/listener)
+    type: string
+  haproxy.addr:
+    description: address:port or "unix". IPv6 has brackets around the address.
+    type: string
+  haproxy.algo:
+    description: load balancing algorithm
+    type: string
+
+metrics:
+  haproxy.connection_rate:
+    description: Number of connections over the last elapsed second (frontend). Corresponds to HAProxy's `conn_rate` metric.
+    enabled: true
+    gauge:
+      value_type: int
+      input_type: string
+    unit: "{connections}"
+  haproxy.requests:
+    description: Total number of requests on this worker process since started. Corresponds to HAProxy's `CumReq` metric.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{requests}"
+  haproxy.idle_percent:
+    description: Ratio of system polling time versus total time. Corresponds to HAProxy's `I`dle_pct` metric.
+    enabled: true
+    gauge:
+      value_type: double
+      input_type: string
+    unit: "{percent}"
+  haproxy.sessions.count:
+    description: Current sessions. Corresponds to HAProxy's `scur` metric.
+    enabled: true
+    gauge:
+      value_type: int
+      input_type: string
+    unit: "{sessions}"
+

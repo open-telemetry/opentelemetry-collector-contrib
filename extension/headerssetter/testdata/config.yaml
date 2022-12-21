@@ -1,7 +1,0 @@
-headers_setter:
-headers_setter/1:
-  headers:
-    - key: X-Scope-OrgID
-      from_context: "tenant_id"
-    - key: User-ID
-      from_context: "user_id"

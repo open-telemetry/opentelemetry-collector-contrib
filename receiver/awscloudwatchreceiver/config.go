@@ -20,7 +20,7 @@ import (
 	"net/url"
 	"time"
 
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/confmap"
 	"go.uber.org/multierr"
 )
 
@@ -32,11 +32,10 @@ var (
 
 // Config is the overall config structure for the awscloudwatchreceiver
 type Config struct {
-	config.ReceiverSettings `mapstructure:",squash"`
-	Region                  string      `mapstructure:"region"`
-	Profile                 string      `mapstructure:"profile"`
-	IMDSEndpoint            string      `mapstructure:"imds_endpoint"`
-	Logs                    *LogsConfig `mapstructure:"logs"`
+	Region       string      `mapstructure:"region"`
+	Profile      string      `mapstructure:"profile"`
+	IMDSEndpoint string      `mapstructure:"imds_endpoint"`
+	Logs         *LogsConfig `mapstructure:"logs"`
 }
 
 // LogsConfig is the configuration for the logs portion of this receiver
@@ -88,9 +87,25 @@ func (c *Config) Validate() error {
 	}
 
 	var errs error
-	errs = multierr.Append(errs, c.ReceiverSettings.Validate())
 	errs = multierr.Append(errs, c.validateLogsConfig())
 	return errs
+}
+
+// Unmarshal is a custom unmarshaller that ensures that autodiscover is nil if
+// autodiscover is not specified
+func (c *Config) Unmarshal(componentParser *confmap.Conf) error {
+	if componentParser == nil {
+		return errors.New("")
+	}
+	err := componentParser.Unmarshal(c, confmap.WithErrorUnused())
+	if err != nil {
+		return err
+	}
+
+	if componentParser.IsSet("logs::groups::named") && !componentParser.IsSet("logs::groups::autodiscover") {
+		c.Logs.Groups.AutodiscoverConfig = nil
+	}
+	return nil
 }
 
 func (c *Config) validateLogsConfig() error {

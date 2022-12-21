@@ -22,8 +22,8 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	exp "go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
@@ -34,7 +34,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func newMetricsExporter(cfg config.Exporter, set component.ExporterCreateSettings) (*exporter, error) {
+func newMetricsExporter(cfg component.Config, set exp.CreateSettings) (*exporter, error) {
 	oCfg := cfg.(*Config)
 
 	if oCfg.Metrics.Endpoint == "" || oCfg.Metrics.Endpoint == "https://" || oCfg.Metrics.Endpoint == "http://" {
@@ -60,18 +60,12 @@ type exporter struct {
 	userAgent string
 }
 
-func (e *exporter) start(_ context.Context, host component.Host) (err error) {
-	dialOpts, err := e.config.Metrics.ToDialOptions(host, e.settings)
-	if err != nil {
-		return err
-	}
-	dialOpts = append(dialOpts, grpc.WithUserAgent(e.userAgent))
-
-	if e.clientConn, err = grpc.Dial(e.config.Metrics.SanitizedEndpoint(), dialOpts...); err != nil {
+func (e *exporter) start(ctx context.Context, host component.Host) (err error) {
+	if e.clientConn, err = e.config.Metrics.ToClientConn(ctx, host, e.settings, grpc.WithUserAgent(e.userAgent)); err != nil {
 		return err
 	}
 
-	e.metricExporter = pmetricotlp.NewClient(e.clientConn)
+	e.metricExporter = pmetricotlp.NewGRPCClient(e.clientConn)
 	if e.config.Metrics.Headers == nil {
 		e.config.Metrics.Headers = make(map[string]string)
 	}
@@ -95,7 +89,7 @@ func (e *exporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
 		newRss := md.ResourceMetrics().AppendEmpty()
 		resourceMetric.CopyTo(newRss)
 
-		req := pmetricotlp.NewRequestFromMetrics(md)
+		req := pmetricotlp.NewExportRequestFromMetrics(md)
 		_, err := e.metricExporter.Export(e.enhanceContext(ctx, appName, subsystem), req, e.callOptions...)
 		if err != nil {
 			return processError(err)

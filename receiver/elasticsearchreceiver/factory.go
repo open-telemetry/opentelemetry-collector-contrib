@@ -20,12 +20,10 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/metadata"
 )
@@ -38,18 +36,17 @@ const (
 )
 
 // NewFactory creates a factory for elasticsearch receiver.
-func NewFactory() component.ReceiverFactory {
-	return component.NewReceiverFactory(
+func NewFactory() receiver.Factory {
+	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver, stability))
+		receiver.WithMetrics(createMetricsReceiver, stability))
 }
 
 // createDefaultConfig creates the default elasticsearchreceiver config.
-func createDefaultConfig() config.Receiver {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
 			CollectionInterval: defaultCollectionInterval,
 		},
 		HTTPClientSettings: confighttp.HTTPClientSettings{
@@ -64,32 +61,19 @@ func createDefaultConfig() config.Receiver {
 
 var errConfigNotES = errors.New("config was not an elasticsearch receiver config")
 
-func logDeprecatedFeatureGateForDirection(log *zap.Logger, gate featuregate.Gate) {
-	log.Warn("WARNING: The " + gate.ID + " feature gate is deprecated and will be removed in the next release. The change to remove " +
-		"the direction attribute has been reverted in the specification. See https://github.com/open-telemetry/opentelemetry-specification/issues/2726 " +
-		"for additional details.")
-}
-
 // createMetricsReceiver creates a metrics receiver for scraping elasticsearch metrics.
 func createMetricsReceiver(
 	_ context.Context,
-	params component.ReceiverCreateSettings,
-	rConf config.Receiver,
+	params receiver.CreateSettings,
+	rConf component.Config,
 	consumer consumer.Metrics,
-) (component.MetricsReceiver, error) {
+) (receiver.Metrics, error) {
 	c, ok := rConf.(*Config)
 	if !ok {
 		return nil, errConfigNotES
 	}
 	es := newElasticSearchScraper(params, c)
 
-	if !es.emitMetricsWithDirectionAttribute {
-		logDeprecatedFeatureGateForDirection(es.settings.Logger, emitMetricsWithDirectionAttributeFeatureGate)
-	}
-
-	if es.emitMetricsWithoutDirectionAttribute {
-		logDeprecatedFeatureGateForDirection(es.settings.Logger, emitMetricsWithoutDirectionAttributeFeatureGate)
-	}
 	scraper, err := scraperhelper.NewScraper(typeStr, es.scrape, scraperhelper.WithStart(es.start))
 	if err != nil {
 		return nil, err

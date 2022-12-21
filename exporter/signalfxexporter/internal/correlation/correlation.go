@@ -23,6 +23,7 @@ import (
 	"github.com/signalfx/signalfx-agent/pkg/apm/correlations"
 	"github.com/signalfx/signalfx-agent/pkg/apm/tracetracker"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
@@ -35,7 +36,7 @@ type Tracker struct {
 	once         sync.Once
 	log          *zap.Logger
 	cfg          *Config
-	params       component.ExporterCreateSettings
+	params       exporter.CreateSettings
 	traceTracker *tracetracker.ActiveServiceTracker
 	pTicker      timeutils.TTicker
 	correlation  *correlationContext
@@ -48,7 +49,7 @@ type correlationContext struct {
 }
 
 // NewTracker creates a new tracker instance for correlation.
-func NewTracker(cfg *Config, accessToken string, params component.ExporterCreateSettings) *Tracker {
+func NewTracker(cfg *Config, accessToken string, params exporter.CreateSettings) *Tracker {
 	return &Tracker{
 		log:         params.Logger,
 		cfg:         cfg,
@@ -57,7 +58,7 @@ func NewTracker(cfg *Config, accessToken string, params component.ExporterCreate
 	}
 }
 
-func newCorrelationClient(cfg *Config, accessToken string, params component.ExporterCreateSettings, host component.Host) (
+func newCorrelationClient(cfg *Config, accessToken string, params exporter.CreateSettings, host component.Host) (
 	*correlationContext, error,
 ) {
 	corrURL, err := url.Parse(cfg.Endpoint)

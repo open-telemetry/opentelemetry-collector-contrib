@@ -24,6 +24,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
 // HumioLink represents a relation between two spans
@@ -181,14 +183,14 @@ func (e *humioTracesExporter) spanToHumioEvent(span ptrace.Span, inst pcommon.In
 		Timestamp: span.StartTimestamp().AsTime(),
 		AsUnix:    e.cfg.Traces.UnixTimestamps,
 		Attributes: &HumioSpan{
-			TraceID:           span.TraceID().HexString(),
-			SpanID:            span.SpanID().HexString(),
-			ParentSpanID:      span.ParentSpanID().HexString(),
+			TraceID:           traceutil.TraceIDToHexOrEmptyString(span.TraceID()),
+			SpanID:            traceutil.SpanIDToHexOrEmptyString(span.SpanID()),
+			ParentSpanID:      traceutil.SpanIDToHexOrEmptyString(span.ParentSpanID()),
 			Name:              span.Name(),
-			Kind:              span.Kind().String(),
+			Kind:              traceutil.SpanKindStr(span.Kind()),
 			Start:             span.StartTimestamp().AsTime().UnixNano(),
 			End:               span.EndTimestamp().AsTime().UnixNano(),
-			StatusCode:        span.Status().Code().String(),
+			StatusCode:        traceutil.StatusCodeStr(span.Status().Code()),
 			StatusDescription: span.Status().Message(),
 			ServiceName:       serviceName,
 			Links:             toHumioLinks(span.Links()),
@@ -202,8 +204,8 @@ func toHumioLinks(pLinks ptrace.SpanLinkSlice) []*HumioLink {
 	for i := 0; i < pLinks.Len(); i++ {
 		link := pLinks.At(i)
 		links = append(links, &HumioLink{
-			TraceID:    link.TraceID().HexString(),
-			SpanID:     link.SpanID().HexString(),
+			TraceID:    traceutil.TraceIDToHexOrEmptyString(link.TraceID()),
+			SpanID:     traceutil.SpanIDToHexOrEmptyString(link.SpanID()),
 			TraceState: link.TraceState().AsRaw(),
 		})
 	}

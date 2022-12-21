@@ -18,7 +18,7 @@
                      "description": "Number of connections opened and closed to the node",
                      "name": "aerospike.node.connection.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -143,7 +143,7 @@
                      "description": "Current number of open connections to the node",
                      "name": "aerospike.node.connection.open",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -248,7 +248,7 @@
                      "description": "Number of cell coverings for query region queried",
                      "name": "aerospike.namespace.geojson.region_query_cells",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "9",
@@ -264,7 +264,7 @@
                      "description": "Number of points outside the region.",
                      "name": "aerospike.namespace.geojson.region_query_false_positive",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -280,7 +280,7 @@
                      "description": "Number of points within the region.",
                      "name": "aerospike.namespace.geojson.region_query_points",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "4",
@@ -296,7 +296,7 @@
                      "description": "Number of geojson queries on the system since the uptime of the node.",
                      "name": "aerospike.namespace.geojson.region_query_requests",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "1",
@@ -326,7 +326,7 @@
                      "description": "Memory currently used by each component of the namespace",
                      "name": "aerospike.namespace.memory.usage",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "33554432",
@@ -388,7 +388,7 @@
                      "description": "Number of query operations performed on the namespace",
                      "name": "aerospike.namespace.query.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -1049,7 +1049,7 @@
                      "description": "Number of transactions performed on the namespace",
                      "name": "aerospike.namespace.transaction.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",

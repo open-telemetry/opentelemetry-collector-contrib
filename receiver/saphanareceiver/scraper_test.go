@@ -21,10 +21,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest/golden"
 )
 
 const fullExpectedMetricsPath = "./testdata/expected_metrics/full.json"
@@ -38,7 +38,7 @@ func TestScraper(t *testing.T) {
 	dbWrapper := &testDBWrapper{}
 	initializeWrapper(t, dbWrapper, allQueryMetrics)
 
-	sc, err := newSapHanaScraper(componenttest.NewNopReceiverCreateSettings(), createDefaultConfig().(*Config), &testConnectionFactory{dbWrapper})
+	sc, err := newSapHanaScraper(receivertest.NewNopCreateSettings(), createDefaultConfig().(*Config), &testConnectionFactory{dbWrapper})
 	require.NoError(t, err)
 
 	expectedMetrics, err := golden.ReadMetrics(fullExpectedMetricsPath)
@@ -47,7 +47,7 @@ func TestScraper(t *testing.T) {
 	actualMetrics, err := sc.Scrape(context.Background())
 	require.NoError(t, err)
 
-	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
+	require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics))
 }
 
 func TestDisabledMetrics(t *testing.T) {
@@ -103,7 +103,7 @@ func TestDisabledMetrics(t *testing.T) {
 	cfg.Metrics.SaphanaVolumeOperationSize.Enabled = false
 	cfg.Metrics.SaphanaVolumeOperationTime.Enabled = false
 
-	sc, err := newSapHanaScraper(componenttest.NewNopReceiverCreateSettings(), cfg, &testConnectionFactory{dbWrapper})
+	sc, err := newSapHanaScraper(receivertest.NewNopCreateSettings(), cfg, &testConnectionFactory{dbWrapper})
 	require.NoError(t, err)
 
 	expectedMetrics, err := golden.ReadMetrics(partialExpectedMetricsPath)
@@ -112,7 +112,7 @@ func TestDisabledMetrics(t *testing.T) {
 	actualMetrics, err := sc.Scrape(context.Background())
 	require.NoError(t, err)
 
-	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
+	require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics))
 }
 
 type queryJSON struct {

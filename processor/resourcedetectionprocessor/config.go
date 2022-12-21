@@ -15,7 +15,6 @@
 package resourcedetectionprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
 
 import (
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
@@ -26,7 +25,6 @@ import (
 
 // Config defines configuration for Resource processor.
 type Config struct {
-	config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	// Detectors is an ordered list of named detectors that should be
 	// run to attempt to detect resource information.
@@ -67,9 +65,4 @@ func (d *DetectorConfig) GetConfigFromType(detectorType internal.DetectorType) i
 	default:
 		return nil
 	}
-}
-
-// Validate config
-func (cfg *Config) Validate() error {
-	return cfg.DetectorConfig.SystemConfig.Validate()
 }

@@ -84,7 +84,7 @@ processors:
 
 ## Tenant information
 
-It is recommended to use the [`header_setter`](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/headerssetter) extension to configure the tenant information to send to Loki. In case a static tenant
+It is recommended to use the [`header_setter`](../../extension/headerssetterextension/README.md) extension to configure the tenant information to send to Loki. In case a static tenant
 should be used, you can make use of the `headers` option for regular HTTP client settings, like the following:
 
 ```yaml
@@ -94,6 +94,28 @@ exporters:
     headers:
       "X-Scope-OrgID": acme
 ```
+
+It is also possible to provide the `loki.tenant` attribute hint that specifies
+which resource or log attributes value should be used as a tenant. For example:
+
+```yaml
+processors:
+  resource:
+    attributes:
+    - action: insert
+      key: loki.tenant
+      value: host.name
+```
+
+In this case the value of the `host.name` resource attribute is used to group logs
+by tenant and send requests with the `X-Scope-OrgID` header set to relevant tenants.
+
+If the `loki.tenant` hint attribute is present in both resource or log attributes,
+then the look-up for a tenant value from resource attributes takes precedence.
+
+## Severity
+
+OpenTelemetry uses `record.severity` to track log levels where loki uses `record.attributes.level` for the same. The exporter automatically maps the two, except if a "level" attribute already exists.
 
 ## Advanced Configuration
 

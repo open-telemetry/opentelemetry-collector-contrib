@@ -16,6 +16,8 @@ package serialization // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"fmt"
+	"sort"
+	"strings"
 
 	dtMetric "github.com/dynatrace-oss/dynatrace-metric-utils-go/metric"
 	"github.com/dynatrace-oss/dynatrace-metric-utils-go/metric/dimensions"
@@ -149,12 +151,13 @@ func serializeCumulativeCounter(name, prefix string, dims dimensions.NormalizedD
 }
 
 func convertTotalCounterToDelta(name, prefix string, dims dimensions.NormalizedDimensionList, dp pmetric.NumberDataPoint, prevCounters *ttlmap.TTLMap) (*dtMetric.Metric, error) {
-	id := name
-
-	dp.Attributes().Sort().Range(func(k string, v pcommon.Value) bool {
-		id += fmt.Sprintf(",%s=%s", k, v.AsString())
+	attrPairs := make([]string, 0, dp.Attributes().Len())
+	dp.Attributes().Range(func(k string, v pcommon.Value) bool {
+		attrPairs = append(attrPairs, k+"="+v.AsString())
 		return true
 	})
+	sort.Strings(attrPairs)
+	id := name + strings.Join(attrPairs, ",")
 
 	prevCounter := prevCounters.Get(id)
 

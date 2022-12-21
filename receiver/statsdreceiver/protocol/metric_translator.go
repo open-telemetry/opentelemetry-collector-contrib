@@ -18,6 +18,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/lightstep/go-expohisto/structure"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"gonum.org/v1/gonum/stat"
@@ -98,6 +99,51 @@ func buildSummaryMetric(desc statsDMetricDescription, summary summaryMetric, sta
 	}
 }
 
+func buildHistogramMetric(desc statsDMetricDescription, histogram histogramMetric, startTime, timeNow time.Time, ilm pmetric.ScopeMetrics) {
+	nm := ilm.Metrics().AppendEmpty()
+	nm.SetName(desc.name)
+	expo := nm.SetEmptyExponentialHistogram()
+	expo.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+
+	dp := expo.DataPoints().AppendEmpty()
+	agg := histogram.agg
+
+	dp.SetCount(agg.Count())
+	dp.SetSum(agg.Sum())
+	if agg.Count() != 0 {
+		dp.SetMin(agg.Min())
+		dp.SetMax(agg.Max())
+	}
+
+	dp.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(timeNow))
+
+	for i := desc.attrs.Iter(); i.Next(); {
+		dp.Attributes().PutStr(string(i.Attribute().Key), i.Attribute().Value.AsString())
+	}
+
+	dp.SetZeroCount(agg.ZeroCount())
+	dp.SetScale(agg.Scale())
+
+	for _, half := range []struct {
+		inFunc  func() *structure.Buckets
+		outFunc func() pmetric.ExponentialHistogramDataPointBuckets
+	}{
+		{agg.Positive, dp.Positive},
+		{agg.Negative, dp.Negative},
+	} {
+		in := half.inFunc()
+		out := half.outFunc()
+		out.SetOffset(in.Offset())
+
+		out.BucketCounts().EnsureCapacity(int(in.Len()))
+
+		for i := uint32(0); i < in.Len(); i++ {
+			out.BucketCounts().Append(in.At(i))
+		}
+	}
+}
+
 func (s statsDMetric) counterValue() int64 {
 	x := s.asFloat
 	// Note statds counters are always represented as integers.
@@ -116,12 +162,12 @@ func (s statsDMetric) gaugeValue() float64 {
 	return s.asFloat
 }
 
-func (s statsDMetric) summaryValue() summaryRaw {
+func (s statsDMetric) sampleValue() sampleValue {
 	count := 1.0
 	if 0 < s.sampleRate && s.sampleRate < 1 {
 		count /= s.sampleRate
 	}
-	return summaryRaw{
+	return sampleValue{
 		value: s.asFloat,
 		count: count,
 	}

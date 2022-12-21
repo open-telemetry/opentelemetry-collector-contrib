@@ -6,13 +6,34 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 )
 
 // MetricSettings provides common settings for a particular metric.
 type MetricSettings struct {
 	Enabled bool `mapstructure:"enabled"`
+
+	enabledProvidedByUser bool
+}
+
+// IsEnabledProvidedByUser returns true if `enabled` option is explicitly set in user settings to any value.
+func (ms *MetricSettings) IsEnabledProvidedByUser() bool {
+	return ms.enabledProvidedByUser
+}
+
+func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
+	if err != nil {
+		return err
+	}
+	ms.enabledProvidedByUser = parser.IsSet("enabled")
+	return nil
 }
 
 // MetricsSettings provides settings for postgresqlreceiver metrics.
@@ -565,14 +586,14 @@ func (m *metricPostgresqlBgwriterDuration) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricPostgresqlBgwriterDuration) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, bgDurationTypeAttributeValue string) {
+func (m *metricPostgresqlBgwriterDuration) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, bgDurationTypeAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutStr("type", bgDurationTypeAttributeValue)
 }
 
@@ -1523,33 +1544,33 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, options ...metricBuilderOption) *MetricsBuilder {
+func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                                pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                            pmetric.NewMetrics(),
-		buildInfo:                                buildInfo,
-		metricPostgresqlBackends:                 newMetricPostgresqlBackends(settings.PostgresqlBackends),
-		metricPostgresqlBgwriterBuffersAllocated: newMetricPostgresqlBgwriterBuffersAllocated(settings.PostgresqlBgwriterBuffersAllocated),
-		metricPostgresqlBgwriterBuffersWrites:    newMetricPostgresqlBgwriterBuffersWrites(settings.PostgresqlBgwriterBuffersWrites),
-		metricPostgresqlBgwriterCheckpointCount:  newMetricPostgresqlBgwriterCheckpointCount(settings.PostgresqlBgwriterCheckpointCount),
-		metricPostgresqlBgwriterDuration:         newMetricPostgresqlBgwriterDuration(settings.PostgresqlBgwriterDuration),
-		metricPostgresqlBgwriterMaxwritten:       newMetricPostgresqlBgwriterMaxwritten(settings.PostgresqlBgwriterMaxwritten),
-		metricPostgresqlBlocksRead:               newMetricPostgresqlBlocksRead(settings.PostgresqlBlocksRead),
-		metricPostgresqlCommits:                  newMetricPostgresqlCommits(settings.PostgresqlCommits),
-		metricPostgresqlConnectionMax:            newMetricPostgresqlConnectionMax(settings.PostgresqlConnectionMax),
-		metricPostgresqlDatabaseCount:            newMetricPostgresqlDatabaseCount(settings.PostgresqlDatabaseCount),
-		metricPostgresqlDbSize:                   newMetricPostgresqlDbSize(settings.PostgresqlDbSize),
-		metricPostgresqlIndexScans:               newMetricPostgresqlIndexScans(settings.PostgresqlIndexScans),
-		metricPostgresqlIndexSize:                newMetricPostgresqlIndexSize(settings.PostgresqlIndexSize),
-		metricPostgresqlOperations:               newMetricPostgresqlOperations(settings.PostgresqlOperations),
-		metricPostgresqlReplicationDataDelay:     newMetricPostgresqlReplicationDataDelay(settings.PostgresqlReplicationDataDelay),
-		metricPostgresqlRollbacks:                newMetricPostgresqlRollbacks(settings.PostgresqlRollbacks),
-		metricPostgresqlRows:                     newMetricPostgresqlRows(settings.PostgresqlRows),
-		metricPostgresqlTableCount:               newMetricPostgresqlTableCount(settings.PostgresqlTableCount),
-		metricPostgresqlTableSize:                newMetricPostgresqlTableSize(settings.PostgresqlTableSize),
-		metricPostgresqlTableVacuumCount:         newMetricPostgresqlTableVacuumCount(settings.PostgresqlTableVacuumCount),
-		metricPostgresqlWalAge:                   newMetricPostgresqlWalAge(settings.PostgresqlWalAge),
-		metricPostgresqlWalLag:                   newMetricPostgresqlWalLag(settings.PostgresqlWalLag),
+		buildInfo:                                settings.BuildInfo,
+		metricPostgresqlBackends:                 newMetricPostgresqlBackends(ms.PostgresqlBackends),
+		metricPostgresqlBgwriterBuffersAllocated: newMetricPostgresqlBgwriterBuffersAllocated(ms.PostgresqlBgwriterBuffersAllocated),
+		metricPostgresqlBgwriterBuffersWrites:    newMetricPostgresqlBgwriterBuffersWrites(ms.PostgresqlBgwriterBuffersWrites),
+		metricPostgresqlBgwriterCheckpointCount:  newMetricPostgresqlBgwriterCheckpointCount(ms.PostgresqlBgwriterCheckpointCount),
+		metricPostgresqlBgwriterDuration:         newMetricPostgresqlBgwriterDuration(ms.PostgresqlBgwriterDuration),
+		metricPostgresqlBgwriterMaxwritten:       newMetricPostgresqlBgwriterMaxwritten(ms.PostgresqlBgwriterMaxwritten),
+		metricPostgresqlBlocksRead:               newMetricPostgresqlBlocksRead(ms.PostgresqlBlocksRead),
+		metricPostgresqlCommits:                  newMetricPostgresqlCommits(ms.PostgresqlCommits),
+		metricPostgresqlConnectionMax:            newMetricPostgresqlConnectionMax(ms.PostgresqlConnectionMax),
+		metricPostgresqlDatabaseCount:            newMetricPostgresqlDatabaseCount(ms.PostgresqlDatabaseCount),
+		metricPostgresqlDbSize:                   newMetricPostgresqlDbSize(ms.PostgresqlDbSize),
+		metricPostgresqlIndexScans:               newMetricPostgresqlIndexScans(ms.PostgresqlIndexScans),
+		metricPostgresqlIndexSize:                newMetricPostgresqlIndexSize(ms.PostgresqlIndexSize),
+		metricPostgresqlOperations:               newMetricPostgresqlOperations(ms.PostgresqlOperations),
+		metricPostgresqlReplicationDataDelay:     newMetricPostgresqlReplicationDataDelay(ms.PostgresqlReplicationDataDelay),
+		metricPostgresqlRollbacks:                newMetricPostgresqlRollbacks(ms.PostgresqlRollbacks),
+		metricPostgresqlRows:                     newMetricPostgresqlRows(ms.PostgresqlRows),
+		metricPostgresqlTableCount:               newMetricPostgresqlTableCount(ms.PostgresqlTableCount),
+		metricPostgresqlTableSize:                newMetricPostgresqlTableSize(ms.PostgresqlTableSize),
+		metricPostgresqlTableVacuumCount:         newMetricPostgresqlTableVacuumCount(ms.PostgresqlTableVacuumCount),
+		metricPostgresqlWalAge:                   newMetricPostgresqlWalAge(ms.PostgresqlWalAge),
+		metricPostgresqlWalLag:                   newMetricPostgresqlWalLag(ms.PostgresqlWalLag),
 	}
 	for _, op := range options {
 		op(mb)
@@ -1685,7 +1706,7 @@ func (mb *MetricsBuilder) RecordPostgresqlBgwriterCheckpointCountDataPoint(ts pc
 }
 
 // RecordPostgresqlBgwriterDurationDataPoint adds a data point to postgresql.bgwriter.duration metric.
-func (mb *MetricsBuilder) RecordPostgresqlBgwriterDurationDataPoint(ts pcommon.Timestamp, val int64, bgDurationTypeAttributeValue AttributeBgDurationType) {
+func (mb *MetricsBuilder) RecordPostgresqlBgwriterDurationDataPoint(ts pcommon.Timestamp, val float64, bgDurationTypeAttributeValue AttributeBgDurationType) {
 	mb.metricPostgresqlBgwriterDuration.recordDataPoint(mb.startTime, ts, val, bgDurationTypeAttributeValue.String())
 }
 

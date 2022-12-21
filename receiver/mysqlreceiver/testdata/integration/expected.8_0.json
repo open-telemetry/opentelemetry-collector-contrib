@@ -12,7 +12,7 @@
                      "description": "The number of data pages in the InnoDB buffer pool.",
                      "name": "mysql.buffer_pool.data_pages",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "228",
@@ -48,7 +48,7 @@
                      "description": "The configured size of the InnoDB buffer pool.",
                      "name": "mysql.buffer_pool.limit",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "134217728",
@@ -63,7 +63,7 @@
                      "description": "The number of operations on the InnoDB buffer pool.",
                      "name": "mysql.buffer_pool.operations",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "240",
@@ -165,7 +165,7 @@
                      "description": "The number of requests to flush pages from the InnoDB buffer pool.",
                      "name": "mysql.buffer_pool.page_flushes",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "232",
@@ -181,7 +181,7 @@
                      "description": "The number of pages in the InnoDB buffer pool.",
                      "name": "mysql.buffer_pool.pages",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "234",
@@ -230,7 +230,7 @@
                      "description": "The number of bytes in the InnoDB buffer pool.",
                      "name": "mysql.buffer_pool.usage",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "229",
@@ -266,7 +266,7 @@
                      "description": "The number of times each type of command has been executed.",
                      "name": "mysql.commands",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "165",
@@ -355,7 +355,7 @@
                      "description": "The number of writes to the InnoDB doublewrite buffer.",
                      "name": "mysql.double_writes",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "251",
@@ -392,7 +392,7 @@
                      "description": "The number of requests to various MySQL handlers.",
                      "name": "mysql.handlers",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "211",
@@ -637,7 +637,7 @@
                      "description": "The number of MySQL locks.",
                      "name": "mysql.locks",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "441",
@@ -674,7 +674,7 @@
                      "description": "The number of InnoDB log operations.",
                      "name": "mysql.log_operations",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "255",
@@ -724,7 +724,7 @@
                      "description": "The number of InnoDB operations.",
                      "name": "mysql.operations",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "248",
@@ -774,7 +774,7 @@
                      "description": "The number of InnoDB page operations.",
                      "name": "mysql.page_operations",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "263",
@@ -824,7 +824,7 @@
                      "description": "The number of InnoDB row locks.",
                      "name": "mysql.row_locks",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "266",
@@ -861,7 +861,7 @@
                      "description": "The number of InnoDB row operations.",
                      "name": "mysql.row_operations",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "270",
@@ -924,7 +924,7 @@
                      "description": "The number of MySQL sorts.",
                      "name": "mysql.sorts",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "416",
@@ -987,7 +987,7 @@
                      "description": "The state of MySQL threads.",
                      "name": "mysql.threads",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "450",
@@ -1049,7 +1049,7 @@
                      "description": "The total count of I/O wait events for a table.",
                      "name": "mysql.table.io.waits.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "isMonotonic": true,
                         "dataPoints": [
                            {
@@ -1160,7 +1160,7 @@
                      "description": "The total time of I/O wait events for a table.",
                      "name": "mysql.table.io.waits.time",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "isMonotonic": true,
                         "dataPoints": [
                            {
@@ -1271,7 +1271,7 @@
                      "description": "The total count of I/O wait events for an index.",
                      "name": "mysql.index.io.waits.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "isMonotonic": true,
                         "dataPoints": [
                            {
@@ -1406,7 +1406,7 @@
                      "description": "The total time of I/O wait events for an index.",
                      "name": "mysql.index.io.waits.time",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "isMonotonic": true,
                         "dataPoints": [
                            {

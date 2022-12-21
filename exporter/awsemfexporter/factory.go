@@ -18,7 +18,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/exporter"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 )
@@ -31,17 +31,16 @@ const (
 )
 
 // NewFactory creates a factory for AWS EMF exporter.
-func NewFactory() component.ExporterFactory {
-	return component.NewExporterFactory(
+func NewFactory() exporter.Factory {
+	return exporter.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsExporter(createMetricsExporter, stability))
+		exporter.WithMetrics(createMetricsExporter, stability))
 }
 
 // CreateDefaultConfig creates the default configuration for exporter.
-func createDefaultConfig() config.Exporter {
+func createDefaultConfig() component.Config {
 	return &Config{
-		ExporterSettings:      config.NewExporterSettings(config.NewComponentID(typeStr)),
 		AWSSessionSettings:    awsutil.CreateDefaultSessionConfig(),
 		LogGroupName:          "",
 		LogStreamName:         "",
@@ -54,8 +53,8 @@ func createDefaultConfig() config.Exporter {
 
 // createMetricsExporter creates a metrics exporter based on this config.
 func createMetricsExporter(_ context.Context,
-	params component.ExporterCreateSettings,
-	config config.Exporter) (component.MetricsExporter, error) {
+	params exporter.CreateSettings,
+	config component.Config) (exporter.Metrics, error) {
 
 	expCfg := config.(*Config)
 

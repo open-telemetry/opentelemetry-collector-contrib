@@ -20,12 +20,10 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver/internal/metadata"
 )
@@ -36,18 +34,17 @@ const (
 )
 
 // NewFactory returns the receiver factory for the vcenterreceiver
-func NewFactory() component.ReceiverFactory {
-	return component.NewReceiverFactory(
+func NewFactory() receiver.Factory {
+	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver, stability),
+		receiver.WithMetrics(createMetricsReceiver, stability),
 	)
 }
 
-func createDefaultConfig() config.Receiver {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
 			CollectionInterval: 2 * time.Minute,
 		},
 		TLSClientSetting: configtls.TLSClientSetting{},
@@ -57,31 +54,18 @@ func createDefaultConfig() config.Receiver {
 
 var errConfigNotVcenter = errors.New("config was not an vcenter receiver config")
 
-func logDeprecatedFeatureGateForDirection(log *zap.Logger, gate featuregate.Gate) {
-	log.Warn("WARNING: The " + gate.ID + " feature gate is deprecated and will be removed in the next release. The change to remove " +
-		"the direction attribute has been reverted in the specification. See https://github.com/open-telemetry/opentelemetry-specification/issues/2726 " +
-		"for additional details.")
-}
-
 func createMetricsReceiver(
 	_ context.Context,
-	params component.ReceiverCreateSettings,
-	rConf config.Receiver,
+	params receiver.CreateSettings,
+	rConf component.Config,
 	consumer consumer.Metrics,
-) (component.MetricsReceiver, error) {
+) (receiver.Metrics, error) {
 	cfg, ok := rConf.(*Config)
 	if !ok {
 		return nil, errConfigNotVcenter
 	}
 	vr := newVmwareVcenterScraper(params.Logger, cfg, params)
 
-	if !vr.emitMetricsWithDirectionAttribute {
-		logDeprecatedFeatureGateForDirection(vr.logger, emitMetricsWithDirectionAttributeFeatureGate)
-	}
-
-	if vr.emitMetricsWithoutDirectionAttribute {
-		logDeprecatedFeatureGateForDirection(vr.logger, emitMetricsWithoutDirectionAttributeFeatureGate)
-	}
 	scraper, err := scraperhelper.NewScraper(
 		typeStr,
 		vr.scrape,

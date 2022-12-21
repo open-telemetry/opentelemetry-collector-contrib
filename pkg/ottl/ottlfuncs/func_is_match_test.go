@@ -15,10 +15,12 @@
 package ottlfuncs
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -33,8 +35,8 @@ func Test_isMatch(t *testing.T) {
 		{
 			name: "replace match true",
 			target: &ottl.StandardGetSetter[interface{}]{
-				Getter: func(ctx interface{}) interface{} {
-					return "hello world"
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return "hello world", nil
 				},
 			},
 			pattern:  "hello.*",
@@ -43,8 +45,8 @@ func Test_isMatch(t *testing.T) {
 		{
 			name: "replace match false",
 			target: &ottl.StandardGetSetter[interface{}]{
-				Getter: func(ctx interface{}) interface{} {
-					return "goodbye world"
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return "goodbye world", nil
 				},
 			},
 			pattern:  "hello.*",
@@ -53,49 +55,86 @@ func Test_isMatch(t *testing.T) {
 		{
 			name: "replace match complex",
 			target: &ottl.StandardGetSetter[interface{}]{
-				Getter: func(ctx interface{}) interface{} {
-					return "-12.001"
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return "-12.001", nil
 				},
 			},
 			pattern:  "[-+]?\\d*\\.\\d+([eE][-+]?\\d+)?",
 			expected: true,
 		},
 		{
-			name: "target not a string",
+			name: "target bool",
 			target: &ottl.StandardGetSetter[interface{}]{
-				Getter: func(ctx interface{}) interface{} {
-					return 1
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return true, nil
 				},
 			},
-			pattern:  "doesnt matter will be false",
-			expected: false,
+			pattern:  "true",
+			expected: true,
 		},
 		{
-			name: "target nil",
+			name: "target int",
 			target: &ottl.StandardGetSetter[interface{}]{
-				Getter: func(ctx interface{}) interface{} {
-					return nil
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return int64(1), nil
 				},
 			},
-			pattern:  "doesnt matter will be false",
-			expected: false,
+			pattern:  `\d`,
+			expected: true,
+		},
+		{
+			name: "target float",
+			target: &ottl.StandardGetSetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return 1.1, nil
+				},
+			},
+			pattern:  `\d\.\d`,
+			expected: true,
+		},
+		{
+			name: "target pcommon.Value",
+			target: &ottl.StandardGetSetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					v := pcommon.NewValueEmpty()
+					v.SetStr("test")
+					return v, nil
+				},
+			},
+			pattern:  `test`,
+			expected: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc, err := IsMatch(tt.target, tt.pattern)
-			require.NoError(t, err)
-			assert.Equal(t, tt.expected, exprFunc(nil))
+			assert.NoError(t, err)
+			result, err := exprFunc(context.Background(), nil)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expected, result)
 		})
 	}
 }
 
 func Test_isMatch_validation(t *testing.T) {
 	target := &ottl.StandardGetSetter[interface{}]{
-		Getter: func(ctx interface{}) interface{} {
-			return "anything"
+		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			return "anything", nil
 		},
 	}
 	_, err := IsMatch[interface{}](target, "\\K")
+	require.Error(t, err)
+}
+
+func Test_isMatch_error(t *testing.T) {
+	target := &ottl.StandardGetSetter[interface{}]{
+		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			v := ottl.Path{}
+			return v, nil
+		},
+	}
+	exprFunc, err := IsMatch[interface{}](target, "test")
+	assert.NoError(t, err)
+	_, err = exprFunc(context.Background(), nil)
 	require.Error(t, err)
 }

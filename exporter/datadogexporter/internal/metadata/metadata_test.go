@@ -29,6 +29,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -56,7 +58,7 @@ var (
 		Version: "1.0",
 	}
 
-	mockExporterCreateSettings = component.ExporterCreateSettings{
+	mockExporterCreateSettings = exporter.CreateSettings{
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 		BuildInfo:         mockBuildInfo,
 	}
@@ -64,7 +66,7 @@ var (
 
 func TestFillHostMetadata(t *testing.T) {
 	hostnameCache.Flush()
-	params := componenttest.NewNopExporterCreateSettings()
+	params := exportertest.NewNopCreateSettings()
 	params.BuildInfo = mockBuildInfo
 
 	pcfg := PusherConfig{
@@ -242,7 +244,7 @@ func TestMetadataFromAttributes(t *testing.T) {
 	for _, testInstance := range tests {
 		t.Run(testInstance.name, func(t *testing.T) {
 			registry := featuregate.NewRegistry()
-			registry.MustRegister(HostnamePreviewGate)
+			registry.MustRegisterID(HostnamePreviewFeatureGate, featuregate.StageBeta)
 			require.NoError(t, registry.Apply(map[string]bool{HostnamePreviewFeatureGate: testInstance.usePreviewHostnameLogic}))
 			metadata := metadataFromAttributesWithRegistry(registry, testInstance.attrs)
 			assert.Equal(t, testInstance.expected.InternalHostname, metadata.InternalHostname)
@@ -300,7 +302,7 @@ func TestPusher(t *testing.T) {
 		APIKey:              "apikey",
 		UseResourceMetadata: true,
 	}
-	params := componenttest.NewNopExporterCreateSettings()
+	params := exportertest.NewNopCreateSettings()
 	params.BuildInfo = mockBuildInfo
 
 	hostProvider, err := GetSourceProvider(componenttest.NewNopTelemetrySettings(), "")

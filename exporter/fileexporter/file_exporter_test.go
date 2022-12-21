@@ -60,7 +60,7 @@ func TestFileTracesExporter(t *testing.T) {
 					Path:       tempFileName(t),
 					FormatType: "json",
 				},
-				unmarshaler: ptrace.NewJSONUnmarshaler(),
+				unmarshaler: &ptrace.JSONUnmarshaler{},
 			},
 		},
 		{
@@ -71,7 +71,7 @@ func TestFileTracesExporter(t *testing.T) {
 					FormatType:  "json",
 					Compression: compressionZSTD,
 				},
-				unmarshaler: ptrace.NewJSONUnmarshaler(),
+				unmarshaler: &ptrace.JSONUnmarshaler{},
 			},
 		},
 		{
@@ -81,7 +81,7 @@ func TestFileTracesExporter(t *testing.T) {
 					Path:       tempFileName(t),
 					FormatType: "proto",
 				},
-				unmarshaler: ptrace.NewProtoUnmarshaler(),
+				unmarshaler: &ptrace.ProtoUnmarshaler{},
 			},
 		},
 		{
@@ -92,7 +92,7 @@ func TestFileTracesExporter(t *testing.T) {
 					FormatType:  "proto",
 					Compression: compressionZSTD,
 				},
-				unmarshaler: ptrace.NewProtoUnmarshaler(),
+				unmarshaler: &ptrace.ProtoUnmarshaler{},
 			},
 		},
 		{
@@ -109,7 +109,7 @@ func TestFileTracesExporter(t *testing.T) {
 						LocalTime:    false,
 					},
 				},
-				unmarshaler: ptrace.NewProtoUnmarshaler(),
+				unmarshaler: &ptrace.ProtoUnmarshaler{},
 			},
 		},
 	}
@@ -194,7 +194,7 @@ func TestFileMetricsExporter(t *testing.T) {
 					Path:       tempFileName(t),
 					FormatType: "json",
 				},
-				unmarshaler: pmetric.NewJSONUnmarshaler(),
+				unmarshaler: &pmetric.JSONUnmarshaler{},
 			},
 		},
 		{
@@ -205,7 +205,7 @@ func TestFileMetricsExporter(t *testing.T) {
 					FormatType:  "json",
 					Compression: compressionZSTD,
 				},
-				unmarshaler: pmetric.NewJSONUnmarshaler(),
+				unmarshaler: &pmetric.JSONUnmarshaler{},
 			},
 		},
 		{
@@ -215,7 +215,7 @@ func TestFileMetricsExporter(t *testing.T) {
 					Path:       tempFileName(t),
 					FormatType: "proto",
 				},
-				unmarshaler: pmetric.NewProtoUnmarshaler(),
+				unmarshaler: &pmetric.ProtoUnmarshaler{},
 			},
 		},
 		{
@@ -226,7 +226,7 @@ func TestFileMetricsExporter(t *testing.T) {
 					FormatType:  "proto",
 					Compression: compressionZSTD,
 				},
-				unmarshaler: pmetric.NewProtoUnmarshaler(),
+				unmarshaler: &pmetric.ProtoUnmarshaler{},
 			},
 		},
 		{
@@ -243,7 +243,7 @@ func TestFileMetricsExporter(t *testing.T) {
 						LocalTime:    false,
 					},
 				},
-				unmarshaler: pmetric.NewProtoUnmarshaler(),
+				unmarshaler: &pmetric.ProtoUnmarshaler{},
 			},
 		},
 	}
@@ -330,7 +330,7 @@ func TestFileLogsExporter(t *testing.T) {
 					Path:       tempFileName(t),
 					FormatType: "json",
 				},
-				unmarshaler: plog.NewJSONUnmarshaler(),
+				unmarshaler: &plog.JSONUnmarshaler{},
 			},
 		},
 		{
@@ -341,7 +341,7 @@ func TestFileLogsExporter(t *testing.T) {
 					FormatType:  "json",
 					Compression: compressionZSTD,
 				},
-				unmarshaler: plog.NewJSONUnmarshaler(),
+				unmarshaler: &plog.JSONUnmarshaler{},
 			},
 		},
 		{
@@ -351,7 +351,7 @@ func TestFileLogsExporter(t *testing.T) {
 					Path:       tempFileName(t),
 					FormatType: "proto",
 				},
-				unmarshaler: plog.NewProtoUnmarshaler(),
+				unmarshaler: &plog.ProtoUnmarshaler{},
 			},
 		},
 		{
@@ -362,7 +362,7 @@ func TestFileLogsExporter(t *testing.T) {
 					FormatType:  "proto",
 					Compression: compressionZSTD,
 				},
-				unmarshaler: plog.NewProtoUnmarshaler(),
+				unmarshaler: &plog.ProtoUnmarshaler{},
 			},
 		},
 		{
@@ -379,7 +379,7 @@ func TestFileLogsExporter(t *testing.T) {
 						LocalTime:    false,
 					},
 				},
-				unmarshaler: plog.NewProtoUnmarshaler(),
+				unmarshaler: &plog.ProtoUnmarshaler{},
 			},
 		},
 	}
@@ -478,7 +478,7 @@ func TestExportMessageAsBuffer(t *testing.T) {
 	require.NotNil(t, fe)
 	//
 	ld := testdata.GenerateLogsManyLogRecordsSameResource(15000)
-	marshaler := plog.NewProtoMarshaler()
+	marshaler := &plog.ProtoMarshaler{}
 	buf, err := marshaler.MarshalLogs(ld)
 	assert.NoError(t, err)
 	assert.Error(t, exportMessageAsBuffer(fe, buf))
@@ -584,21 +584,21 @@ func TestConcurrentlyCompress(t *testing.T) {
 	wg.Wait()
 	buf, err := decompress(ctd)
 	assert.NoError(t, err)
-	traceUnmarshaler := ptrace.NewJSONUnmarshaler()
+	traceUnmarshaler := &ptrace.JSONUnmarshaler{}
 	got, err := traceUnmarshaler.UnmarshalTraces(buf)
 	assert.NoError(t, err)
 	assert.EqualValues(t, td, got)
 
 	buf, err = decompress(cmd)
 	assert.NoError(t, err)
-	metricsUnmarshaler := pmetric.NewJSONUnmarshaler()
+	metricsUnmarshaler := &pmetric.JSONUnmarshaler{}
 	gotMd, err := metricsUnmarshaler.UnmarshalMetrics(buf)
 	assert.NoError(t, err)
 	assert.EqualValues(t, md, gotMd)
 
 	buf, err = decompress(cld)
 	assert.NoError(t, err)
-	logsUnmarshaler := plog.NewJSONUnmarshaler()
+	logsUnmarshaler := &plog.JSONUnmarshaler{}
 	gotLd, err := logsUnmarshaler.UnmarshalLogs(buf)
 	assert.NoError(t, err)
 	assert.EqualValues(t, ld, gotLd)

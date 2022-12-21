@@ -90,6 +90,24 @@ that are allowed to be used as a dimension key in addition to alphanumeric
 characters. Each nonalphanumeric dimension key character that isn't in this string 
 will be replaced with a `_`.
 - `max_connections` (default = 100):  The maximum number of idle HTTP connection the exporter can keep open.
+- `ingest_tls`: (no default) exposes a list of TLS settings to establish a secure connection with signafx receiver configured on another collector instance.
+  - `ca_file` needs to be set if the exporter's `ingest_url` is pointing to a signalfx receiver
+  with TLS enabled and using a self-signed certificate where its CA is not loaded in the system cert pool.
+  Full list of TLS options can be found in the configtls [README](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/configtls#client-configuration) 
+  The following example instructs the signalfx exporter ingest client to use a custom `ca_file` to verify the server certificate.
+  ```yaml
+  ingest_tls:
+      ca_file: "/etc/opt/certs/ca.pem"
+  ```
+- `api_tls`: (no default) exposes a list of TLS settings to establish a secure connection with http_forwarder extension configured on another collector instance.
+  - `ca_file` needs to be set if the exporter's `api_url` is pointing to a http_forwarder extension
+  with TLS enabled and using a self-signed certificate where its CA is not loaded in the system cert pool.
+  Full list of TLS options can be found in the configtls [README](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/configtls#client-configuration)
+  The following example instructs the signalfx exporter api client to use a custom `ca_file` to verify the server certificate.
+  ```yaml
+  api_tls:
+      ca_file: "/etc/opt/certs/ca.pem"
+  ```
 
 In addition, this exporter offers queued retry which is enabled by default.
 Information about queued retry configuration parameters can be found

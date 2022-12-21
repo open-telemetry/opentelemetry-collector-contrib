@@ -14,18 +14,27 @@ type MockGoSNMPWrapper struct {
 	mock.Mock
 }
 
-// BulkWalk provides a mock function with given fields: rootOid, walkFn
-func (_m *MockGoSNMPWrapper) BulkWalk(rootOid string, walkFn gosnmp.WalkFunc) error {
-	ret := _m.Called(rootOid, walkFn)
+// BulkWalkAll provides a mock function with given fields: rootOid
+func (_m *MockGoSNMPWrapper) BulkWalkAll(rootOid string) ([]gosnmp.SnmpPDU, error) {
+	ret := _m.Called(rootOid)
 
-	var r0 error
-	if rf, ok := ret.Get(0).(func(string, gosnmp.WalkFunc) error); ok {
-		r0 = rf(rootOid, walkFn)
+	var r0 []gosnmp.SnmpPDU
+	if rf, ok := ret.Get(0).(func(string) []gosnmp.SnmpPDU); ok {
+		r0 = rf(rootOid)
 	} else {
-		r0 = ret.Error(0)
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]gosnmp.SnmpPDU)
+		}
 	}
 
-	return r0
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(rootOid)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 // Close provides a mock function with given fields:
@@ -271,18 +280,27 @@ func (_m *MockGoSNMPWrapper) SetVersion(version gosnmp.SnmpVersion) {
 	_m.Called(version)
 }
 
-// Walk provides a mock function with given fields: rootOid, walkFn
-func (_m *MockGoSNMPWrapper) Walk(rootOid string, walkFn gosnmp.WalkFunc) error {
-	ret := _m.Called(rootOid, walkFn)
+// WalkAll provides a mock function with given fields: rootOid
+func (_m *MockGoSNMPWrapper) WalkAll(rootOid string) ([]gosnmp.SnmpPDU, error) {
+	ret := _m.Called(rootOid)
 
-	var r0 error
-	if rf, ok := ret.Get(0).(func(string, gosnmp.WalkFunc) error); ok {
-		r0 = rf(rootOid, walkFn)
+	var r0 []gosnmp.SnmpPDU
+	if rf, ok := ret.Get(0).(func(string) []gosnmp.SnmpPDU); ok {
+		r0 = rf(rootOid)
 	} else {
-		r0 = ret.Error(0)
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]gosnmp.SnmpPDU)
+		}
 	}
 
-	return r0
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(rootOid)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 type mockNewGoSNMPWrapperT interface {

@@ -18,6 +18,8 @@ Exporter supports the following features：
 Please note that there is no guarantee that exact field names will remain stable.
 This intended for primarily for debugging Collector without setting up backends.
 
+The official [opentelemetry-collector-contrib container](https://hub.docker.com/r/otel/opentelemetry-collector-contrib/tags#!) does not have a writable filesystem by default since it's built using the special `from scratch` layer. As such, you will need to create a writable directory for the path, potentially by creating writable volumes or creating a custom image.
+
 ## Getting Started
 
 The following settings are required:
