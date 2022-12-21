@@ -19,6 +19,7 @@ import (
 	"compress/gzip"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -158,7 +159,7 @@ func TestConsumeMetricsData(t *testing.T) {
 		md               pmetric.Metrics
 		reqTestFunc      func(t *testing.T, r *http.Request)
 		httpResponseCode int
-		maxContentLength int
+		maxContentLength uint
 		wantErr          bool
 	}{
 		{
@@ -201,23 +202,28 @@ func TestConsumeMetricsData(t *testing.T) {
 			md:   generateLargeBatch(),
 			reqTestFunc: func(t *testing.T, r *http.Request) {
 				body, err := io.ReadAll(r.Body)
-				if err != nil {
-					t.Fatal(err)
-				}
+				assert.NoError(t, err)
 				assert.Equal(t, "keep-alive", r.Header.Get("Connection"))
 				assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
 				assert.Equal(t, "OpenTelemetry-Collector Splunk Exporter/v0.0.1", r.Header.Get("User-Agent"))
 				assert.Equal(t, "Splunk 1234", r.Header.Get("Authorization"))
-				assert.Equal(t, "gzip", r.Header.Get("Content-Encoding"))
-				zipReader, err := gzip.NewReader(bytes.NewReader(body))
-				assert.NoError(t, err)
-				bodyBytes, _ := io.ReadAll(zipReader)
-				firstPayload := strings.Split(string(bodyBytes), "}{")[0]
-				var metric splunk.Event
-				err = json.Unmarshal([]byte(firstPayload+"}"), &metric)
-				if err != nil {
-					t.Fatal(err)
+				bodyBytes := body
+				// the last batch might not be zipped.
+				if "gzip" == r.Header.Get("Content-Encoding") {
+					zipReader, err2 := gzip.NewReader(bytes.NewReader(body))
+					require.NoError(t, err2)
+					bodyBytes, _ = io.ReadAll(zipReader)
 				}
+
+				events := strings.Split(string(bodyBytes), "}{")
+				firstPayload := events[0]
+				if len(events) > 1 {
+					firstPayload += "}"
+				}
+
+				var metric splunk.Event
+				err = json.Unmarshal([]byte(firstPayload), &metric)
+				assert.NoError(t, err, fmt.Sprintf("could not read: %s", firstPayload))
 				assert.Equal(t, "test_splunk", metric.Source)
 				assert.Equal(t, "test_type", metric.SourceType)
 				assert.Equal(t, "test_index", metric.Index)
@@ -252,7 +258,7 @@ func TestConsumeMetricsData(t *testing.T) {
 			config.Index = "test_index"
 			config.SplunkAppName = "OpenTelemetry-Collector Splunk Exporter"
 			config.SplunkAppVersion = "v0.0.1"
-			config.MaxContentLengthMetrics = 1800
+			config.MaxContentLengthMetrics = tt.maxContentLength
 
 			sender, err := buildClient(options, config, zap.NewNop())
 			assert.NoError(t, err)
