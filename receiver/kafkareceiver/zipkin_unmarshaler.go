@@ -23,6 +23,7 @@ const (
 	zipkinProtobufEncoding = "zipkin_proto"
 	zipkinJSONEncoding     = "zipkin_json"
 	zipkinThriftEncoding   = "zipkin_thrift"
+	zipkinJSONv1Encoding   = "zipkin_v1json"
 )
 
 func newZipkinProtobufUnmarshaler() TracesUnmarshaler {
@@ -32,7 +33,9 @@ func newZipkinProtobufUnmarshaler() TracesUnmarshaler {
 func newZipkinJSONUnmarshaler() TracesUnmarshaler {
 	return newPdataTracesUnmarshaler(zipkinv2.NewJSONTracesUnmarshaler(false), zipkinJSONEncoding)
 }
-
+func newZipkinJSONv1Unmarshaler() TracesUnmarshaler {
+	return newPdataTracesUnmarshaler(zipkinv1.NewJSONTracesUnmarshaler(false), zipkinJSONv1Encoding)
+}
 func newZipkinThriftUnmarshaler() TracesUnmarshaler {
 	return newPdataTracesUnmarshaler(zipkinv1.NewThriftTracesUnmarshaler(), zipkinThriftEncoding)
 }

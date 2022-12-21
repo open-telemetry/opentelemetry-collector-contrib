@@ -57,6 +57,7 @@ func defaultTracesUnmarshalers() map[string]TracesUnmarshaler {
 	jaegerJSON := jaegerJSONSpanUnmarshaler{}
 	zipkinProto := newPdataTracesUnmarshaler(zipkinv2.NewProtobufTracesUnmarshaler(false, false), "zipkin_proto")
 	zipkinJSON := newPdataTracesUnmarshaler(zipkinv2.NewJSONTracesUnmarshaler(false), "zipkin_json")
+	zipkinJSONv1 := newPdataTracesUnmarshaler(zipkinv1.NewJSONTracesUnmarshaler(false), "zipkin_v1json")
 	zipkinThrift := newPdataTracesUnmarshaler(zipkinv1.NewThriftTracesUnmarshaler(), "zipkin_thrift")
 	return map[string]TracesUnmarshaler{
 		otlpPb.Encoding():       otlpPb,
@@ -64,6 +65,7 @@ func defaultTracesUnmarshalers() map[string]TracesUnmarshaler {
 		jaegerJSON.Encoding():   jaegerJSON,
 		zipkinProto.Encoding():  zipkinProto,
 		zipkinJSON.Encoding():   zipkinJSON,
+		zipkinJSONv1.Encoding(): zipkinJSONv1,
 		zipkinThrift.Encoding(): zipkinThrift,
 	}
 }

@@ -33,6 +33,8 @@ import (
 
 var v2FromTranslator zipkinv2.FromTranslator
 
+//var v1FromTranslator zipkinv1.FromTranslator
+
 func TestUnmarshalZipkin(t *testing.T) {
 	td := ptrace.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
@@ -45,11 +47,15 @@ func TestUnmarshalZipkin(t *testing.T) {
 	span.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
 	span.SetParentSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 0})
 	spans, err := v2FromTranslator.FromTraces(td)
+	//spansv1,err :=v1FromTranslator.FromTraces(td)
 	require.NoError(t, err)
 
 	serializer := zipkinreporter.JSONSerializer{}
 	jsonBytes, err := serializer.Serialize(spans)
 	require.NoError(t, err)
+
+	//jsonv1Bytes,err := serializer.Serialize(spnasv1)
+	//require.NoError(t, err)
 
 	tSpan := &zipkincore.Span{Name: "foo"}
 	thriftTransport := thrift.NewTMemoryBuffer()
@@ -89,6 +95,12 @@ func TestUnmarshalZipkin(t *testing.T) {
 			bytes:       thriftTransport.Buffer.Bytes(),
 			expected:    tdThrift,
 		},
+		//{
+		//	unmarshaler: newZipkinJSONv1Unmarshaler(),
+		//	encoding:    "zipkin_v1json",
+		//	bytes:       jsonv1Bytes,
+		//	expected:    td,
+		//},
 	}
 	for _, test := range tests {
 		t.Run(test.encoding, func(t *testing.T) {
@@ -111,6 +123,12 @@ func TestUnmarshalZipkinJSON_error(t *testing.T) {
 	_, err := p.Unmarshal([]byte("+$%"))
 	assert.Error(t, err)
 }
+
+//func TestUnmarshalZipkinJSONv1_error(t *testing.T) {
+//	p := newZipkinJSONv1Unmarshaler()
+//	_, err := p.Unmarshal([]byte("+$%"))
+//	assert.Error(t, err)
+//}
 
 func TestUnmarshalZipkinProto_error(t *testing.T) {
 	p := newZipkinProtobufUnmarshaler()

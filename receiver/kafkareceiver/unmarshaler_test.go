@@ -29,6 +29,7 @@ func TestDefaultTracesUnMarshaler(t *testing.T) {
 		"zipkin_proto",
 		"zipkin_json",
 		"zipkin_thrift",
+		"zipkin_v1json",
 	}
 	marshalers := defaultTracesUnmarshalers()
 	assert.Equal(t, len(expectedEncodings), len(marshalers))
