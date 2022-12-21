@@ -36,6 +36,7 @@ type metricTimedData interface {
 	getTimedDataPoints() []*timedMetricDataPoint
 }
 
+// MetricToEnvelopes packages metrics into a slice of Application Insight envelopes .
 func (packer *metricPacker) MetricToEnvelopes(metric pmetric.Metric) []*contracts.Envelope {
 	var envelopes []*contracts.Envelope
 
