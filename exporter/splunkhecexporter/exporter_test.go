@@ -235,43 +235,41 @@ func TestConsumeMetricsData(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			for i := 0; i < 100; i++ {
-				server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					if tt.reqTestFunc != nil {
-						tt.reqTestFunc(t, r)
-					}
-					w.WriteHeader(tt.httpResponseCode)
-				}))
-				defer server.Close()
-
-				serverURL, err := url.Parse(server.URL)
-				assert.NoError(t, err)
-
-				options := &exporterOptions{
-					url:   serverURL,
-					token: "1234",
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if tt.reqTestFunc != nil {
+					tt.reqTestFunc(t, r)
 				}
+				w.WriteHeader(tt.httpResponseCode)
+			}))
+			defer server.Close()
 
-				config := NewFactory().CreateDefaultConfig().(*Config)
-				config.Source = "test"
-				config.SourceType = "test_type"
-				config.Token = "1234"
-				config.Index = "test_index"
-				config.SplunkAppName = "OpenTelemetry-Collector Splunk Exporter"
-				config.SplunkAppVersion = "v0.0.1"
-				config.MaxContentLengthMetrics = tt.maxContentLength
+			serverURL, err := url.Parse(server.URL)
+			assert.NoError(t, err)
 
-				sender, err := buildClient(options, config, zap.NewNop())
-				assert.NoError(t, err)
-
-				err = sender.pushMetricsData(context.Background(), tt.md)
-				if tt.wantErr {
-					assert.Error(t, err)
-					return
-				}
-
-				assert.NoError(t, err)
+			options := &exporterOptions{
+				url:   serverURL,
+				token: "1234",
 			}
+
+			config := NewFactory().CreateDefaultConfig().(*Config)
+			config.Source = "test"
+			config.SourceType = "test_type"
+			config.Token = "1234"
+			config.Index = "test_index"
+			config.SplunkAppName = "OpenTelemetry-Collector Splunk Exporter"
+			config.SplunkAppVersion = "v0.0.1"
+			config.MaxContentLengthMetrics = tt.maxContentLength
+
+			sender, err := buildClient(options, config, zap.NewNop())
+			assert.NoError(t, err)
+
+			err = sender.pushMetricsData(context.Background(), tt.md)
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+
+			assert.NoError(t, err)
 		})
 	}
 }
