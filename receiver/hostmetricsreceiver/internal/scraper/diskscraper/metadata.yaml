@@ -5,9 +5,11 @@ sem_conv_version: 1.9.0
 attributes:
   device:
     description: Name of the disk.
+    type: string
 
   direction:
     description: Direction of flow of bytes/operations (read or write).
+    type: string
     enum: [read, write]
 
 metrics:

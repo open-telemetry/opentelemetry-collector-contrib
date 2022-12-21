@@ -30,21 +30,21 @@ type severityTestCase struct {
 	name       string
 	sample     interface{}
 	mappingSet string
-	mapping    map[interface{}]interface{}
+	mapping    map[string]interface{}
 	buildErr   bool
 	parseErr   bool
 	expected   entry.Severity
 }
 
 func TestSeverityParser(t *testing.T) {
-	allTheThingsMap := map[interface{}]interface{}{
+	allTheThingsMap := map[string]interface{}{
 		"info":   "3xx",
 		"error3": "4xx",
 		"debug4": "5xx",
 		"trace2": []interface{}{
 			"ttttttracer",
 			[]byte{100, 100, 100},
-			map[interface{}]interface{}{"min": 1111, "max": 1234},
+			map[string]interface{}{"min": 1111, "max": 1234},
 		},
 		"fatal2": "",
 	}
@@ -77,103 +77,103 @@ func TestSeverityParser(t *testing.T) {
 		{
 			name:     "custom-string",
 			sample:   "NOOOOOOO",
-			mapping:  map[interface{}]interface{}{"error": "NOOOOOOO"},
+			mapping:  map[string]interface{}{"error": "NOOOOOOO"},
 			expected: entry.Error,
 		},
 		{
 			name:     "custom-string-caps-key",
 			sample:   "NOOOOOOO",
-			mapping:  map[interface{}]interface{}{"ErRoR": "NOOOOOOO"},
+			mapping:  map[string]interface{}{"ErRoR": "NOOOOOOO"},
 			expected: entry.Error,
 		},
 		{
 			name:     "custom-int",
 			sample:   1234,
-			mapping:  map[interface{}]interface{}{"error": 1234},
+			mapping:  map[string]interface{}{"error": 1234},
 			expected: entry.Error,
 		},
 		{
 			name:     "mixed-list-string",
 			sample:   "ThiS Is BaD",
-			mapping:  map[interface{}]interface{}{"error": []interface{}{"NOOOOOOO", "this is bad", 1234}},
+			mapping:  map[string]interface{}{"error": []interface{}{"NOOOOOOO", "this is bad", 1234}},
 			expected: entry.Error,
 		},
 		{
 			name:     "mixed-list-int",
 			sample:   1234,
-			mapping:  map[interface{}]interface{}{"error": []interface{}{"NOOOOOOO", "this is bad", 1234}},
+			mapping:  map[string]interface{}{"error": []interface{}{"NOOOOOOO", "this is bad", 1234}},
 			expected: entry.Error,
 		},
 		{
 			name:     "in-range",
 			sample:   123,
-			mapping:  map[interface{}]interface{}{"error": map[interface{}]interface{}{"min": 120, "max": 125}},
+			mapping:  map[string]interface{}{"error": map[string]interface{}{"min": 120, "max": 125}},
 			expected: entry.Error,
 		},
 		{
 			name:     "in-range-min",
 			sample:   120,
-			mapping:  map[interface{}]interface{}{"error": map[interface{}]interface{}{"min": 120, "max": 125}},
+			mapping:  map[string]interface{}{"error": map[string]interface{}{"min": 120, "max": 125}},
 			expected: entry.Error,
 		},
 		{
 			name:     "in-range-max",
 			sample:   125,
-			mapping:  map[interface{}]interface{}{"error": map[interface{}]interface{}{"min": 120, "max": 125}},
+			mapping:  map[string]interface{}{"error": map[string]interface{}{"min": 120, "max": 125}},
 			expected: entry.Error,
 		},
 		{
 			name:     "out-of-range-min-minus",
 			sample:   119,
-			mapping:  map[interface{}]interface{}{"error": map[interface{}]interface{}{"min": 120, "max": 125}},
+			mapping:  map[string]interface{}{"error": map[string]interface{}{"min": 120, "max": 125}},
 			expected: entry.Default,
 		},
 		{
 			name:     "out-of-range-max-plus",
 			sample:   126,
-			mapping:  map[interface{}]interface{}{"error": map[interface{}]interface{}{"min": 120, "max": 125}},
+			mapping:  map[string]interface{}{"error": map[string]interface{}{"min": 120, "max": 125}},
 			expected: entry.Default,
 		},
 		{
 			name:     "range-out-of-order",
 			sample:   123,
-			mapping:  map[interface{}]interface{}{"error": map[interface{}]interface{}{"min": 125, "max": 120}},
+			mapping:  map[string]interface{}{"error": map[string]interface{}{"min": 125, "max": 120}},
 			expected: entry.Error,
 		},
 		{
 			name:     "Http2xx-hit",
 			sample:   201,
-			mapping:  map[interface{}]interface{}{"error": "2xx"},
+			mapping:  map[string]interface{}{"error": "2xx"},
 			expected: entry.Error,
 		},
 		{
 			name:     "Http2xx-miss",
 			sample:   301,
-			mapping:  map[interface{}]interface{}{"error": "2xx"},
+			mapping:  map[string]interface{}{"error": "2xx"},
 			expected: entry.Default,
 		},
 		{
 			name:     "Http3xx-hit",
 			sample:   301,
-			mapping:  map[interface{}]interface{}{"error": "3xx"},
+			mapping:  map[string]interface{}{"error": "3xx"},
 			expected: entry.Error,
 		},
 		{
 			name:     "Http4xx-hit",
 			sample:   "404",
-			mapping:  map[interface{}]interface{}{"error": "4xx"},
+			mapping:  map[string]interface{}{"error": "4xx"},
 			expected: entry.Error,
 		},
 		{
 			name:     "Http5xx-hit",
 			sample:   555,
-			mapping:  map[interface{}]interface{}{"error": "5xx"},
+			mapping:  map[string]interface{}{"error": "5xx"},
 			expected: entry.Error,
 		},
 		{
 			name:     "Http-All",
 			sample:   "301",
-			mapping:  map[interface{}]interface{}{"debug": "2xx", "info": "3xx", "error": "4xx", "warn": "5xx"},
+			mapping:  map[string]interface{}{"debug": "2xx", "info": "3xx", "error": "4xx", "warn": "5xx"},
 			expected: entry.Info,
 		},
 		{
@@ -260,7 +260,7 @@ func runSeverityParseTest(cfg *Config, ent *entry.Entry, buildErr bool, parseErr
 	}
 }
 
-func parseSeverityTestConfig(parseFrom entry.Field, preset string, mapping map[interface{}]interface{}) *Config {
+func parseSeverityTestConfig(parseFrom entry.Field, preset string, mapping map[string]interface{}) *Config {
 	cfg := NewConfigWithID("test_operator_id")
 	cfg.OutputIDs = []string{"output1"}
 	cfg.SeverityConfig = helper.SeverityConfig{

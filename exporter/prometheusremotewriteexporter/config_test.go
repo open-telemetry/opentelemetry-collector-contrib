@@ -21,8 +21,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -37,19 +38,18 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	tests := []struct {
-		id           config.ComponentID
-		expected     config.Exporter
+		id           component.ID
+		expected     component.Config
 		errorMessage string
 	}{
 		{
-			id:       config.NewComponentIDWithName(typeStr, ""),
+			id:       component.NewIDWithName(typeStr, ""),
 			expected: createDefaultConfig(),
 		},
 		{
-			id: config.NewComponentIDWithName(typeStr, "2"),
+			id: component.NewIDWithName(typeStr, "2"),
 			expected: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-				TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),
+				TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
 				RetrySettings: exporterhelper.RetrySettings{
 					Enabled:         true,
 					InitialInterval: 10 * time.Second,
@@ -74,7 +74,7 @@ func TestLoadConfig(t *testing.T) {
 					ReadBufferSize:  0,
 					WriteBufferSize: 512 * 1024,
 					Timeout:         5 * time.Second,
-					Headers: map[string]string{
+					Headers: map[string]configopaque.String{
 						"Prometheus-Remote-Write-Version": "0.1.0",
 						"X-Scope-OrgID":                   "234"},
 				},
@@ -85,11 +85,11 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:           config.NewComponentIDWithName(typeStr, "negative_queue_size"),
+			id:           component.NewIDWithName(typeStr, "negative_queue_size"),
 			errorMessage: "remote write queue size can't be negative",
 		},
 		{
-			id:           config.NewComponentIDWithName(typeStr, "negative_num_consumers"),
+			id:           component.NewIDWithName(typeStr, "negative_num_consumers"),
 			errorMessage: "remote write consumer number can't be negative",
 		},
 	}
@@ -101,13 +101,13 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, config.UnmarshalExporter(sub, cfg))
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 			if tt.expected == nil {
-				assert.EqualError(t, cfg.Validate(), tt.errorMessage)
+				assert.EqualError(t, component.ValidateConfig(cfg), tt.errorMessage)
 				return
 			}
-			assert.NoError(t, cfg.Validate())
+			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -119,9 +119,9 @@ func TestDisabledQueue(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "disabled_queue").String())
+	sub, err := cm.Sub(component.NewIDWithName(typeStr, "disabled_queue").String())
 	require.NoError(t, err)
-	require.NoError(t, config.UnmarshalExporter(sub, cfg))
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	assert.False(t, cfg.(*Config).RemoteWriteQueue.Enabled)
 }
@@ -132,9 +132,9 @@ func TestDisabledTargetInfo(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "disabled_target_info").String())
+	sub, err := cm.Sub(component.NewIDWithName(typeStr, "disabled_target_info").String())
 	require.NoError(t, err)
-	require.NoError(t, config.UnmarshalExporter(sub, cfg))
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	assert.False(t, cfg.(*Config).TargetInfo.Enabled)
 }

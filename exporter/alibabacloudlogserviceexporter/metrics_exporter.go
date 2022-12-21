@@ -18,14 +18,14 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 )
 
 // newMetricsExporter return a new LogSerice metrics exporter.
-func newMetricsExporter(set component.ExporterCreateSettings, cfg config.Exporter) (component.MetricsExporter, error) {
+func newMetricsExporter(set exporter.CreateSettings, cfg component.Config) (exporter.Metrics, error) {
 
 	l := &logServiceMetricsSender{
 		logger: set.Logger,

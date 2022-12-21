@@ -17,13 +17,11 @@ package logstransformprocessor
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/processor/processortest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -35,14 +33,13 @@ import (
 func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.NoError(t, configtest.CheckConfigStruct(cfg))
+	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 	assert.NotNil(t, cfg)
 }
 
 func TestCreateProcessor(t *testing.T) {
 	factory := NewFactory()
 	cfg := &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 		BaseConfig: adapter.BaseConfig{
 			Operators: []operator.Config{
 				{
@@ -62,14 +59,10 @@ func TestCreateProcessor(t *testing.T) {
 					}(),
 				},
 			},
-			Converter: adapter.ConverterConfig{
-				MaxFlushCount: 500,
-				FlushInterval: 13 * time.Millisecond,
-			},
 		},
 	}
 
-	tp, err := factory.CreateLogsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
+	tp, err := factory.CreateLogsProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, tp)
 }
@@ -77,7 +70,6 @@ func TestCreateProcessor(t *testing.T) {
 func TestInvalidOperators(t *testing.T) {
 	factory := NewFactory()
 	cfg := &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 		BaseConfig: adapter.BaseConfig{
 			Operators: []operator.Config{
 				{
@@ -88,6 +80,6 @@ func TestInvalidOperators(t *testing.T) {
 		},
 	}
 
-	_, err := factory.CreateLogsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, nil)
+	_, err := factory.CreateLogsProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, nil)
 	assert.Error(t, err)
 }

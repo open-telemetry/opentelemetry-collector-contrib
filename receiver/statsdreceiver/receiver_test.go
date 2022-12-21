@@ -26,11 +26,11 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/transport"
@@ -59,7 +59,6 @@ func Test_statsdreceiver_New(t *testing.T) {
 			name: "unsupported transport",
 			args: args{
 				config: Config{
-					ReceiverSettings: defaultConfig.ReceiverSettings,
 					NetAddr: confignet.NetAddr{
 						Endpoint:  "localhost:8125",
 						Transport: "unknown",
@@ -67,12 +66,12 @@ func Test_statsdreceiver_New(t *testing.T) {
 				},
 				nextConsumer: consumertest.NewNop(),
 			},
-			wantErr: errors.New("unsupported transport \"unknown\" for receiver statsd"),
+			wantErr: errors.New("unsupported transport \"unknown\""),
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := New(componenttest.NewNopReceiverCreateSettings(), tt.args.config, tt.args.nextConsumer)
+			_, err := New(receivertest.NewNopCreateSettings(), tt.args.config, tt.args.nextConsumer)
 			assert.Equal(t, tt.wantErr, err)
 		})
 	}
@@ -82,7 +81,7 @@ func TestStatsdReceiver_Flush(t *testing.T) {
 	ctx := context.Background()
 	cfg := createDefaultConfig().(*Config)
 	nextConsumer := consumertest.NewNop()
-	rcv, err := New(componenttest.NewNopReceiverCreateSettings(), *cfg, nextConsumer)
+	rcv, err := New(receivertest.NewNopCreateSettings(), *cfg, nextConsumer)
 	assert.NoError(t, err)
 	r := rcv.(*statsdReceiver)
 	var metrics = pmetric.NewMetrics()
@@ -107,7 +106,6 @@ func Test_statsdreceiver_EndToEnd(t *testing.T) {
 			name: "default_config with 9s interval",
 			configFn: func() *Config {
 				return &Config{
-					ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 					NetAddr: confignet.NetAddr{
 						Endpoint:  defaultBindEndpoint,
 						Transport: defaultTransport,
@@ -127,7 +125,7 @@ func Test_statsdreceiver_EndToEnd(t *testing.T) {
 			cfg := tt.configFn()
 			cfg.NetAddr.Endpoint = addr
 			sink := new(consumertest.MetricsSink)
-			rcv, err := New(componenttest.NewNopReceiverCreateSettings(), *cfg, sink)
+			rcv, err := New(receivertest.NewNopCreateSettings(), *cfg, sink)
 			require.NoError(t, err)
 			r := rcv.(*statsdReceiver)
 

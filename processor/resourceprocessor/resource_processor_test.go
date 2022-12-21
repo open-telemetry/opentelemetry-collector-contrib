@@ -20,12 +20,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/processor/processortest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
@@ -33,7 +32,6 @@ import (
 
 var (
 	cfg = &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 		AttributesActions: []attraction.ActionKeyValue{
 			{Key: "cloud.availability_zone", Value: "zone-1", Action: attraction.UPSERT},
 			{Key: "k8s.cluster.name", FromAttribute: "k8s-cluster", Action: attraction.INSERT},
@@ -82,7 +80,6 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 		{
 			name: "config_attributes_replacement",
 			config: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 				AttributesActions: []attraction.ActionKeyValue{
 					{Key: "k8s.cluster.name", FromAttribute: "k8s-cluster", Action: attraction.INSERT},
 					{Key: "k8s-cluster", Action: attraction.DELETE},
@@ -103,7 +100,7 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 			ttn := new(consumertest.TracesSink)
 
 			factory := NewFactory()
-			rtp, err := factory.CreateTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), tt.config, ttn)
+			rtp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), tt.config, ttn)
 			require.NoError(t, err)
 			assert.True(t, rtp.Capabilities().MutatesData)
 
@@ -118,7 +115,7 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 
 			// Test metrics consumer
 			tmn := new(consumertest.MetricsSink)
-			rmp, err := factory.CreateMetricsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), tt.config, tmn)
+			rmp, err := factory.CreateMetricsProcessor(context.Background(), processortest.NewNopCreateSettings(), tt.config, tmn)
 			require.NoError(t, err)
 			assert.True(t, rtp.Capabilities().MutatesData)
 
@@ -133,7 +130,7 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 
 			// Test logs consumer
 			tln := new(consumertest.LogsSink)
-			rlp, err := factory.CreateLogsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), tt.config, tln)
+			rlp, err := factory.CreateLogsProcessor(context.Background(), processortest.NewNopCreateSettings(), tt.config, tln)
 			require.NoError(t, err)
 			assert.True(t, rtp.Capabilities().MutatesData)
 
@@ -147,29 +144,6 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 			assert.EqualValues(t, wantLogData, logs[0])
 		})
 	}
-}
-
-func TestResourceProcessorError(t *testing.T) {
-	badCfg := &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
-		AttributesActions: nil,
-	}
-
-	// Test traces consumer
-	factory := NewFactory()
-	rtp, err := factory.CreateTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), badCfg, consumertest.NewNop())
-	require.Error(t, err)
-	require.Nil(t, rtp)
-
-	// Test metrics consumer
-	rmp, err := factory.CreateMetricsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), badCfg, consumertest.NewNop())
-	require.Error(t, err)
-	require.Nil(t, rmp)
-
-	// Test logs consumer
-	rlp, err := factory.CreateLogsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), badCfg, consumertest.NewNop())
-	require.Error(t, err)
-	require.Nil(t, rlp)
 }
 
 func generateTraceData(attributes map[string]string) ptrace.Traces {

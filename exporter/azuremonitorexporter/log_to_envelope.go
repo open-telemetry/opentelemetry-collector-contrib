@@ -21,6 +21,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
 type logPacker struct {
@@ -41,8 +43,8 @@ func (packer *logPacker) LogRecordToEnvelope(logRecord plog.LogRecord) *contract
 
 	messageData.Message = logRecord.Body().Str()
 
-	envelope.Tags[contracts.OperationId] = logRecord.TraceID().HexString()
-	envelope.Tags[contracts.OperationParentId] = logRecord.SpanID().HexString()
+	envelope.Tags[contracts.OperationId] = traceutil.TraceIDToHexOrEmptyString(logRecord.TraceID())
+	envelope.Tags[contracts.OperationParentId] = traceutil.SpanIDToHexOrEmptyString(logRecord.SpanID())
 
 	envelope.Name = messageData.EnvelopeName("")
 

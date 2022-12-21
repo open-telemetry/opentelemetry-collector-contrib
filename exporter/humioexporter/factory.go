@@ -19,8 +19,9 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -28,29 +29,28 @@ const (
 	// The key used to refer to this exporter
 	typeStr = "humio"
 	// The stability level of the exporter.
-	stability = component.StabilityLevelBeta
+	stability = component.StabilityLevelDeprecated
 )
 
 // NewFactory creates an exporter factory for Humio
-func NewFactory() component.ExporterFactory {
-	return component.NewExporterFactory(
+func NewFactory() exporter.Factory {
+	return exporter.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporter(createTracesExporter, stability),
+		exporter.WithTraces(createTracesExporter, stability),
 	)
 }
 
 // Provides a struct with default values for all relevant configuration settings
-func createDefaultConfig() config.Exporter {
+func createDefaultConfig() component.Config {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 
 		// Default settings inherited from exporter helper
 		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
 		RetrySettings: exporterhelper.NewDefaultRetrySettings(),
 
 		HTTPClientSettings: confighttp.HTTPClientSettings{
-			Headers: map[string]string{},
+			Headers: map[string]configopaque.String{},
 		},
 
 		// Settings specific to the Humio exporter
@@ -65,9 +65,9 @@ func createDefaultConfig() config.Exporter {
 // Creates a new trace exporter for Humio
 func createTracesExporter(
 	ctx context.Context,
-	set component.ExporterCreateSettings,
-	config config.Exporter,
-) (component.TracesExporter, error) {
+	set exporter.CreateSettings,
+	config component.Config,
+) (exporter.Traces, error) {
 	if config == nil {
 		return nil, errors.New("missing config")
 	}

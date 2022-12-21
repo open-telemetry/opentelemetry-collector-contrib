@@ -40,7 +40,7 @@ func TestMissingClientConfigManagerHTTP(t *testing.T) {
 func TestStartAndStopHTTP(t *testing.T) {
 	// prepare
 	srvSettings := confighttp.HTTPServerSettings{
-		Endpoint: ":0",
+		Endpoint: "127.0.0.1:0",
 	}
 	s, err := NewHTTP(componenttest.NewNopTelemetrySettings(), srvSettings, &mockCfgMgr{})
 	require.NoError(t, err)

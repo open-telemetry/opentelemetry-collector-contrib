@@ -21,7 +21,7 @@ import (
 	"runtime"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	exp "go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 	"google.golang.org/grpc"
@@ -42,7 +42,7 @@ type tracesExporter struct {
 	userAgent string
 }
 
-func newTracesExporter(cfg config.Exporter, set component.ExporterCreateSettings) (*tracesExporter, error) {
+func newTracesExporter(cfg component.Config, set exp.CreateSettings) (*tracesExporter, error) {
 	oCfg, ok := cfg.(*Config)
 	if !ok {
 		return nil, fmt.Errorf("invalid config exporter, expect type: %T, got: %T", &Config{}, cfg)
@@ -57,14 +57,8 @@ func newTracesExporter(cfg config.Exporter, set component.ExporterCreateSettings
 	return &tracesExporter{config: oCfg, settings: set.TelemetrySettings, userAgent: userAgent}, nil
 }
 
-func (e *tracesExporter) start(_ context.Context, host component.Host) error {
-	dialOpts, err := e.config.Traces.ToDialOptions(host, e.settings)
-	if err != nil {
-		return err
-	}
-	dialOpts = append(dialOpts, grpc.WithUserAgent(e.userAgent))
-
-	if e.clientConn, err = grpc.Dial(e.config.Traces.SanitizedEndpoint(), dialOpts...); err != nil {
+func (e *tracesExporter) start(ctx context.Context, host component.Host) (err error) {
+	if e.clientConn, err = e.config.Traces.ToClientConn(ctx, host, e.settings, grpc.WithUserAgent(e.userAgent)); err != nil {
 		return err
 	}
 

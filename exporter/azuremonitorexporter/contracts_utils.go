@@ -21,10 +21,11 @@ import (
 )
 
 const (
-	instrumentibraryName     string = "instrumentationlibrary.name"
-	instrumentLibraryVersion string = "instrumentationlibrary.version"
+	instrumentationLibraryName    string = "instrumentationlibrary.name"
+	instrumentationLibraryVersion string = "instrumentationlibrary.version"
 )
 
+// Applies resource attributes values to data properties
 func applyResourcesToDataProperties(dataProperties map[string]string, resourceAttributes pcommon.Map) {
 	// Copy all the resource labels into the base data properties. Resource values are always strings
 	resourceAttributes.Range(func(k string, v pcommon.Value) bool {

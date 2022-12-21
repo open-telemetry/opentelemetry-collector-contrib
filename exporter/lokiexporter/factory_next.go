@@ -17,11 +17,11 @@ package lokiexporter // import "github.com/open-telemetry/opentelemetry-collecto
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
-func createNextLogsExporter(ctx context.Context, set component.ExporterCreateSettings, cfg *Config) (component.LogsExporter, error) {
+func createNextLogsExporter(ctx context.Context, set exporter.CreateSettings, cfg *Config) (exporter.Logs, error) {
 	exp := newNextExporter(cfg, set.TelemetrySettings)
 
 	return exporterhelper.NewLogsExporter(

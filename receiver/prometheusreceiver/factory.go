@@ -20,8 +20,9 @@ import (
 
 	_ "github.com/prometheus/prometheus/discovery/install" // init() of this package registers service discovery impl.
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/receiver"
 )
 
 // This file implements config for Prometheus receiver.
@@ -34,24 +35,22 @@ const (
 var errRenamingDisallowed = errors.New("metric renaming using metric_relabel_configs is disallowed")
 
 // NewFactory creates a new Prometheus receiver factory.
-func NewFactory() component.ReceiverFactory {
-	return component.NewReceiverFactory(
+func NewFactory() receiver.Factory {
+	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver, stability))
+		receiver.WithMetrics(createMetricsReceiver, stability))
 }
 
-func createDefaultConfig() config.Receiver {
-	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-	}
+func createDefaultConfig() component.Config {
+	return &Config{}
 }
 
 func createMetricsReceiver(
 	_ context.Context,
-	set component.ReceiverCreateSettings,
-	cfg config.Receiver,
+	set receiver.CreateSettings,
+	cfg component.Config,
 	nextConsumer consumer.Metrics,
-) (component.MetricsReceiver, error) {
-	return newPrometheusReceiver(set, cfg.(*Config), nextConsumer), nil
+) (receiver.Metrics, error) {
+	return newPrometheusReceiver(set, cfg.(*Config), nextConsumer, featuregate.GetRegistry()), nil
 }

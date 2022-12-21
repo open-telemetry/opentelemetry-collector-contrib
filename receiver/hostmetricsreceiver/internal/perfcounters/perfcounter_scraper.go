@@ -24,7 +24,7 @@ import (
 
 	"github.com/leoluk/perflib_exporter/perflib"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 )
 
 const totalInstanceName = "_Total"

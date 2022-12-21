@@ -15,6 +15,7 @@
 package splunkhecexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
 
 import (
+	"encoding/hex"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -44,11 +45,11 @@ func mapLogRecordToSplunkEvent(res pcommon.Resource, lr plog.LogRecord, config *
 	hostKey := config.HecToOtelAttrs.Host
 	severityTextKey := config.HecFields.SeverityText
 	severityNumberKey := config.HecFields.SeverityNumber
-	if spanID := lr.SpanID().HexString(); spanID != "" {
-		fields[spanIDFieldKey] = spanID
+	if spanID := lr.SpanID(); !spanID.IsEmpty() {
+		fields[spanIDFieldKey] = hex.EncodeToString(spanID[:])
 	}
-	if traceID := lr.TraceID().HexString(); traceID != "" {
-		fields[traceIDFieldKey] = traceID
+	if traceID := lr.TraceID(); !traceID.IsEmpty() {
+		fields[traceIDFieldKey] = hex.EncodeToString(traceID[:])
 	}
 	if lr.SeverityText() != "" {
 		fields[severityTextKey] = lr.SeverityText()

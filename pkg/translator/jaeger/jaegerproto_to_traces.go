@@ -222,7 +222,7 @@ func jSpanToInternal(span *model.Span, dest ptrace.Span) {
 	attrs := dest.Attributes()
 	attrs.EnsureCapacity(len(span.Tags))
 	jTagsToInternalAttributes(span.Tags, attrs)
-	setInternalSpanStatus(attrs, dest.Status())
+	setInternalSpanStatus(attrs, dest)
 	if spanKindAttr, ok := attrs.Get(tracetranslator.TagSpanKind); ok {
 		dest.SetKind(jSpanKindToInternal(spanKindAttr.Str()))
 		attrs.Remove(tracetranslator.TagSpanKind)
@@ -258,12 +258,13 @@ func jTagsToInternalAttributes(tags []model.KeyValue, dest pcommon.Map) {
 	}
 }
 
-func setInternalSpanStatus(attrs pcommon.Map, dest ptrace.Status) {
+func setInternalSpanStatus(attrs pcommon.Map, span ptrace.Span) {
+	dest := span.Status()
 	statusCode := ptrace.StatusCodeUnset
 	statusMessage := ""
 	statusExists := false
 
-	if errorVal, ok := attrs.Get(tracetranslator.TagError); ok {
+	if errorVal, ok := attrs.Get(tracetranslator.TagError); ok && errorVal.Type() == pcommon.ValueTypeBool {
 		if errorVal.Bool() {
 			statusCode = ptrace.StatusCodeError
 			attrs.Remove(tracetranslator.TagError)
@@ -302,7 +303,7 @@ func setInternalSpanStatus(attrs pcommon.Map, dest ptrace.Status) {
 		// Fallback to introspecting if this span represents a failed HTTP
 		// request or response, but again, only do so if the `error` tag was
 		// not set to true and no explicit status was sent.
-		if code, err := getStatusCodeFromHTTPStatusAttr(httpCodeAttr); err == nil {
+		if code, err := getStatusCodeFromHTTPStatusAttr(httpCodeAttr, span.Kind()); err == nil {
 			if code != ptrace.StatusCodeUnset {
 				statusExists = true
 				statusCode = code
@@ -353,10 +354,23 @@ func codeFromAttr(attrVal pcommon.Value) (int64, error) {
 	return val, nil
 }
 
-func getStatusCodeFromHTTPStatusAttr(attrVal pcommon.Value) (ptrace.StatusCode, error) {
+func getStatusCodeFromHTTPStatusAttr(attrVal pcommon.Value, kind ptrace.SpanKind) (ptrace.StatusCode, error) {
 	statusCode, err := codeFromAttr(attrVal)
 	if err != nil {
 		return ptrace.StatusCodeUnset, err
+	}
+
+	// For HTTP status codes in the 4xx range span status MUST be left unset
+	// in case of SpanKind.SERVER and MUST be set to Error in case of SpanKind.CLIENT.
+	// For HTTP status codes in the 5xx range, as well as any other code the client
+	// failed to interpret, span status MUST be set to Error.
+	if statusCode >= 400 && statusCode < 500 {
+		switch kind {
+		case ptrace.SpanKindClient:
+			return ptrace.StatusCodeError, nil
+		case ptrace.SpanKindServer:
+			return ptrace.StatusCodeUnset, nil
+		}
 	}
 
 	return tracetranslator.StatusCodeFromHTTP(statusCode), nil

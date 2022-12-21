@@ -17,7 +17,7 @@ package azuremonitorexporter // import "github.com/open-telemetry/opentelemetry-
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
@@ -52,7 +52,7 @@ func (exporter *metricExporter) onMetricData(context context.Context, metricData
 }
 
 // Returns a new instance of the meric exporter
-func newMetricsExporter(config *Config, transportChannel transportChannel, set component.ExporterCreateSettings) (component.MetricsExporter, error) {
+func newMetricsExporter(config *Config, transportChannel transportChannel, set exporter.CreateSettings) (exporter.Metrics, error) {
 	exporter := &metricExporter{
 		config:           config,
 		transportChannel: transportChannel,

@@ -16,10 +16,12 @@ package loki // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"fmt"
+	"strings"
 
-	"github.com/grafana/loki/pkg/logproto"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki/logproto"
 )
 
 type PushRequest struct {
@@ -33,6 +35,10 @@ type PushReport struct {
 	NumSubmitted int
 	NumDropped   int
 }
+
+const (
+	levelAttributeName = "level"
+)
 
 // LogsToLokiRequests converts a Logs pipeline data into Loki PushRequests grouped
 // by tenant. The tenant value is inferred from the `loki.tenant` resource or log
@@ -60,6 +66,7 @@ func LogsToLokiRequests(ld plog.Logs) map[string]PushRequest {
 
 		for j := 0; j < ills.Len(); j++ {
 			logs := ills.At(j).LogRecords()
+			scope := ills.At(j).Scope()
 			for k := 0; k < logs.Len(); k++ {
 
 				// similarly, we may remove attributes, so change only our version
@@ -69,6 +76,9 @@ func LogsToLokiRequests(ld plog.Logs) map[string]PushRequest {
 				// we may remove attributes, so we make a copy and change our version
 				resource := pcommon.NewResource()
 				rls.At(i).Resource().CopyTo(resource)
+
+				// adds level attribute from log.severityNumber
+				addLogLevelAttributeAndHint(log)
 
 				// resolve tenant and get/create a push request group
 				tenant := getTenantFromTenantHint(log.Attributes(), resource.Attributes())
@@ -90,7 +100,7 @@ func LogsToLokiRequests(ld plog.Logs) map[string]PushRequest {
 
 				// create the stream name based on the labels
 				labels := mergedLabels.String()
-				entry, err := convertLogToLokiEntry(log, resource, format)
+				entry, err := convertLogToLokiEntry(log, resource, format, scope)
 				if err != nil {
 					// Couldn't convert so dropping log.
 					group.report.Errors = append(group.report.Errors, fmt.Errorf("failed to convert, dropping log: %w", err))
@@ -196,6 +206,7 @@ func LogsToLoki(ld plog.Logs) (*logproto.PushRequest, *PushReport) {
 		ills := rls.At(i).ScopeLogs()
 
 		for j := 0; j < ills.Len(); j++ {
+			scope := ills.At(j).Scope()
 			logs := ills.At(j).LogRecords()
 			for k := 0; k < logs.Len(); k++ {
 
@@ -207,6 +218,9 @@ func LogsToLoki(ld plog.Logs) (*logproto.PushRequest, *PushReport) {
 				resource := pcommon.NewResource()
 				rls.At(i).Resource().CopyTo(resource)
 
+				// adds level attribute from log.severityNumber
+				addLogLevelAttributeAndHint(log)
+
 				format := getFormatFromFormatHint(log.Attributes(), resource.Attributes())
 
 				mergedLabels := convertAttributesAndMerge(log.Attributes(), resource.Attributes())
@@ -217,7 +231,7 @@ func LogsToLoki(ld plog.Logs) (*logproto.PushRequest, *PushReport) {
 				// create the stream name based on the labels
 				labels := mergedLabels.String()
 
-				entry, err := convertLogToLokiEntry(log, resource, format)
+				entry, err := convertLogToLokiEntry(log, resource, format, scope)
 				if err != nil {
 					// Couldn't convert so dropping log.
 					report.Errors = append(report.Errors, fmt.Errorf("failed to convert, dropping log: %w", err))
@@ -251,4 +265,51 @@ func LogsToLoki(ld plog.Logs) (*logproto.PushRequest, *PushReport) {
 	}
 
 	return pr, report
+}
+
+func addLogLevelAttributeAndHint(log plog.LogRecord) {
+	if log.SeverityNumber() == plog.SeverityNumberUnspecified {
+		return
+	}
+	addHint(log)
+	if _, found := log.Attributes().Get(levelAttributeName); !found {
+		level := severityNumberToLevel[log.SeverityNumber().String()]
+		log.Attributes().PutStr(levelAttributeName, level)
+	}
+}
+
+func addHint(log plog.LogRecord) {
+	if value, found := log.Attributes().Get(hintAttributes); found && !strings.Contains(value.AsString(), levelAttributeName) {
+		log.Attributes().PutStr(hintAttributes, fmt.Sprintf("%s,%s", value.AsString(), levelAttributeName))
+	} else {
+		log.Attributes().PutStr(hintAttributes, levelAttributeName)
+	}
+}
+
+var severityNumberToLevel = map[string]string{
+	plog.SeverityNumberUnspecified.String(): "UNSPECIFIED",
+	plog.SeverityNumberTrace.String():       "TRACE",
+	plog.SeverityNumberTrace2.String():      "TRACE2",
+	plog.SeverityNumberTrace3.String():      "TRACE3",
+	plog.SeverityNumberTrace4.String():      "TRACE4",
+	plog.SeverityNumberDebug.String():       "DEBUG",
+	plog.SeverityNumberDebug2.String():      "DEBUG2",
+	plog.SeverityNumberDebug3.String():      "DEBUG3",
+	plog.SeverityNumberDebug4.String():      "DEBUG4",
+	plog.SeverityNumberInfo.String():        "INFO",
+	plog.SeverityNumberInfo2.String():       "INFO2",
+	plog.SeverityNumberInfo3.String():       "INFO3",
+	plog.SeverityNumberInfo4.String():       "INFO4",
+	plog.SeverityNumberWarn.String():        "WARN",
+	plog.SeverityNumberWarn2.String():       "WARN2",
+	plog.SeverityNumberWarn3.String():       "WARN3",
+	plog.SeverityNumberWarn4.String():       "WARN4",
+	plog.SeverityNumberError.String():       "ERROR",
+	plog.SeverityNumberError2.String():      "ERROR2",
+	plog.SeverityNumberError3.String():      "ERROR3",
+	plog.SeverityNumberError4.String():      "ERROR4",
+	plog.SeverityNumberFatal.String():       "FATAL",
+	plog.SeverityNumberFatal2.String():      "FATAL2",
+	plog.SeverityNumberFatal3.String():      "FATAL3",
+	plog.SeverityNumberFatal4.String():      "FATAL4",
 }

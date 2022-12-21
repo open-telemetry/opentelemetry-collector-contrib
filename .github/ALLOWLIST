@@ -19,7 +19,6 @@
 
 ## COMMON & SHARED components
 internal/common
-internal/containertest
 
 ## DEPRECATED components
 extension/fluentbitextension
@@ -27,6 +26,3 @@ extension/fluentbitextension
 ## UNMANTAINED components
 extension/httpforwarder
 receiver/dotnetdiagnosticsreceiver
-
-# OTHER; Looking for an owner
-pkg/experimentalmetricmetadata

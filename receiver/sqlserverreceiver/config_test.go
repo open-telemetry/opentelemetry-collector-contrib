@@ -20,7 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
@@ -48,8 +48,7 @@ func TestValidate(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			actualErr := tc.cfg.Validate()
-			require.NoError(t, actualErr)
+			require.NoError(t, component.ValidateConfig(tc.cfg))
 		})
 	}
 }
@@ -62,8 +61,8 @@ func TestLoadConfig(t *testing.T) {
 
 	sub, err := cm.Sub("sqlserver")
 	require.NoError(t, err)
-	require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-	assert.NoError(t, cfg.Validate())
+	assert.NoError(t, component.ValidateConfig(cfg))
 	assert.Equal(t, factory.CreateDefaultConfig(), cfg)
 }

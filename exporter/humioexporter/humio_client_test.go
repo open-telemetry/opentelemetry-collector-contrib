@@ -28,15 +28,14 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 )
 
 func makeClient(t *testing.T, host string, compression bool) exporterClient {
 	cfg := &Config{
-		ExporterSettings:   config.NewExporterSettings(config.NewComponentID(typeStr)),
 		DisableCompression: !compression,
 		Tag:                TagNone,
 		HTTPClientSettings: confighttp.HTTPClientSettings{
@@ -49,7 +48,7 @@ func makeClient(t *testing.T, host string, compression bool) exporterClient {
 			IngestToken: "traces-token",
 		},
 	}
-	err := cfg.Validate()
+	err := component.ValidateConfig(cfg)
 	require.NoError(t, err)
 
 	err = cfg.sanitize()

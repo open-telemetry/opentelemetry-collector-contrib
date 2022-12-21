@@ -21,7 +21,7 @@ import (
 	"strconv"
 	"time"
 
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -254,7 +254,7 @@ type FileDataProvider struct {
 
 // NewFileDataProvider creates an instance of FileDataProvider which generates test data
 // loaded from a file.
-func NewFileDataProvider(filePath string, dataType config.DataType) (*FileDataProvider, error) {
+func NewFileDataProvider(filePath string, dataType component.DataType) (*FileDataProvider, error) {
 	buf, err := os.ReadFile(filepath.Clean(filePath))
 	if err != nil {
 		return nil, err
@@ -263,19 +263,19 @@ func NewFileDataProvider(filePath string, dataType config.DataType) (*FileDataPr
 	dp := &FileDataProvider{}
 	// Load the message from the file and count the data points.
 	switch dataType {
-	case config.TracesDataType:
+	case component.DataTypeTraces:
 		unmarshaler := &ptrace.JSONUnmarshaler{}
 		if dp.traces, err = unmarshaler.UnmarshalTraces(buf); err != nil {
 			return nil, err
 		}
 		dp.ItemsPerBatch = dp.traces.SpanCount()
-	case config.MetricsDataType:
+	case component.DataTypeMetrics:
 		unmarshaler := &pmetric.JSONUnmarshaler{}
 		if dp.metrics, err = unmarshaler.UnmarshalMetrics(buf); err != nil {
 			return nil, err
 		}
 		dp.ItemsPerBatch = dp.metrics.DataPointCount()
-	case config.LogsDataType:
+	case component.DataTypeLogs:
 		unmarshaler := &plog.JSONUnmarshaler{}
 		if dp.logs, err = unmarshaler.UnmarshalLogs(buf); err != nil {
 			return nil, err

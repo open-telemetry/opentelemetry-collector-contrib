@@ -18,25 +18,22 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-
-	"go.opentelemetry.io/collector/config"
 )
 
 // Config defines configuration for Azure Data Explorer Exporter
 type Config struct {
-	config.ExporterSettings `mapstructure:",squash"`
-	ClusterURI              string `mapstructure:"cluster_uri"`
-	ApplicationID           string `mapstructure:"application_id"`
-	ApplicationKey          string `mapstructure:"application_key"`
-	TenantID                string `mapstructure:"tenant_id"`
-	Database                string `mapstructure:"db_name"`
-	MetricTable             string `mapstructure:"metrics_table_name"`
-	LogTable                string `mapstructure:"logs_table_name"`
-	TraceTable              string `mapstructure:"traces_table_name"`
-	MetricTableMapping      string `mapstructure:"metrics_table_json_mapping"`
-	LogTableMapping         string `mapstructure:"logs_table_json_mapping"`
-	TraceTableMapping       string `mapstructure:"traces_table_json_mapping"`
-	IngestionType           string `mapstructure:"ingestion_type"`
+	ClusterURI         string `mapstructure:"cluster_uri"`
+	ApplicationID      string `mapstructure:"application_id"`
+	ApplicationKey     string `mapstructure:"application_key"`
+	TenantID           string `mapstructure:"tenant_id"`
+	Database           string `mapstructure:"db_name"`
+	MetricTable        string `mapstructure:"metrics_table_name"`
+	LogTable           string `mapstructure:"logs_table_name"`
+	TraceTable         string `mapstructure:"traces_table_name"`
+	MetricTableMapping string `mapstructure:"metrics_table_json_mapping"`
+	LogTableMapping    string `mapstructure:"logs_table_json_mapping"`
+	TraceTableMapping  string `mapstructure:"traces_table_json_mapping"`
+	IngestionType      string `mapstructure:"ingestion_type"`
 }
 
 // Validate checks if the exporter configuration is valid

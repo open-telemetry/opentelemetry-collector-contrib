@@ -23,38 +23,35 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
-	assert.NoError(t, configtest.CheckConfigStruct(cfg))
+	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
 func TestCreateMetricsExporterError(t *testing.T) {
 	cfg := &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-		FormatType:       formatTypeJSON,
+		FormatType: formatTypeJSON,
 	}
 	_, err := createMetricsExporter(
 		context.Background(),
-		componenttest.NewNopExporterCreateSettings(),
+		exportertest.NewNopCreateSettings(),
 		cfg)
 	assert.Error(t, err)
 }
 
 func TestCreateMetricsExporter(t *testing.T) {
 	cfg := &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-		FormatType:       formatTypeJSON,
-		Path:             tempFileName(t),
+		FormatType: formatTypeJSON,
+		Path:       tempFileName(t),
 	}
 	exp, err := createMetricsExporter(
 		context.Background(),
-		componenttest.NewNopExporterCreateSettings(),
+		exportertest.NewNopCreateSettings(),
 		cfg)
 	assert.NoError(t, err)
 	require.NotNil(t, exp)
@@ -62,13 +59,12 @@ func TestCreateMetricsExporter(t *testing.T) {
 
 func TestCreateTracesExporter(t *testing.T) {
 	cfg := &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-		FormatType:       formatTypeJSON,
-		Path:             tempFileName(t),
+		FormatType: formatTypeJSON,
+		Path:       tempFileName(t),
 	}
 	exp, err := createTracesExporter(
 		context.Background(),
-		componenttest.NewNopExporterCreateSettings(),
+		exportertest.NewNopCreateSettings(),
 		cfg)
 	assert.NoError(t, err)
 	require.NotNil(t, exp)
@@ -76,25 +72,23 @@ func TestCreateTracesExporter(t *testing.T) {
 
 func TestCreateTracesExporterError(t *testing.T) {
 	cfg := &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-		FormatType:       formatTypeJSON,
+		FormatType: formatTypeJSON,
 	}
 	_, err := createTracesExporter(
 		context.Background(),
-		componenttest.NewNopExporterCreateSettings(),
+		exportertest.NewNopCreateSettings(),
 		cfg)
 	assert.Error(t, err)
 }
 
 func TestCreateLogsExporter(t *testing.T) {
 	cfg := &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-		FormatType:       formatTypeJSON,
-		Path:             tempFileName(t),
+		FormatType: formatTypeJSON,
+		Path:       tempFileName(t),
 	}
 	exp, err := createLogsExporter(
 		context.Background(),
-		componenttest.NewNopExporterCreateSettings(),
+		exportertest.NewNopCreateSettings(),
 		cfg)
 	assert.NoError(t, err)
 	require.NotNil(t, exp)
@@ -102,12 +96,11 @@ func TestCreateLogsExporter(t *testing.T) {
 
 func TestCreateLogsExporterError(t *testing.T) {
 	cfg := &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-		FormatType:       formatTypeJSON,
+		FormatType: formatTypeJSON,
 	}
 	_, err := createLogsExporter(
 		context.Background(),
-		componenttest.NewNopExporterCreateSettings(),
+		exportertest.NewNopCreateSettings(),
 		cfg)
 	assert.Error(t, err)
 }

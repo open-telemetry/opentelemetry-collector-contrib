@@ -11,11 +11,13 @@ resource_attributes:
 attributes:
   state:
     description: State of followers
+    type: string
     enum:
       - synced
       - unsynced
   direction:
     description: State of a packet based on io direction.
+    type: string
     enum:
       - received
       - sent

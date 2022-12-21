@@ -98,44 +98,16 @@ type Converter struct {
 	logger *zap.Logger
 }
 
-type ConverterOption interface {
-	apply(*Converter)
-}
-
-type optionFunc func(*Converter)
-
-func (f optionFunc) apply(c *Converter) {
-	f(c)
-}
-
-func WithLogger(logger *zap.Logger) ConverterOption {
-	return optionFunc(func(c *Converter) {
-		c.logger = logger
-	})
-}
-
-func WithWorkerCount(workerCount int) ConverterOption {
-	return optionFunc(func(c *Converter) {
-		c.workerCount = workerCount
-	})
-}
-
-func NewConverter(opts ...ConverterOption) *Converter {
-	c := &Converter{
+func NewConverter(logger *zap.Logger) *Converter {
+	return &Converter{
 		workerChan:      make(chan []*entry.Entry),
 		workerCount:     int(math.Max(1, float64(runtime.NumCPU()/4))),
 		aggregationChan: make(chan []workerItem),
 		pLogsChan:       make(chan plog.Logs),
 		stopChan:        make(chan struct{}),
-		logger:          zap.NewNop(),
 		flushChan:       make(chan plog.Logs),
+		logger:          logger,
 	}
-
-	for _, opt := range opts {
-		opt.apply(c)
-	}
-
-	return c
 }
 
 func (c *Converter) Start() {

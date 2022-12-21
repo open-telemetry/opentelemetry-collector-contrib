@@ -17,15 +17,12 @@ package k8sobserver // import "github.com/open-telemetry/opentelemetry-collector
 import (
 	"fmt"
 
-	"go.opentelemetry.io/collector/config"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
 
 // Config defines configuration for k8s attributes processor.
 type Config struct {
-	config.ExtensionSettings `mapstructure:",squash"`
-	k8sconfig.APIConfig      `mapstructure:",squash"`
+	k8sconfig.APIConfig `mapstructure:",squash"`
 
 	// Node is the node name to limit the discovery of pod, port, and node endpoints.
 	// Providing no value (the default) results in discovering endpoints for all available nodes.
@@ -55,5 +52,5 @@ func (cfg *Config) Validate() error {
 	if !cfg.ObservePods && !cfg.ObserveNodes {
 		return fmt.Errorf("one of observe_pods and observe_nodes must be true")
 	}
-	return cfg.APIConfig.Validate()
+	return nil
 }

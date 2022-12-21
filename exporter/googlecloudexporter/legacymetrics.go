@@ -28,7 +28,7 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"go.opencensus.io/plugin/ocgrpc"
 	"go.opencensus.io/stats/view"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -85,7 +85,7 @@ func generateClientOptions(cfg *LegacyConfig) ([]option.ClientOption, error) {
 
 var once sync.Once
 
-func newLegacyGoogleCloudMetricsExporter(cfg *LegacyConfig, set component.ExporterCreateSettings) (component.MetricsExporter, error) {
+func newLegacyGoogleCloudMetricsExporter(cfg *LegacyConfig, set exporter.CreateSettings) (exporter.Metrics, error) {
 	// register view for self-observability
 	once.Do(func() {
 		if err := view.Register(viewPointCount); err != nil {

@@ -25,16 +25,17 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/transport"
 )
 
-var _ component.MetricsReceiver = (*statsdReceiver)(nil)
+var _ receiver.Metrics = (*statsdReceiver)(nil)
 
-// statsdReceiver implements the component.MetricsReceiver for StatsD protocol.
+// statsdReceiver implements the receiver.Metrics for StatsD protocol.
 type statsdReceiver struct {
-	settings component.ReceiverCreateSettings
+	settings receiver.CreateSettings
 	config   *Config
 
 	server       transport.Server
@@ -46,10 +47,10 @@ type statsdReceiver struct {
 
 // New creates the StatsD receiver with the given parameters.
 func New(
-	set component.ReceiverCreateSettings,
+	set receiver.CreateSettings,
 	config Config,
 	nextConsumer consumer.Metrics,
-) (component.MetricsReceiver, error) {
+) (receiver.Metrics, error) {
 	if nextConsumer == nil {
 		return nil, component.ErrNilNextConsumer
 	}
@@ -63,12 +64,17 @@ func New(
 		return nil, err
 	}
 
+	rep, err := newReporter(set)
+	if err != nil {
+		return nil, err
+	}
+
 	r := &statsdReceiver{
 		settings:     set,
 		config:       &config,
 		nextConsumer: nextConsumer,
 		server:       server,
-		reporter:     newReporter(config.ID(), set),
+		reporter:     rep,
 		parser:       &protocol.StatsDParser{},
 	}
 	return r, nil
@@ -81,7 +87,7 @@ func buildTransportServer(config Config) (transport.Server, error) {
 		return transport.NewUDPServer(config.NetAddr.Endpoint)
 	}
 
-	return nil, fmt.Errorf("unsupported transport %q for receiver %v", config.NetAddr.Transport, config.ID())
+	return nil, fmt.Errorf("unsupported transport %q", config.NetAddr.Transport)
 }
 
 // Start starts a UDP server that can process StatsD messages.

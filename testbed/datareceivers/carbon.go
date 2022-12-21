@@ -18,10 +18,11 @@ import (
 	"context"
 	"fmt"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
@@ -31,7 +32,7 @@ import (
 // CarbonDataReceiver implements Carbon format receiver.
 type CarbonDataReceiver struct {
 	testbed.DataReceiverBase
-	receiver component.MetricsReceiver
+	receiver receiver.Metrics
 }
 
 // Ensure CarbonDataReceiver implements MetricDataSender.
@@ -45,7 +46,7 @@ func NewCarbonDataReceiver(port int) *CarbonDataReceiver {
 
 // Start the receiver.
 func (cr *CarbonDataReceiver) Start(_ consumer.Traces, mc consumer.Metrics, _ consumer.Logs) error {
-	addr := fmt.Sprintf("localhost:%d", cr.Port)
+	addr := fmt.Sprintf("127.0.0.1:%d", cr.Port)
 	config := carbonreceiver.Config{
 		NetAddr: confignet.NetAddr{
 			Endpoint: addr,
@@ -56,7 +57,7 @@ func (cr *CarbonDataReceiver) Start(_ consumer.Traces, mc consumer.Metrics, _ co
 		},
 	}
 	var err error
-	cr.receiver, err = carbonreceiver.New(componenttest.NewNopReceiverCreateSettings(), config, mc)
+	cr.receiver, err = carbonreceiver.New(receivertest.NewNopCreateSettings(), config, mc)
 	if err != nil {
 		return err
 	}
@@ -74,7 +75,7 @@ func (cr *CarbonDataReceiver) GenConfigYAMLStr() string {
 	// Note that this generates an exporter config for agent.
 	return fmt.Sprintf(`
   carbon:
-    endpoint: "localhost:%d"`, cr.Port)
+    endpoint: "127.0.0.1:%d"`, cr.Port)
 }
 
 // ProtocolName returns protocol name as it is specified in Collector config.

@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 )
 
 // MetricSettings provides common settings for a particular metric.
@@ -322,15 +323,15 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, options ...metricBuilderOption) *MetricsBuilder {
+func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                      pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                  pmetric.NewMetrics(),
-		buildInfo:                      buildInfo,
-		metricNginxConnectionsAccepted: newMetricNginxConnectionsAccepted(settings.NginxConnectionsAccepted),
-		metricNginxConnectionsCurrent:  newMetricNginxConnectionsCurrent(settings.NginxConnectionsCurrent),
-		metricNginxConnectionsHandled:  newMetricNginxConnectionsHandled(settings.NginxConnectionsHandled),
-		metricNginxRequests:            newMetricNginxRequests(settings.NginxRequests),
+		buildInfo:                      settings.BuildInfo,
+		metricNginxConnectionsAccepted: newMetricNginxConnectionsAccepted(ms.NginxConnectionsAccepted),
+		metricNginxConnectionsCurrent:  newMetricNginxConnectionsCurrent(ms.NginxConnectionsCurrent),
+		metricNginxConnectionsHandled:  newMetricNginxConnectionsHandled(ms.NginxConnectionsHandled),
+		metricNginxRequests:            newMetricNginxRequests(ms.NginxRequests),
 	}
 	for _, op := range options {
 		op(mb)

@@ -15,6 +15,7 @@
 package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 
 import (
+	"context"
 	"errors"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -29,7 +30,7 @@ func TraceID[K any](bytes []byte) (ottl.ExprFunc[K], error) {
 	var idArr [16]byte
 	copy(idArr[:16], bytes)
 	id := pcommon.TraceID(idArr)
-	return func(K) (interface{}, error) {
+	return func(context.Context, K) (interface{}, error) {
 		return id, nil
 	}, nil
 }

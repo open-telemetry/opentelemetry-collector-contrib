@@ -17,11 +17,10 @@ package logstransformprocessor // import "github.com/open-telemetry/opentelemetr
 import (
 	"context"
 	"errors"
-	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
@@ -32,38 +31,33 @@ const (
 	// The value of "type" key in configuration.
 	typeStr = "logstransform"
 	// The stability level of the processor.
-	stability = component.StabilityLevelInDevelopment
+	stability = component.StabilityLevelDevelopment
 )
 
 var processorCapabilities = consumer.Capabilities{MutatesData: true}
 
 // NewFactory returns a new factory for the Logs Transform processor.
-func NewFactory() component.ProcessorFactory {
-	return component.NewProcessorFactory(
+func NewFactory() processor.Factory {
+	return processor.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithLogsProcessor(createLogsProcessor, stability))
+		processor.WithLogs(createLogsProcessor, stability))
 }
 
 // Note: This isn't a valid configuration because the processor would do no work.
-func createDefaultConfig() config.Processor {
+func createDefaultConfig() component.Config {
 	return &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 		BaseConfig: adapter.BaseConfig{
 			Operators: []operator.Config{},
-			Converter: adapter.ConverterConfig{
-				MaxFlushCount: 100,
-				FlushInterval: 100 * time.Millisecond,
-			},
 		},
 	}
 }
 
 func createLogsProcessor(
 	ctx context.Context,
-	set component.ProcessorCreateSettings,
-	cfg config.Processor,
-	nextConsumer consumer.Logs) (component.LogsProcessor, error) {
+	set processor.CreateSettings,
+	cfg component.Config,
+	nextConsumer consumer.Logs) (processor.Logs, error) {
 	pCfg, ok := cfg.(*Config)
 	if !ok {
 		return nil, errors.New("could not initialize logs transform processor")
@@ -74,7 +68,6 @@ func createLogsProcessor(
 	}
 
 	proc := &logsTransformProcessor{
-		id:     cfg.ID(),
 		logger: set.Logger,
 		config: pCfg,
 	}

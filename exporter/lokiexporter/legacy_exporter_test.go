@@ -26,19 +26,20 @@ import (
 	"time"
 
 	"github.com/golang/snappy"
-	"github.com/grafana/loki/pkg/logproto"
 	"github.com/prometheus/common/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter/internal/tenant"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki/logproto"
 )
 
 const (
@@ -64,6 +65,7 @@ func appendTestLogData(dest plog.Logs, numberOfLogs int, attributes map[string]i
 		ts := pcommon.Timestamp(int64(i) * time.Millisecond.Nanoseconds())
 		logRecord := sl.LogRecords().AppendEmpty()
 		logRecord.Body().SetStr("mylog")
+		//nolint:errcheck
 		logRecord.Attributes().FromRaw(attributes)
 		logRecord.SetTimestamp(ts)
 	}
@@ -117,7 +119,7 @@ func TestExporter_pushLogData(t *testing.T) {
 	genericConfig := &Config{
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "",
-			Headers: map[string]string{
+			Headers: map[string]configopaque.String{
 				"X-Custom-Header": "some_value",
 			},
 		},
@@ -566,6 +568,10 @@ func TestExporter_convertLogBodyToEntry(t *testing.T) {
 	res.Attributes().PutStr("host.name", "something")
 	res.Attributes().PutStr("pod.name", "something123")
 
+	scope := pcommon.NewInstrumentationScope()
+	scope.SetName("example-logger-name")
+	scope.SetVersion("v1")
+
 	lr := plog.NewLogRecord()
 	lr.Body().SetStr("Payment succeeded")
 	lr.SetTraceID([16]byte{1, 2, 3, 4})
@@ -583,11 +589,11 @@ func TestExporter_convertLogBodyToEntry(t *testing.T) {
 			ResourceAttributes: map[string]string{"pod.name": "pod.name"},
 		},
 	}, componenttest.NewNopTelemetrySettings())
-	entry, _ := exp.convertLogBodyToEntry(lr, res)
+	entry, _ := exp.convertLogBodyToEntry(lr, res, scope)
 
 	expEntry := &logproto.Entry{
 		Timestamp: time.Unix(0, int64(lr.Timestamp())),
-		Line:      "severity=DEBUG severityN=5 traceID=01020304000000000000000000000000 spanID=0506070800000000 host.name=something Payment succeeded",
+		Line:      "severity=DEBUG severityN=5 traceID=01020304000000000000000000000000 spanID=0506070800000000 host.name=something instrumentation_scope_name=example-logger-name instrumentation_scope_version=v1 Payment succeeded",
 	}
 	require.NotNil(t, entry)
 	require.Equal(t, expEntry, entry)
@@ -689,12 +695,15 @@ func TestExporter_convertLogtoJSONEntry(t *testing.T) {
 	lr.SetTimestamp(ts)
 	res := pcommon.NewResource()
 	res.Attributes().PutStr("host.name", "something")
+	scope := pcommon.NewInstrumentationScope()
+	scope.SetName("example-logger-name")
+	scope.SetVersion("v1")
 
 	exp := newLegacyExporter(&Config{}, componenttest.NewNopTelemetrySettings())
-	entry, err := exp.convertLogToJSONEntry(lr, res)
+	entry, err := exp.convertLogToJSONEntry(lr, res, scope)
 	expEntry := &logproto.Entry{
 		Timestamp: time.Unix(0, int64(lr.Timestamp())),
-		Line:      `{"body":"log message","resources":{"host.name":"something"}}`,
+		Line:      `{"body":"log message","resources":{"host.name":"something"},"instrumentation_scope":{"name":"example-logger-name","version":"v1"}}`,
 	}
 	require.Nil(t, err)
 	require.NotNil(t, entry)

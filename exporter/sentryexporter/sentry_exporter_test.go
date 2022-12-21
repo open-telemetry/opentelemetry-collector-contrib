@@ -28,6 +28,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
 /*
@@ -196,7 +198,7 @@ func TestSpanEventToSentryEvent(t *testing.T) {
 			"library_version": "1.4.3",
 			"aws_instance":    "ap-south-1",
 			"unique_id":       "abcd1234",
-			"span_kind":       ptrace.SpanKindClient.String(),
+			"span_kind":       traceutil.SpanKindStr(ptrace.SpanKindClient),
 			"status_message":  "message",
 		},
 		StartTime: unixNanoToTime(123),
@@ -346,7 +348,7 @@ func TestSpanToSentrySpan(t *testing.T) {
 				"library_version": "1.4.3",
 				"aws_instance":    "ca-central-1",
 				"unique_id":       "abcd1234",
-				"span_kind":       ptrace.SpanKindClient.String(),
+				"span_kind":       traceutil.SpanKindStr(ptrace.SpanKindClient),
 				"status_message":  statusMessage,
 			},
 			StartTime: unixNanoToTime(startTime),
@@ -450,7 +452,7 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.testName, func(t *testing.T) {
 			attrs := pcommon.NewMap()
-			attrs.FromRaw(test.attrs)
+			assert.NoError(t, attrs.FromRaw(test.attrs))
 			op, description := generateSpanDescriptors(test.name, attrs, test.spanKind)
 			assert.Equal(t, test.op, op)
 			assert.Equal(t, test.description, description)

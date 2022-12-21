@@ -26,11 +26,13 @@ import (
 	"strings"
 
 	"github.com/getsentry/sentry-go"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
 const (
@@ -273,7 +275,7 @@ func convertToSentrySpan(span ptrace.Span, library pcommon.InstrumentationScope,
 	}
 
 	if spanKind != ptrace.SpanKindUnspecified {
-		tags["span_kind"] = spanKind.String()
+		tags["span_kind"] = traceutil.SpanKindStr(spanKind)
 	}
 
 	tags["library_name"] = library.Name()
@@ -474,7 +476,7 @@ func generateEventID() sentry.EventID {
 }
 
 // CreateSentryExporter returns a new Sentry Exporter.
-func CreateSentryExporter(config *Config, set component.ExporterCreateSettings) (component.TracesExporter, error) {
+func CreateSentryExporter(config *Config, set exporter.CreateSettings) (exporter.Traces, error) {
 	transport := newSentryTransport()
 
 	clientOptions := sentry.ClientOptions{

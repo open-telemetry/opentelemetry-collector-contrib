@@ -24,13 +24,14 @@ import (
 
 	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
 	"github.com/DataDog/datadog-agent/pkg/otlp/model/translator"
-	"go.opentelemetry.io/collector/component"
+	"github.com/DataDog/datadog-agent/pkg/trace/api"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
-	"gopkg.in/zorkian/go-datadog-api.v2"
+	zorkian "gopkg.in/zorkian/go-datadog-api.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/clientutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
@@ -40,10 +41,10 @@ import (
 )
 
 type metricsExporter struct {
-	params         component.ExporterCreateSettings
+	params         exporter.CreateSettings
 	cfg            *Config
 	ctx            context.Context
-	client         *datadog.Client
+	client         *zorkian.Client
 	tr             *translator.Translator
 	scrubber       scrub.Scrubber
 	retrier        *clientutil.Retrier
@@ -51,7 +52,8 @@ type metricsExporter struct {
 	sourceProvider source.Provider
 	// getPushTime returns a Unix time in nanoseconds, representing the time pushing metrics.
 	// It will be overwritten in tests.
-	getPushTime func() uint64
+	getPushTime       func() uint64
+	apmStatsProcessor api.StatsProcessor
 }
 
 // translatorFromConfig creates a new metrics translator from the exporter
@@ -96,12 +98,12 @@ func translatorFromConfig(logger *zap.Logger, cfg *Config, sourceProvider source
 	return translator.New(logger, options...)
 }
 
-func newMetricsExporter(ctx context.Context, params component.ExporterCreateSettings, cfg *Config, onceMetadata *sync.Once, sourceProvider source.Provider) (*metricsExporter, error) {
-	client := clientutil.CreateClient(cfg.API.Key, cfg.Metrics.TCPAddr.Endpoint)
+func newMetricsExporter(ctx context.Context, params exporter.CreateSettings, cfg *Config, onceMetadata *sync.Once, sourceProvider source.Provider, apmStatsProcessor api.StatsProcessor) (*metricsExporter, error) {
+	client := clientutil.CreateZorkianClient(cfg.API.Key, cfg.Metrics.TCPAddr.Endpoint)
 	client.ExtraHeader["User-Agent"] = clientutil.UserAgent(params.BuildInfo)
 	client.HttpClient = clientutil.NewHTTPClient(cfg.TimeoutSettings, cfg.LimitedHTTPClientSettings.TLSSetting.InsecureSkipVerify)
 
-	if err := clientutil.ValidateAPIKey(params.Logger, client); err != nil && cfg.API.FailOnInvalidKey {
+	if err := clientutil.ValidateAPIKeyZorkian(params.Logger, client); err != nil && cfg.API.FailOnInvalidKey {
 		return nil, err
 	}
 
@@ -112,16 +114,17 @@ func newMetricsExporter(ctx context.Context, params component.ExporterCreateSett
 
 	scrubber := scrub.NewScrubber()
 	return &metricsExporter{
-		params:         params,
-		cfg:            cfg,
-		ctx:            ctx,
-		client:         client,
-		tr:             tr,
-		scrubber:       scrubber,
-		retrier:        clientutil.NewRetrier(params.Logger, cfg.RetrySettings, scrubber),
-		onceMetadata:   onceMetadata,
-		sourceProvider: sourceProvider,
-		getPushTime:    func() uint64 { return uint64(time.Now().UTC().UnixNano()) },
+		params:            params,
+		cfg:               cfg,
+		ctx:               ctx,
+		client:            client,
+		tr:                tr,
+		scrubber:          scrubber,
+		retrier:           clientutil.NewRetrier(params.Logger, cfg.RetrySettings, scrubber),
+		onceMetadata:      onceMetadata,
+		sourceProvider:    sourceProvider,
+		getPushTime:       func() uint64 { return uint64(time.Now().UTC().UnixNano()) },
+		apmStatsProcessor: apmStatsProcessor,
 	}, nil
 }
 
@@ -171,7 +174,7 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metr
 			go metadata.Pusher(exp.ctx, exp.params, newMetadataConfigfromConfig(exp.cfg), exp.sourceProvider, attrs)
 		})
 	}
-	consumer := metrics.NewConsumer()
+	consumer := metrics.NewZorkianConsumer()
 	err := exp.tr.MapMetrics(ctx, md, consumer)
 	if err != nil {
 		return fmt.Errorf("failed to map metrics: %w", err)
@@ -184,8 +187,8 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metr
 	if src.Kind == source.AWSECSFargateKind {
 		tags = append(tags, exp.cfg.HostMetadata.Tags...)
 	}
-	ms, sl := consumer.All(exp.getPushTime(), exp.params.BuildInfo, tags)
-	ms = metrics.PrepareSystemMetrics(ms)
+	ms, sl, sp := consumer.All(exp.getPushTime(), exp.params.BuildInfo, tags)
+	ms = metrics.PrepareZorkianSystemMetrics(ms)
 
 	err = nil
 	if len(ms) > 0 {
@@ -206,6 +209,14 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metr
 				return exp.pushSketches(ctx, sl)
 			}),
 		)
+	}
+
+	if len(sp) > 0 {
+		exp.params.Logger.Debug("exporting APM stats payloads", zap.Any("stats_payloads", sp))
+		statsv := exp.params.BuildInfo.Command + exp.params.BuildInfo.Version
+		for _, p := range sp {
+			exp.apmStatsProcessor.ProcessStats(p, "", statsv)
+		}
 	}
 
 	return err

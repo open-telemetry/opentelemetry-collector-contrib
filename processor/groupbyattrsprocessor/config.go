@@ -14,13 +14,8 @@
 
 package groupbyattrsprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor"
 
-import (
-	"go.opentelemetry.io/collector/config"
-)
-
 // Config is the configuration for the processor.
 type Config struct {
-	config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	// GroupByKeys describes the attribute names that are going to be used for grouping.
 	// Empty value is allowed, since processor in such case can compact data

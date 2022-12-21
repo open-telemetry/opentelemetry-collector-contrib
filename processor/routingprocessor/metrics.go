@@ -18,45 +18,46 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/processor"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoints"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor/internal/common"
 )
 
-var _ component.MetricsProcessor = (*metricsProcessor)(nil)
+var _ processor.Metrics = (*metricsProcessor)(nil)
 
 type metricsProcessor struct {
 	logger *zap.Logger
 	config *Config
 
 	extractor extractor
-	router    router[component.MetricsExporter, ottldatapoints.TransformContext]
+	router    router[exporter.Metrics, ottldatapoint.TransformContext]
 }
 
-func newMetricProcessor(settings component.TelemetrySettings, config config.Processor) *metricsProcessor {
+func newMetricProcessor(settings component.TelemetrySettings, config component.Config) *metricsProcessor {
 	cfg := rewriteRoutingEntriesToOTTL(config.(*Config))
 
 	return &metricsProcessor{
 		logger: settings.Logger,
 		config: cfg,
-		router: newRouter[component.MetricsExporter](
+		router: newRouter[exporter.Metrics](
 			cfg.Table,
 			cfg.DefaultExporters,
 			settings,
-			ottldatapoints.NewParser(common.Functions[ottldatapoints.TransformContext](), settings),
+			ottldatapoint.NewParser(common.Functions[ottldatapoint.TransformContext](), settings),
 		),
 		extractor: newExtractor(cfg.FromAttribute, settings.Logger),
 	}
 }
 
 func (p *metricsProcessor) Start(_ context.Context, host component.Host) error {
-	err := p.router.registerExporters(host.GetExporters()[config.MetricsDataType])
+	err := p.router.registerExporters(host.GetExporters()[component.DataTypeMetrics])
 	if err != nil {
 		return err
 	}
@@ -79,7 +80,7 @@ func (p *metricsProcessor) ConsumeMetrics(ctx context.Context, m pmetric.Metrics
 }
 
 type metricsGroup struct {
-	exporters []component.MetricsExporter
+	exporters []exporter.Metrics
 	metrics   pmetric.Metrics
 }
 
@@ -93,7 +94,7 @@ func (p *metricsProcessor) route(ctx context.Context, tm pmetric.Metrics) error 
 
 	for i := 0; i < tm.ResourceMetrics().Len(); i++ {
 		rmetrics := tm.ResourceMetrics().At(i)
-		mtx := ottldatapoints.NewTransformContext(
+		mtx := ottldatapoint.NewTransformContext(
 			nil,
 			pmetric.Metric{},
 			pmetric.MetricSlice{},
@@ -103,7 +104,7 @@ func (p *metricsProcessor) route(ctx context.Context, tm pmetric.Metrics) error 
 
 		matchCount := len(p.router.routes)
 		for key, route := range p.router.routes {
-			_, isMatch, err := route.statement.Execute(mtx)
+			_, isMatch, err := route.statement.Execute(ctx, mtx)
 			if err != nil {
 				return err
 			}
@@ -131,7 +132,7 @@ func (p *metricsProcessor) route(ctx context.Context, tm pmetric.Metrics) error 
 func (p *metricsProcessor) group(
 	key string,
 	groups map[string]metricsGroup,
-	exporters []component.MetricsExporter,
+	exporters []exporter.Metrics,
 	metrics pmetric.ResourceMetrics,
 ) {
 	group, ok := groups[key]
