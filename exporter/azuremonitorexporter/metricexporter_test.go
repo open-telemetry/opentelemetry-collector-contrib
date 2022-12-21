@@ -96,7 +96,7 @@ func TestSummaryEnvelopes(t *testing.T) {
 }
 
 func getDataPoint(t testing.TB, metric pmetric.Metric) *contracts.DataPoint {
-	var envelopes []*contracts.Envelope = getMetricPacker().MetricToEnvelopes(metric)
+	var envelopes []*contracts.Envelope = getMetricPacker().MetricToEnvelopes(metric, getResource(), getScope())
 	require.Equal(t, len(envelopes), 1)
 	envelope := envelopes[0]
 	require.NotNil(t, envelope)

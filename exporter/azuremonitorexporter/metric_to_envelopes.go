@@ -37,7 +37,7 @@ type metricTimedData interface {
 }
 
 // MetricToEnvelopes packages metrics into a slice of Application Insight envelopes.
-func (packer *metricPacker) MetricToEnvelopes(metric pmetric.Metric) []*contracts.Envelope {
+func (packer *metricPacker) MetricToEnvelopes(metric pmetric.Metric, resource pcommon.Resource, instrumentationScope pcommon.InstrumentationScope) []*contracts.Envelope {
 	var envelopes []*contracts.Envelope
 
 	mtd := packer.getMetricTimedData(metric)
@@ -61,6 +61,11 @@ func (packer *metricPacker) MetricToEnvelopes(metric pmetric.Metric) []*contract
 			data.BaseData = metricData
 			data.BaseType = metricData.BaseType()
 			envelope.Data = data
+
+			resourceAttributes := resource.Attributes()
+			applyResourcesToDataProperties(metricData.Properties, resourceAttributes)
+			applyInstrumentationScopeValueToDataProperties(metricData.Properties, instrumentationScope)
+			applyCloudTagsToEnvelope(envelope, resourceAttributes)
 
 			packer.sanitize(func() []string { return metricData.Sanitize() })
 			packer.sanitize(func() []string { return envelope.Sanitize() })
