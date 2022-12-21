@@ -59,5 +59,5 @@ func createLogsExporter(
 	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.LogsExporter, error) {
-	return exporterhelper.NewLogsExporter(context.TODO(), set, cfg, onLogData)
+	return exporterhelper.NewLogsExporter(ctx, set, cfg, onLogData)
 }
