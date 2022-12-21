@@ -84,7 +84,6 @@ type processHandle interface {
 	Percent(time.Duration) (float64, error)
 	MemoryPercent() (float32, error)
 	MemoryInfo() (*process.MemoryInfoStat, error)
-	MemoryPercent() (float32, error)
 	IOCounters() (*process.IOCountersStat, error)
 	NumThreads() (int32, error)
 	CreateTime() (int64, error)

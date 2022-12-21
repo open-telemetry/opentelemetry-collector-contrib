@@ -31,7 +31,7 @@ metrics:
     unit: "By/s"
     gauge:
       value_type: double
-    attributes: [ device, direction ]
+    attributes: [ direction ]
   system.disk.operations:
     enabled: true
     description: Disk operations count.
