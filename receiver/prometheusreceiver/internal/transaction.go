@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"sort"
 
+	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/exemplar"
 	"github.com/prometheus/prometheus/model/histogram"
@@ -35,8 +36,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
-
-	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 const (
@@ -199,14 +198,14 @@ func (t *transaction) getSeriesRef(ls labels.Labels, mtype pmetric.MetricType) u
 
 // getMetrics returns all metrics to the given slice.
 // The only error returned by this function is errNoDataToBuild.
-func (t *transaction) getMetrics(resource pcommon.Resource) (pmetric.Metrics, error) {
+func (t *transaction) getMetrics() (pmetric.Metrics, error) {
 	if len(t.families) == 0 {
 		return pmetric.Metrics{}, errNoDataToBuild
 	}
 
 	md := pmetric.NewMetrics()
 	rms := md.ResourceMetrics().AppendEmpty()
-	resource.CopyTo(rms.Resource())
+	t.nodeResource.CopyTo(rms.Resource())
 	metrics := rms.ScopeMetrics().AppendEmpty().Metrics()
 
 	for _, mf := range t.families {
@@ -241,7 +240,7 @@ func (t *transaction) Commit() error {
 	}
 
 	ctx := t.obsrecv.StartMetricsOp(t.ctx)
-	md, err := t.getMetrics(t.nodeResource)
+	md, err := t.getMetrics()
 	if err != nil {
 		t.obsrecv.EndMetricsOp(ctx, dataformat, 0, err)
 		return err

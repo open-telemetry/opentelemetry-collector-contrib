@@ -20,24 +20,26 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 	"github.com/prometheus/prometheus/model/exemplar"
 	"github.com/prometheus/prometheus/model/labels"
+	"github.com/prometheus/prometheus/model/textparse"
 	"github.com/prometheus/prometheus/model/value"
 	"github.com/prometheus/prometheus/scrape"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 const (
-	traceIDKey = "trace_id"
-	spanIDKey  = "span_id"
+	traceIDKey     = "trace_id"
+	spanIDKey      = "span_id"
+	PromMetricType = "prom_metric_type"
 )
 
 type metricFamily struct {
 	mtype pmetric.MetricType
+	ptype textparse.MetricType
 	// isMonotonic only applies to sums
 	isMonotonic bool
 	groups      map[uint64]*metricGroup
@@ -50,7 +52,6 @@ type metricFamily struct {
 // a couple data complexValue (buckets and count/sum), a group of a metric family always share a same set of tags. for
 // simple types like counter and gauge, each data point is a group of itself
 type metricGroup struct {
-	mtype        pmetric.MetricType
 	ts           int64
 	ls           labels.Labels
 	count        float64
@@ -71,6 +72,7 @@ func newMetricFamily(metricName string, mc scrape.MetricMetadataStore, logger *z
 
 	return &metricFamily{
 		mtype:       mtype,
+		ptype:       metadata.Type,
 		isMonotonic: isMonotonic,
 		groups:      make(map[uint64]*metricGroup),
 		name:        familyName,
@@ -95,7 +97,7 @@ func (mg *metricGroup) sortPoints() {
 	})
 }
 
-func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice) {
+func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice, mType pmetric.MetricType, pType textparse.MetricType) {
 	if !mg.hasCount || len(mg.complexValue) == 0 {
 		return
 	}
@@ -143,7 +145,7 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice)
 	tsNanos := timestampFromMs(mg.ts)
 	point.SetStartTimestamp(tsNanos) // metrics_adjuster adjusts the startTimestamp to the initial scrape timestamp
 	point.SetTimestamp(tsNanos)
-	populateAttributes(pmetric.MetricTypeHistogram, mg.ls, point.Attributes())
+	populateAttributes(mType, pType, mg.ls, point.Attributes())
 	mg.setExemplars(point.Exemplars())
 }
 
@@ -156,7 +158,7 @@ func (mg *metricGroup) setExemplars(exemplars pmetric.ExemplarSlice) {
 	}
 }
 
-func (mg *metricGroup) toSummaryPoint(dest pmetric.SummaryDataPointSlice) {
+func (mg *metricGroup) toSummaryPoint(dest pmetric.SummaryDataPointSlice, mType pmetric.MetricType, pType textparse.MetricType) {
 	// expecting count to be provided, however, in the following two cases, they can be missed.
 	// 1. data is corrupted
 	// 2. ignored by startValue evaluation
@@ -197,42 +199,49 @@ func (mg *metricGroup) toSummaryPoint(dest pmetric.SummaryDataPointSlice) {
 	tsNanos := timestampFromMs(mg.ts)
 	point.SetTimestamp(tsNanos)
 	point.SetStartTimestamp(tsNanos) // metrics_adjuster adjusts the startTimestamp to the initial scrape timestamp
-	populateAttributes(pmetric.MetricTypeSummary, mg.ls, point.Attributes())
+	populateAttributes(mType, pType, mg.ls, point.Attributes())
 }
 
-func (mg *metricGroup) toNumberDataPoint(dest pmetric.NumberDataPointSlice) {
+func (mg *metricGroup) toNumberDataPoint(dest pmetric.NumberDataPointSlice, mType pmetric.MetricType, pType textparse.MetricType) {
 	tsNanos := timestampFromMs(mg.ts)
 	point := dest.AppendEmpty()
-	// gauge/undefined types have no start time.
-	if mg.mtype == pmetric.MetricTypeSum {
+
+	// StartTimeUnixNano to indicate the start of an unbroken sequence of points means it can also be used to encode implicit gaps in the stream
+	// https://opentelemetry.io/docs/reference/specification/metrics/data-model/#temporality
+	// Only Sum, Summary, Histogram is need to set start time stamp
+	if mType == pmetric.MetricTypeSum {
 		point.SetStartTimestamp(tsNanos) // metrics_adjuster adjusts the startTimestamp to the initial scrape timestamp
 	}
+
 	point.SetTimestamp(tsNanos)
+
 	if value.IsStaleNaN(mg.value) {
 		point.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
 	} else {
 		point.SetDoubleValue(mg.value)
 	}
-	populateAttributes(pmetric.MetricTypeGauge, mg.ls, point.Attributes())
+
+	datapointAttributes := point.Attributes()
+
+	populateAttributes(mType, pType, mg.ls, datapointAttributes)
 	mg.setExemplars(point.Exemplars())
 }
 
-func populateAttributes(mType pmetric.MetricType, ls labels.Labels, dest pcommon.Map) {
-	dest.EnsureCapacity(ls.Len())
-	names := getSortedNotUsefulLabels(mType)
-	j := 0
-	for i := range ls {
-		for j < len(names) && names[j] < ls[i].Name {
-			j++
-		}
-		if j < len(names) && ls[i].Name == names[j] {
-			continue
-		}
-		if ls[i].Value == "" {
-			// empty label values should be omitted
-			continue
-		}
-		dest.PutStr(ls[i].Name, ls[i].Value)
+func populateAttributes(mType pmetric.MetricType, pType textparse.MetricType, ls labels.Labels, attributes pcommon.Map) {
+	attributes.EnsureCapacity(ls.Len() + 1)
+	// Remove unuseful Prometheus Labels since prometheus receiver added OTLP attributes
+	// during initial tracsaction
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/08cd036e9da7fa0678402fe8ce1d4d7bd3234a6a/receiver/prometheusreceiver/internal/transaction.go#L233
+	notUsefulLabels := getSortedNotUsefulLabels(mType)
+	finalLabels := ls.MatchLabels(false, notUsefulLabels...).WithoutEmpty()
+	for i := range finalLabels {
+		attributes.PutStr(finalLabels[i].Name, finalLabels[i].Value)
+	}
+	// Preserve the original Prometheus Type as an datapoint attributes
+	// (e.g Unknown is convert to Gauge )
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/4eaa9f8f8c89492e4df873bda483ea49da8b194f/receiver/prometheusreceiver/internal/util.go#L105-L127
+	if pType == textparse.MetricTypeUnknown {
+		attributes.PutStr(PromMetricType, string(pType))
 	}
 }
 
@@ -240,7 +249,6 @@ func (mf *metricFamily) loadMetricGroupOrCreate(groupKey uint64, ls labels.Label
 	mg, ok := mf.groups[groupKey]
 	if !ok {
 		mg = &metricGroup{
-			mtype:     mf.mtype,
 			ts:        ts,
 			ls:        ls,
 			exemplars: pmetric.NewExemplarSlice(),
@@ -297,7 +305,7 @@ func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice, normalizer *pr
 		histogram.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 		hdpL := histogram.DataPoints()
 		for _, mg := range mf.groupOrders {
-			mg.toDistributionPoint(hdpL)
+			mg.toDistributionPoint(hdpL, mf.mtype, mf.ptype)
 		}
 		pointCount = hdpL.Len()
 
@@ -305,7 +313,7 @@ func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice, normalizer *pr
 		summary := metric.SetEmptySummary()
 		sdpL := summary.DataPoints()
 		for _, mg := range mf.groupOrders {
-			mg.toSummaryPoint(sdpL)
+			mg.toSummaryPoint(sdpL, mf.mtype, mf.ptype)
 		}
 		pointCount = sdpL.Len()
 
@@ -315,7 +323,7 @@ func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice, normalizer *pr
 		sum.SetIsMonotonic(mf.isMonotonic)
 		sdpL := sum.DataPoints()
 		for _, mg := range mf.groupOrders {
-			mg.toNumberDataPoint(sdpL)
+			mg.toNumberDataPoint(sdpL, mf.mtype, mf.ptype)
 		}
 		pointCount = sdpL.Len()
 
@@ -323,7 +331,7 @@ func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice, normalizer *pr
 		gauge := metric.SetEmptyGauge()
 		gdpL := gauge.DataPoints()
 		for _, mg := range mf.groupOrders {
-			mg.toNumberDataPoint(gdpL)
+			mg.toNumberDataPoint(gdpL, mf.mtype, mf.ptype)
 		}
 		pointCount = gdpL.Len()
 	}

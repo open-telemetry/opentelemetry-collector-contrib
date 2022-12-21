@@ -20,10 +20,13 @@ import (
 
 	"github.com/prometheus/common/model"
 	promConfig "github.com/prometheus/prometheus/config"
+	"github.com/prometheus/prometheus/model/textparse"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
 )
 
 // Test data and validation functions for all four core metrics for Prometheus Receiver.
@@ -1463,14 +1466,14 @@ func verifyUntypedMetrics(t *testing.T, td *testData, resourceMetrics []pmetric.
 					numberPointComparator: []numberPointComparator{
 						compareTimestamp(ts1),
 						compareDoubleValue(100),
-						compareAttributes(map[string]string{"method": "post", "code": "200"}),
+						compareAttributes(map[string]string{"method": "post", "code": "200", internal.PromMetricType: string(textparse.MetricTypeUnknown)}),
 					},
 				},
 				{
 					numberPointComparator: []numberPointComparator{
 						compareTimestamp(ts1),
 						compareDoubleValue(5),
-						compareAttributes(map[string]string{"method": "post", "code": "400"}),
+						compareAttributes(map[string]string{"method": "post", "code": "400", internal.PromMetricType: string(textparse.MetricTypeUnknown)}),
 					},
 				},
 			}),
@@ -1481,14 +1484,14 @@ func verifyUntypedMetrics(t *testing.T, td *testData, resourceMetrics []pmetric.
 					numberPointComparator: []numberPointComparator{
 						compareTimestamp(ts1),
 						compareDoubleValue(10),
-						compareAttributes(map[string]string{"name": "rough-snowflake-web", "port": "6380"}),
+						compareAttributes(map[string]string{"name": "rough-snowflake-web", "port": "6380", internal.PromMetricType: string(textparse.MetricTypeUnknown)}),
 					},
 				},
 				{
 					numberPointComparator: []numberPointComparator{
 						compareTimestamp(ts1),
 						compareDoubleValue(12),
-						compareAttributes(map[string]string{"name": "rough-snowflake-web", "port": "6381"}),
+						compareAttributes(map[string]string{"name": "rough-snowflake-web", "port": "6381", internal.PromMetricType: string(textparse.MetricTypeUnknown)}),
 					},
 				},
 			}),

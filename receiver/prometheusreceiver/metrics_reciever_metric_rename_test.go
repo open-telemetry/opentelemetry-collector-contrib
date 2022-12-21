@@ -20,9 +20,12 @@ import (
 	"github.com/prometheus/common/model"
 	promcfg "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/model/relabel"
+	"github.com/prometheus/prometheus/model/textparse"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
 )
 
 var renameMetric = `
@@ -144,7 +147,7 @@ func verifyRenameMetric(t *testing.T, td *testData, resourceMetrics []pmetric.Re
 					numberPointComparator: []numberPointComparator{
 						compareTimestamp(ts1),
 						compareDoubleValue(15),
-						compareAttributes(map[string]string{"method": "post", "port": "6380"}),
+						compareAttributes(map[string]string{"method": "post", "port": "6380", internal.PromMetricType: string(textparse.MetricTypeUnknown)}),
 					},
 				},
 			}),
@@ -156,14 +159,14 @@ func verifyRenameMetric(t *testing.T, td *testData, resourceMetrics []pmetric.Re
 					numberPointComparator: []numberPointComparator{
 						compareTimestamp(ts1),
 						compareDoubleValue(10),
-						compareAttributes(map[string]string{"method": "post", "port": "6380"}),
+						compareAttributes(map[string]string{"method": "post", "port": "6380", internal.PromMetricType: string(textparse.MetricTypeUnknown)}),
 					},
 				},
 				{
 					numberPointComparator: []numberPointComparator{
 						compareTimestamp(ts1),
 						compareDoubleValue(12),
-						compareAttributes(map[string]string{"method": "post", "port": "6381"}),
+						compareAttributes(map[string]string{"method": "post", "port": "6381", internal.PromMetricType: string(textparse.MetricTypeUnknown)}),
 					},
 				},
 			}),

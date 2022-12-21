@@ -19,11 +19,14 @@ import (
 	"math"
 	"testing"
 
+	"github.com/prometheus/prometheus/model/textparse"
 	"github.com/prometheus/prometheus/model/value"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
 )
 
 var staleNaNsPage1 = `
@@ -287,7 +290,7 @@ func verifyNormalNaNs(t *testing.T, td *testData, resourceMetrics []pmetric.Reso
 				{
 					numberPointComparator: []numberPointComparator{
 						compareTimestamp(ts1),
-						compareAttributes(map[string]string{"name": "rough-snowflake-web", "port": "6380"}),
+						compareAttributes(map[string]string{"name": "rough-snowflake-web", "port": "6380", internal.PromMetricType: string(textparse.MetricTypeUnknown)}),
 						assertNormalNan(),
 					},
 				},
@@ -371,7 +374,7 @@ func verifyInfValues(t *testing.T, td *testData, resourceMetrics []pmetric.Resou
 				{
 					numberPointComparator: []numberPointComparator{
 						compareTimestamp(ts1),
-						compareAttributes(map[string]string{"name": "rough-snowflake-web", "port": "6380"}),
+						compareAttributes(map[string]string{"name": "rough-snowflake-web", "port": "6380", internal.PromMetricType: string(textparse.MetricTypeUnknown)}),
 						compareDoubleValue(math.Inf(-1)),
 					},
 				},
