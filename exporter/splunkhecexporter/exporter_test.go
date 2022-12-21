@@ -210,8 +210,8 @@ func TestConsumeMetricsData(t *testing.T) {
 				bodyBytes := body
 				// the last batch might not be zipped.
 				if "gzip" == r.Header.Get("Content-Encoding") {
-					zipReader, err := gzip.NewReader(bytes.NewReader(body))
-					require.NoError(t, err)
+					zipReader, err2 := gzip.NewReader(bytes.NewReader(body))
+					require.NoError(t, err2)
 					bodyBytes, _ = io.ReadAll(zipReader)
 				}
 

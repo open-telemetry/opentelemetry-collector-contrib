@@ -65,11 +65,9 @@ type bufferState struct {
 	bufFront             *index
 	resource             int
 	library              int
-	closed               bool
 }
 
 func (b *bufferState) reset() {
-	b.closed = false
 	b.buf.Reset()
 	b.compressionEnabled = false
 	b.writer = &cancellableBytesWriter{innerWriter: b.buf, maxCapacity: b.bufferMaxLen}
@@ -80,10 +78,6 @@ func (b *bufferState) Read(p []byte) (n int, err error) {
 }
 
 func (b *bufferState) Close() error {
-	if b.closed {
-		return nil
-	}
-	b.closed = true
 	if _, ok := b.writer.(*cancellableGzipWriter); ok {
 		return b.writer.(*cancellableGzipWriter).close()
 	}
