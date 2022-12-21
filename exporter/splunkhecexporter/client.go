@@ -60,14 +60,21 @@ type bufferState struct {
 	compressionAvailable bool
 	compressionEnabled   bool
 	bufferMaxLen         uint
-	writer               io.Writer
+	empty                bool
+	writer               acceptingWriter
 	buf                  *bytes.Buffer
 	bufFront             *index
 	resource             int
 	library              int
 }
 
+type acceptingWriter interface {
+	io.Writer
+	len() (int, error)
+}
+
 func (b *bufferState) reset() {
+	b.empty = true
 	b.buf.Reset()
 	b.compressionEnabled = false
 	b.writer = &cancellableBytesWriter{innerWriter: b.buf, maxCapacity: b.bufferMaxLen}
@@ -123,17 +130,27 @@ func (b *bufferState) accept(data []byte) (bool, error) {
 			}
 
 		}
+		b.empty = false
 		return true, nil
 	}
 	if overCapacity {
 		return false, nil
 	}
+	b.empty = false
 	return true, err
+}
+
+func (b *bufferState) Len() (int, error) {
+	return b.writer.len()
 }
 
 type cancellableBytesWriter struct {
 	innerWriter *bytes.Buffer
 	maxCapacity uint
+}
+
+func (c *cancellableBytesWriter) len() (int, error) {
+	return c.innerWriter.Len(), nil
 }
 
 func (c *cancellableBytesWriter) Write(b []byte) (int, error) {
@@ -147,19 +164,26 @@ func (c *cancellableBytesWriter) Write(b []byte) (int, error) {
 }
 
 type cancellableGzipWriter struct {
-	innerBuffer *bytes.Buffer
-	innerWriter *gzip.Writer
-	maxCapacity uint
-	len         int
+	innerBuffer  *bytes.Buffer
+	innerWriter  *gzip.Writer
+	maxCapacity  uint
+	bytesWritten int
+}
+
+func (c *cancellableGzipWriter) len() (int, error) {
+	if err := c.innerWriter.Flush(); err != nil {
+		return 0, err
+	}
+	return c.innerBuffer.Len(), nil
 }
 
 func (c *cancellableGzipWriter) Write(b []byte) (int, error) {
 	if c.maxCapacity == 0 {
 		return c.innerWriter.Write(b)
 	}
-	c.len += len(b)
+	c.bytesWritten += len(b)
 	// if we see that at a 50% compression rate, we'd be over max capacity, start flushing.
-	if (c.len / 2) > int(c.maxCapacity) {
+	if (c.bytesWritten / 2) > int(c.maxCapacity) {
 		// we flush so the length of the underlying buffer is accurate.
 		if err := c.innerWriter.Flush(); err != nil {
 			return 0, err
@@ -242,7 +266,11 @@ func (c *client) pushMetricsData(
 				localHeaders["Authorization"] = splunk.HECTokenHeader + " " + accessToken.Str()
 			}
 		}
-		return c.postEvents(ctx, bufState, localHeaders, bufState.compressionEnabled, bufState.buf.Len())
+		bufferLength, err := bufState.Len()
+		if err != nil {
+			return err
+		}
+		return c.postEvents(ctx, bufState, localHeaders, bufState.compressionEnabled, bufferLength)
 	}
 
 	return c.pushMetricsDataInBatches(ctx, md, send)
@@ -264,7 +292,11 @@ func (c *client) pushTraceData(
 				localHeaders["Authorization"] = splunk.HECTokenHeader + " " + accessToken.Str()
 			}
 		}
-		return c.postEvents(ctx, bufState, localHeaders, bufState.compressionEnabled, bufState.buf.Len())
+		bufferLength, err := bufState.Len()
+		if err != nil {
+			return err
+		}
+		return c.postEvents(ctx, bufState, localHeaders, bufState.compressionEnabled, bufferLength)
 	}
 
 	return c.pushTracesDataInBatches(ctx, td, send)
@@ -287,7 +319,11 @@ func (c *client) pushLogData(ctx context.Context, ld plog.Logs) error {
 				localHeaders["Authorization"] = splunk.HECTokenHeader + " " + accessToken.Str()
 			}
 		}
-		return c.postEvents(ctx, bufState, localHeaders, bufState.compressionEnabled, bufState.buf.Len())
+		bufferLength, err := bufState.Len()
+		if err != nil {
+			return err
+		}
+		return c.postEvents(ctx, bufState, localHeaders, bufState.compressionEnabled, bufferLength)
 	}
 
 	return c.pushLogDataInBatches(ctx, ld, send)
@@ -314,6 +350,7 @@ func makeBlankBufferState(bufCap uint, compressionAvailable bool) *bufferState {
 	return &bufferState{
 		compressionAvailable: compressionAvailable,
 		compressionEnabled:   false,
+		empty:                true,
 		writer:               &cancellableBytesWriter{innerWriter: buf, maxCapacity: bufCap},
 		buf:                  buf,
 		bufferMaxLen:         bufCap,
@@ -373,7 +410,7 @@ func (c *client) pushLogDataInBatches(ctx context.Context, ld plog.Logs, send fu
 	}
 
 	// There's some leftover unsent non-profiling data
-	if bufState.buf.Len() > 0 {
+	if !bufState.empty {
 
 		if err := send(ctx, bufState, nil); err != nil {
 			return consumererror.NewLogs(err, c.subLogs(ld, bufState.bufFront, profilingBufState.bufFront))
@@ -381,7 +418,7 @@ func (c *client) pushLogDataInBatches(ctx context.Context, ld plog.Logs, send fu
 	}
 
 	// There's some leftover unsent profiling data
-	if profilingBufState.buf.Len() > 0 {
+	if !profilingBufState.empty {
 		if err := send(ctx, profilingBufState, profilingHeaders); err != nil {
 			// Non-profiling bufFront is set to nil because all non-profiling data was flushed successfully above.
 			return consumererror.NewLogs(err, c.subLogs(ld, nil, profilingBufState.bufFront))
@@ -420,7 +457,7 @@ func (c *client) pushLogRecords(ctx context.Context, lds plog.ResourceLogsSlice,
 			continue
 		}
 
-		if state.buf.Len() > 0 {
+		if !state.empty {
 			if err = send(ctx, state, headers); err != nil {
 				return permanentErrors, err
 			}
@@ -439,7 +476,7 @@ func (c *client) pushLogRecords(ctx context.Context, lds plog.ResourceLogsSlice,
 				fmt.Errorf("dropped log event error: event size %d bytes larger than configured max content length %d bytes", len(b), state.bufferMaxLen)))
 			continue
 		}
-		if state.buf.Len() > 0 {
+		if !state.empty {
 			// This means that the current record had overflown the buffer and was not sent
 			state.bufFront = &index{resource: state.resource, library: state.library, record: k}
 		} else {
@@ -486,7 +523,7 @@ func (c *client) pushMetricsRecords(ctx context.Context, mds pmetric.ResourceMet
 			continue
 		}
 
-		if state.buf.Len() > 0 {
+		if !state.empty {
 			if err := send(ctx, state); err != nil {
 				return permanentErrors, err
 			}
@@ -506,7 +543,7 @@ func (c *client) pushMetricsRecords(ctx context.Context, mds pmetric.ResourceMet
 			continue
 		}
 
-		if state.buf.Len() > 0 {
+		if !state.empty {
 			// This means that the current record had overflown the buffer and was not sent
 			state.bufFront = &index{resource: state.resource, library: state.library, record: k}
 		} else {
@@ -548,7 +585,7 @@ func (c *client) pushTracesData(ctx context.Context, tds ptrace.ResourceSpansSli
 			continue
 		}
 
-		if state.buf.Len() > 0 {
+		if !state.empty {
 			if err = send(ctx, state); err != nil {
 				return permanentErrors, err
 			}
@@ -568,7 +605,7 @@ func (c *client) pushTracesData(ctx context.Context, tds ptrace.ResourceSpansSli
 			continue
 		}
 
-		if state.buf.Len() > 0 {
+		if !state.empty {
 			// This means that the current record had overflown the buffer and was not sent
 			state.bufFront = &index{resource: state.resource, library: state.library, record: k}
 		} else {
@@ -607,7 +644,7 @@ func (c *client) pushMetricsDataInBatches(ctx context.Context, md pmetric.Metric
 	}
 
 	// There's some leftover unsent metrics
-	if bufState.buf.Len() > 0 {
+	if !bufState.empty {
 		if err := send(ctx, bufState); err != nil {
 			return consumererror.NewMetrics(err, subMetrics(md, bufState.bufFront))
 		}
@@ -642,7 +679,7 @@ func (c *client) pushTracesDataInBatches(ctx context.Context, td ptrace.Traces, 
 	}
 
 	// There's some leftover unsent traces
-	if bufState.buf.Len() > 0 {
+	if !bufState.empty {
 		if err := send(ctx, bufState); err != nil {
 			return consumererror.NewTraces(err, subTraces(td, bufState.bufFront))
 		}
