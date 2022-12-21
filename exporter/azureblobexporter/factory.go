@@ -18,7 +18,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -30,34 +30,33 @@ const (
 )
 
 // NewFactory returns a factory for Azure Blob exporter.
-func NewFactory() component.ExporterFactory {
-	return component.NewExporterFactory(
+func NewFactory() exporter.Factory {
+	return exporter.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporter(createTracesExporter, component.StabilityLevelInDevelopment),
-		component.WithLogsExporter(createLogsExporter, component.StabilityLevelInDevelopment))
+		exporter.WithTraces(createTracesExporter, component.StabilityLevelDevelopment),
+		exporter.WithLogs(createLogsExporter, component.StabilityLevelDevelopment))
 }
 
-func createDefaultConfig() config.Exporter {
+func createDefaultConfig() component.Config {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-		Logs:             LogsConfig{ContainerName: logsContainerName},
-		Traces:           TracesConfig{ContainerName: tracesContainerName},
+		Logs:   LogsConfig{ContainerName: logsContainerName},
+		Traces: TracesConfig{ContainerName: tracesContainerName},
 	}
 }
 
 func createTracesExporter(
 	ctx context.Context,
-	set component.ExporterCreateSettings,
-	cfg config.Exporter,
-) (component.TracesExporter, error) {
+	set exporter.CreateSettings,
+	cfg component.Config,
+) (exporter.Traces, error) {
 	return exporterhelper.NewTracesExporter(ctx, set, cfg, onTraceData)
 }
 
 func createLogsExporter(
 	ctx context.Context,
-	set component.ExporterCreateSettings,
-	cfg config.Exporter,
-) (component.LogsExporter, error) {
+	set exporter.CreateSettings,
+	cfg component.Config,
+) (exporter.Logs, error) {
 	return exporterhelper.NewLogsExporter(ctx, set, cfg, onLogData)
 }
