@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"runtime"
 	"sync"
 	"testing"
 	"time"
@@ -330,6 +331,9 @@ func TestReceiverUnmarshalVersionFailureExpectingDisable(t *testing.T) {
 }
 
 func TestReceiverFlowControlDelayedRetry(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Failing on windows, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/17197")
+	}
 	someError := consumererror.NewPermanent(fmt.Errorf("some error"))
 	testCases := []struct {
 		name         string
@@ -453,6 +457,9 @@ func TestReceiverFlowControlDelayedRetryInterrupt(t *testing.T) {
 }
 
 func TestReceiverFlowControlDelayedRetryMultipleRetries(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Failing on windows, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/17197")
+	}
 	receiver, messagingService, unmarshaller := newReceiver(t)
 	// we won't wait 10 seconds since we will interrupt well before
 	retryInterval := 2 * time.Millisecond
