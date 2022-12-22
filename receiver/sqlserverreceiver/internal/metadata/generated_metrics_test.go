@@ -3,10 +3,14 @@
 package metadata
 
 import (
+	"path/filepath"
 	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -17,7 +21,13 @@ import (
 func TestDefaultMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	mb := NewMetricsBuilder(DefaultMetricsSettings(), receivertest.NewNopCreateSettings(), WithStartTime(start))
+	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+	settings := receivertest.NewNopCreateSettings()
+	settings.Logger = zap.New(observedZapCore)
+	mb := NewMetricsBuilder(loadConfig(t, "default"), settings, WithStartTime(start))
+
+	assert.Equal(t, 0, observedLogs.Len())
+
 	enabledMetrics := make(map[string]bool)
 
 	enabledMetrics["sqlserver.batch.request.rate"] = true
@@ -98,32 +108,10 @@ func TestDefaultMetrics(t *testing.T) {
 func TestAllMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	metricsSettings := MetricsSettings{
-		SqlserverBatchRequestRate:            MetricSettings{Enabled: true},
-		SqlserverBatchSQLCompilationRate:     MetricSettings{Enabled: true},
-		SqlserverBatchSQLRecompilationRate:   MetricSettings{Enabled: true},
-		SqlserverLockWaitRate:                MetricSettings{Enabled: true},
-		SqlserverLockWaitTimeAvg:             MetricSettings{Enabled: true},
-		SqlserverPageBufferCacheHitRatio:     MetricSettings{Enabled: true},
-		SqlserverPageCheckpointFlushRate:     MetricSettings{Enabled: true},
-		SqlserverPageLazyWriteRate:           MetricSettings{Enabled: true},
-		SqlserverPageLifeExpectancy:          MetricSettings{Enabled: true},
-		SqlserverPageOperationRate:           MetricSettings{Enabled: true},
-		SqlserverPageSplitRate:               MetricSettings{Enabled: true},
-		SqlserverTransactionRate:             MetricSettings{Enabled: true},
-		SqlserverTransactionWriteRate:        MetricSettings{Enabled: true},
-		SqlserverTransactionLogFlushDataRate: MetricSettings{Enabled: true},
-		SqlserverTransactionLogFlushRate:     MetricSettings{Enabled: true},
-		SqlserverTransactionLogFlushWaitRate: MetricSettings{Enabled: true},
-		SqlserverTransactionLogGrowthCount:   MetricSettings{Enabled: true},
-		SqlserverTransactionLogShrinkCount:   MetricSettings{Enabled: true},
-		SqlserverTransactionLogUsage:         MetricSettings{Enabled: true},
-		SqlserverUserConnectionCount:         MetricSettings{Enabled: true},
-	}
 	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 	settings := receivertest.NewNopCreateSettings()
 	settings.Logger = zap.New(observedZapCore)
-	mb := NewMetricsBuilder(metricsSettings, settings, WithStartTime(start))
+	mb := NewMetricsBuilder(loadConfig(t, "all_metrics"), settings, WithStartTime(start))
 
 	assert.Equal(t, 0, observedLogs.Len())
 
@@ -401,34 +389,13 @@ func TestAllMetrics(t *testing.T) {
 func TestNoMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	metricsSettings := MetricsSettings{
-		SqlserverBatchRequestRate:            MetricSettings{Enabled: false},
-		SqlserverBatchSQLCompilationRate:     MetricSettings{Enabled: false},
-		SqlserverBatchSQLRecompilationRate:   MetricSettings{Enabled: false},
-		SqlserverLockWaitRate:                MetricSettings{Enabled: false},
-		SqlserverLockWaitTimeAvg:             MetricSettings{Enabled: false},
-		SqlserverPageBufferCacheHitRatio:     MetricSettings{Enabled: false},
-		SqlserverPageCheckpointFlushRate:     MetricSettings{Enabled: false},
-		SqlserverPageLazyWriteRate:           MetricSettings{Enabled: false},
-		SqlserverPageLifeExpectancy:          MetricSettings{Enabled: false},
-		SqlserverPageOperationRate:           MetricSettings{Enabled: false},
-		SqlserverPageSplitRate:               MetricSettings{Enabled: false},
-		SqlserverTransactionRate:             MetricSettings{Enabled: false},
-		SqlserverTransactionWriteRate:        MetricSettings{Enabled: false},
-		SqlserverTransactionLogFlushDataRate: MetricSettings{Enabled: false},
-		SqlserverTransactionLogFlushRate:     MetricSettings{Enabled: false},
-		SqlserverTransactionLogFlushWaitRate: MetricSettings{Enabled: false},
-		SqlserverTransactionLogGrowthCount:   MetricSettings{Enabled: false},
-		SqlserverTransactionLogShrinkCount:   MetricSettings{Enabled: false},
-		SqlserverTransactionLogUsage:         MetricSettings{Enabled: false},
-		SqlserverUserConnectionCount:         MetricSettings{Enabled: false},
-	}
 	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 	settings := receivertest.NewNopCreateSettings()
 	settings.Logger = zap.New(observedZapCore)
-	mb := NewMetricsBuilder(metricsSettings, settings, WithStartTime(start))
+	mb := NewMetricsBuilder(loadConfig(t, "no_metrics"), settings, WithStartTime(start))
 
 	assert.Equal(t, 0, observedLogs.Len())
+
 	mb.RecordSqlserverBatchRequestRateDataPoint(ts, 1)
 	mb.RecordSqlserverBatchSQLCompilationRateDataPoint(ts, 1)
 	mb.RecordSqlserverBatchSQLRecompilationRateDataPoint(ts, 1)
@@ -453,4 +420,14 @@ func TestNoMetrics(t *testing.T) {
 	metrics := mb.Emit()
 
 	assert.Equal(t, 0, metrics.ResourceMetrics().Len())
+}
+
+func loadConfig(t *testing.T, name string) MetricsSettings {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+	sub, err := cm.Sub(name)
+	require.NoError(t, err)
+	cfg := DefaultMetricsSettings()
+	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
+	return cfg
 }

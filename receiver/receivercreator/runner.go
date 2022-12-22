@@ -64,7 +64,6 @@ func (run *receiverRunner) start(
 
 	// Sets dynamically created receiver to something like receiver_creator/1/redis{endpoint="localhost:6380"}/<EndpointID>.
 	id := component.NewIDWithName(factory.Type(), fmt.Sprintf("%s/%s{endpoint=%q}/%s", receiver.id.Name(), run.idNamespace, endpoint, receiver.endpointID))
-	cfg.SetIDName(id.Name()) //nolint:staticcheck
 
 	recvr, err := run.createRuntimeReceiver(receiverFactory, id, cfg, nextConsumer)
 	if err != nil {

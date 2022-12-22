@@ -314,19 +314,5 @@ By default, the exporter sends telemetry to the project specified by `project` i
 
 See the [Collector feature gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) for an overview of feature gates in the collector.
 
-**BETA**: `exporter.googlecloud.OTLPDirect`
-
-The `exporter.googlecloud.OTLPDirect` is enabled by default starting in v0.50.0, and can be disabled via `--feature-gates=-exporter.googlecloud.OTLPDirect`. The new googlecloud exporter translates pdata directly to google cloud monitoring's types, rather than first translating to opencensus.  See the [Breaking Changes documentation](https://github.com/GoogleCloudPlatform/opentelemetry-operations-go/blob/main/exporter/collector/breaking-changes.md#breaking-changes-vs-old-googlecloud-exporter) for breaking changes that will occur as a result of this feature.
-
-If you are broken by changes described there, or have encountered an issue with the new implementation, please open an issue [here](https://github.com/GoogleCloudPlatform/opentelemetry-operations-go/issues/new)
-
-If you disable the feature-gate, you can continue to set removed legacy configuration options:
-
-- `endpoint` (optional): Endpoint where data is going to be sent to.
-- `use_insecure` (optional): If true. use gRPC as their communication transport. Only has effect if Endpoint is not "".
-- `timeout` (optional): Timeout for all API calls. If not set, defaults to 12 seconds.
-- `resource_mappings` (optional): ResourceMapping defines mapping of resources from source (OpenCensus) to target (Google Cloud).
-  - `label_mappings` (optional): Optional flag signals whether we can proceed with transformation if a label is missing in the resource.
-
 [beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

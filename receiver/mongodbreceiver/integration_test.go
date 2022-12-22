@@ -79,6 +79,7 @@ var (
 
 func TestMongodbIntegration(t *testing.T) {
 	t.Run("Running mongodb 4.0", func(t *testing.T) {
+		t.Skip("Refer to https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/17070")
 		t.Parallel()
 		container, endpoint := getContainer(t, containerRequest4_0, setupScript)
 		defer func() {
@@ -118,6 +119,7 @@ func TestMongodbIntegration(t *testing.T) {
 		require.NoError(t, err)
 	})
 	t.Run("Running mongodb 4.2", func(t *testing.T) {
+		t.Skip("Refer to https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/17070")
 		t.Parallel()
 		container, endpoint := getContainer(t, containerRequest4_2, setupScript)
 		defer func() {

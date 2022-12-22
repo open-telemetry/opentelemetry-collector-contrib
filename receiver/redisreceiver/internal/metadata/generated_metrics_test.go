@@ -3,10 +3,14 @@
 package metadata
 
 import (
+	"path/filepath"
 	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -17,7 +21,13 @@ import (
 func TestDefaultMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	mb := NewMetricsBuilder(DefaultMetricsSettings(), receivertest.NewNopCreateSettings(), WithStartTime(start))
+	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+	settings := receivertest.NewNopCreateSettings()
+	settings.Logger = zap.New(observedZapCore)
+	mb := NewMetricsBuilder(loadConfig(t, "default"), settings, WithStartTime(start))
+
+	assert.Equal(t, 0, observedLogs.Len())
+
 	enabledMetrics := make(map[string]bool)
 
 	enabledMetrics["redis.clients.blocked"] = true
@@ -133,45 +143,10 @@ func TestDefaultMetrics(t *testing.T) {
 func TestAllMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	metricsSettings := MetricsSettings{
-		RedisClientsBlocked:                    MetricSettings{Enabled: true},
-		RedisClientsConnected:                  MetricSettings{Enabled: true},
-		RedisClientsMaxInputBuffer:             MetricSettings{Enabled: true},
-		RedisClientsMaxOutputBuffer:            MetricSettings{Enabled: true},
-		RedisCmdCalls:                          MetricSettings{Enabled: true},
-		RedisCmdUsec:                           MetricSettings{Enabled: true},
-		RedisCommands:                          MetricSettings{Enabled: true},
-		RedisCommandsProcessed:                 MetricSettings{Enabled: true},
-		RedisConnectionsReceived:               MetricSettings{Enabled: true},
-		RedisConnectionsRejected:               MetricSettings{Enabled: true},
-		RedisCPUTime:                           MetricSettings{Enabled: true},
-		RedisDbAvgTTL:                          MetricSettings{Enabled: true},
-		RedisDbExpires:                         MetricSettings{Enabled: true},
-		RedisDbKeys:                            MetricSettings{Enabled: true},
-		RedisKeysEvicted:                       MetricSettings{Enabled: true},
-		RedisKeysExpired:                       MetricSettings{Enabled: true},
-		RedisKeyspaceHits:                      MetricSettings{Enabled: true},
-		RedisKeyspaceMisses:                    MetricSettings{Enabled: true},
-		RedisLatestFork:                        MetricSettings{Enabled: true},
-		RedisMaxmemory:                         MetricSettings{Enabled: true},
-		RedisMemoryFragmentationRatio:          MetricSettings{Enabled: true},
-		RedisMemoryLua:                         MetricSettings{Enabled: true},
-		RedisMemoryPeak:                        MetricSettings{Enabled: true},
-		RedisMemoryRss:                         MetricSettings{Enabled: true},
-		RedisMemoryUsed:                        MetricSettings{Enabled: true},
-		RedisNetInput:                          MetricSettings{Enabled: true},
-		RedisNetOutput:                         MetricSettings{Enabled: true},
-		RedisRdbChangesSinceLastSave:           MetricSettings{Enabled: true},
-		RedisReplicationBacklogFirstByteOffset: MetricSettings{Enabled: true},
-		RedisReplicationOffset:                 MetricSettings{Enabled: true},
-		RedisRole:                              MetricSettings{Enabled: true},
-		RedisSlavesConnected:                   MetricSettings{Enabled: true},
-		RedisUptime:                            MetricSettings{Enabled: true},
-	}
 	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 	settings := receivertest.NewNopCreateSettings()
 	settings.Logger = zap.New(observedZapCore)
-	mb := NewMetricsBuilder(metricsSettings, settings, WithStartTime(start))
+	mb := NewMetricsBuilder(loadConfig(t, "all_metrics"), settings, WithStartTime(start))
 
 	assert.Equal(t, 0, observedLogs.Len())
 
@@ -655,47 +630,13 @@ func TestAllMetrics(t *testing.T) {
 func TestNoMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	metricsSettings := MetricsSettings{
-		RedisClientsBlocked:                    MetricSettings{Enabled: false},
-		RedisClientsConnected:                  MetricSettings{Enabled: false},
-		RedisClientsMaxInputBuffer:             MetricSettings{Enabled: false},
-		RedisClientsMaxOutputBuffer:            MetricSettings{Enabled: false},
-		RedisCmdCalls:                          MetricSettings{Enabled: false},
-		RedisCmdUsec:                           MetricSettings{Enabled: false},
-		RedisCommands:                          MetricSettings{Enabled: false},
-		RedisCommandsProcessed:                 MetricSettings{Enabled: false},
-		RedisConnectionsReceived:               MetricSettings{Enabled: false},
-		RedisConnectionsRejected:               MetricSettings{Enabled: false},
-		RedisCPUTime:                           MetricSettings{Enabled: false},
-		RedisDbAvgTTL:                          MetricSettings{Enabled: false},
-		RedisDbExpires:                         MetricSettings{Enabled: false},
-		RedisDbKeys:                            MetricSettings{Enabled: false},
-		RedisKeysEvicted:                       MetricSettings{Enabled: false},
-		RedisKeysExpired:                       MetricSettings{Enabled: false},
-		RedisKeyspaceHits:                      MetricSettings{Enabled: false},
-		RedisKeyspaceMisses:                    MetricSettings{Enabled: false},
-		RedisLatestFork:                        MetricSettings{Enabled: false},
-		RedisMaxmemory:                         MetricSettings{Enabled: false},
-		RedisMemoryFragmentationRatio:          MetricSettings{Enabled: false},
-		RedisMemoryLua:                         MetricSettings{Enabled: false},
-		RedisMemoryPeak:                        MetricSettings{Enabled: false},
-		RedisMemoryRss:                         MetricSettings{Enabled: false},
-		RedisMemoryUsed:                        MetricSettings{Enabled: false},
-		RedisNetInput:                          MetricSettings{Enabled: false},
-		RedisNetOutput:                         MetricSettings{Enabled: false},
-		RedisRdbChangesSinceLastSave:           MetricSettings{Enabled: false},
-		RedisReplicationBacklogFirstByteOffset: MetricSettings{Enabled: false},
-		RedisReplicationOffset:                 MetricSettings{Enabled: false},
-		RedisRole:                              MetricSettings{Enabled: false},
-		RedisSlavesConnected:                   MetricSettings{Enabled: false},
-		RedisUptime:                            MetricSettings{Enabled: false},
-	}
 	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 	settings := receivertest.NewNopCreateSettings()
 	settings.Logger = zap.New(observedZapCore)
-	mb := NewMetricsBuilder(metricsSettings, settings, WithStartTime(start))
+	mb := NewMetricsBuilder(loadConfig(t, "no_metrics"), settings, WithStartTime(start))
 
 	assert.Equal(t, 0, observedLogs.Len())
+
 	mb.RecordRedisClientsBlockedDataPoint(ts, 1)
 	mb.RecordRedisClientsConnectedDataPoint(ts, 1)
 	mb.RecordRedisClientsMaxInputBufferDataPoint(ts, 1)
@@ -733,4 +674,14 @@ func TestNoMetrics(t *testing.T) {
 	metrics := mb.Emit()
 
 	assert.Equal(t, 0, metrics.ResourceMetrics().Len())
+}
+
+func loadConfig(t *testing.T, name string) MetricsSettings {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+	sub, err := cm.Sub(name)
+	require.NoError(t, err)
+	cfg := DefaultMetricsSettings()
+	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
+	return cfg
 }

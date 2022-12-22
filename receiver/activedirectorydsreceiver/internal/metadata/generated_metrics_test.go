@@ -3,10 +3,14 @@
 package metadata
 
 import (
+	"path/filepath"
 	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -17,7 +21,13 @@ import (
 func TestDefaultMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	mb := NewMetricsBuilder(DefaultMetricsSettings(), receivertest.NewNopCreateSettings(), WithStartTime(start))
+	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+	settings := receivertest.NewNopCreateSettings()
+	settings.Logger = zap.New(observedZapCore)
+	mb := NewMetricsBuilder(loadConfig(t, "default"), settings, WithStartTime(start))
+
+	assert.Equal(t, 0, observedLogs.Len())
+
 	enabledMetrics := make(map[string]bool)
 
 	enabledMetrics["active_directory.ds.bind.rate"] = true
@@ -92,30 +102,10 @@ func TestDefaultMetrics(t *testing.T) {
 func TestAllMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	metricsSettings := MetricsSettings{
-		ActiveDirectoryDsBindRate:                                  MetricSettings{Enabled: true},
-		ActiveDirectoryDsLdapBindLastSuccessfulTime:                MetricSettings{Enabled: true},
-		ActiveDirectoryDsLdapBindRate:                              MetricSettings{Enabled: true},
-		ActiveDirectoryDsLdapClientSessionCount:                    MetricSettings{Enabled: true},
-		ActiveDirectoryDsLdapSearchRate:                            MetricSettings{Enabled: true},
-		ActiveDirectoryDsNameCacheHitRate:                          MetricSettings{Enabled: true},
-		ActiveDirectoryDsNotificationQueued:                        MetricSettings{Enabled: true},
-		ActiveDirectoryDsOperationRate:                             MetricSettings{Enabled: true},
-		ActiveDirectoryDsReplicationNetworkIo:                      MetricSettings{Enabled: true},
-		ActiveDirectoryDsReplicationObjectRate:                     MetricSettings{Enabled: true},
-		ActiveDirectoryDsReplicationOperationPending:               MetricSettings{Enabled: true},
-		ActiveDirectoryDsReplicationPropertyRate:                   MetricSettings{Enabled: true},
-		ActiveDirectoryDsReplicationSyncObjectPending:              MetricSettings{Enabled: true},
-		ActiveDirectoryDsReplicationSyncRequestCount:               MetricSettings{Enabled: true},
-		ActiveDirectoryDsReplicationValueRate:                      MetricSettings{Enabled: true},
-		ActiveDirectoryDsSecurityDescriptorPropagationsEventQueued: MetricSettings{Enabled: true},
-		ActiveDirectoryDsSuboperationRate:                          MetricSettings{Enabled: true},
-		ActiveDirectoryDsThreadCount:                               MetricSettings{Enabled: true},
-	}
 	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 	settings := receivertest.NewNopCreateSettings()
 	settings.Logger = zap.New(observedZapCore)
-	mb := NewMetricsBuilder(metricsSettings, settings, WithStartTime(start))
+	mb := NewMetricsBuilder(loadConfig(t, "all_metrics"), settings, WithStartTime(start))
 
 	assert.Equal(t, 0, observedLogs.Len())
 
@@ -420,32 +410,13 @@ func TestAllMetrics(t *testing.T) {
 func TestNoMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	metricsSettings := MetricsSettings{
-		ActiveDirectoryDsBindRate:                                  MetricSettings{Enabled: false},
-		ActiveDirectoryDsLdapBindLastSuccessfulTime:                MetricSettings{Enabled: false},
-		ActiveDirectoryDsLdapBindRate:                              MetricSettings{Enabled: false},
-		ActiveDirectoryDsLdapClientSessionCount:                    MetricSettings{Enabled: false},
-		ActiveDirectoryDsLdapSearchRate:                            MetricSettings{Enabled: false},
-		ActiveDirectoryDsNameCacheHitRate:                          MetricSettings{Enabled: false},
-		ActiveDirectoryDsNotificationQueued:                        MetricSettings{Enabled: false},
-		ActiveDirectoryDsOperationRate:                             MetricSettings{Enabled: false},
-		ActiveDirectoryDsReplicationNetworkIo:                      MetricSettings{Enabled: false},
-		ActiveDirectoryDsReplicationObjectRate:                     MetricSettings{Enabled: false},
-		ActiveDirectoryDsReplicationOperationPending:               MetricSettings{Enabled: false},
-		ActiveDirectoryDsReplicationPropertyRate:                   MetricSettings{Enabled: false},
-		ActiveDirectoryDsReplicationSyncObjectPending:              MetricSettings{Enabled: false},
-		ActiveDirectoryDsReplicationSyncRequestCount:               MetricSettings{Enabled: false},
-		ActiveDirectoryDsReplicationValueRate:                      MetricSettings{Enabled: false},
-		ActiveDirectoryDsSecurityDescriptorPropagationsEventQueued: MetricSettings{Enabled: false},
-		ActiveDirectoryDsSuboperationRate:                          MetricSettings{Enabled: false},
-		ActiveDirectoryDsThreadCount:                               MetricSettings{Enabled: false},
-	}
 	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 	settings := receivertest.NewNopCreateSettings()
 	settings.Logger = zap.New(observedZapCore)
-	mb := NewMetricsBuilder(metricsSettings, settings, WithStartTime(start))
+	mb := NewMetricsBuilder(loadConfig(t, "no_metrics"), settings, WithStartTime(start))
 
 	assert.Equal(t, 0, observedLogs.Len())
+
 	mb.RecordActiveDirectoryDsBindRateDataPoint(ts, 1, AttributeBindType(1))
 	mb.RecordActiveDirectoryDsLdapBindLastSuccessfulTimeDataPoint(ts, 1)
 	mb.RecordActiveDirectoryDsLdapBindRateDataPoint(ts, 1)
@@ -468,4 +439,14 @@ func TestNoMetrics(t *testing.T) {
 	metrics := mb.Emit()
 
 	assert.Equal(t, 0, metrics.ResourceMetrics().Len())
+}
+
+func loadConfig(t *testing.T, name string) MetricsSettings {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+	sub, err := cm.Sub(name)
+	require.NoError(t, err)
+	cfg := DefaultMetricsSettings()
+	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
+	return cfg
 }

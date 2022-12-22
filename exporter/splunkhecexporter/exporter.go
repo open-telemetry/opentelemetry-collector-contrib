@@ -15,14 +15,12 @@
 package splunkhecexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
 
 import (
-	"compress/gzip"
 	"context"
 	"errors"
 	"fmt"
 	"net"
 	"net/http"
 	"net/url"
-	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -134,8 +132,5 @@ func buildClient(options *exporterOptions, config *Config, logger *zap.Logger) (
 			"__splunk_app_version": config.SplunkAppVersion,
 		},
 		config: config,
-		gzipWriterPool: &sync.Pool{New: func() interface{} {
-			return gzip.NewWriter(nil)
-		}},
 	}, nil
 }

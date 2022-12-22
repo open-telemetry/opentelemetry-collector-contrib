@@ -59,7 +59,7 @@ func TestSnmpReceiverIntegration(t *testing.T) {
 	}()
 	_, err := container.Host(context.Background())
 	require.NoError(t, err)
-	factories, err := componenttest.NopFactories()
+	factories, err := otelcoltest.NopFactories()
 	require.NoError(t, err)
 
 	for _, testCase := range testCases {

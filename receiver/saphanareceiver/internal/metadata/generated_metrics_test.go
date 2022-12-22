@@ -3,10 +3,14 @@
 package metadata
 
 import (
+	"path/filepath"
 	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -17,7 +21,13 @@ import (
 func TestDefaultMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	mb := NewMetricsBuilder(DefaultMetricsSettings(), receivertest.NewNopCreateSettings(), WithStartTime(start))
+	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+	settings := receivertest.NewNopCreateSettings()
+	settings.Logger = zap.New(observedZapCore)
+	mb := NewMetricsBuilder(loadConfig(t, "default"), settings, WithStartTime(start))
+
+	assert.Equal(t, 0, observedLogs.Len())
+
 	enabledMetrics := make(map[string]bool)
 
 	enabledMetrics["saphana.alert.count"] = true
@@ -173,57 +183,10 @@ func TestDefaultMetrics(t *testing.T) {
 func TestAllMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	metricsSettings := MetricsSettings{
-		SaphanaAlertCount:                       MetricSettings{Enabled: true},
-		SaphanaBackupLatest:                     MetricSettings{Enabled: true},
-		SaphanaColumnMemoryUsed:                 MetricSettings{Enabled: true},
-		SaphanaComponentMemoryUsed:              MetricSettings{Enabled: true},
-		SaphanaConnectionCount:                  MetricSettings{Enabled: true},
-		SaphanaCPUUsed:                          MetricSettings{Enabled: true},
-		SaphanaDiskSizeCurrent:                  MetricSettings{Enabled: true},
-		SaphanaHostMemoryCurrent:                MetricSettings{Enabled: true},
-		SaphanaHostSwapCurrent:                  MetricSettings{Enabled: true},
-		SaphanaInstanceCodeSize:                 MetricSettings{Enabled: true},
-		SaphanaInstanceMemoryCurrent:            MetricSettings{Enabled: true},
-		SaphanaInstanceMemorySharedAllocated:    MetricSettings{Enabled: true},
-		SaphanaInstanceMemoryUsedPeak:           MetricSettings{Enabled: true},
-		SaphanaLicenseExpirationTime:            MetricSettings{Enabled: true},
-		SaphanaLicenseLimit:                     MetricSettings{Enabled: true},
-		SaphanaLicensePeak:                      MetricSettings{Enabled: true},
-		SaphanaNetworkRequestAverageTime:        MetricSettings{Enabled: true},
-		SaphanaNetworkRequestCount:              MetricSettings{Enabled: true},
-		SaphanaNetworkRequestFinishedCount:      MetricSettings{Enabled: true},
-		SaphanaReplicationAverageTime:           MetricSettings{Enabled: true},
-		SaphanaReplicationBacklogSize:           MetricSettings{Enabled: true},
-		SaphanaReplicationBacklogTime:           MetricSettings{Enabled: true},
-		SaphanaRowStoreMemoryUsed:               MetricSettings{Enabled: true},
-		SaphanaSchemaMemoryUsedCurrent:          MetricSettings{Enabled: true},
-		SaphanaSchemaMemoryUsedMax:              MetricSettings{Enabled: true},
-		SaphanaSchemaOperationCount:             MetricSettings{Enabled: true},
-		SaphanaSchemaRecordCompressedCount:      MetricSettings{Enabled: true},
-		SaphanaSchemaRecordCount:                MetricSettings{Enabled: true},
-		SaphanaServiceCodeSize:                  MetricSettings{Enabled: true},
-		SaphanaServiceCount:                     MetricSettings{Enabled: true},
-		SaphanaServiceMemoryCompactorsAllocated: MetricSettings{Enabled: true},
-		SaphanaServiceMemoryCompactorsFreeable:  MetricSettings{Enabled: true},
-		SaphanaServiceMemoryEffectiveLimit:      MetricSettings{Enabled: true},
-		SaphanaServiceMemoryHeapCurrent:         MetricSettings{Enabled: true},
-		SaphanaServiceMemoryLimit:               MetricSettings{Enabled: true},
-		SaphanaServiceMemorySharedCurrent:       MetricSettings{Enabled: true},
-		SaphanaServiceMemoryUsed:                MetricSettings{Enabled: true},
-		SaphanaServiceStackSize:                 MetricSettings{Enabled: true},
-		SaphanaServiceThreadCount:               MetricSettings{Enabled: true},
-		SaphanaTransactionBlocked:               MetricSettings{Enabled: true},
-		SaphanaTransactionCount:                 MetricSettings{Enabled: true},
-		SaphanaUptime:                           MetricSettings{Enabled: true},
-		SaphanaVolumeOperationCount:             MetricSettings{Enabled: true},
-		SaphanaVolumeOperationSize:              MetricSettings{Enabled: true},
-		SaphanaVolumeOperationTime:              MetricSettings{Enabled: true},
-	}
 	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 	settings := receivertest.NewNopCreateSettings()
 	settings.Logger = zap.New(observedZapCore)
-	mb := NewMetricsBuilder(metricsSettings, settings, WithStartTime(start))
+	mb := NewMetricsBuilder(loadConfig(t, "all_metrics"), settings, WithStartTime(start))
 
 	assert.Equal(t, 0, observedLogs.Len())
 
@@ -1081,59 +1044,13 @@ func TestAllMetrics(t *testing.T) {
 func TestNoMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	metricsSettings := MetricsSettings{
-		SaphanaAlertCount:                       MetricSettings{Enabled: false},
-		SaphanaBackupLatest:                     MetricSettings{Enabled: false},
-		SaphanaColumnMemoryUsed:                 MetricSettings{Enabled: false},
-		SaphanaComponentMemoryUsed:              MetricSettings{Enabled: false},
-		SaphanaConnectionCount:                  MetricSettings{Enabled: false},
-		SaphanaCPUUsed:                          MetricSettings{Enabled: false},
-		SaphanaDiskSizeCurrent:                  MetricSettings{Enabled: false},
-		SaphanaHostMemoryCurrent:                MetricSettings{Enabled: false},
-		SaphanaHostSwapCurrent:                  MetricSettings{Enabled: false},
-		SaphanaInstanceCodeSize:                 MetricSettings{Enabled: false},
-		SaphanaInstanceMemoryCurrent:            MetricSettings{Enabled: false},
-		SaphanaInstanceMemorySharedAllocated:    MetricSettings{Enabled: false},
-		SaphanaInstanceMemoryUsedPeak:           MetricSettings{Enabled: false},
-		SaphanaLicenseExpirationTime:            MetricSettings{Enabled: false},
-		SaphanaLicenseLimit:                     MetricSettings{Enabled: false},
-		SaphanaLicensePeak:                      MetricSettings{Enabled: false},
-		SaphanaNetworkRequestAverageTime:        MetricSettings{Enabled: false},
-		SaphanaNetworkRequestCount:              MetricSettings{Enabled: false},
-		SaphanaNetworkRequestFinishedCount:      MetricSettings{Enabled: false},
-		SaphanaReplicationAverageTime:           MetricSettings{Enabled: false},
-		SaphanaReplicationBacklogSize:           MetricSettings{Enabled: false},
-		SaphanaReplicationBacklogTime:           MetricSettings{Enabled: false},
-		SaphanaRowStoreMemoryUsed:               MetricSettings{Enabled: false},
-		SaphanaSchemaMemoryUsedCurrent:          MetricSettings{Enabled: false},
-		SaphanaSchemaMemoryUsedMax:              MetricSettings{Enabled: false},
-		SaphanaSchemaOperationCount:             MetricSettings{Enabled: false},
-		SaphanaSchemaRecordCompressedCount:      MetricSettings{Enabled: false},
-		SaphanaSchemaRecordCount:                MetricSettings{Enabled: false},
-		SaphanaServiceCodeSize:                  MetricSettings{Enabled: false},
-		SaphanaServiceCount:                     MetricSettings{Enabled: false},
-		SaphanaServiceMemoryCompactorsAllocated: MetricSettings{Enabled: false},
-		SaphanaServiceMemoryCompactorsFreeable:  MetricSettings{Enabled: false},
-		SaphanaServiceMemoryEffectiveLimit:      MetricSettings{Enabled: false},
-		SaphanaServiceMemoryHeapCurrent:         MetricSettings{Enabled: false},
-		SaphanaServiceMemoryLimit:               MetricSettings{Enabled: false},
-		SaphanaServiceMemorySharedCurrent:       MetricSettings{Enabled: false},
-		SaphanaServiceMemoryUsed:                MetricSettings{Enabled: false},
-		SaphanaServiceStackSize:                 MetricSettings{Enabled: false},
-		SaphanaServiceThreadCount:               MetricSettings{Enabled: false},
-		SaphanaTransactionBlocked:               MetricSettings{Enabled: false},
-		SaphanaTransactionCount:                 MetricSettings{Enabled: false},
-		SaphanaUptime:                           MetricSettings{Enabled: false},
-		SaphanaVolumeOperationCount:             MetricSettings{Enabled: false},
-		SaphanaVolumeOperationSize:              MetricSettings{Enabled: false},
-		SaphanaVolumeOperationTime:              MetricSettings{Enabled: false},
-	}
 	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 	settings := receivertest.NewNopCreateSettings()
 	settings.Logger = zap.New(observedZapCore)
-	mb := NewMetricsBuilder(metricsSettings, settings, WithStartTime(start))
+	mb := NewMetricsBuilder(loadConfig(t, "no_metrics"), settings, WithStartTime(start))
 
 	assert.Equal(t, 0, observedLogs.Len())
+
 	mb.RecordSaphanaAlertCountDataPoint(ts, "1", "attr-val")
 	mb.RecordSaphanaBackupLatestDataPoint(ts, "1")
 	mb.RecordSaphanaColumnMemoryUsedDataPoint(ts, "1", AttributeColumnMemoryType(1), AttributeColumnMemorySubtype(1))
@@ -1183,4 +1100,14 @@ func TestNoMetrics(t *testing.T) {
 	metrics := mb.Emit()
 
 	assert.Equal(t, 0, metrics.ResourceMetrics().Len())
+}
+
+func loadConfig(t *testing.T, name string) MetricsSettings {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+	sub, err := cm.Sub(name)
+	require.NoError(t, err)
+	cfg := DefaultMetricsSettings()
+	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
+	return cfg
 }

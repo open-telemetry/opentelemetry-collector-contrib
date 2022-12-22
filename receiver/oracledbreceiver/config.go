@@ -19,14 +19,12 @@ import (
 	"fmt"
 	"net/url"
 
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver/internal/metadata"
 )
 
 type Config struct {
-	config.ReceiverSettings                 `mapstructure:",squash"`
 	DataSource                              string `mapstructure:"datasource"`
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	MetricsSettings                         metadata.MetricsSettings `mapstructure:"metrics"`

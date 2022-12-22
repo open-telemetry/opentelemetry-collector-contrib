@@ -21,8 +21,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -40,7 +38,6 @@ func TestNewLogsProcessor(t *testing.T) {
 		{
 			name: "nil_nextConsumer",
 			cfg: &Config{
-				ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
 				SamplingPercentage: 15.5,
 			},
 			wantErr: true,
@@ -49,7 +46,6 @@ func TestNewLogsProcessor(t *testing.T) {
 			name:         "happy_path",
 			nextConsumer: consumertest.NewNop(),
 			cfg: &Config{
-				ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
 				SamplingPercentage: 15.5,
 			},
 		},
@@ -57,7 +53,6 @@ func TestNewLogsProcessor(t *testing.T) {
 			name:         "happy_path_hash_seed",
 			nextConsumer: consumertest.NewNop(),
 			cfg: &Config{
-				ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
 				SamplingPercentage: 13.33,
 				HashSeed:           4321,
 			},
@@ -86,7 +81,6 @@ func TestLogsSampling(t *testing.T) {
 		{
 			name: "happy_path",
 			cfg: &Config{
-				ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
 				SamplingPercentage: 100,
 			},
 			received: 100,
@@ -94,7 +88,6 @@ func TestLogsSampling(t *testing.T) {
 		{
 			name: "nothing",
 			cfg: &Config{
-				ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
 				SamplingPercentage: 0,
 			},
 			received: 0,
@@ -102,7 +95,6 @@ func TestLogsSampling(t *testing.T) {
 		{
 			name: "roughly half",
 			cfg: &Config{
-				ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
 				SamplingPercentage: 50,
 				AttributeSource:    traceIDAttributeSource,
 			},
@@ -111,7 +103,6 @@ func TestLogsSampling(t *testing.T) {
 		{
 			name: "sampling_source no sampling",
 			cfg: &Config{
-				ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
 				SamplingPercentage: 0,
 				AttributeSource:    recordAttributeSource,
 				FromAttribute:      "foo",
@@ -121,7 +112,6 @@ func TestLogsSampling(t *testing.T) {
 		{
 			name: "sampling_source all sampling",
 			cfg: &Config{
-				ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
 				SamplingPercentage: 100,
 				AttributeSource:    recordAttributeSource,
 				FromAttribute:      "foo",
@@ -131,7 +121,6 @@ func TestLogsSampling(t *testing.T) {
 		{
 			name: "sampling_source sampling",
 			cfg: &Config{
-				ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
 				SamplingPercentage: 50,
 				AttributeSource:    recordAttributeSource,
 				FromAttribute:      "foo",
@@ -141,7 +130,6 @@ func TestLogsSampling(t *testing.T) {
 		{
 			name: "sampling_priority",
 			cfg: &Config{
-				ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
 				SamplingPercentage: 0,
 				SamplingPriority:   "priority",
 			},
@@ -150,7 +138,6 @@ func TestLogsSampling(t *testing.T) {
 		{
 			name: "sampling_priority with sampling field",
 			cfg: &Config{
-				ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
 				SamplingPercentage: 0,
 				AttributeSource:    recordAttributeSource,
 				FromAttribute:      "foo",

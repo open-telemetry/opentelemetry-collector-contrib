@@ -24,7 +24,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -41,10 +40,9 @@ func TestCreateDefaultConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 
 	assert.Equal(t, &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		TimeoutSettings:  defaulttimeoutSettings(),
-		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
-		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
+		TimeoutSettings: defaulttimeoutSettings(),
+		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
+		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 
 		API: APIConfig{
 			Site: "datadoghq.com",
@@ -102,10 +100,9 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "default"),
 			expected: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				TimeoutSettings:  defaulttimeoutSettings(),
-				RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
-				QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
+				TimeoutSettings: defaulttimeoutSettings(),
+				RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
+				QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 				API: APIConfig{
 					Key:              "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 					Site:             "datadoghq.com",
@@ -150,10 +147,9 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "api"),
 			expected: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				TimeoutSettings:  defaulttimeoutSettings(),
-				RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
-				QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
+				TimeoutSettings: defaulttimeoutSettings(),
+				RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
+				QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 				TagsConfig: TagsConfig{
 					Hostname: "customhostname",
 				},
@@ -204,10 +200,9 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "api2"),
 			expected: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				TimeoutSettings:  defaulttimeoutSettings(),
-				RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
-				QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
+				TimeoutSettings: defaulttimeoutSettings(),
+				RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
+				QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 				TagsConfig: TagsConfig{
 					Hostname: "customhostname",
 				},
@@ -504,10 +499,9 @@ func TestOnlyMetadata(t *testing.T) {
 	factory := NewFactory()
 	ctx := context.Background()
 	cfg := &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		TimeoutSettings:  defaulttimeoutSettings(),
-		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
-		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
+		TimeoutSettings: defaulttimeoutSettings(),
+		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
+		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 
 		API:          APIConfig{Key: "notnull"},
 		Metrics:      MetricsConfig{TCPAddr: confignet.TCPAddr{Endpoint: server.URL}},

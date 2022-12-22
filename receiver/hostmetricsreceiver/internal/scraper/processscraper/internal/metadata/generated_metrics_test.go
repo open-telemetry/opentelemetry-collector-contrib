@@ -3,10 +3,14 @@
 package metadata
 
 import (
+	"path/filepath"
 	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -17,7 +21,15 @@ import (
 func TestDefaultMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	mb := NewMetricsBuilder(DefaultMetricsSettings(), receivertest.NewNopCreateSettings(), WithStartTime(start))
+	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+	settings := receivertest.NewNopCreateSettings()
+	settings.Logger = zap.New(observedZapCore)
+	mb := NewMetricsBuilder(loadConfig(t, "default"), settings, WithStartTime(start))
+
+	assert.Equal(t, "[WARNING] `process.memory.physical_usage` should not be enabled: The metric is deprecated and will be removed in v0.70.0. Please use `process.memory.usage` instead. See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/hostmetricsreceiver#transition-to-process-memory-metric-names-aligned-with-opentelemetry-specification for more details.", observedLogs.All()[0].Message)
+	assert.Equal(t, "[WARNING] `process.memory.virtual_usage` should not be enabled: The metric is deprecated and will be removed in v0.70.0. Please use `process.memory.virtual` metric instead. See  https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/hostmetricsreceiver#transition-to-process-memory-metric-names-aligned-with-opentelemetry-specification for more details.", observedLogs.All()[1].Message)
+	assert.Equal(t, 2, observedLogs.Len())
+
 	enabledMetrics := make(map[string]bool)
 
 	mb.RecordProcessContextSwitchesDataPoint(ts, 1, AttributeContextSwitchType(1))
@@ -29,6 +41,8 @@ func TestDefaultMetrics(t *testing.T) {
 
 	enabledMetrics["process.disk.io"] = true
 	mb.RecordProcessDiskIoDataPoint(ts, 1, AttributeDirection(1))
+
+	mb.RecordProcessDiskOperationsDataPoint(ts, 1, AttributeDirection(1))
 
 	enabledMetrics["process.memory.physical_usage"] = true
 	mb.RecordProcessMemoryPhysicalUsageDataPoint(ts, 1)
@@ -68,32 +82,20 @@ func TestDefaultMetrics(t *testing.T) {
 func TestAllMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	metricsSettings := MetricsSettings{
-		ProcessContextSwitches:     MetricSettings{Enabled: true},
-		ProcessCPUTime:             MetricSettings{Enabled: true},
-		ProcessCPUUtilization:      MetricSettings{Enabled: true},
-		ProcessDiskIo:              MetricSettings{Enabled: true},
-		ProcessMemoryPhysicalUsage: MetricSettings{Enabled: true},
-		ProcessMemoryUsage:         MetricSettings{Enabled: true},
-		ProcessMemoryUtilization:   MetricSettings{Enabled: true},
-		ProcessMemoryVirtual:       MetricSettings{Enabled: true},
-		ProcessMemoryVirtualUsage:  MetricSettings{Enabled: true},
-		ProcessOpenFileDescriptors: MetricSettings{Enabled: true},
-		ProcessPagingFaults:        MetricSettings{Enabled: true},
-		ProcessSignalsPending:      MetricSettings{Enabled: true},
-		ProcessThreads:             MetricSettings{Enabled: true},
-	}
 	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 	settings := receivertest.NewNopCreateSettings()
 	settings.Logger = zap.New(observedZapCore)
-	mb := NewMetricsBuilder(metricsSettings, settings, WithStartTime(start))
+	mb := NewMetricsBuilder(loadConfig(t, "all_metrics"), settings, WithStartTime(start))
 
-	assert.Equal(t, 0+1+1, observedLogs.Len())
+	assert.Equal(t, "[WARNING] `process.memory.physical_usage` should not be enabled: The metric is deprecated and will be removed in v0.70.0. Please use `process.memory.usage` instead. See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/hostmetricsreceiver#transition-to-process-memory-metric-names-aligned-with-opentelemetry-specification for more details.", observedLogs.All()[0].Message)
+	assert.Equal(t, "[WARNING] `process.memory.virtual_usage` should not be enabled: The metric is deprecated and will be removed in v0.70.0. Please use `process.memory.virtual` metric instead. See  https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/hostmetricsreceiver#transition-to-process-memory-metric-names-aligned-with-opentelemetry-specification for more details.", observedLogs.All()[1].Message)
+	assert.Equal(t, 2, observedLogs.Len())
 
 	mb.RecordProcessContextSwitchesDataPoint(ts, 1, AttributeContextSwitchType(1))
 	mb.RecordProcessCPUTimeDataPoint(ts, 1, AttributeState(1))
 	mb.RecordProcessCPUUtilizationDataPoint(ts, 1, AttributeState(1))
 	mb.RecordProcessDiskIoDataPoint(ts, 1, AttributeDirection(1))
+	mb.RecordProcessDiskOperationsDataPoint(ts, 1, AttributeDirection(1))
 	mb.RecordProcessMemoryPhysicalUsageDataPoint(ts, 1)
 	mb.RecordProcessMemoryUsageDataPoint(ts, 1)
 	mb.RecordProcessMemoryUtilizationDataPoint(ts, 1)
@@ -208,6 +210,22 @@ func TestAllMetrics(t *testing.T) {
 			assert.True(t, ok)
 			assert.Equal(t, "read", attrVal.Str())
 			validatedMetrics["process.disk.io"] = struct{}{}
+		case "process.disk.operations":
+			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+			assert.Equal(t, "Number of disk operations performed by the process.", ms.At(i).Description())
+			assert.Equal(t, "{operations}", ms.At(i).Unit())
+			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+			dp := ms.At(i).Sum().DataPoints().At(0)
+			assert.Equal(t, start, dp.StartTimestamp())
+			assert.Equal(t, ts, dp.Timestamp())
+			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+			assert.Equal(t, int64(1), dp.IntValue())
+			attrVal, ok := dp.Attributes().Get("direction")
+			assert.True(t, ok)
+			assert.Equal(t, "read", attrVal.Str())
+			validatedMetrics["process.disk.operations"] = struct{}{}
 		case "process.memory.physical_usage":
 			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
@@ -334,31 +352,18 @@ func TestAllMetrics(t *testing.T) {
 func TestNoMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	metricsSettings := MetricsSettings{
-		ProcessContextSwitches:     MetricSettings{Enabled: false},
-		ProcessCPUTime:             MetricSettings{Enabled: false},
-		ProcessCPUUtilization:      MetricSettings{Enabled: false},
-		ProcessDiskIo:              MetricSettings{Enabled: false},
-		ProcessMemoryPhysicalUsage: MetricSettings{Enabled: false},
-		ProcessMemoryUsage:         MetricSettings{Enabled: false},
-		ProcessMemoryUtilization:   MetricSettings{Enabled: false},
-		ProcessMemoryVirtual:       MetricSettings{Enabled: false},
-		ProcessMemoryVirtualUsage:  MetricSettings{Enabled: false},
-		ProcessOpenFileDescriptors: MetricSettings{Enabled: false},
-		ProcessPagingFaults:        MetricSettings{Enabled: false},
-		ProcessSignalsPending:      MetricSettings{Enabled: false},
-		ProcessThreads:             MetricSettings{Enabled: false},
-	}
 	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 	settings := receivertest.NewNopCreateSettings()
 	settings.Logger = zap.New(observedZapCore)
-	mb := NewMetricsBuilder(metricsSettings, settings, WithStartTime(start))
+	mb := NewMetricsBuilder(loadConfig(t, "no_metrics"), settings, WithStartTime(start))
 
 	assert.Equal(t, 0, observedLogs.Len())
+
 	mb.RecordProcessContextSwitchesDataPoint(ts, 1, AttributeContextSwitchType(1))
 	mb.RecordProcessCPUTimeDataPoint(ts, 1, AttributeState(1))
 	mb.RecordProcessCPUUtilizationDataPoint(ts, 1, AttributeState(1))
 	mb.RecordProcessDiskIoDataPoint(ts, 1, AttributeDirection(1))
+	mb.RecordProcessDiskOperationsDataPoint(ts, 1, AttributeDirection(1))
 	mb.RecordProcessMemoryPhysicalUsageDataPoint(ts, 1)
 	mb.RecordProcessMemoryUsageDataPoint(ts, 1)
 	mb.RecordProcessMemoryUtilizationDataPoint(ts, 1)
@@ -372,4 +377,14 @@ func TestNoMetrics(t *testing.T) {
 	metrics := mb.Emit()
 
 	assert.Equal(t, 0, metrics.ResourceMetrics().Len())
+}
+
+func loadConfig(t *testing.T, name string) MetricsSettings {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+	sub, err := cm.Sub(name)
+	require.NoError(t, err)
+	cfg := DefaultMetricsSettings()
+	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
+	return cfg
 }

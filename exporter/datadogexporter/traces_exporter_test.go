@@ -29,8 +29,6 @@ import (
 	tracelog "github.com/DataDog/datadog-agent/pkg/trace/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/featuregate"
@@ -132,7 +130,6 @@ func TestTracesSource(t *testing.T) {
 	defer tracesServer.Close()
 
 	cfg := Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		API: APIConfig{
 			Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 		},
@@ -234,7 +231,6 @@ func TestTraceExporter(t *testing.T) {
 
 	defer server.Close()
 	cfg := Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		API: APIConfig{
 			Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 		},

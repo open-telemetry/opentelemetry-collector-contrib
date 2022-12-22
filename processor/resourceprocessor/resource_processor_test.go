@@ -20,8 +20,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -34,7 +32,6 @@ import (
 
 var (
 	cfg = &Config{
-		ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 		AttributesActions: []attraction.ActionKeyValue{
 			{Key: "cloud.availability_zone", Value: "zone-1", Action: attraction.UPSERT},
 			{Key: "k8s.cluster.name", FromAttribute: "k8s-cluster", Action: attraction.INSERT},
@@ -83,7 +80,6 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 		{
 			name: "config_attributes_replacement",
 			config: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 				AttributesActions: []attraction.ActionKeyValue{
 					{Key: "k8s.cluster.name", FromAttribute: "k8s-cluster", Action: attraction.INSERT},
 					{Key: "k8s-cluster", Action: attraction.DELETE},

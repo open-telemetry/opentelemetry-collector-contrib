@@ -20,8 +20,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -43,9 +41,7 @@ func TestMetricsTransformProcessor(t *testing.T) {
 			mtp, err := processorhelper.NewMetricsProcessor(
 				context.Background(),
 				processortest.NewNopCreateSettings(),
-				&Config{
-					ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
-				},
+				&Config{},
 				next,
 				p.processMetrics,
 				processorhelper.WithCapabilities(consumerCapabilities))

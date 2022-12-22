@@ -21,7 +21,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -40,17 +39,15 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "sometoken"),
 			expected: &Config{
-				ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
-				Scheme:            defaultScheme,
-				BearerToken:       "sometoken",
+				Scheme:      defaultScheme,
+				BearerToken: "sometoken",
 			},
 		},
 		{
 			id: component.NewIDWithName(typeStr, "withscheme"),
 			expected: &Config{
-				ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
-				Scheme:            "MyScheme",
-				BearerToken:       "my-token",
+				Scheme:      "MyScheme",
+				BearerToken: "my-token",
 			},
 		},
 	}

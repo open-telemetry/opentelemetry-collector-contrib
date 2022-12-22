@@ -3,10 +3,14 @@
 package metadata
 
 import (
+	"path/filepath"
 	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -17,7 +21,13 @@ import (
 func TestDefaultMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	mb := NewMetricsBuilder(DefaultMetricsSettings(), receivertest.NewNopCreateSettings(), WithStartTime(start))
+	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+	settings := receivertest.NewNopCreateSettings()
+	settings.Logger = zap.New(observedZapCore)
+	mb := NewMetricsBuilder(loadConfig(t, "default"), settings, WithStartTime(start))
+
+	assert.Equal(t, 0, observedLogs.Len())
+
 	enabledMetrics := make(map[string]bool)
 
 	enabledMetrics["postgresql.backends"] = true
@@ -104,34 +114,10 @@ func TestDefaultMetrics(t *testing.T) {
 func TestAllMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	metricsSettings := MetricsSettings{
-		PostgresqlBackends:                 MetricSettings{Enabled: true},
-		PostgresqlBgwriterBuffersAllocated: MetricSettings{Enabled: true},
-		PostgresqlBgwriterBuffersWrites:    MetricSettings{Enabled: true},
-		PostgresqlBgwriterCheckpointCount:  MetricSettings{Enabled: true},
-		PostgresqlBgwriterDuration:         MetricSettings{Enabled: true},
-		PostgresqlBgwriterMaxwritten:       MetricSettings{Enabled: true},
-		PostgresqlBlocksRead:               MetricSettings{Enabled: true},
-		PostgresqlCommits:                  MetricSettings{Enabled: true},
-		PostgresqlConnectionMax:            MetricSettings{Enabled: true},
-		PostgresqlDatabaseCount:            MetricSettings{Enabled: true},
-		PostgresqlDbSize:                   MetricSettings{Enabled: true},
-		PostgresqlIndexScans:               MetricSettings{Enabled: true},
-		PostgresqlIndexSize:                MetricSettings{Enabled: true},
-		PostgresqlOperations:               MetricSettings{Enabled: true},
-		PostgresqlReplicationDataDelay:     MetricSettings{Enabled: true},
-		PostgresqlRollbacks:                MetricSettings{Enabled: true},
-		PostgresqlRows:                     MetricSettings{Enabled: true},
-		PostgresqlTableCount:               MetricSettings{Enabled: true},
-		PostgresqlTableSize:                MetricSettings{Enabled: true},
-		PostgresqlTableVacuumCount:         MetricSettings{Enabled: true},
-		PostgresqlWalAge:                   MetricSettings{Enabled: true},
-		PostgresqlWalLag:                   MetricSettings{Enabled: true},
-	}
 	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 	settings := receivertest.NewNopCreateSettings()
 	settings.Logger = zap.New(observedZapCore)
-	mb := NewMetricsBuilder(metricsSettings, settings, WithStartTime(start))
+	mb := NewMetricsBuilder(loadConfig(t, "all_metrics"), settings, WithStartTime(start))
 
 	assert.Equal(t, 0, observedLogs.Len())
 
@@ -525,36 +511,13 @@ func TestAllMetrics(t *testing.T) {
 func TestNoMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	metricsSettings := MetricsSettings{
-		PostgresqlBackends:                 MetricSettings{Enabled: false},
-		PostgresqlBgwriterBuffersAllocated: MetricSettings{Enabled: false},
-		PostgresqlBgwriterBuffersWrites:    MetricSettings{Enabled: false},
-		PostgresqlBgwriterCheckpointCount:  MetricSettings{Enabled: false},
-		PostgresqlBgwriterDuration:         MetricSettings{Enabled: false},
-		PostgresqlBgwriterMaxwritten:       MetricSettings{Enabled: false},
-		PostgresqlBlocksRead:               MetricSettings{Enabled: false},
-		PostgresqlCommits:                  MetricSettings{Enabled: false},
-		PostgresqlConnectionMax:            MetricSettings{Enabled: false},
-		PostgresqlDatabaseCount:            MetricSettings{Enabled: false},
-		PostgresqlDbSize:                   MetricSettings{Enabled: false},
-		PostgresqlIndexScans:               MetricSettings{Enabled: false},
-		PostgresqlIndexSize:                MetricSettings{Enabled: false},
-		PostgresqlOperations:               MetricSettings{Enabled: false},
-		PostgresqlReplicationDataDelay:     MetricSettings{Enabled: false},
-		PostgresqlRollbacks:                MetricSettings{Enabled: false},
-		PostgresqlRows:                     MetricSettings{Enabled: false},
-		PostgresqlTableCount:               MetricSettings{Enabled: false},
-		PostgresqlTableSize:                MetricSettings{Enabled: false},
-		PostgresqlTableVacuumCount:         MetricSettings{Enabled: false},
-		PostgresqlWalAge:                   MetricSettings{Enabled: false},
-		PostgresqlWalLag:                   MetricSettings{Enabled: false},
-	}
 	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 	settings := receivertest.NewNopCreateSettings()
 	settings.Logger = zap.New(observedZapCore)
-	mb := NewMetricsBuilder(metricsSettings, settings, WithStartTime(start))
+	mb := NewMetricsBuilder(loadConfig(t, "no_metrics"), settings, WithStartTime(start))
 
 	assert.Equal(t, 0, observedLogs.Len())
+
 	mb.RecordPostgresqlBackendsDataPoint(ts, 1, "attr-val")
 	mb.RecordPostgresqlBgwriterBuffersAllocatedDataPoint(ts, 1)
 	mb.RecordPostgresqlBgwriterBuffersWritesDataPoint(ts, 1, AttributeBgBufferSource(1))
@@ -581,4 +544,14 @@ func TestNoMetrics(t *testing.T) {
 	metrics := mb.Emit()
 
 	assert.Equal(t, 0, metrics.ResourceMetrics().Len())
+}
+
+func loadConfig(t *testing.T, name string) MetricsSettings {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+	sub, err := cm.Sub(name)
+	require.NoError(t, err)
+	cfg := DefaultMetricsSettings()
+	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
+	return cfg
 }

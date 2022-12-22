@@ -3,10 +3,14 @@
 package metadata
 
 import (
+	"path/filepath"
 	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -17,7 +21,13 @@ import (
 func TestDefaultMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	mb := NewMetricsBuilder(DefaultMetricsSettings(), receivertest.NewNopCreateSettings(), WithStartTime(start))
+	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+	settings := receivertest.NewNopCreateSettings()
+	settings.Logger = zap.New(observedZapCore)
+	mb := NewMetricsBuilder(loadConfig(t, "default"), settings, WithStartTime(start))
+
+	assert.Equal(t, 0, observedLogs.Len())
+
 	enabledMetrics := make(map[string]bool)
 
 	enabledMetrics["memcached.bytes"] = true
@@ -71,23 +81,10 @@ func TestDefaultMetrics(t *testing.T) {
 func TestAllMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	metricsSettings := MetricsSettings{
-		MemcachedBytes:              MetricSettings{Enabled: true},
-		MemcachedCommands:           MetricSettings{Enabled: true},
-		MemcachedConnectionsCurrent: MetricSettings{Enabled: true},
-		MemcachedConnectionsTotal:   MetricSettings{Enabled: true},
-		MemcachedCPUUsage:           MetricSettings{Enabled: true},
-		MemcachedCurrentItems:       MetricSettings{Enabled: true},
-		MemcachedEvictions:          MetricSettings{Enabled: true},
-		MemcachedNetwork:            MetricSettings{Enabled: true},
-		MemcachedOperationHitRatio:  MetricSettings{Enabled: true},
-		MemcachedOperations:         MetricSettings{Enabled: true},
-		MemcachedThreads:            MetricSettings{Enabled: true},
-	}
 	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 	settings := receivertest.NewNopCreateSettings()
 	settings.Logger = zap.New(observedZapCore)
-	mb := NewMetricsBuilder(metricsSettings, settings, WithStartTime(start))
+	mb := NewMetricsBuilder(loadConfig(t, "all_metrics"), settings, WithStartTime(start))
 
 	assert.Equal(t, 0, observedLogs.Len())
 
@@ -282,25 +279,13 @@ func TestAllMetrics(t *testing.T) {
 func TestNoMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	metricsSettings := MetricsSettings{
-		MemcachedBytes:              MetricSettings{Enabled: false},
-		MemcachedCommands:           MetricSettings{Enabled: false},
-		MemcachedConnectionsCurrent: MetricSettings{Enabled: false},
-		MemcachedConnectionsTotal:   MetricSettings{Enabled: false},
-		MemcachedCPUUsage:           MetricSettings{Enabled: false},
-		MemcachedCurrentItems:       MetricSettings{Enabled: false},
-		MemcachedEvictions:          MetricSettings{Enabled: false},
-		MemcachedNetwork:            MetricSettings{Enabled: false},
-		MemcachedOperationHitRatio:  MetricSettings{Enabled: false},
-		MemcachedOperations:         MetricSettings{Enabled: false},
-		MemcachedThreads:            MetricSettings{Enabled: false},
-	}
 	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 	settings := receivertest.NewNopCreateSettings()
 	settings.Logger = zap.New(observedZapCore)
-	mb := NewMetricsBuilder(metricsSettings, settings, WithStartTime(start))
+	mb := NewMetricsBuilder(loadConfig(t, "no_metrics"), settings, WithStartTime(start))
 
 	assert.Equal(t, 0, observedLogs.Len())
+
 	mb.RecordMemcachedBytesDataPoint(ts, 1)
 	mb.RecordMemcachedCommandsDataPoint(ts, 1, AttributeCommand(1))
 	mb.RecordMemcachedConnectionsCurrentDataPoint(ts, 1)
@@ -316,4 +301,14 @@ func TestNoMetrics(t *testing.T) {
 	metrics := mb.Emit()
 
 	assert.Equal(t, 0, metrics.ResourceMetrics().Len())
+}
+
+func loadConfig(t *testing.T, name string) MetricsSettings {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+	sub, err := cm.Sub(name)
+	require.NoError(t, err)
+	cfg := DefaultMetricsSettings()
+	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
+	return cfg
 }

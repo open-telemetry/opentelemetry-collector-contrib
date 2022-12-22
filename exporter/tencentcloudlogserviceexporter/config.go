@@ -18,12 +18,10 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 )
 
 // Config defines configuration for TencentCloud Log Service exporter.
 type Config struct {
-	config.ExporterSettings `mapstructure:",squash"`
 	// LogService's Region, https://cloud.tencent.com/document/product/614/18940
 	// for TencentCloud Kubernetes(or CVM), set ap-{region}.cls.tencentyun.com, eg ap-beijing.cls.tencentyun.com;
 	//  others set ap-{region}.cls.tencentcs.com, eg ap-beijing.cls.tencentcs.com

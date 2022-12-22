@@ -29,6 +29,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
@@ -57,6 +58,10 @@ var (
 )
 
 func TestElasticsearchIntegration(t *testing.T) {
+	// Let this test check if it works with the features disabled and the unit test will test the feature enabled.
+	err := featuregate.GetRegistry().Apply(map[string]bool{emitClusterHealthDetailedShardMetricsID: false, emitAllIndexOperationMetricsID: false})
+	require.NoError(t, err)
+
 	//Starts an elasticsearch docker container
 	t.Run("Running elasticsearch 7.9", func(t *testing.T) {
 		t.Parallel()

@@ -23,24 +23,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/featuregate"
 )
 
-// setPdataFeatureGateForTest changes the pdata feature gate during a test.
-// usage: defer SetPdataFeatureGateForTest(true)()
-func setPdataFeatureGateForTest(t testing.TB, enabled bool) func() {
-	originalValue := featuregate.GetRegistry().IsEnabled(pdataExporterFeatureGate)
-	require.NoError(t, featuregate.GetRegistry().Apply(map[string]bool{pdataExporterFeatureGate: enabled}))
-	return func() {
-		require.NoError(t, featuregate.GetRegistry().Apply(map[string]bool{pdataExporterFeatureGate: originalValue}))
-	}
-}
-
 func TestLoadConfig(t *testing.T) {
-	defer setPdataFeatureGateForTest(t, true)()
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 	factory := NewFactory()
@@ -58,7 +45,6 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, sanitize(cfg.(*Config)),
 		&Config{
-			ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 			TimeoutSettings: exporterhelper.TimeoutSettings{
 				Timeout: 20 * time.Second,
 			},
