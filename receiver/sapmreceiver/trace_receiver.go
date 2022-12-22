@@ -195,6 +195,9 @@ func (sr *sapmReceiver) Start(_ context.Context, host component.Host) error {
 
 // Shutdown stops the the sapmReceiver's server.
 func (sr *sapmReceiver) Shutdown(context.Context) error {
+	if sr.server == nil {
+		return nil
+	}
 	err := sr.server.Close()
 	sr.shutdownWG.Wait()
 	return err
