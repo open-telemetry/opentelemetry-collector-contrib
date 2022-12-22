@@ -351,7 +351,7 @@ func TestReceiverFlowControlDelayedRetry(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			receiver, messagingService, unmarshaller := newReceiver(t)
-			delay := 5 * time.Millisecond
+			delay := 50 * time.Millisecond
 			receiver.config.Flow.DelayedRetry.Delay = delay
 			var err error
 			// we want to return an error at first, then set the next consumer to a noop consumer
@@ -455,7 +455,7 @@ func TestReceiverFlowControlDelayedRetryInterrupt(t *testing.T) {
 func TestReceiverFlowControlDelayedRetryMultipleRetries(t *testing.T) {
 	receiver, messagingService, unmarshaller := newReceiver(t)
 	// we won't wait 10 seconds since we will interrupt well before
-	retryInterval := 2 * time.Millisecond
+	retryInterval := 20 * time.Millisecond
 	var retryCount int64 = 5
 	receiver.config.Flow.DelayedRetry.Delay = retryInterval
 	var err error
