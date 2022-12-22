@@ -3,10 +3,14 @@
 package metadata
 
 import (
+	"path/filepath"
 	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -17,7 +21,13 @@ import (
 func TestDefaultMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	mb := NewMetricsBuilder(DefaultMetricsSettings(), receivertest.NewNopCreateSettings(), WithStartTime(start))
+	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+	settings := receivertest.NewNopCreateSettings()
+	settings.Logger = zap.New(observedZapCore)
+	mb := NewMetricsBuilder(loadConfig(t, "default"), settings, WithStartTime(start))
+
+	assert.Equal(t, 0, observedLogs.Len())
+
 	enabledMetrics := make(map[string]bool)
 
 	enabledMetrics["elasticsearch.breaker.memory.estimated"] = true
@@ -290,103 +300,10 @@ func TestDefaultMetrics(t *testing.T) {
 func TestAllMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	metricsSettings := MetricsSettings{
-		ElasticsearchBreakerMemoryEstimated:                       MetricSettings{Enabled: true},
-		ElasticsearchBreakerMemoryLimit:                           MetricSettings{Enabled: true},
-		ElasticsearchBreakerTripped:                               MetricSettings{Enabled: true},
-		ElasticsearchClusterDataNodes:                             MetricSettings{Enabled: true},
-		ElasticsearchClusterHealth:                                MetricSettings{Enabled: true},
-		ElasticsearchClusterInFlightFetch:                         MetricSettings{Enabled: true},
-		ElasticsearchClusterIndicesCacheEvictions:                 MetricSettings{Enabled: true},
-		ElasticsearchClusterNodes:                                 MetricSettings{Enabled: true},
-		ElasticsearchClusterPendingTasks:                          MetricSettings{Enabled: true},
-		ElasticsearchClusterPublishedStatesDifferences:            MetricSettings{Enabled: true},
-		ElasticsearchClusterPublishedStatesFull:                   MetricSettings{Enabled: true},
-		ElasticsearchClusterShards:                                MetricSettings{Enabled: true},
-		ElasticsearchClusterStateQueue:                            MetricSettings{Enabled: true},
-		ElasticsearchClusterStateUpdateCount:                      MetricSettings{Enabled: true},
-		ElasticsearchClusterStateUpdateTime:                       MetricSettings{Enabled: true},
-		ElasticsearchIndexCacheEvictions:                          MetricSettings{Enabled: true},
-		ElasticsearchIndexCacheMemoryUsage:                        MetricSettings{Enabled: true},
-		ElasticsearchIndexCacheSize:                               MetricSettings{Enabled: true},
-		ElasticsearchIndexDocuments:                               MetricSettings{Enabled: true},
-		ElasticsearchIndexOperationsCompleted:                     MetricSettings{Enabled: true},
-		ElasticsearchIndexOperationsMergeDocsCount:                MetricSettings{Enabled: true},
-		ElasticsearchIndexOperationsMergeSize:                     MetricSettings{Enabled: true},
-		ElasticsearchIndexOperationsTime:                          MetricSettings{Enabled: true},
-		ElasticsearchIndexSegmentsCount:                           MetricSettings{Enabled: true},
-		ElasticsearchIndexSegmentsMemory:                          MetricSettings{Enabled: true},
-		ElasticsearchIndexSegmentsSize:                            MetricSettings{Enabled: true},
-		ElasticsearchIndexShardsSize:                              MetricSettings{Enabled: true},
-		ElasticsearchIndexTranslogOperations:                      MetricSettings{Enabled: true},
-		ElasticsearchIndexTranslogSize:                            MetricSettings{Enabled: true},
-		ElasticsearchIndexingPressureMemoryLimit:                  MetricSettings{Enabled: true},
-		ElasticsearchIndexingPressureMemoryTotalPrimaryRejections: MetricSettings{Enabled: true},
-		ElasticsearchIndexingPressureMemoryTotalReplicaRejections: MetricSettings{Enabled: true},
-		ElasticsearchMemoryIndexingPressure:                       MetricSettings{Enabled: true},
-		ElasticsearchNodeCacheCount:                               MetricSettings{Enabled: true},
-		ElasticsearchNodeCacheEvictions:                           MetricSettings{Enabled: true},
-		ElasticsearchNodeCacheMemoryUsage:                         MetricSettings{Enabled: true},
-		ElasticsearchNodeCacheSize:                                MetricSettings{Enabled: true},
-		ElasticsearchNodeClusterConnections:                       MetricSettings{Enabled: true},
-		ElasticsearchNodeClusterIo:                                MetricSettings{Enabled: true},
-		ElasticsearchNodeDiskIoRead:                               MetricSettings{Enabled: true},
-		ElasticsearchNodeDiskIoWrite:                              MetricSettings{Enabled: true},
-		ElasticsearchNodeDocuments:                                MetricSettings{Enabled: true},
-		ElasticsearchNodeFsDiskAvailable:                          MetricSettings{Enabled: true},
-		ElasticsearchNodeFsDiskFree:                               MetricSettings{Enabled: true},
-		ElasticsearchNodeFsDiskTotal:                              MetricSettings{Enabled: true},
-		ElasticsearchNodeHTTPConnections:                          MetricSettings{Enabled: true},
-		ElasticsearchNodeIngestDocuments:                          MetricSettings{Enabled: true},
-		ElasticsearchNodeIngestDocumentsCurrent:                   MetricSettings{Enabled: true},
-		ElasticsearchNodeIngestOperationsFailed:                   MetricSettings{Enabled: true},
-		ElasticsearchNodeOpenFiles:                                MetricSettings{Enabled: true},
-		ElasticsearchNodeOperationsCompleted:                      MetricSettings{Enabled: true},
-		ElasticsearchNodeOperationsCurrent:                        MetricSettings{Enabled: true},
-		ElasticsearchNodeOperationsGetCompleted:                   MetricSettings{Enabled: true},
-		ElasticsearchNodeOperationsGetTime:                        MetricSettings{Enabled: true},
-		ElasticsearchNodeOperationsTime:                           MetricSettings{Enabled: true},
-		ElasticsearchNodePipelineIngestDocumentsCurrent:           MetricSettings{Enabled: true},
-		ElasticsearchNodePipelineIngestDocumentsPreprocessed:      MetricSettings{Enabled: true},
-		ElasticsearchNodePipelineIngestOperationsFailed:           MetricSettings{Enabled: true},
-		ElasticsearchNodeScriptCacheEvictions:                     MetricSettings{Enabled: true},
-		ElasticsearchNodeScriptCompilationLimitTriggered:          MetricSettings{Enabled: true},
-		ElasticsearchNodeScriptCompilations:                       MetricSettings{Enabled: true},
-		ElasticsearchNodeSegmentsMemory:                           MetricSettings{Enabled: true},
-		ElasticsearchNodeShardsDataSetSize:                        MetricSettings{Enabled: true},
-		ElasticsearchNodeShardsReservedSize:                       MetricSettings{Enabled: true},
-		ElasticsearchNodeShardsSize:                               MetricSettings{Enabled: true},
-		ElasticsearchNodeThreadPoolTasksFinished:                  MetricSettings{Enabled: true},
-		ElasticsearchNodeThreadPoolTasksQueued:                    MetricSettings{Enabled: true},
-		ElasticsearchNodeThreadPoolThreads:                        MetricSettings{Enabled: true},
-		ElasticsearchNodeTranslogOperations:                       MetricSettings{Enabled: true},
-		ElasticsearchNodeTranslogSize:                             MetricSettings{Enabled: true},
-		ElasticsearchNodeTranslogUncommittedSize:                  MetricSettings{Enabled: true},
-		ElasticsearchOsCPULoadAvg15m:                              MetricSettings{Enabled: true},
-		ElasticsearchOsCPULoadAvg1m:                               MetricSettings{Enabled: true},
-		ElasticsearchOsCPULoadAvg5m:                               MetricSettings{Enabled: true},
-		ElasticsearchOsCPUUsage:                                   MetricSettings{Enabled: true},
-		ElasticsearchOsMemory:                                     MetricSettings{Enabled: true},
-		ElasticsearchProcessCPUTime:                               MetricSettings{Enabled: true},
-		ElasticsearchProcessCPUUsage:                              MetricSettings{Enabled: true},
-		ElasticsearchProcessMemoryVirtual:                         MetricSettings{Enabled: true},
-		JvmClassesLoaded:                                          MetricSettings{Enabled: true},
-		JvmGcCollectionsCount:                                     MetricSettings{Enabled: true},
-		JvmGcCollectionsElapsed:                                   MetricSettings{Enabled: true},
-		JvmMemoryHeapCommitted:                                    MetricSettings{Enabled: true},
-		JvmMemoryHeapMax:                                          MetricSettings{Enabled: true},
-		JvmMemoryHeapUsed:                                         MetricSettings{Enabled: true},
-		JvmMemoryHeapUtilization:                                  MetricSettings{Enabled: true},
-		JvmMemoryNonheapCommitted:                                 MetricSettings{Enabled: true},
-		JvmMemoryNonheapUsed:                                      MetricSettings{Enabled: true},
-		JvmMemoryPoolMax:                                          MetricSettings{Enabled: true},
-		JvmMemoryPoolUsed:                                         MetricSettings{Enabled: true},
-		JvmThreadsCount:                                           MetricSettings{Enabled: true},
-	}
 	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 	settings := receivertest.NewNopCreateSettings()
 	settings.Logger = zap.New(observedZapCore)
-	mb := NewMetricsBuilder(metricsSettings, settings, WithStartTime(start))
+	mb := NewMetricsBuilder(loadConfig(t, "all_metrics"), settings, WithStartTime(start))
 
 	assert.Equal(t, 0, observedLogs.Len())
 
@@ -1829,105 +1746,13 @@ func TestAllMetrics(t *testing.T) {
 func TestNoMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	metricsSettings := MetricsSettings{
-		ElasticsearchBreakerMemoryEstimated:                       MetricSettings{Enabled: false},
-		ElasticsearchBreakerMemoryLimit:                           MetricSettings{Enabled: false},
-		ElasticsearchBreakerTripped:                               MetricSettings{Enabled: false},
-		ElasticsearchClusterDataNodes:                             MetricSettings{Enabled: false},
-		ElasticsearchClusterHealth:                                MetricSettings{Enabled: false},
-		ElasticsearchClusterInFlightFetch:                         MetricSettings{Enabled: false},
-		ElasticsearchClusterIndicesCacheEvictions:                 MetricSettings{Enabled: false},
-		ElasticsearchClusterNodes:                                 MetricSettings{Enabled: false},
-		ElasticsearchClusterPendingTasks:                          MetricSettings{Enabled: false},
-		ElasticsearchClusterPublishedStatesDifferences:            MetricSettings{Enabled: false},
-		ElasticsearchClusterPublishedStatesFull:                   MetricSettings{Enabled: false},
-		ElasticsearchClusterShards:                                MetricSettings{Enabled: false},
-		ElasticsearchClusterStateQueue:                            MetricSettings{Enabled: false},
-		ElasticsearchClusterStateUpdateCount:                      MetricSettings{Enabled: false},
-		ElasticsearchClusterStateUpdateTime:                       MetricSettings{Enabled: false},
-		ElasticsearchIndexCacheEvictions:                          MetricSettings{Enabled: false},
-		ElasticsearchIndexCacheMemoryUsage:                        MetricSettings{Enabled: false},
-		ElasticsearchIndexCacheSize:                               MetricSettings{Enabled: false},
-		ElasticsearchIndexDocuments:                               MetricSettings{Enabled: false},
-		ElasticsearchIndexOperationsCompleted:                     MetricSettings{Enabled: false},
-		ElasticsearchIndexOperationsMergeDocsCount:                MetricSettings{Enabled: false},
-		ElasticsearchIndexOperationsMergeSize:                     MetricSettings{Enabled: false},
-		ElasticsearchIndexOperationsTime:                          MetricSettings{Enabled: false},
-		ElasticsearchIndexSegmentsCount:                           MetricSettings{Enabled: false},
-		ElasticsearchIndexSegmentsMemory:                          MetricSettings{Enabled: false},
-		ElasticsearchIndexSegmentsSize:                            MetricSettings{Enabled: false},
-		ElasticsearchIndexShardsSize:                              MetricSettings{Enabled: false},
-		ElasticsearchIndexTranslogOperations:                      MetricSettings{Enabled: false},
-		ElasticsearchIndexTranslogSize:                            MetricSettings{Enabled: false},
-		ElasticsearchIndexingPressureMemoryLimit:                  MetricSettings{Enabled: false},
-		ElasticsearchIndexingPressureMemoryTotalPrimaryRejections: MetricSettings{Enabled: false},
-		ElasticsearchIndexingPressureMemoryTotalReplicaRejections: MetricSettings{Enabled: false},
-		ElasticsearchMemoryIndexingPressure:                       MetricSettings{Enabled: false},
-		ElasticsearchNodeCacheCount:                               MetricSettings{Enabled: false},
-		ElasticsearchNodeCacheEvictions:                           MetricSettings{Enabled: false},
-		ElasticsearchNodeCacheMemoryUsage:                         MetricSettings{Enabled: false},
-		ElasticsearchNodeCacheSize:                                MetricSettings{Enabled: false},
-		ElasticsearchNodeClusterConnections:                       MetricSettings{Enabled: false},
-		ElasticsearchNodeClusterIo:                                MetricSettings{Enabled: false},
-		ElasticsearchNodeDiskIoRead:                               MetricSettings{Enabled: false},
-		ElasticsearchNodeDiskIoWrite:                              MetricSettings{Enabled: false},
-		ElasticsearchNodeDocuments:                                MetricSettings{Enabled: false},
-		ElasticsearchNodeFsDiskAvailable:                          MetricSettings{Enabled: false},
-		ElasticsearchNodeFsDiskFree:                               MetricSettings{Enabled: false},
-		ElasticsearchNodeFsDiskTotal:                              MetricSettings{Enabled: false},
-		ElasticsearchNodeHTTPConnections:                          MetricSettings{Enabled: false},
-		ElasticsearchNodeIngestDocuments:                          MetricSettings{Enabled: false},
-		ElasticsearchNodeIngestDocumentsCurrent:                   MetricSettings{Enabled: false},
-		ElasticsearchNodeIngestOperationsFailed:                   MetricSettings{Enabled: false},
-		ElasticsearchNodeOpenFiles:                                MetricSettings{Enabled: false},
-		ElasticsearchNodeOperationsCompleted:                      MetricSettings{Enabled: false},
-		ElasticsearchNodeOperationsCurrent:                        MetricSettings{Enabled: false},
-		ElasticsearchNodeOperationsGetCompleted:                   MetricSettings{Enabled: false},
-		ElasticsearchNodeOperationsGetTime:                        MetricSettings{Enabled: false},
-		ElasticsearchNodeOperationsTime:                           MetricSettings{Enabled: false},
-		ElasticsearchNodePipelineIngestDocumentsCurrent:           MetricSettings{Enabled: false},
-		ElasticsearchNodePipelineIngestDocumentsPreprocessed:      MetricSettings{Enabled: false},
-		ElasticsearchNodePipelineIngestOperationsFailed:           MetricSettings{Enabled: false},
-		ElasticsearchNodeScriptCacheEvictions:                     MetricSettings{Enabled: false},
-		ElasticsearchNodeScriptCompilationLimitTriggered:          MetricSettings{Enabled: false},
-		ElasticsearchNodeScriptCompilations:                       MetricSettings{Enabled: false},
-		ElasticsearchNodeSegmentsMemory:                           MetricSettings{Enabled: false},
-		ElasticsearchNodeShardsDataSetSize:                        MetricSettings{Enabled: false},
-		ElasticsearchNodeShardsReservedSize:                       MetricSettings{Enabled: false},
-		ElasticsearchNodeShardsSize:                               MetricSettings{Enabled: false},
-		ElasticsearchNodeThreadPoolTasksFinished:                  MetricSettings{Enabled: false},
-		ElasticsearchNodeThreadPoolTasksQueued:                    MetricSettings{Enabled: false},
-		ElasticsearchNodeThreadPoolThreads:                        MetricSettings{Enabled: false},
-		ElasticsearchNodeTranslogOperations:                       MetricSettings{Enabled: false},
-		ElasticsearchNodeTranslogSize:                             MetricSettings{Enabled: false},
-		ElasticsearchNodeTranslogUncommittedSize:                  MetricSettings{Enabled: false},
-		ElasticsearchOsCPULoadAvg15m:                              MetricSettings{Enabled: false},
-		ElasticsearchOsCPULoadAvg1m:                               MetricSettings{Enabled: false},
-		ElasticsearchOsCPULoadAvg5m:                               MetricSettings{Enabled: false},
-		ElasticsearchOsCPUUsage:                                   MetricSettings{Enabled: false},
-		ElasticsearchOsMemory:                                     MetricSettings{Enabled: false},
-		ElasticsearchProcessCPUTime:                               MetricSettings{Enabled: false},
-		ElasticsearchProcessCPUUsage:                              MetricSettings{Enabled: false},
-		ElasticsearchProcessMemoryVirtual:                         MetricSettings{Enabled: false},
-		JvmClassesLoaded:                                          MetricSettings{Enabled: false},
-		JvmGcCollectionsCount:                                     MetricSettings{Enabled: false},
-		JvmGcCollectionsElapsed:                                   MetricSettings{Enabled: false},
-		JvmMemoryHeapCommitted:                                    MetricSettings{Enabled: false},
-		JvmMemoryHeapMax:                                          MetricSettings{Enabled: false},
-		JvmMemoryHeapUsed:                                         MetricSettings{Enabled: false},
-		JvmMemoryHeapUtilization:                                  MetricSettings{Enabled: false},
-		JvmMemoryNonheapCommitted:                                 MetricSettings{Enabled: false},
-		JvmMemoryNonheapUsed:                                      MetricSettings{Enabled: false},
-		JvmMemoryPoolMax:                                          MetricSettings{Enabled: false},
-		JvmMemoryPoolUsed:                                         MetricSettings{Enabled: false},
-		JvmThreadsCount:                                           MetricSettings{Enabled: false},
-	}
 	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 	settings := receivertest.NewNopCreateSettings()
 	settings.Logger = zap.New(observedZapCore)
-	mb := NewMetricsBuilder(metricsSettings, settings, WithStartTime(start))
+	mb := NewMetricsBuilder(loadConfig(t, "no_metrics"), settings, WithStartTime(start))
 
 	assert.Equal(t, 0, observedLogs.Len())
+
 	mb.RecordElasticsearchBreakerMemoryEstimatedDataPoint(ts, 1, "attr-val")
 	mb.RecordElasticsearchBreakerMemoryLimitDataPoint(ts, 1, "attr-val")
 	mb.RecordElasticsearchBreakerTrippedDataPoint(ts, 1, "attr-val")
@@ -2023,4 +1848,14 @@ func TestNoMetrics(t *testing.T) {
 	metrics := mb.Emit()
 
 	assert.Equal(t, 0, metrics.ResourceMetrics().Len())
+}
+
+func loadConfig(t *testing.T, name string) MetricsSettings {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+	sub, err := cm.Sub(name)
+	require.NoError(t, err)
+	cfg := DefaultMetricsSettings()
+	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
+	return cfg
 }
