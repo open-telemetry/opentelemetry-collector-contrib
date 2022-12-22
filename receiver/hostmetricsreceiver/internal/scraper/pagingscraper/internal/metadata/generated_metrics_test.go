@@ -4,7 +4,6 @@ package metadata
 
 import (
 	"path/filepath"
-	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -18,167 +17,164 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 )
 
-func TestDefaultMetrics(t *testing.T) {
-	start := pcommon.Timestamp(1_000_000_000)
-	ts := pcommon.Timestamp(1_000_001_000)
-	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
-	settings := receivertest.NewNopCreateSettings()
-	settings.Logger = zap.New(observedZapCore)
-	mb := NewMetricsBuilder(loadConfig(t, "default"), settings, WithStartTime(start))
+type testMetricsSet int
 
-	assert.Equal(t, 0, observedLogs.Len())
+const (
+	testMetricsSetDefault testMetricsSet = iota
+	testMetricsSetAll
+	testMetricsSetNo
+)
 
-	enabledMetrics := make(map[string]bool)
-
-	enabledMetrics["system.paging.faults"] = true
-	mb.RecordSystemPagingFaultsDataPoint(ts, 1, AttributeType(1))
-
-	enabledMetrics["system.paging.operations"] = true
-	mb.RecordSystemPagingOperationsDataPoint(ts, 1, AttributeDirection(1), AttributeType(1))
-
-	enabledMetrics["system.paging.usage"] = true
-	mb.RecordSystemPagingUsageDataPoint(ts, 1, "attr-val", AttributeState(1))
-
-	mb.RecordSystemPagingUtilizationDataPoint(ts, 1, "attr-val", AttributeState(1))
-
-	metrics := mb.Emit()
-
-	assert.Equal(t, 1, metrics.ResourceMetrics().Len())
-	sm := metrics.ResourceMetrics().At(0).ScopeMetrics()
-	assert.Equal(t, 1, sm.Len())
-	ms := sm.At(0).Metrics()
-	assert.Equal(t, len(enabledMetrics), ms.Len())
-	seenMetrics := make(map[string]bool)
-	for i := 0; i < ms.Len(); i++ {
-		assert.True(t, enabledMetrics[ms.At(i).Name()])
-		seenMetrics[ms.At(i).Name()] = true
+func TestMetricsBuilder(t *testing.T) {
+	tests := []struct {
+		name       string
+		metricsSet testMetricsSet
+	}{
+		{
+			name:       "default",
+			metricsSet: testMetricsSetDefault,
+		},
+		{
+			name:       "all_metrics",
+			metricsSet: testMetricsSetAll,
+		},
+		{
+			name:       "no_metrics",
+			metricsSet: testMetricsSetNo,
+		},
 	}
-	assert.Equal(t, len(enabledMetrics), len(seenMetrics))
-}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			start := pcommon.Timestamp(1_000_000_000)
+			ts := pcommon.Timestamp(1_000_001_000)
+			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+			settings := receivertest.NewNopCreateSettings()
+			settings.Logger = zap.New(observedZapCore)
+			mb := NewMetricsBuilder(loadConfig(t, test.name), settings, WithStartTime(start))
 
-func TestAllMetrics(t *testing.T) {
-	start := pcommon.Timestamp(1_000_000_000)
-	ts := pcommon.Timestamp(1_000_001_000)
-	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
-	settings := receivertest.NewNopCreateSettings()
-	settings.Logger = zap.New(observedZapCore)
-	mb := NewMetricsBuilder(loadConfig(t, "all_metrics"), settings, WithStartTime(start))
+			expectedWarnings := 0
+			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
-	assert.Equal(t, 0, observedLogs.Len())
+			defaultMetricsCount := 0
+			allMetricsCount := 0
 
-	mb.RecordSystemPagingFaultsDataPoint(ts, 1, AttributeType(1))
-	mb.RecordSystemPagingOperationsDataPoint(ts, 1, AttributeDirection(1), AttributeType(1))
-	mb.RecordSystemPagingUsageDataPoint(ts, 1, "attr-val", AttributeState(1))
-	mb.RecordSystemPagingUtilizationDataPoint(ts, 1, "attr-val", AttributeState(1))
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSystemPagingFaultsDataPoint(ts, 1, AttributeType(1))
 
-	metrics := mb.Emit()
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSystemPagingOperationsDataPoint(ts, 1, AttributeDirection(1), AttributeType(1))
 
-	assert.Equal(t, 1, metrics.ResourceMetrics().Len())
-	rm := metrics.ResourceMetrics().At(0)
-	attrCount := 0
-	assert.Equal(t, attrCount, rm.Resource().Attributes().Len())
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSystemPagingUsageDataPoint(ts, 1, "attr-val", AttributeState(1))
 
-	assert.Equal(t, 1, rm.ScopeMetrics().Len())
-	ms := rm.ScopeMetrics().At(0).Metrics()
-	allMetricsCount := reflect.TypeOf(MetricsSettings{}).NumField()
-	assert.Equal(t, allMetricsCount, ms.Len())
-	validatedMetrics := make(map[string]struct{})
-	for i := 0; i < ms.Len(); i++ {
-		switch ms.At(i).Name() {
-		case "system.paging.faults":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The number of page faults.", ms.At(i).Description())
-			assert.Equal(t, "{faults}", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("type")
-			assert.True(t, ok)
-			assert.Equal(t, "major", attrVal.Str())
-			validatedMetrics["system.paging.faults"] = struct{}{}
-		case "system.paging.operations":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The number of paging operations.", ms.At(i).Description())
-			assert.Equal(t, "{operations}", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("direction")
-			assert.True(t, ok)
-			assert.Equal(t, "page_in", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("type")
-			assert.True(t, ok)
-			assert.Equal(t, "major", attrVal.Str())
-			validatedMetrics["system.paging.operations"] = struct{}{}
-		case "system.paging.usage":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Swap (unix) or pagefile (windows) usage.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("device")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("state")
-			assert.True(t, ok)
-			assert.Equal(t, "cached", attrVal.Str())
-			validatedMetrics["system.paging.usage"] = struct{}{}
-		case "system.paging.utilization":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Swap (unix) or pagefile (windows) utilization.", ms.At(i).Description())
-			assert.Equal(t, "1", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			attrVal, ok := dp.Attributes().Get("device")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("state")
-			assert.True(t, ok)
-			assert.Equal(t, "cached", attrVal.Str())
-			validatedMetrics["system.paging.utilization"] = struct{}{}
-		}
+			allMetricsCount++
+			mb.RecordSystemPagingUtilizationDataPoint(ts, 1, "attr-val", AttributeState(1))
+
+			metrics := mb.Emit()
+
+			if test.metricsSet == testMetricsSetNo {
+				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
+				return
+			}
+
+			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
+			rm := metrics.ResourceMetrics().At(0)
+			attrCount := 0
+			assert.Equal(t, attrCount, rm.Resource().Attributes().Len())
+
+			assert.Equal(t, 1, rm.ScopeMetrics().Len())
+			ms := rm.ScopeMetrics().At(0).Metrics()
+			if test.metricsSet == testMetricsSetDefault {
+				assert.Equal(t, defaultMetricsCount, ms.Len())
+			}
+			if test.metricsSet == testMetricsSetAll {
+				assert.Equal(t, allMetricsCount, ms.Len())
+			}
+			validatedMetrics := make(map[string]bool)
+			for i := 0; i < ms.Len(); i++ {
+				switch ms.At(i).Name() {
+				case "system.paging.faults":
+					assert.False(t, validatedMetrics["system.paging.faults"], "Found a duplicate in the metrics slice: system.paging.faults")
+					validatedMetrics["system.paging.faults"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The number of page faults.", ms.At(i).Description())
+					assert.Equal(t, "{faults}", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("type")
+					assert.True(t, ok)
+					assert.Equal(t, "major", attrVal.Str())
+				case "system.paging.operations":
+					assert.False(t, validatedMetrics["system.paging.operations"], "Found a duplicate in the metrics slice: system.paging.operations")
+					validatedMetrics["system.paging.operations"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The number of paging operations.", ms.At(i).Description())
+					assert.Equal(t, "{operations}", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("direction")
+					assert.True(t, ok)
+					assert.Equal(t, "page_in", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("type")
+					assert.True(t, ok)
+					assert.Equal(t, "major", attrVal.Str())
+				case "system.paging.usage":
+					assert.False(t, validatedMetrics["system.paging.usage"], "Found a duplicate in the metrics slice: system.paging.usage")
+					validatedMetrics["system.paging.usage"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Swap (unix) or pagefile (windows) usage.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("device")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("state")
+					assert.True(t, ok)
+					assert.Equal(t, "cached", attrVal.Str())
+				case "system.paging.utilization":
+					assert.False(t, validatedMetrics["system.paging.utilization"], "Found a duplicate in the metrics slice: system.paging.utilization")
+					validatedMetrics["system.paging.utilization"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Swap (unix) or pagefile (windows) utilization.", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("device")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("state")
+					assert.True(t, ok)
+					assert.Equal(t, "cached", attrVal.Str())
+				}
+			}
+		})
 	}
-	assert.Equal(t, allMetricsCount, len(validatedMetrics))
-}
-
-func TestNoMetrics(t *testing.T) {
-	start := pcommon.Timestamp(1_000_000_000)
-	ts := pcommon.Timestamp(1_000_001_000)
-	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
-	settings := receivertest.NewNopCreateSettings()
-	settings.Logger = zap.New(observedZapCore)
-	mb := NewMetricsBuilder(loadConfig(t, "no_metrics"), settings, WithStartTime(start))
-
-	assert.Equal(t, 0, observedLogs.Len())
-
-	mb.RecordSystemPagingFaultsDataPoint(ts, 1, AttributeType(1))
-	mb.RecordSystemPagingOperationsDataPoint(ts, 1, AttributeDirection(1), AttributeType(1))
-	mb.RecordSystemPagingUsageDataPoint(ts, 1, "attr-val", AttributeState(1))
-	mb.RecordSystemPagingUtilizationDataPoint(ts, 1, "attr-val", AttributeState(1))
-
-	metrics := mb.Emit()
-
-	assert.Equal(t, 0, metrics.ResourceMetrics().Len())
 }
 
 func loadConfig(t *testing.T, name string) MetricsSettings {
