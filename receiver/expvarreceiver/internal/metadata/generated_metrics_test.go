@@ -3,10 +3,14 @@
 package metadata
 
 import (
+	"path/filepath"
 	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -17,7 +21,13 @@ import (
 func TestDefaultMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	mb := NewMetricsBuilder(DefaultMetricsSettings(), receivertest.NewNopCreateSettings(), WithStartTime(start))
+	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+	settings := receivertest.NewNopCreateSettings()
+	settings.Logger = zap.New(observedZapCore)
+	mb := NewMetricsBuilder(loadConfig(t, "default"), settings, WithStartTime(start))
+
+	assert.Equal(t, 0, observedLogs.Len())
+
 	enabledMetrics := make(map[string]bool)
 
 	enabledMetrics["process.runtime.memstats.buck_hash_sys"] = true
@@ -114,38 +124,10 @@ func TestDefaultMetrics(t *testing.T) {
 func TestAllMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	metricsSettings := MetricsSettings{
-		ProcessRuntimeMemstatsBuckHashSys:   MetricSettings{Enabled: true},
-		ProcessRuntimeMemstatsFrees:         MetricSettings{Enabled: true},
-		ProcessRuntimeMemstatsGcCPUFraction: MetricSettings{Enabled: true},
-		ProcessRuntimeMemstatsGcSys:         MetricSettings{Enabled: true},
-		ProcessRuntimeMemstatsHeapAlloc:     MetricSettings{Enabled: true},
-		ProcessRuntimeMemstatsHeapIdle:      MetricSettings{Enabled: true},
-		ProcessRuntimeMemstatsHeapInuse:     MetricSettings{Enabled: true},
-		ProcessRuntimeMemstatsHeapObjects:   MetricSettings{Enabled: true},
-		ProcessRuntimeMemstatsHeapReleased:  MetricSettings{Enabled: true},
-		ProcessRuntimeMemstatsHeapSys:       MetricSettings{Enabled: true},
-		ProcessRuntimeMemstatsLastPause:     MetricSettings{Enabled: true},
-		ProcessRuntimeMemstatsLookups:       MetricSettings{Enabled: true},
-		ProcessRuntimeMemstatsMallocs:       MetricSettings{Enabled: true},
-		ProcessRuntimeMemstatsMcacheInuse:   MetricSettings{Enabled: true},
-		ProcessRuntimeMemstatsMcacheSys:     MetricSettings{Enabled: true},
-		ProcessRuntimeMemstatsMspanInuse:    MetricSettings{Enabled: true},
-		ProcessRuntimeMemstatsMspanSys:      MetricSettings{Enabled: true},
-		ProcessRuntimeMemstatsNextGc:        MetricSettings{Enabled: true},
-		ProcessRuntimeMemstatsNumForcedGc:   MetricSettings{Enabled: true},
-		ProcessRuntimeMemstatsNumGc:         MetricSettings{Enabled: true},
-		ProcessRuntimeMemstatsOtherSys:      MetricSettings{Enabled: true},
-		ProcessRuntimeMemstatsPauseTotal:    MetricSettings{Enabled: true},
-		ProcessRuntimeMemstatsStackInuse:    MetricSettings{Enabled: true},
-		ProcessRuntimeMemstatsStackSys:      MetricSettings{Enabled: true},
-		ProcessRuntimeMemstatsSys:           MetricSettings{Enabled: true},
-		ProcessRuntimeMemstatsTotalAlloc:    MetricSettings{Enabled: true},
-	}
 	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 	settings := receivertest.NewNopCreateSettings()
 	settings.Logger = zap.New(observedZapCore)
-	mb := NewMetricsBuilder(metricsSettings, settings, WithStartTime(start))
+	mb := NewMetricsBuilder(loadConfig(t, "all_metrics"), settings, WithStartTime(start))
 
 	assert.Equal(t, 0, observedLogs.Len())
 
@@ -532,40 +514,13 @@ func TestAllMetrics(t *testing.T) {
 func TestNoMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	metricsSettings := MetricsSettings{
-		ProcessRuntimeMemstatsBuckHashSys:   MetricSettings{Enabled: false},
-		ProcessRuntimeMemstatsFrees:         MetricSettings{Enabled: false},
-		ProcessRuntimeMemstatsGcCPUFraction: MetricSettings{Enabled: false},
-		ProcessRuntimeMemstatsGcSys:         MetricSettings{Enabled: false},
-		ProcessRuntimeMemstatsHeapAlloc:     MetricSettings{Enabled: false},
-		ProcessRuntimeMemstatsHeapIdle:      MetricSettings{Enabled: false},
-		ProcessRuntimeMemstatsHeapInuse:     MetricSettings{Enabled: false},
-		ProcessRuntimeMemstatsHeapObjects:   MetricSettings{Enabled: false},
-		ProcessRuntimeMemstatsHeapReleased:  MetricSettings{Enabled: false},
-		ProcessRuntimeMemstatsHeapSys:       MetricSettings{Enabled: false},
-		ProcessRuntimeMemstatsLastPause:     MetricSettings{Enabled: false},
-		ProcessRuntimeMemstatsLookups:       MetricSettings{Enabled: false},
-		ProcessRuntimeMemstatsMallocs:       MetricSettings{Enabled: false},
-		ProcessRuntimeMemstatsMcacheInuse:   MetricSettings{Enabled: false},
-		ProcessRuntimeMemstatsMcacheSys:     MetricSettings{Enabled: false},
-		ProcessRuntimeMemstatsMspanInuse:    MetricSettings{Enabled: false},
-		ProcessRuntimeMemstatsMspanSys:      MetricSettings{Enabled: false},
-		ProcessRuntimeMemstatsNextGc:        MetricSettings{Enabled: false},
-		ProcessRuntimeMemstatsNumForcedGc:   MetricSettings{Enabled: false},
-		ProcessRuntimeMemstatsNumGc:         MetricSettings{Enabled: false},
-		ProcessRuntimeMemstatsOtherSys:      MetricSettings{Enabled: false},
-		ProcessRuntimeMemstatsPauseTotal:    MetricSettings{Enabled: false},
-		ProcessRuntimeMemstatsStackInuse:    MetricSettings{Enabled: false},
-		ProcessRuntimeMemstatsStackSys:      MetricSettings{Enabled: false},
-		ProcessRuntimeMemstatsSys:           MetricSettings{Enabled: false},
-		ProcessRuntimeMemstatsTotalAlloc:    MetricSettings{Enabled: false},
-	}
 	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 	settings := receivertest.NewNopCreateSettings()
 	settings.Logger = zap.New(observedZapCore)
-	mb := NewMetricsBuilder(metricsSettings, settings, WithStartTime(start))
+	mb := NewMetricsBuilder(loadConfig(t, "no_metrics"), settings, WithStartTime(start))
 
 	assert.Equal(t, 0, observedLogs.Len())
+
 	mb.RecordProcessRuntimeMemstatsBuckHashSysDataPoint(ts, 1)
 	mb.RecordProcessRuntimeMemstatsFreesDataPoint(ts, 1)
 	mb.RecordProcessRuntimeMemstatsGcCPUFractionDataPoint(ts, 1)
@@ -596,4 +551,14 @@ func TestNoMetrics(t *testing.T) {
 	metrics := mb.Emit()
 
 	assert.Equal(t, 0, metrics.ResourceMetrics().Len())
+}
+
+func loadConfig(t *testing.T, name string) MetricsSettings {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+	sub, err := cm.Sub(name)
+	require.NoError(t, err)
+	cfg := DefaultMetricsSettings()
+	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
+	return cfg
 }

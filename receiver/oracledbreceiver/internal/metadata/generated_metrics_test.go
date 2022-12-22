@@ -3,10 +3,14 @@
 package metadata
 
 import (
+	"path/filepath"
 	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -17,7 +21,13 @@ import (
 func TestDefaultMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	mb := NewMetricsBuilder(DefaultMetricsSettings(), receivertest.NewNopCreateSettings(), WithStartTime(start))
+	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+	settings := receivertest.NewNopCreateSettings()
+	settings.Logger = zap.New(observedZapCore)
+	mb := NewMetricsBuilder(loadConfig(t, "default"), settings, WithStartTime(start))
+
+	assert.Equal(t, 0, observedLogs.Len())
+
 	enabledMetrics := make(map[string]bool)
 
 	enabledMetrics["oracledb.cpu_time"] = true
@@ -113,37 +123,10 @@ func TestDefaultMetrics(t *testing.T) {
 func TestAllMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	metricsSettings := MetricsSettings{
-		OracledbCPUTime:               MetricSettings{Enabled: true},
-		OracledbDmlLocksLimit:         MetricSettings{Enabled: true},
-		OracledbDmlLocksUsage:         MetricSettings{Enabled: true},
-		OracledbEnqueueDeadlocks:      MetricSettings{Enabled: true},
-		OracledbEnqueueLocksLimit:     MetricSettings{Enabled: true},
-		OracledbEnqueueLocksUsage:     MetricSettings{Enabled: true},
-		OracledbEnqueueResourcesLimit: MetricSettings{Enabled: true},
-		OracledbEnqueueResourcesUsage: MetricSettings{Enabled: true},
-		OracledbExchangeDeadlocks:     MetricSettings{Enabled: true},
-		OracledbExecutions:            MetricSettings{Enabled: true},
-		OracledbHardParses:            MetricSettings{Enabled: true},
-		OracledbLogicalReads:          MetricSettings{Enabled: true},
-		OracledbParseCalls:            MetricSettings{Enabled: true},
-		OracledbPgaMemory:             MetricSettings{Enabled: true},
-		OracledbPhysicalReads:         MetricSettings{Enabled: true},
-		OracledbProcessesLimit:        MetricSettings{Enabled: true},
-		OracledbProcessesUsage:        MetricSettings{Enabled: true},
-		OracledbSessionsLimit:         MetricSettings{Enabled: true},
-		OracledbSessionsUsage:         MetricSettings{Enabled: true},
-		OracledbTablespaceSizeLimit:   MetricSettings{Enabled: true},
-		OracledbTablespaceSizeUsage:   MetricSettings{Enabled: true},
-		OracledbTransactionsLimit:     MetricSettings{Enabled: true},
-		OracledbTransactionsUsage:     MetricSettings{Enabled: true},
-		OracledbUserCommits:           MetricSettings{Enabled: true},
-		OracledbUserRollbacks:         MetricSettings{Enabled: true},
-	}
 	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 	settings := receivertest.NewNopCreateSettings()
 	settings.Logger = zap.New(observedZapCore)
-	mb := NewMetricsBuilder(metricsSettings, settings, WithStartTime(start))
+	mb := NewMetricsBuilder(loadConfig(t, "all_metrics"), settings, WithStartTime(start))
 
 	assert.Equal(t, 0, observedLogs.Len())
 
@@ -508,39 +491,13 @@ func TestAllMetrics(t *testing.T) {
 func TestNoMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	metricsSettings := MetricsSettings{
-		OracledbCPUTime:               MetricSettings{Enabled: false},
-		OracledbDmlLocksLimit:         MetricSettings{Enabled: false},
-		OracledbDmlLocksUsage:         MetricSettings{Enabled: false},
-		OracledbEnqueueDeadlocks:      MetricSettings{Enabled: false},
-		OracledbEnqueueLocksLimit:     MetricSettings{Enabled: false},
-		OracledbEnqueueLocksUsage:     MetricSettings{Enabled: false},
-		OracledbEnqueueResourcesLimit: MetricSettings{Enabled: false},
-		OracledbEnqueueResourcesUsage: MetricSettings{Enabled: false},
-		OracledbExchangeDeadlocks:     MetricSettings{Enabled: false},
-		OracledbExecutions:            MetricSettings{Enabled: false},
-		OracledbHardParses:            MetricSettings{Enabled: false},
-		OracledbLogicalReads:          MetricSettings{Enabled: false},
-		OracledbParseCalls:            MetricSettings{Enabled: false},
-		OracledbPgaMemory:             MetricSettings{Enabled: false},
-		OracledbPhysicalReads:         MetricSettings{Enabled: false},
-		OracledbProcessesLimit:        MetricSettings{Enabled: false},
-		OracledbProcessesUsage:        MetricSettings{Enabled: false},
-		OracledbSessionsLimit:         MetricSettings{Enabled: false},
-		OracledbSessionsUsage:         MetricSettings{Enabled: false},
-		OracledbTablespaceSizeLimit:   MetricSettings{Enabled: false},
-		OracledbTablespaceSizeUsage:   MetricSettings{Enabled: false},
-		OracledbTransactionsLimit:     MetricSettings{Enabled: false},
-		OracledbTransactionsUsage:     MetricSettings{Enabled: false},
-		OracledbUserCommits:           MetricSettings{Enabled: false},
-		OracledbUserRollbacks:         MetricSettings{Enabled: false},
-	}
 	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 	settings := receivertest.NewNopCreateSettings()
 	settings.Logger = zap.New(observedZapCore)
-	mb := NewMetricsBuilder(metricsSettings, settings, WithStartTime(start))
+	mb := NewMetricsBuilder(loadConfig(t, "no_metrics"), settings, WithStartTime(start))
 
 	assert.Equal(t, 0, observedLogs.Len())
+
 	mb.RecordOracledbCPUTimeDataPoint(ts, 1)
 	mb.RecordOracledbDmlLocksLimitDataPoint(ts, "1")
 	mb.RecordOracledbDmlLocksUsageDataPoint(ts, "1")
@@ -570,4 +527,14 @@ func TestNoMetrics(t *testing.T) {
 	metrics := mb.Emit()
 
 	assert.Equal(t, 0, metrics.ResourceMetrics().Len())
+}
+
+func loadConfig(t *testing.T, name string) MetricsSettings {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+	sub, err := cm.Sub(name)
+	require.NoError(t, err)
+	cfg := DefaultMetricsSettings()
+	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
+	return cfg
 }
