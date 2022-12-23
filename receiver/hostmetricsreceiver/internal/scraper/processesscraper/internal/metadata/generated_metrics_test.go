@@ -4,7 +4,6 @@ package metadata
 
 import (
 	"path/filepath"
-	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -18,116 +17,113 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 )
 
-func TestDefaultMetrics(t *testing.T) {
-	start := pcommon.Timestamp(1_000_000_000)
-	ts := pcommon.Timestamp(1_000_001_000)
-	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
-	settings := receivertest.NewNopCreateSettings()
-	settings.Logger = zap.New(observedZapCore)
-	mb := NewMetricsBuilder(loadConfig(t, "default"), settings, WithStartTime(start))
+type testMetricsSet int
 
-	assert.Equal(t, 0, observedLogs.Len())
+const (
+	testMetricsSetDefault testMetricsSet = iota
+	testMetricsSetAll
+	testMetricsSetNo
+)
 
-	enabledMetrics := make(map[string]bool)
-
-	enabledMetrics["system.processes.count"] = true
-	mb.RecordSystemProcessesCountDataPoint(ts, 1, AttributeStatus(1))
-
-	enabledMetrics["system.processes.created"] = true
-	mb.RecordSystemProcessesCreatedDataPoint(ts, 1)
-
-	metrics := mb.Emit()
-
-	assert.Equal(t, 1, metrics.ResourceMetrics().Len())
-	sm := metrics.ResourceMetrics().At(0).ScopeMetrics()
-	assert.Equal(t, 1, sm.Len())
-	ms := sm.At(0).Metrics()
-	assert.Equal(t, len(enabledMetrics), ms.Len())
-	seenMetrics := make(map[string]bool)
-	for i := 0; i < ms.Len(); i++ {
-		assert.True(t, enabledMetrics[ms.At(i).Name()])
-		seenMetrics[ms.At(i).Name()] = true
+func TestMetricsBuilder(t *testing.T) {
+	tests := []struct {
+		name       string
+		metricsSet testMetricsSet
+	}{
+		{
+			name:       "default",
+			metricsSet: testMetricsSetDefault,
+		},
+		{
+			name:       "all_metrics",
+			metricsSet: testMetricsSetAll,
+		},
+		{
+			name:       "no_metrics",
+			metricsSet: testMetricsSetNo,
+		},
 	}
-	assert.Equal(t, len(enabledMetrics), len(seenMetrics))
-}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			start := pcommon.Timestamp(1_000_000_000)
+			ts := pcommon.Timestamp(1_000_001_000)
+			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+			settings := receivertest.NewNopCreateSettings()
+			settings.Logger = zap.New(observedZapCore)
+			mb := NewMetricsBuilder(loadConfig(t, test.name), settings, WithStartTime(start))
 
-func TestAllMetrics(t *testing.T) {
-	start := pcommon.Timestamp(1_000_000_000)
-	ts := pcommon.Timestamp(1_000_001_000)
-	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
-	settings := receivertest.NewNopCreateSettings()
-	settings.Logger = zap.New(observedZapCore)
-	mb := NewMetricsBuilder(loadConfig(t, "all_metrics"), settings, WithStartTime(start))
+			expectedWarnings := 0
+			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
-	assert.Equal(t, 0, observedLogs.Len())
+			defaultMetricsCount := 0
+			allMetricsCount := 0
 
-	mb.RecordSystemProcessesCountDataPoint(ts, 1, AttributeStatus(1))
-	mb.RecordSystemProcessesCreatedDataPoint(ts, 1)
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSystemProcessesCountDataPoint(ts, 1, AttributeStatus(1))
 
-	metrics := mb.Emit()
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSystemProcessesCreatedDataPoint(ts, 1)
 
-	assert.Equal(t, 1, metrics.ResourceMetrics().Len())
-	rm := metrics.ResourceMetrics().At(0)
-	attrCount := 0
-	assert.Equal(t, attrCount, rm.Resource().Attributes().Len())
+			metrics := mb.Emit()
 
-	assert.Equal(t, 1, rm.ScopeMetrics().Len())
-	ms := rm.ScopeMetrics().At(0).Metrics()
-	allMetricsCount := reflect.TypeOf(MetricsSettings{}).NumField()
-	assert.Equal(t, allMetricsCount, ms.Len())
-	validatedMetrics := make(map[string]struct{})
-	for i := 0; i < ms.Len(); i++ {
-		switch ms.At(i).Name() {
-		case "system.processes.count":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Total number of processes in each state.", ms.At(i).Description())
-			assert.Equal(t, "{processes}", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("status")
-			assert.True(t, ok)
-			assert.Equal(t, "blocked", attrVal.Str())
-			validatedMetrics["system.processes.count"] = struct{}{}
-		case "system.processes.created":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Total number of created processes.", ms.At(i).Description())
-			assert.Equal(t, "{processes}", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["system.processes.created"] = struct{}{}
-		}
+			if test.metricsSet == testMetricsSetNo {
+				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
+				return
+			}
+
+			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
+			rm := metrics.ResourceMetrics().At(0)
+			attrCount := 0
+			assert.Equal(t, attrCount, rm.Resource().Attributes().Len())
+
+			assert.Equal(t, 1, rm.ScopeMetrics().Len())
+			ms := rm.ScopeMetrics().At(0).Metrics()
+			if test.metricsSet == testMetricsSetDefault {
+				assert.Equal(t, defaultMetricsCount, ms.Len())
+			}
+			if test.metricsSet == testMetricsSetAll {
+				assert.Equal(t, allMetricsCount, ms.Len())
+			}
+			validatedMetrics := make(map[string]bool)
+			for i := 0; i < ms.Len(); i++ {
+				switch ms.At(i).Name() {
+				case "system.processes.count":
+					assert.False(t, validatedMetrics["system.processes.count"], "Found a duplicate in the metrics slice: system.processes.count")
+					validatedMetrics["system.processes.count"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Total number of processes in each state.", ms.At(i).Description())
+					assert.Equal(t, "{processes}", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("status")
+					assert.True(t, ok)
+					assert.Equal(t, "blocked", attrVal.Str())
+				case "system.processes.created":
+					assert.False(t, validatedMetrics["system.processes.created"], "Found a duplicate in the metrics slice: system.processes.created")
+					validatedMetrics["system.processes.created"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Total number of created processes.", ms.At(i).Description())
+					assert.Equal(t, "{processes}", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				}
+			}
+		})
 	}
-	assert.Equal(t, allMetricsCount, len(validatedMetrics))
-}
-
-func TestNoMetrics(t *testing.T) {
-	start := pcommon.Timestamp(1_000_000_000)
-	ts := pcommon.Timestamp(1_000_001_000)
-	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
-	settings := receivertest.NewNopCreateSettings()
-	settings.Logger = zap.New(observedZapCore)
-	mb := NewMetricsBuilder(loadConfig(t, "no_metrics"), settings, WithStartTime(start))
-
-	assert.Equal(t, 0, observedLogs.Len())
-
-	mb.RecordSystemProcessesCountDataPoint(ts, 1, AttributeStatus(1))
-	mb.RecordSystemProcessesCreatedDataPoint(ts, 1)
-
-	metrics := mb.Emit()
-
-	assert.Equal(t, 0, metrics.ResourceMetrics().Len())
 }
 
 func loadConfig(t *testing.T, name string) MetricsSettings {
