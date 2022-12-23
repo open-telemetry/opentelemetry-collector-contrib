@@ -31,6 +31,7 @@ type Retrier struct {
 	cfg      exporterhelper.RetrySettings
 	logger   *zap.Logger
 	scrubber scrub.Scrubber
+	retryNum int64
 }
 
 func NewRetrier(logger *zap.Logger, settings exporterhelper.RetrySettings, scrubber scrub.Scrubber) *Retrier {
@@ -38,6 +39,7 @@ func NewRetrier(logger *zap.Logger, settings exporterhelper.RetrySettings, scrub
 		cfg:      settings,
 		logger:   logger,
 		scrubber: scrubber,
+		retryNum: int64(0),
 	}
 }
 
@@ -60,7 +62,7 @@ func (r *Retrier) DoWithRetries(ctx context.Context, fn func(context.Context) er
 		Clock:               backoff.SystemClock,
 	}
 	expBackoff.Reset()
-	retryNum := int64(0)
+	r.retryNum = int64(0)
 	for {
 		err := fn(ctx)
 		if err == nil {
@@ -85,7 +87,7 @@ func (r *Retrier) DoWithRetries(ctx context.Context, fn func(context.Context) er
 			zap.Error(err),
 			zap.String("interval", backoffDelayStr),
 		)
-		retryNum++
+		r.retryNum++
 
 		// back-off, but get interrupted when shutting down or request is cancelled or timed out.
 		select {

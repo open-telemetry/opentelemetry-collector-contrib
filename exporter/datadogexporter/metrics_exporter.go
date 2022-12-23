@@ -168,12 +168,12 @@ func (exp *metricsExporter) pushSketches(ctx context.Context, sl sketches.Sketch
 	}
 
 	if err != nil {
-		return fmt.Errorf("failed to do sketches HTTP request: %w", err)
+		return clientutil.WrapError(fmt.Errorf("failed to do sketches HTTP request: %w", err), resp)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode >= 400 {
-		return fmt.Errorf("error when sending payload to %s: %s", sketches.SketchSeriesEndpoint, resp.Status)
+		return clientutil.WrapError(fmt.Errorf("error when sending payload to %s: %s", sketches.SketchSeriesEndpoint, resp.Status), resp)
 	}
 	return nil
 }
@@ -227,8 +227,8 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metr
 				err,
 				exp.retrier.DoWithRetries(ctx, func(context.Context) error {
 					ctx = clientutil.GetRequestContext(ctx, string(exp.cfg.API.Key))
-					_, _, merr := exp.metricsAPI.SubmitMetrics(ctx, datadogV2.MetricPayload{Series: ms})
-					return merr
+					_, httpresp, merr := exp.metricsAPI.SubmitMetrics(ctx, datadogV2.MetricPayload{Series: ms})
+					return clientutil.WrapError(merr, httpresp)
 				}),
 			)
 		}
