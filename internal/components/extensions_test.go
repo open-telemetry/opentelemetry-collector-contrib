@@ -269,7 +269,7 @@ func verifyExtensionLifecycle(t *testing.T, factory extension.Factory, getConfig
 }
 
 // verifyExtensionShutdown is used to test if an extension type can be shutdown without being started first.
-func verifyExtensionShutdown(t *testing.T, factory extension.Factory, getConfigFn getExtensionConfigFn) {
+func verifyExtensionShutdown(tb testing.TB, factory extension.Factory, getConfigFn getExtensionConfigFn) {
 	ctx := context.Background()
 	extCreateSet := extensiontest.NewNopCreateSettings()
 
@@ -277,9 +277,11 @@ func verifyExtensionShutdown(t *testing.T, factory extension.Factory, getConfigF
 		getConfigFn = factory.CreateDefaultConfig
 	}
 
-	firstExt, _ := factory.CreateExtension(ctx, extCreateSet, getConfigFn())
+	e, _ := factory.CreateExtension(ctx, extCreateSet, getConfigFn())
 
-	assert.NoError(t, firstExt.Shutdown(ctx))
+	assert.NotPanics(tb, func() {
+		assert.NoError(tb, e.Shutdown(ctx))
+	})
 }
 
 // assertNoErrorHost implements a component.Host that asserts that there were no errors.

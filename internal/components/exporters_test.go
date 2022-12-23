@@ -510,7 +510,7 @@ func verifyExporterLifecycle(t *testing.T, factory exporter.Factory, getConfigFn
 }
 
 // verifyExporterShutdown is used to test if an exporter type can be shutdown without being started first.
-func verifyExporterShutdown(t *testing.T, factory exporter.Factory, getConfigFn getExporterConfigFn) {
+func verifyExporterShutdown(tb testing.TB, factory exporter.Factory, getConfigFn getExporterConfigFn) {
 	ctx := context.Background()
 	expCreateSettings := exportertest.NewNopCreateSettings()
 
@@ -525,11 +525,13 @@ func verifyExporterShutdown(t *testing.T, factory exporter.Factory, getConfigFn 
 	}
 
 	for _, createFn := range createFns {
-		firstRcvr, err := createFn(ctx, expCreateSettings, getConfigFn())
+		r, err := createFn(ctx, expCreateSettings, getConfigFn())
 		if errors.Is(err, component.ErrDataTypeIsNotSupported) {
 			continue
 		}
-		require.NoError(t, firstRcvr.Shutdown(ctx))
+		assert.NotPanics(tb, func() {
+			assert.NoError(tb, r.Shutdown(ctx))
+		})
 	}
 }
 

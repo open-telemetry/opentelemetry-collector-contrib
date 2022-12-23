@@ -202,7 +202,7 @@ func verifyProcessorLifecycle(t *testing.T, factory processor.Factory, getConfig
 
 // verifyProcessorShutdown is used to test if a processor type can be shutdown without being started first.
 // We disregard errors being returned by shutdown, we're just making sure the processors don't panic.
-func verifyProcessorShutdown(_ *testing.T, factory processor.Factory, getConfigFn getProcessorConfigFn) {
+func verifyProcessorShutdown(tb testing.TB, factory processor.Factory, getConfigFn getProcessorConfigFn) {
 	ctx := context.Background()
 	processorCreationSet := processortest.NewNopCreateSettings()
 
@@ -217,11 +217,13 @@ func verifyProcessorShutdown(_ *testing.T, factory processor.Factory, getConfigF
 	}
 
 	for _, createFn := range createFns {
-		firstExp, err := createFn(ctx, processorCreationSet, getConfigFn())
+		p, err := createFn(ctx, processorCreationSet, getConfigFn())
 		if errors.Is(err, component.ErrDataTypeIsNotSupported) {
 			continue
 		}
-		_ = firstExp.Shutdown(ctx)
+		assert.NotPanics(tb, func() {
+			_ = p.Shutdown(ctx)
+		})
 	}
 }
 
