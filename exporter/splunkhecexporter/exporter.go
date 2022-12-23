@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -76,14 +77,17 @@ func createExporter(
 		return nil, err
 	}
 
-	client, err := buildClient(options, config, logger)
+	httpClient, err := buildHTTPClient(config)
 	if err != nil {
 		return nil, err
 	}
 
+	client := buildClient(options, config, httpClient, logger)
+
 	if config.HecHealthCheckEnabled {
-		err = client.checkHecHealth()
-		if err != nil {
+		healthCheckURL := options.url
+		healthCheckURL.Path = config.HealthPath
+		if err := checkHecHealth(httpClient, healthCheckURL); err != nil {
 			return nil, fmt.Errorf("health check failed: %w", err)
 		}
 	}
@@ -97,40 +101,62 @@ func createExporter(
 	}, nil
 }
 
-func buildClient(options *exporterOptions, config *Config, logger *zap.Logger) (*client, error) {
+func checkHecHealth(client *http.Client, healthCheckURL *url.URL) error {
+
+	req, err := http.NewRequest("GET", healthCheckURL.String(), nil)
+	if err != nil {
+		return consumererror.NewPermanent(err)
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	err = splunk.HandleHTTPCode(resp)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func buildClient(options *exporterOptions, config *Config, httpClient *http.Client, logger *zap.Logger) *client {
+	return &client{
+		logger:    logger,
+		config:    config,
+		hecWorker: &defaultHecWorker{options.url, httpClient, buildHTTPHeaders(config)},
+	}
+}
+
+func buildHTTPClient(config *Config) (*http.Client, error) {
 	tlsCfg, err := config.TLSSetting.LoadTLSConfig()
 	if err != nil {
 		return nil, fmt.Errorf("could not retrieve TLS config for Splunk HEC Exporter: %w", err)
 	}
-	healthCheckURLPath := *options.url
-	healthCheckURLPath.Path = config.HealthPath
-	return &client{
-		url:            options.url,
-		healthCheckURL: &healthCheckURLPath,
-		client: &http.Client{
-			Timeout: config.Timeout,
-			Transport: &http.Transport{
-				Proxy: http.ProxyFromEnvironment,
-				DialContext: (&net.Dialer{
-					Timeout:   dialerTimeout,
-					KeepAlive: dialerKeepAlive,
-				}).DialContext,
-				MaxIdleConns:        int(config.MaxConnections),
-				MaxIdleConnsPerHost: int(config.MaxConnections),
-				IdleConnTimeout:     idleConnTimeout,
-				TLSHandshakeTimeout: tlsHandshakeTimeout,
-				TLSClientConfig:     tlsCfg,
-			},
-		},
-		logger: logger,
-		headers: map[string]string{
-			"Connection":           "keep-alive",
-			"Content-Type":         "application/json",
-			"User-Agent":           config.SplunkAppName + "/" + config.SplunkAppVersion,
-			"Authorization":        splunk.HECTokenHeader + " " + config.Token,
-			"__splunk_app_name":    config.SplunkAppName,
-			"__splunk_app_version": config.SplunkAppVersion,
-		},
-		config: config,
-	}, nil
+	return &http.Client{
+		Timeout: config.Timeout,
+		Transport: &http.Transport{
+			Proxy: http.ProxyFromEnvironment,
+			DialContext: (&net.Dialer{
+				Timeout:   dialerTimeout,
+				KeepAlive: dialerKeepAlive,
+			}).DialContext,
+			MaxIdleConns:        int(config.MaxConnections),
+			MaxIdleConnsPerHost: int(config.MaxConnections),
+			IdleConnTimeout:     idleConnTimeout,
+			TLSHandshakeTimeout: tlsHandshakeTimeout,
+			TLSClientConfig:     tlsCfg,
+		}}, nil
+}
+func buildHTTPHeaders(config *Config) map[string]string {
+	return map[string]string{
+		"Connection":           "keep-alive",
+		"Content-Type":         "application/json",
+		"User-Agent":           config.SplunkAppName + "/" + config.SplunkAppVersion,
+		"Authorization":        splunk.HECTokenHeader + " " + config.Token,
+		"__splunk_app_name":    config.SplunkAppName,
+		"__splunk_app_version": config.SplunkAppVersion,
+	}
 }
