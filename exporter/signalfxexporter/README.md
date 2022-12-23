@@ -89,7 +89,7 @@ The following configuration options can also be configured:
 that are allowed to be used as a dimension key in addition to alphanumeric 
 characters. Each nonalphanumeric dimension key character that isn't in this string 
 will be replaced with a `_`.
-- `max_connections` (default = 100):  The maximum number of idle HTTP connection the exporter can keep open.
+- `max_connections` (default = 100):  The maximum number of idle HTTP connection the exporter can keep open. Deprecated. Prefer using [HTTP settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/confighttp/README.md) instead.
 - `ingest_tls`: (no default) exposes a list of TLS settings to establish a secure connection with signafx receiver configured on another collector instance.
   - `ca_file` needs to be set if the exporter's `ingest_url` is pointing to a signalfx receiver
   with TLS enabled and using a self-signed certificate where its CA is not loaded in the system cert pool.
