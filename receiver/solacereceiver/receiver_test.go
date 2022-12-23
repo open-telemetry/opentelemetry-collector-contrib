@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"runtime"
 	"sync"
 	"testing"
 	"time"
@@ -351,7 +352,12 @@ func TestReceiverFlowControlDelayedRetry(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			receiver, messagingService, unmarshaller := newReceiver(t)
-			delay := 50 * time.Millisecond
+			delay := 5 * time.Millisecond
+			// Increase delay on windows due to tick granularity
+			// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/17197
+			if runtime.GOOS == "windows" {
+				delay = 500 * time.Millisecond
+			}
 			receiver.config.Flow.DelayedRetry.Delay = delay
 			var err error
 			// we want to return an error at first, then set the next consumer to a noop consumer
