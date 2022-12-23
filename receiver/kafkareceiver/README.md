@@ -26,6 +26,7 @@ The following settings can be optionally configured:
   - `jaeger_json`: the payload is deserialized to a single Jaeger JSON Span using `jsonpb`.
   - `zipkin_proto`: the payload is deserialized into a list of Zipkin proto spans.
   - `zipkin_json`: the payload is deserialized into a list of Zipkin V2 JSON spans.
+  - `zipkin_v1json`: the payload is deserialized into a list of Ziplin V1 JSON spans.
   - `zipkin_thrift`: the payload is deserialized into a list of Zipkin Thrift spans.
   - `raw`: (logs only) the payload's bytes are inserted as the body of a log record.
 - `group_id` (default = otel-collector):  The consumer group that receiver will be consuming messages from
