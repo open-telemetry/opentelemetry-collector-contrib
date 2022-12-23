@@ -279,7 +279,7 @@ func verifyExtensionShutdown(t *testing.T, factory extension.Factory, getConfigF
 
 	firstExt, _ := factory.CreateExtension(ctx, extCreateSet, getConfigFn())
 
-	require.NoError(t, firstExt.Shutdown(ctx))
+	assert.NoError(t, firstExt.Shutdown(ctx))
 }
 
 // assertNoErrorHost implements a component.Host that asserts that there were no errors.
