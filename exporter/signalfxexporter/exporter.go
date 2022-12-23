@@ -229,15 +229,15 @@ func (se *signalfxExporter) createClient(host component.Host) (*http.Client, err
 	se.config.HTTPClientSettings.Headers = nil
 	se.config.HTTPClientSettings.TLSSetting = se.config.IngestTLSSettings
 
-	if se.config.MaxIdleConns == nil {
-		se.config.MaxIdleConns = &se.config.MaxConnections
+	if se.config.HTTPClientSettings.MaxIdleConns == nil {
+		se.config.HTTPClientSettings.MaxIdleConns = &se.config.MaxConnections
 	}
-	if se.config.MaxIdleConnsPerHost == nil {
-		se.config.MaxIdleConnsPerHost = &se.config.MaxConnections
+	if se.config.HTTPClientSettings.MaxIdleConnsPerHost == nil {
+		se.config.HTTPClientSettings.MaxIdleConnsPerHost = &se.config.MaxConnections
 	}
-	if se.config.IdleConnTimeout == nil {
+	if se.config.HTTPClientSettings.IdleConnTimeout == nil {
 		defaultIdleConnTimeout := 30 * time.Second
-		se.config.IdleConnTimeout = &defaultIdleConnTimeout
+		se.config.HTTPClientSettings.IdleConnTimeout = &defaultIdleConnTimeout
 	}
 
 	return se.config.ToClient(host, se.telemetrySettings)

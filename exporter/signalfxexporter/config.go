@@ -161,7 +161,7 @@ func (cfg *Config) validateConfig() error {
 			` "ingest_url" and "api_url" should be explicitly set`)
 	}
 
-	if cfg.Timeout < 0 {
+	if cfg.HTTPClientSettings.Timeout < 0 {
 		return errors.New(`cannot have a negative "timeout"`)
 	}
 
