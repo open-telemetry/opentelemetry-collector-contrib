@@ -1048,7 +1048,7 @@ func Test_pushLogData_PostError(t *testing.T) {
 	c := client{
 		config:    NewFactory().CreateDefaultConfig().(*Config),
 		logger:    zaptest.NewLogger(t),
-		hecWorker: &hecWorkerWithoutAck{url: &url.URL{Host: "in va lid"}},
+		hecWorker: &defaultHecWorker{url: &url.URL{Host: "in va lid"}},
 	}
 
 	// 2000 log records -> ~371888 bytes when JSON encoded.
@@ -1097,7 +1097,7 @@ func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
 
 	// An HTTP client that returns status code 400 and response body responseBody.
 	httpClient, _ := newTestClient(400, responseBody)
-	splunkClient.hecWorker = &hecWorkerWithoutAck{url, httpClient, buildHTTPHeaders(config)}
+	splunkClient.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config)}
 	// Sending logs using the client.
 	err := splunkClient.pushLogData(context.Background(), logs)
 	// TODO: Uncomment after consumererror.Logs implements method Unwrap.
@@ -1108,7 +1108,7 @@ func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
 
 	// An HTTP client that returns some other status code other than 400 and response body responseBody.
 	httpClient, _ = newTestClient(500, responseBody)
-	splunkClient.hecWorker = &hecWorkerWithoutAck{url, httpClient, buildHTTPHeaders(config)}
+	splunkClient.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config)}
 	// Sending logs using the client.
 	err = splunkClient.pushLogData(context.Background(), logs)
 	// TODO: Uncomment after consumererror.Logs implements method Unwrap.
@@ -1134,7 +1134,7 @@ func Test_pushLogData_ShouldReturnUnsentLogsOnly(t *testing.T) {
 
 	// The first record is to be sent successfully, the second one should not
 	httpClient, _ := newTestClientWithPresetResponses([]int{200, 400}, []string{"OK", "NOK"})
-	c.hecWorker = &hecWorkerWithoutAck{url, httpClient, buildHTTPHeaders(config)}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config)}
 
 	err := c.pushLogData(context.Background(), logs)
 	require.Error(t, err)
@@ -1159,7 +1159,7 @@ func Test_pushLogData_ShouldAddHeadersForProfilingData(t *testing.T) {
 	var headers *[]http.Header
 
 	httpClient, headers := newTestClient(200, "OK")
-	c.hecWorker = &hecWorkerWithoutAck{url, httpClient, buildHTTPHeaders(config)}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config)}
 
 	// A 300-byte buffer only fits one record (around 200 bytes), so each record will be sent separately
 	c.config.MaxContentLengthLogs, c.config.DisableCompression = 300, true
@@ -1225,7 +1225,7 @@ func benchPushLogData(b *testing.B, numResources int, numProfiling int, numNonPr
 	}
 
 	httpClient, _ := newTestClient(200, "OK")
-	c.hecWorker = &hecWorkerWithoutAck{url, httpClient, buildHTTPHeaders(config)}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config)}
 
 	c.config.MaxContentLengthLogs = bufSize
 	logs := createLogDataWithCustomLibraries(numResources, []string{"otel.logs", "otel.profiling"}, []int{numNonProfiling, numProfiling})
@@ -1243,7 +1243,7 @@ func Test_pushLogData_Small_MaxContentLength(t *testing.T) {
 	c := client{
 		config:    config,
 		logger:    zaptest.NewLogger(t),
-		hecWorker: &hecWorkerWithoutAck{&url.URL{Scheme: "http", Host: "splunk"}, http.DefaultClient, buildHTTPHeaders(config)},
+		hecWorker: &defaultHecWorker{&url.URL{Scheme: "http", Host: "splunk"}, http.DefaultClient, buildHTTPHeaders(config)},
 	}
 	c.config.MaxContentLengthLogs = 1
 

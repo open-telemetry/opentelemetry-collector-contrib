@@ -20,7 +20,7 @@ import (
 
 type mockHecWorker struct{}
 
-func (m *mockHecWorker) Send(ctx context.Context, bufferState *bufferState, headers map[string]string) error {
+func (m *mockHecWorker) send(ctx context.Context, bufferState *bufferState, headers map[string]string) error {
 	return nil
 }
 

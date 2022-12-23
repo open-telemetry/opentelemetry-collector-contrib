@@ -27,16 +27,16 @@ import (
 )
 
 type hecWorker interface {
-	Send(context.Context, *bufferState, map[string]string) error
+	send(context.Context, *bufferState, map[string]string) error
 }
 
-type hecWorkerWithoutAck struct {
+type defaultHecWorker struct {
 	url     *url.URL
 	client  *http.Client
 	headers map[string]string
 }
 
-func (hec *hecWorkerWithoutAck) Send(ctx context.Context, bufferState *bufferState, headers map[string]string) error {
+func (hec *defaultHecWorker) send(ctx context.Context, bufferState *bufferState, headers map[string]string) error {
 	req, err := http.NewRequestWithContext(ctx, "POST", hec.url.String(), bufferState)
 	if err != nil {
 		return consumererror.NewPermanent(err)
@@ -72,4 +72,4 @@ func (hec *hecWorkerWithoutAck) Send(ctx context.Context, bufferState *bufferSta
 	return multierr.Combine(err, errCopy)
 }
 
-var _ hecWorker = &hecWorkerWithoutAck{}
+var _ hecWorker = &defaultHecWorker{}

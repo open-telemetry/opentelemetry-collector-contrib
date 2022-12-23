@@ -126,7 +126,7 @@ func buildClient(options *exporterOptions, config *Config, httpClient *http.Clie
 	return &client{
 		logger:    logger,
 		config:    config,
-		hecWorker: &hecWorkerWithoutAck{options.url, httpClient, buildHTTPHeaders(config)},
+		hecWorker: &defaultHecWorker{options.url, httpClient, buildHTTPHeaders(config)},
 	}
 }
 

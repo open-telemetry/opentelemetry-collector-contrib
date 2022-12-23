@@ -446,7 +446,7 @@ func (c *client) postEvents(ctx context.Context, bufState *bufferState, headers 
 	if err := bufState.Close(); err != nil {
 		return err
 	}
-	return c.hecWorker.Send(ctx, bufState, headers)
+	return c.hecWorker.send(ctx, bufState, headers)
 }
 
 // subLogs returns a subset of `ld` starting from `profilingBufFront` for profiling data
