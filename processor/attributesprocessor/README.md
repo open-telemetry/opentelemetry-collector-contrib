@@ -184,7 +184,7 @@ with a non-empty value for a valid configuration. The `log_bodies`, `log_severit
 non-empty value for a valid configuration. The `span_names`, `metric_names`, `expressions`, `resource_attributes`,
 and `services` fields are invalid.
 - For metrics, one of `metric_names`, `resources` must be specified
-with a valid non-empty value for a valid configuration. The `span_names`, `log_bodies`, `log_severity_texts` and
+with a valid non-empty value for a valid configuration. The `span_names`, `libraries`, `log_bodies`, `log_severity_texts` and
 `services` fields are invalid.
 
 

@@ -179,8 +179,6 @@ func newExpr(mp *filterconfig.MatchProperties) (expr.BoolExpr[ottlmetric.Transfo
 		})
 		matchers = append(matchers, resourceMatcher)
 	}
-	// do library(?) match
-	// TODO
 
 	return expr.And(matchers...), nil
 }
