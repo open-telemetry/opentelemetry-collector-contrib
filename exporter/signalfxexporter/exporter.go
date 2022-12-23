@@ -123,6 +123,7 @@ func (se *signalfxExporter) start(_ context.Context, host component.Host) (err e
 		return err
 	}
 
+	headers := buildHeaders(se.config)
 	client, err := se.createClient(host)
 	if err != nil {
 		return err
@@ -131,7 +132,7 @@ func (se *signalfxExporter) start(_ context.Context, host component.Host) (err e
 	dpClient := &sfxDPClient{
 		sfxClientBase: sfxClientBase{
 			ingestURL: options.ingestURL,
-			headers:   buildHeaders(se.config),
+			headers:   headers,
 			client:    client,
 			zippers:   newGzipPool(),
 		},
@@ -226,6 +227,7 @@ func (se *signalfxExporter) startLogs(_ context.Context, host component.Host) er
 
 func (se *signalfxExporter) createClient(host component.Host) (*http.Client, error) {
 
+	// we want to control how headers are set, overriding user headers with our passthrough.
 	se.config.HTTPClientSettings.Headers = nil
 	se.config.HTTPClientSettings.TLSSetting = se.config.IngestTLSSettings
 
@@ -270,7 +272,7 @@ func buildHeaders(config *Config) map[string]string {
 	// Add any custom headers from the config. They will override the pre-defined
 	// ones above in case of conflict, but, not the content encoding one since
 	// the latter one is defined according to the payload.
-	for k, v := range config.Headers {
+	for k, v := range config.HTTPClientSettings.Headers {
 		headers[k] = string(v)
 	}
 

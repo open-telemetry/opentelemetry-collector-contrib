@@ -420,11 +420,11 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.IngestURL = server.URL
 			cfg.APIURL = server.URL
-			cfg.Headers = make(map[string]configopaque.String)
+			cfg.HTTPClientSettings.Headers = make(map[string]configopaque.String)
 			for k, v := range tt.additionalHeaders {
-				cfg.Headers[k] = configopaque.String(v)
+				cfg.HTTPClientSettings.Headers[k] = configopaque.String(v)
 			}
-			cfg.Headers["test_header_"] = configopaque.String(tt.name)
+			cfg.HTTPClientSettings.Headers["test_header_"] = configopaque.String(tt.name)
 			cfg.AccessToken = fromHeaders
 			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
 			sfxExp, err := NewFactory().CreateMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
