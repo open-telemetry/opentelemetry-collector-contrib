@@ -111,7 +111,7 @@ type Config struct {
 	NonAlphanumericDimensionChars string `mapstructure:"nonalphanumeric_dimension_chars"`
 
 	// MaxConnections is used to set a limit to the maximum idle HTTP connection the exporter can keep open.
-	// Deprecated: prefer using HTTPClientSettings.MaxIdleConns or HTTPClientSettings.MaxIdleConns instead.
+	// Deprecated: use HTTPClientSettings.MaxIdleConns or HTTPClientSettings.MaxIdleConnsPerHost instead.
 	MaxConnections int `mapstructure:"max_connections"`
 }
 
