@@ -205,6 +205,7 @@ func (se *signalfxExporter) startLogs(_ context.Context, host component.Host) er
 		return fmt.Errorf("failed to process config: %w", err)
 	}
 
+	headers := buildHeaders(se.config)
 	client, err := se.createClient(host)
 	if err != nil {
 		return err
@@ -213,7 +214,7 @@ func (se *signalfxExporter) startLogs(_ context.Context, host component.Host) er
 	eventClient := &sfxEventClient{
 		sfxClientBase: sfxClientBase{
 			ingestURL: options.ingestURL,
-			headers:   buildHeaders(se.config),
+			headers:   headers,
 			client:    client,
 			zippers:   newGzipPool(),
 		},
@@ -226,9 +227,6 @@ func (se *signalfxExporter) startLogs(_ context.Context, host component.Host) er
 }
 
 func (se *signalfxExporter) createClient(host component.Host) (*http.Client, error) {
-
-	// we want to control how headers are set, overriding user headers with our passthrough.
-	se.config.HTTPClientSettings.Headers = nil
 	se.config.HTTPClientSettings.TLSSetting = se.config.IngestTLSSettings
 
 	if se.config.HTTPClientSettings.MaxIdleConns == nil {
@@ -275,6 +273,8 @@ func buildHeaders(config *Config) map[string]string {
 	for k, v := range config.HTTPClientSettings.Headers {
 		headers[k] = string(v)
 	}
+	// we want to control how headers are set, overriding user headers with our passthrough.
+	config.HTTPClientSettings.Headers = nil
 
 	return headers
 }
