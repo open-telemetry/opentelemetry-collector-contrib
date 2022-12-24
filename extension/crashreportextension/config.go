@@ -18,13 +18,11 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 )
 
 // Config specifies where and how to report crashes
 type Config struct {
-	config.ExtensionSettings      `mapstructure:",squash"`
 	confighttp.HTTPClientSettings `mapstructure:",squash"`
 }
 

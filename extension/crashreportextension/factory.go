@@ -18,7 +18,6 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/extension"
 )
 
@@ -38,22 +37,13 @@ func NewFactory() extension.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	return &Config{
-		ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
-	}
+	return &Config{}
 }
 
-func createExtension(_ context.Context, _ extension.CreateSettings, _ component.Config) (extension.Extension, error) {
-	return &crashReportExtension{}, nil
-}
-
-type crashReportExtension struct {
-}
-
-func (c *crashReportExtension) Start(_ context.Context, _ component.Host) error {
-	return nil
-}
-
-func (c *crashReportExtension) Shutdown(_ context.Context) error {
-	return nil
+func createExtension(_ context.Context, settings extension.CreateSettings, cfg component.Config) (extension.Extension, error) {
+	return &crashReportExtension{
+		cfg:               cfg.(*Config),
+		telemetrySettings: settings.TelemetrySettings,
+		logger:            settings.Logger,
+	}, nil
 }
