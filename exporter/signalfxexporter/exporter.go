@@ -237,9 +237,6 @@ func (se *signalfxExporter) createClient(host component.Host) (*http.Client, err
 	if se.config.HTTPClientSettings.MaxIdleConnsPerHost == nil {
 		se.config.HTTPClientSettings.MaxIdleConnsPerHost = &se.config.MaxConnections
 	}
-	if se.config.HTTPClientSettings.MaxConnsPerHost == nil {
-		se.config.HTTPClientSettings.MaxConnsPerHost = &se.config.MaxConnections
-	}
 	if se.config.HTTPClientSettings.IdleConnTimeout == nil {
 		defaultIdleConnTimeout := 30 * time.Second
 		se.config.HTTPClientSettings.IdleConnTimeout = &defaultIdleConnTimeout
