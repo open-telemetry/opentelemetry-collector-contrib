@@ -16,7 +16,6 @@ package awsemfexporter // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"encoding/json"
-	"log"
 	"strings"
 
 	aws "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics"
@@ -46,10 +45,11 @@ func addToGroupedMetric(pmd pmetric.Metric, groupedMetrics map[interface{}]*grou
 	}
 
 	for i := 0; i < dps.Len(); i++ {
-		dps, retained := dps.CalculateDeltaDatapoints(i, metadata.instrumentationLibraryName)
+		dps, retained := dps.CalculateDeltaDatapoints(i, metadata.instrumentationLibraryName, config.DetailedMetrics)
 		if !retained {
 			continue
 		}
+
 		for _, dp := range dps {
 			labels := dp.labels
 
@@ -81,7 +81,6 @@ func addToGroupedMetric(pmd pmetric.Metric, groupedMetrics map[interface{}]*grou
 
 			// Extra params to use when grouping metrics
 			groupKey := aws.NewKey(metadata.groupedMetricMetadata, labels)
-			log.Printf("labels and key %v %v", labels, groupKey)
 			if _, ok := groupedMetrics[groupKey]; ok {
 				// if MetricName already exists in metrics map, print warning log
 				if _, ok := groupedMetrics[groupKey].metrics[dp.name]; ok {
@@ -100,12 +99,9 @@ func addToGroupedMetric(pmd pmetric.Metric, groupedMetrics map[interface{}]*grou
 					metadata: metadata,
 				}
 			}
-			log.Printf("Group Metrics Key %v,", groupedMetrics[groupKey])
-
 		}
-		log.Printf("Group Metrics Key %v,", groupedMetrics)
-	}
 
+	}
 	return nil
 }
 

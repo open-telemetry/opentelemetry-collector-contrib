@@ -109,7 +109,7 @@ func (mt metricTranslator) translateOTelToGroupedMetric(rm pmetric.ResourceMetri
 	}
 	for j := 0; j < ilms.Len(); j++ {
 		ilm := ilms.At(j)
-		if ilm.Scope().Name() == "" {
+		if ilm.Scope().Name() != "" {
 			instrumentationLibName = ilm.Scope().Name()
 		}
 

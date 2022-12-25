@@ -17,10 +17,9 @@ package awsemfexporter // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"errors"
 
-	"go.uber.org/zap"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
+	"go.uber.org/zap"
 )
 
 var (
@@ -78,6 +77,10 @@ type Config struct {
 	// "Enabled" - A boolean field to enable/disable this option. Default is `false`.
 	// If enabled, all the resource attributes will be converted to metric labels by default.
 	ResourceToTelemetrySettings resourcetotelemetry.Settings `mapstructure:"resource_to_telemetry_conversion"`
+
+	// DetailedMetrics is the options for preserving the OTEL metrics values instead of basic metrics (e.g instead of exporting quantile as
+	// a Statistical value , the EMF exporter will preserve the quantile's population )
+	DetailedMetrics bool `mapstructure:"detailed_metrics"`
 
 	// logger is the Logger used for writing error/warning logs
 	logger *zap.Logger
