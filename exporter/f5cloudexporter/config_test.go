@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	otlphttp "go.opentelemetry.io/collector/exporter/otlphttpexporter"
@@ -57,7 +58,7 @@ func TestLoadConfig(t *testing.T) {
 				ReadBufferSize:  123,
 				WriteBufferSize: 345,
 				Timeout:         time.Second * 10,
-				Headers: map[string]string{
+				Headers: map[string]configopaque.String{
 					"User-Agent": "opentelemetry-collector-contrib {{version}}",
 				},
 				Compression: "gzip",

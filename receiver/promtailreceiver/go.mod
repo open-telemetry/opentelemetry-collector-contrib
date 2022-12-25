@@ -5,15 +5,15 @@ go 1.18
 require (
 	github.com/go-kit/log v0.2.1
 	github.com/grafana/loki v1.6.2-0.20221214135803-c71620ae9437
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.67.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.68.0
 	github.com/prometheus/client_golang v1.14.0
-	github.com/prometheus/common v0.38.0
-	github.com/prometheus/prometheus v0.40.6
+	github.com/prometheus/common v0.39.0
+	github.com/prometheus/prometheus v0.40.7
 	github.com/stretchr/testify v1.8.1
 	github.com/weaveworks/common v0.0.0-20221201103051-7c2720a9024d
-	go.opentelemetry.io/collector v0.67.1-0.20221213235724-812f462b3182
-	go.opentelemetry.io/collector/component v0.67.1-0.20221213235724-812f462b3182
-	go.opentelemetry.io/collector/confmap v0.67.0
+	go.opentelemetry.io/collector v0.68.0
+	go.opentelemetry.io/collector/component v0.68.0
+	go.opentelemetry.io/collector/confmap v0.68.0
 	go.uber.org/zap v1.24.0
 	gopkg.in/yaml.v2 v2.4.0
 )
@@ -21,7 +21,7 @@ require (
 require (
 	cloud.google.com/go v0.105.0 // indirect
 	cloud.google.com/go/compute v1.14.0 // indirect
-	cloud.google.com/go/compute/metadata v0.2.2 // indirect
+	cloud.google.com/go/compute/metadata v0.2.3 // indirect
 	cloud.google.com/go/iam v0.8.0 // indirect
 	cloud.google.com/go/pubsub v1.28.0 // indirect
 	github.com/Azure/azure-sdk-for-go v65.0.0+incompatible // indirect
@@ -43,7 +43,7 @@ require (
 	github.com/antonmedv/expr v1.9.0 // indirect
 	github.com/armon/go-metrics v0.4.0 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d // indirect
-	github.com/aws/aws-sdk-go v1.44.158 // indirect
+	github.com/aws/aws-sdk-go v1.44.163 // indirect
 	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bmatcuk/doublestar v1.2.2 // indirect
@@ -60,7 +60,7 @@ require (
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/digitalocean/godo v1.88.0 // indirect
 	github.com/docker/distribution v2.7.1+incompatible // indirect
-	github.com/docker/docker v20.10.21+incompatible // indirect
+	github.com/docker/docker v20.10.22+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
@@ -145,7 +145,7 @@ require (
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-colorable v0.1.12 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
-	github.com/matttproud/golang_protobuf_extensions v1.0.2 // indirect
+	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/miekg/dns v1.1.50 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
@@ -192,9 +192,9 @@ require (
 	go.etcd.io/etcd/client/v3 v3.5.4 // indirect
 	go.mongodb.org/mongo-driver v1.11.1 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/consumer v0.67.1-0.20221213235724-812f462b3182 // indirect
-	go.opentelemetry.io/collector/featuregate v0.67.1-0.20221213235724-812f462b3182 // indirect
-	go.opentelemetry.io/collector/pdata v1.0.0-rc1.0.20221213235724-812f462b3182 // indirect
+	go.opentelemetry.io/collector/consumer v0.68.0 // indirect
+	go.opentelemetry.io/collector/featuregate v0.68.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.0.0-rc2 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.37.0 // indirect
 	go.opentelemetry.io/otel v1.11.2 // indirect
 	go.opentelemetry.io/otel/metric v0.34.0 // indirect
@@ -208,7 +208,7 @@ require (
 	golang.org/x/exp v0.0.0-20221031165847-c99f073a8326 // indirect
 	golang.org/x/mod v0.7.0 // indirect
 	golang.org/x/net v0.4.0 // indirect
-	golang.org/x/oauth2 v0.1.0 // indirect
+	golang.org/x/oauth2 v0.3.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
 	golang.org/x/sys v0.3.0 // indirect
 	golang.org/x/term v0.3.0 // indirect
@@ -216,7 +216,7 @@ require (
 	golang.org/x/time v0.1.0 // indirect
 	golang.org/x/tools v0.2.0 // indirect
 	gonum.org/v1/gonum v0.12.0 // indirect
-	google.golang.org/api v0.104.0 // indirect
+	google.golang.org/api v0.105.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20221206210731-b1a01be3a5f6 // indirect
 	google.golang.org/grpc v1.51.0 // indirect

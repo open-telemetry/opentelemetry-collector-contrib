@@ -20,6 +20,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
@@ -90,7 +91,7 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Timeout: 5 * time.Second,
-			Headers: map[string]string{
+			Headers: map[string]configopaque.String{
 				"User-Agent": "OpenTelemetry -> Influx",
 			},
 		},

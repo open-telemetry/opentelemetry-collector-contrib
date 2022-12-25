@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
@@ -32,7 +33,7 @@ func TestNew(t *testing.T) {
 	config := Config{
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: testHTTPAddress,
-			Headers:  map[string]string{"test": "test"},
+			Headers:  map[string]configopaque.String{"test": "test"},
 			Timeout:  10 * time.Nanosecond,
 		},
 	}

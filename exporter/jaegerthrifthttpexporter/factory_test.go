@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 )
 
@@ -48,7 +49,7 @@ func TestFactory_CreateTracesExporter(t *testing.T) {
 	config := &Config{
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "http://jaeger.example.com/api/traces",
-			Headers: map[string]string{
+			Headers: map[string]configopaque.String{
 				"added-entry": "added value",
 				"dot.test":    "test",
 			},

@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -49,7 +50,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "http://jaeger.example.com/api/traces",
-					Headers: map[string]string{
+					Headers: map[string]configopaque.String{
 						"added-entry": "added value",
 						"dot.test":    "test",
 					},

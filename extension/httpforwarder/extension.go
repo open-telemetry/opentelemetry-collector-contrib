@@ -80,7 +80,7 @@ func (h *httpForwarder) forwardRequest(writer http.ResponseWriter, request *http
 
 	// Add additional headers.
 	for k, v := range h.config.Egress.Headers {
-		forwarderRequest.Header.Add(k, v)
+		forwarderRequest.Header.Add(k, string(v))
 	}
 
 	// Add "Via" header for tracking purposes on both the outgoing requests and responses.

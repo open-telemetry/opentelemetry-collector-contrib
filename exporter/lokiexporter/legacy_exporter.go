@@ -130,7 +130,7 @@ func (l *lokiExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
 	}
 
 	for k, v := range l.config.HTTPClientSettings.Headers {
-		req.Header.Set(k, v)
+		req.Header.Set(k, string(v))
 	}
 	req.Header.Set("Content-Type", "application/x-protobuf")
 

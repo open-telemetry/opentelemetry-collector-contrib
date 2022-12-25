@@ -81,8 +81,11 @@ func Test_loadMetadata(t *testing.T) {
 					"default.metric": {
 						Enabled:               true,
 						Description:           "Monotonic cumulative sum int metric enabled by default.",
-						ExtendedDocumentation: "Additional information.",
-						Unit:                  "s",
+						ExtendedDocumentation: "The metric will be become optional soon.",
+						Warnings: warnings{
+							IfEnabledNotSet: "This metric will be disabled by default soon.",
+						},
+						Unit: "s",
 						Sum: &sum{
 							MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeInt},
 							Aggregated:      Aggregated{Aggregation: pmetric.AggregationTemporalityCumulative},
@@ -94,13 +97,27 @@ func Test_loadMetadata(t *testing.T) {
 						Enabled:     false,
 						Description: "[DEPRECATED] Gauge double metric disabled by default.",
 						Warnings: warnings{
-							IfEnabled: "This metric is deprecated and will be removed soon.",
+							IfConfigured: "This metric is deprecated and will be removed soon.",
 						},
 						Unit: "1",
 						Gauge: &gauge{
 							MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeDouble},
 						},
 						Attributes: []attributeName{"string_attr", "boolean_attr"},
+					},
+					"default.metric.to_be_removed": {
+						Enabled:               true,
+						Description:           "[DEPRECATED] Non-monotonic delta sum double metric enabled by default.",
+						ExtendedDocumentation: "The metric will be will be removed soon.",
+						Warnings: warnings{
+							IfEnabled: "This metric is deprecated and will be removed soon.",
+						},
+						Unit: "s",
+						Sum: &sum{
+							MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeDouble},
+							Aggregated:      Aggregated{Aggregation: pmetric.AggregationTemporalityDelta},
+							Mono:            Mono{Monotonic: false},
+						},
 					},
 				},
 			},
