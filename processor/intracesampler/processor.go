@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.uber.org/zap"
 	"golang.org/x/exp/slices"
@@ -39,7 +40,7 @@ type inTraceSamplerProcessor struct {
 	scaledSamplingRate uint32
 }
 
-func newInTraceSamplerSpansProcessor(ctx context.Context, set component.ProcessorCreateSettings, cfg *Config, nextConsumer consumer.Traces) (component.TracesProcessor, error) {
+func newInTraceSamplerSpansProcessor(ctx context.Context, set processor.CreateSettings, cfg *Config, nextConsumer consumer.Traces) (component.TracesProcessor, error) {
 
 	its := &inTraceSamplerProcessor{
 		logger:             set.Logger,
@@ -109,10 +110,10 @@ func spansToTraceTree(td ptrace.Traces) TraceTreeData {
 	// find roots
 	roots := make([]pcommon.SpanID, 0)
 	for _, fullspan := range fullSpans {
-		parentSpanId := fullspan.span.ParentSpanID()
-		if _, ok := fullSpans[parentSpanId]; !ok {
-			currentSpanId := fullspan.span.SpanID()
-			roots = append(roots, currentSpanId)
+		parentSpanID := fullspan.span.ParentSpanID()
+		if _, ok := fullSpans[parentSpanID]; !ok {
+			currentSpanID := fullspan.span.SpanID()
+			roots = append(roots, currentSpanID)
 		}
 	}
 
@@ -149,15 +150,15 @@ func isAllSameTraceID(td ptrace.Traces) bool {
 	return true
 }
 
-func (its *inTraceSamplerProcessor) getScopeBranchesToUnsampleRec(traceTreeData TraceTreeData, currentSpanId pcommon.SpanID, unsampledScopes map[pcommon.SpanID]bool) bool {
-	currentFullSpan := traceTreeData.fullSpans[currentSpanId]
+func (its *inTraceSamplerProcessor) getScopeBranchesToUnsampleRec(traceTreeData TraceTreeData, currentSpanID pcommon.SpanID, unsampledScopes map[pcommon.SpanID]bool) bool {
+	currentFullSpan := traceTreeData.fullSpans[currentSpanID]
 	currentScopeName := currentFullSpan.scope.Name()
 
 	// currrent span should be unsampled if it's in the unsampledScopes map
 	// and all it's children are also in the unsampled.
 	currentUnsampled := slices.Contains(its.config.ScopeLeaves, currentScopeName)
-	for _, childSpanId := range traceTreeData.children[currentSpanId] {
-		childUnsampled := its.getScopeBranchesToUnsampleRec(traceTreeData, childSpanId, unsampledScopes)
+	for _, childSpanID := range traceTreeData.children[currentSpanID] {
+		childUnsampled := its.getScopeBranchesToUnsampleRec(traceTreeData, childSpanID, unsampledScopes)
 		currentUnsampled = currentUnsampled && childUnsampled
 	}
 
@@ -169,8 +170,8 @@ func (its *inTraceSamplerProcessor) getScopeBranchesToUnsampleRec(traceTreeData 
 
 func (its *inTraceSamplerProcessor) getScopeBranchesToUnsample(traceTreeData TraceTreeData) map[pcommon.SpanID]bool {
 	unsampledScopes := make(map[pcommon.SpanID]bool, 0)
-	for _, rootSpanId := range traceTreeData.roots {
-		its.getScopeBranchesToUnsampleRec(traceTreeData, rootSpanId, unsampledScopes)
+	for _, rootSpanID := range traceTreeData.roots {
+		its.getScopeBranchesToUnsampleRec(traceTreeData, rootSpanID, unsampledScopes)
 	}
 
 	return unsampledScopes

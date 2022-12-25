@@ -20,12 +20,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/processor/processortest"
 )
 
 func TestNewTracesProcessor(t *testing.T) {
@@ -65,7 +65,7 @@ func TestNewTracesProcessor(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := newInTraceSamplerSpansProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), tt.cfg, tt.nextConsumer)
+			got, err := newInTraceSamplerSpansProcessor(context.Background(), processortest.NewNopCreateSettings(), tt.cfg, tt.nextConsumer)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
@@ -86,14 +86,14 @@ func Test_intracesampler_ScopeLeaves(t *testing.T) {
 	}
 
 	// create traces with 2 spans a->b where a scope is "bar" and b scope is "foo"
-	traceId := pcommon.TraceID{0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7}
+	traceID := pcommon.TraceID{0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7}
 	td := ptrace.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
 	rs.Resource().Attributes().PutStr("service.name", "test-service")
-	barSpan := addScopeWithOneSpan(rs, traceId, 1, "bar", nil)
-	_ = addScopeWithOneSpan(rs, traceId, 2, "foo", &barSpan)
+	barSpan := addScopeWithOneSpan(rs, traceID, 1, "bar", nil)
+	_ = addScopeWithOneSpan(rs, traceID, 2, "foo", &barSpan)
 
-	its, err := newInTraceSamplerSpansProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, sink)
+	its, err := newInTraceSamplerSpansProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, sink)
 	if err != nil {
 		t.Errorf("error when creating traceSamplerProcessor: %v", err)
 		return
@@ -120,15 +120,15 @@ func Test_intracesampler_ScopeLeaves_NotLeaf(t *testing.T) {
 
 	// create traces with 3 spans a->b->c
 	// a scope is "bar", b scope is "foo", c scope is "baz"
-	traceId := pcommon.TraceID{0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7}
+	traceID := pcommon.TraceID{0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7}
 	td := ptrace.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
 	rs.Resource().Attributes().PutStr("service.name", "test-service")
-	barSpan := addScopeWithOneSpan(rs, traceId, 1, "bar", nil)
-	fooSpan := addScopeWithOneSpan(rs, traceId, 2, "foo", &barSpan)
-	_ = addScopeWithOneSpan(rs, traceId, 3, "baz", &fooSpan)
+	barSpan := addScopeWithOneSpan(rs, traceID, 1, "bar", nil)
+	fooSpan := addScopeWithOneSpan(rs, traceID, 2, "foo", &barSpan)
+	_ = addScopeWithOneSpan(rs, traceID, 3, "baz", &fooSpan)
 
-	its, err := newInTraceSamplerSpansProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, sink)
+	its, err := newInTraceSamplerSpansProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, sink)
 	if err != nil {
 		t.Errorf("error when creating traceSamplerProcessor: %v", err)
 		return
@@ -156,15 +156,15 @@ func Test_intracesampler_ScopeLeaves_MultipleLeafs(t *testing.T) {
 
 	// create traces with 3 spans a->b->c
 	// a -> scope bar, b -> scope foo, c -> scope foo
-	traceId := pcommon.TraceID{0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7}
+	traceID := pcommon.TraceID{0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7}
 	td := ptrace.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
 	rs.Resource().Attributes().PutStr("service.name", "test-service")
-	barSpan := addScopeWithOneSpan(rs, traceId, 1, "bar", nil)
-	fooParentSpan := addScopeWithOneSpan(rs, traceId, 2, "foo", &barSpan)
-	_ = addScopeWithOneSpan(rs, traceId, 3, "foo", &fooParentSpan)
+	barSpan := addScopeWithOneSpan(rs, traceID, 1, "bar", nil)
+	fooParentSpan := addScopeWithOneSpan(rs, traceID, 2, "foo", &barSpan)
+	_ = addScopeWithOneSpan(rs, traceID, 3, "foo", &fooParentSpan)
 
-	its, err := newInTraceSamplerSpansProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, sink)
+	its, err := newInTraceSamplerSpansProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, sink)
 	if err != nil {
 		t.Errorf("error when creating traceSamplerProcessor: %v", err)
 		return
@@ -196,16 +196,16 @@ func Test_intracesampler_MultipleTraces(t *testing.T) {
 	// create 2 traces: 1 with 2 spans a->b, other with span a
 	// a -> scope bar, b -> scope foo
 	// if this was the only trace it would be sampled, removing span b
-	traceId1 := pcommon.TraceID{0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7}
-	traceId2 := pcommon.TraceID{1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4}
+	traceID1 := pcommon.TraceID{0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7}
+	traceID2 := pcommon.TraceID{1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4}
 	td := ptrace.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
 	rs.Resource().Attributes().PutStr("service.name", "test-service")
-	barSpan1 := addScopeWithOneSpan(rs, traceId1, 1, "bar", nil)
-	fooSpan1 := addScopeWithOneSpan(rs, traceId1, 2, "foo", &barSpan1)
-	_ = addScopeWithOneSpan(rs, traceId2, 1, "bar", nil)
+	barSpan1 := addScopeWithOneSpan(rs, traceID1, 1, "bar", nil)
+	fooSpan1 := addScopeWithOneSpan(rs, traceID1, 2, "foo", &barSpan1)
+	_ = addScopeWithOneSpan(rs, traceID2, 1, "bar", nil)
 
-	its, err := newInTraceSamplerSpansProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, sink)
+	its, err := newInTraceSamplerSpansProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, sink)
 	if err != nil {
 		t.Errorf("error when creating traceSamplerProcessor: %v", err)
 		return
@@ -221,7 +221,7 @@ func Test_intracesampler_MultipleTraces(t *testing.T) {
 }
 
 func Test_intracesampler_ScopeLeaves_MultipleScopes(t *testing.T) {
-	traceId := pcommon.TraceID{0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7}
+	traceID := pcommon.TraceID{0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7}
 
 	sink := new(consumertest.TracesSink)
 	cfg := &Config{
@@ -236,11 +236,11 @@ func Test_intracesampler_ScopeLeaves_MultipleScopes(t *testing.T) {
 	td := ptrace.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
 	rs.Resource().Attributes().PutStr("service.name", "test-service")
-	barSpan := addScopeWithOneSpan(rs, traceId, 1, "bar", nil)
-	fooSpan := addScopeWithOneSpan(rs, traceId, 2, "foo", &barSpan)
-	_ = addScopeWithOneSpan(rs, traceId, 3, "baz", &fooSpan)
+	barSpan := addScopeWithOneSpan(rs, traceID, 1, "bar", nil)
+	fooSpan := addScopeWithOneSpan(rs, traceID, 2, "foo", &barSpan)
+	_ = addScopeWithOneSpan(rs, traceID, 3, "baz", &fooSpan)
 
-	its, err := newInTraceSamplerSpansProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, sink)
+	its, err := newInTraceSamplerSpansProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, sink)
 	if err != nil {
 		t.Errorf("error when creating traceSamplerProcessor: %v", err)
 		return
@@ -257,7 +257,7 @@ func Test_intracesampler_ScopeLeaves_MultipleScopes(t *testing.T) {
 
 func Test_intracesampler_SamplingPercentage(t *testing.T) {
 
-	traceId := pcommon.TraceID{0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7}
+	traceID := pcommon.TraceID{0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7}
 
 	sink := new(consumertest.TracesSink)
 	cfg := &Config{
@@ -270,10 +270,10 @@ func Test_intracesampler_SamplingPercentage(t *testing.T) {
 	td := ptrace.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
 	rs.Resource().Attributes().PutStr("service.name", "test-service")
-	barSpan := addScopeWithOneSpan(rs, traceId, 1, "bar", nil)
-	_ = addScopeWithOneSpan(rs, traceId, 2, "foo", &barSpan)
+	barSpan := addScopeWithOneSpan(rs, traceID, 1, "bar", nil)
+	_ = addScopeWithOneSpan(rs, traceID, 2, "foo", &barSpan)
 
-	its, err := newInTraceSamplerSpansProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, sink)
+	its, err := newInTraceSamplerSpansProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, sink)
 	if err != nil {
 		t.Errorf("error when creating traceSamplerProcessor: %v", err)
 		return
@@ -287,11 +287,11 @@ func Test_intracesampler_SamplingPercentage(t *testing.T) {
 	assert.Equal(t, 2, outputNumSpans)
 }
 
-func addScopeWithOneSpan(rs ptrace.ResourceSpans, traceId pcommon.TraceID, spanIndex byte, scopeName string, parentSpan *ptrace.Span) ptrace.Span {
+func addScopeWithOneSpan(rs ptrace.ResourceSpans, traceID pcommon.TraceID, spanIndex byte, scopeName string, parentSpan *ptrace.Span) ptrace.Span {
 	ss := rs.ScopeSpans().AppendEmpty()
 	ss.Scope().SetName(scopeName)
 	span := ss.Spans().AppendEmpty()
-	span.SetTraceID(traceId)
+	span.SetTraceID(traceID)
 	span.SetSpanID(pcommon.SpanID{spanIndex, spanIndex, spanIndex, spanIndex, spanIndex, spanIndex, spanIndex, spanIndex})
 	if parentSpan != nil {
 		span.SetParentSpanID(parentSpan.SpanID())
