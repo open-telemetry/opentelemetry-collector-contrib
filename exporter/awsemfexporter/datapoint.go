@@ -15,13 +15,14 @@
 package awsemfexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter"
 
 import (
+	"fmt"
+	"strconv"
 	"time"
 
+	aws "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
-
-	aws "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics"
 )
 
 var deltaMetricCalculator = aws.NewFloat64DeltaCalculator()
@@ -41,36 +42,6 @@ func calculateSummaryDelta(prev *aws.MetricValue, val interface{}, timestampMs t
 	return summaryMetricEntry{summaryDelta, countDelta}, true
 }
 
-// dataPoint represents a processed metric data point
-type dataPoint struct {
-	value       interface{}
-	labels      map[string]string
-	timestampMs int64
-}
-
-// dataPoints is a wrapper interface for:
-//   - pmetric.NumberDataPointSlice
-//   - pmetric.HistogramDataPointSlice
-//   - pmetric.SummaryDataPointSlice
-type dataPoints interface {
-	Len() int
-	// At gets the adjusted datapoint from the DataPointSlice at i-th index.
-	// dataPoint: the adjusted data point
-	// retained: indicates whether the data point is valid for further process
-	// NOTE: It is an expensive call as it calculates the metric value.
-	At(i int) (dataPoint dataPoint, retained bool)
-}
-
-// deltaMetricMetadata contains the metadata required to perform rate/delta calculation
-type deltaMetricMetadata struct {
-	adjustToDelta bool
-	metricName    string
-	timestampMs   int64
-	namespace     string
-	logGroup      string
-	logStream     string
-}
-
 func mergeLabels(m deltaMetricMetadata, labels map[string]string) map[string]string {
 	result := map[string]string{
 		"namespace": m.namespace,
@@ -83,22 +54,50 @@ func mergeLabels(m deltaMetricMetadata, labels map[string]string) map[string]str
 	return result
 }
 
+// dataPoint represents a processed metric data point
+type dataPoint struct {
+	name        string
+	value       interface{}
+	labels      map[string]string
+	timestampMs int64
+}
+
+// dataPointSlice is a wrapper interface for:
+//   - pmetric.NumberDataPointSlice
+//   - pmetric.HistogramDataPointSlice
+//   - pmetric.SummaryDataPointSlice
+type dataPointSlice interface {
+	Len() int
+	// At gets the adjusted datapoint from the DataPointSlice at i-th index.
+	// dataPoint: the adjusted data point
+	// retained: indicates whether the data point is valid for further process
+	// NOTE: It is an expensive call as it calculates the metric value.
+	CalculateDeltaDatapoints(i int, instrumentationLibraryName string) (dataPoint []dataPoint, retained bool)
+}
+
+// deltaMetricMetadata contains the metadata required to perform rate/delta calculation
+type deltaMetricMetadata struct {
+	adjustToDelta bool
+	metricName    string
+	namespace     string
+	logGroup      string
+	logStream     string
+}
+
 // numberDataPointSlice is a wrapper for pmetric.NumberDataPointSlice
 type numberDataPointSlice struct {
-	instrumentationLibraryName string
 	deltaMetricMetadata
 	pmetric.NumberDataPointSlice
 }
 
 // histogramDataPointSlice is a wrapper for pmetric.HistogramDataPointSlice
 type histogramDataPointSlice struct {
-	instrumentationLibraryName string
+	deltaMetricMetadata
 	pmetric.HistogramDataPointSlice
 }
 
 // summaryDataPointSlice is a wrapper for pmetric.SummaryDataPointSlice
 type summaryDataPointSlice struct {
-	instrumentationLibraryName string
 	deltaMetricMetadata
 	pmetric.SummaryDataPointSlice
 }
@@ -109,9 +108,9 @@ type summaryMetricEntry struct {
 }
 
 // At retrieves the NumberDataPoint at the given index and performs rate/delta calculation if necessary.
-func (dps numberDataPointSlice) At(i int) (dataPoint, bool) {
+func (dps numberDataPointSlice) CalculateDeltaDatapoints(i int, instrumentationLibraryName string) ([]dataPoint, bool) {
 	metric := dps.NumberDataPointSlice.At(i)
-	labels := createLabels(metric.Attributes(), dps.instrumentationLibraryName)
+	labels := createLabels(metric.Attributes(), instrumentationLibraryName)
 	timestampMs := unixNanoToMilliseconds(metric.Timestamp())
 
 	var metricVal float64
@@ -122,13 +121,14 @@ func (dps numberDataPointSlice) At(i int) (dataPoint, bool) {
 		metricVal = float64(metric.IntValue())
 	}
 
-	retained := true
+	var retained bool = true
+	var datapoints []dataPoint = []dataPoint{}
+
 	if dps.adjustToDelta {
 		var deltaVal interface{}
-		deltaVal, retained = deltaMetricCalculator.Calculate(dps.metricName, mergeLabels(dps.deltaMetricMetadata, labels),
-			metricVal, metric.Timestamp().AsTime())
+		deltaVal, retained = deltaMetricCalculator.Calculate(dps.metricName, mergeLabels(dps.deltaMetricMetadata, labels), metricVal, metric.Timestamp().AsTime())
 		if !retained {
-			return dataPoint{}, retained
+			return datapoints, retained
 		}
 		// It should not happen in practice that the previous metric value is smaller than the current one.
 		// If it happens, we assume that the metric is reset for some reason.
@@ -137,20 +137,19 @@ func (dps numberDataPointSlice) At(i int) (dataPoint, bool) {
 		}
 	}
 
-	return dataPoint{
-		value:       metricVal,
-		labels:      labels,
-		timestampMs: timestampMs,
-	}, retained
+	datapoints = append(datapoints, dataPoint{name: dps.metricName, value: metricVal, labels: labels, timestampMs: timestampMs})
+
+	return datapoints, retained
 }
 
 // At retrieves the HistogramDataPoint at the given index.
-func (dps histogramDataPointSlice) At(i int) (dataPoint, bool) {
+func (dps histogramDataPointSlice) CalculateDeltaDatapoints(i int, instrumentationLibraryName string) ([]dataPoint, bool) {
 	metric := dps.HistogramDataPointSlice.At(i)
-	labels := createLabels(metric.Attributes(), dps.instrumentationLibraryName)
+	labels := createLabels(metric.Attributes(), instrumentationLibraryName)
 	timestamp := unixNanoToMilliseconds(metric.Timestamp())
 
-	return dataPoint{
+	return []dataPoint{dataPoint{
+		name: dps.metricName,
 		value: &cWMetricStats{
 			Count: metric.Count(),
 			Sum:   metric.Sum(),
@@ -159,44 +158,53 @@ func (dps histogramDataPointSlice) At(i int) (dataPoint, bool) {
 		},
 		labels:      labels,
 		timestampMs: timestamp,
-	}, true
+	}}, true
 }
 
 // At retrieves the SummaryDataPoint at the given index.
-func (dps summaryDataPointSlice) At(i int) (dataPoint, bool) {
+func (dps summaryDataPointSlice) CalculateDeltaDatapoints(i int, instrumentationLibraryName string) ([]dataPoint, bool) {
 	metric := dps.SummaryDataPointSlice.At(i)
-	labels := createLabels(metric.Attributes(), dps.instrumentationLibraryName)
+	labels := createLabels(metric.Attributes(), instrumentationLibraryName)
 	timestampMs := unixNanoToMilliseconds(metric.Timestamp())
 
 	sum := metric.Sum()
 	count := metric.Count()
-	retained := true
+	var retained bool = true
+	var datapoints []dataPoint = []dataPoint{}
+
 	if dps.adjustToDelta {
 		var delta interface{}
-		delta, retained = summaryMetricCalculator.Calculate(dps.metricName, mergeLabels(dps.deltaMetricMetadata, labels),
-			summaryMetricEntry{metric.Sum(), metric.Count()}, metric.Timestamp().AsTime())
+		delta, retained = summaryMetricCalculator.Calculate(dps.metricName, mergeLabels(dps.deltaMetricMetadata, labels), summaryMetricEntry{sum, count}, metric.Timestamp().AsTime())
 		if !retained {
-			return dataPoint{}, retained
+			return datapoints, retained
 		}
 		summaryMetricDelta := delta.(summaryMetricEntry)
 		sum = summaryMetricDelta.sum
 		count = summaryMetricDelta.count
 	}
-
-	metricVal := &cWMetricStats{
-		Count: count,
-		Sum:   sum,
+	debugFlags := false
+	if debugFlags {
+		metricVal := &cWMetricStats{
+			Count: count,
+			Sum:   sum,
+		}
+		if quantileValues := metric.QuantileValues(); quantileValues.Len() > 0 {
+			metricVal.Min = quantileValues.At(0).Value()
+			metricVal.Max = quantileValues.At(quantileValues.Len() - 1).Value()
+		}
+		datapoints = append(datapoints, dataPoint{name: dps.metricName, value: metricVal, labels: labels, timestampMs: timestampMs})
+	} else {
+		values := metric.QuantileValues()
+		datapoints = append(datapoints, dataPoint{name: fmt.Sprint(dps.metricName, "_count"), value: count, labels: labels, timestampMs: timestampMs})
+		datapoints = append(datapoints, dataPoint{name: fmt.Sprint(dps.metricName, "_sum"), value: sum, labels: labels, timestampMs: timestampMs})
+		for i := 0; i < values.Len(); i++ {
+			value := values.At(i)
+			labels["quantile"] = strconv.FormatFloat(value.Quantile(), 'g', -1, 64)
+			datapoints = append(datapoints, dataPoint{name: dps.metricName, value: value.Value(), labels: labels, timestampMs: timestampMs})
+		}
 	}
-	if quantileValues := metric.QuantileValues(); quantileValues.Len() > 0 {
-		metricVal.Min = quantileValues.At(0).Value()
-		metricVal.Max = quantileValues.At(quantileValues.Len() - 1).Value()
-	}
 
-	return dataPoint{
-		value:       metricVal,
-		labels:      labels,
-		timestampMs: timestampMs,
-	}, retained
+	return datapoints, retained
 }
 
 // createLabels converts OTel AttributesMap attributes to a map
@@ -209,7 +217,7 @@ func createLabels(attributes pcommon.Map, instrLibName string) map[string]string
 	})
 
 	// Add OTel instrumentation lib name as an additional label if it is defined
-	if instrLibName != noInstrumentationLibraryName {
+	if instrLibName != "" {
 		labels[oTellibDimensionKey] = instrLibName
 	}
 
@@ -217,36 +225,34 @@ func createLabels(attributes pcommon.Map, instrLibName string) map[string]string
 }
 
 // getDataPoints retrieves data points from OT Metric.
-func getDataPoints(pmd pmetric.Metric, metadata cWMetricMetadata, logger *zap.Logger) (dps dataPoints) {
-	adjusterMetadata := deltaMetricMetadata{
+func getDataPoints(pmd pmetric.Metric, metadata cWMetricMetadata, logger *zap.Logger) dataPointSlice {
+	metricMetadata := deltaMetricMetadata{
 		false,
 		pmd.Name(),
-		metadata.timestampMs,
 		metadata.namespace,
 		metadata.logGroup,
 		metadata.logStream,
 	}
 
+	var dps dataPointSlice = nil
 	switch pmd.Type() {
 	case pmetric.MetricTypeGauge:
 		metric := pmd.Gauge()
 		dps = numberDataPointSlice{
-			metadata.instrumentationLibraryName,
-			adjusterMetadata,
+			metricMetadata,
 			metric.DataPoints(),
 		}
 	case pmetric.MetricTypeSum:
 		metric := pmd.Sum()
-		adjusterMetadata.adjustToDelta = metric.AggregationTemporality() == pmetric.AggregationTemporalityCumulative
+		metricMetadata.adjustToDelta = metric.AggregationTemporality() == pmetric.AggregationTemporalityCumulative
 		dps = numberDataPointSlice{
-			metadata.instrumentationLibraryName,
-			adjusterMetadata,
+			metricMetadata,
 			metric.DataPoints(),
 		}
 	case pmetric.MetricTypeHistogram:
 		metric := pmd.Histogram()
 		dps = histogramDataPointSlice{
-			metadata.instrumentationLibraryName,
+			metricMetadata,
 			metric.DataPoints(),
 		}
 	case pmetric.MetricTypeSummary:
@@ -257,10 +263,9 @@ func getDataPoints(pmd pmetric.Metric, metadata cWMetricMetadata, logger *zap.Lo
 		// attribute processor) from resource metrics. If it exists, and equals to prometheus, the sum and count will be
 		// converted.
 		// For more information: https://github.com/open-telemetry/opentelemetry-collector/blob/main/receiver/prometheusreceiver/DESIGN.md#summary
-		adjusterMetadata.adjustToDelta = metadata.receiver == prometheusReceiver
+		metricMetadata.adjustToDelta = metadata.receiver == prometheusReceiver
 		dps = summaryDataPointSlice{
-			metadata.instrumentationLibraryName,
-			adjusterMetadata,
+			metricMetadata,
 			metric.DataPoints(),
 		}
 	default:
@@ -270,5 +275,6 @@ func getDataPoints(pmd pmetric.Metric, metadata cWMetricMetadata, logger *zap.Lo
 			zap.String("Unit", pmd.Unit()),
 		)
 	}
-	return
+
+	return dps
 }
