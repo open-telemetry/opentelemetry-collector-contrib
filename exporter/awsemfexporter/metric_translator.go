@@ -20,10 +20,9 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
 )
 
 const (
@@ -87,7 +86,7 @@ type metricTranslator struct {
 	metricDescriptor map[string]MetricDescriptor
 }
 
-func newMetricTranslator(config Config) metricTranslator {
+func newMetricTranslator(config *Config) metricTranslator {
 	mt := map[string]MetricDescriptor{}
 	for _, descriptor := range config.MetricDescriptors {
 		mt[descriptor.MetricName] = descriptor

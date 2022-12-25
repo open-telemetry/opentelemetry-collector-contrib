@@ -18,13 +18,11 @@ package awscloudwatchlogsexporter // import "github.com/open-telemetry/opentelem
 
 import (
 	"context"
-	"errors"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 	"go.opentelemetry.io/collector/component"
 	exp "go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 )
 
 const (
@@ -50,11 +48,25 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func createLogsExporter(_ context.Context, params exp.CreateSettings, config component.Config) (exp.Logs, error) {
-	expConfig, ok := config.(*Config)
-	if !ok {
-		return nil, errors.New("invalid configuration type; can't cast to awscloudwatchlogsexporter.Config")
-	}
-	return newCwLogsExporter(expConfig, params)
+func createLogsExporter(ctx context.Context, params exp.CreateSettings, config component.Config) (exp.Logs, error) {
+	expCfg := config.(*Config)
 
+	logsExp, err := newCwLogsExporter(expCfg, params)
+	if err != nil {
+		return nil, err
+	}
+
+	exporter, err := exporterhelper.NewLogsExporter(
+		ctx,
+		params,
+		config,
+		logsExp.ConsumeLogs,
+		exporterhelper.WithQueue(expCfg.enforcedQueueSettings()),
+		exporterhelper.WithRetry(expCfg.RetrySettings),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return exporter, nil
 }

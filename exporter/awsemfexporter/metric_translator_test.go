@@ -28,6 +28,7 @@ import (
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/golang/protobuf/ptypes/wrappers"
+	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -35,8 +36,6 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
-
-	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
 
 func readFromFile(filename string) string {
@@ -435,7 +434,7 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 	}
 	oc := createMetricTestData()
 
-	translator := newMetricTranslator(*config)
+	translator := newMetricTranslator(config)
 
 	noInstrLibMetric := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics).ResourceMetrics().At(0)
 	instrLibMetric := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics).ResourceMetrics().At(0)
@@ -2143,7 +2142,7 @@ func BenchmarkTranslateOtToGroupedMetricWithInstrLibrary(b *testing.B) {
 		DimensionRollupOption: zeroAndSingleDimensionRollup,
 		logger:                zap.NewNop(),
 	}
-	translator := newMetricTranslator(*config)
+	translator := newMetricTranslator(config)
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
@@ -2166,7 +2165,7 @@ func BenchmarkTranslateOtToGroupedMetricWithoutConfigReplacePattern(b *testing.B
 		LogStreamName:         "stream.no.replace.pattern",
 		logger:                zap.NewNop(),
 	}
-	translator := newMetricTranslator(*config)
+	translator := newMetricTranslator(config)
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
@@ -2189,7 +2188,7 @@ func BenchmarkTranslateOtToGroupedMetricWithConfigReplaceWithResource(b *testing
 		LogStreamName:         "stream.no.replace.pattern",
 		logger:                zap.NewNop(),
 	}
-	translator := newMetricTranslator(*config)
+	translator := newMetricTranslator(config)
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
@@ -2212,7 +2211,7 @@ func BenchmarkTranslateOtToGroupedMetricWithConfigReplaceWithLabel(b *testing.B)
 		LogStreamName:         "stream.{PodName}",
 		logger:                zap.NewNop(),
 	}
-	translator := newMetricTranslator(*config)
+	translator := newMetricTranslator(config)
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
@@ -2230,7 +2229,7 @@ func BenchmarkTranslateOtToGroupedMetricWithoutInstrLibrary(b *testing.B) {
 		DimensionRollupOption: zeroAndSingleDimensionRollup,
 		logger:                zap.NewNop(),
 	}
-	translator := newMetricTranslator(*config)
+	translator := newMetricTranslator(config)
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
@@ -2489,7 +2488,7 @@ func TestTranslateOtToGroupedMetricForLogGroupAndStream(t *testing.T) {
 				logger:                zap.NewNop(),
 			}
 
-			translator := newMetricTranslator(*config)
+			translator := newMetricTranslator(config)
 
 			groupedMetrics := make(map[interface{}]*groupedMetric)
 

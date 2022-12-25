@@ -24,6 +24,16 @@ import (
 	"go.uber.org/zap"
 )
 
+type MetricDescriptor struct {
+	// MetricName is the name of the metric
+	MetricName string `mapstructure:"metric_name"`
+	// Unit defines the override value of metric descriptor `unit`
+	Unit string `mapstructure:"unit"`
+	// Overwrite set to true means the existing metric descriptor will be overwritten or a new metric descriptor will be created; false means
+	// the descriptor will only be configured if empty.
+	Overwrite bool `mapstructure:"overwrite"`
+}
+
 // MetricDeclaration characterizes a rule to be used to set dimensions for certain
 // incoming metrics, filtered by their metric names.
 type MetricDeclaration struct {

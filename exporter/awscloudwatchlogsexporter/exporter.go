@@ -24,20 +24,17 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/google/uuid"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	exp "go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
 )
 
 type exporter struct {
-	Config           *Config
 	logger           *zap.Logger
 	retryCount       int
 	collectorID      string
@@ -45,54 +42,36 @@ type exporter struct {
 	pusher           cwlogs.Pusher
 }
 
-func newCwLogsPusher(expConfig *Config, params exp.CreateSettings) (exp.Logs, error) {
-	if expConfig == nil {
+func newCwLogsExporter(config *Config, params exp.CreateSettings) (exp.Logs, error) {
+	if config == nil {
 		return nil, errors.New("awscloudwatchlogs exporter config is nil")
 	}
 
-	expConfig.logger = params.Logger
-
 	// create AWS session
-	awsConfig, session, err := awsutil.GetAWSConfigSession(params.Logger, &awsutil.Conn{}, &expConfig.AWSSessionSettings)
+	awsConfig, session, err := awsutil.GetAWSConfigSession(params.Logger, &awsutil.Conn{}, &config.AWSSessionSettings)
 	if err != nil {
 		return nil, err
 	}
 
 	// create CWLogs client with aws session config
-	svcStructuredLog := cwlogs.NewClient(params.Logger, awsConfig, params.BuildInfo, expConfig.LogGroupName, expConfig.LogRetention, session)
+	svcStructuredLog := cwlogs.NewClient(params.Logger, awsConfig, params.BuildInfo, config.LogGroupName, config.LogRetention, session)
 	collectorIdentifier, err := uuid.NewRandom()
 
 	if err != nil {
 		return nil, err
 	}
 
-	pusher := cwlogs.NewPusher(aws.String(expConfig.LogGroupName), aws.String(expConfig.LogStreamName), *awsConfig.MaxRetries, *svcStructuredLog, params.Logger)
+	pusher := cwlogs.NewPusher(aws.String(config.LogGroupName), aws.String(config.LogStreamName), *awsConfig.MaxRetries, *svcStructuredLog, params.Logger)
 
 	logsExporter := &exporter{
 		svcStructuredLog: svcStructuredLog,
-		Config:           expConfig,
 		logger:           params.Logger,
 		retryCount:       *awsConfig.MaxRetries,
 		collectorID:      collectorIdentifier.String(),
 		pusher:           pusher,
 	}
-	return logsExporter, nil
-}
 
-func newCwLogsExporter(config component.Config, params exp.CreateSettings) (exp.Logs, error) {
-	expConfig := config.(*Config)
-	logsExporter, err := newCwLogsPusher(expConfig, params)
-	if err != nil {
-		return nil, err
-	}
-	return exporterhelper.NewLogsExporter(
-		context.TODO(),
-		params,
-		config,
-		logsExporter.ConsumeLogs,
-		exporterhelper.WithQueue(expConfig.enforcedQueueSettings()),
-		exporterhelper.WithRetry(expConfig.RetrySettings),
-	)
+	return logsExporter, nil
 
 }
 
