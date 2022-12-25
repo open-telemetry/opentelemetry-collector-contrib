@@ -18,10 +18,9 @@ import (
 	"encoding/json"
 	"strings"
 
+	aws "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
-
-	aws "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics"
 )
 
 // groupedMetric defines set of metrics with same namespace, timestamp and labels
@@ -80,7 +79,7 @@ func addToGroupedMetric(pmd pmetric.Metric, groupedMetrics map[interface{}]*grou
 		}
 
 		// Extra params to use when grouping metrics
-		groupKey := groupedMetricKey(metadata.groupedMetricMetadata, labels)
+		groupKey := aws.NewKey(metadata, labels)
 		if _, ok := groupedMetrics[groupKey]; ok {
 			// if MetricName already exists in metrics map, print warning log
 			if _, ok := groupedMetrics[groupKey].metrics[metricName]; ok {
@@ -176,10 +175,6 @@ func mapGetHelper(labels map[string]string, key string) string {
 	}
 
 	return ""
-}
-
-func groupedMetricKey(metadata groupedMetricMetadata, labels map[string]string) aws.Key {
-	return aws.NewKey(metadata, labels)
 }
 
 func translateUnit(metric pmetric.Metric, descriptor map[string]MetricDescriptor) string {

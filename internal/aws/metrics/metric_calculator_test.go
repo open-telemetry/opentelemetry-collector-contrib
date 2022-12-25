@@ -24,37 +24,37 @@ import (
 )
 
 func TestFloat64RateCalculator(t *testing.T) {
-	MetricMetadata := "rate"
+	metricKey := NewKey("rate", nil)
 	initTime := time.Now()
 	c := newFloat64RateCalculator()
-	r, ok := c.Calculate(MetricMetadata, nil, float64(50), initTime)
+	r, ok := c.Calculate(metricKey, float64(50), initTime)
 	assert.False(t, ok)
 	assert.Equal(t, float64(0), r)
 
 	nextTime := initTime.Add(100 * time.Millisecond)
-	r, ok = c.Calculate(MetricMetadata, nil, float64(100), nextTime)
+	r, ok = c.Calculate(metricKey, float64(100), nextTime)
 	assert.True(t, ok)
 	assert.InDelta(t, 0.5, r, 0.1)
 }
 
 func TestFloat64RateCalculatorWithTooFrequentUpdate(t *testing.T) {
-	MetricMetadata := "rate"
+	metricKey := NewKey("rate", nil)
 	initTime := time.Now()
 	c := newFloat64RateCalculator()
-	r, ok := c.Calculate(MetricMetadata, nil, float64(50), initTime)
+	r, ok := c.Calculate(metricKey, float64(50), initTime)
 	assert.False(t, ok)
 	assert.Equal(t, float64(0), r)
 
 	nextTime := initTime
 	for i := 0; i < 10; i++ {
 		nextTime = nextTime.Add(5 * time.Millisecond)
-		r, ok = c.Calculate(MetricMetadata, nil, float64(105), nextTime)
+		r, ok = c.Calculate(metricKey, float64(105), nextTime)
 		assert.False(t, ok)
 		assert.Equal(t, float64(0), r)
 	}
 
 	nextTime = nextTime.Add(5 * time.Millisecond)
-	r, ok = c.Calculate(MetricMetadata, nil, float64(105), nextTime)
+	r, ok = c.Calculate(metricKey, float64(105), nextTime)
 	assert.True(t, ok)
 	assert.InDelta(t, 1, r, 0.1)
 }
@@ -73,13 +73,13 @@ func newFloat64RateCalculator() MetricCalculator {
 }
 
 func TestFloat64DeltaCalculator(t *testing.T) {
-	MetricMetadata := "delta"
+	metricKey := NewKey("delta", nil)
 	initTime := time.Now()
 	c := NewFloat64DeltaCalculator()
 
 	testCases := []float64{0.1, 0.1, 0.5, 1.3, 1.9, 2.5, 5, 24.2, 103}
 	for i, f := range testCases {
-		r, ok := c.Calculate(MetricMetadata, nil, f, initTime)
+		r, ok := c.Calculate(metricKey, f, initTime)
 		assert.Equal(t, i > 0, ok)
 		if i == 0 {
 			assert.Equal(t, float64(0), r)
@@ -90,13 +90,13 @@ func TestFloat64DeltaCalculator(t *testing.T) {
 }
 
 func TestFloat64DeltaCalculatorWithDecreasingValues(t *testing.T) {
-	MetricMetadata := "delta"
+	metricKey := NewKey("delta", nil)
 	initTime := time.Now()
 	c := NewFloat64DeltaCalculator()
 
 	testCases := []float64{108, 106, 56.2, 28.8, 10, 10, 3, -1, -100}
 	for i, f := range testCases {
-		r, ok := c.Calculate(MetricMetadata, nil, f, initTime)
+		r, ok := c.Calculate(metricKey, f, initTime)
 		assert.Equal(t, i > 0, ok)
 		if ok {
 			assert.Equal(t, testCases[i]-testCases[i-1], r)
