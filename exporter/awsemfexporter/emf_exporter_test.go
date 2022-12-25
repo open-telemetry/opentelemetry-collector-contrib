@@ -625,8 +625,6 @@ func TestWrapErrorIfBadRequest(t *testing.T) {
 	assert.False(t, consumererror.IsPermanent(err))
 }
 
-// This test verifies that if func newEmfExporter() returns an error then newEmfExporter()
-// will do so.
 func TestNewEmfExporterWithoutConfig(t *testing.T) {
 	factory := NewFactory()
 	expCfg := factory.CreateDefaultConfig().(*Config)

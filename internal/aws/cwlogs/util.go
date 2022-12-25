@@ -16,6 +16,8 @@ package cwlogs // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import "github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 
+// EMFSupportedUnits contains the unit collection supported by CloudWatch backend service.
+// https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_MetricDatum.html
 var EMFSupportedUnits = cloudwatchlogs.StandardUnit_Values()
 
 // IsValidRetentionValue confirms whether the retention is supported with CloudWatchLogs are not and return true if supported

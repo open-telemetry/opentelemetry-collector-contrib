@@ -18,12 +18,14 @@ import (
 	"bytes"
 	"errors"
 	"regexp"
-	"sort"
 	"strings"
 
 	"go.uber.org/zap"
+	"golang.org/x/exp/slices"
 )
 
+// MetricDescriptor  allows the schema of a metric to be overwritten before sending out to the CloudWatch backend service.
+// Currently, we only support unit override.
 type MetricDescriptor struct {
 	// MetricName is the name of the metric
 	MetricName string `mapstructure:"metric_name"`
@@ -99,10 +101,6 @@ func (m *MetricDeclaration) init(logger *zap.Logger) (err error) {
 	seen := make(map[string]bool, len(m.Dimensions))
 	for _, dimSet := range m.Dimensions {
 		concatenatedDims := strings.Join(dimSet, ",")
-		if len(dimSet) > 10 {
-			logger.Warn("Dropped dimension set: > 10 dimensions specified.", zap.String("dimensions", concatenatedDims))
-			continue
-		}
 
 		// Dedup dimensions within dimension set
 		dedupedDims, hasDuplicate := dedupDimensionSet(dimSet)
@@ -110,8 +108,13 @@ func (m *MetricDeclaration) init(logger *zap.Logger) (err error) {
 			logger.Debug("Removed duplicates from dimension set.", zap.String("dimensions", concatenatedDims))
 		}
 
+		if len(dedupedDims) > 10 {
+			logger.Warn("Dropped dimension set: > 10 dimensions specified.", zap.String("dimensions", concatenatedDims))
+			continue
+		}
+
 		// Sort dimensions
-		sort.Strings(dedupedDims)
+		slices.Sort(dedupedDims)
 
 		// Dedup dimension sets
 		key := strings.Join(dedupedDims, ",")
@@ -135,7 +138,7 @@ func (m *MetricDeclaration) init(logger *zap.Logger) (err error) {
 			return err
 		}
 	}
-	return
+	return nil
 }
 
 // MatchesName returns true if the given OTLP Metric's name matches any of the Metric
@@ -196,8 +199,8 @@ func (lm *LabelMatcher) init() (err error) {
 	if len(lm.Separator) == 0 {
 		lm.Separator = ";"
 	}
-	lm.compiledRegex = regexp.MustCompile(lm.Regex)
-	return
+	lm.compiledRegex, err = regexp.Compile(lm.Regex)
+	return err
 }
 
 // Matches returns true if given set of labels matches the LabelMatcher's rules.

@@ -48,6 +48,7 @@ func createDefaultConfig() component.Config {
 		Namespace:             "",
 		DimensionRollupOption: "ZeroAndSingleDimensionRollup",
 		OutputDestination:     "cloudwatch",
+		LogRetention:          0,
 	}
 }
 
