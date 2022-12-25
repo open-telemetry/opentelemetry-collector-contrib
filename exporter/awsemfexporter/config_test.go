@@ -18,14 +18,13 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -98,7 +97,7 @@ func TestLoadConfig(t *testing.T) {
 				LogStreamName:         "",
 				DimensionRollupOption: "ZeroAndSingleDimensionRollup",
 				OutputDestination:     "cloudwatch",
-				MetricDescriptors: []MetricDescriptor{{
+				MetricDescriptors: []*MetricDescriptor{{
 					MetricName: "memcached_current_items",
 					Unit:       "Count",
 					Overwrite:  true,
@@ -123,7 +122,7 @@ func TestLoadConfig(t *testing.T) {
 }
 
 func TestConfigValidate(t *testing.T) {
-	incorrectDescriptor := []MetricDescriptor{
+	incorrectDescriptor := []*MetricDescriptor{
 		{MetricName: ""},
 		{Unit: "Count", MetricName: "apiserver_total", Overwrite: true},
 		{Unit: "INVALID", MetricName: "404"},
@@ -142,7 +141,7 @@ func TestConfigValidate(t *testing.T) {
 	assert.NoError(t, component.ValidateConfig(cfg))
 
 	assert.Equal(t, 2, len(cfg.MetricDescriptors))
-	assert.Equal(t, []MetricDescriptor{
+	assert.Equal(t, []*MetricDescriptor{
 		{Unit: "Count", MetricName: "apiserver_total", Overwrite: true},
 		{Unit: "Megabytes", MetricName: "memory_usage"},
 	}, cfg.MetricDescriptors)

@@ -19,6 +19,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
@@ -61,7 +62,7 @@ type Config struct {
 	MetricDeclarations []*MetricDeclaration `mapstructure:"metric_declarations"`
 
 	// MetricDescriptors is the list of override metric descriptors that are sent to the CloudWatch
-	MetricDescriptors []MetricDescriptor `mapstructure:"metric_descriptors"`
+	MetricDescriptors []*MetricDescriptor `mapstructure:"metric_descriptors"`
 
 	// OutputDestination is an option to specify the EMFExporter output. Default option is "cloudwatch"
 	// "cloudwatch" - direct the exporter output to CloudWatch backend
@@ -98,12 +99,12 @@ func (config *Config) Validate() error {
 	}
 	config.MetricDeclarations = validDeclarations
 
-	var validDescriptors []MetricDescriptor
+	var validDescriptors []*MetricDescriptor
 	for _, descriptor := range config.MetricDescriptors {
 		if descriptor.MetricName == "" {
 			continue
 		}
-		if ok := slices.Contains(emfSupportedUnits, descriptor.Unit); ok {
+		if ok := slices.Contains(cwlogs.EMFSupportedUnits, descriptor.Unit); ok {
 			validDescriptors = append(validDescriptors, descriptor)
 		} else {
 			config.logger.Warn("Dropped unsupported metric desctriptor.", zap.String("unit", descriptor.Unit))
@@ -111,40 +112,9 @@ func (config *Config) Validate() error {
 	}
 	config.MetricDescriptors = validDescriptors
 
-	if !isValidRetentionValue(config.LogRetention) {
+	if !cwlogs.IsValidRetentionValue(config.LogRetention) {
 		return errors.New("invalid value for retention policy.  Please make sure to use the following values: 0 (Never Expire), 1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 2192, 2557, 2922, 3288, or 3653")
 	}
 
 	return nil
-}
-
-// Added function to check if value is an accepted number of log retention days
-func isValidRetentionValue(input int64) bool {
-	switch input {
-	case
-		0,
-		1,
-		3,
-		5,
-		7,
-		14,
-		30,
-		60,
-		90,
-		120,
-		150,
-		180,
-		365,
-		400,
-		545,
-		731,
-		1827,
-		2192,
-		2557,
-		2922,
-		3288,
-		3653:
-		return true
-	}
-	return false
 }

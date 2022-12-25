@@ -83,11 +83,11 @@ type cWMetricMetadata struct {
 }
 
 type metricTranslator struct {
-	metricDescriptor map[string]MetricDescriptor
+	metricDescriptor map[string]*MetricDescriptor
 }
 
 func newMetricTranslator(config *Config) metricTranslator {
-	mt := map[string]MetricDescriptor{}
+	mt := map[string]*MetricDescriptor{}
 	for _, descriptor := range config.MetricDescriptors {
 		mt[descriptor.MetricName] = descriptor
 	}
