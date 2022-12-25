@@ -16,6 +16,7 @@ package awsemfexporter // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 	"time"
 
@@ -25,8 +26,10 @@ import (
 	"go.uber.org/zap"
 )
 
-var deltaMetricCalculator = aws.NewFloat64DeltaCalculator()
-var summaryMetricCalculator = aws.NewMetricCalculator(calculateSummaryDelta)
+var (
+	deltaMetricCalculator   = aws.NewFloat64DeltaCalculator()
+	summaryMetricCalculator = aws.NewMetricCalculator(calculateSummaryDelta)
+)
 
 func calculateSummaryDelta(prev *aws.MetricValue, val interface{}, timestampMs time.Time) (interface{}, bool) {
 	metricEntry := val.(summaryMetricEntry)
@@ -194,15 +197,23 @@ func (dps summaryDataPointSlice) CalculateDeltaDatapoints(i int, instrumentation
 		}
 		datapoints = append(datapoints, dataPoint{name: dps.metricName, value: metricVal, labels: labels, timestampMs: timestampMs})
 	} else {
+
 		values := metric.QuantileValues()
 		datapoints = append(datapoints, dataPoint{name: fmt.Sprint(dps.metricName, "_count"), value: count, labels: labels, timestampMs: timestampMs})
 		datapoints = append(datapoints, dataPoint{name: fmt.Sprint(dps.metricName, "_sum"), value: sum, labels: labels, timestampMs: timestampMs})
+		log.Printf("quantile count  %v", dataPoint{name: fmt.Sprint(dps.metricName, "_count"), value: count, labels: labels, timestampMs: timestampMs})
+		log.Printf("quantile _sum %v", dataPoint{name: fmt.Sprint(dps.metricName, "_sum"), value: sum, labels: labels, timestampMs: timestampMs})
+		log.Printf("labels %v", labels)
 		for i := 0; i < values.Len(); i++ {
-			value := values.At(i)
-			labels["quantile"] = strconv.FormatFloat(value.Quantile(), 'g', -1, 64)
-			datapoints = append(datapoints, dataPoint{name: dps.metricName, value: value.Value(), labels: labels, timestampMs: timestampMs})
+			quantile := values.At(i)
+			log.Printf("quantile value that exists %v", strconv.FormatFloat(quantile.Quantile(), 'g', -1, 64))
+			labels["quantile"] = strconv.FormatFloat(quantile.Quantile(), 'g', -1, 64)
+			log.Printf("quantile value that exists %v", labels["quantile"])
+			datapoints = append(datapoints, dataPoint{name: dps.metricName, value: quantile.Value(), labels: labels, timestampMs: timestampMs})
+
 		}
 	}
+	log.Printf("labels %v", datapoints)
 
 	return datapoints, retained
 }
