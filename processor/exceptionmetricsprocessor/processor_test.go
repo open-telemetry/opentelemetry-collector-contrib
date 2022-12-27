@@ -44,16 +44,18 @@ import (
 )
 
 const (
-	stringAttrName      = "stringAttrName"
-	intAttrName         = "intAttrName"
-	doubleAttrName      = "doubleAttrName"
-	boolAttrName        = "boolAttrName"
-	nullAttrName        = "nullAttrName"
-	mapAttrName         = "mapAttrName"
-	arrayAttrName       = "arrayAttrName"
-	notInSpanAttrName0  = "shouldBeInMetric"
-	notInSpanAttrName1  = "shouldNotBeInMetric"
-	DimensionsCacheSize = 2
+	stringAttrName           = "stringAttrName"
+	intAttrName              = "intAttrName"
+	doubleAttrName           = "doubleAttrName"
+	boolAttrName             = "boolAttrName"
+	nullAttrName             = "nullAttrName"
+	mapAttrName              = "mapAttrName"
+	arrayAttrName            = "arrayAttrName"
+	notInSpanAttrName0       = "shouldBeInMetric"
+	notInSpanAttrName1       = "shouldNotBeInMetric"
+	exceptionTypeAttrName    = "exception.type"
+	exceptionMessageAttrName = "exception.message"
+	DimensionsCacheSize      = 2
 
 	sampleLatency         = float64(11)
 	sampleLatencyDuration = time.Duration(sampleLatency) * time.Millisecond
@@ -353,6 +355,10 @@ func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, de
 			{notInSpanAttrName0, &defaultNotInSpanAttrVal},
 			// Leave the default value unset to test that this dimension should not be added to the metric.
 			{notInSpanAttrName1, nil},
+
+			// Exception specific dimensions
+			{exceptionTypeAttrName, nil},
+			{exceptionMessageAttrName, nil},
 		},
 		keyBuf:                new(bytes.Buffer),
 		exceptions:            make(map[metricKey]int),
@@ -413,14 +419,16 @@ func verifyConsumeMetricsInput(t testing.TB, input pmetric.Metrics, numCumulativ
 func verifyMetricLabels(dp metricDataPoint, t testing.TB, seenMetricIDs map[metricID]bool) {
 	mID := metricID{}
 	wantDimensions := map[string]pcommon.Value{
-		stringAttrName:     pcommon.NewValueStr("stringAttrValue"),
-		intAttrName:        pcommon.NewValueInt(99),
-		doubleAttrName:     pcommon.NewValueDouble(99.99),
-		boolAttrName:       pcommon.NewValueBool(true),
-		nullAttrName:       pcommon.NewValueEmpty(),
-		arrayAttrName:      pcommon.NewValueSlice(),
-		mapAttrName:        pcommon.NewValueMap(),
-		notInSpanAttrName0: pcommon.NewValueStr("defaultNotInSpanAttrVal"),
+		stringAttrName:           pcommon.NewValueStr("stringAttrValue"),
+		intAttrName:              pcommon.NewValueInt(99),
+		doubleAttrName:           pcommon.NewValueDouble(99.99),
+		boolAttrName:             pcommon.NewValueBool(true),
+		nullAttrName:             pcommon.NewValueEmpty(),
+		arrayAttrName:            pcommon.NewValueSlice(),
+		mapAttrName:              pcommon.NewValueMap(),
+		notInSpanAttrName0:       pcommon.NewValueStr("defaultNotInSpanAttrVal"),
+		exceptionTypeAttrName:    pcommon.NewValueStr("Exception"),
+		exceptionMessageAttrName: pcommon.NewValueStr("Exception message"),
 	}
 	dp.Attributes().Range(func(k string, v pcommon.Value) bool {
 		switch k {
