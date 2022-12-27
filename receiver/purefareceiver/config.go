@@ -46,6 +46,9 @@ type Config struct {
 
 	// Volumes represents the list of volumes to query
 	Volumes []internal.ScraperConfig `mapstructure:"volumes"`
+
+	// Env represents the list of environment to query
+	Env string `mapstructure:"env"`
 }
 
 type Settings struct {
