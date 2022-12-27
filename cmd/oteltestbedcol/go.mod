@@ -328,6 +328,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostm
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension => ../../extension/bearertokenauthextension
 
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/crashreportextension => ../../extension/crashreportextension
+
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter => ../../exporter/lokiexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin => ../../pkg/translator/zipkin

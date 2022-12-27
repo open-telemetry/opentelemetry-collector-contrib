@@ -1,0 +1,3 @@
+crashreport:
+  endpoint: "https://example.com"
+  timeout: "5s"

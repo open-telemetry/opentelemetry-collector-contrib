@@ -16,10 +16,17 @@ package crashreportextension
 
 import (
 	"context"
+	"errors"
+	"io"
+	"net"
+	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configauth"
 	"go.uber.org/zap"
 )
 
@@ -40,5 +47,71 @@ func TestCrashReporter_StartShutdownPanic(t *testing.T) {
 	assert.NoError(t, err)
 	err = reporter.Shutdown(context.Background())
 	assert.NoError(t, err)
-	reporter.handlePanic(struct{}{})
+}
+
+func TestCrashReporter_InvalidClient(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.HTTPClientSettings.Auth = &configauth.Authentication{AuthenticatorID: component.NewID("foo")}
+	reporter := &crashReportExtension{
+		cfg:    cfg,
+		logger: zap.NewNop(),
+	}
+	err := reporter.Start(context.Background(), componenttest.NewNopHost())
+	assert.Error(t, err)
+}
+
+func TestCrashReporter_handlePanic_invalidurl(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	reporter := &crashReportExtension{
+		cfg:    cfg,
+		logger: zap.NewNop(),
+	}
+	err := reporter.Start(context.Background(), componenttest.NewNopHost())
+	assert.NoError(t, err)
+	reporter.handlePanic(errors.New("foo"))
+}
+
+type crashReader struct {
+	statusCode int
+	body       string
+}
+
+func (cr *crashReader) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+	value, _ := io.ReadAll(req.Body)
+	resp.WriteHeader(cr.statusCode)
+	cr.body = string(value)
+}
+
+func TestCrashReporter_handlePanic_happyPath(t *testing.T) {
+	reader := &crashReader{
+		statusCode: 200,
+	}
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	defer listener.Close()
+	mux := http.NewServeMux()
+	mux.Handle("/", reader)
+	server := &http.Server{
+		Handler: mux,
+	}
+	go func() {
+		err2 := server.Serve(listener)
+		require.NoError(t, err2)
+	}()
+	cfg := createDefaultConfig().(*Config)
+	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector/raw"
+
+	reporter := &crashReportExtension{
+		cfg:    cfg,
+		logger: zap.NewNop(),
+	}
+	err = reporter.Start(context.Background(), componenttest.NewNopHost())
+	assert.NoError(t, err)
+	defer func() {
+		_ = reporter.Shutdown(context.Background())
+	}()
+
+	reporter.handlePanic(errors.New("foo"))
+
+	require.Contains(t, reader.body, "goroutine")
 }

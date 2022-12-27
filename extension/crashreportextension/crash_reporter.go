@@ -60,8 +60,8 @@ func (c *crashReportExtension) handlePanic(fatalErr any) {
 		resp, err := c.httpClient.Post(c.cfg.HTTPClientSettings.Endpoint, "application/octet-stream", strings.NewReader(msg))
 		if err != nil {
 			c.logger.Error("error sending crash report", zap.Error(err))
-		} else if resp.StatusCode < 300 {
-			c.logger.Info("crash report sent successfully", zap.Int("code", resp.StatusCode))
+		} else {
+			c.logger.Info("crash report sent", zap.Int("code", resp.StatusCode))
 		}
 	}
 }
