@@ -20,7 +20,7 @@ import (
 
 // Cache consists of an LRU cache and the evicted items from the LRU cache.
 // This data structure makes sure all the cached items can be retrieved either from the LRU cache or the evictedItems
-// map. In exceptionsmetricsprocessor's use case, we need to hold all the items during the current processing step for
+// map. In exceptionmetricsprocessor's use case, we need to hold all the items during the current processing step for
 // building the metrics. The evicted items can/should be safely removed once the metrics are built from the current
 // batch of spans.
 //

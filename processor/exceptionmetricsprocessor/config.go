@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package exceptionsmetricsprocessor
+package exceptionmetricsprocessor
 
 import (
 	"go.opentelemetry.io/collector/config"
@@ -40,7 +40,7 @@ type Dimension struct {
 	Default *string `mapstructure:"default"`
 }
 
-// Config defines the configuration options for exceptionsmetricsprocessor.
+// Config defines the configuration options for exceptionmetricsprocessor.
 type Config struct {
 	config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
