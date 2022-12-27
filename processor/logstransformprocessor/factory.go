@@ -21,7 +21,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor"
-	"go.opentelemetry.io/collector/processor/processorhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -67,17 +66,5 @@ func createLogsProcessor(
 		return nil, errors.New("no operators were configured for this logs transform processor")
 	}
 
-	proc := &logsTransformProcessor{
-		logger: set.Logger,
-		config: pCfg,
-	}
-	return processorhelper.NewLogsProcessor(
-		ctx,
-		set,
-		cfg,
-		nextConsumer,
-		proc.processLogs,
-		processorhelper.WithStart(proc.Start),
-		processorhelper.WithShutdown(proc.Shutdown),
-		processorhelper.WithCapabilities(processorCapabilities))
+	return newProcessor(pCfg, nextConsumer, set.Logger)
 }
