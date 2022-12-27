@@ -92,6 +92,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/exceptionmetricsprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor"
@@ -354,6 +355,7 @@ func Components() (otelcol.Factories, error) {
 	processors := []processor.Factory{
 		attributesprocessor.NewFactory(),
 		batchprocessor.NewFactory(),
+		exceptionsprocessor.NewFactory(),
 		filterprocessor.NewFactory(),
 		groupbyattrsprocessor.NewFactory(),
 		groupbytraceprocessor.NewFactory(),

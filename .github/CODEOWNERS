@@ -127,6 +127,7 @@ processor/attributesprocessor/                       @open-telemetry/collector-c
 processor/cumulativetodeltaprocessor/                @open-telemetry/collector-contrib-approvers @TylerHelmuth
 processor/datadogprocessor/                          @open-telemetry/collector-contrib-approvers @mx-psi @gbbr @dineshg13
 processor/deltatorateprocessor/                      @open-telemetry/collector-contrib-approvers @Aneurysm9
+processor/exceptionmetricsprocessor/                 @open-telemetry/collector-contrib-approvers @gouthamve @marctc
 processor/filterprocessor/                           @open-telemetry/collector-contrib-approvers @TylerHelmuth @boostchicken
 processor/groupbyattrsprocessor/                     @open-telemetry/collector-contrib-approvers
 processor/groupbytraceprocessor/                     @open-telemetry/collector-contrib-approvers @jpkrohling
