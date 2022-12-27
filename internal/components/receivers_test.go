@@ -437,6 +437,7 @@ func TestDefaultReceivers(t *testing.T) {
 			}
 
 			verifyReceiverLifecycle(t, factory, tt.getConfigFn)
+			verifyReceiverShutdown(t, factory, tt.getConfigFn)
 		})
 	}
 }
@@ -477,6 +478,32 @@ func verifyReceiverLifecycle(t *testing.T, factory receiver.Factory, getConfigFn
 		require.NoError(t, err)
 		require.NoError(t, secondRcvr.Start(ctx, host))
 		require.NoError(t, secondRcvr.Shutdown(ctx))
+	}
+}
+
+// verifyReceiverShutdown is used to test if a receiver type can be shutdown without being started first.
+func verifyReceiverShutdown(tb testing.TB, factory receiver.Factory, getConfigFn getReceiverConfigFn) {
+	ctx := context.Background()
+	receiverCreateSet := receivertest.NewNopCreateSettings()
+
+	if getConfigFn == nil {
+		getConfigFn = factory.CreateDefaultConfig
+	}
+
+	createFns := []createReceiverFn{
+		wrapCreateLogsRcvr(factory),
+		wrapCreateTracesRcvr(factory),
+		wrapCreateMetricsRcvr(factory),
+	}
+
+	for _, createFn := range createFns {
+		r, err := createFn(ctx, receiverCreateSet, getConfigFn())
+		if errors.Is(err, component.ErrDataTypeIsNotSupported) {
+			continue
+		}
+		assert.NotPanics(tb, func() {
+			assert.NoError(tb, r.Shutdown(ctx))
+		})
 	}
 }
 
