@@ -1,0 +1,23 @@
+receivers:
+  hostmetrics:
+    collection_interval: 1m
+    scrapers:
+      # memory:
+      processes:
+      process:
+
+
+exporters:
+  # Data sources: traces, metrics, logs
+  file:
+    path: /Users/naama/Downloads/otelOutput.txt
+
+
+service:
+  pipelines:
+    metrics:
+      receivers: [hostmetrics]
+      exporters: [file]
+  telemetry:
+    logs:
+      level: "debug"
