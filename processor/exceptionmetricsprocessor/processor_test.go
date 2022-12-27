@@ -78,7 +78,6 @@ type serviceSpans struct {
 }
 
 type span struct {
-	operation  string
 	kind       ptrace.SpanKind
 	statusCode ptrace.StatusCode
 }
@@ -408,7 +407,7 @@ func verifyConsumeMetricsInput(t testing.TB, input pmetric.Metrics, numCumulativ
 	require.Equal(t, 3, callsDps.Len())
 	for dpi := 0; dpi < 3; dpi++ {
 		dp := callsDps.At(dpi)
-		assert.Equal(t, int64(numCumulativeConsumptions), dp.IntValue(), "There should only be one metric per Service/operation/kind combination")
+		assert.Equal(t, int64(numCumulativeConsumptions), dp.IntValue(), "There should only be one metric per Service/kind combination")
 		assert.NotZero(t, dp.StartTimestamp(), "StartTimestamp should be set")
 		assert.NotZero(t, dp.Timestamp(), "Timestamp should be set")
 		verifyMetricLabels(dp, t, seenMetricIDs)
@@ -448,7 +447,7 @@ func verifyMetricLabels(dp metricDataPoint, t testing.TB, seenMetricIDs map[metr
 	})
 	assert.Empty(t, wantDimensions, "Did not see all expected dimensions in metric. Missing: ", wantDimensions)
 
-	// Service/operation/kind should be a unique metric.
+	// Service/kind should be a unique metric.
 	assert.False(t, seenMetricIDs[mID])
 	seenMetricIDs[mID] = true
 }
@@ -465,9 +464,9 @@ func buildBadSampleTrace() ptrace.Traces {
 
 // buildSampleTrace builds the following trace:
 //
-//	service-a/ping (server) ->
-//	  service-a/ping (client) ->
-//	    service-b/ping (server)
+//	service-a (server) ->
+//	  service-a (client) ->
+//	    service-b (server)
 func buildSampleTrace() ptrace.Traces {
 	traces := ptrace.NewTraces()
 
@@ -476,14 +475,12 @@ func buildSampleTrace() ptrace.Traces {
 			serviceName: "service-a",
 			spans: []span{
 				{
-					operation:  "/ping",
 					kind:       ptrace.SpanKindServer,
-					statusCode: ptrace.StatusCodeOk,
+					statusCode: ptrace.StatusCodeError,
 				},
 				{
-					operation:  "/ping",
 					kind:       ptrace.SpanKindClient,
-					statusCode: ptrace.StatusCodeOk,
+					statusCode: ptrace.StatusCodeError,
 				},
 			},
 		}, traces.ResourceSpans().AppendEmpty())
@@ -492,7 +489,6 @@ func buildSampleTrace() ptrace.Traces {
 			serviceName: "service-b",
 			spans: []span{
 				{
-					operation:  "/ping",
 					kind:       ptrace.SpanKindServer,
 					statusCode: ptrace.StatusCodeError,
 				},
@@ -514,7 +510,6 @@ func initServiceSpans(serviceSpans serviceSpans, spans ptrace.ResourceSpans) {
 }
 
 func initSpan(span span, s ptrace.Span) {
-	s.SetName(span.operation)
 	s.SetKind(span.kind)
 	s.Status().SetCode(span.statusCode)
 	now := time.Now()
