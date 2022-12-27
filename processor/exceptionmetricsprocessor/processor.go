@@ -96,7 +96,7 @@ func newDimensions(cfgDims []Dimension) []dimension {
 }
 
 func newProcessor(logger *zap.Logger, config component.Config, nextConsumer consumer.Traces) (*processorImp, error) {
-	logger.Info("Building exceptionsmetricsprocessor")
+	logger.Info("Building exceptionmetricsprocessor")
 	pConfig := config.(*Config)
 
 	if err := validateDimensions(pConfig.Dimensions, pConfig.skipSanitizeLabel); err != nil {
@@ -156,7 +156,7 @@ func validateDimensions(dimensions []Dimension, skipSanitizeLabel bool) error {
 
 // Start implements the component.Component interface.
 func (p *processorImp) Start(ctx context.Context, host component.Host) error {
-	p.logger.Info("Starting exceptionsmetricsprocessor")
+	p.logger.Info("Starting exceptionmetricsprocessor")
 	exporters := host.GetExporters()
 
 	var availableMetricsExporters []string
@@ -170,13 +170,13 @@ func (p *processorImp) Start(ctx context.Context, host component.Host) error {
 
 		availableMetricsExporters = append(availableMetricsExporters, k.String())
 
-		p.logger.Debug("Looking for exceptionsmetrics exporter from available exporters",
-			zap.String("exceptionsmetrics-exporter", p.config.MetricsExporter),
+		p.logger.Debug("Looking for exceptionmetrics exporter from available exporters",
+			zap.String("exceptionmetrics-exporter", p.config.MetricsExporter),
 			zap.Any("available-exporters", availableMetricsExporters),
 		)
 		if k.String() == p.config.MetricsExporter {
 			p.metricsExporter = metricsExp
-			p.logger.Info("Found exporter", zap.String("exceptionsmetrics-exporter", p.config.MetricsExporter))
+			p.logger.Info("Found exporter", zap.String("exceptionmetrics-exporter", p.config.MetricsExporter))
 			break
 		}
 	}
@@ -184,13 +184,13 @@ func (p *processorImp) Start(ctx context.Context, host component.Host) error {
 		return fmt.Errorf("failed to find metrics exporter: '%s'; please configure metrics_exporter from one of: %+v",
 			p.config.MetricsExporter, availableMetricsExporters)
 	}
-	p.logger.Info("Started exceptionsmetricsprocessor")
+	p.logger.Info("Started exceptionmetricsprocessor")
 	return nil
 }
 
 // Shutdown implements the component.Component interface.
 func (p *processorImp) Shutdown(context.Context) error {
-	p.logger.Info("Shutting down exceptionsmetricsprocessor")
+	p.logger.Info("Shutting down exceptionmetricsprocessor")
 	return nil
 }
 
@@ -276,7 +276,7 @@ func (p *processorImp) aggregateExceptionMetrics(traces ptrace.Traces) {
 func (p *processorImp) buildExceptionMetrics() (pmetric.Metrics, error) {
 	m := pmetric.NewMetrics()
 	ilm := m.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
-	ilm.Scope().SetName("exceptionsmetricsprocessor")
+	ilm.Scope().SetName("exceptionmetricsprocessor")
 
 	if err := p.collectExceptions(ilm); err != nil {
 		return pmetric.Metrics{}, err

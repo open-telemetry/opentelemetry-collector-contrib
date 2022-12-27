@@ -1,11 +1,11 @@
 # This example is practical application of a 3-pipeline configuration for
 # writing to a remote prometheus-compatible write endpoint.
 #
-# The spanmetrics processor will output data on every span batch that is received,
+# The exceptionmetrics processor will output data on every span batch that is received,
 # that could overwhelm the remote write endpoint.
 #
 # Therefore, a good pattern to follow is to ratelimit the metrics coming out of
-# spanmetrics by adding a prometheus exporter (to expose these metrics as snapshots)
+# exceptionmetrics by adding a prometheus exporter (to expose these metrics as snapshots)
 # and a prometheus receiver to scrape these snapshots at a controlled interval,
 # passing these scraped metrics onto the prometheusremotewrite exporter.
 #
@@ -18,7 +18,7 @@ receivers:
         endpoint: "0.0.0.0:14278"
 
   # Dummy receiver that's never used, because a pipeline is required to have one.
-  otlp/spanmetrics:
+  otlp/exceptionmetrics:
     protocols:
       grpc:
         endpoint: "localhost:12345"
@@ -47,24 +47,24 @@ exporters:
 
 processors:
   batch:
-  spanmetrics:
+  exceptionmetrics:
     metrics_exporter: prometheus
 
 service:
   pipelines:
     traces:
       receivers: [jaeger]
-      # spanmetrics will pass on span data untouched to next processor
-      # while also accumulating metrics to be sent to the configured 'otlp/spanmetrics' exporter.
-      processors: [spanmetrics, batch]
+      # exceptionmetrics will pass on span data untouched to next processor
+      # while also accumulating metrics to be sent to the configured 'otlp/exceptionmetrics' exporter.
+      processors: [exceptionmetrics, batch]
       exporters: [jaeger]
 
     # This pipeline acts as a proxy to the 'metrics' pipeline below,
     # allowing for further metrics processing if required.
-    metrics/spanmetrics:
+    metrics/exceptionmetrics:
       # This receiver is just a dummy and never used.
       # Added to pass validation requiring at least one receiver in a pipeline.
-      receivers: [otlp/spanmetrics]
+      receivers: [otlp/exceptionmetrics]
       exporters: [prometheus]
 
     metrics:

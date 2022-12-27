@@ -17,18 +17,15 @@ package exceptionsmetricsprocessor
 import (
 	"path/filepath"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
+	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
-	"go.opentelemetry.io/collector/service/servicetest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter"
@@ -37,13 +34,16 @@ import (
 
 func TestLoadConfig(t *testing.T) {
 	defaultMethod := "GET"
+	defaultDimensions := []Dimension{
+		{Name: "exception.type"},
+		{Name: "exception.message"},
+	}
 	testcases := []struct {
-		configFile                  string
-		wantMetricsExporter         string
-		wantLatencyHistogramBuckets []time.Duration
-		wantDimensions              []Dimension
-		wantDimensionsCacheSize     int
-		wantAggregationTemporality  string
+		configFile                 string
+		wantMetricsExporter        string
+		wantDimensions             []Dimension
+		wantDimensionsCacheSize    int
+		wantAggregationTemporality string
 	}{
 		{
 			configFile:                 "config-2-pipelines.yaml",
@@ -53,22 +53,13 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			configFile:                 "config-3-pipelines.yaml",
-			wantMetricsExporter:        "otlp/spanmetrics",
+			wantMetricsExporter:        "otlp/exceptionmetrics",
 			wantAggregationTemporality: cumulative,
 			wantDimensionsCacheSize:    defaultDimensionsCacheSize,
 		},
 		{
 			configFile:          "config-full.yaml",
-			wantMetricsExporter: "otlp/spanmetrics",
-			wantLatencyHistogramBuckets: []time.Duration{
-				100 * time.Microsecond,
-				1 * time.Millisecond,
-				2 * time.Millisecond,
-				6 * time.Millisecond,
-				10 * time.Millisecond,
-				100 * time.Millisecond,
-				250 * time.Millisecond,
-			},
+			wantMetricsExporter: "otlp/exceptionmetrics",
 			wantDimensions: []Dimension{
 				{"http.method", &defaultMethod},
 				{"http.status_code", nil},
@@ -80,7 +71,7 @@ func TestLoadConfig(t *testing.T) {
 	for _, tc := range testcases {
 		t.Run(tc.configFile, func(t *testing.T) {
 			// Prepare
-			factories, err := componenttest.NopFactories()
+			factories, err := otelcoltest.NopFactories()
 			require.NoError(t, err)
 
 			factories.Receivers["otlp"] = otlpreceiver.NewFactory()
@@ -94,19 +85,20 @@ func TestLoadConfig(t *testing.T) {
 			factories.Exporters["jaeger"] = jaegerexporter.NewFactory()
 
 			// Test
-			cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", tc.configFile), factories)
+			cfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", tc.configFile), factories)
 
 			// Verify
 			require.NoError(t, err)
 			require.NotNil(t, cfg)
+			if tc.wantDimensions == nil {
+				tc.wantDimensions = defaultDimensions
+			}
 			assert.Equal(t,
 				&Config{
-					ProcessorSettings:       config.NewProcessorSettings(component.NewID(typeStr)),
-					MetricsExporter:         tc.wantMetricsExporter,
-					LatencyHistogramBuckets: tc.wantLatencyHistogramBuckets,
-					Dimensions:              tc.wantDimensions,
-					DimensionsCacheSize:     tc.wantDimensionsCacheSize,
-					AggregationTemporality:  tc.wantAggregationTemporality,
+					MetricsExporter:        tc.wantMetricsExporter,
+					Dimensions:             tc.wantDimensions,
+					DimensionsCacheSize:    tc.wantDimensionsCacheSize,
+					AggregationTemporality: tc.wantAggregationTemporality,
 				},
 				cfg.Processors[component.NewID(typeStr)],
 			)

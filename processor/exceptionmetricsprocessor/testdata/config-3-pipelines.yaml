@@ -17,7 +17,7 @@ receivers:
         endpoint: "localhost:55677"
 
   # Dummy receiver that's never used, because a pipeline is required to have one.
-  otlp/spanmetrics:
+  otlp/exceptionmetrics:
     protocols:
       grpc:
         endpoint: "localhost:12345"
@@ -31,33 +31,33 @@ exporters:
     tls:
       insecure: true
 
-  otlp/spanmetrics:
+  otlp/exceptionmetrics:
     endpoint: "localhost: 55677"
     tls:
       insecure: true
 
 processors:
   batch:
-  spanmetrics:
-    metrics_exporter: otlp/spanmetrics
+  exceptionmetrics:
+    metrics_exporter: otlp/exceptionmetrics
     aggregation_temporality: "AGGREGATION_TEMPORALITY_CUMULATIVE"
 
 service:
   pipelines:
     traces:
       receivers: [jaeger]
-      # spanmetrics will pass on span data untouched to next processor
-      # while also accumulating metrics to be sent to the configured 'otlp/spanmetrics' exporter.
-      processors: [spanmetrics, batch]
+      # exceptionmetrics will pass on span data untouched to next processor
+      # while also accumulating metrics to be sent to the configured 'otlp/exceptionmetrics' exporter.
+      processors: [exceptionmetrics, batch]
       exporters: [jaeger]
 
     # This pipeline acts as a proxy to the 'metrics' pipeline below,
     # allowing for further metrics processing if required.
-    metrics/spanmetrics:
+    metrics/exceptionmetrics:
       # This receiver is just a dummy and never used.
       # Added to pass validation requiring at least one receiver in a pipeline.
-      receivers: [otlp/spanmetrics]
-      exporters: [otlp/spanmetrics]
+      receivers: [otlp/exceptionmetrics]
+      exporters: [otlp/exceptionmetrics]
 
     metrics:
       receivers: [otlp]

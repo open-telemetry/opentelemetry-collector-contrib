@@ -25,14 +25,15 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/processor/processortest"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
@@ -107,12 +108,12 @@ func TestProcessorStart(t *testing.T) {
 			mhost := &mocks.Host{}
 			mhost.On("GetExporters").Return(exporters)
 
-			// Create spanmetrics processor
+			// Create exceptionmetrics processor
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.MetricsExporter = tc.metricsExporter
 
-			procCreationParams := componenttest.NewNopProcessorCreateSettings()
+			procCreationParams := processortest.NewNopCreateSettings()
 			traceProcessor, err := factory.CreateTracesProcessor(context.Background(), procCreationParams, cfg, consumertest.NewNop())
 			require.NoError(t, err)
 
@@ -145,27 +146,6 @@ func TestProcessorShutdown(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestConfigureLatencyBounds(t *testing.T) {
-	// Prepare
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.LatencyHistogramBuckets = []time.Duration{
-		3 * time.Nanosecond,
-		3 * time.Microsecond,
-		3 * time.Millisecond,
-		3 * time.Second,
-	}
-
-	// Test
-	next := new(consumertest.TracesSink)
-	p, err := newProcessor(zaptest.NewLogger(t), cfg, next)
-
-	// Verify
-	assert.NoError(t, err)
-	assert.NotNil(t, p)
-	assert.Equal(t, []float64{0.000003, 0.003, 3, 3000}, p.latencyBounds)
-}
-
 func TestProcessorCapabilities(t *testing.T) {
 	// Prepare
 	factory := NewFactory()
@@ -182,7 +162,7 @@ func TestProcessorCapabilities(t *testing.T) {
 	assert.Equal(t, false, caps.MutatesData)
 }
 
-func TestProcessorConsumeTracesErrors(t *testing.T) {
+func TestProcessorConsumeTracesWithErrors(t *testing.T) {
 	for _, tc := range []struct {
 		name              string
 		consumeMetricsErr error
@@ -381,8 +361,6 @@ func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, de
 		nextConsumer:    tcon,
 
 		startTimestamp: pcommon.NewTimestampFromTime(time.Now()),
-		histograms:     make(map[metricKey]*histogramData),
-		latencyBounds:  defaultLatencyHistogramBucketsMs,
 		dimensions: []dimension{
 			// Set nil defaults to force a lookup for the attribute in the span.
 			{stringAttrName, nil},
@@ -400,6 +378,7 @@ func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, de
 			{regionResourceAttrName, nil},
 		},
 		keyBuf:                new(bytes.Buffer),
+		exceptions:            make(map[metricKey]int),
 		metricKeyToDimensions: metricKeyToDimensions,
 	}
 }
@@ -431,17 +410,14 @@ func verifyMultipleCumulativeConsumptions() func(t testing.TB, input pmetric.Met
 // verifyConsumeMetricsInput verifies the input of the ConsumeMetrics call from this processor.
 // This is the best point to verify the computed metrics from spans are as expected.
 func verifyConsumeMetricsInput(t testing.TB, input pmetric.Metrics, expectedTemporality pmetric.AggregationTemporality, numCumulativeConsumptions int) bool {
-	require.Equal(t, 6, input.DataPointCount(),
-		"Should be 3 for each of call count and latency. Each group of 3 data points is made of: "+
-			"service-a (server kind) -> service-a (client kind) -> service-b (service kind)",
-	)
+	require.Equal(t, 3, input.DataPointCount(), "Should be 1 for each generated span")
 
 	rm := input.ResourceMetrics()
 	require.Equal(t, 1, rm.Len())
 
 	ilm := rm.At(0).ScopeMetrics()
 	require.Equal(t, 1, ilm.Len())
-	assert.Equal(t, "spanmetricsprocessor", ilm.At(0).Scope().Name())
+	assert.Equal(t, "exceptionmetricsprocessor", ilm.At(0).Scope().Name())
 
 	m := ilm.At(0).Metrics()
 	require.Equal(t, 2, m.Len())
@@ -518,8 +494,8 @@ func verifyMetricLabels(dp metricDataPoint, t testing.TB, seenMetricIDs map[metr
 		switch k {
 		case serviceNameKey:
 			mID.service = v.Str()
-		case operationKey:
-			mID.operation = v.Str()
+		// case operationKey:
+		// 	mID.operation = v.Str()
 		case spanKindKey:
 			mID.kind = v.Str()
 		case statusCodeKey:
@@ -618,18 +594,22 @@ func initSpan(span span, s ptrace.Span) {
 	s.Attributes().PutEmptySlice(arrayAttrName)
 	s.SetTraceID(pcommon.TraceID([16]byte{byte(42)}))
 	s.SetSpanID(pcommon.SpanID([8]byte{byte(42)}))
+
+	// Set some events for the span with attributes.
+	e := s.Events().AppendEmpty().Attributes()
+	e.PutStr("exception.type", "Exception")
+	e.PutStr("exception.message", "Exception message")
 }
 
-func newOTLPExporters(t *testing.T) (component.ID, component.MetricsExporter, component.TracesExporter) {
+func newOTLPExporters(t *testing.T) (component.ID, exporter.Metrics, exporter.Traces) {
 	otlpExpFactory := otlpexporter.NewFactory()
 	otlpID := component.NewID("otlp")
 	otlpConfig := &otlpexporter.Config{
-		ExporterSettings: config.NewExporterSettings(otlpID),
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: "example.com:1234",
 		},
 	}
-	expCreationParams := componenttest.NewNopExporterCreateSettings()
+	expCreationParams := exportertest.NewNopCreateSettings()
 	mexp, err := otlpExpFactory.CreateMetricsExporter(context.Background(), expCreationParams, otlpConfig)
 	require.NoError(t, err)
 	texp, err := otlpExpFactory.CreateTracesExporter(context.Background(), expCreationParams, otlpConfig)
@@ -853,30 +833,30 @@ func TestSetExemplars(t *testing.T) {
 	assert.Equal(t, exemplarSlice.At(0).DoubleValue(), value)
 }
 
-func TestProcessorUpdateExemplars(t *testing.T) {
-	// ----- conditions -------------------------------------------------------
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig().(*Config)
-	traces := buildSampleTrace()
-	traceID := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID()
-	spanID := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).SpanID()
-	key := metricKey("metricKey")
-	next := new(consumertest.TracesSink)
-	p, err := newProcessor(zaptest.NewLogger(t), cfg, next)
-	value := float64(42)
+// func TestProcessorUpdateExemplars(t *testing.T) {
+// 	// ----- conditions -------------------------------------------------------
+// 	factory := NewFactory()
+// 	cfg := factory.CreateDefaultConfig().(*Config)
+// 	traces := buildSampleTrace()
+// 	traceID := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID()
+// 	spanID := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).SpanID()
+// 	key := metricKey("metricKey")
+// 	next := new(consumertest.TracesSink)
+// 	p, err := newProcessor(zaptest.NewLogger(t), cfg, next)
+// 	value := float64(42)
 
-	// ----- call -------------------------------------------------------------
-	p.updateHistogram(key, value, traceID, spanID)
+// 	// ----- call -------------------------------------------------------------
+// 	p.updateHistogram(key, value, traceID, spanID)
 
-	// ----- verify -----------------------------------------------------------
-	assert.NoError(t, err)
-	assert.NotEmpty(t, p.histograms[key].exemplarsData)
-	assert.Equal(t, p.histograms[key].exemplarsData[0], exemplarData{traceID: traceID, spanID: spanID, value: value})
+// 	// ----- verify -----------------------------------------------------------
+// 	assert.NoError(t, err)
+// 	assert.NotEmpty(t, p.histograms[key].exemplarsData)
+// 	assert.Equal(t, p.histograms[key].exemplarsData[0], exemplarData{traceID: traceID, spanID: spanID, value: value})
 
-	// ----- call -------------------------------------------------------------
-	p.resetExemplarData()
+// 	// ----- call -------------------------------------------------------------
+// 	p.resetExemplarData()
 
-	// ----- verify -----------------------------------------------------------
-	assert.NoError(t, err)
-	assert.Empty(t, p.histograms[key].exemplarsData)
-}
+// 	// ----- verify -----------------------------------------------------------
+// 	assert.NoError(t, err)
+// 	assert.Empty(t, p.histograms[key].exemplarsData)
+// }

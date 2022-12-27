@@ -7,7 +7,7 @@ receivers:
         endpoint: "0.0.0.0:14278"
 
   # Dummy receiver that's never used, because a pipeline is required to have one.
-  otlp/spanmetrics:
+  otlp/exceptionmetrics:
     protocols:
       grpc:
         endpoint: "localhost:12345"
@@ -26,22 +26,22 @@ exporters:
 
 processors:
   batch:
-  spanmetrics:
+  exceptionmetrics:
     metrics_exporter: prometheus
 
 service:
   pipelines:
     traces:
       receivers: [jaeger]
-      # spanmetrics will pass on span data untouched to next processor
+      # exceptionmetrics will pass on span data untouched to next processor
       # while also accumulating metrics to be sent to the configured 'prometheus' exporter.
-      processors: [spanmetrics, batch]
+      processors: [exceptionmetrics, batch]
       exporters: [jaeger]
 
     metrics:
       # This receiver is just a dummy and never used.
       # Added to pass validation requiring at least one receiver in a pipeline.
-      receivers: [otlp/spanmetrics]
+      receivers: [otlp/exceptionmetrics]
       # The metrics_exporter must be present in this list, which is not the case here
       # ('prometheus' is missing).
       exporters: [otlp]
