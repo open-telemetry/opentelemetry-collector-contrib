@@ -463,6 +463,7 @@ func TestDefaultExporters(t *testing.T) {
 			}
 
 			verifyExporterLifecycle(t, factory, tt.getConfigFn)
+			verifyExporterShutdown(t, factory, tt.getConfigFn)
 		})
 	}
 }
@@ -505,6 +506,32 @@ func verifyExporterLifecycle(t *testing.T, factory exporter.Factory, getConfigFn
 		for _, exp := range exps {
 			assert.NoError(t, exp.Shutdown(ctx))
 		}
+	}
+}
+
+// verifyExporterShutdown is used to test if an exporter type can be shutdown without being started first.
+func verifyExporterShutdown(tb testing.TB, factory exporter.Factory, getConfigFn getExporterConfigFn) {
+	ctx := context.Background()
+	expCreateSettings := exportertest.NewNopCreateSettings()
+
+	if getConfigFn == nil {
+		getConfigFn = factory.CreateDefaultConfig
+	}
+
+	createFns := []createExporterFn{
+		wrapCreateLogsExp(factory),
+		wrapCreateTracesExp(factory),
+		wrapCreateMetricsExp(factory),
+	}
+
+	for _, createFn := range createFns {
+		r, err := createFn(ctx, expCreateSettings, getConfigFn())
+		if errors.Is(err, component.ErrDataTypeIsNotSupported) {
+			continue
+		}
+		assert.NotPanics(tb, func() {
+			assert.NoError(tb, r.Shutdown(ctx))
+		})
 	}
 }
 

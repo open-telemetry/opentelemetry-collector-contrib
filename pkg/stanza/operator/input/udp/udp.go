@@ -228,6 +228,9 @@ func (u *Input) readMessage() ([]byte, net.Addr, error) {
 
 // Stop will stop listening for udp messages.
 func (u *Input) Stop() error {
+	if u.cancel == nil {
+		return nil
+	}
 	u.cancel()
 	if u.connection != nil {
 		if err := u.connection.Close(); err != nil {
