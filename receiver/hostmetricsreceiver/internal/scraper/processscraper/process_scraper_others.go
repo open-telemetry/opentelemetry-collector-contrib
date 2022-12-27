@@ -20,8 +20,8 @@ package processscraper // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"github.com/shirou/gopsutil/v3/cpu"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/ucal"
 )
 
 func (s *scraper) recordCPUTimeMetric(now pcommon.Timestamp, cpuTime *cpu.TimesStat) {
@@ -30,7 +30,13 @@ func (s *scraper) recordCPUTimeMetric(now pcommon.Timestamp, cpuTime *cpu.TimesS
 	s.mb.RecordProcessCPUTimeDataPoint(now, cpuTime.Iowait, metadata.AttributeStateWait)
 }
 
-func getProcessExecutable(processHandle) (*executableMetadata, error) {
+func (s *scraper) recordCPUUtilization(now pcommon.Timestamp, cpuUtilization ucal.CPUUtilization) {
+	s.mb.RecordProcessCPUUtilizationDataPoint(now, cpuUtilization.User, metadata.AttributeStateUser)
+	s.mb.RecordProcessCPUUtilizationDataPoint(now, cpuUtilization.System, metadata.AttributeStateSystem)
+	s.mb.RecordProcessCPUUtilizationDataPoint(now, cpuUtilization.Iowait, metadata.AttributeStateWait)
+}
+
+func getProcessExecutable(proc processHandle) (*executableMetadata, error) {
 	// attempting to get the process name 
 	name, err := proc.Name()
 	if err != nil {
@@ -48,7 +54,7 @@ func getProcessExecutable(processHandle) (*executableMetadata, error) {
 	return executable, nil
 }
 
-func getProcessCommand(processHandle) (*commandMetadata, error) {
+func getProcessCommand(proc processHandle) (*commandMetadata, error) {
 	cmdline, err := proc.Cmdline()
 	if err != nil {
 		return nil, err
