@@ -256,16 +256,17 @@ func (p *processorImp) aggregateExceptionMetrics(traces ptrace.Traces) {
 			for k := 0; k < spans.Len(); k++ {
 				span := spans.At(k)
 				for l := 0; l < span.Events().Len(); l++ {
-					// TODO: check if the span is an exception span
 					event := span.Events().At(l)
-					attr := event.Attributes()
+					if event.Name() == "exception" {
+						attr := event.Attributes()
 
-					// Always reset the buffer before re-using.
-					p.keyBuf.Reset()
-					buildKey(p.keyBuf, serviceName, span, p.dimensions, attr)
-					key := metricKey(p.keyBuf.String())
-					p.cache(serviceName, span, key, attr)
-					p.updateException(key, span.TraceID(), span.SpanID())
+						// Always reset the buffer before re-using.
+						p.keyBuf.Reset()
+						buildKey(p.keyBuf, serviceName, span, p.dimensions, attr)
+						key := metricKey(p.keyBuf.String())
+						p.cache(serviceName, span, key, attr)
+						p.updateException(key, span.TraceID(), span.SpanID())
+					}
 				}
 			}
 		}

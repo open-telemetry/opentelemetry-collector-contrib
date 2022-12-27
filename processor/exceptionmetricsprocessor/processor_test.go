@@ -532,9 +532,10 @@ func initSpan(span span, s ptrace.Span) {
 	s.SetTraceID(pcommon.TraceID([16]byte{byte(42)}))
 	s.SetSpanID(pcommon.SpanID([8]byte{byte(42)}))
 
-	e := s.Events().AppendEmpty().Attributes()
-	e.PutStr("exception.type", "Exception")
-	e.PutStr("exception.message", "Exception message")
+	e := s.Events().AppendEmpty()
+	e.SetName("exception")
+	e.Attributes().PutStr("exception.type", "Exception")
+	e.Attributes().PutStr("exception.message", "Exception message")
 }
 
 func newOTLPExporters(t *testing.T) (component.ID, exporter.Metrics, exporter.Traces) {
