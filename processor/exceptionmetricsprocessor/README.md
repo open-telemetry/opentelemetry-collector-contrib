@@ -6,7 +6,7 @@
 | Supported pipeline types | traces        |
 | Distributions            | [contrib]     |
 
-Extract metrics from collected exceptions from spans.
+Extract metrics from [recorded exceptions](https://opentelemetry.io/docs/reference/specification/trace/semantic_conventions/exceptions/) from spans.
 
 Each metric will have _at least_ the following dimensions because they are common across all spans:
 - Service name
@@ -25,12 +25,7 @@ The following settings can be optionally configured:
 
 - `dimensions`: the list of dimensions to add together with the default dimensions defined above.
   
-  Each additional dimension is defined with a `name` which is looked up in the span's collection of attributes or
-  resource attributes (AKA process tags) such as `ip`, `host.name` or `region`.
-  
-  If the `name`d attribute is missing in the span, the optional provided `default` is used.
-  
-  If no `default` is provided, this dimension will be **omitted** from the metric.
+  Each additional dimension is defined with a `name` which is looked up in the span's collection of attributes or resource attributes.
 
 ## Examples
 
