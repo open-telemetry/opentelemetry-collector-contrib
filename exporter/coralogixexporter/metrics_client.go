@@ -84,16 +84,13 @@ func (e *exporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
 	for i := 0; i < rss.Len(); i++ {
 		resourceMetric := rss.At(i)
 		appName, subsystem := e.config.getMetadataFromResource(resourceMetric.Resource())
+		resourceMetric.Resource().Attributes().PutStr(cxAppNameAttrName, appName)
+		resourceMetric.Resource().Attributes().PutStr(cxSubsystemNameAttrName, subsystem)
+	}
 
-		md := pmetric.NewMetrics()
-		newRss := md.ResourceMetrics().AppendEmpty()
-		resourceMetric.CopyTo(newRss)
-
-		req := pmetricotlp.NewExportRequestFromMetrics(md)
-		_, err := e.metricExporter.Export(e.enhanceContext(ctx, appName, subsystem), req, e.callOptions...)
-		if err != nil {
-			return processError(err)
-		}
+	_, err := e.metricExporter.Export(e.enhanceContext(ctx), pmetricotlp.NewExportRequestFromMetrics(md), e.callOptions...)
+	if err != nil {
+		return processError(err)
 	}
 
 	return nil
@@ -103,14 +100,11 @@ func (e *exporter) shutdown(context.Context) error {
 	return e.clientConn.Close()
 }
 
-func (e *exporter) enhanceContext(ctx context.Context, appName, subSystemName string) context.Context {
+func (e *exporter) enhanceContext(ctx context.Context) context.Context {
 	headers := make(map[string]string)
 	for k, v := range e.config.Metrics.Headers {
 		headers[k] = v
 	}
-
-	headers["ApplicationName"] = appName
-	headers["ApiName"] = subSystemName
 
 	return metadata.NewOutgoingContext(ctx, metadata.New(headers))
 }
