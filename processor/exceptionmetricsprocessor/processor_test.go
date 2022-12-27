@@ -56,7 +56,6 @@ const (
 	regionResourceAttrName = "region"
 	DimensionsCacheSize    = 2
 
-	sampleRegion          = "us-east-1"
 	sampleLatency         = float64(11)
 	sampleLatencyDuration = time.Duration(sampleLatency) * time.Millisecond
 )
@@ -64,7 +63,6 @@ const (
 // metricID represents the minimum attributes that uniquely identifies a metric in our tests.
 type metricID struct {
 	service    string
-	operation  string
 	kind       string
 	statusCode string
 }
@@ -232,12 +230,6 @@ func TestProcessorConsumeTraces(t *testing.T) {
 			traces:                 []ptrace.Traces{buildSampleTrace()},
 		},
 		{
-			name:                   "Test single consumption, three spans (Delta).",
-			aggregationTemporality: delta,
-			verifier:               verifyConsumeMetricsInputDelta,
-			traces:                 []ptrace.Traces{buildSampleTrace()},
-		},
-		{
 			// More consumptions, should accumulate additively.
 			name:                   "Test two consumptions (Cumulative).",
 			aggregationTemporality: cumulative,
@@ -245,15 +237,8 @@ func TestProcessorConsumeTraces(t *testing.T) {
 			traces:                 []ptrace.Traces{buildSampleTrace(), buildSampleTrace()},
 		},
 		{
-			// More consumptions, should not accumulate. Therefore, end state should be the same as single consumption case.
-			name:                   "Test two consumptions (Delta).",
-			aggregationTemporality: delta,
-			verifier:               verifyConsumeMetricsInputDelta,
-			traces:                 []ptrace.Traces{buildSampleTrace(), buildSampleTrace()},
-		},
-		{
 			// Consumptions with improper timestamps
-			name:                   "Test bad consumptions (Delta).",
+			name:                   "Test bad consumptions (Cumulative).",
 			aggregationTemporality: cumulative,
 			verifier:               verifyBadMetricsOkay,
 			traces:                 []ptrace.Traces{buildBadSampleTrace()},
@@ -392,11 +377,6 @@ func verifyBadMetricsOkay(t testing.TB, input pmetric.Metrics) bool {
 	return true // Validating no exception
 }
 
-// verifyConsumeMetricsInputDelta expects one accumulation of metrics, and marked as delta
-func verifyConsumeMetricsInputDelta(t testing.TB, input pmetric.Metrics) bool {
-	return verifyConsumeMetricsInput(t, input, pmetric.AggregationTemporalityDelta, 1)
-}
-
 // verifyMultipleCumulativeConsumptions expects the amount of accumulations as kept track of by numCumulativeConsumptions.
 // numCumulativeConsumptions acts as a multiplier for the values, since the cumulative metrics are additive.
 func verifyMultipleCumulativeConsumptions() func(t testing.TB, input pmetric.Metrics) bool {
@@ -420,11 +400,11 @@ func verifyConsumeMetricsInput(t testing.TB, input pmetric.Metrics, expectedTemp
 	assert.Equal(t, "exceptionmetricsprocessor", ilm.At(0).Scope().Name())
 
 	m := ilm.At(0).Metrics()
-	require.Equal(t, 2, m.Len())
+	require.Equal(t, 1, m.Len())
 
 	seenMetricIDs := make(map[metricID]bool)
 	// The first 3 data points are for call counts.
-	assert.Equal(t, "calls_total", m.At(0).Name())
+	assert.Equal(t, "exceptions_total", m.At(0).Name())
 	assert.Equal(t, expectedTemporality, m.At(0).Sum().AggregationTemporality())
 	assert.True(t, m.At(0).Sum().IsMonotonic())
 	callsDps := m.At(0).Sum().DataPoints()
@@ -436,66 +416,25 @@ func verifyConsumeMetricsInput(t testing.TB, input pmetric.Metrics, expectedTemp
 		assert.NotZero(t, dp.Timestamp(), "Timestamp should be set")
 		verifyMetricLabels(dp, t, seenMetricIDs)
 	}
-
-	seenMetricIDs = make(map[metricID]bool)
-	// The remaining 3 data points are for latency.
-	assert.Equal(t, "latency", m.At(1).Name())
-	assert.Equal(t, "ms", m.At(1).Unit())
-	assert.Equal(t, expectedTemporality, m.At(1).Histogram().AggregationTemporality())
-	latencyDps := m.At(1).Histogram().DataPoints()
-	require.Equal(t, 3, latencyDps.Len())
-	for dpi := 0; dpi < 3; dpi++ {
-		dp := latencyDps.At(dpi)
-		assert.Equal(t, sampleLatency*float64(numCumulativeConsumptions), dp.Sum(), "Should be a 11ms latency measurement, multiplied by the number of stateful accumulations.")
-		assert.NotZero(t, dp.Timestamp(), "Timestamp should be set")
-
-		// Verify bucket counts.
-
-		// The bucket counts should be 1 greater than the explicit bounds as documented in:
-		// https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/metrics/v1/metrics.proto.
-		assert.Equal(t, dp.ExplicitBounds().Len()+1, dp.BucketCounts().Len())
-
-		// Find the bucket index where the 11ms latency should belong in.
-		var foundLatencyIndex int
-		for foundLatencyIndex = 0; foundLatencyIndex < dp.ExplicitBounds().Len(); foundLatencyIndex++ {
-			if dp.ExplicitBounds().At(foundLatencyIndex) > sampleLatency {
-				break
-			}
-		}
-
-		// Then verify that all histogram buckets are empty except for the bucket with the 11ms latency.
-		var wantBucketCount uint64
-		for bi := 0; bi < dp.BucketCounts().Len(); bi++ {
-			wantBucketCount = 0
-			if bi == foundLatencyIndex {
-				wantBucketCount = uint64(numCumulativeConsumptions)
-			}
-			assert.Equal(t, wantBucketCount, dp.BucketCounts().At(bi))
-		}
-		verifyMetricLabels(dp, t, seenMetricIDs)
-	}
 	return true
 }
 
 func verifyMetricLabels(dp metricDataPoint, t testing.TB, seenMetricIDs map[metricID]bool) {
 	mID := metricID{}
 	wantDimensions := map[string]pcommon.Value{
-		stringAttrName:         pcommon.NewValueStr("stringAttrValue"),
-		intAttrName:            pcommon.NewValueInt(99),
-		doubleAttrName:         pcommon.NewValueDouble(99.99),
-		boolAttrName:           pcommon.NewValueBool(true),
-		nullAttrName:           pcommon.NewValueEmpty(),
-		arrayAttrName:          pcommon.NewValueSlice(),
-		mapAttrName:            pcommon.NewValueMap(),
-		notInSpanAttrName0:     pcommon.NewValueStr("defaultNotInSpanAttrVal"),
-		regionResourceAttrName: pcommon.NewValueStr(sampleRegion),
+		stringAttrName:     pcommon.NewValueStr("stringAttrValue"),
+		intAttrName:        pcommon.NewValueInt(99),
+		doubleAttrName:     pcommon.NewValueDouble(99.99),
+		boolAttrName:       pcommon.NewValueBool(true),
+		nullAttrName:       pcommon.NewValueEmpty(),
+		arrayAttrName:      pcommon.NewValueSlice(),
+		mapAttrName:        pcommon.NewValueMap(),
+		notInSpanAttrName0: pcommon.NewValueStr("defaultNotInSpanAttrVal"),
 	}
 	dp.Attributes().Range(func(k string, v pcommon.Value) bool {
 		switch k {
 		case serviceNameKey:
 			mID.service = v.Str()
-		// case operationKey:
-		// 	mID.operation = v.Str()
 		case spanKindKey:
 			mID.kind = v.Str()
 		case statusCodeKey:
@@ -569,8 +508,6 @@ func initServiceSpans(serviceSpans serviceSpans, spans ptrace.ResourceSpans) {
 		spans.Resource().Attributes().PutStr(conventions.AttributeServiceName, serviceSpans.serviceName)
 	}
 
-	spans.Resource().Attributes().PutStr(regionResourceAttrName, sampleRegion)
-
 	ils := spans.ScopeSpans().AppendEmpty()
 	for _, span := range serviceSpans.spans {
 		initSpan(span, ils.Spans().AppendEmpty())
@@ -595,7 +532,6 @@ func initSpan(span span, s ptrace.Span) {
 	s.SetTraceID(pcommon.TraceID([16]byte{byte(42)}))
 	s.SetSpanID(pcommon.SpanID([8]byte{byte(42)}))
 
-	// Set some events for the span with attributes.
 	e := s.Events().AppendEmpty().Attributes()
 	e.PutStr("exception.type", "Exception")
 	e.PutStr("exception.message", "Exception message")
