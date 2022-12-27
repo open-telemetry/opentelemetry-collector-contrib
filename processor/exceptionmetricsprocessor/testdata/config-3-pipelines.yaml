@@ -40,7 +40,6 @@ processors:
   batch:
   exceptionmetrics:
     metrics_exporter: otlp/exceptionmetrics
-    aggregation_temporality: "AGGREGATION_TEMPORALITY_CUMULATIVE"
 
 service:
   pipelines:

@@ -276,11 +276,6 @@ func (p *processorImp) buildExceptionMetrics() (pmetric.Metrics, error) {
 
 	p.metricKeyToDimensions.RemoveEvictedItems()
 
-	// If delta metrics, reset accumulated data
-	if p.config.GetAggregationTemporality() == pmetric.AggregationTemporalityDelta {
-		p.resetAccumulatedMetrics()
-	}
-
 	return m, nil
 }
 
@@ -288,7 +283,7 @@ func (p *processorImp) collectExceptions(ilm pmetric.ScopeMetrics) error {
 	mCalls := ilm.Metrics().AppendEmpty()
 	mCalls.SetName("exceptions_total")
 	mCalls.SetEmptySum().SetIsMonotonic(true)
-	mCalls.Sum().SetAggregationTemporality(p.config.GetAggregationTemporality())
+	mCalls.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	dps := mCalls.Sum().DataPoints()
 	dps.EnsureCapacity(len(p.exceptions))
 	timestamp := pcommon.NewTimestampFromTime(time.Now())

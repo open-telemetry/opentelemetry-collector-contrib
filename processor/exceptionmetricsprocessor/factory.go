@@ -41,8 +41,7 @@ func NewFactory() processor.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		AggregationTemporality: "AGGREGATION_TEMPORALITY_CUMULATIVE",
-		DimensionsCacheSize:    defaultDimensionsCacheSize,
+		DimensionsCacheSize: defaultDimensionsCacheSize,
 		Dimensions: []Dimension{
 			{Name: "exception.type"},
 			{Name: "exception.message"},

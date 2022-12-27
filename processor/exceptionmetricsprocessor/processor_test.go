@@ -189,7 +189,7 @@ func TestProcessorConsumeTracesWithErrors(t *testing.T) {
 			tcon := &mocks.TracesConsumer{}
 			tcon.On("ConsumeTraces", mock.Anything, mock.Anything).Return(tc.consumeTracesErr)
 
-			p := newProcessorImp(mexp, tcon, nil, cumulative, logger)
+			p := newProcessorImp(mexp, tcon, nil, logger)
 
 			traces := buildSampleTrace()
 
@@ -217,30 +217,25 @@ func TestProcessorConsumeTraces(t *testing.T) {
 	t.Parallel()
 
 	testcases := []struct {
-		name                   string
-		aggregationTemporality string
-		verifier               func(t testing.TB, input pmetric.Metrics) bool
-		traces                 []ptrace.Traces
+		name     string
+		verifier func(t testing.TB, input pmetric.Metrics) bool
+		traces   []ptrace.Traces
 	}{
 		{
-			name:                   "Test single consumption, three spans (Cumulative).",
-			aggregationTemporality: cumulative,
-			verifier:               verifyConsumeMetricsInputCumulative,
-			traces:                 []ptrace.Traces{buildSampleTrace()},
+			name:     "Test single consumption, three spans.",
+			verifier: verifyConsumeMetricsInputCumulative,
+			traces:   []ptrace.Traces{buildSampleTrace()},
 		},
 		{
-			// More consumptions, should accumulate additively.
-			name:                   "Test two consumptions (Cumulative).",
-			aggregationTemporality: cumulative,
-			verifier:               verifyMultipleCumulativeConsumptions(),
-			traces:                 []ptrace.Traces{buildSampleTrace(), buildSampleTrace()},
+			name:     "Test two consumptions",
+			verifier: verifyMultipleCumulativeConsumptions(),
+			traces:   []ptrace.Traces{buildSampleTrace(), buildSampleTrace()},
 		},
 		{
 			// Consumptions with improper timestamps
-			name:                   "Test bad consumptions (Cumulative).",
-			aggregationTemporality: cumulative,
-			verifier:               verifyBadMetricsOkay,
-			traces:                 []ptrace.Traces{buildBadSampleTrace()},
+			name:     "Test bad consumptions",
+			verifier: verifyBadMetricsOkay,
+			traces:   []ptrace.Traces{buildBadSampleTrace()},
 		},
 	}
 
@@ -262,7 +257,7 @@ func TestProcessorConsumeTraces(t *testing.T) {
 			tcon.On("ConsumeTraces", mock.Anything, mock.Anything).Return(nil)
 
 			defaultNullValue := pcommon.NewValueStr("defaultNullValue")
-			p := newProcessorImp(mexp, tcon, &defaultNullValue, tc.aggregationTemporality, zaptest.NewLogger(t))
+			p := newProcessorImp(mexp, tcon, &defaultNullValue, zaptest.NewLogger(t))
 
 			for _, traces := range tc.traces {
 				// Test
@@ -284,7 +279,7 @@ func TestMetricKeyCache(t *testing.T) {
 	tcon.On("ConsumeTraces", mock.Anything, mock.Anything).Return(nil)
 
 	defaultNullValue := pcommon.NewValueStr("defaultNullValue")
-	p := newProcessorImp(mexp, tcon, &defaultNullValue, cumulative, zaptest.NewLogger(t))
+	p := newProcessorImp(mexp, tcon, &defaultNullValue, zaptest.NewLogger(t))
 	traces := buildSampleTrace()
 
 	// Test
@@ -320,7 +315,7 @@ func BenchmarkProcessorConsumeTraces(b *testing.B) {
 	tcon.On("ConsumeTraces", mock.Anything, mock.Anything).Return(nil)
 
 	defaultNullValue := pcommon.NewValueStr("defaultNullValue")
-	p := newProcessorImp(mexp, tcon, &defaultNullValue, cumulative, zaptest.NewLogger(b))
+	p := newProcessorImp(mexp, tcon, &defaultNullValue, zaptest.NewLogger(b))
 
 	traces := buildSampleTrace()
 
@@ -331,7 +326,7 @@ func BenchmarkProcessorConsumeTraces(b *testing.B) {
 	}
 }
 
-func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, defaultNullValue *pcommon.Value, temporality string, logger *zap.Logger) *processorImp {
+func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, defaultNullValue *pcommon.Value, logger *zap.Logger) *processorImp {
 	defaultNotInSpanAttrVal := pcommon.NewValueStr("defaultNotInSpanAttrVal")
 	// use size 2 for LRU cache for testing purpose
 	metricKeyToDimensions, err := cache.NewCache[metricKey, pcommon.Map](DimensionsCacheSize)
@@ -340,7 +335,7 @@ func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, de
 	}
 	return &processorImp{
 		logger:          logger,
-		config:          Config{AggregationTemporality: temporality},
+		config:          Config{},
 		metricsExporter: mexp,
 		nextConsumer:    tcon,
 
@@ -367,7 +362,7 @@ func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, de
 
 // verifyConsumeMetricsInputCumulative expects one accumulation of metrics, and marked as cumulative
 func verifyConsumeMetricsInputCumulative(t testing.TB, input pmetric.Metrics) bool {
-	return verifyConsumeMetricsInput(t, input, pmetric.AggregationTemporalityCumulative, 1)
+	return verifyConsumeMetricsInput(t, input, 1)
 }
 
 func verifyBadMetricsOkay(t testing.TB, input pmetric.Metrics) bool {
@@ -380,13 +375,13 @@ func verifyMultipleCumulativeConsumptions() func(t testing.TB, input pmetric.Met
 	numCumulativeConsumptions := 0
 	return func(t testing.TB, input pmetric.Metrics) bool {
 		numCumulativeConsumptions++
-		return verifyConsumeMetricsInput(t, input, pmetric.AggregationTemporalityCumulative, numCumulativeConsumptions)
+		return verifyConsumeMetricsInput(t, input, numCumulativeConsumptions)
 	}
 }
 
 // verifyConsumeMetricsInput verifies the input of the ConsumeMetrics call from this processor.
 // This is the best point to verify the computed metrics from spans are as expected.
-func verifyConsumeMetricsInput(t testing.TB, input pmetric.Metrics, expectedTemporality pmetric.AggregationTemporality, numCumulativeConsumptions int) bool {
+func verifyConsumeMetricsInput(t testing.TB, input pmetric.Metrics, numCumulativeConsumptions int) bool {
 	require.Equal(t, 3, input.DataPointCount(), "Should be 1 for each generated span")
 
 	rm := input.ResourceMetrics()
@@ -402,7 +397,6 @@ func verifyConsumeMetricsInput(t testing.TB, input pmetric.Metrics, expectedTemp
 	seenMetricIDs := make(map[metricID]bool)
 	// The first 3 data points are for call counts.
 	assert.Equal(t, "exceptions_total", m.At(0).Name())
-	assert.Equal(t, expectedTemporality, m.At(0).Sum().AggregationTemporality())
 	assert.True(t, m.At(0).Sum().IsMonotonic())
 	callsDps := m.At(0).Sum().DataPoints()
 	require.Equal(t, 3, callsDps.Len())

@@ -23,7 +23,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
-	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 
@@ -39,23 +38,20 @@ func TestLoadConfig(t *testing.T) {
 		{Name: "exception.message"},
 	}
 	testcases := []struct {
-		configFile                 string
-		wantMetricsExporter        string
-		wantDimensions             []Dimension
-		wantDimensionsCacheSize    int
-		wantAggregationTemporality string
+		configFile              string
+		wantMetricsExporter     string
+		wantDimensions          []Dimension
+		wantDimensionsCacheSize int
 	}{
 		{
-			configFile:                 "config-2-pipelines.yaml",
-			wantMetricsExporter:        "prometheus",
-			wantAggregationTemporality: cumulative,
-			wantDimensionsCacheSize:    500,
+			configFile:              "config-2-pipelines.yaml",
+			wantMetricsExporter:     "prometheus",
+			wantDimensionsCacheSize: 500,
 		},
 		{
-			configFile:                 "config-3-pipelines.yaml",
-			wantMetricsExporter:        "otlp/exceptionmetrics",
-			wantAggregationTemporality: cumulative,
-			wantDimensionsCacheSize:    defaultDimensionsCacheSize,
+			configFile:              "config-3-pipelines.yaml",
+			wantMetricsExporter:     "otlp/exceptionmetrics",
+			wantDimensionsCacheSize: defaultDimensionsCacheSize,
 		},
 		{
 			configFile:          "config-full.yaml",
@@ -64,8 +60,7 @@ func TestLoadConfig(t *testing.T) {
 				{"http.method", &defaultMethod},
 				{"http.status_code", nil},
 			},
-			wantDimensionsCacheSize:    1500,
-			wantAggregationTemporality: delta,
+			wantDimensionsCacheSize: 1500,
 		},
 	}
 	for _, tc := range testcases {
@@ -95,24 +90,12 @@ func TestLoadConfig(t *testing.T) {
 			}
 			assert.Equal(t,
 				&Config{
-					MetricsExporter:        tc.wantMetricsExporter,
-					Dimensions:             tc.wantDimensions,
-					DimensionsCacheSize:    tc.wantDimensionsCacheSize,
-					AggregationTemporality: tc.wantAggregationTemporality,
+					MetricsExporter:     tc.wantMetricsExporter,
+					Dimensions:          tc.wantDimensions,
+					DimensionsCacheSize: tc.wantDimensionsCacheSize,
 				},
 				cfg.Processors[component.NewID(typeStr)],
 			)
 		})
 	}
-}
-
-func TestGetAggregationTemporality(t *testing.T) {
-	cfg := &Config{AggregationTemporality: delta}
-	assert.Equal(t, pmetric.AggregationTemporalityDelta, cfg.GetAggregationTemporality())
-
-	cfg = &Config{AggregationTemporality: cumulative}
-	assert.Equal(t, pmetric.AggregationTemporalityCumulative, cfg.GetAggregationTemporality())
-
-	cfg = &Config{}
-	assert.Equal(t, pmetric.AggregationTemporalityCumulative, cfg.GetAggregationTemporality())
 }

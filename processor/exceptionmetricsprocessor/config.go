@@ -17,12 +17,9 @@ package exceptionmetricsprocessor
 import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/featuregate"
-	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 const (
-	delta                  = "AGGREGATION_TEMPORALITY_DELTA"
-	cumulative             = "AGGREGATION_TEMPORALITY_CUMULATIVE"
 	dropSanitizationGateID = "processor.spanmetrics.PermissiveLabelSanitization" // TODO: check
 )
 
@@ -61,17 +58,6 @@ type Config struct {
 	// Optional. See defaultDimensionsCacheSize in processor.go for the default value.
 	DimensionsCacheSize int `mapstructure:"dimensions_cache_size"`
 
-	AggregationTemporality string `mapstructure:"aggregation_temporality"`
-
 	// skipSanitizeLabel if enabled, labels that start with _ are not sanitized
 	skipSanitizeLabel bool
-}
-
-// GetAggregationTemporality converts the string value given in the config into a AggregationTemporality.
-// Returns cumulative, unless delta is correctly specified.
-func (c Config) GetAggregationTemporality() pmetric.AggregationTemporality {
-	if c.AggregationTemporality == delta {
-		return pmetric.AggregationTemporalityDelta
-	}
-	return pmetric.AggregationTemporalityCumulative
 }
