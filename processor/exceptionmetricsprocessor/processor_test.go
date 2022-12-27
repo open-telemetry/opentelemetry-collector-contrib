@@ -44,17 +44,16 @@ import (
 )
 
 const (
-	stringAttrName         = "stringAttrName"
-	intAttrName            = "intAttrName"
-	doubleAttrName         = "doubleAttrName"
-	boolAttrName           = "boolAttrName"
-	nullAttrName           = "nullAttrName"
-	mapAttrName            = "mapAttrName"
-	arrayAttrName          = "arrayAttrName"
-	notInSpanAttrName0     = "shouldBeInMetric"
-	notInSpanAttrName1     = "shouldNotBeInMetric"
-	regionResourceAttrName = "region"
-	DimensionsCacheSize    = 2
+	stringAttrName      = "stringAttrName"
+	intAttrName         = "intAttrName"
+	doubleAttrName      = "doubleAttrName"
+	boolAttrName        = "boolAttrName"
+	nullAttrName        = "nullAttrName"
+	mapAttrName         = "mapAttrName"
+	arrayAttrName       = "arrayAttrName"
+	notInSpanAttrName0  = "shouldBeInMetric"
+	notInSpanAttrName1  = "shouldNotBeInMetric"
+	DimensionsCacheSize = 2
 
 	sampleLatency         = float64(11)
 	sampleLatencyDuration = time.Duration(sampleLatency) * time.Millisecond
@@ -359,8 +358,6 @@ func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, de
 			{notInSpanAttrName0, &defaultNotInSpanAttrVal},
 			// Leave the default value unset to test that this dimension should not be added to the metric.
 			{notInSpanAttrName1, nil},
-			// Add a resource attribute to test "process" attributes like IP, host, region, cluster, etc.
-			{regionResourceAttrName, nil},
 		},
 		keyBuf:                new(bytes.Buffer),
 		exceptions:            make(map[metricKey]int),
@@ -744,56 +741,3 @@ func TestSanitize(t *testing.T) {
 	require.Equal(t, "test", sanitize("test", cfg.skipSanitizeLabel))
 	require.Equal(t, "test__", sanitize("test_/", cfg.skipSanitizeLabel))
 }
-
-func TestSetExemplars(t *testing.T) {
-	// ----- conditions -------------------------------------------------------
-	traces := buildSampleTrace()
-	traceID := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID()
-	spanID := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).SpanID()
-	exemplarSlice := pmetric.NewExemplarSlice()
-	timestamp := pcommon.NewTimestampFromTime(time.Now())
-	value := float64(42)
-
-	ed := []exemplarData{{traceID: traceID, spanID: spanID, value: value}}
-
-	// ----- call -------------------------------------------------------------
-	setExemplars(ed, timestamp, exemplarSlice)
-
-	// ----- verify -----------------------------------------------------------
-	traceIDValue := exemplarSlice.At(0).TraceID()
-	spanIDValue := exemplarSlice.At(0).SpanID()
-
-	assert.NotEmpty(t, exemplarSlice)
-	assert.Equal(t, traceIDValue, traceID)
-	assert.Equal(t, spanIDValue, spanID)
-	assert.Equal(t, exemplarSlice.At(0).Timestamp(), timestamp)
-	assert.Equal(t, exemplarSlice.At(0).DoubleValue(), value)
-}
-
-// func TestProcessorUpdateExemplars(t *testing.T) {
-// 	// ----- conditions -------------------------------------------------------
-// 	factory := NewFactory()
-// 	cfg := factory.CreateDefaultConfig().(*Config)
-// 	traces := buildSampleTrace()
-// 	traceID := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID()
-// 	spanID := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).SpanID()
-// 	key := metricKey("metricKey")
-// 	next := new(consumertest.TracesSink)
-// 	p, err := newProcessor(zaptest.NewLogger(t), cfg, next)
-// 	value := float64(42)
-
-// 	// ----- call -------------------------------------------------------------
-// 	p.updateHistogram(key, value, traceID, spanID)
-
-// 	// ----- verify -----------------------------------------------------------
-// 	assert.NoError(t, err)
-// 	assert.NotEmpty(t, p.histograms[key].exemplarsData)
-// 	assert.Equal(t, p.histograms[key].exemplarsData[0], exemplarData{traceID: traceID, spanID: spanID, value: value})
-
-// 	// ----- call -------------------------------------------------------------
-// 	p.resetExemplarData()
-
-// 	// ----- verify -----------------------------------------------------------
-// 	assert.NoError(t, err)
-// 	assert.Empty(t, p.histograms[key].exemplarsData)
-// }

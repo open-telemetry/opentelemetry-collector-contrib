@@ -46,12 +46,6 @@ const (
 	defaultDimensionsCacheSize = 1000
 )
 
-type exemplarData struct {
-	traceID pcommon.TraceID
-	spanID  pcommon.SpanID
-	value   float64
-}
-
 type metricKey string
 
 type processorImp struct {
@@ -214,10 +208,6 @@ func (p *processorImp) tracesToMetrics(ctx context.Context, traces ptrace.Traces
 	p.aggregateExceptionMetrics(traces)
 	m, err := p.buildExceptionMetrics()
 
-	// Exemplars are only relevant to this batch of traces, so must be cleared within the lock,
-	// regardless of error while building metrics, before the next batch of spans is received.
-	//p.resetExemplarData()
-
 	// This component no longer needs to read the metrics once built, so it is safe to unlock.
 	p.lock.Unlock()
 
@@ -290,7 +280,6 @@ func (p *processorImp) buildExceptionMetrics() (pmetric.Metrics, error) {
 	if p.config.GetAggregationTemporality() == pmetric.AggregationTemporalityDelta {
 		p.resetAccumulatedMetrics()
 	}
-	//p.resetExemplarData()
 
 	return m, nil
 }
@@ -333,16 +322,6 @@ func (p *processorImp) updateException(key metricKey, traceID pcommon.TraceID, s
 	}
 
 	p.exceptions[key]++
-	//histo.exemplarsData = append(histo.exemplarsData, exemplarData{traceID: traceID, spanID: spanID, value: latency})
-}
-
-// resetExemplarData resets the entire exemplars map so the next trace will recreate all
-// the data structure. An exemplar is a punctual value that exists at specific moment in time
-// and should be not considered like a metrics that persist over time.
-func (p *processorImp) resetExemplarData() {
-	// for _, histo := range p.histograms {
-	// 	histo.exemplarsData = nil
-	// }
 }
 
 func (p *processorImp) buildDimensionKVs(serviceName string, span ptrace.Span, resourceAttrs pcommon.Map) pcommon.Map {
@@ -450,29 +429,4 @@ func sanitizeRune(r rune) rune {
 	}
 	// Everything else turns into an underscore
 	return '_'
-}
-
-// setExemplars sets the histogram exemplars.
-func setExemplars(exemplarsData []exemplarData, timestamp pcommon.Timestamp, exemplars pmetric.ExemplarSlice) {
-	es := pmetric.NewExemplarSlice()
-	es.EnsureCapacity(len(exemplarsData))
-
-	for _, ed := range exemplarsData {
-		value := ed.value
-		traceID := ed.traceID
-		spanID := ed.spanID
-
-		exemplar := es.AppendEmpty()
-
-		if traceID.IsEmpty() {
-			continue
-		}
-
-		exemplar.SetDoubleValue(value)
-		exemplar.SetTimestamp(timestamp)
-		exemplar.SetTraceID(traceID)
-		exemplar.SetSpanID(spanID)
-	}
-
-	es.CopyTo(exemplars)
 }
