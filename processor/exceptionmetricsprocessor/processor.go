@@ -255,9 +255,9 @@ func (p *processorImp) aggregateExceptionMetrics(traces ptrace.Traces) {
 			spans := ils.Spans()
 			for k := 0; k < spans.Len(); k++ {
 				span := spans.At(k)
-				if span.Events().Len() != 0 {
+				for l := 0; l < span.Events().Len(); l++ {
 					// TODO: check if the span is an exception span
-					event := span.Events().At(0)
+					event := span.Events().At(l)
 					attr := event.Attributes()
 
 					// Always reset the buffer before re-using.
