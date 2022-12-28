@@ -384,8 +384,8 @@ func TestCompareMetrics(t *testing.T) {
 					errors.New("datapoints for metric: `gauge.one`, do not match expected"),
 					errors.New("metric missing expected datapoint with attributes: map[attribute.two:value A hostname:unpredictable]"),
 					errors.New("metric missing expected datapoint with attributes: map[attribute.two:value B hostname:unpredictable]"),
-					errors.New("metric has extra datapoint with attributes: map[attribute.two:value A hostname:random]"),
 					errors.New("metric has extra datapoint with attributes: map[attribute.two:value B hostname:random]"),
+					errors.New("metric has extra datapoint with attributes: map[attribute.two:value A hostname:random]"),
 				),
 				reason: "An unpredictable attribute value will cause failures if not ignored.",
 			},
@@ -404,8 +404,8 @@ func TestCompareMetrics(t *testing.T) {
 					errors.New("datapoints for metric: `gauge.one`, do not match expected"),
 					errors.New("metric missing expected datapoint with attributes: map[attribute.two:value A hostname:unpredictable]"),
 					errors.New("metric missing expected datapoint with attributes: map[attribute.two:value B hostname:unpredictable]"),
-					errors.New("metric has extra datapoint with attributes: map[attribute.two:value A hostname:random]"),
 					errors.New("metric has extra datapoint with attributes: map[attribute.two:value B hostname:random]"),
+					errors.New("metric has extra datapoint with attributes: map[attribute.two:value A hostname:random]"),
 				),
 				reason: "An unpredictable attribute will cause failures if not ignored.",
 			},
@@ -472,14 +472,14 @@ func TestCompareMetrics(t *testing.T) {
 			},
 			withOptions: expectation{
 				err:    nil,
-				reason: "The underbred resource metrics was properly sorted. The unpredictable resource attribute was ignored on each resource that carried it, but the predictable attributes were preserved.",
+				reason: "The unpredictable resource attribute was ignored on each resource that carried it, but the predictable attributes were preserved.",
 			},
 		},
 		{
 			name: "sort-unordered-metric-slice",
 			withoutOptions: expectation{
 				err:    nil,
-				reason: "the underbred metric slices was properly sorted.",
+				reason: "the unordered metric slices were properly sorted.",
 			},
 		},
 		{
@@ -492,8 +492,8 @@ func TestCompareMetrics(t *testing.T) {
 					errors.New("datapoints for metric: `gauge.one`, do not match expected"),
 					errors.New("metric missing expected datapoint with attributes: map[attribute.two:value A hostname:unpredictable]"),
 					errors.New("metric missing expected datapoint with attributes: map[attribute.two:value B hostname:unpredictable]"),
-					errors.New("metric has extra datapoint with attributes: map[attribute.two:value A hostname:random]"),
 					errors.New("metric has extra datapoint with attributes: map[attribute.two:value B hostname:random]"),
+					errors.New("metric has extra datapoint with attributes: map[attribute.two:value A hostname:random]"),
 				),
 				reason: "An unpredictable attribute will cause failures if not ignored.",
 			},
@@ -510,8 +510,8 @@ func TestCompareMetrics(t *testing.T) {
 			withoutOptions: expectation{
 				err: multierr.Combine(
 					errors.New("datapoints for metric: `gauge.one`, do not match expected"),
-					errors.New("metric missing expected datapoint with attributes: map[attribute.one:one attribute.two:same]"),
 					errors.New("metric missing expected datapoint with attributes: map[attribute.one:two attribute.two:same]"),
+					errors.New("metric missing expected datapoint with attributes: map[attribute.one:one attribute.two:same]"),
 					errors.New("metric has extra datapoint with attributes: map[attribute.one:random.one attribute.two:same]"),
 					errors.New("metric has extra datapoint with attributes: map[attribute.one:random.two attribute.two:same]"),
 				),
@@ -530,10 +530,10 @@ func TestCompareMetrics(t *testing.T) {
 			withoutOptions: expectation{
 				err: multierr.Combine(
 					errors.New("datapoints for metric: `gauge.one`, do not match expected"),
-					errors.New("metric missing expected datapoint with attributes: map[attribute.one:unpredictable.one attribute.two:same]"),
 					errors.New("metric missing expected datapoint with attributes: map[attribute.one:unpredictable.two attribute.two:same]"),
-					errors.New("metric has extra datapoint with attributes: map[attribute.one:random.two attribute.two:same]"),
+					errors.New("metric missing expected datapoint with attributes: map[attribute.one:unpredictable.one attribute.two:same]"),
 					errors.New("metric has extra datapoint with attributes: map[attribute.one:random.one attribute.two:same]"),
+					errors.New("metric has extra datapoint with attributes: map[attribute.one:random.two attribute.two:same]"),
 				),
 				reason: "An unpredictable attribute will cause failures if not ignored.",
 			},
