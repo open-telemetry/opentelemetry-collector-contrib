@@ -57,6 +57,7 @@ func TestLoadConfig(t *testing.T) {
 				},
 				IndexedAttributes:  []string{"indexed_attr_0", "indexed_attr_1"},
 				IndexAllAttributes: false,
+				LogGroupNames:      []string{"group1", "group2"},
 			},
 		},
 	}
