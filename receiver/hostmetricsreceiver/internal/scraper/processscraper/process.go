@@ -15,6 +15,8 @@
 package processscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper"
 
 import (
+	"fmt"
+	"os/user"
 	"strings"
 	"time"
 
@@ -124,6 +126,20 @@ func getProcessHandlesInternal() (processHandles, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// NAAMA Debug
+	// for _,p := range processes {
+
+	// 	fmt.Printf("Naama TEST process path PRE vars process pid %v: ", p.Pid)
+	// 	fmt.Println(p.Exe())
+	// }
+	// currUser, err := user.Current()
+	// if err != nil {
+	// 	fmt.Println(err)
+	// }
+	// fmt.Print("current user is ")
+	// fmt.Println(currUser)
+	// Naama Debug END
 
 	return &gopsProcessHandles{handles: processes}, nil
 }
