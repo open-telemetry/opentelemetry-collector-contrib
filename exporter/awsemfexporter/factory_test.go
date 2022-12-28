@@ -32,6 +32,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
+	assert.NotNil(t, cfg.(*Config).logger)
 }
 
 func TestCreateTracesExporter(t *testing.T) {

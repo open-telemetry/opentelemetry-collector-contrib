@@ -19,6 +19,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 )
@@ -47,7 +48,7 @@ func createDefaultConfig() component.Config {
 		Namespace:             "",
 		DimensionRollupOption: "ZeroAndSingleDimensionRollup",
 		OutputDestination:     "cloudwatch",
-		logger:                nil,
+		logger:                zap.NewNop(),
 	}
 }
 
