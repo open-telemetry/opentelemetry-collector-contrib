@@ -116,12 +116,13 @@ type metricHaproxyIdlePercent struct {
 // init fills haproxy.idle_percent metric with initial data.
 func (m *metricHaproxyIdlePercent) init() {
 	m.data.SetName("haproxy.idle_percent")
-	m.data.SetDescription("Ratio of system polling time versus total time. Corresponds to HAProxy's `I`dle_pct` metric.")
+	m.data.SetDescription("Ratio of system polling time versus total time. Corresponds to HAProxy's `Idle_pct` metric.")
 	m.data.SetUnit("{percent}")
 	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricHaproxyIdlePercent) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+func (m *metricHaproxyIdlePercent) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, proxyNameAttributeValue string, serviceNameAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -129,6 +130,8 @@ func (m *metricHaproxyIdlePercent) recordDataPoint(start pcommon.Timestamp, ts p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("proxy_name", proxyNameAttributeValue)
+	dp.Attributes().PutStr("service_name", serviceNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -219,9 +222,10 @@ func (m *metricHaproxySessionsCount) init() {
 	m.data.SetDescription("Current sessions. Corresponds to HAProxy's `scur` metric.")
 	m.data.SetUnit("{sessions}")
 	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricHaproxySessionsCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricHaproxySessionsCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, proxyNameAttributeValue string, serviceNameAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -229,6 +233,8 @@ func (m *metricHaproxySessionsCount) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
+	dp.Attributes().PutStr("proxy_name", proxyNameAttributeValue)
+	dp.Attributes().PutStr("service_name", serviceNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -337,20 +343,6 @@ func WithHaproxyPid(val string) ResourceMetricsOption {
 	}
 }
 
-// WithHaproxyProxyName sets provided value as "haproxy.proxy_name" attribute for current resource.
-func WithHaproxyProxyName(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("haproxy.proxy_name", val)
-	}
-}
-
-// WithHaproxyServiceName sets provided value as "haproxy.service_name" attribute for current resource.
-func WithHaproxyServiceName(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("haproxy.service_name", val)
-	}
-}
-
 // WithHaproxySid sets provided value as "haproxy.sid" attribute for current resource.
 func WithHaproxySid(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
@@ -438,12 +430,12 @@ func (mb *MetricsBuilder) RecordHaproxyConnectionRateDataPoint(ts pcommon.Timest
 }
 
 // RecordHaproxyIdlePercentDataPoint adds a data point to haproxy.idle_percent metric.
-func (mb *MetricsBuilder) RecordHaproxyIdlePercentDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (mb *MetricsBuilder) RecordHaproxyIdlePercentDataPoint(ts pcommon.Timestamp, inputVal string, proxyNameAttributeValue string, serviceNameAttributeValue string) error {
 	val, err := strconv.ParseFloat(inputVal, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse float64 for HaproxyIdlePercent, value was %s: %w", inputVal, err)
 	}
-	mb.metricHaproxyIdlePercent.recordDataPoint(mb.startTime, ts, val)
+	mb.metricHaproxyIdlePercent.recordDataPoint(mb.startTime, ts, val, proxyNameAttributeValue, serviceNameAttributeValue)
 	return nil
 }
 
@@ -458,12 +450,12 @@ func (mb *MetricsBuilder) RecordHaproxyRequestsDataPoint(ts pcommon.Timestamp, i
 }
 
 // RecordHaproxySessionsCountDataPoint adds a data point to haproxy.sessions.count metric.
-func (mb *MetricsBuilder) RecordHaproxySessionsCountDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (mb *MetricsBuilder) RecordHaproxySessionsCountDataPoint(ts pcommon.Timestamp, inputVal string, proxyNameAttributeValue string, serviceNameAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for HaproxySessionsCount, value was %s: %w", inputVal, err)
 	}
-	mb.metricHaproxySessionsCount.recordDataPoint(mb.startTime, ts, val)
+	mb.metricHaproxySessionsCount.recordDataPoint(mb.startTime, ts, val, proxyNameAttributeValue, serviceNameAttributeValue)
 	return nil
 }
 

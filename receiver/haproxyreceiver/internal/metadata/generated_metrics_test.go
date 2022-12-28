@@ -64,7 +64,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordHaproxyIdlePercentDataPoint(ts, "1")
+			mb.RecordHaproxyIdlePercentDataPoint(ts, "1", "attr-val", "attr-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -72,9 +72,9 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordHaproxySessionsCountDataPoint(ts, "1")
+			mb.RecordHaproxySessionsCountDataPoint(ts, "1", "attr-val", "attr-val")
 
-			metrics := mb.Emit(WithHaproxyAddr("attr-val"), WithHaproxyAlgo("attr-val"), WithHaproxyIid("attr-val"), WithHaproxyPid("attr-val"), WithHaproxyProxyName("attr-val"), WithHaproxyServiceName("attr-val"), WithHaproxySid("attr-val"), WithHaproxyType("attr-val"), WithHaproxyURL("attr-val"))
+			metrics := mb.Emit(WithHaproxyAddr("attr-val"), WithHaproxyAlgo("attr-val"), WithHaproxyIid("attr-val"), WithHaproxyPid("attr-val"), WithHaproxySid("attr-val"), WithHaproxyType("attr-val"), WithHaproxyURL("attr-val"))
 
 			if test.metricsSet == testMetricsSetNo {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -98,14 +98,6 @@ func TestMetricsBuilder(t *testing.T) {
 			assert.EqualValues(t, "attr-val", attrVal.Str())
 			attrCount++
 			attrVal, ok = rm.Resource().Attributes().Get("haproxy.pid")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			attrCount++
-			attrVal, ok = rm.Resource().Attributes().Get("haproxy.proxy_name")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			attrCount++
-			attrVal, ok = rm.Resource().Attributes().Get("haproxy.service_name")
 			assert.True(t, ok)
 			assert.EqualValues(t, "attr-val", attrVal.Str())
 			attrCount++
@@ -150,13 +142,19 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["haproxy.idle_percent"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Ratio of system polling time versus total time. Corresponds to HAProxy's `I`dle_pct` metric.", ms.At(i).Description())
+					assert.Equal(t, "Ratio of system polling time versus total time. Corresponds to HAProxy's `Idle_pct` metric.", ms.At(i).Description())
 					assert.Equal(t, "{percent}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("proxy_name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("service_name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
 				case "haproxy.requests":
 					assert.False(t, validatedMetrics["haproxy.requests"], "Found a duplicate in the metrics slice: haproxy.requests")
 					validatedMetrics["haproxy.requests"] = true
@@ -183,6 +181,12 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("proxy_name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("service_name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "attr-val", attrVal.Str())
 				}
 			}
 		})
