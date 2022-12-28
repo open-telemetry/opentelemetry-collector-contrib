@@ -88,15 +88,14 @@ func TestCrashReporter_handlePanic_happyPath(t *testing.T) {
 	}
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	require.NoError(t, err)
-	defer listener.Close()
 	mux := http.NewServeMux()
 	mux.Handle("/", reader)
 	server := &http.Server{
 		Handler: mux,
 	}
+	defer server.Close()
 	go func() {
-		err2 := server.Serve(listener)
-		require.NoError(t, err2)
+		_ = server.Serve(listener)
 	}()
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector/raw"
