@@ -53,12 +53,12 @@ func TestMetricsBuilder(t *testing.T) {
 			mb := NewMetricsBuilder(loadConfig(t, test.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
-			if test.metricsSet == testMetricsSetDefault || test.metricsSet == testMetricsSetAll {
-				assert.Equal(t, "[WARNING] `process.memory.physical_usage` should not be enabled: The metric is deprecated and will be removed in v0.70.0. Please use `process.memory.usage` instead. See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/hostmetricsreceiver#transition-to-process-memory-metric-names-aligned-with-opentelemetry-specification for more details.", observedLogs.All()[expectedWarnings].Message)
+			if test.metricsSet == testMetricsSetAll || test.metricsSet == testMetricsSetNo {
+				assert.Equal(t, "[WARNING] `process.memory.physical_usage` should not be configured: The metric is deprecated and will be removed in v0.72.0. Please use `process.memory.usage` instead. See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/hostmetricsreceiver#transition-to-process-memory-metric-names-aligned-with-opentelemetry-specification for more details.", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
-			if test.metricsSet == testMetricsSetDefault || test.metricsSet == testMetricsSetAll {
-				assert.Equal(t, "[WARNING] `process.memory.virtual_usage` should not be enabled: The metric is deprecated and will be removed in v0.70.0. Please use `process.memory.virtual` metric instead. See  https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/hostmetricsreceiver#transition-to-process-memory-metric-names-aligned-with-opentelemetry-specification for more details.", observedLogs.All()[expectedWarnings].Message)
+			if test.metricsSet == testMetricsSetAll || test.metricsSet == testMetricsSetNo {
+				assert.Equal(t, "[WARNING] `process.memory.virtual_usage` should not be configured: The metric is deprecated and will be removed in v0.72.0. Please use `process.memory.virtual` metric instead. See  https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/hostmetricsreceiver#transition-to-process-memory-metric-names-aligned-with-opentelemetry-specification for more details.", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
@@ -83,20 +83,20 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordProcessDiskOperationsDataPoint(ts, 1, AttributeDirection(1))
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessMemoryPhysicalUsageDataPoint(ts, 1)
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessMemoryUsageDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordProcessMemoryUtilizationDataPoint(ts, 1)
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessMemoryVirtualDataPoint(ts, 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessMemoryVirtualUsageDataPoint(ts, 1)
 
@@ -251,7 +251,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["process.memory.physical_usage"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Deprecated: use `process.memory.usage` metric instead. The amount of physical memory in use.", ms.At(i).Description())
+					assert.Equal(t, "[DEPRECATED] Use `process.memory.usage` metric instead. The amount of physical memory in use.", ms.At(i).Description())
 					assert.Equal(t, "By", ms.At(i).Unit())
 					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
@@ -305,7 +305,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["process.memory.virtual_usage"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Deprecated: Use `process.memory.virtual` metric instead. Virtual memory size.", ms.At(i).Description())
+					assert.Equal(t, "[DEPRECATED] Use `process.memory.virtual` metric instead. Virtual memory size.", ms.At(i).Description())
 					assert.Equal(t, "By", ms.At(i).Unit())
 					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
