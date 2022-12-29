@@ -2,10 +2,10 @@ package batchmemlimitprocessor
 
 import (
 	"context"
+	"go.opentelemetry.io/collector/processor"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 )
 
@@ -18,16 +18,14 @@ const (
 
 var processorCapabilities = consumer.Capabilities{MutatesData: true}
 
-func NewFactory() component.ProcessorFactory {
-	return component.NewProcessorFactory(typeStr, createDefaultConfig,
-		component.WithLogsProcessor(createMemoryLimiterProcessor,
+func NewFactory() processor.Factory {
+	return processor.NewFactory(typeStr, createDefaultConfig,
+		processor.WithLogs(createMemoryLimiterProcessor,
 			stability))
 }
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
-
 		Timeout:        1 * time.Second,
 		SendMemorySize: 1000000,
 		SendBatchSize:  1000,
@@ -36,9 +34,9 @@ func createDefaultConfig() component.Config {
 
 func createMemoryLimiterProcessor(
 	_ context.Context,
-	set component.ProcessorCreateSettings,
+	set processor.CreateSettings,
 	cfg component.Config,
 	nextConsumer consumer.Logs,
-) (component.LogsProcessor, error) {
+) (processor.Logs, error) {
 	return newBatchMemoryLimiterProcessor(nextConsumer, set.Logger, cfg.(*Config)), nil
 }

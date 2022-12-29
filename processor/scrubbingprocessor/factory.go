@@ -2,9 +2,9 @@ package scrubbingprocessor
 
 import (
 	"context"
+	"go.opentelemetry.io/collector/processor"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 )
@@ -18,24 +18,22 @@ const (
 
 var processorCapabilities = consumer.Capabilities{MutatesData: true}
 
-func NewFactory() component.ProcessorFactory {
-	return component.NewProcessorFactory(typeStr, createDefaultConfig,
-		component.WithLogsProcessor(createLogsProcessor,
+func NewFactory() processor.Factory {
+	return processor.NewFactory(typeStr, createDefaultConfig,
+		processor.WithLogs(createLogsProcessor,
 			stability))
 }
 
 func createDefaultConfig() component.Config {
-	return &Config{
-		ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
-	}
+	return &Config{}
 }
 
 func createLogsProcessor(
 	ctx context.Context,
-	set component.ProcessorCreateSettings,
+	set processor.CreateSettings,
 	cfg component.Config,
 	nextConsumer consumer.Logs,
-) (component.LogsProcessor, error) {
+) (processor.Logs, error) {
 	sp, err := newScrubbingProcessorProcessor(set.Logger, cfg.(*Config))
 	if err != nil {
 		return nil, err

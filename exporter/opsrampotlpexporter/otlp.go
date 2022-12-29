@@ -20,7 +20,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -115,7 +115,7 @@ func getAuthToken(cfg SecuritySettings) (string, error) {
 		return "", err
 	}
 	defer resp.Body.Close()
-	jsonResp, err := ioutil.ReadAll(resp.Body)
+	jsonResp, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", err
 	}
@@ -299,8 +299,8 @@ func (e *opsrampOTLPExporter) applyMasking(ld plog.Logs) {
 			for z := 0; z < scopedLog.LogRecords().Len(); z++ {
 				log := scopedLog.LogRecords().At(z)
 				for _, setting := range e.config.Masking {
-					regexp := regexp.MustCompile(setting.Regexp)
-					log.Body().SetStr(regexp.ReplaceAllString(log.Body().AsString(), setting.Placeholder))
+					rExp := regexp.MustCompile(setting.Regexp)
+					log.Body().SetStr(rExp.ReplaceAllString(log.Body().AsString(), setting.Placeholder))
 				}
 			}
 		}
