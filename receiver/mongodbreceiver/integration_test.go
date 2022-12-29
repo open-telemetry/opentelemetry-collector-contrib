@@ -138,7 +138,6 @@ func TestMongodbIntegration(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			t.Skip("Refer to https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/17070")
 			t.Parallel()
 			container, endpoint := getContainer(t, tt.container, setupScript)
 			defer func() {
@@ -147,6 +146,7 @@ func TestMongodbIntegration(t *testing.T) {
 
 			f := NewFactory()
 			cfg := f.CreateDefaultConfig().(*Config)
+			cfg.CollectionInterval = 10 * time.Second
 			tt.cfgMod(cfg, endpoint)
 
 			consumer := new(consumertest.MetricsSink)
@@ -155,12 +155,13 @@ func TestMongodbIntegration(t *testing.T) {
 			require.NoError(t, err, "failed creating metrics receiver")
 
 			require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
+
+			// Wait for multiple collections, in case the first represents partially started system
 			require.Eventuallyf(t, func() bool {
-				return len(consumer.AllMetrics()) > 0
+				return len(consumer.AllMetrics()) > 1
 			}, 2*time.Minute, 1*time.Second, "failed to receive more than 0 metrics")
 			require.NoError(t, rcvr.Shutdown(context.Background()))
-
-			actualMetrics := consumer.AllMetrics()[0]
+			actualMetrics := consumer.AllMetrics()[1]
 
 			expectedFile := filepath.Join("testdata", "integration", fmt.Sprintf("expected.%s.json", tt.name))
 			expectedMetrics, err := golden.ReadMetrics(expectedFile)
