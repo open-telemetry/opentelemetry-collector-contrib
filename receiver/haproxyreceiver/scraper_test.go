@@ -39,24 +39,22 @@ func Test_scraper_readStats(t *testing.T) {
 	defer l.Close()
 
 	go func() {
-		for {
-			c, err2 := l.Accept()
-			require.NoError(t, err2)
+		c, err2 := l.Accept()
+		require.NoError(t, err2)
 
-			buf := make([]byte, 512)
-			nr, err2 := c.Read(buf)
-			require.NoError(t, err2)
+		buf := make([]byte, 512)
+		nr, err2 := c.Read(buf)
+		require.NoError(t, err2)
 
-			data := string(buf[0:nr])
-			switch data {
-			case "show stats\n":
-				stats, err2 := os.ReadFile(filepath.Join("testdata", "stats.txt"))
-				require.NoError(t, err2)
-				_, err2 = c.Write(stats)
-				require.NoError(t, err2)
-			default:
-				require.Fail(t, fmt.Sprintf("invalid message: %v", data))
-			}
+		data := string(buf[0:nr])
+		switch data {
+		case "show stats\n":
+			stats, err2 := os.ReadFile(filepath.Join("testdata", "stats.txt"))
+			require.NoError(t, err2)
+			_, err2 = c.Write(stats)
+			require.NoError(t, err2)
+		default:
+			require.Fail(t, fmt.Sprintf("invalid message: %v", data))
 		}
 	}()
 
