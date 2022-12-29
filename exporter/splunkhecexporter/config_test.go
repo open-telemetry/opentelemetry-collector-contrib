@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -121,7 +122,7 @@ func TestLoadConfig(t *testing.T) {
 func TestConfig_getOptionsFromConfig(t *testing.T) {
 	type fields struct {
 		Endpoint                string
-		Token                   string
+		Token                   configopaque.String
 		Source                  string
 		SourceType              string
 		Index                   string
