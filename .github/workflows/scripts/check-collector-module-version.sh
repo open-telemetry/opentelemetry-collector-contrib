@@ -19,6 +19,7 @@
 # as a dependency.
 #
 
+# disabled as might not have access to this file for several reasons
 # shellcheck disable=SC1091
 source ./internal/buildscripts/modules
 
@@ -80,6 +81,7 @@ MAIN_MOD_FILE="./go.mod"
 BETA_MODULE="go.opentelemetry.io/collector "
 BETA_MOD_VERSION=$(get_collector_version "$BETA_MODULE" "$MAIN_MOD_FILE")
 check_collector_versions_correct "$BETA_MODULE" "$BETA_MOD_VERSION"
+# local var, need not be assigned
 # shellcheck disable=SC2154
 for mod in "${beta_modules[@]}"; do
    check_collector_versions_correct "$mod" "$BETA_MOD_VERSION"
