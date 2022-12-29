@@ -17,6 +17,7 @@ package fileconsumer // import "github.com/open-telemetry/opentelemetry-collecto
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"os"
 
@@ -71,24 +72,41 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 			return
 		default:
 		}
-
 		ok := scanner.Scan()
 		if !ok {
-			if err := scanner.getError(); err != nil {
+			err := scanner.Err()
+			if errors.Is(err, bufio.ErrTooLong) {
+				r.Infow("Log entry too large, truncate it, outputting the log unit per max_log_size")
+				if _, seekErr := r.file.Seek(r.Offset, 0); seekErr != nil {
+					r.Errorw("Failed to seek", zap.Error(seekErr))
+					return
+				}
+				buff := make([]byte, r.maxLogSize)
+				buffLen, readErr := r.Read(buff)
+				if readErr != nil {
+					r.Error("Failed to read", zap.Error(readErr))
+					return
+				}
+				currentOffset := r.Offset + int64(buffLen)
+				r.EmitScanBytes(ctx, buff, currentOffset)
+			} else if err != nil {
 				r.Errorw("Failed during scan", zap.Error(err))
 			}
+
 			break
 		}
-
-		token, err := r.encoding.Decode(scanner.Bytes())
-		if err != nil {
-			r.Errorw("decode: %w", zap.Error(err))
-		} else {
-			r.emit(ctx, r.fileAttributes, token)
-		}
-
-		r.Offset = scanner.Pos()
+		r.EmitScanBytes(ctx, scanner.Bytes(), scanner.Pos())
 	}
+}
+
+func (r *Reader) EmitScanBytes(ctx context.Context, msgBuf []byte, currentOffset int64) {
+	token, err := r.encoding.Decode(msgBuf)
+	if err != nil {
+		r.Errorw("decode: %w", zap.Error(err))
+	} else {
+		r.emit(ctx, r.fileAttributes, token)
+	}
+	r.Offset = currentOffset
 }
 
 // Close will close the file
