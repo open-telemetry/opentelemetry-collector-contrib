@@ -94,6 +94,20 @@ Percentage of total CPU time used by the process since last scrape, expressed as
 | ---- | ----------- | ------ |
 | state | Breakdown of CPU usage by type. | Str: ``system``, ``user``, ``wait`` |
 
+### process.disk.operations
+
+Number of disk operations performed by the process.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {operations} | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| direction | Direction of flow of bytes (read or write). | Str: ``read``, ``write`` |
+
 ### process.memory.usage
 
 The amount of physical memory in use.
@@ -101,6 +115,14 @@ The amount of physical memory in use.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | By | Sum | Int | Cumulative | false |
+
+### process.memory.utilization
+
+Percentage of total physical memory that is used by the process.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
 
 ### process.memory.virtual
 

@@ -32,7 +32,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter"
@@ -46,7 +45,6 @@ import (
 // Test_NewPRWExporter checks that a new exporter instance with non-nil fields is initialized
 func Test_NewPRWExporter(t *testing.T) {
 	cfg := &Config{
-		ExporterSettings:   config.NewExporterSettings(component.NewID(typeStr)),
 		TimeoutSettings:    exporterhelper.TimeoutSettings{},
 		RetrySettings:      exporterhelper.RetrySettings{},
 		Namespace:          "",
@@ -141,11 +139,10 @@ func Test_NewPRWExporter(t *testing.T) {
 // Test_Start checks if the client is properly created as expected.
 func Test_Start(t *testing.T) {
 	cfg := &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		TimeoutSettings:  exporterhelper.TimeoutSettings{},
-		RetrySettings:    exporterhelper.RetrySettings{},
-		Namespace:        "",
-		ExternalLabels:   map[string]string{},
+		TimeoutSettings: exporterhelper.TimeoutSettings{},
+		RetrySettings:   exporterhelper.RetrySettings{},
+		Namespace:       "",
+		ExternalLabels:  map[string]string{},
 		TargetInfo: &TargetInfo{
 			Enabled: true,
 		},
@@ -644,8 +641,7 @@ func Test_PushMetrics(t *testing.T) {
 					defer server.Close()
 
 					cfg := &Config{
-						ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-						Namespace:        "",
+						Namespace: "",
 						HTTPClientSettings: confighttp.HTTPClientSettings{
 							Endpoint: server.URL,
 							// We almost read 0 bytes, so no need to tune ReadBufferSize.
@@ -828,8 +824,7 @@ func TestWALOnExporterRoundTrip(t *testing.T) {
 	// exporter and export some time series!
 	tempDir := t.TempDir()
 	cfg := &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		Namespace:        "test_ns",
+		Namespace: "test_ns",
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: prweServer.URL,
 		},

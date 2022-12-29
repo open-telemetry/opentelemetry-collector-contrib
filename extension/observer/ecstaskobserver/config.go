@@ -19,8 +19,6 @@ import (
 	"net/url"
 	"time"
 
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 )
 
@@ -30,7 +28,6 @@ const (
 )
 
 type Config struct {
-	config.ExtensionSettings      `mapstructure:",squash"`
 	confighttp.HTTPClientSettings `mapstructure:",squash"`
 
 	// RefreshInterval determines the frequency at which the observer
@@ -54,8 +51,7 @@ func (c Config) Validate() error {
 
 func defaultConfig() Config {
 	return Config{
-		ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
-		RefreshInterval:   defaultRefreshInterval,
-		PortLabels:        []string{defaultPortLabel},
+		RefreshInterval: defaultRefreshInterval,
+		PortLabels:      []string{defaultPortLabel},
 	}
 }

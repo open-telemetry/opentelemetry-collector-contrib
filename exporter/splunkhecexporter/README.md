@@ -30,13 +30,13 @@ The following configuration options can also be configured:
 - `max_content_length_logs` (default: 2097152): Maximum log payload size in bytes. Log batches of bigger size will be
   broken down into several requests. Default value is 2097152 bytes (2 MiB). Maximum allowed value is 838860800
   (~ 800 MB). Keep in mind that Splunk Observability backend doesn't accept requests bigger than 2 MiB. This
-  configuration value can be raised only if used with Splunk Core/Cloud.
+  configuration value can be raised only if used with Splunk Core/Cloud. When set to 0, it will treat as infinite length and it will create only 1 request per batch.
 - `max_content_length_metrics` (default: 2097152): Maximum metric payload size in bytes. Metric batches of bigger size
   will be broken down into several requests. Default value is 2097152 bytes (2 MiB). Maximum allowed value is 838860800
-  (~ 800 MB).
+  (~ 800 MB). When set to 0, it will treat as infinite length and it will create only one request per batch.
 - `max_content_length_metrics` (default: 2097152): Maximum trace payload size in bytes. Trace batches of bigger size
   will be broken down into several requests. Default value is 2097152 bytes (2 MiB). Maximum allowed value is 838860800
-  (~ 800 MB).
+  (~ 800 MB). When set to 0, it will treat as infinite length and it will create only one request per batch.
 - `splunk_app_name` (default: "OpenTelemetry Collector Contrib") App name is used to track telemetry information for Splunk App's using HEC by App name.
 - `splunk_app_version` (default: Current OpenTelemetry Collector Contrib Build Version): App version is used to track telemetry information for Splunk App's using HEC by App version. 
 - `log_data_enabled` (default: true): Specifies whether the log data is exported. Set it to `false` if you want the log 

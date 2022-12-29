@@ -55,11 +55,15 @@ func run(ymlPath string) error {
 	tmplDir := filepath.Join(filepath.Dir(filename), "templates")
 
 	codeDir := filepath.Join(ymlDir, "internal", "metadata")
-	if err = os.MkdirAll(codeDir, 0700); err != nil {
+	if err = os.MkdirAll(filepath.Join(codeDir, "testdata"), 0700); err != nil {
 		return fmt.Errorf("unable to create output directory %q: %w", codeDir, err)
 	}
 	if err = generateFile(filepath.Join(tmplDir, "metrics.go.tmpl"),
 		filepath.Join(codeDir, "generated_metrics.go"), md); err != nil {
+		return err
+	}
+	if err = generateFile(filepath.Join(tmplDir, "testdata", "config.yaml.tmpl"),
+		filepath.Join(codeDir, "testdata", "config.yaml"), md); err != nil {
 		return err
 	}
 	if err = generateFile(filepath.Join(tmplDir, "metrics_test.go.tmpl"),
@@ -99,6 +103,7 @@ func generateFile(tmplFile string, outputFile string, md metadata) error {
 					return false
 				},
 				"stringsJoin": strings.Join,
+				"inc":         func(i int) int { return i + 1 },
 			}).ParseFiles(tmplFile))
 
 	buf := bytes.Buffer{}
@@ -107,27 +112,23 @@ func generateFile(tmplFile string, outputFile string, md metadata) error {
 		return fmt.Errorf("failed executing template: %w", err)
 	}
 
-	result := buf.Bytes()
-
-	if strings.HasSuffix(outputFile, ".go") {
-		var err error
-		result, err = format.Source(buf.Bytes())
-		if err != nil {
-			errstr := strings.Builder{}
-			_, _ = fmt.Fprintf(&errstr, "failed formatting source: %v", err)
-			errstr.WriteString("--- BEGIN SOURCE ---")
-			errstr.Write(buf.Bytes())
-			errstr.WriteString("--- END SOURCE ---")
-			return errors.New(errstr.String())
-		}
-	}
-
 	if err := os.Remove(outputFile); err != nil && !errors.Is(err, os.ErrNotExist) {
 		return fmt.Errorf("unable to remove genererated file %q: %w", outputFile, err)
 	}
+
+	result := buf.Bytes()
+	var formatErr error
+	if strings.HasSuffix(outputFile, ".go") {
+		if formatted, err := format.Source(buf.Bytes()); err == nil {
+			result = formatted
+		} else {
+			formatErr = fmt.Errorf("failed formatting %s:%w", outputFile, err)
+		}
+	}
+
 	if err := os.WriteFile(outputFile, result, 0600); err != nil {
 		return fmt.Errorf("failed writing %q: %w", outputFile, err)
 	}
 
-	return nil
+	return formatErr
 }

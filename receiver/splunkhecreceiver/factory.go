@@ -18,12 +18,10 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
@@ -52,7 +50,6 @@ func NewFactory() receiver.Factory {
 // CreateDefaultConfig creates the default configuration for Splunk HEC receiver.
 func createDefaultConfig() component.Config {
 	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: defaultEndpoint,
 		},
@@ -78,10 +75,6 @@ func createMetricsReceiver(
 
 	rCfg := cfg.(*Config)
 
-	if rCfg.Path != "" {
-		params.Logger.Warn("splunk_hec receiver path is deprecated", zap.String("path", rCfg.Path))
-	}
-
 	return newMetricsReceiver(params, *rCfg, consumer)
 }
 
@@ -94,10 +87,6 @@ func createLogsReceiver(
 ) (receiver.Logs, error) {
 
 	rCfg := cfg.(*Config)
-
-	if rCfg.Path != "" {
-		params.Logger.Warn("splunk_hec receiver path is deprecated", zap.String("path", rCfg.Path))
-	}
 
 	return newLogsReceiver(params, *rCfg, consumer)
 }

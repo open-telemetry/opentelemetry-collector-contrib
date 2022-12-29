@@ -185,7 +185,9 @@ func (s *mongodbScraper) recordAdminStats(now pcommon.Timestamp, document bson.M
 	s.recordGlobalLockTime(now, document, errs)
 	s.recordNetworkCount(now, document, errs)
 	s.recordOperations(now, document, errs)
+	s.recordOperationsRepl(now, document, errs)
 	s.recordSessionCount(now, document, errs)
+	s.recordLatencyTime(now, document, errs)
 }
 
 func (s *mongodbScraper) recordIndexStats(now pcommon.Timestamp, indexStats []bson.M, databaseName string, collectionName string, errs *scrapererror.ScrapeErrors) {

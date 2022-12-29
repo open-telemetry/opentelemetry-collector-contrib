@@ -81,6 +81,9 @@ func (r *googleCloudSpannerReceiver) Shutdown(context.Context) error {
 		projectReader.Shutdown()
 	}
 
+	if r.metricsBuilder == nil {
+		return nil
+	}
 	err := r.metricsBuilder.Shutdown()
 	if err != nil {
 		return err

@@ -24,6 +24,7 @@ import (
 
 	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
 	"github.com/DataDog/datadog-agent/pkg/otlp/model/translator"
+	"github.com/DataDog/datadog-agent/pkg/trace/api"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -51,7 +52,8 @@ type metricsExporter struct {
 	sourceProvider source.Provider
 	// getPushTime returns a Unix time in nanoseconds, representing the time pushing metrics.
 	// It will be overwritten in tests.
-	getPushTime func() uint64
+	getPushTime       func() uint64
+	apmStatsProcessor api.StatsProcessor
 }
 
 // translatorFromConfig creates a new metrics translator from the exporter
@@ -96,7 +98,7 @@ func translatorFromConfig(logger *zap.Logger, cfg *Config, sourceProvider source
 	return translator.New(logger, options...)
 }
 
-func newMetricsExporter(ctx context.Context, params exporter.CreateSettings, cfg *Config, onceMetadata *sync.Once, sourceProvider source.Provider) (*metricsExporter, error) {
+func newMetricsExporter(ctx context.Context, params exporter.CreateSettings, cfg *Config, onceMetadata *sync.Once, sourceProvider source.Provider, apmStatsProcessor api.StatsProcessor) (*metricsExporter, error) {
 	client := clientutil.CreateZorkianClient(cfg.API.Key, cfg.Metrics.TCPAddr.Endpoint)
 	client.ExtraHeader["User-Agent"] = clientutil.UserAgent(params.BuildInfo)
 	client.HttpClient = clientutil.NewHTTPClient(cfg.TimeoutSettings, cfg.LimitedHTTPClientSettings.TLSSetting.InsecureSkipVerify)
@@ -112,16 +114,17 @@ func newMetricsExporter(ctx context.Context, params exporter.CreateSettings, cfg
 
 	scrubber := scrub.NewScrubber()
 	return &metricsExporter{
-		params:         params,
-		cfg:            cfg,
-		ctx:            ctx,
-		client:         client,
-		tr:             tr,
-		scrubber:       scrubber,
-		retrier:        clientutil.NewRetrier(params.Logger, cfg.RetrySettings, scrubber),
-		onceMetadata:   onceMetadata,
-		sourceProvider: sourceProvider,
-		getPushTime:    func() uint64 { return uint64(time.Now().UTC().UnixNano()) },
+		params:            params,
+		cfg:               cfg,
+		ctx:               ctx,
+		client:            client,
+		tr:                tr,
+		scrubber:          scrubber,
+		retrier:           clientutil.NewRetrier(params.Logger, cfg.RetrySettings, scrubber),
+		onceMetadata:      onceMetadata,
+		sourceProvider:    sourceProvider,
+		getPushTime:       func() uint64 { return uint64(time.Now().UTC().UnixNano()) },
+		apmStatsProcessor: apmStatsProcessor,
 	}, nil
 }
 
@@ -184,7 +187,7 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metr
 	if src.Kind == source.AWSECSFargateKind {
 		tags = append(tags, exp.cfg.HostMetadata.Tags...)
 	}
-	ms, sl := consumer.All(exp.getPushTime(), exp.params.BuildInfo, tags)
+	ms, sl, sp := consumer.All(exp.getPushTime(), exp.params.BuildInfo, tags)
 	ms = metrics.PrepareZorkianSystemMetrics(ms)
 
 	err = nil
@@ -206,6 +209,14 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metr
 				return exp.pushSketches(ctx, sl)
 			}),
 		)
+	}
+
+	if len(sp) > 0 {
+		exp.params.Logger.Debug("exporting APM stats payloads", zap.Any("stats_payloads", sp))
+		statsv := exp.params.BuildInfo.Command + exp.params.BuildInfo.Version
+		for _, p := range sp {
+			exp.apmStatsProcessor.ProcessStats(p, "", statsv)
+		}
 	}
 
 	return err

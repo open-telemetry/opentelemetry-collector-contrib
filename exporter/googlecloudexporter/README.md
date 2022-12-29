@@ -149,8 +149,9 @@ The following configuration options are supported:
   - `create_service_timeseries` (default = false): If true, this will send all timeseries using `CreateServiceTimeSeries`. Implicitly, this sets `skip_create_descriptor` to true.
   - `create_metric_descriptor_buffer_size` (default = 10): Buffer size for the channel which asynchronously calls CreateMetricDescriptor.
   - `service_resource_labels` (default = true):  If true, the exporter will copy OTel's service.name, service.namespace, and service.instance.id resource attributes into the GCM timeseries metric labels.
-  - `resource_filters` (default = []): If provided, resource attributes matching any filter will be included in metric labels.
+  - `resource_filters` (default = []): If provided, resource attributes matching any filter will be included in metric labels. Can be defined by `prefix`, `regex`, or `prefix` AND `regex`.
     - `prefix`: Match resource keys by prefix.
+    - `regex`: Match resource keys by regex.
   - `cumulative_normalization` (default = true): If true, normalizes cumulative metrics without start times or with explicit reset points by subtracting subsequent points from the initial point. It is enabled by default. Since it caches starting points, it may result inincreased memory usage.
   - `sum_of_squared_deviation` (default = false): If true, enables calculation of an estimated sum of squared deviation.  It is an estimate, and is not exact.
 - `trace` (optional): Configuration for sending traces to Cloud Trace.
@@ -163,6 +164,9 @@ The following configuration options are supported:
   - `endpoint` (default = logging.googleapis.com): Endpoint where log data is going to be sent to. D
   - `use_insecure` (default = false): If true, use gRPC as their communication transport. Only has effect if Endpoint is not "".
   - `default_log_name` (optional): Defines a default name for log entries. If left unset, and a log entry does not have the `gcp.log_name` attribute set, the exporter will return an error processing that entry.
+  - `resource_filters` (default = []): If provided, resource attributes matching any filter will be included in log labels. Can be defined by `prefix`, `regex`, or `prefix` AND `regex`.
+    - `prefix`: Match resource keys by prefix.
+    - `regex`: Match resource keys by regex.
 - `retry_on_failure` (optional): Configuration for how to handle retries when sending data to Google Cloud fails.
   - `enabled` (default = true)
   - `initial_interval` (default = 5s): Time to wait after the first failure before retrying; ignored if `enabled` is `false`
@@ -309,20 +313,6 @@ By default, the exporter sends telemetry to the project specified by `project` i
 ## Features and Feature-Gates
 
 See the [Collector feature gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) for an overview of feature gates in the collector.
-
-**BETA**: `exporter.googlecloud.OTLPDirect`
-
-The `exporter.googlecloud.OTLPDirect` is enabled by default starting in v0.50.0, and can be disabled via `--feature-gates=-exporter.googlecloud.OTLPDirect`. The new googlecloud exporter translates pdata directly to google cloud monitoring's types, rather than first translating to opencensus.  See the [Breaking Changes documentation](https://github.com/GoogleCloudPlatform/opentelemetry-operations-go/blob/main/exporter/collector/breaking-changes.md#breaking-changes-vs-old-googlecloud-exporter) for breaking changes that will occur as a result of this feature.
-
-If you are broken by changes described there, or have encountered an issue with the new implementation, please open an issue [here](https://github.com/GoogleCloudPlatform/opentelemetry-operations-go/issues/new)
-
-If you disable the feature-gate, you can continue to set removed legacy configuration options:
-
-- `endpoint` (optional): Endpoint where data is going to be sent to.
-- `use_insecure` (optional): If true. use gRPC as their communication transport. Only has effect if Endpoint is not "".
-- `timeout` (optional): Timeout for all API calls. If not set, defaults to 12 seconds.
-- `resource_mappings` (optional): ResourceMapping defines mapping of resources from source (OpenCensus) to target (Google Cloud).
-  - `label_mappings` (optional): Optional flag signals whether we can proceed with transformation if a label is missing in the resource.
 
 [beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

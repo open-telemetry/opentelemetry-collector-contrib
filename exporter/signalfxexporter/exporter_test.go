@@ -34,9 +34,7 @@ import (
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -69,35 +67,31 @@ func TestNew(t *testing.T) {
 		{
 			name: "bad config fails",
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				APIURL:           "abc",
+				APIURL: "abc",
 			},
 			wantErr: true,
 		},
 		{
 			name: "fails to create metrics converter",
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				AccessToken:      "test",
-				Realm:            "realm",
-				ExcludeMetrics:   []dpfilters.MetricFilter{{}},
+				AccessToken:    "test",
+				Realm:          "realm",
+				ExcludeMetrics: []dpfilters.MetricFilter{{}},
 			},
 			wantErr: true,
 		},
 		{
 			name: "successfully create exporter",
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				AccessToken:      "someToken",
-				Realm:            "xyz",
-				TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: 1 * time.Second},
-				Headers:          nil,
+				AccessToken:     "someToken",
+				Realm:           "xyz",
+				TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: 1 * time.Second},
+				Headers:         nil,
 			},
 		},
 		{
 			name: "create exporter with host metadata syncer",
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				AccessToken:      "someToken",
 				Realm:            "xyz",
 				TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: 1 * time.Second},
@@ -454,11 +448,10 @@ func TestNewEventExporter(t *testing.T) {
 	assert.Nil(t, got)
 
 	cfg := &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		AccessToken:      "someToken",
-		IngestURL:        "asdf://:%",
-		TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: 1 * time.Second},
-		Headers:          nil,
+		AccessToken:     "someToken",
+		IngestURL:       "asdf://:%",
+		TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: 1 * time.Second},
+		Headers:         nil,
 	}
 
 	got, err = newEventExporter(cfg, zap.NewNop())
@@ -1063,9 +1056,8 @@ func TestTLSExporterInit(t *testing.T) {
 		{
 			name: "valid CA",
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				APIURL:           "https://test",
-				IngestURL:        "https://test",
+				APIURL:    "https://test",
+				IngestURL: "https://test",
 				IngestTLSSettings: configtls.TLSClientSetting{
 					TLSSetting: configtls.TLSSetting{
 						CAFile: "./testdata/certs/ca.pem",
@@ -1084,9 +1076,8 @@ func TestTLSExporterInit(t *testing.T) {
 		{
 			name: "missing CA",
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				APIURL:           "https://test",
-				IngestURL:        "https://test",
+				APIURL:    "https://test",
+				IngestURL: "https://test",
 				IngestTLSSettings: configtls.TLSClientSetting{
 					TLSSetting: configtls.TLSSetting{
 						CAFile: "./testdata/certs/missingfile",
@@ -1101,9 +1092,8 @@ func TestTLSExporterInit(t *testing.T) {
 		{
 			name: "invalid CA",
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				APIURL:           "https://test",
-				IngestURL:        "https://test",
+				APIURL:    "https://test",
+				IngestURL: "https://test",
 				IngestTLSSettings: configtls.TLSClientSetting{
 					TLSSetting: configtls.TLSSetting{
 						CAFile: "./testdata/certs/invalid-ca.pem",
@@ -1160,7 +1150,6 @@ func TestTLSIngestConnection(t *testing.T) {
 		{
 			name: "Ingest CA not set",
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				APIURL:           serverURL,
 				IngestURL:        serverURL,
 				AccessToken:      "random",
@@ -1172,9 +1161,8 @@ func TestTLSIngestConnection(t *testing.T) {
 		{
 			name: "Ingest CA set",
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				APIURL:           serverURL,
-				IngestURL:        serverURL,
+				APIURL:    serverURL,
+				IngestURL: serverURL,
 				IngestTLSSettings: configtls.TLSClientSetting{
 					TLSSetting: configtls.TLSSetting{
 						CAFile: "./testdata/certs/ca.pem",
@@ -1243,7 +1231,6 @@ func TestTLSAPIConnection(t *testing.T) {
 		{
 			name: "API CA set",
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				APIURL:           server.URL,
 				IngestURL:        server.URL,
 				AccessToken:      "random",
@@ -1259,7 +1246,6 @@ func TestTLSAPIConnection(t *testing.T) {
 		{
 			name: "API CA set",
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				APIURL:           server.URL,
 				IngestURL:        server.URL,
 				AccessToken:      "random",

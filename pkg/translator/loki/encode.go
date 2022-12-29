@@ -29,19 +29,25 @@ import (
 
 // JSON representation of the LogRecord as described by https://developers.google.com/protocol-buffers/docs/proto3#json
 type lokiEntry struct {
-	Name       string                 `json:"name,omitempty"`
-	Body       json.RawMessage        `json:"body,omitempty"`
-	TraceID    string                 `json:"traceid,omitempty"`
-	SpanID     string                 `json:"spanid,omitempty"`
-	Severity   string                 `json:"severity,omitempty"`
-	Attributes map[string]interface{} `json:"attributes,omitempty"`
-	Resources  map[string]interface{} `json:"resources,omitempty"`
+	Name                 string                 `json:"name,omitempty"`
+	Body                 json.RawMessage        `json:"body,omitempty"`
+	TraceID              string                 `json:"traceid,omitempty"`
+	SpanID               string                 `json:"spanid,omitempty"`
+	Severity             string                 `json:"severity,omitempty"`
+	Attributes           map[string]interface{} `json:"attributes,omitempty"`
+	Resources            map[string]interface{} `json:"resources,omitempty"`
+	InstrumentationScope *instrumentationScope  `json:"instrumentation_scope,omitempty"`
+}
+
+type instrumentationScope struct {
+	Name    string `json:"name,omitempty"`
+	Version string `json:"version,omitempty"`
 }
 
 // Encode converts an OTLP log record and its resource attributes into a JSON
 // string representing a Loki entry. An error is returned when the record can't
 // be marshaled into JSON.
-func Encode(lr plog.LogRecord, res pcommon.Resource) (string, error) {
+func Encode(lr plog.LogRecord, res pcommon.Resource, scope pcommon.InstrumentationScope) (string, error) {
 	var logRecord lokiEntry
 	var jsonRecord []byte
 	var err error
@@ -60,6 +66,17 @@ func Encode(lr plog.LogRecord, res pcommon.Resource) (string, error) {
 		Resources:  res.Attributes().AsRaw(),
 	}
 
+	scopeName := scope.Name()
+	scopeVersion := scope.Version()
+	if scopeName != "" {
+		logRecord.InstrumentationScope = &instrumentationScope{
+			Name: scopeName,
+		}
+		if scopeVersion != "" {
+			logRecord.InstrumentationScope.Version = scopeVersion
+		}
+	}
+
 	jsonRecord, err = json.Marshal(logRecord)
 	if err != nil {
 		return "", err
@@ -70,7 +87,7 @@ func Encode(lr plog.LogRecord, res pcommon.Resource) (string, error) {
 // EncodeLogfmt converts an OTLP log record and its resource attributes into a logfmt
 // string representing a Loki entry. An error is returned when the record can't
 // be marshaled into logfmt.
-func EncodeLogfmt(lr plog.LogRecord, res pcommon.Resource) (string, error) {
+func EncodeLogfmt(lr plog.LogRecord, res pcommon.Resource, scope pcommon.InstrumentationScope) (string, error) {
 	keyvals := bodyToKeyvals(lr.Body())
 
 	if traceID := lr.TraceID(); !traceID.IsEmpty() {
@@ -96,6 +113,15 @@ func EncodeLogfmt(lr plog.LogRecord, res pcommon.Resource) (string, error) {
 		keyvals = append(keyvals, valueToKeyvals(fmt.Sprintf("resource_%s", k), v)...)
 		return true
 	})
+
+	scopeName := scope.Name()
+	scopeVersion := scope.Version()
+	if scopeName != "" {
+		keyvals = append(keyvals, "instrumentation_scope_name", scopeName)
+		if scopeVersion != "" {
+			keyvals = append(keyvals, "instrumentation_scope_version", scopeVersion)
+		}
+	}
 
 	logfmtLine, err := logfmt.MarshalKeyvals(keyvals...)
 	if err != nil {

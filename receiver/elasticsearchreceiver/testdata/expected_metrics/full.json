@@ -794,6 +794,21 @@
                      "unit": "By"
                   },
                   {
+                     "description": "Total amount of memory used for the query cache across all shards assigned to the node.",
+                     "name": "elasticsearch.node.cache.size",
+                     "sum": {
+                        "aggregationTemporality": 2,
+                        "dataPoints": [
+                           {
+                              "asInt": "394",
+                              "startTimeUnixNano": "1670395732182417000",
+                              "timeUnixNano": "1670395732187524000"
+                           }
+                        ]
+                     },
+                     "unit": "By"
+                  },
+                  {
                      "description": "Total count of query cache misses across all shards assigned to selected nodes.",
                      "name": "elasticsearch.node.cache.count",
                      "sum": {
@@ -1294,6 +1309,28 @@
                         ],
                         "isMonotonic": true
                      },
+                     "unit": "{operations}"
+                  },
+                  {
+                     "description": "Number of query operations currently running.",
+                     "gauge": {
+                        "dataPoints": [
+                           {
+                              "asInt": "6723",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "query"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1670396411069414000",
+                              "timeUnixNano": "1670396411072189000"
+                           }
+                        ]
+                     },
+                     "name": "elasticsearch.node.operations.current",
                      "unit": "{operations}"
                   },
                   {
@@ -1980,6 +2017,51 @@
                         ]
                      },
                      "name": "elasticsearch.os.memory",
+                     "unit": "By"
+                  },
+                  {
+                     "description": "CPU time used by the process on which the Java virtual machine is running.",
+                     "name": "elasticsearch.process.cpu.time",
+                     "sum": {
+                        "aggregationTemporality": 2,
+                        "dataPoints": [
+                           {
+                              "asInt": "42970",
+                              "startTimeUnixNano": "1670400055325086000",
+                              "timeUnixNano": "1670400055330564000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "ms"
+                  },
+                  {
+                     "description": "CPU usage in percent.",
+                     "gauge": {
+                        "dataPoints": [
+                           {
+                              "asDouble": 0,
+                              "startTimeUnixNano": "1670556275657741000",
+                              "timeUnixNano": "1670556275662037000"
+                           }
+                        ]
+                     },
+                     "name": "elasticsearch.process.cpu.usage",
+                     "unit": "1"
+                  },
+                  {
+                     "description": "Size of virtual memory that is guaranteed to be available to the running process.",
+                     "name": "elasticsearch.process.memory.virtual",
+                     "sum": {
+                        "aggregationTemporality": 2,
+                        "dataPoints": [
+                           {
+                              "asInt": "4961767424",
+                              "startTimeUnixNano": "1670400872688367000",
+                              "timeUnixNano": "1670400872693424000"
+                           }
+                        ]
+                     },
                      "unit": "By"
                   },
                   {

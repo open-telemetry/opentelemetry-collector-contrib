@@ -18,7 +18,6 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 
@@ -27,8 +26,6 @@ import (
 
 // Config represent a configuration for the CloudWatch logs exporter.
 type Config struct {
-	config.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-
 	exporterhelper.RetrySettings `mapstructure:"retry_on_failure"`
 
 	// LogGroupName is the name of CloudWatch log group which defines group of log streams

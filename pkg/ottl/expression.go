@@ -122,8 +122,11 @@ func (p *Parser[K]) newGetter(val value) (Getter[K], error) {
 		if eL.Path != nil {
 			return p.pathParser(eL.Path)
 		}
-		if eL.Invocation != nil {
-			call, err := p.newFunctionCall(*eL.Invocation)
+		if eL.Converter != nil {
+			call, err := p.newFunctionCall(invocation{
+				Function:  eL.Converter.Function,
+				Arguments: eL.Converter.Arguments,
+			})
 			if err != nil {
 				return nil, err
 			}

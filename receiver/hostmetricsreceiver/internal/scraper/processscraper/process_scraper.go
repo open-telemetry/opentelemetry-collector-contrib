@@ -33,16 +33,17 @@ import (
 )
 
 const (
-	cpuMetricsLen            = 1
-	memoryMetricsLen         = 2
-	diskMetricsLen           = 1
-	pagingMetricsLen         = 1
-	threadMetricsLen         = 1
-	contextSwitchMetricsLen  = 1
-	fileDescriptorMetricsLen = 1
-	signalMetricsLen         = 1
+	cpuMetricsLen               = 1
+	memoryMetricsLen            = 2
+	memoryUtilizationMetricsLen = 1
+	diskMetricsLen              = 1
+	pagingMetricsLen            = 1
+	threadMetricsLen            = 1
+	contextSwitchMetricsLen     = 1
+	fileDescriptorMetricsLen    = 1
+	signalMetricsLen            = 1
 
-	metricsLen = cpuMetricsLen + memoryMetricsLen + diskMetricsLen + pagingMetricsLen + threadMetricsLen + contextSwitchMetricsLen + fileDescriptorMetricsLen + signalMetricsLen
+	metricsLen = cpuMetricsLen + memoryMetricsLen + diskMetricsLen + memoryUtilizationMetricsLen + pagingMetricsLen + threadMetricsLen + contextSwitchMetricsLen + fileDescriptorMetricsLen + signalMetricsLen
 )
 
 // scraper for Process Metrics
@@ -118,7 +119,11 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 			errs.AddPartial(memoryMetricsLen, fmt.Errorf("error reading memory info for process %q (pid %v): %w", md.executable.name, md.pid, err))
 		}
 
-		if err = s.scrapeAndAppendDiskIOMetric(now, md.handle); err != nil {
+		if err = s.scrapeAndAppendMemoryUtilizationMetric(now, md.handle); err != nil {
+			errs.AddPartial(memoryUtilizationMetricsLen, fmt.Errorf("error reading memory utilization for process %q (pid %v): %w", md.executable.name, md.pid, err))
+		}
+
+		if err = s.scrapeAndAppendDiskMetrics(now, md.handle); err != nil {
 			errs.AddPartial(diskMetricsLen, fmt.Errorf("error reading disk usage for process %q (pid %v): %w", md.executable.name, md.pid, err))
 		}
 
@@ -254,8 +259,23 @@ func (s *scraper) scrapeAndAppendMemoryUsageMetrics(now pcommon.Timestamp, handl
 	return nil
 }
 
-func (s *scraper) scrapeAndAppendDiskIOMetric(now pcommon.Timestamp, handle processHandle) error {
-	if !s.config.Metrics.ProcessDiskIo.Enabled {
+func (s *scraper) scrapeAndAppendMemoryUtilizationMetric(now pcommon.Timestamp, handle processHandle) error {
+	if !s.config.Metrics.ProcessMemoryUtilization.Enabled {
+		return nil
+	}
+
+	memoryPercent, err := handle.MemoryPercent()
+	if err != nil {
+		return err
+	}
+
+	s.mb.RecordProcessMemoryUtilizationDataPoint(now, float64(memoryPercent))
+
+	return nil
+}
+
+func (s *scraper) scrapeAndAppendDiskMetrics(now pcommon.Timestamp, handle processHandle) error {
+	if !(s.config.Metrics.ProcessDiskIo.Enabled || s.config.Metrics.ProcessDiskOperations.Enabled) {
 		return nil
 	}
 
@@ -266,6 +286,8 @@ func (s *scraper) scrapeAndAppendDiskIOMetric(now pcommon.Timestamp, handle proc
 
 	s.mb.RecordProcessDiskIoDataPoint(now, int64(io.ReadBytes), metadata.AttributeDirectionRead)
 	s.mb.RecordProcessDiskIoDataPoint(now, int64(io.WriteBytes), metadata.AttributeDirectionWrite)
+	s.mb.RecordProcessDiskOperationsDataPoint(now, int64(io.ReadCount), metadata.AttributeDirectionRead)
+	s.mb.RecordProcessDiskOperationsDataPoint(now, int64(io.WriteCount), metadata.AttributeDirectionWrite)
 
 	return nil
 }
