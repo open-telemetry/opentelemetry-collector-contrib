@@ -99,7 +99,7 @@ func translatorFromConfig(logger *zap.Logger, cfg *Config, sourceProvider source
 }
 
 func newMetricsExporter(ctx context.Context, params exporter.CreateSettings, cfg *Config, onceMetadata *sync.Once, sourceProvider source.Provider, apmStatsProcessor api.StatsProcessor) (*metricsExporter, error) {
-	client := clientutil.CreateZorkianClient(cfg.API.Key, cfg.Metrics.TCPAddr.Endpoint)
+	client := clientutil.CreateZorkianClient(string(cfg.API.Key), cfg.Metrics.TCPAddr.Endpoint)
 	client.ExtraHeader["User-Agent"] = clientutil.UserAgent(params.BuildInfo)
 	client.HttpClient = clientutil.NewHTTPClient(cfg.TimeoutSettings, cfg.LimitedHTTPClientSettings.TLSSetting.InsecureSkipVerify)
 
@@ -143,7 +143,7 @@ func (exp *metricsExporter) pushSketches(ctx context.Context, sl sketches.Sketch
 		return fmt.Errorf("failed to build sketches HTTP request: %w", err)
 	}
 
-	clientutil.SetDDHeaders(req.Header, exp.params.BuildInfo, exp.cfg.API.Key)
+	clientutil.SetDDHeaders(req.Header, exp.params.BuildInfo, string(exp.cfg.API.Key))
 	clientutil.SetExtraHeaders(req.Header, clientutil.ProtobufHeaders)
 	resp, err := exp.client.HttpClient.Do(req)
 

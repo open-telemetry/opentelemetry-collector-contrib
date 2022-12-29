@@ -52,7 +52,7 @@ type traceExporter struct {
 
 func newTracesExporter(ctx context.Context, params exporter.CreateSettings, cfg *Config, onceMetadata *sync.Once, sourceProvider source.Provider, agent *agent.Agent) (*traceExporter, error) {
 	// client to send running metric to the backend & perform API key validation
-	client := clientutil.CreateZorkianClient(cfg.API.Key, cfg.Metrics.TCPAddr.Endpoint)
+	client := clientutil.CreateZorkianClient(string(cfg.API.Key), cfg.Metrics.TCPAddr.Endpoint)
 	if err := clientutil.ValidateAPIKeyZorkian(params.Logger, client); err != nil && cfg.API.FailOnInvalidKey {
 		return nil, err
 	}
@@ -130,7 +130,7 @@ func newTraceAgent(ctx context.Context, params exporter.CreateSettings, cfg *Con
 	acfg.OTLPReceiver.SpanNameRemappings = cfg.Traces.SpanNameRemappings
 	acfg.OTLPReceiver.SpanNameAsResourceName = cfg.Traces.SpanNameAsResourceName
 	acfg.OTLPReceiver.UsePreviewHostnameLogic = featuregate.GetRegistry().IsEnabled(metadata.HostnamePreviewFeatureGate)
-	acfg.Endpoints[0].APIKey = cfg.API.Key
+	acfg.Endpoints[0].APIKey = string(cfg.API.Key)
 	acfg.Ignore["resource"] = cfg.Traces.IgnoreResources
 	acfg.ReceiverPort = 0 // disable HTTP receiver
 	acfg.AgentVersion = fmt.Sprintf("datadogexporter-%s-%s", params.BuildInfo.Command, params.BuildInfo.Version)
