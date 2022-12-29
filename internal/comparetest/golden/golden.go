@@ -17,6 +17,7 @@ package golden // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"encoding/json"
 	"os"
+	"testing"
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
@@ -32,7 +33,18 @@ func ReadMetrics(filePath string) (pmetric.Metrics, error) {
 }
 
 // WriteMetrics writes a pmetric.Metrics to the specified file
-func WriteMetrics(filePath string, metrics pmetric.Metrics) error {
+func WriteMetrics(t *testing.T, filePath string, metrics pmetric.Metrics) error {
+	if err := writeMetrics(filePath, metrics); err != nil {
+		return err
+	}
+	t.Logf("Golden file successfully written to %s.", filePath)
+	t.Log("NOTE: The WriteMetrics call must be removed in order to pass the test.")
+	t.Fail()
+	return nil
+}
+
+// writeMetrics writes a pmetric.Metrics to the specified file
+func writeMetrics(filePath string, metrics pmetric.Metrics) error {
 	unmarshaler := &pmetric.JSONMarshaler{}
 	fileBytes, err := unmarshaler.MarshalMetrics(metrics)
 	if err != nil {
@@ -47,5 +59,8 @@ func WriteMetrics(filePath string, metrics pmetric.Metrics) error {
 		return err
 	}
 	b = append(b, []byte("\n")...)
-	return os.WriteFile(filePath, b, 0600)
+	if err := os.WriteFile(filePath, b, 0600); err != nil {
+		return err
+	}
+	return nil
 }
