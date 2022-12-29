@@ -50,6 +50,7 @@ main () {
     declare -A REVIEWED
 
     for REVIEWER in ${REVIEW_LOGINS}; do
+        # ignored as not unused
         # shellcheck disable=SC2034
         REVIEWED["@${REVIEWER}"]=true
     done
@@ -74,6 +75,7 @@ main () {
                 continue
             fi
 
+            # ignored as not unused
             # shellcheck disable=SC2034
             PROCESSED_COMPONENTS["${COMPONENT}"]=true
 
