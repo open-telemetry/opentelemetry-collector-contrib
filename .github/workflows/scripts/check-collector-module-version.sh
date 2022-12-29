@@ -19,7 +19,7 @@
 # as a dependency.
 #
 
-# shellcheck source=./internal/buildscripts/modules
+# shellcheck disable=SC1091
 source ./internal/buildscripts/modules
 
 set -eu -o pipefail
