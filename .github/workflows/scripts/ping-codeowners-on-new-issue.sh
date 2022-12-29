@@ -65,6 +65,7 @@ for COMPONENT in ${BODY_COMPONENTS}; do
     fi
 
     PING_LINES+="- ${COMPONENT}: ${CODEOWNERS}\n"
+    # shellcheck disable=SC2034
     PINGED_COMPONENTS["${TITLE_COMPONENT}"]=1
 
     if (( "${#COMPONENT}" > 50 )); then
@@ -99,5 +100,5 @@ if [[ -n "${PING_LINES}" ]]; then
   #    to get the newlines to render correctly, using string formatting
   #    causes the newlines to be interpreted literally.
   printf "Pinging code owners:\n${PING_LINES}\n%s" "${LABELS_COMMENT}"  \
-  | gh issue comment "${ISSUE}" -F -
+  || gh issue comment "${ISSUE}" -F -
 fi

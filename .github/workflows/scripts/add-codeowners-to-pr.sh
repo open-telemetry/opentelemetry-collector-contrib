@@ -50,6 +50,7 @@ main () {
     declare -A REVIEWED
 
     for REVIEWER in ${REVIEW_LOGINS}; do
+        # shellcheck disable=SC2034
         REVIEWED["@${REVIEWER}"]=true
     done
 
@@ -73,6 +74,7 @@ main () {
                 continue
             fi
 
+            # shellcheck disable=SC2034
             PROCESSED_COMPONENTS["${COMPONENT}"]=true
 
             OWNERS=$(COMPONENT="${COMPONENT}" bash "${CUR_DIRECTORY}/get-codeowners.sh")
