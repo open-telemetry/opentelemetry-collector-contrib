@@ -28,7 +28,7 @@ for line in $requests; do
         continue
     fi
     last_updated="$module $version"
-    make for-all CMD="$GITHUB_WORKSPACE/internal/buildscripts/update-dep" MODULE="$module" VERSION=v"$version"
+    make for-all CMD="$GITHUB_WORKSPACE/internal/buildscripts/update-dep" MODULE="$module" VERSION="v$version"
 done
 
 make gotidy
