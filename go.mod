@@ -91,6 +91,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver v0.68.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver v0.68.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver v0.68.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver v0.68.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver v0.68.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.68.0
@@ -200,8 +201,8 @@ require (
 	github.com/Azure/azure-kusto-go v0.9.2 // indirect
 	github.com/Azure/azure-pipeline-go v0.2.3 // indirect
 	github.com/Azure/azure-sdk-for-go v67.1.0+incompatible // indirect
-	github.com/Azure/azure-sdk-for-go/sdk/azcore v0.21.1 // indirect
-	github.com/Azure/azure-sdk-for-go/sdk/internal v0.8.3 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/azcore v0.22.0 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/internal v0.9.1 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v0.3.0 // indirect
 	github.com/Azure/azure-storage-blob-go v0.15.0 // indirect
 	github.com/Azure/azure-storage-queue-go v0.0.0-20191125232315-636801874cdd // indirect
