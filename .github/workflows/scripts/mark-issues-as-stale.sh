@@ -74,7 +74,7 @@ for ISSUE in ${ISSUES}; do
         echo "Pinging code owners for issue #${ISSUE}."
 
         # The GitHub CLI only offers multiline strings through file input.
-        printf "%s $STALE_MESSAGE\n\nPinging code owners:\n%s $OWNER_MENTIONS\nSee [Adding Labels via Comments](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#adding-labels-via-comments) if you do not have permissions to add labels yourself." \
+        printf "%s \n\nPinging code owners:\n%s \nSee [Adding Labels via Comments](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#adding-labels-via-comments) if you do not have permissions to add labels yourself." "$STALE_MESSAGE" "$OWNER_MENTIONS" \
           | gh issue comment "${ISSUE}" -F -
     fi
 
