@@ -43,30 +43,27 @@ type logsTransformProcessor struct {
 	emitter       *adapter.LogEmitter
 	converter     *adapter.Converter
 	fromConverter *adapter.FromPdataConverter
+	done          context.CancelFunc
 	wg            sync.WaitGroup
 }
 
 func newProcessor(config *Config, nextConsumer consumer.Logs, logger *zap.Logger) (*logsTransformProcessor, error) {
-	p := &logsTransformProcessor{
-		logger:   logger,
-		config:   config,
-		consumer: nextConsumer,
-	}
-
-	baseCfg := p.config.BaseConfig
-
-	p.emitter = adapter.NewLogEmitter(p.logger.Sugar())
 	pipe, err := pipeline.Config{
-		Operators:     baseCfg.Operators,
-		DefaultOutput: p.emitter,
-	}.Build(p.logger.Sugar())
+		Operators:     config.BaseConfig.Operators,
+		DefaultOutput: adapter.NewLogEmitter(logger.Sugar()),
+	}.Build(logger.Sugar())
+
 	if err != nil {
 		return nil, err
 	}
 
-	p.pipe = pipe
-
-	return p, nil
+	return &logsTransformProcessor{
+		logger:   logger,
+		config:   config,
+		consumer: nextConsumer,
+		pipe:     pipe,
+		emitter:  adapter.NewLogEmitter(logger.Sugar()),
+	}, nil
 }
 
 func (ltp *logsTransformProcessor) Capabilities() consumer.Capabilities {
@@ -78,12 +75,13 @@ func (ltp *logsTransformProcessor) Shutdown(ctx context.Context) error {
 	pipelineErr := ltp.pipe.Stop()
 	ltp.converter.Stop()
 	ltp.fromConverter.Stop()
+	ltp.done()
 	ltp.wg.Wait()
 
 	return pipelineErr
 }
 
-func (ltp *logsTransformProcessor) Start(ctx context.Context, host component.Host) error {
+func (ltp *logsTransformProcessor) Start(_ context.Context, host component.Host) error {
 
 	// There is no need for this processor to use storage
 	err := ltp.pipe.Start(storage.NewNopClient())
@@ -105,6 +103,8 @@ func (ltp *logsTransformProcessor) Start(ctx context.Context, host component.Hos
 	ltp.fromConverter = adapter.NewFromPdataConverter(wkrCount, ltp.logger)
 	ltp.fromConverter.Start()
 
+	var ctx context.Context
+	ctx, ltp.done = context.WithCancel(context.Background())
 	// Below we're starting 3 loops:
 	// * first which reads all the logs translated by the fromConverter and then forwards
 	//   them to pipeline
