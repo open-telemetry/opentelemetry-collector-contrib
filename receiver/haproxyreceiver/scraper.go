@@ -29,14 +29,18 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/haproxyreceiver/internal/metadata"
 )
 
+var (
+	showStatsCommand = []byte("show stats\n")
+)
+
 type scraper struct {
 	endpoint       string
 	logger         *zap.Logger
 	metricsBuilder *metadata.MetricsBuilder
 }
 
-func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
-        var d net.Dialer
+func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
+	var d net.Dialer
 	c, err := d.DialContext(ctx, "unix", s.endpoint)
 	if err != nil {
 		return pmetric.NewMetrics(), err
@@ -59,7 +63,7 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 }
 
 func (s *scraper) readStats(c net.Conn) ([]map[string]string, error) {
-	_, err := c.Write([]byte("show stats\n"))
+	_, err := c.Write(showStatsCommand)
 	if err != nil {
 		return nil, err
 	}
