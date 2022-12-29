@@ -36,8 +36,8 @@ type scraper struct {
 }
 
 func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
-
-	c, err := net.Dial("unix", s.endpoint)
+        var d net.Dialer
+	c, err := d.DialContext(ctx, "unix", s.endpoint)
 	if err != nil {
 		return pmetric.NewMetrics(), err
 	}
