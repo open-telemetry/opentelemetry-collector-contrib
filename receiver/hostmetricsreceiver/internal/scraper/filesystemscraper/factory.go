@@ -57,7 +57,7 @@ func (f *Factory) CreateMetricsScraper(
 	cfg := config.(*Config)
 
 	if _, err := os.Stat("/.dockerenv"); cfg.RootPath == "" && err != nil {
-		settings.Logger.Warn("No root config set when running in docker environment, will report container filesystem stats")
+		settings.Logger.Warn("No `root_path` config set when running in docker environment, will report container filesystem stats. See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/hostmetricsreceiver#collecting-host-metrics-from-inside-a-container-linux-only")
 	}
 
 	s, err := newFileSystemScraper(ctx, settings, cfg)
