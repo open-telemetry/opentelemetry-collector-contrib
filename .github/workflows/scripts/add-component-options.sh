@@ -49,7 +49,7 @@ for COMPONENT in $(sh "${CUR_DIRECTORY}/get-components.sh"); do
   REST=$(echo "${COMPONENT}" | cut -f2- -d'/' | sed "s%${TYPE}/%/%" | sed "s%${TYPE}\$%%")
   LABEL=""
 
-  if [ -z "${TYPE}" ] | [ -z "${REST}" ]; then
+  if [ -z "${TYPE}" ] || [ -z "${REST}" ]; then
     LABEL="${COMPONENT}"
   else
     LABEL="${TYPE}/${REST}"
@@ -57,6 +57,6 @@ for COMPONENT in $(sh "${CUR_DIRECTORY}/get-components.sh"); do
 
   LABELS="${LABELS}${LABEL}\n"
 done
-printf "${LABELS}" | sort | awk '{ printf "      - %s\n",$1 }'
+printf "%s" "$LABELS" | sort | awk '{ printf "      - %s\n",$1 }'
 tail -n $((TOTAL_LINES-END_LINE+1)) "${FILE}"
 

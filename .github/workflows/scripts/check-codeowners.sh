@@ -43,7 +43,7 @@ check_code_owner_existence() {
       # which has an owner and would therefore implicitly include the component
       # path as a sub folder e.g. 'internal/aws' is listed in $CODEOWNERS
       # which accounts for internal/aws/awsutil, internal/aws/k8s etc.
-      PREFIX_MODULE_PATH=$(echo $module | cut -d/ -f 1-2)
+      PREFIX_MODULE_PATH=$(echo "$module" | cut -d/ -f 1-2)
       if ! grep -wq "^$PREFIX_MODULE_PATH/ " "$CODEOWNERS"; then
         # Check if it is a known component that is waiting on an owner
         if grep -wq "$module" "$ALLOWLIST"; then

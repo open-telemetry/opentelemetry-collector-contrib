@@ -1,6 +1,8 @@
-TESTS="$(make -s -C testbed list-stability-tests | xargs echo|sed 's/ /|/g')"
+#!/usr/bin/env bash
 
-TESTS=(${TESTS//|/ })
+TESTS=$(make -s -C testbed list-stability-tests | xargs echo|sed 's/ /|/g')
+
+TESTS="(${TESTS//|/ })"
 MATRIX="{\"include\":["
 curr=""
 for i in "${!TESTS[@]}"; do
@@ -8,4 +10,4 @@ for i in "${!TESTS[@]}"; do
     MATRIX+="{\"test\":\"$curr\"},"
 done
 MATRIX+="]}"
-echo "stabilitytest_matrix=$MATRIX" >> $GITHUB_OUTPUT
+echo "stabilitytest_matrix=$MATRIX" >> "$GITHUB_OUTPUT"

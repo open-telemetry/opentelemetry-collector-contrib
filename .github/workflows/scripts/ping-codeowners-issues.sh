@@ -31,7 +31,7 @@ if [[ -z "${OWNERS}" ]]; then
     exit 0
 fi
 
-if [[ "${OWNERS}" =~ "${SENDER}" ]]; then
+if [[ "${OWNERS}" =~ ${SENDER} ]]; then
     echo "Label applied by code owner ${SENDER}"
     exit 0
 fi

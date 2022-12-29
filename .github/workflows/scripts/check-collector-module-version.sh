@@ -19,6 +19,7 @@
 # as a dependency.
 #
 
+# shellcheck source=./internal/buildscripts/modules
 source ./internal/buildscripts/modules
 
 set -eu -o pipefail
@@ -29,8 +30,8 @@ get_collector_version() {
    main_mod_file="$2"
 
    if grep -q "$collector_module" "$main_mod_file"; then
-      grep "$collector_module" "$main_mod_file" | (read mod version rest;
-         echo $version)
+      grep "$collector_module" "$main_mod_file" | (read -r mod version rest;
+         echo "$version")
    else
       echo "Error: failed to retrieve the \"$collector_module\" version from \"$main_mod_file\"."
       exit 1
@@ -79,7 +80,8 @@ MAIN_MOD_FILE="./go.mod"
 BETA_MODULE="go.opentelemetry.io/collector "
 BETA_MOD_VERSION=$(get_collector_version "$BETA_MODULE" "$MAIN_MOD_FILE")
 check_collector_versions_correct "$BETA_MODULE" "$BETA_MOD_VERSION"
-for mod in ${beta_modules[@]}; do
+# shellcheck disable=SC2154
+for mod in "${beta_modules[@]}"; do
    check_collector_versions_correct "$mod" "$BETA_MOD_VERSION"
 done
 
@@ -87,7 +89,8 @@ done
 RC_MODULE="go.opentelemetry.io/collector/pdata "
 RC_MOD_VERSION=$(get_collector_version "$RC_MODULE" "$MAIN_MOD_FILE")
 check_collector_versions_correct "$RC_MODULE" "$RC_MOD_VERSION"
-for mod in ${rc_modules[@]}; do
+# shellcheck disable=SC2154
+for mod in "${rc_modules[@]}"; do
    check_collector_versions_correct "$mod" "$RC_MOD_VERSION"
 done
 

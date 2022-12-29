@@ -1,5 +1,7 @@
-TESTS="$(make -s -C testbed list-tests | xargs echo|sed 's/ /|/g')"
-TESTS=(${TESTS//|/ })
+#!/usr/bin/env bash
+
+TESTS=$(make -s -C testbed list-tests | xargs echo|sed 's/ /|/g')
+TESTS="(${TESTS//|/ })"
 MATRIX="{\"include\":["
 curr=""
 for i in "${!TESTS[@]}"; do
@@ -15,4 +17,4 @@ else
 fi
 done
 MATRIX+=",{\"test\":\"$curr\"}]}"
-echo "loadtest_matrix=$MATRIX" >> $GITHUB_OUTPUT
+echo "loadtest_matrix=$MATRIX" >> "$GITHUB_OUTPUT"
