@@ -17,6 +17,7 @@ package opampextension
 import (
 	"errors"
 
+	"github.com/oklog/ulid/v2"
 	"go.opentelemetry.io/collector/config"
 )
 
@@ -34,9 +35,9 @@ type Config struct {
 
 // Validate checks if the extension configuration is valid
 func (cfg *Config) Validate() error {
-	// no need to validate less than 0 case for uint64
-	if len(cfg.InstanceUID) > 26 {
-		return errors.New("instance_uid has more than 26 characters")
+	_, err := ulid.ParseStrict(cfg.InstanceUID)
+	if err != nil {
+		return errors.New("opamp instance_uid is invalid")
 	}
 	return nil
 }

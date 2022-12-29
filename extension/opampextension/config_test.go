@@ -52,5 +52,5 @@ func TestConfigValidate(t *testing.T) {
 	cfg := &Config{InstanceUID: "01BX5ZZKBKACTAV9WEVGEMMVRZFAIL"}
 	err := cfg.Validate()
 	require.Error(t, err)
-	assert.Equal(t, "instance_uid has more than 26 characters", err.Error())
+	assert.Equal(t, "opamp instance_uid is invalid", err.Error())
 }

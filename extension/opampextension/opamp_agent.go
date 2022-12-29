@@ -107,11 +107,11 @@ func (o *opampAgent) Start(_ context.Context, _ component.Host) error {
 	return nil
 }
 
-func (o *opampAgent) Shutdown(_ context.Context) error {
+func (o *opampAgent) Shutdown(ctx context.Context) error {
 	o.logger.Debug("OpAMP agent shutting down...")
 	if o.opampClient != nil {
 		o.logger.Debug("Stopping OpAMP client...")
-		err := o.opampClient.Stop(context.Background())
+		err := o.opampClient.Stop(ctx)
 		return err
 	}
 	return nil
