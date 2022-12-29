@@ -86,7 +86,7 @@ func TestScanner(t *testing.T) {
 			scanner := NewPositionalScanner(reader, tc.maxSize, tc.startOffset, splitter)
 
 			for i, p := 0, 0; scanner.Scan(); i++ {
-				require.NoError(t, scanner.getError())
+				require.NoError(t, scanner.Err())
 
 				token := scanner.Bytes()
 				require.Equal(t, tc.expected[i], token)
