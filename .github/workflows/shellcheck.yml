@@ -13,3 +13,4 @@ jobs:
         uses: sudo-bot/action-shellcheck@latest
         with:
           cli-args: ".github/workflows/scripts/*.sh internal/buildscripts/*.sh"
+          
