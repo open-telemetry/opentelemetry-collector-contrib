@@ -29,10 +29,10 @@ func logk8sClusterSuccessMessage(logger *zap.Logger) plog.Logs {
 
 	resourceAttrs := rl.Resource().Attributes()
 	resourceAttrs.EnsureCapacity(1)
-	resourceAttrs.UpsertString(semconv.AttributeK8SClusterName, "unknown")
+	resourceAttrs.PutStr(semconv.AttributeK8SClusterName, "unknown")
 
 	// A static message to show that the middleware agent is running
-	lr.Body().SetStringVal("Middleware Agent installed successfully")
+	lr.Body().SetStr("Middleware Agent installed successfully")
 
 	// Log added as type "info"
 	lr.SetSeverityNumber(9)
