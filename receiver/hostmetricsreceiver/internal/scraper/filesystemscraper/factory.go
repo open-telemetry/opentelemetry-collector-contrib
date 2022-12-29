@@ -16,6 +16,7 @@ package filesystemscraper // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
+	"os"
 
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
@@ -54,6 +55,11 @@ func (f *Factory) CreateMetricsScraper(
 	config internal.Config,
 ) (scraperhelper.Scraper, error) {
 	cfg := config.(*Config)
+
+	if _, err := os.Stat("/.dockerenv"); cfg.RootPath == "" && err != nil {
+		settings.Logger.Warn("No root config set when running in docker environment, will report container filesystem stats")
+	}
+
 	s, err := newFileSystemScraper(ctx, settings, cfg)
 	if err != nil {
 		return nil, err
