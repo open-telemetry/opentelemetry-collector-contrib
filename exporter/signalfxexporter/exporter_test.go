@@ -425,7 +425,7 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 				cfg.HTTPClientSettings.Headers[k] = configopaque.String(v)
 			}
 			cfg.HTTPClientSettings.Headers["test_header_"] = configopaque.String(tt.name)
-			cfg.AccessToken = fromHeaders
+			cfg.AccessToken = configopaque.String(fromHeaders)
 			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
 			sfxExp, err := NewFactory().CreateMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
 			require.NoError(t, err)
@@ -682,7 +682,7 @@ func TestConsumeLogsDataWithAccessTokenPassthrough(t *testing.T) {
 			cfg.APIURL = server.URL
 			cfg.Headers = make(map[string]configopaque.String)
 			cfg.Headers["test_header_"] = configopaque.String(tt.name)
-			cfg.AccessToken = fromHeaders
+			cfg.AccessToken = configopaque.String(fromHeaders)
 			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
 			sfxExp, err := NewFactory().CreateLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
 			require.NoError(t, err)
