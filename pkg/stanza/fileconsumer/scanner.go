@@ -22,6 +22,8 @@ import (
 	stanzaerrors "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
 )
 
+const defaultBufSize = 16 * 1024
+
 // PositionalScanner is a scanner that maintains position
 type PositionalScanner struct {
 	pos int64
@@ -35,11 +37,22 @@ func NewPositionalScanner(r io.Reader, maxLogSize int, startOffset int64, splitF
 		Scanner: bufio.NewScanner(r),
 	}
 
-	buf := make([]byte, 0, 16384)
+	bufSize := defaultBufSize
+	if maxLogSize < bufSize {
+		bufSize = maxLogSize
+	}
+
+	buf := make([]byte, 0, bufSize)
 	ps.Scanner.Buffer(buf, maxLogSize)
 
 	scanFunc := func(data []byte, atEOF bool) (advance int, token []byte, err error) {
 		advance, token, err = splitFunc(data, atEOF)
+		if (advance == 0 && token == nil && err == nil) && len(data) >= maxLogSize {
+			// reference: https://pkg.go.dev/bufio#SplitFunc
+			// splitFunc returns (0, nil, nil) to signal the Scanner to read more data but the buffer is full.
+			// Truncate the log entry.
+			advance, token, err = len(data), data, nil
+		}
 		ps.pos += int64(advance)
 		return
 	}

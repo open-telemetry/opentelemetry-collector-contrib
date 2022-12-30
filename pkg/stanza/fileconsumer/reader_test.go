@@ -98,6 +98,32 @@ func TestTokenization(t *testing.T) {
 	}
 }
 
+func TestTokenizationTooLong(t *testing.T) {
+	fileContent := []byte("aaaaaaaaaaaaaaaaaaaaaa\naaa\n")
+	expected := [][]byte{
+		[]byte("aaaaaaaaaa"),
+		[]byte("aaaaaaaaaa"),
+		[]byte("aa"),
+		[]byte("aaa"),
+	}
+
+	f, emitChan := testReaderFactory(t)
+	f.readerConfig.maxLogSize = 10
+
+	temp := openTemp(t, t.TempDir())
+	_, err := temp.Write(fileContent)
+	require.NoError(t, err)
+
+	r, err := f.newReaderBuilder().withFile(temp).build()
+	require.NoError(t, err)
+
+	r.ReadToEnd(context.Background())
+
+	for _, expected := range expected {
+		require.Equal(t, expected, readToken(t, emitChan))
+	}
+}
+
 func testReaderFactory(t *testing.T) (*readerFactory, chan *emitParams) {
 	emitChan := make(chan *emitParams, 100)
 	return &readerFactory{
