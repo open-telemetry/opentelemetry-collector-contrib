@@ -1,5 +1,0 @@
-change_type: enhancement
-component: googlecloudspannerreceiver
-note: Support for p50, p95 and p99 percentile latencies for queries and transactions.
-issues: [16429]
-subtext:

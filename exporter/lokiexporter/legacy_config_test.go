@@ -24,6 +24,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -44,7 +45,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(typeStr, "allsettings"),
 			expected: &Config{
 				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Headers: map[string]string{
+					Headers: map[string]configopaque.String{
 						"X-Custom-Header": "loki_rocks",
 					},
 					Endpoint: "https://loki:3100/loki/api/v1/push",
@@ -92,7 +93,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(typeStr, "json"),
 			expected: &Config{
 				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Headers:  map[string]string{},
+					Headers:  map[string]configopaque.String{},
 					Endpoint: "https://loki:3100/loki/api/v1/push",
 					TLSSetting: configtls.TLSClientSetting{
 						TLSSetting: configtls.TLSSetting{

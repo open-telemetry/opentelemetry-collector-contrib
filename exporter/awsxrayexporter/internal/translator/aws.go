@@ -25,7 +25,7 @@ import (
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
 
-func makeAws(attributes map[string]pcommon.Value, resource pcommon.Resource) (map[string]pcommon.Value, *awsxray.AWSData) {
+func makeAws(attributes map[string]pcommon.Value, resource pcommon.Resource, logGroupNames []string) (map[string]pcommon.Value, *awsxray.AWSData) {
 	var (
 		cloud        string
 		service      string
@@ -219,11 +219,22 @@ func makeAws(attributes map[string]pcommon.Value, resource pcommon.Resource) (ma
 	}
 
 	// Since we must couple log group ARNs and Log Group Names in the same CWLogs object, we first try to derive the
-	// names from the ARN, then fall back to just recording the names
-	if logGroupArns != (pcommon.Slice{}) && logGroupArns.Len() > 0 {
+	// names from the ARN, then fall back to recording the names, if they do not exist in the resource
+	// then pull from them from config.
+	switch {
+	case logGroupArns != (pcommon.Slice{}) && logGroupArns.Len() > 0:
 		cwl = getLogGroupMetadata(logGroupArns, true)
-	} else if logGroups != (pcommon.Slice{}) && logGroups.Len() > 0 {
+	case logGroups != (pcommon.Slice{}) && logGroups.Len() > 0:
 		cwl = getLogGroupMetadata(logGroups, false)
+	case logGroupNames != nil:
+		var configSlice = pcommon.NewSlice()
+		configSlice.EnsureCapacity(len(logGroupNames))
+
+		for _, s := range logGroupNames {
+			configSlice.AppendEmpty().SetStr(s)
+		}
+
+		cwl = getLogGroupMetadata(configSlice, false)
 	}
 
 	if sdkName != "" && sdkLanguage != "" {

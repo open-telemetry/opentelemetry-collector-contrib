@@ -128,6 +128,9 @@ func (r *statsdReceiver) Start(ctx context.Context, host component.Host) error {
 
 // Shutdown stops the StatsD receiver.
 func (r *statsdReceiver) Shutdown(context.Context) error {
+	if r.cancel == nil {
+		return nil
+	}
 	err := r.server.Close()
 	r.cancel()
 	return err

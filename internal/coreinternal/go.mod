@@ -3,10 +3,11 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/corein
 go 1.18
 
 require (
+	github.com/cespare/xxhash/v2 v2.1.2
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.67.1-0.20221213235724-812f462b3182
-	go.opentelemetry.io/collector/pdata v1.0.0-rc1.0.20221213235724-812f462b3182
-	go.opentelemetry.io/collector/semconv v0.67.1-0.20221213235724-812f462b3182
+	go.opentelemetry.io/collector v0.68.0
+	go.opentelemetry.io/collector/pdata v1.0.0-rc2
+	go.opentelemetry.io/collector/semconv v0.68.0
 	go.uber.org/zap v1.24.0
 )
 
