@@ -65,7 +65,6 @@ type dataPoints interface {
 type deltaMetricMetadata struct {
 	adjustToDelta bool
 	metricName    string
-	timestampMs   int64
 	namespace     string
 	logGroup      string
 	logStream     string
@@ -209,7 +208,6 @@ func getDataPoints(pmd pmetric.Metric, metadata cWMetricMetadata, logger *zap.Lo
 	adjusterMetadata := deltaMetricMetadata{
 		false,
 		pmd.Name(),
-		metadata.timestampMs,
 		metadata.namespace,
 		metadata.logGroup,
 		metadata.logStream,
