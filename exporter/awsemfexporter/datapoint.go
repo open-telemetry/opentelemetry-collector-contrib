@@ -17,10 +17,11 @@ package awsemfexporter // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"time"
 
-	aws "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
+
+	aws "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics"
 )
 
 var deltaMetricCalculator = aws.NewFloat64DeltaCalculator()
