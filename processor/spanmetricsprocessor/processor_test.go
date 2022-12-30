@@ -137,69 +137,6 @@ func TestProcessorStart(t *testing.T) {
 	}
 }
 
-func TestProcessorShutdown(t *testing.T) {
-	// Prepare
-	exporters := map[component.DataType]map[component.ID]component.Component{}
-	mhost := &mocks.Host{}
-	mhost.On("GetExporters").Return(exporters)
-
-	ctx := context.Background()
-	logger := zap.NewNop()
-
-	var wg sync.WaitGroup
-	mexp := &mocks.MetricsExporter{}
-	mexp.On("ConsumeMetrics", mock.Anything, mock.MatchedBy(func(input pmetric.Metrics) bool {
-		wg.Done()
-		return true
-	})).Return(nil)
-
-	tcon := &mocks.TracesConsumer{}
-	tcon.On("ConsumeTraces", mock.Anything, mock.Anything).Return(nil)
-
-	mockClock := clock.NewMock(time.Now())
-	ticker := mockClock.NewTicker(time.Nanosecond)
-
-	// Test
-	p := newProcessorImp(mexp, tcon, nil, cumulative, logger, ticker)
-	defer func() { sdErr := p.Shutdown(ctx); require.NoError(t, sdErr) }()
-
-	// Should be safe to call Shutdown without Start.
-	err := p.Shutdown(ctx)
-	require.NoError(t, err)
-
-	// Should be no calls of ConsumeMetrics because no goroutine started for emitting metrics.
-	mexp.AssertNumberOfCalls(t, "ConsumeMetrics", 0)
-
-	err = p.Start(ctx, mhost)
-	defer func() { sdErr := p.Shutdown(ctx); require.NoError(t, sdErr) }()
-	require.NoError(t, err)
-
-	// Allow goroutines time to execute any actions. Given the timer hasn't ticked, can't use the WaitGroup.
-	time.Sleep(time.Millisecond)
-
-	// Still no metrics emitted because ticker hasn't ticked.
-	mexp.AssertNumberOfCalls(t, "ConsumeMetrics", 0)
-
-	// Trigger flush.
-	wg.Add(1)
-	mockClock.Add(time.Nanosecond)
-	wg.Wait()
-
-	mexp.AssertNumberOfCalls(t, "ConsumeMetrics", 1)
-
-	err = p.Shutdown(ctx)
-	require.NoError(t, err)
-
-	// Allow goroutines time to execute any actions and end their lifecycle given the timer is now stopped.
-	time.Sleep(time.Millisecond)
-
-	// Trigger flush to check ConsumeMetrics is not invoked again.
-	mockClock.Add(time.Nanosecond)
-
-	// No new metrics emitted even after time elapsed because ticker should be stopped and goroutine exited.
-	mexp.AssertNumberOfCalls(t, "ConsumeMetrics", 1)
-}
-
 func TestProcessorConcurrentShutdown(t *testing.T) {
 	// Prepare
 	exporters := map[component.DataType]map[component.ID]component.Component{}
@@ -231,7 +168,7 @@ func TestProcessorConcurrentShutdown(t *testing.T) {
 	wg.Add(concurrency)
 	for i := 0; i < concurrency; i++ {
 		go func() {
-			err = p.Shutdown(ctx)
+			err := p.Shutdown(ctx)
 			require.NoError(t, err)
 			wg.Done()
 		}()
