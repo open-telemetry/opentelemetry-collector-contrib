@@ -190,11 +190,11 @@ func TestProcessorShutdown(t *testing.T) {
 	err = p.Shutdown(ctx)
 	require.NoError(t, err)
 
-	// Trigger flush.
-	mockClock.Add(time.Nanosecond)
-
-	// Allow goroutines time to execute any actions, given the timer should be stopped.
+	// Allow goroutines time to execute any actions and end their lifecycle given the timer is now stopped.
 	time.Sleep(time.Millisecond)
+
+	// Trigger flush to check ConsumeMetrics is not invoked again.
+	mockClock.Add(time.Nanosecond)
 
 	// No new metrics emitted even after time elapsed because ticker should be stopped and goroutine exited.
 	mexp.AssertNumberOfCalls(t, "ConsumeMetrics", 1)
