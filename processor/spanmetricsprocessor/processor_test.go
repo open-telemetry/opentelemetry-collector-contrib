@@ -1081,8 +1081,14 @@ func TestConsumeTracesEvictedCacheKey(t *testing.T) {
 		err = p.ConsumeTraces(ctx, traces)
 		require.NoError(t, err)
 
+		// Allow time for metrics aggregation to complete.
+		time.Sleep(time.Millisecond)
+
 		// Trigger flush.
 		mockClock.Add(time.Nanosecond)
+
+		// Allow time for metrics flush to complete.
+		time.Sleep(time.Millisecond)
 	}
 
 	wg.Wait()
