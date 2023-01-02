@@ -328,10 +328,9 @@ func (p *processorImp) collectLatencyMetrics(ilm pmetric.ScopeMetrics) {
 	dps.EnsureCapacity(len(p.histograms))
 	timestamp := pcommon.NewTimestampFromTime(time.Now())
 	for key, hist := range p.histograms {
-		// If the key is not in the cache, simply don't publish it because it's likely
-		// the metric has expired (or the cache size is too small).
 		dimensions, ok := p.metricKeyToDimensions.Get(key)
 		if !ok {
+			p.logger.Warn("Metric key not found in cache; consider increasing the dimensions_cache_size", zap.String("key", string(key)))
 			continue
 		}
 		dpLatency := dps.AppendEmpty()
@@ -357,10 +356,9 @@ func (p *processorImp) collectCallMetrics(ilm pmetric.ScopeMetrics) {
 	dps.EnsureCapacity(len(p.histograms))
 	timestamp := pcommon.NewTimestampFromTime(time.Now())
 	for key, hist := range p.histograms {
-		// If the key is not in the cache, simply don't publish it because it's likely
-		// the metric has expired (or the cache size is too small).
 		dimensions, ok := p.metricKeyToDimensions.Get(key)
 		if !ok {
+			p.logger.Warn("Metric key not found in cache; consider increasing the dimensions_cache_size", zap.String("key", string(key)))
 			continue
 		}
 
