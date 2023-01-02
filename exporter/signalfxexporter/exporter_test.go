@@ -35,6 +35,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -83,27 +85,25 @@ func TestNew(t *testing.T) {
 		{
 			name: "successfully create exporter",
 			config: &Config{
-				AccessToken:     "someToken",
-				Realm:           "xyz",
-				TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: 1 * time.Second},
-				Headers:         nil,
+				AccessToken:        "someToken",
+				Realm:              "xyz",
+				HTTPClientSettings: confighttp.HTTPClientSettings{Timeout: 1 * time.Second},
 			},
 		},
 		{
 			name: "create exporter with host metadata syncer",
 			config: &Config{
-				AccessToken:      "someToken",
-				Realm:            "xyz",
-				TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: 1 * time.Second},
-				Headers:          nil,
-				SyncHostMetadata: true,
+				AccessToken:        "someToken",
+				Realm:              "xyz",
+				HTTPClientSettings: confighttp.HTTPClientSettings{Timeout: 1 * time.Second},
+				SyncHostMetadata:   true,
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := newSignalFxExporter(tt.config, zap.NewNop())
+			got, err := newSignalFxExporter(tt.config, exportertest.NewNopCreateSettings())
 			if tt.wantErr {
 				require.Error(t, err)
 				if tt.wantErrMessage != "" {
@@ -197,16 +197,23 @@ func TestConsumeMetrics(t *testing.T) {
 			serverURL, err := url.Parse(server.URL)
 			assert.NoError(t, err)
 
+			cfg := &Config{
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Timeout: 1 * time.Second,
+					Headers: map[string]configopaque.String{"test_header_": "test"},
+				},
+			}
+
+			client, err := cfg.ToClient(componenttest.NewNopHost(), exportertest.NewNopCreateSettings().TelemetrySettings)
+			require.NoError(t, err)
+
 			c, err := translation.NewMetricsConverter(zap.NewNop(), nil, nil, nil, "")
 			require.NoError(t, err)
 			require.NotNil(t, c)
 			dpClient := &sfxDPClient{
 				sfxClientBase: sfxClientBase{
 					ingestURL: serverURL,
-					headers:   map[string]string{"test_header_": "test"},
-					client: &http.Client{
-						Timeout: 1 * time.Second,
-					},
+					client:    client,
 					zippers: sync.Pool{New: func() interface{} {
 						return gzip.NewWriter(nil)
 					}},
@@ -413,11 +420,11 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.IngestURL = server.URL
 			cfg.APIURL = server.URL
-			cfg.Headers = make(map[string]string)
+			cfg.HTTPClientSettings.Headers = make(map[string]configopaque.String)
 			for k, v := range tt.additionalHeaders {
-				cfg.Headers[k] = v
+				cfg.HTTPClientSettings.Headers[k] = configopaque.String(v)
 			}
-			cfg.Headers["test_header_"] = tt.name
+			cfg.HTTPClientSettings.Headers["test_header_"] = configopaque.String(tt.name)
 			cfg.AccessToken = fromHeaders
 			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
 			sfxExp, err := NewFactory().CreateMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
@@ -443,31 +450,32 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 }
 
 func TestNewEventExporter(t *testing.T) {
-	got, err := newEventExporter(nil, zap.NewNop())
+	got, err := newEventExporter(nil, exportertest.NewNopCreateSettings())
 	assert.EqualError(t, err, "nil config")
 	assert.Nil(t, got)
 
 	cfg := &Config{
-		AccessToken:     "someToken",
-		IngestURL:       "asdf://:%",
-		TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: 1 * time.Second},
-		Headers:         nil,
+		AccessToken:        "someToken",
+		IngestURL:          "asdf://:%",
+		HTTPClientSettings: confighttp.HTTPClientSettings{Timeout: 1 * time.Second},
 	}
 
-	got, err = newEventExporter(cfg, zap.NewNop())
+	got, err = newEventExporter(cfg, exportertest.NewNopCreateSettings())
 	assert.NotNil(t, err)
 	assert.Nil(t, got)
 
 	cfg = &Config{
-		AccessToken:     "someToken",
-		Realm:           "xyz",
-		TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: 1 * time.Second},
-		Headers:         nil,
+		AccessToken:        "someToken",
+		Realm:              "xyz",
+		HTTPClientSettings: confighttp.HTTPClientSettings{Timeout: 1 * time.Second},
 	}
 
-	got, err = newEventExporter(cfg, zap.NewNop())
+	got, err = newEventExporter(cfg, exportertest.NewNopCreateSettings())
 	assert.NoError(t, err)
 	require.NotNil(t, got)
+
+	err = got.startLogs(context.Background(), componenttest.NewNopHost())
+	assert.NoError(t, err)
 
 	// This is expected to fail.
 	ld := makeSampleResourceLogs()
@@ -575,14 +583,21 @@ func TestConsumeEventData(t *testing.T) {
 			serverURL, err := url.Parse(server.URL)
 			assert.NoError(t, err)
 
+			cfg := &Config{
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Timeout: 1 * time.Second,
+					Headers: map[string]configopaque.String{"test_header_": "test"},
+				},
+			}
+
+			client, err := cfg.ToClient(componenttest.NewNopHost(), exportertest.NewNopCreateSettings().TelemetrySettings)
+			require.NoError(t, err)
+
 			eventClient := &sfxEventClient{
 				sfxClientBase: sfxClientBase{
 					ingestURL: serverURL,
-					headers:   map[string]string{"test_header_": "test"},
-					client: &http.Client{
-						Timeout: 1 * time.Second,
-					},
-					zippers: newGzipPool(),
+					client:    client,
+					zippers:   newGzipPool(),
 				},
 				logger: zap.NewNop(),
 			}
@@ -665,8 +680,8 @@ func TestConsumeLogsDataWithAccessTokenPassthrough(t *testing.T) {
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.IngestURL = server.URL
 			cfg.APIURL = server.URL
-			cfg.Headers = make(map[string]string)
-			cfg.Headers["test_header_"] = tt.name
+			cfg.Headers = make(map[string]configopaque.String)
+			cfg.Headers["test_header_"] = configopaque.String(tt.name)
 			cfg.AccessToken = fromHeaders
 			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
 			sfxExp, err := NewFactory().CreateLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
@@ -1109,7 +1124,9 @@ func TestTLSExporterInit(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sfx, err := newSignalFxExporter(tt.config, zap.NewNop())
+			sfx, err := newSignalFxExporter(tt.config, exportertest.NewNopCreateSettings())
+			assert.NoError(t, err)
+			err = sfx.start(context.Background(), componenttest.NewNopHost())
 			if tt.wantErr {
 				require.Error(t, err)
 				if tt.wantErrMessage != "" {
@@ -1177,7 +1194,9 @@ func TestTLSIngestConnection(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sfx, err := newSignalFxExporter(tt.config, zap.NewNop())
+			sfx, err := newSignalFxExporter(tt.config, exportertest.NewNopCreateSettings())
+			assert.NoError(t, err)
+			err = sfx.start(context.Background(), componenttest.NewNopHost())
 			assert.NoError(t, err)
 
 			_, err = sfx.pushMetricsData(context.Background(), metricsPayload)
