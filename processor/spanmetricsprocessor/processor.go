@@ -85,7 +85,7 @@ type processorImp struct {
 	metricKeyToDimensions *cache.Cache[metricKey, pcommon.Map]
 
 	ticker  *clock.Ticker
-	done    chan bool
+	done    chan struct{}
 	started bool
 
 	shutdownOnce sync.Once
@@ -153,7 +153,7 @@ func newProcessor(logger *zap.Logger, config component.Config, nextConsumer cons
 		keyBuf:                bytes.NewBuffer(make([]byte, 0, 1024)),
 		metricKeyToDimensions: metricKeyToDimensionsCache,
 		ticker:                ticker,
-		done:                  make(chan bool),
+		done:                  make(chan struct{}),
 	}, nil
 }
 
@@ -254,7 +254,7 @@ func (p *processorImp) Shutdown(context.Context) error {
 		if p.started {
 			p.logger.Info("Stopping ticker")
 			p.ticker.Stop()
-			p.done <- true
+			p.done <- struct{}{}
 			p.started = false
 		}
 	})

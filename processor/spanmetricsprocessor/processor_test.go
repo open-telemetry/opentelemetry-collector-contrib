@@ -480,7 +480,7 @@ func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, de
 		keyBuf:                new(bytes.Buffer),
 		metricKeyToDimensions: metricKeyToDimensions,
 		ticker:                ticker,
-		done:                  make(chan bool),
+		done:                  make(chan struct{}),
 	}
 }
 
