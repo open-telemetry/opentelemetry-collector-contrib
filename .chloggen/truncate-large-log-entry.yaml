@@ -5,7 +5,7 @@ change_type: bug_fix
 component: filelogreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: truncate log entry if it is larger than max_log_size
+note: Truncate log entry if it is longer than `max_log_size`
 
 # One or more tracking issues related to the change
 issues: [16487]
