@@ -33,7 +33,7 @@ func TestWriteMetrics(t *testing.T) {
 	metricslice.CopyTo(metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics())
 
 	actualFile := filepath.Join(t.TempDir(), "metrics.json")
-	require.NoError(t, WriteMetrics(actualFile, metrics))
+	require.NoError(t, writeMetrics(actualFile, metrics))
 
 	actualBytes, err := os.ReadFile(actualFile)
 	require.NoError(t, err)
@@ -67,7 +67,7 @@ func TestRoundTrip(t *testing.T) {
 	metricslice.CopyTo(expectedMetrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics())
 
 	tempDir := filepath.Join(t.TempDir(), "metrics.json")
-	require.NoError(t, WriteMetrics(tempDir, expectedMetrics))
+	require.NoError(t, writeMetrics(tempDir, expectedMetrics))
 
 	actualMetrics, err := ReadMetrics(tempDir)
 	require.NoError(t, err)
