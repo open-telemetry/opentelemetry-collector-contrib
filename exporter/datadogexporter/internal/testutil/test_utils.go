@@ -45,7 +45,7 @@ type DatadogServer struct {
 	MetadataChan chan []byte
 }
 
-/* #nosec G101 */
+/* #nosec G101 -- This is a false positive, these are API endpoints rather than credentials */
 const (
 	ValidateAPIKeyEndpoint = "/api/v1/validate"
 	MetricV1Endpoint       = "/api/v1/series"

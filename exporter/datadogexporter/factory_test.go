@@ -393,8 +393,10 @@ func TestCreateAPIExporterFailOnInvalidKey_Zorkian(t *testing.T) {
 	server := testutil.DatadogServerMock(testutil.ValidateAPIKeyEndpointInvalid)
 	defer server.Close()
 
-	err := enableZorkianMetricExport()
-	require.NoError(t, err)
+	if isMetricExportV2Enabled() {
+		require.NoError(t, enableZorkianMetricExport())
+		defer require.NoError(t, enableNativeMetricExport())
+	}
 
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
@@ -471,8 +473,10 @@ func TestCreateAPIExporterFailOnInvalidKey(t *testing.T) {
 	server := testutil.DatadogServerMock(testutil.ValidateAPIKeyEndpointInvalid)
 	defer server.Close()
 
-	err := enableNativeMetricExport()
-	require.NoError(t, err)
+	if !isMetricExportV2Enabled() {
+		require.NoError(t, enableNativeMetricExport())
+		defer require.NoError(t, enableZorkianMetricExport())
+	}
 
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)

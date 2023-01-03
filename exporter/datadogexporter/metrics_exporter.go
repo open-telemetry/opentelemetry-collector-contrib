@@ -227,7 +227,7 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metr
 				err,
 				exp.retrier.DoWithRetries(ctx, func(context.Context) error {
 					ctx = clientutil.GetRequestContext(ctx, exp.cfg.API.Key)
-					_, _, merr := exp.metricsAPI.SubmitMetrics(ctx, datadogV2.MetricPayload{Series: ms}, *datadogV2.NewSubmitMetricsOptionalParameters())
+					_, _, merr := exp.metricsAPI.SubmitMetrics(ctx, datadogV2.MetricPayload{Series: ms})
 					return merr
 				}),
 			)
