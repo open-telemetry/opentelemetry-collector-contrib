@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/antonmedv/expr v1.9.0
-	github.com/bmatcuk/doublestar/v4 v4.4.0
+	github.com/bmatcuk/doublestar/v4 v4.5.0
 	github.com/influxdata/go-syslog/v3 v3.0.1-0.20210608084020-ac565dc76ba6
 	github.com/jpillora/backoff v1.0.0
 	github.com/json-iterator/go v1.1.12
