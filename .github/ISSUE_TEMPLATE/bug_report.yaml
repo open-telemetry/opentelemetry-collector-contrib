@@ -133,6 +133,7 @@ body:
       - processor/schema
       - processor/servicegraph
       - processor/span
+      - processor/spanbatchsampler
       - processor/spanmetrics
       - processor/tailsampling
       - processor/transform
