@@ -21,13 +21,14 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 )
 
 // Config defines configuration for the Instana exporter
 type Config struct {
 	Endpoint string `mapstructure:"endpoint"`
 
-	AgentKey string `mapstructure:"agent_key"`
+	AgentKey configopaque.String `mapstructure:"agent_key"`
 
 	confighttp.HTTPClientSettings `mapstructure:",squash"`
 }
