@@ -75,7 +75,7 @@ func newInfluxHTTPWriter(logger common.Logger, config *Config, host component.Ho
 		queryValues.Set("bucket", config.Bucket)
 
 		if config.Token != "" {
-			config.HTTPClientSettings.Headers["Authorization"] = configopaque.String("Token " + config.Token)
+			config.HTTPClientSettings.Headers["Authorization"] = "Token " + config.Token
 		}
 	}
 
