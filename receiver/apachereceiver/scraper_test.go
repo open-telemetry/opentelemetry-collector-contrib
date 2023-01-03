@@ -42,8 +42,6 @@ func TestScraper(t *testing.T) {
 	cfg.Endpoint = fmt.Sprintf("%s%s", apacheMock.URL, "/server-status?auto")
 	require.NoError(t, component.ValidateConfig(cfg))
 
-	// Let this test check if it works with the feature enabled and the integration test will test the feature disabled.
-
 	serverName, port, err := parseResourseAttributes(cfg.Endpoint)
 	require.NoError(t, err)
 	scraper := newApacheScraper(receivertest.NewNopCreateSettings(), cfg, serverName, port)
