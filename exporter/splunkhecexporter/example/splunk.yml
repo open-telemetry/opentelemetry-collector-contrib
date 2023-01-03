@@ -4,8 +4,8 @@ splunk:
       directory: /opt/splunk/etc/apps/search/local
       content:
         metrics:
-          coldPath: ${env:SPLUNK_DB}/metrics/colddb
+          coldPath: $SPLUNK_DB/metrics/colddb
           datatype: metric
-          homePath: ${env:SPLUNK_DB}/metrics/db
+          homePath: $SPLUNK_DB/metrics/db
           maxTotalDataSizeMB: 512000
-          thawedPath: ${env:SPLUNK_DB}/metrics/thaweddb
+          thawedPath: $SPLUNK_DB/metrics/thaweddb
