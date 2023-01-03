@@ -27,7 +27,7 @@ import (
 var (
 	ErrTooManyItems = errors.New("too many items")
 	// NeedToFindAttributes the list of attributes need to matches, the higher the front, the higher the priority.
-	NeedToFindAttributes = []string{semconv.AttributeNetSockPeerAddr, semconv.AttributeNetPeerName, semconv.AttributeRPCService, semconv.AttributeHTTPURL, semconv.AttributeHTTPTarget}
+	NeedToFindAttributes = []string{semconv.AttributeDBName, semconv.AttributeNetSockPeerAddr, semconv.AttributeNetPeerName, semconv.AttributeRPCService, semconv.AttributeHTTPURL, semconv.AttributeHTTPTarget}
 )
 
 type Callback func(e *Edge)
