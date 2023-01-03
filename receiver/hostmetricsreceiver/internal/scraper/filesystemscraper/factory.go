@@ -16,6 +16,7 @@ package filesystemscraper // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
+	"errors"
 	"os"
 
 	"go.opentelemetry.io/collector/receiver"
@@ -56,8 +57,18 @@ func (f *Factory) CreateMetricsScraper(
 ) (scraperhelper.Scraper, error) {
 	cfg := config.(*Config)
 
-	if _, err := os.Stat("/.dockerenv"); cfg.RootPath == "" && err != nil {
-		settings.Logger.Warn("No `root_path` config set when running in docker environment, will report container filesystem stats. See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/hostmetricsreceiver#collecting-host-metrics-from-inside-a-container-linux-only")
+	if cfg.RootPath == "" {
+		for _, p := range []string{
+			"/.dockerenv",        // Mounted by dockerd when starting a container by default
+			"/run/.containerenv", // Mounted by podman as described here: https://github.com/containers/podman/blob/ecbb52cb478309cfd59cc061f082702b69f0f4b7/docs/source/markdown/podman-run.1.md.in#L31
+		} {
+			if _, err := os.Stat(p); !errors.Is(err, os.ErrNotExist) {
+				settings.Logger.Warn(
+					"No `root_path` config set when running in docker environment, will report container filesystem stats." +
+						" See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/hostmetricsreceiver#collecting-host-metrics-from-inside-a-container-linux-only")
+				break
+			}
+		}
 	}
 
 	s, err := newFileSystemScraper(ctx, settings, cfg)
