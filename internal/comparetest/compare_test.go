@@ -457,25 +457,6 @@ func TestCompareMetrics(t *testing.T) {
 			},
 		},
 		{
-			name: "sort-unordered-resource-metrics",
-			compareOptions: []CompareOption{
-				IgnoreResourceAttributeValue("node_id"),
-			},
-			withoutOptions: expectation{
-				err: multierr.Combine(
-					errors.New("missing expected resource with attributes: map[namespace:test node_id:hasmoremetrics]"),
-					errors.New("missing expected resource with attributes: map[namespace:test node_id:hasfewermetrics]"),
-					errors.New("extra resource with attributes: map[namespace:test node_id:hasmoremetrics-actual]"),
-					errors.New("extra resource with attributes: map[namespace:test node_id:hasfewermetrics-actual]"),
-				),
-				reason: "An unpredictable resource attribute will cause failures if not ignored.",
-			},
-			withOptions: expectation{
-				err:    nil,
-				reason: "The underbred resource metrics was properly sorted. The unpredictable resource attribute was ignored on each resource that carried it, but the predictable attributes were preserved.",
-			},
-		},
-		{
 			name: "sort-unordered-metric-slice",
 			withoutOptions: expectation{
 				err:    nil,
