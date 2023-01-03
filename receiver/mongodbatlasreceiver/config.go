@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
@@ -35,7 +36,7 @@ var _ component.Config = (*Config)(nil)
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	PublicKey                               string                       `mapstructure:"public_key"`
-	PrivateKey                              string                       `mapstructure:"private_key"`
+	PrivateKey                              configopaque.String          `mapstructure:"private_key"`
 	Granularity                             string                       `mapstructure:"granularity"`
 	Metrics                                 metadata.MetricsSettings     `mapstructure:"metrics"`
 	Alerts                                  AlertConfig                  `mapstructure:"alerts"`
@@ -47,7 +48,7 @@ type Config struct {
 type AlertConfig struct {
 	Enabled  bool                        `mapstructure:"enabled"`
 	Endpoint string                      `mapstructure:"endpoint"`
-	Secret   string                      `mapstructure:"secret"`
+	Secret   configopaque.String         `mapstructure:"secret"`
 	TLS      *configtls.TLSServerSetting `mapstructure:"tls"`
 	Mode     string                      `mapstructure:"mode"`
 

@@ -20,6 +20,7 @@ import (
 	"net/url"
 
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
 
@@ -41,7 +42,7 @@ type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	confighttp.HTTPClientSettings           `mapstructure:",squash"`
 	Username                                string                   `mapstructure:"username"`
-	Password                                string                   `mapstructure:"password"`
+	Password                                configopaque.String      `mapstructure:"password"`
 	Metrics                                 metadata.MetricsSettings `mapstructure:"metrics"`
 }
 

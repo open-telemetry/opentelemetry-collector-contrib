@@ -20,6 +20,7 @@ import (
 	"net"
 
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
@@ -39,7 +40,7 @@ const (
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	Username                                string                         `mapstructure:"username"`
-	Password                                string                         `mapstructure:"password"`
+	Password                                configopaque.String            `mapstructure:"password"`
 	Databases                               []string                       `mapstructure:"databases"`
 	confignet.NetAddr                       `mapstructure:",squash"`       // provides Endpoint and Transport
 	configtls.TLSClientSetting              `mapstructure:"tls,omitempty"` // provides SSL details

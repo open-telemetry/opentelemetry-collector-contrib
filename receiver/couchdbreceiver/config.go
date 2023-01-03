@@ -20,6 +20,7 @@ import (
 	"net/url"
 
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
 
@@ -43,7 +44,7 @@ type Config struct {
 	confighttp.HTTPClientSettings           `mapstructure:",squash"`
 	Metrics                                 metadata.MetricsSettings `mapstructure:"metrics"`
 	Username                                string                   `mapstructure:"username"`
-	Password                                string                   `mapstructure:"password"`
+	Password                                configopaque.String      `mapstructure:"password"`
 }
 
 // Validate validates missing and invalid configuration fields.

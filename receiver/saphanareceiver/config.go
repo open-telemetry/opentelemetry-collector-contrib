@@ -18,6 +18,7 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
@@ -38,8 +39,8 @@ type Config struct {
 	// Metrics defines which metrics to enable for the scraper
 	Metrics metadata.MetricsSettings `mapstructure:"metrics"`
 
-	Username string `mapstructure:"username"`
-	Password string `mapstructure:"password"`
+	Username string              `mapstructure:"username"`
+	Password configopaque.String `mapstructure:"password"`
 }
 
 func (cfg *Config) Validate() error {

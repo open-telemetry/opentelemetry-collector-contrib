@@ -55,7 +55,7 @@ type ProjectContext struct {
 const collectionInterval = time.Minute * 5
 
 func newMongoDBAtlasLogsReceiver(settings rcvr.CreateSettings, cfg *Config, consumer consumer.Logs) *logsReceiver {
-	client := internal.NewMongoDBAtlasClient(cfg.PublicKey, cfg.PrivateKey, cfg.RetrySettings, settings.Logger)
+	client := internal.NewMongoDBAtlasClient(cfg.PublicKey, string(cfg.PrivateKey), cfg.RetrySettings, settings.Logger)
 	return &logsReceiver{
 		log:         settings.Logger,
 		cfg:         cfg,

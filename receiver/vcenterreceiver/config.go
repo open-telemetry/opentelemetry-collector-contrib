@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"net/url"
 
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
@@ -33,7 +34,7 @@ type Config struct {
 	Metrics                                 metadata.MetricsSettings `mapstructure:"metrics"`
 	Endpoint                                string                   `mapstructure:"endpoint"`
 	Username                                string                   `mapstructure:"username"`
-	Password                                string                   `mapstructure:"password"`
+	Password                                configopaque.String      `mapstructure:"password"`
 }
 
 // Validate checks to see if the supplied config will work for the receiver

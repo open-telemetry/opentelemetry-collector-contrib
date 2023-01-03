@@ -82,7 +82,7 @@ func TestNewClient(t *testing.T) {
 				require.True(t, ok)
 
 				require.Equal(t, tc.cfg.Username, actualClient.creds.username)
-				require.Equal(t, tc.cfg.Password, actualClient.creds.password)
+				require.EqualValues(t, tc.cfg.Password, actualClient.creds.password)
 				require.Equal(t, tc.cfg.Endpoint, actualClient.hostEndpoint)
 				require.Equal(t, zap.NewNop(), actualClient.logger)
 				require.NotNil(t, actualClient.client)
