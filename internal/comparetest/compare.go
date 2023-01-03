@@ -44,9 +44,8 @@ func CompareMetrics(expected, actual pmetric.Metrics, options ...CompareOption) 
 	}
 
 	// sort ResourceMetrics
-	lessWithSubsort := lessResourceMetrics(true)
-	expectedMetrics.Sort(lessWithSubsort)
-	actualMetrics.Sort(lessWithSubsort)
+	expectedMetrics.Sort(sortResourceMetrics)
+	actualMetrics.Sort(sortResourceMetrics)
 
 	numResources := expectedMetrics.Len()
 
@@ -102,9 +101,8 @@ func CompareResourceMetrics(expected, actual pmetric.ResourceMetrics) error {
 			ailms.Len())
 	}
 
-	lessWithSubsort := lessScopeMetrics(true)
-	eilms.Sort(lessWithSubsort)
-	ailms.Sort(lessWithSubsort)
+	eilms.Sort(sortInstrumentationLibrary)
+	ailms.Sort(sortInstrumentationLibrary)
 
 	for i := 0; i < eilms.Len(); i++ {
 		eilm, ailm := eilms.At(i), ailms.At(i)
@@ -133,9 +131,8 @@ func CompareMetricSlices(expected, actual pmetric.MetricSlice) error {
 	}
 
 	// Sort MetricSlices
-	lessWithSubsort := lessMetrics(true)
-	expected.Sort(lessWithSubsort)
-	actual.Sort(lessWithSubsort)
+	expected.Sort(sortMetricSlice)
+	actual.Sort(sortMetricSlice)
 
 	expectedByName, actualByName := metricsByName(expected), metricsByName(actual)
 
@@ -200,10 +197,6 @@ func CompareNumberDataPointSlices(expected, actual pmetric.NumberDataPointSlice)
 	if expected.Len() != actual.Len() {
 		return fmt.Errorf("number of datapoints does not match expected: %d, actual: %d", expected.Len(), actual.Len())
 	}
-
-	// Sort NumberDataPointSlice
-	expected.Sort(lessDataPoints)
-	actual.Sort(lessDataPoints)
 
 	numPoints := expected.Len()
 
