@@ -140,13 +140,14 @@ func convertBucketsLayout(buckets pmetric.ExponentialHistogramDataPointBuckets) 
 			continue
 		}
 
+		// The offset is adjusted by 1 as described above.
 		bucketIdx := int32(i) + buckets.Offset() + 1
 		delta := bucketIdx - nextBucketIdx
 		if i == 0 || delta > 2 {
 			// We have to create a new span, either because we are
 			// at the very beginning, or because we have found a gap
-			// of more than two buckets. See
-			// https://github.com/prometheus/client_golang/blob/main/prometheus/histogram.go#L1296
+			// of more than two buckets. The constant 2 is copied from the logic in
+			// https://github.com/prometheus/client_golang/blob/27f0506d6ebbb117b6b697d0552ee5be2502c5f2/prometheus/histogram.go#L1296
 			spans = append(spans, &prompb.BucketSpan{
 				Offset: delta,
 				Length: 0,
