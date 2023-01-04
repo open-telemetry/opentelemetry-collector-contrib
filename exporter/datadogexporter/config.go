@@ -31,8 +31,9 @@ import (
 )
 
 var (
-	errUnsetAPIKey = errors.New("api.key is not set")
-	errNoMetadata  = errors.New("only_metadata can't be enabled when host_metadata::enabled = false or host_metadata::hostname_source != first_resource")
+	errUnsetAPIKey   = errors.New("api.key is not set")
+	errNoMetadata    = errors.New("only_metadata can't be enabled when host_metadata::enabled = false or host_metadata::hostname_source != first_resource")
+	errEmptyEndpoint = errors.New("endpoint cannot be empty")
 )
 
 const (
@@ -498,5 +499,11 @@ func (c *Config) Unmarshal(configMap *confmap.Conf) error {
 	if !configMap.IsSet("logs::endpoint") {
 		c.Logs.TCPAddr.Endpoint = fmt.Sprintf("https://http-intake.logs.%s", c.API.Site)
 	}
+
+	// Return an error if an endpoint is explicitly set to ""
+	if c.Metrics.TCPAddr.Endpoint == "" || c.Traces.TCPAddr.Endpoint == "" || c.Logs.TCPAddr.Endpoint == "" {
+		return errEmptyEndpoint
+	}
+
 	return nil
 }
