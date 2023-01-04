@@ -25,6 +25,7 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/trace/agent"
 	traceconfig "github.com/DataDog/datadog-agent/pkg/trace/config"
 	tracelog "github.com/DataDog/datadog-agent/pkg/trace/log"
+	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/featuregate"
@@ -42,29 +43,42 @@ import (
 type traceExporter struct {
 	params         exporter.CreateSettings
 	cfg            *Config
-	ctx            context.Context // ctx triggers shutdown upon cancellation
-	client         *zorkian.Client // client sends runnimg metrics to backend & performs API validation
-	scrubber       scrub.Scrubber  // scrubber scrubs sensitive information from error messages
-	onceMetadata   *sync.Once      // onceMetadata ensures that metadata is sent only once across all exporters
-	agent          *agent.Agent    // agent processes incoming traces
-	sourceProvider source.Provider // is able to source the origin of a trace (hostname, container, etc)
+	ctx            context.Context       // ctx triggers shutdown upon cancellation
+	client         *zorkian.Client       // client sends runnimg metrics to backend & performs API validation
+	metricsAPI     *datadogV2.MetricsApi // client sends runnimg metrics to backend
+	scrubber       scrub.Scrubber        // scrubber scrubs sensitive information from error messages
+	onceMetadata   *sync.Once            // onceMetadata ensures that metadata is sent only once across all exporters
+	agent          *agent.Agent          // agent processes incoming traces
+	sourceProvider source.Provider       // is able to source the origin of a trace (hostname, container, etc)
 }
 
 func newTracesExporter(ctx context.Context, params exporter.CreateSettings, cfg *Config, onceMetadata *sync.Once, sourceProvider source.Provider, agent *agent.Agent) (*traceExporter, error) {
-	// client to send running metric to the backend & perform API key validation
-	client := clientutil.CreateZorkianClient(cfg.API.Key, cfg.Metrics.TCPAddr.Endpoint)
-	if err := clientutil.ValidateAPIKeyZorkian(params.Logger, client); err != nil && cfg.API.FailOnInvalidKey {
-		return nil, err
-	}
 	exp := &traceExporter{
 		params:         params,
 		cfg:            cfg,
 		ctx:            ctx,
-		client:         client,
 		agent:          agent,
 		onceMetadata:   onceMetadata,
 		scrubber:       scrub.NewScrubber(),
 		sourceProvider: sourceProvider,
+	}
+	// client to send running metric to the backend & perform API key validation
+	if isMetricExportV2Enabled() {
+		apiClient := clientutil.CreateAPIClient(
+			params.BuildInfo,
+			cfg.Metrics.TCPAddr.Endpoint,
+			cfg.TimeoutSettings,
+			cfg.LimitedHTTPClientSettings.TLSSetting.InsecureSkipVerify)
+		if err := clientutil.ValidateAPIKey(ctx, cfg.API.Key, params.Logger, apiClient); err != nil && cfg.API.FailOnInvalidKey {
+			return nil, err
+		}
+		exp.metricsAPI = datadogV2.NewMetricsApi(apiClient)
+	} else {
+		client := clientutil.CreateZorkianClient(cfg.API.Key, cfg.Metrics.TCPAddr.Endpoint)
+		if err := clientutil.ValidateAPIKeyZorkian(params.Logger, client); err != nil && cfg.API.FailOnInvalidKey {
+			return nil, err
+		}
+		exp.client = client
 	}
 	return exp, nil
 }
@@ -90,7 +104,6 @@ func (exp *traceExporter) consumeTraces(
 	rspans := td.ResourceSpans()
 	hosts := make(map[string]struct{})
 	tags := make(map[string]struct{})
-	now := pcommon.NewTimestampFromTime(time.Now())
 	for i := 0; i < rspans.Len(); i++ {
 		rspan := rspans.At(i)
 		src := exp.agent.OTLPReceiver.ReceiveResourceSpans(ctx, rspan, http.Header{}, "otlp-exporter")
@@ -101,21 +114,45 @@ func (exp *traceExporter) consumeTraces(
 			tags[src.Tag()] = struct{}{}
 		}
 	}
-	series := make([]zorkian.Metric, 0, len(hosts)+len(tags))
-	for host := range hosts {
-		series = append(series, metrics.DefaultZorkianMetrics("traces", host, uint64(now), exp.params.BuildInfo)...)
-	}
-	for tag := range tags {
-		ms := metrics.DefaultZorkianMetrics("traces", "", uint64(now), exp.params.BuildInfo)
-		for i := range ms {
-			ms[i].Tags = append(ms[i].Tags, tag)
+
+	exp.exportTraceMetrics(ctx, hosts, tags)
+	return nil
+}
+
+func (exp *traceExporter) exportTraceMetrics(ctx context.Context, hosts map[string]struct{}, tags map[string]struct{}) {
+	now := pcommon.NewTimestampFromTime(time.Now())
+	var err error
+	if isMetricExportV2Enabled() {
+		series := make([]datadogV2.MetricSeries, 0, len(hosts)+len(tags))
+		for host := range hosts {
+			series = append(series, metrics.DefaultMetrics("traces", host, uint64(now), exp.params.BuildInfo)...)
 		}
-		series = append(series, ms...)
+		for tag := range tags {
+			ms := metrics.DefaultMetrics("traces", "", uint64(now), exp.params.BuildInfo)
+			for i := range ms {
+				ms[i].Tags = append(ms[i].Tags, tag)
+			}
+			series = append(series, ms...)
+		}
+		ctx = clientutil.GetRequestContext(ctx, exp.cfg.API.Key)
+		_, _, err = exp.metricsAPI.SubmitMetrics(ctx, datadogV2.MetricPayload{Series: series})
+	} else {
+		series := make([]zorkian.Metric, 0, len(hosts)+len(tags))
+		for host := range hosts {
+			series = append(series, metrics.DefaultZorkianMetrics("traces", host, uint64(now), exp.params.BuildInfo)...)
+		}
+		for tag := range tags {
+			ms := metrics.DefaultZorkianMetrics("traces", "", uint64(now), exp.params.BuildInfo)
+			for i := range ms {
+				ms[i].Tags = append(ms[i].Tags, tag)
+			}
+			series = append(series, ms...)
+		}
+		err = exp.client.PostMetrics(series)
 	}
-	if err := exp.client.PostMetrics(series); err != nil {
+	if err != nil {
 		exp.params.Logger.Error("Error posting hostname/tags series", zap.Error(err))
 	}
-	return nil
 }
 
 func newTraceAgent(ctx context.Context, params exporter.CreateSettings, cfg *Config, sourceProvider source.Provider) (*agent.Agent, error) {
