@@ -265,7 +265,7 @@ func buildHeaders(config *Config) map[string]string {
 	}
 
 	if config.AccessToken != "" {
-		headers[splunk.SFxAccessTokenHeader] = config.AccessToken
+		headers[splunk.SFxAccessTokenHeader] = string(config.AccessToken)
 	}
 
 	// Add any custom headers from the config. They will override the pre-defined
