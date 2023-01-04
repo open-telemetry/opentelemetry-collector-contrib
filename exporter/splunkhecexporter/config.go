@@ -20,6 +20,7 @@ import (
 	"net/url"
 	"path"
 
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
@@ -58,7 +59,7 @@ type Config struct {
 	ProfilingDataEnabled bool `mapstructure:"profiling_data_enabled"`
 
 	// HEC Token is the authentication token provided by Splunk: https://docs.splunk.com/Documentation/Splunk/latest/Data/UsetheHTTPEventCollector.
-	Token string `mapstructure:"token"`
+	Token configopaque.String `mapstructure:"token"`
 
 	// URL is the Splunk HEC endpoint where data is going to be sent to.
 	Endpoint string `mapstructure:"endpoint"`
