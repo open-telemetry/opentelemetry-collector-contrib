@@ -63,6 +63,16 @@ func Test_isValidAggregationTemporality(t *testing.T) {
 			want: true,
 		},
 		{
+			name: "cumulative exponential histogram",
+			metric: func() pmetric.Metric {
+				metric := pmetric.NewMetric()
+				h := metric.SetEmptyExponentialHistogram()
+				h.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				return metric
+			}(),
+			want: true,
+		},
+		{
 			name:   "missing type",
 			metric: pmetric.NewMetric(),
 			want:   false,
@@ -81,6 +91,16 @@ func Test_isValidAggregationTemporality(t *testing.T) {
 			name: "delta histogram",
 			metric: getHistogramMetric(
 				"", l, pmetric.AggregationTemporalityDelta, 0, 0, 0, []float64{}, []uint64{}),
+			want: false,
+		},
+		{
+			name: "delta exponential histogram",
+			metric: func() pmetric.Metric {
+				metric := pmetric.NewMetric()
+				h := metric.SetEmptyExponentialHistogram()
+				h.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+				return metric
+			}(),
 			want: false,
 		},
 	}
