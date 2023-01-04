@@ -264,8 +264,8 @@ exporters:
   clickhouse:
     dsn: tcp://127.0.0.1:9000/otel
     ttl_days: 3
-    logs_table: otel_logs
-    traces_table: otel_traces
+    logs_table_name: otel_logs
+    traces_table_name: otel_traces
     timeout: 5s
     retry_on_failure:
       enabled: true
