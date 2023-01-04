@@ -19,10 +19,11 @@ package awscloudwatchlogsexporter // import "github.com/open-telemetry/opentelem
 import (
 	"context"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 	"go.opentelemetry.io/collector/component"
 	exp "go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 )
 
 const (

@@ -34,10 +34,10 @@ func CompareMetrics(expected, actual pmetric.Metrics, options ...CompareOption) 
 	actual.CopyTo(act)
 
 	for _, option := range options {
-		option.apply(expected, actual)
+		option.apply(exp, act)
 	}
 
-	expectedMetrics, actualMetrics := expected.ResourceMetrics(), actual.ResourceMetrics()
+	expectedMetrics, actualMetrics := exp.ResourceMetrics(), act.ResourceMetrics()
 	if expectedMetrics.Len() != actualMetrics.Len() {
 		return fmt.Errorf("number of resources does not match expected: %d, actual: %d", expectedMetrics.Len(),
 			actualMetrics.Len())

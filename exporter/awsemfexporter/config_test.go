@@ -18,13 +18,14 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -58,6 +59,7 @@ func TestLoadConfig(t *testing.T) {
 				LogStreamName:         "",
 				DimensionRollupOption: "ZeroAndSingleDimensionRollup",
 				OutputDestination:     "cloudwatch",
+				logger:                zap.NewNop(),
 			},
 		},
 		{
@@ -78,6 +80,7 @@ func TestLoadConfig(t *testing.T) {
 				DimensionRollupOption:       "ZeroAndSingleDimensionRollup",
 				OutputDestination:           "cloudwatch",
 				ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
+				logger:                      zap.NewNop(),
 			},
 		},
 		{
@@ -102,6 +105,7 @@ func TestLoadConfig(t *testing.T) {
 					Unit:       "Count",
 					Overwrite:  true,
 				}},
+				logger: zap.NewNop(),
 			},
 		},
 	}

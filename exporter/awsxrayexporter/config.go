@@ -30,4 +30,6 @@ type Config struct {
 	// Set to true to convert all OpenTelemetry attributes to X-Ray annotation (indexed) ignoring the IndexedAttributes option.
 	// Default value: false
 	IndexAllAttributes bool `mapstructure:"index_all_attributes"`
+
+	LogGroupNames []string `mapstructure:"aws_log_groups"`
 }

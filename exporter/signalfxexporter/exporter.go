@@ -35,6 +35,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/dimensions"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/hostmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 	metadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 )
 
@@ -60,10 +61,14 @@ func (sme *signalfMetadataExporter) ConsumeMetadata(metadata []*metadata.Metadat
 }
 
 type signalfxExporter struct {
+	config             *Config
+	logger             *zap.Logger
+	telemetrySettings  component.TelemetrySettings
 	pushMetricsData    func(ctx context.Context, md pmetric.Metrics) (droppedTimeSeries int, err error)
 	pushMetadata       func(metadata []*metadata.MetadataUpdate) error
 	pushLogsData       func(ctx context.Context, ld plog.Logs) (droppedLogRecords int, err error)
 	hostMetadataSyncer *hostmetadata.Syncer
+	converter          *translation.MetricsConverter
 }
 
 type exporterOptions struct {
@@ -81,7 +86,7 @@ type exporterOptions struct {
 // newSignalFxExporter returns a new SignalFx exporter.
 func newSignalFxExporter(
 	config *Config,
-	logger *zap.Logger,
+	createSettings exporter.CreateSettings,
 ) (*signalfxExporter, error) {
 	if config == nil {
 		return nil, errors.New("nil config")
@@ -92,9 +97,7 @@ func newSignalFxExporter(
 		return nil, err
 	}
 
-	headers := buildHeaders(config)
-
-	sampledLogger := translation.CreateSampledLogger(logger)
+	sampledLogger := translation.CreateSampledLogger(createSettings.Logger)
 	converter, err := translation.NewMetricsConverter(
 		sampledLogger,
 		options.metricTranslator,
@@ -106,36 +109,42 @@ func newSignalFxExporter(
 		return nil, fmt.Errorf("failed to create metric converter: %w", err)
 	}
 
-	transport := http.DefaultTransport.(*http.Transport).Clone()
-	transport.MaxIdleConns = config.MaxConnections
-	transport.MaxIdleConnsPerHost = config.MaxConnections
-	transport.IdleConnTimeout = 30 * time.Second
+	return &signalfxExporter{
+		config:            config,
+		logger:            createSettings.Logger,
+		telemetrySettings: createSettings.TelemetrySettings,
+		converter:         converter,
+	}, nil
+}
 
-	ingestTLSCfg, err := config.IngestTLSSettings.LoadTLSConfig()
+func (se *signalfxExporter) start(_ context.Context, host component.Host) (err error) {
+	options, err := se.config.getOptionsFromConfig()
 	if err != nil {
-		return nil, fmt.Errorf("could not load Ingest TLS config: %w", err)
+		return err
 	}
-	transport.TLSClientConfig = ingestTLSCfg
+
+	headers := buildHeaders(se.config)
+	client, err := se.createClient(host)
+	if err != nil {
+		return err
+	}
 
 	dpClient := &sfxDPClient{
 		sfxClientBase: sfxClientBase{
 			ingestURL: options.ingestURL,
 			headers:   headers,
-			client: &http.Client{
-				Timeout:   config.Timeout,
-				Transport: transport,
-			},
-			zippers: newGzipPool(),
+			client:    client,
+			zippers:   newGzipPool(),
 		},
 		logDataPoints:          options.logDataPoints,
-		logger:                 logger,
-		accessTokenPassthrough: config.AccessTokenPassthrough,
-		converter:              converter,
+		logger:                 se.logger,
+		accessTokenPassthrough: se.config.AccessTokenPassthrough,
+		converter:              se.converter,
 	}
 
-	apiTLSCfg, err := config.APITLSSettings.LoadTLSConfig()
+	apiTLSCfg, err := se.config.APITLSSettings.LoadTLSConfig()
 	if err != nil {
-		return nil, fmt.Errorf("could not load API TLS config: %w", err)
+		return fmt.Errorf("could not load API TLS config: %w", err)
 	}
 
 	dimClient := dimensions.NewDimensionClient(
@@ -145,7 +154,7 @@ func newSignalFxExporter(
 			APIURL:       options.apiURL,
 			APITLSConfig: apiTLSCfg,
 			LogUpdates:   options.logDimUpdate,
-			Logger:       logger,
+			Logger:       se.logger,
 			// Duration to wait between property updates. This might be worth
 			// being made configurable.
 			SendDelay: 10,
@@ -153,20 +162,18 @@ func newSignalFxExporter(
 			// buffer a fixed number of updates. Might also be a good candidate
 			// to make configurable.
 			PropertiesMaxBuffered: 10000,
-			MetricsConverter:      *converter,
+			MetricsConverter:      *se.converter,
 		})
 	dimClient.Start()
 
 	var hms *hostmetadata.Syncer
-	if config.SyncHostMetadata {
-		hms = hostmetadata.NewSyncer(logger, dimClient)
+	if se.config.SyncHostMetadata {
+		hms = hostmetadata.NewSyncer(se.logger, dimClient)
 	}
-
-	return &signalfxExporter{
-		pushMetricsData:    dpClient.pushMetricsData,
-		pushMetadata:       dimClient.PushMetadata,
-		hostMetadataSyncer: hms,
-	}, nil
+	se.pushMetricsData = dpClient.pushMetricsData
+	se.pushMetadata = dimClient.PushMetadata
+	se.hostMetadataSyncer = hms
+	return nil
 }
 
 func newGzipPool() sync.Pool {
@@ -175,47 +182,65 @@ func newGzipPool() sync.Pool {
 	}}
 }
 
-func newEventExporter(config *Config, logger *zap.Logger) (*signalfxExporter, error) {
+func newEventExporter(config *Config, createSettings exporter.CreateSettings) (*signalfxExporter, error) {
 	if config == nil {
 		return nil, errors.New("nil config")
 	}
 
-	options, err := config.getOptionsFromConfig()
+	_, err := config.getOptionsFromConfig()
 	if err != nil {
-		return nil,
-			fmt.Errorf("failed to process config: %w", err)
+		return nil, fmt.Errorf("failed to process config: %w", err)
+	}
+	return &signalfxExporter{
+		config:            config,
+		logger:            createSettings.Logger,
+		telemetrySettings: createSettings.TelemetrySettings,
+	}, nil
+
+}
+
+func (se *signalfxExporter) startLogs(_ context.Context, host component.Host) error {
+	options, err := se.config.getOptionsFromConfig()
+	if err != nil {
+		return fmt.Errorf("failed to process config: %w", err)
 	}
 
-	headers := buildHeaders(config)
-
-	transport := http.DefaultTransport.(*http.Transport).Clone()
-	transport.MaxIdleConns = config.MaxConnections
-	transport.MaxIdleConnsPerHost = config.MaxConnections
-	transport.IdleConnTimeout = 30 * time.Second
-
-	ingestTLSCfg, err := config.IngestTLSSettings.LoadTLSConfig()
+	headers := buildHeaders(se.config)
+	client, err := se.createClient(host)
 	if err != nil {
-		return nil, fmt.Errorf("could not load Ingest TLS config: %w", err)
+		return err
 	}
-	transport.TLSClientConfig = ingestTLSCfg
 
 	eventClient := &sfxEventClient{
 		sfxClientBase: sfxClientBase{
 			ingestURL: options.ingestURL,
 			headers:   headers,
-			client: &http.Client{
-				Timeout:   config.Timeout,
-				Transport: transport,
-			},
-			zippers: newGzipPool(),
+			client:    client,
+			zippers:   newGzipPool(),
 		},
-		logger:                 logger,
-		accessTokenPassthrough: config.AccessTokenPassthrough,
+		logger:                 se.logger,
+		accessTokenPassthrough: se.config.AccessTokenPassthrough,
 	}
 
-	return &signalfxExporter{
-		pushLogsData: eventClient.pushLogsData,
-	}, nil
+	se.pushLogsData = eventClient.pushLogsData
+	return nil
+}
+
+func (se *signalfxExporter) createClient(host component.Host) (*http.Client, error) {
+	se.config.HTTPClientSettings.TLSSetting = se.config.IngestTLSSettings
+
+	if se.config.HTTPClientSettings.MaxIdleConns == nil {
+		se.config.HTTPClientSettings.MaxIdleConns = &se.config.MaxConnections
+	}
+	if se.config.HTTPClientSettings.MaxIdleConnsPerHost == nil {
+		se.config.HTTPClientSettings.MaxIdleConnsPerHost = &se.config.MaxConnections
+	}
+	if se.config.HTTPClientSettings.IdleConnTimeout == nil {
+		defaultIdleConnTimeout := 30 * time.Second
+		se.config.HTTPClientSettings.IdleConnTimeout = &defaultIdleConnTimeout
+	}
+
+	return se.config.ToClient(host, se.telemetrySettings)
 }
 
 func (se *signalfxExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
@@ -229,4 +254,27 @@ func (se *signalfxExporter) pushMetrics(ctx context.Context, md pmetric.Metrics)
 func (se *signalfxExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 	_, err := se.pushLogsData(ctx, ld)
 	return err
+}
+
+func buildHeaders(config *Config) map[string]string {
+	headers := map[string]string{
+		"Connection":   "keep-alive",
+		"Content-Type": "application/x-protobuf",
+		"User-Agent":   "OpenTelemetry-Collector SignalFx Exporter/v0.0.1",
+	}
+
+	if config.AccessToken != "" {
+		headers[splunk.SFxAccessTokenHeader] = config.AccessToken
+	}
+
+	// Add any custom headers from the config. They will override the pre-defined
+	// ones above in case of conflict, but, not the content encoding one since
+	// the latter one is defined according to the payload.
+	for k, v := range config.HTTPClientSettings.Headers {
+		headers[k] = string(v)
+	}
+	// we want to control how headers are set, overriding user headers with our passthrough.
+	config.HTTPClientSettings.Headers = nil
+
+	return headers
 }

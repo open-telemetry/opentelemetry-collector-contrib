@@ -18,9 +18,10 @@ import (
 	"encoding/json"
 	"strings"
 
-	aws "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
+
+	aws "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics"
 )
 
 // groupedMetric defines set of metrics with same namespace, timestamp and labels
@@ -62,10 +63,10 @@ func addToGroupedMetric(pmd pmetric.Metric, groupedMetrics map[interface{}]*grou
 		// if patterns are provided for a valid key and that key doesn't exist in the resource attributes, it is replaced with `undefined`.
 		if !patternReplaceSucceeded {
 			if strings.Contains(metadata.logGroup, "undefined") {
-				metadata.logGroup, _ = replacePatterns(config.LogGroupName, labels, config.logger)
+				metadata.logGroup, _ = replacePatterns(config.LogGroupName, labels, logger)
 			}
 			if strings.Contains(metadata.logStream, "undefined") {
-				metadata.logStream, _ = replacePatterns(config.LogStreamName, labels, config.logger)
+				metadata.logStream, _ = replacePatterns(config.LogStreamName, labels, logger)
 			}
 		}
 
