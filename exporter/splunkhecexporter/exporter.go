@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -51,7 +52,7 @@ type splunkExporter struct {
 
 type exporterOptions struct {
 	url   *url.URL
-	token string
+	token configopaque.String
 }
 
 // createExporter returns a new Splunk exporter.
@@ -155,7 +156,7 @@ func buildHTTPHeaders(config *Config) map[string]string {
 		"Connection":           "keep-alive",
 		"Content-Type":         "application/json",
 		"User-Agent":           config.SplunkAppName + "/" + config.SplunkAppVersion,
-		"Authorization":        splunk.HECTokenHeader + " " + config.Token,
+		"Authorization":        splunk.HECTokenHeader + " " + string(config.Token),
 		"__splunk_app_name":    config.SplunkAppName,
 		"__splunk_app_version": config.SplunkAppVersion,
 	}
