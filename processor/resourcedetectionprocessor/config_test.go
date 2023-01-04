@@ -42,9 +42,9 @@ func TestLoadConfig(t *testing.T) {
 		errorMessage string
 	}{
 		{
-			id: component.NewIDWithName(typeStr, "gce"),
+			id: component.NewIDWithName(typeStr, "gcp"),
 			expected: &Config{
-				Detectors:          []string{"env", "gce"},
+				Detectors:          []string{"env", "gcp"},
 				HTTPClientSettings: cfg,
 				Override:           false,
 			},
