@@ -32,10 +32,6 @@ import (
 const (
 	// TypeStr is type of detector.
 	TypeStr = "gcp"
-	// 'gke' and 'gce' detectors are replaced with the unified 'gcp' detector
-	// TODO(#10348): Remove these after the v0.54.0 release.
-	DeprecatedGKETypeStr = "gke"
-	DeprecatedGCETypeStr = "gce"
 )
 
 // NewDetector returns a detector which can detect resource attributes on:
@@ -163,32 +159,4 @@ func (r *resourceBuilder) addZoneOrRegion(detect func() (string, gcp.LocationTyp
 	default:
 		r.errs = append(r.errs, fmt.Errorf("location must be zone or region. Got %v", locType))
 	}
-}
-
-// DeduplicateDetectors ensures only one of ['gcp','gke','gce'] are present in
-// the list of detectors. Currently, users configure both GCE and GKE detectors
-// when running on GKE. Resource merge would fail in this case if we don't
-// deduplicate, which would break users.
-// TODO(#10348): Remove this function after the v0.54.0 release.
-func DeduplicateDetectors(set processor.CreateSettings, detectors []string) []string {
-	var out []string
-	var found bool
-	for _, d := range detectors {
-		switch d {
-		case DeprecatedGKETypeStr:
-			set.Logger.Warn("The 'gke' detector is deprecated.  Use the 'gcp' detector instead.")
-		case DeprecatedGCETypeStr:
-			set.Logger.Warn("The 'gce' detector is deprecated.  Use the 'gcp' detector instead.")
-		case TypeStr:
-		default:
-			out = append(out, d)
-			continue
-		}
-		// ensure we only keep the first GCP detector we find.
-		if !found {
-			found = true
-			out = append(out, d)
-		}
-	}
-	return out
 }
