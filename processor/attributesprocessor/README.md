@@ -250,6 +250,22 @@ attributes:
           value: {value}
 ```
 
+For example:
+
+```yaml
+attributes:
+  include:
+    match_type: strict
+    metric_names: ["foo", "bar"]
+  exclude:
+    match_type: regexp
+    attributes:
+      - key: thekey
+        value: "v.*"
+```
+
+This configuration will match all metric data points where the metric name is either "foo" or "bar", and the metric data point attribute "thekey" does not begin with the letter 'v'.
+
 ### Match Configuration
 
 Some `match_type` values have additional configuration options that can be
