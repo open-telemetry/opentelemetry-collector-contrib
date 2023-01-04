@@ -45,9 +45,20 @@ type logsExporter struct {
 func newLogsExporter(ctx context.Context, params exporter.CreateSettings, cfg *Config, onceMetadata *sync.Once, sourceProvider source.Provider) (*logsExporter, error) {
 	// create Datadog client
 	// validation endpoint is provided by Metrics
-	client := clientutil.CreateZorkianClient(cfg.API.Key, cfg.Metrics.TCPAddr.Endpoint)
+	var err error
+	if isMetricExportV2Enabled() {
+		apiClient := clientutil.CreateAPIClient(
+			params.BuildInfo,
+			cfg.Metrics.TCPAddr.Endpoint,
+			cfg.TimeoutSettings,
+			cfg.LimitedHTTPClientSettings.TLSSetting.InsecureSkipVerify)
+		err = clientutil.ValidateAPIKey(ctx, cfg.API.Key, params.Logger, apiClient)
+	} else {
+		client := clientutil.CreateZorkianClient(cfg.API.Key, cfg.Metrics.TCPAddr.Endpoint)
+		err = clientutil.ValidateAPIKeyZorkian(params.Logger, client)
+	}
 	// validate the apiKey
-	if err := clientutil.ValidateAPIKeyZorkian(params.Logger, client); err != nil && cfg.API.FailOnInvalidKey {
+	if err != nil && cfg.API.FailOnInvalidKey {
 		return nil, err
 	}
 
