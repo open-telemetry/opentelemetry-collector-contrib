@@ -31,7 +31,7 @@ require (
 	github.com/pelletier/go-toml v1.9.4 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rogpeppe/go-internal v1.8.0 // indirect
-	github.com/rs/cors v1.8.2 // indirect
+	github.com/rs/cors v1.8.3 // indirect
 	go.opentelemetry.io/collector/confmap v0.68.0 // indirect
 	go.opentelemetry.io/collector/consumer v0.68.0 // indirect
 	go.opentelemetry.io/collector/featuregate v0.68.0 // indirect
