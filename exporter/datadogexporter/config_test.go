@@ -211,6 +211,33 @@ func TestUnmarshal(t *testing.T) {
 			}),
 			err: "\"metrics::instrumentation_library_metadata_as_tags\" was removed in favor of \"metrics::instrumentation_scope_as_tags\". See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11135",
 		},
+		{
+			name: "Empty metric endpoint",
+			configMap: confmap.NewFromStringMap(map[string]interface{}{
+				"metrics": map[string]interface{}{
+					"endpoint": "",
+				},
+			}),
+			err: errEmptyEndpoint.Error(),
+		},
+		{
+			name: "Empty trace endpoint",
+			configMap: confmap.NewFromStringMap(map[string]interface{}{
+				"traces": map[string]interface{}{
+					"endpoint": "",
+				},
+			}),
+			err: errEmptyEndpoint.Error(),
+		},
+		{
+			name: "Empty log endpoint",
+			configMap: confmap.NewFromStringMap(map[string]interface{}{
+				"logs": map[string]interface{}{
+					"endpoint": "",
+				},
+			}),
+			err: errEmptyEndpoint.Error(),
+		},
 	}
 
 	f := NewFactory()

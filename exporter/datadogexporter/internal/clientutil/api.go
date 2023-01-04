@@ -32,14 +32,12 @@ func CreateAPIClient(buildInfo component.BuildInfo, endpoint string, settings ex
 	configuration.UserAgent = UserAgent(buildInfo)
 	configuration.HTTPClient = NewHTTPClient(settings, insecureSkipVerify)
 	configuration.Compress = true
-	if endpoint != "" {
-		configuration.Servers = datadog.ServerConfigurations{
-			{
-				URL:         "{site}",
-				Description: "No description provided",
-				Variables:   map[string]datadog.ServerVariable{"site": {DefaultValue: endpoint}},
-			},
-		}
+	configuration.Servers = datadog.ServerConfigurations{
+		{
+			URL:         "{site}",
+			Description: "No description provided",
+			Variables:   map[string]datadog.ServerVariable{"site": {DefaultValue: endpoint}},
+		},
 	}
 	return datadog.NewAPIClient(configuration)
 }
