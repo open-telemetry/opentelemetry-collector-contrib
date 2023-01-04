@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
@@ -77,7 +78,7 @@ type exporterOptions struct {
 	apiURL            *url.URL
 	apiTLSSettings    configtls.TLSClientSetting
 	httpTimeout       time.Duration
-	token             string
+	token             configopaque.String
 	logDataPoints     bool
 	logDimUpdate      bool
 	metricTranslator  *translation.MetricTranslator
@@ -264,7 +265,7 @@ func buildHeaders(config *Config) map[string]string {
 	}
 
 	if config.AccessToken != "" {
-		headers[splunk.SFxAccessTokenHeader] = config.AccessToken
+		headers[splunk.SFxAccessTokenHeader] = string(config.AccessToken)
 	}
 
 	// Add any custom headers from the config. They will override the pre-defined
