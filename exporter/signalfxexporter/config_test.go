@@ -202,7 +202,7 @@ func TestConfig_getOptionsFromConfig(t *testing.T) {
 		return translator
 	}
 	type fields struct {
-		AccessToken      string
+		AccessToken      configopaque.String
 		Realm            string
 		IngestURL        string
 		APIURL           string

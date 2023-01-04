@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -44,7 +45,7 @@ type Config struct {
 	confighttp.HTTPClientSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 
 	// AccessToken is the authentication token provided by SignalFx.
-	AccessToken string `mapstructure:"access_token"`
+	AccessToken configopaque.String `mapstructure:"access_token"`
 
 	// Realm is the SignalFx realm where data is going to be sent to.
 	Realm string `mapstructure:"realm"`
