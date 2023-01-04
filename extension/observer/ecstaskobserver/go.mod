@@ -27,9 +27,7 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/cors v1.8.3 // indirect
-	go.opentelemetry.io/collector/consumer v0.68.1-0.20230104175729-d8c9f24ecec0 // indirect
 	go.opentelemetry.io/collector/featuregate v0.68.1-0.20230104175729-d8c9f24ecec0 // indirect
-	go.opentelemetry.io/collector/pdata v1.0.0-rc2.0.20230104175729-d8c9f24ecec0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.37.0 // indirect
 	go.opentelemetry.io/otel v1.11.2 // indirect
 	go.opentelemetry.io/otel/metric v0.34.0 // indirect
