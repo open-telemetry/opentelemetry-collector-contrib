@@ -66,6 +66,7 @@ func LogsToLokiRequests(ld plog.Logs) map[string]PushRequest {
 
 		for j := 0; j < ills.Len(); j++ {
 			logs := ills.At(j).LogRecords()
+			scope := ills.At(j).Scope()
 			for k := 0; k < logs.Len(); k++ {
 
 				// similarly, we may remove attributes, so change only our version
@@ -99,7 +100,7 @@ func LogsToLokiRequests(ld plog.Logs) map[string]PushRequest {
 
 				// create the stream name based on the labels
 				labels := mergedLabels.String()
-				entry, err := convertLogToLokiEntry(log, resource, format)
+				entry, err := convertLogToLokiEntry(log, resource, format, scope)
 				if err != nil {
 					// Couldn't convert so dropping log.
 					group.report.Errors = append(group.report.Errors, fmt.Errorf("failed to convert, dropping log: %w", err))
@@ -205,6 +206,7 @@ func LogsToLoki(ld plog.Logs) (*logproto.PushRequest, *PushReport) {
 		ills := rls.At(i).ScopeLogs()
 
 		for j := 0; j < ills.Len(); j++ {
+			scope := ills.At(j).Scope()
 			logs := ills.At(j).LogRecords()
 			for k := 0; k < logs.Len(); k++ {
 
@@ -229,7 +231,7 @@ func LogsToLoki(ld plog.Logs) (*logproto.PushRequest, *PushReport) {
 				// create the stream name based on the labels
 				labels := mergedLabels.String()
 
-				entry, err := convertLogToLokiEntry(log, resource, format)
+				entry, err := convertLogToLokiEntry(log, resource, format, scope)
 				if err != nil {
 					// Couldn't convert so dropping log.
 					report.Errors = append(report.Errors, fmt.Errorf("failed to convert, dropping log: %w", err))

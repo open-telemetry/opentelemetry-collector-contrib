@@ -3,30 +3,30 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/google
 go 1.18
 
 require (
-	cloud.google.com/go/spanner v1.41.0
+	cloud.google.com/go/spanner v1.42.0
 	github.com/ReneKroon/ttlcache/v2 v2.11.0
 	github.com/mitchellh/hashstructure v1.1.0
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.67.1-0.20221212050940-28cd74963b9d
-	go.opentelemetry.io/collector/component v0.67.1-0.20221212050940-28cd74963b9d
-	go.opentelemetry.io/collector/confmap v0.67.0
-	go.opentelemetry.io/collector/consumer v0.67.1-0.20221212050940-28cd74963b9d
-	go.opentelemetry.io/collector/pdata v1.0.0-rc1.0.20221212050940-28cd74963b9d
+	go.opentelemetry.io/collector v0.68.1-0.20230104175729-d8c9f24ecec0
+	go.opentelemetry.io/collector/component v0.68.1-0.20230104175729-d8c9f24ecec0
+	go.opentelemetry.io/collector/confmap v0.68.1-0.20230104175729-d8c9f24ecec0
+	go.opentelemetry.io/collector/consumer v0.68.1-0.20230104175729-d8c9f24ecec0
+	go.opentelemetry.io/collector/pdata v1.0.0-rc2.0.20230104175729-d8c9f24ecec0
 	go.uber.org/zap v1.24.0
-	google.golang.org/api v0.104.0
+	google.golang.org/api v0.105.0
 	google.golang.org/grpc v1.51.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
-	cloud.google.com/go v0.105.0 // indirect
+	cloud.google.com/go v0.107.0 // indirect
 	cloud.google.com/go/compute v1.14.0 // indirect
-	cloud.google.com/go/compute/metadata v0.2.2 // indirect
+	cloud.google.com/go/compute/metadata v0.2.3 // indirect
 	cloud.google.com/go/iam v0.8.0 // indirect
 	cloud.google.com/go/longrunning v0.3.0 // indirect
 	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/census-instrumentation/opencensus-proto v0.4.1 // indirect
-	github.com/cespare/xxhash/v2 v2.1.2 // indirect
+	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/cncf/udpa/go v0.0.0-20210930031921-04548b0d99d4 // indirect
 	github.com/cncf/xds/go v0.0.0-20211130200136-a8f946100490 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
@@ -51,7 +51,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/featuregate v0.67.1-0.20221212050940-28cd74963b9d // indirect
+	go.opentelemetry.io/collector/featuregate v0.68.1-0.20230104175729-d8c9f24ecec0 // indirect
 	go.opentelemetry.io/otel v1.11.2 // indirect
 	go.opentelemetry.io/otel/metric v0.34.0 // indirect
 	go.opentelemetry.io/otel/trace v1.11.2 // indirect

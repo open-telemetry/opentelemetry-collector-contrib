@@ -40,17 +40,17 @@ Disk bytes transferred.
 | ---- | ----------- | ------ |
 | direction | Direction of flow of bytes (read or write). | Str: ``read``, ``write`` |
 
-### process.memory.physical_usage
+### process.memory.usage
 
-Deprecated: use `process.memory.usage` metric instead. The amount of physical memory in use.
+The amount of physical memory in use.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | By | Sum | Int | Cumulative | false |
 
-### process.memory.virtual_usage
+### process.memory.virtual
 
-Deprecated: Use `process.memory.virtual` metric instead. Virtual memory size.
+Virtual memory size.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -94,9 +94,23 @@ Percentage of total CPU time used by the process since last scrape, expressed as
 | ---- | ----------- | ------ |
 | state | Breakdown of CPU usage by type. | Str: ``system``, ``user``, ``wait`` |
 
-### process.memory.usage
+### process.disk.operations
 
-The amount of physical memory in use.
+Number of disk operations performed by the process.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {operations} | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| direction | Direction of flow of bytes (read or write). | Str: ``read``, ``write`` |
+
+### process.memory.physical_usage
+
+[DEPRECATED] Use `process.memory.usage` metric instead. The amount of physical memory in use.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -110,9 +124,9 @@ Percentage of total physical memory that is used by the process.
 | ---- | ----------- | ---------- |
 | 1 | Gauge | Double |
 
-### process.memory.virtual
+### process.memory.virtual_usage
 
-Virtual memory size.
+[DEPRECATED] Use `process.memory.virtual` metric instead. Virtual memory size.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |

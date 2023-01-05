@@ -19,8 +19,8 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
@@ -89,10 +89,9 @@ func createLogsExporter(ctx context.Context, set exporter.CreateSettings, config
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Timeout: 5 * time.Second,
-			Headers: map[string]string{
+			Headers: map[string]configopaque.String{
 				"User-Agent": "OpenTelemetry -> Influx",
 			},
 		},

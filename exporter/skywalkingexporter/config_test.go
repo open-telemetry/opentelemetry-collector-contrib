@@ -22,7 +22,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -49,7 +48,6 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "2"),
 			expected: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				RetrySettings: exporterhelper.RetrySettings{
 					Enabled:         true,
 					InitialInterval: 10 * time.Second,
@@ -108,7 +106,6 @@ func TestLoadConfig(t *testing.T) {
 
 func TestValidate(t *testing.T) {
 	c1 := &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: "",
 		},
@@ -117,7 +114,6 @@ func TestValidate(t *testing.T) {
 	err := c1.Validate()
 	assert.Error(t, err)
 	c2 := &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: "",
 		},

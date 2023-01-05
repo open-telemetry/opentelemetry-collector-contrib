@@ -20,7 +20,6 @@ import (
 
 	_ "github.com/prometheus/prometheus/discovery/install" // init() of this package registers service discovery impl.
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/receiver"
@@ -44,9 +43,7 @@ func NewFactory() receiver.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
-	}
+	return &Config{}
 }
 
 func createMetricsReceiver(

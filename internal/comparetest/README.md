@@ -40,6 +40,9 @@ When updating an existing test:
 2. Run the test once.
 3. Remove the call to `golden.WriteMetrics`.
 
+NOTE: `golden.WriteMetrics` will always mark the test as failed. This behavior is
+necessary to ensure the function is removed after the golden file is written.
+
 ```go
 func TestScraper(t *testing.T) {
   cfg := createDefaultConfig().(*Config)
@@ -55,7 +58,7 @@ func TestScraper(t *testing.T) {
 
   expectedFile := filepath.Join("testdata", "scraper", "expected.json")
 
-  golden.WriteMetrics(expectedFile, actualMetrics)   // This line is temporary! TODO remove this!!
+  golden.WriteMetrics(t, expectedFile, actualMetrics) // This line is temporary! TODO remove this!!
 
   expectedMetrics, err := golden.ReadMetrics(expectedFile)
   require.NoError(t, err)

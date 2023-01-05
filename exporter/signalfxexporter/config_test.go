@@ -24,8 +24,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
@@ -59,16 +59,14 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "allsettings"),
 			expected: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				AccessToken:      "testToken",
-				Realm:            "us1",
-				MaxConnections:   70,
-				Headers: map[string]string{
-					"added-entry": "added value",
-					"dot.test":    "test",
-				},
-				TimeoutSettings: exporterhelper.TimeoutSettings{
-					Timeout: 2 * time.Second,
+				AccessToken:    "testToken",
+				Realm:          "us1",
+				MaxConnections: 70,
+				HTTPClientSettings: confighttp.HTTPClientSettings{Timeout: 2 * time.Second,
+					Headers: map[string]configopaque.String{
+						"added-entry": "added value",
+						"dot.test":    "test",
+					},
 				},
 				RetrySettings: exporterhelper.RetrySettings{
 					Enabled:         true,
@@ -204,12 +202,12 @@ func TestConfig_getOptionsFromConfig(t *testing.T) {
 		return translator
 	}
 	type fields struct {
-		AccessToken      string
+		AccessToken      configopaque.String
 		Realm            string
 		IngestURL        string
 		APIURL           string
 		Timeout          time.Duration
-		Headers          map[string]string
+		Headers          map[string]configopaque.String
 		TranslationRules []translation.Rule
 		SyncHostMetadata bool
 	}
@@ -321,15 +319,14 @@ func TestConfig_getOptionsFromConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				AccessToken:      tt.fields.AccessToken,
-				Realm:            tt.fields.Realm,
-				IngestURL:        tt.fields.IngestURL,
-				APIURL:           tt.fields.APIURL,
-				TimeoutSettings: exporterhelper.TimeoutSettings{
+				AccessToken: tt.fields.AccessToken,
+				Realm:       tt.fields.Realm,
+				IngestURL:   tt.fields.IngestURL,
+				APIURL:      tt.fields.APIURL,
+				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Timeout: tt.fields.Timeout,
+					Headers: tt.fields.Headers,
 				},
-				Headers:             tt.fields.Headers,
 				TranslationRules:    tt.fields.TranslationRules,
 				SyncHostMetadata:    tt.fields.SyncHostMetadata,
 				DeltaTranslationTTL: 3600,

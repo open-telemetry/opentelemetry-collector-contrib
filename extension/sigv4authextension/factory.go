@@ -20,7 +20,6 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/extension"
 )
 
@@ -37,9 +36,7 @@ func NewFactory() extension.Factory {
 // createDefaultConfig() creates a Config struct with default values.
 // We only set the ID here.
 func createDefaultConfig() component.Config {
-	return &Config{
-		ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
-	}
+	return &Config{}
 }
 
 // createExtension() calls newSigv4Extension() in extension.go to create the extension.

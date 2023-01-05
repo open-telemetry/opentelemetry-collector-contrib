@@ -16,12 +16,10 @@ package datadogprocessor // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 )
 
 // Config defines the configuration options for datadogprocessor.
 type Config struct {
-	config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	// MetricsExporter specifies the name of the metrics exporter to be used when
 	// exporting stats metrics.

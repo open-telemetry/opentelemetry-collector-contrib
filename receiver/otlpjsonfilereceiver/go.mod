@@ -3,19 +3,19 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otlpjs
 go 1.18
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.67.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.67.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.68.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.68.0
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.67.1-0.20221212050940-28cd74963b9d
-	go.opentelemetry.io/collector/component v0.67.1-0.20221212050940-28cd74963b9d
-	go.opentelemetry.io/collector/confmap v0.67.0
-	go.opentelemetry.io/collector/consumer v0.67.1-0.20221212050940-28cd74963b9d
-	go.opentelemetry.io/collector/pdata v1.0.0-rc1.0.20221212050940-28cd74963b9d
+	go.opentelemetry.io/collector v0.68.1-0.20230104175729-d8c9f24ecec0
+	go.opentelemetry.io/collector/component v0.68.1-0.20230104175729-d8c9f24ecec0
+	go.opentelemetry.io/collector/confmap v0.68.1-0.20230104175729-d8c9f24ecec0
+	go.opentelemetry.io/collector/consumer v0.68.1-0.20230104175729-d8c9f24ecec0
+	go.opentelemetry.io/collector/pdata v1.0.0-rc2.0.20230104175729-d8c9f24ecec0
 )
 
 require (
 	github.com/antonmedv/expr v1.9.0 // indirect
-	github.com/bmatcuk/doublestar/v4 v4.4.0 // indirect
+	github.com/bmatcuk/doublestar/v4 v4.5.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
@@ -30,7 +30,7 @@ require (
 	github.com/observiq/ctimefmt v1.0.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/featuregate v0.67.1-0.20221212050940-28cd74963b9d // indirect
+	go.opentelemetry.io/collector/featuregate v0.68.1-0.20230104175729-d8c9f24ecec0 // indirect
 	go.opentelemetry.io/otel v1.11.2 // indirect
 	go.opentelemetry.io/otel/metric v0.34.0 // indirect
 	go.opentelemetry.io/otel/trace v1.11.2 // indirect

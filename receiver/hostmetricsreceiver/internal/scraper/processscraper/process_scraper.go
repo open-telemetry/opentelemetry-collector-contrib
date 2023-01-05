@@ -123,7 +123,7 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 			errs.AddPartial(memoryUtilizationMetricsLen, fmt.Errorf("error reading memory utilization for process %q (pid %v): %w", md.executable.name, md.pid, err))
 		}
 
-		if err = s.scrapeAndAppendDiskIOMetric(now, md.handle); err != nil {
+		if err = s.scrapeAndAppendDiskMetrics(now, md.handle); err != nil {
 			errs.AddPartial(diskMetricsLen, fmt.Errorf("error reading disk usage for process %q (pid %v): %w", md.executable.name, md.pid, err))
 		}
 
@@ -243,7 +243,7 @@ func (s *scraper) scrapeAndAppendCPUTimeMetric(now pcommon.Timestamp, handle pro
 }
 
 func (s *scraper) scrapeAndAppendMemoryUsageMetrics(now pcommon.Timestamp, handle processHandle) error {
-	if !(s.config.Metrics.ProcessMemoryPhysicalUsage.Enabled || s.config.Metrics.ProcessMemoryVirtualUsage.Enabled) {
+	if !(s.config.Metrics.ProcessMemoryUsage.Enabled || s.config.Metrics.ProcessMemoryVirtual.Enabled || s.config.Metrics.ProcessMemoryPhysicalUsage.Enabled || s.config.Metrics.ProcessMemoryVirtualUsage.Enabled) {
 		return nil
 	}
 
@@ -274,8 +274,8 @@ func (s *scraper) scrapeAndAppendMemoryUtilizationMetric(now pcommon.Timestamp, 
 	return nil
 }
 
-func (s *scraper) scrapeAndAppendDiskIOMetric(now pcommon.Timestamp, handle processHandle) error {
-	if !s.config.Metrics.ProcessDiskIo.Enabled {
+func (s *scraper) scrapeAndAppendDiskMetrics(now pcommon.Timestamp, handle processHandle) error {
+	if !(s.config.Metrics.ProcessDiskIo.Enabled || s.config.Metrics.ProcessDiskOperations.Enabled) {
 		return nil
 	}
 
@@ -286,6 +286,8 @@ func (s *scraper) scrapeAndAppendDiskIOMetric(now pcommon.Timestamp, handle proc
 
 	s.mb.RecordProcessDiskIoDataPoint(now, int64(io.ReadBytes), metadata.AttributeDirectionRead)
 	s.mb.RecordProcessDiskIoDataPoint(now, int64(io.WriteBytes), metadata.AttributeDirectionWrite)
+	s.mb.RecordProcessDiskOperationsDataPoint(now, int64(io.ReadCount), metadata.AttributeDirectionRead)
+	s.mb.RecordProcessDiskOperationsDataPoint(now, int64(io.WriteCount), metadata.AttributeDirectionWrite)
 
 	return nil
 }

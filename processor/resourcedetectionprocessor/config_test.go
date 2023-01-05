@@ -22,7 +22,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
@@ -43,10 +42,9 @@ func TestLoadConfig(t *testing.T) {
 		errorMessage string
 	}{
 		{
-			id: component.NewIDWithName(typeStr, "gce"),
+			id: component.NewIDWithName(typeStr, "gcp"),
 			expected: &Config{
-				ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
-				Detectors:          []string{"env", "gce"},
+				Detectors:          []string{"env", "gcp"},
 				HTTPClientSettings: cfg,
 				Override:           false,
 			},
@@ -54,8 +52,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "ec2"),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
-				Detectors:         []string{"env", "ec2"},
+				Detectors: []string{"env", "ec2"},
 				DetectorConfig: DetectorConfig{
 					EC2Config: ec2.Config{
 						Tags: []string{"^tag1$", "^tag2$"},
@@ -68,8 +65,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "system"),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
-				Detectors:         []string{"env", "system"},
+				Detectors: []string{"env", "system"},
 				DetectorConfig: DetectorConfig{
 					SystemConfig: system.Config{
 						HostnameSources: []string{"os"},

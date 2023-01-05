@@ -19,7 +19,6 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
@@ -74,8 +73,7 @@ func defaultMetricsUnmarshalers(logger *zap.Logger) map[string]unmarshaler.Metri
 // to port 8443 and the record type set to the CloudWatch metric stream.
 func createDefaultConfig() component.Config {
 	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
-		RecordType:       defaultRecordType,
+		RecordType: defaultRecordType,
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: defaultEndpoint,
 		},

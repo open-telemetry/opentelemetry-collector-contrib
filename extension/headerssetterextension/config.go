@@ -16,8 +16,6 @@ package headerssetterextension // import "github.com/open-telemetry/opentelemetr
 
 import (
 	"fmt"
-
-	"go.opentelemetry.io/collector/config"
 )
 
 var (
@@ -28,8 +26,7 @@ var (
 )
 
 type Config struct {
-	config.ExtensionSettings `mapstructure:",squash"`
-	HeadersConfig            []HeaderConfig `mapstructure:"headers"`
+	HeadersConfig []HeaderConfig `mapstructure:"headers"`
 }
 
 type HeaderConfig struct {

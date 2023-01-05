@@ -23,7 +23,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 
@@ -34,7 +33,6 @@ func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.Equal(t, cfg, &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		AWSSessionSettings: awsutil.AWSSessionSettings{
 			NumberOfWorkers:       8,
 			Endpoint:              "",

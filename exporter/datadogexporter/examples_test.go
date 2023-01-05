@@ -21,8 +21,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/otelcol"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
@@ -91,9 +91,9 @@ func TestExamples(t *testing.T) {
 
 // newTestComponents returns the minimum amount of components necessary for
 // running a collector with any of the examples/* yaml configuration files.
-func newTestComponents(t *testing.T) component.Factories {
+func newTestComponents(t *testing.T) otelcol.Factories {
 	var (
-		factories component.Factories
+		factories otelcol.Factories
 		err       error
 	)
 	factories.Receivers, err = receiver.MakeFactoryMap(

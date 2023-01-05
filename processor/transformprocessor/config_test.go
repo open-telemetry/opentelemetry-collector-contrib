@@ -20,7 +20,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
@@ -37,7 +36,6 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, ""),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 				TraceStatements: []common.ContextStatements{
 					{
 						Context: "span",
@@ -87,7 +85,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			id:           component.NewIDWithName(typeStr, "bad_syntax_trace"),
-			errorMessage: "1:18: unexpected token \"where\" (expected \")\")",
+			errorMessage: "unable to parse OTTL statement: 1:18: unexpected token \"where\" (expected \")\")",
 		},
 		{
 			id:           component.NewIDWithName(typeStr, "unknown_function_trace"),
@@ -95,7 +93,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			id:           component.NewIDWithName(typeStr, "bad_syntax_metric"),
-			errorMessage: "1:18: unexpected token \"where\" (expected \")\")",
+			errorMessage: "unable to parse OTTL statement: 1:18: unexpected token \"where\" (expected \")\")",
 		},
 		{
 			id:           component.NewIDWithName(typeStr, "unknown_function_metric"),
@@ -103,7 +101,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			id:           component.NewIDWithName(typeStr, "bad_syntax_log"),
-			errorMessage: "1:18: unexpected token \"where\" (expected \")\")",
+			errorMessage: "unable to parse OTTL statement: 1:18: unexpected token \"where\" (expected \")\")",
 		},
 		{
 			id:           component.NewIDWithName(typeStr, "unknown_function_log"),

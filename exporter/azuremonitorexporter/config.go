@@ -16,16 +16,13 @@ package azuremonitorexporter // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"time"
-
-	"go.opentelemetry.io/collector/config"
 )
 
 // Config defines configuration for Azure Monitor
 type Config struct {
-	config.ExporterSettings `mapstructure:",squash"`
-	Endpoint                string        `mapstructure:"endpoint"`
-	InstrumentationKey      string        `mapstructure:"instrumentation_key"`
-	MaxBatchSize            int           `mapstructure:"maxbatchsize"`
-	MaxBatchInterval        time.Duration `mapstructure:"maxbatchinterval"`
-	SpanEventsEnabled       bool          `mapstructure:"spaneventsenabled"`
+	Endpoint           string        `mapstructure:"endpoint"`
+	InstrumentationKey string        `mapstructure:"instrumentation_key"`
+	MaxBatchSize       int           `mapstructure:"maxbatchsize"`
+	MaxBatchInterval   time.Duration `mapstructure:"maxbatchinterval"`
+	SpanEventsEnabled  bool          `mapstructure:"spaneventsenabled"`
 }

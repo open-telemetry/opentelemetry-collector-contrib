@@ -21,7 +21,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -35,10 +34,9 @@ func TestLoadConfig(t *testing.T) {
 			configPath: "config_traces.yaml",
 			id:         component.NewIDWithName(typeStr, ""),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
-				DefaultExporters:  []string{"otlp"},
-				AttributeSource:   "context",
-				FromAttribute:     "X-Tenant",
+				DefaultExporters: []string{"otlp"},
+				AttributeSource:  "context",
+				FromAttribute:    "X-Tenant",
 				Table: []RoutingTableItem{
 					{
 						Value:     "acme",
@@ -55,10 +53,9 @@ func TestLoadConfig(t *testing.T) {
 			configPath: "config_metrics.yaml",
 			id:         component.NewIDWithName(typeStr, ""),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
-				DefaultExporters:  []string{"logging/default"},
-				AttributeSource:   "context",
-				FromAttribute:     "X-Custom-Metrics-Header",
+				DefaultExporters: []string{"logging/default"},
+				AttributeSource:  "context",
+				FromAttribute:    "X-Custom-Metrics-Header",
 				Table: []RoutingTableItem{
 					{
 						Value:     "acme",
@@ -75,10 +72,9 @@ func TestLoadConfig(t *testing.T) {
 			configPath: "config_logs.yaml",
 			id:         component.NewIDWithName(typeStr, ""),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
-				DefaultExporters:  []string{"logging/default"},
-				AttributeSource:   "context",
-				FromAttribute:     "X-Custom-Logs-Header",
+				DefaultExporters: []string{"logging/default"},
+				AttributeSource:  "context",
+				FromAttribute:    "X-Custom-Logs-Header",
 				Table: []RoutingTableItem{
 					{
 						Value:     "acme",
@@ -95,10 +91,9 @@ func TestLoadConfig(t *testing.T) {
 			configPath: "config.yaml",
 			id:         component.NewIDWithName(typeStr, ""),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
-				DefaultExporters:  []string{"jaeger"},
-				AttributeSource:   resourceAttributeSource,
-				FromAttribute:     "X-Tenant",
+				DefaultExporters: []string{"jaeger"},
+				AttributeSource:  resourceAttributeSource,
+				FromAttribute:    "X-Tenant",
 				Table: []RoutingTableItem{
 					{
 						Value:     "acme",
@@ -111,8 +106,7 @@ func TestLoadConfig(t *testing.T) {
 			configPath: "config.yaml",
 			id:         component.NewIDWithName(typeStr, "ottl"),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
-				DefaultExporters:  []string{"jaeger"},
+				DefaultExporters: []string{"jaeger"},
 				Table: []RoutingTableItem{
 					{
 						Statement: "route() where resource.attributes[\"X-Tenant\"] == \"acme\"",

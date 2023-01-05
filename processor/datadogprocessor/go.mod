@@ -3,28 +3,29 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/processor/datad
 go 1.18
 
 require (
-	github.com/DataDog/datadog-agent/pkg/otlp/model v0.41.0-rc.3.0.20221207140548-a500ba1a95be
-	github.com/DataDog/datadog-agent/pkg/trace v0.41.0-rc.3.0.20221207140548-a500ba1a95be
+	github.com/DataDog/datadog-agent/pkg/otlp/model v0.42.0-rc.2.0.20221215161218-ae4a2b6bc233
+	github.com/DataDog/datadog-agent/pkg/trace v0.42.0-rc.2.0.20221215161218-ae4a2b6bc233
 	github.com/DataDog/sketches-go v1.4.1
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.67.1-0.20221212050940-28cd74963b9d
-	go.opentelemetry.io/collector/component v0.67.1-0.20221212050940-28cd74963b9d
-	go.opentelemetry.io/collector/consumer v0.67.1-0.20221212050940-28cd74963b9d
-	go.opentelemetry.io/collector/pdata v1.0.0-rc1.0.20221212050940-28cd74963b9d
+	go.opentelemetry.io/collector v0.68.1-0.20230104175729-d8c9f24ecec0
+	go.opentelemetry.io/collector/component v0.68.1-0.20230104175729-d8c9f24ecec0
+	go.opentelemetry.io/collector/consumer v0.68.1-0.20230104175729-d8c9f24ecec0
+	go.opentelemetry.io/collector/pdata v1.0.0-rc2.0.20230104175729-d8c9f24ecec0
 	go.uber.org/zap v1.24.0
 	google.golang.org/protobuf v1.28.1
 )
 
 require (
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.41.0-rc.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/quantile v0.41.0-rc.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.41.0-rc.3.0.20221207140548-a500ba1a95be // indirect
-	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.41.0-rc.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.41.0-rc.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.41.0-rc.3 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.42.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/quantile v0.42.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.42.0-rc.2.0.20221215161218-ae4a2b6bc233 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.42.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.42.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.42.0-rc.2 // indirect
 	github.com/DataDog/datadog-go/v5 v5.1.1 // indirect
+	github.com/DataDog/go-tuf v0.3.0--fix-localmeta-fork // indirect
 	github.com/Microsoft/go-winio v0.5.2 // indirect
-	github.com/cespare/xxhash/v2 v2.1.2 // indirect
+	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/cihub/seelog v0.0.0-20170130134532-f561c5e57575 // indirect
 	github.com/containerd/cgroups v1.0.4 // indirect
 	github.com/coreos/go-systemd/v22 v22.3.2 // indirect
@@ -51,21 +52,20 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/opencontainers/runtime-spec v1.0.3-0.20210326190908-1c3f411f0417 // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
-	github.com/philhofer/fwd v1.1.2-0.20210722190033-5c56ac6d0bb9 // indirect
+	github.com/philhofer/fwd v1.1.2 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20220216144756-c35f1ee13d7c // indirect
 	github.com/rogpeppe/go-internal v1.9.0 // indirect
-	github.com/secure-systems-lab/go-securesystemslib v0.3.1 // indirect
-	github.com/shirou/gopsutil/v3 v3.22.10 // indirect
-	github.com/theupdateframework/go-tuf v0.3.0 // indirect
-	github.com/tinylib/msgp v1.1.7 // indirect
+	github.com/secure-systems-lab/go-securesystemslib v0.4.0 // indirect
+	github.com/shirou/gopsutil/v3 v3.22.12 // indirect
+	github.com/tinylib/msgp v1.1.8 // indirect
 	github.com/tklauser/go-sysconf v0.3.11 // indirect
 	github.com/tklauser/numcpus v0.6.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
-	go.opentelemetry.io/collector/confmap v0.67.0 // indirect
-	go.opentelemetry.io/collector/featuregate v0.67.1-0.20221212050940-28cd74963b9d // indirect
-	go.opentelemetry.io/collector/semconv v0.67.1-0.20221212050940-28cd74963b9d // indirect
+	go.opentelemetry.io/collector/confmap v0.68.1-0.20230104175729-d8c9f24ecec0 // indirect
+	go.opentelemetry.io/collector/featuregate v0.68.1-0.20230104175729-d8c9f24ecec0 // indirect
+	go.opentelemetry.io/collector/semconv v0.68.1-0.20230104175729-d8c9f24ecec0 // indirect
 	go.opentelemetry.io/otel v1.11.2 // indirect
 	go.opentelemetry.io/otel/metric v0.34.0 // indirect
 	go.opentelemetry.io/otel/trace v1.11.2 // indirect

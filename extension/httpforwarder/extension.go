@@ -67,6 +67,9 @@ func (h *httpForwarder) Start(_ context.Context, host component.Host) error {
 }
 
 func (h *httpForwarder) Shutdown(_ context.Context) error {
+	if h.server == nil {
+		return nil
+	}
 	return h.server.Close()
 }
 
@@ -80,7 +83,7 @@ func (h *httpForwarder) forwardRequest(writer http.ResponseWriter, request *http
 
 	// Add additional headers.
 	for k, v := range h.config.Egress.Headers {
-		forwarderRequest.Header.Add(k, v)
+		forwarderRequest.Header.Add(k, string(v))
 	}
 
 	// Add "Via" header for tracking purposes on both the outgoing requests and responses.

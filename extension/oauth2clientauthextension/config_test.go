@@ -23,7 +23,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -39,24 +38,22 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewID(typeStr),
 			expected: &Config{
-				ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
-				ClientSecret:      "someclientsecret",
-				ClientID:          "someclientid",
-				EndpointParams:    url.Values{"audience": []string{"someaudience"}},
-				Scopes:            []string{"api.metrics"},
-				TokenURL:          "https://example.com/oauth2/default/v1/token",
-				Timeout:           time.Second,
+				ClientSecret:   "someclientsecret",
+				ClientID:       "someclientid",
+				EndpointParams: url.Values{"audience": []string{"someaudience"}},
+				Scopes:         []string{"api.metrics"},
+				TokenURL:       "https://example.com/oauth2/default/v1/token",
+				Timeout:        time.Second,
 			},
 		},
 		{
 			id: component.NewIDWithName(typeStr, "withtls"),
 			expected: &Config{
-				ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
-				ClientSecret:      "someclientsecret2",
-				ClientID:          "someclientid2",
-				Scopes:            []string{"api.metrics"},
-				TokenURL:          "https://example2.com/oauth2/default/v1/token",
-				Timeout:           time.Second,
+				ClientSecret: "someclientsecret2",
+				ClientID:     "someclientid2",
+				Scopes:       []string{"api.metrics"},
+				TokenURL:     "https://example2.com/oauth2/default/v1/token",
+				Timeout:      time.Second,
 				TLSSetting: configtls.TLSClientSetting{
 					TLSSetting: configtls.TLSSetting{
 						CAFile:   "cafile",

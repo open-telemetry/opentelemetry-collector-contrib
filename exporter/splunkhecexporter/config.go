@@ -20,7 +20,7 @@ import (
 	"net/url"
 	"path"
 
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
@@ -48,7 +48,6 @@ type OtelToHecFields struct {
 
 // Config defines configuration for Splunk exporter.
 type Config struct {
-	config.ExporterSettings        `mapstructure:",squash"`
 	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
 	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
@@ -60,7 +59,7 @@ type Config struct {
 	ProfilingDataEnabled bool `mapstructure:"profiling_data_enabled"`
 
 	// HEC Token is the authentication token provided by Splunk: https://docs.splunk.com/Documentation/Splunk/latest/Data/UsetheHTTPEventCollector.
-	Token string `mapstructure:"token"`
+	Token configopaque.String `mapstructure:"token"`
 
 	// URL is the Splunk HEC endpoint where data is going to be sent to.
 	Endpoint string `mapstructure:"endpoint"`

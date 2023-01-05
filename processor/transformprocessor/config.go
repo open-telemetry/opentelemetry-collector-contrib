@@ -16,7 +16,6 @@ package transformprocessor // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
@@ -26,8 +25,6 @@ import (
 )
 
 type Config struct {
-	config.ProcessorSettings `mapstructure:",squash"`
-
 	TraceStatements  []common.ContextStatements `mapstructure:"trace_statements"`
 	MetricStatements []common.ContextStatements `mapstructure:"metric_statements"`
 	LogStatements    []common.ContextStatements `mapstructure:"log_statements"`

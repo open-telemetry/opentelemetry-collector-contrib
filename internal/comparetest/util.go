@@ -18,6 +18,8 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/pdatautil"
 )
 
 func metricsByName(metricSlice pmetric.MetricSlice) map[string]pmetric.Metric {
@@ -59,17 +61,7 @@ func sortResourceMetrics(a, b pmetric.ResourceMetrics) bool {
 	if a.SchemaUrl() < b.SchemaUrl() {
 		return true
 	}
-	if a.ScopeMetrics().Len() != b.ScopeMetrics().Len() {
-		return a.ScopeMetrics().Len() < b.ScopeMetrics().Len()
-	}
-	for i := 0; i < a.ScopeMetrics().Len(); i++ {
-		aSm := a.ScopeMetrics().At(i)
-		bSm := b.ScopeMetrics().At(i)
-		if aSm.Metrics().Len() < bSm.Metrics().Len() {
-			return true
-		}
-	}
-	return false
+	return pdatautil.MapHash(a.Resource().Attributes()) < pdatautil.MapHash(b.Resource().Attributes())
 }
 
 func sortMetricSlice(a, b pmetric.Metric) bool {

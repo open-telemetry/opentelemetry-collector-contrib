@@ -160,6 +160,7 @@ body:
       - receiver/fluentforward
       - receiver/googlecloudpubsub
       - receiver/googlecloudspanner
+      - receiver/haproxy
       - receiver/hostmetrics
       - receiver/httpcheck
       - receiver/iis

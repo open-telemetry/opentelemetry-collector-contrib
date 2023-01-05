@@ -19,7 +19,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
@@ -46,7 +45,6 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		Metrics: metadata.DefaultMetricsSettings(),
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 			CollectionInterval: 1 * time.Minute,
 		},
 		HTTPClientSettings: confighttp.HTTPClientSettings{

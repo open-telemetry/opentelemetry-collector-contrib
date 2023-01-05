@@ -25,9 +25,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -47,8 +45,7 @@ func TestPrometheusExporter(t *testing.T) {
 	}{
 		{
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				Namespace:        "test",
+				Namespace: "test",
 				ConstLabels: map[string]string{
 					"foo0":  "bar0",
 					"code0": "one0",
@@ -62,7 +59,6 @@ func TestPrometheusExporter(t *testing.T) {
 		},
 		{
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				HTTPServerSettings: confighttp.HTTPServerSettings{
 					Endpoint: ":88999",
 				},
@@ -70,9 +66,7 @@ func TestPrometheusExporter(t *testing.T) {
 			wantStartErr: "listen tcp: address 88999: invalid port",
 		},
 		{
-			config: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-			},
+			config:  &Config{},
 			wantErr: "expecting a non-blank address to run the Prometheus metrics handler",
 		},
 	}
@@ -109,8 +103,7 @@ func TestPrometheusExporter(t *testing.T) {
 
 func TestPrometheusExporter_WithTLS(t *testing.T) {
 	cfg := &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		Namespace:        "test",
+		Namespace: "test",
 		ConstLabels: map[string]string{
 			"foo2":  "bar2",
 			"code2": "one2",
@@ -195,8 +188,7 @@ func TestPrometheusExporter_WithTLS(t *testing.T) {
 // See: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/4986
 func TestPrometheusExporter_endToEndMultipleTargets(t *testing.T) {
 	cfg := &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		Namespace:        "test",
+		Namespace: "test",
 		ConstLabels: map[string]string{
 			"foo1":  "bar1",
 			"code1": "one1",
@@ -278,8 +270,7 @@ func TestPrometheusExporter_endToEndMultipleTargets(t *testing.T) {
 
 func TestPrometheusExporter_endToEnd(t *testing.T) {
 	cfg := &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		Namespace:        "test",
+		Namespace: "test",
 		ConstLabels: map[string]string{
 			"foo1":  "bar1",
 			"code1": "one1",
@@ -355,8 +346,7 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 
 func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 	cfg := &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		Namespace:        "test",
+		Namespace: "test",
 		ConstLabels: map[string]string{
 			"foo2":  "bar2",
 			"code2": "one2",
@@ -433,8 +423,7 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 
 func TestPrometheusExporter_endToEndWithResource(t *testing.T) {
 	cfg := &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		Namespace:        "test",
+		Namespace: "test",
 		ConstLabels: map[string]string{
 			"foo2":  "bar2",
 			"code2": "one2",
