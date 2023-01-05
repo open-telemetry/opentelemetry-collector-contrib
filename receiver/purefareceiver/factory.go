@@ -45,7 +45,7 @@ func createDefaultConfig() component.Config {
 		Settings: &Settings{
 			ReloadIntervals: &ReloadIntervals{
 				Array:       15 * time.Second,
-				Host:        13 * time.Second,
+				Host:        15 * time.Second,
 				Directories: 15 * time.Second,
 				Pods:        15 * time.Second,
 				Volumes:     15 * time.Second,
