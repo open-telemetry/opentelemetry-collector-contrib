@@ -40,7 +40,7 @@ func TestLogsSink(t *testing.T) {
   require.NoError(t, err)
 
   require.Eventually(t, func() bool {
-  return sink.LogRecordCount() > 0
+    return sink.LogRecordCount() > 0
   }, 2*time.Second, 10*time.Millisecond)
 
   err = alertRcvr.Shutdown(context.Background())
@@ -49,7 +49,7 @@ func TestLogsSink(t *testing.T) {
   logs := sink.AllLogs()[0]
   expected, err := readLogs(filepath.Join("testdata", "logs", "expected.json"))
   require.NoError(t, err)
-  require.NoError(t, compareLogs(expected, logs))
+  require.NoError(t, comparetest.CompareLogs(expected, logs))
 }
 ```
 
