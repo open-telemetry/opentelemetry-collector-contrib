@@ -48,9 +48,9 @@ func NewFactory() processor.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		TraceStatements:   []common.ContextStatements{},
-		MetricStatements:  []common.ContextStatements{},
-		LogStatements:     []common.ContextStatements{},
+		TraceStatements:  []common.ContextStatements{},
+		MetricStatements: []common.ContextStatements{},
+		LogStatements:    []common.ContextStatements{},
 	}
 }
 

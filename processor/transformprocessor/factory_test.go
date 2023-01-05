@@ -39,9 +39,9 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.Equal(t, cfg, &Config{
-		TraceStatements:   []common.ContextStatements{},
-		MetricStatements:  []common.ContextStatements{},
-		LogStatements:     []common.ContextStatements{},
+		TraceStatements:  []common.ContextStatements{},
+		MetricStatements: []common.ContextStatements{},
+		LogStatements:    []common.ContextStatements{},
 	})
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
