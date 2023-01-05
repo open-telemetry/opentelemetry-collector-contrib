@@ -2,6 +2,26 @@ default:
 all_metrics:
   kafka.brokers:
     enabled: true
+  kafka.brokers.consumer_fetch_rate:
+    enabled: true
+  kafka.brokers.count:
+    enabled: true
+  kafka.brokers.incoming_byte_rate:
+    enabled: true
+  kafka.brokers.outgoing_byte_rate:
+    enabled: true
+  kafka.brokers.request_latency:
+    enabled: true
+  kafka.brokers.request_rate:
+    enabled: true
+  kafka.brokers.request_size:
+    enabled: true
+  kafka.brokers.requests_in_flight:
+    enabled: true
+  kafka.brokers.response_rate:
+    enabled: true
+  kafka.brokers.response_size:
+    enabled: true
   kafka.consumer_group.lag:
     enabled: true
   kafka.consumer_group.lag_sum:
@@ -24,6 +44,26 @@ all_metrics:
     enabled: true
 no_metrics:
   kafka.brokers:
+    enabled: false
+  kafka.brokers.consumer_fetch_rate:
+    enabled: false
+  kafka.brokers.count:
+    enabled: false
+  kafka.brokers.incoming_byte_rate:
+    enabled: false
+  kafka.brokers.outgoing_byte_rate:
+    enabled: false
+  kafka.brokers.request_latency:
+    enabled: false
+  kafka.brokers.request_rate:
+    enabled: false
+  kafka.brokers.request_size:
+    enabled: false
+  kafka.brokers.requests_in_flight:
+    enabled: false
+  kafka.brokers.response_rate:
+    enabled: false
+  kafka.brokers.response_size:
     enabled: false
   kafka.consumer_group.lag:
     enabled: false
