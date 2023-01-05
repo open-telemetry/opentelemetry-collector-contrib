@@ -14,6 +14,8 @@
 
 package consul // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/consul"
 
+import "go.opentelemetry.io/collector/config/configopaque"
+
 // The struct requires no user-specified fields by default as consul agent's default
 // configuration will be provided to the API client.
 // See `consul.go#NewDetector` for more information.
@@ -29,7 +31,7 @@ type Config struct {
 	// which overrides the agent's default (empty) token.
 	// Token or Tokenfile are only required if [Consul's ACL
 	// System](https://www.consul.io/docs/security/acl/acl-system) is enabled.
-	Token string `mapstructure:"token"`
+	Token configopaque.String `mapstructure:"token"`
 
 	// TokenFile is a file containing the current token to use for this client.
 	// If provided it is read once at startup and never again.
