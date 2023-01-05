@@ -64,30 +64,33 @@ func (s *Sender) SubmitLogs(ctx context.Context, payload []datadogV2.HTTPLogItem
 		s.logger.Debug("Submitting logs", zap.Any("payload", payload))
 	}
 
-	// enable sending gzip
-	// Get a fresh opts for each request to avoid duplicating ddtags
-	opts := *datadogV2.NewSubmitLogOptionalParameters().WithContentEncoding(datadogV2.CONTENTENCODING_GZIP)
-
 	// Correctly sets apiSubmitLogRequest ddtags field based on tags from translator Transform method
-	if payload[0].HasDdtags() {
-		tags := datadog.PtrString(payload[0].GetDdtags())
-		if opts.Ddtags != nil {
-			tags = datadog.PtrString(fmt.Sprint(*opts.Ddtags, ",", payload[0].GetDdtags()))
-		}
-		opts.Ddtags = tags
-	}
-	_, r, err := s.api.SubmitLog(ctx, payload, opts)
-	if err != nil {
-		if r != nil {
-			b := make([]byte, 1024) // 1KB message max
-			n, _ := r.Body.Read(b)  // ignore any error
-			s.logger.Error("Failed to send logs", zap.Error(err), zap.String("msg", string(b[:n])), zap.String("status_code", r.Status))
-			return err
-		}
+	for _, logItem := range payload {
+		// enable sending gzip
+		// Get a fresh opts for each request to avoid duplicating ddtags
+		opts := *datadogV2.NewSubmitLogOptionalParameters().WithContentEncoding(datadogV2.CONTENTENCODING_GZIP)
 
-		// If response is nil assume permanent error.
-		// The error will be logged by the exporter helper.
-		return consumererror.NewPermanent(err)
+		if logItem.HasDdtags() {
+			tags := datadog.PtrString(logItem.GetDdtags())
+			if opts.Ddtags != nil {
+				tags = datadog.PtrString(fmt.Sprint(*opts.Ddtags, ",", logItem.GetDdtags()))
+			}
+			opts.Ddtags = tags
+		}
+		_, r, err := s.api.SubmitLog(ctx, []datadogV2.HTTPLogItem{logItem}, opts)
+		if err != nil {
+			if r != nil {
+				b := make([]byte, 1024) // 1KB message max
+				n, _ := r.Body.Read(b)  // ignore any error
+				s.logger.Error("Failed to send logs", zap.Error(err), zap.String("msg", string(b[:n])), zap.String("status_code", r.Status))
+				return err
+			}
+
+			// If response is nil assume permanent error.
+			// The error will be logged by the exporter helper.
+			return consumererror.NewPermanent(err)
+		}
 	}
+
 	return nil
 }
