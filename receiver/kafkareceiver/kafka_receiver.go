@@ -94,6 +94,8 @@ func newTracesReceiver(config Config, set receiver.CreateSettings, unmarshalers 
 	c.Metadata.Full = config.Metadata.Full
 	c.Metadata.Retry.Max = config.Metadata.Retry.Max
 	c.Metadata.Retry.Backoff = config.Metadata.Retry.Backoff
+	c.Consumer.Offsets.AutoCommit.Enable = config.AutoCommit.Enable
+	c.Consumer.Offsets.AutoCommit.Interval = config.AutoCommit.Interval
 	if config.ProtocolVersion != "" {
 		version, err := sarama.ParseKafkaVersion(config.ProtocolVersion)
 		if err != nil {
@@ -269,6 +271,8 @@ func newLogsReceiver(config Config, set receiver.CreateSettings, unmarshalers ma
 	c.Metadata.Full = config.Metadata.Full
 	c.Metadata.Retry.Max = config.Metadata.Retry.Max
 	c.Metadata.Retry.Backoff = config.Metadata.Retry.Backoff
+	c.Consumer.Offsets.AutoCommit.Enable = config.AutoCommit.Enable
+	c.Consumer.Offsets.AutoCommit.Interval = config.AutoCommit.Interval
 	if config.ProtocolVersion != "" {
 		version, err := sarama.ParseKafkaVersion(config.ProtocolVersion)
 		if err != nil {
