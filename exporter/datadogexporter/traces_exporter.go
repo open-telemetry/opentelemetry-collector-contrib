@@ -69,12 +69,12 @@ func newTracesExporter(ctx context.Context, params exporter.CreateSettings, cfg 
 			cfg.Metrics.TCPAddr.Endpoint,
 			cfg.TimeoutSettings,
 			cfg.LimitedHTTPClientSettings.TLSSetting.InsecureSkipVerify)
-		if err := clientutil.ValidateAPIKey(ctx, cfg.API.Key, params.Logger, apiClient); err != nil && cfg.API.FailOnInvalidKey {
+		if err := clientutil.ValidateAPIKey(ctx, string(cfg.API.Key), params.Logger, apiClient); err != nil && cfg.API.FailOnInvalidKey {
 			return nil, err
 		}
 		exp.metricsAPI = datadogV2.NewMetricsApi(apiClient)
 	} else {
-		client := clientutil.CreateZorkianClient(cfg.API.Key, cfg.Metrics.TCPAddr.Endpoint)
+		client := clientutil.CreateZorkianClient(string(cfg.API.Key), cfg.Metrics.TCPAddr.Endpoint)
 		if err := clientutil.ValidateAPIKeyZorkian(params.Logger, client); err != nil && cfg.API.FailOnInvalidKey {
 			return nil, err
 		}
@@ -134,7 +134,7 @@ func (exp *traceExporter) exportTraceMetrics(ctx context.Context, hosts map[stri
 			}
 			series = append(series, ms...)
 		}
-		ctx = clientutil.GetRequestContext(ctx, exp.cfg.API.Key)
+		ctx = clientutil.GetRequestContext(ctx, string(exp.cfg.API.Key))
 		_, _, err = exp.metricsAPI.SubmitMetrics(ctx, datadogV2.MetricPayload{Series: series})
 	} else {
 		series := make([]zorkian.Metric, 0, len(hosts)+len(tags))
@@ -167,7 +167,7 @@ func newTraceAgent(ctx context.Context, params exporter.CreateSettings, cfg *Con
 	acfg.OTLPReceiver.SpanNameRemappings = cfg.Traces.SpanNameRemappings
 	acfg.OTLPReceiver.SpanNameAsResourceName = cfg.Traces.SpanNameAsResourceName
 	acfg.OTLPReceiver.UsePreviewHostnameLogic = featuregate.GetRegistry().IsEnabled(metadata.HostnamePreviewFeatureGate)
-	acfg.Endpoints[0].APIKey = cfg.API.Key
+	acfg.Endpoints[0].APIKey = string(cfg.API.Key)
 	acfg.Ignore["resource"] = cfg.Traces.IgnoreResources
 	acfg.ReceiverPort = 0 // disable HTTP receiver
 	acfg.AgentVersion = fmt.Sprintf("datadogexporter-%s-%s", params.BuildInfo.Command, params.BuildInfo.Version)

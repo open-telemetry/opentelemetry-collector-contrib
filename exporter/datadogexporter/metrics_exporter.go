@@ -126,12 +126,12 @@ func newMetricsExporter(ctx context.Context, params exporter.CreateSettings, cfg
 			cfg.Metrics.TCPAddr.Endpoint,
 			cfg.TimeoutSettings,
 			cfg.LimitedHTTPClientSettings.TLSSetting.InsecureSkipVerify)
-		if err := clientutil.ValidateAPIKey(ctx, cfg.API.Key, params.Logger, apiClient); err != nil && cfg.API.FailOnInvalidKey {
+		if err := clientutil.ValidateAPIKey(ctx, string(cfg.API.Key), params.Logger, apiClient); err != nil && cfg.API.FailOnInvalidKey {
 			return nil, err
 		}
 		exporter.metricsAPI = datadogV2.NewMetricsApi(apiClient)
 	} else {
-		client := clientutil.CreateZorkianClient(cfg.API.Key, cfg.Metrics.TCPAddr.Endpoint)
+		client := clientutil.CreateZorkianClient(string(cfg.API.Key), cfg.Metrics.TCPAddr.Endpoint)
 		client.ExtraHeader["User-Agent"] = clientutil.UserAgent(params.BuildInfo)
 		client.HttpClient = clientutil.NewHTTPClient(cfg.TimeoutSettings, cfg.LimitedHTTPClientSettings.TLSSetting.InsecureSkipVerify)
 
@@ -158,7 +158,7 @@ func (exp *metricsExporter) pushSketches(ctx context.Context, sl sketches.Sketch
 		return fmt.Errorf("failed to build sketches HTTP request: %w", err)
 	}
 
-	clientutil.SetDDHeaders(req.Header, exp.params.BuildInfo, exp.cfg.API.Key)
+	clientutil.SetDDHeaders(req.Header, exp.params.BuildInfo, string(exp.cfg.API.Key))
 	clientutil.SetExtraHeaders(req.Header, clientutil.ProtobufHeaders)
 	var resp *http.Response
 	if isMetricExportV2Enabled() {
@@ -226,7 +226,7 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metr
 			err = multierr.Append(
 				err,
 				exp.retrier.DoWithRetries(ctx, func(context.Context) error {
-					ctx = clientutil.GetRequestContext(ctx, exp.cfg.API.Key)
+					ctx = clientutil.GetRequestContext(ctx, string(exp.cfg.API.Key))
 					_, _, merr := exp.metricsAPI.SubmitMetrics(ctx, datadogV2.MetricPayload{Series: ms})
 					return merr
 				}),

@@ -23,6 +23,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/multierr"
@@ -45,7 +46,7 @@ const (
 type APIConfig struct {
 	// Key is the Datadog API key to associate your Agent's data with your organization.
 	// Create a new API key here: https://app.datadoghq.com/account/settings
-	Key string `mapstructure:"key"`
+	Key configopaque.String `mapstructure:"key"`
 
 	// Site is the site of the Datadog intake to send data to.
 	// The default value is "datadoghq.com".
@@ -487,7 +488,7 @@ func (c *Config) Unmarshal(configMap *confmap.Conf) error {
 		return err
 	}
 
-	c.API.Key = strings.TrimSpace(c.API.Key)
+	c.API.Key = configopaque.String(strings.TrimSpace(string(c.API.Key)))
 
 	// If an endpoint is not explicitly set, override it based on the site.
 	if !configMap.IsSet("metrics::endpoint") {
