@@ -122,6 +122,18 @@ func TestFinder(t *testing.T) {
 			exclude:  []string{},
 			expected: []string{"1.log", filepath.Join("a", "1.log"), filepath.Join("a", "b", "1.log"), filepath.Join("c", "1.log")},
 		},
+		{
+			name:     "SingleLevelFilesOnly",
+			files:    []string{"a1.log", "a2.txt", "b/b1.log", "b/b2.txt"},
+			include:  []string{"*"},
+			expected: []string{"a1.log", "a2.txt"},
+		},
+		{
+			name:     "MultiLevelFilesOnly",
+			files:    []string{"a1.log", "a2.txt", "b/b1.log", "b/b2.txt", "b/c/c1.csv"},
+			include:  []string{filepath.Join("**", "*")},
+			expected: []string{"a1.log", "a2.txt", filepath.Join("b", "b1.log"), filepath.Join("b", "b2.txt"), filepath.Join("b", "c", "c1.csv")},
+		},
 	}
 
 	for _, tc := range cases {
