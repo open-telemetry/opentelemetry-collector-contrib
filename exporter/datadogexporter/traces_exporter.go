@@ -134,7 +134,7 @@ func (exp *traceExporter) exportTraceMetrics(ctx context.Context, hosts map[stri
 			}
 			series = append(series, ms...)
 		}
-		ctx = clientutil.GetRequestContext(ctx, exp.cfg.API.Key)
+		ctx = clientutil.GetRequestContext(ctx, string(exp.cfg.API.Key))
 		_, _, err = exp.metricsAPI.SubmitMetrics(ctx, datadogV2.MetricPayload{Series: series})
 	} else {
 		series := make([]zorkian.Metric, 0, len(hosts)+len(tags))
