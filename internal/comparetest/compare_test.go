@@ -16,7 +16,6 @@ package comparetest
 
 import (
 	"errors"
-	"fmt"
 	"path/filepath"
 	"testing"
 
@@ -559,134 +558,160 @@ func TestCompareLogs(t *testing.T) {
 		{
 			name: "logs-missing",
 			wantErr: expectation{
-				err:    errors.New("amount of ResourceLogs between Logs are not equal (expected: 2, actual: 1)"),
+				err:    errors.New("amount of ResourceLogs between Logs are not equal expected: 2, actual: 1"),
 				reason: "A missing resource should cause a failure",
 			},
 		},
 		{
 			name: "logs-resource-attributes-mismatch",
 			wantErr: expectation{
-				err:    fmt.Errorf("resource logs at index %d: %w", 1, fmt.Errorf("resource logs Attributes doesn't match (expected: map[testKey2:two], actual: map[testKey2:one])")),
+				err: multierr.Combine(
+					errors.New("missing expected resource with attributes: map[testKey2:two]"),
+					errors.New("extra resource with attributes: map[testKey2:one]"),
+				),
 				reason: "A resource with a different set of attributes is a different resource.",
 			},
 		},
 		{
-			name: "logs-resource-schemaurl-missing",
+			name: "logs-resource-instrumentation-library-extra",
 			wantErr: expectation{
-				err:    fmt.Errorf("resource logs at index %d: %w", 0, fmt.Errorf("resource logs SchemaUrl doesn't match (expected: https://opentelemetry.io/schemas/1.6.1, actual: )")),
-				reason: "A missing schema url should cause a failure",
+				err:    errors.New("number of instrumentation libraries does not match expected: 1, actual: 2"),
+				reason: "An extra instrumentation library should cause a failure.",
 			},
 		},
 		{
-			name: "logs-resource-droppedattributescount-missing",
+			name: "logs-resource-instrumentation-library-missing",
 			wantErr: expectation{
-				err:    fmt.Errorf("resource logs at index %d: %w", 0, fmt.Errorf("resource logs DroppedAttributesCount doesn't match (expected: 1, actual: 0)")),
-				reason: "A missing dropped attributes count should cause a failure",
+				err:    errors.New("number of instrumentation libraries does not match expected: 2, actual: 1"),
+				reason: "An missing instrumentation library should cause a failure.",
 			},
 		},
 		{
-			name: "logs-scopelogs-missing",
+			name: "logs-resource-instrumentation-library-name-mismatch",
 			wantErr: expectation{
-				err:    fmt.Errorf("resource logs at index %d: %w", 0, fmt.Errorf("amount of ScopeLogs between ResourceLogs are not equal (expected: 1, actual: 0)")),
-				reason: "A missing scope logs should cause a failure",
+				err:    errors.New("instrumentation library Name does not match expected: one, actual: two"),
+				reason: "An instrumentation library with a different name is a different library.",
 			},
 		},
 		{
-			name: "logs-scopelogs-schemaurl-missing",
+			name: "logs-resource-instrumentation-library-version-mismatch",
 			wantErr: expectation{
-				err:    fmt.Errorf("resource logs at index %d: %w", 0, fmt.Errorf("scope logs at index %d: %w", 0, fmt.Errorf("log scope SchemaUrl doesn't match (expected: https://opentelemetry.io/schemas/1.6.1, actual: )"))),
-				reason: "A missing scope log schema url should cause a failure",
-			},
-		},
-		{
-			name: "logs-scopelogs-scopename-mismatch",
-			wantErr: expectation{
-				err:    fmt.Errorf("resource logs at index %d: %w", 0, fmt.Errorf("scope logs at index %d: %w", 0, fmt.Errorf("log scope Name doesn't match (expected: exporter, actual: collector)"))),
-				reason: "A scope log scope name with wrong value should cause a failure",
-			},
-		},
-		{
-			name: "logs-scopelogs-scopeversion-mismatch",
-			wantErr: expectation{
-				err:    fmt.Errorf("resource logs at index %d: %w", 0, fmt.Errorf("scope logs at index %d: %w", 0, fmt.Errorf("log scope Version doesn't match (expected: v1.1.0, actual: v0.1.0)"))),
-				reason: "A scope log scope version with wrong value should cause a failure",
+				err:    errors.New("instrumentation library Version does not match expected: 1.0, actual: 2.0"),
+				reason: "An instrumentation library with a different version is a different library.",
 			},
 		},
 		{
 			name: "logs-logrecords-missing",
 			wantErr: expectation{
-				err:    fmt.Errorf("resource logs at index %d: %w", 0, fmt.Errorf("scope logs at index %d: %w", 0, fmt.Errorf("amount of log records between ScopeLogs are not equal (expected: 1, actual: 0)"))),
+				err:    errors.New("number of log records does not match expected: 1, actual: 0"),
 				reason: "A missing log records should cause a failure",
+			},
+		},
+		{
+			name: "logs-logrecords-attributes-mismatch",
+			wantErr: expectation{
+				err: multierr.Combine(
+					errors.New("log missing expected resource with attributes: map[testKey2:teststringvalue2 testKey3:teststringvalue3]"),
+					errors.New("log has extra record with attributes: map[testKey1:teststringvalue1 testKey2:teststringvalue2]"),
+				),
+				reason: "A log record attributes with wrong value should cause a failure",
 			},
 		},
 		{
 			name: "logs-logrecords-flag-mismatch",
 			wantErr: expectation{
-				err:    fmt.Errorf("resource logs at index %d: %w", 0, fmt.Errorf("scope logs at index %d: %w", 0, fmt.Errorf("log record at index %d: %w", 0, fmt.Errorf("log record Flags doesn't match (expected: 2, actual: 1)")))),
+				err: multierr.Combine(
+					errors.New("log record with attributes: map[testKey1:teststringvalue1 testKey2:teststringvalue2], does not match expected"),
+					errors.New("log record Flags doesn't match expected: 1, actual: 2"),
+				),
 				reason: "A log record flag with wrong value should cause a failure",
 			},
 		},
 		{
 			name: "logs-logrecords-droppedattributescount-mismatch",
 			wantErr: expectation{
-				err:    fmt.Errorf("resource logs at index %d: %w", 0, fmt.Errorf("scope logs at index %d: %w", 0, fmt.Errorf("log record at index %d: %w", 0, fmt.Errorf("log record DroppedAttributesCount doesn't match (expected: 10, actual: 0)")))),
+				err: multierr.Combine(
+					errors.New("log record with attributes: map[testKey1:teststringvalue1 testKey2:teststringvalue2], does not match expected"),
+					errors.New("log record DroppedAttributesCount doesn't match expected: 0, actual: 10"),
+				),
 				reason: "A log record dropped attributes count with wrong value should cause a failure",
 			},
 		},
 		{
 			name: "logs-logrecords-timestamp-mismatch",
 			wantErr: expectation{
-				err:    fmt.Errorf("resource logs at index %d: %w", 0, fmt.Errorf("scope logs at index %d: %w", 0, fmt.Errorf("log record at index %d: %w", 0, fmt.Errorf("log record Timestamp doesn't match (expected: 11651379494838200000, actual: 11651379494838206464)")))),
+				err: multierr.Combine(
+					errors.New("log record with attributes: map[testKey1:teststringvalue1 testKey2:teststringvalue2], does not match expected"),
+					errors.New("log record Timestamp doesn't match expected: 11651379494838206464, actual: 11651379494838200000"),
+				),
 				reason: "A log record timestamp with wrong value should cause a failure",
 			},
 		},
 		{
 			name: "logs-logrecords-observedtimestamp-mismatch",
 			wantErr: expectation{
-				err:    fmt.Errorf("resource logs at index %d: %w", 0, fmt.Errorf("scope logs at index %d: %w", 0, fmt.Errorf("log record at index %d: %w", 0, fmt.Errorf("log record ObservedTimestamp doesn't match (expected: 11651379494838200000, actual: 11651379494838206464)")))),
+				err: multierr.Combine(
+					errors.New("log record with attributes: map[testKey1:teststringvalue1 testKey2:teststringvalue2], does not match expected"),
+					errors.New("log record ObservedTimestamp doesn't match expected: 11651379494838206464, actual: 11651379494838200000"),
+				),
 				reason: "A log record observed timestamp with wrong value should cause a failure",
 			},
 		},
 		{
 			name: "logs-logrecords-severitynumber-mismatch",
 			wantErr: expectation{
-				err:    fmt.Errorf("resource logs at index %d: %w", 0, fmt.Errorf("scope logs at index %d: %w", 0, fmt.Errorf("log record at index %d: %w", 0, fmt.Errorf("log record SeverityNumber doesn't match (expected: 1, actual: 9)")))),
+				err: multierr.Combine(
+					errors.New("log record with attributes: map[testKey1:teststringvalue1 testKey2:teststringvalue2], does not match expected"),
+					errors.New("log record SeverityNumber doesn't match expected: 9, actual: 1"),
+				),
 				reason: "A log record severity number with wrong value should cause a failure",
 			},
 		},
 		{
 			name: "logs-logrecords-severitytext-mismatch",
 			wantErr: expectation{
-				err:    fmt.Errorf("resource logs at index %d: %w", 0, fmt.Errorf("scope logs at index %d: %w", 0, fmt.Errorf("log record at index %d: %w", 0, fmt.Errorf("log record SeverityText doesn't match (expected: OPEN, actual: TEST)")))),
+				err: multierr.Combine(
+					errors.New("log record with attributes: map[testKey1:teststringvalue1 testKey2:teststringvalue2], does not match expected"),
+					errors.New("log record SeverityText doesn't match expected: TEST, actual: OPEN"),
+				),
 				reason: "A log record severity text with wrong value should cause a failure",
 			},
 		},
 		{
 			name: "logs-logrecords-traceid-mismatch",
 			wantErr: expectation{
-				err:    fmt.Errorf("resource logs at index %d: %w", 0, fmt.Errorf("scope logs at index %d: %w", 0, fmt.Errorf("log record at index %d: %w", 0, fmt.Errorf("log record TraceID doesn't match (expected: [123 32 209 52 158 249 182 214 249 212 209 212 163 172 46 130], actual: [139 32 209 52 158 249 182 214 249 212 209 212 163 172 46 130])")))),
+				err: multierr.Combine(
+					errors.New("log record with attributes: map[testKey1:teststringvalue1 testKey2:teststringvalue2], does not match expected"),
+					errors.New("log record TraceID doesn't match expected: [139 32 209 52 158 249 182 214 249 212 209 212 163 172 46 130], actual: [123 32 209 52 158 249 182 214 249 212 209 212 163 172 46 130]"),
+				),
 				reason: "A log record trace id with wrong value should cause a failure",
 			},
 		},
 		{
 			name: "logs-logrecords-spanid-mismatch",
 			wantErr: expectation{
-				err:    fmt.Errorf("resource logs at index %d: %w", 0, fmt.Errorf("scope logs at index %d: %w", 0, fmt.Errorf("log record at index %d: %w", 0, fmt.Errorf("log record SpanID doesn't match (expected: [12 42 217 36 225 119 22 48], actual: [12 42 217 36 225 119 22 64])")))),
+				err: multierr.Combine(
+					errors.New("log record with attributes: map[testKey1:teststringvalue1 testKey2:teststringvalue2], does not match expected"),
+					errors.New("log record SpanID doesn't match expected: [12 42 217 36 225 119 22 64], actual: [12 42 217 36 225 119 22 48]"),
+				),
 				reason: "A log record span id with wrong value should cause a failure",
 			},
 		},
 		{
 			name: "logs-logrecords-body-mismatch",
 			wantErr: expectation{
-				err:    fmt.Errorf("resource logs at index %d: %w", 0, fmt.Errorf("scope logs at index %d: %w", 0, fmt.Errorf("log record at index %d: %w", 0, fmt.Errorf("log record Body doesn't match (expected: testscopevalue2, actual: testscopevalue1)")))),
+				err: multierr.Combine(
+					errors.New("log record with attributes: map[testKey1:teststringvalue1 testKey2:teststringvalue2], does not match expected"),
+					errors.New("log record Body doesn't match expected: testscopevalue1, actual: testscopevalue2"),
+				),
 				reason: "A log record body with wrong value should cause a failure",
 			},
 		},
 		{
-			name: "logs-logrecords-attributes-mismatch",
+			name: "sort-unordered-log-slice",
 			wantErr: expectation{
-				err:    fmt.Errorf("resource logs at index %d: %w", 0, fmt.Errorf("scope logs at index %d: %w", 0, fmt.Errorf("log record at index %d: %w", 0, fmt.Errorf("log record Attributes doesn't match (expected: map[string]interface {}{\"testKey2\":\"teststringvalue2\", \"testKey3\":\"teststringvalue3\"}, actual: map[string]interface {}{\"testKey1\":\"teststringvalue1\", \"testKey2\":\"teststringvalue2\"})")))),
-				reason: "A log record attributes with wrong value should cause a failure",
+				err:    nil,
+				reason: "A log record body with wrong value should cause a failure",
 			},
 		},
 	}
