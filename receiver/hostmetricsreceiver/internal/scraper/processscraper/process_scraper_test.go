@@ -207,10 +207,10 @@ func assertCPUUtilizationMetricValid(t *testing.T, resourceMetrics pmetric.Resou
 }
 
 func assertMemoryUsageMetricValid(t *testing.T, resourceMetrics pmetric.ResourceMetricsSlice, startTime pcommon.Timestamp) {
-	physicalMemUsageMetric := getMetric(t, "process.memory.physical_usage", resourceMetrics)
-	assert.Equal(t, "process.memory.physical_usage", physicalMemUsageMetric.Name())
-	virtualMemUsageMetric := getMetric(t, "process.memory.virtual_usage", resourceMetrics)
-	assert.Equal(t, "process.memory.virtual_usage", virtualMemUsageMetric.Name())
+	physicalMemUsageMetric := getMetric(t, "process.memory.usage", resourceMetrics)
+	assert.Equal(t, "process.memory.usage", physicalMemUsageMetric.Name())
+	virtualMemUsageMetric := getMetric(t, "process.memory.virtual", resourceMetrics)
+	assert.Equal(t, "process.memory.virtual", virtualMemUsageMetric.Name())
 
 	if startTime != 0 {
 		internal.AssertSumMetricStartTimeEquals(t, physicalMemUsageMetric, startTime)
@@ -962,8 +962,8 @@ func TestScrapeMetrics_DontCheckDisabledMetrics(t *testing.T) {
 	metricSettings.ProcessCPUTime.Enabled = false
 	metricSettings.ProcessDiskIo.Enabled = false
 	metricSettings.ProcessDiskOperations.Enabled = false
-	metricSettings.ProcessMemoryPhysicalUsage.Enabled = false
-	metricSettings.ProcessMemoryVirtualUsage.Enabled = false
+	metricSettings.ProcessMemoryUsage.Enabled = false
+	metricSettings.ProcessMemoryVirtual.Enabled = false
 
 	t.Run("Metrics don't log errors when disabled", func(t *testing.T) {
 		config := &Config{Metrics: metricSettings}

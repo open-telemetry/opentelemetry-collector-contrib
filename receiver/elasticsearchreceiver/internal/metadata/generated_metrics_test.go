@@ -401,7 +401,7 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordJvmThreadsCountDataPoint(ts, 1)
 
-			metrics := mb.Emit(WithElasticsearchClusterName("attr-val"), WithElasticsearchIndexName("attr-val"), WithElasticsearchNodeName("attr-val"))
+			metrics := mb.Emit(WithElasticsearchClusterName("attr-val"), WithElasticsearchIndexName("attr-val"), WithElasticsearchNodeName("attr-val"), WithElasticsearchNodeVersion("attr-val"))
 
 			if test.metricsSet == testMetricsSetNo {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -421,6 +421,10 @@ func TestMetricsBuilder(t *testing.T) {
 			assert.EqualValues(t, "attr-val", attrVal.Str())
 			attrCount++
 			attrVal, ok = rm.Resource().Attributes().Get("elasticsearch.node.name")
+			assert.True(t, ok)
+			assert.EqualValues(t, "attr-val", attrVal.Str())
+			attrCount++
+			attrVal, ok = rm.Resource().Attributes().Get("elasticsearch.node.version")
 			assert.True(t, ok)
 			assert.EqualValues(t, "attr-val", attrVal.Str())
 			assert.Equal(t, attrCount, rm.Resource().Attributes().Len())

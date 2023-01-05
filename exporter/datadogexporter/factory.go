@@ -39,8 +39,32 @@ import (
 
 const (
 	// typeStr is the type of the exporter
-	typeStr = "datadog"
+	typeStr                              = "datadog"
+	mertricExportNativeClientFeatureGate = "exporter.datadogexporter.metricexportnativeclient"
 )
+
+func init() {
+	featuregate.GetRegistry().MustRegisterID(
+		mertricExportNativeClientFeatureGate,
+		featuregate.StageBeta,
+		featuregate.WithRegisterDescription("When enabled, metric export in datadogexporter uses native Datadog client APIs instead of Zorkian APIs."),
+	)
+}
+
+// isMetricExportV2Enabled returns true if metric export in datadogexporter uses native Datadog client APIs, false if it uses Zorkian APIs
+func isMetricExportV2Enabled() bool {
+	return featuregate.GetRegistry().IsEnabled(mertricExportNativeClientFeatureGate)
+}
+
+// enableNativeMetricExport switches metric export to call native Datadog APIs instead of Zorkian APIs.
+func enableNativeMetricExport() error {
+	return featuregate.GetRegistry().Apply(map[string]bool{mertricExportNativeClientFeatureGate: true})
+}
+
+// enableZorkianMetricExport switches metric export to call Zorkian APIs instead of native Datadog APIs.
+func enableZorkianMetricExport() error {
+	return featuregate.GetRegistry().Apply(map[string]bool{mertricExportNativeClientFeatureGate: false})
+}
 
 type factory struct {
 	onceMetadata sync.Once
