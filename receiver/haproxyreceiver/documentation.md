@@ -22,11 +22,18 @@ Number of connections over the last elapsed second (frontend). Corresponds to HA
 
 ### haproxy.idle_percent
 
-Ratio of system polling time versus total time. Corresponds to HAProxy's `I`dle_pct` metric.
+Ratio of system polling time versus total time. Corresponds to HAProxy's `Idle_pct` metric.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | {percent} | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| proxy_name | Proxy name | Any Str |
+| service_name | Service name (FRONTEND for frontend, BACKEND for backend, any name for server/listener) | Any Str |
 
 ### haproxy.requests
 
@@ -44,6 +51,13 @@ Current sessions. Corresponds to HAProxy's `scur` metric.
 | ---- | ----------- | ---------- |
 | {sessions} | Gauge | Int |
 
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| proxy_name | Proxy name | Any Str |
+| service_name | Service name (FRONTEND for frontend, BACKEND for backend, any name for server/listener) | Any Str |
+
 ## Resource Attributes
 
 | Name | Description | Values |
@@ -52,8 +66,6 @@ Current sessions. Corresponds to HAProxy's `scur` metric.
 | haproxy.algo | load balancing algorithm | Any Str |
 | haproxy.iid | unique proxy id | Any Str |
 | haproxy.pid | process id (0 for first instance, 1 for second, ...) | Any Str |
-| haproxy.proxy_name | Proxy name | Any Str |
-| haproxy.service_name | Service name (FRONTEND for frontend, BACKEND for backend, any name for server/listener) | Any Str |
 | haproxy.sid | server id (unique inside a proxy) | Any Str |
 | haproxy.type | (0=frontend, 1=backend, 2=server, 3=socket/listener) | Any Str |
 | haproxy.url | The path to the HAProxy socket or HTTP URL. | Any Str |
