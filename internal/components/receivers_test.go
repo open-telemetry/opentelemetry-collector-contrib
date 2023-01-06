@@ -442,13 +442,11 @@ func TestDefaultReceivers(t *testing.T) {
 			require.True(t, ok)
 			assert.Equal(t, tt.receiver, factory.Type())
 
-			if tt.skipLifecyle {
-				t.Skip("Skipping lifecycle test", tt.receiver)
-				return
-			}
-
-			verifyReceiverLifecycle(t, factory, tt.getConfigFn)
 			verifyReceiverShutdown(t, factory, tt.getConfigFn)
+
+			if !tt.skipLifecyle {
+				verifyReceiverLifecycle(t, factory, tt.getConfigFn)
+			}
 		})
 	}
 }
@@ -510,6 +508,9 @@ func verifyReceiverShutdown(tb testing.TB, factory receiver.Factory, getConfigFn
 	for _, createFn := range createFns {
 		r, err := createFn(ctx, receiverCreateSet, getConfigFn())
 		if errors.Is(err, component.ErrDataTypeIsNotSupported) {
+			continue
+		}
+		if r == nil {
 			continue
 		}
 		assert.NotPanics(tb, func() {
