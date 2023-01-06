@@ -231,7 +231,7 @@ func (se *signalfxExporter) createClient(host component.Host) (*http.Client, err
 	se.config.HTTPClientSettings.TLSSetting = se.config.IngestTLSSettings
 
 	if se.config.MaxConnections != 0 {
-		se.logger.Warn("You are using the deprecated `max_connections` option that will be removed in the next release; use `max_idle_conns` and `max_idle_conns_per_host` instead: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/signalfxexporter#advanced-configuration")
+		se.logger.Warn("You are using the deprecated `max_connections` option that will be removed soon; use `max_idle_conns` and `max_idle_conns_per_host` instead: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/signalfxexporter#advanced-configuration")
 		se.config.HTTPClientSettings.MaxIdleConns = &se.config.MaxConnections
 		se.config.HTTPClientSettings.MaxIdleConnsPerHost = &se.config.MaxConnections
 	}
