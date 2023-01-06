@@ -124,7 +124,7 @@ func TestLogsExporter_createDatabase(t *testing.T) {
 			TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
 			QueueSettings:   QueueSettings{QueueSize: exporterhelper.NewDefaultQueueSettings().QueueSize},
 			RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
-			DSN:             "tcp://mydatabase-clickhouse-headless:9000/mydatabase",
+			DSN:             "tcp://newdatabase-clickhouse-headless:9000/newdatabase",
 			LogsTableName:   "otel_logs",
 			TracesTableName: "otel_traces",
 			TTLDays:         7,
