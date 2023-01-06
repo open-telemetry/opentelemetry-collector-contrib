@@ -16,7 +16,6 @@ package heroku // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"context"
-	"errors"
 	"os"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -43,10 +42,6 @@ const (
 	herokuAppID = "heroku.app.id"
 	// The dyno identifier. Used as host name
 	herokuDynoID = "heroku.dyno.id"
-)
-
-var (
-	errHerokuMetadata = errors.New("failed retrieving heroku metadata")
 )
 
 // NewDetector returns a detector which can detect resource attributes on Heroku
