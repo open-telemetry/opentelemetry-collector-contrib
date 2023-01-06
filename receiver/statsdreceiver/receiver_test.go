@@ -55,6 +55,25 @@ func Test_statsdreceiver_New(t *testing.T) {
 			},
 			wantErr: component.ErrNilNextConsumer,
 		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := New(receivertest.NewNopCreateSettings(), tt.args.config, tt.args.nextConsumer)
+			assert.Equal(t, tt.wantErr, err)
+		})
+	}
+}
+
+func Test_statsdreceiver_Start(t *testing.T) {
+	type args struct {
+		config       Config
+		nextConsumer consumer.Metrics
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr error
+	}{
 		{
 			name: "unsupported transport",
 			args: args{
@@ -71,7 +90,9 @@ func Test_statsdreceiver_New(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := New(receivertest.NewNopCreateSettings(), tt.args.config, tt.args.nextConsumer)
+			receiver, err := New(receivertest.NewNopCreateSettings(), tt.args.config, tt.args.nextConsumer)
+			require.NoError(t, err)
+			err = receiver.Start(context.Background(), componenttest.NewNopHost())
 			assert.Equal(t, tt.wantErr, err)
 		})
 	}
