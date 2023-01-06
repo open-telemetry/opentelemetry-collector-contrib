@@ -24,6 +24,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
@@ -155,4 +156,69 @@ func initSum(metric pmetric.Metric, name, desc, unit string, aggr pmetric.Aggreg
 	metric.SetUnit(unit)
 	metric.SetEmptySum().SetIsMonotonic(isMonotonic)
 	metric.Sum().SetAggregationTemporality(aggr)
+}
+
+func TestReadLogs(t *testing.T) {
+	expectedLogs := CreateTestLogs()
+
+	expectedFile := filepath.Join("testdata", "logs-roundtrip", "expected.json")
+	actualLogs, err := ReadLogs(expectedFile)
+	require.NoError(t, err)
+	require.Equal(t, expectedLogs, actualLogs)
+}
+
+func TestWriteLogs(t *testing.T) {
+	logs := CreateTestLogs()
+
+	actualFile := filepath.Join(t.TempDir(), "logs.json")
+	require.NoError(t, WriteLogs(actualFile, logs))
+
+	actualBytes, err := os.ReadFile(actualFile)
+	require.NoError(t, err)
+
+	expectedFile := filepath.Join("testdata", "logs-roundtrip", "expected.json")
+	expectedBytes, err := os.ReadFile(expectedFile)
+	require.NoError(t, err)
+
+	if runtime.GOOS == "windows" {
+		// ioutil adds a '\r' that we don't actually expect
+		expectedBytes = bytes.ReplaceAll(expectedBytes, []byte("\r\n"), []byte("\n"))
+	}
+
+	require.Equal(t, expectedBytes, actualBytes)
+}
+
+func TestLogsRoundTrip(t *testing.T) {
+	expectedLogs := CreateTestLogs()
+
+	tempDir := filepath.Join(t.TempDir(), "logs.json")
+	require.NoError(t, WriteLogs(tempDir, expectedLogs))
+
+	actualLogs, err := ReadLogs(tempDir)
+	require.NoError(t, err)
+	require.Equal(t, expectedLogs, actualLogs)
+}
+
+func CreateTestLogs() plog.Logs {
+	logs := plog.NewLogs()
+
+	rl := logs.ResourceLogs().AppendEmpty()
+	rl.Resource().Attributes().PutStr("testKey1", "teststringvalue1")
+	rl.Resource().Attributes().PutStr("testKey2", "teststringvalue2")
+
+	sl := rl.ScopeLogs().AppendEmpty()
+	sl.Scope().SetName("collector")
+	sl.Scope().SetVersion("v0.1.0")
+
+	logRecord := sl.LogRecords().AppendEmpty()
+	timestamp := pcommon.NewTimestampFromTime(time.Time{})
+	logRecord.SetTimestamp(timestamp)
+	logRecord.SetObservedTimestamp(timestamp)
+	logRecord.SetSeverityNumber(plog.SeverityNumberInfo)
+	logRecord.SetSeverityText("TEST")
+	logRecord.Body().SetStr("testscopevalue1")
+	logRecord.Attributes().PutStr("testKey1", "teststringvalue1")
+	logRecord.Attributes().PutStr("testKey2", "teststringvalue2")
+
+	return logs
 }

@@ -17,6 +17,7 @@ package comparetest // import "github.com/open-telemetry/opentelemetry-collector
 import (
 	"fmt"
 
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/pdatautil"
@@ -66,4 +67,28 @@ func sortResourceMetrics(a, b pmetric.ResourceMetrics) bool {
 
 func sortMetricSlice(a, b pmetric.Metric) bool {
 	return a.Name() < b.Name()
+}
+
+func sortResourceLogs(a, b plog.ResourceLogs) bool {
+	if a.SchemaUrl() < b.SchemaUrl() {
+		return true
+	}
+	return pdatautil.MapHash(a.Resource().Attributes()) < pdatautil.MapHash(b.Resource().Attributes())
+}
+
+func sortLogsInstrumentationLibrary(a, b plog.ScopeLogs) bool {
+	if a.SchemaUrl() < b.SchemaUrl() {
+		return true
+	}
+	if a.Scope().Name() < b.Scope().Name() {
+		return true
+	}
+	if a.Scope().Version() < b.Scope().Version() {
+		return true
+	}
+	return false
+}
+
+func sortLogRecordSlice(a, b plog.LogRecord) bool {
+	return pdatautil.MapHash(a.Attributes()) < pdatautil.MapHash(b.Attributes())
 }
