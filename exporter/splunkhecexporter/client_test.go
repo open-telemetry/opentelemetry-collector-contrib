@@ -208,7 +208,7 @@ func runMetricsExport(cfg *Config, metrics pmetric.Metrics, expectedBatchesNum i
 	}
 
 	factory := NewFactory()
-	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
+	cfg.HTTPClientSettings.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	cfg.Token = "1234-1234"
 
 	rr := make(chan receivedRequest)
@@ -258,7 +258,7 @@ func runTraceExport(testConfig *Config, traces ptrace.Traces, expectedBatchesNum
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
+	cfg.HTTPClientSettings.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	cfg.DisableCompression = testConfig.DisableCompression
 	cfg.MaxContentLengthTraces = testConfig.MaxContentLengthTraces
 	cfg.Token = "1234-1234"
@@ -319,7 +319,7 @@ func runLogExport(cfg *Config, ld plog.Logs, expectedBatchesNum int, t *testing.
 		panic(err)
 	}
 
-	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
+	cfg.HTTPClientSettings.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	cfg.Token = "1234-1234"
 
 	rr := make(chan receivedRequest)
@@ -881,7 +881,7 @@ func TestErrorReceived(t *testing.T) {
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
+	cfg.HTTPClientSettings.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	// Disable QueueSettings to ensure that we execute the request when calling ConsumeTraces
 	// otherwise we will not see the error.
 	cfg.QueueSettings.Enabled = false
@@ -930,7 +930,7 @@ func TestInvalidURL(t *testing.T) {
 	cfg.QueueSettings.Enabled = false
 	// Disable retries to not wait too much time for the return error.
 	cfg.RetrySettings.Enabled = false
-	cfg.Endpoint = "ftp://example.com:134"
+	cfg.HTTPClientSettings.Endpoint = "ftp://example.com:134"
 	cfg.Token = "1234-1234"
 	params := exportertest.NewNopCreateSettings()
 	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
@@ -955,12 +955,6 @@ func TestInvalidJson(t *testing.T) {
 	}
 	_, err := jsoniter.Marshal(badEvent)
 	assert.Error(t, err)
-}
-
-func TestStartAlwaysReturnsNil(t *testing.T) {
-	c := client{}
-	err := c.start(context.Background(), componenttest.NewNopHost())
-	assert.NoError(t, err)
 }
 
 func Test_pushLogData_nil_Logs(t *testing.T) {

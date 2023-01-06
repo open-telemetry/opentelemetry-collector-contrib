@@ -21,6 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 )
 
@@ -32,7 +33,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 func TestCreateMetricsExporter(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "https://example.com:8088/services/collector"
+	cfg.HTTPClientSettings.Endpoint = "https://example.com:8088/services/collector"
 	cfg.Token = "1234-1234"
 
 	params := exportertest.NewNopCreateSettings()
@@ -40,15 +41,9 @@ func TestCreateMetricsExporter(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestCreateMetricsExporterNoConfig(t *testing.T) {
-	params := exportertest.NewNopCreateSettings()
-	_, err := createMetricsExporter(context.Background(), params, nil)
-	assert.Error(t, err)
-}
-
 func TestCreateTracesExporter(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "https://example.com:8088/services/collector"
+	cfg.HTTPClientSettings.Endpoint = "https://example.com:8088/services/collector"
 	cfg.Token = "1234-1234"
 
 	params := exportertest.NewNopCreateSettings()
@@ -56,15 +51,9 @@ func TestCreateTracesExporter(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestCreateTracesExporterNoConfig(t *testing.T) {
-	params := exportertest.NewNopCreateSettings()
-	_, err := createTracesExporter(context.Background(), params, nil)
-	assert.Error(t, err)
-}
-
 func TestCreateTracesExporterInvalidEndpoint(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "urn:something:12345"
+	cfg.HTTPClientSettings.Endpoint = "urn:something:12345"
 	params := exportertest.NewNopCreateSettings()
 	_, err := createTracesExporter(context.Background(), params, cfg)
 	assert.Error(t, err)
@@ -72,7 +61,7 @@ func TestCreateTracesExporterInvalidEndpoint(t *testing.T) {
 
 func TestCreateLogsExporter(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "https://example.com:8088/services/collector"
+	cfg.HTTPClientSettings.Endpoint = "https://example.com:8088/services/collector"
 	cfg.Token = "1234-1234"
 
 	params := exportertest.NewNopCreateSettings()
@@ -80,15 +69,9 @@ func TestCreateLogsExporter(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestCreateLogsExporterNoConfig(t *testing.T) {
-	params := exportertest.NewNopCreateSettings()
-	_, err := createLogsExporter(context.Background(), params, nil)
-	assert.Error(t, err)
-}
-
 func TestCreateLogsExporterInvalidEndpoint(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "urn:something:12345"
+	cfg.HTTPClientSettings.Endpoint = "urn:something:12345"
 	params := exportertest.NewNopCreateSettings()
 	_, err := createLogsExporter(context.Background(), params, cfg)
 	assert.Error(t, err)
@@ -98,7 +81,7 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	factory := NewFactory()
 
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.Endpoint = "https://example.com:8088/services/collector"
+	cfg.HTTPClientSettings.Endpoint = "https://example.com:8088/services/collector"
 	cfg.Token = "1234-1234"
 	params := exportertest.NewNopCreateSettings()
 	exp, err := factory.CreateMetricsExporter(
@@ -109,7 +92,7 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 
 	// Set values that don't have a valid default.
 	cfg.Token = "testToken"
-	cfg.Endpoint = "https://example.com"
+	cfg.HTTPClientSettings.Endpoint = "https://example.com"
 	exp, err = factory.CreateMetricsExporter(
 		context.Background(), params,
 		cfg)
@@ -121,8 +104,10 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 
 func TestFactory_CreateMetricsExporter(t *testing.T) {
 	config := &Config{
-		Token:    "testToken",
-		Endpoint: "https://example.com:8000",
+		Token: "testToken",
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Endpoint: "https://example.com:8000",
+		},
 	}
 
 	params := exportertest.NewNopCreateSettings()
@@ -147,7 +132,9 @@ func TestFactory_CreateMetricsExporterFails(t *testing.T) {
 		{
 			name: "empty_token",
 			config: &Config{
-				Endpoint: "https://example.com:8000",
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: "https://example.com:8000",
+				},
 			},
 			errorMessage: "requires a non-empty \"token\"",
 		},
