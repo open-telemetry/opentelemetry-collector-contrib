@@ -44,6 +44,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
 )
 
 var testPayloads = []string{
@@ -114,7 +115,7 @@ func TestAlertsReceiver(t *testing.T) {
 			expectedLogs, err := readLogs(filepath.Join("testdata", "alerts", "golden", payloadName))
 			require.NoError(t, err)
 
-			require.NoError(t, compareLogs(expectedLogs, logs))
+			require.NoError(t, comparetest.CompareLogs(expectedLogs, logs))
 		})
 	}
 }
@@ -187,7 +188,7 @@ func TestAlertsReceiverTLS(t *testing.T) {
 			expectedLogs, err := readLogs(filepath.Join("testdata", "alerts", "golden", payloadName))
 			require.NoError(t, err)
 
-			require.NoError(t, compareLogs(expectedLogs, logs))
+			require.NoError(t, comparetest.CompareLogs(expectedLogs, logs))
 		})
 	}
 }
@@ -253,7 +254,7 @@ func TestAtlasPoll(t *testing.T) {
 	logs := sink.AllLogs()[0]
 	expectedLogs, err := readLogs(filepath.Join("testdata", "alerts", "golden", "retrieved-logs.json"))
 	require.NoError(t, err)
-	require.NoError(t, compareLogs(expectedLogs, logs))
+	require.NoError(t, comparetest.CompareLogs(expectedLogs, logs))
 }
 
 func calculateHMACb64(secret string, payload []byte) (string, error) {
