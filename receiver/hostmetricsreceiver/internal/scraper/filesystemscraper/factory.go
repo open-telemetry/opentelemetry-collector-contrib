@@ -63,7 +63,7 @@ func (f *Factory) CreateMetricsScraper(
 			"/run/.containerenv", // Mounted by podman as described here: https://github.com/containers/podman/blob/ecbb52cb478309cfd59cc061f082702b69f0f4b7/docs/source/markdown/podman-run.1.md.in#L31
 		} {
 			if _, err := os.Stat(p); err == nil {
-
+				inContainer = true
 				break
 			}
 		}
