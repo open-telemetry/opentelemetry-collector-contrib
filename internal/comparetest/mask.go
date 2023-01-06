@@ -16,13 +16,15 @@ package comparetest // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"fmt"
+	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-// IgnoreMetricValues is a CompareOption that clears all values
-func IgnoreMetricValues(metricNames ...string) CompareOption {
+// IgnoreMetricValues is a MetricsCompareOption that clears all metric values.
+func IgnoreMetricValues(metricNames ...string) MetricsCompareOption {
 	return ignoreMetricValues{
 		metricNames: metricNames,
 	}
@@ -32,7 +34,7 @@ type ignoreMetricValues struct {
 	metricNames []string
 }
 
-func (opt ignoreMetricValues) apply(expected, actual pmetric.Metrics) {
+func (opt ignoreMetricValues) applyOnMetrics(expected, actual pmetric.Metrics) {
 	maskMetricValues(expected, opt.metricNames...)
 	maskMetricValues(actual, opt.metricNames...)
 }
@@ -69,8 +71,8 @@ func maskDataPointSliceValues(dataPoints pmetric.NumberDataPointSlice) {
 	}
 }
 
-// IgnoreMetricAttributeValue is a CompareOption that clears all values
-func IgnoreMetricAttributeValue(attributeName string, metricNames ...string) CompareOption {
+// IgnoreMetricAttributeValue is a MetricsCompareOption that clears value of the metric attribute.
+func IgnoreMetricAttributeValue(attributeName string, metricNames ...string) MetricsCompareOption {
 	return ignoreMetricAttributeValue{
 		attributeName: attributeName,
 		metricNames:   metricNames,
@@ -82,7 +84,7 @@ type ignoreMetricAttributeValue struct {
 	metricNames   []string
 }
 
-func (opt ignoreMetricAttributeValue) apply(expected, actual pmetric.Metrics) {
+func (opt ignoreMetricAttributeValue) applyOnMetrics(expected, actual pmetric.Metrics) {
 	maskMetricAttributeValue(expected, opt)
 	maskMetricAttributeValue(actual, opt)
 }
@@ -146,7 +148,7 @@ func maskDataPointSliceAttributeValues(dataPoints pmetric.NumberDataPointSlice, 
 }
 
 // IgnoreResourceAttributeValue is a CompareOption that removes a resource attribute
-// from all resources
+// from all resources.
 func IgnoreResourceAttributeValue(attributeName string) CompareOption {
 	return ignoreResourceAttributeValue{
 		attributeName: attributeName,
@@ -157,22 +159,38 @@ type ignoreResourceAttributeValue struct {
 	attributeName string
 }
 
-func (opt ignoreResourceAttributeValue) apply(expected, actual pmetric.Metrics) {
-	maskResourceAttributeValue(expected, opt)
-	maskResourceAttributeValue(actual, opt)
+func (opt ignoreResourceAttributeValue) applyOnMetrics(expected, actual pmetric.Metrics) {
+	opt.maskMetricsResourceAttributeValue(expected)
+	opt.maskMetricsResourceAttributeValue(actual)
 }
 
-func maskResourceAttributeValue(metrics pmetric.Metrics, opt ignoreResourceAttributeValue) {
+func (opt ignoreResourceAttributeValue) maskMetricsResourceAttributeValue(metrics pmetric.Metrics) {
 	rms := metrics.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
-		if _, ok := rms.At(i).Resource().Attributes().Get(opt.attributeName); ok {
-			rms.At(i).Resource().Attributes().Remove(opt.attributeName)
-		}
+		opt.maskResourceAttributeValue(rms.At(i).Resource())
 	}
 }
 
-// IgnoreSubsequentDataPoints is a CompareOption that ignores data points after the first
-func IgnoreSubsequentDataPoints(metricNames ...string) CompareOption {
+func (opt ignoreResourceAttributeValue) applyOnLogs(expected, actual plog.Logs) {
+	opt.maskLogsResourceAttributeValue(expected)
+	opt.maskLogsResourceAttributeValue(actual)
+}
+
+func (opt ignoreResourceAttributeValue) maskLogsResourceAttributeValue(metrics plog.Logs) {
+	rls := metrics.ResourceLogs()
+	for i := 0; i < rls.Len(); i++ {
+		opt.maskResourceAttributeValue(rls.At(i).Resource())
+	}
+}
+
+func (opt ignoreResourceAttributeValue) maskResourceAttributeValue(res pcommon.Resource) {
+	if _, ok := res.Attributes().Get(opt.attributeName); ok {
+		res.Attributes().Remove(opt.attributeName)
+	}
+}
+
+// IgnoreSubsequentDataPoints is a MetricsCompareOption that ignores data points after the first.
+func IgnoreSubsequentDataPoints(metricNames ...string) MetricsCompareOption {
 	return ignoreSubsequentDataPoints{
 		metricNames: metricNames,
 	}
@@ -182,7 +200,7 @@ type ignoreSubsequentDataPoints struct {
 	metricNames []string
 }
 
-func (opt ignoreSubsequentDataPoints) apply(expected, actual pmetric.Metrics) {
+func (opt ignoreSubsequentDataPoints) applyOnMetrics(expected, actual pmetric.Metrics) {
 	maskSubsequentDataPoints(expected, opt.metricNames...)
 	maskSubsequentDataPoints(actual, opt.metricNames...)
 }
@@ -207,6 +225,31 @@ func maskSubsequentDataPoints(metrics pmetric.Metrics, metricNames ...string) {
 						return n > 1
 					})
 				}
+			}
+		}
+	}
+}
+
+func IgnoreObservedTimestamp() LogsCompareOption {
+	return ignoreObservedTimestamp{}
+}
+
+type ignoreObservedTimestamp struct{}
+
+func (opt ignoreObservedTimestamp) applyOnLogs(expected, actual plog.Logs) {
+	now := pcommon.NewTimestampFromTime(time.Now())
+	maskObservedTimestamp(expected, now)
+	maskObservedTimestamp(actual, now)
+}
+
+func maskObservedTimestamp(logs plog.Logs, ts pcommon.Timestamp) {
+	rls := logs.ResourceLogs()
+	for i := 0; i < logs.ResourceLogs().Len(); i++ {
+		sls := rls.At(i).ScopeLogs()
+		for j := 0; j < sls.Len(); j++ {
+			lrs := sls.At(j).LogRecords()
+			for k := 0; k < lrs.Len(); k++ {
+				lrs.At(k).SetObservedTimestamp(ts)
 			}
 		}
 	}

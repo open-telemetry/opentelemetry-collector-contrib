@@ -99,7 +99,7 @@ func TestScaperScrape(t *testing.T) {
 		expectedMetricGen func(t *testing.T) pmetric.Metrics
 		expectedErr       error
 		endpoint          string
-		compareOptions    []comparetest.CompareOption
+		compareOptions    []comparetest.MetricsCompareOption
 	}{
 		{
 			desc:             "Successful Collection",
@@ -111,7 +111,7 @@ func TestScaperScrape(t *testing.T) {
 				return expectedMetrics
 			},
 			expectedErr: nil,
-			compareOptions: []comparetest.CompareOption{
+			compareOptions: []comparetest.MetricsCompareOption{
 				comparetest.IgnoreMetricAttributeValue("http.url"),
 				comparetest.IgnoreMetricValues("httpcheck.duration"),
 			},
@@ -126,7 +126,7 @@ func TestScaperScrape(t *testing.T) {
 				return expectedMetrics
 			},
 			expectedErr: nil,
-			compareOptions: []comparetest.CompareOption{
+			compareOptions: []comparetest.MetricsCompareOption{
 				comparetest.IgnoreMetricAttributeValue("http.url"),
 				comparetest.IgnoreMetricValues("httpcheck.duration"),
 			},
@@ -141,7 +141,7 @@ func TestScaperScrape(t *testing.T) {
 				return expectedMetrics
 			},
 			expectedErr: nil,
-			compareOptions: []comparetest.CompareOption{
+			compareOptions: []comparetest.MetricsCompareOption{
 				comparetest.IgnoreMetricValues("httpcheck.duration"),
 				comparetest.IgnoreMetricAttributeValue("error.message"),
 			},
