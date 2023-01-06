@@ -19,14 +19,12 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"errors"
-	"fmt"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/agiledragon/gomonkey/v2"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -105,24 +103,35 @@ func TestExporter_pushLogsData(t *testing.T) {
 }
 
 func TestLogsExporter_createDatabase(t *testing.T) {
-	c := &Config{
-		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
-		QueueSettings:   QueueSettings{QueueSize: exporterhelper.NewDefaultQueueSettings().QueueSize},
-		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
-		DSN:             "tcp://mydatabase-clickhouse-headless:9000/mydatabase",
-		LogsTableName:   "otel_logs",
-		TracesTableName: "otel_traces",
-		TTLDays:         7,
-	}
-
-	patchs := gomonkey.ApplyFunc(sql.Open, func(driverName, dataSourceName string) (*sql.DB, error) {
-		require.Equal(t, "tcp://mydatabase-clickhouse-headless:9000/default", dataSourceName)
-		return nil, fmt.Errorf("mock error")
+	initClickhouseTestServer(t, func(query string, values []driver.Value) error {
+		return nil
 	})
-	patchs.Reset()
-
-	err := createDatabase(c)
-	require.Error(t, err, "sql.Open:mock error")
+	t.Run("tcp://mydatabase-clickhouse-headless:9000/mydatabase", func(t *testing.T) {
+		c := &Config{
+			TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
+			QueueSettings:   QueueSettings{QueueSize: exporterhelper.NewDefaultQueueSettings().QueueSize},
+			RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
+			DSN:             "tcp://mydatabase-clickhouse-headless:9000/mydatabase",
+			LogsTableName:   "otel_logs",
+			TracesTableName: "otel_traces",
+			TTLDays:         7,
+		}
+		err := createDatabase(c)
+		require.NoError(t, err)
+	})
+	t.Run("tcp://newdatabase-clickhouse-headless:9000/newdatabase", func(t *testing.T) {
+		c := &Config{
+			TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
+			QueueSettings:   QueueSettings{QueueSize: exporterhelper.NewDefaultQueueSettings().QueueSize},
+			RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
+			DSN:             "tcp://mydatabase-clickhouse-headless:9000/mydatabase",
+			LogsTableName:   "otel_logs",
+			TracesTableName: "otel_traces",
+			TTLDays:         7,
+		}
+		err := createDatabase(c)
+		require.NoError(t, err)
+	})
 }
 
 func newTestLogsExporter(t *testing.T, dsn string, fns ...func(*Config)) *logsExporter {
