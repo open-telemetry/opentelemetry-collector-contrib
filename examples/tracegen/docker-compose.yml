@@ -19,7 +19,7 @@ services:
 
   tracegen:
     build:
-      context: ../../tracegen
+      context: ../../cmd/tracegen
     command:
       - -otlp-endpoint
       - otel-collector:4317
