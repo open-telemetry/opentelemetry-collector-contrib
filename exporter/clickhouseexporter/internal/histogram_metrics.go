@@ -49,8 +49,7 @@ CREATE TABLE IF NOT EXISTS %s_histogram (
 	Exemplars Nested (
 		FilteredAttributes Map(LowCardinality(String), String),
 		TimeUnix DateTime64(9),
-		ValueAsDouble Float64,
-		ValueAsInt Int64,
+		Value Float64,
 		SpanId String,
 		TraceId String
     ) CODEC(ZSTD(1)),
@@ -84,14 +83,13 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
 	ExplicitBounds,
   	Exemplars.FilteredAttributes,
 	Exemplars.TimeUnix,
-    Exemplars.ValueAsDouble,
-    Exemplars.ValueAsInt,
+    Exemplars.Value,
     Exemplars.SpanId,
     Exemplars.TraceId,
 	Flags,
 	Min,
 	Max) VALUES `
-	histogramPlaceholders = "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+	histogramPlaceholders = "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
 )
 
 type histogramModel struct {
@@ -134,11 +132,10 @@ func (h *histogramMetrics) insert(ctx context.Context, tx *sql.Tx, logger *zap.L
 			valueArgs = append(valueArgs, convertSliceToArraySet(dp.BucketCounts().AsRaw(), logger))
 			valueArgs = append(valueArgs, convertSliceToArraySet(dp.ExplicitBounds().AsRaw(), logger))
 
-			attrs, times, floatValues, intValues, traceIDs, spanIDs := convertExemplars(dp.Exemplars())
+			attrs, times, values, traceIDs, spanIDs := convertExemplars(dp.Exemplars())
 			valueArgs = append(valueArgs, attrs)
 			valueArgs = append(valueArgs, times)
-			valueArgs = append(valueArgs, floatValues)
-			valueArgs = append(valueArgs, intValues)
+			valueArgs = append(valueArgs, values)
 			valueArgs = append(valueArgs, traceIDs)
 			valueArgs = append(valueArgs, spanIDs)
 			valueArgs = append(valueArgs, uint32(dp.Flags()))

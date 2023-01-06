@@ -42,14 +42,12 @@ CREATE TABLE IF NOT EXISTS %s_gauge (
     Attributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
     StartTimeUnix DateTime64(9) CODEC(Delta, ZSTD(1)),
     TimeUnix DateTime64(9) CODEC(Delta, ZSTD(1)),
-    ValueAsDouble Float64 CODEC(ZSTD(1)),
-    ValueAsInt Int64 CODEC(ZSTD(1)),
+    Value Float64 CODEC(ZSTD(1)),
     Flags UInt32 CODEC(ZSTD(1)),
     Exemplars Nested (
 		FilteredAttributes Map(LowCardinality(String), String),
 		TimeUnix DateTime64(9),
-		ValueAsDouble Float64,
-		ValueAsInt Int64,
+		Value Float64,
 		SpanId String,
 		TraceId String
     ) CODEC(ZSTD(1))
@@ -73,16 +71,14 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
     MetricUnit,
     Attributes,
     TimeUnix,
-    ValueAsDouble,
-    ValueAsInt,
+    Value,
     Flags,
     Exemplars.FilteredAttributes,
 	Exemplars.TimeUnix,
-    Exemplars.ValueAsDouble,
-    Exemplars.ValueAsInt,
+    Exemplars.Value,
     Exemplars.SpanId,
     Exemplars.TraceId) VALUES `
-	gaugePlaceholders = "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+	gaugePlaceholders = "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
 )
 
 type gaugeModel struct {
@@ -119,15 +115,13 @@ func (g *gaugeMetrics) insert(ctx context.Context, tx *sql.Tx, logger *zap.Logge
 			valueArgs = append(valueArgs, model.metricUnit)
 			valueArgs = append(valueArgs, attributesToMap(dp.Attributes()))
 			valueArgs = append(valueArgs, dp.Timestamp().AsTime().UnixNano())
-			valueArgs = append(valueArgs, dp.DoubleValue())
-			valueArgs = append(valueArgs, dp.IntValue())
+			valueArgs = append(valueArgs, getValue(dp.IntValue(), dp.DoubleValue()))
 			valueArgs = append(valueArgs, uint32(dp.Flags()))
 
-			attrs, times, floatValues, intValues, traceIDs, spanIDs := convertExemplars(dp.Exemplars())
+			attrs, times, values, traceIDs, spanIDs := convertExemplars(dp.Exemplars())
 			valueArgs = append(valueArgs, attrs)
 			valueArgs = append(valueArgs, times)
-			valueArgs = append(valueArgs, floatValues)
-			valueArgs = append(valueArgs, intValues)
+			valueArgs = append(valueArgs, values)
 			valueArgs = append(valueArgs, traceIDs)
 			valueArgs = append(valueArgs, spanIDs)
 		}

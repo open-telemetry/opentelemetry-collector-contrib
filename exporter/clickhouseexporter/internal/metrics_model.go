@@ -96,27 +96,34 @@ func InsertMetrics(ctx context.Context, tx *sql.Tx, metricsMap map[pmetric.Metri
 	return multierr.Combine(err...)
 }
 
-func convertExemplars(exemplars pmetric.ExemplarSlice) (clickhouse.ArraySet, clickhouse.ArraySet, clickhouse.ArraySet, clickhouse.ArraySet, clickhouse.ArraySet, clickhouse.ArraySet) {
+func convertExemplars(exemplars pmetric.ExemplarSlice) (clickhouse.ArraySet, clickhouse.ArraySet, clickhouse.ArraySet, clickhouse.ArraySet, clickhouse.ArraySet) {
 	var (
-		attrs       clickhouse.ArraySet
-		times       clickhouse.ArraySet
-		floatValues clickhouse.ArraySet
-		intValues   clickhouse.ArraySet
-		traceIDs    clickhouse.ArraySet
-		spanIDs     clickhouse.ArraySet
+		attrs    clickhouse.ArraySet
+		times    clickhouse.ArraySet
+		values   clickhouse.ArraySet
+		traceIDs clickhouse.ArraySet
+		spanIDs  clickhouse.ArraySet
 	)
 	for i := 0; i < exemplars.Len(); i++ {
 		exemplar := exemplars.At(i)
 		attrs = append(attrs, attributesToMap(exemplar.FilteredAttributes()))
 		times = append(times, exemplar.Timestamp().AsTime())
-		floatValues = append(floatValues, exemplar.DoubleValue())
-		intValues = append(intValues, exemplar.IntValue())
+		values = append(values, getValue(exemplar.IntValue(), exemplar.DoubleValue()))
 
 		traceID, spanID := exemplar.TraceID(), exemplar.SpanID()
 		traceIDs = append(traceIDs, hex.EncodeToString(traceID[:]))
 		spanIDs = append(spanIDs, hex.EncodeToString(spanID[:]))
 	}
-	return attrs, times, floatValues, intValues, traceIDs, spanIDs
+	return attrs, times, values, traceIDs, spanIDs
+}
+
+// https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/metrics/v1/metrics.proto#L358
+// define two types for one datapoint value, clickhouse only use one value of float64 to store them
+func getValue(intValue int64, floatValue float64) float64 {
+	if intValue > 0 {
+		return float64(intValue)
+	}
+	return floatValue
 }
 
 // Only support converting string type in pcommon.Value, other type will convert into an empty string

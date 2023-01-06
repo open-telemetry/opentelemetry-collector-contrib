@@ -17,6 +17,7 @@ package clickhouseexporter
 import (
 	"context"
 	"database/sql/driver"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -41,7 +42,18 @@ func TestExporter_pushMetricsData(t *testing.T) {
 
 		require.Equal(t, 5, items)
 	})
-	t.Run("check Resource metadata  and scope metadata", func(t *testing.T) {
+	t.Run("push failure", func(t *testing.T) {
+		initClickhouseTestServer(t, func(query string, values []driver.Value) error {
+			if strings.HasPrefix(query, "INSERT") {
+				return fmt.Errorf("mock insert error")
+			}
+			return nil
+		})
+		exporter := newTestMetricsExporter(t, defaultDSN)
+		err := exporter.pushMetricsData(context.TODO(), simpleMetrics(1))
+		require.Error(t, err)
+	})
+	t.Run("check Resource metadata and scope metadata", func(t *testing.T) {
 		var items int
 		initClickhouseTestServer(t, func(query string, values []driver.Value) error {
 			if strings.HasPrefix(query, "INSERT") {
@@ -50,8 +62,8 @@ func TestExporter_pushMetricsData(t *testing.T) {
 					require.Equal(t, "Resource SchemaUrl 1", values[1])
 					require.Equal(t, "Scope name 1", values[2])
 
-					require.Equal(t, "Resource SchemaUrl 2", values[31])
-					require.Equal(t, "Scope name 2", values[32])
+					require.Equal(t, "Resource SchemaUrl 2", values[30])
+					require.Equal(t, "Scope name 2", values[31])
 				}
 			}
 			return nil
@@ -99,7 +111,7 @@ func simpleMetrics(count int) pmetric.Metrics {
 		m.SetUnit("count")
 		m.SetDescription("This is a sum metrics")
 		dp = m.SetEmptySum().DataPoints().AppendEmpty()
-		dp.SetIntValue(int64(i))
+		dp.SetDoubleValue(11.234)
 		dp.Attributes().PutStr("sum_label_1", "1")
 		dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 		exemplars = dp.Exemplars().AppendEmpty()
@@ -126,7 +138,7 @@ func simpleMetrics(count int) pmetric.Metrics {
 		dpHisto.SetMin(0)
 		dpHisto.SetMax(1)
 		exemplars = dpHisto.Exemplars().AppendEmpty()
-		exemplars.SetIntValue(54)
+		exemplars.SetDoubleValue(55.22)
 		exemplars.FilteredAttributes().PutStr("key", "value")
 		exemplars.FilteredAttributes().PutStr("key2", "value2")
 		exemplars.SetSpanID([8]byte{1, 2, 3, byte(i)})

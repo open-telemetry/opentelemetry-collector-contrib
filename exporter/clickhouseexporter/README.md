@@ -216,7 +216,7 @@ Limit 100;
 
 ### Metrics
 
-Metrics data is stored in different clickhouse tables depending on their types.  The tables will have a suffix to
+Metrics data is stored in different clickhouse tables depending on their types. The tables will have a suffix to
 distinguish which type of metrics data is stored.
 
 | Metrics Type          | Metrics Table          |
@@ -234,16 +234,19 @@ between Prometheus(OpenMetrics) and OTLP Metrics.
 
 - Find a sum metrics with name
 ```clickhouse
-select TimeUnix,MetricName,Attributes,ValueAsDouble from otel_metrics_sum
+select TimeUnix,MetricName,Attributes,Value from otel_metrics_sum
 where MetricName='calls_total' limit 100
 ```
 
 - Find a sum metrics with name, attribute.
 ```clickhouse
-select TimeUnix,MetricName,Attributes,ValueAsDouble from otel_metrics_sum
+select TimeUnix,MetricName,Attributes,Value from otel_metrics_sum
 where MetricName='calls_total' and Attributes['service_name']='featureflagservice'
 limit 100
 ```
+
+The OTLP Metrics [define two type value for one datapoint](https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/metrics/v1/metrics.proto#L358),
+clickhouse only use one value of float64 to store them.
 
 ## Performance Guide
 
@@ -427,14 +430,12 @@ CREATE TABLE IF NOT EXISTS otel.otel_metrics_gauge (
     Attributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
     StartTimeUnix DateTime64(9) CODEC(Delta, ZSTD(1)),
     TimeUnix DateTime64(9) CODEC(Delta, ZSTD(1)),
-    ValueAsDouble Float64 CODEC(ZSTD(1)),
-    ValueAsInt Int64 CODEC(ZSTD(1)),
+    Value Float64 CODEC(ZSTD(1)),
     Flags UInt32 CODEC(ZSTD(1)),
     Exemplars Nested (
 		FilteredAttributes Map(LowCardinality(String), String),
 		TimeUnix DateTime64(9),
-		ValueAsDouble Float64,
-		ValueAsInt Int64,
+		Value Float64,
 		SpanId String,
 		TraceId String
     ) CODEC(ZSTD(1))
@@ -462,14 +463,12 @@ CREATE TABLE IF NOT EXISTS otel.otel_metrics_sum (
     Attributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
 	StartTimeUnix DateTime64(9) CODEC(Delta, ZSTD(1)),
 	TimeUnix DateTime64(9) CODEC(Delta, ZSTD(1)),
-	ValueAsDouble Float64 CODEC(ZSTD(1)),
-	ValueAsInt UInt32 CODEC(ZSTD(1)),
+	Value Float64 CODEC(ZSTD(1)),
 	Flags UInt32  CODEC(ZSTD(1)),
     Exemplars Nested (
 		FilteredAttributes Map(LowCardinality(String), String),
 		TimeUnix DateTime64(9),
-		ValueAsDouble Float64,
-		ValueAsInt Int64,
+		Value Float64,
 		SpanId String,
 		TraceId String
     ) CODEC(ZSTD(1)),
@@ -506,8 +505,7 @@ CREATE TABLE IF NOT EXISTS otel.otel_metrics_histogram (
 	Exemplars Nested (
 		FilteredAttributes Map(LowCardinality(String), String),
 		TimeUnix DateTime64(9),
-		ValueAsDouble Float64,
-		ValueAsInt Int64,
+		Value Float64,
 		SpanId String,
 		TraceId String
     ) CODEC(ZSTD(1)),
@@ -549,8 +547,7 @@ CREATE TABLE IF NOT EXISTS otel.otel_metrics_exponential_histogram (
 	Exemplars Nested (
 		FilteredAttributes Map(LowCardinality(String), String),
 		TimeUnix DateTime64(9),
-		ValueAsDouble Float64,
-		ValueAsInt Int64,
+		Value Float64,
 		SpanId String,
 		TraceId String
     ) CODEC(ZSTD(1)),

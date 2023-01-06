@@ -53,8 +53,7 @@ CREATE TABLE IF NOT EXISTS %s_exponential_histogram (
 	Exemplars Nested (
 		FilteredAttributes Map(LowCardinality(String), String),
 		TimeUnix DateTime64(9),
-		ValueAsDouble Float64,
-		ValueAsInt Int64,
+		Value Float64,
 		SpanId String,
 		TraceId String
     ) CODEC(ZSTD(1)),
@@ -92,14 +91,13 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
 	NegativeBucketCounts,
   	Exemplars.FilteredAttributes,
 	Exemplars.TimeUnix,
-    Exemplars.ValueAsDouble,
-    Exemplars.ValueAsInt,
+    Exemplars.Value,
     Exemplars.SpanId,
     Exemplars.TraceId,
 	Flags,
 	Min,
 	Max) VALUES `
-	expHistogramPlaceholders = "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+	expHistogramPlaceholders = "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
 )
 
 type expHistogramModel struct {
@@ -146,11 +144,10 @@ func (e *expHistogramMetrics) insert(ctx context.Context, tx *sql.Tx, logger *za
 			valueArgs = append(valueArgs, dp.Negative().Offset())
 			valueArgs = append(valueArgs, convertSliceToArraySet(dp.Negative().BucketCounts().AsRaw(), logger))
 
-			attrs, times, floatValues, intValues, traceIDs, spanIDs := convertExemplars(dp.Exemplars())
+			attrs, times, values, traceIDs, spanIDs := convertExemplars(dp.Exemplars())
 			valueArgs = append(valueArgs, attrs)
 			valueArgs = append(valueArgs, times)
-			valueArgs = append(valueArgs, floatValues)
-			valueArgs = append(valueArgs, intValues)
+			valueArgs = append(valueArgs, values)
 			valueArgs = append(valueArgs, traceIDs)
 			valueArgs = append(valueArgs, spanIDs)
 			valueArgs = append(valueArgs, uint32(dp.Flags()))

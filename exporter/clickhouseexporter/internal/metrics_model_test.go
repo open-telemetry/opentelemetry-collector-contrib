@@ -47,18 +47,16 @@ func Test_convertExemplars(t *testing.T) {
 	t.Run("empty exemplar", func(t *testing.T) {
 		exemplars := pmetric.NewExemplarSlice()
 		var (
-			expectAttrs       clickhouse.ArraySet
-			expectTimes       clickhouse.ArraySet
-			expectFloatValues clickhouse.ArraySet
-			expectIntValues   clickhouse.ArraySet
-			expectTraceIDs    clickhouse.ArraySet
-			expectSpanIDs     clickhouse.ArraySet
+			expectAttrs    clickhouse.ArraySet
+			expectTimes    clickhouse.ArraySet
+			expectValues   clickhouse.ArraySet
+			expectTraceIDs clickhouse.ArraySet
+			expectSpanIDs  clickhouse.ArraySet
 		)
-		attrs, times, floatValues, intValues, traceIDs, spanIDs := convertExemplars(exemplars)
+		attrs, times, values, traceIDs, spanIDs := convertExemplars(exemplars)
 		require.Equal(t, expectAttrs, attrs)
 		require.Equal(t, expectTimes, times)
-		require.Equal(t, expectFloatValues, floatValues)
-		require.Equal(t, expectIntValues, intValues)
+		require.Equal(t, expectValues, values)
 		require.Equal(t, expectTraceIDs, traceIDs)
 		require.Equal(t, expectSpanIDs, spanIDs)
 
@@ -69,11 +67,10 @@ func Test_convertExemplars(t *testing.T) {
 		exemplar.FilteredAttributes().PutStr("key1", "value1")
 		exemplar.FilteredAttributes().PutStr("key2", "value2")
 
-		attrs, times, floatValues, intValues, traceIDs, spanIDs := convertExemplars(exemplars)
+		attrs, times, values, traceIDs, spanIDs := convertExemplars(exemplars)
 		require.Equal(t, clickhouse.ArraySet{map[string]string{"key1": "value1", "key2": "value2"}}, attrs)
 		require.Equal(t, clickhouse.ArraySet{time.Date(1970, time.January, 1, 0, 0, 0, 0, time.UTC)}, times)
-		require.Equal(t, clickhouse.ArraySet{0.0}, floatValues)
-		require.Equal(t, clickhouse.ArraySet{int64(0)}, intValues)
+		require.Equal(t, clickhouse.ArraySet{0.0}, values)
 		require.Equal(t, clickhouse.ArraySet{"00000000000000000000000000000000"}, traceIDs)
 		require.Equal(t, clickhouse.ArraySet{"0000000000000000"}, spanIDs)
 	})
@@ -82,11 +79,10 @@ func Test_convertExemplars(t *testing.T) {
 		exemplar := exemplars.AppendEmpty()
 		exemplar.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1672218930, 0)))
 
-		attrs, times, floatValues, intValues, traceIDs, spanIDs := convertExemplars(exemplars)
+		attrs, times, values, traceIDs, spanIDs := convertExemplars(exemplars)
 		require.Equal(t, clickhouse.ArraySet{map[string]string{}}, attrs)
 		require.Equal(t, clickhouse.ArraySet{time.Unix(1672218930, 0).UTC()}, times)
-		require.Equal(t, clickhouse.ArraySet{0.0}, floatValues)
-		require.Equal(t, clickhouse.ArraySet{int64(0)}, intValues)
+		require.Equal(t, clickhouse.ArraySet{0.0}, values)
 		require.Equal(t, clickhouse.ArraySet{"00000000000000000000000000000000"}, traceIDs)
 		require.Equal(t, clickhouse.ArraySet{"0000000000000000"}, spanIDs)
 	})
@@ -95,11 +91,10 @@ func Test_convertExemplars(t *testing.T) {
 		exemplar := exemplars.AppendEmpty()
 		exemplar.SetDoubleValue(15.0)
 
-		attrs, times, floatValues, intValues, traceIDs, spanIDs := convertExemplars(exemplars)
+		attrs, times, values, traceIDs, spanIDs := convertExemplars(exemplars)
 		require.Equal(t, clickhouse.ArraySet{map[string]string{}}, attrs)
 		require.Equal(t, clickhouse.ArraySet{time.Date(1970, time.January, 1, 0, 0, 0, 0, time.UTC)}, times)
-		require.Equal(t, clickhouse.ArraySet{15.0}, floatValues)
-		require.Equal(t, clickhouse.ArraySet{int64(0)}, intValues)
+		require.Equal(t, clickhouse.ArraySet{15.0}, values)
 		require.Equal(t, clickhouse.ArraySet{"00000000000000000000000000000000"}, traceIDs)
 		require.Equal(t, clickhouse.ArraySet{"0000000000000000"}, spanIDs)
 	})
@@ -108,11 +103,10 @@ func Test_convertExemplars(t *testing.T) {
 		exemplar := exemplars.AppendEmpty()
 		exemplar.SetIntValue(20)
 
-		attrs, times, floatValues, intValues, traceIDs, spanIDs := convertExemplars(exemplars)
+		attrs, times, values, traceIDs, spanIDs := convertExemplars(exemplars)
 		require.Equal(t, clickhouse.ArraySet{map[string]string{}}, attrs)
 		require.Equal(t, clickhouse.ArraySet{time.Date(1970, time.January, 1, 0, 0, 0, 0, time.UTC)}, times)
-		require.Equal(t, clickhouse.ArraySet{0.0}, floatValues)
-		require.Equal(t, clickhouse.ArraySet{int64(20)}, intValues)
+		require.Equal(t, clickhouse.ArraySet{20.0}, values)
 		require.Equal(t, clickhouse.ArraySet{"00000000000000000000000000000000"}, traceIDs)
 		require.Equal(t, clickhouse.ArraySet{"0000000000000000"}, spanIDs)
 	})
@@ -121,11 +115,10 @@ func Test_convertExemplars(t *testing.T) {
 		exemplar := exemplars.AppendEmpty()
 		exemplar.SetSpanID([8]byte{1, 2, 3, 4})
 
-		attrs, times, floatValues, intValues, traceIDs, spanIDs := convertExemplars(exemplars)
+		attrs, times, values, traceIDs, spanIDs := convertExemplars(exemplars)
 		require.Equal(t, clickhouse.ArraySet{map[string]string{}}, attrs)
 		require.Equal(t, clickhouse.ArraySet{time.Date(1970, time.January, 1, 0, 0, 0, 0, time.UTC)}, times)
-		require.Equal(t, clickhouse.ArraySet{0.0}, floatValues)
-		require.Equal(t, clickhouse.ArraySet{int64(0)}, intValues)
+		require.Equal(t, clickhouse.ArraySet{0.0}, values)
 		require.Equal(t, clickhouse.ArraySet{"00000000000000000000000000000000"}, traceIDs)
 		require.Equal(t, clickhouse.ArraySet{"0102030400000000"}, spanIDs)
 	})
@@ -134,11 +127,10 @@ func Test_convertExemplars(t *testing.T) {
 		exemplar := exemplars.AppendEmpty()
 		exemplar.SetTraceID([16]byte{1, 2, 3, 4})
 
-		attrs, times, floatValues, intValues, traceIDs, spanIDs := convertExemplars(exemplars)
+		attrs, times, values, traceIDs, spanIDs := convertExemplars(exemplars)
 		require.Equal(t, clickhouse.ArraySet{map[string]string{}}, attrs)
 		require.Equal(t, clickhouse.ArraySet{time.Date(1970, time.January, 1, 0, 0, 0, 0, time.UTC)}, times)
-		require.Equal(t, clickhouse.ArraySet{0.0}, floatValues)
-		require.Equal(t, clickhouse.ArraySet{int64(0)}, intValues)
+		require.Equal(t, clickhouse.ArraySet{0.0}, values)
 		require.Equal(t, clickhouse.ArraySet{"01020304000000000000000000000000"}, traceIDs)
 		require.Equal(t, clickhouse.ArraySet{"0000000000000000"}, spanIDs)
 	})
@@ -162,11 +154,10 @@ func Test_convertExemplars(t *testing.T) {
 		exemplar.SetSpanID([8]byte{1, 2, 3, 5})
 		exemplar.SetTraceID([16]byte{1, 2, 3, 5})
 
-		attrs, times, floatValues, intValues, traceIDs, spanIDs := convertExemplars(exemplars)
+		attrs, times, values, traceIDs, spanIDs := convertExemplars(exemplars)
 		require.Equal(t, clickhouse.ArraySet{map[string]string{"key1": "value1", "key2": "value2"}, map[string]string{"key3": "value3", "key4": "value4"}}, attrs)
 		require.Equal(t, clickhouse.ArraySet{time.Unix(1672218930, 0).UTC(), time.Unix(1672219930, 0).UTC()}, times)
-		require.Equal(t, clickhouse.ArraySet{0.0, 16.0}, floatValues)
-		require.Equal(t, clickhouse.ArraySet{int64(20), int64(0)}, intValues)
+		require.Equal(t, clickhouse.ArraySet{20.0, 16.0}, values)
 		require.Equal(t, clickhouse.ArraySet{"01020304000000000000000000000000", "01020305000000000000000000000000"}, traceIDs)
 		require.Equal(t, clickhouse.ArraySet{"0102030400000000", "0102030500000000"}, spanIDs)
 	})
@@ -219,4 +210,13 @@ func Test_convertValueAtQuantile(t *testing.T) {
 		require.Equal(t, clickhouse.ArraySet{1.0, 2.0}, values)
 	})
 
+}
+
+func Test_getValue(t *testing.T) {
+	t.Run("set int64 value", func(t *testing.T) {
+		require.Equal(t, 10.0, getValue(int64(10), 0))
+	})
+	t.Run("set float64 value", func(t *testing.T) {
+		require.Equal(t, 20.0, getValue(0, 20.0))
+	})
 }
