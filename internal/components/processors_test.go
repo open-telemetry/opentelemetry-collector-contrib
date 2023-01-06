@@ -221,6 +221,9 @@ func verifyProcessorShutdown(tb testing.TB, factory processor.Factory, getConfig
 		if errors.Is(err, component.ErrDataTypeIsNotSupported) {
 			continue
 		}
+		if p == nil {
+			continue
+		}
 		assert.NotPanics(tb, func() {
 			_ = p.Shutdown(ctx)
 		})
