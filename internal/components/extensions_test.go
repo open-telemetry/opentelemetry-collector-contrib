@@ -229,13 +229,12 @@ func TestDefaultExtensions(t *testing.T) {
 			require.True(t, ok)
 			assert.Equal(t, tt.extension, factory.Type())
 
-			if tt.skipLifecycle {
-				t.Skip("Skipping lifecycle test for ", tt.extension)
-				return
+			verifyExtensionShutdown(t, factory, tt.getConfigFn)
+
+			if !tt.skipLifecycle {
+				verifyExtensionLifecycle(t, factory, tt.getConfigFn)
 			}
 
-			verifyExtensionLifecycle(t, factory, tt.getConfigFn)
-			verifyExtensionShutdown(t, factory, tt.getConfigFn)
 		})
 	}
 }
@@ -277,7 +276,13 @@ func verifyExtensionShutdown(tb testing.TB, factory extension.Factory, getConfig
 		getConfigFn = factory.CreateDefaultConfig
 	}
 
-	e, _ := factory.CreateExtension(ctx, extCreateSet, getConfigFn())
+	e, err := factory.CreateExtension(ctx, extCreateSet, getConfigFn())
+	if err == component.ErrDataTypeIsNotSupported {
+		return
+	}
+	if e == nil {
+		return
+	}
 
 	assert.NotPanics(tb, func() {
 		assert.NoError(tb, e.Shutdown(ctx))

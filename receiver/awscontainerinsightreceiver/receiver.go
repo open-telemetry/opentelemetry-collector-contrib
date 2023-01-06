@@ -132,6 +132,9 @@ func (acir *awsContainerInsightReceiver) Start(ctx context.Context, host compone
 
 // Shutdown stops the awsContainerInsightReceiver receiver.
 func (acir *awsContainerInsightReceiver) Shutdown(context.Context) error {
+	if acir.cancel == nil {
+		return nil
+	}
 	acir.cancel()
 	return nil
 }

@@ -151,12 +151,12 @@ func TestDefaultProcessors(t *testing.T) {
 			require.True(t, ok)
 			assert.Equal(t, tt.processor, factory.Type())
 
-			if tt.skipLifecycle {
-				t.Skip("Skipping lifecycle processor check for:", tt.processor)
-				return
-			}
-			verifyProcessorLifecycle(t, factory, tt.getConfigFn)
 			verifyProcessorShutdown(t, factory, tt.getConfigFn)
+
+			if !tt.skipLifecycle {
+				verifyProcessorLifecycle(t, factory, tt.getConfigFn)
+			}
+
 		})
 	}
 }

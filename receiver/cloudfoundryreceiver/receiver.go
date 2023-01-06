@@ -121,6 +121,9 @@ func (cfr *cloudFoundryReceiver) Start(ctx context.Context, host component.Host)
 }
 
 func (cfr *cloudFoundryReceiver) Shutdown(_ context.Context) error {
+	if cfr.cancel == nil {
+		return nil
+	}
 	cfr.cancel()
 	cfr.goroutines.Wait()
 	return nil

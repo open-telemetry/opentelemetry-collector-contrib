@@ -457,13 +457,11 @@ func TestDefaultExporters(t *testing.T) {
 			require.True(t, ok)
 			assert.Equal(t, tt.exporter, factory.Type())
 
-			if tt.skipLifecycle {
-				t.Skip("Skipping lifecycle test", tt.exporter)
-				return
-			}
-
-			verifyExporterLifecycle(t, factory, tt.getConfigFn)
 			verifyExporterShutdown(t, factory, tt.getConfigFn)
+
+			if !tt.skipLifecycle {
+				verifyExporterLifecycle(t, factory, tt.getConfigFn)
+			}
 		})
 	}
 }
@@ -527,6 +525,9 @@ func verifyExporterShutdown(tb testing.TB, factory exporter.Factory, getConfigFn
 	for _, createFn := range createFns {
 		r, err := createFn(ctx, expCreateSettings, getConfigFn())
 		if errors.Is(err, component.ErrDataTypeIsNotSupported) {
+			continue
+		}
+		if r == nil {
 			continue
 		}
 		assert.NotPanics(tb, func() {
