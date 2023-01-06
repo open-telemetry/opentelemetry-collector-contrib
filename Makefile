@@ -249,6 +249,7 @@ generate:
 mdatagen-test:
 	cd cmd/mdatagen && $(GOCMD) install .
 	cd cmd/mdatagen && $(GOCMD) generate ./...
+	cd cmd/mdatagen && $(GOCMD) test ./...
 
 .PHONY: chlog-install
 chlog-install:

@@ -208,6 +208,94 @@ func DefaultMetricsSettings() MetricsSettings {
 	}
 }
 
+// ResourceAttributeSettings provides common settings for a particular metric.
+type ResourceAttributeSettings struct {
+	Enabled bool `mapstructure:"enabled"`
+
+	enabledProvidedByUser bool
+}
+
+func (ras *ResourceAttributeSettings) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(ras, confmap.WithErrorUnused())
+	if err != nil {
+		return err
+	}
+	ras.enabledProvidedByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ResourceAttributesSettings provides settings for kubeletstatsreceiver metrics.
+type ResourceAttributesSettings struct {
+	AwsVolumeID                  ResourceAttributeSettings `mapstructure:"aws.volume.id"`
+	ContainerID                  ResourceAttributeSettings `mapstructure:"container.id"`
+	FsType                       ResourceAttributeSettings `mapstructure:"fs.type"`
+	GcePdName                    ResourceAttributeSettings `mapstructure:"gce.pd.name"`
+	GlusterfsEndpointsName       ResourceAttributeSettings `mapstructure:"glusterfs.endpoints.name"`
+	GlusterfsPath                ResourceAttributeSettings `mapstructure:"glusterfs.path"`
+	K8sContainerName             ResourceAttributeSettings `mapstructure:"k8s.container.name"`
+	K8sNamespaceName             ResourceAttributeSettings `mapstructure:"k8s.namespace.name"`
+	K8sNodeName                  ResourceAttributeSettings `mapstructure:"k8s.node.name"`
+	K8sPersistentvolumeclaimName ResourceAttributeSettings `mapstructure:"k8s.persistentvolumeclaim.name"`
+	K8sPodName                   ResourceAttributeSettings `mapstructure:"k8s.pod.name"`
+	K8sPodUID                    ResourceAttributeSettings `mapstructure:"k8s.pod.uid"`
+	K8sVolumeName                ResourceAttributeSettings `mapstructure:"k8s.volume.name"`
+	K8sVolumeType                ResourceAttributeSettings `mapstructure:"k8s.volume.type"`
+	Partition                    ResourceAttributeSettings `mapstructure:"partition"`
+}
+
+func DefaultResourceAttributesSettings() ResourceAttributesSettings {
+	return ResourceAttributesSettings{
+		AwsVolumeID: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		ContainerID: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		FsType: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		GcePdName: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		GlusterfsEndpointsName: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		GlusterfsPath: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		K8sContainerName: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		K8sNamespaceName: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		K8sNodeName: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		K8sPersistentvolumeclaimName: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		K8sPodName: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		K8sPodUID: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		K8sVolumeName: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		K8sVolumeType: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		Partition: ResourceAttributeSettings{
+			Enabled: true,
+		},
+	}
+}
+
 // AttributeDirection specifies the a value direction attribute.
 type AttributeDirection int
 
@@ -2326,6 +2414,7 @@ type MetricsBuilder struct {
 	resourceCapacity                     int                 // maximum observed number of resource attributes.
 	metricsBuffer                        pmetric.Metrics     // accumulates metrics data before emitting.
 	buildInfo                            component.BuildInfo // contains version information
+	resourceAttributesSettings           ResourceAttributesSettings
 	metricContainerCPUTime               metricContainerCPUTime
 	metricContainerCPUUtilization        metricContainerCPUUtilization
 	metricContainerFilesystemAvailable   metricContainerFilesystemAvailable
@@ -2380,11 +2469,19 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
+// WithResourceAttributesSettings sets ResourceAttributeSettings on the metrics builder.
+func WithResourceAttributesSettings(ras ResourceAttributesSettings) metricBuilderOption {
+	return func(mb *MetricsBuilder) {
+		mb.resourceAttributesSettings = ras
+	}
+}
+
 func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                            pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                        pmetric.NewMetrics(),
 		buildInfo:                            settings.BuildInfo,
+		resourceAttributesSettings:           DefaultResourceAttributesSettings(),
 		metricContainerCPUTime:               newMetricContainerCPUTime(ms.ContainerCPUTime),
 		metricContainerCPUUtilization:        newMetricContainerCPUUtilization(ms.ContainerCPUUtilization),
 		metricContainerFilesystemAvailable:   newMetricContainerFilesystemAvailable(ms.ContainerFilesystemAvailable),
@@ -2445,117 +2542,147 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(pmetric.ResourceMetrics)
+type ResourceMetricsOption func(ResourceAttributesSettings, pmetric.ResourceMetrics)
 
 // WithAwsVolumeID sets provided value as "aws.volume.id" attribute for current resource.
 func WithAwsVolumeID(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("aws.volume.id", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.AwsVolumeID.Enabled {
+			rm.Resource().Attributes().PutStr("aws.volume.id", val)
+		}
 	}
 }
 
 // WithContainerID sets provided value as "container.id" attribute for current resource.
 func WithContainerID(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("container.id", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.ContainerID.Enabled {
+			rm.Resource().Attributes().PutStr("container.id", val)
+		}
 	}
 }
 
 // WithFsType sets provided value as "fs.type" attribute for current resource.
 func WithFsType(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("fs.type", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.FsType.Enabled {
+			rm.Resource().Attributes().PutStr("fs.type", val)
+		}
 	}
 }
 
 // WithGcePdName sets provided value as "gce.pd.name" attribute for current resource.
 func WithGcePdName(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("gce.pd.name", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.GcePdName.Enabled {
+			rm.Resource().Attributes().PutStr("gce.pd.name", val)
+		}
 	}
 }
 
 // WithGlusterfsEndpointsName sets provided value as "glusterfs.endpoints.name" attribute for current resource.
 func WithGlusterfsEndpointsName(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("glusterfs.endpoints.name", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.GlusterfsEndpointsName.Enabled {
+			rm.Resource().Attributes().PutStr("glusterfs.endpoints.name", val)
+		}
 	}
 }
 
 // WithGlusterfsPath sets provided value as "glusterfs.path" attribute for current resource.
 func WithGlusterfsPath(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("glusterfs.path", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.GlusterfsPath.Enabled {
+			rm.Resource().Attributes().PutStr("glusterfs.path", val)
+		}
 	}
 }
 
 // WithK8sContainerName sets provided value as "k8s.container.name" attribute for current resource.
 func WithK8sContainerName(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("k8s.container.name", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.K8sContainerName.Enabled {
+			rm.Resource().Attributes().PutStr("k8s.container.name", val)
+		}
 	}
 }
 
 // WithK8sNamespaceName sets provided value as "k8s.namespace.name" attribute for current resource.
 func WithK8sNamespaceName(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("k8s.namespace.name", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.K8sNamespaceName.Enabled {
+			rm.Resource().Attributes().PutStr("k8s.namespace.name", val)
+		}
 	}
 }
 
 // WithK8sNodeName sets provided value as "k8s.node.name" attribute for current resource.
 func WithK8sNodeName(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("k8s.node.name", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.K8sNodeName.Enabled {
+			rm.Resource().Attributes().PutStr("k8s.node.name", val)
+		}
 	}
 }
 
 // WithK8sPersistentvolumeclaimName sets provided value as "k8s.persistentvolumeclaim.name" attribute for current resource.
 func WithK8sPersistentvolumeclaimName(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("k8s.persistentvolumeclaim.name", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.K8sPersistentvolumeclaimName.Enabled {
+			rm.Resource().Attributes().PutStr("k8s.persistentvolumeclaim.name", val)
+		}
 	}
 }
 
 // WithK8sPodName sets provided value as "k8s.pod.name" attribute for current resource.
 func WithK8sPodName(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("k8s.pod.name", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.K8sPodName.Enabled {
+			rm.Resource().Attributes().PutStr("k8s.pod.name", val)
+		}
 	}
 }
 
 // WithK8sPodUID sets provided value as "k8s.pod.uid" attribute for current resource.
 func WithK8sPodUID(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("k8s.pod.uid", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.K8sPodUID.Enabled {
+			rm.Resource().Attributes().PutStr("k8s.pod.uid", val)
+		}
 	}
 }
 
 // WithK8sVolumeName sets provided value as "k8s.volume.name" attribute for current resource.
 func WithK8sVolumeName(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("k8s.volume.name", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.K8sVolumeName.Enabled {
+			rm.Resource().Attributes().PutStr("k8s.volume.name", val)
+		}
 	}
 }
 
 // WithK8sVolumeType sets provided value as "k8s.volume.type" attribute for current resource.
 func WithK8sVolumeType(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("k8s.volume.type", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.K8sVolumeType.Enabled {
+			rm.Resource().Attributes().PutStr("k8s.volume.type", val)
+		}
 	}
 }
 
 // WithPartition sets provided value as "partition" attribute for current resource.
 func WithPartition(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("partition", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.Partition.Enabled {
+			rm.Resource().Attributes().PutStr("partition", val)
+		}
 	}
 }
 
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
@@ -2626,8 +2753,9 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricK8sVolumeInodes.emit(ils.Metrics())
 	mb.metricK8sVolumeInodesFree.emit(ils.Metrics())
 	mb.metricK8sVolumeInodesUsed.emit(ils.Metrics())
+
 	for _, op := range rmo {
-		op(rm)
+		op(mb.resourceAttributesSettings, rm)
 	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)

@@ -186,6 +186,8 @@ type attribute struct {
 	Description string `mapstructure:"description"`
 	// NameOverride can be used to override the attribute name.
 	NameOverride string `mapstructure:"name_override"`
+	// Enabled defines whether the attribute is enabled by default.
+	Enabled bool `yaml:"enabled" validate:"required"`
 	// Enum can optionally describe the set of values to which the attribute can belong.
 	Enum []string
 	// Type is an attribute type.
