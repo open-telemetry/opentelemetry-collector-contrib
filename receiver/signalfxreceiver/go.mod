@@ -80,9 +80,6 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-// TODO: remove once the next release of jaeger is out
-replace github.com/jaegertracing/jaeger v1.39.0 => github.com/jaegertracing/jaeger v1.39.1-0.20221110195127-14c11365a856
-
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter => ../../exporter/signalfxexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
