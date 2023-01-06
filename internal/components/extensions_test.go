@@ -20,6 +20,7 @@ package components
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -277,7 +278,7 @@ func verifyExtensionShutdown(tb testing.TB, factory extension.Factory, getConfig
 	}
 
 	e, err := factory.CreateExtension(ctx, extCreateSet, getConfigFn())
-	if err == component.ErrDataTypeIsNotSupported {
+	if errors.Is(err, component.ErrDataTypeIsNotSupported) {
 		return
 	}
 	if e == nil {
