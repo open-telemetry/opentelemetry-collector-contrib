@@ -4,6 +4,7 @@ go 1.18
 
 require (
 	github.com/ClickHouse/clickhouse-go/v2 v2.4.3
+	github.com/agiledragon/gomonkey/v2 v2.9.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.68.0
 	github.com/stretchr/testify v1.8.1
 	go.opentelemetry.io/collector v0.68.1-0.20230104175729-d8c9f24ecec0
