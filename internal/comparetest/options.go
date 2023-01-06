@@ -23,6 +23,21 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
+// MetricsCompareOption can be used to mutate expected and/or actual metrics before comparing.
+type MetricsCompareOption interface {
+	applyOnMetrics(expected, actual pmetric.Metrics)
+}
+
+// LogsCompareOption can be used to mutate expected and/or actual logs before comparing.
+type LogsCompareOption interface {
+	applyOnLogs(expected, actual plog.Logs)
+}
+
+type CompareOption interface {
+	MetricsCompareOption
+	LogsCompareOption
+}
+
 // IgnoreMetricValues is a MetricsCompareOption that clears all metric values.
 func IgnoreMetricValues(metricNames ...string) MetricsCompareOption {
 	return ignoreMetricValues{
