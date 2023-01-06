@@ -467,7 +467,7 @@ func CompareLogRecords(expected, actual plog.LogRecord) error {
 			actual.SpanID())
 	}
 
-	if !expected.Body().Equal(actual.Body()) {
+	if !reflect.DeepEqual(expected.Body().AsRaw(), actual.Body().AsRaw()) {
 		return fmt.Errorf("log record Body doesn't match expected: %s, actual: %s",
 			expected.Body().AsString(),
 			actual.Body().AsString())
