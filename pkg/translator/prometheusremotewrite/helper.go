@@ -37,13 +37,14 @@ import (
 )
 
 const (
-	nameStr     = "__name__"
-	sumStr      = "_sum"
-	countStr    = "_count"
-	bucketStr   = "_bucket"
-	leStr       = "le"
-	quantileStr = "quantile"
-	pInfStr     = "+Inf"
+	nameStr       = "__name__"
+	sumStr        = "_sum"
+	countStr      = "_count"
+	bucketStr     = "_bucket"
+	leStr         = "le"
+	quantileStr   = "quantile"
+	pInfStr       = "+Inf"
+	createdPrefix = "_created"
 	// maxExemplarRunes is the maximum number of UTF-8 exemplar characters
 	// according to the prometheus specification
 	// https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md#exemplars
@@ -277,12 +278,27 @@ func addSingleNumberDataPoint(pt pmetric.NumberDataPoint, resource pcommon.Resou
 		sample.Value = math.Float64frombits(value.StaleNaN)
 	}
 	addSample(tsMap, sample, labels, metric.Type().String())
+
+	// add _created time series if needed
+	if metric.Type() == pmetric.MetricTypeSum && metric.Sum().IsMonotonic() {
+		startTimestamp := pt.StartTimestamp()
+		if startTimestamp != 0 {
+			createdLabels := createAttributes(
+				resource,
+				pt.Attributes(),
+				settings.ExternalLabels,
+				nameStr,
+				name+createdPrefix,
+			)
+			addCreatedTimeSeriesIfNeeded(tsMap, createdLabels, startTimestamp, metric.Type().String())
+		}
+	}
 }
 
 // addSingleHistogramDataPoint converts pt to 2 + min(len(ExplicitBounds), len(BucketCount)) + 1 samples. It
 // ignore extra buckets if len(ExplicitBounds) > len(BucketCounts)
 func addSingleHistogramDataPoint(pt pmetric.HistogramDataPoint, resource pcommon.Resource, metric pmetric.Metric, settings Settings, tsMap map[string]*prompb.TimeSeries) {
-	time := convertTimeStamp(pt.Timestamp())
+	timestamp := convertTimeStamp(pt.Timestamp())
 	// sum, count, and buckets of the histogram should append suffix to baseName
 	baseName := prometheustranslator.BuildPromCompliantName(metric, settings.Namespace)
 
@@ -292,7 +308,7 @@ func addSingleHistogramDataPoint(pt pmetric.HistogramDataPoint, resource pcommon
 		// treat sum as a sample in an individual TimeSeries
 		sum := &prompb.Sample{
 			Value:     pt.Sum(),
-			Timestamp: time,
+			Timestamp: timestamp,
 		}
 		if pt.Flags().NoRecordedValue() {
 			sum.Value = math.Float64frombits(value.StaleNaN)
@@ -300,12 +316,13 @@ func addSingleHistogramDataPoint(pt pmetric.HistogramDataPoint, resource pcommon
 
 		sumlabels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nameStr, baseName+sumStr)
 		addSample(tsMap, sum, sumlabels, metric.Type().String())
+
 	}
 
 	// treat count as a sample in an individual TimeSeries
 	count := &prompb.Sample{
 		Value:     float64(pt.Count()),
-		Timestamp: time,
+		Timestamp: timestamp,
 	}
 	if pt.Flags().NoRecordedValue() {
 		count.Value = math.Float64frombits(value.StaleNaN)
@@ -327,7 +344,7 @@ func addSingleHistogramDataPoint(pt pmetric.HistogramDataPoint, resource pcommon
 		cumulativeCount += pt.BucketCounts().At(i)
 		bucket := &prompb.Sample{
 			Value:     float64(cumulativeCount),
-			Timestamp: time,
+			Timestamp: timestamp,
 		}
 		if pt.Flags().NoRecordedValue() {
 			bucket.Value = math.Float64frombits(value.StaleNaN)
@@ -340,7 +357,7 @@ func addSingleHistogramDataPoint(pt pmetric.HistogramDataPoint, resource pcommon
 	}
 	// add le=+Inf bucket
 	infBucket := &prompb.Sample{
-		Timestamp: time,
+		Timestamp: timestamp,
 	}
 	if pt.Flags().NoRecordedValue() {
 		infBucket.Value = math.Float64frombits(value.StaleNaN)
@@ -352,6 +369,19 @@ func addSingleHistogramDataPoint(pt pmetric.HistogramDataPoint, resource pcommon
 
 	bucketBounds = append(bucketBounds, bucketBoundsData{sig: sig, bound: math.Inf(1)})
 	addExemplars(tsMap, promExemplars, bucketBounds)
+
+	// add _created time series if needed
+	startTimestamp := pt.StartTimestamp()
+	if startTimestamp != 0 {
+		createdLabels := createAttributes(
+			resource,
+			pt.Attributes(),
+			settings.ExternalLabels,
+			nameStr,
+			baseName+createdPrefix,
+		)
+		addCreatedTimeSeriesIfNeeded(tsMap, createdLabels, startTimestamp, metric.Type().String())
+	}
 }
 
 func getPromExemplars(pt pmetric.HistogramDataPoint) []prompb.Exemplar {
@@ -448,13 +478,13 @@ func maxTimestamp(a, b pcommon.Timestamp) pcommon.Timestamp {
 // addSingleSummaryDataPoint converts pt to len(QuantileValues) + 2 samples.
 func addSingleSummaryDataPoint(pt pmetric.SummaryDataPoint, resource pcommon.Resource, metric pmetric.Metric, settings Settings,
 	tsMap map[string]*prompb.TimeSeries) {
-	time := convertTimeStamp(pt.Timestamp())
+	timestamp := convertTimeStamp(pt.Timestamp())
 	// sum and count of the summary should append suffix to baseName
 	baseName := prometheustranslator.BuildPromCompliantName(metric, settings.Namespace)
 	// treat sum as a sample in an individual TimeSeries
 	sum := &prompb.Sample{
 		Value:     pt.Sum(),
-		Timestamp: time,
+		Timestamp: timestamp,
 	}
 	if pt.Flags().NoRecordedValue() {
 		sum.Value = math.Float64frombits(value.StaleNaN)
@@ -465,7 +495,7 @@ func addSingleSummaryDataPoint(pt pmetric.SummaryDataPoint, resource pcommon.Res
 	// treat count as a sample in an individual TimeSeries
 	count := &prompb.Sample{
 		Value:     float64(pt.Count()),
-		Timestamp: time,
+		Timestamp: timestamp,
 	}
 	if pt.Flags().NoRecordedValue() {
 		count.Value = math.Float64frombits(value.StaleNaN)
@@ -478,7 +508,7 @@ func addSingleSummaryDataPoint(pt pmetric.SummaryDataPoint, resource pcommon.Res
 		qt := pt.QuantileValues().At(i)
 		quantile := &prompb.Sample{
 			Value:     qt.Value(),
-			Timestamp: time,
+			Timestamp: timestamp,
 		}
 		if pt.Flags().NoRecordedValue() {
 			quantile.Value = math.Float64frombits(value.StaleNaN)
@@ -486,6 +516,40 @@ func addSingleSummaryDataPoint(pt pmetric.SummaryDataPoint, resource pcommon.Res
 		percentileStr := strconv.FormatFloat(qt.Quantile(), 'f', -1, 64)
 		qtlabels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nameStr, baseName, quantileStr, percentileStr)
 		addSample(tsMap, quantile, qtlabels, metric.Type().String())
+	}
+
+	// add _created time series if needed
+	startTimestamp := pt.StartTimestamp()
+	if startTimestamp != 0 {
+		createdLabels := createAttributes(
+			resource,
+			pt.Attributes(),
+			settings.ExternalLabels,
+			nameStr,
+			baseName+createdPrefix,
+		)
+		addCreatedTimeSeriesIfNeeded(tsMap, createdLabels, startTimestamp, metric.Type().String())
+	}
+}
+
+// addCreatedTimeSeriesIfNeeded adds {name}_created time series with a single
+// sample. If the series exists, then new samples won't be added.
+func addCreatedTimeSeriesIfNeeded(
+	series map[string]*prompb.TimeSeries,
+	labels []prompb.Label,
+	startTimestamp pcommon.Timestamp,
+	metricType string,
+) {
+	sig := timeSeriesSignature(metricType, &labels)
+	if _, ok := series[sig]; !ok {
+		series[sig] = &prompb.TimeSeries{
+			Labels: labels,
+			Samples: []prompb.Sample{
+				{ // convert ns to ms
+					Value: float64(convertTimeStamp(startTimestamp)),
+				},
+			},
+		}
 	}
 }
 
