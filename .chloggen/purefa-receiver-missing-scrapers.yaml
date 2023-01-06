@@ -5,7 +5,7 @@ change_type: bug_fix
 component: receiver/purefareceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: The changes reflect on the solution of non-array scrapers that were not working as expected
+note: Set an explicit reload interval for all scrapers.
 
 # One or more tracking issues related to the change
 issues: [16992]
