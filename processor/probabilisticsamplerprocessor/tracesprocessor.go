@@ -47,9 +47,6 @@ const (
 	doNotSampleSpan
 
 	// The constants help translate user friendly percentages to numbers direct used in sampling.
-	//numHashBuckets        = 0x4000 // Using a power of 2 to avoid division.
-	//numHashBuckets        = math.MaxInt32
-	//bitMaskHashBuckets    = math.MaxInt32
 	numHashBuckets        = 0x4000 // Using a power of 2 to avoid division.
 	bitMaskHashBuckets    = numHashBuckets - 1
 	percentageScaleFactor = numHashBuckets / 100.0

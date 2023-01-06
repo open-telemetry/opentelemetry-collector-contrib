@@ -106,7 +106,7 @@ func Test_tracesamplerprocessor_SamplingPercentageRange(t *testing.T) {
 				ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
 				SamplingPercentage: 5,
 			},
-			numBatches:        1e5,
+			numBatches:        1e6,
 			numTracesPerBatch: 2,
 			acceptableDelta:   0.01,
 		},
