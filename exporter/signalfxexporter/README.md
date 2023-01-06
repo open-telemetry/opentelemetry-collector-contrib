@@ -243,7 +243,7 @@ exporters:
       dot.test: test
     realm: us1
     timeout: 5s
-    max_connections: 80
+    max_idle_conns: 80
 ```
 
 > :warning: When enabling the SignalFx receiver or exporter, configure both the `metrics` and `logs` pipelines.
