@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package traces // import "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/tracegen/internal/tracegen"
+package traces // import "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/traces"
 
 import (
 	"context"
@@ -47,14 +47,14 @@ const (
 )
 
 func (w worker) simulateTraces() {
-	tracer := otel.Tracer("tracegen")
+	tracer := otel.Tracer("telemetrygen")
 	limiter := rate.NewLimiter(w.limitPerSecond, 1)
 	var i int
 	for w.running.Load() {
 		ctx, sp := tracer.Start(context.Background(), "lets-go", trace.WithAttributes(
 			attribute.String("span.kind", "client"), // is there a semantic convention for this?
 			semconv.NetPeerIPKey.String(fakeIP),
-			semconv.PeerServiceKey.String("tracegen-server"),
+			semconv.PeerServiceKey.String("telemetrygen-server"),
 		))
 
 		childCtx := ctx
@@ -70,7 +70,7 @@ func (w worker) simulateTraces() {
 		_, child := tracer.Start(childCtx, "okey-dokey", trace.WithAttributes(
 			attribute.String("span.kind", "server"),
 			semconv.NetPeerIPKey.String(fakeIP),
-			semconv.PeerServiceKey.String("tracegen-client"),
+			semconv.PeerServiceKey.String("telemetrygen-client"),
 		))
 
 		if err := limiter.Wait(context.Background()); err != nil {

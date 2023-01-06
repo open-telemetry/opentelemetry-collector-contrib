@@ -82,9 +82,8 @@ func (c *Config) Flags(fs *pflag.FlagSet) {
 	fs.BoolVar(&c.PropagateContext, "marshal", false, "Whether to marshal trace context via HTTP headers")
 	fs.Int64Var(&c.Rate, "rate", 0, "Approximately how many traces per second each worker should generate. Zero means no throttling.")
 	fs.DurationVar(&c.TotalDuration, "duration", 0, "For how long to run the test")
-	fs.StringVar(&c.ServiceName, "service", "tracegen", "Service name to use")
+	fs.StringVar(&c.ServiceName, "service", "telemetrygen", "Service name to use")
 
-	// unfortunately, at this moment, the otel-go client doesn't support configuring OTLP via env vars
 	fs.StringVar(&c.Endpoint, "otlp-endpoint", "localhost:4317", "Target to which the exporter is going to send spans or metrics. This MAY be configured to include a path (e.g. example.com/v1/traces)")
 	fs.BoolVar(&c.Insecure, "otlp-insecure", false, "Whether to enable client transport security for the exporter's grpc or http connection")
 	fs.BoolVar(&c.UseHTTP, "otlp-http", false, "Whether to use HTTP exporter rather than a gRPC one")
