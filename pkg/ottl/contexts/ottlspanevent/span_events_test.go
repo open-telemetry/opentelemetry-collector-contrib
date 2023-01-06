@@ -15,6 +15,7 @@
 package ottlspanevent
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -47,6 +48,15 @@ func Test_newPathGetSetter(t *testing.T) {
 
 	newStatus := ptrace.NewStatus()
 	newStatus.SetMessage("new status")
+
+	newPMap := pcommon.NewMap()
+	pMap2 := newPMap.PutEmptyMap("k2")
+	pMap2.PutStr("k1", "string")
+
+	newMap := make(map[string]interface{})
+	newMap2 := make(map[string]interface{})
+	newMap2["k1"] = "string"
+	newMap["k2"] = newMap2
 
 	tests := []struct {
 		name     string
@@ -250,6 +260,44 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 		},
 		{
+			name: "attributes pcommon.Map",
+			path: []ottl.Field{
+				{
+					Name:   "attributes",
+					MapKey: ottltest.Strp("pMap"),
+				},
+			},
+			orig: func() pcommon.Map {
+				val, _ := refSpanEvent.Attributes().Get("pMap")
+				return val.Map()
+			}(),
+			newVal: newPMap,
+			modified: func(spanEvent ptrace.SpanEvent, span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+				m := spanEvent.Attributes().PutEmptyMap("pMap")
+				m2 := m.PutEmptyMap("k2")
+				m2.PutStr("k1", "string")
+			},
+		},
+		{
+			name: "attributes map[string]interface{}",
+			path: []ottl.Field{
+				{
+					Name:   "attributes",
+					MapKey: ottltest.Strp("map"),
+				},
+			},
+			orig: func() pcommon.Map {
+				val, _ := refSpanEvent.Attributes().Get("map")
+				return val.Map()
+			}(),
+			newVal: newMap,
+			modified: func(spanEvent ptrace.SpanEvent, span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+				m := spanEvent.Attributes().PutEmptyMap("map")
+				m2 := m.PutEmptyMap("k2")
+				m2.PutStr("k1", "string")
+			},
+		},
+		{
 			name: "dropped_attributes_count",
 			path: []ottl.Field{
 				{
@@ -309,11 +357,11 @@ func Test_newPathGetSetter(t *testing.T) {
 
 			spanEvent, span, il, resource := createTelemetry()
 
-			got, err := accessor.Get(NewTransformContext(spanEvent, span, il, resource))
+			got, err := accessor.Get(context.Background(), NewTransformContext(spanEvent, span, il, resource))
 			assert.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
-			err = accessor.Set(NewTransformContext(spanEvent, span, il, resource), tt.newVal)
+			err = accessor.Set(context.Background(), NewTransformContext(spanEvent, span, il, resource), tt.newVal)
 			assert.NoError(t, err)
 
 			exSpanEvent, exSpan, exIl, exRes := createTelemetry()
@@ -358,6 +406,12 @@ func createTelemetry() (ptrace.SpanEvent, ptrace.Span, pcommon.InstrumentationSc
 	arrBytes := spanEvent.Attributes().PutEmptySlice("arr_bytes")
 	arrBytes.AppendEmpty().SetEmptyBytes().FromRaw([]byte{1, 2, 3})
 	arrBytes.AppendEmpty().SetEmptyBytes().FromRaw([]byte{2, 3, 4})
+
+	pMap := spanEvent.Attributes().PutEmptyMap("pMap")
+	pMap.PutStr("original", "map")
+
+	m := spanEvent.Attributes().PutEmptyMap("map")
+	m.PutStr("original", "map")
 
 	span := ptrace.NewSpan()
 	span.SetName("test")

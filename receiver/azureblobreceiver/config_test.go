@@ -20,34 +20,32 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
+	factories, err := otelcoltest.NopFactories()
 	assert.NoError(t, err)
 
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
+	cfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
 	assert.Equal(t, len(cfg.Receivers), 2)
 
-	receiver := cfg.Receivers[config.NewComponentID(typeStr)]
+	receiver := cfg.Receivers[component.NewID(typeStr)]
 	assert.Equal(t, factory.CreateDefaultConfig(), receiver)
 
-	receiver = cfg.Receivers[config.NewComponentIDWithName(typeStr, "2")].(*Config)
-	assert.NoError(t, configtest.CheckConfigStruct(receiver))
+	receiver = cfg.Receivers[component.NewIDWithName(typeStr, "2")].(*Config)
+	assert.NoError(t, componenttest.CheckConfigStruct(receiver))
 	assert.Equal(
 		t,
 		&Config{
-			ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "2")),
 			ConnectionString: goodConnectionString,
 			Logs:             LogsConfig{ContainerName: logsContainerName},
 			Traces:           TracesConfig{ContainerName: tracesContainerName},

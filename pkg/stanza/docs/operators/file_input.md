@@ -1,6 +1,6 @@
 ## `file_input` operator
 
-The `file_input` operator reads logs from files. It will place the lines read into the `message` field of the new entry.
+The `file_input` operator reads logs from files. It will place the lines read into the `body` of the new entry.
 
 ### Configuration Fields
 

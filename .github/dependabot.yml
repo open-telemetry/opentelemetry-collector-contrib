@@ -23,6 +23,14 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/cmd/otelcontribcol"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/cmd/oteltestbedcol"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/cmd/telemetrygen"
     schedule:
       interval: "weekly"
@@ -140,6 +148,10 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/exporter/loadbalancingexporter"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/exporter/logicmonitorexporter"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -335,7 +347,7 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
-    directory: "/internal/containertest"
+    directory: "/internal/comparetest"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -344,6 +356,10 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/internal/docker"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/internal/filter"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -356,10 +372,6 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/internal/metadataproviders"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/internal/scrapertest"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -436,6 +448,10 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/processor/cumulativetodeltaprocessor"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/processor/datadogprocessor"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -719,7 +735,15 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/receiver/promtailreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/receiver/pulsarreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/purefareceiver"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"

@@ -28,10 +28,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 
@@ -48,7 +48,7 @@ func TestType(t *testing.T) {
 
 func TestValidConfig(t *testing.T) {
 	factory := NewFactory()
-	err := configtest.CheckConfigStruct(factory.CreateDefaultConfig())
+	err := componenttest.CheckConfigStruct(factory.CreateDefaultConfig())
 	require.NoError(t, err)
 }
 
@@ -56,7 +56,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 	factory := NewFactory()
 	traceReceiver, err := factory.CreateTracesReceiver(
 		context.Background(),
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 		factory.CreateDefaultConfig(),
 		nil,
 	)
@@ -68,7 +68,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 	factory := NewFactory()
 	metricsReceiver, err := factory.CreateMetricsReceiver(
 		context.Background(),
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 		tlsConfig(),
 		consumertest.NewNop(),
 	)
@@ -83,7 +83,7 @@ func TestFactoryInvalidExtraMetadataLabels(t *testing.T) {
 	}
 	metricsReceiver, err := factory.CreateMetricsReceiver(
 		context.Background(),
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 		&cfg,
 		consumertest.NewNop(),
 	)
@@ -103,7 +103,7 @@ func TestFactoryBadAuthType(t *testing.T) {
 	}
 	_, err := factory.CreateMetricsReceiver(
 		context.Background(),
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 		cfg,
 		consumertest.NewNop(),
 	)

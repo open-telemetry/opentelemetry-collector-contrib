@@ -15,6 +15,7 @@
 package ottlcommon
 
 import (
+	"context"
 	"encoding/hex"
 	"testing"
 	"time"
@@ -155,6 +156,22 @@ func TestSpanPathGetSetter(t *testing.T) {
 			},
 		},
 		{
+			name: "parent_span_id string",
+			path: []ottl.Field{
+				{
+					Name: "parent_span_id",
+				},
+				{
+					Name: "string",
+				},
+			},
+			orig:   hex.EncodeToString(spanID2[:]),
+			newVal: hex.EncodeToString(spanID[:]),
+			modified: func(span ptrace.Span) {
+				span.SetParentSpanID(spanID)
+			},
+		},
+		{
 			name: "name",
 			path: []ottl.Field{
 				{
@@ -287,6 +304,23 @@ func TestSpanPathGetSetter(t *testing.T) {
 			newVal: []byte{2, 3, 4},
 			modified: func(span ptrace.Span) {
 				span.Attributes().PutEmptyBytes("bytes").FromRaw([]byte{2, 3, 4})
+			},
+		},
+		{
+			name: "attributes array empty",
+			path: []ottl.Field{
+				{
+					Name:   "attributes",
+					MapKey: ottltest.Strp("arr_empty"),
+				},
+			},
+			orig: func() pcommon.Slice {
+				val, _ := refSpan.Attributes().Get("arr_empty")
+				return val.Slice()
+			}(),
+			newVal: []any{},
+			modified: func(span ptrace.Span) {
+				// no-op
 			},
 		},
 		{
@@ -498,11 +532,11 @@ func TestSpanPathGetSetter(t *testing.T) {
 
 			span := createSpan()
 
-			got, err := accessor.Get(newSpanContext(span))
+			got, err := accessor.Get(context.Background(), newSpanContext(span))
 			assert.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
-			err = accessor.Set(newSpanContext(span), tt.newVal)
+			err = accessor.Set(context.Background(), newSpanContext(span), tt.newVal)
 			assert.NoError(t, err)
 
 			expectedSpan := createSpan()
@@ -528,6 +562,8 @@ func createSpan() ptrace.Span {
 	span.Attributes().PutInt("int", 10)
 	span.Attributes().PutDouble("double", 1.2)
 	span.Attributes().PutEmptyBytes("bytes").FromRaw([]byte{1, 3, 2})
+
+	span.Attributes().PutEmptySlice("arr_empty")
 
 	arrStr := span.Attributes().PutEmptySlice("arr_str")
 	arrStr.AppendEmpty().SetStr("one")

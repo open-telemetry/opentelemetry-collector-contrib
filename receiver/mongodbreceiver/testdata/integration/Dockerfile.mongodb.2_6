@@ -1,6 +1,0 @@
-FROM mongo:2.6
-
-COPY scripts/setup.sh /setup.sh
-RUN chmod +x /setup.sh
-
-EXPOSE 27017

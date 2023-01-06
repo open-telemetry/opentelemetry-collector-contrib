@@ -18,13 +18,11 @@ import (
 	"net/url"
 	"time"
 
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 )
 
 // Config defines configuration for simple prometheus receiver.
 type Config struct {
-	config.ReceiverSettings       `mapstructure:",squash"`
 	confighttp.HTTPClientSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	// Deprecated: [v0.55.0] Use confighttp.HTTPClientSettings instead.
 	httpConfig `mapstructure:",squash"`

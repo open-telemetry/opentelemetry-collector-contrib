@@ -28,9 +28,9 @@ import (
 	"github.com/rs/cors"
 	"github.com/soheilhy/cmux"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
@@ -57,20 +57,18 @@ type ocReceiver struct {
 	startTracesReceiverOnce  sync.Once
 	startMetricsReceiverOnce sync.Once
 
-	id       config.ComponentID
-	settings component.ReceiverCreateSettings
+	settings receiver.CreateSettings
 }
 
 // newOpenCensusReceiver just creates the OpenCensus receiver services. It is the caller's
 // responsibility to invoke the respective Start*Reception methods as well
 // as the various Stop*Reception methods to end it.
 func newOpenCensusReceiver(
-	id config.ComponentID,
 	transport string,
 	addr string,
 	tc consumer.Traces,
 	mc consumer.Metrics,
-	settings component.ReceiverCreateSettings,
+	settings receiver.CreateSettings,
 	opts ...ocOption,
 ) (*ocReceiver, error) {
 	// TODO: (@odeke-em) use options to enable address binding changes.
@@ -80,7 +78,6 @@ func newOpenCensusReceiver(
 	}
 
 	ocr := &ocReceiver{
-		id:              id,
 		ln:              ln,
 		corsOrigins:     []string{}, // Disable CORS by default.
 		gatewayMux:      gatewayruntime.NewServeMux(),
@@ -131,7 +128,7 @@ func (ocr *ocReceiver) registerTraceConsumer(host component.Host) error {
 	var err error
 
 	ocr.startTracesReceiverOnce.Do(func() {
-		ocr.traceReceiver, err = octrace.New(ocr.id, ocr.traceConsumer, ocr.settings)
+		ocr.traceReceiver, err = octrace.New(ocr.traceConsumer, ocr.settings)
 		if err != nil {
 			return
 		}
@@ -153,7 +150,7 @@ func (ocr *ocReceiver) registerMetricsConsumer(host component.Host) error {
 	var err error
 
 	ocr.startMetricsReceiverOnce.Do(func() {
-		ocr.metricsReceiver, err = ocmetrics.New(ocr.id, ocr.metricsConsumer, ocr.settings)
+		ocr.metricsReceiver, err = ocmetrics.New(ocr.metricsConsumer, ocr.settings)
 		if err != nil {
 			return
 		}

@@ -20,7 +20,8 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/exporter"
 	otlphttp "go.opentelemetry.io/collector/exporter/otlphttpexporter"
 	"golang.org/x/oauth2"
 	"google.golang.org/api/idtoken"
@@ -31,27 +32,27 @@ const typeStr = "f5cloud" // The value of "type" key in configuration.
 type TokenSourceGetter func(config *Config) (oauth2.TokenSource, error)
 
 type f5cloudFactory struct {
-	component.ExporterFactory
+	exporter.Factory
 	getTokenSource TokenSourceGetter
 }
 
 // NewFactory returns a factory of the F5 Cloud exporter that can be registered to the Collector.
-func NewFactory() component.ExporterFactory {
+func NewFactory() exporter.Factory {
 	return NewFactoryWithTokenSourceGetter(getTokenSourceFromConfig)
 }
 
-func NewFactoryWithTokenSourceGetter(tsg TokenSourceGetter) component.ExporterFactory {
-	return &f5cloudFactory{ExporterFactory: otlphttp.NewFactory(), getTokenSource: tsg}
+func NewFactoryWithTokenSourceGetter(tsg TokenSourceGetter) exporter.Factory {
+	return &f5cloudFactory{Factory: otlphttp.NewFactory(), getTokenSource: tsg}
 }
 
-func (f *f5cloudFactory) Type() config.Type {
+func (f *f5cloudFactory) Type() component.Type {
 	return typeStr
 }
 
 func (f *f5cloudFactory) CreateMetricsExporter(
 	ctx context.Context,
-	params component.ExporterCreateSettings,
-	config config.Exporter) (component.MetricsExporter, error) {
+	params exporter.CreateSettings,
+	config component.Config) (exporter.Metrics, error) {
 
 	cfg := config.(*Config)
 
@@ -61,13 +62,13 @@ func (f *f5cloudFactory) CreateMetricsExporter(
 
 	fillUserAgent(cfg, params.BuildInfo.Version)
 
-	return f.ExporterFactory.CreateMetricsExporter(ctx, params, &cfg.Config)
+	return f.Factory.CreateMetricsExporter(ctx, params, &cfg.Config)
 }
 
 func (f *f5cloudFactory) CreateTracesExporter(
 	ctx context.Context,
-	params component.ExporterCreateSettings,
-	config config.Exporter) (component.TracesExporter, error) {
+	params exporter.CreateSettings,
+	config component.Config) (exporter.Traces, error) {
 
 	cfg := config.(*Config)
 
@@ -77,13 +78,13 @@ func (f *f5cloudFactory) CreateTracesExporter(
 
 	fillUserAgent(cfg, params.BuildInfo.Version)
 
-	return f.ExporterFactory.CreateTracesExporter(ctx, params, &cfg.Config)
+	return f.Factory.CreateTracesExporter(ctx, params, &cfg.Config)
 }
 
 func (f *f5cloudFactory) CreateLogsExporter(
 	ctx context.Context,
-	params component.ExporterCreateSettings,
-	config config.Exporter) (component.LogsExporter, error) {
+	params exporter.CreateSettings,
+	config component.Config) (exporter.Logs, error) {
 
 	cfg := config.(*Config)
 
@@ -93,19 +94,17 @@ func (f *f5cloudFactory) CreateLogsExporter(
 
 	fillUserAgent(cfg, params.BuildInfo.Version)
 
-	return f.ExporterFactory.CreateLogsExporter(ctx, params, &cfg.Config)
+	return f.Factory.CreateLogsExporter(ctx, params, &cfg.Config)
 }
 
-func (f *f5cloudFactory) CreateDefaultConfig() config.Exporter {
+func (f *f5cloudFactory) CreateDefaultConfig() component.Config {
 	cfg := &Config{
-		Config: *f.ExporterFactory.CreateDefaultConfig().(*otlphttp.Config),
+		Config: *f.Factory.CreateDefaultConfig().(*otlphttp.Config),
 		AuthConfig: AuthConfig{
 			CredentialFile: "",
 			Audience:       "",
 		},
 	}
-
-	cfg.ExporterSettings = config.NewExporterSettings(config.NewComponentID(typeStr))
 
 	cfg.Headers["User-Agent"] = "opentelemetry-collector-contrib {{version}}"
 
@@ -132,5 +131,5 @@ func getTokenSourceFromConfig(config *Config) (oauth2.TokenSource, error) {
 }
 
 func fillUserAgent(cfg *Config, version string) {
-	cfg.Headers["User-Agent"] = strings.ReplaceAll(cfg.Headers["User-Agent"], "{{version}}", version)
+	cfg.Headers["User-Agent"] = configopaque.String(strings.ReplaceAll(string(cfg.Headers["User-Agent"]), "{{version}}", version))
 }

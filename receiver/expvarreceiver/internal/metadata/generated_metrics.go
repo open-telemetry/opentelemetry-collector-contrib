@@ -9,18 +9,14 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 )
 
 // MetricSettings provides common settings for a particular metric.
 type MetricSettings struct {
 	Enabled bool `mapstructure:"enabled"`
 
-	enabledProvidedByUser bool
-}
-
-// IsEnabledProvidedByUser returns true if `enabled` option is explicitly set in user settings to any value.
-func (ms *MetricSettings) IsEnabledProvidedByUser() bool {
-	return ms.enabledProvidedByUser
+	enabledSetByUser bool
 }
 
 func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
@@ -31,7 +27,7 @@ func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
 	if err != nil {
 		return err
 	}
-	ms.enabledProvidedByUser = parser.IsSet("enabled")
+	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
 }
 
@@ -1516,37 +1512,37 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, options ...metricBuilderOption) *MetricsBuilder {
+func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                                 pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                             pmetric.NewMetrics(),
-		buildInfo:                                 buildInfo,
-		metricProcessRuntimeMemstatsBuckHashSys:   newMetricProcessRuntimeMemstatsBuckHashSys(settings.ProcessRuntimeMemstatsBuckHashSys),
-		metricProcessRuntimeMemstatsFrees:         newMetricProcessRuntimeMemstatsFrees(settings.ProcessRuntimeMemstatsFrees),
-		metricProcessRuntimeMemstatsGcCPUFraction: newMetricProcessRuntimeMemstatsGcCPUFraction(settings.ProcessRuntimeMemstatsGcCPUFraction),
-		metricProcessRuntimeMemstatsGcSys:         newMetricProcessRuntimeMemstatsGcSys(settings.ProcessRuntimeMemstatsGcSys),
-		metricProcessRuntimeMemstatsHeapAlloc:     newMetricProcessRuntimeMemstatsHeapAlloc(settings.ProcessRuntimeMemstatsHeapAlloc),
-		metricProcessRuntimeMemstatsHeapIdle:      newMetricProcessRuntimeMemstatsHeapIdle(settings.ProcessRuntimeMemstatsHeapIdle),
-		metricProcessRuntimeMemstatsHeapInuse:     newMetricProcessRuntimeMemstatsHeapInuse(settings.ProcessRuntimeMemstatsHeapInuse),
-		metricProcessRuntimeMemstatsHeapObjects:   newMetricProcessRuntimeMemstatsHeapObjects(settings.ProcessRuntimeMemstatsHeapObjects),
-		metricProcessRuntimeMemstatsHeapReleased:  newMetricProcessRuntimeMemstatsHeapReleased(settings.ProcessRuntimeMemstatsHeapReleased),
-		metricProcessRuntimeMemstatsHeapSys:       newMetricProcessRuntimeMemstatsHeapSys(settings.ProcessRuntimeMemstatsHeapSys),
-		metricProcessRuntimeMemstatsLastPause:     newMetricProcessRuntimeMemstatsLastPause(settings.ProcessRuntimeMemstatsLastPause),
-		metricProcessRuntimeMemstatsLookups:       newMetricProcessRuntimeMemstatsLookups(settings.ProcessRuntimeMemstatsLookups),
-		metricProcessRuntimeMemstatsMallocs:       newMetricProcessRuntimeMemstatsMallocs(settings.ProcessRuntimeMemstatsMallocs),
-		metricProcessRuntimeMemstatsMcacheInuse:   newMetricProcessRuntimeMemstatsMcacheInuse(settings.ProcessRuntimeMemstatsMcacheInuse),
-		metricProcessRuntimeMemstatsMcacheSys:     newMetricProcessRuntimeMemstatsMcacheSys(settings.ProcessRuntimeMemstatsMcacheSys),
-		metricProcessRuntimeMemstatsMspanInuse:    newMetricProcessRuntimeMemstatsMspanInuse(settings.ProcessRuntimeMemstatsMspanInuse),
-		metricProcessRuntimeMemstatsMspanSys:      newMetricProcessRuntimeMemstatsMspanSys(settings.ProcessRuntimeMemstatsMspanSys),
-		metricProcessRuntimeMemstatsNextGc:        newMetricProcessRuntimeMemstatsNextGc(settings.ProcessRuntimeMemstatsNextGc),
-		metricProcessRuntimeMemstatsNumForcedGc:   newMetricProcessRuntimeMemstatsNumForcedGc(settings.ProcessRuntimeMemstatsNumForcedGc),
-		metricProcessRuntimeMemstatsNumGc:         newMetricProcessRuntimeMemstatsNumGc(settings.ProcessRuntimeMemstatsNumGc),
-		metricProcessRuntimeMemstatsOtherSys:      newMetricProcessRuntimeMemstatsOtherSys(settings.ProcessRuntimeMemstatsOtherSys),
-		metricProcessRuntimeMemstatsPauseTotal:    newMetricProcessRuntimeMemstatsPauseTotal(settings.ProcessRuntimeMemstatsPauseTotal),
-		metricProcessRuntimeMemstatsStackInuse:    newMetricProcessRuntimeMemstatsStackInuse(settings.ProcessRuntimeMemstatsStackInuse),
-		metricProcessRuntimeMemstatsStackSys:      newMetricProcessRuntimeMemstatsStackSys(settings.ProcessRuntimeMemstatsStackSys),
-		metricProcessRuntimeMemstatsSys:           newMetricProcessRuntimeMemstatsSys(settings.ProcessRuntimeMemstatsSys),
-		metricProcessRuntimeMemstatsTotalAlloc:    newMetricProcessRuntimeMemstatsTotalAlloc(settings.ProcessRuntimeMemstatsTotalAlloc),
+		buildInfo:                                 settings.BuildInfo,
+		metricProcessRuntimeMemstatsBuckHashSys:   newMetricProcessRuntimeMemstatsBuckHashSys(ms.ProcessRuntimeMemstatsBuckHashSys),
+		metricProcessRuntimeMemstatsFrees:         newMetricProcessRuntimeMemstatsFrees(ms.ProcessRuntimeMemstatsFrees),
+		metricProcessRuntimeMemstatsGcCPUFraction: newMetricProcessRuntimeMemstatsGcCPUFraction(ms.ProcessRuntimeMemstatsGcCPUFraction),
+		metricProcessRuntimeMemstatsGcSys:         newMetricProcessRuntimeMemstatsGcSys(ms.ProcessRuntimeMemstatsGcSys),
+		metricProcessRuntimeMemstatsHeapAlloc:     newMetricProcessRuntimeMemstatsHeapAlloc(ms.ProcessRuntimeMemstatsHeapAlloc),
+		metricProcessRuntimeMemstatsHeapIdle:      newMetricProcessRuntimeMemstatsHeapIdle(ms.ProcessRuntimeMemstatsHeapIdle),
+		metricProcessRuntimeMemstatsHeapInuse:     newMetricProcessRuntimeMemstatsHeapInuse(ms.ProcessRuntimeMemstatsHeapInuse),
+		metricProcessRuntimeMemstatsHeapObjects:   newMetricProcessRuntimeMemstatsHeapObjects(ms.ProcessRuntimeMemstatsHeapObjects),
+		metricProcessRuntimeMemstatsHeapReleased:  newMetricProcessRuntimeMemstatsHeapReleased(ms.ProcessRuntimeMemstatsHeapReleased),
+		metricProcessRuntimeMemstatsHeapSys:       newMetricProcessRuntimeMemstatsHeapSys(ms.ProcessRuntimeMemstatsHeapSys),
+		metricProcessRuntimeMemstatsLastPause:     newMetricProcessRuntimeMemstatsLastPause(ms.ProcessRuntimeMemstatsLastPause),
+		metricProcessRuntimeMemstatsLookups:       newMetricProcessRuntimeMemstatsLookups(ms.ProcessRuntimeMemstatsLookups),
+		metricProcessRuntimeMemstatsMallocs:       newMetricProcessRuntimeMemstatsMallocs(ms.ProcessRuntimeMemstatsMallocs),
+		metricProcessRuntimeMemstatsMcacheInuse:   newMetricProcessRuntimeMemstatsMcacheInuse(ms.ProcessRuntimeMemstatsMcacheInuse),
+		metricProcessRuntimeMemstatsMcacheSys:     newMetricProcessRuntimeMemstatsMcacheSys(ms.ProcessRuntimeMemstatsMcacheSys),
+		metricProcessRuntimeMemstatsMspanInuse:    newMetricProcessRuntimeMemstatsMspanInuse(ms.ProcessRuntimeMemstatsMspanInuse),
+		metricProcessRuntimeMemstatsMspanSys:      newMetricProcessRuntimeMemstatsMspanSys(ms.ProcessRuntimeMemstatsMspanSys),
+		metricProcessRuntimeMemstatsNextGc:        newMetricProcessRuntimeMemstatsNextGc(ms.ProcessRuntimeMemstatsNextGc),
+		metricProcessRuntimeMemstatsNumForcedGc:   newMetricProcessRuntimeMemstatsNumForcedGc(ms.ProcessRuntimeMemstatsNumForcedGc),
+		metricProcessRuntimeMemstatsNumGc:         newMetricProcessRuntimeMemstatsNumGc(ms.ProcessRuntimeMemstatsNumGc),
+		metricProcessRuntimeMemstatsOtherSys:      newMetricProcessRuntimeMemstatsOtherSys(ms.ProcessRuntimeMemstatsOtherSys),
+		metricProcessRuntimeMemstatsPauseTotal:    newMetricProcessRuntimeMemstatsPauseTotal(ms.ProcessRuntimeMemstatsPauseTotal),
+		metricProcessRuntimeMemstatsStackInuse:    newMetricProcessRuntimeMemstatsStackInuse(ms.ProcessRuntimeMemstatsStackInuse),
+		metricProcessRuntimeMemstatsStackSys:      newMetricProcessRuntimeMemstatsStackSys(ms.ProcessRuntimeMemstatsStackSys),
+		metricProcessRuntimeMemstatsSys:           newMetricProcessRuntimeMemstatsSys(ms.ProcessRuntimeMemstatsSys),
+		metricProcessRuntimeMemstatsTotalAlloc:    newMetricProcessRuntimeMemstatsTotalAlloc(ms.ProcessRuntimeMemstatsTotalAlloc),
 	}
 	for _, op := range options {
 		op(mb)

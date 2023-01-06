@@ -19,7 +19,6 @@ import (
 	"strings"
 	"time"
 
-	"go.opentelemetry.io/collector/config"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
@@ -54,8 +53,7 @@ type K8sObjectsConfig struct {
 }
 
 type Config struct {
-	config.ReceiverSettings `mapstructure:",squash"`
-	k8sconfig.APIConfig     `mapstructure:",squash"`
+	k8sconfig.APIConfig `mapstructure:",squash"`
 
 	Objects []*K8sObjectsConfig `mapstructure:"objects"`
 
@@ -100,7 +98,7 @@ func (c *Config) Validate() error {
 
 		object.gvr = gvr
 	}
-	return c.ReceiverSettings.Validate()
+	return nil
 }
 
 func (c *Config) getDiscoveryClient() (discovery.ServerResourcesInterface, error) {

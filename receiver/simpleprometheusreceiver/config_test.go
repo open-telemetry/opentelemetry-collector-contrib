@@ -22,7 +22,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -35,17 +35,16 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	tests := []struct {
-		id       config.ComponentID
-		expected config.Receiver
+		id       component.ID
+		expected component.Config
 	}{
 		{
-			id:       config.NewComponentIDWithName(typeStr, ""),
+			id:       component.NewIDWithName(typeStr, ""),
 			expected: createDefaultConfig(),
 		},
 		{
-			id: config.NewComponentIDWithName(typeStr, "all_settings"),
+			id: component.NewIDWithName(typeStr, "all_settings"),
 			expected: &Config{
-				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "localhost:1234",
 					TLSSetting: configtls.TLSClientSetting{
@@ -64,9 +63,8 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: config.NewComponentIDWithName(typeStr, "partial_settings"),
+			id: component.NewIDWithName(typeStr, "partial_settings"),
 			expected: &Config{
-				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "localhost:1234",
 					TLSSetting: configtls.TLSClientSetting{
@@ -78,9 +76,8 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: config.NewComponentIDWithName(typeStr, "partial_tls_settings"),
+			id: component.NewIDWithName(typeStr, "partial_tls_settings"),
 			expected: &Config{
-				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "localhost:1234",
 				},
@@ -97,9 +94,9 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-			assert.NoError(t, cfg.Validate())
+			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

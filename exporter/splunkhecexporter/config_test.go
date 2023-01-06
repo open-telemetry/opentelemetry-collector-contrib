@@ -22,7 +22,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -42,17 +43,16 @@ func TestLoadConfig(t *testing.T) {
 	defaultCfg.Endpoint = "https://splunk:8088/services/collector"
 
 	tests := []struct {
-		id       config.ComponentID
-		expected config.Exporter
+		id       component.ID
+		expected component.Config
 	}{
 		{
-			id:       config.NewComponentIDWithName(typeStr, ""),
+			id:       component.NewIDWithName(typeStr, ""),
 			expected: defaultCfg,
 		},
 		{
-			id: config.NewComponentIDWithName(typeStr, "allsettings"),
+			id: component.NewIDWithName(typeStr, "allsettings"),
 			expected: &Config{
-				ExporterSettings:        config.NewExporterSettings(config.NewComponentID(typeStr)),
 				Token:                   "00000000-0000-0000-0000-0000000000000",
 				Endpoint:                "https://splunk:8088/services/collector",
 				Source:                  "otel",
@@ -97,8 +97,9 @@ func TestLoadConfig(t *testing.T) {
 				HecFields: OtelToHecFields{
 					SeverityText:   "myseverityfield",
 					SeverityNumber: "myseveritynumfield",
-					Name:           "mynamefield",
 				},
+				HealthPath:            "/services/collector/health",
+				HecHealthCheckEnabled: false,
 			},
 		},
 	}
@@ -110,9 +111,9 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, config.UnmarshalExporter(sub, cfg))
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-			assert.NoError(t, cfg.Validate())
+			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -121,7 +122,7 @@ func TestLoadConfig(t *testing.T) {
 func TestConfig_getOptionsFromConfig(t *testing.T) {
 	type fields struct {
 		Endpoint                string
-		Token                   string
+		Token                   configopaque.String
 		Source                  string
 		SourceType              string
 		Index                   string

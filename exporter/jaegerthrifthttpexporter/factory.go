@@ -16,12 +16,10 @@ package jaegerthrifthttpexporter // import "github.com/open-telemetry/openteleme
 
 import (
 	"context"
-	"fmt"
-	"net/url"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -33,16 +31,15 @@ const (
 )
 
 // NewFactory creates a factory for Jaeger Thrift over HTTP exporter.
-func NewFactory() component.ExporterFactory {
-	return component.NewExporterFactory(
+func NewFactory() exporter.Factory {
+	return exporter.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporter(createTracesExporter, stability))
+		exporter.WithTraces(createTracesExporter, stability))
 }
 
-func createDefaultConfig() config.Exporter {
+func createDefaultConfig() component.Config {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Timeout: exporterhelper.NewDefaultTimeoutSettings().Timeout,
 		},
@@ -51,22 +48,11 @@ func createDefaultConfig() config.Exporter {
 
 func createTracesExporter(
 	_ context.Context,
-	set component.ExporterCreateSettings,
-	config config.Exporter,
-) (component.TracesExporter, error) {
+	set exporter.CreateSettings,
+	config component.Config,
+) (exporter.Traces, error) {
 
 	expCfg := config.(*Config)
-	_, err := url.ParseRequestURI(expCfg.HTTPClientSettings.Endpoint)
-	if err != nil {
-		// TODO: Improve error message, see #215
-		err = fmt.Errorf("%q config requires a valid \"endpoint\": %w", expCfg.ID().String(), err)
-		return nil, err
-	}
-
-	if expCfg.HTTPClientSettings.Timeout <= 0 {
-		err := fmt.Errorf("%q config requires a positive value for \"timeout\"", expCfg.ID().String())
-		return nil, err
-	}
 
 	return newTracesExporter(expCfg, set)
 }

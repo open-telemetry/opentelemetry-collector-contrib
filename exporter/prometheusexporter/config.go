@@ -18,7 +18,7 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
@@ -26,7 +26,6 @@ import (
 
 // Config defines configuration for Prometheus exporter.
 type Config struct {
-	config.ExporterSettings       `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 	confighttp.HTTPServerSettings `mapstructure:",squash"`
 
 	// Namespace if set, exports metrics under the provided value.
@@ -48,7 +47,7 @@ type Config struct {
 	EnableOpenMetrics bool `mapstructure:"enable_open_metrics"`
 }
 
-var _ config.Exporter = (*Config)(nil)
+var _ component.Config = (*Config)(nil)
 
 // Validate checks if the exporter configuration is valid
 func (cfg *Config) Validate() error {

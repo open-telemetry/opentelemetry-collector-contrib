@@ -64,6 +64,7 @@ comparable AWS X-Ray Daemon configuration values.
 | `role_arn`             | IAM role to upload segments to a different account.                                |         |
 | `indexed_attributes`   | List of attribute names to be converted to X-Ray annotations.                      |         |
 | `index_all_attributes` | Enable or disable conversion of all OpenTelemetry attributes to X-Ray annotations. | false   |
+| `aws_log_groups`       | List of log group names for cloud watch.                                           |         |
 
 ## AWS Credential Configuration
 

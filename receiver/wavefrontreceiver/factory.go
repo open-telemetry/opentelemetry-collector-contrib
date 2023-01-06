@@ -18,9 +18,9 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
@@ -37,16 +37,15 @@ const (
 )
 
 // NewFactory creates a factory for WaveFront receiver.
-func NewFactory() component.ReceiverFactory {
-	return component.NewReceiverFactory(
+func NewFactory() receiver.Factory {
+	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver, stability))
+		receiver.WithMetrics(createMetricsReceiver, stability))
 }
 
-func createDefaultConfig() config.Receiver {
+func createDefaultConfig() component.Config {
 	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		TCPAddr: confignet.TCPAddr{
 			Endpoint: "localhost:2003",
 		},
@@ -56,10 +55,10 @@ func createDefaultConfig() config.Receiver {
 
 func createMetricsReceiver(
 	ctx context.Context,
-	params component.ReceiverCreateSettings,
-	cfg config.Receiver,
+	params receiver.CreateSettings,
+	cfg component.Config,
 	consumer consumer.Metrics,
-) (component.MetricsReceiver, error) {
+) (receiver.Metrics, error) {
 
 	rCfg := cfg.(*Config)
 
@@ -70,7 +69,6 @@ func createMetricsReceiver(
 	// The Wavefront receiver leverages the Carbon receiver code by implementing
 	// a dedicated parser for its format.
 	carbonCfg := carbonreceiver.Config{
-		ReceiverSettings: rCfg.ReceiverSettings,
 		NetAddr: confignet.NetAddr{
 			Endpoint:  rCfg.Endpoint,
 			Transport: "tcp",

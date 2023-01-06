@@ -17,6 +17,7 @@ package signalfxexporter
 import (
 	"compress/gzip"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -34,13 +35,17 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/dimensions"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
@@ -64,47 +69,41 @@ func TestNew(t *testing.T) {
 		{
 			name: "bad config fails",
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-				APIURL:           "abc",
+				APIURL: "abc",
 			},
 			wantErr: true,
 		},
 		{
 			name: "fails to create metrics converter",
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-				AccessToken:      "test",
-				Realm:            "realm",
-				ExcludeMetrics:   []dpfilters.MetricFilter{{}},
+				AccessToken:    "test",
+				Realm:          "realm",
+				ExcludeMetrics: []dpfilters.MetricFilter{{}},
 			},
 			wantErr: true,
 		},
 		{
 			name: "successfully create exporter",
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-				AccessToken:      "someToken",
-				Realm:            "xyz",
-				TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: 1 * time.Second},
-				Headers:          nil,
+				AccessToken:        "someToken",
+				Realm:              "xyz",
+				HTTPClientSettings: confighttp.HTTPClientSettings{Timeout: 1 * time.Second},
 			},
 		},
 		{
 			name: "create exporter with host metadata syncer",
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-				AccessToken:      "someToken",
-				Realm:            "xyz",
-				TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: 1 * time.Second},
-				Headers:          nil,
-				SyncHostMetadata: true,
+				AccessToken:        "someToken",
+				Realm:              "xyz",
+				HTTPClientSettings: confighttp.HTTPClientSettings{Timeout: 1 * time.Second},
+				SyncHostMetadata:   true,
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := newSignalFxExporter(tt.config, zap.NewNop())
+			got, err := newSignalFxExporter(tt.config, exportertest.NewNopCreateSettings())
 			if tt.wantErr {
 				require.Error(t, err)
 				if tt.wantErrMessage != "" {
@@ -198,16 +197,23 @@ func TestConsumeMetrics(t *testing.T) {
 			serverURL, err := url.Parse(server.URL)
 			assert.NoError(t, err)
 
+			cfg := &Config{
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Timeout: 1 * time.Second,
+					Headers: map[string]configopaque.String{"test_header_": "test"},
+				},
+			}
+
+			client, err := cfg.ToClient(componenttest.NewNopHost(), exportertest.NewNopCreateSettings().TelemetrySettings)
+			require.NoError(t, err)
+
 			c, err := translation.NewMetricsConverter(zap.NewNop(), nil, nil, nil, "")
 			require.NoError(t, err)
 			require.NotNil(t, c)
 			dpClient := &sfxDPClient{
 				sfxClientBase: sfxClientBase{
 					ingestURL: serverURL,
-					headers:   map[string]string{"test_header_": "test"},
-					client: &http.Client{
-						Timeout: 1 * time.Second,
-					},
+					client:    client,
 					zippers: sync.Pool{New: func() interface{} {
 						return gzip.NewWriter(nil)
 					}},
@@ -414,14 +420,14 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.IngestURL = server.URL
 			cfg.APIURL = server.URL
-			cfg.Headers = make(map[string]string)
+			cfg.HTTPClientSettings.Headers = make(map[string]configopaque.String)
 			for k, v := range tt.additionalHeaders {
-				cfg.Headers[k] = v
+				cfg.HTTPClientSettings.Headers[k] = configopaque.String(v)
 			}
-			cfg.Headers["test_header_"] = tt.name
-			cfg.AccessToken = fromHeaders
+			cfg.HTTPClientSettings.Headers["test_header_"] = configopaque.String(tt.name)
+			cfg.AccessToken = configopaque.String(fromHeaders)
 			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
-			sfxExp, err := NewFactory().CreateMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
+			sfxExp, err := NewFactory().CreateMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
 			require.NoError(t, err)
 			require.NoError(t, sfxExp.Start(context.Background(), componenttest.NewNopHost()))
 			defer func() {
@@ -444,32 +450,32 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 }
 
 func TestNewEventExporter(t *testing.T) {
-	got, err := newEventExporter(nil, zap.NewNop())
+	got, err := newEventExporter(nil, exportertest.NewNopCreateSettings())
 	assert.EqualError(t, err, "nil config")
 	assert.Nil(t, got)
 
 	cfg := &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-		AccessToken:      "someToken",
-		IngestURL:        "asdf://:%",
-		TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: 1 * time.Second},
-		Headers:          nil,
+		AccessToken:        "someToken",
+		IngestURL:          "asdf://:%",
+		HTTPClientSettings: confighttp.HTTPClientSettings{Timeout: 1 * time.Second},
 	}
 
-	got, err = newEventExporter(cfg, zap.NewNop())
+	got, err = newEventExporter(cfg, exportertest.NewNopCreateSettings())
 	assert.NotNil(t, err)
 	assert.Nil(t, got)
 
 	cfg = &Config{
-		AccessToken:     "someToken",
-		Realm:           "xyz",
-		TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: 1 * time.Second},
-		Headers:         nil,
+		AccessToken:        "someToken",
+		Realm:              "xyz",
+		HTTPClientSettings: confighttp.HTTPClientSettings{Timeout: 1 * time.Second},
 	}
 
-	got, err = newEventExporter(cfg, zap.NewNop())
+	got, err = newEventExporter(cfg, exportertest.NewNopCreateSettings())
 	assert.NoError(t, err)
 	require.NotNil(t, got)
+
+	err = got.startLogs(context.Background(), componenttest.NewNopHost())
+	assert.NoError(t, err)
 
 	// This is expected to fail.
 	ld := makeSampleResourceLogs()
@@ -577,14 +583,21 @@ func TestConsumeEventData(t *testing.T) {
 			serverURL, err := url.Parse(server.URL)
 			assert.NoError(t, err)
 
+			cfg := &Config{
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Timeout: 1 * time.Second,
+					Headers: map[string]configopaque.String{"test_header_": "test"},
+				},
+			}
+
+			client, err := cfg.ToClient(componenttest.NewNopHost(), exportertest.NewNopCreateSettings().TelemetrySettings)
+			require.NoError(t, err)
+
 			eventClient := &sfxEventClient{
 				sfxClientBase: sfxClientBase{
 					ingestURL: serverURL,
-					headers:   map[string]string{"test_header_": "test"},
-					client: &http.Client{
-						Timeout: 1 * time.Second,
-					},
-					zippers: newGzipPool(),
+					client:    client,
+					zippers:   newGzipPool(),
 				},
 				logger: zap.NewNop(),
 			}
@@ -667,11 +680,11 @@ func TestConsumeLogsDataWithAccessTokenPassthrough(t *testing.T) {
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.IngestURL = server.URL
 			cfg.APIURL = server.URL
-			cfg.Headers = make(map[string]string)
-			cfg.Headers["test_header_"] = tt.name
-			cfg.AccessToken = fromHeaders
+			cfg.Headers = make(map[string]configopaque.String)
+			cfg.Headers["test_header_"] = configopaque.String(tt.name)
+			cfg.AccessToken = configopaque.String(fromHeaders)
 			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
-			sfxExp, err := NewFactory().CreateLogsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
+			sfxExp, err := NewFactory().CreateLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
 			require.NoError(t, err)
 			require.NoError(t, sfxExp.Start(context.Background(), componenttest.NewNopHost()))
 			defer func() {
@@ -1040,10 +1053,280 @@ func TestSignalFxExporterConsumeMetadata(t *testing.T) {
 	rCfg := cfg.(*Config)
 	rCfg.AccessToken = "token"
 	rCfg.Realm = "realm"
-	exp, err := f.CreateMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), rCfg)
+	exp, err := f.CreateMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), rCfg)
 	require.NoError(t, err)
 
 	kme, ok := exp.(metadata.MetadataExporter)
 	require.True(t, ok, "SignalFx exporter does not implement metadata.MetadataExporter")
 	require.NotNil(t, kme)
+}
+
+func TestTLSExporterInit(t *testing.T) {
+	tests := []struct {
+		name           string
+		config         *Config
+		wantErr        bool
+		wantErrMessage string
+	}{
+		{
+			name: "valid CA",
+			config: &Config{
+				APIURL:    "https://test",
+				IngestURL: "https://test",
+				IngestTLSSettings: configtls.TLSClientSetting{
+					TLSSetting: configtls.TLSSetting{
+						CAFile: "./testdata/certs/ca.pem",
+					},
+				},
+				APITLSSettings: configtls.TLSClientSetting{
+					TLSSetting: configtls.TLSSetting{
+						CAFile: "./testdata/certs/ca.pem",
+					},
+				},
+				AccessToken:      "random",
+				SyncHostMetadata: true,
+			},
+			wantErr: false,
+		},
+		{
+			name: "missing CA",
+			config: &Config{
+				APIURL:    "https://test",
+				IngestURL: "https://test",
+				IngestTLSSettings: configtls.TLSClientSetting{
+					TLSSetting: configtls.TLSSetting{
+						CAFile: "./testdata/certs/missingfile",
+					},
+				},
+				AccessToken:      "random",
+				SyncHostMetadata: true,
+			},
+			wantErr:        true,
+			wantErrMessage: "failed to load CA CertPool",
+		},
+		{
+			name: "invalid CA",
+			config: &Config{
+				APIURL:    "https://test",
+				IngestURL: "https://test",
+				IngestTLSSettings: configtls.TLSClientSetting{
+					TLSSetting: configtls.TLSSetting{
+						CAFile: "./testdata/certs/invalid-ca.pem",
+					},
+				},
+				AccessToken:      "random",
+				SyncHostMetadata: true,
+			},
+			wantErr:        true,
+			wantErrMessage: "failed to load CA CertPool",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sfx, err := newSignalFxExporter(tt.config, exportertest.NewNopCreateSettings())
+			assert.NoError(t, err)
+			err = sfx.start(context.Background(), componenttest.NewNopHost())
+			if tt.wantErr {
+				require.Error(t, err)
+				if tt.wantErrMessage != "" {
+					require.ErrorContains(t, err, tt.wantErrMessage)
+				}
+			} else {
+				require.NotNil(t, sfx)
+			}
+		})
+	}
+}
+
+func TestTLSIngestConnection(t *testing.T) {
+	metricsPayload := pmetric.NewMetrics()
+	rm := metricsPayload.ResourceMetrics().AppendEmpty()
+	ilm := rm.ScopeMetrics().AppendEmpty()
+	m := ilm.Metrics().AppendEmpty()
+	m.SetName("test_gauge")
+	dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
+	dp.Attributes().PutStr("k0", "v0")
+	dp.Attributes().PutStr("k1", "v1")
+	dp.SetDoubleValue(123)
+
+	server, err := newLocalHTTPSTestServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, "connection is successful")
+	}))
+	require.NoError(t, err)
+	defer server.Close()
+
+	serverURL := server.URL
+
+	tests := []struct {
+		name           string
+		config         *Config
+		wantErr        bool
+		wantErrMessage string
+	}{
+		{
+			name: "Ingest CA not set",
+			config: &Config{
+				APIURL:           serverURL,
+				IngestURL:        serverURL,
+				AccessToken:      "random",
+				SyncHostMetadata: true,
+			},
+			wantErr:        true,
+			wantErrMessage: "x509.*certificate",
+		},
+		{
+			name: "Ingest CA set",
+			config: &Config{
+				APIURL:    serverURL,
+				IngestURL: serverURL,
+				IngestTLSSettings: configtls.TLSClientSetting{
+					TLSSetting: configtls.TLSSetting{
+						CAFile: "./testdata/certs/ca.pem",
+					},
+				},
+				AccessToken:      "random",
+				SyncHostMetadata: true,
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sfx, err := newSignalFxExporter(tt.config, exportertest.NewNopCreateSettings())
+			assert.NoError(t, err)
+			err = sfx.start(context.Background(), componenttest.NewNopHost())
+			assert.NoError(t, err)
+
+			_, err = sfx.pushMetricsData(context.Background(), metricsPayload)
+			if tt.wantErr {
+				require.Error(t, err)
+				if tt.wantErrMessage != "" {
+					assert.Regexp(t, tt.wantErrMessage, err)
+				}
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestTLSAPIConnection(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	converter, err := translation.NewMetricsConverter(
+		zap.NewNop(),
+		nil,
+		cfg.ExcludeMetrics,
+		cfg.IncludeMetrics,
+		cfg.NonAlphanumericDimensionChars,
+	)
+	require.NoError(t, err)
+
+	metadata := []*metadata.MetadataUpdate{
+		{
+			ResourceIDKey: "key",
+			ResourceID:    "id",
+			MetadataDelta: metadata.MetadataDelta{
+				MetadataToAdd: map[string]string{
+					"prop.erty1": "val1",
+				},
+			},
+		},
+	}
+
+	server, err := newLocalHTTPSTestServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, "connection is successful")
+	}))
+	require.NoError(t, err)
+	defer server.Close()
+
+	tests := []struct {
+		name           string
+		config         *Config
+		wantErr        bool
+		wantErrMessage string
+	}{
+		{
+			name: "API CA set",
+			config: &Config{
+				APIURL:           server.URL,
+				IngestURL:        server.URL,
+				AccessToken:      "random",
+				SyncHostMetadata: true,
+				APITLSSettings: configtls.TLSClientSetting{
+					TLSSetting: configtls.TLSSetting{
+						CAFile: "./testdata/certs/ca.pem",
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "API CA set",
+			config: &Config{
+				APIURL:           server.URL,
+				IngestURL:        server.URL,
+				AccessToken:      "random",
+				SyncHostMetadata: true,
+			},
+			wantErr:        true,
+			wantErrMessage: "error making HTTP request.*x509",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			observedZapCore, observedLogs := observer.New(zap.DebugLevel)
+			logger := zap.New(observedZapCore)
+			apiTLSCfg, err := tt.config.APITLSSettings.LoadTLSConfig()
+			require.NoError(t, err)
+			serverURL, err := url.Parse(tt.config.APIURL)
+			assert.NoError(t, err)
+			dimClient := dimensions.NewDimensionClient(
+				context.Background(),
+				dimensions.DimensionClientOptions{
+					Token:                 "",
+					APIURL:                serverURL,
+					LogUpdates:            true,
+					Logger:                logger,
+					SendDelay:             1,
+					PropertiesMaxBuffered: 10,
+					MetricsConverter:      *converter,
+					APITLSConfig:          apiTLSCfg,
+				})
+			dimClient.Start()
+
+			se := signalfxExporter{
+				pushMetadata: dimClient.PushMetadata,
+			}
+			sme := signalfMetadataExporter{
+				pushMetadata: se.pushMetadata,
+			}
+
+			err = sme.ConsumeMetadata(metadata)
+			time.Sleep(3 * time.Second)
+			require.NoError(t, err)
+
+			if tt.wantErr {
+				if tt.wantErrMessage != "" {
+					assert.Regexp(t, tt.wantErrMessage, observedLogs.All()[0].Context[0].Interface.(error).Error())
+				}
+			} else {
+				require.Equal(t, 1, observedLogs.Len())
+				require.Nil(t, observedLogs.All()[0].Context[0].Interface)
+			}
+		})
+	}
+}
+
+func newLocalHTTPSTestServer(handler http.Handler) (*httptest.Server, error) {
+	ts := httptest.NewUnstartedServer(handler)
+	cert, err := tls.LoadX509KeyPair("./testdata/certs/cert.pem", "./testdata/certs/cert-key.pem")
+	if err != nil {
+		return nil, err
+	}
+	ts.TLS = &tls.Config{Certificates: []tls.Certificate{cert}}
+	ts.StartTLS()
+	return ts, nil
 }

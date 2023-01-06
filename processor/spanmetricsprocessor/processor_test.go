@@ -15,6 +15,7 @@
 package spanmetricsprocessor
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"testing"
@@ -24,14 +25,15 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/processor/processortest"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
@@ -84,11 +86,11 @@ type span struct {
 
 func TestProcessorStart(t *testing.T) {
 	// Create otlp exporters.
-	otlpConfig, mexp, texp := newOTLPExporters(t)
+	otlpID, mexp, texp := newOTLPExporters(t)
 
 	for _, tc := range []struct {
 		name            string
-		exporter        component.Exporter
+		exporter        component.Component
 		metricsExporter string
 		wantErrorMsg    string
 	}{
@@ -98,9 +100,9 @@ func TestProcessorStart(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			// Prepare
-			exporters := map[config.DataType]map[config.ComponentID]component.Exporter{
-				config.MetricsDataType: {
-					otlpConfig.ID(): tc.exporter,
+			exporters := map[component.DataType]map[component.ID]component.Component{
+				component.DataTypeMetrics: {
+					otlpID: tc.exporter,
 				},
 			}
 			mhost := &mocks.Host{}
@@ -111,7 +113,7 @@ func TestProcessorStart(t *testing.T) {
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.MetricsExporter = tc.metricsExporter
 
-			procCreationParams := componenttest.NewNopProcessorCreateSettings()
+			procCreationParams := processortest.NewNopCreateSettings()
 			traceProcessor, err := factory.CreateTracesProcessor(context.Background(), procCreationParams, cfg, consumertest.NewNop())
 			require.NoError(t, err)
 
@@ -326,14 +328,14 @@ func TestMetricKeyCache(t *testing.T) {
 	ctx := metadata.NewIncomingContext(context.Background(), nil)
 
 	// 0 key was cached at beginning
-	assert.Empty(t, p.metricKeyToDimensions.Keys())
+	assert.Zero(t, p.metricKeyToDimensions.Len())
 
 	err := p.ConsumeTraces(ctx, traces)
 	// Validate
 	require.NoError(t, err)
 	// 2 key was cached, 1 key was evicted and cleaned after the processing
 	assert.Eventually(t, func() bool {
-		return assert.Len(t, p.metricKeyToDimensions.Keys(), DimensionsCacheSize)
+		return assert.Equal(t, DimensionsCacheSize, p.metricKeyToDimensions.Len())
 	}, 10*time.Second, time.Millisecond*100)
 
 	// consume another batch of traces
@@ -342,7 +344,7 @@ func TestMetricKeyCache(t *testing.T) {
 
 	// 2 key was cached, other keys were evicted and cleaned after the processing
 	assert.Eventually(t, func() bool {
-		return assert.Len(t, p.metricKeyToDimensions.Keys(), DimensionsCacheSize)
+		return assert.Equal(t, DimensionsCacheSize, p.metricKeyToDimensions.Len())
 	}, 10*time.Second, time.Millisecond*100)
 }
 
@@ -398,6 +400,7 @@ func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, de
 			// Add a resource attribute to test "process" attributes like IP, host, region, cluster, etc.
 			{regionResourceAttrName, nil},
 		},
+		keyBuf:                new(bytes.Buffer),
 		metricKeyToDimensions: metricKeyToDimensions,
 	}
 }
@@ -429,8 +432,8 @@ func verifyMultipleCumulativeConsumptions() func(t testing.TB, input pmetric.Met
 // verifyConsumeMetricsInput verifies the input of the ConsumeMetrics call from this processor.
 // This is the best point to verify the computed metrics from spans are as expected.
 func verifyConsumeMetricsInput(t testing.TB, input pmetric.Metrics, expectedTemporality pmetric.AggregationTemporality, numCumulativeConsumptions int) bool {
-	require.Equal(t, 6, input.MetricCount(),
-		"Should be 3 for each of call count and latency. Each group of 3 metrics is made of: "+
+	require.Equal(t, 6, input.DataPointCount(),
+		"Should be 3 for each of call count and latency. Each group of 3 data points is made of: "+
 			"service-a (server kind) -> service-a (client kind) -> service-b (service kind)",
 	)
 
@@ -442,44 +445,32 @@ func verifyConsumeMetricsInput(t testing.TB, input pmetric.Metrics, expectedTemp
 	assert.Equal(t, "spanmetricsprocessor", ilm.At(0).Scope().Name())
 
 	m := ilm.At(0).Metrics()
-	require.Equal(t, 6, m.Len())
+	require.Equal(t, 2, m.Len())
 
 	seenMetricIDs := make(map[metricID]bool)
-	mi := 0
-	// The first 3 metrics are for call counts.
-	for ; mi < 3; mi++ {
-		assert.Equal(t, "calls_total", m.At(mi).Name())
-
-		data := m.At(mi).Sum()
-		assert.Equal(t, expectedTemporality, data.AggregationTemporality())
-		assert.True(t, data.IsMonotonic())
-
-		dps := data.DataPoints()
-		require.Equal(t, 1, dps.Len())
-
-		dp := dps.At(0)
+	// The first 3 data points are for call counts.
+	assert.Equal(t, "calls_total", m.At(0).Name())
+	assert.Equal(t, expectedTemporality, m.At(0).Sum().AggregationTemporality())
+	assert.True(t, m.At(0).Sum().IsMonotonic())
+	callsDps := m.At(0).Sum().DataPoints()
+	require.Equal(t, 3, callsDps.Len())
+	for dpi := 0; dpi < 3; dpi++ {
+		dp := callsDps.At(dpi)
 		assert.Equal(t, int64(numCumulativeConsumptions), dp.IntValue(), "There should only be one metric per Service/operation/kind combination")
 		assert.NotZero(t, dp.StartTimestamp(), "StartTimestamp should be set")
 		assert.NotZero(t, dp.Timestamp(), "Timestamp should be set")
-
 		verifyMetricLabels(dp, t, seenMetricIDs)
 	}
 
 	seenMetricIDs = make(map[metricID]bool)
-	// The remaining metrics are for latency.
-	for ; mi < m.Len(); mi++ {
-		metric := m.At(mi)
-
-		assert.Equal(t, "latency", metric.Name())
-		assert.Equal(t, "ms", metric.Unit())
-
-		data := metric.Histogram()
-		assert.Equal(t, expectedTemporality, data.AggregationTemporality())
-
-		dps := data.DataPoints()
-		require.Equal(t, 1, dps.Len())
-
-		dp := dps.At(0)
+	// The remaining 3 data points are for latency.
+	assert.Equal(t, "latency", m.At(1).Name())
+	assert.Equal(t, "ms", m.At(1).Unit())
+	assert.Equal(t, expectedTemporality, m.At(1).Histogram().AggregationTemporality())
+	latencyDps := m.At(1).Histogram().DataPoints()
+	require.Equal(t, 3, latencyDps.Len())
+	for dpi := 0; dpi < 3; dpi++ {
+		dp := latencyDps.At(dpi)
 		assert.Equal(t, sampleLatency*float64(numCumulativeConsumptions), dp.Sum(), "Should be a 11ms latency measurement, multiplied by the number of stateful accumulations.")
 		assert.NotZero(t, dp.Timestamp(), "Timestamp should be set")
 
@@ -630,31 +621,33 @@ func initSpan(span span, s ptrace.Span) {
 	s.SetSpanID(pcommon.SpanID([8]byte{byte(42)}))
 }
 
-func newOTLPExporters(t *testing.T) (*otlpexporter.Config, component.MetricsExporter, component.TracesExporter) {
+func newOTLPExporters(t *testing.T) (component.ID, exporter.Metrics, exporter.Traces) {
 	otlpExpFactory := otlpexporter.NewFactory()
+	otlpID := component.NewID("otlp")
 	otlpConfig := &otlpexporter.Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID("otlp")),
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: "example.com:1234",
 		},
 	}
-	expCreationParams := componenttest.NewNopExporterCreateSettings()
+	expCreationParams := exportertest.NewNopCreateSettings()
 	mexp, err := otlpExpFactory.CreateMetricsExporter(context.Background(), expCreationParams, otlpConfig)
 	require.NoError(t, err)
 	texp, err := otlpExpFactory.CreateTracesExporter(context.Background(), expCreationParams, otlpConfig)
 	require.NoError(t, err)
-	return otlpConfig, mexp, texp
+	return otlpID, mexp, texp
 }
 
 func TestBuildKeySameServiceOperationCharSequence(t *testing.T) {
 	span0 := ptrace.NewSpan()
 	span0.SetName("c")
-	k0 := buildKey("ab", span0, nil, pcommon.NewMap())
-
+	buf := &bytes.Buffer{}
+	buildKey(buf, "ab", span0, nil, pcommon.NewMap())
+	k0 := metricKey(buf.String())
+	buf.Reset()
 	span1 := ptrace.NewSpan()
 	span1.SetName("bc")
-	k1 := buildKey("a", span1, nil, pcommon.NewMap())
-
+	buildKey(buf, "a", span1, nil, pcommon.NewMap())
+	k1 := metricKey(buf.String())
 	assert.NotEqual(t, k0, k1)
 	assert.Equal(t, metricKey("ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET"), k0)
 	assert.Equal(t, metricKey("a\u0000bc\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET"), k1)
@@ -723,13 +716,13 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			resAttr := pcommon.NewMap()
-			resAttr.FromRaw(tc.resourceAttrMap)
+			assert.NoError(t, resAttr.FromRaw(tc.resourceAttrMap))
 			span0 := ptrace.NewSpan()
-			span0.Attributes().FromRaw(tc.spanAttrMap)
+			assert.NoError(t, span0.Attributes().FromRaw(tc.spanAttrMap))
 			span0.SetName("c")
-			k := buildKey("ab", span0, tc.optionalDims, resAttr)
-
-			assert.Equal(t, metricKey(tc.wantKey), k)
+			buf := &bytes.Buffer{}
+			buildKey(buf, "ab", span0, tc.optionalDims, resAttr)
+			assert.Equal(t, tc.wantKey, buf.String())
 		})
 	}
 }

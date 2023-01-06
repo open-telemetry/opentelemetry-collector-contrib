@@ -18,45 +18,46 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/processor"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllogs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor/internal/common"
 )
 
-var _ component.LogsProcessor = (*logProcessor)(nil)
+var _ processor.Logs = (*logProcessor)(nil)
 
 type logProcessor struct {
 	logger *zap.Logger
 	config *Config
 
 	extractor extractor
-	router    router[component.LogsExporter, ottllogs.TransformContext]
+	router    router[exporter.Logs, ottllog.TransformContext]
 }
 
-func newLogProcessor(settings component.TelemetrySettings, config config.Processor) *logProcessor {
+func newLogProcessor(settings component.TelemetrySettings, config component.Config) *logProcessor {
 	cfg := rewriteRoutingEntriesToOTTL(config.(*Config))
 
 	return &logProcessor{
 		logger: settings.Logger,
 		config: cfg,
-		router: newRouter[component.LogsExporter, ottllogs.TransformContext](
+		router: newRouter[exporter.Logs, ottllog.TransformContext](
 			cfg.Table,
 			cfg.DefaultExporters,
 			settings,
-			ottllogs.NewParser(common.Functions[ottllogs.TransformContext](), settings),
+			ottllog.NewParser(common.Functions[ottllog.TransformContext](), settings),
 		),
 		extractor: newExtractor(cfg.FromAttribute, settings.Logger),
 	}
 }
 
 func (p *logProcessor) Start(_ context.Context, host component.Host) error {
-	err := p.router.registerExporters(host.GetExporters()[config.LogsDataType])
+	err := p.router.registerExporters(host.GetExporters()[component.DataTypeLogs])
 	if err != nil {
 		return err
 	}
@@ -79,7 +80,7 @@ func (p *logProcessor) ConsumeLogs(ctx context.Context, l plog.Logs) error {
 }
 
 type logsGroup struct {
-	exporters []component.LogsExporter
+	exporters []exporter.Logs
 	logs      plog.Logs
 }
 
@@ -93,7 +94,7 @@ func (p *logProcessor) route(ctx context.Context, l plog.Logs) error {
 
 	for i := 0; i < l.ResourceLogs().Len(); i++ {
 		rlogs := l.ResourceLogs().At(i)
-		ltx := ottllogs.NewTransformContext(
+		ltx := ottllog.NewTransformContext(
 			plog.LogRecord{},
 			pcommon.InstrumentationScope{},
 			rlogs.Resource(),
@@ -101,7 +102,7 @@ func (p *logProcessor) route(ctx context.Context, l plog.Logs) error {
 
 		matchCount := len(p.router.routes)
 		for key, route := range p.router.routes {
-			_, isMatch, err := route.statement.Execute(ltx)
+			_, isMatch, err := route.statement.Execute(ctx, ltx)
 			if err != nil {
 				return err
 			}
@@ -128,7 +129,7 @@ func (p *logProcessor) route(ctx context.Context, l plog.Logs) error {
 func (p *logProcessor) group(
 	key string,
 	groups map[string]logsGroup,
-	exporters []component.LogsExporter,
+	exporters []exporter.Logs,
 	spans plog.ResourceLogs,
 ) {
 	group, ok := groups[key]

@@ -39,12 +39,12 @@ func NewTransformContext(instrumentationScope pcommon.InstrumentationScope, reso
 	}
 }
 
-func (ctx TransformContext) GetInstrumentationScope() pcommon.InstrumentationScope {
-	return ctx.instrumentationScope
+func (tCtx TransformContext) GetInstrumentationScope() pcommon.InstrumentationScope {
+	return tCtx.instrumentationScope
 }
 
-func (ctx TransformContext) GetResource() pcommon.Resource {
-	return ctx.resource
+func (tCtx TransformContext) GetResource() pcommon.Resource {
+	return tCtx.resource
 }
 
 func NewParser(functions map[string]interface{}, telemetrySettings component.TelemetrySettings) ottl.Parser[TransformContext] {

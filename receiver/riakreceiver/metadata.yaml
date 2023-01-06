@@ -8,11 +8,13 @@ resource_attributes:
 attributes:
   request:
     description: The request operation type.
+    type: string
     enum:
       - put
       - get
   operation:
     description: The operation type for index operations.
+    type: string
     enum:
       - read
       - write

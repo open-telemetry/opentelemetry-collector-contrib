@@ -22,7 +22,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -31,31 +31,29 @@ func TestLoadConfig(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		id          config.ComponentID
-		expected    config.Extension
+		id          component.ID
+		expected    component.Config
 		expectedErr error
 	}{
 		{
-			id: config.NewComponentID(typeStr),
+			id: component.NewID(typeStr),
 			expected: &Config{
-				ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
-				ClientSecret:      "someclientsecret",
-				ClientID:          "someclientid",
-				EndpointParams:    url.Values{"audience": []string{"someaudience"}},
-				Scopes:            []string{"api.metrics"},
-				TokenURL:          "https://example.com/oauth2/default/v1/token",
-				Timeout:           time.Second,
+				ClientSecret:   "someclientsecret",
+				ClientID:       "someclientid",
+				EndpointParams: url.Values{"audience": []string{"someaudience"}},
+				Scopes:         []string{"api.metrics"},
+				TokenURL:       "https://example.com/oauth2/default/v1/token",
+				Timeout:        time.Second,
 			},
 		},
 		{
-			id: config.NewComponentIDWithName(typeStr, "withtls"),
+			id: component.NewIDWithName(typeStr, "withtls"),
 			expected: &Config{
-				ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
-				ClientSecret:      "someclientsecret2",
-				ClientID:          "someclientid2",
-				Scopes:            []string{"api.metrics"},
-				TokenURL:          "https://example2.com/oauth2/default/v1/token",
-				Timeout:           time.Second,
+				ClientSecret: "someclientsecret2",
+				ClientID:     "someclientid2",
+				Scopes:       []string{"api.metrics"},
+				TokenURL:     "https://example2.com/oauth2/default/v1/token",
+				Timeout:      time.Second,
 				TLSSetting: configtls.TLSClientSetting{
 					TLSSetting: configtls.TLSSetting{
 						CAFile:   "cafile",
@@ -69,15 +67,15 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:          config.NewComponentIDWithName(typeStr, "missingurl"),
+			id:          component.NewIDWithName(typeStr, "missingurl"),
 			expectedErr: errNoTokenURLProvided,
 		},
 		{
-			id:          config.NewComponentIDWithName(typeStr, "missingid"),
+			id:          component.NewIDWithName(typeStr, "missingid"),
 			expectedErr: errNoClientIDProvided,
 		},
 		{
-			id:          config.NewComponentIDWithName(typeStr, "missingsecret"),
+			id:          component.NewIDWithName(typeStr, "missingsecret"),
 			expectedErr: errNoClientSecretProvided,
 		},
 	}
@@ -89,12 +87,12 @@ func TestLoadConfig(t *testing.T) {
 			cfg := factory.CreateDefaultConfig()
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, config.UnmarshalExtension(sub, cfg))
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 			if tt.expectedErr != nil {
-				assert.ErrorIs(t, cfg.Validate(), tt.expectedErr)
+				assert.ErrorIs(t, component.ValidateConfig(cfg), tt.expectedErr)
 				return
 			}
-			assert.NoError(t, cfg.Validate())
+			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

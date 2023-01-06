@@ -263,10 +263,10 @@
                      "unit": "By"
                   },
                   {
-                     "description": "The number of times each type of command has been executed.",
-                     "name": "mysql.commands",
+                     "description": "The number of times each type of prepared statement command has been issued.",
+                     "name": "mysql.prepared_statements",
                      "sum": {
-                        "aggregationTemporality": 2,
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
                               "asInt": "165",
@@ -1627,6 +1627,22 @@
                      "unit": "ns"
                   },
                   {
+                     "description": "The number of connection attempts (successful or not) to the MySQL server.",
+                     "name": "mysql.connection.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "188",
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "1"
+                  },
+                  {
                      "description": "The number of transmitted bytes between server and clients.",
                      "name": "mysql.client.network.io",
                      "sum": {
@@ -2928,7 +2944,38 @@
                         ],
                         "isMonotonic": true
                      },
-                     "unit": "1"
+                     "unit": "1"                  },
+                  {
+                     "description": "This field is an indication of how “late” the replica is.",
+                     "name": "mysql.replica.time_behind_source",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "isMonotonic": false,
+                        "dataPoints": [
+                           {
+                              "asInt": "5",
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           }
+                        ]
+                     },
+                     "unit": "s"
+                  },
+                  {
+                     "description": "The number of seconds that the replica must lag the source.",
+                     "name": "mysql.replica.sql_delay",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "isMonotonic": false,
+                        "dataPoints": [
+                           {
+                              "asInt": "8",
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           }
+                        ]
+                     },
+                     "unit": "s"
                   }
                ]
             }

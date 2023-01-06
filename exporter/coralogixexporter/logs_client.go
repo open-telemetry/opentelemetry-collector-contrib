@@ -21,14 +21,14 @@ import (
 	"runtime"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	exp "go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
 
-func newLogsExporter(cfg config.Exporter, set component.ExporterCreateSettings) (*logsExporter, error) {
+func newLogsExporter(cfg component.Config, set exp.CreateSettings) (*logsExporter, error) {
 	oCfg := cfg.(*Config)
 
 	if oCfg.Logs.Endpoint == "" || oCfg.Logs.Endpoint == "https://" || oCfg.Logs.Endpoint == "http://" {

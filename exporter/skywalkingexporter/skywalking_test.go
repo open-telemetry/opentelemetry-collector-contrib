@@ -25,11 +25,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"google.golang.org/grpc"
 	v3 "skywalking.apache.org/repo/goapi/collect/common/v3"
 	metricpb "skywalking.apache.org/repo/goapi/collect/language/agent/v3"
@@ -41,8 +41,7 @@ import (
 func TestSwExporter(t *testing.T) {
 	server, addr, handler := initializeGRPCTestServer(t, grpc.MaxConcurrentStreams(10))
 	tt := &Config{
-		NumStreams:       10,
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		NumStreams: 10,
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: addr.String(),
 			TLSSetting: configtls.TLSClientSetting{
@@ -54,7 +53,7 @@ func TestSwExporter(t *testing.T) {
 	oce := newLogsExporter(context.Background(), tt, componenttest.NewNopTelemetrySettings())
 	got, err := exporterhelper.NewLogsExporter(
 		context.Background(),
-		componenttest.NewNopExporterCreateSettings(),
+		exportertest.NewNopCreateSettings(),
 		tt,
 		oce.pushLogs,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
@@ -115,8 +114,7 @@ func TestSwExporter(t *testing.T) {
 
 	server, addr, handler2 := initializeGRPCTestServerMetric(t, grpc.MaxConcurrentStreams(10))
 	tt = &Config{
-		NumStreams:       10,
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		NumStreams: 10,
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: addr.String(),
 			TLSSetting: configtls.TLSClientSetting{
@@ -128,7 +126,7 @@ func TestSwExporter(t *testing.T) {
 	oce = newMetricsExporter(context.Background(), tt, componenttest.NewNopTelemetrySettings())
 	got2, err2 := exporterhelper.NewMetricsExporter(
 		context.Background(),
-		componenttest.NewNopExporterCreateSettings(),
+		exportertest.NewNopCreateSettings(),
 		tt,
 		oce.pushMetrics,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),

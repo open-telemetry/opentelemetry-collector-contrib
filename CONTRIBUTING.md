@@ -126,7 +126,6 @@ to be included in the distributed otelcol-contrib binaries and docker images.
 
 The following GitHub users are the currently available sponsors, either by being an approver or a maintainer of the contrib repository. The list is ordered based on a random sort of the list of sponsors done live at the Collector SIG meeting on 27-Apr-2022 and serves as the seed for the round-robin selection of sponsors, as described in the section above.
 
-* [@bogdandrutu](https://github.com/bogdandrutu)
 * [@dashpole](https://github.com/dashpole)
 * [@TylerHelmuth](https://github.com/TylerHelmuth)
 * [@djaglowski](https://github.com/djaglowski)
@@ -135,6 +134,9 @@ The following GitHub users are the currently available sponsors, either by being
 * [@mx-psi](https://github.com/mx-psi)
 * [@jpkrohling](https://github.com/jpkrohling)
 * [@dmitryax](https://github.com/dmitryax)
+* [@evan-bradley](https://github.com/evan-bradley)
+* [@MovieStoreGuy](https://github.com/MovieStoreGuy)
+* [@bogdandrutu](https://github.com/bogdandrutu)
 
 Whenever a sponsor is picked from the top of this list, please move them to the bottom.
 
@@ -167,10 +169,13 @@ In order to facilitate proper label usage and to empower Code Owners, you are ab
 
 The following general labels are supported:
 
-| Label              | Label in Comment   |
-|--------------------|--------------------|
-| `good first issue` | `good-first-issue` |
-| `help wanted`      | `help-wanted`      |
+| Label                | Label in Comment     |
+|----------------------|----------------------|
+| `good first issue`   | `good-first-issue`   |
+| `help wanted`        | `help-wanted`        |
+| `needs discussion`   | `needs-discussion`   |
+| `needs triage`       | `needs-triage`       |
+| `waiting for author` | `waiting-for-author` |
 
 To delete a label, prepend the label with `-`. Note that you must make a new comment to modify labels; you cannot edit an existing comment.
 
@@ -193,8 +198,46 @@ Sometimes a component may be in need of a new or additional Code Owner. A few re
 If you would like to help and become a Code Owner you must meet the following requirements:
 
 1. [Be a member of the OpenTelemetry organization.](https://github.com/open-telemetry/community/blob/main/community-membership.md#member)
-2. (Code Owner Discretion) It is best to have resolved an issue related to the component, contributed directly to the component, and/or review component PRs. How much interaction with the component is required before becoming a Code Owner is up to any existing Code Owners. 
+2. (Code Owner Discretion) It is best to have resolved an issue related to the component, contributed directly to the component, and/or review component PRs. How much interaction with the component is required before becoming a Code Owner is up to any existing Code Owners.
 
 Code Ownership is ultimately up to the judgement of the existing Code Owners and Collector Contrib Maintainers. Meeting the above requirements is not a guarantee to be granted Code Ownership.
 
 To become a Code Owner, open a PR with the CODEOWNERS file modified, adding your GitHub username to the component's row. Be sure to tag the existing Code Owners, if any, within the PR to ensure they receive a notification.
+
+### Makefile Guidelines
+
+When adding or modifying the `Makefile`'s in this repository, consider the following design guidelines.
+
+Make targets are organized according to whether they apply to the entire repository, or only to an individual module.
+The [Makefile](./Makefile) SHOULD contain "repo-level" targets. (i.e. targets that apply to the entire repo.)
+Likewise, `Makefile.Common` SHOULD contain "module-level" targets. (i.e. targets that apply to one module at a time.)
+Each module should have a `Makefile` at its root that includes `Makefile.Common`.
+
+#### Module-level targets
+
+Module-level targets SHOULD NOT act on nested modules. For example, running `make lint` at the root of the repo will
+*only* evaluate code that is part of the `go.opentelemetry.io/collector` module. This excludes nested modules such as
+`go.opentelemetry.io/collector/component`.
+
+Each module-level target SHOULD have a corresponding repo-level target. For example, `make golint` will run `make lint`
+in each module. In this way, the entire repository is covered. The root `Makefile` contains some "for each module" targets
+that can wrap a module-level target into a repo-level target.
+
+#### Repo-level targets
+
+Whenever reasonable, targets SHOULD be implemented as module-level targets (and wrapped with a repo-level target).
+However, there are many valid justifications for implementing a standalone repo-level target.
+
+1. The target naturally applies to the repo as a whole. (e.g. Building the collector.)
+2. Interaction between modules would be problematic.
+3. A necessary tool does not provide a mechanism for scoping its application. (e.g. `porto` cannot be limited to a specific module.)
+4. The "for each module" pattern would result in incomplete coverage of the codebase. (e.g. A target that scans all file, not just `.go` files.)
+
+#### Default targets
+
+The default module-level target (i.e. running `make` in the context of an individual module), should run a substantial set of module-level
+targets for an individual module. Ideally, this would include *all* module-level targets, but exceptions should be made if a particular
+target would result in unacceptable latency in the local development loop.
+
+The default repo-level target (i.e. running `make` at the root of the repo) should meaningfully validate the entire repo. This should include
+running the default common target for each module as well as additional repo-level targets.

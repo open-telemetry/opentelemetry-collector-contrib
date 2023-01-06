@@ -20,12 +20,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver/internal/metadata"
 	mock "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver/internal/mockserver"
 )
@@ -62,7 +61,7 @@ func TestScrape_TLS(t *testing.T) {
 }
 
 func testScrape(ctx context.Context, t *testing.T, cfg *Config) {
-	scraper := newVmwareVcenterScraper(zap.NewNop(), cfg, componenttest.NewNopReceiverCreateSettings())
+	scraper := newVmwareVcenterScraper(zap.NewNop(), cfg, receivertest.NewNopCreateSettings())
 
 	metrics, err := scraper.scrape(ctx)
 	require.NoError(t, err)
@@ -72,7 +71,7 @@ func testScrape(ctx context.Context, t *testing.T, cfg *Config) {
 	expectedMetrics, err := golden.ReadMetrics(goldenPath)
 	require.NoError(t, err)
 
-	err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+	err = comparetest.CompareMetrics(expectedMetrics, metrics)
 	require.NoError(t, err)
 	require.NoError(t, scraper.Shutdown(ctx))
 }
@@ -84,7 +83,7 @@ func TestScrape_NoClient(t *testing.T) {
 		config: &Config{
 			Endpoint: "http://vcsa.localnet",
 		},
-		mb:     metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), component.NewDefaultBuildInfo()),
+		mb:     metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), receivertest.NewNopCreateSettings()),
 		logger: zap.NewNop(),
 	}
 	metrics, err := scraper.scrape(ctx)
@@ -115,7 +114,7 @@ func TestStartFailures_Metrics(t *testing.T) {
 
 	ctx := context.Background()
 	for _, tc := range cases {
-		scraper := newVmwareVcenterScraper(zap.NewNop(), &tc.cfg, componenttest.NewNopReceiverCreateSettings())
+		scraper := newVmwareVcenterScraper(zap.NewNop(), &tc.cfg, receivertest.NewNopCreateSettings())
 		err := scraper.Start(ctx, nil)
 		if tc.err != nil {
 			require.ErrorContains(t, err, tc.err.Error())

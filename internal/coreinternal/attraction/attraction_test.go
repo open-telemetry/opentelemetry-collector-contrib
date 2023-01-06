@@ -41,7 +41,7 @@ type testCase struct {
 func runIndividualTestCase(t *testing.T, tt testCase, ap *AttrProc) {
 	t.Run(tt.name, func(t *testing.T) {
 		inputMap := pcommon.NewMap()
-		inputMap.FromRaw(tt.inputAttributes)
+		assert.NoError(t, inputMap.FromRaw(tt.inputAttributes))
 		ap.Process(context.TODO(), nil, inputMap)
 		require.Equal(t, tt.expectedAttributes, inputMap.AsRaw())
 	})
@@ -837,7 +837,7 @@ func TestInvalidConfig(t *testing.T) {
 			actionLists: []ActionKeyValue{
 				{Key: "UnsupportedValue", Value: []int{}, Action: UPSERT},
 			},
-			errorString: "error unsupported value type \"[]int\"",
+			errorString: "<Invalid value type []int>",
 		},
 		{
 			name: "missing value or from attribute",

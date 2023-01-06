@@ -15,7 +15,8 @@
 package awsemfexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter"
 
 import (
-	"go.opentelemetry.io/collector/config"
+	"errors"
+
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
@@ -30,7 +31,6 @@ var (
 
 // Config defines configuration for AWS EMF exporter.
 type Config struct {
-	config.ExporterSettings `mapstructure:",squash"`
 	// AWSSessionSettings contains the common configuration options
 	// for creating AWS session to communicate with backend
 	awsutil.AWSSessionSettings `mapstructure:",squash"`
@@ -48,6 +48,11 @@ type Config struct {
 	// "SingleDimensionRollupOnly" - Enable single dimension rollup
 	// "NoDimensionRollup" - No dimension rollup (only keep original metrics which contain all dimensions)
 	DimensionRollupOption string `mapstructure:"dimension_rollup_option"`
+
+	// LogRetention is the option to set the log retention policy for the CloudWatch Log Group. Defaults to Never Expire if not specified or set to 0
+	// Possible values are 1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 2192, 2557, 2922, 3288, or 3653
+	LogRetention int64 `mapstructure:"log_retention"`
+
 	// ParseJSONEncodedAttributeValues is an array of attribute keys whose corresponding values are JSON-encoded as strings.
 	// Those strings will be decoded to its original json structure.
 	ParseJSONEncodedAttributeValues []string `mapstructure:"parse_json_encoded_attr_values"`
@@ -79,13 +84,13 @@ type Config struct {
 }
 
 type MetricDescriptor struct {
-	// metricName is the name of the metric
-	metricName string `mapstructure:"metric_name"`
-	// unit defines the override value of metric descriptor `unit`
-	unit string `mapstructure:"unit"`
-	// overwrite set to true means the existing metric descriptor will be overwritten or a new metric descriptor will be created; false means
+	// MetricName is the name of the metric
+	MetricName string `mapstructure:"metric_name"`
+	// Unit defines the override value of metric descriptor `unit`
+	Unit string `mapstructure:"unit"`
+	// Overwrite set to true means the existing metric descriptor will be overwritten or a new metric descriptor will be created; false means
 	// the descriptor will only be configured if empty.
-	overwrite bool `mapstructure:"overwrite"`
+	Overwrite bool `mapstructure:"overwrite"`
 }
 
 // Validate filters out invalid metricDeclarations and metricDescriptors
@@ -103,17 +108,53 @@ func (config *Config) Validate() error {
 
 	var validDescriptors []MetricDescriptor
 	for _, descriptor := range config.MetricDescriptors {
-		if descriptor.metricName == "" {
+		if descriptor.MetricName == "" {
 			continue
 		}
-		if _, ok := eMFSupportedUnits[descriptor.unit]; ok {
+		if _, ok := eMFSupportedUnits[descriptor.Unit]; ok {
 			validDescriptors = append(validDescriptors, descriptor)
 		} else {
-			config.logger.Warn("Dropped unsupported metric desctriptor.", zap.String("unit", descriptor.unit))
+			config.logger.Warn("Dropped unsupported metric desctriptor.", zap.String("unit", descriptor.Unit))
 		}
 	}
 	config.MetricDescriptors = validDescriptors
+
+	if !isValidRetentionValue(config.LogRetention) {
+		return errors.New("invalid value for retention policy.  Please make sure to use the following values: 0 (Never Expire), 1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 2192, 2557, 2922, 3288, or 3653")
+	}
+
 	return nil
+}
+
+// Added function to check if value is an accepted number of log retention days
+func isValidRetentionValue(input int64) bool {
+	switch input {
+	case
+		0,
+		1,
+		3,
+		5,
+		7,
+		14,
+		30,
+		60,
+		90,
+		120,
+		150,
+		180,
+		365,
+		400,
+		545,
+		731,
+		1827,
+		2192,
+		2557,
+		2922,
+		3288,
+		3653:
+		return true
+	}
+	return false
 }
 
 func newEMFSupportedUnits() map[string]interface{} {

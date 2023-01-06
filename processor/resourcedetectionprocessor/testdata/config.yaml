@@ -1,6 +1,6 @@
 resourcedetection:
-resourcedetection/gce:
-  detectors: [env, gce]
+resourcedetection/gcp:
+  detectors: [env, gcp]
   timeout: 2s
   override: false
 

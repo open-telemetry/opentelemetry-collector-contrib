@@ -20,7 +20,7 @@ import (
 	"net/url"
 	"path"
 
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
@@ -44,13 +44,10 @@ type OtelToHecFields struct {
 	SeverityText string `mapstructure:"severity_text"`
 	// SeverityNumber informs the exporter to map the severity number field to a specific HEC field.
 	SeverityNumber string `mapstructure:"severity_number"`
-	// Name informs the exporter to map the name field to a specific HEC field.
-	Name string `mapstructure:"name"`
 }
 
 // Config defines configuration for Splunk exporter.
 type Config struct {
-	config.ExporterSettings        `mapstructure:",squash"`
 	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
 	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
@@ -62,7 +59,7 @@ type Config struct {
 	ProfilingDataEnabled bool `mapstructure:"profiling_data_enabled"`
 
 	// HEC Token is the authentication token provided by Splunk: https://docs.splunk.com/Documentation/Splunk/latest/Data/UsetheHTTPEventCollector.
-	Token string `mapstructure:"token"`
+	Token configopaque.String `mapstructure:"token"`
 
 	// URL is the Splunk HEC endpoint where data is going to be sent to.
 	Endpoint string `mapstructure:"endpoint"`
@@ -107,6 +104,12 @@ type Config struct {
 	HecToOtelAttrs splunk.HecToOtelAttrs `mapstructure:"hec_metadata_to_otel_attrs"`
 	// HecFields creates a mapping from attributes to HEC fields.
 	HecFields OtelToHecFields `mapstructure:"otel_to_hec_fields"`
+
+	// HealthPath for health API, default is '/services/collector/health'
+	HealthPath string `mapstructure:"health_path"`
+
+	// HecHealthCheckEnabled can be used to verify Splunk HEC health on exporter's startup
+	HecHealthCheckEnabled bool `mapstructure:"health_check_enabled"`
 }
 
 func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {

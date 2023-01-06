@@ -56,3 +56,6 @@ service:
       processors: [ resourcedetection ]
       exporters: [ mezmo ]
 ```
+
+[stable]: https://github.com/open-telemetry/opentelemetry-collector#stable
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

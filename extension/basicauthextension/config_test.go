@@ -20,7 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -28,27 +28,25 @@ func TestLoadConfig(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		id          config.ComponentID
-		expected    config.Extension
+		id          component.ID
+		expected    component.Config
 		expectedErr bool
 	}{
 		{
-			id:          config.NewComponentID(typeStr),
+			id:          component.NewID(typeStr),
 			expectedErr: true,
 		},
 		{
-			id: config.NewComponentIDWithName(typeStr, "server"),
+			id: component.NewIDWithName(typeStr, "server"),
 			expected: &Config{
-				ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
 				Htpasswd: &HtpasswdSettings{
 					Inline: "username1:password1\nusername2:password2\n",
 				},
 			},
 		},
 		{
-			id: config.NewComponentIDWithName(typeStr, "client"),
+			id: component.NewIDWithName(typeStr, "client"),
 			expected: &Config{
-				ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
 				ClientAuth: &ClientAuthSettings{
 					Username: "username",
 					Password: "password",
@@ -56,7 +54,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:          config.NewComponentIDWithName(typeStr, "both"),
+			id:          component.NewIDWithName(typeStr, "both"),
 			expectedErr: true,
 		},
 	}
@@ -68,12 +66,12 @@ func TestLoadConfig(t *testing.T) {
 			cfg := factory.CreateDefaultConfig()
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, config.UnmarshalExtension(sub, cfg))
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 			if tt.expectedErr {
-				assert.Error(t, cfg.Validate())
+				assert.Error(t, component.ValidateConfig(cfg))
 				return
 			}
-			assert.NoError(t, cfg.Validate())
+			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

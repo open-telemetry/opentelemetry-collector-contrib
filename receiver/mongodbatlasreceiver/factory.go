@@ -20,9 +20,9 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	rcvr "go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/metadata"
@@ -37,21 +37,21 @@ const (
 )
 
 // NewFactory creates a factory for MongoDB Atlas receiver
-func NewFactory() component.ReceiverFactory {
-	return component.NewReceiverFactory(
+func NewFactory() rcvr.Factory {
+	return rcvr.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver, stability),
-		component.WithLogsReceiver(createCombinedLogReceiver, stability))
+		rcvr.WithMetrics(createMetricsReceiver, stability),
+		rcvr.WithLogs(createCombinedLogReceiver, stability))
 
 }
 
 func createMetricsReceiver(
 	_ context.Context,
-	params component.ReceiverCreateSettings,
-	rConf config.Receiver,
+	params rcvr.CreateSettings,
+	rConf component.Config,
 	consumer consumer.Metrics,
-) (component.MetricsReceiver, error) {
+) (rcvr.Metrics, error) {
 	cfg := rConf.(*Config)
 	recv := newMongoDBAtlasReceiver(params, cfg)
 	ms, err := newMongoDBAtlasScraper(recv)
@@ -64,10 +64,10 @@ func createMetricsReceiver(
 
 func createCombinedLogReceiver(
 	ctx context.Context,
-	params component.ReceiverCreateSettings,
-	rConf config.Receiver,
+	params rcvr.CreateSettings,
+	rConf component.Config,
 	consumer consumer.Logs,
-) (component.LogsReceiver, error) {
+) (rcvr.Logs, error) {
 	cfg := rConf.(*Config)
 
 	if !cfg.Alerts.Enabled && !cfg.Logs.Enabled {
@@ -78,7 +78,7 @@ func createCombinedLogReceiver(
 	recv := &combinedLogsReceiver{}
 
 	if cfg.Alerts.Enabled {
-		recv.alerts, err = newAlertsReceiver(params.Logger, cfg, consumer)
+		recv.alerts, err = newAlertsReceiver(params, cfg, consumer)
 		if err != nil {
 			return nil, fmt.Errorf("unable to create a MongoDB Atlas Alerts Receiver instance: %w", err)
 		}
@@ -91,7 +91,7 @@ func createCombinedLogReceiver(
 	return recv, nil
 }
 
-func createDefaultConfig() config.Receiver {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(typeStr),
 		Granularity:               defaultGranularity,

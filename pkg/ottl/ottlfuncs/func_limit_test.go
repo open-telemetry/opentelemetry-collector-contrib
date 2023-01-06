@@ -15,6 +15,7 @@
 package ottlfuncs
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -30,11 +31,11 @@ func Test_limit(t *testing.T) {
 	input.PutBool("test3", true)
 
 	target := &ottl.StandardGetSetter[pcommon.Map]{
-		Getter: func(ctx pcommon.Map) (interface{}, error) {
-			return ctx, nil
+		Getter: func(ctx context.Context, tCtx pcommon.Map) (interface{}, error) {
+			return tCtx, nil
 		},
-		Setter: func(ctx pcommon.Map, val interface{}) error {
-			val.(pcommon.Map).CopyTo(ctx)
+		Setter: func(ctx context.Context, tCtx pcommon.Map, val interface{}) error {
+			val.(pcommon.Map).CopyTo(tCtx)
 			return nil
 		},
 	}
@@ -130,7 +131,7 @@ func Test_limit(t *testing.T) {
 			exprFunc, err := Limit(tt.target, tt.limit, tt.keep)
 			assert.NoError(t, err)
 
-			result, err := exprFunc(scenarioMap)
+			result, err := exprFunc(nil, scenarioMap)
 			assert.NoError(t, err)
 			assert.Nil(t, result)
 
@@ -172,10 +173,10 @@ func Test_limit_validation(t *testing.T) {
 func Test_limit_bad_input(t *testing.T) {
 	input := pcommon.NewValueStr("not a map")
 	target := &ottl.StandardGetSetter[interface{}]{
-		Getter: func(ctx interface{}) (interface{}, error) {
-			return ctx, nil
+		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			return tCtx, nil
 		},
-		Setter: func(ctx interface{}, val interface{}) error {
+		Setter: func(ctx context.Context, tCtx interface{}, val interface{}) error {
 			t.Errorf("nothing should be set in this scenario")
 			return nil
 		},
@@ -183,7 +184,7 @@ func Test_limit_bad_input(t *testing.T) {
 
 	exprFunc, err := Limit[interface{}](target, 1, []string{})
 	assert.NoError(t, err)
-	result, err := exprFunc(input)
+	result, err := exprFunc(nil, input)
 	assert.NoError(t, err)
 	assert.Nil(t, result)
 	assert.Equal(t, pcommon.NewValueStr("not a map"), input)
@@ -191,10 +192,10 @@ func Test_limit_bad_input(t *testing.T) {
 
 func Test_limit_get_nil(t *testing.T) {
 	target := &ottl.StandardGetSetter[interface{}]{
-		Getter: func(ctx interface{}) (interface{}, error) {
-			return ctx, nil
+		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			return tCtx, nil
 		},
-		Setter: func(ctx interface{}, val interface{}) error {
+		Setter: func(ctx context.Context, tCtx interface{}, val interface{}) error {
 			t.Errorf("nothing should be set in this scenario")
 			return nil
 		},
@@ -202,7 +203,7 @@ func Test_limit_get_nil(t *testing.T) {
 
 	exprFunc, err := Limit[interface{}](target, 1, []string{})
 	assert.NoError(t, err)
-	result, err := exprFunc(nil)
+	result, err := exprFunc(nil, nil)
 	assert.NoError(t, err)
 	assert.Nil(t, result)
 	assert.Nil(t, result)

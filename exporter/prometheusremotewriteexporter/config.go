@@ -17,7 +17,7 @@ package prometheusremotewriteexporter // import "github.com/open-telemetry/opent
 import (
 	"fmt"
 
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
@@ -26,7 +26,6 @@ import (
 
 // Config defines configuration for Remote Write exporter.
 type Config struct {
-	config.ExporterSettings        `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
 
@@ -75,7 +74,7 @@ type RemoteWriteQueue struct {
 
 // TODO(jbd): Add capacity, max_samples_per_send to QueueConfig.
 
-var _ config.Exporter = (*Config)(nil)
+var _ component.Config = (*Config)(nil)
 
 // Validate checks if the exporter configuration is valid
 func (cfg *Config) Validate() error {

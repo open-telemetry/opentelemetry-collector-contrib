@@ -15,6 +15,8 @@
 package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 
 import (
+	"context"
+
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -26,8 +28,8 @@ func KeepKeys[K any](target ottl.GetSetter[K], keys []string) (ottl.ExprFunc[K],
 		keySet[key] = struct{}{}
 	}
 
-	return func(ctx K) (interface{}, error) {
-		val, err := target.Get(ctx)
+	return func(ctx context.Context, tCtx K) (interface{}, error) {
+		val, err := target.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}

@@ -9,18 +9,14 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 )
 
 // MetricSettings provides common settings for a particular metric.
 type MetricSettings struct {
 	Enabled bool `mapstructure:"enabled"`
 
-	enabledProvidedByUser bool
-}
-
-// IsEnabledProvidedByUser returns true if `enabled` option is explicitly set in user settings to any value.
-func (ms *MetricSettings) IsEnabledProvidedByUser() bool {
-	return ms.enabledProvidedByUser
+	enabledSetByUser bool
 }
 
 func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
@@ -31,7 +27,7 @@ func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
 	if err != nil {
 		return err
 	}
-	ms.enabledProvidedByUser = parser.IsSet("enabled")
+	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
 }
 
@@ -688,22 +684,22 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, options ...metricBuilderOption) *MetricsBuilder {
+func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                          pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                      pmetric.NewMetrics(),
-		buildInfo:                          buildInfo,
-		metricKafkaBrokers:                 newMetricKafkaBrokers(settings.KafkaBrokers),
-		metricKafkaConsumerGroupLag:        newMetricKafkaConsumerGroupLag(settings.KafkaConsumerGroupLag),
-		metricKafkaConsumerGroupLagSum:     newMetricKafkaConsumerGroupLagSum(settings.KafkaConsumerGroupLagSum),
-		metricKafkaConsumerGroupMembers:    newMetricKafkaConsumerGroupMembers(settings.KafkaConsumerGroupMembers),
-		metricKafkaConsumerGroupOffset:     newMetricKafkaConsumerGroupOffset(settings.KafkaConsumerGroupOffset),
-		metricKafkaConsumerGroupOffsetSum:  newMetricKafkaConsumerGroupOffsetSum(settings.KafkaConsumerGroupOffsetSum),
-		metricKafkaPartitionCurrentOffset:  newMetricKafkaPartitionCurrentOffset(settings.KafkaPartitionCurrentOffset),
-		metricKafkaPartitionOldestOffset:   newMetricKafkaPartitionOldestOffset(settings.KafkaPartitionOldestOffset),
-		metricKafkaPartitionReplicas:       newMetricKafkaPartitionReplicas(settings.KafkaPartitionReplicas),
-		metricKafkaPartitionReplicasInSync: newMetricKafkaPartitionReplicasInSync(settings.KafkaPartitionReplicasInSync),
-		metricKafkaTopicPartitions:         newMetricKafkaTopicPartitions(settings.KafkaTopicPartitions),
+		buildInfo:                          settings.BuildInfo,
+		metricKafkaBrokers:                 newMetricKafkaBrokers(ms.KafkaBrokers),
+		metricKafkaConsumerGroupLag:        newMetricKafkaConsumerGroupLag(ms.KafkaConsumerGroupLag),
+		metricKafkaConsumerGroupLagSum:     newMetricKafkaConsumerGroupLagSum(ms.KafkaConsumerGroupLagSum),
+		metricKafkaConsumerGroupMembers:    newMetricKafkaConsumerGroupMembers(ms.KafkaConsumerGroupMembers),
+		metricKafkaConsumerGroupOffset:     newMetricKafkaConsumerGroupOffset(ms.KafkaConsumerGroupOffset),
+		metricKafkaConsumerGroupOffsetSum:  newMetricKafkaConsumerGroupOffsetSum(ms.KafkaConsumerGroupOffsetSum),
+		metricKafkaPartitionCurrentOffset:  newMetricKafkaPartitionCurrentOffset(ms.KafkaPartitionCurrentOffset),
+		metricKafkaPartitionOldestOffset:   newMetricKafkaPartitionOldestOffset(ms.KafkaPartitionOldestOffset),
+		metricKafkaPartitionReplicas:       newMetricKafkaPartitionReplicas(ms.KafkaPartitionReplicas),
+		metricKafkaPartitionReplicasInSync: newMetricKafkaPartitionReplicasInSync(ms.KafkaPartitionReplicasInSync),
+		metricKafkaTopicPartitions:         newMetricKafkaTopicPartitions(ms.KafkaTopicPartitions),
 	}
 	for _, op := range options {
 		op(mb)

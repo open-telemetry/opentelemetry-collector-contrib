@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 )
 
@@ -16,12 +17,7 @@ import (
 type MetricSettings struct {
 	Enabled bool `mapstructure:"enabled"`
 
-	enabledProvidedByUser bool
-}
-
-// IsEnabledProvidedByUser returns true if `enabled` option is explicitly set in user settings to any value.
-func (ms *MetricSettings) IsEnabledProvidedByUser() bool {
-	return ms.enabledProvidedByUser
+	enabledSetByUser bool
 }
 
 func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
@@ -32,7 +28,7 @@ func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
 	if err != nil {
 		return err
 	}
-	ms.enabledProvidedByUser = parser.IsSet("enabled")
+	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
 }
 
@@ -286,7 +282,7 @@ type metricSystemNetworkDropped struct {
 // init fills system.network.dropped metric with initial data.
 func (m *metricSystemNetworkDropped) init() {
 	m.data.SetName("system.network.dropped")
-	m.data.SetDescription("The number of packets dropped. (Deprecated)")
+	m.data.SetDescription("The number of packets dropped.")
 	m.data.SetUnit("{packets}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -340,7 +336,7 @@ type metricSystemNetworkErrors struct {
 // init fills system.network.errors metric with initial data.
 func (m *metricSystemNetworkErrors) init() {
 	m.data.SetName("system.network.errors")
-	m.data.SetDescription("The number of errors encountered. (Deprecated)")
+	m.data.SetDescription("The number of errors encountered.")
 	m.data.SetUnit("{errors}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -394,7 +390,7 @@ type metricSystemNetworkIo struct {
 // init fills system.network.io metric with initial data.
 func (m *metricSystemNetworkIo) init() {
 	m.data.SetName("system.network.io")
-	m.data.SetDescription("The number of bytes transmitted and received. (Deprecated)")
+	m.data.SetDescription("The number of bytes transmitted and received.")
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -448,7 +444,7 @@ type metricSystemNetworkPackets struct {
 // init fills system.network.packets metric with initial data.
 func (m *metricSystemNetworkPackets) init() {
 	m.data.SetName("system.network.packets")
-	m.data.SetDescription("The number of packets transferred. (Deprecated)")
+	m.data.SetDescription("The number of packets transferred.")
 	m.data.SetUnit("{packets}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -520,18 +516,18 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, options ...metricBuilderOption) *MetricsBuilder {
+func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                         pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                     pmetric.NewMetrics(),
-		buildInfo:                         buildInfo,
-		metricSystemNetworkConnections:    newMetricSystemNetworkConnections(settings.SystemNetworkConnections),
-		metricSystemNetworkConntrackCount: newMetricSystemNetworkConntrackCount(settings.SystemNetworkConntrackCount),
-		metricSystemNetworkConntrackMax:   newMetricSystemNetworkConntrackMax(settings.SystemNetworkConntrackMax),
-		metricSystemNetworkDropped:        newMetricSystemNetworkDropped(settings.SystemNetworkDropped),
-		metricSystemNetworkErrors:         newMetricSystemNetworkErrors(settings.SystemNetworkErrors),
-		metricSystemNetworkIo:             newMetricSystemNetworkIo(settings.SystemNetworkIo),
-		metricSystemNetworkPackets:        newMetricSystemNetworkPackets(settings.SystemNetworkPackets),
+		buildInfo:                         settings.BuildInfo,
+		metricSystemNetworkConnections:    newMetricSystemNetworkConnections(ms.SystemNetworkConnections),
+		metricSystemNetworkConntrackCount: newMetricSystemNetworkConntrackCount(ms.SystemNetworkConntrackCount),
+		metricSystemNetworkConntrackMax:   newMetricSystemNetworkConntrackMax(ms.SystemNetworkConntrackMax),
+		metricSystemNetworkDropped:        newMetricSystemNetworkDropped(ms.SystemNetworkDropped),
+		metricSystemNetworkErrors:         newMetricSystemNetworkErrors(ms.SystemNetworkErrors),
+		metricSystemNetworkIo:             newMetricSystemNetworkIo(ms.SystemNetworkIo),
+		metricSystemNetworkPackets:        newMetricSystemNetworkPackets(ms.SystemNetworkPackets),
 	}
 	for _, op := range options {
 		op(mb)

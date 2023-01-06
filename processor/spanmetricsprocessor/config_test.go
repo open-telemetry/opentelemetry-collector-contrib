@@ -21,13 +21,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
+	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
-	"go.opentelemetry.io/collector/service/servicetest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter"
@@ -79,7 +78,7 @@ func TestLoadConfig(t *testing.T) {
 	for _, tc := range testcases {
 		t.Run(tc.configFile, func(t *testing.T) {
 			// Prepare
-			factories, err := componenttest.NopFactories()
+			factories, err := otelcoltest.NopFactories()
 			require.NoError(t, err)
 
 			factories.Receivers["otlp"] = otlpreceiver.NewFactory()
@@ -93,21 +92,20 @@ func TestLoadConfig(t *testing.T) {
 			factories.Exporters["jaeger"] = jaegerexporter.NewFactory()
 
 			// Test
-			cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", tc.configFile), factories)
+			cfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", tc.configFile), factories)
 
 			// Verify
 			require.NoError(t, err)
 			require.NotNil(t, cfg)
 			assert.Equal(t,
 				&Config{
-					ProcessorSettings:       config.NewProcessorSettings(config.NewComponentID(typeStr)),
 					MetricsExporter:         tc.wantMetricsExporter,
 					LatencyHistogramBuckets: tc.wantLatencyHistogramBuckets,
 					Dimensions:              tc.wantDimensions,
 					DimensionsCacheSize:     tc.wantDimensionsCacheSize,
 					AggregationTemporality:  tc.wantAggregationTemporality,
 				},
-				cfg.Processors[config.NewComponentID(typeStr)],
+				cfg.Processors[component.NewID(typeStr)],
 			)
 		})
 	}

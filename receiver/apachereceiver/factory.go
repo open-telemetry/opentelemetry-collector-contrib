@@ -16,12 +16,13 @@ package apachereceiver // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
+	"net/url"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver/internal/metadata"
@@ -30,20 +31,22 @@ import (
 const (
 	typeStr   = "apache"
 	stability = component.StabilityLevelBeta
+
+	httpDefaultPort  = "80"
+	httpsDefaultPort = "443"
 )
 
 // NewFactory creates a factory for apache receiver.
-func NewFactory() component.ReceiverFactory {
-	return component.NewReceiverFactory(
+func NewFactory() receiver.Factory {
+	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver, stability))
+		receiver.WithMetrics(createMetricsReceiver, stability))
 }
 
-func createDefaultConfig() config.Receiver {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
 			CollectionInterval: 10 * time.Second,
 		},
 		HTTPClientSettings: confighttp.HTTPClientSettings{
@@ -54,15 +57,36 @@ func createDefaultConfig() config.Receiver {
 	}
 }
 
+func parseResourseAttributes(endpoint string) (string, string, error) {
+	u, err := url.Parse(endpoint)
+	serverName := u.Hostname()
+	port := u.Port()
+
+	if port == "" {
+		if u.Scheme == "https" {
+			port = httpsDefaultPort
+		} else if u.Scheme == "http" {
+			port = httpDefaultPort
+		}
+		// else: unknown scheme, leave port as empty string
+	}
+
+	return serverName, port, err
+}
+
 func createMetricsReceiver(
 	_ context.Context,
-	params component.ReceiverCreateSettings,
-	rConf config.Receiver,
+	params receiver.CreateSettings,
+	rConf component.Config,
 	consumer consumer.Metrics,
-) (component.MetricsReceiver, error) {
+) (receiver.Metrics, error) {
 	cfg := rConf.(*Config)
+	serverName, port, err := parseResourseAttributes(cfg.Endpoint)
+	if err != nil {
+		return nil, err
+	}
 
-	ns := newApacheScraper(params, cfg)
+	ns := newApacheScraper(params, cfg, serverName, port)
 	scraper, err := scraperhelper.NewScraper(typeStr, ns.scrape, scraperhelper.WithStart(ns.start))
 	if err != nil {
 		return nil, err

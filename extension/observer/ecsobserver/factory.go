@@ -19,16 +19,16 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/extension"
 )
 
 const (
-	typeStr config.Type = "ecs_observer"
+	typeStr component.Type = "ecs_observer"
 )
 
 // NewFactory creates a factory for ECSObserver extension.
-func NewFactory() component.ExtensionFactory {
-	return component.NewExtensionFactory(
+func NewFactory() extension.Factory {
+	return extension.NewFactory(
 		typeStr,
 		createDefaultConfig,
 		createExtension,
@@ -36,12 +36,12 @@ func NewFactory() component.ExtensionFactory {
 	)
 }
 
-func createDefaultConfig() config.Extension {
+func createDefaultConfig() component.Config {
 	cfg := DefaultConfig()
 	return &cfg
 }
 
-func createExtension(ctx context.Context, params component.ExtensionCreateSettings, cfg config.Extension) (component.Extension, error) {
+func createExtension(ctx context.Context, params extension.CreateSettings, cfg component.Config) (extension.Extension, error) {
 	sdCfg := cfg.(*Config)
 	fetcher, err := newTaskFetcherFromConfig(*sdCfg, params.Logger)
 	if err != nil {
@@ -51,7 +51,7 @@ func createExtension(ctx context.Context, params component.ExtensionCreateSettin
 }
 
 // fetcher is mock in unit test or AWS API client
-func createExtensionWithFetcher(params component.ExtensionCreateSettings, sdCfg *Config, fetcher *taskFetcher) (component.Extension, error) {
+func createExtensionWithFetcher(params extension.CreateSettings, sdCfg *Config, fetcher *taskFetcher) (extension.Extension, error) {
 	sd, err := newDiscovery(*sdCfg, serviceDiscoveryOptions{Logger: params.Logger, Fetcher: fetcher})
 	if err != nil {
 		return nil, err

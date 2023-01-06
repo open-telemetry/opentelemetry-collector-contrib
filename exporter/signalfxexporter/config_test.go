@@ -23,8 +23,9 @@ import (
 	apmcorrelation "github.com/signalfx/signalfx-agent/pkg/apm/correlations"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
@@ -47,27 +48,28 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	defaultCfg.TranslationRules = defaultTranslationRules
 
+	seventy := 70
+
 	tests := []struct {
-		id       config.ComponentID
-		expected config.Exporter
+		id       component.ID
+		expected component.Config
 	}{
 		{
-			id:       config.NewComponentIDWithName(typeStr, ""),
+			id:       component.NewIDWithName(typeStr, ""),
 			expected: defaultCfg,
 		},
 		{
-			id: config.NewComponentIDWithName(typeStr, "allsettings"),
+			id: component.NewIDWithName(typeStr, "allsettings"),
 			expected: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-				AccessToken:      "testToken",
-				Realm:            "us1",
-				MaxConnections:   70,
-				Headers: map[string]string{
-					"added-entry": "added value",
-					"dot.test":    "test",
-				},
-				TimeoutSettings: exporterhelper.TimeoutSettings{
-					Timeout: 2 * time.Second,
+				AccessToken: "testToken",
+				Realm:       "us1",
+				HTTPClientSettings: confighttp.HTTPClientSettings{Timeout: 2 * time.Second,
+					Headers: map[string]configopaque.String{
+						"added-entry": "added value",
+						"dot.test":    "test",
+					},
+					MaxIdleConns:        &seventy,
+					MaxIdleConnsPerHost: &seventy,
 				},
 				RetrySettings: exporterhelper.RetrySettings{
 					Enabled:         true,
@@ -188,9 +190,9 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, config.UnmarshalExporter(sub, cfg))
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-			assert.NoError(t, cfg.Validate())
+			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -203,12 +205,12 @@ func TestConfig_getOptionsFromConfig(t *testing.T) {
 		return translator
 	}
 	type fields struct {
-		AccessToken      string
+		AccessToken      configopaque.String
 		Realm            string
 		IngestURL        string
 		APIURL           string
 		Timeout          time.Duration
-		Headers          map[string]string
+		Headers          map[string]configopaque.String
 		TranslationRules []translation.Rule
 		SyncHostMetadata bool
 	}
@@ -320,15 +322,14 @@ func TestConfig_getOptionsFromConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-				AccessToken:      tt.fields.AccessToken,
-				Realm:            tt.fields.Realm,
-				IngestURL:        tt.fields.IngestURL,
-				APIURL:           tt.fields.APIURL,
-				TimeoutSettings: exporterhelper.TimeoutSettings{
+				AccessToken: tt.fields.AccessToken,
+				Realm:       tt.fields.Realm,
+				IngestURL:   tt.fields.IngestURL,
+				APIURL:      tt.fields.APIURL,
+				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Timeout: tt.fields.Timeout,
+					Headers: tt.fields.Headers,
 				},
-				Headers:             tt.fields.Headers,
 				TranslationRules:    tt.fields.TranslationRules,
 				SyncHostMetadata:    tt.fields.SyncHostMetadata,
 				DeltaTranslationTTL: 3600,

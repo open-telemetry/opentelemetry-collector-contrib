@@ -34,6 +34,7 @@ import (
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -73,9 +74,9 @@ var (
 	errUnsupportedLogEvent    = initJSONResponse(responseErrUnsupportedLogEvent)
 )
 
-// splunkReceiver implements the component.MetricsReceiver for Splunk HEC metric protocol.
+// splunkReceiver implements the receiver.Metrics for Splunk HEC metric protocol.
 type splunkReceiver struct {
-	settings        component.ReceiverCreateSettings
+	settings        receiver.CreateSettings
 	config          *Config
 	logsConsumer    consumer.Logs
 	metricsConsumer consumer.Metrics
@@ -85,14 +86,14 @@ type splunkReceiver struct {
 	gzipReaderPool  *sync.Pool
 }
 
-var _ component.MetricsReceiver = (*splunkReceiver)(nil)
+var _ receiver.Metrics = (*splunkReceiver)(nil)
 
 // newMetricsReceiver creates the Splunk HEC receiver with the given configuration.
 func newMetricsReceiver(
-	settings component.ReceiverCreateSettings,
+	settings receiver.CreateSettings,
 	config Config,
 	nextConsumer consumer.Metrics,
-) (component.MetricsReceiver, error) {
+) (receiver.Metrics, error) {
 	if nextConsumer == nil {
 		return nil, errNilNextMetricsConsumer
 	}
@@ -106,6 +107,14 @@ func newMetricsReceiver(
 		transport = "https"
 	}
 
+	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+		ReceiverID:             settings.ID,
+		Transport:              transport,
+		ReceiverCreateSettings: settings,
+	})
+	if err != nil {
+		return nil, err
+	}
 	r := &splunkReceiver{
 		settings:        settings,
 		config:          &config,
@@ -117,11 +126,7 @@ func newMetricsReceiver(
 			ReadHeaderTimeout: defaultServerTimeout,
 			WriteTimeout:      defaultServerTimeout,
 		},
-		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
-			ReceiverID:             config.ID(),
-			Transport:              transport,
-			ReceiverCreateSettings: settings,
-		}),
+		obsrecv:        obsrecv,
 		gzipReaderPool: &sync.Pool{New: func() interface{} { return new(gzip.Reader) }},
 	}
 
@@ -130,10 +135,10 @@ func newMetricsReceiver(
 
 // newLogsReceiver creates the Splunk HEC receiver with the given configuration.
 func newLogsReceiver(
-	settings component.ReceiverCreateSettings,
+	settings receiver.CreateSettings,
 	config Config,
 	nextConsumer consumer.Logs,
-) (component.LogsReceiver, error) {
+) (receiver.Logs, error) {
 	if nextConsumer == nil {
 		return nil, errNilNextLogsConsumer
 	}
@@ -144,6 +149,15 @@ func newLogsReceiver(
 	transport := "http"
 	if config.TLSSetting != nil {
 		transport = "https"
+	}
+
+	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+		ReceiverID:             settings.ID,
+		Transport:              transport,
+		ReceiverCreateSettings: settings,
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	r := &splunkReceiver{
@@ -158,11 +172,7 @@ func newLogsReceiver(
 			WriteTimeout:      defaultServerTimeout,
 		},
 		gzipReaderPool: &sync.Pool{New: func() interface{} { return new(gzip.Reader) }},
-		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
-			ReceiverID:             config.ID(),
-			Transport:              transport,
-			ReceiverCreateSettings: settings,
-		}),
+		obsrecv:        obsrecv,
 	}
 
 	return r, nil
@@ -185,6 +195,7 @@ func (r *splunkReceiver) Start(_ context.Context, host component.Host) error {
 	}
 
 	mx := mux.NewRouter()
+	mx.NewRoute().Path(r.config.HealthPath).HandlerFunc(r.handleHealthReq)
 	if r.logsConsumer != nil {
 		mx.NewRoute().Path(r.config.RawPath).HandlerFunc(r.handleRawReq)
 	}
@@ -433,6 +444,10 @@ func (r *splunkReceiver) failRequest(
 			zap.Error(err), // It handles nil error
 		)
 	}
+}
+
+func (r *splunkReceiver) handleHealthReq(writer http.ResponseWriter, _ *http.Request) {
+	writer.WriteHeader(200)
 }
 
 func initJSONResponse(s string) []byte {

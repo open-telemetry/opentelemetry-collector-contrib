@@ -15,6 +15,7 @@
 package ottl
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -36,10 +37,12 @@ func valueFor(x any) value {
 		switch {
 		case v == "NAME":
 			// if the string is NAME construct a path of "name".
-			val.Path = &Path{
-				Fields: []Field{
-					{
-						Name: "name",
+			val.Literal = &mathExprLiteral{
+				Path: &Path{
+					Fields: []Field{
+						{
+							Name: "name",
+						},
 					},
 				},
 			}
@@ -50,13 +53,13 @@ func valueFor(x any) value {
 			val.String = ottltest.Strp(v)
 		}
 	case float64:
-		val.Float = ottltest.Floatp(v)
+		val.Literal = &mathExprLiteral{Float: ottltest.Floatp(v)}
 	case *float64:
-		val.Float = v
+		val.Literal = &mathExprLiteral{Float: v}
 	case int:
-		val.Int = ottltest.Intp(int64(v))
+		val.Literal = &mathExprLiteral{Int: ottltest.Intp(int64(v))}
 	case *int64:
-		val.Int = v
+		val.Literal = &mathExprLiteral{Int: v}
 	case bool:
 		val.Bool = booleanp(boolean(v))
 	case nil:
@@ -119,9 +122,9 @@ func Test_newComparisonEvaluator(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			comp := comparisonHelper(tt.l, tt.r, tt.op)
-			evaluate, err := p.newComparisonEvaluator(comp)
+			evaluator, err := p.newComparisonEvaluator(comp)
 			assert.NoError(t, err)
-			result, err := evaluate(tt.item)
+			result, err := evaluator.Eval(context.Background(), tt.item)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.want, result)
 		})
@@ -348,12 +351,114 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 				},
 			},
 		},
+		{"i", true,
+			&booleanExpression{
+				Left: &term{
+					Left: &booleanValue{
+						Negation:  ottltest.Strp("not"),
+						ConstExpr: booleanp(false),
+					},
+				},
+			},
+		},
+		{"j", false,
+			&booleanExpression{
+				Left: &term{
+					Left: &booleanValue{
+						Negation:  ottltest.Strp("not"),
+						ConstExpr: booleanp(true),
+					},
+				},
+			},
+		},
+		{"k", true,
+			&booleanExpression{
+				Left: &term{
+					Left: &booleanValue{
+						Negation: ottltest.Strp("not"),
+						Comparison: &comparison{
+							Left: value{
+								String: ottltest.Strp("test"),
+							},
+							Op: EQ,
+							Right: value{
+								String: ottltest.Strp("not test"),
+							},
+						},
+					},
+				},
+			},
+		},
+		{"l", false,
+			&booleanExpression{
+				Left: &term{
+					Left: &booleanValue{
+						ConstExpr: booleanp(true),
+					},
+					Right: []*opAndBooleanValue{
+						{
+							Operator: "and",
+							Value: &booleanValue{
+								Negation: ottltest.Strp("not"),
+								SubExpr: &booleanExpression{
+									Left: &term{
+										Left: &booleanValue{
+											ConstExpr: booleanp(true),
+										},
+									},
+									Right: []*opOrTerm{
+										{
+											Operator: "or",
+											Term: &term{
+												Left: &booleanValue{
+													ConstExpr: booleanp(false),
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{"m", false,
+			&booleanExpression{
+				Left: &term{
+					Left: &booleanValue{
+						Negation:  ottltest.Strp("not"),
+						ConstExpr: booleanp(true),
+					},
+					Right: []*opAndBooleanValue{
+						{
+							Operator: "and",
+							Value: &booleanValue{
+								Negation:  ottltest.Strp("not"),
+								ConstExpr: booleanp(false),
+							},
+						},
+					},
+				},
+				Right: []*opOrTerm{
+					{
+						Operator: "or",
+						Term: &term{
+							Left: &booleanValue{
+								Negation:  ottltest.Strp("not"),
+								ConstExpr: booleanp(true),
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			evaluate, err := p.newBooleanExpressionEvaluator(tt.expr)
+			evaluator, err := p.newBoolExpr(tt.expr)
 			assert.NoError(t, err)
-			result, err := evaluate(nil)
+			result, err := evaluator.Eval(context.Background(), nil)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.want, result)
 		})

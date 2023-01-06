@@ -29,9 +29,10 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest/golden"
 )
 
 func nginxContainer(t *testing.T) testcontainers.Container {
@@ -75,7 +76,7 @@ func TestNginxIntegration(t *testing.T) {
 	cfg.Endpoint = fmt.Sprintf("http://%s:8080/status", hostname)
 
 	consumer := new(consumertest.MetricsSink)
-	settings := componenttest.NewNopReceiverCreateSettings()
+	settings := receivertest.NewNopCreateSettings()
 
 	rcvr, err := f.CreateMetricsReceiver(context.Background(), settings, cfg, consumer)
 	require.NoError(t, err, "failed creating metrics receiver")
@@ -86,5 +87,5 @@ func TestNginxIntegration(t *testing.T) {
 
 	actualMetrics := consumer.AllMetrics()[0]
 
-	scrapertest.CompareMetrics(expectedMetrics, actualMetrics, scrapertest.IgnoreMetricValues())
+	comparetest.CompareMetrics(expectedMetrics, actualMetrics, comparetest.IgnoreMetricValues())
 }

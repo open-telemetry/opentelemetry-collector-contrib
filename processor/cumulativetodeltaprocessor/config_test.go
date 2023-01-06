@@ -21,24 +21,23 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 )
 
 func TestLoadConfig(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		id           config.ComponentID
-		expected     config.Processor
+		id           component.ID
+		expected     component.Config
 		errorMessage string
 	}{
 		{
-			id: config.NewComponentIDWithName(typeStr, ""),
+			id: component.NewIDWithName(typeStr, ""),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 				Include: MatchMetrics{
 					Metrics: []string{
 						"metric1",
@@ -63,13 +62,12 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:       config.NewComponentIDWithName(typeStr, "empty"),
+			id:       component.NewIDWithName(typeStr, "empty"),
 			expected: createDefaultConfig(),
 		},
 		{
-			id: config.NewComponentIDWithName(typeStr, "regexp"),
+			id: component.NewIDWithName(typeStr, "regexp"),
 			expected: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 				Include: MatchMetrics{
 					Metrics: []string{
 						"a*",
@@ -92,11 +90,11 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:           config.NewComponentIDWithName(typeStr, "missing_match_type"),
+			id:           component.NewIDWithName(typeStr, "missing_match_type"),
 			errorMessage: "match_type must be set if metrics are supplied",
 		},
 		{
-			id:           config.NewComponentIDWithName(typeStr, "missing_name"),
+			id:           component.NewIDWithName(typeStr, "missing_name"),
 			errorMessage: "metrics must be supplied if match_type is set",
 		},
 	}
@@ -111,13 +109,13 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, config.UnmarshalProcessor(sub, cfg))
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 			if tt.expected == nil {
-				assert.EqualError(t, cfg.Validate(), tt.errorMessage)
+				assert.EqualError(t, component.ValidateConfig(cfg), tt.errorMessage)
 				return
 			}
-			assert.NoError(t, cfg.Validate())
+			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

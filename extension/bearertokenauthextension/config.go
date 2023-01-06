@@ -17,12 +17,11 @@ package bearertokenauthextension // import "github.com/open-telemetry/openteleme
 import (
 	"errors"
 
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 )
 
 // Config specifies how the Per-RPC bearer token based authentication data should be obtained.
 type Config struct {
-	config.ExtensionSettings `mapstructure:",squash"`
 
 	// Scheme specifies the auth-scheme for the token. Defaults to "Bearer"
 	Scheme string `mapstructure:"scheme,omitempty"`
@@ -34,7 +33,7 @@ type Config struct {
 	Filename string `mapstructure:"filename,omitempty"`
 }
 
-var _ config.Extension = (*Config)(nil)
+var _ component.Config = (*Config)(nil)
 var errNoTokenProvided = errors.New("no bearer token provided")
 
 // Validate checks if the extension configuration is valid

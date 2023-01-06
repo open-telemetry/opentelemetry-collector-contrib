@@ -21,6 +21,7 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/otlp/model/attributes"
 	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
 	"github.com/DataDog/datadog-agent/pkg/otlp/model/translator"
+	"github.com/DataDog/datadog-agent/pkg/trace/pb"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -74,8 +75,8 @@ func TestRunningMetrics(t *testing.T) {
 
 	var runningHostnames []string
 	for _, metric := range consumer.runningMetrics(0, component.BuildInfo{}) {
-		if metric.Host != nil {
-			runningHostnames = append(runningHostnames, *metric.Host)
+		for _, res := range metric.Resources {
+			runningHostnames = append(runningHostnames, *res.Name)
 		}
 	}
 
@@ -83,7 +84,6 @@ func TestRunningMetrics(t *testing.T) {
 		runningHostnames,
 		[]string{"fallbackHostname", "resource-hostname-1", "resource-hostname-2"},
 	)
-
 }
 
 func TestTagsMetrics(t *testing.T) {
@@ -121,12 +121,30 @@ func TestTagsMetrics(t *testing.T) {
 	var runningHostnames []string
 	for _, metric := range runningMetrics {
 		runningTags = append(runningTags, metric.Tags...)
-		if metric.Host != nil {
-			runningHostnames = append(runningHostnames, *metric.Host)
+		for _, res := range metric.Resources {
+			runningHostnames = append(runningHostnames, *res.Name)
 		}
 	}
 
 	assert.ElementsMatch(t, runningHostnames, []string{"", "", ""})
 	assert.Len(t, runningMetrics, 3)
 	assert.ElementsMatch(t, runningTags, []string{"task_arn:task-arn-1", "task_arn:task-arn-2", "task_arn:task-arn-3"})
+}
+
+func TestConsumeAPMStats(t *testing.T) {
+	c := NewConsumer()
+	for _, sp := range testutil.StatsPayloads {
+		c.ConsumeAPMStats(sp)
+	}
+	require.Len(t, c.as, len(testutil.StatsPayloads))
+	require.ElementsMatch(t, c.as, testutil.StatsPayloads)
+	_, _, out := c.All(0, component.BuildInfo{}, []string{})
+	require.ElementsMatch(t, out, testutil.StatsPayloads)
+	_, _, out = c.All(0, component.BuildInfo{}, []string{"extra:key"})
+	var copies []pb.ClientStatsPayload
+	for _, sp := range testutil.StatsPayloads {
+		sp.Tags = append(sp.Tags, "extra:key")
+		copies = append(copies, sp)
+	}
+	require.ElementsMatch(t, out, copies)
 }

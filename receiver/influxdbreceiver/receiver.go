@@ -87,7 +87,10 @@ func (r *metricsReceiver) Start(_ context.Context, host component.Host) error {
 	return nil
 }
 
-func (r *metricsReceiver) Shutdown(ctx context.Context) error {
+func (r *metricsReceiver) Shutdown(_ context.Context) error {
+	if r.server == nil {
+		return nil
+	}
 	if err := r.server.Close(); err != nil {
 		return err
 	}

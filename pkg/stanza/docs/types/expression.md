@@ -1,7 +1,7 @@
 # Expressions
 
 Expressions give the config flexibility by allowing dynamic business logic rules to be included in static configs.
-Most notably, expressions can be used to route messages and add new fields based on the contents of the log entry
+Most notably, expressions can be used to route log records and add new fields based on the contents of the log entry
 being processed.
 
 For reference documentation of the expression language, see [here](https://github.com/antonmedv/expr/blob/master/docs/Language-Definition.md).

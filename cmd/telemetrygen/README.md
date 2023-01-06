@@ -1,10 +1,9 @@
 # Telemetry generator for OpenTelemetry
 
-| Status                   |                       |
-| ------------------------ | --------------------- |
-| Stability                | traces [WIP]          |
-|                          | metrics [WIP]         |
-| Supported signal types   | traces, metrics       |
+| Status                   |                 |
+| ------------------------ |-----------------|
+| Stability                | [development]   |
+| Supported signal types   | traces, metrics |
 
 This utility simulates a client generating **traces** and **metrics**, useful for testing and demonstration purposes.
 
@@ -28,3 +27,5 @@ telemetrygen traces
 ```
 telemetrygen metrics
 ```
+
+[development]: https://github.com/open-telemetry/opentelemetry-collector#development

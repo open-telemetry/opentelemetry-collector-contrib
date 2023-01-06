@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 )
 
@@ -16,12 +17,7 @@ import (
 type MetricSettings struct {
 	Enabled bool `mapstructure:"enabled"`
 
-	enabledProvidedByUser bool
-}
-
-// IsEnabledProvidedByUser returns true if `enabled` option is explicitly set in user settings to any value.
-func (ms *MetricSettings) IsEnabledProvidedByUser() bool {
-	return ms.enabledProvidedByUser
+	enabledSetByUser bool
 }
 
 func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
@@ -32,7 +28,7 @@ func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
 	if err != nil {
 		return err
 	}
-	ms.enabledProvidedByUser = parser.IsSet("enabled")
+	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
 }
 
@@ -501,18 +497,18 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, options ...metricBuilderOption) *MetricsBuilder {
+func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                         pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                     pmetric.NewMetrics(),
-		buildInfo:                         buildInfo,
-		metricSystemDiskIo:                newMetricSystemDiskIo(settings.SystemDiskIo),
-		metricSystemDiskIoTime:            newMetricSystemDiskIoTime(settings.SystemDiskIoTime),
-		metricSystemDiskMerged:            newMetricSystemDiskMerged(settings.SystemDiskMerged),
-		metricSystemDiskOperationTime:     newMetricSystemDiskOperationTime(settings.SystemDiskOperationTime),
-		metricSystemDiskOperations:        newMetricSystemDiskOperations(settings.SystemDiskOperations),
-		metricSystemDiskPendingOperations: newMetricSystemDiskPendingOperations(settings.SystemDiskPendingOperations),
-		metricSystemDiskWeightedIoTime:    newMetricSystemDiskWeightedIoTime(settings.SystemDiskWeightedIoTime),
+		buildInfo:                         settings.BuildInfo,
+		metricSystemDiskIo:                newMetricSystemDiskIo(ms.SystemDiskIo),
+		metricSystemDiskIoTime:            newMetricSystemDiskIoTime(ms.SystemDiskIoTime),
+		metricSystemDiskMerged:            newMetricSystemDiskMerged(ms.SystemDiskMerged),
+		metricSystemDiskOperationTime:     newMetricSystemDiskOperationTime(ms.SystemDiskOperationTime),
+		metricSystemDiskOperations:        newMetricSystemDiskOperations(ms.SystemDiskOperations),
+		metricSystemDiskPendingOperations: newMetricSystemDiskPendingOperations(ms.SystemDiskPendingOperations),
+		metricSystemDiskWeightedIoTime:    newMetricSystemDiskWeightedIoTime(ms.SystemDiskWeightedIoTime),
 	}
 	for _, op := range options {
 		op(mb)

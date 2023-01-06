@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
@@ -40,8 +41,8 @@ import (
 // newTracesExporter returns a new Jaeger gRPC exporter.
 // The exporter name is the name to be used in the observability of the exporter.
 // The collectorEndpoint should be of the form "hostname:14250" (a gRPC target).
-func newTracesExporter(cfg *Config, set component.ExporterCreateSettings) (component.TracesExporter, error) {
-	s := newProtoGRPCSender(cfg, set.TelemetrySettings)
+func newTracesExporter(cfg *Config, set exporter.CreateSettings) (exporter.Traces, error) {
+	s := newProtoGRPCSender(cfg, set)
 	return exporterhelper.NewTracesExporter(
 		context.TODO(), set, cfg, s.pushTraces,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
@@ -72,10 +73,10 @@ type protoGRPCSender struct {
 	clientSettings *configgrpc.GRPCClientSettings
 }
 
-func newProtoGRPCSender(cfg *Config, settings component.TelemetrySettings) *protoGRPCSender {
+func newProtoGRPCSender(cfg *Config, set exporter.CreateSettings) *protoGRPCSender {
 	s := &protoGRPCSender{
-		name:                      cfg.ID().String(),
-		settings:                  settings,
+		name:                      set.ID.String(),
+		settings:                  set.TelemetrySettings,
 		metadata:                  metadata.New(cfg.GRPCClientSettings.Headers),
 		waitForReady:              cfg.WaitForReady,
 		connStateReporterInterval: time.Second,

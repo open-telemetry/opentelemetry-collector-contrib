@@ -155,32 +155,6 @@
                         "aggregationTemporality": 2,
                         "dataPoints": [
                            {
-                              "asInt": "2",
-                              "attributes": [
-                                 {
-                                    "key": "operation",
-                                    "value": {
-                                       "stringValue": "query"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372940162070000",
-                              "timeUnixNano": "1659372940162165000"
-                           },
-                           {
-                              "asInt": "0",
-                              "attributes": [
-                                 {
-                                    "key": "operation",
-                                    "value": {
-                                       "stringValue": "update"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372940162070000",
-                              "timeUnixNano": "1659372940162165000"
-                           },
-                           {
                               "asInt": "0",
                               "attributes": [
                                  {
@@ -231,6 +205,170 @@
                               ],
                               "startTimeUnixNano": "1659372940162070000",
                               "timeUnixNano": "1659372940162165000"
+                           },
+                           {
+                              "asInt": "2",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "query"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659372940162070000",
+                              "timeUnixNano": "1659372940162165000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "update"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659372940162070000",
+                              "timeUnixNano": "1659372940162165000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "{operations}"
+                  },
+                  {
+                     "description": "The latency of operations.",
+                     "name": "mongodb.operation.latency.time",
+                     "gauge": {
+                        "aggregationTemporality": 2,
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "read"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1670911731284766000",
+                              "timeUnixNano": "1670911731288585000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "write"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1670911731284766000",
+                              "timeUnixNano": "1670911731288585000"
+                           },
+                           {
+                              "asInt": "8631",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "command"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1670911731284766000",
+                              "timeUnixNano": "1670911731288585000"
+                           }
+                        ]
+                     },
+                     "unit": "us"
+                  },
+                  {
+                     "description": "The number of replicated operations executed.",
+                     "name": "mongodb.operation.repl.count",
+                     "sum": {
+                        "aggregationTemporality": 2,
+                        "dataPoints": [
+                           {
+                              "asInt": "3",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "insert"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1670911805821119000",
+                              "timeUnixNano": "1670911805825012000"
+                           },
+                           {
+                              "asInt": "4",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "query"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1670911805821119000",
+                              "timeUnixNano": "1670911805825012000"
+                           },
+                           {
+                              "asInt": "5",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "update"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1670911805821119000",
+                              "timeUnixNano": "1670911805825012000"
+                           },
+                           {
+                              "asInt": "1",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "delete"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1670911805821119000",
+                              "timeUnixNano": "1670911805825012000"
+                           },
+                           {
+                              "asInt": "2",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "getmore"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1670911805821119000",
+                              "timeUnixNano": "1670911805825012000"
+                           },
+                           {
+                              "asInt": "27",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "command"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1670911805821119000",
+                              "timeUnixNano": "1670911805825012000"
                            }
                         ],
                         "isMonotonic": true
@@ -271,32 +409,6 @@
                      "sum": {
                         "aggregationTemporality": 2,
                         "dataPoints": [
-                           {
-                              "asInt": "0",
-                              "attributes": [
-                                 {
-                                    "key": "operation",
-                                    "value": {
-                                       "stringValue": "getmore"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372940162070000",
-                              "timeUnixNano": "1659372940162165000"
-                           },
-                           {
-                              "asInt": "49340",
-                              "attributes": [
-                                 {
-                                    "key": "operation",
-                                    "value": {
-                                       "stringValue": "command"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372940162070000",
-                              "timeUnixNano": "1659372940162165000"
-                           },
                            {
                               "asInt": "12465",
                               "attributes": [
@@ -343,6 +455,32 @@
                                     "key": "operation",
                                     "value": {
                                        "stringValue": "delete"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659372940162070000",
+                              "timeUnixNano": "1659372940162165000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "getmore"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659372940162070000",
+                              "timeUnixNano": "1659372940162165000"
+                           },
+                           {
+                              "asInt": "49340",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "command"
                                     }
                                  }
                               ],
@@ -406,25 +544,6 @@
                         "aggregationTemporality": 2,
                         "dataPoints": [
                            {
-                              "asInt": "3",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "fakedatabase"
-                                    }
-                                 },
-                                 {
-                                    "key": "type",
-                                    "value": {
-                                       "stringValue": "current"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372940162070000",
-                              "timeUnixNano": "1659372940162165000"
-                           },
-                           {
                               "asInt": "1",
                               "attributes": [
                                  {
@@ -456,6 +575,25 @@
                                     "key": "type",
                                     "value": {
                                        "stringValue": "available"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659372940162070000",
+                              "timeUnixNano": "1659372940162165000"
+                           },
+                           {
+                              "asInt": "3",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "fakedatabase"
+                                    }
+                                 },
+                                 {
+                                    "key": "type",
+                                    "value": {
+                                       "stringValue": "current"
                                     }
                                  }
                               ],
@@ -507,6 +645,25 @@
                                  {
                                     "key": "operation",
                                     "value": {
+                                       "stringValue": "insert"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659372940162070000",
+                              "timeUnixNano": "1659372940162165000"
+                           },
+                           {
+                              "asInt": "1",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "fakedatabase"
+                                    }
+                                 },
+                                 {
+                                    "key": "operation",
+                                    "value": {
                                        "stringValue": "update"
                                     }
                                  }
@@ -527,25 +684,6 @@
                                     "key": "operation",
                                     "value": {
                                        "stringValue": "delete"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372940162070000",
-                              "timeUnixNano": "1659372940162165000"
-                           },
-                           {
-                              "asInt": "1",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "fakedatabase"
-                                    }
-                                 },
-                                 {
-                                    "key": "operation",
-                                    "value": {
-                                       "stringValue": "insert"
                                     }
                                  }
                               ],

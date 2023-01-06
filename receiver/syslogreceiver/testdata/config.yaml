@@ -2,6 +2,3 @@ syslog:
   tcp:
     listen_address: "127.0.0.1:29018"
   protocol: rfc5424
-  converter:
-    flush_interval: 100ms
-    worker_count: 1
