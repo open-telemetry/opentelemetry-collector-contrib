@@ -49,65 +49,41 @@ func (r *purefaReceiver) Start(ctx context.Context, compHost component.Host) err
 	fact := prometheusreceiver.NewFactory()
 	scrapeCfgs := []*config.ScrapeConfig{}
 
-	arrLabels := model.LabelSet{
+	commomLabel := model.LabelSet{
 		"env":           model.LabelValue(r.cfg.Env),
 		"fa_array_name": model.LabelValue(r.cfg.Endpoint),
 		"host":          model.LabelValue(r.cfg.Endpoint),
 	}
 
-	arrScraper := internal.NewScraper(ctx, internal.ScraperTypeArray, r.cfg.Endpoint, r.cfg.Arrays, r.cfg.Settings.ReloadIntervals.Array, arrLabels)
+	arrScraper := internal.NewScraper(ctx, internal.ScraperTypeArray, r.cfg.Endpoint, r.cfg.Arrays, r.cfg.Settings.ReloadIntervals.Array, commomLabel)
 	if scCfgs, err := arrScraper.ToPrometheusReceiverConfig(compHost, fact); err == nil {
 		scrapeCfgs = append(scrapeCfgs, scCfgs...)
 	} else {
 		return err
 	}
 
-	hostLabels := model.LabelSet{
-		"env":           model.LabelValue(r.cfg.Env),
-		"fa_array_name": model.LabelValue(r.cfg.Endpoint),
-		"host":          model.LabelValue(r.cfg.Endpoint),
-	}
-
-	hostScraper := internal.NewScraper(ctx, internal.ScraperTypeHost, r.cfg.Endpoint, r.cfg.Hosts, r.cfg.Settings.ReloadIntervals.Host, hostLabels)
+	hostScraper := internal.NewScraper(ctx, internal.ScraperTypeHost, r.cfg.Endpoint, r.cfg.Hosts, r.cfg.Settings.ReloadIntervals.Host, commomLabel)
 	if scCfgs, err := hostScraper.ToPrometheusReceiverConfig(compHost, fact); err == nil {
 		scrapeCfgs = append(scrapeCfgs, scCfgs...)
 	} else {
 		return err
 	}
 
-	dirLabels := model.LabelSet{
-		"env":           model.LabelValue(r.cfg.Env),
-		"fa_array_name": model.LabelValue(r.cfg.Endpoint),
-		"host":          model.LabelValue(r.cfg.Endpoint),
-	}
-
-	directoriesScraper := internal.NewScraper(ctx, internal.ScraperTypeDirectories, r.cfg.Endpoint, r.cfg.Directories, r.cfg.Settings.ReloadIntervals.Directories, dirLabels)
+	directoriesScraper := internal.NewScraper(ctx, internal.ScraperTypeDirectories, r.cfg.Endpoint, r.cfg.Directories, r.cfg.Settings.ReloadIntervals.Directories, commomLabel)
 	if scCfgs, err := directoriesScraper.ToPrometheusReceiverConfig(compHost, fact); err == nil {
 		scrapeCfgs = append(scrapeCfgs, scCfgs...)
 	} else {
 		return err
 	}
 
-	podsLabels := model.LabelSet{
-		"env":           model.LabelValue(r.cfg.Env),
-		"fa_array_name": model.LabelValue(r.cfg.Endpoint),
-		"host":          model.LabelValue(r.cfg.Endpoint),
-	}
-
-	podsScraper := internal.NewScraper(ctx, internal.ScraperTypePods, r.cfg.Endpoint, r.cfg.Pods, r.cfg.Settings.ReloadIntervals.Pods, podsLabels)
+	podsScraper := internal.NewScraper(ctx, internal.ScraperTypePods, r.cfg.Endpoint, r.cfg.Pods, r.cfg.Settings.ReloadIntervals.Pods, commomLabel)
 	if scCfgs, err := podsScraper.ToPrometheusReceiverConfig(compHost, fact); err == nil {
 		scrapeCfgs = append(scrapeCfgs, scCfgs...)
 	} else {
 		return err
 	}
 
-	volLabels := model.LabelSet{
-		"env":           model.LabelValue(r.cfg.Env),
-		"fa_array_name": model.LabelValue(r.cfg.Endpoint),
-		"host":          model.LabelValue(r.cfg.Endpoint),
-	}
-
-	volumesScraper := internal.NewScraper(ctx, internal.ScraperTypeVolumes, r.cfg.Endpoint, r.cfg.Volumes, r.cfg.Settings.ReloadIntervals.Volumes, volLabels)
+	volumesScraper := internal.NewScraper(ctx, internal.ScraperTypeVolumes, r.cfg.Endpoint, r.cfg.Volumes, r.cfg.Settings.ReloadIntervals.Volumes, model.LabelSet{})
 	if scCfgs, err := volumesScraper.ToPrometheusReceiverConfig(compHost, fact); err == nil {
 		scrapeCfgs = append(scrapeCfgs, scCfgs...)
 	} else {
