@@ -23,19 +23,28 @@ import (
 	"go.uber.org/multierr"
 )
 
-// CompareOption is applied by the CompareMetricSlices function
-// to mutates an expected and/or actual result before comparing.
-type CompareOption interface {
-	apply(expected, actual pmetric.Metrics)
+// MetricsCompareOption can be used to mutate expected and/or actual metrics before comparing.
+type MetricsCompareOption interface {
+	applyOnMetrics(expected, actual pmetric.Metrics)
 }
 
-func CompareMetrics(expected, actual pmetric.Metrics, options ...CompareOption) error {
+// LogsCompareOption can be used to mutate expected and/or actual logs before comparing.
+type LogsCompareOption interface {
+	applyOnLogs(expected, actual plog.Logs)
+}
+
+type CompareOption interface {
+	MetricsCompareOption
+	LogsCompareOption
+}
+
+func CompareMetrics(expected, actual pmetric.Metrics, options ...MetricsCompareOption) error {
 	exp, act := pmetric.NewMetrics(), pmetric.NewMetrics()
 	expected.CopyTo(exp)
 	actual.CopyTo(act)
 
 	for _, option := range options {
-		option.apply(exp, act)
+		option.applyOnMetrics(exp, act)
 	}
 
 	expectedMetrics, actualMetrics := exp.ResourceMetrics(), act.ResourceMetrics()
@@ -271,10 +280,14 @@ func numberTypeToString(t pmetric.NumberDataPointValueType) string {
 
 // CompareLogs compares each part of two given Logs and returns
 // an error if they don't match. The error describes what didn't match.
-func CompareLogs(expected, actual plog.Logs) error {
+func CompareLogs(expected, actual plog.Logs, options ...LogsCompareOption) error {
 	exp, act := plog.NewLogs(), plog.NewLogs()
 	expected.CopyTo(exp)
 	actual.CopyTo(act)
+
+	for _, option := range options {
+		option.applyOnLogs(exp, act)
+	}
 
 	expectedLogs, actualLogs := exp.ResourceLogs(), act.ResourceLogs()
 	if expectedLogs.Len() != actualLogs.Len() {
@@ -363,7 +376,7 @@ func CompareResourceLogs(expected, actual plog.ResourceLogs) error {
 	return nil
 }
 
-// CompareLogRecordSlice compares each part of two given LogRecordSlices and returns
+// CompareLogRecordSlices compares each part of two given LogRecordSlices and returns
 // an error if they don't match. The error describes what didn't match.
 func CompareLogRecordSlices(expected, actual plog.LogRecordSlice) error {
 	if expected.Len() != actual.Len() {
