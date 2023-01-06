@@ -120,6 +120,9 @@ func consumerTracesLoop(ctx context.Context, c *pulsarTracesConsumer) error {
 }
 
 func (c *pulsarTracesConsumer) Shutdown(context.Context) error {
+	if c.cancel == nil {
+		return nil
+	}
 	c.cancel()
 	c.consumer.Close()
 	c.client.Close()
@@ -218,6 +221,9 @@ func consumeMetricsLoop(ctx context.Context, c *pulsarMetricsConsumer) error {
 }
 
 func (c *pulsarMetricsConsumer) Shutdown(context.Context) error {
+	if c.cancel == nil {
+		return nil
+	}
 	c.cancel()
 	c.consumer.Close()
 	c.client.Close()
@@ -315,6 +321,9 @@ func consumeLogsLoop(ctx context.Context, c *pulsarLogsConsumer) error {
 }
 
 func (c *pulsarLogsConsumer) Shutdown(context.Context) error {
+	if c.cancel == nil {
+		return nil
+	}
 	c.cancel()
 	c.consumer.Close()
 	c.client.Close()
