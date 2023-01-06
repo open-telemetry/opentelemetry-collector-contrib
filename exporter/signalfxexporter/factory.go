@@ -42,6 +42,8 @@ const (
 	stability = component.StabilityLevelBeta
 
 	defaultHTTPTimeout = time.Second * 5
+
+	defaultMaxConns = 100
 )
 
 // NewFactory creates a factory for SignalFx exporter.
@@ -56,17 +58,21 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
+	maxConnCount := defaultMaxConns
 	return &Config{
-		RetrySettings:      exporterhelper.NewDefaultRetrySettings(),
-		QueueSettings:      exporterhelper.NewDefaultQueueSettings(),
-		HTTPClientSettings: confighttp.HTTPClientSettings{Timeout: defaultHTTPTimeout},
+		RetrySettings: exporterhelper.NewDefaultRetrySettings(),
+		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Timeout:             defaultHTTPTimeout,
+			MaxIdleConns:        &maxConnCount,
+			MaxIdleConnsPerHost: &maxConnCount,
+		},
 		AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
 			AccessTokenPassthrough: true,
 		},
 		DeltaTranslationTTL:           3600,
 		Correlation:                   correlation.DefaultConfig(),
 		NonAlphanumericDimensionChars: "_-.",
-		MaxConnections:                100,
 	}
 }
 
