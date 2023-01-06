@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/processor/processortest"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
@@ -78,9 +79,11 @@ func TestDetectTruePartial(t *testing.T) {
 
 func TestDetectFalse(t *testing.T) {
 
-	detector := &detector{}
+	detector := &detector{
+		logger: zap.NewNop(),
+	}
 	res, schemaURL, err := detector.Detect(context.Background())
-	require.Error(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "", schemaURL)
 	assert.True(t, internal.IsEmptyResource(res))
 }

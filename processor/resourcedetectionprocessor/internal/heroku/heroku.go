@@ -65,7 +65,8 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	res := pcommon.NewResource()
 	dynoID, ok := os.LookupEnv("HEROKU_DYNO_ID")
 	if !ok {
-		return res, "", errHerokuMetadata
+		d.logger.Debug("heroku metadata unavailable", zap.Error(err))
+		return res, "", nil
 	}
 
 	attrs := res.Attributes()
