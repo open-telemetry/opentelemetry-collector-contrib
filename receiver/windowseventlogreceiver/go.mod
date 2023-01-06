@@ -42,7 +42,7 @@ require (
 	golang.org/x/net v0.4.0 // indirect
 	golang.org/x/text v0.5.0 // indirect
 	gonum.org/v1/gonum v0.12.0 // indirect
-	google.golang.org/genproto v0.0.0-20220218161850-94dd64e39d7c // indirect
+	google.golang.org/genproto v0.0.0-20220822174746-9e6da59bd2fc // indirect
 	google.golang.org/grpc v1.51.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
@@ -54,3 +54,7 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza => 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage => ../../extension/storage
 
 retract v0.65.0
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest => ../../internal/comparetest
