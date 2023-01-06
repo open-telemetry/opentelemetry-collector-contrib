@@ -667,8 +667,8 @@ github.com/jaegertracing/jaeger v1.34.1/go.mod h1:md+YcRcDgMCAgB9qyXl0PdstYiq8fj
 github.com/jaegertracing/jaeger v1.35.2/go.mod h1:e7FBVZ14ptsRjwiHEnLyxvOa4bSnZA0BDFE1OcvNiHs=
 github.com/jaegertracing/jaeger v1.36.0/go.mod h1:67uyR2zQgEk7EfguOR3eZOGvGDRzY5Yos6n2aaXxq1Y=
 github.com/jaegertracing/jaeger v1.38.0/go.mod h1:4MBTMxfCp3d4buDLxRlHnESQvTFCkN16OUIeE9BEdl4=
-github.com/jaegertracing/jaeger v1.39.1-0.20221110195127-14c11365a856 h1:YLZ10whw2OQWjHnjqklvXSpS6QY+xhPsUTUya8yQQvc=
-github.com/jaegertracing/jaeger v1.39.1-0.20221110195127-14c11365a856/go.mod h1:4UMLDc2yEm0f2Djlej2F7B/BMXRpSyVQX8CkuvtQ4nk=
+github.com/jaegertracing/jaeger v1.39.0 h1:kJT8WSF1baxF4FqlHo/elHfr2Xv9D8bhuMcVrD7SpJc=
+github.com/jaegertracing/jaeger v1.39.0/go.mod h1:IEhg51euQ8U9p4kBV7Y7xudmMi8gt6v673y5rlBBT1E=
 github.com/jcmturner/aescts/v2 v2.0.0/go.mod h1:AiaICIRyfYg35RUkr8yESTqvSy7csK90qZ5xfvvsoNs=
 github.com/jcmturner/dnsutils/v2 v2.0.0/go.mod h1:b0TnjGOvI/n42bZa+hmXL+kFJZsFT7G4t3HTlQ184QM=
 github.com/jcmturner/gofork v0.0.0-20190328161633-dc7c13fece03/go.mod h1:MK8+TM0La+2rjBD4jE12Kj1pCCxK7d2LK/UM3ncEo0o=
