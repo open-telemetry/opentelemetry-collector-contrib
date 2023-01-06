@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/apache/pulsar-client-go v0.8.1
 	github.com/gogo/protobuf v1.3.2
-	github.com/jaegertracing/jaeger v1.40.0
+	github.com/jaegertracing/jaeger v1.41.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.68.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.68.0
 	github.com/stretchr/testify v1.8.1
