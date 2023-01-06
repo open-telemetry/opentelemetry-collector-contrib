@@ -37,6 +37,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/docker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/env"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/heroku"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system"
 )
 
@@ -71,6 +72,7 @@ func NewFactory() processor.Factory {
 		elasticbeanstalk.TypeStr: elasticbeanstalk.NewDetector,
 		env.TypeStr:              env.NewDetector,
 		gcp.TypeStr:              gcp.NewDetector,
+		heroku.TypeStr:           heroku.NewDetector,
 		system.TypeStr:           system.NewDetector,
 	})
 
