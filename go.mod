@@ -219,7 +219,7 @@ require (
 	github.com/Azure/go-autorest/tracing v0.6.0 // indirect
 	github.com/ClickHouse/ch-go v0.50.0 // indirect
 	github.com/ClickHouse/clickhouse-go/v2 v2.4.3 // indirect
-	github.com/DataDog/agent-payload/v5 v5.0.59 // indirect
+	github.com/DataDog/agent-payload/v5 v5.0.52 // indirect
 	github.com/DataDog/datadog-agent/pkg/obfuscate v0.42.0-rc.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/otlp/model v0.42.0-rc.2.0.20221215161218-ae4a2b6bc233 // indirect
 	github.com/DataDog/datadog-agent/pkg/quantile v0.42.0-rc.2.0.20221215161218-ae4a2b6bc233 // indirect
@@ -1026,6 +1026,9 @@ retract (
 
 // see https://github.com/distribution/distribution/issues/3590
 exclude github.com/docker/distribution v2.8.0+incompatible
+
+// see https://github.com/DataDog/agent-payload/issues/218
+exclude github.com/DataDog/agent-payload/v5 v5.0.59
 
 // see https://github.com/mattn/go-ieproxy/issues/45
 replace github.com/mattn/go-ieproxy => github.com/mattn/go-ieproxy v0.0.1
