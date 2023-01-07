@@ -75,6 +75,7 @@ body:
       - extension/bearertokenauth
       - extension/headerssetter
       - extension/healthcheck
+      - extension/httpforwarder
       - extension/jaegerremotesampling
       - extension/oauth2clientauth
       - extension/observer
