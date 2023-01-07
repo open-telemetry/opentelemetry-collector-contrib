@@ -194,7 +194,7 @@ the following process will be followed to phase out the old metrics:
 
 - Until and including `v0.63.0`, only the old metrics `process.memory.physical_usage` and `process.memory.virtual_usage` are emitted.
   You can use the [Metrics Transform processor][metricstransformprocessor_docs] to rename them.
-- Between `v0.64.0` and `v0.69.0`, the new metrics are introduced as optional (disabled by default) and the old metrics are marked as deprecated.
+- Between `v0.64.0` and `v0.68.0`, the new metrics are introduced as optional (disabled by default) and the old metrics are marked as deprecated.
   Only the old metrics are emitted by default.
 - Between `v0.69.0` and `v0.71.0`, the new metrics are enabled and the old metrics are disabled by default.
 - In `v0.72.0` and up, the old metrics are removed.

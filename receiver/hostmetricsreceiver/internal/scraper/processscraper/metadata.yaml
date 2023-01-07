@@ -84,11 +84,11 @@ metrics:
     attributes: [state]
 
   process.memory.physical_usage:
-    enabled: true
-    description: "Deprecated: use `process.memory.usage` metric instead. The amount of physical memory in use."
+    enabled: false
+    description: "[DEPRECATED] Use `process.memory.usage` metric instead. The amount of physical memory in use."
     warnings:
-      if_enabled: >-
-        The metric is deprecated and will be removed in v0.70.0. Please use `process.memory.usage` instead. See
+      if_configured: >-
+        The metric is deprecated and will be removed in v0.72.0. Please use `process.memory.usage` instead. See
         https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/hostmetricsreceiver#transition-to-process-memory-metric-names-aligned-with-opentelemetry-specification
         for more details.
     unit: By
@@ -98,7 +98,7 @@ metrics:
       monotonic: false
 
   process.memory.usage:
-    enabled: false
+    enabled: true
     description: The amount of physical memory in use.
     unit: By
     sum:
@@ -107,11 +107,11 @@ metrics:
       monotonic: false
 
   process.memory.virtual_usage:
-    enabled: true
-    description: "Deprecated: Use `process.memory.virtual` metric instead. Virtual memory size."
+    enabled: false
+    description: "[DEPRECATED] Use `process.memory.virtual` metric instead. Virtual memory size."
     warnings:
-      if_enabled: >-
-        The metric is deprecated and will be removed in v0.70.0. Please use `process.memory.virtual` metric instead. See 
+      if_configured: >-
+        The metric is deprecated and will be removed in v0.72.0. Please use `process.memory.virtual` metric instead. See 
         https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/hostmetricsreceiver#transition-to-process-memory-metric-names-aligned-with-opentelemetry-specification
         for more details.
     unit: By
@@ -121,7 +121,7 @@ metrics:
       monotonic: false
 
   process.memory.virtual:
-    enabled: false
+    enabled: true
     description: Virtual memory size.
     unit: By
     sum:

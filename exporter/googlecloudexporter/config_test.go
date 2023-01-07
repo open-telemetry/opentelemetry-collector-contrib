@@ -25,21 +25,9 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/featuregate"
 )
 
-// setPdataFeatureGateForTest changes the pdata feature gate during a test.
-// usage: defer SetPdataFeatureGateForTest(true)()
-func setPdataFeatureGateForTest(t testing.TB, enabled bool) func() {
-	originalValue := featuregate.GetRegistry().IsEnabled(pdataExporterFeatureGate)
-	require.NoError(t, featuregate.GetRegistry().Apply(map[string]bool{pdataExporterFeatureGate: enabled}))
-	return func() {
-		require.NoError(t, featuregate.GetRegistry().Apply(map[string]bool{pdataExporterFeatureGate: originalValue}))
-	}
-}
-
 func TestLoadConfig(t *testing.T) {
-	defer setPdataFeatureGateForTest(t, true)()
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 	factory := NewFactory()

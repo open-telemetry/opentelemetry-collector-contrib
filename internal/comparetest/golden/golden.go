@@ -17,7 +17,10 @@ package golden // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"encoding/json"
 	"os"
+	"path/filepath"
+	"testing"
 
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
@@ -32,7 +35,18 @@ func ReadMetrics(filePath string) (pmetric.Metrics, error) {
 }
 
 // WriteMetrics writes a pmetric.Metrics to the specified file
-func WriteMetrics(filePath string, metrics pmetric.Metrics) error {
+func WriteMetrics(t *testing.T, filePath string, metrics pmetric.Metrics) error {
+	if err := writeMetrics(filePath, metrics); err != nil {
+		return err
+	}
+	t.Logf("Golden file successfully written to %s.", filePath)
+	t.Log("NOTE: The WriteMetrics call must be removed in order to pass the test.")
+	t.Fail()
+	return nil
+}
+
+// writeMetrics writes a pmetric.Metrics to the specified file
+func writeMetrics(filePath string, metrics pmetric.Metrics) error {
 	unmarshaler := &pmetric.JSONMarshaler{}
 	fileBytes, err := unmarshaler.MarshalMetrics(metrics)
 	if err != nil {
@@ -43,6 +57,39 @@ func WriteMetrics(filePath string, metrics pmetric.Metrics) error {
 		return err
 	}
 	b, err := json.MarshalIndent(jsonVal, "", "   ")
+	if err != nil {
+		return err
+	}
+	b = append(b, []byte("\n")...)
+	if err := os.WriteFile(filePath, b, 0600); err != nil {
+		return err
+	}
+	return nil
+}
+
+// ReadLogs reads a plog.Logs from the specified file
+func ReadLogs(filePath string) (plog.Logs, error) {
+	b, err := os.ReadFile(filepath.Clean(filePath))
+	if err != nil {
+		return plog.Logs{}, err
+	}
+
+	unmarshaler := plog.JSONUnmarshaler{}
+	return unmarshaler.UnmarshalLogs(b)
+}
+
+// WriteLogs writes a plog.Logs to the specified file
+func WriteLogs(filePath string, logs plog.Logs) error {
+	unmarshaler := &plog.JSONMarshaler{}
+	fileBytes, err := unmarshaler.MarshalLogs(logs)
+	if err != nil {
+		return err
+	}
+	var jsonVal map[string]interface{}
+	if err = json.Unmarshal(fileBytes, &jsonVal); err != nil {
+		return err
+	}
+	b, err := json.MarshalIndent(jsonVal, "", "    ")
 	if err != nil {
 		return err
 	}

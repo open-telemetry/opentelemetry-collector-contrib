@@ -84,5 +84,14 @@ This feature gate is enabled by default, and eventually the old implementation w
 to give users time to migrate to the new implementation. The target release for the old implementation to be removed
 is 0.71.0.
 
+**ALPHA**: `receiver.elasticsearch.emitNodeVersionAttr`
+
+The feature gate `receiver.elasticsearch.emitNodeVersionAttr` once enabled will enrich all node metrics with an
+resource attribute representing the node version.
+
+This feature gate will eventually be enabled by default, and eventually the old implementation will be removed. It aims
+to give users time to migrate to the new implementation. The target release for this featuregate to be enabled by default
+is 0.69.0.
+
 [beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

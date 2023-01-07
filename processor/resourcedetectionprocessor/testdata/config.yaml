@@ -1,6 +1,6 @@
 resourcedetection:
-resourcedetection/gce:
-  detectors: [env, gce]
+resourcedetection/gcp:
+  detectors: [env, gcp]
   timeout: 2s
   override: false
 
@@ -33,6 +33,11 @@ resourcedetection/docker:
 
 resourcedetection/azure:
   detectors: [env, azure]
+  timeout: 2s
+  override: false
+
+resourcedetection/heroku:
+  detectors: [env, heroku]
   timeout: 2s
   override: false
 

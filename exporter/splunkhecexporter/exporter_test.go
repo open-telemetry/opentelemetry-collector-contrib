@@ -209,7 +209,7 @@ func TestConsumeMetricsData(t *testing.T) {
 				assert.Equal(t, "Splunk 1234", r.Header.Get("Authorization"))
 				bodyBytes := body
 				// the last batch might not be zipped.
-				if "gzip" == r.Header.Get("Content-Encoding") {
+				if r.Header.Get("Content-Encoding") == "gzip" {
 					zipReader, err2 := gzip.NewReader(bytes.NewReader(body))
 					require.NoError(t, err2)
 					bodyBytes, _ = io.ReadAll(zipReader)
@@ -260,8 +260,10 @@ func TestConsumeMetricsData(t *testing.T) {
 			config.SplunkAppVersion = "v0.0.1"
 			config.MaxContentLengthMetrics = tt.maxContentLength
 
-			sender, err := buildClient(options, config, zap.NewNop())
-			assert.NoError(t, err)
+			httpClient, err := buildHTTPClient(config)
+			require.NoError(t, err)
+
+			sender := buildClient(options, config, httpClient, zap.NewNop())
 
 			err = sender.pushMetricsData(context.Background(), tt.md)
 			if tt.wantErr {
@@ -397,8 +399,10 @@ func TestConsumeLogsData(t *testing.T) {
 			config.SplunkAppName = "OpenTelemetry-Collector Splunk Exporter"
 			config.SplunkAppVersion = "v0.0.1"
 
-			sender, err := buildClient(options, config, zap.NewNop())
-			assert.NoError(t, err)
+			httpClient, err := buildHTTPClient(config)
+			require.NoError(t, err)
+
+			sender := buildClient(options, config, httpClient, zap.NewNop())
 
 			err = sender.pushLogData(context.Background(), tt.ld)
 			if tt.wantErr {
@@ -420,4 +424,21 @@ func TestExporterStartAlwaysReturnsNil(t *testing.T) {
 	e, err := createExporter(config, zap.NewNop(), &buildInfo)
 	assert.NoError(t, err)
 	assert.NoError(t, e.start(context.Background(), componenttest.NewNopHost()))
+}
+
+func TestHecHealthCheckFailed(t *testing.T) {
+
+	healthCheckURL := &url.URL{Scheme: "http", Host: "splunk", Path: "/services/collector/health"}
+	client, _ := newTestClient(503, "NOK")
+	err := checkHecHealth(client, healthCheckURL)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "503")
+}
+
+func TestHecHealthCheckSucceded(t *testing.T) {
+	healthCheckURL := &url.URL{Scheme: "http", Host: "splunk", Path: "/services/collector/health"}
+
+	client, _ := newTestClient(200, "OK")
+	err := checkHecHealth(client, healthCheckURL)
+	assert.NoError(t, err)
 }

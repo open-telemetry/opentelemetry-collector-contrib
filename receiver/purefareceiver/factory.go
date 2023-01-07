@@ -44,7 +44,11 @@ func createDefaultConfig() component.Config {
 		HTTPClientSettings: confighttp.HTTPClientSettings{},
 		Settings: &Settings{
 			ReloadIntervals: &ReloadIntervals{
-				Array: 15 * time.Second,
+				Array:       15 * time.Second,
+				Host:        15 * time.Second,
+				Directories: 15 * time.Second,
+				Pods:        15 * time.Second,
+				Volumes:     15 * time.Second,
 			},
 		},
 	}

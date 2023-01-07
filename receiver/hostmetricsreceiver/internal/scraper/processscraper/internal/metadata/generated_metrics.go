@@ -17,12 +17,7 @@ import (
 type MetricSettings struct {
 	Enabled bool `mapstructure:"enabled"`
 
-	enabledProvidedByUser bool
-}
-
-// IsEnabledProvidedByUser returns true if `enabled` option is explicitly set in user settings to any value.
-func (ms *MetricSettings) IsEnabledProvidedByUser() bool {
-	return ms.enabledProvidedByUser
+	enabledSetByUser bool
 }
 
 func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
@@ -33,7 +28,7 @@ func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
 	if err != nil {
 		return err
 	}
-	ms.enabledProvidedByUser = parser.IsSet("enabled")
+	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
 }
 
@@ -73,19 +68,19 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: false,
 		},
 		ProcessMemoryPhysicalUsage: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ProcessMemoryUsage: MetricSettings{
-			Enabled: false,
+			Enabled: true,
 		},
 		ProcessMemoryUtilization: MetricSettings{
 			Enabled: false,
 		},
 		ProcessMemoryVirtual: MetricSettings{
-			Enabled: false,
+			Enabled: true,
 		},
 		ProcessMemoryVirtualUsage: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ProcessOpenFileDescriptors: MetricSettings{
 			Enabled: false,
@@ -482,7 +477,7 @@ type metricProcessMemoryPhysicalUsage struct {
 // init fills process.memory.physical_usage metric with initial data.
 func (m *metricProcessMemoryPhysicalUsage) init() {
 	m.data.SetName("process.memory.physical_usage")
-	m.data.SetDescription("Deprecated: use `process.memory.usage` metric instead. The amount of physical memory in use.")
+	m.data.SetDescription("[DEPRECATED] Use `process.memory.usage` metric instead. The amount of physical memory in use.")
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
@@ -684,7 +679,7 @@ type metricProcessMemoryVirtualUsage struct {
 // init fills process.memory.virtual_usage metric with initial data.
 func (m *metricProcessMemoryVirtualUsage) init() {
 	m.data.SetName("process.memory.virtual_usage")
-	m.data.SetDescription("Deprecated: Use `process.memory.virtual` metric instead. Virtual memory size.")
+	m.data.SetDescription("[DEPRECATED] Use `process.memory.virtual` metric instead. Virtual memory size.")
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
@@ -967,14 +962,12 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 }
 
 func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
-	if ms.ProcessMemoryPhysicalUsage.Enabled {
-		settings.Logger.Warn("[WARNING] `process.memory.physical_usage` should not be enabled: The metric is deprecated and will be removed in v0.70.0. Please use `process.memory.usage` instead. See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/hostmetricsreceiver#transition-to-process-memory-metric-names-aligned-with-opentelemetry-specification for more details.")
+	if ms.ProcessMemoryPhysicalUsage.enabledSetByUser {
+		settings.Logger.Warn("[WARNING] `process.memory.physical_usage` should not be configured: The metric is deprecated and will be removed in v0.72.0. Please use `process.memory.usage` instead. See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/hostmetricsreceiver#transition-to-process-memory-metric-names-aligned-with-opentelemetry-specification for more details.")
 	}
-
-	if ms.ProcessMemoryVirtualUsage.Enabled {
-		settings.Logger.Warn("[WARNING] `process.memory.virtual_usage` should not be enabled: The metric is deprecated and will be removed in v0.70.0. Please use `process.memory.virtual` metric instead. See  https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/hostmetricsreceiver#transition-to-process-memory-metric-names-aligned-with-opentelemetry-specification for more details.")
+	if ms.ProcessMemoryVirtualUsage.enabledSetByUser {
+		settings.Logger.Warn("[WARNING] `process.memory.virtual_usage` should not be configured: The metric is deprecated and will be removed in v0.72.0. Please use `process.memory.virtual` metric instead. See  https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/hostmetricsreceiver#transition-to-process-memory-metric-names-aligned-with-opentelemetry-specification for more details.")
 	}
-
 	mb := &MetricsBuilder{
 		startTime:                        pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                    pmetric.NewMetrics(),

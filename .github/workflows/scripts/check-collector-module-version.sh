@@ -48,7 +48,7 @@ check_collector_versions_correct() {
    # Loop through all the module files, checking the collector version
    for mod_file in $mod_files; do
       if grep -q "$collector_module" "$mod_file"; then
-         mod_line=$(grep "$collector_module" "$mod_file")
+         mod_line=$(grep -m1 "$collector_module" "$mod_file")
          version=$(echo "$mod_line" | cut -d" " -f2)
 
          # To account for a module on its own 'require' line,
@@ -57,6 +57,14 @@ check_collector_versions_correct() {
          # for the space at the end of some collector modules.
          if [ "$version" == "$collector_module" ] || [ "$version " == "$collector_module" ]; then
             version=$(echo "$mod_line" | cut -d" " -f3)
+         fi
+
+         # TODO: remove when core v0.69.0 has been released
+         # To account for a module inside a replace statement, check if
+         # the string starts w/ replace. If so, use the 5th element in the
+         # string.
+         if [[ "$mod_line" =~ ^replace.* ]]; then
+            version=$(echo "$mod_line" | cut -d" " -f5)
          fi
 
          if [ "$version" != "$collector_mod_version" ]; then

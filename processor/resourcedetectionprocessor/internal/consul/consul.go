@@ -56,7 +56,7 @@ func NewDetector(p processor.CreateSettings, dcfg internal.DetectorConfig) (inte
 		cfg.Namespace = userCfg.Namespace
 	}
 	if userCfg.Token != "" {
-		cfg.Token = userCfg.Token
+		cfg.Token = string(userCfg.Token)
 	}
 	if userCfg.TokenFile != "" {
 		cfg.Token = userCfg.TokenFile

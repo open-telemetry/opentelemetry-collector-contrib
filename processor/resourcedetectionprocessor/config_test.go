@@ -27,6 +27,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/heroku"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system"
 )
 
@@ -42,9 +43,9 @@ func TestLoadConfig(t *testing.T) {
 		errorMessage string
 	}{
 		{
-			id: component.NewIDWithName(typeStr, "gce"),
+			id: component.NewIDWithName(typeStr, "gcp"),
 			expected: &Config{
-				Detectors:          []string{"env", "gce"},
+				Detectors:          []string{"env", "gcp"},
 				HTTPClientSettings: cfg,
 				Override:           false,
 			},
@@ -74,6 +75,14 @@ func TestLoadConfig(t *testing.T) {
 				HTTPClientSettings: cfg,
 				Override:           false,
 				Attributes:         []string{"a", "b"},
+			},
+		},
+		{
+			id: component.NewIDWithName(typeStr, "heroku"),
+			expected: &Config{
+				Detectors:          []string{"env", "heroku"},
+				HTTPClientSettings: cfg,
+				Override:           false,
 			},
 		},
 		{
@@ -143,6 +152,12 @@ func TestGetConfigFromType(t *testing.T) {
 			expectedConfig: system.Config{
 				HostnameSources: []string{"os"},
 			},
+		},
+		{
+			name:                "Get Heroku Config",
+			detectorType:        heroku.TypeStr,
+			inputDetectorConfig: DetectorConfig{},
+			expectedConfig:      nil,
 		},
 	}
 

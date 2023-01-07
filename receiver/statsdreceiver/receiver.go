@@ -59,11 +59,6 @@ func New(
 		config.NetAddr.Endpoint = "localhost:8125"
 	}
 
-	server, err := buildTransportServer(config)
-	if err != nil {
-		return nil, err
-	}
-
 	rep, err := newReporter(set)
 	if err != nil {
 		return nil, err
@@ -73,7 +68,6 @@ func New(
 		settings:     set,
 		config:       &config,
 		nextConsumer: nextConsumer,
-		server:       server,
 		reporter:     rep,
 		parser:       &protocol.StatsDParser{},
 	}
@@ -93,9 +87,14 @@ func buildTransportServer(config Config) (transport.Server, error) {
 // Start starts a UDP server that can process StatsD messages.
 func (r *statsdReceiver) Start(ctx context.Context, host component.Host) error {
 	ctx, r.cancel = context.WithCancel(ctx)
+	server, err := buildTransportServer(*r.config)
+	if err != nil {
+		return err
+	}
+	r.server = server
 	var transferChan = make(chan string, 10)
 	ticker := time.NewTicker(r.config.AggregationInterval)
-	err := r.parser.Initialize(r.config.EnableMetricType, r.config.IsMonotonicCounter, r.config.TimerHistogramMapping)
+	err = r.parser.Initialize(r.config.EnableMetricType, r.config.IsMonotonicCounter, r.config.TimerHistogramMapping)
 	if err != nil {
 		return err
 	}
@@ -128,6 +127,9 @@ func (r *statsdReceiver) Start(ctx context.Context, host component.Host) error {
 
 // Shutdown stops the StatsD receiver.
 func (r *statsdReceiver) Shutdown(context.Context) error {
+	if r.cancel == nil {
+		return nil
+	}
 	err := r.server.Close()
 	r.cancel()
 	return err
