@@ -20,17 +20,17 @@ type config struct {
 	// which can be found in the Azure Blob Storage resource on the Azure Portal. (no default)
 	ConnectionString string `mapstructure:"connection_string"`
 	// Logs related configurations
-	Logs LogsConfig `mapstructure:"logs"`
+	Logs logsConfig `mapstructure:"logs"`
 	// Traces related configurations
-	Traces TracesConfig `mapstructure:"traces"`
+	Traces tracesConfig `mapstructure:"traces"`
 }
 
-type LogsConfig struct {
+type logsConfig struct {
 	// Name of the container where the exporter saves blobs with logs. (default = "logs")
 	ContainerName string `mapstructure:"container_name"`
 }
 
-type TracesConfig struct {
+type tracesConfig struct {
 	// Name of the container where the exporter saves blobs with traces. (default = "traces")
 	ContainerName string `mapstructure:"container_name"`
 }

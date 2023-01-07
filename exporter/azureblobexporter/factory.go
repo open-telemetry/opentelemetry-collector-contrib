@@ -39,9 +39,9 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	return &Config{
-		Logs:   LogsConfig{ContainerName: logsContainerName},
-		Traces: TracesConfig{ContainerName: tracesContainerName},
+	return &config{
+		Logs:   logsConfig{ContainerName: logsContainerName},
+		Traces: tracesConfig{ContainerName: tracesContainerName},
 	}
 }
 
