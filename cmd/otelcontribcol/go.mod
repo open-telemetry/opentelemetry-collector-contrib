@@ -307,7 +307,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter v0.70.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudpubsubexporter v0.70.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlemanagedprometheusexporter v0.70.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/humioexporter v0.70.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter v0.70.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter v0.70.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter v0.70.0 // indirect
@@ -710,8 +709,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokie
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudfoundryreceiver => ../../receiver/cloudfoundryreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor => ../../processor/tailsamplingprocessor
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/humioexporter => ../../exporter/humioexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray => ../../internal/aws/xray
 
