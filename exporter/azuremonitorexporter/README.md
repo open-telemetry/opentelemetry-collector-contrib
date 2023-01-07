@@ -1,10 +1,10 @@
 # Azure Monitor Exporter
 
-| Status                   |              |
-|--------------------------|--------------|
-| Stability                | [beta]       |
-| Supported pipeline types | logs, traces |
-| Distributions            | [contrib]    |
+| Status                   |                       |
+|--------------------------|-----------------------|
+| Stability                | [beta]                |
+| Supported pipeline types | logs, traces, metrics |
+| Distributions            | [contrib]             |
 
 This exporter sends logs, traces and metrics to [Azure Monitor](https://docs.microsoft.com/azure/azure-monitor/).
 

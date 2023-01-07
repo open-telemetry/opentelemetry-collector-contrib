@@ -125,6 +125,7 @@ func getMetricExporter(config *Config, transportChannel transportChannel) *metri
 		config,
 		transportChannel,
 		zap.NewNop(),
+		newMetricPacker(zap.NewNop()),
 	}
 }
 
