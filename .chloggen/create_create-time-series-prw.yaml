@@ -14,3 +14,4 @@ issues: [17412, 12426]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext:
+  The export of tbe `_created` metric is configurable in the Prometheus remote write exporter. It is disabled by default.

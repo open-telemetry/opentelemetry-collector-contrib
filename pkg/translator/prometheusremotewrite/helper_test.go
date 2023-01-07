@@ -723,7 +723,9 @@ func TestAddSingleNumberDataPoint(t *testing.T) {
 					metric.Sum().DataPoints().At(x),
 					pcommon.NewResource(),
 					metric,
-					Settings{},
+					Settings{
+						ExportCreatedMetric: true,
+					},
 					got,
 				)
 			}
@@ -831,7 +833,9 @@ func TestAddSingleSummaryDataPoint(t *testing.T) {
 					metric.Summary().DataPoints().At(x),
 					pcommon.NewResource(),
 					metric,
-					Settings{},
+					Settings{
+						ExportCreatedMetric: true,
+					},
 					got,
 				)
 			}
@@ -940,7 +944,9 @@ func TestAddSingleHistogramDataPoint(t *testing.T) {
 					metric.Histogram().DataPoints().At(x),
 					pcommon.NewResource(),
 					metric,
-					Settings{},
+					Settings{
+						ExportCreatedMetric: true,
+					},
 					got,
 				)
 			}

@@ -280,7 +280,7 @@ func addSingleNumberDataPoint(pt pmetric.NumberDataPoint, resource pcommon.Resou
 	addSample(tsMap, sample, labels, metric.Type().String())
 
 	// add _created time series if needed
-	if metric.Type() == pmetric.MetricTypeSum && metric.Sum().IsMonotonic() {
+	if settings.ExportCreatedMetric && isMonotonicSum(metric) {
 		startTimestamp := pt.StartTimestamp()
 		if startTimestamp != 0 {
 			createdLabels := createAttributes(
@@ -293,6 +293,10 @@ func addSingleNumberDataPoint(pt pmetric.NumberDataPoint, resource pcommon.Resou
 			addCreatedTimeSeriesIfNeeded(tsMap, createdLabels, startTimestamp, metric.Type().String())
 		}
 	}
+}
+
+func isMonotonicSum(metric pmetric.Metric) bool {
+	return metric.Type() == pmetric.MetricTypeSum && metric.Sum().IsMonotonic()
 }
 
 // addSingleHistogramDataPoint converts pt to 2 + min(len(ExplicitBounds), len(BucketCount)) + 1 samples. It
@@ -372,7 +376,7 @@ func addSingleHistogramDataPoint(pt pmetric.HistogramDataPoint, resource pcommon
 
 	// add _created time series if needed
 	startTimestamp := pt.StartTimestamp()
-	if startTimestamp != 0 {
+	if settings.ExportCreatedMetric && startTimestamp != 0 {
 		createdLabels := createAttributes(
 			resource,
 			pt.Attributes(),
@@ -520,7 +524,7 @@ func addSingleSummaryDataPoint(pt pmetric.SummaryDataPoint, resource pcommon.Res
 
 	// add _created time series if needed
 	startTimestamp := pt.StartTimestamp()
-	if startTimestamp != 0 {
+	if settings.ExportCreatedMetric && startTimestamp != 0 {
 		createdLabels := createAttributes(
 			resource,
 			pt.Attributes(),
