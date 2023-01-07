@@ -15,7 +15,7 @@
 package azureblobexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azureblobexporter"
 
 // Config defines configuration for Azure Monitor
-type Config struct {
+type config struct {
 	// Azure Blob Storage connection key,
 	// which can be found in the Azure Blob Storage resource on the Azure Portal. (no default)
 	ConnectionString string `mapstructure:"connection_string"`
