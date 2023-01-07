@@ -2,7 +2,7 @@
 
 | Status                   |           |
 | ------------------------ |-----------|
-| Stability                | [beta]    |
+| Stability                | [stable]  |
 | Distributions            | [contrib] |
 
 This extension accepts HTTP requests, optionally adds headers to them and forwards them.
@@ -39,5 +39,5 @@ The following settings can be optionally configured:
 The full list of settings exposed for this exporter are documented [here](config.go)
 with detailed sample configurations [here](testdata/config.yaml).
 
-[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[stable]:https://github.com/open-telemetry/opentelemetry-collector#stable
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
