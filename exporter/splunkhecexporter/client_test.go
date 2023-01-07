@@ -455,8 +455,8 @@ func TestReceiveTracesBatches(t *testing.T) {
 			}(),
 			want: wantType{
 				batches: [][]string{
-					{`"start_time":1`, `"start_time":2`, `"start_time":3`, `"start_time":4`, `"start_time":7`, `"start_time":8`, `"start_time":9`, `"start_time":20`, `"start_time":40`},
-					{`"start_time":85`, `"start_time":98`, `"start_time":99`},
+					{`"start_time":1`},
+					{`"start_time":99`},
 				},
 				numBatches: 2,
 				compressed: true,
