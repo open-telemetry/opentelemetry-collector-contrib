@@ -25,23 +25,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest/golden"
 )
 
-type expectation struct {
-	err    error
-	reason string
-}
-
-func (e expectation) validate(t *testing.T, err error) {
-	if e.err == nil {
-		require.NoError(t, err, e.reason)
-		return
-	}
-	require.Equal(t, e.err, err, e.reason)
-}
-
 func TestCompareMetrics(t *testing.T) {
 	tcs := []struct {
 		name           string
-		compareOptions []CompareOption // when no options are used
+		compareOptions []MetricsCompareOption
 		withoutOptions expectation
 		withOptions    expectation
 	}{
@@ -308,7 +295,7 @@ func TestCompareMetrics(t *testing.T) {
 		},
 		{
 			name: "ignore-data-point-value-double-mismatch",
-			compareOptions: []CompareOption{
+			compareOptions: []MetricsCompareOption{
 				IgnoreMetricValues(),
 			},
 			withoutOptions: expectation{
@@ -322,7 +309,7 @@ func TestCompareMetrics(t *testing.T) {
 		},
 		{
 			name: "ignore-data-point-value-int-mismatch",
-			compareOptions: []CompareOption{
+			compareOptions: []MetricsCompareOption{
 				IgnoreMetricValues(),
 			},
 			withoutOptions: expectation{
@@ -336,7 +323,7 @@ func TestCompareMetrics(t *testing.T) {
 		},
 		{
 			name: "ignore-subsequent-data-points-all",
-			compareOptions: []CompareOption{
+			compareOptions: []MetricsCompareOption{
 				IgnoreSubsequentDataPoints(),
 			},
 			withoutOptions: expectation{
@@ -349,7 +336,7 @@ func TestCompareMetrics(t *testing.T) {
 		},
 		{
 			name: "ignore-subsequent-data-points-one",
-			compareOptions: []CompareOption{
+			compareOptions: []MetricsCompareOption{
 				IgnoreSubsequentDataPoints("sum.one"),
 			},
 			withoutOptions: expectation{
@@ -362,7 +349,7 @@ func TestCompareMetrics(t *testing.T) {
 		},
 		{
 			name: "ignore-single-metric",
-			compareOptions: []CompareOption{
+			compareOptions: []MetricsCompareOption{
 				IgnoreMetricValues("sum.two"),
 			},
 			withoutOptions: expectation{
@@ -376,7 +363,7 @@ func TestCompareMetrics(t *testing.T) {
 		},
 		{
 			name: "ignore-global-attribute-value",
-			compareOptions: []CompareOption{
+			compareOptions: []MetricsCompareOption{
 				IgnoreMetricAttributeValue("hostname"),
 			},
 			withoutOptions: expectation{
@@ -396,7 +383,7 @@ func TestCompareMetrics(t *testing.T) {
 		},
 		{
 			name: "ignore-one-attribute-value",
-			compareOptions: []CompareOption{
+			compareOptions: []MetricsCompareOption{
 				IgnoreMetricAttributeValue("hostname", "gauge.one"),
 			},
 			withoutOptions: expectation{
@@ -420,7 +407,7 @@ func TestCompareMetrics(t *testing.T) {
 		},
 		{
 			name: "ignore-one-resource-attribute",
-			compareOptions: []CompareOption{
+			compareOptions: []MetricsCompareOption{
 				IgnoreResourceAttributeValue("node_id"),
 			},
 			withoutOptions: expectation{
@@ -437,7 +424,7 @@ func TestCompareMetrics(t *testing.T) {
 		},
 		{
 			name: "ignore-one-resource-attribute-multiple-resources",
-			compareOptions: []CompareOption{
+			compareOptions: []MetricsCompareOption{
 				IgnoreResourceAttributeValue("node_id"),
 			},
 			withoutOptions: expectation{
@@ -465,7 +452,7 @@ func TestCompareMetrics(t *testing.T) {
 		},
 		{
 			name: "ignore-each-attribute-value",
-			compareOptions: []CompareOption{
+			compareOptions: []MetricsCompareOption{
 				IgnoreMetricAttributeValue("hostname", "gauge.one", "sum.one"),
 			},
 			withoutOptions: expectation{
@@ -485,7 +472,7 @@ func TestCompareMetrics(t *testing.T) {
 		},
 		{
 			name: "ignore-attribute-set-collision",
-			compareOptions: []CompareOption{
+			compareOptions: []MetricsCompareOption{
 				IgnoreMetricAttributeValue("attribute.one"),
 			},
 			withoutOptions: expectation{
@@ -505,7 +492,7 @@ func TestCompareMetrics(t *testing.T) {
 		},
 		{
 			name: "ignore-attribute-set-collision-order",
-			compareOptions: []CompareOption{
+			compareOptions: []MetricsCompareOption{
 				IgnoreMetricAttributeValue("attribute.one"),
 			},
 			withoutOptions: expectation{
@@ -528,10 +515,12 @@ func TestCompareMetrics(t *testing.T) {
 
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			expected, err := golden.ReadMetrics(filepath.Join("testdata", tc.name, "expected.json"))
+			dir := filepath.Join("testdata", "metrics", tc.name)
+
+			expected, err := golden.ReadMetrics(filepath.Join(dir, "expected.json"))
 			require.NoError(t, err)
 
-			actual, err := golden.ReadMetrics(filepath.Join("testdata", tc.name, "actual.json"))
+			actual, err := golden.ReadMetrics(filepath.Join(dir, "actual.json"))
 			require.NoError(t, err)
 
 			err = CompareMetrics(expected, actual)

@@ -40,17 +40,17 @@ Disk bytes transferred.
 | ---- | ----------- | ------ |
 | direction | Direction of flow of bytes (read or write). | Str: ``read``, ``write`` |
 
-### process.memory.physical_usage
+### process.memory.usage
 
-Deprecated: use `process.memory.usage` metric instead. The amount of physical memory in use.
+The amount of physical memory in use.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | By | Sum | Int | Cumulative | false |
 
-### process.memory.virtual_usage
+### process.memory.virtual
 
-Deprecated: Use `process.memory.virtual` metric instead. Virtual memory size.
+Virtual memory size.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -108,9 +108,9 @@ Number of disk operations performed by the process.
 | ---- | ----------- | ------ |
 | direction | Direction of flow of bytes (read or write). | Str: ``read``, ``write`` |
 
-### process.memory.usage
+### process.memory.physical_usage
 
-The amount of physical memory in use.
+[DEPRECATED] Use `process.memory.usage` metric instead. The amount of physical memory in use.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -124,9 +124,9 @@ Percentage of total physical memory that is used by the process.
 | ---- | ----------- | ---------- |
 | 1 | Gauge | Double |
 
-### process.memory.virtual
+### process.memory.virtual_usage
 
-Virtual memory size.
+[DEPRECATED] Use `process.memory.virtual` metric instead. Virtual memory size.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |

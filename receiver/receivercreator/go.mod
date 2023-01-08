@@ -9,12 +9,12 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.68.0
 	github.com/spf13/cast v1.5.0
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.68.0
-	go.opentelemetry.io/collector/component v0.68.0
-	go.opentelemetry.io/collector/confmap v0.68.0
-	go.opentelemetry.io/collector/consumer v0.68.0
-	go.opentelemetry.io/collector/pdata v1.0.0-rc2
-	go.opentelemetry.io/collector/semconv v0.68.0
+	go.opentelemetry.io/collector v0.68.1-0.20230104175729-d8c9f24ecec0
+	go.opentelemetry.io/collector/component v0.68.1-0.20230104175729-d8c9f24ecec0
+	go.opentelemetry.io/collector/confmap v0.68.1-0.20230104175729-d8c9f24ecec0
+	go.opentelemetry.io/collector/consumer v0.68.1-0.20230104175729-d8c9f24ecec0
+	go.opentelemetry.io/collector/pdata v1.0.0-rc2.0.20230104175729-d8c9f24ecec0
+	go.opentelemetry.io/collector/semconv v0.68.1-0.20230104175729-d8c9f24ecec0
 	go.uber.org/multierr v1.9.0
 	go.uber.org/zap v1.24.0
 )
@@ -59,7 +59,8 @@ require (
 	github.com/tklauser/numcpus v0.6.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/featuregate v0.68.0 // indirect
+	go.opentelemetry.io/collector/extension/zpagesextension v0.68.1-0.20230104175729-d8c9f24ecec0 // indirect
+	go.opentelemetry.io/collector/featuregate v0.68.1-0.20230104175729-d8c9f24ecec0 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.12.0 // indirect
 	go.opentelemetry.io/otel v1.11.2 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.34.0 // indirect
@@ -71,7 +72,7 @@ require (
 	golang.org/x/net v0.4.0 // indirect
 	golang.org/x/sys v0.3.0 // indirect
 	golang.org/x/text v0.5.0 // indirect
-	google.golang.org/genproto v0.0.0-20221114212237-e4508ebdbee1 // indirect
+	google.golang.org/genproto v0.0.0-20221207170731-23e4bf6bdc37 // indirect
 	google.golang.org/grpc v1.51.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
@@ -85,3 +86,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
 
 retract v0.65.0
+
+// TODO: remove when core v0.69.0 has been released
+replace go.opentelemetry.io/collector/extension/zpagesextension => go.opentelemetry.io/collector/extension/zpagesextension v0.68.1-0.20230104175729-d8c9f24ecec0

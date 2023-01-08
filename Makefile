@@ -3,6 +3,8 @@ include ./Makefile.Common
 RUN_CONFIG?=local/config.yaml
 CMD?=
 OTEL_VERSION=main
+OTEL_RC_VERSION=main
+OTEL_STABLE_VERSION=main
 
 BUILD_INFO_IMPORT_PATH=github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelcontribcore/internal/version
 VERSION=$(shell git describe --always --match "v[0-9]*" HEAD)

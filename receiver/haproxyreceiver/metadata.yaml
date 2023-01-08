@@ -4,12 +4,6 @@ resource_attributes:
   haproxy.url:
     description: The path to the HAProxy socket or HTTP URL.
     type: string
-  haproxy.proxy_name:
-    description: Proxy name
-    type: string
-  haproxy.service_name:
-    description: Service name (FRONTEND for frontend, BACKEND for backend, any name for server/listener)
-    type: string
   haproxy.pid:
     description: process id (0 for first instance, 1 for second, ...)
     type: string
@@ -27,6 +21,14 @@ resource_attributes:
     type: string
   haproxy.algo:
     description: load balancing algorithm
+    type: string
+
+attributes:
+  proxy_name:
+    description: Proxy name
+    type: string
+  service_name:
+    description: Service name (FRONTEND for frontend, BACKEND for backend, any name for server/listener)
     type: string
 
 metrics:
@@ -47,12 +49,15 @@ metrics:
       input_type: string
     unit: "{requests}"
   haproxy.idle_percent:
-    description: Ratio of system polling time versus total time. Corresponds to HAProxy's `I`dle_pct` metric.
+    description: Ratio of system polling time versus total time. Corresponds to HAProxy's `Idle_pct` metric.
     enabled: true
     gauge:
       value_type: double
       input_type: string
     unit: "{percent}"
+    attributes:
+      - proxy_name
+      - service_name
   haproxy.sessions.count:
     description: Current sessions. Corresponds to HAProxy's `scur` metric.
     enabled: true
@@ -60,4 +65,6 @@ metrics:
       value_type: int
       input_type: string
     unit: "{sessions}"
-
+    attributes:
+      - proxy_name
+      - service_name

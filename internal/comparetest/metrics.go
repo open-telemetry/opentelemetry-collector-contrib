@@ -22,19 +22,13 @@ import (
 	"go.uber.org/multierr"
 )
 
-// CompareOption is applied by the CompareMetricSlices function
-// to mutates an expected and/or actual result before comparing.
-type CompareOption interface {
-	apply(expected, actual pmetric.Metrics)
-}
-
-func CompareMetrics(expected, actual pmetric.Metrics, options ...CompareOption) error {
+func CompareMetrics(expected, actual pmetric.Metrics, options ...MetricsCompareOption) error {
 	exp, act := pmetric.NewMetrics(), pmetric.NewMetrics()
 	expected.CopyTo(exp)
 	actual.CopyTo(act)
 
 	for _, option := range options {
-		option.apply(exp, act)
+		option.applyOnMetrics(exp, act)
 	}
 
 	expectedMetrics, actualMetrics := exp.ResourceMetrics(), act.ResourceMetrics()

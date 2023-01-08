@@ -48,17 +48,6 @@ func NewFactory() processor.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		OTTLConfig: OTTLConfig{
-			Logs: SignalConfig{
-				Statements: []string{},
-			},
-			Traces: SignalConfig{
-				Statements: []string{},
-			},
-			Metrics: SignalConfig{
-				Statements: []string{},
-			},
-		},
 		TraceStatements:  []common.ContextStatements{},
 		MetricStatements: []common.ContextStatements{},
 		LogStatements:    []common.ContextStatements{},
@@ -73,7 +62,7 @@ func createLogsProcessor(
 ) (processor.Logs, error) {
 	oCfg := cfg.(*Config)
 
-	proc, err := logs.NewProcessor(oCfg.Logs.Statements, oCfg.LogStatements, set.TelemetrySettings)
+	proc, err := logs.NewProcessor(oCfg.LogStatements, set.TelemetrySettings)
 	if err != nil {
 		return nil, fmt.Errorf("invalid config for \"transform\" processor %w", err)
 	}
@@ -94,7 +83,7 @@ func createTracesProcessor(
 ) (processor.Traces, error) {
 	oCfg := cfg.(*Config)
 
-	proc, err := traces.NewProcessor(oCfg.Traces.Statements, oCfg.TraceStatements, set.TelemetrySettings)
+	proc, err := traces.NewProcessor(oCfg.TraceStatements, set.TelemetrySettings)
 	if err != nil {
 		return nil, fmt.Errorf("invalid config for \"transform\" processor %w", err)
 	}
@@ -115,7 +104,7 @@ func createMetricsProcessor(
 ) (processor.Metrics, error) {
 	oCfg := cfg.(*Config)
 
-	proc, err := metrics.NewProcessor(oCfg.Metrics.Statements, oCfg.MetricStatements, set.TelemetrySettings)
+	proc, err := metrics.NewProcessor(oCfg.MetricStatements, set.TelemetrySettings)
 	if err != nil {
 		return nil, fmt.Errorf("invalid config for \"transform\" processor %w", err)
 	}

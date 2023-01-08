@@ -37,6 +37,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/docker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/env"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/heroku"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system"
 )
 
@@ -71,9 +72,7 @@ func NewFactory() processor.Factory {
 		elasticbeanstalk.TypeStr: elasticbeanstalk.NewDetector,
 		env.TypeStr:              env.NewDetector,
 		gcp.TypeStr:              gcp.NewDetector,
-		// TODO(#10348): Remove GKE and GCE after the v0.54.0 release.
-		gcp.DeprecatedGKETypeStr: gcp.NewDetector,
-		gcp.DeprecatedGCETypeStr: gcp.NewDetector,
+		heroku.TypeStr:           heroku.NewDetector,
 		system.TypeStr:           system.NewDetector,
 	})
 
@@ -207,9 +206,6 @@ func (f *factory) getResourceProvider(
 	if provider, ok := f.providers[params.ID]; ok {
 		return provider, nil
 	}
-
-	// TODO(#10348): Remove this after the v0.54.0 release.
-	configuredDetectors = gcp.DeduplicateDetectors(params, configuredDetectors)
 
 	detectorTypes := make([]internal.DetectorType, 0, len(configuredDetectors))
 	for _, key := range configuredDetectors {

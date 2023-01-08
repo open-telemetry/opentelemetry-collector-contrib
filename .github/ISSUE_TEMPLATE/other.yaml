@@ -69,6 +69,7 @@ body:
       - extension/bearertokenauth
       - extension/headerssetter
       - extension/healthcheck
+      - extension/httpforwarder
       - extension/jaegerremotesampling
       - extension/oauth2clientauth
       - extension/observer
@@ -123,6 +124,7 @@ body:
       - processor/resource
       - processor/resourcedetection
       - processor/resourcedetection/internal/azure
+      - processor/resourcedetection/internal/heroku
       - processor/routing
       - processor/schema
       - processor/servicegraph
