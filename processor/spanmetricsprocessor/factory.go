@@ -50,6 +50,6 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func createTracesProcessor(_ context.Context, params processor.CreateSettings, cfg component.Config, nextConsumer consumer.Traces) (processor.Traces, error) {
-	return newProcessor(params.Logger, cfg, nextConsumer, clock.Realtime().NewTicker(cfg.(*Config).MetricsFlushInterval))
+func createTracesProcessor(ctx context.Context, params processor.CreateSettings, cfg component.Config, nextConsumer consumer.Traces) (processor.Traces, error) {
+	return newProcessor(params.Logger, cfg, nextConsumer, clock.FromContext(ctx).NewTicker(cfg.(*Config).MetricsFlushInterval))
 }
