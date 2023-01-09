@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -40,6 +41,8 @@ var (
 const (
 	// DefaultSite is the default site of the Datadog intake to send data to
 	DefaultSite = "datadoghq.com"
+	// Default interval for sum_to_rate_conversion
+	DefaultSumToRateInterval = 10 * time.Second
 )
 
 // APIConfig defines the API configuration options
@@ -164,6 +167,14 @@ type SumConfig struct {
 	// The default is 'to_delta'.
 	// See https://docs.datadoghq.com/metrics/otlp/?tab=sum#mapping for details and examples.
 	CumulativeMonotonicMode CumulativeMonotonicSumMode `mapstructure:"cumulative_monotonic_mode"`
+
+	// The default is false, which submits sum as `count` type
+	// Enabling this changes the submission type from `count` to `rate`
+	SubmitAsRate bool `mapstructure:"submit_as_rate"`
+
+	// Required when SubmitAsRate is set to true
+	// Defaults to 10s for sum to rate conversion interval
+	SumToRateConversionInterval time.Duration `mapstructure:"sum_to_rate_conversion_interval"`
 }
 
 // SummaryMode is the export mode for OTLP Summary metrics.
@@ -504,6 +515,11 @@ func (c *Config) Unmarshal(configMap *confmap.Conf) error {
 	// Return an error if an endpoint is explicitly set to ""
 	if c.Metrics.TCPAddr.Endpoint == "" || c.Traces.TCPAddr.Endpoint == "" || c.Logs.TCPAddr.Endpoint == "" {
 		return errEmptyEndpoint
+	}
+
+	if !configMap.IsSet("metrics::sums::sum_to_rate_conversion_interval") {
+		fmt.Println("`sum_to_rate_conversion_interval` is unset. Defaulting it to 10s")
+		c.Metrics.SumConfig.SumToRateConversionInterval = DefaultSumToRateInterval
 	}
 
 	return nil

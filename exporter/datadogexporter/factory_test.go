@@ -119,7 +119,8 @@ func TestLoadConfig(t *testing.T) {
 						SendCountSum: false,
 					},
 					SumConfig: SumConfig{
-						CumulativeMonotonicMode: CumulativeMonotonicSumModeToDelta,
+						CumulativeMonotonicMode:     CumulativeMonotonicSumModeToDelta,
+						SumToRateConversionInterval: DefaultSumToRateInterval,
 					},
 					SummaryConfig: SummaryConfig{
 						Mode: SummaryModeGauges,
@@ -168,7 +169,8 @@ func TestLoadConfig(t *testing.T) {
 						SendCountSum: false,
 					},
 					SumConfig: SumConfig{
-						CumulativeMonotonicMode: CumulativeMonotonicSumModeToDelta,
+						CumulativeMonotonicMode:     CumulativeMonotonicSumModeToDelta,
+						SumToRateConversionInterval: DefaultSumToRateInterval,
 					},
 					SummaryConfig: SummaryConfig{
 						Mode: SummaryModeGauges,
@@ -221,7 +223,8 @@ func TestLoadConfig(t *testing.T) {
 						SendCountSum: false,
 					},
 					SumConfig: SumConfig{
-						CumulativeMonotonicMode: CumulativeMonotonicSumModeToDelta,
+						CumulativeMonotonicMode:     CumulativeMonotonicSumModeToDelta,
+						SumToRateConversionInterval: DefaultSumToRateInterval,
 					},
 					SummaryConfig: SummaryConfig{
 						Mode: SummaryModeGauges,
@@ -247,6 +250,55 @@ func TestLoadConfig(t *testing.T) {
 					HostnameSource: HostnameSourceConfigOrSystem,
 					Tags:           []string{"example:tag"},
 				},
+			},
+		},
+		{
+			id: component.NewIDWithName(typeStr, "sum_as_rate"),
+			expected: &Config{
+				TimeoutSettings: defaulttimeoutSettings(),
+				RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
+				QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
+				API: APIConfig{
+					Key:              "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+					Site:             "datadoghq.com",
+					FailOnInvalidKey: false,
+				},
+
+				Metrics: MetricsConfig{
+					TCPAddr: confignet.TCPAddr{
+						Endpoint: "https://api.datadoghq.com",
+					},
+					DeltaTTL: 3600,
+					HistConfig: HistogramConfig{
+						Mode:         "distributions",
+						SendCountSum: false,
+					},
+					SumConfig: SumConfig{
+						CumulativeMonotonicMode:     CumulativeMonotonicSumModeToDelta,
+						SubmitAsRate:                true,
+						SumToRateConversionInterval: DefaultSumToRateInterval,
+					},
+					SummaryConfig: SummaryConfig{
+						Mode: SummaryModeGauges,
+					},
+				},
+
+				Traces: TracesConfig{
+					TCPAddr: confignet.TCPAddr{
+						Endpoint: "https://trace.agent.datadoghq.com",
+					},
+					IgnoreResources: []string{},
+				},
+				Logs: LogsConfig{
+					TCPAddr: confignet.TCPAddr{
+						Endpoint: "https://http-intake.logs.datadoghq.com",
+					},
+				},
+				HostMetadata: HostMetadataConfig{
+					Enabled:        true,
+					HostnameSource: HostnameSourceConfigOrSystem,
+				},
+				OnlyMetadata: false,
 			},
 		},
 	}

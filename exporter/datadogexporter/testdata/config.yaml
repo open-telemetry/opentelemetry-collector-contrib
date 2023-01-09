@@ -37,3 +37,10 @@ datadog/default:
   api:
     key: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 
+datadog/sum_as_rate:
+  api:
+    key: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+
+  metrics:
+    sums:
+      submit_as_rate: true
