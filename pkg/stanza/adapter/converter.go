@@ -288,6 +288,9 @@ func convert(ent *entry.Entry) plog.LogRecord {
 // Convert converts one entry.Entry into plog.Logs.
 // To be used in a stateless setting like tests where ease of use is more
 // important than performance or throughput.
+// Deprecated: [v0.68.0] Unnecessary exported API.
+// Please add a comment in https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/17429
+// if you use it.
 func Convert(ent *entry.Entry) plog.Logs {
 	pLogs := plog.NewLogs()
 	logs := pLogs.ResourceLogs()
