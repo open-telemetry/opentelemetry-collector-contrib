@@ -291,7 +291,7 @@ func (p *processorImp) exportMetrics(ctx context.Context) {
 	p.lock.Unlock()
 
 	if err := p.metricsExporter.ConsumeMetrics(ctx, m); err != nil {
-		p.logger.Error("Failed ConsumeMetrics: " + err.Error())
+		p.logger.Error("Failed ConsumeMetrics", zap.Error(err))
 		return
 	}
 }
