@@ -6,7 +6,7 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.17.3
 	github.com/aws/aws-sdk-go-v2/config v1.18.7
 	github.com/aws/aws-sdk-go-v2/credentials v1.13.7
-	github.com/aws/aws-sdk-go-v2/service/sts v1.17.7
+	github.com/aws/aws-sdk-go-v2/service/sts v1.18.0
 	github.com/stretchr/testify v1.8.1
 	go.opentelemetry.io/collector v0.68.1-0.20230104175729-d8c9f24ecec0
 	go.opentelemetry.io/collector/component v0.68.1-0.20230104175729-d8c9f24ecec0
