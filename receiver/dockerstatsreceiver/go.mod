@@ -5,17 +5,17 @@ go 1.18
 require (
 	github.com/docker/docker v20.10.22+incompatible
 	github.com/google/go-cmp v0.5.9
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest v0.68.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.68.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest v0.69.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.69.0
 	github.com/stretchr/testify v1.8.1
 	github.com/testcontainers/testcontainers-go v0.17.0
-	go.opentelemetry.io/collector v0.68.1-0.20230104175729-d8c9f24ecec0
-	go.opentelemetry.io/collector/component v0.68.1-0.20230104175729-d8c9f24ecec0
-	go.opentelemetry.io/collector/confmap v0.68.1-0.20230104175729-d8c9f24ecec0
-	go.opentelemetry.io/collector/consumer v0.68.1-0.20230104175729-d8c9f24ecec0
-	go.opentelemetry.io/collector/featuregate v0.68.1-0.20230104175729-d8c9f24ecec0
-	go.opentelemetry.io/collector/pdata v1.0.0-rc2.0.20230104175729-d8c9f24ecec0
-	go.opentelemetry.io/collector/semconv v0.68.1-0.20230104175729-d8c9f24ecec0
+	go.opentelemetry.io/collector v0.69.0
+	go.opentelemetry.io/collector/component v0.69.0
+	go.opentelemetry.io/collector/confmap v0.69.0
+	go.opentelemetry.io/collector/consumer v0.69.0
+	go.opentelemetry.io/collector/featuregate v0.69.0
+	go.opentelemetry.io/collector/pdata v1.0.0-rc3.0.20230109164642-7d168dd20efd
+	go.opentelemetry.io/collector/semconv v0.69.0
 	go.uber.org/multierr v1.9.0
 	go.uber.org/zap v1.24.0
 )
@@ -49,7 +49,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.0.0-00010101000000-000000000000 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.69.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.0-rc2 // indirect
 	github.com/opencontainers/runc v1.1.3 // indirect
@@ -63,9 +63,9 @@ require (
 	go.opentelemetry.io/otel/trace v1.11.2 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/goleak v1.1.12 // indirect
-	golang.org/x/net v0.4.0 // indirect
-	golang.org/x/sys v0.3.0 // indirect
-	golang.org/x/text v0.5.0 // indirect
+	golang.org/x/net v0.5.0 // indirect
+	golang.org/x/sys v0.4.0 // indirect
+	golang.org/x/text v0.6.0 // indirect
 	google.golang.org/genproto v0.0.0-20220822174746-9e6da59bd2fc // indirect
 	google.golang.org/grpc v1.51.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
