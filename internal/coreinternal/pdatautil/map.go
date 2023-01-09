@@ -25,6 +25,7 @@ import (
 )
 
 var (
+	keyPrefix       = []byte{'\xf4'}
 	valEmpty        = []byte{'\xf5'}
 	valBytesPrefix  = []byte{'\xf6'}
 	valStrPrefix    = []byte{'\xf7'}
@@ -55,6 +56,7 @@ func writeMapHash(h hash.Hash, m pcommon.Map) {
 	sort.Strings(keys)
 	for _, k := range keys {
 		v, _ := m.Get(k)
+		h.Write(keyPrefix)
 		h.Write([]byte(k))
 		writeValueHash(h, v)
 	}
