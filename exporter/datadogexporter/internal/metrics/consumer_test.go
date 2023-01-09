@@ -17,6 +17,7 @@ package metrics
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/DataDog/datadog-agent/pkg/otlp/model/attributes"
 	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
@@ -30,6 +31,10 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
+)
+
+const (
+	DefaultSumToRateInterval = 10 * time.Second
 )
 
 type testProvider string
@@ -70,7 +75,7 @@ func TestRunningMetrics(t *testing.T) {
 	tr := newTranslator(t, logger)
 
 	ctx := context.Background()
-	consumer := NewConsumer()
+	consumer := NewConsumer(false, DefaultSumToRateInterval)
 	assert.NoError(t, tr.MapMetrics(ctx, ms, consumer))
 
 	var runningHostnames []string
@@ -113,7 +118,7 @@ func TestTagsMetrics(t *testing.T) {
 	tr := newTranslator(t, logger)
 
 	ctx := context.Background()
-	consumer := NewConsumer()
+	consumer := NewConsumer(false, DefaultSumToRateInterval)
 	assert.NoError(t, tr.MapMetrics(ctx, ms, consumer))
 
 	runningMetrics := consumer.runningMetrics(0, component.BuildInfo{})
@@ -132,7 +137,7 @@ func TestTagsMetrics(t *testing.T) {
 }
 
 func TestConsumeAPMStats(t *testing.T) {
-	c := NewConsumer()
+	c := NewConsumer(false, DefaultSumToRateInterval)
 	for _, sp := range testutil.StatsPayloads {
 		c.ConsumeAPMStats(sp)
 	}

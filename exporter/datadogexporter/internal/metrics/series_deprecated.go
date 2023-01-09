@@ -28,6 +28,8 @@ const (
 	Gauge MetricType = "gauge"
 	// Count is the Datadog Count metric type
 	Count MetricType = "count"
+	// Rate is the Datadog Rate metric type
+	Rate MetricType = "rate"
 )
 
 // newZorkianMetric creates a new Zorkian Datadog metric given a name, a Unix nanoseconds timestamp

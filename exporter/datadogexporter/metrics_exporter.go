@@ -196,9 +196,11 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metr
 	}
 	var consumer translator.Consumer
 	if isMetricExportV2Enabled() {
-		consumer = metrics.NewConsumer()
+		consumer = metrics.NewConsumer(exp.cfg.Metrics.SumConfig.SubmitAsRate,
+			exp.cfg.Metrics.SumConfig.SumToRateConversionInterval)
 	} else {
-		consumer = metrics.NewZorkianConsumer()
+		consumer = metrics.NewZorkianConsumer(exp.cfg.Metrics.SumConfig.SubmitAsRate,
+			exp.cfg.Metrics.SumConfig.SumToRateConversionInterval)
 	}
 	err := exp.tr.MapMetrics(ctx, md, consumer)
 	if err != nil {

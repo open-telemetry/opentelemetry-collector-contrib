@@ -16,6 +16,7 @@ package metrics // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"context"
+	"time"
 
 	"github.com/DataDog/datadog-agent/pkg/otlp/model/translator"
 	"github.com/DataDog/datadog-agent/pkg/quantile"
@@ -34,18 +35,22 @@ var _ translator.APMStatsConsumer = (*ZorkianConsumer)(nil)
 // ZorkianConsumer implements translator.Consumer. It records consumed metrics, sketches and
 // APM stats payloads. It provides them to the caller using the All method.
 type ZorkianConsumer struct {
-	ms        []zorkian.Metric
-	sl        sketches.SketchSeriesList
-	as        []pb.ClientStatsPayload
-	seenHosts map[string]struct{}
-	seenTags  map[string]struct{}
+	ms                          []zorkian.Metric
+	sl                          sketches.SketchSeriesList
+	as                          []pb.ClientStatsPayload
+	seenHosts                   map[string]struct{}
+	seenTags                    map[string]struct{}
+	sumAsRate                   bool
+	sumToRateConversionInterval time.Duration
 }
 
 // NewZorkianConsumer creates a new ZorkianConsumer. It implements translator.Consumer.
-func NewZorkianConsumer() *ZorkianConsumer {
+func NewZorkianConsumer(metricsSumAsRate bool, metricsSumToRateConversionInterval time.Duration) *ZorkianConsumer {
 	return &ZorkianConsumer{
-		seenHosts: make(map[string]struct{}),
-		seenTags:  make(map[string]struct{}),
+		seenHosts:                   make(map[string]struct{}),
+		seenTags:                    make(map[string]struct{}),
+		sumAsRate:                   metricsSumAsRate,
+		sumToRateConversionInterval: metricsSumToRateConversionInterval,
 	}
 }
 
@@ -55,7 +60,11 @@ func (c *ZorkianConsumer) toDataType(dt translator.MetricDataType) (out MetricTy
 
 	switch dt {
 	case translator.Count:
-		out = Count
+		if c.sumAsRate {
+			out = Rate
+		} else {
+			out = Count
+		}
 	case translator.Gauge:
 		out = Gauge
 	}
@@ -115,6 +124,9 @@ func (c *ZorkianConsumer) ConsumeTimeSeries(
 	value float64,
 ) {
 	dt := c.toDataType(typ)
+	if dt == Rate {
+		value = value / c.sumToRateConversionInterval.Seconds()
+	}
 	met := NewZorkianMetric(dims.Name(), dt, timestamp, value, dims.Tags())
 	met.SetHost(dims.Host())
 	c.ms = append(c.ms, met)

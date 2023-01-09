@@ -52,7 +52,7 @@ func TestZorkianRunningMetrics(t *testing.T) {
 	tr := newTranslator(t, logger)
 
 	ctx := context.Background()
-	consumer := NewZorkianConsumer()
+	consumer := NewZorkianConsumer(false, DefaultSumToRateInterval)
 	assert.NoError(t, tr.MapMetrics(ctx, ms, consumer))
 
 	var runningHostnames []string
@@ -96,7 +96,7 @@ func TestZorkianTagsMetrics(t *testing.T) {
 	tr := newTranslator(t, logger)
 
 	ctx := context.Background()
-	consumer := NewZorkianConsumer()
+	consumer := NewZorkianConsumer(false, DefaultSumToRateInterval)
 	assert.NoError(t, tr.MapMetrics(ctx, ms, consumer))
 
 	runningMetrics := consumer.runningMetrics(0, component.BuildInfo{})
@@ -115,7 +115,7 @@ func TestZorkianTagsMetrics(t *testing.T) {
 }
 
 func TestZorkianConsumeAPMStats(t *testing.T) {
-	c := NewZorkianConsumer()
+	c := NewZorkianConsumer(false, DefaultSumToRateInterval)
 	for _, sp := range testutil.StatsPayloads {
 		c.ConsumeAPMStats(sp)
 	}

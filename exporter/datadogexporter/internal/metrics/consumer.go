@@ -16,6 +16,7 @@ package metrics // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"context"
+	"time"
 
 	"github.com/DataDog/datadog-agent/pkg/otlp/model/translator"
 	"github.com/DataDog/datadog-agent/pkg/quantile"
@@ -35,18 +36,22 @@ var _ translator.APMStatsConsumer = (*Consumer)(nil)
 // Consumer implements translator.Consumer. It records consumed metrics, sketches and
 // APM stats payloads. It provides them to the caller using the All method.
 type Consumer struct {
-	ms        []datadogV2.MetricSeries
-	sl        sketches.SketchSeriesList
-	as        []pb.ClientStatsPayload
-	seenHosts map[string]struct{}
-	seenTags  map[string]struct{}
+	ms                          []datadogV2.MetricSeries
+	sl                          sketches.SketchSeriesList
+	as                          []pb.ClientStatsPayload
+	seenHosts                   map[string]struct{}
+	seenTags                    map[string]struct{}
+	sumAsRate                   bool
+	sumToRateConversionInterval time.Duration
 }
 
 // NewConsumer creates a new Datadog consumer. It implements translator.Consumer.
-func NewConsumer() *Consumer {
+func NewConsumer(metricsSumAsRate bool, metricsSumToRateConversionInterval time.Duration) *Consumer {
 	return &Consumer{
-		seenHosts: make(map[string]struct{}),
-		seenTags:  make(map[string]struct{}),
+		seenHosts:                   make(map[string]struct{}),
+		seenTags:                    make(map[string]struct{}),
+		sumAsRate:                   metricsSumAsRate,
+		sumToRateConversionInterval: metricsSumToRateConversionInterval,
 	}
 }
 
@@ -56,7 +61,11 @@ func (c *Consumer) toDataType(dt translator.MetricDataType) (out datadogV2.Metri
 
 	switch dt {
 	case translator.Count:
-		out = datadogV2.METRICINTAKETYPE_COUNT
+		if c.sumAsRate {
+			out = datadogV2.METRICINTAKETYPE_RATE
+		} else {
+			out = datadogV2.METRICINTAKETYPE_COUNT
+		}
 	case translator.Gauge:
 		out = datadogV2.METRICINTAKETYPE_GAUGE
 	}
@@ -116,6 +125,9 @@ func (c *Consumer) ConsumeTimeSeries(
 	value float64,
 ) {
 	dt := c.toDataType(typ)
+	if dt == datadogV2.METRICINTAKETYPE_RATE {
+		value = value / c.sumToRateConversionInterval.Seconds()
+	}
 	met := NewMetric(dims.Name(), dt, timestamp, value, dims.Tags())
 	met.SetResources([]datadogV2.MetricResource{
 		{
