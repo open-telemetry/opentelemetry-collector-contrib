@@ -36,8 +36,7 @@ import (
 func Start(cfg *Config) error {
 	logger, err := zap.NewDevelopment()
 	if err != nil {
-		fmt.Errorf("failed to obtain logger: %w", err)
-		return err
+		return fmt.Errorf("failed to obtain logger: %w", err)
 	}
 	grpcZap.ReplaceGrpcLoggerV2(logger.WithOptions(
 		zap.AddCallerSkip(3),
