@@ -499,11 +499,8 @@ func makeSampleResourceLogs() plog.Logs {
 	propMap.PutBool("isActive", true)
 	propMap.PutInt("rack", 5)
 	propMap.PutDouble("temp", 40.5)
-	propMap.Sort()
 	attrs.PutInt("com.splunk.signalfx.event_category", int64(sfxpb.EventCategory_USER_DEFINED))
 	attrs.PutStr("com.splunk.signalfx.event_type", "shutdown")
-
-	l.Attributes().Sort()
 
 	return out
 }
