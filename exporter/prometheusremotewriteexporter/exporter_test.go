@@ -53,7 +53,7 @@ func Test_NewPRWExporter(t *testing.T) {
 		TargetInfo: &TargetInfo{
 			Enabled: true,
 		},
-		ExportCreatedMetric: &ExportCreatedMetric{
+		CreatedMetric: &CreatedMetric{
 			Enabled: false,
 		},
 	}
@@ -148,7 +148,7 @@ func Test_Start(t *testing.T) {
 		TargetInfo: &TargetInfo{
 			Enabled: true,
 		},
-		ExportCreatedMetric: &ExportCreatedMetric{
+		CreatedMetric: &CreatedMetric{
 			Enabled: false,
 		},
 	}
@@ -657,7 +657,7 @@ func Test_PushMetrics(t *testing.T) {
 						TargetInfo: &TargetInfo{
 							Enabled: true,
 						},
-						ExportCreatedMetric: &ExportCreatedMetric{
+						CreatedMetric: &CreatedMetric{
 							Enabled: true,
 						},
 					}
@@ -844,7 +844,7 @@ func TestWALOnExporterRoundTrip(t *testing.T) {
 		TargetInfo: &TargetInfo{
 			Enabled: true,
 		},
-		ExportCreatedMetric: &ExportCreatedMetric{
+		CreatedMetric: &CreatedMetric{
 			Enabled: false,
 		},
 	}

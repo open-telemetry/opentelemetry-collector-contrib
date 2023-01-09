@@ -111,7 +111,7 @@ func createDefaultConfig() component.Config {
 		TargetInfo: &TargetInfo{
 			Enabled: true,
 		},
-		ExportCreatedMetric: &ExportCreatedMetric{
+		CreatedMetric: &CreatedMetric{
 			Enabled: false,
 		},
 	}

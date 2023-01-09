@@ -44,7 +44,7 @@ const (
 	leStr         = "le"
 	quantileStr   = "quantile"
 	pInfStr       = "+Inf"
-	createdPrefix = "_created"
+	createdSuffix = "_created"
 	// maxExemplarRunes is the maximum number of UTF-8 exemplar characters
 	// according to the prometheus specification
 	// https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md#exemplars
@@ -288,7 +288,7 @@ func addSingleNumberDataPoint(pt pmetric.NumberDataPoint, resource pcommon.Resou
 				pt.Attributes(),
 				settings.ExternalLabels,
 				nameStr,
-				name+createdPrefix,
+				name+createdSuffix,
 			)
 			addCreatedTimeSeriesIfNeeded(tsMap, createdLabels, startTimestamp, metric.Type().String())
 		}
@@ -382,7 +382,7 @@ func addSingleHistogramDataPoint(pt pmetric.HistogramDataPoint, resource pcommon
 			pt.Attributes(),
 			settings.ExternalLabels,
 			nameStr,
-			baseName+createdPrefix,
+			baseName+createdSuffix,
 		)
 		addCreatedTimeSeriesIfNeeded(tsMap, createdLabels, startTimestamp, metric.Type().String())
 	}
@@ -530,7 +530,7 @@ func addSingleSummaryDataPoint(pt pmetric.SummaryDataPoint, resource pcommon.Res
 			pt.Attributes(),
 			settings.ExternalLabels,
 			nameStr,
-			baseName+createdPrefix,
+			baseName+createdSuffix,
 		)
 		addCreatedTimeSeriesIfNeeded(tsMap, createdLabels, startTimestamp, metric.Type().String())
 	}

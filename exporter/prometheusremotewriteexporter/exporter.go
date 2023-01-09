@@ -83,7 +83,7 @@ func newPRWExporter(cfg *Config, set exporter.CreateSettings) (*prwExporter, err
 			Namespace:           cfg.Namespace,
 			ExternalLabels:      sanitizedLabels,
 			DisableTargetInfo:   !cfg.TargetInfo.Enabled,
-			ExportCreatedMetric: cfg.ExportCreatedMetric.Enabled,
+			ExportCreatedMetric: cfg.CreatedMetric.Enabled,
 		},
 	}
 	if cfg.WAL == nil {

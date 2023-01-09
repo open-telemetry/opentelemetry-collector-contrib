@@ -640,7 +640,7 @@ func TestAddSingleNumberDataPoint(t *testing.T) {
 					{Name: model.MetricNameLabel, Value: "test_sum"},
 				}
 				createdLabels := []prompb.Label{
-					{Name: model.MetricNameLabel, Value: "test_sum" + createdPrefix},
+					{Name: model.MetricNameLabel, Value: "test_sum" + createdSuffix},
 				}
 				return map[string]*prompb.TimeSeries{
 					timeSeriesSignature(pmetric.MetricTypeSum.String(), &labels): {
@@ -760,7 +760,7 @@ func TestAddSingleSummaryDataPoint(t *testing.T) {
 					{Name: model.MetricNameLabel, Value: "test_summary" + countStr},
 				}
 				createdLabels := []prompb.Label{
-					{Name: model.MetricNameLabel, Value: "test_summary" + createdPrefix},
+					{Name: model.MetricNameLabel, Value: "test_summary" + createdSuffix},
 				}
 				sumLabels := []prompb.Label{
 					{Name: model.MetricNameLabel, Value: "test_summary" + sumStr},
@@ -869,7 +869,7 @@ func TestAddSingleHistogramDataPoint(t *testing.T) {
 					{Name: model.MetricNameLabel, Value: "test_hist" + countStr},
 				}
 				createdLabels := []prompb.Label{
-					{Name: model.MetricNameLabel, Value: "test_hist" + createdPrefix},
+					{Name: model.MetricNameLabel, Value: "test_hist" + createdSuffix},
 				}
 				infLabels := []prompb.Label{
 					{Name: model.MetricNameLabel, Value: "test_hist_bucket"},

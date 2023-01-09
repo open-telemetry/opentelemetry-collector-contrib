@@ -82,7 +82,7 @@ func TestLoadConfig(t *testing.T) {
 				TargetInfo: &TargetInfo{
 					Enabled: true,
 				},
-				ExportCreatedMetric: &ExportCreatedMetric{Enabled: true},
+				CreatedMetric: &CreatedMetric{Enabled: true},
 			},
 		},
 		{
