@@ -32,15 +32,15 @@ var (
 // splunkHecToLogData transforms splunk events into logs
 func splunkHecToLogData(logger *zap.Logger, events []*splunk.Event, resourceCustomizer func(pcommon.Resource), config *Config) (plog.Logs, error) {
 	ld := plog.NewLogs()
-	resourceLogMap := make(map[[4]string]plog.ScopeLogs)
+	scopeLogsMap := make(map[[4]string]plog.ScopeLogs)
 	for _, event := range events {
 		key := [4]string{event.Host, event.Source, event.SourceType, event.Index}
 		var sl plog.ScopeLogs
 		var found bool
-		if sl, found = resourceLogMap[key]; !found {
+		if sl, found = scopeLogsMap[key]; !found {
 			rl := ld.ResourceLogs().AppendEmpty()
 			sl = rl.ScopeLogs().AppendEmpty()
-			resourceLogMap[key] = sl
+			scopeLogsMap[key] = sl
 			if event.Host != "" {
 				rl.Resource().Attributes().PutStr(config.HecToOtelAttrs.Host, event.Host)
 			}
