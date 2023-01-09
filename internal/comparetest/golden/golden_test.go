@@ -16,6 +16,7 @@ package golden
 
 import (
 	"bytes"
+	"encoding/hex"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -26,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 func TestWriteMetrics(t *testing.T) {
@@ -221,4 +223,77 @@ func CreateTestLogs() plog.Logs {
 	logRecord.Attributes().PutStr("testKey2", "teststringvalue2")
 
 	return logs
+}
+
+func TestReadTraces(t *testing.T) {
+	expectedTraces := CreateTestTraces()
+
+	expectedFile := filepath.Join("testdata", "traces-roundtrip", "expected.json")
+	actualTraces, err := ReadTraces(expectedFile)
+	require.NoError(t, err)
+	require.Equal(t, expectedTraces, actualTraces)
+}
+
+func TestWriteTraces(t *testing.T) {
+	traces := CreateTestTraces()
+
+	actualFile := filepath.Join("./testdata/traces-roundtrip", "traces.json")
+	require.NoError(t, writeTraces(actualFile, traces))
+
+	actualBytes, err := os.ReadFile(actualFile)
+	require.NoError(t, err)
+
+	expectedFile := filepath.Join("testdata", "traces-roundtrip", "expected.json")
+	expectedBytes, err := os.ReadFile(expectedFile)
+	require.NoError(t, err)
+
+	if runtime.GOOS == "windows" {
+		// ioutil adds a '\r' that we don't actually expect
+		expectedBytes = bytes.ReplaceAll(expectedBytes, []byte("\r\n"), []byte("\n"))
+	}
+
+	require.Equal(t, expectedBytes, actualBytes)
+}
+
+func CreateTestTraces() ptrace.Traces {
+	traces := ptrace.NewTraces()
+
+	rs := traces.ResourceSpans().AppendEmpty()
+	rs.Resource().Attributes().PutStr("testKey1", "teststringvalue1")
+	rs.Resource().Attributes().PutStr("testKey2", "teststringvalue2")
+	rs.Resource().SetDroppedAttributesCount(1)
+
+	ss := rs.ScopeSpans().AppendEmpty()
+	ss.Scope().SetName("collector")
+	ss.Scope().SetVersion("v0.1.0")
+
+	span := ss.Spans().AppendEmpty()
+	span.Attributes().PutStr("testKey1", "teststringvalue1")
+	span.Attributes().PutStr("testKey2", "teststringvalue2")
+	span.SetDroppedAttributesCount(1)
+	timestamp := pcommon.NewTimestampFromTime(time.Time{})
+	span.SetStartTimestamp(timestamp)
+	span.SetEndTimestamp(timestamp)
+	span.Status().SetCode(ptrace.StatusCodeOk)
+	span.SetName("span1")
+	span.SetKind(ptrace.SpanKindServer)
+	var parentSpanID [8]byte
+	byteSlice, _ := hex.DecodeString("bcff497b5a47310f")
+	copy(parentSpanID[:], byteSlice)
+	span.SetParentSpanID(pcommon.SpanID(parentSpanID))
+
+	var spanID [8]byte
+	byteSlice, _ = hex.DecodeString("fd0da883bb27cd6b")
+	copy(spanID[:], byteSlice)
+	span.SetSpanID(pcommon.SpanID(spanID))
+
+	var traceID [16]byte
+	byteSlice, _ = hex.DecodeString("8c8b1765a7b0acf0b66aa4623fcb7bd5")
+	copy(traceID[:], byteSlice)
+	span.SetTraceID(pcommon.TraceID(traceID))
+
+	event := span.Events().AppendEmpty()
+	event.SetName("Sub span event")
+
+	return traces
 }
