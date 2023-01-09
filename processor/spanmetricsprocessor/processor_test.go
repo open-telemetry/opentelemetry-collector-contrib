@@ -296,7 +296,7 @@ func TestProcessorConsumeMetricsErrors(t *testing.T) {
 	allLogs := observedLogs.All()
 	require.NotEmpty(t, allLogs)
 
-	assert.Equal(t, "Failed ConsumeMetrics: consume metrics error", allLogs[0].Message)
+	assert.Equal(t, "Failed ConsumeMetrics", allLogs[0].Message)
 }
 
 func TestProcessorConsumeTraces(t *testing.T) {
