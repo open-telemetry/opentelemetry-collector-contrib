@@ -59,14 +59,6 @@ check_collector_versions_correct() {
             version=$(echo "$mod_line" | cut -d" " -f3)
          fi
 
-         # TODO: remove when core v0.69.0 has been released
-         # To account for a module inside a replace statement, check if
-         # the string starts w/ replace. If so, use the 5th element in the
-         # string.
-         if [[ "$mod_line" =~ ^replace.* ]]; then
-            version=$(echo "$mod_line" | cut -d" " -f5)
-         fi
-
          if [ "$version" != "$collector_mod_version" ]; then
             incorrect_version=$((incorrect_version+1))
             echo "Incorrect version \"$version\" of \"$collector_module\" is included in \"$mod_file\". It should be version \"$collector_mod_version\"."
