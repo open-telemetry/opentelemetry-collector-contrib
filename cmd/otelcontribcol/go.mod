@@ -528,7 +528,7 @@ require (
 	github.com/stretchr/objx v0.5.0 // indirect
 	github.com/stretchr/testify v1.8.1 // indirect
 	github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635 // indirect
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.575 // indirect
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.576 // indirect
 	github.com/tg123/go-htpasswd v1.2.0 // indirect
 	github.com/tidwall/gjson v1.14.3 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
