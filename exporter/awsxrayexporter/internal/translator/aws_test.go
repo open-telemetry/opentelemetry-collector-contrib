@@ -440,6 +440,45 @@ func TestLogGroupsFromArns(t *testing.T) {
 	assert.Contains(t, awsData.CWLogs, cwl2)
 }
 
+// Simulate Log groups being set using OTEL_RESOURCE_ATTRIBUTES
+func TestLogGroupsFromStringResourceAttribute(t *testing.T) {
+	cwl1 := awsxray.LogGroupMetadata{
+		LogGroup: awsxray.String("group1"),
+	}
+
+	attributes := make(map[string]pcommon.Value)
+	resource := pcommon.NewResource()
+	resource.Attributes().PutStr(conventions.AttributeAWSLogGroupNames, "group1")
+
+	filtered, awsData := makeAws(attributes, resource, nil)
+
+	assert.NotNil(t, filtered)
+	assert.NotNil(t, awsData)
+	assert.Equal(t, 1, len(awsData.CWLogs))
+	assert.Contains(t, awsData.CWLogs, cwl1)
+}
+
+// Simulate Log groups arns being set using OTEL_RESOURCE_ATTRIBUTES
+func TestLogGroupsArnsFromStringResourceAttributes(t *testing.T) {
+	group1 := "arn:aws:logs:us-east-1:123456789123:log-group:group1"
+
+	cwl1 := awsxray.LogGroupMetadata{
+		LogGroup: awsxray.String("group1"),
+		Arn:      awsxray.String(group1),
+	}
+
+	attributes := make(map[string]pcommon.Value)
+	resource := pcommon.NewResource()
+	resource.Attributes().PutStr(conventions.AttributeAWSLogGroupARNs, group1)
+
+	filtered, awsData := makeAws(attributes, resource, nil)
+
+	assert.NotNil(t, filtered)
+	assert.NotNil(t, awsData)
+	assert.Equal(t, 1, len(awsData.CWLogs))
+	assert.Contains(t, awsData.CWLogs, cwl1)
+}
+
 func TestLogGroupsFromConfig(t *testing.T) {
 	cwl1 := awsxray.LogGroupMetadata{
 		LogGroup: awsxray.String("logGroup1"),

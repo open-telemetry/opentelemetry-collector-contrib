@@ -117,9 +117,9 @@ func makeAws(attributes map[string]pcommon.Value, resource pcommon.Resource, log
 		case conventions.AttributeAWSECSLaunchtype:
 			launchType = value.Str()
 		case conventions.AttributeAWSLogGroupNames:
-			logGroups = value.Slice()
+			logGroups = normalizeToSlice(value)
 		case conventions.AttributeAWSLogGroupARNs:
-			logGroupArns = value.Slice()
+			logGroupArns = normalizeToSlice(value)
 		}
 		return true
 	})
@@ -266,6 +266,18 @@ func makeAws(attributes map[string]pcommon.Value, resource pcommon.Resource, log
 		TableName:    awsxray.String(tableName),
 	}
 	return filtered, awsData
+}
+
+// Convert string values to slice of size 1 so that we can also handle resource
+// attributes that are set using the OTEL_RESOURCE_ATTRIBUTES
+func normalizeToSlice(v pcommon.Value) pcommon.Slice {
+	if v.Type() == pcommon.ValueTypeStr {
+		s := pcommon.NewSlice()
+		s.AppendEmpty().SetStr(v.Str())
+		return s
+	}
+
+	return v.Slice()
 }
 
 // Given an array of log group ARNs, create a corresponding amount of LogGroupMetadata objects with log_group and arn
