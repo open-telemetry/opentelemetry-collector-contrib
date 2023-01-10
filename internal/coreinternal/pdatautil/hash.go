@@ -44,18 +44,15 @@ var (
 // Maps with the same underlying key/value pairs in different order produce the same deterministic hash value.
 func MapHash(m pcommon.Map) [16]byte {
 	h := xxhash.New()
-
 	writeMapHash(h, m)
-	b := make([]byte, 0, 16)
-	b = h.Sum(b)
+	return hashSum128(h)
+}
 
-	// Append an extra byte to generate another part of the hash sum
-	_, _ = h.Write(extraByte)
-	b = h.Sum(b)
-
-	res := [16]byte{}
-	copy(res[:], b)
-	return res
+// ValueHash return a hash for the provided pcommon.Value.
+func ValueHash(v pcommon.Value) [16]byte {
+	h := xxhash.New()
+	writeValueHash(h, v)
+	return hashSum128(h)
 }
 
 func writeMapHash(h hash.Hash, m pcommon.Map) {
@@ -114,4 +111,18 @@ func writeValueHash(h hash.Hash, v pcommon.Value) {
 	case pcommon.ValueTypeEmpty:
 		h.Write(valEmpty)
 	}
+}
+
+// hashSum128 returns a [16]byte hash sum.
+func hashSum128(h hash.Hash) [16]byte {
+	b := make([]byte, 0, 16)
+	b = h.Sum(b)
+
+	// Append an extra byte to generate another part of the hash sum
+	_, _ = h.Write(extraByte)
+	b = h.Sum(b)
+
+	res := [16]byte{}
+	copy(res[:], b)
+	return res
 }

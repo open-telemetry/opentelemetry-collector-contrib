@@ -18,10 +18,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-func TestMapHash_Equal(t *testing.T) {
+func TestMapHash(t *testing.T) {
 	tests := []struct {
 		name  string
 		maps  []pcommon.Map
@@ -81,10 +82,8 @@ func TestMapHash_Equal(t *testing.T) {
 			equal: false,
 		},
 		{
-			name: "empty_maps",
-			maps: func() []pcommon.Map {
-				return []pcommon.Map{pcommon.NewMap(), pcommon.NewMap()}
-			}(),
+			name:  "empty_maps",
+			maps:  []pcommon.Map{pcommon.NewMap(), pcommon.NewMap()},
 			equal: true,
 		},
 		{
@@ -133,6 +132,189 @@ func TestMapHash_Equal(t *testing.T) {
 					}
 				}
 			}
+		})
+	}
+}
+
+func TestValueHash(t *testing.T) {
+	tests := []struct {
+		name   string
+		values []pcommon.Value
+		equal  bool
+	}{
+		{
+			name: "different_values",
+			values: func() []pcommon.Value {
+				m := make([]pcommon.Value, 21)
+				for i := 0; i < len(m); i++ {
+					m[i] = pcommon.NewValueEmpty()
+				}
+				m[1].SetStr("")
+				m[2].SetStr("v")
+				m[3].SetBool(false)
+				m[4].SetBool(true)
+				m[5].SetInt(0)
+				m[6].SetInt(1)
+				m[7].SetDouble(0)
+				m[8].SetDouble(1)
+
+				m[9].SetEmptySlice()
+				m[10].SetEmptySlice().AppendEmpty()
+				m[11].SetEmptySlice().AppendEmpty().SetStr("")
+				m[12].SetEmptySlice().AppendEmpty().SetStr("v")
+
+				m[13].SetEmptyBytes()
+				m[14].SetEmptyBytes().FromRaw([]byte{0})
+				m[15].SetEmptyBytes().FromRaw([]byte{1})
+
+				m[16].SetEmptyMap()
+				m[17].SetEmptyMap().PutStr("k", "")
+				m[18].SetEmptyMap().PutBool("k", false)
+				m[19].SetEmptyMap().PutEmptyMap("")
+				m[20].SetEmptyMap().PutEmptyMap("k")
+
+				return m
+			}(),
+			equal: false,
+		},
+		{
+			name:   "empty_values",
+			values: []pcommon.Value{pcommon.NewValueEmpty(), pcommon.NewValueEmpty()},
+			equal:  true,
+		},
+		{
+			name:   "empty_strings",
+			values: []pcommon.Value{pcommon.NewValueStr(""), pcommon.NewValueStr("")},
+			equal:  true,
+		},
+		{
+			name:   "strings",
+			values: []pcommon.Value{pcommon.NewValueStr("v"), pcommon.NewValueStr("v")},
+			equal:  true,
+		},
+		{
+			name:   "int",
+			values: []pcommon.Value{pcommon.NewValueInt(1), pcommon.NewValueInt(1)},
+			equal:  true,
+		},
+		{
+			name:   "double",
+			values: []pcommon.Value{pcommon.NewValueDouble(1), pcommon.NewValueDouble(1)},
+			equal:  true,
+		},
+		{
+			name:   "bool",
+			values: []pcommon.Value{pcommon.NewValueBool(true), pcommon.NewValueBool(true)},
+			equal:  true,
+		},
+		{
+			name:   "empty_bytes",
+			values: []pcommon.Value{pcommon.NewValueBytes(), pcommon.NewValueBytes()},
+			equal:  true,
+		},
+		{
+			name: "bytes",
+			values: func() []pcommon.Value {
+				v1 := pcommon.NewValueBytes()
+				require.NoError(t, v1.FromRaw([]byte{0}))
+				v2 := pcommon.NewValueBytes()
+				require.NoError(t, v2.FromRaw([]byte{0}))
+				return []pcommon.Value{v1, v2}
+			}(),
+			equal: true,
+		},
+		{
+			name:   "empty_slices",
+			values: []pcommon.Value{pcommon.NewValueSlice(), pcommon.NewValueSlice()},
+			equal:  true,
+		},
+		{
+			name: "slices_with_empty_items",
+			values: func() []pcommon.Value {
+				v1 := pcommon.NewValueSlice()
+				v1.Slice().AppendEmpty()
+				v2 := pcommon.NewValueSlice()
+				v2.Slice().AppendEmpty()
+				return []pcommon.Value{v1, v2}
+			}(),
+			equal: true,
+		},
+		{
+			name: "slices",
+			values: func() []pcommon.Value {
+				v1 := pcommon.NewValueSlice()
+				v1.Slice().AppendEmpty().SetStr("v")
+				v2 := pcommon.NewValueSlice()
+				v2.Slice().AppendEmpty().SetStr("v")
+				return []pcommon.Value{v1, v2}
+			}(),
+			equal: true,
+		},
+		{
+			name:   "empty_maps",
+			values: []pcommon.Value{pcommon.NewValueMap(), pcommon.NewValueMap()},
+			equal:  true,
+		},
+		{
+			name: "maps",
+			values: func() []pcommon.Value {
+				v1 := pcommon.NewValueMap()
+				v1.Map().PutStr("k1", "v")
+				v1.Map().PutInt("k2", 0)
+				v2 := pcommon.NewValueMap()
+				v2.Map().PutInt("k2", 0)
+				v2.Map().PutStr("k1", "v")
+				return []pcommon.Value{v1, v2}
+			}(),
+			equal: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			for i := 0; i < len(tt.values); i++ {
+				for j := i + 1; j < len(tt.values); j++ {
+					if tt.equal {
+						assert.Equal(t, ValueHash(tt.values[i]), ValueHash(tt.values[j]),
+							"values %d %v and %d %v must have the same hash", i, tt.values[i].AsRaw(), j, tt.values[j].AsRaw())
+					} else {
+						assert.NotEqual(t, ValueHash(tt.values[i]), ValueHash(tt.values[j]),
+							"values %d %v and %d %v must have different hashes", i, tt.values[i].AsRaw(), j, tt.values[j].AsRaw())
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestMapValueHashNotEqual(t *testing.T) {
+	tests := []struct {
+		name string
+		m    pcommon.Map
+		v    pcommon.Value
+	}{
+		{
+			name: "empty",
+			v:    pcommon.NewValueMap(),
+			m:    pcommon.NewMap(),
+		},
+		{
+			name: "not_empty",
+			v: func() pcommon.Value {
+				v := pcommon.NewValueMap()
+				v.Map().PutStr("k", "v")
+				return v
+			}(),
+			m: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutStr("k", "v")
+				return m
+			}(),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.NotEqual(t, ValueHash(tt.v), MapHash(tt.m),
+				"value %v and map %v must have different hashes", tt.v.AsRaw(), tt.m.AsRaw())
 		})
 	}
 }
