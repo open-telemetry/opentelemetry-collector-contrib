@@ -30,7 +30,7 @@ receivers:
   couchdb:
     endpoint: http://localhost:5984
     username: otelu
-    password: $COUCHDB_PASSWORD
+    password: ${env:COUCHDB_PASSWORD}
     collection_interval: 60s
 ```
 

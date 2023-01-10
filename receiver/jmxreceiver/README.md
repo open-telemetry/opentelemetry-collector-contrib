@@ -37,7 +37,7 @@ receivers:
       endpoint: mycollectorotlpreceiver:4317
     username: my_jmx_username
     # determined by the environment variable value
-    password: $MY_JMX_PASSWORD
+    password: ${env:MY_JMX_PASSWORD}
     resource_attributes: my.attr=my.value,my.other.attr=my.other.value
     log_level: info
     additional_jars:
