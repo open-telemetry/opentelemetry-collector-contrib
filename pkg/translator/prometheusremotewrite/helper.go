@@ -241,18 +241,16 @@ func createAttributes(resource pcommon.Resource, attributes pcommon.Map, externa
 	return s
 }
 
-// validateMetrics returns a bool representing whether the metric has a valid type and temporality combination and a
-// matching metric type and field
-func validateMetrics(metric pmetric.Metric) bool {
+// isValidAggregationTemporality checks whether an OTel metric has a valid
+// aggregation temporality for conversion to a Prometheus metric.
+func isValidAggregationTemporality(metric pmetric.Metric) bool {
 	switch metric.Type() {
-	case pmetric.MetricTypeGauge:
-		return metric.Gauge().DataPoints().Len() != 0
+	case pmetric.MetricTypeGauge, pmetric.MetricTypeSummary:
+		return true
 	case pmetric.MetricTypeSum:
-		return metric.Sum().DataPoints().Len() != 0 && metric.Sum().AggregationTemporality() == pmetric.AggregationTemporalityCumulative
+		return metric.Sum().AggregationTemporality() == pmetric.AggregationTemporalityCumulative
 	case pmetric.MetricTypeHistogram:
-		return metric.Histogram().DataPoints().Len() != 0 && metric.Histogram().AggregationTemporality() == pmetric.AggregationTemporalityCumulative
-	case pmetric.MetricTypeSummary:
-		return metric.Summary().DataPoints().Len() != 0
+		return metric.Histogram().AggregationTemporality() == pmetric.AggregationTemporalityCumulative
 	}
 	return false
 }
