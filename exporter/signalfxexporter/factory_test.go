@@ -214,13 +214,20 @@ func TestDefaultTranslationRules(t *testing.T) {
 	require.Len(t, dps, 2)
 	require.Equal(t, 2, len(dps[0].Dimensions))
 	for _, dp := range dps {
-		require.Equal(t, "direction", dp.Dimensions[0].Key)
-		switch dp.Dimensions[1].Value {
-		case "write":
-			require.Equal(t, int64(11e9), *dp.Value.IntValue)
-		case "read":
-			require.Equal(t, int64(3e9), *dp.Value.IntValue)
+		var directionFound bool
+		for _, dim := range dp.Dimensions {
+			if dim.Key != "direction" {
+				continue
+			}
+			directionFound = true
+			switch dim.Value {
+			case "write":
+				require.Equal(t, int64(11e9), *dp.Value.IntValue)
+			case "read":
+				require.Equal(t, int64(3e9), *dp.Value.IntValue)
+			}
 		}
+		require.True(t, directionFound, `missing dimension: direction`)
 	}
 
 	// disk_ops.total gauge from system.disk.operations cumulative, where is disk_ops.total
@@ -230,8 +237,7 @@ func TestDefaultTranslationRules(t *testing.T) {
 	require.Len(t, dps, 1)
 	require.Equal(t, int64(8e3), *dps[0].Value.IntValue)
 	require.Equal(t, 1, len(dps[0].Dimensions))
-	require.Equal(t, "host", dps[0].Dimensions[0].Key)
-	require.Equal(t, "host0", dps[0].Dimensions[0].Value)
+	requireDimension(t, dps[0].Dimensions, "host", "host0")
 
 	// system.network.io.total new metric calculation
 	dps, ok = metrics["system.network.io.total"]
@@ -245,8 +251,7 @@ func TestDefaultTranslationRules(t *testing.T) {
 	require.Len(t, dps, 1)
 	require.Equal(t, 4, len(dps[0].Dimensions))
 	require.Equal(t, int64(350), *dps[0].Value.IntValue)
-	require.Equal(t, "direction", dps[0].Dimensions[0].Key)
-	require.Equal(t, "receive", dps[0].Dimensions[0].Value)
+	requireDimension(t, dps[0].Dimensions, "direction", "receive")
 
 	// network.total new metric calculation
 	dps, ok = metrics["network.total"]
@@ -254,6 +259,18 @@ func TestDefaultTranslationRules(t *testing.T) {
 	require.Len(t, dps, 1)
 	require.Equal(t, 3, len(dps[0].Dimensions))
 	require.Equal(t, int64(10e9), *dps[0].Value.IntValue)
+}
+
+func requireDimension(t *testing.T, dims []*sfxpb.Dimension, key, val string) {
+	var found bool
+	for _, dim := range dims {
+		if dim.Key != key {
+			continue
+		}
+		found = true
+		require.Equal(t, val, dim.Value)
+	}
+	require.True(t, found, `missing dimension: %s`, key)
 }
 
 func TestCreateMetricsExporterWithDefaultExcludeMetrics(t *testing.T) {
@@ -317,7 +334,6 @@ func testMetricsData() pmetric.Metrics {
 	dp11.Attributes().PutStr("host", "host0")
 	dp11.Attributes().PutStr("kubernetes_node", "node0")
 	dp11.Attributes().PutStr("kubernetes_cluster", "cluster0")
-	dp11.Attributes().Sort()
 	dp11.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)))
 	dp11.SetIntValue(4e9)
 	dp12 := m1.Gauge().DataPoints().AppendEmpty()
@@ -325,7 +341,6 @@ func testMetricsData() pmetric.Metrics {
 	dp12.Attributes().PutStr("host", "host0")
 	dp12.Attributes().PutStr("kubernetes_node", "node0")
 	dp12.Attributes().PutStr("kubernetes_cluster", "cluster0")
-	dp12.Attributes().Sort()
 	dp12.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)))
 	dp12.SetIntValue(6e9)
 
@@ -339,28 +354,24 @@ func testMetricsData() pmetric.Metrics {
 	dp21.Attributes().PutStr("host", "host0")
 	dp21.Attributes().PutStr("direction", "read")
 	dp21.Attributes().PutStr("device", "sda1")
-	dp21.Attributes().Sort()
 	dp21.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)))
 	dp21.SetIntValue(1e9)
 	dp22 := m2.Sum().DataPoints().AppendEmpty()
 	dp22.Attributes().PutStr("host", "host0")
 	dp22.Attributes().PutStr("direction", "read")
 	dp22.Attributes().PutStr("device", "sda2")
-	dp22.Attributes().Sort()
 	dp22.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)))
 	dp22.SetIntValue(2e9)
 	dp23 := m2.Sum().DataPoints().AppendEmpty()
 	dp23.Attributes().PutStr("host", "host0")
 	dp23.Attributes().PutStr("direction", "write")
 	dp23.Attributes().PutStr("device", "sda1")
-	dp23.Attributes().Sort()
 	dp23.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)))
 	dp23.SetIntValue(3e9)
 	dp24 := m2.Sum().DataPoints().AppendEmpty()
 	dp24.Attributes().PutStr("host", "host0")
 	dp24.Attributes().PutStr("direction", "write")
 	dp24.Attributes().PutStr("device", "sda2")
-	dp24.Attributes().Sort()
 	dp24.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)))
 	dp24.SetIntValue(8e9)
 
@@ -374,28 +385,24 @@ func testMetricsData() pmetric.Metrics {
 	dp31.Attributes().PutStr("host", "host0")
 	dp31.Attributes().PutStr("direction", "write")
 	dp31.Attributes().PutStr("device", "sda1")
-	dp31.Attributes().Sort()
 	dp31.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)))
 	dp31.SetIntValue(4e3)
 	dp32 := m3.Sum().DataPoints().AppendEmpty()
 	dp32.Attributes().PutStr("host", "host0")
 	dp32.Attributes().PutStr("direction", "read")
 	dp32.Attributes().PutStr("device", "sda2")
-	dp32.Attributes().Sort()
 	dp32.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)))
 	dp32.SetIntValue(6e3)
 	dp33 := m3.Sum().DataPoints().AppendEmpty()
 	dp33.Attributes().PutStr("host", "host0")
 	dp33.Attributes().PutStr("direction", "write")
 	dp33.Attributes().PutStr("device", "sda1")
-	dp33.Attributes().Sort()
 	dp33.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)))
 	dp33.SetIntValue(1e3)
 	dp34 := m3.Sum().DataPoints().AppendEmpty()
 	dp34.Attributes().PutStr("host", "host0")
 	dp34.Attributes().PutStr("direction", "write")
 	dp34.Attributes().PutStr("device", "sda2")
-	dp34.Attributes().Sort()
 	dp34.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)))
 	dp34.SetIntValue(5e3)
 
@@ -409,28 +416,24 @@ func testMetricsData() pmetric.Metrics {
 	dp41.Attributes().PutStr("host", "host0")
 	dp41.Attributes().PutStr("direction", "read")
 	dp41.Attributes().PutStr("device", "sda1")
-	dp41.Attributes().Sort()
 	dp41.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000060, 0)))
 	dp41.SetIntValue(6e3)
 	dp42 := m4.Sum().DataPoints().AppendEmpty()
 	dp42.Attributes().PutStr("host", "host0")
 	dp42.Attributes().PutStr("direction", "read")
 	dp42.Attributes().PutStr("device", "sda2")
-	dp42.Attributes().Sort()
 	dp42.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000060, 0)))
 	dp42.SetIntValue(8e3)
 	dp43 := m4.Sum().DataPoints().AppendEmpty()
 	dp43.Attributes().PutStr("host", "host0")
 	dp43.Attributes().PutStr("direction", "write")
 	dp43.Attributes().PutStr("device", "sda1")
-	dp43.Attributes().Sort()
 	dp43.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000060, 0)))
 	dp43.SetIntValue(3e3)
 	dp44 := m4.Sum().DataPoints().AppendEmpty()
 	dp44.Attributes().PutStr("host", "host0")
 	dp44.Attributes().PutStr("direction", "write")
 	dp44.Attributes().PutStr("device", "sda2")
-	dp44.Attributes().Sort()
 	dp44.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000060, 0)))
 	dp44.SetIntValue(7e3)
 
@@ -445,7 +448,6 @@ func testMetricsData() pmetric.Metrics {
 	dp51.Attributes().PutStr("device", "eth0")
 	dp51.Attributes().PutStr("kubernetes_node", "node0")
 	dp51.Attributes().PutStr("kubernetes_cluster", "cluster0")
-	dp51.Attributes().Sort()
 	dp51.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)))
 	dp51.SetIntValue(4e9)
 	dp52 := m5.Gauge().DataPoints().AppendEmpty()
@@ -454,7 +456,6 @@ func testMetricsData() pmetric.Metrics {
 	dp52.Attributes().PutStr("device", "eth0")
 	dp52.Attributes().PutStr("kubernetes_node", "node0")
 	dp52.Attributes().PutStr("kubernetes_cluster", "cluster0")
-	dp52.Attributes().Sort()
 	dp52.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)))
 	dp52.SetIntValue(6e9)
 
@@ -467,7 +468,6 @@ func testMetricsData() pmetric.Metrics {
 	dp61.Attributes().PutStr("device", "eth0")
 	dp61.Attributes().PutStr("kubernetes_node", "node0")
 	dp61.Attributes().PutStr("kubernetes_cluster", "cluster0")
-	dp61.Attributes().Sort()
 	dp61.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)))
 	dp61.SetIntValue(200)
 	dp62 := m6.Gauge().DataPoints().AppendEmpty()
@@ -476,7 +476,6 @@ func testMetricsData() pmetric.Metrics {
 	dp62.Attributes().PutStr("device", "eth1")
 	dp62.Attributes().PutStr("kubernetes_node", "node0")
 	dp62.Attributes().PutStr("kubernetes_cluster", "cluster0")
-	dp62.Attributes().Sort()
 	dp62.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)))
 	dp62.SetIntValue(150)
 
@@ -488,7 +487,6 @@ func testMetricsData() pmetric.Metrics {
 	dp71.Attributes().PutStr("host", "host0")
 	dp71.Attributes().PutStr("kubernetes_node", "node0")
 	dp71.Attributes().PutStr("kubernetes_cluster", "cluster0")
-	dp71.Attributes().Sort()
 	dp71.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)))
 	dp71.SetIntValue(1000)
 
@@ -498,7 +496,6 @@ func testMetricsData() pmetric.Metrics {
 	dp81.Attributes().PutStr("host", "host0")
 	dp81.Attributes().PutStr("kubernetes_node", "node0")
 	dp81.Attributes().PutStr("kubernetes_cluster", "cluster0")
-	dp81.Attributes().Sort()
 	dp81.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)))
 	dp81.SetIntValue(1000)
 
@@ -508,7 +505,6 @@ func testMetricsData() pmetric.Metrics {
 	dp91.Attributes().PutStr("host", "host0")
 	dp91.Attributes().PutStr("kubernetes_node", "node0")
 	dp91.Attributes().PutStr("kubernetes_cluster", "cluster0")
-	dp91.Attributes().Sort()
 	dp91.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)))
 	dp91.SetIntValue(1000)
 

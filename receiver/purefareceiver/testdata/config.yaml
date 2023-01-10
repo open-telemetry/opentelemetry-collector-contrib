@@ -11,6 +11,7 @@ receivers:
       - address: gse-array02
         auth:
           authenticator: bearertokenauth/array02
+    env: dev
     settings:
       reload_intervals:
         array: 10s
