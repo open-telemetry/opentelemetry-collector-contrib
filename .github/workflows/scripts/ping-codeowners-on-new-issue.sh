@@ -65,7 +65,7 @@ for COMPONENT in ${BODY_COMPONENTS}; do
     fi
 
     PING_LINES+="- ${COMPONENT}: ${CODEOWNERS}\n"
-    PINGED_COMPONENTS["${TITLE_COMPONENT}"]=1
+    PINGED_COMPONENTS["${COMPONENT}"]=1
 
     if (( "${#COMPONENT}" > 50 )); then
       echo "'${COMPONENT}' exceeds GitHub's 50-character limit on labels, skipping adding a label"
