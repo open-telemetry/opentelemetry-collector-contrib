@@ -69,7 +69,7 @@ func (e *exporter) start(ctx context.Context, host component.Host) (err error) {
 	if e.config.Metrics.Headers == nil {
 		e.config.Metrics.Headers = make(map[string]string)
 	}
-	e.config.Metrics.Headers["Authorization"] = "Bearer " + e.config.PrivateKey
+	e.config.Metrics.Headers["Authorization"] = "Bearer " + string(e.config.PrivateKey)
 
 	e.callOptions = []grpc.CallOption{
 		grpc.WaitForReady(e.config.Metrics.WaitForReady),

@@ -14,7 +14,8 @@
 
 package alibabacloudlogserviceexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter"
 
-// Config defines configuration for AlibabaCloud Log Service exporter.
+import "go.opentelemetry.io/collector/config/configopaque" // Config defines configuration for AlibabaCloud Log Service exporter.
+
 type Config struct {
 	// LogService's Endpoint, https://www.alibabacloud.com/help/doc-detail/29008.htm
 	// for AlibabaCloud Kubernetes(or ECS), set {region-id}-intranet.log.aliyuncs.com, eg cn-hangzhou-intranet.log.aliyuncs.com;
@@ -27,7 +28,7 @@ type Config struct {
 	// AlibabaCloud access key id
 	AccessKeyID string `mapstructure:"access_key_id"`
 	// AlibabaCloud access key secret
-	AccessKeySecret string `mapstructure:"access_key_secret"`
+	AccessKeySecret configopaque.String `mapstructure:"access_key_secret"`
 	// Set AlibabaCLoud ECS ram role if you are using ACK
 	ECSRamRole string `mapstructure:"ecs_ram_role"`
 	// Set Token File Path if you are using ACK

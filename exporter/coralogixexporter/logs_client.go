@@ -63,7 +63,7 @@ func (e *logsExporter) start(ctx context.Context, host component.Host) (err erro
 	if e.config.Logs.Headers == nil {
 		e.config.Logs.Headers = make(map[string]string)
 	}
-	e.config.Logs.Headers["Authorization"] = "Bearer " + e.config.PrivateKey
+	e.config.Logs.Headers["Authorization"] = "Bearer " + string(e.config.PrivateKey)
 
 	e.callOptions = []grpc.CallOption{
 		grpc.WaitForReady(e.config.Logs.WaitForReady),
