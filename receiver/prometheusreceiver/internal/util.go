@@ -33,6 +33,7 @@ const (
 	metricsSuffixSum    = "_sum"
 	metricSuffixTotal   = "_total"
 	metricSuffixInfo    = "_info"
+	metricSuffixCreated = "_created"
 	startTimeMetricName = "process_start_time_seconds"
 	scrapeUpMetricName  = "up"
 
@@ -41,7 +42,7 @@ const (
 )
 
 var (
-	trimmableSuffixes     = []string{metricsSuffixBucket, metricsSuffixCount, metricsSuffixSum, metricSuffixTotal, metricSuffixInfo}
+	trimmableSuffixes     = []string{metricsSuffixBucket, metricsSuffixCount, metricsSuffixSum, metricSuffixTotal, metricSuffixInfo, metricSuffixCreated}
 	errNoDataToBuild      = errors.New("there's no data to build")
 	errNoBoundaryLabel    = errors.New("given metricType has no 'le' or 'quantile' label")
 	errEmptyQuantileLabel = errors.New("'quantile' label on summary metric missing is empty")

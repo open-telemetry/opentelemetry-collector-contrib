@@ -315,6 +315,13 @@ func adjustMetricHistogram(tsm *timeseriesMap, current pmetric.Metric) {
 	currentPoints := histogram.DataPoints()
 	for i := 0; i < currentPoints.Len(); i++ {
 		currentDist := currentPoints.At(i)
+
+		// start timestamp was set from _created
+		if !currentDist.Flags().NoRecordedValue() &&
+			currentDist.StartTimestamp() < currentDist.Timestamp() {
+			continue
+		}
+
 		tsi, found := tsm.get(current, currentDist.Attributes())
 		if !found {
 			// initialize everything.
@@ -349,6 +356,13 @@ func adjustMetricSum(tsm *timeseriesMap, current pmetric.Metric) {
 	currentPoints := current.Sum().DataPoints()
 	for i := 0; i < currentPoints.Len(); i++ {
 		currentSum := currentPoints.At(i)
+
+		// start timestamp was set from _created
+		if !currentSum.Flags().NoRecordedValue() &&
+			currentSum.StartTimestamp() < currentSum.Timestamp() {
+			continue
+		}
+
 		tsi, found := tsm.get(current, currentSum.Attributes())
 		if !found {
 			// initialize everything.
@@ -381,6 +395,13 @@ func adjustMetricSummary(tsm *timeseriesMap, current pmetric.Metric) {
 
 	for i := 0; i < currentPoints.Len(); i++ {
 		currentSummary := currentPoints.At(i)
+
+		// start timestamp was set from _created
+		if !currentSummary.Flags().NoRecordedValue() &&
+			currentSummary.StartTimestamp() < currentSummary.Timestamp() {
+			continue
+		}
+
 		tsi, found := tsm.get(current, currentSummary.Attributes())
 		if !found {
 			// initialize everything.
