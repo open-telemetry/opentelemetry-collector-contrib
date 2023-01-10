@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver/internal"
@@ -44,6 +45,17 @@ func newReceiver(cfg *Config, set receiver.CreateSettings, next consumer.Metrics
 		next: next,
 	}
 }
+
+type loggingHost struct {
+	component.Host
+	logger *zap.Logger
+}
+
+func (h *loggingHost) ReportFatalError(err error) {
+	h.logger.Error("receiver reported a fatal error", zap.Error(err))
+}
+
+var _ component.Host = (*loggingHost)(nil)
 
 func (r *purefaReceiver) Start(ctx context.Context, compHost component.Host) error {
 	fact := prometheusreceiver.NewFactory()
