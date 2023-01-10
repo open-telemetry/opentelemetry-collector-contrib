@@ -19,12 +19,12 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"errors"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
