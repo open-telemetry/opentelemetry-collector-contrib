@@ -51,8 +51,7 @@ func FromMetrics(md pmetric.Metrics, settings Settings) (tsMap map[string]*promp
 				metric := metricSlice.At(k)
 				mostRecentTimestamp = maxTimestamp(mostRecentTimestamp, mostRecentTimestampInMetric(metric))
 
-				// check for valid type and temporality combination and for matching data field and type
-				if ok := validateMetrics(metric); !ok {
+				if !isValidAggregationTemporality(metric) {
 					errs = multierr.Append(errs, errors.New("invalid temporality and type combination"))
 					continue
 				}
