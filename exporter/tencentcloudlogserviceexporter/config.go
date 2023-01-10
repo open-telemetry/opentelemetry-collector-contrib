@@ -18,6 +18,7 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configopaque"
 )
 
 // Config defines configuration for TencentCloud Log Service exporter.
@@ -33,7 +34,7 @@ type Config struct {
 	// TencentCloud access key id
 	SecretID string `mapstructure:"secret_id"`
 	// TencentCloud access key secret
-	SecretKey string `mapstructure:"secret_key"`
+	SecretKey configopaque.String `mapstructure:"secret_key"`
 }
 
 var _ component.Config = (*Config)(nil)
