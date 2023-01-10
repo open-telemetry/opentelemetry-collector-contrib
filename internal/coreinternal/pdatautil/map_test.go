@@ -34,7 +34,6 @@ func TestMapHash_Equal(t *testing.T) {
 				for i := 0; i < len(m); i++ {
 					m[i] = pcommon.NewMap()
 				}
-
 				m[1].PutStr("k", "")
 				m[2].PutStr("k", "v")
 				m[3].PutStr("k1", "v1")
@@ -136,5 +135,62 @@ func TestMapHash_Equal(t *testing.T) {
 			}
 		})
 	}
+}
 
+func BenchmarkMapHashFourItems(b *testing.B) {
+	m := pcommon.NewMap()
+	m.PutStr("test-string-key2", "test-value-2")
+	m.PutStr("test-string-key1", "test-value-1")
+	m.PutInt("test-int-key", 123)
+	m.PutBool("test-bool-key", true)
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		MapHash(m)
+	}
+}
+
+func BenchmarkMapHashEightItems(b *testing.B) {
+	m := pcommon.NewMap()
+	m.PutStr("test-string-key2", "test-value-2")
+	m.PutStr("test-string-key1", "test-value-1")
+	m.PutInt("test-int-key", 123)
+	m.PutBool("test-bool-key", true)
+	m.PutStr("test-string-key3", "test-value-3")
+	m.PutDouble("test-double-key2", 22.123)
+	m.PutDouble("test-double-key1", 11.123)
+	m.PutEmptyBytes("test-bytes-key").FromRaw([]byte("abc"))
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		MapHash(m)
+	}
+}
+
+func BenchmarkMapHashWithEmbeddedSliceAndMap(b *testing.B) {
+	m := pcommon.NewMap()
+	m.PutStr("test-string-key2", "test-value-2")
+	m.PutStr("test-string-key1", "test-value-1")
+	m.PutInt("test-int-key", 123)
+	m.PutBool("test-bool-key", true)
+	m.PutStr("test-string-key3", "test-value-3")
+	m.PutDouble("test-double-key2", 22.123)
+	m.PutDouble("test-double-key1", 11.123)
+	m.PutEmptyBytes("test-bytes-key").FromRaw([]byte("abc"))
+	m1 := m.PutEmptyMap("test-map-key")
+	m1.PutStr("test-embedded-string-key", "test-embedded-string-value")
+	m1.PutDouble("test-embedded-double-key", 22.123)
+	m1.PutInt("test-embedded-int-key", 234)
+	sl := m.PutEmptySlice("test-slice-key")
+	sl.AppendEmpty().SetStr("test-slice-string-1")
+	sl.AppendEmpty().SetStr("test-slice-string-2")
+	sl.AppendEmpty().SetStr("test-slice-string-3")
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		MapHash(m)
+	}
 }
