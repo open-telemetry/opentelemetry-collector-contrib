@@ -25,6 +25,7 @@ import (
 )
 
 var (
+	extraByte       = []byte{'\xf3'}
 	keyPrefix       = []byte{'\xf4'}
 	valEmpty        = []byte{'\xf5'}
 	valBytesPrefix  = []byte{'\xf6'}
@@ -41,10 +42,20 @@ var (
 
 // MapHash return a hash for the provided map.
 // Maps with the same underlying key/value pairs in different order produce the same deterministic hash value.
-func MapHash(m pcommon.Map) uint64 {
+func MapHash(m pcommon.Map) [16]byte {
 	h := xxhash.New()
+
 	writeMapHash(h, m)
-	return h.Sum64()
+	b := make([]byte, 0, 16)
+	b = h.Sum(b)
+
+	// Append an extra byte to generate another part of the hash sum
+	_, _ = h.Write(extraByte)
+	b = h.Sum(b)
+
+	res := [16]byte{}
+	copy(res[:], b)
+	return res
 }
 
 func writeMapHash(h hash.Hash, m pcommon.Map) {
