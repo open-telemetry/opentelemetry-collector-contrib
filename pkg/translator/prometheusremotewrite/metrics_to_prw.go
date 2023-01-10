@@ -19,20 +19,10 @@ import (
 	"fmt"
 
 	"github.com/prometheus/prometheus/prompb"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"
 )
-
-// Deprecated: [0.45.0] use `prometheusremotewrite.FromMetrics`. It does not wrap the error as `NewPermanent`.
-func MetricsToPRW(namespace string, externalLabels map[string]string, md pmetric.Metrics) (map[string]*prompb.TimeSeries, int, error) {
-	tsMap, err := FromMetrics(md, Settings{Namespace: namespace, ExternalLabels: externalLabels})
-	if err != nil {
-		err = consumererror.NewPermanent(err)
-	}
-	return tsMap, md.MetricCount() - len(tsMap), err
-}
 
 type Settings struct {
 	Namespace         string
