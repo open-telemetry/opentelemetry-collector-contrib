@@ -31,7 +31,6 @@ type Retrier struct {
 	cfg      exporterhelper.RetrySettings
 	logger   *zap.Logger
 	scrubber scrub.Scrubber
-	retryNum int64
 }
 
 func NewRetrier(logger *zap.Logger, settings exporterhelper.RetrySettings, scrubber scrub.Scrubber) *Retrier {
@@ -39,15 +38,14 @@ func NewRetrier(logger *zap.Logger, settings exporterhelper.RetrySettings, scrub
 		cfg:      settings,
 		logger:   logger,
 		scrubber: scrubber,
-		retryNum: int64(0),
 	}
 }
 
 // DoWithRetries does a function with retries. This is a condensed version of the code on
 // the exporterhelper, which we reuse here since we want custom retry logic.
-func (r *Retrier) DoWithRetries(ctx context.Context, fn func(context.Context) error) error {
+func (r *Retrier) DoWithRetries(ctx context.Context, fn func(context.Context) error) (int64, error) {
 	if !r.cfg.Enabled {
-		return fn(ctx)
+		return 0, fn(ctx)
 	}
 
 	// Do not use NewExponentialBackOff since it calls Reset and the code here must
@@ -62,23 +60,23 @@ func (r *Retrier) DoWithRetries(ctx context.Context, fn func(context.Context) er
 		Clock:               backoff.SystemClock,
 	}
 	expBackoff.Reset()
-	r.retryNum = int64(0)
+	retryNum := int64(0)
 	for {
 		err := fn(ctx)
 		if err == nil {
-			return nil
+			return retryNum, nil
 		}
 
 		err = r.scrubber.Scrub(err)
 
 		if consumererror.IsPermanent(err) {
-			return err
+			return retryNum, err
 		}
 
 		backoffDelay := expBackoff.NextBackOff()
 		if backoffDelay == backoff.Stop {
 			err = fmt.Errorf("max elapsed time expired %w", err)
-			return err
+			return retryNum, err
 		}
 
 		backoffDelayStr := backoffDelay.String()
@@ -87,12 +85,12 @@ func (r *Retrier) DoWithRetries(ctx context.Context, fn func(context.Context) er
 			zap.Error(err),
 			zap.String("interval", backoffDelayStr),
 		)
-		r.retryNum++
+		retryNum++
 
 		// back-off, but get interrupted when shutting down or request is cancelled or timed out.
 		select {
 		case <-ctx.Done():
-			return fmt.Errorf("request is cancelled or timed out %w", err)
+			return retryNum, fmt.Errorf("request is cancelled or timed out %w", err)
 		case <-time.After(backoffDelay):
 		}
 	}
