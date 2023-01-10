@@ -518,21 +518,13 @@ func TestAttributeGrouping(t *testing.T) {
 				histogramDataPoint := hms.At(i).Histogram().DataPoints().At(0)
 				exponentialHistogramDataPoint := ehms.At(i).ExponentialHistogram().DataPoints().At(0)
 
-				log.Attributes().Sort()
-				span.Attributes().Sort()
-				gaugeDataPoint.Attributes().Sort()
-				sumDataPoint.Attributes().Sort()
-				summaryDataPoint.Attributes().Sort()
-				histogramDataPoint.Attributes().Sort()
-				exponentialHistogramDataPoint.Attributes().Sort()
-
-				assert.EqualValues(t, expectedAttributes, log.Attributes())
-				assert.EqualValues(t, expectedAttributes, span.Attributes())
-				assert.EqualValues(t, expectedAttributes, gaugeDataPoint.Attributes())
-				assert.EqualValues(t, expectedAttributes, sumDataPoint.Attributes())
-				assert.EqualValues(t, expectedAttributes, summaryDataPoint.Attributes())
-				assert.EqualValues(t, expectedAttributes, histogramDataPoint.Attributes())
-				assert.EqualValues(t, expectedAttributes, exponentialHistogramDataPoint.Attributes())
+				assert.Equal(t, expectedAttributes.AsRaw(), log.Attributes().AsRaw())
+				assert.Equal(t, expectedAttributes.AsRaw(), span.Attributes().AsRaw())
+				assert.Equal(t, expectedAttributes.AsRaw(), gaugeDataPoint.Attributes().AsRaw())
+				assert.Equal(t, expectedAttributes.AsRaw(), sumDataPoint.Attributes().AsRaw())
+				assert.Equal(t, expectedAttributes.AsRaw(), summaryDataPoint.Attributes().AsRaw())
+				assert.Equal(t, expectedAttributes.AsRaw(), histogramDataPoint.Attributes().AsRaw())
+				assert.Equal(t, expectedAttributes.AsRaw(), exponentialHistogramDataPoint.Attributes().AsRaw())
 			}
 		})
 	}
