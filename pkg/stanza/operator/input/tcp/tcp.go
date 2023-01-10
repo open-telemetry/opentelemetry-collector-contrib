@@ -294,6 +294,9 @@ func (t *Input) goHandleMessages(ctx context.Context, conn net.Conn, cancel cont
 
 // Stop will stop listening for log entries over TCP.
 func (t *Input) Stop() error {
+	if t.cancel == nil {
+		return nil
+	}
 	t.cancel()
 
 	if t.listener != nil {

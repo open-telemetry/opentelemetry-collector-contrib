@@ -89,7 +89,7 @@ The following configuration options can also be configured:
 that are allowed to be used as a dimension key in addition to alphanumeric 
 characters. Each nonalphanumeric dimension key character that isn't in this string 
 will be replaced with a `_`.
-- `max_connections` (default = 100):  The maximum number of idle HTTP connection the exporter can keep open.
+- `max_connections` (default = 100):  The maximum number of idle HTTP connections the exporter can keep open. Deprecated: use `max_idle_conns` or `max_idle_conns_per_host` instead. See [HTTP settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/confighttp/README.md) for more info.
 - `ingest_tls`: (no default) exposes a list of TLS settings to establish a secure connection with signafx receiver configured on another collector instance.
   - `ca_file` needs to be set if the exporter's `ingest_url` is pointing to a signalfx receiver
   with TLS enabled and using a self-signed certificate where its CA is not loaded in the system cert pool.
@@ -270,6 +270,14 @@ with detailed sample configurations [here](testdata/config.yaml).
 
 This exporter also offers proxy support as documented
 [here](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter#proxy-support).
+
+## Advanced Configuration
+
+Several helper files are leveraged to provide additional capabilities automatically:
+
+- [HTTP settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/confighttp/README.md)
+- [TLS and mTLS settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md)
+- [Queuing, retry and timeout settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
 
 [beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

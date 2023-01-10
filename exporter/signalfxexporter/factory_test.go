@@ -27,7 +27,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -112,11 +113,13 @@ func TestCreateMetricsExporter_CustomConfig(t *testing.T) {
 	config := &Config{
 		AccessToken: "testToken",
 		Realm:       "us1",
-		Headers: map[string]string{
-			"added-entry": "added value",
-			"dot.test":    "test",
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Timeout: 2 * time.Second,
+			Headers: map[string]configopaque.String{
+				"added-entry": "added value",
+				"dot.test":    "test",
+			},
 		},
-		TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: 2 * time.Second},
 	}
 
 	te, err := createMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), config)
@@ -133,9 +136,9 @@ func TestFactory_CreateMetricsExporterFails(t *testing.T) {
 		{
 			name: "negative_duration",
 			config: &Config{
-				AccessToken:     "testToken",
-				Realm:           "lab",
-				TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: -2 * time.Second},
+				AccessToken:        "testToken",
+				Realm:              "lab",
+				HTTPClientSettings: confighttp.HTTPClientSettings{Timeout: -2 * time.Second},
 			},
 			errorMessage: "cannot have a negative \"timeout\"",
 		},

@@ -27,7 +27,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
@@ -61,12 +60,6 @@ func TestScrape(t *testing.T) {
 
 		cfg.Metrics.MysqlReplicaSQLDelay.Enabled = true
 		cfg.Metrics.MysqlReplicaTimeBehindSource.Enabled = true
-
-		// Test with feature gate enabled
-		err := featuregate.GetRegistry().Apply(map[string]bool{
-			RenameCommands: true,
-		})
-		require.NoError(t, err)
 
 		cfg.Metrics.MysqlConnectionCount.Enabled = true
 

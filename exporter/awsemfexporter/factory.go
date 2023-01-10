@@ -17,9 +17,11 @@ package awsemfexporter // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"context"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
+	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 )
 
 const (
@@ -46,8 +48,7 @@ func createDefaultConfig() component.Config {
 		Namespace:             "",
 		DimensionRollupOption: "ZeroAndSingleDimensionRollup",
 		OutputDestination:     "cloudwatch",
-		logger:                nil,
-		DetailedMetrics:       false,
+		logger:                zap.NewNop(),
 	}
 }
 

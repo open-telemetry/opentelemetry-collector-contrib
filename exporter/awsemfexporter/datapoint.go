@@ -12,9 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/*
-datapoint.go - calculate delta values or keep the value  for each OTEL type (e.g calculate delta for Counter)
-*/
 package awsemfexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter"
 
 import (
@@ -134,14 +131,13 @@ func (dps numberDataPointSlice) CalculateDeltaDatapoints(i int, instrumentationL
 		metricVal = float64(metric.IntValue())
 	}
 
-	var retained bool = true
-	var datapoints []dataPoint = []dataPoint{}
+	retained := true
 
 	if dps.adjustToDelta {
 		var deltaVal interface{}
 		deltaVal, retained = deltaMetricCalculator.Calculate(dps.metricName, mergeLabels(dps.deltaMetricMetadata, labels), metricVal, metric.Timestamp().AsTime())
 		if !retained {
-			return datapoints, retained
+			return nil, retained
 		}
 		// It should not happen in practice that the previous metric value is smaller than the current one.
 		// If it happens, we assume that the metric is reset for some reason.
@@ -150,9 +146,7 @@ func (dps numberDataPointSlice) CalculateDeltaDatapoints(i int, instrumentationL
 		}
 	}
 
-	datapoints = append(datapoints, dataPoint{name: dps.metricName, value: metricVal, labels: labels, timestampMs: timestampMs})
-
-	return datapoints, retained
+	return []dataPoint{dataPoint{name: dps.metricName, value: metricVal, labels: labels, timestampMs: timestampMs}}, retained
 }
 
 // At retrieves the HistogramDataPoint at the given index.
@@ -182,8 +176,9 @@ func (dps summaryDataPointSlice) CalculateDeltaDatapoints(i int, instrumentation
 
 	sum := metric.Sum()
 	count := metric.Count()
-	var retained bool = true
-	var datapoints []dataPoint = []dataPoint{}
+
+	retained := true
+	datapoints := []dataPoint{}
 
 	if dps.adjustToDelta {
 		var delta interface{}
@@ -249,7 +244,8 @@ func getDataPoints(pmd pmetric.Metric, metadata cWMetricMetadata, logger *zap.Lo
 		logStream:     metadata.logStream,
 	}
 
-	var dps dataPointSlice = nil
+	var dps dataPointSlice
+
 	switch pmd.Type() {
 	case pmetric.MetricTypeGauge:
 		metric := pmd.Gauge()

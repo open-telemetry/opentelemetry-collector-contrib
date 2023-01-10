@@ -74,6 +74,7 @@ type serviceGraphProcessor struct {
 	reqDurationBounds              []float64
 	reqDurationSecondsBucketCounts map[string][]uint64
 
+	metricMutex sync.RWMutex
 	keyToMetric map[string]metricSeries
 
 	shutdownCh chan interface{}
@@ -308,6 +309,8 @@ func (p *serviceGraphProcessor) aggregateMetricsForEdge(e *store.Edge) {
 }
 
 func (p *serviceGraphProcessor) updateSeries(key string, dimensions pcommon.Map) {
+	p.metricMutex.Lock()
+	defer p.metricMutex.Unlock()
 	// Overwrite the series if it already exists
 	p.keyToMetric[key] = metricSeries{
 		dimensions:  dimensions,
@@ -316,6 +319,8 @@ func (p *serviceGraphProcessor) updateSeries(key string, dimensions pcommon.Map)
 }
 
 func (p *serviceGraphProcessor) dimensionsForSeries(key string) (pcommon.Map, bool) {
+	p.metricMutex.RLock()
+	defer p.metricMutex.RUnlock()
 	if series, ok := p.keyToMetric[key]; ok {
 		return series.dimensions, true
 	}
@@ -487,15 +492,19 @@ func (p *serviceGraphProcessor) cacheLoop(d time.Duration) {
 // cleanCache removes series that have not been updated in 15 minutes
 func (p *serviceGraphProcessor) cleanCache() {
 	var staleSeries []string
+	p.metricMutex.RLock()
 	for key, series := range p.keyToMetric {
 		if series.lastUpdated+15*time.Minute.Milliseconds() < time.Now().UnixMilli() {
 			staleSeries = append(staleSeries, key)
 		}
 	}
+	p.metricMutex.RUnlock()
 
+	p.metricMutex.Lock()
 	for _, key := range staleSeries {
 		delete(p.keyToMetric, key)
 	}
+	p.metricMutex.Unlock()
 }
 
 // durationToMillis converts the given duration to the number of milliseconds it represents.

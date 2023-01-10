@@ -156,6 +156,7 @@ func TestDefaultProcessors(t *testing.T) {
 				return
 			}
 			verifyProcessorLifecycle(t, factory, tt.getConfigFn)
+			verifyProcessorShutdown(t, factory, tt.getConfigFn)
 		})
 	}
 }
@@ -165,7 +166,7 @@ func TestDefaultProcessors(t *testing.T) {
 // default configuration.
 type getProcessorConfigFn func() component.Config
 
-// verifyProcessorLifecycle is used to test if an processor type can handle the typical
+// verifyProcessorLifecycle is used to test if a processor type can handle the typical
 // lifecycle of a component. The getConfigFn parameter only need to be specified if
 // the test can't be done with the default configuration for the component.
 func verifyProcessorLifecycle(t *testing.T, factory processor.Factory, getConfigFn getProcessorConfigFn) {
@@ -196,6 +197,33 @@ func verifyProcessorLifecycle(t *testing.T, factory processor.Factory, getConfig
 		require.NoError(t, err)
 		require.NoError(t, secondExp.Start(ctx, host))
 		require.NoError(t, secondExp.Shutdown(ctx))
+	}
+}
+
+// verifyProcessorShutdown is used to test if a processor type can be shutdown without being started first.
+// We disregard errors being returned by shutdown, we're just making sure the processors don't panic.
+func verifyProcessorShutdown(tb testing.TB, factory processor.Factory, getConfigFn getProcessorConfigFn) {
+	ctx := context.Background()
+	processorCreationSet := processortest.NewNopCreateSettings()
+
+	if getConfigFn == nil {
+		getConfigFn = factory.CreateDefaultConfig
+	}
+
+	createFns := []createProcessorFn{
+		wrapCreateLogsProc(factory),
+		wrapCreateTracesProc(factory),
+		wrapCreateMetricsProc(factory),
+	}
+
+	for _, createFn := range createFns {
+		p, err := createFn(ctx, processorCreationSet, getConfigFn())
+		if errors.Is(err, component.ErrDataTypeIsNotSupported) {
+			continue
+		}
+		assert.NotPanics(tb, func() {
+			_ = p.Shutdown(ctx)
+		})
 	}
 }
 
