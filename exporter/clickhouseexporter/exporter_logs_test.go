@@ -106,7 +106,7 @@ func TestLogsExporter_createDatabase(t *testing.T) {
 	initClickhouseTestServer(t, func(query string, values []driver.Value) error {
 		return nil
 	})
-	t.Run("tcp://mydatabase-clickhouse-headless:9000/mydatabase", func(t *testing.T) {
+	t.Run("database name is a substring of the DSN", func(t *testing.T) {
 		c := &Config{
 			TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
 			QueueSettings:   QueueSettings{QueueSize: exporterhelper.NewDefaultQueueSettings().QueueSize},
@@ -119,12 +119,12 @@ func TestLogsExporter_createDatabase(t *testing.T) {
 		err := createDatabase(c)
 		require.NoError(t, err)
 	})
-	t.Run("tcp://newdatabase-clickhouse-headless:9000/newdatabase", func(t *testing.T) {
+	t.Run("database name isn't a substring of the DSN", func(t *testing.T) {
 		c := &Config{
 			TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
 			QueueSettings:   QueueSettings{QueueSize: exporterhelper.NewDefaultQueueSettings().QueueSize},
 			RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
-			DSN:             "tcp://newdatabase-clickhouse-headless:9000/newdatabase",
+			DSN:             "tcp://newdatabase-clickhouse-headless:9000/otel",
 			LogsTableName:   "otel_logs",
 			TracesTableName: "otel_traces",
 			TTLDays:         7,
