@@ -288,6 +288,16 @@ metrics:
     enabled: true
 ```
 
+### mongodb.health
+
+The health status of the server.
+
+A value of '1' indicates healthy. A value of '0' indicates unhealthy.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
 ### mongodb.lock.acquire.count
 
 Number of times the lock was acquired in the specified mode.
@@ -379,6 +389,14 @@ The number of replicated operations executed.
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | operation | The MongoDB operation being counted. | Str: ``insert``, ``query``, ``update``, ``delete``, ``getmore``, ``command`` |
+
+### mongodb.uptime
+
+The amount of time that the server has been running.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| ms | Sum | Int | Cumulative | true |
 
 ## Resource Attributes
 
