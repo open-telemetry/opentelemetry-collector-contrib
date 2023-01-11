@@ -358,6 +358,167 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 	}
 }
 
+func Test_metricsExporter_SumAsRate(t *testing.T) {
+	if !isMetricExportV2Enabled() {
+		require.NoError(t, enableNativeMetricExport())
+		t.Cleanup(func() { require.NoError(t, enableZorkianMetricExport()) })
+	}
+	attrs := map[string]string{
+		conventions.AttributeDeploymentEnvironment: "dev",
+		"custom_attribute":                         "custom_value",
+	}
+	tests := []struct {
+		metrics                     pmetric.Metrics
+		source                      source.Source
+		hostTags                    []string
+		submitAsRate                bool
+		sumToRateConversionInterval time.Duration
+		expectedSeries              map[string]interface{}
+	}{
+		{
+			metrics: createTestSums(attrs),
+			source: source.Source{
+				Kind:       source.HostnameKind,
+				Identifier: "test-host",
+			},
+			hostTags:                    []string{"key1:value1", "key2:value2"},
+			submitAsRate:                true,
+			sumToRateConversionInterval: DefaultSumToRateInterval,
+			expectedSeries: map[string]interface{}{
+				"series": []interface{}{
+					map[string]interface{}{
+						"metric":    "int.sum",
+						"points":    []interface{}{map[string]interface{}{"timestamp": float64(0), "value": float64(11.1)}},
+						"type":      float64(datadogV2.METRICINTAKETYPE_RATE),
+						"resources": []interface{}{map[string]interface{}{"name": "test-host", "type": "host"}},
+						"tags":      []interface{}{"env:dev"},
+					},
+					map[string]interface{}{
+						"metric":    "double.sum",
+						"points":    []interface{}{map[string]interface{}{"timestamp": float64(0), "value": float64(12.345)}},
+						"type":      float64(datadogV2.METRICINTAKETYPE_RATE),
+						"resources": []interface{}{map[string]interface{}{"name": "test-host", "type": "host"}},
+						"tags":      []interface{}{"env:dev"},
+					},
+					map[string]interface{}{
+						"metric":    "otel.datadog_exporter.metrics.running",
+						"points":    []interface{}{map[string]interface{}{"timestamp": float64(0), "value": float64(1)}},
+						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
+						"resources": []interface{}{map[string]interface{}{"name": "test-host", "type": "host"}},
+						"tags":      []interface{}{"version:latest", "command:otelcol"},
+					},
+				},
+			},
+		},
+		{
+			metrics: createTestSums(attrs),
+			source: source.Source{
+				Kind:       source.HostnameKind,
+				Identifier: "test-host",
+			},
+			hostTags:                    []string{"key1:value1", "key2:value2"},
+			submitAsRate:                true,
+			sumToRateConversionInterval: 2 * DefaultSumToRateInterval,
+			expectedSeries: map[string]interface{}{
+				"series": []interface{}{
+					map[string]interface{}{
+						"metric":    "int.sum",
+						"points":    []interface{}{map[string]interface{}{"timestamp": float64(0), "value": float64(5.55)}},
+						"type":      float64(datadogV2.METRICINTAKETYPE_RATE),
+						"resources": []interface{}{map[string]interface{}{"name": "test-host", "type": "host"}},
+						"tags":      []interface{}{"env:dev"},
+					},
+					map[string]interface{}{
+						"metric":    "double.sum",
+						"points":    []interface{}{map[string]interface{}{"timestamp": float64(0), "value": float64(6.1725)}},
+						"type":      float64(datadogV2.METRICINTAKETYPE_RATE),
+						"resources": []interface{}{map[string]interface{}{"name": "test-host", "type": "host"}},
+						"tags":      []interface{}{"env:dev"},
+					},
+					map[string]interface{}{
+						"metric":    "otel.datadog_exporter.metrics.running",
+						"points":    []interface{}{map[string]interface{}{"timestamp": float64(0), "value": float64(1)}},
+						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
+						"resources": []interface{}{map[string]interface{}{"name": "test-host", "type": "host"}},
+						"tags":      []interface{}{"version:latest", "command:otelcol"},
+					},
+				},
+			},
+		},
+		{
+			metrics: createTestSums(attrs),
+			source: source.Source{
+				Kind:       source.AWSECSFargateKind,
+				Identifier: "task_arn",
+			},
+			hostTags:     []string{"key1:value1", "key2:value2"},
+			submitAsRate: false,
+			expectedSeries: map[string]interface{}{
+				"series": []interface{}{
+					map[string]interface{}{
+						"metric":    "int.sum",
+						"points":    []interface{}{map[string]interface{}{"timestamp": float64(0), "value": float64(111)}},
+						"type":      float64(datadogV2.METRICINTAKETYPE_COUNT),
+						"resources": []interface{}{map[string]interface{}{"name": "test-host", "type": "host"}},
+						"tags":      []interface{}{"env:dev", "key1:value1", "key2:value2"},
+					},
+					map[string]interface{}{
+						"metric":    "double.sum",
+						"points":    []interface{}{map[string]interface{}{"timestamp": float64(0), "value": float64(123.45)}},
+						"type":      float64(datadogV2.METRICINTAKETYPE_COUNT),
+						"resources": []interface{}{map[string]interface{}{"name": "test-host", "type": "host"}},
+						"tags":      []interface{}{"env:dev", "key1:value1", "key2:value2"},
+					},
+					map[string]interface{}{
+						"metric":    "otel.datadog_exporter.metrics.running",
+						"points":    []interface{}{map[string]interface{}{"timestamp": float64(0), "value": float64(1)}},
+						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
+						"resources": []interface{}{map[string]interface{}{"name": "test-host", "type": "host"}},
+						"tags":      []interface{}{"version:latest", "command:otelcol", "key1:value1", "key2:value2"},
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(fmt.Sprintf("kind=%s", tt.source.Kind), func(t *testing.T) {
+			seriesRecorder := &testutil.HTTPRequestRecorder{Pattern: testutil.MetricV2Endpoint}
+			sketchRecorder := &testutil.HTTPRequestRecorder{Pattern: testutil.SketchesMetricEndpoint}
+			server := testutil.DatadogServerMock(
+				seriesRecorder.HandlerFunc,
+				sketchRecorder.HandlerFunc,
+			)
+			defer server.Close()
+
+			var (
+				once          sync.Once
+				statsRecorder testutil.MockStatsProcessor
+			)
+			exp, _ := newMetricsExporter(
+				context.Background(),
+				exportertest.NewNopCreateSettings(),
+				newTestSumsConfig(t, server.URL, tt.hostTags, tt.submitAsRate, tt.sumToRateConversionInterval),
+				&once,
+				&testutil.MockSourceProvider{Src: tt.source},
+				&statsRecorder,
+			)
+			exp.getPushTime = func() uint64 { return 0 }
+			err := exp.PushMetricsData(context.Background(), tt.metrics)
+			if len(tt.expectedSeries) == 0 {
+				assert.Nil(t, seriesRecorder.ByteBody)
+			} else {
+				assert.Equal(t, "gzip", seriesRecorder.Header.Get("Accept-Encoding"))
+				assert.Equal(t, "application/json", seriesRecorder.Header.Get("Content-Type"))
+				assert.Equal(t, "otelcol/latest", seriesRecorder.Header.Get("User-Agent"))
+				assert.NoError(t, err)
+				var actual map[string]interface{}
+				assert.NoError(t, json.Unmarshal(seriesRecorder.ByteBody, &actual))
+				assert.EqualValues(t, tt.expectedSeries, actual)
+			}
+		})
+	}
+}
+
 func TestNewExporter_Zorkian(t *testing.T) {
 	if isMetricExportV2Enabled() {
 		require.NoError(t, enableZorkianMetricExport())
@@ -741,6 +902,167 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 	}
 }
 
+func Test_metricsExporter_SumAsRate_Zorkian(t *testing.T) {
+	if isMetricExportV2Enabled() {
+		require.NoError(t, enableZorkianMetricExport())
+		t.Cleanup(func() { require.NoError(t, enableNativeMetricExport()) })
+	}
+	attrs := map[string]string{
+		conventions.AttributeDeploymentEnvironment: "dev",
+		"custom_attribute":                         "custom_value",
+	}
+	tests := []struct {
+		metrics                     pmetric.Metrics
+		source                      source.Source
+		hostTags                    []string
+		submitAsRate                bool
+		sumToRateConversionInterval time.Duration
+		expectedSeries              map[string]interface{}
+	}{
+		{
+			metrics: createTestSums(attrs),
+			source: source.Source{
+				Kind:       source.HostnameKind,
+				Identifier: "test-host",
+			},
+			hostTags:                    []string{"key1:value1", "key2:value2"},
+			submitAsRate:                true,
+			sumToRateConversionInterval: DefaultSumToRateInterval,
+			expectedSeries: map[string]interface{}{
+				"series": []interface{}{
+					map[string]interface{}{
+						"metric": "int.sum",
+						"points": []interface{}{[]interface{}{float64(0), float64(11.1)}},
+						"type":   "rate",
+						"host":   "test-host",
+						"tags":   []interface{}{"env:dev"},
+					},
+					map[string]interface{}{
+						"metric": "double.sum",
+						"points": []interface{}{[]interface{}{float64(0), float64(12.345)}},
+						"type":   "rate",
+						"host":   "test-host",
+						"tags":   []interface{}{"env:dev"},
+					},
+					map[string]interface{}{
+						"metric": "otel.datadog_exporter.metrics.running",
+						"points": []interface{}{[]interface{}{float64(0), float64(1)}},
+						"type":   "gauge",
+						"host":   "test-host",
+						"tags":   []interface{}{"version:latest", "command:otelcol"},
+					},
+				},
+			},
+		},
+		{
+			metrics: createTestSums(attrs),
+			source: source.Source{
+				Kind:       source.HostnameKind,
+				Identifier: "test-host",
+			},
+			hostTags:                    []string{"key1:value1", "key2:value2"},
+			submitAsRate:                true,
+			sumToRateConversionInterval: 2 * DefaultSumToRateInterval,
+			expectedSeries: map[string]interface{}{
+				"series": []interface{}{
+					map[string]interface{}{
+						"metric": "int.sum",
+						"points": []interface{}{[]interface{}{float64(0), float64(5.55)}},
+						"type":   "rate",
+						"host":   "test-host",
+						"tags":   []interface{}{"env:dev"},
+					},
+					map[string]interface{}{
+						"metric": "double.sum",
+						"points": []interface{}{[]interface{}{float64(0), float64(6.1725)}},
+						"type":   "rate",
+						"host":   "test-host",
+						"tags":   []interface{}{"env:dev"},
+					},
+					map[string]interface{}{
+						"metric": "otel.datadog_exporter.metrics.running",
+						"points": []interface{}{[]interface{}{float64(0), float64(1)}},
+						"type":   "gauge",
+						"host":   "test-host",
+						"tags":   []interface{}{"version:latest", "command:otelcol"},
+					},
+				},
+			},
+		},
+		{
+			metrics: createTestSums(attrs),
+			source: source.Source{
+				Kind:       source.AWSECSFargateKind,
+				Identifier: "task_arn",
+			},
+			hostTags:     []string{"key1:value1", "key2:value2"},
+			submitAsRate: false,
+			expectedSeries: map[string]interface{}{
+				"series": []interface{}{
+					map[string]interface{}{
+						"metric": "int.sum",
+						"points": []interface{}{[]interface{}{float64(0), float64(111)}},
+						"type":   "count",
+						"host":   "test-host",
+						"tags":   []interface{}{"env:dev", "key1:value1", "key2:value2"},
+					},
+					map[string]interface{}{
+						"metric": "double.sum",
+						"points": []interface{}{[]interface{}{float64(0), float64(123.45)}},
+						"type":   "count",
+						"host":   "test-host",
+						"tags":   []interface{}{"env:dev", "key1:value1", "key2:value2"},
+					},
+					map[string]interface{}{
+						"metric": "otel.datadog_exporter.metrics.running",
+						"points": []interface{}{[]interface{}{float64(0), float64(1)}},
+						"type":   "gauge",
+						"host":   "test-host",
+						"tags":   []interface{}{"version:latest", "command:otelcol", "key1:value1", "key2:value2"},
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(fmt.Sprintf("kind=%s", tt.source.Kind), func(t *testing.T) {
+			seriesRecorder := &testutil.HTTPRequestRecorder{Pattern: testutil.MetricV1Endpoint}
+			sketchRecorder := &testutil.HTTPRequestRecorder{Pattern: testutil.SketchesMetricEndpoint}
+			server := testutil.DatadogServerMock(
+				seriesRecorder.HandlerFunc,
+				sketchRecorder.HandlerFunc,
+			)
+			defer server.Close()
+
+			var (
+				once          sync.Once
+				statsRecorder testutil.MockStatsProcessor
+			)
+			exp, _ := newMetricsExporter(
+				context.Background(),
+				exportertest.NewNopCreateSettings(),
+				newTestSumsConfig(t, server.URL, tt.hostTags, tt.submitAsRate, tt.sumToRateConversionInterval),
+				&once,
+				&testutil.MockSourceProvider{Src: tt.source},
+				&statsRecorder,
+			)
+			exp.getPushTime = func() uint64 { return 0 }
+			err := exp.PushMetricsData(context.Background(), tt.metrics)
+			if len(tt.expectedSeries) == 0 {
+				assert.Nil(t, seriesRecorder.ByteBody)
+			} else {
+				assert.Equal(t, "gzip", seriesRecorder.Header.Get("Accept-Encoding"))
+				assert.Equal(t, "application/json", seriesRecorder.Header.Get("Content-Type"))
+				assert.Equal(t, "otelcol/latest", seriesRecorder.Header.Get("User-Agent"))
+				assert.NoError(t, err)
+				var actual map[string]interface{}
+				assert.NoError(t, json.Unmarshal(seriesRecorder.ByteBody, &actual))
+				assert.EqualValues(t, tt.expectedSeries, actual)
+			}
+		})
+	}
+}
+
 func createTestMetricsWithStats() pmetric.Metrics {
 	md := createTestMetrics(map[string]string{
 		conventions.AttributeDeploymentEnvironment: "dev",
@@ -834,6 +1156,76 @@ func newTestConfig(t *testing.T, endpoint string, hostTags []string, histogramMo
 			DeltaTTL: 3600,
 			SumConfig: SumConfig{
 				CumulativeMonotonicMode: CumulativeMonotonicSumModeRawValue,
+			},
+		},
+	}
+}
+
+func createTestSums(additionalAttributes map[string]string) pmetric.Metrics {
+	const (
+		host    = "test-host"
+		name    = "test-metrics"
+		version = "v0.0.1"
+	)
+	md := pmetric.NewMetrics()
+	rms := md.ResourceMetrics()
+	rm := rms.AppendEmpty()
+
+	attrs := rm.Resource().Attributes()
+	attrs.PutStr("datadog.host.name", host)
+	for attr, val := range additionalAttributes {
+		attrs.PutStr(attr, val)
+	}
+	ilms := rm.ScopeMetrics()
+
+	ilm := ilms.AppendEmpty()
+	ilm.Scope().SetName(name)
+	ilm.Scope().SetVersion(version)
+	metricsArray := ilm.Metrics()
+	metricsArray.AppendEmpty() // first one is TypeNone to test that it's ignored
+
+	// IntSum
+	met := metricsArray.AppendEmpty()
+	met.SetName("int.sum")
+	dpsInt := met.SetEmptySum().DataPoints()
+	met.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+	dpInt := dpsInt.AppendEmpty()
+	dpInt.SetTimestamp(seconds(0))
+	dpInt.SetIntValue(111)
+
+	// DoubleSum
+	met = metricsArray.AppendEmpty()
+	met.SetName("double.sum")
+	dpsDbl := met.SetEmptySum().DataPoints()
+	met.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+	dpDbl := dpsDbl.AppendEmpty()
+	dpDbl.SetTimestamp(seconds(0))
+	dpDbl.SetDoubleValue(123.45)
+
+	return md
+}
+
+func newTestSumsConfig(t *testing.T, endpoint string, hostTags []string,
+	submitAsRate bool, sumToRateInterval time.Duration) *Config {
+
+	t.Helper()
+	return &Config{
+		HostMetadata: HostMetadataConfig{
+			Tags: hostTags,
+		},
+		Metrics: MetricsConfig{
+			TCPAddr: confignet.TCPAddr{
+				Endpoint: endpoint,
+			},
+			HistConfig: HistogramConfig{
+				Mode: HistogramModeCounters,
+			},
+			// Set values to avoid errors. No particular intention in value selection.
+			DeltaTTL: 3600,
+			SumConfig: SumConfig{
+				CumulativeMonotonicMode:     CumulativeMonotonicSumModeRawValue,
+				SubmitAsRate:                submitAsRate,
+				SumToRateConversionInterval: sumToRateInterval,
 			},
 		},
 	}
