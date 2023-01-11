@@ -76,6 +76,7 @@ Triagers ([@open-telemetry/collector-contrib-triagers](https://github.com/orgs/o
 
 - [Goutham Veeramachaneni](https://github.com/gouthamve), Grafana
 - [Ziqi Zhao](https://github.com/fatsheep9146), Alibaba
+- [Antoine Toulme](https://github.com/atoulme), Splunk
 - Actively seeking contributors to triage issues
 
 Emeritus Triagers:
