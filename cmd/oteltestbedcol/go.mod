@@ -210,7 +210,7 @@ require (
 	go.opentelemetry.io/collector/confmap v0.69.0 // indirect
 	go.opentelemetry.io/collector/consumer v0.69.0 // indirect
 	go.opentelemetry.io/collector/featuregate v0.69.0 // indirect
-	go.opentelemetry.io/collector/pdata v1.0.0-rc3.0.20230109164642-7d168dd20efd // indirect
+	go.opentelemetry.io/collector/pdata v1.0.0-rc3 // indirect
 	go.opentelemetry.io/collector/semconv v0.69.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.37.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.37.0 // indirect

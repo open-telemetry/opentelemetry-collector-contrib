@@ -36,7 +36,7 @@ require (
 	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.69.0
 	go.opentelemetry.io/collector/extension/ballastextension v0.69.0
 	go.opentelemetry.io/collector/extension/zpagesextension v0.69.0
-	go.opentelemetry.io/collector/pdata v1.0.0-rc3.0.20230109164642-7d168dd20efd
+	go.opentelemetry.io/collector/pdata v1.0.0-rc3
 	go.opentelemetry.io/collector/processor/batchprocessor v0.69.0
 	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.69.0
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.69.0
