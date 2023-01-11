@@ -474,8 +474,7 @@ func TestAttributeGrouping(t *testing.T) {
 			}
 
 			for _, res := range resources {
-				res.Attributes().Sort()
-				assert.Equal(t, expectedResource, res)
+				assert.Equal(t, expectedResource.Attributes().AsRaw(), res.Attributes().AsRaw())
 			}
 
 			ills := processedLogs.ResourceLogs().At(0).ScopeLogs()
