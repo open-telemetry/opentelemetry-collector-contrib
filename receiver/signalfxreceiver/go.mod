@@ -6,6 +6,7 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter v0.69.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.69.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.69.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx v0.69.0
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3
@@ -22,6 +23,7 @@ require (
 
 require (
 	github.com/cenkalti/backoff/v4 v4.2.0 // indirect
+	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/felixge/httpsnoop v1.0.3 // indirect
 	github.com/go-logfmt/logfmt v0.5.1 // indirect
@@ -81,6 +83,8 @@ require (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter => ../../exporter/signalfxexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest => ../../internal/comparetest
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
 
