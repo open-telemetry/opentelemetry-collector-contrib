@@ -80,7 +80,7 @@ In the case of multiple values are defined, the value with higher precedence wil
 
 `aws.log.group.arns` and `aws.log.group.names` are slice resource attributes that can be set programmatically.
 Alternatively those resource attributes can be set using the [`OTEL_RESOURCE_ATTRIBUTES` environment variable](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/sdk.md#specifying-resource-information-via-an-environment-variable). In this case only a single log group/log group arn can
-be provided.
+be provided as a string rather than a slice.
 
 ## AWS Credential Configuration
 
