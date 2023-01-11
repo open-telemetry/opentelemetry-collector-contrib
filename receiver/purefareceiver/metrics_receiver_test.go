@@ -16,7 +16,6 @@ package purefareceiver // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -24,18 +23,15 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-
-	"go.uber.org/zap"
-	zapObserver "go.uber.org/zap/zaptest/observer"
 )
 
-func TestStart(t *testing.T) {
+func TestStartMetrics(t *testing.T) {
 	// prepare
 	cfg, ok := createDefaultConfig().(*Config)
 	require.True(t, ok)
 
 	sink := &consumertest.MetricsSink{}
-	recv := newReceiver(cfg, receivertest.NewNopCreateSettings(), sink)
+	recv := newMetricsReceiver(cfg, receivertest.NewNopCreateSettings(), sink)
 
 	// test
 	err := recv.Start(context.Background(), componenttest.NewNopHost())
@@ -44,13 +40,13 @@ func TestStart(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestShutdown(t *testing.T) {
+func TestShutdownMetrics(t *testing.T) {
 	// prepare
 	cfg, ok := createDefaultConfig().(*Config)
 	require.True(t, ok)
 
 	sink := &consumertest.MetricsSink{}
-	recv := newReceiver(cfg, receivertest.NewNopCreateSettings(), sink)
+	recv := newMetricsReceiver(cfg, receivertest.NewNopCreateSettings(), sink)
 
 	err := recv.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -60,17 +56,4 @@ func TestShutdown(t *testing.T) {
 
 	// verify
 	assert.NoError(t, err)
-}
-
-func TestLoggingHost(t *testing.T) {
-	core, obs := zapObserver.New(zap.ErrorLevel)
-	host := &loggingHost{
-		Host:   componenttest.NewNopHost(),
-		logger: zap.New(core),
-	}
-	host.ReportFatalError(errors.New("runtime error"))
-	require.Equal(t, 1, obs.Len())
-	log := obs.All()[0]
-	assert.Equal(t, "receiver reported a fatal error", log.Message)
-	assert.Equal(t, "runtime error", log.ContextMap()["error"])
 }

@@ -36,7 +36,8 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, stability))
+		receiver.WithMetrics(createMetricsReceiver, stability),
+		receiver.WithLogs(createLogsReceiver, stability))
 }
 
 func createDefaultConfig() component.Config {
@@ -64,5 +65,18 @@ func createMetricsReceiver(
 	if !ok {
 		return nil, fmt.Errorf("a purefa receiver config was expected by the receiver factory, but got %T", rCfg)
 	}
-	return newReceiver(cfg, set, next), nil
+	return newMetricsReceiver(cfg, set, next), nil
+}
+
+func createLogsReceiver(
+	_ context.Context,
+	set receiver.CreateSettings,
+	rCfg component.Config,
+	next consumer.Logs,
+) (receiver.Logs, error) {
+	cfg, ok := rCfg.(*Config)
+	if !ok {
+		return nil, fmt.Errorf("a purefa receiver config was expected by the receiver factory, but got %T", rCfg)
+	}
+	return newLogsReceiver(cfg, set, next), nil
 }

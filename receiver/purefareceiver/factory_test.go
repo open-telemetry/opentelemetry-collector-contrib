@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -48,4 +49,14 @@ func TestCreateReceiver(t *testing.T) {
 	tReceiver, err := factory.CreateTracesReceiver(context.Background(), set, cfg, nil)
 	assert.Equal(t, err, component.ErrDataTypeIsNotSupported)
 	assert.Nil(t, tReceiver)
+}
+func TestCreateLogsReceiver(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	_, err := NewFactory().CreateLogsReceiver(
+		context.Background(),
+		receivertest.NewNopCreateSettings(),
+		cfg,
+		nil,
+	)
+	require.NoError(t, err)
 }
