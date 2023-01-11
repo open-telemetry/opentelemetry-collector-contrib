@@ -152,12 +152,18 @@ func TestQueryEndpointCorrectInfrastructureAWS(t *testing.T) {
 
 	got, err := provider.Infrastructure(context.Background())
 	require.NoError(t, err)
-	expect := InfrastructureMetadata{
-		Name:     "test-d-bm4rt",
-		Region:   "us-east-1",
-		Provider: "aws",
-		Platform: "aws_openshift",
-		Topology: "HighlyAvailable",
+	expect := InfrastructureAPIResponse{
+		Status: InfrastructureStatus{
+			InfrastructureName:     "test-d-bm4rt",
+			ControlPlaneTopology:   "HighlyAvailable",
+			InfrastructureTopology: "HighlyAvailable",
+			PlatformStatus: InfrastructurePlatformStatus{
+				Type: "AWS",
+				Aws: InfrastructureStatusAWS{
+					Region: "us-east-1",
+				},
+			},
+		},
 	}
 	assert.Equal(t, expect, *got)
 }
@@ -191,12 +197,18 @@ func TestQueryEndpointCorrectInfrastructureAzure(t *testing.T) {
 
 	got, err := provider.Infrastructure(context.Background())
 	require.NoError(t, err)
-	expect := InfrastructureMetadata{
-		Name:     "test-d-bm4rt",
-		Region:   "us-east-1",
-		Provider: "azure",
-		Platform: "azure_openshift",
-		Topology: "HighlyAvailable",
+	expect := InfrastructureAPIResponse{
+		Status: InfrastructureStatus{
+			InfrastructureName:     "test-d-bm4rt",
+			ControlPlaneTopology:   "HighlyAvailable",
+			InfrastructureTopology: "HighlyAvailable",
+			PlatformStatus: InfrastructurePlatformStatus{
+				Type: "AZURE",
+				Azure: InfrastructureStatusAzure{
+					CloudName: "us-east-1",
+				},
+			},
+		},
 	}
 	assert.Equal(t, expect, *got)
 }
@@ -228,12 +240,18 @@ func TestQueryEndpointCorrectInfrastructureGCP(t *testing.T) {
 
 	got, err := provider.Infrastructure(context.Background())
 	require.NoError(t, err)
-	expect := InfrastructureMetadata{
-		Name:     "test-d-bm4rt",
-		Region:   "us-east-1",
-		Provider: "gcp",
-		Platform: "google_cloud_openshift",
-		Topology: "HighlyAvailable",
+	expect := InfrastructureAPIResponse{
+		Status: InfrastructureStatus{
+			InfrastructureName:     "test-d-bm4rt",
+			ControlPlaneTopology:   "HighlyAvailable",
+			InfrastructureTopology: "HighlyAvailable",
+			PlatformStatus: InfrastructurePlatformStatus{
+				Type: "GCP",
+				GCP: InfrastructureStatusGCP{
+					Region: "us-east-1",
+				},
+			},
+		},
 	}
 	assert.Equal(t, expect, *got)
 }
@@ -265,12 +283,18 @@ func TestQueryEndpointCorrectInfrastructureIBMCloud(t *testing.T) {
 
 	got, err := provider.Infrastructure(context.Background())
 	require.NoError(t, err)
-	expect := InfrastructureMetadata{
-		Name:     "test-d-bm4rt",
-		Region:   "us-east-1",
-		Provider: "ibm_cloud",
-		Platform: "ibm_cloud_openshift",
-		Topology: "HighlyAvailable",
+	expect := InfrastructureAPIResponse{
+		Status: InfrastructureStatus{
+			InfrastructureName:     "test-d-bm4rt",
+			ControlPlaneTopology:   "HighlyAvailable",
+			InfrastructureTopology: "HighlyAvailable",
+			PlatformStatus: InfrastructurePlatformStatus{
+				Type: "ibmcloud",
+				IBMCloud: InfrastructureStatusIBMCloud{
+					Location: "us-east-1",
+				},
+			},
+		},
 	}
 	assert.Equal(t, expect, *got)
 }
@@ -302,10 +326,18 @@ func TestQueryEndpointCorrectInfrastructureOpenstack(t *testing.T) {
 
 	got, err := provider.Infrastructure(context.Background())
 	require.NoError(t, err)
-	expect := InfrastructureMetadata{
-		Name:     "test-d-bm4rt",
-		Region:   "us-east-1",
-		Topology: "HighlyAvailable",
+	expect := InfrastructureAPIResponse{
+		Status: InfrastructureStatus{
+			InfrastructureName:     "test-d-bm4rt",
+			ControlPlaneTopology:   "HighlyAvailable",
+			InfrastructureTopology: "HighlyAvailable",
+			PlatformStatus: InfrastructurePlatformStatus{
+				Type: "openstack",
+				OpenStack: InfrastructureStatusOpenStack{
+					CloudName: "us-east-1",
+				},
+			},
+		},
 	}
 	assert.Equal(t, expect, *got)
 }
