@@ -125,7 +125,7 @@ func (c *ZorkianConsumer) ConsumeTimeSeries(
 ) {
 	dt := c.toDataType(typ)
 	if dt == Rate {
-		value = value / c.sumToRateConversionInterval.Seconds()
+		value /= c.sumToRateConversionInterval.Seconds()
 	}
 	met := NewZorkianMetric(dims.Name(), dt, timestamp, value, dims.Tags())
 	met.SetHost(dims.Host())

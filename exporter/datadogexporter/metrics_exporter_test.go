@@ -388,14 +388,14 @@ func Test_metricsExporter_SumAsRate(t *testing.T) {
 				"series": []interface{}{
 					map[string]interface{}{
 						"metric":    "int.sum",
-						"points":    []interface{}{map[string]interface{}{"timestamp": float64(0), "value": float64(11.1)}},
+						"points":    []interface{}{map[string]interface{}{"timestamp": float64(1), "value": float64(11.1)}},
 						"type":      float64(datadogV2.METRICINTAKETYPE_RATE),
 						"resources": []interface{}{map[string]interface{}{"name": "test-host", "type": "host"}},
 						"tags":      []interface{}{"env:dev"},
 					},
 					map[string]interface{}{
 						"metric":    "double.sum",
-						"points":    []interface{}{map[string]interface{}{"timestamp": float64(0), "value": float64(12.345)}},
+						"points":    []interface{}{map[string]interface{}{"timestamp": float64(1), "value": float64(12.345)}},
 						"type":      float64(datadogV2.METRICINTAKETYPE_RATE),
 						"resources": []interface{}{map[string]interface{}{"name": "test-host", "type": "host"}},
 						"tags":      []interface{}{"env:dev"},
@@ -423,14 +423,14 @@ func Test_metricsExporter_SumAsRate(t *testing.T) {
 				"series": []interface{}{
 					map[string]interface{}{
 						"metric":    "int.sum",
-						"points":    []interface{}{map[string]interface{}{"timestamp": float64(0), "value": float64(5.55)}},
+						"points":    []interface{}{map[string]interface{}{"timestamp": float64(1), "value": float64(5.55)}},
 						"type":      float64(datadogV2.METRICINTAKETYPE_RATE),
 						"resources": []interface{}{map[string]interface{}{"name": "test-host", "type": "host"}},
 						"tags":      []interface{}{"env:dev"},
 					},
 					map[string]interface{}{
 						"metric":    "double.sum",
-						"points":    []interface{}{map[string]interface{}{"timestamp": float64(0), "value": float64(6.1725)}},
+						"points":    []interface{}{map[string]interface{}{"timestamp": float64(1), "value": float64(6.1725)}},
 						"type":      float64(datadogV2.METRICINTAKETYPE_RATE),
 						"resources": []interface{}{map[string]interface{}{"name": "test-host", "type": "host"}},
 						"tags":      []interface{}{"env:dev"},
@@ -457,14 +457,14 @@ func Test_metricsExporter_SumAsRate(t *testing.T) {
 				"series": []interface{}{
 					map[string]interface{}{
 						"metric":    "int.sum",
-						"points":    []interface{}{map[string]interface{}{"timestamp": float64(0), "value": float64(111)}},
+						"points":    []interface{}{map[string]interface{}{"timestamp": float64(1), "value": float64(111)}},
 						"type":      float64(datadogV2.METRICINTAKETYPE_COUNT),
 						"resources": []interface{}{map[string]interface{}{"name": "test-host", "type": "host"}},
 						"tags":      []interface{}{"env:dev", "key1:value1", "key2:value2"},
 					},
 					map[string]interface{}{
 						"metric":    "double.sum",
-						"points":    []interface{}{map[string]interface{}{"timestamp": float64(0), "value": float64(123.45)}},
+						"points":    []interface{}{map[string]interface{}{"timestamp": float64(1), "value": float64(123.45)}},
 						"type":      float64(datadogV2.METRICINTAKETYPE_COUNT),
 						"resources": []interface{}{map[string]interface{}{"name": "test-host", "type": "host"}},
 						"tags":      []interface{}{"env:dev", "key1:value1", "key2:value2"},
@@ -932,14 +932,14 @@ func Test_metricsExporter_SumAsRate_Zorkian(t *testing.T) {
 				"series": []interface{}{
 					map[string]interface{}{
 						"metric": "int.sum",
-						"points": []interface{}{[]interface{}{float64(0), float64(11.1)}},
+						"points": []interface{}{[]interface{}{float64(1), float64(11.1)}},
 						"type":   "rate",
 						"host":   "test-host",
 						"tags":   []interface{}{"env:dev"},
 					},
 					map[string]interface{}{
 						"metric": "double.sum",
-						"points": []interface{}{[]interface{}{float64(0), float64(12.345)}},
+						"points": []interface{}{[]interface{}{float64(1), float64(12.345)}},
 						"type":   "rate",
 						"host":   "test-host",
 						"tags":   []interface{}{"env:dev"},
@@ -967,14 +967,14 @@ func Test_metricsExporter_SumAsRate_Zorkian(t *testing.T) {
 				"series": []interface{}{
 					map[string]interface{}{
 						"metric": "int.sum",
-						"points": []interface{}{[]interface{}{float64(0), float64(5.55)}},
+						"points": []interface{}{[]interface{}{float64(1), float64(5.55)}},
 						"type":   "rate",
 						"host":   "test-host",
 						"tags":   []interface{}{"env:dev"},
 					},
 					map[string]interface{}{
 						"metric": "double.sum",
-						"points": []interface{}{[]interface{}{float64(0), float64(6.1725)}},
+						"points": []interface{}{[]interface{}{float64(1), float64(6.1725)}},
 						"type":   "rate",
 						"host":   "test-host",
 						"tags":   []interface{}{"env:dev"},
@@ -1001,14 +1001,14 @@ func Test_metricsExporter_SumAsRate_Zorkian(t *testing.T) {
 				"series": []interface{}{
 					map[string]interface{}{
 						"metric": "int.sum",
-						"points": []interface{}{[]interface{}{float64(0), float64(111)}},
+						"points": []interface{}{[]interface{}{float64(1), float64(111)}},
 						"type":   "count",
 						"host":   "test-host",
 						"tags":   []interface{}{"env:dev", "key1:value1", "key2:value2"},
 					},
 					map[string]interface{}{
 						"metric": "double.sum",
-						"points": []interface{}{[]interface{}{float64(0), float64(123.45)}},
+						"points": []interface{}{[]interface{}{float64(1), float64(123.45)}},
 						"type":   "count",
 						"host":   "test-host",
 						"tags":   []interface{}{"env:dev", "key1:value1", "key2:value2"},
@@ -1190,7 +1190,7 @@ func createTestSums(additionalAttributes map[string]string) pmetric.Metrics {
 	dpsInt := met.SetEmptySum().DataPoints()
 	met.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 	dpInt := dpsInt.AppendEmpty()
-	dpInt.SetTimestamp(seconds(0))
+	dpInt.SetTimestamp(seconds(1))
 	dpInt.SetIntValue(111)
 
 	// DoubleSum
@@ -1199,7 +1199,7 @@ func createTestSums(additionalAttributes map[string]string) pmetric.Metrics {
 	dpsDbl := met.SetEmptySum().DataPoints()
 	met.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 	dpDbl := dpsDbl.AppendEmpty()
-	dpDbl.SetTimestamp(seconds(0))
+	dpDbl.SetTimestamp(seconds(1))
 	dpDbl.SetDoubleValue(123.45)
 
 	return md

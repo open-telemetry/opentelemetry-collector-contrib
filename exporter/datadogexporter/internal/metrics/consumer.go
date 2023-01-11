@@ -126,7 +126,7 @@ func (c *Consumer) ConsumeTimeSeries(
 ) {
 	dt := c.toDataType(typ)
 	if dt == datadogV2.METRICINTAKETYPE_RATE {
-		value = value / c.sumToRateConversionInterval.Seconds()
+		value /= c.sumToRateConversionInterval.Seconds()
 	}
 	met := NewMetric(dims.Name(), dt, timestamp, value, dims.Tags())
 	met.SetResources([]datadogV2.MetricResource{
