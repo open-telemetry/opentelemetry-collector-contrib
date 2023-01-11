@@ -24,7 +24,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -103,34 +102,15 @@ func TestExporter_pushLogsData(t *testing.T) {
 }
 
 func TestLogsExporter_createDatabase(t *testing.T) {
-	initClickhouseTestServer(t, func(query string, values []driver.Value) error {
-		return nil
-	})
 	t.Run("database name is a substring of the DSN", func(t *testing.T) {
-		c := &Config{
-			TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
-			QueueSettings:   QueueSettings{QueueSize: exporterhelper.NewDefaultQueueSettings().QueueSize},
-			RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
-			DSN:             "tcp://mydatabase-clickhouse-headless:9000/mydatabase",
-			LogsTableName:   "otel_logs",
-			TracesTableName: "otel_traces",
-			TTLDays:         7,
-		}
-		err := createDatabase(c)
-		require.NoError(t, err)
+		dsn := "tcp://mydatabase-clickhouse-headless:9000/mydatabase"
+		defaultDns := getDefaultDns(dsn, "mydatabase")
+		require.Equal(t, defaultDns, "tcp://mydatabase-clickhouse-headless:9000/default")
 	})
 	t.Run("database name isn't a substring of the DSN", func(t *testing.T) {
-		c := &Config{
-			TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
-			QueueSettings:   QueueSettings{QueueSize: exporterhelper.NewDefaultQueueSettings().QueueSize},
-			RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
-			DSN:             "tcp://newdatabase-clickhouse-headless:9000/otel",
-			LogsTableName:   "otel_logs",
-			TracesTableName: "otel_traces",
-			TTLDays:         7,
-		}
-		err := createDatabase(c)
-		require.NoError(t, err)
+		dsn := "tcp://newdatabase-clickhouse-headless:9000/otel"
+		defaultDns := getDefaultDns(dsn, "otel")
+		require.Equal(t, defaultDns, "tcp://newdatabase-clickhouse-headless:9000/default")
 	})
 }
 

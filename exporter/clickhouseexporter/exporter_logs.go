@@ -192,7 +192,7 @@ func createDatabase(cfg *Config) error {
 		return nil
 	}
 	// use default database to create new database
-	dsnUseDefaultDatabase := fmt.Sprintf("%s%s", cfg.DSN[0:strings.LastIndex(cfg.DSN, database)], defaultDatabase)
+	dsnUseDefaultDatabase := getDefaultDns(cfg.DSN, database)
 	db, err := sql.Open(driverName, dsnUseDefaultDatabase)
 	if err != nil {
 		return fmt.Errorf("sql.Open:%w", err)
@@ -206,6 +206,10 @@ func createDatabase(cfg *Config) error {
 		return fmt.Errorf("create database:%w", err)
 	}
 	return nil
+}
+
+func getDefaultDns(dsn string, database string) string {
+	return fmt.Sprintf("%s%s", dsn[0:strings.LastIndex(dsn, database)], defaultDatabase)
 }
 
 func createLogsTable(cfg *Config, db *sql.DB) error {
