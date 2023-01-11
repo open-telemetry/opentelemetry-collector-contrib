@@ -45,7 +45,7 @@ type Consumer struct {
 	sumToRateConversionInterval time.Duration
 }
 
-// NewConsumer creates a new Datadog consumer. It implements translator.Consumer.
+// NewConsumer creates a new Datadog consumer.
 func NewConsumer(metricsSumAsRate bool, metricsSumToRateConversionInterval time.Duration) *Consumer {
 	return &Consumer{
 		seenHosts:                   make(map[string]struct{}),
