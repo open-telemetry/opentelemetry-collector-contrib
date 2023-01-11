@@ -18,6 +18,7 @@ import (
 	"database/sql"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/receiver"
 )
 
 const (
@@ -25,10 +26,10 @@ const (
 	stability = component.StabilityLevelUndefined
 )
 
-func NewFactory() component.ReceiverFactory {
-	return component.NewReceiverFactory(
+func NewFactory() receiver.Factory {
+	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createReceiverFunc(sql.Open, newDbClient), stability),
+		receiver.WithMetrics(createReceiverFunc(sql.Open, newDbClient), stability),
 	)
 }

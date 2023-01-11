@@ -21,6 +21,7 @@ import (
 	"runtime"
 
 	"go.opentelemetry.io/collector/component"
+	exp "go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 	"google.golang.org/grpc"
@@ -41,7 +42,7 @@ type tracesExporter struct {
 	userAgent string
 }
 
-func newTracesExporter(cfg component.Config, set component.ExporterCreateSettings) (*tracesExporter, error) {
+func newTracesExporter(cfg component.Config, set exp.CreateSettings) (*tracesExporter, error) {
 	oCfg, ok := cfg.(*Config)
 	if !ok {
 		return nil, fmt.Errorf("invalid config exporter, expect type: %T, got: %T", &Config{}, cfg)
@@ -65,7 +66,7 @@ func (e *tracesExporter) start(ctx context.Context, host component.Host) (err er
 	if e.config.Traces.Headers == nil {
 		e.config.Traces.Headers = make(map[string]string)
 	}
-	e.config.Traces.Headers["Authorization"] = "Bearer " + e.config.PrivateKey
+	e.config.Traces.Headers["Authorization"] = "Bearer " + string(e.config.PrivateKey)
 
 	e.callOptions = []grpc.CallOption{
 		grpc.WaitForReady(e.config.Traces.WaitForReady),

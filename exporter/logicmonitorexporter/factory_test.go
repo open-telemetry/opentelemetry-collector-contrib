@@ -18,9 +18,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -30,9 +28,8 @@ func TestCreateDefaultConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 
 	assert.Equal(t, &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
-		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
+		RetrySettings: exporterhelper.NewDefaultRetrySettings(),
+		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
 	}, cfg, "failed to create default config")
 
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
@@ -57,7 +54,6 @@ func TestCreateDefaultConfig(t *testing.T) {
 // 		{
 // 			name: "Non Error scenario",
 // 			config: Config{
-// 				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 // 				HTTPClientSettings: confighttp.HTTPClientSettings{
 // 					Endpoint: "http://example.com",
 // 					TLSSetting: configtls.TLSClientSetting{
@@ -73,7 +69,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 // 		t.Run(tt.name, func(t *testing.T) {
 // 			t.Setenv("LOGICMONITOR_ACCOUNT", "localdev")
 // 			factory := NewFactory()
-// 			set := componenttest.NewNopExporterCreateSettings()
+// 			set := exportertest.NewNopCreateSettings()
 // 			_, err := factory.CreateTracesExporter(context.Background(), set, &tt.config)
 // 			if (err != nil) != tt.wantErr {
 // 				t.Errorf("CreateTracesExporter() error = %v, wantErr %v", err, tt.wantErr)
@@ -92,7 +88,6 @@ func TestCreateDefaultConfig(t *testing.T) {
 // 		{
 // 			name: "valid config",
 // 			config: Config{
-// 				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 // 				HTTPClientSettings: confighttp.HTTPClientSettings{
 // 					Endpoint: "http://" + testutil.GetAvailableLocalAddress(t),
 // 				},
@@ -102,7 +97,6 @@ func TestCreateDefaultConfig(t *testing.T) {
 // 		{
 // 			name: "invalid config",
 // 			config: Config{
-// 				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 // 				HTTPClientSettings: confighttp.HTTPClientSettings{
 // 					Endpoint: "",
 // 				},
@@ -115,7 +109,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 // 		t.Run(tt.name, func(t *testing.T) {
 // 			factory := NewFactory()
 // 			cfg := factory.CreateDefaultConfig().(*Config)
-// 			set := componenttest.NewNopExporterCreateSettings()
+// 			set := exportertest.NewNopCreateSettings()
 // 			t.Setenv("LOGICMONITOR_ACCOUNT", "localdev")
 // 			oexp, err := factory.CreateLogsExporter(context.Background(), set, cfg)
 // 			if (err != nil) != tt.shouldError {

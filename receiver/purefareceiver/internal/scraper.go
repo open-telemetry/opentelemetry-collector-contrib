@@ -25,10 +25,11 @@ import (
 	"github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/discovery"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/receiver"
 )
 
 type Scraper interface {
-	ToPrometheusReceiverConfig(host component.Host, fact component.ReceiverFactory) ([]*config.ScrapeConfig, error)
+	ToPrometheusReceiverConfig(host component.Host, fact receiver.Factory) ([]*config.ScrapeConfig, error)
 }
 
 type ScraperType string
@@ -46,6 +47,7 @@ type scraper struct {
 	endpoint       string
 	configs        []ScraperConfig
 	scrapeInterval time.Duration
+	labels         model.LabelSet
 }
 
 func NewScraper(ctx context.Context,
@@ -53,16 +55,18 @@ func NewScraper(ctx context.Context,
 	endpoint string,
 	configs []ScraperConfig,
 	scrapeInterval time.Duration,
+	labels model.LabelSet,
 ) Scraper {
 	return &scraper{
 		scraperType:    scraperType,
 		endpoint:       endpoint,
 		configs:        configs,
 		scrapeInterval: scrapeInterval,
+		labels:         labels,
 	}
 }
 
-func (h *scraper) ToPrometheusReceiverConfig(host component.Host, fact component.ReceiverFactory) ([]*config.ScrapeConfig, error) {
+func (h *scraper) ToPrometheusReceiverConfig(host component.Host, fact receiver.Factory) ([]*config.ScrapeConfig, error) {
 	scrapeCfgs := []*config.ScrapeConfig{}
 
 	for _, arr := range h.configs {
@@ -97,6 +101,7 @@ func (h *scraper) ToPrometheusReceiverConfig(host component.Host, fact component
 						Targets: []model.LabelSet{
 							{model.AddressLabel: model.LabelValue(u.Host)},
 						},
+						Labels: h.labels,
 					},
 				},
 			},

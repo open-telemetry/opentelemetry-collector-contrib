@@ -33,9 +33,10 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest/golden"
 )
 
 type doneCheckable interface {
@@ -300,7 +301,7 @@ func TestAerospikeIntegration(t *testing.T) {
 	cfg.ScraperControllerSettings.CollectionInterval = 100 * time.Millisecond
 
 	consumer := new(consumertest.MetricsSink)
-	settings := componenttest.NewNopReceiverCreateSettings()
+	settings := receivertest.NewNopCreateSettings()
 	receiver, err := f.CreateMetricsReceiver(context.Background(), settings, cfg, consumer)
 	require.NoError(t, err, "failed creating metrics receiver")
 	require.NoError(t, receiver.Start(context.Background(), componenttest.NewNopHost()), "failed starting metrics receiver")
@@ -316,13 +317,13 @@ func TestAerospikeIntegration(t *testing.T) {
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err, "failed reading expected metrics")
 
-	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics, scrapertest.IgnoreMetricValues(), scrapertest.IgnoreResourceAttributeValue("aerospike.node.name")))
+	require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics, comparetest.IgnoreMetricValues(), comparetest.IgnoreResourceAttributeValue("aerospike.node.name")))
 
 	// now do a run in cluster mode
 	cfg.CollectClusterMetrics = true
 
 	consumer = new(consumertest.MetricsSink)
-	settings = componenttest.NewNopReceiverCreateSettings()
+	settings = receivertest.NewNopCreateSettings()
 	receiver, err = f.CreateMetricsReceiver(context.Background(), settings, cfg, consumer)
 	require.NoError(t, err, "failed creating metrics receiver")
 	time.Sleep(time.Second / 2)
@@ -338,6 +339,6 @@ func TestAerospikeIntegration(t *testing.T) {
 	expectedMetrics, err = golden.ReadMetrics(expectedFile)
 	require.NoError(t, err, "failed reading expected metrics")
 
-	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics, scrapertest.IgnoreMetricValues(), scrapertest.IgnoreResourceAttributeValue("aerospike.node.name")))
+	require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics, comparetest.IgnoreMetricValues(), comparetest.IgnoreResourceAttributeValue("aerospike.node.name")))
 
 }

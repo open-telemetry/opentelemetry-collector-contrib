@@ -21,13 +21,12 @@ import (
 	"strings"
 	"time"
 
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 )
 
 // Config defines configuration for Elastic exporter.
 type Config struct {
-	config.ExporterSettings `mapstructure:",squash"`
 
 	// Endpoints holds the Elasticsearch URLs the exporter should send events to.
 	//
@@ -96,12 +95,12 @@ type AuthenticationSettings struct {
 	User string `mapstructure:"user"`
 
 	// Password is used to configure HTTP Basic Authentication.
-	Password string `mapstructure:"password"`
+	Password configopaque.String `mapstructure:"password"`
 
 	// APIKey is used to configure ApiKey based Authentication.
 	//
 	// https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-create-api-key.html
-	APIKey string `mapstructure:"api_key"`
+	APIKey configopaque.String `mapstructure:"api_key"`
 }
 
 // DiscoverySettings defines Elasticsearch node discovery related settings.

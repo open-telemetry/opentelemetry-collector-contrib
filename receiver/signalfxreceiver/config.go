@@ -15,7 +15,6 @@
 package signalfxreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver"
 
 import (
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -23,7 +22,6 @@ import (
 
 // Config defines configuration for the SignalFx receiver.
 type Config struct {
-	config.ReceiverSettings       `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 	confighttp.HTTPServerSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	splunk.AccessTokenPassthroughConfig `mapstructure:",squash"`

@@ -20,16 +20,17 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
 
-var _ component.MetricsReceiver = (*receiverCreator)(nil)
+var _ receiver.Metrics = (*receiverCreator)(nil)
 
 // receiverCreator implements consumer.Metrics.
 type receiverCreator struct {
-	params          component.ReceiverCreateSettings
+	params          receiver.CreateSettings
 	cfg             *Config
 	nextConsumer    consumer.Metrics
 	observerHandler *observerHandler
@@ -37,7 +38,7 @@ type receiverCreator struct {
 }
 
 // newReceiverCreator creates the receiver_creator with the given parameters.
-func newReceiverCreator(params component.ReceiverCreateSettings, cfg *Config, nextConsumer consumer.Metrics) (component.MetricsReceiver, error) {
+func newReceiverCreator(params receiver.CreateSettings, cfg *Config, nextConsumer consumer.Metrics) (receiver.Metrics, error) {
 	if nextConsumer == nil {
 		return nil, component.ErrNilNextConsumer
 	}
@@ -118,6 +119,9 @@ func (rc *receiverCreator) Start(_ context.Context, host component.Host) error {
 func (rc *receiverCreator) Shutdown(context.Context) error {
 	for _, observable := range rc.observables {
 		observable.Unsubscribe(rc.observerHandler)
+	}
+	if rc.observerHandler == nil {
+		return nil
 	}
 	return rc.observerHandler.shutdown()
 }

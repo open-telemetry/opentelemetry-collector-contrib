@@ -21,13 +21,14 @@ import (
 	"runtime"
 
 	"go.opentelemetry.io/collector/component"
+	exp "go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
 
-func newLogsExporter(cfg component.Config, set component.ExporterCreateSettings) (*logsExporter, error) {
+func newLogsExporter(cfg component.Config, set exp.CreateSettings) (*logsExporter, error) {
 	oCfg := cfg.(*Config)
 
 	if oCfg.Logs.Endpoint == "" || oCfg.Logs.Endpoint == "https://" || oCfg.Logs.Endpoint == "http://" {
@@ -62,7 +63,7 @@ func (e *logsExporter) start(ctx context.Context, host component.Host) (err erro
 	if e.config.Logs.Headers == nil {
 		e.config.Logs.Headers = make(map[string]string)
 	}
-	e.config.Logs.Headers["Authorization"] = "Bearer " + e.config.PrivateKey
+	e.config.Logs.Headers["Authorization"] = "Bearer " + string(e.config.PrivateKey)
 
 	e.callOptions = []grpc.CallOption{
 		grpc.WaitForReady(e.config.Logs.WaitForReady),

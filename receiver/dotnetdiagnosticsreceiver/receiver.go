@@ -20,6 +20,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	rcvr "go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver/dotnet"
@@ -50,7 +51,7 @@ func NewReceiver(
 	intervalSec int,
 	logger *zap.Logger,
 	bw network.BlobWriter,
-) (component.MetricsReceiver, error) {
+) (rcvr.Metrics, error) {
 	return &receiver{
 		nextConsumer: mc,
 		connect:      connect,

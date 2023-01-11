@@ -19,7 +19,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -31,24 +31,23 @@ const (
 )
 
 // NewFactory creates a factory for Elastic exporter.
-func NewFactory() component.ExporterFactory {
-	return component.NewExporterFactory(
+func NewFactory() exporter.Factory {
+	return exporter.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithLogsExporter(createLogsExporter, stability),
-		component.WithTracesExporter(createTracesExporter, stability),
+		exporter.WithLogs(createLogsExporter, stability),
+		exporter.WithTraces(createTracesExporter, stability),
 	)
 }
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),
-		QueueSettings:    QueueSettings{QueueSize: exporterhelper.NewDefaultQueueSettings().QueueSize},
-		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
-		LogsTableName:    "otel_logs",
-		TracesTableName:  "otel_traces",
-		TTLDays:          7,
+		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
+		QueueSettings:   QueueSettings{QueueSize: exporterhelper.NewDefaultQueueSettings().QueueSize},
+		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
+		LogsTableName:   "otel_logs",
+		TracesTableName: "otel_traces",
+		TTLDays:         7,
 	}
 }
 
@@ -56,9 +55,9 @@ func createDefaultConfig() component.Config {
 // Logs are directly insert into clickhouse.
 func createLogsExporter(
 	ctx context.Context,
-	set component.ExporterCreateSettings,
+	set exporter.CreateSettings,
 	cfg component.Config,
-) (component.LogsExporter, error) {
+) (exporter.Logs, error) {
 	c := cfg.(*Config)
 	exporter, err := newLogsExporter(set.Logger, c)
 	if err != nil {
@@ -81,9 +80,9 @@ func createLogsExporter(
 // Traces are directly insert into clickhouse.
 func createTracesExporter(
 	ctx context.Context,
-	set component.ExporterCreateSettings,
+	set exporter.CreateSettings,
 	cfg component.Config,
-) (component.TracesExporter, error) {
+) (exporter.Traces, error) {
 	c := cfg.(*Config)
 	exporter, err := newTracesExporter(set.Logger, c)
 	if err != nil {

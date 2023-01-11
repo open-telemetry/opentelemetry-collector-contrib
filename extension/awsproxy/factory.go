@@ -18,7 +18,6 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/extension"
@@ -45,7 +44,6 @@ func NewFactory() extension.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
 		ProxyConfig: proxy.Config{
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: defaultEndpoint,

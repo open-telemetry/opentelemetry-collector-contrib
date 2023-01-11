@@ -17,14 +17,12 @@ package pulsarexporter // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"github.com/apache/pulsar-client-go/pulsar"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 // Config defines configuration for Pulsar exporter.
 type Config struct {
-	config.ExporterSettings `mapstructure:",squash"`
-
 	exporterhelper.TimeoutSettings `mapstructure:",squash"`
 	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
 	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
@@ -55,17 +53,17 @@ type TLS struct {
 }
 
 type Token struct {
-	Token string `mapstructure:"Token"`
+	Token configopaque.String `mapstructure:"Token"`
 }
 
 type Athenz struct {
-	ProviderDomain  string `mapstructure:"provider_domain"`
-	TenantDomain    string `mapstructure:"tenant_domain"`
-	TenantService   string `mapstructure:"tenant_service"`
-	PrivateKey      string `mapstructure:"private_key"`
-	KeyID           string `mapstructure:"key_id"`
-	PrincipalHeader string `mapstructure:"principal_header"`
-	ZtsURL          string `mapstructure:"zts_url"`
+	ProviderDomain  string              `mapstructure:"provider_domain"`
+	TenantDomain    string              `mapstructure:"tenant_domain"`
+	TenantService   string              `mapstructure:"tenant_service"`
+	PrivateKey      configopaque.String `mapstructure:"private_key"`
+	KeyID           string              `mapstructure:"key_id"`
+	PrincipalHeader string              `mapstructure:"principal_header"`
+	ZtsURL          string              `mapstructure:"zts_url"`
 }
 
 type OAuth2 struct {
@@ -88,7 +86,7 @@ func (cfg *Config) auth() pulsar.Authentication {
 		return pulsar.NewAuthenticationTLS(authentication.TLS.CertFile, authentication.TLS.KeyFile)
 	}
 	if authentication.Token != nil {
-		return pulsar.NewAuthenticationToken(authentication.Token.Token)
+		return pulsar.NewAuthenticationToken(string(authentication.Token.Token))
 	}
 	if authentication.OAuth2 != nil {
 		return pulsar.NewAuthenticationOAuth2(map[string]string{
@@ -102,7 +100,7 @@ func (cfg *Config) auth() pulsar.Authentication {
 			"providerDomain":  authentication.Athenz.ProviderDomain,
 			"tenantDomain":    authentication.Athenz.TenantDomain,
 			"tenantService":   authentication.Athenz.TenantService,
-			"privateKey":      authentication.Athenz.PrivateKey,
+			"privateKey":      string(authentication.Athenz.PrivateKey),
 			"keyId":           authentication.Athenz.KeyID,
 			"principalHeader": authentication.Athenz.PrincipalHeader,
 			"ztsUrl":          authentication.Athenz.ZtsURL,

@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -41,7 +42,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 	cfg.Brokers = []string{"invalid:9092"}
 	cfg.ProtocolVersion = "2.0.0"
 	f := kafkaReceiverFactory{tracesUnmarshalers: defaultTracesUnmarshalers()}
-	r, err := f.createTracesReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, nil)
+	r, err := f.createTracesReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, nil)
 	// no available broker
 	require.Error(t, err)
 	assert.Nil(t, r)
@@ -53,7 +54,7 @@ func TestCreateTracesReceiver_error(t *testing.T) {
 	// disable contacting broker at startup
 	cfg.Metadata.Full = false
 	f := kafkaReceiverFactory{tracesUnmarshalers: defaultTracesUnmarshalers()}
-	r, err := f.createTracesReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, nil)
+	r, err := f.createTracesReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, nil)
 	require.NoError(t, err)
 	assert.NotNil(t, r)
 }
@@ -68,13 +69,13 @@ func TestWithTracesUnmarshalers(t *testing.T) {
 
 	t.Run("custom_encoding", func(t *testing.T) {
 		cfg.Encoding = unmarshaler.Encoding()
-		receiver, err := f.CreateTracesReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, nil)
+		receiver, err := f.CreateTracesReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, nil)
 		require.NoError(t, err)
 		require.NotNil(t, receiver)
 	})
 	t.Run("default_encoding", func(t *testing.T) {
 		cfg.Encoding = defaultEncoding
-		receiver, err := f.CreateTracesReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, nil)
+		receiver, err := f.CreateTracesReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, nil)
 		require.NoError(t, err)
 		assert.NotNil(t, receiver)
 	})
@@ -85,7 +86,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 	cfg.Brokers = []string{"invalid:9092"}
 	cfg.ProtocolVersion = "2.0.0"
 	f := kafkaReceiverFactory{metricsUnmarshalers: defaultMetricsUnmarshalers()}
-	r, err := f.createMetricsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, nil)
+	r, err := f.createMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, nil)
 	// no available broker
 	require.Error(t, err)
 	assert.Nil(t, r)
@@ -97,7 +98,7 @@ func TestCreateMetricsReceiver_error(t *testing.T) {
 	// disable contacting broker at startup
 	cfg.Metadata.Full = false
 	f := kafkaReceiverFactory{metricsUnmarshalers: defaultMetricsUnmarshalers()}
-	r, err := f.createMetricsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, nil)
+	r, err := f.createMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, nil)
 	require.NoError(t, err)
 	assert.NotNil(t, r)
 }
@@ -112,13 +113,13 @@ func TestWithMetricsUnmarshalers(t *testing.T) {
 
 	t.Run("custom_encoding", func(t *testing.T) {
 		cfg.Encoding = unmarshaler.Encoding()
-		receiver, err := f.CreateMetricsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, nil)
+		receiver, err := f.CreateMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, nil)
 		require.NoError(t, err)
 		require.NotNil(t, receiver)
 	})
 	t.Run("default_encoding", func(t *testing.T) {
 		cfg.Encoding = defaultEncoding
-		receiver, err := f.CreateMetricsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, nil)
+		receiver, err := f.CreateMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, nil)
 		require.NoError(t, err)
 		assert.NotNil(t, receiver)
 	})
@@ -129,7 +130,7 @@ func TestCreateLogsReceiver(t *testing.T) {
 	cfg.Brokers = []string{"invalid:9092"}
 	cfg.ProtocolVersion = "2.0.0"
 	f := kafkaReceiverFactory{logsUnmarshalers: defaultLogsUnmarshalers()}
-	r, err := f.createLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, nil)
+	r, err := f.createLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, nil)
 	// no available broker
 	require.Error(t, err)
 	assert.Nil(t, r)
@@ -141,7 +142,7 @@ func TestCreateLogsReceiver_error(t *testing.T) {
 	// disable contacting broker at startup
 	cfg.Metadata.Full = false
 	f := kafkaReceiverFactory{logsUnmarshalers: defaultLogsUnmarshalers()}
-	r, err := f.createLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, nil)
+	r, err := f.createLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, nil)
 	require.NoError(t, err)
 	assert.NotNil(t, r)
 }
@@ -156,13 +157,13 @@ func TestWithLogsUnmarshalers(t *testing.T) {
 
 	t.Run("custom_encoding", func(t *testing.T) {
 		cfg.Encoding = unmarshaler.Encoding()
-		exporter, err := f.CreateLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, nil)
+		exporter, err := f.CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, nil)
 		require.NoError(t, err)
 		require.NotNil(t, exporter)
 	})
 	t.Run("default_encoding", func(t *testing.T) {
 		cfg.Encoding = defaultEncoding
-		exporter, err := f.CreateLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, nil)
+		exporter, err := f.CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, nil)
 		require.NoError(t, err)
 		assert.NotNil(t, exporter)
 	})

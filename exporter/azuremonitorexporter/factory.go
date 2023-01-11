@@ -21,7 +21,7 @@ import (
 
 	"github.com/microsoft/ApplicationInsights-Go/appinsights"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/exporter"
 	"go.uber.org/zap"
 )
 
@@ -38,13 +38,13 @@ var (
 )
 
 // NewFactory returns a factory for Azure Monitor exporter.
-func NewFactory() component.ExporterFactory {
+func NewFactory() exporter.Factory {
 	f := &factory{}
-	return component.NewExporterFactory(
+	return exporter.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporter(f.createTracesExporter, stability),
-		component.WithLogsExporter(f.createLogsExporter, stability))
+		exporter.WithTraces(f.createTracesExporter, stability),
+		exporter.WithLogs(f.createLogsExporter, stability))
 }
 
 // Implements the interface from go.opentelemetry.io/collector/exporter/factory.go
@@ -54,7 +54,6 @@ type factory struct {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		ExporterSettings:  config.NewExporterSettings(component.NewID(typeStr)),
 		Endpoint:          defaultEndpoint,
 		MaxBatchSize:      1024,
 		MaxBatchInterval:  10 * time.Second,
@@ -64,9 +63,9 @@ func createDefaultConfig() component.Config {
 
 func (f *factory) createTracesExporter(
 	ctx context.Context,
-	set component.ExporterCreateSettings,
+	set exporter.CreateSettings,
 	cfg component.Config,
-) (component.TracesExporter, error) {
+) (exporter.Traces, error) {
 	exporterConfig, ok := cfg.(*Config)
 
 	if !ok {
@@ -79,9 +78,9 @@ func (f *factory) createTracesExporter(
 
 func (f *factory) createLogsExporter(
 	ctx context.Context,
-	set component.ExporterCreateSettings,
+	set exporter.CreateSettings,
 	cfg component.Config,
-) (component.LogsExporter, error) {
+) (exporter.Logs, error) {
 	exporterConfig, ok := cfg.(*Config)
 
 	if !ok {
@@ -99,7 +98,7 @@ func (f *factory) getTransportChannel(exporterConfig *Config, logger *zap.Logger
 	// The default transport channel uses the default send mechanism from the AppInsights telemetry client.
 	// This default channel handles batching, appropriate retries, and is backed by memory.
 	if f.tChannel == nil {
-		telemetryConfiguration := appinsights.NewTelemetryConfiguration(exporterConfig.InstrumentationKey)
+		telemetryConfiguration := appinsights.NewTelemetryConfiguration(string(exporterConfig.InstrumentationKey))
 		telemetryConfiguration.EndpointUrl = exporterConfig.Endpoint
 		telemetryConfiguration.MaxBatchSize = exporterConfig.MaxBatchSize
 		telemetryConfiguration.MaxBatchInterval = exporterConfig.MaxBatchInterval

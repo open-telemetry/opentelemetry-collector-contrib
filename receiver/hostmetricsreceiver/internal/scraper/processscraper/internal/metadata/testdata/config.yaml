@@ -1,0 +1,59 @@
+default:
+all_metrics:
+  process.context_switches:
+    enabled: true
+  process.cpu.time:
+    enabled: true
+  process.cpu.utilization:
+    enabled: true
+  process.disk.io:
+    enabled: true
+  process.disk.operations:
+    enabled: true
+  process.memory.physical_usage:
+    enabled: true
+  process.memory.usage:
+    enabled: true
+  process.memory.utilization:
+    enabled: true
+  process.memory.virtual:
+    enabled: true
+  process.memory.virtual_usage:
+    enabled: true
+  process.open_file_descriptors:
+    enabled: true
+  process.paging.faults:
+    enabled: true
+  process.signals_pending:
+    enabled: true
+  process.threads:
+    enabled: true
+no_metrics:
+  process.context_switches:
+    enabled: false
+  process.cpu.time:
+    enabled: false
+  process.cpu.utilization:
+    enabled: false
+  process.disk.io:
+    enabled: false
+  process.disk.operations:
+    enabled: false
+  process.memory.physical_usage:
+    enabled: false
+  process.memory.usage:
+    enabled: false
+  process.memory.utilization:
+    enabled: false
+  process.memory.virtual:
+    enabled: false
+  process.memory.virtual_usage:
+    enabled: false
+  process.open_file_descriptors:
+    enabled: false
+  process.paging.faults:
+    enabled: false
+  process.signals_pending:
+    enabled: false
+  process.threads:
+    enabled: false

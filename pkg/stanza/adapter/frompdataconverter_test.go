@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 )
 
@@ -108,23 +109,8 @@ func TestRoundTrip(t *testing.T) {
 	require.Equal(t, 1, len(entries))
 
 	pLogs := Convert(entries[0])
-	sortComplexData(initialLogs)
-	sortComplexData(pLogs)
-	require.Equal(t, initialLogs, pLogs)
-}
 
-func sortComplexData(pLogs plog.Logs) {
-	pLogs.ResourceLogs().At(0).Resource().Attributes().Sort()
-	attrObject, _ := pLogs.ResourceLogs().At(0).Resource().Attributes().Get("object")
-	attrObject.Map().Sort()
-	pLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Map().Sort()
-	level1, _ := pLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Map().Get("object")
-	level1.Map().Sort()
-	level2, _ := level1.Map().Get("object")
-	level2.Map().Sort()
-	pLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Sort()
-	attrObject, _ = pLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get("object")
-	attrObject.Map().Sort()
+	require.NoError(t, comparetest.CompareLogs(initialLogs, pLogs))
 }
 
 func TestConvertFrom(t *testing.T) {

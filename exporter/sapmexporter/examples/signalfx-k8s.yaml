@@ -12,7 +12,7 @@ data:
       health_check:
       http_forwarder:
         egress:
-          endpoint: "https://api.${SFX_REALM}.signalfx.com"
+          endpoint: "https://api.${env:SFX_REALM}.signalfx.com"
       zpages:
     receivers:
       sapm:
@@ -67,12 +67,12 @@ data:
     exporters:
       # Traces
       sapm:
-        access_token: "${SFX_TOKEN}"
-        endpoint: "https://ingest.${SFX_REALM}.signalfx.com/v2/trace"
+        access_token: "${env:SFX_TOKEN}"
+        endpoint: "https://ingest.${env:SFX_REALM}.signalfx.com/v2/trace"
       # Metrics
       signalfx:
-        access_token: "${SFX_TOKEN}"
-        realm: "${SFX_REALM}"
+        access_token: "${env:SFX_TOKEN}"
+        realm: "${env:SFX_REALM}"
     service:
       extensions: [health_check, http_forwarder, zpages]
       pipelines:

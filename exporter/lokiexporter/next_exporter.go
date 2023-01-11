@@ -85,7 +85,7 @@ func (l *nextLokiExporter) sendPushRequest(ctx context.Context, tenant string, r
 	}
 
 	for k, v := range l.config.HTTPClientSettings.Headers {
-		req.Header.Set(k, v)
+		req.Header.Set(k, string(v))
 	}
 	req.Header.Set("Content-Type", "application/x-protobuf")
 	if len(tenant) > 0 {

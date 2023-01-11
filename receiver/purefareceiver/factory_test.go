@@ -21,6 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
 func TestTypeStr(t *testing.T) {
@@ -39,7 +40,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestCreateReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	set := componenttest.NewNopReceiverCreateSettings()
+	set := receivertest.NewNopCreateSettings()
 	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), set, cfg, nil)
 	assert.NoError(t, err, "receiver creation failed")
 	assert.NotNil(t, mReceiver, "receiver creation failed")

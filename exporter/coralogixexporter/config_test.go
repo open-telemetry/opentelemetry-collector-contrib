@@ -23,11 +23,11 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -43,11 +43,10 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, ""),
 			expected: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
-				RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
-				PrivateKey:       "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-				AppName:          "APP_NAME",
+				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
+				RetrySettings: exporterhelper.NewDefaultRetrySettings(),
+				PrivateKey:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+				AppName:       "APP_NAME",
 				// Deprecated: [v0.47.0] SubSystem will remove in the next version
 				SubSystem:       "SUBSYSTEM_NAME",
 				TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
@@ -99,11 +98,10 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "all"),
 			expected: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
-				RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
-				PrivateKey:       "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-				AppName:          "APP_NAME",
+				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
+				RetrySettings: exporterhelper.NewDefaultRetrySettings(),
+				PrivateKey:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+				AppName:       "APP_NAME",
 				// Deprecated: [v0.47.0] SubSystem will remove in the next version
 				SubSystem:       "SUBSYSTEM_NAME",
 				TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
@@ -181,7 +179,7 @@ func TestTraceExporter(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-	params := componenttest.NewNopExporterCreateSettings()
+	params := exportertest.NewNopCreateSettings()
 	te, err := newTracesExporter(cfg, params)
 	assert.NoError(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")

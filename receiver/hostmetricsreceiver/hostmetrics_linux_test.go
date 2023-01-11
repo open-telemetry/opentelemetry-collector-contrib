@@ -23,8 +23,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper"
@@ -46,10 +45,10 @@ func TestInconsistentRootPaths(t *testing.T) {
 
 func TestLoadConfigRootPath(t *testing.T) {
 	t.Setenv("HOST_PROC", "testdata")
-	factories, _ := componenttest.NopFactories()
+	factories, _ := otelcoltest.NopFactories()
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config-root-path.yaml"), factories)
+	cfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "config-root-path.yaml"), factories)
 	require.NoError(t, err)
 	globalRootPath = ""
 
@@ -64,10 +63,10 @@ func TestLoadConfigRootPath(t *testing.T) {
 }
 
 func TestLoadInvalidConfig_RootPathNotExist(t *testing.T) {
-	factories, _ := componenttest.NopFactories()
+	factories, _ := otelcoltest.NopFactories()
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
-	_, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config-bad-root-path.yaml"), factories)
+	_, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "config-bad-root-path.yaml"), factories)
 	assert.ErrorContains(t, err, "invalid root_path:")
 	globalRootPath = ""
 }

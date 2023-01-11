@@ -29,11 +29,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -114,7 +113,7 @@ func generateLogsOneEmptyTimestamp() plog.Logs {
 
 func testLogsExporter(ld plog.Logs, t *testing.T, cfg *Config) error {
 	var err error
-	params := componenttest.NewNopExporterCreateSettings()
+	params := exportertest.NewNopCreateSettings()
 	exporter, err := createLogsExporter(context.Background(), params, cfg)
 	if err != nil {
 		return err
@@ -162,7 +161,7 @@ func newTestTraces() ptrace.Traces {
 }
 
 func testTracesExporter(td ptrace.Traces, t *testing.T, cfg *Config) error {
-	params := componenttest.NewNopExporterCreateSettings()
+	params := exportertest.NewNopCreateSettings()
 	exporter, err := createTracesExporter(context.Background(), params, cfg)
 	if err != nil {
 		return err
@@ -202,9 +201,8 @@ func TestExportErrors(tester *testing.T) {
 			rw.WriteHeader(test.status)
 		}))
 		cfg := &Config{
-			Region:           "",
-			Token:            "token",
-			ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
+			Region: "",
+			Token:  "token",
 			HTTPClientSettings: confighttp.HTTPClientSettings{
 				Endpoint: server.URL,
 			},
@@ -223,13 +221,13 @@ func TestExportErrors(tester *testing.T) {
 }
 
 func TestNullTracesExporterConfig(tester *testing.T) {
-	params := componenttest.NewNopExporterCreateSettings()
+	params := exportertest.NewNopCreateSettings()
 	_, err := newLogzioTracesExporter(nil, params)
 	assert.Error(tester, err, "Null exporter config should produce error")
 }
 
 func TestNullExporterConfig(tester *testing.T) {
-	params := componenttest.NewNopExporterCreateSettings()
+	params := exportertest.NewNopCreateSettings()
 	_, err := newLogzioExporter(nil, params)
 	assert.Error(tester, err, "Null exporter config should produce error")
 }
@@ -238,7 +236,7 @@ func TestNullTokenConfig(tester *testing.T) {
 	cfg := Config{
 		Region: "eu",
 	}
-	params := componenttest.NewNopExporterCreateSettings()
+	params := exportertest.NewNopCreateSettings()
 	_, err := createTracesExporter(context.Background(), params, &cfg)
 	assert.Error(tester, err, "Empty token should produce error")
 }
@@ -268,9 +266,8 @@ func TestPushTraceData(tester *testing.T) {
 		rw.WriteHeader(http.StatusOK)
 	}))
 	cfg := Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		Token:            "token",
-		Region:           "",
+		Token:  "token",
+		Region: "",
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint:    server.URL,
 			Compression: configcompression.Gzip,
@@ -302,9 +299,8 @@ func TestPushLogsData(tester *testing.T) {
 		rw.WriteHeader(http.StatusOK)
 	}))
 	cfg := Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		Token:            "token",
-		Region:           "",
+		Token:  "token",
+		Region: "",
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint:    server.URL,
 			Compression: configcompression.Gzip,

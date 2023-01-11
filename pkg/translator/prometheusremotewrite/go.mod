@@ -3,15 +3,14 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/
 go 1.18
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.66.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.66.0
-	github.com/prometheus/common v0.37.0
-	github.com/prometheus/prometheus v0.40.5
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.69.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.69.0
+	github.com/prometheus/common v0.39.0
+	github.com/prometheus/prometheus v0.41.0
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector/consumer v0.66.1-0.20221202005155-1c54042beb70
-	go.opentelemetry.io/collector/pdata v0.66.1-0.20221202005155-1c54042beb70
-	go.opentelemetry.io/collector/semconv v0.66.1-0.20221202005155-1c54042beb70
-	go.uber.org/multierr v1.8.0
+	go.opentelemetry.io/collector/pdata v1.0.0-rc3.0.20230109164642-7d168dd20efd
+	go.opentelemetry.io/collector/semconv v0.69.0
+	go.uber.org/multierr v1.9.0
 )
 
 require (
@@ -24,12 +23,12 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rogpeppe/go-internal v1.9.0 // indirect
-	go.opentelemetry.io/collector/featuregate v0.66.1-0.20221202005155-1c54042beb70 // indirect
+	go.opentelemetry.io/collector/featuregate v0.69.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
-	golang.org/x/net v0.3.0 // indirect
-	golang.org/x/sys v0.3.0 // indirect
-	golang.org/x/text v0.5.0 // indirect
-	google.golang.org/genproto v0.0.0-20221027153422-115e99e71e1c // indirect
+	golang.org/x/net v0.5.0 // indirect
+	golang.org/x/sys v0.4.0 // indirect
+	golang.org/x/text v0.6.0 // indirect
+	google.golang.org/genproto v0.0.0-20221207170731-23e4bf6bdc37 // indirect
 	google.golang.org/grpc v1.51.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect

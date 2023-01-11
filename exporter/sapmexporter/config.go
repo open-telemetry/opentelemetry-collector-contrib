@@ -20,7 +20,7 @@ import (
 	"net/url"
 
 	sapmclient "github.com/signalfx/sapm-proto/client"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -33,14 +33,13 @@ const (
 
 // Config defines configuration for SAPM exporter.
 type Config struct {
-	config.ExporterSettings `mapstructure:",squash"`
 
 	// Endpoint is the destination to where traces will be sent to in SAPM format.
 	// It must be a full URL and include the scheme, port and path e.g, https://ingest.signalfx.com/v2/trace
 	Endpoint string `mapstructure:"endpoint"`
 
 	// AccessToken is the authentication token provided by SignalFx.
-	AccessToken string `mapstructure:"access_token"`
+	AccessToken configopaque.String `mapstructure:"access_token"`
 
 	// NumWorkers is the number of workers that should be used to export traces.
 	// Exporter can make as many requests in parallel as the number of workers. Defaults to 8.
@@ -99,7 +98,7 @@ func (c *Config) clientOptions() []sapmclient.Option {
 	}
 
 	if c.AccessToken != "" {
-		opts = append(opts, sapmclient.WithAccessToken(c.AccessToken))
+		opts = append(opts, sapmclient.WithAccessToken(string(c.AccessToken)))
 	}
 
 	if c.DisableCompression {

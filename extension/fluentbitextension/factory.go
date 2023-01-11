@@ -19,7 +19,6 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/extension"
 	"go.uber.org/zap"
 )
@@ -42,9 +41,7 @@ func NewFactory() extension.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	return &Config{
-		ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
-	}
+	return &Config{}
 }
 
 func logDeprecation(logger *zap.Logger) {

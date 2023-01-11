@@ -33,13 +33,12 @@ import (
 	"github.com/prometheus/prometheus/scrape"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/atomic"
 	"gopkg.in/yaml.v2"
 
@@ -606,8 +605,7 @@ func testComponent(t *testing.T, targets []*testData, useStartTimeMetric bool, s
 	defer mp.Close()
 
 	cms := new(consumertest.MetricsSink)
-	receiver := newPrometheusReceiver(componenttest.NewNopReceiverCreateSettings(), &Config{
-		ReceiverSettings:     config.NewReceiverSettings(component.NewID(typeStr)),
+	receiver := newPrometheusReceiver(receivertest.NewNopCreateSettings(), &Config{
 		PrometheusConfig:     cfg,
 		UseStartTimeMetric:   useStartTimeMetric,
 		StartTimeMetricRegex: startTimeMetricRegex,

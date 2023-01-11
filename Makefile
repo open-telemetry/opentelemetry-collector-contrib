@@ -3,6 +3,8 @@ include ./Makefile.Common
 RUN_CONFIG?=local/config.yaml
 CMD?=
 OTEL_VERSION=main
+OTEL_RC_VERSION=main
+OTEL_STABLE_VERSION=main
 
 BUILD_INFO_IMPORT_PATH=github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelcontribcore/internal/version
 VERSION=$(shell git describe --always --match "v[0-9]*" HEAD)
@@ -63,7 +65,7 @@ all-common:
 	@$(MAKE) $(FOR_GROUP_TARGET) TARGET="common"
 
 .PHONY: e2e-test
-e2e-test: otelcontribcol otelcontribcol-testbed
+e2e-test: otelcontribcol oteltestbedcol
 	$(MAKE) -C testbed run-tests
 
 .PHONY: unit-tests-with-cover
@@ -219,7 +221,7 @@ install-tools:
 
 .PHONY: run
 run:
-	GO111MODULE=on $(GOCMD) run --race ./cmd/otelcontribcol/... --config ${RUN_CONFIG} ${RUN_ARGS}
+	cd ./cmd/otelcontribcol && GO111MODULE=on $(GOCMD) run --race . --config ../../${RUN_CONFIG} ${RUN_ARGS}
 
 .PHONY: docker-component # Not intended to be used directly
 docker-component: check-component
@@ -242,6 +244,11 @@ docker-otelcontribcol:
 generate:
 	cd cmd/mdatagen && $(GOCMD) install .
 	$(MAKE) for-all CMD="$(GOCMD) generate ./..."
+
+.PHONY: mdatagen-test
+mdatagen-test:
+	cd cmd/mdatagen && $(GOCMD) install .
+	cd cmd/mdatagen && $(GOCMD) generate ./...
 
 .PHONY: chlog-install
 chlog-install:
@@ -267,14 +274,14 @@ chlog-update: chlog-install
 # Build the Collector executable.
 .PHONY: otelcontribcol
 otelcontribcol:
-	GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ./bin/otelcontribcol_$(GOOS)_$(GOARCH)$(EXTENSION) \
-		$(BUILD_INFO) -tags $(GO_BUILD_TAGS) ./cmd/otelcontribcol
+	cd ./cmd/otelcontribcol && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/otelcontribcol_$(GOOS)_$(GOARCH)$(EXTENSION) \
+		$(BUILD_INFO) -tags $(GO_BUILD_TAGS) .
 
 # Build the Collector executable, with only components used in testbed.
-.PHONY: otelcontribcol-testbed
-otelcontribcol-testbed:
-	GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ./bin/otelcontribcol_testbed_$(GOOS)_$(GOARCH)$(EXTENSION) \
-		$(BUILD_INFO) -tags $(GO_BUILD_TAGS),testbed ./cmd/otelcontribcol
+.PHONY: oteltestbedcol
+oteltestbedcol:
+	cd ./cmd/oteltestbedcol && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/oteltestbedcol_$(GOOS)_$(GOARCH)$(EXTENSION) \
+		$(BUILD_INFO) -tags $(GO_BUILD_TAGS) .
 
 .PHONY: update-dep
 update-dep:
@@ -283,7 +290,7 @@ update-dep:
 
 .PHONY: update-otel
 update-otel:
-	$(MAKE) update-dep MODULE=go.opentelemetry.io/collector VERSION=$(OTEL_VERSION)
+	$(MAKE) update-dep MODULE=go.opentelemetry.io/collector VERSION=$(OTEL_VERSION) RC_VERSION=$(OTEL_RC_VERSION) STABLE_VERSION=$(OTEL_STABLE_VERSION)
 
 .PHONY: otel-from-tree
 otel-from-tree:
@@ -353,6 +360,11 @@ multimod-prerelease: install-tools
 	multimod prerelease -s=true -b=false -v ./versions.yaml -m contrib-base
 	$(MAKE) gotidy
 
+.PHONY: multimod-sync
+multimod-sync: install-tools
+	multimod sync -a=true -s=true -o ../opentelemetry-collector
+	$(MAKE) gotidy
+
 .PHONY: crosslink
 crosslink: install-tools
 	@echo "Executing crosslink"
@@ -365,6 +377,7 @@ clean:
 	find . -type f -name 'coverage.html' -delete
 	find . -type f -name 'integration-coverage.txt' -delete
 	find . -type f -name 'integration-coverage.html' -delete
+	find . -type f -name 'foresight-test-report.txt' -delete
 
 .PHONY: genconfigdocs
 genconfigdocs:

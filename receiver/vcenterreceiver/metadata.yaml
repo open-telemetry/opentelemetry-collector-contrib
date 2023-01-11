@@ -44,13 +44,6 @@ attributes:
     enum:
       - read
       - write
-  latency_type:
-    name_override: type
-    description: The type of disk latency being reported.
-    type: string
-    enum:
-      - kernel
-      - device
   throughput_direction:
     name_override: direction
     description: The direction of network throughput.
@@ -291,6 +284,24 @@ metrics:
     enabled: true
     description: The amount of memory that is used by the virtual machine.
     unit: MiBy
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation: cumulative
+    attributes: []
+  vcenter.vm.memory.swapped:
+    enabled: true
+    description: The portion of memory that is granted to this VM from the host's swap space.
+    unit: MiBy
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation: cumulative
+    attributes: []
+  vcenter.vm.memory.swapped_ssd:
+    enabled: true
+    description: The amount of memory swapped to fast disk device such as SSD.
+    unit: KiBy
     sum:
       monotonic: false
       value_type: int

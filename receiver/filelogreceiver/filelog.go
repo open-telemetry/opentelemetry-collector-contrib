@@ -16,7 +16,7 @@ package filelogreceiver // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -29,7 +29,7 @@ const (
 )
 
 // NewFactory creates a factory for filelog receiver
-func NewFactory() component.ReceiverFactory {
+func NewFactory() receiver.Factory {
 	return adapter.NewFactory(ReceiverType{}, stability)
 }
 
@@ -49,8 +49,7 @@ func (f ReceiverType) CreateDefaultConfig() component.Config {
 func createDefaultConfig() *FileLogConfig {
 	return &FileLogConfig{
 		BaseConfig: adapter.BaseConfig{
-			ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
-			Operators:        []operator.Config{},
+			Operators: []operator.Config{},
 		},
 		InputConfig: *file.NewConfig(),
 	}

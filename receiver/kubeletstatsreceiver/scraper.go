@@ -19,8 +19,8 @@ import (
 	"fmt"
 	"time"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
@@ -51,7 +51,7 @@ type kubletScraper struct {
 
 func newKubletScraper(
 	restClient kubelet.RestClient,
-	set component.ReceiverCreateSettings,
+	set receiver.CreateSettings,
 	rOptions *scraperOptions,
 	metricsConfig metadata.MetricsSettings,
 ) (scraperhelper.Scraper, error) {

@@ -24,9 +24,9 @@ import (
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
 func TestCreateTracesReceiver(t *testing.T) {
@@ -41,7 +41,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 
 	receiver, err := factory.CreateTracesReceiver(
 		context.Background(),
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 		cfg,
 		consumertest.NewNop(),
 	)
@@ -52,36 +52,32 @@ func TestCreateTracesReceiver(t *testing.T) {
 }
 
 func TestCreateTracesReceiverWrongConfig(t *testing.T) {
-	factories := getTestNopFactories(t)
-	factory := factories.Receivers[componentType]
-	_, err := factory.CreateTracesReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), nil, nil)
+	factory := NewFactory()
+	_, err := factory.CreateTracesReceiver(context.Background(), receivertest.NewNopCreateSettings(), nil, nil)
 	assert.Equal(t, component.ErrDataTypeIsNotSupported, err)
 }
 
 func TestCreateTracesReceiverNilConsumer(t *testing.T) {
-	factories := getTestNopFactories(t)
 	cfg := createDefaultConfig()
-	factory := factories.Receivers[componentType]
-	_, err := factory.CreateTracesReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, nil)
+	factory := NewFactory()
+	_, err := factory.CreateTracesReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, nil)
 	assert.Equal(t, component.ErrNilNextConsumer, err)
 }
 
 func TestCreateTracesReceiverBadConfigNoAuth(t *testing.T) {
-	factories := getTestNopFactories(t)
 	cfg := createDefaultConfig().(*Config)
 	cfg.Queue = "some-queue"
-	factory := factories.Receivers[componentType]
-	_, err := factory.CreateTracesReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, consumertest.NewNop())
+	factory := NewFactory()
+	_, err := factory.CreateTracesReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, consumertest.NewNop())
 	assert.Equal(t, errMissingAuthDetails, err)
 }
 
 func TestCreateTracesReceiverBadConfigIncompleteAuth(t *testing.T) {
-	factories := getTestNopFactories(t)
 	cfg := createDefaultConfig().(*Config)
 	cfg.Queue = "some-queue"
 	cfg.Auth = Authentication{PlainText: &SaslPlainTextConfig{Username: "someUsername"}} // missing password
-	factory := factories.Receivers[componentType]
-	_, err := factory.CreateTracesReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, consumertest.NewNop())
+	factory := NewFactory()
+	_, err := factory.CreateTracesReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, consumertest.NewNop())
 	assert.Equal(t, errMissingPlainTextParams, err)
 }
 
@@ -108,17 +104,10 @@ func TestCreateTracesReceiverBadMetrics(t *testing.T) {
 
 	receiver, err := factory.CreateTracesReceiver(
 		context.Background(),
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 		cfg,
 		consumertest.NewNop(),
 	)
 	assert.Error(t, err)
 	assert.Nil(t, receiver)
-}
-
-func getTestNopFactories(t *testing.T) component.Factories {
-	factories, err := componenttest.NopFactories()
-	assert.Nil(t, err)
-	factories.Receivers[componentType] = NewFactory()
-	return factories
 }

@@ -21,6 +21,7 @@ body:
       - cmd/configschema
       - cmd/mdatagen
       - cmd/otelcontribcol
+      - cmd/oteltestbedcol
       - cmd/telemetrygen
       - cmd/tracegen
       - confmap/provider/s3provider
@@ -74,6 +75,7 @@ body:
       - extension/bearertokenauth
       - extension/headerssetter
       - extension/healthcheck
+      - extension/httpforwarder
       - extension/jaegerremotesampling
       - extension/oauth2clientauth
       - extension/observer
@@ -88,13 +90,13 @@ body:
       - extension/storage/dbstorage
       - extension/storage/filestorage
       - internal/aws
+      - internal/comparetest
       - internal/core
       - internal/docker
       - internal/filter
       - internal/k8sconfig
       - internal/kubelet
       - internal/metadataproviders
-      - internal/scrapertest
       - internal/sharedcomponent
       - internal/splunk
       - internal/tools
@@ -114,6 +116,7 @@ body:
       - pkg/winperfcounters
       - processor/attributes
       - processor/cumulativetodelta
+      - processor/datadog
       - processor/deltatorate
       - processor/filter
       - processor/groupbyattrs
@@ -127,6 +130,7 @@ body:
       - processor/resource
       - processor/resourcedetection
       - processor/resourcedetection/internal/azure
+      - processor/resourcedetection/internal/heroku
       - processor/routing
       - processor/schema
       - processor/servicegraph
@@ -158,6 +162,7 @@ body:
       - receiver/fluentforward
       - receiver/googlecloudpubsub
       - receiver/googlecloudspanner
+      - receiver/haproxy
       - receiver/hostmetrics
       - receiver/httpcheck
       - receiver/iis

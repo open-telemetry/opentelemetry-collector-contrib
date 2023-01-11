@@ -23,6 +23,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	exp "go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
@@ -33,7 +34,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func newMetricsExporter(cfg component.Config, set component.ExporterCreateSettings) (*exporter, error) {
+func newMetricsExporter(cfg component.Config, set exp.CreateSettings) (*exporter, error) {
 	oCfg := cfg.(*Config)
 
 	if oCfg.Metrics.Endpoint == "" || oCfg.Metrics.Endpoint == "https://" || oCfg.Metrics.Endpoint == "http://" {
@@ -68,7 +69,7 @@ func (e *exporter) start(ctx context.Context, host component.Host) (err error) {
 	if e.config.Metrics.Headers == nil {
 		e.config.Metrics.Headers = make(map[string]string)
 	}
-	e.config.Metrics.Headers["Authorization"] = "Bearer " + e.config.PrivateKey
+	e.config.Metrics.Headers["Authorization"] = "Bearer " + string(e.config.PrivateKey)
 
 	e.callOptions = []grpc.CallOption{
 		grpc.WaitForReady(e.config.Metrics.WaitForReady),

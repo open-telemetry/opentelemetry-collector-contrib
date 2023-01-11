@@ -23,14 +23,16 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/processor/processortest"
 	semconv "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap/zaptest"
 )
@@ -62,12 +64,12 @@ func TestProcessorStart(t *testing.T) {
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.MetricsExporter = tc.metricsExporter
 
-			procCreationParams := componenttest.NewNopProcessorCreateSettings()
+			procCreationParams := processortest.NewNopCreateSettings()
 			traceProcessor, err := factory.CreateTracesProcessor(context.Background(), procCreationParams, cfg, consumertest.NewNop())
 			require.NoError(t, err)
 
 			// Test
-			smp := traceProcessor.(*processor)
+			smp := traceProcessor.(*serviceGraphProcessor)
 			err = smp.Start(context.Background(), newMockHost(exporters))
 
 			// Verify
@@ -225,16 +227,15 @@ func sampleTraces() ptrace.Traces {
 	return traces
 }
 
-func newOTLPExporters(t *testing.T) (component.ID, component.MetricsExporter, component.TracesExporter) {
+func newOTLPExporters(t *testing.T) (component.ID, exporter.Metrics, exporter.Traces) {
 	otlpExpFactory := otlpexporter.NewFactory()
 	otlpID := component.NewID("otlp")
 	otlpConfig := &otlpexporter.Config{
-		ExporterSettings: config.NewExporterSettings(otlpID),
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: "example.com:1234",
 		},
 	}
-	expCreationParams := componenttest.NewNopExporterCreateSettings()
+	expCreationParams := exportertest.NewNopCreateSettings()
 	mexp, err := otlpExpFactory.CreateMetricsExporter(context.Background(), expCreationParams, otlpConfig)
 	require.NoError(t, err)
 	texp, err := otlpExpFactory.CreateTracesExporter(context.Background(), expCreationParams, otlpConfig)
@@ -258,9 +259,9 @@ func (m *mockHost) GetExporters() map[component.DataType]map[component.ID]compon
 	return m.exps
 }
 
-var _ component.MetricsExporter = (*mockMetricsExporter)(nil)
+var _ exporter.Metrics = (*mockMetricsExporter)(nil)
 
-func newMockMetricsExporter(verifyFunc func(md pmetric.Metrics) error) component.MetricsExporter {
+func newMockMetricsExporter(verifyFunc func(md pmetric.Metrics) error) exporter.Metrics {
 	return &mockMetricsExporter{verify: verifyFunc}
 }
 
@@ -279,7 +280,7 @@ func (m *mockMetricsExporter) ConsumeMetrics(_ context.Context, md pmetric.Metri
 }
 
 func TestUpdateDurationMetrics(t *testing.T) {
-	p := processor{
+	p := serviceGraphProcessor{
 		reqTotal:                       make(map[string]int64),
 		reqFailedTotal:                 make(map[string]int64),
 		reqDurationSecondsSum:          make(map[string]float64),

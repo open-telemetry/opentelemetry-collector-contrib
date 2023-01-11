@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
 func TestStart(t *testing.T) {
@@ -30,7 +31,7 @@ func TestStart(t *testing.T) {
 	require.True(t, ok)
 
 	sink := &consumertest.MetricsSink{}
-	recv := newReceiver(cfg, componenttest.NewNopReceiverCreateSettings(), sink)
+	recv := newReceiver(cfg, receivertest.NewNopCreateSettings(), sink)
 
 	// test
 	err := recv.Start(context.Background(), componenttest.NewNopHost())
@@ -45,7 +46,7 @@ func TestShutdown(t *testing.T) {
 	require.True(t, ok)
 
 	sink := &consumertest.MetricsSink{}
-	recv := newReceiver(cfg, componenttest.NewNopReceiverCreateSettings(), sink)
+	recv := newReceiver(cfg, receivertest.NewNopCreateSettings(), sink)
 
 	err := recv.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
