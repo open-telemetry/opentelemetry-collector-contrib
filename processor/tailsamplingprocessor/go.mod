@@ -12,7 +12,7 @@ require (
 	go.opentelemetry.io/collector/component v0.69.0
 	go.opentelemetry.io/collector/confmap v0.69.0
 	go.opentelemetry.io/collector/consumer v0.69.0
-	go.opentelemetry.io/collector/pdata v1.0.0-rc3.0.20230109164642-7d168dd20efd
+	go.opentelemetry.io/collector/pdata v1.0.0-rc3
 	go.opentelemetry.io/otel/trace v1.11.2
 	go.uber.org/atomic v1.10.0
 	go.uber.org/goleak v1.2.0
