@@ -50,6 +50,7 @@ main() {
     #
     # The GitHub API validates that authors are not requested to review, but
     # accepts duplicate logins and logins that are already reviewers.
+    echo "Requesting review from code owners: ${REVIEWERS}"
     curl \
         --fail \
         -X POST \
@@ -58,7 +59,7 @@ main() {
         "https://api.github.com/repos/${REPO}/pulls/${PR}/requested_reviewers" \
         -d "{\"reviewers\":[${REVIEWERS}]}" \
         | jq ".message" \
-        || echo "Request failed to request review from code owners on #${PR}"
+        || echo "Request failed to request review from code owners"
 }
 
-main || echo "Failed to request review from code owners on PR #${PR}"
+main || echo "Failed to request review from code owners"
