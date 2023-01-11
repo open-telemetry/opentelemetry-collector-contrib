@@ -101,7 +101,7 @@ func TestExporter_pushLogsData(t *testing.T) {
 	})
 }
 
-func TestLogsExporter_createDatabase(t *testing.T) {
+func TestLogsExporter_getDefaultDns(t *testing.T) {
 	t.Run("database name is a substring of the DSN", func(t *testing.T) {
 		dsn := "tcp://mydatabase-clickhouse-headless:9000/mydatabase"
 		defaultDns := getDefaultDns(dsn, "mydatabase")
