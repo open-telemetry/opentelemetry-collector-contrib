@@ -98,7 +98,7 @@ type sumMetrics struct {
 	insertSQL string
 }
 
-func (s *sumMetrics) insert(ctx context.Context, tx *sql.Tx, logger *zap.Logger) error {
+func (s *sumMetrics) insert(ctx context.Context, db *sql.DB, logger *zap.Logger) error {
 	var valuePlaceholders []string
 	var valueArgs []interface{}
 
@@ -138,7 +138,10 @@ func (s *sumMetrics) insert(ctx context.Context, tx *sql.Tx, logger *zap.Logger)
 	}
 
 	start := time.Now()
-	_, err := tx.ExecContext(ctx, fmt.Sprintf("%s %s", s.insertSQL, strings.Join(valuePlaceholders, ",")), valueArgs...)
+	err := doWithTx(ctx, db, func(tx *sql.Tx) error {
+		_, err := tx.ExecContext(ctx, fmt.Sprintf("%s %s", s.insertSQL, strings.Join(valuePlaceholders, ",")), valueArgs...)
+		return err
+	})
 	duration := time.Since(start)
 	if err != nil {
 		logger.Debug("insert sum metrics", zap.Duration("cost", duration))

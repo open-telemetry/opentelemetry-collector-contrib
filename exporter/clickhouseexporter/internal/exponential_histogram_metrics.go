@@ -113,7 +113,7 @@ type expHistogramMetrics struct {
 	insertSQL         string
 }
 
-func (e *expHistogramMetrics) insert(ctx context.Context, tx *sql.Tx, logger *zap.Logger) error {
+func (e *expHistogramMetrics) insert(ctx context.Context, db *sql.DB, logger *zap.Logger) error {
 	var valuePlaceholders []string
 	var valueArgs []interface{}
 
@@ -161,7 +161,10 @@ func (e *expHistogramMetrics) insert(ctx context.Context, tx *sql.Tx, logger *za
 	}
 
 	start := time.Now()
-	_, err := tx.ExecContext(ctx, fmt.Sprintf("%s %s", e.insertSQL, strings.Join(valuePlaceholders, ",")), valueArgs...)
+	err := doWithTx(ctx, db, func(tx *sql.Tx) error {
+		_, err := tx.ExecContext(ctx, fmt.Sprintf("%s %s", e.insertSQL, strings.Join(valuePlaceholders, ",")), valueArgs...)
+		return err
+	})
 	duration := time.Since(start)
 	if err != nil {
 		logger.Debug("insert exponential histogram metrics", zap.Duration("cost", duration))

@@ -33,7 +33,7 @@ var supportMetricsType = [...]string{createGaugeTableSQL, createSumTableSQL, cre
 
 type metricsModel interface {
 	Add(metrics any, metaData *MetricsMetaData, name string, description string, unit string) error
-	insert(ctx context.Context, tx *sql.Tx, logger *zap.Logger) error
+	insert(ctx context.Context, db *sql.DB, logger *zap.Logger) error
 }
 
 type MetricsMetaData struct {
@@ -77,13 +77,13 @@ func CreateMetricsModel(tableName string) map[pmetric.MetricType]metricsModel {
 	return metricsMap
 }
 
-func InsertMetrics(ctx context.Context, tx *sql.Tx, metricsMap map[pmetric.MetricType]metricsModel, logger *zap.Logger) error {
+func InsertMetrics(ctx context.Context, db *sql.DB, metricsMap map[pmetric.MetricType]metricsModel, logger *zap.Logger) error {
 	errsChan := make(chan error, 5)
 	wg := &sync.WaitGroup{}
 	for _, m := range metricsMap {
 		wg.Add(1)
 		go func(m metricsModel, wg *sync.WaitGroup) {
-			errsChan <- m.insert(ctx, tx, logger)
+			errsChan <- m.insert(ctx, db, logger)
 			wg.Done()
 		}(m, wg)
 	}
@@ -164,4 +164,19 @@ func convertValueAtQuantile(valueAtQuantile pmetric.SummaryDataPointValueAtQuant
 		values = append(values, value.Value())
 	}
 	return quantiles, values
+}
+
+// a copy of clickhouseexporter.doWithTx
+func doWithTx(_ context.Context, db *sql.DB, fn func(tx *sql.Tx) error) error {
+	tx, err := db.Begin()
+	if err != nil {
+		return fmt.Errorf("db.Begin: %w", err)
+	}
+	defer func() {
+		_ = tx.Rollback()
+	}()
+	if err := fn(tx); err != nil {
+		return err
+	}
+	return tx.Commit()
 }

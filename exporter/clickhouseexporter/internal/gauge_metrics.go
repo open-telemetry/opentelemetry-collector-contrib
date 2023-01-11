@@ -94,7 +94,7 @@ type gaugeMetrics struct {
 	insertSQL   string
 }
 
-func (g *gaugeMetrics) insert(ctx context.Context, tx *sql.Tx, logger *zap.Logger) error {
+func (g *gaugeMetrics) insert(ctx context.Context, db *sql.DB, logger *zap.Logger) error {
 	var valuePlaceholders []string
 	var valueArgs []interface{}
 
@@ -131,7 +131,10 @@ func (g *gaugeMetrics) insert(ctx context.Context, tx *sql.Tx, logger *zap.Logge
 		return nil
 	}
 	start := time.Now()
-	_, err := tx.ExecContext(ctx, fmt.Sprintf("%s %s", g.insertSQL, strings.Join(valuePlaceholders, ",")), valueArgs...)
+	err := doWithTx(ctx, db, func(tx *sql.Tx) error {
+		_, err := tx.ExecContext(ctx, fmt.Sprintf("%s %s", g.insertSQL, strings.Join(valuePlaceholders, ",")), valueArgs...)
+		return err
+	})
 	duration := time.Since(start)
 	if err != nil {
 		logger.Debug("insert gauge metrics", zap.Duration("cost", duration))

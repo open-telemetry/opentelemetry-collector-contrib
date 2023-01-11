@@ -18,14 +18,10 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"time"
-
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal"
 )
 
 type metricsExporter struct {
@@ -67,48 +63,43 @@ func (e *metricsExporter) shutdown(ctx context.Context) error {
 }
 
 func (e *metricsExporter) pushMetricsData(ctx context.Context, md pmetric.Metrics) error {
-	err := doWithTx(ctx, e.client, func(tx *sql.Tx) error {
-		metricsMap := internal.CreateMetricsModel(e.cfg.MetricsTableName)
-		for i := 0; i < md.ResourceMetrics().Len(); i++ {
-			metaData := internal.MetricsMetaData{}
-			metrics := md.ResourceMetrics().At(i)
-			res := metrics.Resource()
-			metaData.ResAttr = attributesToMap(res.Attributes())
-			metaData.ResURL = metrics.SchemaUrl()
-			for j := 0; j < metrics.ScopeMetrics().Len(); j++ {
-				rs := metrics.ScopeMetrics().At(j).Metrics()
-				metaData.ScopeURL = metrics.ScopeMetrics().At(j).SchemaUrl()
-				metaData.ScopeInstr = metrics.ScopeMetrics().At(j).Scope()
-				for k := 0; k < rs.Len(); k++ {
-					r := rs.At(k)
-					var errs []error
-					switch r.Type() {
-					case pmetric.MetricTypeGauge:
-						errs = append(errs, metricsMap[pmetric.MetricTypeGauge].Add(r.Gauge(), &metaData, r.Name(), r.Description(), r.Unit()))
-					case pmetric.MetricTypeSum:
-						errs = append(errs, metricsMap[pmetric.MetricTypeSum].Add(r.Sum(), &metaData, r.Name(), r.Description(), r.Unit()))
-					case pmetric.MetricTypeHistogram:
-						errs = append(errs, metricsMap[pmetric.MetricTypeHistogram].Add(r.Histogram(), &metaData, r.Name(), r.Description(), r.Unit()))
-					case pmetric.MetricTypeExponentialHistogram:
-						errs = append(errs, metricsMap[pmetric.MetricTypeExponentialHistogram].Add(r.ExponentialHistogram(), &metaData, r.Name(), r.Description(), r.Unit()))
-					case pmetric.MetricTypeSummary:
-						errs = append(errs, metricsMap[pmetric.MetricTypeSummary].Add(r.Summary(), &metaData, r.Name(), r.Description(), r.Unit()))
-					default:
-						return fmt.Errorf("unsupported metrics type")
-					}
-					if multierr.Combine(errs...) != nil {
-						return multierr.Combine(errs...)
-					}
+	metricsMap := internal.CreateMetricsModel(e.cfg.MetricsTableName)
+	for i := 0; i < md.ResourceMetrics().Len(); i++ {
+		metaData := internal.MetricsMetaData{}
+		metrics := md.ResourceMetrics().At(i)
+		res := metrics.Resource()
+		metaData.ResAttr = attributesToMap(res.Attributes())
+		metaData.ResURL = metrics.SchemaUrl()
+		for j := 0; j < metrics.ScopeMetrics().Len(); j++ {
+			rs := metrics.ScopeMetrics().At(j).Metrics()
+			metaData.ScopeURL = metrics.ScopeMetrics().At(j).SchemaUrl()
+			metaData.ScopeInstr = metrics.ScopeMetrics().At(j).Scope()
+			for k := 0; k < rs.Len(); k++ {
+				r := rs.At(k)
+				var errs []error
+				switch r.Type() {
+				case pmetric.MetricTypeGauge:
+					errs = append(errs, metricsMap[pmetric.MetricTypeGauge].Add(r.Gauge(), &metaData, r.Name(), r.Description(), r.Unit()))
+				case pmetric.MetricTypeSum:
+					errs = append(errs, metricsMap[pmetric.MetricTypeSum].Add(r.Sum(), &metaData, r.Name(), r.Description(), r.Unit()))
+				case pmetric.MetricTypeHistogram:
+					errs = append(errs, metricsMap[pmetric.MetricTypeHistogram].Add(r.Histogram(), &metaData, r.Name(), r.Description(), r.Unit()))
+				case pmetric.MetricTypeExponentialHistogram:
+					errs = append(errs, metricsMap[pmetric.MetricTypeExponentialHistogram].Add(r.ExponentialHistogram(), &metaData, r.Name(), r.Description(), r.Unit()))
+				case pmetric.MetricTypeSummary:
+					errs = append(errs, metricsMap[pmetric.MetricTypeSummary].Add(r.Summary(), &metaData, r.Name(), r.Description(), r.Unit()))
+				default:
+					return fmt.Errorf("unsupported metrics type")
+				}
+				if multierr.Combine(errs...) != nil {
+					return multierr.Combine(errs...)
 				}
 			}
 		}
-
-		// batch insert https://clickhouse.com/docs/en/about-us/performance/#performance-when-inserting-data
-		if err := internal.InsertMetrics(ctx, tx, metricsMap, e.logger); err != nil {
-			return exporterhelper.NewThrottleRetry(err, time.Duration(0)*time.Second)
-		}
-
-		return nil
-	})
-	return err
+	}
+	// batch insert https://clickhouse.com/docs/en/about-us/performance/#performance-when-inserting-data
+	if err := internal.InsertMetrics(ctx, e.client, metricsMap, e.logger); err != nil {
+		return err
+	}
+	return nil
 }
