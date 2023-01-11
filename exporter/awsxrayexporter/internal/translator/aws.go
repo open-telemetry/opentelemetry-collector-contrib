@@ -268,16 +268,22 @@ func makeAws(attributes map[string]pcommon.Value, resource pcommon.Resource, log
 	return filtered, awsData
 }
 
-// Convert string values to slice of size 1 so that we can also handle resource
+// Normalize value to slice.
+// 1. String values are converted to a slice of size 1 so that we can also handle resource
 // attributes that are set using the OTEL_RESOURCE_ATTRIBUTES
+// 2. Slices are kept as they are
+// 3. Other types will result in a empty slice so that we avoid panic.
 func normalizeToSlice(v pcommon.Value) pcommon.Slice {
-	if v.Type() == pcommon.ValueTypeStr {
+	switch v.Type() {
+	case pcommon.ValueTypeStr:
 		s := pcommon.NewSlice()
 		s.AppendEmpty().SetStr(v.Str())
 		return s
+	case pcommon.ValueTypeSlice:
+		return v.Slice()
+	default:
+		return pcommon.NewSlice()
 	}
-
-	return v.Slice()
 }
 
 // Given an array of log group ARNs, create a corresponding amount of LogGroupMetadata objects with log_group and arn

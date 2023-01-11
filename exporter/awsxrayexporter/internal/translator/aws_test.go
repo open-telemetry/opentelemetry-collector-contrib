@@ -458,6 +458,18 @@ func TestLogGroupsFromStringResourceAttribute(t *testing.T) {
 	assert.Contains(t, awsData.CWLogs, cwl1)
 }
 
+func TestLogGroupsInvalidType(t *testing.T) {
+	attributes := make(map[string]pcommon.Value)
+	resource := pcommon.NewResource()
+	resource.Attributes().PutInt(conventions.AttributeAWSLogGroupNames, 1)
+
+	filtered, awsData := makeAws(attributes, resource, nil)
+
+	assert.NotNil(t, filtered)
+	assert.NotNil(t, awsData)
+	assert.Equal(t, 0, len(awsData.CWLogs))
+}
+
 // Simulate Log groups arns being set using OTEL_RESOURCE_ATTRIBUTES
 func TestLogGroupsArnsFromStringResourceAttributes(t *testing.T) {
 	group1 := "arn:aws:logs:us-east-1:123456789123:log-group:group1"
