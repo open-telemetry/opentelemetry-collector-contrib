@@ -171,7 +171,7 @@ func TestWriteLogs(t *testing.T) {
 	logs := CreateTestLogs()
 
 	actualFile := filepath.Join(t.TempDir(), "logs.json")
-	require.NoError(t, WriteLogs(actualFile, logs))
+	require.NoError(t, writeLogs(actualFile, logs))
 
 	actualBytes, err := os.ReadFile(actualFile)
 	require.NoError(t, err)
@@ -192,7 +192,7 @@ func TestLogsRoundTrip(t *testing.T) {
 	expectedLogs := CreateTestLogs()
 
 	tempDir := filepath.Join(t.TempDir(), "logs.json")
-	require.NoError(t, WriteLogs(tempDir, expectedLogs))
+	require.NoError(t, writeLogs(tempDir, expectedLogs))
 
 	actualLogs, err := ReadLogs(tempDir)
 	require.NoError(t, err)
