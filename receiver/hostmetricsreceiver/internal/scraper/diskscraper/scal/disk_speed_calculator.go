@@ -46,14 +46,14 @@ type DiskSpeedCalculator struct {
 // CalculateAndRecord calculates the disk speed for the different interfaces comparing previously
 // stored []disk.IOCountersStat and time.Time and current []disk.IOCountersStat and current time.Time
 // If no previous data is stored it will return empty slice of DiskSpeed and no error
-func (n *DiskSpeedCalculator) CalculateAndRecord(now pcommon.Timestamp, diskIOCounters map[string]disk.IOCountersStat, recorder func(pcommon.Timestamp, DiskSpeed)) error {
+func (n *DiskSpeedCalculator) CalculateAndRecord(now pcommon.Timestamp, diskIOCounters map[string]disk.IOCountersStat, recorder func(pcommon.Timestamp, map[string]DiskSpeed)) error {
 	if n.previousDiskIOCounters != nil {
 		for _, previousDiskIOCounter := range n.previousDiskIOCounters {
 			currentNetIOCounter, err := diskCounterForDeviceName(previousDiskIOCounter.Name, diskIOCounters)
 			if err != nil {
 				return fmt.Errorf("getting io count for interface %s: %w", previousDiskIOCounter.Name, err)
 			}
-			recorder(now, diskSpeed(n.previousDiskIOCounterRecordTime, previousDiskIOCounter, currentNetIOCounter))
+			recorder(now, diskSpeed(n.previousDiskIOCounterRecordTime, previousDiskIOCounter, currentNetIOCounter, previousDiskIOCounter.Name))
 		}
 	}
 	n.previousDiskIOCounters = diskIOCounters
@@ -63,17 +63,23 @@ func (n *DiskSpeedCalculator) CalculateAndRecord(now pcommon.Timestamp, diskIOCo
 }
 
 // diskSpeed calculates the difference between 2 disk.IOCountersStat using spent time between them
-func diskSpeed(lastRecordTime float64, timeStart disk.IOCountersStat, timeEnd disk.IOCountersStat) DiskSpeed {
+func diskSpeed(lastRecordTime float64, timeStart disk.IOCountersStat, timeEnd disk.IOCountersStat, device string) map[string]DiskSpeed {
+
 	elapsedSeconds := getCurrentTime() - lastRecordTime
 	if elapsedSeconds <= 0 {
-		return DiskSpeed{Name: timeStart.Name}
+		return map[string]DiskSpeed{
+			device: {
+				Name: timeStart.Name,
+			},
+		}
 	}
 	// fmt.Println("elapsed.............\n\n\n", elapsedSeconds)
-
-	data := DiskSpeed{
-		Name:       timeStart.Name,
-		WriteSpeed: (float64(timeEnd.WriteBytes) - float64(timeStart.WriteBytes)) / elapsedSeconds,
-		ReadSpeed:  (float64(timeEnd.ReadBytes) - float64(timeStart.ReadBytes)) / elapsedSeconds,
+	data := map[string]DiskSpeed{
+		device: DiskSpeed{
+			Name:       timeStart.Name,
+			WriteSpeed: (float64(timeEnd.WriteBytes) - float64(timeStart.WriteBytes)) / elapsedSeconds,
+			ReadSpeed:  (float64(timeEnd.ReadBytes) - float64(timeStart.ReadBytes)) / elapsedSeconds,
+		},
 	}
 	return data
 }

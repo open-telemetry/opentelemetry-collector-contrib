@@ -138,4 +138,5 @@ The rate of transmission and reception.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
+| device | Name of the disk. | Any Str |
 | direction | Direction of flow of bytes/operations (read or write). | Str: ``read``, ``write`` |

@@ -46,14 +46,14 @@ type NetworkBandwidthCalculator struct {
 // CalculateAndRecord calculates the network bandwidth for the different interfaces comparing previously
 // stored []net.IOCountersStat and time.Time and current []net.IOCountersStat and current time.Time
 // If no previous data is stored it will return empty slice of NetworkBandwidth and no error
-func (n *NetworkBandwidthCalculator) CalculateAndRecord(now pcommon.Timestamp, netIOCounters []net.IOCountersStat, recorder func(pcommon.Timestamp, NetworkBandwidth)) error {
+func (n *NetworkBandwidthCalculator) CalculateAndRecord(now pcommon.Timestamp, netIOCounters []net.IOCountersStat, recorder func(pcommon.Timestamp, map[string]NetworkBandwidth)) error {
 	if n.previousNetIOCounters != nil {
 		for _, previousNetIOCounter := range n.previousNetIOCounters {
 			currentNetIOCounter, err := networkCounterForName(previousNetIOCounter.Name, netIOCounters)
 			if err != nil {
 				return fmt.Errorf("getting io count for interface %s: %w", previousNetIOCounter.Name, err)
 			}
-			recorder(now, networkBandwidth(n.previousNetIOCounterRecordTime, previousNetIOCounter, currentNetIOCounter))
+			recorder(now, networkBandwidth(n.previousNetIOCounterRecordTime, previousNetIOCounter, currentNetIOCounter, previousNetIOCounter.Name))
 		}
 	}
 	n.previousNetIOCounters = netIOCounters
@@ -63,17 +63,23 @@ func (n *NetworkBandwidthCalculator) CalculateAndRecord(now pcommon.Timestamp, n
 }
 
 // networkBandwidth calculates the difference between 2 net.IOCountersStat using spent time between them
-func networkBandwidth(lastRecordTime float64, timeStart net.IOCountersStat, timeEnd net.IOCountersStat) NetworkBandwidth {
+func networkBandwidth(lastRecordTime float64, timeStart net.IOCountersStat, timeEnd net.IOCountersStat, device string) map[string]NetworkBandwidth {
 	elapsedSeconds := getCurrentTime() - lastRecordTime
 	if elapsedSeconds <= 0 {
-		return NetworkBandwidth{Name: timeStart.Name}
+		return map[string]NetworkBandwidth{
+			device: {
+				Name: timeStart.Name,
+			},
+		}
 	}
 	// fmt.Println("elapsed.............\n\n\n", elapsedSeconds)
 
-	data := NetworkBandwidth{
-		Name:         timeStart.Name,
-		OutboundRate: (float64(timeEnd.BytesSent) - float64(timeStart.BytesSent)) / elapsedSeconds,
-		InboundRate:  (float64(timeEnd.BytesRecv) - float64(timeStart.BytesRecv)) / elapsedSeconds,
+	data := map[string]NetworkBandwidth{
+		device: {
+			Name:         timeStart.Name,
+			OutboundRate: (float64(timeEnd.BytesSent) - float64(timeStart.BytesSent)) / elapsedSeconds,
+			InboundRate:  (float64(timeEnd.BytesRecv) - float64(timeStart.BytesRecv)) / elapsedSeconds,
+		},
 	}
 	return data
 }

@@ -64,7 +64,7 @@ metrics:
     unit: "By/s"
     gauge:
       value_type: double
-    attributes: [ direction ]
+    attributes: [ device, direction ]
   system.network.connections:
     enabled: true
     description: The number of connections.
