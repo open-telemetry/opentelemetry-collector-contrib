@@ -155,7 +155,7 @@ func (h *histogramMetrics) insert(ctx context.Context, db *sql.DB, logger *zap.L
 	})
 	duration := time.Since(start)
 	if err != nil {
-		logger.Debug("insert histogram metrics", zap.Duration("cost", duration))
+		logger.Debug("insert histogram metrics fail", zap.Duration("cost", duration))
 		return fmt.Errorf("insert histogram metrics fail:%w", err)
 	}
 

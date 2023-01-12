@@ -30,6 +30,7 @@ import (
 )
 
 func TestExporter_pushMetricsData(t *testing.T) {
+	t.Parallel()
 	t.Run("push success", func(t *testing.T) {
 		mutex := sync.Mutex{}
 		var items int

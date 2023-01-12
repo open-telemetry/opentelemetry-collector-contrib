@@ -167,7 +167,7 @@ func (e *expHistogramMetrics) insert(ctx context.Context, db *sql.DB, logger *za
 	})
 	duration := time.Since(start)
 	if err != nil {
-		logger.Debug("insert exponential histogram metrics", zap.Duration("cost", duration))
+		logger.Debug("insert exponential histogram metrics fail", zap.Duration("cost", duration))
 		return fmt.Errorf("insert exponential histogram metrics fail:%w", err)
 	}
 

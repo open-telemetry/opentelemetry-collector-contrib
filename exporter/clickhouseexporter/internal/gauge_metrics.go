@@ -137,7 +137,7 @@ func (g *gaugeMetrics) insert(ctx context.Context, db *sql.DB, logger *zap.Logge
 	})
 	duration := time.Since(start)
 	if err != nil {
-		logger.Debug("insert gauge metrics", zap.Duration("cost", duration))
+		logger.Debug("insert gauge metrics fail", zap.Duration("cost", duration))
 		return fmt.Errorf("insert gauge metrics fail:%w", err)
 	}
 
