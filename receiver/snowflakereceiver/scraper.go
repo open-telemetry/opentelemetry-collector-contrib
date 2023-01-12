@@ -52,8 +52,8 @@ func (s *snowflakeMetricsScraper) start(_ context.Context, _ component.Host) (er
 }
 
 func (s *snowflakeMetricsScraper) shutdown(_ context.Context) (err error) {
-    err = s.client.client.Close()
-    return err
+	err = s.client.client.Close()
+	return err
 }
 
 // wrapper for all of the sub-scraping tasks, implements the scraper interface for
