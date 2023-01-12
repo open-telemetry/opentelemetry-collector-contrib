@@ -36,9 +36,10 @@ const (
 func init() {
 	featuregate.GetRegistry().MustRegisterID(
 		useScraperV2ID,
-		featuregate.StageBeta,
+		featuregate.StageStable,
 		featuregate.WithRegisterDescription("When enabled, the receiver will use the function ScrapeV2 to collect metrics. This allows each metric to be turned off/on via config. The new metrics are slightly different to the legacy implementation."),
 		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9794"),
+		featuregate.WithRegisterRemovalVersion("0.71.0"),
 	)
 }
 
