@@ -168,8 +168,8 @@ type SumConfig struct {
 	// See https://docs.datadoghq.com/metrics/otlp/?tab=sum#mapping for details and examples.
 	CumulativeMonotonicMode CumulativeMonotonicSumMode `mapstructure:"cumulative_monotonic_mode"`
 
-	// The default is false, which submits sum as `count` type
-	// Enabling this changes the submission type from `count` to `rate`
+	// SubmitAsRate reports whether the sum should be submitted as a rate. The default
+	// is false, which means that it will be submitted as a count.
 	SubmitAsRate bool `mapstructure:"submit_as_rate"`
 
 	// Required when SubmitAsRate is set to true
