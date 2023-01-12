@@ -35,12 +35,11 @@ processors:
 
 Refer to [config.yaml](./testdata/config.yaml) for detailed examples on using the processor.
 
-The `num_traces` property tells the processor what's the maximum number of traces to keep in the internal storage. A higher `num_traces` might incur in a higher memory usage.
+The `num_traces` (default=1,000,000) property tells the processor what's the maximum number of traces to keep in the internal storage. A higher `num_traces` might incur in a higher memory usage.
 
-The `wait_duration` property tells the processor for how long it should keep traces in the internal storage. Once a trace is kept for this duration, it's then released to the next consumer and removed from the internal storage. Spans from a trace that has been released will be kept for the entire duration again.
+The `wait_duration` (default=1s) property tells the processor for how long it should keep traces in the internal storage. Once a trace is kept for this duration, it's then released to the next consumer and removed from the internal storage. Spans from a trace that has been released will be kept for the entire duration again.
 
-The `num_workers` property controls how many concurrent workers the processor will use to process traces. This number
-should be set equal to the amount of physical processors available to the collector.
+The `num_workers` (default=1) property controls how many concurrent workers the processor will use to process traces. 
 
 ## Metrics
 
