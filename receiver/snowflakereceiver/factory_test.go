@@ -26,7 +26,7 @@ import (
 
 func TestFacoryCreate(t *testing.T) {
 	factory := NewFactory()
-	require.EqualValues(t, "snowflakemetrics", factory.Type())
+	require.EqualValues(t, "snowflake", factory.Type())
 }
 
 func TestDefaultConfig(t *testing.T) {

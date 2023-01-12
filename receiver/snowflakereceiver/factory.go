@@ -27,7 +27,7 @@ import (
 )
 
 const (
-	typeStr         = "snowflakemetrics"
+	typeStr         = "snowflake"
 	defaultInterval = 30 * time.Minute
 	defaultRole     = "ACCOUNTADMIN"
 	defaultDB       = "SNOWFLAKE"
@@ -50,7 +50,7 @@ func NewFactory() component.Factory {
 	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, component.StabilityLevelAlpha),
+		receiver.WithMetrics(createMetricsReceiver, component.StabilityLevelDevelopment),
 	)
 }
 
@@ -62,7 +62,7 @@ func createMetricsReceiver(_ context.Context,
 	cfg := baseCfg.(*Config)
 	snowflakeScraper := newSnowflakeMetricsScraper(params, cfg)
 
-	scraper, err := scraperhelper.NewScraper(typeStr, snowflakeScraper.scrape, scraperhelper.WithStart(snowflakeScraper.start))
+	scraper, err := scraperhelper.NewScraper(typeStr, snowflakeScraper.scrape, scraperhelper.WithStart(snowflakeScraper.start), scraperhelper.WithShutdown(snowflakeScraper.shutdown))
 	if err != nil {
 		return nil, err
 	}
