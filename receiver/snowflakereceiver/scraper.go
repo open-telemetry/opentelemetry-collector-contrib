@@ -74,7 +74,7 @@ func (s *snowflakeMetricsScraper) scrape(ctx context.Context) (pmetric.Metrics, 
 	s.scrapeSnowpipeMetrics(ctx, now, *errs)
 	s.scrapeStorageMetrics(ctx, now, *errs)
 
-	return s.mb.Emit(), errs.Combine()
+	return s.mb.Emit(metadata.WithSnowflakeAccountName(s.conf.Account)), errs.Combine()
 }
 
 func (s *snowflakeMetricsScraper) scrapeBillingMetrics(ctx context.Context, t pcommon.Timestamp, errs scrapererror.ScrapeErrors) {
@@ -89,9 +89,6 @@ func (s *snowflakeMetricsScraper) scrapeBillingMetrics(ctx context.Context, t pc
 		s.mb.RecordSnowflakeBillingCloudServiceTotalDataPoint(t, row.totalCloudService, row.serviceType.String)
 		s.mb.RecordSnowflakeBillingTotalCreditTotalDataPoint(t, row.totalCredits, row.serviceType.String)
 		s.mb.RecordSnowflakeBillingVirtualWarehouseTotalDataPoint(t, row.totalVirtualWarehouseCredits, row.serviceType.String)
-
-		s.mb.EmitForResource(
-			metadata.WithSnowflakeAccountName(s.conf.Account))
 	}
 }
 
@@ -107,10 +104,6 @@ func (s *snowflakeMetricsScraper) scrapeWarehouseBillingMetrics(ctx context.Cont
 		s.mb.RecordSnowflakeBillingWarehouseTotalCreditTotalDataPoint(t, row.totalCredit, row.warehouseName.String)
 		s.mb.RecordSnowflakeBillingWarehouseCloudServiceTotalDataPoint(t, row.totalCloudService, row.warehouseName.String)
 		s.mb.RecordSnowflakeBillingWarehouseVirtualWarehouseTotalDataPoint(t, row.totalVirtualWarehouse, row.warehouseName.String)
-
-		s.mb.EmitForResource(
-			metadata.WithSnowflakeAccountName(s.conf.Account))
-
 	}
 }
 
@@ -124,9 +117,6 @@ func (s *snowflakeMetricsScraper) scrapeLoginMetrics(ctx context.Context, t pcom
 
 	for _, row := range *loginMetrics {
 		s.mb.RecordSnowflakeLoginsTotalDataPoint(t, row.loginsTotal, row.errorMessage.String, row.reportedClientType.String, row.isSuccess.String)
-
-		s.mb.EmitForResource(
-			metadata.WithSnowflakeAccountName(s.conf.Account))
 	}
 }
 
@@ -143,8 +133,6 @@ func (s *snowflakeMetricsScraper) scrapeHighLevelQueryMetrics(ctx context.Contex
 		s.mb.RecordSnowflakeQueryBlockedDataPoint(t, row.avgQueryBlocked, row.warehouseName.String)
 		s.mb.RecordSnowflakeQueryQueuedOverloadDataPoint(t, row.avgQueryQueuedOverload, row.warehouseName.String)
 		s.mb.RecordSnowflakeQueryQueuedProvisionDataPoint(t, row.avgQueryQueuedProvision, row.warehouseName.String)
-
-		s.mb.EmitForResource(metadata.WithSnowflakeAccountName(s.conf.Account))
 	}
 }
 
@@ -176,9 +164,6 @@ func (s *snowflakeMetricsScraper) scrapeDBMetrics(ctx context.Context, t pcommon
 		s.mb.RecordSnowflakeRowsUnloadedAvgDataPoint(t, row.avgRowsUnloaded, row.attributes.schemaName.String, row.attributes.executionStatus.String, row.attributes.errorMessage.String, row.attributes.queryType.String, row.attributes.warehouseName.String, row.attributes.databaseName.String, row.attributes.warehouseSize.String)
 		s.mb.RecordSnowflakeRowsUpdatedAvgDataPoint(t, row.avgRowsUpdated, row.attributes.schemaName.String, row.attributes.executionStatus.String, row.attributes.errorMessage.String, row.attributes.queryType.String, row.attributes.warehouseName.String, row.attributes.databaseName.String, row.attributes.warehouseSize.String)
 		s.mb.RecordSnowflakeTotalElapsedTimeAvgDataPoint(t, row.avgTotalElapsedTime, row.attributes.schemaName.String, row.attributes.executionStatus.String, row.attributes.errorMessage.String, row.attributes.queryType.String, row.attributes.warehouseName.String, row.attributes.databaseName.String, row.attributes.warehouseSize.String)
-
-		s.mb.EmitForResource(
-			metadata.WithSnowflakeAccountName(s.conf.Account))
 	}
 }
 
@@ -192,9 +177,6 @@ func (s *snowflakeMetricsScraper) scrapeSessionMetrics(ctx context.Context, t pc
 
 	for _, row := range *sessionMetrics {
 		s.mb.RecordSnowflakeSessionIDCountDataPoint(t, row.distinctSessionID, row.userName.String)
-
-		s.mb.EmitForResource(
-			metadata.WithSnowflakeAccountName(s.conf.Account))
 	}
 }
 
@@ -208,9 +190,6 @@ func (s *snowflakeMetricsScraper) scrapeSnowpipeMetrics(ctx context.Context, t p
 
 	for _, row := range *snowpipeMetrics {
 		s.mb.RecordSnowflakePipeCreditsUsedTotalDataPoint(t, row.creditsUsed, row.pipeName.String)
-
-		s.mb.EmitForResource(
-			metadata.WithSnowflakeAccountName(s.conf.Account))
 	}
 }
 
@@ -226,8 +205,5 @@ func (s *snowflakeMetricsScraper) scrapeStorageMetrics(ctx context.Context, t pc
 		s.mb.RecordSnowflakeStorageStorageBytesTotalDataPoint(t, row.storageBytes)
 		s.mb.RecordSnowflakeStorageStageBytesTotalDataPoint(t, row.stageBytes)
 		s.mb.RecordSnowflakeStorageFailsafeBytesTotalDataPoint(t, row.failsafeBytes)
-
-		s.mb.EmitForResource(
-			metadata.WithSnowflakeAccountName(s.conf.Account))
 	}
 }
