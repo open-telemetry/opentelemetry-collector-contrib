@@ -1,5 +1,5 @@
 # One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
-change_type: breaking
+change_type: bug_fix
 
 # The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
 component: receiver/prometheusreceiver
@@ -18,3 +18,5 @@ subtext: |
   metric family, only then its values is used to set `StartTimeUnixNano` on the
   relevant OTLP metric and dropped afterwards. Otherwise, it is converted to the
   monotonic OTLP Sum metric.
+  This behaviour is disabled by default. Use the `receiver.prometheusreceiver.UseCreatedMetric`
+  to enable it.

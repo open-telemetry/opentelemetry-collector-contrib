@@ -28,9 +28,19 @@ import (
 // This file implements config for Prometheus receiver.
 
 const (
-	typeStr   = "prometheus"
-	stability = component.StabilityLevelBeta
+	typeStr                = "prometheus"
+	stability              = component.StabilityLevelBeta
+	useCreatedMetricGateID = "receiver.prometheusreceiver.UseCreatedMetric"
 )
+
+func init() {
+	featuregate.GetRegistry().MustRegisterID(
+		useCreatedMetricGateID,
+		featuregate.StageAlpha,
+		featuregate.WithRegisterDescription("When enabled, the Prometheus receiver will"+
+			" retrieve the start time for Summary, Histogram and Sum metrics from _created metric"),
+	)
+}
 
 var errRenamingDisallowed = errors.New("metric renaming using metric_relabel_configs is disallowed")
 

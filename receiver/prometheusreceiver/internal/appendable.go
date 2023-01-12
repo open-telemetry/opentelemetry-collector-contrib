@@ -47,11 +47,12 @@ func NewAppendable(
 	gcInterval time.Duration,
 	useStartTimeMetric bool,
 	startTimeMetricRegex *regexp.Regexp,
+	useCreatedMetric bool,
 	externalLabels labels.Labels,
 	registry *featuregate.Registry) (storage.Appendable, error) {
 	var metricAdjuster MetricsAdjuster
 	if !useStartTimeMetric {
-		metricAdjuster = NewInitialPointAdjuster(set.Logger, gcInterval)
+		metricAdjuster = NewInitialPointAdjuster(set.Logger, gcInterval, useCreatedMetric)
 	} else {
 		metricAdjuster = NewStartTimeMetricAdjuster(set.Logger, startTimeMetricRegex)
 	}

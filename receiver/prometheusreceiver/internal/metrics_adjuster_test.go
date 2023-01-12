@@ -78,7 +78,7 @@ func TestGauge(t *testing.T) {
 			adjusted:    metrics(gaugeMetric(gauge1, doublePoint(k1v1k2v2, t3, t3, 55))),
 		},
 	}
-	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute), "job", "0", script)
+	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute, true), "job", "0", script)
 }
 
 func TestSum(t *testing.T) {
@@ -109,7 +109,7 @@ func TestSum(t *testing.T) {
 			adjusted:    metrics(sumMetric(sum1, doublePoint(k1v1k2v2, t3, t5, 72))),
 		},
 	}
-	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute), "job", "0", script)
+	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute, true), "job", "0", script)
 }
 
 func TestSummaryNoCount(t *testing.T) {
@@ -136,7 +136,7 @@ func TestSummaryNoCount(t *testing.T) {
 		},
 	}
 
-	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute), "job", "0", script)
+	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute, true), "job", "0", script)
 }
 
 func TestSummaryFlagNoRecordedValue(t *testing.T) {
@@ -153,7 +153,7 @@ func TestSummaryFlagNoRecordedValue(t *testing.T) {
 		},
 	}
 
-	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute), "job", "0", script)
+	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute, true), "job", "0", script)
 }
 
 func TestSummary(t *testing.T) {
@@ -196,7 +196,7 @@ func TestSummary(t *testing.T) {
 		},
 	}
 
-	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute), "job", "0", script)
+	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute, true), "job", "0", script)
 }
 
 func TestHistogram(t *testing.T) {
@@ -219,7 +219,7 @@ func TestHistogram(t *testing.T) {
 			adjusted:    metrics(histogramMetric(histogram1, histogramPoint(k1v1k2v2, t3, t4, bounds0, []uint64{7, 4, 2, 12}))),
 		},
 	}
-	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute), "job", "0", script)
+	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute, true), "job", "0", script)
 }
 
 func TestHistogramFlagNoRecordedValue(t *testing.T) {
@@ -236,7 +236,7 @@ func TestHistogramFlagNoRecordedValue(t *testing.T) {
 		},
 	}
 
-	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute), "job", "0", script)
+	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute, true), "job", "0", script)
 }
 
 func TestHistogramFlagNoRecordedValueFirstObservation(t *testing.T) {
@@ -253,7 +253,7 @@ func TestHistogramFlagNoRecordedValueFirstObservation(t *testing.T) {
 		},
 	}
 
-	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute), "job", "0", script)
+	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute, true), "job", "0", script)
 }
 
 func TestSummaryFlagNoRecordedValueFirstObservation(t *testing.T) {
@@ -270,7 +270,7 @@ func TestSummaryFlagNoRecordedValueFirstObservation(t *testing.T) {
 		},
 	}
 
-	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute), "job", "0", script)
+	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute, true), "job", "0", script)
 }
 
 func TestGaugeFlagNoRecordedValueFirstObservation(t *testing.T) {
@@ -287,7 +287,7 @@ func TestGaugeFlagNoRecordedValueFirstObservation(t *testing.T) {
 		},
 	}
 
-	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute), "job", "0", script)
+	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute, true), "job", "0", script)
 }
 
 func TestSumFlagNoRecordedValueFirstObservation(t *testing.T) {
@@ -304,7 +304,7 @@ func TestSumFlagNoRecordedValueFirstObservation(t *testing.T) {
 		},
 	}
 
-	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute), "job", "0", script)
+	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute, true), "job", "0", script)
 }
 
 func TestMultiMetrics(t *testing.T) {
@@ -368,7 +368,7 @@ func TestMultiMetrics(t *testing.T) {
 			),
 		},
 	}
-	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute), "job", "0", script)
+	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute, true), "job", "0", script)
 }
 
 func TestNewDataPointsAdded(t *testing.T) {
@@ -430,7 +430,7 @@ func TestNewDataPointsAdded(t *testing.T) {
 			),
 		},
 	}
-	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute), "job", "0", script)
+	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute, true), "job", "0", script)
 }
 
 func TestMultiTimeseries(t *testing.T) {
@@ -489,7 +489,7 @@ func TestMultiTimeseries(t *testing.T) {
 			),
 		},
 	}
-	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute), "job", "0", script)
+	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute, true), "job", "0", script)
 }
 
 func TestEmptyLabels(t *testing.T) {
@@ -515,7 +515,7 @@ func TestEmptyLabels(t *testing.T) {
 			adjusted:    metrics(sumMetric(sum1, doublePoint(k1vEmptyk2vEmptyk3vEmpty, t1, t3, 88))),
 		},
 	}
-	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute), "job", "0", script)
+	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute, true), "job", "0", script)
 }
 
 func TestTsGC(t *testing.T) {
@@ -569,7 +569,7 @@ func TestTsGC(t *testing.T) {
 		},
 	}
 
-	ma := NewInitialPointAdjuster(zap.NewNop(), time.Minute)
+	ma := NewInitialPointAdjuster(zap.NewNop(), time.Minute, true)
 
 	// run round 1
 	runScript(t, ma, "job", "0", script1)
@@ -629,7 +629,7 @@ func TestJobGC(t *testing.T) {
 	}
 
 	gcInterval := 10 * time.Millisecond
-	ma := NewInitialPointAdjuster(zap.NewNop(), gcInterval)
+	ma := NewInitialPointAdjuster(zap.NewNop(), gcInterval, true)
 
 	// run job 1, round 1 - all entries marked
 	runScript(t, ma, "job1", "0", job1Script1)
