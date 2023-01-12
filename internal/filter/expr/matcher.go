@@ -20,9 +20,11 @@ import (
 
 // BoolExpr is an interface that allows matching a context K against a configuration of a match.
 type BoolExpr[K any] interface {
+	// Evaluate match context K against the configuration of ctx
 	Eval(ctx context.Context, tCtx K) (bool, error)
 }
 
+// A BoolExpr wrapper that inverts the predicate
 type notMatcher[K any] struct {
 	matcher BoolExpr[K]
 }
@@ -36,13 +38,14 @@ func Not[K any](matcher BoolExpr[K]) BoolExpr[K] {
 	return notMatcher[K]{matcher: matcher}
 }
 
+// A BoolExpr wrapper that is the logical OR on a list of matches, `matchers`
 type orMatcher[K any] struct {
 	matchers []BoolExpr[K]
 }
 
 func (om orMatcher[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
-	for i := range om.matchers {
-		ret, err := om.matchers[i].Eval(ctx, tCtx)
+	for _, matcher := range om.matchers {
+		ret, err := matcher.Eval(ctx, tCtx)
 		if err != nil {
 			return false, err
 		}
@@ -53,6 +56,7 @@ func (om orMatcher[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
 	return false, nil
 }
 
+// Create an Or BoolExpr from a list of matchers
 func Or[K any](matchers ...BoolExpr[K]) BoolExpr[K] {
 	switch len(matchers) {
 	case 0:
@@ -64,13 +68,14 @@ func Or[K any](matchers ...BoolExpr[K]) BoolExpr[K] {
 	}
 }
 
+// A BoolExpr wrapper that is the logical AND on a list of matches, `matchers`
 type andMatcher[K any] struct {
 	matchers []BoolExpr[K]
 }
 
 func (am andMatcher[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
-	for i := range am.matchers {
-		ret, err := am.matchers[i].Eval(ctx, tCtx)
+	for _, matcher := range am.matchers {
+		ret, err := matcher.Eval(ctx, tCtx)
 		if err != nil {
 			return false, err
 		}
@@ -81,6 +86,7 @@ func (am andMatcher[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
 	return true, nil
 }
 
+// Create an And BoolExpr from a list of matchers
 func And[K any](matchers ...BoolExpr[K]) BoolExpr[K] {
 	switch len(matchers) {
 	case 0:

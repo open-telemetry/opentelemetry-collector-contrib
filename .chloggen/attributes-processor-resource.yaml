@@ -5,7 +5,7 @@ change_type: enhancement
 component: attributesprocessor
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Adds ability for attributes processor to process resource attribute and data point attribute matching
+note: Adds functionality for the attributes processor to filter based on resource attributes and data point attributes
 
 # One or more tracking issues related to the change
 issues: [17017]

@@ -61,7 +61,7 @@ func generateMetricData(resourceName string, attrs map[string]interface{}) pmetr
 
 	g := m.SetEmptyGauge()
 	dp := g.DataPoints().AppendEmpty()
-	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMicro(0)))
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMicro(12000)))
 	dp.SetIntValue(7)
 
 	switch m.Type() {
