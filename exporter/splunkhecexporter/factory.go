@@ -100,13 +100,6 @@ func createTracesExporter(
 	config component.Config,
 ) (exporter.Traces, error) {
 	cfg := config.(*Config)
-	if err := cfg.Validate(); err != nil {
-		return nil, err
-	}
-
-	if cfg.SplunkAppName == "" {
-		cfg.SplunkAppName = defaultSplunkAppName
-	}
 
 	if cfg.SplunkAppVersion == "" {
 		cfg.SplunkAppVersion = set.BuildInfo.Version
@@ -137,13 +130,6 @@ func createMetricsExporter(
 	config component.Config,
 ) (exporter.Metrics, error) {
 	cfg := config.(*Config)
-	if err := cfg.Validate(); err != nil {
-		return nil, err
-	}
-
-	if cfg.SplunkAppName == "" {
-		cfg.SplunkAppName = defaultSplunkAppName
-	}
 
 	if cfg.SplunkAppVersion == "" {
 		cfg.SplunkAppVersion = set.BuildInfo.Version
@@ -184,16 +170,9 @@ func createLogsExporter(
 	config component.Config,
 ) (exporter exporter.Logs, err error) {
 	cfg := config.(*Config)
-	if err = cfg.Validate(); err != nil {
-		return nil, err
-	}
 
 	if !cfg.LogDataEnabled && !cfg.ProfilingDataEnabled {
 		return nil, errors.New(`either "log_data_enabled" or "profiling_data_enabled" has to be true`)
-	}
-
-	if cfg.SplunkAppName == "" {
-		cfg.SplunkAppName = defaultSplunkAppName
 	}
 
 	if cfg.SplunkAppVersion == "" {
