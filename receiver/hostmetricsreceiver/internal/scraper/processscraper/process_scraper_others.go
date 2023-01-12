@@ -18,6 +18,7 @@
 package processscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper"
 
 import (
+	"regexp"
 	"github.com/shirou/gopsutil/v3/cpu"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/metadata"
@@ -44,10 +45,12 @@ func getProcessExecutable(proc processHandle) (*executableMetadata, error) {
 	}
 
 	// attampting to get the process path
-	exe, err := proc.Exe()
+	cmdline, err := proc.Cmdline()
 	if err != nil {
 		return nil, err
 	}
+	regex, _ := regexp.Compile("^\\S+")
+	exe := regex.FindString(cmdline)
 
 	// managed to get the info
 	executable := &executableMetadata{name: name, path: exe}
