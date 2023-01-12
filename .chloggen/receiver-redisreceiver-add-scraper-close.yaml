@@ -5,7 +5,7 @@ change_type: enhancement
 component: redisreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add scraper shutdown with redis client close function to avoid redis client connection poll leaks
+note: Add scraper shutdown with redis client close function to avoid redis client connection pool leaks
 
 # One or more tracking issues related to the change
 issues: []
