@@ -33,7 +33,7 @@ const (
 	// The value of "type" key in configuration.
 	typeStr = "signalfx"
 	// The stability level of the receiver.
-	stability = component.StabilityLevelStable
+	stability = component.StabilityLevelBeta
 
 	// Default endpoints to bind to.
 	defaultEndpoint = ":9943"
