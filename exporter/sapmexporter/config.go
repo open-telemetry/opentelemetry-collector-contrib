@@ -16,7 +16,6 @@ package sapmexporter // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"errors"
-	"fmt"
 	"net/url"
 
 	sapmclient "github.com/signalfx/sapm-proto/client"
@@ -67,9 +66,6 @@ func (c *Config) Validate() error {
 	_, err := url.Parse(c.Endpoint)
 	if err != nil {
 		return err
-	}
-	if err := c.QueueSettings.Validate(); err != nil {
-		return fmt.Errorf("sending_queue settings has invalid configuration: %w", err)
 	}
 	return nil
 }

@@ -115,5 +115,6 @@ func TestInvalidConfig(t *testing.T) {
 			QueueSize: -1,
 		},
 	}
-	require.Error(t, invalid.Validate())
+
+	require.Error(t, component.ValidateConfig(invalid))
 }
