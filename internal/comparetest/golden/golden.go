@@ -79,7 +79,18 @@ func ReadLogs(filePath string) (plog.Logs, error) {
 }
 
 // WriteLogs writes a plog.Logs to the specified file
-func WriteLogs(filePath string, logs plog.Logs) error {
+func WriteLogs(t *testing.T, filePath string, metrics plog.Logs) error {
+	if err := writeLogs(filePath, metrics); err != nil {
+		return err
+	}
+	t.Logf("Golden file successfully written to %s.", filePath)
+	t.Log("NOTE: The WriteLogs call must be removed in order to pass the test.")
+	t.Fail()
+	return nil
+}
+
+// writeLogs writes a plog.Logs to the specified file
+func writeLogs(filePath string, logs plog.Logs) error {
 	unmarshaler := &plog.JSONMarshaler{}
 	fileBytes, err := unmarshaler.MarshalLogs(logs)
 	if err != nil {
