@@ -192,7 +192,7 @@ func createDatabase(cfg *Config) error {
 		return nil
 	}
 	// use default database to create new database
-	dsnUseDefaultDatabase, err := getDefaultDns(cfg.DSN, database)
+	dsnUseDefaultDatabase, err := getDefaultDSN(cfg.DSN, database)
 	if err != nil {
 		return err
 	}
@@ -211,7 +211,7 @@ func createDatabase(cfg *Config) error {
 	return nil
 }
 
-func getDefaultDns(dsn string, database string) (string, error) {
+func getDefaultDSN(dsn string, database string) (string, error) {
 	if strings.LastIndex(dsn, database) == -1 {
 		return "", fmt.Errorf("database not present in dsn")
 	}
