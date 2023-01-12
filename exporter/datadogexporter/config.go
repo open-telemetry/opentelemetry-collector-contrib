@@ -41,7 +41,7 @@ var (
 const (
 	// DefaultSite is the default site of the Datadog intake to send data to
 	DefaultSite = "datadoghq.com"
-	// Default interval for sum_to_rate_conversion
+	// DefaultSumToRateInterval specifies the interval to use when converting a sum to a rate.
 	DefaultSumToRateInterval = 10 * time.Second
 )
 
