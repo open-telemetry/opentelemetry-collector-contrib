@@ -52,6 +52,7 @@ var (
 )
 
 func TestRabbitmqIntegration(t *testing.T) {
+	t.Skip("See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/17201")
 	t.Run("Running rabbitmq 3.9", func(t *testing.T) {
 		t.Parallel()
 		container := getContainer(t, containerRequest3_9)

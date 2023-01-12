@@ -29,44 +29,64 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
 
-// Test_validateMetrics checks validateMetrics return true if a type and temporality combination is valid, false
-// otherwise.
-func Test_validateMetrics(t *testing.T) {
+func Test_isValidAggregationTemporality(t *testing.T) {
+	l := pcommon.NewMap()
 
-	// define a single test
-	type combTest struct {
+	tests := []struct {
 		name   string
 		metric pmetric.Metric
 		want   bool
+	}{
+		{
+			name: "summary",
+			metric: func() pmetric.Metric {
+				quantiles := pmetric.NewSummaryDataPointValueAtQuantileSlice()
+				quantiles.AppendEmpty().SetValue(1)
+				return getSummaryMetric("", l, 0, 0, 0, quantiles)
+			}(),
+			want: true,
+		},
+		{
+			name:   "gauge",
+			metric: getIntGaugeMetric("", l, 0, 0),
+			want:   true,
+		},
+		{
+			name:   "cumulative sum",
+			metric: getIntSumMetric("", l, pmetric.AggregationTemporalityCumulative, 0, 0),
+			want:   true,
+		},
+		{
+			name: "cumulative histogram",
+			metric: getHistogramMetric(
+				"", l, pmetric.AggregationTemporalityCumulative, 0, 0, 0, []float64{}, []uint64{}),
+			want: true,
+		},
+		{
+			name:   "missing type",
+			metric: pmetric.NewMetric(),
+			want:   false,
+		},
+		{
+			name:   "unspecified sum temporality",
+			metric: getIntSumMetric("", l, pmetric.AggregationTemporalityUnspecified, 0, 0),
+			want:   false,
+		},
+		{
+			name:   "delta sum",
+			metric: getIntSumMetric("", l, pmetric.AggregationTemporalityDelta, 0, 0),
+			want:   false,
+		},
+		{
+			name: "delta histogram",
+			metric: getHistogramMetric(
+				"", l, pmetric.AggregationTemporalityDelta, 0, 0, 0, []float64{}, []uint64{}),
+			want: false,
+		},
 	}
-
-	var tests []combTest
-
-	// append true cases
-	for k, validMetric := range validMetrics1 {
-		name := "valid_" + k
-
-		tests = append(tests, combTest{
-			name,
-			validMetric,
-			true,
-		})
-	}
-
-	for k, invalidMetric := range invalidMetrics {
-		name := "invalid_" + k
-
-		tests = append(tests, combTest{
-			name,
-			invalidMetric,
-			false,
-		})
-	}
-
-	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := validateMetrics(tt.metric)
+			got := isValidAggregationTemporality(tt.metric)
 			assert.Equal(t, tt.want, got)
 		})
 	}
@@ -163,7 +183,7 @@ func Test_timeSeriesSignature(t *testing.T) {
 			validMetrics1[validHistogram],
 			validMetrics1[validHistogram].Type().String() + lb2Sig,
 		},
-		// descriptor type cannot be nil, as checked by validateMetrics
+		// descriptor type cannot be nil, as checked by validateAggregationTemporality
 		{
 			"nil_case",
 			nil,

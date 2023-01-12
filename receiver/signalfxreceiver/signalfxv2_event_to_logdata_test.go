@@ -24,6 +24,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
 )
 
 func TestSignalFxV2EventsToLogData(t *testing.T) {
@@ -66,9 +68,7 @@ func TestSignalFxV2EventsToLogData(t *testing.T) {
 		propMap.PutInt("rack", 5)
 		propMap.PutDouble("temp", 40.5)
 		propMap.PutEmpty("nullProp")
-		propMap.Sort()
 
-		l.Attributes().Sort()
 		return logSlice
 	}
 
@@ -101,10 +101,7 @@ func TestSignalFxV2EventsToLogData(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			lrs := plog.NewLogRecordSlice()
 			signalFxV2EventsToLogRecords(tt.sfxEvents, lrs)
-			for i := 0; i < lrs.Len(); i++ {
-				lrs.At(i).Attributes().Sort()
-			}
-			assert.Equal(t, tt.expected, lrs)
+			assert.NoError(t, comparetest.CompareLogRecordSlices(tt.expected, lrs))
 		})
 	}
 }

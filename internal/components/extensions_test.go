@@ -20,6 +20,7 @@ package components
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -229,12 +230,12 @@ func TestDefaultExtensions(t *testing.T) {
 			require.True(t, ok)
 			assert.Equal(t, tt.extension, factory.Type())
 
-			if tt.skipLifecycle {
-				t.Skip("Skipping lifecycle test for ", tt.extension)
-				return
+			verifyExtensionShutdown(t, factory, tt.getConfigFn)
+
+			if !tt.skipLifecycle {
+				verifyExtensionLifecycle(t, factory, tt.getConfigFn)
 			}
 
-			verifyExtensionLifecycle(t, factory, tt.getConfigFn)
 		})
 	}
 }
@@ -265,6 +266,28 @@ func verifyExtensionLifecycle(t *testing.T, factory extension.Factory, getConfig
 	require.NoError(t, err)
 	require.NoError(t, secondExt.Start(ctx, host))
 	require.NoError(t, secondExt.Shutdown(ctx))
+}
+
+// verifyExtensionShutdown is used to test if an extension type can be shutdown without being started first.
+func verifyExtensionShutdown(tb testing.TB, factory extension.Factory, getConfigFn getExtensionConfigFn) {
+	ctx := context.Background()
+	extCreateSet := extensiontest.NewNopCreateSettings()
+
+	if getConfigFn == nil {
+		getConfigFn = factory.CreateDefaultConfig
+	}
+
+	e, err := factory.CreateExtension(ctx, extCreateSet, getConfigFn())
+	if errors.Is(err, component.ErrDataTypeIsNotSupported) {
+		return
+	}
+	if e == nil {
+		return
+	}
+
+	assert.NotPanics(tb, func() {
+		assert.NoError(tb, e.Shutdown(ctx))
+	})
 }
 
 // assertNoErrorHost implements a component.Host that asserts that there were no errors.

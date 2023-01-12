@@ -20,10 +20,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/processor/processortest"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
@@ -41,7 +41,7 @@ type testCase struct {
 }
 
 // runIndividualTestCase is the common logic of passing trace data through a configured attributes processor.
-func runIndividualTestCase(t *testing.T, tt testCase, tp component.TracesProcessor) {
+func runIndividualTestCase(t *testing.T, tt testCase, tp processor.Traces) {
 	t.Run(tt.name, func(t *testing.T) {
 		td := generateTraceData(tt.serviceName, tt.name, tt.inputAttributes)
 		assert.NoError(t, tp.ConsumeTraces(context.Background(), td))
@@ -118,7 +118,7 @@ func TestSpanProcessor_NilEmptyData(t *testing.T) {
 		{Key: "attribute1", Action: attraction.DELETE},
 	}
 
-	tp, err := factory.CreateTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), oCfg, consumertest.NewNop())
+	tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), oCfg, consumertest.NewNop())
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 	for i := range testCases {
@@ -185,7 +185,7 @@ func TestAttributes_FilterSpans(t *testing.T) {
 		},
 		Config: *createConfig(filterset.Strict),
 	}
-	tp, err := factory.CreateTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
+	tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop())
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 
@@ -253,7 +253,7 @@ func TestAttributes_FilterSpansByNameStrict(t *testing.T) {
 		SpanNames: []string{"dont_apply"},
 		Config:    *createConfig(filterset.Strict),
 	}
-	tp, err := factory.CreateTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
+	tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop())
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 
@@ -321,7 +321,7 @@ func TestAttributes_FilterSpansByNameRegexp(t *testing.T) {
 		SpanNames: []string{".*dont_apply$"},
 		Config:    *createConfig(filterset.Regexp),
 	}
-	tp, err := factory.CreateTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
+	tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop())
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 
@@ -380,7 +380,7 @@ func TestAttributes_Hash(t *testing.T) {
 		{Key: "user.authenticated", Action: attraction.HASH},
 	}
 
-	tp, err := factory.CreateTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
+	tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop())
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 
@@ -483,7 +483,7 @@ func TestAttributes_Convert(t *testing.T) {
 		{Key: "to.string", Action: attraction.CONVERT, ConvertedType: "string"},
 	}
 
-	tp, err := factory.CreateTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
+	tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop())
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 
@@ -527,7 +527,7 @@ func BenchmarkAttributes_FilterSpansByName(b *testing.B) {
 	oCfg.Include = &filterconfig.MatchProperties{
 		SpanNames: []string{"^apply.*"},
 	}
-	tp, err := factory.CreateTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
+	tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop())
 	require.Nil(b, err)
 	require.NotNil(b, tp)
 

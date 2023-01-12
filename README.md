@@ -12,7 +12,7 @@
 
 <p align="center">
   <a href="https://github.com/open-telemetry/opentelemetry-collector-contrib/actions/workflows/build-and-test.yml?query=branch%3Amain">
-    <img alt="Build Status" src="https://img.shields.io/github/workflow/status/open-telemetry/opentelemetry-collector-contrib/build-and-test/main?style=for-the-badge">
+    <img alt="Build Status" src="https://img.shields.io/github/actions/workflow/status/open-telemetry/opentelemetry-collector-contrib/build-and-test.yml?branch=main&style=for-the-badge">
   </a>
   <a href="https://goreportcard.com/report/github.com/open-telemetry/opentelemetry-collector-contrib">
     <img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/open-telemetry/opentelemetry-collector-contrib?style=for-the-badge">
@@ -74,6 +74,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 Triagers ([@open-telemetry/collector-contrib-triagers](https://github.com/orgs/open-telemetry/teams/collector-contrib-triagers))
 
+- [Antoine Toulme](https://github.com/atoulme), Splunk
+- [Benedikt Bongartz](https://github.com/frzifus), Red Hat
 - [Goutham Veeramachaneni](https://github.com/gouthamve), Grafana
 - [Ziqi Zhao](https://github.com/fatsheep9146), Alibaba
 - Actively seeking contributors to triage issues

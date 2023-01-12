@@ -22,14 +22,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 )
 
 func TestLoadConfig(t *testing.T) {
 	// Prepare
-	factories, err := componenttest.NopFactories()
+	factories, err := otelcoltest.NopFactories()
 	require.NoError(t, err)
 
 	factories.Processors[typeStr] = NewFactory()
@@ -42,7 +40,6 @@ func TestLoadConfig(t *testing.T) {
 	require.NotNil(t, cfg)
 	assert.Equal(t,
 		&Config{
-			ProcessorSettings:       config.NewProcessorSettings(component.NewID(typeStr)),
 			MetricsExporter:         "metrics",
 			LatencyHistogramBuckets: []time.Duration{1, 2, 3, 4, 5},
 			Dimensions:              []string{"dimension-1", "dimension-2"},

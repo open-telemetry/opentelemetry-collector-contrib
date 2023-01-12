@@ -14,6 +14,12 @@
                   "value": {
                      "stringValue": "917e13e55eed"
                   }
+               },
+               {
+                  "key": "elasticsearch.node.version",
+                  "value": {
+                     "stringValue": "7.17.7"
+                  }
                }
             ]
          },

@@ -23,8 +23,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -80,7 +80,6 @@ func TestLoadInvalidTagStrategy(t *testing.T) {
 func TestLoadAllSettings(t *testing.T) {
 	// Arrange
 	expected := &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 
 		QueueSettings: exporterhelper.QueueSettings{
 			Enabled:      false,
@@ -96,7 +95,7 @@ func TestLoadAllSettings(t *testing.T) {
 
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint:        "http://localhost:8080/",
-			Headers:         map[string]string{},
+			Headers:         map[string]configopaque.String{},
 			Timeout:         10 * time.Second,
 			ReadBufferSize:  4096,
 			WriteBufferSize: 4096,
@@ -141,8 +140,7 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "Valid minimal configuration",
 			cfg: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				Tag:              TagNone,
+				Tag: TagNone,
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "http://localhost:8080",
 				},
@@ -152,11 +150,10 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "Valid custom headers",
 			cfg: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				Tag:              TagNone,
+				Tag: TagNone,
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "http://localhost:8080",
-					Headers: map[string]string{
+					Headers: map[string]configopaque.String{
 						"user-agent":       "Humio",
 						"content-type":     "application/json",
 						"content-encoding": "gzip",
@@ -168,7 +165,6 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "Valid compression disabled",
 			cfg: &Config{
-				ExporterSettings:   config.NewExporterSettings(component.NewID(typeStr)),
 				DisableCompression: true,
 				Tag:                TagNone,
 				HTTPClientSettings: confighttp.HTTPClientSettings{
@@ -180,8 +176,7 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "Missing endpoint",
 			cfg: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				Tag:              TagNone,
+				Tag: TagNone,
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "",
 				},
@@ -191,8 +186,7 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "Override tag strategy",
 			cfg: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				Tag:              TagServiceName,
+				Tag: TagServiceName,
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "e",
 				},
@@ -202,8 +196,7 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "Unix time",
 			cfg: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				Tag:              TagNone,
+				Tag: TagNone,
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "e",
 				},
@@ -216,8 +209,7 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "Error creating URLs",
 			cfg: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				Tag:              TagNone,
+				Tag: TagNone,
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "\n\t",
 				},
@@ -227,11 +219,10 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "Invalid Content-Type header",
 			cfg: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				Tag:              TagNone,
+				Tag: TagNone,
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "e",
-					Headers: map[string]string{
+					Headers: map[string]configopaque.String{
 						"content-type": "text/plain",
 					},
 				},
@@ -241,11 +232,10 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "User-provided Authorization header",
 			cfg: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				Tag:              TagNone,
+				Tag: TagNone,
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "e",
-					Headers: map[string]string{
+					Headers: map[string]configopaque.String{
 						"authorization": "Bearer mytoken",
 					},
 				},
@@ -255,11 +245,10 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "Invalid content encoding",
 			cfg: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				Tag:              TagNone,
+				Tag: TagNone,
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "e",
-					Headers: map[string]string{
+					Headers: map[string]configopaque.String{
 						"content-encoding": "compress",
 					},
 				},
@@ -269,12 +258,11 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "Content encoding without compression",
 			cfg: &Config{
-				ExporterSettings:   config.NewExporterSettings(component.NewID(typeStr)),
 				DisableCompression: true,
 				Tag:                TagNone,
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "e",
-					Headers: map[string]string{
+					Headers: map[string]configopaque.String{
 						"content-encoding": "gzip",
 					},
 				},
@@ -296,7 +284,6 @@ func TestValidate(t *testing.T) {
 func TestSanitizeValid(t *testing.T) {
 	// Arrange
 	cfg := &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "http://localhost:8080",
 		},
@@ -315,7 +302,7 @@ func TestSanitizeValid(t *testing.T) {
 	assert.Equal(t, "localhost:8080", cfg.structuredEndpoint.Host)
 	assert.Equal(t, structuredPath, cfg.structuredEndpoint.Path)
 
-	assert.Equal(t, map[string]string{
+	assert.Equal(t, map[string]configopaque.String{
 		"content-type":     "application/json",
 		"content-encoding": "gzip",
 		"user-agent":       "opentelemetry-collector-contrib Humio",
@@ -325,10 +312,9 @@ func TestSanitizeValid(t *testing.T) {
 func TestSanitizeCustomHeaders(t *testing.T) {
 	// Arrange
 	cfg := &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "http://localhost:8080",
-			Headers: map[string]string{
+			Headers: map[string]configopaque.String{
 				"user-agent":       "Humio",
 				"content-type":     "application/json",
 				"content-encoding": "gzip",
@@ -341,7 +327,7 @@ func TestSanitizeCustomHeaders(t *testing.T) {
 
 	// Assert
 	require.NoError(t, err)
-	assert.Equal(t, map[string]string{
+	assert.Equal(t, map[string]configopaque.String{
 		"content-type":     "application/json",
 		"content-encoding": "gzip",
 		"user-agent":       "Humio",
@@ -351,7 +337,6 @@ func TestSanitizeCustomHeaders(t *testing.T) {
 func TestSanitizeNoCompression(t *testing.T) {
 	// Arrange
 	cfg := &Config{
-		ExporterSettings:   config.NewExporterSettings(component.NewID(typeStr)),
 		DisableCompression: true,
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "http://localhost:8080",
@@ -363,7 +348,7 @@ func TestSanitizeNoCompression(t *testing.T) {
 
 	// Assert
 	require.NoError(t, err)
-	assert.Equal(t, map[string]string{
+	assert.Equal(t, map[string]configopaque.String{
 		"content-type": "application/json",
 		"user-agent":   "opentelemetry-collector-contrib Humio",
 	}, cfg.Headers)

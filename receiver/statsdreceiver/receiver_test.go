@@ -26,7 +26,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -56,11 +55,29 @@ func Test_statsdreceiver_New(t *testing.T) {
 			},
 			wantErr: component.ErrNilNextConsumer,
 		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := New(receivertest.NewNopCreateSettings(), tt.args.config, tt.args.nextConsumer)
+			assert.Equal(t, tt.wantErr, err)
+		})
+	}
+}
+
+func Test_statsdreceiver_Start(t *testing.T) {
+	type args struct {
+		config       Config
+		nextConsumer consumer.Metrics
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr error
+	}{
 		{
 			name: "unsupported transport",
 			args: args{
 				config: Config{
-					ReceiverSettings: defaultConfig.ReceiverSettings,
 					NetAddr: confignet.NetAddr{
 						Endpoint:  "localhost:8125",
 						Transport: "unknown",
@@ -73,7 +90,9 @@ func Test_statsdreceiver_New(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := New(receivertest.NewNopCreateSettings(), tt.args.config, tt.args.nextConsumer)
+			receiver, err := New(receivertest.NewNopCreateSettings(), tt.args.config, tt.args.nextConsumer)
+			require.NoError(t, err)
+			err = receiver.Start(context.Background(), componenttest.NewNopHost())
 			assert.Equal(t, tt.wantErr, err)
 		})
 	}
@@ -108,7 +127,6 @@ func Test_statsdreceiver_EndToEnd(t *testing.T) {
 			name: "default_config with 9s interval",
 			configFn: func() *Config {
 				return &Config{
-					ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 					NetAddr: confignet.NetAddr{
 						Endpoint:  defaultBindEndpoint,
 						Transport: defaultTransport,

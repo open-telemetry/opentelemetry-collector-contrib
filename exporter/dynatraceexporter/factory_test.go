@@ -23,8 +23,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
@@ -38,9 +38,8 @@ func TestCreateDefaultConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 
 	assert.Equal(t, &dtconfig.Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
-		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
+		RetrySettings: exporterhelper.NewDefaultRetrySettings(),
+		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
 		ResourceToTelemetrySettings: resourcetotelemetry.Settings{
 			Enabled: false,
 		},
@@ -66,13 +65,12 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "defaults"),
 			expected: &dtconfig.Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
-				QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
+				RetrySettings: exporterhelper.NewDefaultRetrySettings(),
+				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
 
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: apiconstants.GetDefaultOneAgentEndpoint(),
-					Headers: map[string]string{
+					Headers: map[string]configopaque.String{
 						"Content-Type": "text/plain; charset=UTF-8",
 						"User-Agent":   "opentelemetry-collector"},
 				},
@@ -83,13 +81,12 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "valid"),
 			expected: &dtconfig.Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
-				QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
+				RetrySettings: exporterhelper.NewDefaultRetrySettings(),
+				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
 
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "http://example.com/api/v2/metrics/ingest",
-					Headers: map[string]string{
+					Headers: map[string]configopaque.String{
 						"Authorization": "Api-Token token",
 						"Content-Type":  "text/plain; charset=UTF-8",
 						"User-Agent":    "opentelemetry-collector"},
@@ -107,13 +104,12 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "valid_tags"),
 			expected: &dtconfig.Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
-				QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
+				RetrySettings: exporterhelper.NewDefaultRetrySettings(),
+				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
 
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "http://example.com/api/v2/metrics/ingest",
-					Headers: map[string]string{
+					Headers: map[string]configopaque.String{
 						"Authorization": "Api-Token token",
 						"Content-Type":  "text/plain; charset=UTF-8",
 						"User-Agent":    "opentelemetry-collector"},

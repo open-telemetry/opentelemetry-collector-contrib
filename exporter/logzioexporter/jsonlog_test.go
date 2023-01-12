@@ -25,9 +25,7 @@ import (
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -98,9 +96,8 @@ func TestSetTimeStamp(t *testing.T) {
 	}))
 	ld := generateLogsOneEmptyTimestamp()
 	cfg := &Config{
-		Region:           "us",
-		Token:            "token",
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
+		Region: "us",
+		Token:  "token",
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint:    server.URL,
 			Compression: configcompression.Gzip,

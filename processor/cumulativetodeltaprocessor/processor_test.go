@@ -23,11 +23,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/processor/processortest"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
@@ -336,14 +336,13 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 			// next stores the results of the filter metric processor
 			next := new(consumertest.MetricsSink)
 			cfg := &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
-				Include:           test.include,
-				Exclude:           test.exclude,
+				Include: test.include,
+				Exclude: test.exclude,
 			}
 			factory := NewFactory()
 			mgp, err := factory.CreateMetricsProcessor(
 				context.Background(),
-				componenttest.NewNopProcessorCreateSettings(),
+				processortest.NewNopCreateSettings(),
 				cfg,
 				next,
 			)
@@ -501,7 +500,7 @@ func generateTestHistogramMetrics(tm testHistogramMetric) pmetric.Metrics {
 
 func BenchmarkConsumeMetrics(b *testing.B) {
 	c := consumertest.NewNop()
-	params := component.ProcessorCreateSettings{
+	params := processor.CreateSettings{
 		TelemetrySettings: component.TelemetrySettings{
 			Logger: zap.NewNop(),
 		},

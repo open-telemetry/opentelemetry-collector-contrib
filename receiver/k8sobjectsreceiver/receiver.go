@@ -125,7 +125,7 @@ func (kr *k8sobjectsreceiver) startPull(ctx context.Context, config *K8sObjectsC
 			if err != nil {
 				kr.setting.Logger.Error("error in pulling object", zap.String("resource", config.gvr.String()), zap.Error(err))
 			} else if len(objects.Items) > 0 {
-				logs := unstructuredListToLogData(objects)
+				logs := pullObjectsToLogData(objects, config)
 				obsCtx := kr.obsrecv.StartLogsOp(ctx)
 				err = kr.consumer.ConsumeLogs(obsCtx, logs)
 				kr.obsrecv.EndLogsOp(obsCtx, typeStr, logs.LogRecordCount(), err)
@@ -162,7 +162,7 @@ func (kr *k8sobjectsreceiver) startWatch(ctx context.Context, config *K8sObjects
 				kr.setting.Logger.Warn("Watch channel closed unexpectedly", zap.String("resource", config.gvr.String()))
 				return
 			}
-			logs := watchEventToLogData(&data)
+			logs := watchObjectsToLogData(&data, config)
 
 			obsCtx := kr.obsrecv.StartLogsOp(ctx)
 			err := kr.consumer.ConsumeLogs(obsCtx, logs)

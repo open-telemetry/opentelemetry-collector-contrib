@@ -18,7 +18,7 @@ import (
 	"errors"
 	"time"
 
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.uber.org/multierr"
 )
 
@@ -31,8 +31,6 @@ var (
 )
 
 type Config struct {
-	config.ExtensionSettings `mapstructure:",squash"`
-
 	KeyID string `mapstructure:"key_id"`
 
 	TTL time.Duration `mapstructure:"ttl"`
@@ -41,7 +39,7 @@ type Config struct {
 
 	Audience []string `mapstructure:"audience"`
 
-	PrivateKey string `mapstructure:"private_key"`
+	PrivateKey configopaque.String `mapstructure:"private_key"`
 }
 
 func (c *Config) Validate() error {

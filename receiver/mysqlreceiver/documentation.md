@@ -84,20 +84,6 @@ The number of bytes in the InnoDB buffer pool.
 | ---- | ----------- | ------ |
 | status | The status of buffer pool data. | Str: ``dirty``, ``clean`` |
 
-### mysql.commands
-
-The number of times each type of command has been executed.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | true |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| command | The prepare statement command types. | Str: ``execute``, ``close``, ``fetch``, ``prepare``, ``reset``, ``send_long_data`` |
-
 ### mysql.double_writes
 
 The number of writes to the InnoDB doublewrite buffer.
@@ -469,6 +455,22 @@ The number of slow queries.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | 1 | Sum | Int | Cumulative | true |
+
+### mysql.replica.sql_delay
+
+The number of seconds that the replica must lag the source.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| s | Sum | Int | Cumulative | false |
+
+### mysql.replica.time_behind_source
+
+This field is an indication of how “late” the replica is.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| s | Sum | Int | Cumulative | false |
 
 ### mysql.statement_event.count
 

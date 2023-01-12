@@ -73,8 +73,8 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 				Arguments: []value{
 					{
 						Literal: &mathExprLiteral{
-							Invocation: &invocation{
-								Function: "unknownfunc",
+							Converter: &converter{
+								Function: "Unknownfunc",
 							},
 						},
 					},
@@ -461,8 +461,8 @@ func Test_NewFunctionCall(t *testing.T) {
 								},
 								{
 									Literal: &mathExprLiteral{
-										Invocation: &invocation{
-											Function: "testing_getter",
+										Converter: &converter{
+											Function: "Testing_getter",
 											Arguments: []value{
 												{
 													Literal: &mathExprLiteral{
@@ -598,8 +598,8 @@ func Test_NewFunctionCall(t *testing.T) {
 								},
 								{
 									Literal: &mathExprLiteral{
-										Invocation: &invocation{
-											Function: "testing_getter",
+										Converter: &converter{
+											Function: "Testing_getter",
 											Arguments: []value{
 												{
 													Literal: &mathExprLiteral{
@@ -943,6 +943,7 @@ func defaultFunctionsForTests() map[string]interface{} {
 	functions["testing_setter"] = functionWithSetter
 	functions["testing_getsetter"] = functionWithGetSetter
 	functions["testing_getter"] = functionWithGetter
+	functions["Testing_getter"] = functionWithGetter
 	functions["testing_string"] = functionWithString
 	functions["testing_float"] = functionWithFloat
 	functions["testing_int"] = functionWithInt

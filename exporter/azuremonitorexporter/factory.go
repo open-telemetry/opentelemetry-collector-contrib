@@ -21,7 +21,6 @@ import (
 
 	"github.com/microsoft/ApplicationInsights-Go/appinsights"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter"
 	"go.uber.org/zap"
 )
@@ -55,7 +54,6 @@ type factory struct {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		ExporterSettings:  config.NewExporterSettings(component.NewID(typeStr)),
 		Endpoint:          defaultEndpoint,
 		MaxBatchSize:      1024,
 		MaxBatchInterval:  10 * time.Second,
@@ -100,7 +98,7 @@ func (f *factory) getTransportChannel(exporterConfig *Config, logger *zap.Logger
 	// The default transport channel uses the default send mechanism from the AppInsights telemetry client.
 	// This default channel handles batching, appropriate retries, and is backed by memory.
 	if f.tChannel == nil {
-		telemetryConfiguration := appinsights.NewTelemetryConfiguration(exporterConfig.InstrumentationKey)
+		telemetryConfiguration := appinsights.NewTelemetryConfiguration(string(exporterConfig.InstrumentationKey))
 		telemetryConfiguration.EndpointUrl = exporterConfig.Endpoint
 		telemetryConfiguration.MaxBatchSize = exporterConfig.MaxBatchSize
 		telemetryConfiguration.MaxBatchInterval = exporterConfig.MaxBatchInterval

@@ -22,7 +22,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
@@ -46,7 +45,6 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "customname"),
 			expected: &Config{
-				ExporterSettings:    config.NewExporterSettings(component.NewID(typeStr)),
 				Endpoint:            "test-endpoint",
 				AccessToken:         "abcd1234",
 				NumWorkers:          3,

@@ -98,6 +98,9 @@ func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) er
 }
 
 func (kr *kubernetesReceiver) Shutdown(context.Context) error {
+	if kr.cancel == nil {
+		return nil
+	}
 	kr.cancel()
 	return nil
 }

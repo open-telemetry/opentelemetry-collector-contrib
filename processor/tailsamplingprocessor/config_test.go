@@ -22,7 +22,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -42,7 +41,6 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t,
 		cfg,
 		&Config{
-			ProcessorSettings:       config.NewProcessorSettings(component.NewID(typeStr)),
 			DecisionWait:            10 * time.Second,
 			NumTraces:               100,
 			ExpectedNewTracesPerSec: 10,
