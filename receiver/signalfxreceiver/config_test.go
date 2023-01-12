@@ -86,3 +86,30 @@ func TestLoadConfig(t *testing.T) {
 		})
 	}
 }
+
+func TestCreateInvalidHTTPEndpoint(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Endpoint = ""
+
+	err := cfg.Validate()
+	assert.Error(t, err, "endpoint is not formatted correctly: missing port in address")
+}
+
+func TestCreateNoPortEndpoint(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Endpoint = "localhost:"
+
+	err := cfg.Validate()
+	assert.Error(t, err, "endpoint is not formatted correctly: missing port in address")
+}
+
+func TestCreateLargePortEndpoint(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Endpoint = "localhost:65536"
+
+	err := cfg.Validate()
+	assert.Error(t, err, "endpoint is not formatted correctly: missing port in address")
+}

@@ -63,8 +63,6 @@ const (
 )
 
 var (
-	errEmptyEndpoint = errors.New("empty endpoint")
-
 	okRespBody               = initJSONResponse(responseOK)
 	invalidMethodRespBody    = initJSONResponse(responseInvalidMethod)
 	invalidContentRespBody   = initJSONResponse(responseInvalidContentType)
