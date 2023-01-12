@@ -101,14 +101,11 @@ func createTracesExporter(
 ) (exporter.Traces, error) {
 	cfg := config.(*Config)
 
-	if cfg.SplunkAppVersion == "" {
-		cfg.SplunkAppVersion = set.BuildInfo.Version
-	}
-
 	c := &client{
 		config:            cfg,
 		logger:            set.Logger,
 		telemetrySettings: set.TelemetrySettings,
+		buildInfo:         set.BuildInfo,
 	}
 
 	return exporterhelper.NewTracesExporter(
@@ -139,6 +136,7 @@ func createMetricsExporter(
 		config:            cfg,
 		logger:            set.Logger,
 		telemetrySettings: set.TelemetrySettings,
+		buildInfo:         set.BuildInfo,
 	}
 
 	exporter, err := exporterhelper.NewMetricsExporter(
@@ -175,14 +173,11 @@ func createLogsExporter(
 		return nil, errors.New(`either "log_data_enabled" or "profiling_data_enabled" has to be true`)
 	}
 
-	if cfg.SplunkAppVersion == "" {
-		cfg.SplunkAppVersion = set.BuildInfo.Version
-	}
-
 	c := &client{
 		config:            cfg,
 		logger:            set.Logger,
 		telemetrySettings: set.TelemetrySettings,
+		buildInfo:         set.BuildInfo,
 	}
 
 	logsExporter, err := exporterhelper.NewLogsExporter(

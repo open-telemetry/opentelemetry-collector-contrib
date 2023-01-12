@@ -41,6 +41,7 @@ type client struct {
 	wg                sync.WaitGroup
 	telemetrySettings component.TelemetrySettings
 	hecWorker         hecWorker
+	buildInfo         component.BuildInfo
 }
 
 func (c *client) pushMetricsData(
@@ -633,7 +634,7 @@ func (c *client) start(ctx context.Context, host component.Host) (err error) {
 		}
 	}
 	url, _ := c.config.getURL()
-	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(c.config)}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(c.config, c.buildInfo)}
 	return nil
 }
 
@@ -674,11 +675,15 @@ func buildHTTPClient(config *Config, host component.Host, telemetrySettings comp
 	return config.ToClient(host, telemetrySettings)
 }
 
-func buildHTTPHeaders(config *Config) map[string]string {
+func buildHTTPHeaders(config *Config, buildInfo component.BuildInfo) map[string]string {
+	appVersion := config.SplunkAppVersion
+	if appVersion == "" {
+		appVersion = buildInfo.Version
+	}
 	return map[string]string{
 		"Connection":           "keep-alive",
 		"Content-Type":         "application/json",
-		"User-Agent":           config.SplunkAppName + "/" + config.SplunkAppVersion,
+		"User-Agent":           config.SplunkAppName + "/" + appVersion,
 		"Authorization":        splunk.HECTokenHeader + " " + string(config.Token),
 		"__splunk_app_name":    config.SplunkAppName,
 		"__splunk_app_version": config.SplunkAppVersion,
