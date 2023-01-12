@@ -25,6 +25,7 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver"
 	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -198,6 +199,12 @@ func TestDefaultReceivers(t *testing.T) {
 		{
 			receiver:     "jmx",
 			skipLifecyle: true, // Requires a running instance with JMX
+			getConfigFn: func() component.Config {
+				cfg := jmxreceiver.NewFactory().CreateDefaultConfig().(*jmxreceiver.Config)
+				cfg.Endpoint = "localhost:1234"
+				cfg.TargetSystem = "jvm"
+				return cfg
+			},
 		},
 		{
 			receiver:     "journald",
