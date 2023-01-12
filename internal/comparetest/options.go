@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 // MetricsCompareOption can be used to mutate expected and/or actual metrics before comparing.
@@ -31,6 +32,11 @@ type MetricsCompareOption interface {
 // LogsCompareOption can be used to mutate expected and/or actual logs before comparing.
 type LogsCompareOption interface {
 	applyOnLogs(expected, actual plog.Logs)
+}
+
+// TracesCompareOption can be used to mutate expected and/or actual traces before comparing.
+type TracesCompareOption interface {
+	applyOnTraces(expected, actual ptrace.Traces)
 }
 
 type CompareOption interface {
