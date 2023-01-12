@@ -31,7 +31,7 @@ processors:
 exporters:
   datadog:
     api:
-      key: ${DD_API_KEY}
+      key: ${env:DD_API_KEY}
 
 service:
   pipelines:
