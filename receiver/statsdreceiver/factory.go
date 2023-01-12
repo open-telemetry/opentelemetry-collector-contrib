@@ -70,9 +70,5 @@ func createMetricsReceiver(
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	c := cfg.(*Config)
-	err := c.validate()
-	if err != nil {
-		return nil, err
-	}
 	return New(params, *c, consumer)
 }
