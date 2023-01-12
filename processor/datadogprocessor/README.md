@@ -12,7 +12,7 @@ The Datadog Processor can be used to compute Datadog APM Stats pre-sampling. For
 
 ## Usage
 
-To use the Datadog Processor, simply prepend it into a pipeline before any sampling processor. The Datadog Processor will compute APM Stats on all spans that it sees. In most conditions it requires no configuration. Here is an example on how to apply it to a configuration using the [probabilisticsampler](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/probabilisticsamplerprocessor):
+To use the Datadog Processor, simply prepend it into a pipeline before any sampling processor. The Datadog Processor will compute APM Stats on all spans that it sees. Here is an example on how to add it to a pipeline using the [probabilisticsampler](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/probabilisticsamplerprocessor):
 
 <table>
 <tr>
