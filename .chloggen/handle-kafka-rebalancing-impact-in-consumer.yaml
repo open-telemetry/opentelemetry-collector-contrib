@@ -5,7 +5,9 @@ change_type: enhancement
 component: kafkareceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Handle an impact of kafka rebalancing.
+note: Once a rebalance is triggered, sessions must be completed within `Config.Consumer.Group.Rebalance.Timeout`. This means that ConsumeClaim() functions must exit
+	as quickly as possible to allow time for Cleanup() and the final offset commit. If the timeout is exceeded, the consumer will be removed from the group by Kafka, which will cause offset
+	commit failures. Solved this problem by watching `ConsumerGroupSession.Context().Done()` in `ConsumeClaim`.
 
 # One or more tracking issues related to the change
 issues: [17312]
