@@ -122,6 +122,9 @@ func (cfg *Config) getURL() (out *url.URL, err error) {
 
 // Validate checks if the exporter configuration is valid.
 func (cfg *Config) Validate() error {
+	if !cfg.LogDataEnabled && !cfg.ProfilingDataEnabled {
+		return errors.New(`either "log_data_enabled" or "profiling_data_enabled" has to be true`)
+	}
 	if cfg.HTTPClientSettings.Endpoint == "" {
 		return errors.New(`requires a non-empty "endpoint"`)
 	}

@@ -15,7 +15,6 @@
 package splunkhecexporter
 
 import (
-	"errors"
 	"path/filepath"
 	"testing"
 	"time"
@@ -126,22 +125,31 @@ func TestConfig_Validate(t *testing.T) {
 	tests := []struct {
 		name    string
 		cfg     *Config
-		wantErr error
+		wantErr string
 	}{
 		{
 			name:    "default",
 			cfg:     createDefaultConfig().(*Config),
-			wantErr: errors.New("requires a non-empty \"endpoint\""),
+			wantErr: "requires a non-empty \"endpoint\"",
 		},
 		{
 			name: "bad url",
 			cfg: func() *Config {
 				cfg := createDefaultConfig().(*Config)
-				cfg.HTTPClientSettings.Endpoint = "http://foo_bar.com"
+				cfg.HTTPClientSettings.Endpoint = "cache_object:foo/bar"
 				cfg.Token = "foo"
 				return cfg
 			}(),
-			wantErr: nil,
+			wantErr: "invalid \"endpoint\": parse \"cache_object:foo/bar\": first path segment in URL cannot contain colon",
+		},
+		{
+			name: "missing token",
+			cfg: func() *Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.HTTPClientSettings.Endpoint = "http://example.com"
+				return cfg
+			}(),
+			wantErr: "requires a non-empty \"token\"",
 		},
 		{
 			name: "max default content-length for logs",
@@ -152,7 +160,7 @@ func TestConfig_Validate(t *testing.T) {
 				cfg.Token = "foo"
 				return cfg
 			}(),
-			wantErr: errors.New("requires \"max_content_length_logs\" <= 838860800"),
+			wantErr: "requires \"max_content_length_logs\" <= 838860800",
 		},
 		{
 			name: "max default content-length for metrics",
@@ -163,7 +171,7 @@ func TestConfig_Validate(t *testing.T) {
 				cfg.Token = "foo"
 				return cfg
 			}(),
-			wantErr: errors.New("requires \"max_content_length_metrics\" <= 838860800"),
+			wantErr: "requires \"max_content_length_metrics\" <= 838860800",
 		},
 		{
 			name: "max default content-length for traces",
@@ -174,17 +182,17 @@ func TestConfig_Validate(t *testing.T) {
 				cfg.Token = "foo"
 				return cfg
 			}(),
-			wantErr: errors.New("requires \"max_content_length_traces\" <= 838860800"),
+			wantErr: "requires \"max_content_length_traces\" <= 838860800",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := tt.cfg.Validate()
-			if tt.wantErr == nil {
+			if tt.wantErr == "" {
 				require.NoError(t, err)
 			} else {
-				require.Equal(t, tt.wantErr, err)
+				require.EqualError(t, err, tt.wantErr)
 			}
 		})
 	}

@@ -128,10 +128,6 @@ func createMetricsExporter(
 ) (exporter.Metrics, error) {
 	cfg := config.(*Config)
 
-	if cfg.SplunkAppVersion == "" {
-		cfg.SplunkAppVersion = set.BuildInfo.Version
-	}
-
 	c := &client{
 		config:            cfg,
 		logger:            set.Logger,

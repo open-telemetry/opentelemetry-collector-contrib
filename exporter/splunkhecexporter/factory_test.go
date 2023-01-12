@@ -51,14 +51,6 @@ func TestCreateTracesExporter(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestCreateTracesExporterInvalidEndpoint(t *testing.T) {
-	cfg := createDefaultConfig().(*Config)
-	cfg.HTTPClientSettings.Endpoint = "urn:something:12345"
-	params := exportertest.NewNopCreateSettings()
-	_, err := createTracesExporter(context.Background(), params, cfg)
-	assert.Error(t, err)
-}
-
 func TestCreateLogsExporter(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.HTTPClientSettings.Endpoint = "https://example.com:8088/services/collector"
@@ -67,14 +59,6 @@ func TestCreateLogsExporter(t *testing.T) {
 	params := exportertest.NewNopCreateSettings()
 	_, err := createLogsExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
-}
-
-func TestCreateLogsExporterInvalidEndpoint(t *testing.T) {
-	cfg := createDefaultConfig().(*Config)
-	cfg.HTTPClientSettings.Endpoint = "urn:something:12345"
-	params := exportertest.NewNopCreateSettings()
-	_, err := createLogsExporter(context.Background(), params, cfg)
-	assert.Error(t, err)
 }
 
 func TestCreateInstanceViaFactory(t *testing.T) {
@@ -114,37 +98,4 @@ func TestFactory_CreateMetricsExporter(t *testing.T) {
 	te, err := createMetricsExporter(context.Background(), params, config)
 	assert.NoError(t, err)
 	assert.NotNil(t, te)
-}
-
-func TestFactory_CreateMetricsExporterFails(t *testing.T) {
-	tests := []struct {
-		name         string
-		config       *Config
-		errorMessage string
-	}{
-		{
-			name: "empty_endpoint",
-			config: &Config{
-				Token: "token",
-			},
-			errorMessage: "requires a non-empty \"endpoint\"",
-		},
-		{
-			name: "empty_token",
-			config: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Endpoint: "https://example.com:8000",
-				},
-			},
-			errorMessage: "requires a non-empty \"token\"",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			params := exportertest.NewNopCreateSettings()
-			te, err := createMetricsExporter(context.Background(), params, tt.config)
-			assert.EqualError(t, err, tt.errorMessage)
-			assert.Nil(t, te)
-		})
-	}
 }
