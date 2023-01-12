@@ -104,12 +104,14 @@ func TestExporter_pushLogsData(t *testing.T) {
 func TestLogsExporter_getDefaultDns(t *testing.T) {
 	t.Run("database name is a substring of the DSN", func(t *testing.T) {
 		dsn := "tcp://mydatabase-clickhouse-headless:9000/mydatabase"
-		defaultDns, _ := getDefaultDns(dsn, "mydatabase")
+		defaultDns, err := getDefaultDns(dsn, "mydatabase")
+		require.NoError(t, err)
 		require.Equal(t, defaultDns, "tcp://mydatabase-clickhouse-headless:9000/default")
 	})
 	t.Run("database name isn't a substring of the DSN", func(t *testing.T) {
 		dsn := "tcp://newdatabase-clickhouse-headless:9000/otel"
-		defaultDns, _ := getDefaultDns(dsn, "otel")
+		defaultDns, err := getDefaultDns(dsn, "otel")
+		require.NoError(t, err)
 		require.Equal(t, defaultDns, "tcp://newdatabase-clickhouse-headless:9000/default")
 	})
 	t.Run("error param for database", func(t *testing.T) {
@@ -117,9 +119,10 @@ func TestLogsExporter_getDefaultDns(t *testing.T) {
 		_, err := getDefaultDns(dsn, "otel")
 		require.Error(t, err)
 	})
-	t.Run("database name is same as default default database", func(t *testing.T) {
+	t.Run("database name is same as default database", func(t *testing.T) {
 		dsn := "tcp://mydatabase-clickhouse-headless:9000/default"
-		defaultDns, _ := getDefaultDns(dsn, "default")
+		defaultDns, err := getDefaultDns(dsn, "default")
+		require.NoError(t, err)
 		require.Equal(t, defaultDns, "tcp://mydatabase-clickhouse-headless:9000/default")
 	})
 }

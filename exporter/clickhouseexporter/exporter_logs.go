@@ -192,7 +192,10 @@ func createDatabase(cfg *Config) error {
 		return nil
 	}
 	// use default database to create new database
-	dsnUseDefaultDatabase, _ := getDefaultDns(cfg.DSN, database)
+	dsnUseDefaultDatabase, err := getDefaultDns(cfg.DSN, database)
+	if err != nil {
+		return nil
+	}
 	db, err := sql.Open(driverName, dsnUseDefaultDatabase)
 	if err != nil {
 		return fmt.Errorf("sql.Open:%w", err)
