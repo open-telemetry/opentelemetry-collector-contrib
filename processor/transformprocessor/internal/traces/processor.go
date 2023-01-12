@@ -21,29 +21,14 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
 type Processor struct {
 	contexts []consumer.Traces
-	// Deprecated.  Use contexts instead
-	statements []*ottl.Statement[ottlspan.TransformContext]
 }
 
-func NewProcessor(statements []string, contextStatements []common.ContextStatements, settings component.TelemetrySettings) (*Processor, error) {
-	if len(statements) > 0 {
-		ottlp := ottlspan.NewParser(SpanFunctions(), settings)
-		parsedStatements, err := ottlp.ParseStatements(statements)
-		if err != nil {
-			return nil, err
-		}
-		return &Processor{
-			statements: parsedStatements,
-		}, nil
-	}
-
+func NewProcessor(contextStatements []common.ContextStatements, settings component.TelemetrySettings) (*Processor, error) {
 	pc, err := common.NewTraceParserCollection(settings, common.WithSpanParser(SpanFunctions()), common.WithSpanEventParser(SpanEventFunctions()))
 	if err != nil {
 		return nil, err
@@ -64,29 +49,10 @@ func NewProcessor(statements []string, contextStatements []common.ContextStateme
 }
 
 func (p *Processor) ProcessTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
-	if len(p.statements) > 0 {
-		for i := 0; i < td.ResourceSpans().Len(); i++ {
-			rspans := td.ResourceSpans().At(i)
-			for j := 0; j < rspans.ScopeSpans().Len(); j++ {
-				sspan := rspans.ScopeSpans().At(j)
-				spans := sspan.Spans()
-				for k := 0; k < spans.Len(); k++ {
-					tCtx := ottlspan.NewTransformContext(spans.At(k), sspan.Scope(), rspans.Resource())
-					for _, statement := range p.statements {
-						_, _, err := statement.Execute(ctx, tCtx)
-						if err != nil {
-							return td, err
-						}
-					}
-				}
-			}
-		}
-	} else {
-		for _, c := range p.contexts {
-			err := c.ConsumeTraces(ctx, td)
-			if err != nil {
-				return td, err
-			}
+	for _, c := range p.contexts {
+		err := c.ConsumeTraces(ctx, td)
+		if err != nil {
+			return td, err
 		}
 	}
 	return td, nil

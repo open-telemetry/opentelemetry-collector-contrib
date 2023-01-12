@@ -15,9 +15,14 @@
 package comparetest // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
 
 import (
+	"bytes"
 	"fmt"
 
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/pdatautil"
 )
 
 func metricsByName(metricSlice pmetric.MetricSlice) map[string]pmetric.Metric {
@@ -59,19 +64,67 @@ func sortResourceMetrics(a, b pmetric.ResourceMetrics) bool {
 	if a.SchemaUrl() < b.SchemaUrl() {
 		return true
 	}
-	if a.ScopeMetrics().Len() != b.ScopeMetrics().Len() {
-		return a.ScopeMetrics().Len() < b.ScopeMetrics().Len()
-	}
-	for i := 0; i < a.ScopeMetrics().Len(); i++ {
-		aSm := a.ScopeMetrics().At(i)
-		bSm := b.ScopeMetrics().At(i)
-		if aSm.Metrics().Len() < bSm.Metrics().Len() {
-			return true
-		}
-	}
-	return false
+	aAttrs := pdatautil.MapHash(a.Resource().Attributes())
+	bAttrs := pdatautil.MapHash(b.Resource().Attributes())
+	return bytes.Compare(aAttrs[:], bAttrs[:]) < 0
 }
 
 func sortMetricSlice(a, b pmetric.Metric) bool {
 	return a.Name() < b.Name()
+}
+
+func sortResourceLogs(a, b plog.ResourceLogs) bool {
+	if a.SchemaUrl() < b.SchemaUrl() {
+		return true
+	}
+	aAttrs := pdatautil.MapHash(a.Resource().Attributes())
+	bAttrs := pdatautil.MapHash(b.Resource().Attributes())
+	return bytes.Compare(aAttrs[:], bAttrs[:]) < 0
+}
+
+func sortLogsInstrumentationLibrary(a, b plog.ScopeLogs) bool {
+	if a.SchemaUrl() < b.SchemaUrl() {
+		return true
+	}
+	if a.Scope().Name() < b.Scope().Name() {
+		return true
+	}
+	if a.Scope().Version() < b.Scope().Version() {
+		return true
+	}
+	return false
+}
+
+func sortLogRecordSlice(a, b plog.LogRecord) bool {
+	aAttrs := pdatautil.MapHash(a.Attributes())
+	bAttrs := pdatautil.MapHash(b.Attributes())
+	return bytes.Compare(aAttrs[:], bAttrs[:]) < 0
+}
+
+func sortResourceSpans(a, b ptrace.ResourceSpans) bool {
+	if a.SchemaUrl() < b.SchemaUrl() {
+		return true
+	}
+	aAttrs := pdatautil.MapHash(a.Resource().Attributes())
+	bAttrs := pdatautil.MapHash(b.Resource().Attributes())
+	return bytes.Compare(aAttrs[:], bAttrs[:]) < 0
+}
+
+func sortSpansInstrumentationLibrary(a, b ptrace.ScopeSpans) bool {
+	if a.SchemaUrl() < b.SchemaUrl() {
+		return true
+	}
+	if a.Scope().Name() < b.Scope().Name() {
+		return true
+	}
+	if a.Scope().Version() < b.Scope().Version() {
+		return true
+	}
+	return false
+}
+
+func sortSpanSlice(a, b ptrace.Span) bool {
+	aAttrs := pdatautil.MapHash(a.Attributes())
+	bAttrs := pdatautil.MapHash(b.Attributes())
+	return bytes.Compare(aAttrs[:], bAttrs[:]) < 0
 }

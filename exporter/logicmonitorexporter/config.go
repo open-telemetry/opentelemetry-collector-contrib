@@ -19,6 +19,7 @@ import (
 	"net/url"
 
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
@@ -37,8 +38,8 @@ type Config struct {
 }
 
 type APIToken struct {
-	AccessID  string `mapstructure:"access_id"`
-	AccessKey string `mapstructure:"access_key"`
+	AccessID  string              `mapstructure:"access_id"`
+	AccessKey configopaque.String `mapstructure:"access_key"`
 }
 
 func (c *Config) Validate() error {

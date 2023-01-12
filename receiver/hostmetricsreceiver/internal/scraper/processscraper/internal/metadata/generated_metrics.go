@@ -17,12 +17,7 @@ import (
 type MetricSettings struct {
 	Enabled bool `mapstructure:"enabled"`
 
-	enabledProvidedByUser bool
-}
-
-// IsEnabledProvidedByUser returns true if `enabled` option is explicitly set in user settings to any value.
-func (ms *MetricSettings) IsEnabledProvidedByUser() bool {
-	return ms.enabledProvidedByUser
+	enabledSetByUser bool
 }
 
 func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
@@ -33,7 +28,7 @@ func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
 	if err != nil {
 		return err
 	}
-	ms.enabledProvidedByUser = parser.IsSet("enabled")
+	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
 }
 
@@ -43,6 +38,7 @@ type MetricsSettings struct {
 	ProcessCPUTime             MetricSettings `mapstructure:"process.cpu.time"`
 	ProcessCPUUtilization      MetricSettings `mapstructure:"process.cpu.utilization"`
 	ProcessDiskIo              MetricSettings `mapstructure:"process.disk.io"`
+	ProcessDiskOperations      MetricSettings `mapstructure:"process.disk.operations"`
 	ProcessMemoryPhysicalUsage MetricSettings `mapstructure:"process.memory.physical_usage"`
 	ProcessMemoryUsage         MetricSettings `mapstructure:"process.memory.usage"`
 	ProcessMemoryUtilization   MetricSettings `mapstructure:"process.memory.utilization"`
@@ -68,20 +64,23 @@ func DefaultMetricsSettings() MetricsSettings {
 		ProcessDiskIo: MetricSettings{
 			Enabled: true,
 		},
+		ProcessDiskOperations: MetricSettings{
+			Enabled: false,
+		},
 		ProcessMemoryPhysicalUsage: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ProcessMemoryUsage: MetricSettings{
-			Enabled: false,
+			Enabled: true,
 		},
 		ProcessMemoryUtilization: MetricSettings{
 			Enabled: false,
 		},
 		ProcessMemoryVirtual: MetricSettings{
-			Enabled: false,
+			Enabled: true,
 		},
 		ProcessMemoryVirtualUsage: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ProcessOpenFileDescriptors: MetricSettings{
 			Enabled: false,
@@ -416,6 +415,59 @@ func newMetricProcessDiskIo(settings MetricSettings) metricProcessDiskIo {
 	return m
 }
 
+type metricProcessDiskOperations struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills process.disk.operations metric with initial data.
+func (m *metricProcessDiskOperations) init() {
+	m.data.SetName("process.disk.operations")
+	m.data.SetDescription("Number of disk operations performed by the process.")
+	m.data.SetUnit("{operations}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricProcessDiskOperations) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, directionAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("direction", directionAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricProcessDiskOperations) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricProcessDiskOperations) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricProcessDiskOperations(settings MetricSettings) metricProcessDiskOperations {
+	m := metricProcessDiskOperations{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricProcessMemoryPhysicalUsage struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -425,7 +477,7 @@ type metricProcessMemoryPhysicalUsage struct {
 // init fills process.memory.physical_usage metric with initial data.
 func (m *metricProcessMemoryPhysicalUsage) init() {
 	m.data.SetName("process.memory.physical_usage")
-	m.data.SetDescription("Deprecated: use `process.memory.usage` metric instead. The amount of physical memory in use.")
+	m.data.SetDescription("[DEPRECATED] Use `process.memory.usage` metric instead. The amount of physical memory in use.")
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
@@ -627,7 +679,7 @@ type metricProcessMemoryVirtualUsage struct {
 // init fills process.memory.virtual_usage metric with initial data.
 func (m *metricProcessMemoryVirtualUsage) init() {
 	m.data.SetName("process.memory.virtual_usage")
-	m.data.SetDescription("Deprecated: Use `process.memory.virtual` metric instead. Virtual memory size.")
+	m.data.SetDescription("[DEPRECATED] Use `process.memory.virtual` metric instead. Virtual memory size.")
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
@@ -887,6 +939,7 @@ type MetricsBuilder struct {
 	metricProcessCPUTime             metricProcessCPUTime
 	metricProcessCPUUtilization      metricProcessCPUUtilization
 	metricProcessDiskIo              metricProcessDiskIo
+	metricProcessDiskOperations      metricProcessDiskOperations
 	metricProcessMemoryPhysicalUsage metricProcessMemoryPhysicalUsage
 	metricProcessMemoryUsage         metricProcessMemoryUsage
 	metricProcessMemoryUtilization   metricProcessMemoryUtilization
@@ -909,14 +962,12 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 }
 
 func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
-	if ms.ProcessMemoryPhysicalUsage.Enabled {
-		settings.Logger.Warn("[WARNING] `process.memory.physical_usage` should not be enabled: The metric is deprecated and will be removed in v0.70.0. Please use `process.memory.usage` instead. See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/hostmetricsreceiver#transition-to-process-memory-metric-names-aligned-with-opentelemetry-specification for more details.")
+	if ms.ProcessMemoryPhysicalUsage.enabledSetByUser {
+		settings.Logger.Warn("[WARNING] `process.memory.physical_usage` should not be configured: The metric is deprecated and will be removed in v0.72.0. Please use `process.memory.usage` instead. See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/hostmetricsreceiver#transition-to-process-memory-metric-names-aligned-with-opentelemetry-specification for more details.")
 	}
-
-	if ms.ProcessMemoryVirtualUsage.Enabled {
-		settings.Logger.Warn("[WARNING] `process.memory.virtual_usage` should not be enabled: The metric is deprecated and will be removed in v0.70.0. Please use `process.memory.virtual` metric instead. See  https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/hostmetricsreceiver#transition-to-process-memory-metric-names-aligned-with-opentelemetry-specification for more details.")
+	if ms.ProcessMemoryVirtualUsage.enabledSetByUser {
+		settings.Logger.Warn("[WARNING] `process.memory.virtual_usage` should not be configured: The metric is deprecated and will be removed in v0.72.0. Please use `process.memory.virtual` metric instead. See  https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/hostmetricsreceiver#transition-to-process-memory-metric-names-aligned-with-opentelemetry-specification for more details.")
 	}
-
 	mb := &MetricsBuilder{
 		startTime:                        pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                    pmetric.NewMetrics(),
@@ -925,6 +976,7 @@ func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, opt
 		metricProcessCPUTime:             newMetricProcessCPUTime(ms.ProcessCPUTime),
 		metricProcessCPUUtilization:      newMetricProcessCPUUtilization(ms.ProcessCPUUtilization),
 		metricProcessDiskIo:              newMetricProcessDiskIo(ms.ProcessDiskIo),
+		metricProcessDiskOperations:      newMetricProcessDiskOperations(ms.ProcessDiskOperations),
 		metricProcessMemoryPhysicalUsage: newMetricProcessMemoryPhysicalUsage(ms.ProcessMemoryPhysicalUsage),
 		metricProcessMemoryUsage:         newMetricProcessMemoryUsage(ms.ProcessMemoryUsage),
 		metricProcessMemoryUtilization:   newMetricProcessMemoryUtilization(ms.ProcessMemoryUtilization),
@@ -1040,6 +1092,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricProcessCPUTime.emit(ils.Metrics())
 	mb.metricProcessCPUUtilization.emit(ils.Metrics())
 	mb.metricProcessDiskIo.emit(ils.Metrics())
+	mb.metricProcessDiskOperations.emit(ils.Metrics())
 	mb.metricProcessMemoryPhysicalUsage.emit(ils.Metrics())
 	mb.metricProcessMemoryUsage.emit(ils.Metrics())
 	mb.metricProcessMemoryUtilization.emit(ils.Metrics())
@@ -1086,6 +1139,11 @@ func (mb *MetricsBuilder) RecordProcessCPUUtilizationDataPoint(ts pcommon.Timest
 // RecordProcessDiskIoDataPoint adds a data point to process.disk.io metric.
 func (mb *MetricsBuilder) RecordProcessDiskIoDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection) {
 	mb.metricProcessDiskIo.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String())
+}
+
+// RecordProcessDiskOperationsDataPoint adds a data point to process.disk.operations metric.
+func (mb *MetricsBuilder) RecordProcessDiskOperationsDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection) {
+	mb.metricProcessDiskOperations.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String())
 }
 
 // RecordProcessMemoryPhysicalUsageDataPoint adds a data point to process.memory.physical_usage metric.

@@ -409,8 +409,8 @@ func Test_splunkhecReceiver_TLS(t *testing.T) {
 	lr.SetTimestamp(pcommon.Timestamp(int64(sec * 1e9)))
 
 	lr.Body().SetStr("foo")
-	lr.Attributes().PutStr("com.splunk.sourcetype", "custom:sourcetype")
-	lr.Attributes().PutStr("com.splunk.index", "myindex")
+	rl.Resource().Attributes().PutStr("com.splunk.sourcetype", "custom:sourcetype")
+	rl.Resource().Attributes().PutStr("com.splunk.index", "myindex")
 	want := logs
 
 	t.Log("Sending Splunk HEC data Request")

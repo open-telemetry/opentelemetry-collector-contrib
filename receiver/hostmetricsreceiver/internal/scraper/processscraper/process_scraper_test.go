@@ -129,7 +129,12 @@ func TestScrape(t *testing.T) {
 				assertMetricMissing(t, md.ResourceMetrics(), "process.cpu.utilization")
 			}
 			assertMemoryUsageMetricValid(t, md.ResourceMetrics(), expectedStartTime)
-			assertOldDiskIOMetricValid(t, md.ResourceMetrics(), expectedStartTime)
+			assertDiskIoMetricValid(t, md.ResourceMetrics(), expectedStartTime)
+			if metricsSettings.ProcessDiskOperations.Enabled {
+				assertDiskOperationsMetricValid(t, md.ResourceMetrics(), expectedStartTime)
+			} else {
+				assertMetricMissing(t, md.ResourceMetrics(), "process.disk.operations")
+			}
 			if metricsSettings.ProcessPagingFaults.Enabled {
 				assertPagingMetricValid(t, md.ResourceMetrics(), expectedStartTime)
 			}
@@ -202,10 +207,10 @@ func assertCPUUtilizationMetricValid(t *testing.T, resourceMetrics pmetric.Resou
 }
 
 func assertMemoryUsageMetricValid(t *testing.T, resourceMetrics pmetric.ResourceMetricsSlice, startTime pcommon.Timestamp) {
-	physicalMemUsageMetric := getMetric(t, "process.memory.physical_usage", resourceMetrics)
-	assert.Equal(t, "process.memory.physical_usage", physicalMemUsageMetric.Name())
-	virtualMemUsageMetric := getMetric(t, "process.memory.virtual_usage", resourceMetrics)
-	assert.Equal(t, "process.memory.virtual_usage", virtualMemUsageMetric.Name())
+	physicalMemUsageMetric := getMetric(t, "process.memory.usage", resourceMetrics)
+	assert.Equal(t, "process.memory.usage", physicalMemUsageMetric.Name())
+	virtualMemUsageMetric := getMetric(t, "process.memory.virtual", resourceMetrics)
+	assert.Equal(t, "process.memory.virtual", virtualMemUsageMetric.Name())
 
 	if startTime != 0 {
 		internal.AssertSumMetricStartTimeEquals(t, physicalMemUsageMetric, startTime)
@@ -259,15 +264,26 @@ func assertMetricMissing(t *testing.T, resourceMetrics pmetric.ResourceMetricsSl
 	}
 }
 
-func assertOldDiskIOMetricValid(t *testing.T, resourceMetrics pmetric.ResourceMetricsSlice,
+func assertDiskIoMetricValid(t *testing.T, resourceMetrics pmetric.ResourceMetricsSlice,
 	startTime pcommon.Timestamp) {
-	diskIOMetric := getMetric(t, "process.disk.io", resourceMetrics)
+	diskIoMetric := getMetric(t, "process.disk.io", resourceMetrics)
 	if startTime != 0 {
-		internal.AssertSumMetricStartTimeEquals(t, diskIOMetric, startTime)
+		internal.AssertSumMetricStartTimeEquals(t, diskIoMetric, startTime)
 	}
-	internal.AssertSumMetricHasAttributeValue(t, diskIOMetric, 0, "direction",
+	internal.AssertSumMetricHasAttributeValue(t, diskIoMetric, 0, "direction",
 		pcommon.NewValueStr(metadata.AttributeDirectionRead.String()))
-	internal.AssertSumMetricHasAttributeValue(t, diskIOMetric, 1, "direction",
+	internal.AssertSumMetricHasAttributeValue(t, diskIoMetric, 1, "direction",
+		pcommon.NewValueStr(metadata.AttributeDirectionWrite.String()))
+}
+
+func assertDiskOperationsMetricValid(t *testing.T, resourceMetrics pmetric.ResourceMetricsSlice, startTime pcommon.Timestamp) {
+	diskOperationsMetric := getMetric(t, "process.disk.operations", resourceMetrics)
+	if startTime != 0 {
+		internal.AssertSumMetricStartTimeEquals(t, diskOperationsMetric, startTime)
+	}
+	internal.AssertSumMetricHasAttributeValue(t, diskOperationsMetric, 0, "direction",
+		pcommon.NewValueStr(metadata.AttributeDirectionRead.String()))
+	internal.AssertSumMetricHasAttributeValue(t, diskOperationsMetric, 1, "direction",
 		pcommon.NewValueStr(metadata.AttributeDirectionWrite.String()))
 }
 
@@ -945,8 +961,9 @@ func TestScrapeMetrics_DontCheckDisabledMetrics(t *testing.T) {
 
 	metricSettings.ProcessCPUTime.Enabled = false
 	metricSettings.ProcessDiskIo.Enabled = false
-	metricSettings.ProcessMemoryPhysicalUsage.Enabled = false
-	metricSettings.ProcessMemoryVirtualUsage.Enabled = false
+	metricSettings.ProcessDiskOperations.Enabled = false
+	metricSettings.ProcessMemoryUsage.Enabled = false
+	metricSettings.ProcessMemoryVirtual.Enabled = false
 
 	t.Run("Metrics don't log errors when disabled", func(t *testing.T) {
 		config := &Config{Metrics: metricSettings}

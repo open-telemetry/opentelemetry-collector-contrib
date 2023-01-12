@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -51,7 +52,7 @@ type Config struct {
 	IngestURL string `mapstructure:"ingest_url"`
 
 	// Token is the authentication token provided by Mezmo.
-	IngestKey string `mapstructure:"ingest_key"`
+	IngestKey configopaque.String `mapstructure:"ingest_key"`
 }
 
 // returns default http client settings

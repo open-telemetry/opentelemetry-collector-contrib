@@ -1050,3 +1050,4 @@ Fraction of heap memory usage
 | elasticsearch.cluster.name | The name of the elasticsearch cluster. | Any Str |
 | elasticsearch.index.name | The name of the elasticsearch index. | Any Str |
 | elasticsearch.node.name | The name of the elasticsearch node. | Any Str |
+| elasticsearch.node.version | The version of the elasticsearch node. | Any Str |
