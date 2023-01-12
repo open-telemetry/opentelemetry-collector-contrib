@@ -19,6 +19,7 @@ import (
 	"database/sql/driver"
 	"fmt"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -30,9 +31,12 @@ import (
 
 func TestExporter_pushMetricsData(t *testing.T) {
 	t.Run("push success", func(t *testing.T) {
+		mutex := sync.Mutex{}
 		var items int
 		initClickhouseTestServer(t, func(query string, values []driver.Value) error {
 			if strings.HasPrefix(query, "INSERT") {
+				mutex.Lock()
+				defer mutex.Unlock()
 				items++
 			}
 			return nil
@@ -54,9 +58,12 @@ func TestExporter_pushMetricsData(t *testing.T) {
 		require.Error(t, err)
 	})
 	t.Run("check Resource metadata and scope metadata", func(t *testing.T) {
+		mutex := sync.Mutex{}
 		var items int
 		initClickhouseTestServer(t, func(query string, values []driver.Value) error {
 			if strings.HasPrefix(query, "INSERT") {
+				mutex.Lock()
+				defer mutex.Unlock()
 				items++
 				if strings.HasPrefix(query, "INSERT INTO otel_metrics_exponential_histogram") {
 					require.Equal(t, "Resource SchemaUrl 1", values[1])
