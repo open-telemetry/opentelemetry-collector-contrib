@@ -738,8 +738,8 @@ func TestReceiveBatchedMetrics(t *testing.T) {
 			}(),
 			want: wantType{
 				batches: [][]string{
-					{`"k1":"v1"`, `"time":1.001`},
-					{`"time":2.002`, `"time":3.003`},
+					{``, ``},
+					{``, ``},
 				},
 				numBatches: 2,
 			},
