@@ -516,9 +516,7 @@ func (c *Config) Unmarshal(configMap *confmap.Conf) error {
 	if c.Metrics.TCPAddr.Endpoint == "" || c.Traces.TCPAddr.Endpoint == "" || c.Logs.TCPAddr.Endpoint == "" {
 		return errEmptyEndpoint
 	}
-
 	if !configMap.IsSet("metrics::sums::sum_to_rate_conversion_interval") {
-		fmt.Println("`sum_to_rate_conversion_interval` is unset. Defaulting it to 10s")
 		c.Metrics.SumConfig.SumToRateConversionInterval = DefaultSumToRateInterval
 	}
 
