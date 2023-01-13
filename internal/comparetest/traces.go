@@ -91,8 +91,12 @@ func CompareTraces(expected, actual ptrace.Traces, options ...TracesCompareOptio
 // CompareResourceSpans compares each part of two given ResourceSpans and returns
 // an error if they don't match. The error describes what didn't match.
 func CompareResourceSpans(expected, actual ptrace.ResourceSpans) error {
-	eilms := expected.ScopeSpans()
-	ailms := actual.ScopeSpans()
+	exp, act := ptrace.NewResourceSpans(), ptrace.NewResourceSpans()
+	expected.CopyTo(exp)
+	actual.CopyTo(act)
+
+	eilms := exp.ScopeSpans()
+	ailms := act.ScopeSpans()
 
 	if eilms.Len() != ailms.Len() {
 		return fmt.Errorf("number of instrumentation libraries does not match expected: %d, actual: %d", eilms.Len(),
@@ -123,24 +127,28 @@ func CompareResourceSpans(expected, actual ptrace.ResourceSpans) error {
 // CompareSpanSlices compares each part of two given SpanSlices and returns
 // an error if they don't match. The error describes what didn't match.
 func CompareSpanSlices(expected, actual ptrace.SpanSlice) error {
-	if expected.Len() != actual.Len() {
-		return fmt.Errorf("number of spans does not match expected: %d, actual: %d", expected.Len(), actual.Len())
+	exp, act := ptrace.NewSpanSlice(), ptrace.NewSpanSlice()
+	expected.CopyTo(exp)
+	actual.CopyTo(act)
+
+	if exp.Len() != act.Len() {
+		return fmt.Errorf("number of spans does not match expected: %d, actual: %d", exp.Len(), act.Len())
 	}
 
-	expected.Sort(sortSpanSlice)
-	actual.Sort(sortSpanSlice)
+	exp.Sort(sortSpanSlice)
+	act.Sort(sortSpanSlice)
 
-	numSpans := expected.Len()
+	numSpans := exp.Len()
 
 	// Keep track of matching spans so that each span can only be matched once
 	matchingSpans := make(map[ptrace.Span]ptrace.Span, numSpans)
 
 	var errs error
 	for e := 0; e < numSpans; e++ {
-		elr := expected.At(e)
+		elr := exp.At(e)
 		var foundMatch bool
 		for a := 0; a < numSpans; a++ {
-			alr := actual.At(a)
+			alr := act.At(a)
 			if _, ok := matchingSpans[alr]; ok {
 				continue
 			}
@@ -156,8 +164,8 @@ func CompareSpanSlices(expected, actual ptrace.SpanSlice) error {
 	}
 
 	for i := 0; i < numSpans; i++ {
-		if _, ok := matchingSpans[actual.At(i)]; !ok {
-			errs = multierr.Append(errs, fmt.Errorf("span has extra record with attributes: %v", actual.At(i).Attributes().AsRaw()))
+		if _, ok := matchingSpans[act.At(i)]; !ok {
+			errs = multierr.Append(errs, fmt.Errorf("span has extra record with attributes: %v", act.At(i).Attributes().AsRaw()))
 		}
 	}
 
@@ -176,94 +184,98 @@ func CompareSpanSlices(expected, actual ptrace.SpanSlice) error {
 // CompareSpans compares each part of two given Span and returns
 // an error if they don't match. The error describes what didn't match.
 func CompareSpans(expected, actual ptrace.Span) error {
-	if expected.TraceID() != actual.TraceID() {
+	exp, act := ptrace.NewSpan(), ptrace.NewSpan()
+	expected.CopyTo(exp)
+	actual.CopyTo(act)
+
+	if exp.TraceID() != act.TraceID() {
 		return fmt.Errorf("span TraceID doesn't match expected: %d, actual: %d",
-			expected.TraceID(),
-			actual.TraceID())
+			exp.TraceID(),
+			act.TraceID())
 	}
 
-	if expected.SpanID() != actual.SpanID() {
+	if exp.SpanID() != act.SpanID() {
 		return fmt.Errorf("span SpanID doesn't match expected: %d, actual: %d",
-			expected.SpanID(),
-			actual.SpanID())
+			exp.SpanID(),
+			act.SpanID())
 	}
 
-	if expected.TraceState().AsRaw() != actual.TraceState().AsRaw() {
+	if exp.TraceState().AsRaw() != act.TraceState().AsRaw() {
 		return fmt.Errorf("span TraceState doesn't match expected: %s, actual: %s",
-			expected.TraceState().AsRaw(),
-			actual.TraceState().AsRaw())
+			exp.TraceState().AsRaw(),
+			act.TraceState().AsRaw())
 	}
 
-	if expected.ParentSpanID() != actual.ParentSpanID() {
+	if exp.ParentSpanID() != act.ParentSpanID() {
 		return fmt.Errorf("span ParentSpanID doesn't match expected: %d, actual: %d",
-			expected.ParentSpanID(),
-			actual.ParentSpanID())
+			exp.ParentSpanID(),
+			act.ParentSpanID())
 	}
 
-	if expected.Name() != actual.Name() {
+	if exp.Name() != act.Name() {
 		return fmt.Errorf("span Name doesn't match expected: %s, actual: %s",
-			expected.Name(),
-			actual.Name())
+			exp.Name(),
+			act.Name())
 	}
 
-	if expected.Kind() != actual.Kind() {
+	if exp.Kind() != act.Kind() {
 		return fmt.Errorf("span Kind doesn't match expected: %d, actual: %d",
-			expected.Kind(),
-			actual.Kind())
+			exp.Kind(),
+			act.Kind())
 	}
 
-	if expected.StartTimestamp() != actual.StartTimestamp() {
+	if exp.StartTimestamp() != act.StartTimestamp() {
 		return fmt.Errorf("span StartTimestamp doesn't match expected: %d, actual: %d",
-			expected.StartTimestamp(),
-			actual.StartTimestamp())
+			exp.StartTimestamp(),
+			act.StartTimestamp())
 	}
 
-	if expected.EndTimestamp() != actual.EndTimestamp() {
+	if exp.EndTimestamp() != act.EndTimestamp() {
 		return fmt.Errorf("span EndTimestamp doesn't match expected: %d, actual: %d",
-			expected.EndTimestamp(),
-			actual.EndTimestamp())
+			exp.EndTimestamp(),
+			act.EndTimestamp())
 	}
 
-	if !reflect.DeepEqual(expected.Attributes().AsRaw(), actual.Attributes().AsRaw()) {
+	if !reflect.DeepEqual(exp.Attributes().AsRaw(), act.Attributes().AsRaw()) {
 		return fmt.Errorf("span Attributes doesn't match expected: %s, actual: %s",
-			expected.Attributes().AsRaw(),
-			actual.Attributes().AsRaw())
+			exp.Attributes().AsRaw(),
+			act.Attributes().AsRaw())
 	}
 
-	if expected.DroppedAttributesCount() != actual.DroppedAttributesCount() {
+	if exp.DroppedAttributesCount() != act.DroppedAttributesCount() {
 		return fmt.Errorf("span DroppedAttributesCount doesn't match expected: %d, actual: %d",
-			expected.DroppedAttributesCount(),
-			actual.DroppedAttributesCount())
+			exp.DroppedAttributesCount(),
+			act.DroppedAttributesCount())
 	}
 
-	if !reflect.DeepEqual(expected.Events(), actual.Events()) {
+	if !reflect.DeepEqual(exp.Events(), act.Events()) {
 		return fmt.Errorf("span Events doesn't match expected: %v, actual: %v",
-			expected.Events(),
-			actual.Events())
+			exp.Events(),
+			act.Events())
 	}
 
-	if expected.DroppedEventsCount() != actual.DroppedEventsCount() {
+	if exp.DroppedEventsCount() != act.DroppedEventsCount() {
 		return fmt.Errorf("span DroppedEventsCount doesn't match expected: %d, actual: %d",
-			expected.DroppedEventsCount(),
-			actual.DroppedEventsCount())
+			exp.DroppedEventsCount(),
+			act.DroppedEventsCount())
 	}
 
-	if !reflect.DeepEqual(expected.Links(), actual.Links()) {
+	if !reflect.DeepEqual(exp.Links(), act.Links()) {
 		return fmt.Errorf("span Links doesn't match expected: %v, actual: %v",
-			expected.Links(),
-			actual.Links())
+			exp.Links(),
+			act.Links())
 	}
 
-	if expected.DroppedLinksCount() != actual.DroppedLinksCount() {
+	if exp.DroppedLinksCount() != act.DroppedLinksCount() {
 		return fmt.Errorf("span DroppedLinksCount doesn't match expected: %d, actual: %d",
-			expected.DroppedLinksCount(),
+			exp.DroppedLinksCount(),
 			actual.DroppedLinksCount())
 	}
 
-	if !reflect.DeepEqual(expected.Status(), actual.Status()) {
+	if !reflect.DeepEqual(exp.Status(), act.Status()) {
 		return fmt.Errorf("span Status doesn't match expected: %v, actual: %v",
-			expected.Status(),
-			actual.Status())
+			exp.Status(),
+			act.Status())
 	}
 
 	return nil
