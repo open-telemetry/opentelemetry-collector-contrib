@@ -93,7 +93,7 @@ func TestCreateInvalidHTTPEndpoint(t *testing.T) {
 	cfg.Endpoint = ""
 
 	err := cfg.Validate()
-	assert.Error(t, err, "endpoint is not formatted correctly: missing port in address")
+	assert.EqualError(t, err, "empty endpoint")
 }
 
 func TestCreateNoPortEndpoint(t *testing.T) {
@@ -102,7 +102,7 @@ func TestCreateNoPortEndpoint(t *testing.T) {
 	cfg.Endpoint = "localhost:"
 
 	err := cfg.Validate()
-	assert.Error(t, err, "endpoint is not formatted correctly: missing port in address")
+	assert.EqualError(t, err, `endpoint port is not a number: strconv.ParseInt: parsing "": invalid syntax`)
 }
 
 func TestCreateLargePortEndpoint(t *testing.T) {
@@ -111,5 +111,5 @@ func TestCreateLargePortEndpoint(t *testing.T) {
 	cfg.Endpoint = "localhost:65536"
 
 	err := cfg.Validate()
-	assert.Error(t, err, "endpoint is not formatted correctly: missing port in address")
+	assert.EqualError(t, err, "port number must be between 1 and 65535")
 }
