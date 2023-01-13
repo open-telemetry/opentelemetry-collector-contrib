@@ -58,7 +58,7 @@ main () {
     done
 
     if [[ -v REVIEWED[@] ]]; then
-        echo "Users that have already reviewed this PR and will not have another review requested: ${!REVIEWED[@]}"
+        echo "Users that have already reviewed this PR and will not have another review requested:" "${!REVIEWED[@]}"
     else
         echo "This PR has not yet been reviewed, all code owners are eligible for a review request"
     fi

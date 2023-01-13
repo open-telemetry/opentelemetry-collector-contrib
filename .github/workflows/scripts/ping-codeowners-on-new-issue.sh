@@ -80,7 +80,7 @@ for COMPONENT in ${BODY_COMPONENTS}; do
 done
 
 if [[ -v PINGED_COMPONENTS[@] ]]; then
-  echo "The issue was associated with components: ${!PINGED_COMPONENTS[@]}"
+  echo "The issue was associated with components:" "${!PINGED_COMPONENTS[@]}"
 else
   echo "No related components were given"
 fi
