@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 )
 
 // MetricSettings provides common settings for a particular metric.
@@ -48,35 +49,30 @@ type MetricsSettings struct {
 	SnowflakeLoginsTotal                           MetricSettings `mapstructure:"snowflake.logins.total"`
 	SnowflakePipeCreditsUsedTotal                  MetricSettings `mapstructure:"snowflake.pipe.credits_used.total"`
 	SnowflakeQueryBlocked                          MetricSettings `mapstructure:"snowflake.query.blocked"`
-	SnowflakeQueryBytesDeletedTotal                MetricSettings `mapstructure:"snowflake.query.bytes_deleted.total"`
-	SnowflakeQueryBytesScannedTotal                MetricSettings `mapstructure:"snowflake.query.bytes_scanned.total"`
-	SnowflakeQueryBytesSpilledLocalTotal           MetricSettings `mapstructure:"snowflake.query.bytes_spilled.local.total"`
-	SnowflakeQueryBytesSpilledRemoteTotal          MetricSettings `mapstructure:"snowflake.query.bytes_spilled.remote.total"`
-	SnowflakeQueryBytesWrittenTotal                MetricSettings `mapstructure:"snowflake.query.bytes_written.total"`
-	SnowflakeQueryCompilationTimeTotal             MetricSettings `mapstructure:"snowflake.query.compilation_time.total"`
+	SnowflakeQueryBytesDeletedAvg                  MetricSettings `mapstructure:"snowflake.query.bytes_deleted.avg"`
+	SnowflakeQueryBytesSpilledLocalAvg             MetricSettings `mapstructure:"snowflake.query.bytes_spilled.local.avg"`
+	SnowflakeQueryBytesSpilledRemoteAvg            MetricSettings `mapstructure:"snowflake.query.bytes_spilled.remote.avg"`
+	SnowflakeQueryBytesWrittenAvg                  MetricSettings `mapstructure:"snowflake.query.bytes_written.avg"`
+	SnowflakeQueryCompilationTimeAvg               MetricSettings `mapstructure:"snowflake.query.compilation_time.avg"`
 	SnowflakeQueryDataScannedCacheAvg              MetricSettings `mapstructure:"snowflake.query.data_scanned_cache.avg"`
 	SnowflakeQueryExecuted                         MetricSettings `mapstructure:"snowflake.query.executed"`
-	SnowflakeQueryExecutionTimeTotal               MetricSettings `mapstructure:"snowflake.query.execution_time.total"`
-	SnowflakeQueryPartitionsScannedTotal           MetricSettings `mapstructure:"snowflake.query.partitions_scanned.total"`
+	SnowflakeQueryExecutionTimeAvg                 MetricSettings `mapstructure:"snowflake.query.execution_time.avg"`
+	SnowflakeQueryPartitionsScannedAvg             MetricSettings `mapstructure:"snowflake.query.partitions_scanned.avg"`
 	SnowflakeQueryQueuedOverload                   MetricSettings `mapstructure:"snowflake.query.queued_overload"`
 	SnowflakeQueryQueuedProvision                  MetricSettings `mapstructure:"snowflake.query.queued_provision"`
 	SnowflakeQueuedOverloadTimeAvg                 MetricSettings `mapstructure:"snowflake.queued_overload_time.avg"`
-	SnowflakeQueuedOverloadTimeTotal               MetricSettings `mapstructure:"snowflake.queued_overload_time.total"`
 	SnowflakeQueuedProvisioningTimeAvg             MetricSettings `mapstructure:"snowflake.queued_provisioning_time.avg"`
-	SnowflakeQueuedProvisioningTimeTotal           MetricSettings `mapstructure:"snowflake.queued_provisioning_time.total"`
 	SnowflakeQueuedRepairTimeAvg                   MetricSettings `mapstructure:"snowflake.queued_repair_time.avg"`
-	SnowflakeQueuedRepairTimeTotal                 MetricSettings `mapstructure:"snowflake.queued_repair_time.total"`
-	SnowflakeRowsDeletedTotal                      MetricSettings `mapstructure:"snowflake.rows_deleted.total"`
-	SnowflakeRowsInsertedTotal                     MetricSettings `mapstructure:"snowflake.rows_inserted.total"`
-	SnowflakeRowsProducedTotal                     MetricSettings `mapstructure:"snowflake.rows_produced.total"`
-	SnowflakeRowsUnloadedTotal                     MetricSettings `mapstructure:"snowflake.rows_unloaded.total"`
-	SnowflakeRowsUpdatedTotal                      MetricSettings `mapstructure:"snowflake.rows_updated.total"`
+	SnowflakeRowsDeletedAvg                        MetricSettings `mapstructure:"snowflake.rows_deleted.avg"`
+	SnowflakeRowsInsertedAvg                       MetricSettings `mapstructure:"snowflake.rows_inserted.avg"`
+	SnowflakeRowsProducedAvg                       MetricSettings `mapstructure:"snowflake.rows_produced.avg"`
+	SnowflakeRowsUnloadedAvg                       MetricSettings `mapstructure:"snowflake.rows_unloaded.avg"`
+	SnowflakeRowsUpdatedAvg                        MetricSettings `mapstructure:"snowflake.rows_updated.avg"`
 	SnowflakeSessionIDCount                        MetricSettings `mapstructure:"snowflake.session_id.count"`
 	SnowflakeStorageFailsafeBytesTotal             MetricSettings `mapstructure:"snowflake.storage.failsafe_bytes.total"`
 	SnowflakeStorageStageBytesTotal                MetricSettings `mapstructure:"snowflake.storage.stage_bytes.total"`
 	SnowflakeStorageStorageBytesTotal              MetricSettings `mapstructure:"snowflake.storage.storage_bytes.total"`
 	SnowflakeTotalElapsedTimeAvg                   MetricSettings `mapstructure:"snowflake.total_elapsed_time.avg"`
-	SnowflakeTotalElapsedTimeTotal                 MetricSettings `mapstructure:"snowflake.total_elapsed_time.total"`
 }
 
 func DefaultMetricsSettings() MetricsSettings {
@@ -114,22 +110,19 @@ func DefaultMetricsSettings() MetricsSettings {
 		SnowflakeQueryBlocked: MetricSettings{
 			Enabled: true,
 		},
-		SnowflakeQueryBytesDeletedTotal: MetricSettings{
+		SnowflakeQueryBytesDeletedAvg: MetricSettings{
 			Enabled: true,
 		},
-		SnowflakeQueryBytesScannedTotal: MetricSettings{
+		SnowflakeQueryBytesSpilledLocalAvg: MetricSettings{
 			Enabled: false,
 		},
-		SnowflakeQueryBytesSpilledLocalTotal: MetricSettings{
+		SnowflakeQueryBytesSpilledRemoteAvg: MetricSettings{
 			Enabled: false,
 		},
-		SnowflakeQueryBytesSpilledRemoteTotal: MetricSettings{
-			Enabled: false,
-		},
-		SnowflakeQueryBytesWrittenTotal: MetricSettings{
+		SnowflakeQueryBytesWrittenAvg: MetricSettings{
 			Enabled: true,
 		},
-		SnowflakeQueryCompilationTimeTotal: MetricSettings{
+		SnowflakeQueryCompilationTimeAvg: MetricSettings{
 			Enabled: true,
 		},
 		SnowflakeQueryDataScannedCacheAvg: MetricSettings{
@@ -138,10 +131,10 @@ func DefaultMetricsSettings() MetricsSettings {
 		SnowflakeQueryExecuted: MetricSettings{
 			Enabled: true,
 		},
-		SnowflakeQueryExecutionTimeTotal: MetricSettings{
+		SnowflakeQueryExecutionTimeAvg: MetricSettings{
 			Enabled: true,
 		},
-		SnowflakeQueryPartitionsScannedTotal: MetricSettings{
+		SnowflakeQueryPartitionsScannedAvg: MetricSettings{
 			Enabled: false,
 		},
 		SnowflakeQueryQueuedOverload: MetricSettings{
@@ -153,34 +146,25 @@ func DefaultMetricsSettings() MetricsSettings {
 		SnowflakeQueuedOverloadTimeAvg: MetricSettings{
 			Enabled: true,
 		},
-		SnowflakeQueuedOverloadTimeTotal: MetricSettings{
-			Enabled: false,
-		},
 		SnowflakeQueuedProvisioningTimeAvg: MetricSettings{
 			Enabled: true,
-		},
-		SnowflakeQueuedProvisioningTimeTotal: MetricSettings{
-			Enabled: false,
 		},
 		SnowflakeQueuedRepairTimeAvg: MetricSettings{
 			Enabled: true,
 		},
-		SnowflakeQueuedRepairTimeTotal: MetricSettings{
+		SnowflakeRowsDeletedAvg: MetricSettings{
 			Enabled: false,
 		},
-		SnowflakeRowsDeletedTotal: MetricSettings{
+		SnowflakeRowsInsertedAvg: MetricSettings{
 			Enabled: false,
 		},
-		SnowflakeRowsInsertedTotal: MetricSettings{
+		SnowflakeRowsProducedAvg: MetricSettings{
 			Enabled: false,
 		},
-		SnowflakeRowsProducedTotal: MetricSettings{
+		SnowflakeRowsUnloadedAvg: MetricSettings{
 			Enabled: false,
 		},
-		SnowflakeRowsUnloadedTotal: MetricSettings{
-			Enabled: false,
-		},
-		SnowflakeRowsUpdatedTotal: MetricSettings{
+		SnowflakeRowsUpdatedAvg: MetricSettings{
 			Enabled: false,
 		},
 		SnowflakeSessionIDCount: MetricSettings{
@@ -198,9 +182,6 @@ func DefaultMetricsSettings() MetricsSettings {
 		SnowflakeTotalElapsedTimeAvg: MetricSettings{
 			Enabled: true,
 		},
-		SnowflakeTotalElapsedTimeTotal: MetricSettings{
-			Enabled: false,
-		},
 	}
 }
 
@@ -213,7 +194,7 @@ type metricSnowflakeBillingCloudServiceTotal struct {
 // init fills snowflake.billing.cloud_service.total metric with initial data.
 func (m *metricSnowflakeBillingCloudServiceTotal) init() {
 	m.data.SetName("snowflake.billing.cloud_service.total")
-	m.data.SetDescription("Reported total credits used in the cloud service.")
+	m.data.SetDescription("Reported total credits used in the cloud service over the last 24 hour window.")
 	m.data.SetUnit("{credits}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -264,7 +245,7 @@ type metricSnowflakeBillingTotalCreditTotal struct {
 // init fills snowflake.billing.total_credit.total metric with initial data.
 func (m *metricSnowflakeBillingTotalCreditTotal) init() {
 	m.data.SetName("snowflake.billing.total_credit.total")
-	m.data.SetDescription("Reported total credits used across account.")
+	m.data.SetDescription("Reported total credits used across account over the last 24 hour window.")
 	m.data.SetUnit("{credits}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -315,7 +296,7 @@ type metricSnowflakeBillingVirtualWarehouseTotal struct {
 // init fills snowflake.billing.virtual_warehouse.total metric with initial data.
 func (m *metricSnowflakeBillingVirtualWarehouseTotal) init() {
 	m.data.SetName("snowflake.billing.virtual_warehouse.total")
-	m.data.SetDescription("Reported total credits used by virtual warehouse service.")
+	m.data.SetDescription("Reported total credits used by virtual warehouse service over the last 24 hour window.")
 	m.data.SetUnit("{credits}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -366,7 +347,7 @@ type metricSnowflakeBillingWarehouseCloudServiceTotal struct {
 // init fills snowflake.billing.warehouse.cloud_service.total metric with initial data.
 func (m *metricSnowflakeBillingWarehouseCloudServiceTotal) init() {
 	m.data.SetName("snowflake.billing.warehouse.cloud_service.total")
-	m.data.SetDescription("Credits used across cloud service for given warehouse.")
+	m.data.SetDescription("Credits used across cloud service for given warehouse over the last 24 hour window.")
 	m.data.SetUnit("{credits}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -417,7 +398,7 @@ type metricSnowflakeBillingWarehouseTotalCreditTotal struct {
 // init fills snowflake.billing.warehouse.total_credit.total metric with initial data.
 func (m *metricSnowflakeBillingWarehouseTotalCreditTotal) init() {
 	m.data.SetName("snowflake.billing.warehouse.total_credit.total")
-	m.data.SetDescription("Total credits used associated with given warehouse.")
+	m.data.SetDescription("Total credits used associated with given warehouse over the last 24 hour window.")
 	m.data.SetUnit("{credits}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -468,7 +449,7 @@ type metricSnowflakeBillingWarehouseVirtualWarehouseTotal struct {
 // init fills snowflake.billing.warehouse.virtual_warehouse.total metric with initial data.
 func (m *metricSnowflakeBillingWarehouseVirtualWarehouseTotal) init() {
 	m.data.SetName("snowflake.billing.warehouse.virtual_warehouse.total")
-	m.data.SetDescription("Total credits used by virtual warehouse service for given warehouse.")
+	m.data.SetDescription("Total credits used by virtual warehouse service for given warehouse over the last 24 hour window.")
 	m.data.SetUnit("{credits}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -519,7 +500,7 @@ type metricSnowflakeDatabaseBytesScannedAvg struct {
 // init fills snowflake.database.bytes_scanned.avg metric with initial data.
 func (m *metricSnowflakeDatabaseBytesScannedAvg) init() {
 	m.data.SetName("snowflake.database.bytes_scanned.avg")
-	m.data.SetDescription("Average bytes scanned in a database.")
+	m.data.SetDescription("Average bytes scanned in a database over the last 24 hour window.")
 	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -576,7 +557,7 @@ type metricSnowflakeDatabaseQueryCount struct {
 // init fills snowflake.database.query.count metric with initial data.
 func (m *metricSnowflakeDatabaseQueryCount) init() {
 	m.data.SetName("snowflake.database.query.count")
-	m.data.SetDescription("Total query count for database.")
+	m.data.SetDescription("Total query count for database over the last 24 hour window.")
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -633,7 +614,7 @@ type metricSnowflakeLoginsTotal struct {
 // init fills snowflake.logins.total metric with initial data.
 func (m *metricSnowflakeLoginsTotal) init() {
 	m.data.SetName("snowflake.logins.total")
-	m.data.SetDescription("Total login attempts for account.")
+	m.data.SetDescription("Total login attempts for account over the last 24 hour window.")
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -686,7 +667,7 @@ type metricSnowflakePipeCreditsUsedTotal struct {
 // init fills snowflake.pipe.credits_used.total metric with initial data.
 func (m *metricSnowflakePipeCreditsUsedTotal) init() {
 	m.data.SetName("snowflake.pipe.credits_used.total")
-	m.data.SetDescription("Snow pipe credits contotaled.")
+	m.data.SetDescription("Snow pipe credits contotaled over the last 24 hour window.")
 	m.data.SetUnit("{credits}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -737,7 +718,7 @@ type metricSnowflakeQueryBlocked struct {
 // init fills snowflake.query.blocked metric with initial data.
 func (m *metricSnowflakeQueryBlocked) init() {
 	m.data.SetName("snowflake.query.blocked")
-	m.data.SetDescription("Blocked query count for warehouse.")
+	m.data.SetDescription("Blocked query count for warehouse over the last 24 hour window.")
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -779,307 +760,22 @@ func newMetricSnowflakeQueryBlocked(settings MetricSettings) metricSnowflakeQuer
 	return m
 }
 
-type metricSnowflakeQueryBytesDeletedTotal struct {
+type metricSnowflakeQueryBytesDeletedAvg struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills snowflake.query.bytes_deleted.total metric with initial data.
-func (m *metricSnowflakeQueryBytesDeletedTotal) init() {
-	m.data.SetName("snowflake.query.bytes_deleted.total")
-	m.data.SetDescription("Total bytes deleted in database.")
+// init fills snowflake.query.bytes_deleted.avg metric with initial data.
+func (m *metricSnowflakeQueryBytesDeletedAvg) init() {
+	m.data.SetName("snowflake.query.bytes_deleted.avg")
+	m.data.SetDescription("Average bytes deleted in database over the last 24 hour window.")
 	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSnowflakeQueryBytesDeletedTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-	dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
-	dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
-	dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
-	dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
-	dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
-	dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
-	dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricSnowflakeQueryBytesDeletedTotal) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricSnowflakeQueryBytesDeletedTotal) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricSnowflakeQueryBytesDeletedTotal(settings MetricSettings) metricSnowflakeQueryBytesDeletedTotal {
-	m := metricSnowflakeQueryBytesDeletedTotal{settings: settings}
-	if settings.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricSnowflakeQueryBytesScannedTotal struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills snowflake.query.bytes_scanned.total metric with initial data.
-func (m *metricSnowflakeQueryBytesScannedTotal) init() {
-	m.data.SetName("snowflake.query.bytes_scanned.total")
-	m.data.SetDescription("Total bytes scanend in database.")
-	m.data.SetUnit("By")
-	m.data.SetEmptyGauge()
-	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricSnowflakeQueryBytesScannedTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-	dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
-	dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
-	dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
-	dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
-	dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
-	dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
-	dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricSnowflakeQueryBytesScannedTotal) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricSnowflakeQueryBytesScannedTotal) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricSnowflakeQueryBytesScannedTotal(settings MetricSettings) metricSnowflakeQueryBytesScannedTotal {
-	m := metricSnowflakeQueryBytesScannedTotal{settings: settings}
-	if settings.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricSnowflakeQueryBytesSpilledLocalTotal struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills snowflake.query.bytes_spilled.local.total metric with initial data.
-func (m *metricSnowflakeQueryBytesSpilledLocalTotal) init() {
-	m.data.SetName("snowflake.query.bytes_spilled.local.total")
-	m.data.SetDescription("Total bytes spilled (intermediate results do not fit in memory) by local storage.")
-	m.data.SetUnit("By")
-	m.data.SetEmptyGauge()
-	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricSnowflakeQueryBytesSpilledLocalTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-	dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
-	dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
-	dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
-	dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
-	dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
-	dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
-	dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricSnowflakeQueryBytesSpilledLocalTotal) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricSnowflakeQueryBytesSpilledLocalTotal) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricSnowflakeQueryBytesSpilledLocalTotal(settings MetricSettings) metricSnowflakeQueryBytesSpilledLocalTotal {
-	m := metricSnowflakeQueryBytesSpilledLocalTotal{settings: settings}
-	if settings.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricSnowflakeQueryBytesSpilledRemoteTotal struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills snowflake.query.bytes_spilled.remote.total metric with initial data.
-func (m *metricSnowflakeQueryBytesSpilledRemoteTotal) init() {
-	m.data.SetName("snowflake.query.bytes_spilled.remote.total")
-	m.data.SetDescription("Total bytes spilled (intermediate results do not fit in memory) by remote storage.")
-	m.data.SetUnit("By")
-	m.data.SetEmptyGauge()
-	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricSnowflakeQueryBytesSpilledRemoteTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-	dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
-	dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
-	dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
-	dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
-	dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
-	dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
-	dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricSnowflakeQueryBytesSpilledRemoteTotal) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricSnowflakeQueryBytesSpilledRemoteTotal) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricSnowflakeQueryBytesSpilledRemoteTotal(settings MetricSettings) metricSnowflakeQueryBytesSpilledRemoteTotal {
-	m := metricSnowflakeQueryBytesSpilledRemoteTotal{settings: settings}
-	if settings.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricSnowflakeQueryBytesWrittenTotal struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills snowflake.query.bytes_written.total metric with initial data.
-func (m *metricSnowflakeQueryBytesWrittenTotal) init() {
-	m.data.SetName("snowflake.query.bytes_written.total")
-	m.data.SetDescription("Total bytes written by database.")
-	m.data.SetUnit("By")
-	m.data.SetEmptyGauge()
-	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricSnowflakeQueryBytesWrittenTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-	dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
-	dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
-	dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
-	dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
-	dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
-	dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
-	dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricSnowflakeQueryBytesWrittenTotal) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricSnowflakeQueryBytesWrittenTotal) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricSnowflakeQueryBytesWrittenTotal(settings MetricSettings) metricSnowflakeQueryBytesWrittenTotal {
-	m := metricSnowflakeQueryBytesWrittenTotal{settings: settings}
-	if settings.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricSnowflakeQueryCompilationTimeTotal struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills snowflake.query.compilation_time.total metric with initial data.
-func (m *metricSnowflakeQueryCompilationTimeTotal) init() {
-	m.data.SetName("snowflake.query.compilation_time.total")
-	m.data.SetDescription("Total time taken to compile query.")
-	m.data.SetUnit("s")
-	m.data.SetEmptyGauge()
-	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricSnowflakeQueryCompilationTimeTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
+func (m *metricSnowflakeQueryBytesDeletedAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1097,14 +793,14 @@ func (m *metricSnowflakeQueryCompilationTimeTotal) recordDataPoint(start pcommon
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricSnowflakeQueryCompilationTimeTotal) updateCapacity() {
+func (m *metricSnowflakeQueryBytesDeletedAvg) updateCapacity() {
 	if m.data.Gauge().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricSnowflakeQueryCompilationTimeTotal) emit(metrics pmetric.MetricSlice) {
+func (m *metricSnowflakeQueryBytesDeletedAvg) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -1112,8 +808,236 @@ func (m *metricSnowflakeQueryCompilationTimeTotal) emit(metrics pmetric.MetricSl
 	}
 }
 
-func newMetricSnowflakeQueryCompilationTimeTotal(settings MetricSettings) metricSnowflakeQueryCompilationTimeTotal {
-	m := metricSnowflakeQueryCompilationTimeTotal{settings: settings}
+func newMetricSnowflakeQueryBytesDeletedAvg(settings MetricSettings) metricSnowflakeQueryBytesDeletedAvg {
+	m := metricSnowflakeQueryBytesDeletedAvg{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSnowflakeQueryBytesSpilledLocalAvg struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills snowflake.query.bytes_spilled.local.avg metric with initial data.
+func (m *metricSnowflakeQueryBytesSpilledLocalAvg) init() {
+	m.data.SetName("snowflake.query.bytes_spilled.local.avg")
+	m.data.SetDescription("Avergae bytes spilled (intermediate results do not fit in memory) by local storage over the last 24 hour window.")
+	m.data.SetUnit("By")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSnowflakeQueryBytesSpilledLocalAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
+	dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
+	dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
+	dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
+	dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
+	dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
+	dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSnowflakeQueryBytesSpilledLocalAvg) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSnowflakeQueryBytesSpilledLocalAvg) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSnowflakeQueryBytesSpilledLocalAvg(settings MetricSettings) metricSnowflakeQueryBytesSpilledLocalAvg {
+	m := metricSnowflakeQueryBytesSpilledLocalAvg{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSnowflakeQueryBytesSpilledRemoteAvg struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills snowflake.query.bytes_spilled.remote.avg metric with initial data.
+func (m *metricSnowflakeQueryBytesSpilledRemoteAvg) init() {
+	m.data.SetName("snowflake.query.bytes_spilled.remote.avg")
+	m.data.SetDescription("Avergae bytes spilled (intermediate results do not fit in memory) by remote storage over the last 24 hour window.")
+	m.data.SetUnit("By")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSnowflakeQueryBytesSpilledRemoteAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
+	dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
+	dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
+	dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
+	dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
+	dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
+	dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSnowflakeQueryBytesSpilledRemoteAvg) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSnowflakeQueryBytesSpilledRemoteAvg) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSnowflakeQueryBytesSpilledRemoteAvg(settings MetricSettings) metricSnowflakeQueryBytesSpilledRemoteAvg {
+	m := metricSnowflakeQueryBytesSpilledRemoteAvg{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSnowflakeQueryBytesWrittenAvg struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills snowflake.query.bytes_written.avg metric with initial data.
+func (m *metricSnowflakeQueryBytesWrittenAvg) init() {
+	m.data.SetName("snowflake.query.bytes_written.avg")
+	m.data.SetDescription("Average bytes written by database over the last 24 hour window.")
+	m.data.SetUnit("By")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSnowflakeQueryBytesWrittenAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
+	dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
+	dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
+	dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
+	dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
+	dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
+	dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSnowflakeQueryBytesWrittenAvg) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSnowflakeQueryBytesWrittenAvg) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSnowflakeQueryBytesWrittenAvg(settings MetricSettings) metricSnowflakeQueryBytesWrittenAvg {
+	m := metricSnowflakeQueryBytesWrittenAvg{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSnowflakeQueryCompilationTimeAvg struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills snowflake.query.compilation_time.avg metric with initial data.
+func (m *metricSnowflakeQueryCompilationTimeAvg) init() {
+	m.data.SetName("snowflake.query.compilation_time.avg")
+	m.data.SetDescription("Average time taken to compile query over the last 24 hour window.")
+	m.data.SetUnit("s")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSnowflakeQueryCompilationTimeAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
+	dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
+	dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
+	dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
+	dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
+	dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
+	dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSnowflakeQueryCompilationTimeAvg) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSnowflakeQueryCompilationTimeAvg) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSnowflakeQueryCompilationTimeAvg(settings MetricSettings) metricSnowflakeQueryCompilationTimeAvg {
+	m := metricSnowflakeQueryCompilationTimeAvg{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1130,7 +1054,7 @@ type metricSnowflakeQueryDataScannedCacheAvg struct {
 // init fills snowflake.query.data_scanned_cache.avg metric with initial data.
 func (m *metricSnowflakeQueryDataScannedCacheAvg) init() {
 	m.data.SetName("snowflake.query.data_scanned_cache.avg")
-	m.data.SetDescription("Average percentage of data scanned from cache.")
+	m.data.SetDescription("Average percentage of data scanned from cache over the last 24 hour window.")
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -1187,7 +1111,7 @@ type metricSnowflakeQueryExecuted struct {
 // init fills snowflake.query.executed metric with initial data.
 func (m *metricSnowflakeQueryExecuted) init() {
 	m.data.SetName("snowflake.query.executed")
-	m.data.SetDescription("Executed query count for warehouse.")
+	m.data.SetDescription("Executed query count for warehouse over the last 24 hour window.")
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -1229,22 +1153,22 @@ func newMetricSnowflakeQueryExecuted(settings MetricSettings) metricSnowflakeQue
 	return m
 }
 
-type metricSnowflakeQueryExecutionTimeTotal struct {
+type metricSnowflakeQueryExecutionTimeAvg struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills snowflake.query.execution_time.total metric with initial data.
-func (m *metricSnowflakeQueryExecutionTimeTotal) init() {
-	m.data.SetName("snowflake.query.execution_time.total")
-	m.data.SetDescription("Total time spent executing queries in database.")
+// init fills snowflake.query.execution_time.avg metric with initial data.
+func (m *metricSnowflakeQueryExecutionTimeAvg) init() {
+	m.data.SetName("snowflake.query.execution_time.avg")
+	m.data.SetDescription("Average time spent executing queries in database over the last 24 hour window.")
 	m.data.SetUnit("s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSnowflakeQueryExecutionTimeTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
+func (m *metricSnowflakeQueryExecutionTimeAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1262,14 +1186,14 @@ func (m *metricSnowflakeQueryExecutionTimeTotal) recordDataPoint(start pcommon.T
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricSnowflakeQueryExecutionTimeTotal) updateCapacity() {
+func (m *metricSnowflakeQueryExecutionTimeAvg) updateCapacity() {
 	if m.data.Gauge().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricSnowflakeQueryExecutionTimeTotal) emit(metrics pmetric.MetricSlice) {
+func (m *metricSnowflakeQueryExecutionTimeAvg) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -1277,8 +1201,8 @@ func (m *metricSnowflakeQueryExecutionTimeTotal) emit(metrics pmetric.MetricSlic
 	}
 }
 
-func newMetricSnowflakeQueryExecutionTimeTotal(settings MetricSettings) metricSnowflakeQueryExecutionTimeTotal {
-	m := metricSnowflakeQueryExecutionTimeTotal{settings: settings}
+func newMetricSnowflakeQueryExecutionTimeAvg(settings MetricSettings) metricSnowflakeQueryExecutionTimeAvg {
+	m := metricSnowflakeQueryExecutionTimeAvg{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1286,29 +1210,29 @@ func newMetricSnowflakeQueryExecutionTimeTotal(settings MetricSettings) metricSn
 	return m
 }
 
-type metricSnowflakeQueryPartitionsScannedTotal struct {
+type metricSnowflakeQueryPartitionsScannedAvg struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills snowflake.query.partitions_scanned.total metric with initial data.
-func (m *metricSnowflakeQueryPartitionsScannedTotal) init() {
-	m.data.SetName("snowflake.query.partitions_scanned.total")
-	m.data.SetDescription("Number of partitions scanned during query so far.")
+// init fills snowflake.query.partitions_scanned.avg metric with initial data.
+func (m *metricSnowflakeQueryPartitionsScannedAvg) init() {
+	m.data.SetName("snowflake.query.partitions_scanned.avg")
+	m.data.SetDescription("Number of partitions scanned during query so far over the last 24 hour window.")
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSnowflakeQueryPartitionsScannedTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
+func (m *metricSnowflakeQueryPartitionsScannedAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
 	dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
 	dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
@@ -1319,14 +1243,14 @@ func (m *metricSnowflakeQueryPartitionsScannedTotal) recordDataPoint(start pcomm
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricSnowflakeQueryPartitionsScannedTotal) updateCapacity() {
+func (m *metricSnowflakeQueryPartitionsScannedAvg) updateCapacity() {
 	if m.data.Gauge().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricSnowflakeQueryPartitionsScannedTotal) emit(metrics pmetric.MetricSlice) {
+func (m *metricSnowflakeQueryPartitionsScannedAvg) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -1334,8 +1258,8 @@ func (m *metricSnowflakeQueryPartitionsScannedTotal) emit(metrics pmetric.Metric
 	}
 }
 
-func newMetricSnowflakeQueryPartitionsScannedTotal(settings MetricSettings) metricSnowflakeQueryPartitionsScannedTotal {
-	m := metricSnowflakeQueryPartitionsScannedTotal{settings: settings}
+func newMetricSnowflakeQueryPartitionsScannedAvg(settings MetricSettings) metricSnowflakeQueryPartitionsScannedAvg {
+	m := metricSnowflakeQueryPartitionsScannedAvg{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1352,7 +1276,7 @@ type metricSnowflakeQueryQueuedOverload struct {
 // init fills snowflake.query.queued_overload metric with initial data.
 func (m *metricSnowflakeQueryQueuedOverload) init() {
 	m.data.SetName("snowflake.query.queued_overload")
-	m.data.SetDescription("Overloaded query count for warehouse.")
+	m.data.SetDescription("Overloaded query count for warehouse over the last 24 hour window.")
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -1403,7 +1327,7 @@ type metricSnowflakeQueryQueuedProvision struct {
 // init fills snowflake.query.queued_provision metric with initial data.
 func (m *metricSnowflakeQueryQueuedProvision) init() {
 	m.data.SetName("snowflake.query.queued_provision")
-	m.data.SetDescription("Number of compute resources queued for provisioning.")
+	m.data.SetDescription("Number of compute resources queued for provisioning over the last 24 hour window.")
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -1454,7 +1378,7 @@ type metricSnowflakeQueuedOverloadTimeAvg struct {
 // init fills snowflake.queued_overload_time.avg metric with initial data.
 func (m *metricSnowflakeQueuedOverloadTimeAvg) init() {
 	m.data.SetName("snowflake.queued_overload_time.avg")
-	m.data.SetDescription("Average time spent in warehouse queue due to warehouse being overloaded.")
+	m.data.SetDescription("Average time spent in warehouse queue due to warehouse being overloaded over the last 24 hour window.")
 	m.data.SetUnit("s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -1502,63 +1426,6 @@ func newMetricSnowflakeQueuedOverloadTimeAvg(settings MetricSettings) metricSnow
 	return m
 }
 
-type metricSnowflakeQueuedOverloadTimeTotal struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills snowflake.queued_overload_time.total metric with initial data.
-func (m *metricSnowflakeQueuedOverloadTimeTotal) init() {
-	m.data.SetName("snowflake.queued_overload_time.total")
-	m.data.SetDescription("Total time spent in warehouse queue due to warehouse being overloaded.")
-	m.data.SetUnit("s")
-	m.data.SetEmptyGauge()
-	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricSnowflakeQueuedOverloadTimeTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-	dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
-	dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
-	dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
-	dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
-	dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
-	dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
-	dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricSnowflakeQueuedOverloadTimeTotal) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricSnowflakeQueuedOverloadTimeTotal) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricSnowflakeQueuedOverloadTimeTotal(settings MetricSettings) metricSnowflakeQueuedOverloadTimeTotal {
-	m := metricSnowflakeQueuedOverloadTimeTotal{settings: settings}
-	if settings.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
 type metricSnowflakeQueuedProvisioningTimeAvg struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -1568,7 +1435,7 @@ type metricSnowflakeQueuedProvisioningTimeAvg struct {
 // init fills snowflake.queued_provisioning_time.avg metric with initial data.
 func (m *metricSnowflakeQueuedProvisioningTimeAvg) init() {
 	m.data.SetName("snowflake.queued_provisioning_time.avg")
-	m.data.SetDescription("Average time spent in warehouse queue waiting for resources to provision.")
+	m.data.SetDescription("Average time spent in warehouse queue waiting for resources to provision over the last 24 hour window.")
 	m.data.SetUnit("s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -1616,63 +1483,6 @@ func newMetricSnowflakeQueuedProvisioningTimeAvg(settings MetricSettings) metric
 	return m
 }
 
-type metricSnowflakeQueuedProvisioningTimeTotal struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills snowflake.queued_provisioning_time.total metric with initial data.
-func (m *metricSnowflakeQueuedProvisioningTimeTotal) init() {
-	m.data.SetName("snowflake.queued_provisioning_time.total")
-	m.data.SetDescription("Total time spent in warehouse queue waiting for resources to provision.")
-	m.data.SetUnit("s")
-	m.data.SetEmptyGauge()
-	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricSnowflakeQueuedProvisioningTimeTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-	dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
-	dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
-	dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
-	dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
-	dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
-	dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
-	dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricSnowflakeQueuedProvisioningTimeTotal) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricSnowflakeQueuedProvisioningTimeTotal) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricSnowflakeQueuedProvisioningTimeTotal(settings MetricSettings) metricSnowflakeQueuedProvisioningTimeTotal {
-	m := metricSnowflakeQueuedProvisioningTimeTotal{settings: settings}
-	if settings.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
 type metricSnowflakeQueuedRepairTimeAvg struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -1682,7 +1492,7 @@ type metricSnowflakeQueuedRepairTimeAvg struct {
 // init fills snowflake.queued_repair_time.avg metric with initial data.
 func (m *metricSnowflakeQueuedRepairTimeAvg) init() {
 	m.data.SetName("snowflake.queued_repair_time.avg")
-	m.data.SetDescription("Average time spent in warehouse queue waiting for compute resources to be repaired.")
+	m.data.SetDescription("Average time spent in warehouse queue waiting for compute resources to be repaired over the last 24 hour window.")
 	m.data.SetUnit("s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -1730,29 +1540,29 @@ func newMetricSnowflakeQueuedRepairTimeAvg(settings MetricSettings) metricSnowfl
 	return m
 }
 
-type metricSnowflakeQueuedRepairTimeTotal struct {
+type metricSnowflakeRowsDeletedAvg struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills snowflake.queued_repair_time.total metric with initial data.
-func (m *metricSnowflakeQueuedRepairTimeTotal) init() {
-	m.data.SetName("snowflake.queued_repair_time.total")
-	m.data.SetDescription("Total time spent in warehouse queue waiting for compute resources to be repaired.")
-	m.data.SetUnit("s")
+// init fills snowflake.rows_deleted.avg metric with initial data.
+func (m *metricSnowflakeRowsDeletedAvg) init() {
+	m.data.SetName("snowflake.rows_deleted.avg")
+	m.data.SetDescription("Number of rows deleted from a table (or tables) over the last 24 hour window.")
+	m.data.SetUnit("{rows}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSnowflakeQueuedRepairTimeTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
+func (m *metricSnowflakeRowsDeletedAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
 	dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
 	dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
@@ -1763,14 +1573,14 @@ func (m *metricSnowflakeQueuedRepairTimeTotal) recordDataPoint(start pcommon.Tim
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricSnowflakeQueuedRepairTimeTotal) updateCapacity() {
+func (m *metricSnowflakeRowsDeletedAvg) updateCapacity() {
 	if m.data.Gauge().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricSnowflakeQueuedRepairTimeTotal) emit(metrics pmetric.MetricSlice) {
+func (m *metricSnowflakeRowsDeletedAvg) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -1778,8 +1588,8 @@ func (m *metricSnowflakeQueuedRepairTimeTotal) emit(metrics pmetric.MetricSlice)
 	}
 }
 
-func newMetricSnowflakeQueuedRepairTimeTotal(settings MetricSettings) metricSnowflakeQueuedRepairTimeTotal {
-	m := metricSnowflakeQueuedRepairTimeTotal{settings: settings}
+func newMetricSnowflakeRowsDeletedAvg(settings MetricSettings) metricSnowflakeRowsDeletedAvg {
+	m := metricSnowflakeRowsDeletedAvg{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1787,29 +1597,29 @@ func newMetricSnowflakeQueuedRepairTimeTotal(settings MetricSettings) metricSnow
 	return m
 }
 
-type metricSnowflakeRowsDeletedTotal struct {
+type metricSnowflakeRowsInsertedAvg struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills snowflake.rows_deleted.total metric with initial data.
-func (m *metricSnowflakeRowsDeletedTotal) init() {
-	m.data.SetName("snowflake.rows_deleted.total")
-	m.data.SetDescription("Number of rows deleted from a table (or tables).")
+// init fills snowflake.rows_inserted.avg metric with initial data.
+func (m *metricSnowflakeRowsInsertedAvg) init() {
+	m.data.SetName("snowflake.rows_inserted.avg")
+	m.data.SetDescription("Number of rows inserted into a table (or tables) over the last 24 hour window.")
 	m.data.SetUnit("{rows}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSnowflakeRowsDeletedTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
+func (m *metricSnowflakeRowsInsertedAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
 	dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
 	dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
@@ -1820,14 +1630,14 @@ func (m *metricSnowflakeRowsDeletedTotal) recordDataPoint(start pcommon.Timestam
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricSnowflakeRowsDeletedTotal) updateCapacity() {
+func (m *metricSnowflakeRowsInsertedAvg) updateCapacity() {
 	if m.data.Gauge().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricSnowflakeRowsDeletedTotal) emit(metrics pmetric.MetricSlice) {
+func (m *metricSnowflakeRowsInsertedAvg) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -1835,8 +1645,8 @@ func (m *metricSnowflakeRowsDeletedTotal) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSnowflakeRowsDeletedTotal(settings MetricSettings) metricSnowflakeRowsDeletedTotal {
-	m := metricSnowflakeRowsDeletedTotal{settings: settings}
+func newMetricSnowflakeRowsInsertedAvg(settings MetricSettings) metricSnowflakeRowsInsertedAvg {
+	m := metricSnowflakeRowsInsertedAvg{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1844,29 +1654,29 @@ func newMetricSnowflakeRowsDeletedTotal(settings MetricSettings) metricSnowflake
 	return m
 }
 
-type metricSnowflakeRowsInsertedTotal struct {
+type metricSnowflakeRowsProducedAvg struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills snowflake.rows_inserted.total metric with initial data.
-func (m *metricSnowflakeRowsInsertedTotal) init() {
-	m.data.SetName("snowflake.rows_inserted.total")
-	m.data.SetDescription("Number of rows inserted into a table (or tables).")
+// init fills snowflake.rows_produced.avg metric with initial data.
+func (m *metricSnowflakeRowsProducedAvg) init() {
+	m.data.SetName("snowflake.rows_produced.avg")
+	m.data.SetDescription("Average number of rows produced by statement over the last 24 hour window.")
 	m.data.SetUnit("{rows}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSnowflakeRowsInsertedTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
+func (m *metricSnowflakeRowsProducedAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
 	dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
 	dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
@@ -1877,14 +1687,14 @@ func (m *metricSnowflakeRowsInsertedTotal) recordDataPoint(start pcommon.Timesta
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricSnowflakeRowsInsertedTotal) updateCapacity() {
+func (m *metricSnowflakeRowsProducedAvg) updateCapacity() {
 	if m.data.Gauge().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricSnowflakeRowsInsertedTotal) emit(metrics pmetric.MetricSlice) {
+func (m *metricSnowflakeRowsProducedAvg) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -1892,8 +1702,8 @@ func (m *metricSnowflakeRowsInsertedTotal) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSnowflakeRowsInsertedTotal(settings MetricSettings) metricSnowflakeRowsInsertedTotal {
-	m := metricSnowflakeRowsInsertedTotal{settings: settings}
+func newMetricSnowflakeRowsProducedAvg(settings MetricSettings) metricSnowflakeRowsProducedAvg {
+	m := metricSnowflakeRowsProducedAvg{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1901,29 +1711,29 @@ func newMetricSnowflakeRowsInsertedTotal(settings MetricSettings) metricSnowflak
 	return m
 }
 
-type metricSnowflakeRowsProducedTotal struct {
+type metricSnowflakeRowsUnloadedAvg struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills snowflake.rows_produced.total metric with initial data.
-func (m *metricSnowflakeRowsProducedTotal) init() {
-	m.data.SetName("snowflake.rows_produced.total")
-	m.data.SetDescription("Total number of rows produced by statement.")
+// init fills snowflake.rows_unloaded.avg metric with initial data.
+func (m *metricSnowflakeRowsUnloadedAvg) init() {
+	m.data.SetName("snowflake.rows_unloaded.avg")
+	m.data.SetDescription("Average number of rows unloaded during data export over the last 24 hour window.")
 	m.data.SetUnit("{rows}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSnowflakeRowsProducedTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
+func (m *metricSnowflakeRowsUnloadedAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
 	dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
 	dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
@@ -1934,14 +1744,14 @@ func (m *metricSnowflakeRowsProducedTotal) recordDataPoint(start pcommon.Timesta
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricSnowflakeRowsProducedTotal) updateCapacity() {
+func (m *metricSnowflakeRowsUnloadedAvg) updateCapacity() {
 	if m.data.Gauge().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricSnowflakeRowsProducedTotal) emit(metrics pmetric.MetricSlice) {
+func (m *metricSnowflakeRowsUnloadedAvg) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -1949,8 +1759,8 @@ func (m *metricSnowflakeRowsProducedTotal) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSnowflakeRowsProducedTotal(settings MetricSettings) metricSnowflakeRowsProducedTotal {
-	m := metricSnowflakeRowsProducedTotal{settings: settings}
+func newMetricSnowflakeRowsUnloadedAvg(settings MetricSettings) metricSnowflakeRowsUnloadedAvg {
+	m := metricSnowflakeRowsUnloadedAvg{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1958,29 +1768,29 @@ func newMetricSnowflakeRowsProducedTotal(settings MetricSettings) metricSnowflak
 	return m
 }
 
-type metricSnowflakeRowsUnloadedTotal struct {
+type metricSnowflakeRowsUpdatedAvg struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills snowflake.rows_unloaded.total metric with initial data.
-func (m *metricSnowflakeRowsUnloadedTotal) init() {
-	m.data.SetName("snowflake.rows_unloaded.total")
-	m.data.SetDescription("Total number of rows unloaded during data export.")
+// init fills snowflake.rows_updated.avg metric with initial data.
+func (m *metricSnowflakeRowsUpdatedAvg) init() {
+	m.data.SetName("snowflake.rows_updated.avg")
+	m.data.SetDescription("Average number of rows updated in a table over the last 24 hour window.")
 	m.data.SetUnit("{rows}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSnowflakeRowsUnloadedTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
+func (m *metricSnowflakeRowsUpdatedAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
+	dp.SetDoubleValue(val)
 	dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
 	dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
 	dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
@@ -1991,14 +1801,14 @@ func (m *metricSnowflakeRowsUnloadedTotal) recordDataPoint(start pcommon.Timesta
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricSnowflakeRowsUnloadedTotal) updateCapacity() {
+func (m *metricSnowflakeRowsUpdatedAvg) updateCapacity() {
 	if m.data.Gauge().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricSnowflakeRowsUnloadedTotal) emit(metrics pmetric.MetricSlice) {
+func (m *metricSnowflakeRowsUpdatedAvg) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -2006,65 +1816,8 @@ func (m *metricSnowflakeRowsUnloadedTotal) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricSnowflakeRowsUnloadedTotal(settings MetricSettings) metricSnowflakeRowsUnloadedTotal {
-	m := metricSnowflakeRowsUnloadedTotal{settings: settings}
-	if settings.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricSnowflakeRowsUpdatedTotal struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills snowflake.rows_updated.total metric with initial data.
-func (m *metricSnowflakeRowsUpdatedTotal) init() {
-	m.data.SetName("snowflake.rows_updated.total")
-	m.data.SetDescription("Total number of rows updated in a table.")
-	m.data.SetUnit("{rows}")
-	m.data.SetEmptyGauge()
-	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricSnowflakeRowsUpdatedTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-	dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
-	dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
-	dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
-	dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
-	dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
-	dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
-	dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricSnowflakeRowsUpdatedTotal) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricSnowflakeRowsUpdatedTotal) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricSnowflakeRowsUpdatedTotal(settings MetricSettings) metricSnowflakeRowsUpdatedTotal {
-	m := metricSnowflakeRowsUpdatedTotal{settings: settings}
+func newMetricSnowflakeRowsUpdatedAvg(settings MetricSettings) metricSnowflakeRowsUpdatedAvg {
+	m := metricSnowflakeRowsUpdatedAvg{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2081,7 +1834,7 @@ type metricSnowflakeSessionIDCount struct {
 // init fills snowflake.session_id.count metric with initial data.
 func (m *metricSnowflakeSessionIDCount) init() {
 	m.data.SetName("snowflake.session_id.count")
-	m.data.SetDescription("Distinct session id's associated with snowflake username.")
+	m.data.SetDescription("Distinct session id's associated with snowflake username over the last 24 hour window.")
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -2279,7 +2032,7 @@ type metricSnowflakeTotalElapsedTimeAvg struct {
 // init fills snowflake.total_elapsed_time.avg metric with initial data.
 func (m *metricSnowflakeTotalElapsedTimeAvg) init() {
 	m.data.SetName("snowflake.total_elapsed_time.avg")
-	m.data.SetDescription("Average elapsed time.")
+	m.data.SetDescription("Average elapsed time over the last 24 hour window.")
 	m.data.SetUnit("s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -2327,63 +2080,6 @@ func newMetricSnowflakeTotalElapsedTimeAvg(settings MetricSettings) metricSnowfl
 	return m
 }
 
-type metricSnowflakeTotalElapsedTimeTotal struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills snowflake.total_elapsed_time.total metric with initial data.
-func (m *metricSnowflakeTotalElapsedTimeTotal) init() {
-	m.data.SetName("snowflake.total_elapsed_time.total")
-	m.data.SetDescription("Total elapsed time.")
-	m.data.SetUnit("s")
-	m.data.SetEmptyGauge()
-	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricSnowflakeTotalElapsedTimeTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-	dp.Attributes().PutStr("schema_name", schemaNameAttributeValue)
-	dp.Attributes().PutStr("execution_status", executionStatusAttributeValue)
-	dp.Attributes().PutStr("error_message", errorMessageAttributeValue)
-	dp.Attributes().PutStr("query_type", queryTypeAttributeValue)
-	dp.Attributes().PutStr("warehouse_name", warehouseNameAttributeValue)
-	dp.Attributes().PutStr("database_name", databaseNameAttributeValue)
-	dp.Attributes().PutStr("warehouse_size", warehouseSizeAttributeValue)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricSnowflakeTotalElapsedTimeTotal) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricSnowflakeTotalElapsedTimeTotal) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricSnowflakeTotalElapsedTimeTotal(settings MetricSettings) metricSnowflakeTotalElapsedTimeTotal {
-	m := metricSnowflakeTotalElapsedTimeTotal{settings: settings}
-	if settings.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
@@ -2403,35 +2099,30 @@ type MetricsBuilder struct {
 	metricSnowflakeLoginsTotal                           metricSnowflakeLoginsTotal
 	metricSnowflakePipeCreditsUsedTotal                  metricSnowflakePipeCreditsUsedTotal
 	metricSnowflakeQueryBlocked                          metricSnowflakeQueryBlocked
-	metricSnowflakeQueryBytesDeletedTotal                metricSnowflakeQueryBytesDeletedTotal
-	metricSnowflakeQueryBytesScannedTotal                metricSnowflakeQueryBytesScannedTotal
-	metricSnowflakeQueryBytesSpilledLocalTotal           metricSnowflakeQueryBytesSpilledLocalTotal
-	metricSnowflakeQueryBytesSpilledRemoteTotal          metricSnowflakeQueryBytesSpilledRemoteTotal
-	metricSnowflakeQueryBytesWrittenTotal                metricSnowflakeQueryBytesWrittenTotal
-	metricSnowflakeQueryCompilationTimeTotal             metricSnowflakeQueryCompilationTimeTotal
+	metricSnowflakeQueryBytesDeletedAvg                  metricSnowflakeQueryBytesDeletedAvg
+	metricSnowflakeQueryBytesSpilledLocalAvg             metricSnowflakeQueryBytesSpilledLocalAvg
+	metricSnowflakeQueryBytesSpilledRemoteAvg            metricSnowflakeQueryBytesSpilledRemoteAvg
+	metricSnowflakeQueryBytesWrittenAvg                  metricSnowflakeQueryBytesWrittenAvg
+	metricSnowflakeQueryCompilationTimeAvg               metricSnowflakeQueryCompilationTimeAvg
 	metricSnowflakeQueryDataScannedCacheAvg              metricSnowflakeQueryDataScannedCacheAvg
 	metricSnowflakeQueryExecuted                         metricSnowflakeQueryExecuted
-	metricSnowflakeQueryExecutionTimeTotal               metricSnowflakeQueryExecutionTimeTotal
-	metricSnowflakeQueryPartitionsScannedTotal           metricSnowflakeQueryPartitionsScannedTotal
+	metricSnowflakeQueryExecutionTimeAvg                 metricSnowflakeQueryExecutionTimeAvg
+	metricSnowflakeQueryPartitionsScannedAvg             metricSnowflakeQueryPartitionsScannedAvg
 	metricSnowflakeQueryQueuedOverload                   metricSnowflakeQueryQueuedOverload
 	metricSnowflakeQueryQueuedProvision                  metricSnowflakeQueryQueuedProvision
 	metricSnowflakeQueuedOverloadTimeAvg                 metricSnowflakeQueuedOverloadTimeAvg
-	metricSnowflakeQueuedOverloadTimeTotal               metricSnowflakeQueuedOverloadTimeTotal
 	metricSnowflakeQueuedProvisioningTimeAvg             metricSnowflakeQueuedProvisioningTimeAvg
-	metricSnowflakeQueuedProvisioningTimeTotal           metricSnowflakeQueuedProvisioningTimeTotal
 	metricSnowflakeQueuedRepairTimeAvg                   metricSnowflakeQueuedRepairTimeAvg
-	metricSnowflakeQueuedRepairTimeTotal                 metricSnowflakeQueuedRepairTimeTotal
-	metricSnowflakeRowsDeletedTotal                      metricSnowflakeRowsDeletedTotal
-	metricSnowflakeRowsInsertedTotal                     metricSnowflakeRowsInsertedTotal
-	metricSnowflakeRowsProducedTotal                     metricSnowflakeRowsProducedTotal
-	metricSnowflakeRowsUnloadedTotal                     metricSnowflakeRowsUnloadedTotal
-	metricSnowflakeRowsUpdatedTotal                      metricSnowflakeRowsUpdatedTotal
+	metricSnowflakeRowsDeletedAvg                        metricSnowflakeRowsDeletedAvg
+	metricSnowflakeRowsInsertedAvg                       metricSnowflakeRowsInsertedAvg
+	metricSnowflakeRowsProducedAvg                       metricSnowflakeRowsProducedAvg
+	metricSnowflakeRowsUnloadedAvg                       metricSnowflakeRowsUnloadedAvg
+	metricSnowflakeRowsUpdatedAvg                        metricSnowflakeRowsUpdatedAvg
 	metricSnowflakeSessionIDCount                        metricSnowflakeSessionIDCount
 	metricSnowflakeStorageFailsafeBytesTotal             metricSnowflakeStorageFailsafeBytesTotal
 	metricSnowflakeStorageStageBytesTotal                metricSnowflakeStorageStageBytesTotal
 	metricSnowflakeStorageStorageBytesTotal              metricSnowflakeStorageStorageBytesTotal
 	metricSnowflakeTotalElapsedTimeAvg                   metricSnowflakeTotalElapsedTimeAvg
-	metricSnowflakeTotalElapsedTimeTotal                 metricSnowflakeTotalElapsedTimeTotal
 }
 
 // metricBuilderOption applies changes to default metrics builder.
@@ -2444,51 +2135,46 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, options ...metricBuilderOption) *MetricsBuilder {
+func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                                            pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                                        pmetric.NewMetrics(),
-		buildInfo:                                            buildInfo,
-		metricSnowflakeBillingCloudServiceTotal:              newMetricSnowflakeBillingCloudServiceTotal(settings.SnowflakeBillingCloudServiceTotal),
-		metricSnowflakeBillingTotalCreditTotal:               newMetricSnowflakeBillingTotalCreditTotal(settings.SnowflakeBillingTotalCreditTotal),
-		metricSnowflakeBillingVirtualWarehouseTotal:          newMetricSnowflakeBillingVirtualWarehouseTotal(settings.SnowflakeBillingVirtualWarehouseTotal),
-		metricSnowflakeBillingWarehouseCloudServiceTotal:     newMetricSnowflakeBillingWarehouseCloudServiceTotal(settings.SnowflakeBillingWarehouseCloudServiceTotal),
-		metricSnowflakeBillingWarehouseTotalCreditTotal:      newMetricSnowflakeBillingWarehouseTotalCreditTotal(settings.SnowflakeBillingWarehouseTotalCreditTotal),
-		metricSnowflakeBillingWarehouseVirtualWarehouseTotal: newMetricSnowflakeBillingWarehouseVirtualWarehouseTotal(settings.SnowflakeBillingWarehouseVirtualWarehouseTotal),
-		metricSnowflakeDatabaseBytesScannedAvg:               newMetricSnowflakeDatabaseBytesScannedAvg(settings.SnowflakeDatabaseBytesScannedAvg),
-		metricSnowflakeDatabaseQueryCount:                    newMetricSnowflakeDatabaseQueryCount(settings.SnowflakeDatabaseQueryCount),
-		metricSnowflakeLoginsTotal:                           newMetricSnowflakeLoginsTotal(settings.SnowflakeLoginsTotal),
-		metricSnowflakePipeCreditsUsedTotal:                  newMetricSnowflakePipeCreditsUsedTotal(settings.SnowflakePipeCreditsUsedTotal),
-		metricSnowflakeQueryBlocked:                          newMetricSnowflakeQueryBlocked(settings.SnowflakeQueryBlocked),
-		metricSnowflakeQueryBytesDeletedTotal:                newMetricSnowflakeQueryBytesDeletedTotal(settings.SnowflakeQueryBytesDeletedTotal),
-		metricSnowflakeQueryBytesScannedTotal:                newMetricSnowflakeQueryBytesScannedTotal(settings.SnowflakeQueryBytesScannedTotal),
-		metricSnowflakeQueryBytesSpilledLocalTotal:           newMetricSnowflakeQueryBytesSpilledLocalTotal(settings.SnowflakeQueryBytesSpilledLocalTotal),
-		metricSnowflakeQueryBytesSpilledRemoteTotal:          newMetricSnowflakeQueryBytesSpilledRemoteTotal(settings.SnowflakeQueryBytesSpilledRemoteTotal),
-		metricSnowflakeQueryBytesWrittenTotal:                newMetricSnowflakeQueryBytesWrittenTotal(settings.SnowflakeQueryBytesWrittenTotal),
-		metricSnowflakeQueryCompilationTimeTotal:             newMetricSnowflakeQueryCompilationTimeTotal(settings.SnowflakeQueryCompilationTimeTotal),
-		metricSnowflakeQueryDataScannedCacheAvg:              newMetricSnowflakeQueryDataScannedCacheAvg(settings.SnowflakeQueryDataScannedCacheAvg),
-		metricSnowflakeQueryExecuted:                         newMetricSnowflakeQueryExecuted(settings.SnowflakeQueryExecuted),
-		metricSnowflakeQueryExecutionTimeTotal:               newMetricSnowflakeQueryExecutionTimeTotal(settings.SnowflakeQueryExecutionTimeTotal),
-		metricSnowflakeQueryPartitionsScannedTotal:           newMetricSnowflakeQueryPartitionsScannedTotal(settings.SnowflakeQueryPartitionsScannedTotal),
-		metricSnowflakeQueryQueuedOverload:                   newMetricSnowflakeQueryQueuedOverload(settings.SnowflakeQueryQueuedOverload),
-		metricSnowflakeQueryQueuedProvision:                  newMetricSnowflakeQueryQueuedProvision(settings.SnowflakeQueryQueuedProvision),
-		metricSnowflakeQueuedOverloadTimeAvg:                 newMetricSnowflakeQueuedOverloadTimeAvg(settings.SnowflakeQueuedOverloadTimeAvg),
-		metricSnowflakeQueuedOverloadTimeTotal:               newMetricSnowflakeQueuedOverloadTimeTotal(settings.SnowflakeQueuedOverloadTimeTotal),
-		metricSnowflakeQueuedProvisioningTimeAvg:             newMetricSnowflakeQueuedProvisioningTimeAvg(settings.SnowflakeQueuedProvisioningTimeAvg),
-		metricSnowflakeQueuedProvisioningTimeTotal:           newMetricSnowflakeQueuedProvisioningTimeTotal(settings.SnowflakeQueuedProvisioningTimeTotal),
-		metricSnowflakeQueuedRepairTimeAvg:                   newMetricSnowflakeQueuedRepairTimeAvg(settings.SnowflakeQueuedRepairTimeAvg),
-		metricSnowflakeQueuedRepairTimeTotal:                 newMetricSnowflakeQueuedRepairTimeTotal(settings.SnowflakeQueuedRepairTimeTotal),
-		metricSnowflakeRowsDeletedTotal:                      newMetricSnowflakeRowsDeletedTotal(settings.SnowflakeRowsDeletedTotal),
-		metricSnowflakeRowsInsertedTotal:                     newMetricSnowflakeRowsInsertedTotal(settings.SnowflakeRowsInsertedTotal),
-		metricSnowflakeRowsProducedTotal:                     newMetricSnowflakeRowsProducedTotal(settings.SnowflakeRowsProducedTotal),
-		metricSnowflakeRowsUnloadedTotal:                     newMetricSnowflakeRowsUnloadedTotal(settings.SnowflakeRowsUnloadedTotal),
-		metricSnowflakeRowsUpdatedTotal:                      newMetricSnowflakeRowsUpdatedTotal(settings.SnowflakeRowsUpdatedTotal),
-		metricSnowflakeSessionIDCount:                        newMetricSnowflakeSessionIDCount(settings.SnowflakeSessionIDCount),
-		metricSnowflakeStorageFailsafeBytesTotal:             newMetricSnowflakeStorageFailsafeBytesTotal(settings.SnowflakeStorageFailsafeBytesTotal),
-		metricSnowflakeStorageStageBytesTotal:                newMetricSnowflakeStorageStageBytesTotal(settings.SnowflakeStorageStageBytesTotal),
-		metricSnowflakeStorageStorageBytesTotal:              newMetricSnowflakeStorageStorageBytesTotal(settings.SnowflakeStorageStorageBytesTotal),
-		metricSnowflakeTotalElapsedTimeAvg:                   newMetricSnowflakeTotalElapsedTimeAvg(settings.SnowflakeTotalElapsedTimeAvg),
-		metricSnowflakeTotalElapsedTimeTotal:                 newMetricSnowflakeTotalElapsedTimeTotal(settings.SnowflakeTotalElapsedTimeTotal),
+		buildInfo:                                            settings.BuildInfo,
+		metricSnowflakeBillingCloudServiceTotal:              newMetricSnowflakeBillingCloudServiceTotal(ms.SnowflakeBillingCloudServiceTotal),
+		metricSnowflakeBillingTotalCreditTotal:               newMetricSnowflakeBillingTotalCreditTotal(ms.SnowflakeBillingTotalCreditTotal),
+		metricSnowflakeBillingVirtualWarehouseTotal:          newMetricSnowflakeBillingVirtualWarehouseTotal(ms.SnowflakeBillingVirtualWarehouseTotal),
+		metricSnowflakeBillingWarehouseCloudServiceTotal:     newMetricSnowflakeBillingWarehouseCloudServiceTotal(ms.SnowflakeBillingWarehouseCloudServiceTotal),
+		metricSnowflakeBillingWarehouseTotalCreditTotal:      newMetricSnowflakeBillingWarehouseTotalCreditTotal(ms.SnowflakeBillingWarehouseTotalCreditTotal),
+		metricSnowflakeBillingWarehouseVirtualWarehouseTotal: newMetricSnowflakeBillingWarehouseVirtualWarehouseTotal(ms.SnowflakeBillingWarehouseVirtualWarehouseTotal),
+		metricSnowflakeDatabaseBytesScannedAvg:               newMetricSnowflakeDatabaseBytesScannedAvg(ms.SnowflakeDatabaseBytesScannedAvg),
+		metricSnowflakeDatabaseQueryCount:                    newMetricSnowflakeDatabaseQueryCount(ms.SnowflakeDatabaseQueryCount),
+		metricSnowflakeLoginsTotal:                           newMetricSnowflakeLoginsTotal(ms.SnowflakeLoginsTotal),
+		metricSnowflakePipeCreditsUsedTotal:                  newMetricSnowflakePipeCreditsUsedTotal(ms.SnowflakePipeCreditsUsedTotal),
+		metricSnowflakeQueryBlocked:                          newMetricSnowflakeQueryBlocked(ms.SnowflakeQueryBlocked),
+		metricSnowflakeQueryBytesDeletedAvg:                  newMetricSnowflakeQueryBytesDeletedAvg(ms.SnowflakeQueryBytesDeletedAvg),
+		metricSnowflakeQueryBytesSpilledLocalAvg:             newMetricSnowflakeQueryBytesSpilledLocalAvg(ms.SnowflakeQueryBytesSpilledLocalAvg),
+		metricSnowflakeQueryBytesSpilledRemoteAvg:            newMetricSnowflakeQueryBytesSpilledRemoteAvg(ms.SnowflakeQueryBytesSpilledRemoteAvg),
+		metricSnowflakeQueryBytesWrittenAvg:                  newMetricSnowflakeQueryBytesWrittenAvg(ms.SnowflakeQueryBytesWrittenAvg),
+		metricSnowflakeQueryCompilationTimeAvg:               newMetricSnowflakeQueryCompilationTimeAvg(ms.SnowflakeQueryCompilationTimeAvg),
+		metricSnowflakeQueryDataScannedCacheAvg:              newMetricSnowflakeQueryDataScannedCacheAvg(ms.SnowflakeQueryDataScannedCacheAvg),
+		metricSnowflakeQueryExecuted:                         newMetricSnowflakeQueryExecuted(ms.SnowflakeQueryExecuted),
+		metricSnowflakeQueryExecutionTimeAvg:                 newMetricSnowflakeQueryExecutionTimeAvg(ms.SnowflakeQueryExecutionTimeAvg),
+		metricSnowflakeQueryPartitionsScannedAvg:             newMetricSnowflakeQueryPartitionsScannedAvg(ms.SnowflakeQueryPartitionsScannedAvg),
+		metricSnowflakeQueryQueuedOverload:                   newMetricSnowflakeQueryQueuedOverload(ms.SnowflakeQueryQueuedOverload),
+		metricSnowflakeQueryQueuedProvision:                  newMetricSnowflakeQueryQueuedProvision(ms.SnowflakeQueryQueuedProvision),
+		metricSnowflakeQueuedOverloadTimeAvg:                 newMetricSnowflakeQueuedOverloadTimeAvg(ms.SnowflakeQueuedOverloadTimeAvg),
+		metricSnowflakeQueuedProvisioningTimeAvg:             newMetricSnowflakeQueuedProvisioningTimeAvg(ms.SnowflakeQueuedProvisioningTimeAvg),
+		metricSnowflakeQueuedRepairTimeAvg:                   newMetricSnowflakeQueuedRepairTimeAvg(ms.SnowflakeQueuedRepairTimeAvg),
+		metricSnowflakeRowsDeletedAvg:                        newMetricSnowflakeRowsDeletedAvg(ms.SnowflakeRowsDeletedAvg),
+		metricSnowflakeRowsInsertedAvg:                       newMetricSnowflakeRowsInsertedAvg(ms.SnowflakeRowsInsertedAvg),
+		metricSnowflakeRowsProducedAvg:                       newMetricSnowflakeRowsProducedAvg(ms.SnowflakeRowsProducedAvg),
+		metricSnowflakeRowsUnloadedAvg:                       newMetricSnowflakeRowsUnloadedAvg(ms.SnowflakeRowsUnloadedAvg),
+		metricSnowflakeRowsUpdatedAvg:                        newMetricSnowflakeRowsUpdatedAvg(ms.SnowflakeRowsUpdatedAvg),
+		metricSnowflakeSessionIDCount:                        newMetricSnowflakeSessionIDCount(ms.SnowflakeSessionIDCount),
+		metricSnowflakeStorageFailsafeBytesTotal:             newMetricSnowflakeStorageFailsafeBytesTotal(ms.SnowflakeStorageFailsafeBytesTotal),
+		metricSnowflakeStorageStageBytesTotal:                newMetricSnowflakeStorageStageBytesTotal(ms.SnowflakeStorageStageBytesTotal),
+		metricSnowflakeStorageStorageBytesTotal:              newMetricSnowflakeStorageStorageBytesTotal(ms.SnowflakeStorageStorageBytesTotal),
+		metricSnowflakeTotalElapsedTimeAvg:                   newMetricSnowflakeTotalElapsedTimeAvg(ms.SnowflakeTotalElapsedTimeAvg),
 	}
 	for _, op := range options {
 		op(mb)
@@ -2513,20 +2199,6 @@ type ResourceMetricsOption func(pmetric.ResourceMetrics)
 func WithSnowflakeAccountName(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
 		rm.Resource().Attributes().PutStr("snowflake.account.name", val)
-	}
-}
-
-// WithSnowflakeUsername sets provided value as "snowflake.username" attribute for current resource.
-func WithSnowflakeUsername(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("snowflake.username", val)
-	}
-}
-
-// WithSnowflakeWarehouseName sets provided value as "snowflake.warehouse.name" attribute for current resource.
-func WithSnowflakeWarehouseName(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("snowflake.warehouse.name", val)
 	}
 }
 
@@ -2573,35 +2245,30 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricSnowflakeLoginsTotal.emit(ils.Metrics())
 	mb.metricSnowflakePipeCreditsUsedTotal.emit(ils.Metrics())
 	mb.metricSnowflakeQueryBlocked.emit(ils.Metrics())
-	mb.metricSnowflakeQueryBytesDeletedTotal.emit(ils.Metrics())
-	mb.metricSnowflakeQueryBytesScannedTotal.emit(ils.Metrics())
-	mb.metricSnowflakeQueryBytesSpilledLocalTotal.emit(ils.Metrics())
-	mb.metricSnowflakeQueryBytesSpilledRemoteTotal.emit(ils.Metrics())
-	mb.metricSnowflakeQueryBytesWrittenTotal.emit(ils.Metrics())
-	mb.metricSnowflakeQueryCompilationTimeTotal.emit(ils.Metrics())
+	mb.metricSnowflakeQueryBytesDeletedAvg.emit(ils.Metrics())
+	mb.metricSnowflakeQueryBytesSpilledLocalAvg.emit(ils.Metrics())
+	mb.metricSnowflakeQueryBytesSpilledRemoteAvg.emit(ils.Metrics())
+	mb.metricSnowflakeQueryBytesWrittenAvg.emit(ils.Metrics())
+	mb.metricSnowflakeQueryCompilationTimeAvg.emit(ils.Metrics())
 	mb.metricSnowflakeQueryDataScannedCacheAvg.emit(ils.Metrics())
 	mb.metricSnowflakeQueryExecuted.emit(ils.Metrics())
-	mb.metricSnowflakeQueryExecutionTimeTotal.emit(ils.Metrics())
-	mb.metricSnowflakeQueryPartitionsScannedTotal.emit(ils.Metrics())
+	mb.metricSnowflakeQueryExecutionTimeAvg.emit(ils.Metrics())
+	mb.metricSnowflakeQueryPartitionsScannedAvg.emit(ils.Metrics())
 	mb.metricSnowflakeQueryQueuedOverload.emit(ils.Metrics())
 	mb.metricSnowflakeQueryQueuedProvision.emit(ils.Metrics())
 	mb.metricSnowflakeQueuedOverloadTimeAvg.emit(ils.Metrics())
-	mb.metricSnowflakeQueuedOverloadTimeTotal.emit(ils.Metrics())
 	mb.metricSnowflakeQueuedProvisioningTimeAvg.emit(ils.Metrics())
-	mb.metricSnowflakeQueuedProvisioningTimeTotal.emit(ils.Metrics())
 	mb.metricSnowflakeQueuedRepairTimeAvg.emit(ils.Metrics())
-	mb.metricSnowflakeQueuedRepairTimeTotal.emit(ils.Metrics())
-	mb.metricSnowflakeRowsDeletedTotal.emit(ils.Metrics())
-	mb.metricSnowflakeRowsInsertedTotal.emit(ils.Metrics())
-	mb.metricSnowflakeRowsProducedTotal.emit(ils.Metrics())
-	mb.metricSnowflakeRowsUnloadedTotal.emit(ils.Metrics())
-	mb.metricSnowflakeRowsUpdatedTotal.emit(ils.Metrics())
+	mb.metricSnowflakeRowsDeletedAvg.emit(ils.Metrics())
+	mb.metricSnowflakeRowsInsertedAvg.emit(ils.Metrics())
+	mb.metricSnowflakeRowsProducedAvg.emit(ils.Metrics())
+	mb.metricSnowflakeRowsUnloadedAvg.emit(ils.Metrics())
+	mb.metricSnowflakeRowsUpdatedAvg.emit(ils.Metrics())
 	mb.metricSnowflakeSessionIDCount.emit(ils.Metrics())
 	mb.metricSnowflakeStorageFailsafeBytesTotal.emit(ils.Metrics())
 	mb.metricSnowflakeStorageStageBytesTotal.emit(ils.Metrics())
 	mb.metricSnowflakeStorageStorageBytesTotal.emit(ils.Metrics())
 	mb.metricSnowflakeTotalElapsedTimeAvg.emit(ils.Metrics())
-	mb.metricSnowflakeTotalElapsedTimeTotal.emit(ils.Metrics())
 	for _, op := range rmo {
 		op(rm)
 	}
@@ -2676,34 +2343,29 @@ func (mb *MetricsBuilder) RecordSnowflakeQueryBlockedDataPoint(ts pcommon.Timest
 	mb.metricSnowflakeQueryBlocked.recordDataPoint(mb.startTime, ts, val, warehouseNameAttributeValue)
 }
 
-// RecordSnowflakeQueryBytesDeletedTotalDataPoint adds a data point to snowflake.query.bytes_deleted.total metric.
-func (mb *MetricsBuilder) RecordSnowflakeQueryBytesDeletedTotalDataPoint(ts pcommon.Timestamp, val int64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
-	mb.metricSnowflakeQueryBytesDeletedTotal.recordDataPoint(mb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
+// RecordSnowflakeQueryBytesDeletedAvgDataPoint adds a data point to snowflake.query.bytes_deleted.avg metric.
+func (mb *MetricsBuilder) RecordSnowflakeQueryBytesDeletedAvgDataPoint(ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
+	mb.metricSnowflakeQueryBytesDeletedAvg.recordDataPoint(mb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
 }
 
-// RecordSnowflakeQueryBytesScannedTotalDataPoint adds a data point to snowflake.query.bytes_scanned.total metric.
-func (mb *MetricsBuilder) RecordSnowflakeQueryBytesScannedTotalDataPoint(ts pcommon.Timestamp, val int64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
-	mb.metricSnowflakeQueryBytesScannedTotal.recordDataPoint(mb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
+// RecordSnowflakeQueryBytesSpilledLocalAvgDataPoint adds a data point to snowflake.query.bytes_spilled.local.avg metric.
+func (mb *MetricsBuilder) RecordSnowflakeQueryBytesSpilledLocalAvgDataPoint(ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
+	mb.metricSnowflakeQueryBytesSpilledLocalAvg.recordDataPoint(mb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
 }
 
-// RecordSnowflakeQueryBytesSpilledLocalTotalDataPoint adds a data point to snowflake.query.bytes_spilled.local.total metric.
-func (mb *MetricsBuilder) RecordSnowflakeQueryBytesSpilledLocalTotalDataPoint(ts pcommon.Timestamp, val int64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
-	mb.metricSnowflakeQueryBytesSpilledLocalTotal.recordDataPoint(mb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
+// RecordSnowflakeQueryBytesSpilledRemoteAvgDataPoint adds a data point to snowflake.query.bytes_spilled.remote.avg metric.
+func (mb *MetricsBuilder) RecordSnowflakeQueryBytesSpilledRemoteAvgDataPoint(ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
+	mb.metricSnowflakeQueryBytesSpilledRemoteAvg.recordDataPoint(mb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
 }
 
-// RecordSnowflakeQueryBytesSpilledRemoteTotalDataPoint adds a data point to snowflake.query.bytes_spilled.remote.total metric.
-func (mb *MetricsBuilder) RecordSnowflakeQueryBytesSpilledRemoteTotalDataPoint(ts pcommon.Timestamp, val int64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
-	mb.metricSnowflakeQueryBytesSpilledRemoteTotal.recordDataPoint(mb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
+// RecordSnowflakeQueryBytesWrittenAvgDataPoint adds a data point to snowflake.query.bytes_written.avg metric.
+func (mb *MetricsBuilder) RecordSnowflakeQueryBytesWrittenAvgDataPoint(ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
+	mb.metricSnowflakeQueryBytesWrittenAvg.recordDataPoint(mb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
 }
 
-// RecordSnowflakeQueryBytesWrittenTotalDataPoint adds a data point to snowflake.query.bytes_written.total metric.
-func (mb *MetricsBuilder) RecordSnowflakeQueryBytesWrittenTotalDataPoint(ts pcommon.Timestamp, val int64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
-	mb.metricSnowflakeQueryBytesWrittenTotal.recordDataPoint(mb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
-}
-
-// RecordSnowflakeQueryCompilationTimeTotalDataPoint adds a data point to snowflake.query.compilation_time.total metric.
-func (mb *MetricsBuilder) RecordSnowflakeQueryCompilationTimeTotalDataPoint(ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
-	mb.metricSnowflakeQueryCompilationTimeTotal.recordDataPoint(mb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
+// RecordSnowflakeQueryCompilationTimeAvgDataPoint adds a data point to snowflake.query.compilation_time.avg metric.
+func (mb *MetricsBuilder) RecordSnowflakeQueryCompilationTimeAvgDataPoint(ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
+	mb.metricSnowflakeQueryCompilationTimeAvg.recordDataPoint(mb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
 }
 
 // RecordSnowflakeQueryDataScannedCacheAvgDataPoint adds a data point to snowflake.query.data_scanned_cache.avg metric.
@@ -2716,14 +2378,14 @@ func (mb *MetricsBuilder) RecordSnowflakeQueryExecutedDataPoint(ts pcommon.Times
 	mb.metricSnowflakeQueryExecuted.recordDataPoint(mb.startTime, ts, val, warehouseNameAttributeValue)
 }
 
-// RecordSnowflakeQueryExecutionTimeTotalDataPoint adds a data point to snowflake.query.execution_time.total metric.
-func (mb *MetricsBuilder) RecordSnowflakeQueryExecutionTimeTotalDataPoint(ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
-	mb.metricSnowflakeQueryExecutionTimeTotal.recordDataPoint(mb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
+// RecordSnowflakeQueryExecutionTimeAvgDataPoint adds a data point to snowflake.query.execution_time.avg metric.
+func (mb *MetricsBuilder) RecordSnowflakeQueryExecutionTimeAvgDataPoint(ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
+	mb.metricSnowflakeQueryExecutionTimeAvg.recordDataPoint(mb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
 }
 
-// RecordSnowflakeQueryPartitionsScannedTotalDataPoint adds a data point to snowflake.query.partitions_scanned.total metric.
-func (mb *MetricsBuilder) RecordSnowflakeQueryPartitionsScannedTotalDataPoint(ts pcommon.Timestamp, val int64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
-	mb.metricSnowflakeQueryPartitionsScannedTotal.recordDataPoint(mb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
+// RecordSnowflakeQueryPartitionsScannedAvgDataPoint adds a data point to snowflake.query.partitions_scanned.avg metric.
+func (mb *MetricsBuilder) RecordSnowflakeQueryPartitionsScannedAvgDataPoint(ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
+	mb.metricSnowflakeQueryPartitionsScannedAvg.recordDataPoint(mb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
 }
 
 // RecordSnowflakeQueryQueuedOverloadDataPoint adds a data point to snowflake.query.queued_overload metric.
@@ -2741,19 +2403,9 @@ func (mb *MetricsBuilder) RecordSnowflakeQueuedOverloadTimeAvgDataPoint(ts pcomm
 	mb.metricSnowflakeQueuedOverloadTimeAvg.recordDataPoint(mb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
 }
 
-// RecordSnowflakeQueuedOverloadTimeTotalDataPoint adds a data point to snowflake.queued_overload_time.total metric.
-func (mb *MetricsBuilder) RecordSnowflakeQueuedOverloadTimeTotalDataPoint(ts pcommon.Timestamp, val int64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
-	mb.metricSnowflakeQueuedOverloadTimeTotal.recordDataPoint(mb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
-}
-
 // RecordSnowflakeQueuedProvisioningTimeAvgDataPoint adds a data point to snowflake.queued_provisioning_time.avg metric.
 func (mb *MetricsBuilder) RecordSnowflakeQueuedProvisioningTimeAvgDataPoint(ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
 	mb.metricSnowflakeQueuedProvisioningTimeAvg.recordDataPoint(mb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
-}
-
-// RecordSnowflakeQueuedProvisioningTimeTotalDataPoint adds a data point to snowflake.queued_provisioning_time.total metric.
-func (mb *MetricsBuilder) RecordSnowflakeQueuedProvisioningTimeTotalDataPoint(ts pcommon.Timestamp, val int64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
-	mb.metricSnowflakeQueuedProvisioningTimeTotal.recordDataPoint(mb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
 }
 
 // RecordSnowflakeQueuedRepairTimeAvgDataPoint adds a data point to snowflake.queued_repair_time.avg metric.
@@ -2761,34 +2413,29 @@ func (mb *MetricsBuilder) RecordSnowflakeQueuedRepairTimeAvgDataPoint(ts pcommon
 	mb.metricSnowflakeQueuedRepairTimeAvg.recordDataPoint(mb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
 }
 
-// RecordSnowflakeQueuedRepairTimeTotalDataPoint adds a data point to snowflake.queued_repair_time.total metric.
-func (mb *MetricsBuilder) RecordSnowflakeQueuedRepairTimeTotalDataPoint(ts pcommon.Timestamp, val int64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
-	mb.metricSnowflakeQueuedRepairTimeTotal.recordDataPoint(mb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
+// RecordSnowflakeRowsDeletedAvgDataPoint adds a data point to snowflake.rows_deleted.avg metric.
+func (mb *MetricsBuilder) RecordSnowflakeRowsDeletedAvgDataPoint(ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
+	mb.metricSnowflakeRowsDeletedAvg.recordDataPoint(mb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
 }
 
-// RecordSnowflakeRowsDeletedTotalDataPoint adds a data point to snowflake.rows_deleted.total metric.
-func (mb *MetricsBuilder) RecordSnowflakeRowsDeletedTotalDataPoint(ts pcommon.Timestamp, val int64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
-	mb.metricSnowflakeRowsDeletedTotal.recordDataPoint(mb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
+// RecordSnowflakeRowsInsertedAvgDataPoint adds a data point to snowflake.rows_inserted.avg metric.
+func (mb *MetricsBuilder) RecordSnowflakeRowsInsertedAvgDataPoint(ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
+	mb.metricSnowflakeRowsInsertedAvg.recordDataPoint(mb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
 }
 
-// RecordSnowflakeRowsInsertedTotalDataPoint adds a data point to snowflake.rows_inserted.total metric.
-func (mb *MetricsBuilder) RecordSnowflakeRowsInsertedTotalDataPoint(ts pcommon.Timestamp, val int64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
-	mb.metricSnowflakeRowsInsertedTotal.recordDataPoint(mb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
+// RecordSnowflakeRowsProducedAvgDataPoint adds a data point to snowflake.rows_produced.avg metric.
+func (mb *MetricsBuilder) RecordSnowflakeRowsProducedAvgDataPoint(ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
+	mb.metricSnowflakeRowsProducedAvg.recordDataPoint(mb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
 }
 
-// RecordSnowflakeRowsProducedTotalDataPoint adds a data point to snowflake.rows_produced.total metric.
-func (mb *MetricsBuilder) RecordSnowflakeRowsProducedTotalDataPoint(ts pcommon.Timestamp, val int64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
-	mb.metricSnowflakeRowsProducedTotal.recordDataPoint(mb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
+// RecordSnowflakeRowsUnloadedAvgDataPoint adds a data point to snowflake.rows_unloaded.avg metric.
+func (mb *MetricsBuilder) RecordSnowflakeRowsUnloadedAvgDataPoint(ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
+	mb.metricSnowflakeRowsUnloadedAvg.recordDataPoint(mb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
 }
 
-// RecordSnowflakeRowsUnloadedTotalDataPoint adds a data point to snowflake.rows_unloaded.total metric.
-func (mb *MetricsBuilder) RecordSnowflakeRowsUnloadedTotalDataPoint(ts pcommon.Timestamp, val int64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
-	mb.metricSnowflakeRowsUnloadedTotal.recordDataPoint(mb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
-}
-
-// RecordSnowflakeRowsUpdatedTotalDataPoint adds a data point to snowflake.rows_updated.total metric.
-func (mb *MetricsBuilder) RecordSnowflakeRowsUpdatedTotalDataPoint(ts pcommon.Timestamp, val int64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
-	mb.metricSnowflakeRowsUpdatedTotal.recordDataPoint(mb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
+// RecordSnowflakeRowsUpdatedAvgDataPoint adds a data point to snowflake.rows_updated.avg metric.
+func (mb *MetricsBuilder) RecordSnowflakeRowsUpdatedAvgDataPoint(ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
+	mb.metricSnowflakeRowsUpdatedAvg.recordDataPoint(mb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
 }
 
 // RecordSnowflakeSessionIDCountDataPoint adds a data point to snowflake.session_id.count metric.
@@ -2814,11 +2461,6 @@ func (mb *MetricsBuilder) RecordSnowflakeStorageStorageBytesTotalDataPoint(ts pc
 // RecordSnowflakeTotalElapsedTimeAvgDataPoint adds a data point to snowflake.total_elapsed_time.avg metric.
 func (mb *MetricsBuilder) RecordSnowflakeTotalElapsedTimeAvgDataPoint(ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
 	mb.metricSnowflakeTotalElapsedTimeAvg.recordDataPoint(mb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
-}
-
-// RecordSnowflakeTotalElapsedTimeTotalDataPoint adds a data point to snowflake.total_elapsed_time.total metric.
-func (mb *MetricsBuilder) RecordSnowflakeTotalElapsedTimeTotalDataPoint(ts pcommon.Timestamp, val int64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
-	mb.metricSnowflakeTotalElapsedTimeTotal.recordDataPoint(mb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
