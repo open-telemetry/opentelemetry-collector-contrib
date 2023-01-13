@@ -196,25 +196,21 @@ func CompareMetricSlices(expected, actual pmetric.MetricSlice) error {
 // CompareNumberDataPointSlices compares each part of two given NumberDataPointSlices and returns
 // an error if they don't match. The error describes what didn't match.
 func CompareNumberDataPointSlices(expected, actual pmetric.NumberDataPointSlice) error {
-	exp, act := pmetric.NewNumberDataPointSlice(), pmetric.NewNumberDataPointSlice()
-	expected.CopyTo(exp)
-	actual.CopyTo(act)
-
-	if exp.Len() != act.Len() {
-		return fmt.Errorf("number of datapoints does not match expected: %d, actual: %d", exp.Len(), act.Len())
+	if expected.Len() != actual.Len() {
+		return fmt.Errorf("number of datapoints does not match expected: %d, actual: %d", expected.Len(), actual.Len())
 	}
 
-	numPoints := exp.Len()
+	numPoints := expected.Len()
 
 	// Keep track of matching data points so that each point can only be matched once
 	matchingDPS := make(map[pmetric.NumberDataPoint]pmetric.NumberDataPoint, numPoints)
 
 	var errs error
 	for e := 0; e < numPoints; e++ {
-		edp := exp.At(e)
+		edp := expected.At(e)
 		var foundMatch bool
 		for a := 0; a < numPoints; a++ {
-			adp := act.At(a)
+			adp := actual.At(a)
 			if _, ok := matchingDPS[adp]; ok {
 				continue
 			}
@@ -231,8 +227,8 @@ func CompareNumberDataPointSlices(expected, actual pmetric.NumberDataPointSlice)
 	}
 
 	for i := 0; i < numPoints; i++ {
-		if _, ok := matchingDPS[act.At(i)]; !ok {
-			errs = multierr.Append(errs, fmt.Errorf("metric has extra datapoint with attributes: %v", act.At(i).Attributes().AsRaw()))
+		if _, ok := matchingDPS[actual.At(i)]; !ok {
+			errs = multierr.Append(errs, fmt.Errorf("metric has extra datapoint with attributes: %v", actual.At(i).Attributes().AsRaw()))
 		}
 	}
 
