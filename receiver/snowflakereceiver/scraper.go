@@ -52,9 +52,9 @@ func (s *snowflakeMetricsScraper) start(_ context.Context, _ component.Host) (er
 }
 
 func (s *snowflakeMetricsScraper) shutdown(_ context.Context) (err error) {
-    if s.client == nil {
-        return nil 
-    }
+	if s.client == nil {
+		return nil
+	}
 	err = s.client.client.Close()
 	return err
 }
