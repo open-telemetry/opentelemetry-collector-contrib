@@ -13,8 +13,8 @@ require (
 	go.opentelemetry.io/collector/component v0.69.0
 	go.opentelemetry.io/collector/confmap v0.69.0
 	go.opentelemetry.io/collector/consumer v0.69.0
-	go.opentelemetry.io/collector/pdata v1.0.0-rc3.0.20230109164642-7d168dd20efd
-	google.golang.org/grpc v1.51.0
+	go.opentelemetry.io/collector/pdata v1.0.0-rc3
+	google.golang.org/grpc v1.52.0
 )
 
 require (

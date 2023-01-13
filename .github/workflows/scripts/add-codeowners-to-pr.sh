@@ -50,7 +50,11 @@ main () {
     declare -A REVIEWED
 
     for REVIEWER in ${REVIEW_LOGINS}; do
-        REVIEWED["@${REVIEWER}"]=true
+        # GitHub adds "app/" in front of user logins. The API docs don't make
+        # it clear what this means or whether it will always be present. The
+        # '/' character isn't a valid character for usernames, so this won't
+        # replace characters within a username.
+        REVIEWED["@${REVIEWER//app\//}"]=true
     done
 
     for COMPONENT in ${COMPONENTS}; do

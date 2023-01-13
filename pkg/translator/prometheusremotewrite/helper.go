@@ -251,6 +251,8 @@ func isValidAggregationTemporality(metric pmetric.Metric) bool {
 		return metric.Sum().AggregationTemporality() == pmetric.AggregationTemporalityCumulative
 	case pmetric.MetricTypeHistogram:
 		return metric.Histogram().AggregationTemporality() == pmetric.AggregationTemporalityCumulative
+	case pmetric.MetricTypeExponentialHistogram:
+		return metric.ExponentialHistogram().AggregationTemporality() == pmetric.AggregationTemporalityCumulative
 	}
 	return false
 }
@@ -315,7 +317,7 @@ func addSingleHistogramDataPoint(pt pmetric.HistogramDataPoint, resource pcommon
 	// cumulative count for conversion to cumulative histogram
 	var cumulativeCount uint64
 
-	promExemplars := getPromExemplars(pt)
+	promExemplars := getPromExemplars[pmetric.HistogramDataPoint](pt)
 
 	var bucketBounds []bucketBoundsData
 
@@ -352,7 +354,12 @@ func addSingleHistogramDataPoint(pt pmetric.HistogramDataPoint, resource pcommon
 	addExemplars(tsMap, promExemplars, bucketBounds)
 }
 
-func getPromExemplars(pt pmetric.HistogramDataPoint) []prompb.Exemplar {
+type exemplarType interface {
+	pmetric.ExponentialHistogramDataPoint | pmetric.HistogramDataPoint
+	Exemplars() pmetric.ExemplarSlice
+}
+
+func getPromExemplars[T exemplarType](pt T) []prompb.Exemplar {
 	var promExemplars []prompb.Exemplar
 
 	for i := 0; i < pt.Exemplars().Len(); i++ {
@@ -424,6 +431,11 @@ func mostRecentTimestampInMetric(metric pmetric.Metric) pcommon.Timestamp {
 		}
 	case pmetric.MetricTypeHistogram:
 		dataPoints := metric.Histogram().DataPoints()
+		for x := 0; x < dataPoints.Len(); x++ {
+			ts = maxTimestamp(ts, dataPoints.At(x).Timestamp())
+		}
+	case pmetric.MetricTypeExponentialHistogram:
+		dataPoints := metric.ExponentialHistogram().DataPoints()
 		for x := 0; x < dataPoints.Len(); x++ {
 			ts = maxTimestamp(ts, dataPoints.At(x).Timestamp())
 		}

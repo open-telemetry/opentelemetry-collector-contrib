@@ -29,7 +29,7 @@ require (
 	go.opentelemetry.io/collector/confmap v0.69.0
 	go.opentelemetry.io/collector/consumer v0.69.0
 	go.opentelemetry.io/collector/featuregate v0.69.0
-	go.opentelemetry.io/collector/pdata v1.0.0-rc3.0.20230109164642-7d168dd20efd
+	go.opentelemetry.io/collector/pdata v1.0.0-rc3
 	go.opentelemetry.io/collector/processor/batchprocessor v0.69.0
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.69.0
 	go.opentelemetry.io/collector/semconv v0.69.0
@@ -176,7 +176,7 @@ require (
 	gonum.org/v1/gonum v0.12.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20221202195650-67e5cbc046fd // indirect
-	google.golang.org/grpc v1.51.0 // indirect
+	google.golang.org/grpc v1.52.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/api v0.26.0 // indirect

@@ -65,7 +65,7 @@ require (
 	go.opentelemetry.io/collector/consumer v0.69.0 // indirect
 	go.opentelemetry.io/collector/extension/zpagesextension v0.69.0 // indirect
 	go.opentelemetry.io/collector/featuregate v0.69.0 // indirect
-	go.opentelemetry.io/collector/pdata v1.0.0-rc3.0.20230109164642-7d168dd20efd // indirect
+	go.opentelemetry.io/collector/pdata v1.0.0-rc3 // indirect
 	go.opentelemetry.io/collector/semconv v0.69.0 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.12.0 // indirect
 	go.opentelemetry.io/otel v1.11.2 // indirect
@@ -85,7 +85,7 @@ require (
 	google.golang.org/api v0.106.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20221227171554-f9683d7f8bef // indirect
-	google.golang.org/grpc v1.51.0 // indirect
+	google.golang.org/grpc v1.52.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
