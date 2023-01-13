@@ -86,3 +86,30 @@ func TestLoadConfig(t *testing.T) {
 		})
 	}
 }
+
+func TestCreateInvalidHTTPEndpoint(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Endpoint = ""
+
+	err := cfg.Validate()
+	assert.EqualError(t, err, "empty endpoint")
+}
+
+func TestCreateNoPortEndpoint(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Endpoint = "localhost:"
+
+	err := cfg.Validate()
+	assert.EqualError(t, err, `endpoint port is not a number: strconv.ParseInt: parsing "": invalid syntax`)
+}
+
+func TestCreateLargePortEndpoint(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Endpoint = "localhost:65536"
+
+	err := cfg.Validate()
+	assert.EqualError(t, err, "port number must be between 1 and 65535")
+}
