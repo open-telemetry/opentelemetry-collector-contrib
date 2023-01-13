@@ -107,7 +107,7 @@ if [[ -n "${PING_LINES}" ]]; then
   # 3. The PING_LINES variable must be directly put into the printf string
   #    to get the newlines to render correctly, using string formatting
   #    causes the newlines to be interpreted literally.
-  echo "Pinging code owners"
+  printf "Pinging code owners:\n${PING_LINES}"
   printf "Pinging code owners:\n${PING_LINES}\n%s" "${LABELS_COMMENT}"  \
   | gh issue comment "${ISSUE}" -F -
 else
