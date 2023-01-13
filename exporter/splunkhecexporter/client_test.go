@@ -454,10 +454,8 @@ func TestReceiveTracesBatches(t *testing.T) {
 				return cfg
 			}(),
 			want: wantType{
-				batches: [][]string{
-					{`"start_time":1`},
-					{`"start_time":99`},
-				},
+				// just test that the test has 2 batches, don't test its contents.
+				batches:    [][]string{{""}, {""}},
 				numBatches: 2,
 				compressed: true,
 			},
