@@ -17,6 +17,7 @@ package logs // import "github.com/open-telemetry/opentelemetry-collector-contri
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
@@ -64,33 +65,61 @@ func (s *Sender) SubmitLogs(ctx context.Context, payload []datadogV2.HTTPLogItem
 		s.logger.Debug("Submitting logs", zap.Any("payload", payload))
 	}
 
+	var prevDdtags string
+	var logItemBatch []datadogV2.HTTPLogItem
+
+	if len(payload) > 0 && payload[0].HasDdtags() {
+		prevDdtags = *payload[0].Ddtags
+	}
+
 	// Correctly sets apiSubmitLogRequest ddtags field based on tags from translator Transform method
-	for _, logItem := range payload {
+	for i, logItem := range payload {
 		// enable sending gzip
 		// Get a fresh opts for each request to avoid duplicating ddtags
 		opts := *datadogV2.NewSubmitLogOptionalParameters().WithContentEncoding(datadogV2.CONTENTENCODING_GZIP)
 
+		var tags string
 		if logItem.HasDdtags() {
-			tags := datadog.PtrString(logItem.GetDdtags())
+			tags = logItem.GetDdtags()
 			if opts.Ddtags != nil {
-				tags = datadog.PtrString(fmt.Sprint(*opts.Ddtags, ",", logItem.GetDdtags()))
+				tags = fmt.Sprint(*opts.Ddtags, ",", logItem.GetDdtags())
 			}
-			opts.Ddtags = tags
+			opts.Ddtags = datadog.PtrString(tags)
 		}
-		_, r, err := s.api.SubmitLog(ctx, []datadogV2.HTTPLogItem{logItem}, opts)
-		if err != nil {
-			if r != nil {
-				b := make([]byte, 1024) // 1KB message max
-				n, _ := r.Body.Read(b)  // ignore any error
-				s.logger.Error("Failed to send logs", zap.Error(err), zap.String("msg", string(b[:n])), zap.String("status_code", r.Status))
-				return err
-			}
 
-			// If response is nil assume permanent error.
-			// The error will be logged by the exporter helper.
-			return consumererror.NewPermanent(err)
+		if prevDdtags == tags {
+			logItemBatch = append(logItemBatch, logItem)
+		} else {
+			opts.Ddtags = datadog.PtrString(prevDdtags)
+			_, r, err := s.api.SubmitLog(ctx, logItemBatch, opts)
+			if err != nil {
+				return s.handleSubmitLogError(err, r)
+			}
+			logItemBatch = []datadogV2.HTTPLogItem{logItem}
+		}
+		prevDdtags = tags
+
+		if i == len(payload)-1 {
+			opts.Ddtags = datadog.PtrString(tags)
+			_, r, err := s.api.SubmitLog(ctx, logItemBatch, opts)
+			if err != nil {
+				return s.handleSubmitLogError(err, r)
+			}
 		}
 	}
 
 	return nil
+}
+
+func (s *Sender) handleSubmitLogError(err error, r *http.Response) error {
+	if r != nil {
+		b := make([]byte, 1024) // 1KB message max
+		n, _ := r.Body.Read(b)  // ignore any error
+		s.logger.Error("Failed to send logs", zap.Error(err), zap.String("msg", string(b[:n])), zap.String("status_code", r.Status))
+		return err
+	}
+
+	// If response is nil assume permanent error.
+	// The error will be logged by the exporter helper.
+	return consumererror.NewPermanent(err)
 }
