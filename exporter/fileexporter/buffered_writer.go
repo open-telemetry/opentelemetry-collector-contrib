@@ -24,7 +24,7 @@ import (
 // bufferedWriteCloser is intended to use more memory
 // in order to optimize writing to disk to help improve performance.
 type bufferedWriteCloser struct {
-	wraped   io.Closer
+	wrapped   io.Closer
 	buffered *bufio.Writer
 }
 
