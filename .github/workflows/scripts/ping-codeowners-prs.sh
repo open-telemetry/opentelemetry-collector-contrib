@@ -52,14 +52,15 @@ main() {
     # accepts duplicate logins and logins that are already reviewers.
     echo "Requesting review from code owners: ${REVIEWERS}"
     curl \
-        --fail \
         -X POST \
         -H "Accept: application/vnd.github+json" \
         -H "Authorization: Bearer ${GITHUB_TOKEN}" \
         "https://api.github.com/repos/${REPO}/pulls/${PR}/requested_reviewers" \
         -d "{\"reviewers\":[${REVIEWERS}]}" \
-        | jq ".message" \
-        || echo "Request failed to request review from code owners"
+        | jq ".message"
+        || echo "jq was unable to parse GitHub's response"
 }
 
-main || echo "Failed to request review from code owners"
+# We don't want this workflow to ever fail and block a PR,
+# so ensure all errors are caught.
+main || echo "Failed to run $0"

@@ -142,10 +142,12 @@ main () {
             "https://api.github.com/repos/${REPO}/pulls/${PR}/requested_reviewers" \
             -d "{\"reviewers\":[${REVIEWERS}]}" \
             | jq ".message" \
-            || echo "Failed to add reviewers"
+            || echo "jq was unable to parse GitHub's response"
     else
         echo "No code owners found"
     fi
 }
 
+# We don't want this workflow to ever fail and block a PR,
+# so ensure all errors are caught.
 main || echo "Failed to run $0"
