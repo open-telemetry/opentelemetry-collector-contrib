@@ -23,6 +23,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"text/template"
 )
@@ -47,7 +48,11 @@ func run(ymlPath string) error {
 		return fmt.Errorf("failed loading %v: %w", ymlPath, err)
 	}
 
-	tmplDir := "templates"
+	_, filename, _, ok := runtime.Caller(0)
+	if !ok {
+		return errors.New("unable to determine filename")
+	}
+	tmplDir := filepath.Join(filepath.Dir(filename), "templates")
 
 	codeDir := filepath.Join(ymlDir, "internal", "metadata")
 	if err = os.MkdirAll(filepath.Join(codeDir, "testdata"), 0700); err != nil {
@@ -99,7 +104,7 @@ func generateFile(tmplFile string, outputFile string, md metadata) error {
 				},
 				"stringsJoin": strings.Join,
 				"inc":         func(i int) int { return i + 1 },
-			}).ParseFS(templateFS, tmplFile))
+			}).ParseFiles(tmplFile))
 
 	buf := bytes.Buffer{}
 
