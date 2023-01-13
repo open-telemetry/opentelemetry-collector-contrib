@@ -40,6 +40,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otlpjsonfilereceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
@@ -198,6 +199,12 @@ func TestDefaultReceivers(t *testing.T) {
 		{
 			receiver:     "jmx",
 			skipLifecyle: true, // Requires a running instance with JMX
+			getConfigFn: func() component.Config {
+				cfg := jmxreceiver.NewFactory().CreateDefaultConfig().(*jmxreceiver.Config)
+				cfg.Endpoint = "localhost:1234"
+				cfg.TargetSystem = "jvm"
+				return cfg
+			},
 		},
 		{
 			receiver:     "journald",
