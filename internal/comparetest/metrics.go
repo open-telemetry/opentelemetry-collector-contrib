@@ -87,8 +87,12 @@ func CompareMetrics(expected, actual pmetric.Metrics, options ...MetricsCompareO
 }
 
 func CompareResourceMetrics(expected, actual pmetric.ResourceMetrics) error {
-	eilms := expected.ScopeMetrics()
-	ailms := actual.ScopeMetrics()
+	exp, act := pmetric.NewResourceMetrics(), pmetric.NewResourceMetrics()
+	expected.CopyTo(exp)
+	actual.CopyTo(act)
+
+	eilms := exp.ScopeMetrics()
+	ailms := act.ScopeMetrics()
 
 	if eilms.Len() != ailms.Len() {
 		return fmt.Errorf("number of instrumentation libraries does not match expected: %d, actual: %d", eilms.Len(),
@@ -120,15 +124,19 @@ func CompareResourceMetrics(expected, actual pmetric.ResourceMetrics) error {
 // an error if they don't match. The error describes what didn't match. The
 // expected and actual values are clones before options are applied.
 func CompareMetricSlices(expected, actual pmetric.MetricSlice) error {
-	if expected.Len() != actual.Len() {
-		return fmt.Errorf("number of metrics does not match expected: %d, actual: %d", expected.Len(), actual.Len())
+	exp, act := pmetric.NewMetricSlice(), pmetric.NewMetricSlice()
+	expected.CopyTo(exp)
+	actual.CopyTo(act)
+
+	if exp.Len() != act.Len() {
+		return fmt.Errorf("number of metrics does not match expected: %d, actual: %d", exp.Len(), act.Len())
 	}
 
 	// Sort MetricSlices
-	expected.Sort(sortMetricSlice)
-	actual.Sort(sortMetricSlice)
+	exp.Sort(sortMetricSlice)
+	act.Sort(sortMetricSlice)
 
-	expectedByName, actualByName := metricsByName(expected), metricsByName(actual)
+	expectedByName, actualByName := metricsByName(exp), metricsByName(act)
 
 	var errs error
 	for name := range actualByName {
@@ -147,8 +155,8 @@ func CompareMetricSlices(expected, actual pmetric.MetricSlice) error {
 		return errs
 	}
 
-	for i := 0; i < actual.Len(); i++ {
-		actualMetric := actual.At(i)
+	for i := 0; i < act.Len(); i++ {
+		actualMetric := act.At(i)
 		expectedMetric := expectedByName[actualMetric.Name()]
 		if actualMetric.Description() != expectedMetric.Description() {
 			return fmt.Errorf("metric Description does not match expected: %s, actual: %s", expectedMetric.Description(), actualMetric.Description())

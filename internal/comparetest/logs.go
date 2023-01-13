@@ -91,8 +91,12 @@ func CompareLogs(expected, actual plog.Logs, options ...LogsCompareOption) error
 // CompareResourceLogs compares each part of two given ResourceLogs and returns
 // an error if they don't match. The error describes what didn't match.
 func CompareResourceLogs(expected, actual plog.ResourceLogs) error {
-	eilms := expected.ScopeLogs()
-	ailms := actual.ScopeLogs()
+	exp, act := plog.NewResourceLogs(), plog.NewResourceLogs()
+	expected.CopyTo(exp)
+	actual.CopyTo(act)
+
+	eilms := exp.ScopeLogs()
+	ailms := act.ScopeLogs()
 
 	if eilms.Len() != ailms.Len() {
 		return fmt.Errorf("number of instrumentation libraries does not match expected: %d, actual: %d", eilms.Len(),
@@ -123,24 +127,28 @@ func CompareResourceLogs(expected, actual plog.ResourceLogs) error {
 // CompareLogRecordSlices compares each part of two given LogRecordSlices and returns
 // an error if they don't match. The error describes what didn't match.
 func CompareLogRecordSlices(expected, actual plog.LogRecordSlice) error {
-	if expected.Len() != actual.Len() {
-		return fmt.Errorf("number of log records does not match expected: %d, actual: %d", expected.Len(), actual.Len())
+	exp, act := plog.NewLogRecordSlice(), plog.NewLogRecordSlice()
+	expected.CopyTo(exp)
+	actual.CopyTo(act)
+
+	if exp.Len() != act.Len() {
+		return fmt.Errorf("number of log records does not match expected: %d, actual: %d", exp.Len(), act.Len())
 	}
 
-	expected.Sort(sortLogRecordSlice)
-	actual.Sort(sortLogRecordSlice)
+	exp.Sort(sortLogRecordSlice)
+	act.Sort(sortLogRecordSlice)
 
-	numLogRecords := expected.Len()
+	numLogRecords := exp.Len()
 
 	// Keep track of matching records so that each record can only be matched once
 	matchingLogRecords := make(map[plog.LogRecord]plog.LogRecord, numLogRecords)
 
 	var errs error
 	for e := 0; e < numLogRecords; e++ {
-		elr := expected.At(e)
+		elr := exp.At(e)
 		var foundMatch bool
 		for a := 0; a < numLogRecords; a++ {
-			alr := actual.At(a)
+			alr := act.At(a)
 			if _, ok := matchingLogRecords[alr]; ok {
 				continue
 			}
@@ -156,8 +164,8 @@ func CompareLogRecordSlices(expected, actual plog.LogRecordSlice) error {
 	}
 
 	for i := 0; i < numLogRecords; i++ {
-		if _, ok := matchingLogRecords[actual.At(i)]; !ok {
-			errs = multierr.Append(errs, fmt.Errorf("log has extra record with attributes: %v", actual.At(i).Attributes().AsRaw()))
+		if _, ok := matchingLogRecords[act.At(i)]; !ok {
+			errs = multierr.Append(errs, fmt.Errorf("log has extra record with attributes: %v", act.At(i).Attributes().AsRaw()))
 		}
 	}
 

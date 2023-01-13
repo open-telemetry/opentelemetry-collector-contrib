@@ -91,8 +91,12 @@ func CompareTraces(expected, actual ptrace.Traces, options ...TracesCompareOptio
 // CompareResourceSpans compares each part of two given ResourceSpans and returns
 // an error if they don't match. The error describes what didn't match.
 func CompareResourceSpans(expected, actual ptrace.ResourceSpans) error {
-	eilms := expected.ScopeSpans()
-	ailms := actual.ScopeSpans()
+	exp, act := ptrace.NewResourceSpans(), ptrace.NewResourceSpans()
+	expected.CopyTo(exp)
+	actual.CopyTo(act)
+
+	eilms := exp.ScopeSpans()
+	ailms := act.ScopeSpans()
 
 	if eilms.Len() != ailms.Len() {
 		return fmt.Errorf("number of instrumentation libraries does not match expected: %d, actual: %d", eilms.Len(),
@@ -123,24 +127,28 @@ func CompareResourceSpans(expected, actual ptrace.ResourceSpans) error {
 // CompareSpanSlices compares each part of two given SpanSlices and returns
 // an error if they don't match. The error describes what didn't match.
 func CompareSpanSlices(expected, actual ptrace.SpanSlice) error {
-	if expected.Len() != actual.Len() {
-		return fmt.Errorf("number of spans does not match expected: %d, actual: %d", expected.Len(), actual.Len())
+	exp, act := ptrace.NewSpanSlice(), ptrace.NewSpanSlice()
+	expected.CopyTo(exp)
+	actual.CopyTo(act)
+
+	if exp.Len() != act.Len() {
+		return fmt.Errorf("number of spans does not match expected: %d, actual: %d", exp.Len(), act.Len())
 	}
 
-	expected.Sort(sortSpanSlice)
-	actual.Sort(sortSpanSlice)
+	exp.Sort(sortSpanSlice)
+	act.Sort(sortSpanSlice)
 
-	numSpans := expected.Len()
+	numSpans := exp.Len()
 
 	// Keep track of matching spans so that each span can only be matched once
 	matchingSpans := make(map[ptrace.Span]ptrace.Span, numSpans)
 
 	var errs error
 	for e := 0; e < numSpans; e++ {
-		elr := expected.At(e)
+		elr := exp.At(e)
 		var foundMatch bool
 		for a := 0; a < numSpans; a++ {
-			alr := actual.At(a)
+			alr := act.At(a)
 			if _, ok := matchingSpans[alr]; ok {
 				continue
 			}
@@ -156,8 +164,8 @@ func CompareSpanSlices(expected, actual ptrace.SpanSlice) error {
 	}
 
 	for i := 0; i < numSpans; i++ {
-		if _, ok := matchingSpans[actual.At(i)]; !ok {
-			errs = multierr.Append(errs, fmt.Errorf("span has extra record with attributes: %v", actual.At(i).Attributes().AsRaw()))
+		if _, ok := matchingSpans[act.At(i)]; !ok {
+			errs = multierr.Append(errs, fmt.Errorf("span has extra record with attributes: %v", act.At(i).Attributes().AsRaw()))
 		}
 	}
 
