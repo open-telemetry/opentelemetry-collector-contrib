@@ -99,6 +99,10 @@ type sumMetrics struct {
 }
 
 func (s *sumMetrics) insert(ctx context.Context, db *sql.DB, logger *zap.Logger) error {
+	if len(s.sumModel) == 0 {
+		return nil
+	}
+
 	var valuePlaceholders []string
 	var valueArgs []interface{}
 
@@ -155,16 +159,16 @@ func (s *sumMetrics) insert(ctx context.Context, db *sql.DB, logger *zap.Logger)
 }
 
 func (s *sumMetrics) Add(metrics any, metaData *MetricsMetaData, name string, description string, unit string) error {
-	if sum, ok := metrics.(pmetric.Sum); ok {
-		s.sumModel = append(s.sumModel, &sumModel{
-			metricName:        name,
-			metricDescription: description,
-			metricUnit:        unit,
-			metadata:          metaData,
-			sum:               sum,
-		})
-	} else {
+	sum, ok := metrics.(pmetric.Sum)
+	if !ok {
 		return fmt.Errorf("metrics param is not type of Sum")
 	}
+	s.sumModel = append(s.sumModel, &sumModel{
+		metricName:        name,
+		metricDescription: description,
+		metricUnit:        unit,
+		metadata:          metaData,
+		sum:               sum,
+	})
 	return nil
 }

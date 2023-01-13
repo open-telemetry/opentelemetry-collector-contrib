@@ -106,6 +106,10 @@ type histogramMetrics struct {
 }
 
 func (h *histogramMetrics) insert(ctx context.Context, db *sql.DB, logger *zap.Logger) error {
+	if len(h.histogramModel) == 0 {
+		return nil
+	}
+
 	var valuePlaceholders []string
 	var valueArgs []interface{}
 
@@ -166,16 +170,16 @@ func (h *histogramMetrics) insert(ctx context.Context, db *sql.DB, logger *zap.L
 }
 
 func (h *histogramMetrics) Add(metrics any, metaData *MetricsMetaData, name string, description string, unit string) error {
-	if histogram, ok := metrics.(pmetric.Histogram); ok {
-		h.histogramModel = append(h.histogramModel, &histogramModel{
-			metricName:        name,
-			metricDescription: description,
-			metricUnit:        unit,
-			metadata:          metaData,
-			histogram:         histogram,
-		})
-	} else {
+	histogram, ok := metrics.(pmetric.Histogram)
+	if !ok {
 		return fmt.Errorf("metrics param is not type of Histogram")
 	}
+	h.histogramModel = append(h.histogramModel, &histogramModel{
+		metricName:        name,
+		metricDescription: description,
+		metricUnit:        unit,
+		metadata:          metaData,
+		histogram:         histogram,
+	})
 	return nil
 }

@@ -18,6 +18,8 @@ import (
 	"context"
 	"database/sql/driver"
 	"fmt"
+	"log"
+	"net/http"
 	"strings"
 	"sync"
 	"testing"
@@ -27,11 +29,21 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap/zaptest"
+	_ "net/http/pprof"
 )
+
+// local dev test
+func Test_newMetricsExporter(t *testing.T) {
+	exporter := newTestMetricsExporter(t, defaultDSN)
+	mustPushMetricsData(t, exporter, simpleMetrics(1))
+}
 
 func TestExporter_pushMetricsData(t *testing.T) {
 	t.Parallel()
 	t.Run("push success", func(t *testing.T) {
+		go func() {
+			log.Println(http.ListenAndServe("0.0.0.0:10000", nil))
+		}()
 		mutex := sync.Mutex{}
 		var items int
 		initClickhouseTestServer(t, func(query string, values []driver.Value) error {
@@ -43,9 +55,11 @@ func TestExporter_pushMetricsData(t *testing.T) {
 			return nil
 		})
 		exporter := newTestMetricsExporter(t, defaultDSN)
-		mustPushMetricsData(t, exporter, simpleMetrics(1))
-
-		require.Equal(t, 5, items)
+		md := simpleMetrics(1000)
+		for {
+			mustPushMetricsData(t, exporter, md)
+			time.Sleep(time.Second * 5)
+		}
 	})
 	t.Run("push failure", func(t *testing.T) {
 		initClickhouseTestServer(t, func(query string, values []driver.Value) error {

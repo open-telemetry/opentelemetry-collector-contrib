@@ -95,6 +95,10 @@ type gaugeMetrics struct {
 }
 
 func (g *gaugeMetrics) insert(ctx context.Context, db *sql.DB, logger *zap.Logger) error {
+	if len(g.gaugeModels) == 0 {
+		return nil
+	}
+
 	var valuePlaceholders []string
 	var valueArgs []interface{}
 
@@ -127,9 +131,6 @@ func (g *gaugeMetrics) insert(ctx context.Context, db *sql.DB, logger *zap.Logge
 		}
 	}
 
-	if len(valuePlaceholders) == 0 {
-		return nil
-	}
 	start := time.Now()
 	err := doWithTx(ctx, db, func(tx *sql.Tx) error {
 		_, err := tx.ExecContext(ctx, fmt.Sprintf("%s %s", g.insertSQL, strings.Join(valuePlaceholders, ",")), valueArgs...)
@@ -148,16 +149,16 @@ func (g *gaugeMetrics) insert(ctx context.Context, db *sql.DB, logger *zap.Logge
 }
 
 func (g *gaugeMetrics) Add(metrics any, metaData *MetricsMetaData, name string, description string, unit string) error {
-	if gauge, ok := metrics.(pmetric.Gauge); ok {
-		g.gaugeModels = append(g.gaugeModels, &gaugeModel{
-			metricName:        name,
-			metricDescription: description,
-			metricUnit:        unit,
-			metadata:          metaData,
-			gauge:             gauge,
-		})
-	} else {
+	gauge, ok := metrics.(pmetric.Gauge)
+	if !ok {
 		return fmt.Errorf("metrics param is not type of Gauge")
 	}
+	g.gaugeModels = append(g.gaugeModels, &gaugeModel{
+		metricName:        name,
+		metricDescription: description,
+		metricUnit:        unit,
+		metadata:          metaData,
+		gauge:             gauge,
+	})
 	return nil
 }

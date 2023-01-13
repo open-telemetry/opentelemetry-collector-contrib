@@ -97,7 +97,8 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
 	Flags,
 	Min,
 	Max) VALUES `
-	expHistogramPlaceholders = "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+	expHistogramPlaceholders = "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?),"
+	expHistogramValueCounts  = 29
 )
 
 type expHistogramModel struct {
@@ -109,60 +110,71 @@ type expHistogramModel struct {
 }
 
 type expHistogramMetrics struct {
-	expHistogramModel []*expHistogramModel
-	insertSQL         string
+	expHistogramModels []*expHistogramModel
+	insertSQL          string
+	count              int
 }
 
 func (e *expHistogramMetrics) insert(ctx context.Context, db *sql.DB, logger *zap.Logger) error {
-	var valuePlaceholders []string
-	var valueArgs []interface{}
-
-	for _, model := range e.expHistogramModel {
-		for i := 0; i < model.expHistogram.DataPoints().Len(); i++ {
-			dp := model.expHistogram.DataPoints().At(i)
-			valuePlaceholders = append(valuePlaceholders, expHistogramPlaceholders)
-
-			valueArgs = append(valueArgs, model.metadata.ResAttr)
-			valueArgs = append(valueArgs, model.metadata.ResURL)
-			valueArgs = append(valueArgs, model.metadata.ScopeInstr.Name())
-			valueArgs = append(valueArgs, model.metadata.ScopeInstr.Version())
-			valueArgs = append(valueArgs, attributesToMap(model.metadata.ScopeInstr.Attributes()))
-			valueArgs = append(valueArgs, model.metadata.ScopeInstr.DroppedAttributesCount())
-			valueArgs = append(valueArgs, model.metadata.ScopeURL)
-			valueArgs = append(valueArgs, model.metricName)
-			valueArgs = append(valueArgs, model.metricDescription)
-			valueArgs = append(valueArgs, model.metricUnit)
-			valueArgs = append(valueArgs, attributesToMap(dp.Attributes()))
-			valueArgs = append(valueArgs, dp.StartTimestamp().AsTime().UnixNano())
-			valueArgs = append(valueArgs, dp.Timestamp().AsTime().UnixNano())
-			valueArgs = append(valueArgs, dp.Count())
-			valueArgs = append(valueArgs, dp.Sum())
-			valueArgs = append(valueArgs, dp.Scale())
-			valueArgs = append(valueArgs, dp.ZeroCount())
-			valueArgs = append(valueArgs, dp.Positive().Offset())
-			valueArgs = append(valueArgs, convertSliceToArraySet(dp.Positive().BucketCounts().AsRaw(), logger))
-			valueArgs = append(valueArgs, dp.Negative().Offset())
-			valueArgs = append(valueArgs, convertSliceToArraySet(dp.Negative().BucketCounts().AsRaw(), logger))
-
-			attrs, times, values, traceIDs, spanIDs := convertExemplars(dp.Exemplars())
-			valueArgs = append(valueArgs, attrs)
-			valueArgs = append(valueArgs, times)
-			valueArgs = append(valueArgs, values)
-			valueArgs = append(valueArgs, traceIDs)
-			valueArgs = append(valueArgs, spanIDs)
-			valueArgs = append(valueArgs, uint32(dp.Flags()))
-			valueArgs = append(valueArgs, dp.Min())
-			valueArgs = append(valueArgs, dp.Max())
-		}
+	//f, _ := os.Create("./cpu.pprof")
+	//pprof.StartCPUProfile(f)
+	//defer pprof.StopCPUProfile()
+	//
+	//f, _ = os.Create("./heap.pprof")
+	//pprof.WriteHeapProfile(f)
+	if len(e.expHistogramModels) == 0 {
+		return nil
 	}
 
-	if len(valuePlaceholders) == 0 {
-		return nil
+	valueArgs := make([]any, e.count*expHistogramValueCounts)
+	var b strings.Builder
+
+	index := 0
+	for _, model := range e.expHistogramModels {
+		for j := 0; j < model.expHistogram.DataPoints().Len(); j++ {
+			dp := model.expHistogram.DataPoints().At(j)
+			b.WriteString(expHistogramPlaceholders)
+
+			valueArgs[index+0] = model.metadata.ResAttr
+			valueArgs[index+1] = model.metadata.ResURL
+			valueArgs[index+2] = model.metadata.ScopeInstr.Name()
+			valueArgs[index+3] = model.metadata.ScopeInstr.Version()
+			valueArgs[index+4] = attributesToMap(model.metadata.ScopeInstr.Attributes())
+			valueArgs[index+5] = model.metadata.ScopeInstr.DroppedAttributesCount()
+			valueArgs[index+6] = model.metadata.ScopeURL
+			valueArgs[index+7] = model.metricName
+			valueArgs[index+8] = model.metricDescription
+			valueArgs[index+9] = model.metricUnit
+			valueArgs[index+10] = attributesToMap(dp.Attributes())
+			valueArgs[index+11] = dp.StartTimestamp().AsTime().UnixNano()
+			valueArgs[index+12] = dp.Timestamp().AsTime().UnixNano()
+			valueArgs[index+13] = dp.Count()
+			valueArgs[index+14] = dp.Sum()
+			valueArgs[index+15] = dp.Scale()
+			valueArgs[index+16] = dp.ZeroCount()
+			valueArgs[index+17] = dp.Positive().Offset()
+			valueArgs[index+18] = convertSliceToArraySet(dp.Positive().BucketCounts().AsRaw(), logger)
+			valueArgs[index+19] = dp.Negative().Offset()
+			valueArgs[index+20] = convertSliceToArraySet(dp.Negative().BucketCounts().AsRaw(), logger)
+
+			attrs, times, values, traceIDs, spanIDs := convertExemplars(dp.Exemplars())
+			valueArgs[index+21] = attrs
+			valueArgs[index+22] = times
+			valueArgs[index+23] = values
+			valueArgs[index+24] = traceIDs
+			valueArgs[index+25] = spanIDs
+			valueArgs[index+26] = uint32(dp.Flags())
+			valueArgs[index+27] = dp.Min()
+			valueArgs[index+28] = dp.Max()
+
+			index += expHistogramValueCounts
+		}
 	}
 
 	start := time.Now()
 	err := doWithTx(ctx, db, func(tx *sql.Tx) error {
-		_, err := tx.ExecContext(ctx, fmt.Sprintf("%s %s", e.insertSQL, strings.Join(valuePlaceholders, ",")), valueArgs...)
+		query := fmt.Sprintf("%s %s", e.insertSQL, strings.TrimSuffix(b.String(), ","))
+		_, err := tx.ExecContext(ctx, query, valueArgs...)
 		return err
 	})
 	duration := time.Since(start)
@@ -172,22 +184,24 @@ func (e *expHistogramMetrics) insert(ctx context.Context, db *sql.DB, logger *za
 	}
 
 	// TODO latency metrics
-	logger.Debug("insert exponential histogram metrics", zap.Int("records", len(valuePlaceholders)),
+	logger.Debug("insert exponential histogram metrics", zap.Int("records", e.count),
 		zap.Duration("cost", duration))
 	return nil
 }
 
 func (e *expHistogramMetrics) Add(metrics any, metaData *MetricsMetaData, name string, description string, unit string) error {
-	if expHistogram, ok := metrics.(pmetric.ExponentialHistogram); ok {
-		e.expHistogramModel = append(e.expHistogramModel, &expHistogramModel{
-			metricName:        name,
-			metricDescription: description,
-			metricUnit:        unit,
-			metadata:          metaData,
-			expHistogram:      expHistogram,
-		})
-	} else {
+	expHistogram, ok := metrics.(pmetric.ExponentialHistogram)
+	if !ok {
 		return fmt.Errorf("metrics param is not type of ExponentialHistogram")
 	}
+	e.count += expHistogram.DataPoints().Len()
+	e.expHistogramModels = append(e.expHistogramModels, &expHistogramModel{
+		metricName:        name,
+		metricDescription: description,
+		metricUnit:        unit,
+		metadata:          metaData,
+		expHistogram:      expHistogram,
+	})
+
 	return nil
 }

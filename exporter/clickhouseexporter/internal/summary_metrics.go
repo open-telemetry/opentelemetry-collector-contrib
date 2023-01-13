@@ -92,6 +92,10 @@ type summaryMetrics struct {
 }
 
 func (s *summaryMetrics) insert(ctx context.Context, db *sql.DB, logger *zap.Logger) error {
+	if len(s.summaryModel) == 0 {
+		return nil
+	}
+
 	var valuePlaceholders []string
 	var valueArgs []interface{}
 
@@ -145,16 +149,16 @@ func (s *summaryMetrics) insert(ctx context.Context, db *sql.DB, logger *zap.Log
 }
 
 func (s *summaryMetrics) Add(metrics any, metaData *MetricsMetaData, name string, description string, unit string) error {
-	if summary, ok := metrics.(pmetric.Summary); ok {
-		s.summaryModel = append(s.summaryModel, &summaryModel{
-			metricName:        name,
-			metricDescription: description,
-			metricUnit:        unit,
-			metadata:          metaData,
-			summary:           summary,
-		})
-	} else {
+	summary, ok := metrics.(pmetric.Summary)
+	if !ok {
 		return fmt.Errorf("metrics param is not type of Summary")
 	}
+	s.summaryModel = append(s.summaryModel, &summaryModel{
+		metricName:        name,
+		metricDescription: description,
+		metricUnit:        unit,
+		metadata:          metaData,
+		summary:           summary,
+	})
 	return nil
 }

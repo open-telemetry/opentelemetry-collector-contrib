@@ -29,13 +29,23 @@ import (
 	"go.uber.org/zap"
 )
 
-var supportMetricsType = [...]string{createGaugeTableSQL, createSumTableSQL, createHistogramTableSQL, createExpHistogramTableSQL, createSummaryTableSQL}
+var supportedMetricTypes = map[string]struct{}{
+	createGaugeTableSQL: {},
+	// ... add the other names here
+	createSumTableSQL:          {},
+	createHistogramTableSQL:    {},
+	createExpHistogramTableSQL: {},
+	createSummaryTableSQL:      {},
+}
 
-type metricsModel interface {
+// MetricsModel  represent a set of operation on MetricsMetaData
+type MetricsModel interface {
+	// Add use to add metric MetaData to a  specific MetricsMetaData
 	Add(metrics any, metaData *MetricsMetaData, name string, description string, unit string) error
 	insert(ctx context.Context, db *sql.DB, logger *zap.Logger) error
 }
 
+// MetricsMetaData  contain specific metric data
 type MetricsMetaData struct {
 	ResAttr    map[string]string
 	ResURL     string
@@ -43,12 +53,12 @@ type MetricsMetaData struct {
 	ScopeInstr pcommon.InstrumentationScope
 }
 
-func CreateMetricsTable(tableName string, ttlDays uint, db *sql.DB) error {
+func NewMetricsTable(tableName string, ttlDays uint, db *sql.DB) error {
 	var ttlExpr string
 	if ttlDays > 0 {
 		ttlExpr = fmt.Sprintf(`TTL toDateTime(TimeUnix) + toIntervalDay(%d)`, ttlDays)
 	}
-	for _, table := range supportMetricsType {
+	for table, _ := range supportedMetricTypes {
 		query := fmt.Sprintf(table, tableName, ttlExpr)
 		if _, err := db.Exec(query); err != nil {
 			return fmt.Errorf("exec create metrics table sql: %w", err)
@@ -57,43 +67,43 @@ func CreateMetricsTable(tableName string, ttlDays uint, db *sql.DB) error {
 	return nil
 }
 
-func CreateMetricsModel(tableName string) map[pmetric.MetricType]metricsModel {
-	metricsMap := make(map[pmetric.MetricType]metricsModel)
-	metricsMap[pmetric.MetricTypeGauge] = &gaugeMetrics{
-		insertSQL: fmt.Sprintf(insertGaugeTableSQL, tableName),
+func NewMetricsModel(tableName string) map[pmetric.MetricType]MetricsModel {
+	return map[pmetric.MetricType]MetricsModel{
+		pmetric.MetricTypeGauge: &gaugeMetrics{
+			insertSQL: fmt.Sprintf(insertGaugeTableSQL, tableName),
+		},
+		pmetric.MetricTypeSum: &sumMetrics{
+			insertSQL: fmt.Sprintf(insertSumTableSQL, tableName),
+		},
+		pmetric.MetricTypeHistogram: &histogramMetrics{
+			insertSQL: fmt.Sprintf(insertHistogramTableSQL, tableName),
+		},
+		pmetric.MetricTypeExponentialHistogram: &expHistogramMetrics{
+			insertSQL: fmt.Sprintf(insertExpHistogramTableSQL, tableName),
+		},
+		pmetric.MetricTypeSummary: &summaryMetrics{
+			insertSQL: fmt.Sprintf(insertSummaryTableSQL, tableName),
+		},
 	}
-	metricsMap[pmetric.MetricTypeSum] = &sumMetrics{
-		insertSQL: fmt.Sprintf(insertSumTableSQL, tableName),
-	}
-	metricsMap[pmetric.MetricTypeHistogram] = &histogramMetrics{
-		insertSQL: fmt.Sprintf(insertHistogramTableSQL, tableName),
-	}
-	metricsMap[pmetric.MetricTypeExponentialHistogram] = &expHistogramMetrics{
-		insertSQL: fmt.Sprintf(insertExpHistogramTableSQL, tableName),
-	}
-	metricsMap[pmetric.MetricTypeSummary] = &summaryMetrics{
-		insertSQL: fmt.Sprintf(insertSummaryTableSQL, tableName),
-	}
-	return metricsMap
 }
 
-func InsertMetrics(ctx context.Context, db *sql.DB, metricsMap map[pmetric.MetricType]metricsModel, logger *zap.Logger) error {
+func InsertMetrics(ctx context.Context, db *sql.DB, metricsMap map[pmetric.MetricType]MetricsModel, logger *zap.Logger) error {
 	errsChan := make(chan error, 5)
 	wg := &sync.WaitGroup{}
 	for _, m := range metricsMap {
 		wg.Add(1)
-		go func(m metricsModel, wg *sync.WaitGroup) {
+		go func(m MetricsModel, wg *sync.WaitGroup) {
 			errsChan <- m.insert(ctx, db, logger)
 			wg.Done()
 		}(m, wg)
 	}
 	wg.Wait()
 	close(errsChan)
-	var err []error
-	for e := range errsChan {
-		err = append(err, e)
+	var errs error
+	for err := range errsChan {
+		errs = multierr.Append(errs, err)
 	}
-	return multierr.Combine(err...)
+	return errs
 }
 
 func convertExemplars(exemplars pmetric.ExemplarSlice) (clickhouse.ArraySet, clickhouse.ArraySet, clickhouse.ArraySet, clickhouse.ArraySet, clickhouse.ArraySet) {
@@ -120,6 +130,7 @@ func convertExemplars(exemplars pmetric.ExemplarSlice) (clickhouse.ArraySet, cli
 // https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/metrics/v1/metrics.proto#L358
 // define two types for one datapoint value, clickhouse only use one value of float64 to store them
 func getValue(intValue int64, floatValue float64) float64 {
+
 	if intValue > 0 {
 		return float64(intValue)
 	}
@@ -167,8 +178,8 @@ func convertValueAtQuantile(valueAtQuantile pmetric.SummaryDataPointValueAtQuant
 }
 
 // a copy of clickhouseexporter.doWithTx
-func doWithTx(_ context.Context, db *sql.DB, fn func(tx *sql.Tx) error) error {
-	tx, err := db.Begin()
+func doWithTx(ctx context.Context, db *sql.DB, fn func(tx *sql.Tx) error) error {
+	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("db.Begin: %w", err)
 	}

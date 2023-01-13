@@ -45,7 +45,7 @@ func newMetricsExporter(logger *zap.Logger, cfg *Config) (*metricsExporter, erro
 		return nil, err
 	}
 
-	if err = internal.CreateMetricsTable(cfg.MetricsTableName, cfg.TTLDays, client); err != nil {
+	if err = internal.NewMetricsTable(cfg.MetricsTableName, cfg.TTLDays, client); err != nil {
 		return nil, err
 	}
 
@@ -65,7 +65,7 @@ func (e *metricsExporter) shutdown(ctx context.Context) error {
 }
 
 func (e *metricsExporter) pushMetricsData(ctx context.Context, md pmetric.Metrics) error {
-	metricsMap := internal.CreateMetricsModel(e.cfg.MetricsTableName)
+	metricsMap := internal.NewMetricsModel(e.cfg.MetricsTableName)
 	for i := 0; i < md.ResourceMetrics().Len(); i++ {
 		metaData := internal.MetricsMetaData{}
 		metrics := md.ResourceMetrics().At(i)
@@ -78,23 +78,23 @@ func (e *metricsExporter) pushMetricsData(ctx context.Context, md pmetric.Metric
 			metaData.ScopeInstr = metrics.ScopeMetrics().At(j).Scope()
 			for k := 0; k < rs.Len(); k++ {
 				r := rs.At(k)
-				var errs []error
+				var errs error
 				switch r.Type() {
 				case pmetric.MetricTypeGauge:
-					errs = append(errs, metricsMap[pmetric.MetricTypeGauge].Add(r.Gauge(), &metaData, r.Name(), r.Description(), r.Unit()))
+					errs = multierr.Append(errs, metricsMap[pmetric.MetricTypeGauge].Add(r.Gauge(), &metaData, r.Name(), r.Description(), r.Unit()))
 				case pmetric.MetricTypeSum:
-					errs = append(errs, metricsMap[pmetric.MetricTypeSum].Add(r.Sum(), &metaData, r.Name(), r.Description(), r.Unit()))
+					errs = multierr.Append(errs, metricsMap[pmetric.MetricTypeSum].Add(r.Sum(), &metaData, r.Name(), r.Description(), r.Unit()))
 				case pmetric.MetricTypeHistogram:
-					errs = append(errs, metricsMap[pmetric.MetricTypeHistogram].Add(r.Histogram(), &metaData, r.Name(), r.Description(), r.Unit()))
+					errs = multierr.Append(errs, metricsMap[pmetric.MetricTypeHistogram].Add(r.Histogram(), &metaData, r.Name(), r.Description(), r.Unit()))
 				case pmetric.MetricTypeExponentialHistogram:
-					errs = append(errs, metricsMap[pmetric.MetricTypeExponentialHistogram].Add(r.ExponentialHistogram(), &metaData, r.Name(), r.Description(), r.Unit()))
+					errs = multierr.Append(errs, metricsMap[pmetric.MetricTypeExponentialHistogram].Add(r.ExponentialHistogram(), &metaData, r.Name(), r.Description(), r.Unit()))
 				case pmetric.MetricTypeSummary:
-					errs = append(errs, metricsMap[pmetric.MetricTypeSummary].Add(r.Summary(), &metaData, r.Name(), r.Description(), r.Unit()))
+					errs = multierr.Append(errs, metricsMap[pmetric.MetricTypeSummary].Add(r.Summary(), &metaData, r.Name(), r.Description(), r.Unit()))
 				default:
 					return fmt.Errorf("unsupported metrics type")
 				}
-				if multierr.Combine(errs...) != nil {
-					return multierr.Combine(errs...)
+				if errs != nil {
+					return errs
 				}
 			}
 		}
