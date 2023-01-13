@@ -172,8 +172,8 @@ type SumConfig struct {
 	// is false, which means that it will be submitted as a count.
 	SubmitAsRate bool `mapstructure:"submit_as_rate"`
 
-	// Required when SubmitAsRate is set to true
-	// Defaults to 10s for sum to rate conversion interval
+	// SumToRateConversionInterval specifies the interval to use when submitting sums
+	// as rate. To be used in conjunction with SubmitAsRate.
 	SumToRateConversionInterval time.Duration `mapstructure:"sum_to_rate_conversion_interval"`
 }
 
