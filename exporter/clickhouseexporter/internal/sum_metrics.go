@@ -123,7 +123,7 @@ func (s *sumMetrics) insert(ctx context.Context, db *sql.DB, logger *zap.Logger)
 			valueArgs = append(valueArgs, model.metricUnit)
 			valueArgs = append(valueArgs, attributesToMap(dp.Attributes()))
 			valueArgs = append(valueArgs, dp.Timestamp().AsTime().UnixNano())
-			valueArgs = append(valueArgs, getValue(dp.IntValue(), dp.DoubleValue()))
+			valueArgs = append(valueArgs, getValue(dp.IntValue(), dp.DoubleValue(), dp.ValueType()))
 			valueArgs = append(valueArgs, uint32(dp.Flags()))
 
 			attrs, times, values, traceIDs, spanIDs := convertExemplars(dp.Exemplars())

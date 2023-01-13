@@ -116,12 +116,6 @@ type expHistogramMetrics struct {
 }
 
 func (e *expHistogramMetrics) insert(ctx context.Context, db *sql.DB, logger *zap.Logger) error {
-	//f, _ := os.Create("./cpu.pprof")
-	//pprof.StartCPUProfile(f)
-	//defer pprof.StopCPUProfile()
-	//
-	//f, _ = os.Create("./heap.pprof")
-	//pprof.WriteHeapProfile(f)
 	if len(e.expHistogramModels) == 0 {
 		return nil
 	}

@@ -19,7 +19,6 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"fmt"
-	"reflect"
 	"sync"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
@@ -30,18 +29,19 @@ import (
 )
 
 var supportedMetricTypes = map[string]struct{}{
-	createGaugeTableSQL: {},
-	// ... add the other names here
+	createGaugeTableSQL:        {},
 	createSumTableSQL:          {},
 	createHistogramTableSQL:    {},
 	createExpHistogramTableSQL: {},
 	createSummaryTableSQL:      {},
 }
 
-// MetricsModel  represent a set of operation on MetricsMetaData
+// MetricsModel is used to group metric data and insert into clickhouse
+// any type of metrics need implement it.
 type MetricsModel interface {
-	// Add use to add metric MetaData to a  specific MetricsMetaData
+	// Add used to bind MetricsMetaData to a specific metric then put them into a slice
 	Add(metrics any, metaData *MetricsMetaData, name string, description string, unit string) error
+	// insert is used to insert metric data to clickhouse
 	insert(ctx context.Context, db *sql.DB, logger *zap.Logger) error
 }
 
@@ -118,7 +118,7 @@ func convertExemplars(exemplars pmetric.ExemplarSlice) (clickhouse.ArraySet, cli
 		exemplar := exemplars.At(i)
 		attrs = append(attrs, attributesToMap(exemplar.FilteredAttributes()))
 		times = append(times, exemplar.Timestamp().AsTime())
-		values = append(values, getValue(exemplar.IntValue(), exemplar.DoubleValue()))
+		values = append(values, getValue(exemplar.IntValue(), exemplar.DoubleValue(), exemplar.ValueType()))
 
 		traceID, spanID := exemplar.TraceID(), exemplar.SpanID()
 		traceIDs = append(traceIDs, hex.EncodeToString(traceID[:]))
@@ -129,19 +129,35 @@ func convertExemplars(exemplars pmetric.ExemplarSlice) (clickhouse.ArraySet, cli
 
 // https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/metrics/v1/metrics.proto#L358
 // define two types for one datapoint value, clickhouse only use one value of float64 to store them
-func getValue(intValue int64, floatValue float64) float64 {
-
-	if intValue > 0 {
-		return float64(intValue)
+func getValue(intValue int64, floatValue float64, dataType any) float64 {
+	switch t := dataType.(type) {
+	case pmetric.ExemplarValueType:
+		switch t {
+		case pmetric.ExemplarValueTypeDouble:
+			return floatValue
+		case pmetric.ExemplarValueTypeInt:
+			return float64(intValue)
+		default:
+			return 0.0
+		}
+	case pmetric.NumberDataPointValueType:
+		switch t {
+		case pmetric.NumberDataPointValueTypeDouble:
+			return floatValue
+		case pmetric.NumberDataPointValueTypeInt:
+			return float64(intValue)
+		default:
+			return 0.0
+		}
+	default:
+		return 0.0
 	}
-	return floatValue
 }
 
-// Only support converting string type in pcommon.Value, other type will convert into an empty string
 func attributesToMap(attributes pcommon.Map) map[string]string {
 	m := make(map[string]string, attributes.Len())
 	attributes.Range(func(k string, v pcommon.Value) bool {
-		m[k] = v.Str()
+		m[k] = v.AsString()
 		return true
 	})
 	return m
@@ -159,7 +175,7 @@ func convertSliceToArraySet(slice interface{}, logger *zap.Logger) clickhouse.Ar
 			set = append(set, item)
 		}
 	default:
-		logger.Warn("unsupported slice type", zap.String("type", reflect.TypeOf(slice).String()))
+		logger.Warn("unsupported slice type", zap.String("current support", "[]uint64, []float64"))
 	}
 	return set
 }
@@ -177,7 +193,8 @@ func convertValueAtQuantile(valueAtQuantile pmetric.SummaryDataPointValueAtQuant
 	return quantiles, values
 }
 
-// a copy of clickhouseexporter.doWithTx
+// doWithTx is a copy of clickhouseexporter.doWithTx. This function is in a temporary status, after this PR get merged,
+// there will be a PR to move all db function and tool function to internal package.
 func doWithTx(ctx context.Context, db *sql.DB, fn func(tx *sql.Tx) error) error {
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
