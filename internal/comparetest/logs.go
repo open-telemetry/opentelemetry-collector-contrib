@@ -184,62 +184,58 @@ func CompareLogRecordSlices(expected, actual plog.LogRecordSlice) error {
 // CompareLogRecords compares each part of two given LogRecord and returns
 // an error if they don't match. The error describes what didn't match.
 func CompareLogRecords(expected, actual plog.LogRecord) error {
-	exp, act := plog.NewLogRecord(), plog.NewLogRecord()
-	expected.CopyTo(exp)
-	actual.CopyTo(act)
-
-	if exp.Flags() != act.Flags() {
+	if expected.Flags() != actual.Flags() {
 		return fmt.Errorf("log record Flags doesn't match expected: %d, actual: %d",
-			exp.Flags(),
-			act.Flags())
+			expected.Flags(),
+			actual.Flags())
 	}
 
-	if exp.DroppedAttributesCount() != act.DroppedAttributesCount() {
+	if expected.DroppedAttributesCount() != actual.DroppedAttributesCount() {
 		return fmt.Errorf("log record DroppedAttributesCount doesn't match expected: %d, actual: %d",
 			expected.DroppedAttributesCount(),
-			act.DroppedAttributesCount())
+			actual.DroppedAttributesCount())
 	}
 
-	if exp.Timestamp() != act.Timestamp() {
+	if expected.Timestamp() != actual.Timestamp() {
 		return fmt.Errorf("log record Timestamp doesn't match expected: %d, actual: %d",
 			expected.Timestamp(),
-			act.Timestamp())
+			actual.Timestamp())
 	}
 
-	if exp.ObservedTimestamp() != act.ObservedTimestamp() {
+	if expected.ObservedTimestamp() != actual.ObservedTimestamp() {
 		return fmt.Errorf("log record ObservedTimestamp doesn't match expected: %d, actual: %d",
-			exp.ObservedTimestamp(),
-			act.ObservedTimestamp())
+			expected.ObservedTimestamp(),
+			actual.ObservedTimestamp())
 	}
 
-	if exp.SeverityNumber() != act.SeverityNumber() {
+	if expected.SeverityNumber() != actual.SeverityNumber() {
 		return fmt.Errorf("log record SeverityNumber doesn't match expected: %d, actual: %d",
-			exp.SeverityNumber(),
-			act.SeverityNumber())
+			expected.SeverityNumber(),
+			actual.SeverityNumber())
 	}
 
-	if exp.SeverityText() != act.SeverityText() {
+	if expected.SeverityText() != actual.SeverityText() {
 		return fmt.Errorf("log record SeverityText doesn't match expected: %s, actual: %s",
-			exp.SeverityText(),
-			act.SeverityText())
+			expected.SeverityText(),
+			actual.SeverityText())
 	}
 
-	if exp.TraceID() != act.TraceID() {
+	if expected.TraceID() != actual.TraceID() {
 		return fmt.Errorf("log record TraceID doesn't match expected: %d, actual: %d",
-			exp.TraceID(),
-			act.TraceID())
+			expected.TraceID(),
+			actual.TraceID())
 	}
 
-	if exp.SpanID() != act.SpanID() {
+	if expected.SpanID() != actual.SpanID() {
 		return fmt.Errorf("log record SpanID doesn't match expected: %d, actual: %d",
-			exp.SpanID(),
-			act.SpanID())
+			expected.SpanID(),
+			actual.SpanID())
 	}
 
-	if !reflect.DeepEqual(exp.Body().AsRaw(), act.Body().AsRaw()) {
+	if !reflect.DeepEqual(expected.Body().AsRaw(), actual.Body().AsRaw()) {
 		return fmt.Errorf("log record Body doesn't match expected: %s, actual: %s",
-			exp.Body().AsString(),
-			act.Body().AsString())
+			expected.Body().AsString(),
+			actual.Body().AsString())
 	}
 
 	return nil

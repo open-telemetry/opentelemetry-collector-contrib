@@ -184,98 +184,94 @@ func CompareSpanSlices(expected, actual ptrace.SpanSlice) error {
 // CompareSpans compares each part of two given Span and returns
 // an error if they don't match. The error describes what didn't match.
 func CompareSpans(expected, actual ptrace.Span) error {
-	exp, act := ptrace.NewSpan(), ptrace.NewSpan()
-	expected.CopyTo(exp)
-	actual.CopyTo(act)
-
-	if exp.TraceID() != act.TraceID() {
+	if expected.TraceID() != actual.TraceID() {
 		return fmt.Errorf("span TraceID doesn't match expected: %d, actual: %d",
-			exp.TraceID(),
-			act.TraceID())
+			expected.TraceID(),
+			actual.TraceID())
 	}
 
-	if exp.SpanID() != act.SpanID() {
+	if expected.SpanID() != actual.SpanID() {
 		return fmt.Errorf("span SpanID doesn't match expected: %d, actual: %d",
-			exp.SpanID(),
-			act.SpanID())
+			expected.SpanID(),
+			actual.SpanID())
 	}
 
-	if exp.TraceState().AsRaw() != act.TraceState().AsRaw() {
+	if expected.TraceState().AsRaw() != actual.TraceState().AsRaw() {
 		return fmt.Errorf("span TraceState doesn't match expected: %s, actual: %s",
-			exp.TraceState().AsRaw(),
-			act.TraceState().AsRaw())
+			expected.TraceState().AsRaw(),
+			actual.TraceState().AsRaw())
 	}
 
-	if exp.ParentSpanID() != act.ParentSpanID() {
+	if expected.ParentSpanID() != actual.ParentSpanID() {
 		return fmt.Errorf("span ParentSpanID doesn't match expected: %d, actual: %d",
-			exp.ParentSpanID(),
-			act.ParentSpanID())
+			expected.ParentSpanID(),
+			actual.ParentSpanID())
 	}
 
-	if exp.Name() != act.Name() {
+	if expected.Name() != actual.Name() {
 		return fmt.Errorf("span Name doesn't match expected: %s, actual: %s",
-			exp.Name(),
-			act.Name())
+			expected.Name(),
+			actual.Name())
 	}
 
-	if exp.Kind() != act.Kind() {
+	if expected.Kind() != actual.Kind() {
 		return fmt.Errorf("span Kind doesn't match expected: %d, actual: %d",
-			exp.Kind(),
-			act.Kind())
+			expected.Kind(),
+			actual.Kind())
 	}
 
-	if exp.StartTimestamp() != act.StartTimestamp() {
+	if expected.StartTimestamp() != actual.StartTimestamp() {
 		return fmt.Errorf("span StartTimestamp doesn't match expected: %d, actual: %d",
-			exp.StartTimestamp(),
-			act.StartTimestamp())
+			expected.StartTimestamp(),
+			actual.StartTimestamp())
 	}
 
-	if exp.EndTimestamp() != act.EndTimestamp() {
+	if expected.EndTimestamp() != actual.EndTimestamp() {
 		return fmt.Errorf("span EndTimestamp doesn't match expected: %d, actual: %d",
-			exp.EndTimestamp(),
-			act.EndTimestamp())
+			expected.EndTimestamp(),
+			actual.EndTimestamp())
 	}
 
-	if !reflect.DeepEqual(exp.Attributes().AsRaw(), act.Attributes().AsRaw()) {
+	if !reflect.DeepEqual(expected.Attributes().AsRaw(), actual.Attributes().AsRaw()) {
 		return fmt.Errorf("span Attributes doesn't match expected: %s, actual: %s",
-			exp.Attributes().AsRaw(),
-			act.Attributes().AsRaw())
+			expected.Attributes().AsRaw(),
+			actual.Attributes().AsRaw())
 	}
 
-	if exp.DroppedAttributesCount() != act.DroppedAttributesCount() {
+	if expected.DroppedAttributesCount() != actual.DroppedAttributesCount() {
 		return fmt.Errorf("span DroppedAttributesCount doesn't match expected: %d, actual: %d",
-			exp.DroppedAttributesCount(),
-			act.DroppedAttributesCount())
+			expected.DroppedAttributesCount(),
+			actual.DroppedAttributesCount())
 	}
 
-	if !reflect.DeepEqual(exp.Events(), act.Events()) {
+	if !reflect.DeepEqual(expected.Events(), actual.Events()) {
 		return fmt.Errorf("span Events doesn't match expected: %v, actual: %v",
-			exp.Events(),
-			act.Events())
+			expected.Events(),
+			actual.Events())
 	}
 
-	if exp.DroppedEventsCount() != act.DroppedEventsCount() {
+	if expected.DroppedEventsCount() != actual.DroppedEventsCount() {
 		return fmt.Errorf("span DroppedEventsCount doesn't match expected: %d, actual: %d",
-			exp.DroppedEventsCount(),
-			act.DroppedEventsCount())
+			expected.DroppedEventsCount(),
+			actual.DroppedEventsCount())
 	}
 
-	if !reflect.DeepEqual(exp.Links(), act.Links()) {
+	if !reflect.DeepEqual(expected.Links(), actual.Links()) {
 		return fmt.Errorf("span Links doesn't match expected: %v, actual: %v",
-			exp.Links(),
-			act.Links())
+			expected.Links(),
+			actual.Links())
 	}
 
-	if exp.DroppedLinksCount() != act.DroppedLinksCount() {
+	if expected.DroppedLinksCount() != actual.DroppedLinksCount() {
 		return fmt.Errorf("span DroppedLinksCount doesn't match expected: %d, actual: %d",
-			exp.DroppedLinksCount(),
+			expected.DroppedLinksCount(),
 			actual.DroppedLinksCount())
 	}
 
-	if !reflect.DeepEqual(exp.Status(), act.Status()) {
+	if !reflect.DeepEqual(expected.Status(), actual.Status()) {
 		return fmt.Errorf("span Status doesn't match expected: %v, actual: %v",
-			exp.Status(),
-			act.Status())
+			expected.Status(),
+			actual.Status())
 	}
 
 	return nil

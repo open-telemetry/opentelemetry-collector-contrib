@@ -251,18 +251,14 @@ func CompareNumberDataPointSlices(expected, actual pmetric.NumberDataPointSlice)
 // CompareNumberDataPoints compares each part of two given NumberDataPoints and returns
 // an error if they don't match. The error describes what didn't match.
 func CompareNumberDataPoints(expected, actual pmetric.NumberDataPoint) error {
-	exp, act := pmetric.NewNumberDataPoint(), pmetric.NewNumberDataPoint()
-	expected.CopyTo(exp)
-	actual.CopyTo(act)
-
-	if exp.ValueType() != act.ValueType() {
-		return fmt.Errorf("metric datapoint types don't match: expected type: %s, actual type: %s", numberTypeToString(exp.ValueType()), numberTypeToString(act.ValueType()))
+	if expected.ValueType() != actual.ValueType() {
+		return fmt.Errorf("metric datapoint types don't match: expected type: %s, actual type: %s", numberTypeToString(expected.ValueType()), numberTypeToString(actual.ValueType()))
 	}
-	if exp.IntValue() != act.IntValue() {
-		return fmt.Errorf("metric datapoint IntVal doesn't match expected: %d, actual: %d", exp.IntValue(), act.IntValue())
+	if expected.IntValue() != actual.IntValue() {
+		return fmt.Errorf("metric datapoint IntVal doesn't match expected: %d, actual: %d", expected.IntValue(), actual.IntValue())
 	}
-	if exp.DoubleValue() != act.DoubleValue() {
-		return fmt.Errorf("metric datapoint DoubleVal doesn't match expected: %f, actual: %f", exp.DoubleValue(), act.DoubleValue())
+	if expected.DoubleValue() != actual.DoubleValue() {
+		return fmt.Errorf("metric datapoint DoubleVal doesn't match expected: %f, actual: %f", expected.DoubleValue(), actual.DoubleValue())
 	}
 	return nil
 }
