@@ -85,7 +85,7 @@ if [[ -n "${LABELS}" ]]; then
   # 2. The call to edit the issue will fail if any of the
   #    labels doesn't exist. We can be reasonably sure that
   #    all labels will exist since they come from a known set.
-  echo gh issue edit "${ISSUE}" --add-label "${LABELS}" || true
+  gh issue edit "${ISSUE}" --add-label "${LABELS}" || true
 fi
 
 if [[ -n "${PING_LINES}" ]]; then
