@@ -37,13 +37,15 @@ var supportedMetricTypes = map[string]struct{}{
 	createSummaryTableSQL:      {},
 }
 
+var logger *zap.Logger
+
 // MetricsModel is used to group metric data and insert into clickhouse
 // any type of metrics need implement it.
 type MetricsModel interface {
 	// Add used to bind MetricsMetaData to a specific metric then put them into a slice
 	Add(metrics any, metaData *MetricsMetaData, name string, description string, unit string) error
 	// insert is used to insert metric data to clickhouse
-	insert(ctx context.Context, db *sql.DB, logger *zap.Logger) error
+	insert(ctx context.Context, db *sql.DB) error
 }
 
 // MetricsMetaData  contain specific metric data
@@ -52,6 +54,11 @@ type MetricsMetaData struct {
 	ResURL     string
 	ScopeURL   string
 	ScopeInstr pcommon.InstrumentationScope
+}
+
+// SetLogger set a logger instance
+func SetLogger(l *zap.Logger) {
+	logger = l
 }
 
 func NewMetricsTable(tableName string, ttlDays uint, db *sql.DB) error {
@@ -88,13 +95,13 @@ func NewMetricsModel(tableName string) map[pmetric.MetricType]MetricsModel {
 	}
 }
 
-func InsertMetrics(ctx context.Context, db *sql.DB, metricsMap map[pmetric.MetricType]MetricsModel, logger *zap.Logger) error {
+func InsertMetrics(ctx context.Context, db *sql.DB, metricsMap map[pmetric.MetricType]MetricsModel) error {
 	errsChan := make(chan error, len(supportedMetricTypes))
 	wg := &sync.WaitGroup{}
 	for _, m := range metricsMap {
 		wg.Add(1)
 		go func(m MetricsModel, wg *sync.WaitGroup) {
-			errsChan <- m.insert(ctx, db, logger)
+			errsChan <- m.insert(ctx, db)
 			wg.Done()
 		}(m, wg)
 	}
@@ -139,6 +146,7 @@ func getValue(intValue int64, floatValue float64, dataType any) float64 {
 		case pmetric.ExemplarValueTypeInt:
 			return float64(intValue)
 		default:
+			logger.Warn("Can't find a suitable value for ExemplarValueType, ues 0.0 as default")
 			return 0.0
 		}
 	case pmetric.NumberDataPointValueType:
@@ -148,9 +156,11 @@ func getValue(intValue int64, floatValue float64, dataType any) float64 {
 		case pmetric.NumberDataPointValueTypeInt:
 			return float64(intValue)
 		default:
+			logger.Warn("Can't find a suitable value for NumberDataPointValueType, ues 0.0 as default")
 			return 0.0
 		}
 	default:
+		logger.Warn("unsupported ValueType, current support: ExemplarValueType, NumberDataPointValueType, ues 0.0 as default")
 		return 0.0
 	}
 }

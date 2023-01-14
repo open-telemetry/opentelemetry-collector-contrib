@@ -15,6 +15,7 @@
 package internal
 
 import (
+	"go.uber.org/zap/zaptest"
 	"testing"
 	"time"
 
@@ -35,15 +36,16 @@ func Test_attributesToMap(t *testing.T) {
 		t,
 		map[string]string{
 			"key":    "value",
-			"bool":   "",
-			"int":    "",
-			"double": "",
+			"bool":   "true",
+			"int":    "0",
+			"double": "0",
 		},
 		result,
 	)
 }
 
 func Test_convertExemplars(t *testing.T) {
+	SetLogger(zaptest.NewLogger(t))
 	t.Run("empty exemplar", func(t *testing.T) {
 		exemplars := pmetric.NewExemplarSlice()
 		var (
@@ -213,6 +215,7 @@ func Test_convertValueAtQuantile(t *testing.T) {
 }
 
 func Test_getValue(t *testing.T) {
+	SetLogger(zaptest.NewLogger(t))
 	t.Run("set int64 value with NumberDataPointValueType", func(t *testing.T) {
 		require.Equal(t, 10.0, getValue(int64(10), 0, pmetric.NumberDataPointValueTypeInt))
 	})
@@ -224,6 +227,9 @@ func Test_getValue(t *testing.T) {
 	})
 	t.Run("set float64 value with ExemplarValueType", func(t *testing.T) {
 		require.Equal(t, 20.0, getValue(0, 20.0, pmetric.ExemplarValueTypeDouble))
+	})
+	t.Run("set a unsupport dataType", func(t *testing.T) {
+		require.Equal(t, 0.0, getValue(int64(10), 0, pmetric.MetricTypeHistogram))
 	})
 }
 

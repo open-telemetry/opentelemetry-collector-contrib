@@ -94,7 +94,7 @@ type summaryMetrics struct {
 	count        int
 }
 
-func (s *summaryMetrics) insert(ctx context.Context, db *sql.DB, logger *zap.Logger) error {
+func (s *summaryMetrics) insert(ctx context.Context, db *sql.DB) error {
 	if s.count == 0 {
 		return nil
 	}

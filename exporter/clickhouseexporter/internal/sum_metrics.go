@@ -101,7 +101,7 @@ type sumMetrics struct {
 	count     int
 }
 
-func (s *sumMetrics) insert(ctx context.Context, db *sql.DB, logger *zap.Logger) error {
+func (s *sumMetrics) insert(ctx context.Context, db *sql.DB) error {
 	if s.count == 0 {
 		return nil
 	}

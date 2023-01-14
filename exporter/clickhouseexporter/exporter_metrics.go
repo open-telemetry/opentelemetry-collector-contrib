@@ -45,6 +45,7 @@ func newMetricsExporter(logger *zap.Logger, cfg *Config) (*metricsExporter, erro
 		return nil, err
 	}
 
+	internal.SetLogger(logger)
 	if err = internal.NewMetricsTable(cfg.MetricsTableName, cfg.TTLDays, client); err != nil {
 		return nil, err
 	}
@@ -100,7 +101,7 @@ func (e *metricsExporter) pushMetricsData(ctx context.Context, md pmetric.Metric
 		}
 	}
 	// batch insert https://clickhouse.com/docs/en/about-us/performance/#performance-when-inserting-data
-	if err := internal.InsertMetrics(ctx, e.client, metricsMap, e.logger); err != nil {
+	if err := internal.InsertMetrics(ctx, e.client, metricsMap); err != nil {
 		return err
 	}
 	return nil

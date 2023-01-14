@@ -97,7 +97,7 @@ type gaugeMetrics struct {
 	count       int
 }
 
-func (g *gaugeMetrics) insert(ctx context.Context, db *sql.DB, logger *zap.Logger) error {
+func (g *gaugeMetrics) insert(ctx context.Context, db *sql.DB) error {
 	if g.count == 0 {
 		return nil
 	}

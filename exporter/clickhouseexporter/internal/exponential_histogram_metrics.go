@@ -116,7 +116,7 @@ type expHistogramMetrics struct {
 	count              int
 }
 
-func (e *expHistogramMetrics) insert(ctx context.Context, db *sql.DB, logger *zap.Logger) error {
+func (e *expHistogramMetrics) insert(ctx context.Context, db *sql.DB) error {
 	if e.count == 0 {
 		return nil
 	}

@@ -108,7 +108,7 @@ type histogramMetrics struct {
 	count          int
 }
 
-func (h *histogramMetrics) insert(ctx context.Context, db *sql.DB, logger *zap.Logger) error {
+func (h *histogramMetrics) insert(ctx context.Context, db *sql.DB) error {
 	if h.count == 0 {
 		return nil
 	}
