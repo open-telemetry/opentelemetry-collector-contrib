@@ -89,8 +89,10 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
 	Flags,
 	Min,
 	Max) VALUES `
-	histogramPlaceholders = "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+	histogramValueCounts = 25
 )
+
+var histogramPlaceholders = newPlaceholder(25)
 
 type histogramModel struct {
 	metricName        string
@@ -103,58 +105,56 @@ type histogramModel struct {
 type histogramMetrics struct {
 	histogramModel []*histogramModel
 	insertSQL      string
+	count          int
 }
 
 func (h *histogramMetrics) insert(ctx context.Context, db *sql.DB, logger *zap.Logger) error {
-	if len(h.histogramModel) == 0 {
+	if h.count == 0 {
 		return nil
 	}
 
-	var valuePlaceholders []string
-	var valueArgs []interface{}
+	valueArgs := make([]any, h.count*histogramValueCounts)
+	var b strings.Builder
 
+	index := 0
 	for _, model := range h.histogramModel {
 		for i := 0; i < model.histogram.DataPoints().Len(); i++ {
 			dp := model.histogram.DataPoints().At(i)
-			valuePlaceholders = append(valuePlaceholders, histogramPlaceholders)
+			b.WriteString(*histogramPlaceholders)
 
-			valueArgs = append(valueArgs, model.metadata.ResAttr)
-			valueArgs = append(valueArgs, model.metadata.ResURL)
-			valueArgs = append(valueArgs, model.metadata.ScopeInstr.Name())
-			valueArgs = append(valueArgs, model.metadata.ScopeInstr.Version())
-			valueArgs = append(valueArgs, attributesToMap(model.metadata.ScopeInstr.Attributes()))
-			valueArgs = append(valueArgs, model.metadata.ScopeInstr.DroppedAttributesCount())
-			valueArgs = append(valueArgs, model.metadata.ScopeURL)
-			valueArgs = append(valueArgs, model.metricName)
-			valueArgs = append(valueArgs, model.metricDescription)
-			valueArgs = append(valueArgs, model.metricUnit)
-			valueArgs = append(valueArgs, attributesToMap(dp.Attributes()))
-			valueArgs = append(valueArgs, dp.StartTimestamp().AsTime().UnixNano())
-			valueArgs = append(valueArgs, dp.Timestamp().AsTime().UnixNano())
-			valueArgs = append(valueArgs, dp.Count())
-			valueArgs = append(valueArgs, dp.Sum())
-			valueArgs = append(valueArgs, convertSliceToArraySet(dp.BucketCounts().AsRaw(), logger))
-			valueArgs = append(valueArgs, convertSliceToArraySet(dp.ExplicitBounds().AsRaw(), logger))
+			valueArgs[index] = model.metadata.ResAttr
+			valueArgs[index+1] = model.metadata.ResURL
+			valueArgs[index+2] = model.metadata.ScopeInstr.Name()
+			valueArgs[index+3] = model.metadata.ScopeInstr.Version()
+			valueArgs[index+4] = attributesToMap(model.metadata.ScopeInstr.Attributes())
+			valueArgs[index+5] = model.metadata.ScopeInstr.DroppedAttributesCount()
+			valueArgs[index+6] = model.metadata.ScopeURL
+			valueArgs[index+7] = model.metricName
+			valueArgs[index+8] = model.metricDescription
+			valueArgs[index+9] = model.metricUnit
+			valueArgs[index+10] = attributesToMap(dp.Attributes())
+			valueArgs[index+11] = dp.StartTimestamp().AsTime().UnixNano()
+			valueArgs[index+12] = dp.Timestamp().AsTime().UnixNano()
+			valueArgs[index+13] = dp.Count()
+			valueArgs[index+14] = dp.Sum()
+			valueArgs[index+15] = convertSliceToArraySet(dp.BucketCounts().AsRaw())
+			valueArgs[index+16] = convertSliceToArraySet(dp.ExplicitBounds().AsRaw())
 
 			attrs, times, values, traceIDs, spanIDs := convertExemplars(dp.Exemplars())
-			valueArgs = append(valueArgs, attrs)
-			valueArgs = append(valueArgs, times)
-			valueArgs = append(valueArgs, values)
-			valueArgs = append(valueArgs, traceIDs)
-			valueArgs = append(valueArgs, spanIDs)
-			valueArgs = append(valueArgs, uint32(dp.Flags()))
-			valueArgs = append(valueArgs, dp.Min())
-			valueArgs = append(valueArgs, dp.Max())
+			valueArgs[index+17] = attrs
+			valueArgs[index+18] = times
+			valueArgs[index+19] = values
+			valueArgs[index+20] = traceIDs
+			valueArgs[index+21] = spanIDs
+			valueArgs[index+22] = uint32(dp.Flags())
+			valueArgs[index+23] = dp.Min()
+			valueArgs[index+24] = dp.Max()
 		}
-	}
-
-	if len(valuePlaceholders) == 0 {
-		return nil
 	}
 
 	start := time.Now()
 	err := doWithTx(ctx, db, func(tx *sql.Tx) error {
-		_, err := tx.ExecContext(ctx, fmt.Sprintf("%s %s", h.insertSQL, strings.Join(valuePlaceholders, ",")), valueArgs...)
+		_, err := tx.ExecContext(ctx, fmt.Sprintf("%s %s", h.insertSQL, strings.TrimSuffix(b.String(), ",")), valueArgs...)
 		return err
 	})
 	duration := time.Since(start)
@@ -164,7 +164,7 @@ func (h *histogramMetrics) insert(ctx context.Context, db *sql.DB, logger *zap.L
 	}
 
 	// TODO latency metrics
-	logger.Debug("insert histogram metrics", zap.Int("records", len(valuePlaceholders)),
+	logger.Debug("insert histogram metrics", zap.Int("records", h.count),
 		zap.Duration("cost", duration))
 	return nil
 }
@@ -174,6 +174,7 @@ func (h *histogramMetrics) Add(metrics any, metaData *MetricsMetaData, name stri
 	if !ok {
 		return fmt.Errorf("metrics param is not type of Histogram")
 	}
+	h.count += histogram.DataPoints().Len()
 	h.histogramModel = append(h.histogramModel, &histogramModel{
 		metricName:        name,
 		metricDescription: description,

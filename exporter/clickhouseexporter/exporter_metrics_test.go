@@ -18,8 +18,6 @@ import (
 	"context"
 	"database/sql/driver"
 	"fmt"
-	"log"
-	"net/http"
 	"strings"
 	"sync"
 	"testing"
@@ -35,15 +33,12 @@ import (
 // local dev test
 func Test_newMetricsExporter(t *testing.T) {
 	exporter := newTestMetricsExporter(t, defaultDSN)
-	mustPushMetricsData(t, exporter, simpleMetrics(1))
+	mustPushMetricsData(t, exporter, simpleMetrics(1000))
 }
 
 func TestExporter_pushMetricsData(t *testing.T) {
 	t.Parallel()
 	t.Run("push success", func(t *testing.T) {
-		go func() {
-			log.Println(http.ListenAndServe("0.0.0.0:10000", nil))
-		}()
 		mutex := sync.Mutex{}
 		var items int
 		initClickhouseTestServer(t, func(query string, values []driver.Value) error {
@@ -55,11 +50,7 @@ func TestExporter_pushMetricsData(t *testing.T) {
 			return nil
 		})
 		exporter := newTestMetricsExporter(t, defaultDSN)
-		md := simpleMetrics(1000)
-		for {
-			mustPushMetricsData(t, exporter, md)
-			time.Sleep(time.Second * 5)
-		}
+		mustPushMetricsData(t, exporter, simpleMetrics(1))
 	})
 	t.Run("push failure", func(t *testing.T) {
 		initClickhouseTestServer(t, func(query string, values []driver.Value) error {
@@ -97,6 +88,18 @@ func TestExporter_pushMetricsData(t *testing.T) {
 	})
 }
 
+func Benchmark_pushMetricsData(b *testing.B) {
+	pm := simpleMetrics(1)
+	exporter := newTestMetricsExporter(&testing.T{}, defaultDSN)
+	b.ReportAllocs()
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		err := exporter.pushMetricsData(context.TODO(), pm)
+		require.NoError(b, err)
+	}
+}
+
+// simpleMetrics there will be added two ResourceMetrics and each of them have count data point
 func simpleMetrics(count int) pmetric.Metrics {
 	metrics := pmetric.NewMetrics()
 	rm := metrics.ResourceMetrics().AppendEmpty()

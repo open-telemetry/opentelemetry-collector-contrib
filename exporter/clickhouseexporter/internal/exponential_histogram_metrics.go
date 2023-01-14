@@ -97,9 +97,10 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
 	Flags,
 	Min,
 	Max) VALUES `
-	expHistogramPlaceholders = "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?),"
-	expHistogramValueCounts  = 29
+	expHistogramValueCounts = 29
 )
+
+var expHistogramPlaceholders = newPlaceholder(expHistogramValueCounts)
 
 type expHistogramModel struct {
 	metricName        string
@@ -116,7 +117,7 @@ type expHistogramMetrics struct {
 }
 
 func (e *expHistogramMetrics) insert(ctx context.Context, db *sql.DB, logger *zap.Logger) error {
-	if len(e.expHistogramModels) == 0 {
+	if e.count == 0 {
 		return nil
 	}
 
@@ -125,11 +126,11 @@ func (e *expHistogramMetrics) insert(ctx context.Context, db *sql.DB, logger *za
 
 	index := 0
 	for _, model := range e.expHistogramModels {
-		for j := 0; j < model.expHistogram.DataPoints().Len(); j++ {
-			dp := model.expHistogram.DataPoints().At(j)
-			b.WriteString(expHistogramPlaceholders)
+		for i := 0; i < model.expHistogram.DataPoints().Len(); i++ {
+			dp := model.expHistogram.DataPoints().At(i)
+			b.WriteString(*expHistogramPlaceholders)
 
-			valueArgs[index+0] = model.metadata.ResAttr
+			valueArgs[index] = model.metadata.ResAttr
 			valueArgs[index+1] = model.metadata.ResURL
 			valueArgs[index+2] = model.metadata.ScopeInstr.Name()
 			valueArgs[index+3] = model.metadata.ScopeInstr.Version()
@@ -147,9 +148,9 @@ func (e *expHistogramMetrics) insert(ctx context.Context, db *sql.DB, logger *za
 			valueArgs[index+15] = dp.Scale()
 			valueArgs[index+16] = dp.ZeroCount()
 			valueArgs[index+17] = dp.Positive().Offset()
-			valueArgs[index+18] = convertSliceToArraySet(dp.Positive().BucketCounts().AsRaw(), logger)
+			valueArgs[index+18] = convertSliceToArraySet(dp.Positive().BucketCounts().AsRaw())
 			valueArgs[index+19] = dp.Negative().Offset()
-			valueArgs[index+20] = convertSliceToArraySet(dp.Negative().BucketCounts().AsRaw(), logger)
+			valueArgs[index+20] = convertSliceToArraySet(dp.Negative().BucketCounts().AsRaw())
 
 			attrs, times, values, traceIDs, spanIDs := convertExemplars(dp.Exemplars())
 			valueArgs[index+21] = attrs
@@ -167,8 +168,8 @@ func (e *expHistogramMetrics) insert(ctx context.Context, db *sql.DB, logger *za
 
 	start := time.Now()
 	err := doWithTx(ctx, db, func(tx *sql.Tx) error {
-		query := fmt.Sprintf("%s %s", e.insertSQL, strings.TrimSuffix(b.String(), ","))
-		_, err := tx.ExecContext(ctx, query, valueArgs...)
+
+		_, err := tx.ExecContext(ctx, fmt.Sprintf("%s %s", e.insertSQL, strings.TrimSuffix(b.String(), ",")), valueArgs...)
 		return err
 	})
 	duration := time.Since(start)

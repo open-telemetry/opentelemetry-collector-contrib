@@ -78,8 +78,10 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
     Exemplars.Value,
     Exemplars.SpanId,
     Exemplars.TraceId) VALUES `
-	gaugePlaceholders = "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+	gaugeValueCounts = 19
 )
+
+var gaugePlaceholders = newPlaceholder(19)
 
 type gaugeModel struct {
 	metricName        string
@@ -92,48 +94,50 @@ type gaugeModel struct {
 type gaugeMetrics struct {
 	gaugeModels []*gaugeModel
 	insertSQL   string
+	count       int
 }
 
 func (g *gaugeMetrics) insert(ctx context.Context, db *sql.DB, logger *zap.Logger) error {
-	if len(g.gaugeModels) == 0 {
+	if g.count == 0 {
 		return nil
 	}
 
-	var valuePlaceholders []string
-	var valueArgs []interface{}
+	valueArgs := make([]any, g.count*gaugeValueCounts)
+	var b strings.Builder
 
+	index := 0
 	for _, model := range g.gaugeModels {
 		for i := 0; i < model.gauge.DataPoints().Len(); i++ {
 			dp := model.gauge.DataPoints().At(i)
-			valuePlaceholders = append(valuePlaceholders, gaugePlaceholders)
+			b.WriteString(*gaugePlaceholders)
 
-			valueArgs = append(valueArgs, model.metadata.ResAttr)
-			valueArgs = append(valueArgs, model.metadata.ResURL)
-			valueArgs = append(valueArgs, model.metadata.ScopeInstr.Name())
-			valueArgs = append(valueArgs, model.metadata.ScopeInstr.Version())
-			valueArgs = append(valueArgs, attributesToMap(model.metadata.ScopeInstr.Attributes()))
-			valueArgs = append(valueArgs, model.metadata.ScopeInstr.DroppedAttributesCount())
-			valueArgs = append(valueArgs, model.metadata.ScopeURL)
-			valueArgs = append(valueArgs, model.metricName)
-			valueArgs = append(valueArgs, model.metricDescription)
-			valueArgs = append(valueArgs, model.metricUnit)
-			valueArgs = append(valueArgs, attributesToMap(dp.Attributes()))
-			valueArgs = append(valueArgs, dp.Timestamp().AsTime().UnixNano())
-			valueArgs = append(valueArgs, getValue(dp.IntValue(), dp.DoubleValue(), dp.ValueType()))
-			valueArgs = append(valueArgs, uint32(dp.Flags()))
+			valueArgs[index] = model.metadata.ResAttr
+			valueArgs[index+1] = model.metadata.ResURL
+			valueArgs[index+2] = model.metadata.ScopeInstr.Name()
+			valueArgs[index+3] = model.metadata.ScopeInstr.Version()
+			valueArgs[index+4] = attributesToMap(model.metadata.ScopeInstr.Attributes())
+			valueArgs[index+5] = model.metadata.ScopeInstr.DroppedAttributesCount()
+			valueArgs[index+6] = model.metadata.ScopeURL
+			valueArgs[index+7] = model.metricName
+			valueArgs[index+8] = model.metricDescription
+			valueArgs[index+9] = model.metricUnit
+			valueArgs[index+10] = attributesToMap(dp.Attributes())
+			valueArgs[index+11] = dp.Timestamp().AsTime().UnixNano()
+			valueArgs[index+12] = getValue(dp.IntValue(), dp.DoubleValue(), dp.ValueType())
+			valueArgs[index+13] = uint32(dp.Flags())
 
 			attrs, times, values, traceIDs, spanIDs := convertExemplars(dp.Exemplars())
-			valueArgs = append(valueArgs, attrs)
-			valueArgs = append(valueArgs, times)
-			valueArgs = append(valueArgs, values)
-			valueArgs = append(valueArgs, traceIDs)
-			valueArgs = append(valueArgs, spanIDs)
+			valueArgs[index+14] = attrs
+			valueArgs[index+15] = times
+			valueArgs[index+16] = values
+			valueArgs[index+17] = traceIDs
+			valueArgs[index+18] = spanIDs
 		}
 	}
 
 	start := time.Now()
 	err := doWithTx(ctx, db, func(tx *sql.Tx) error {
-		_, err := tx.ExecContext(ctx, fmt.Sprintf("%s %s", g.insertSQL, strings.Join(valuePlaceholders, ",")), valueArgs...)
+		_, err := tx.ExecContext(ctx, fmt.Sprintf("%s %s", g.insertSQL, strings.TrimSuffix(b.String(), ",")), valueArgs...)
 		return err
 	})
 	duration := time.Since(start)
@@ -143,7 +147,7 @@ func (g *gaugeMetrics) insert(ctx context.Context, db *sql.DB, logger *zap.Logge
 	}
 
 	// TODO latency metrics
-	logger.Debug("insert gauge metrics", zap.Int("records", len(valuePlaceholders)),
+	logger.Debug("insert gauge metrics", zap.Int("records", g.count),
 		zap.Duration("cost", duration))
 	return nil
 }
@@ -153,6 +157,7 @@ func (g *gaugeMetrics) Add(metrics any, metaData *MetricsMetaData, name string, 
 	if !ok {
 		return fmt.Errorf("metrics param is not type of Gauge")
 	}
+	g.count += gauge.DataPoints().Len()
 	g.gaugeModels = append(g.gaugeModels, &gaugeModel{
 		metricName:        name,
 		metricDescription: description,

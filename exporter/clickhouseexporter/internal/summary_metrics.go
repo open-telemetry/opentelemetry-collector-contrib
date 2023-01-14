@@ -75,8 +75,10 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
     ValueAtQuantiles.Quantile,
 	ValueAtQuantiles.Value,
     Flags) VALUES `
-	summaryPlaceholders = "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+	summaryValueCounts = 18
 )
+
+var summaryPlaceholders = newPlaceholder(18)
 
 type summaryModel struct {
 	metricName        string
@@ -89,51 +91,49 @@ type summaryModel struct {
 type summaryMetrics struct {
 	summaryModel []*summaryModel
 	insertSQL    string
+	count        int
 }
 
 func (s *summaryMetrics) insert(ctx context.Context, db *sql.DB, logger *zap.Logger) error {
-	if len(s.summaryModel) == 0 {
+	if s.count == 0 {
 		return nil
 	}
 
-	var valuePlaceholders []string
-	var valueArgs []interface{}
+	valueArgs := make([]any, s.count*summaryValueCounts)
+	var b strings.Builder
 
+	index := 0
 	for _, model := range s.summaryModel {
 		for i := 0; i < model.summary.DataPoints().Len(); i++ {
 			dp := model.summary.DataPoints().At(i)
-			valuePlaceholders = append(valuePlaceholders, summaryPlaceholders)
+			b.WriteString(*summaryPlaceholders)
 
-			valueArgs = append(valueArgs, model.metadata.ResAttr)
-			valueArgs = append(valueArgs, model.metadata.ResURL)
-			valueArgs = append(valueArgs, model.metadata.ScopeInstr.Name())
-			valueArgs = append(valueArgs, model.metadata.ScopeInstr.Version())
-			valueArgs = append(valueArgs, attributesToMap(model.metadata.ScopeInstr.Attributes()))
-			valueArgs = append(valueArgs, model.metadata.ScopeInstr.DroppedAttributesCount())
-			valueArgs = append(valueArgs, model.metadata.ScopeURL)
-			valueArgs = append(valueArgs, model.metricName)
-			valueArgs = append(valueArgs, model.metricDescription)
-			valueArgs = append(valueArgs, model.metricUnit)
-			valueArgs = append(valueArgs, attributesToMap(dp.Attributes()))
-			valueArgs = append(valueArgs, dp.StartTimestamp().AsTime().UnixNano())
-			valueArgs = append(valueArgs, dp.Timestamp().AsTime().UnixNano())
-			valueArgs = append(valueArgs, dp.Count())
-			valueArgs = append(valueArgs, dp.Sum())
+			valueArgs[index] = model.metadata.ResAttr
+			valueArgs[index+1] = model.metadata.ResURL
+			valueArgs[index+2] = model.metadata.ScopeInstr.Name()
+			valueArgs[index+3] = model.metadata.ScopeInstr.Version()
+			valueArgs[index+4] = attributesToMap(model.metadata.ScopeInstr.Attributes())
+			valueArgs[index+5] = model.metadata.ScopeInstr.DroppedAttributesCount()
+			valueArgs[index+6] = model.metadata.ScopeURL
+			valueArgs[index+7] = model.metricName
+			valueArgs[index+8] = model.metricDescription
+			valueArgs[index+9] = model.metricUnit
+			valueArgs[index+10] = attributesToMap(dp.Attributes())
+			valueArgs[index+11] = dp.StartTimestamp().AsTime().UnixNano()
+			valueArgs[index+12] = dp.Timestamp().AsTime().UnixNano()
+			valueArgs[index+13] = dp.Count()
+			valueArgs[index+14] = dp.Sum()
 
 			quantiles, values := convertValueAtQuantile(dp.QuantileValues())
-			valueArgs = append(valueArgs, quantiles)
-			valueArgs = append(valueArgs, values)
-			valueArgs = append(valueArgs, uint32(dp.Flags()))
+			valueArgs[index+15] = quantiles
+			valueArgs[index+16] = values
+			valueArgs[index+17] = uint32(dp.Flags())
 		}
-	}
-
-	if len(valuePlaceholders) == 0 {
-		return nil
 	}
 
 	start := time.Now()
 	err := doWithTx(ctx, db, func(tx *sql.Tx) error {
-		_, err := tx.ExecContext(ctx, fmt.Sprintf("%s %s", s.insertSQL, strings.Join(valuePlaceholders, ",")), valueArgs...)
+		_, err := tx.ExecContext(ctx, fmt.Sprintf("%s %s", s.insertSQL, strings.TrimSuffix(b.String(), ",")), valueArgs...)
 		return err
 	})
 	duration := time.Since(start)
@@ -143,7 +143,7 @@ func (s *summaryMetrics) insert(ctx context.Context, db *sql.DB, logger *zap.Log
 	}
 
 	// TODO latency metrics
-	logger.Debug("insert summary metrics", zap.Int("records", len(valuePlaceholders)),
+	logger.Debug("insert summary metrics", zap.Int("records", s.count),
 		zap.Duration("cost", duration))
 	return nil
 }
@@ -153,6 +153,7 @@ func (s *summaryMetrics) Add(metrics any, metaData *MetricsMetaData, name string
 	if !ok {
 		return fmt.Errorf("metrics param is not type of Summary")
 	}
+	s.count += summary.DataPoints().Len()
 	s.summaryModel = append(s.summaryModel, &summaryModel{
 		metricName:        name,
 		metricDescription: description,

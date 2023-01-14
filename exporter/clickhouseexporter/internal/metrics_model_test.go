@@ -213,10 +213,21 @@ func Test_convertValueAtQuantile(t *testing.T) {
 }
 
 func Test_getValue(t *testing.T) {
-	t.Run("set int64 value", func(t *testing.T) {
-		require.Equal(t, 10.0, getValue(int64(10), 0))
+	t.Run("set int64 value with NumberDataPointValueType", func(t *testing.T) {
+		require.Equal(t, 10.0, getValue(int64(10), 0, pmetric.NumberDataPointValueTypeInt))
 	})
-	t.Run("set float64 value", func(t *testing.T) {
-		require.Equal(t, 20.0, getValue(0, 20.0))
+	t.Run("set float64 value with NumberDataPointValueType", func(t *testing.T) {
+		require.Equal(t, 20.0, getValue(0, 20.0, pmetric.NumberDataPointValueTypeDouble))
 	})
+	t.Run("set int64 value with ExemplarValueType", func(t *testing.T) {
+		require.Equal(t, 10.0, getValue(int64(10), 0, pmetric.ExemplarValueTypeInt))
+	})
+	t.Run("set float64 value with ExemplarValueType", func(t *testing.T) {
+		require.Equal(t, 20.0, getValue(0, 20.0, pmetric.ExemplarValueTypeDouble))
+	})
+}
+
+func Test_newPlaceholder(t *testing.T) {
+	expectStr := "(?,?,?,?,?),"
+	require.Equal(t, newPlaceholder(5), &expectStr)
 }

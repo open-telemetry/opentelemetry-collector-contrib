@@ -19,6 +19,7 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
@@ -88,7 +89,7 @@ func NewMetricsModel(tableName string) map[pmetric.MetricType]MetricsModel {
 }
 
 func InsertMetrics(ctx context.Context, db *sql.DB, metricsMap map[pmetric.MetricType]MetricsModel, logger *zap.Logger) error {
-	errsChan := make(chan error, 5)
+	errsChan := make(chan error, len(supportedMetricTypes))
 	wg := &sync.WaitGroup{}
 	for _, m := range metricsMap {
 		wg.Add(1)
@@ -163,19 +164,10 @@ func attributesToMap(attributes pcommon.Map) map[string]string {
 	return m
 }
 
-func convertSliceToArraySet(slice interface{}, logger *zap.Logger) clickhouse.ArraySet {
+func convertSliceToArraySet[T any](slice []T) clickhouse.ArraySet {
 	var set clickhouse.ArraySet
-	switch slice := slice.(type) {
-	case []uint64:
-		for _, item := range slice {
-			set = append(set, item)
-		}
-	case []float64:
-		for _, item := range slice {
-			set = append(set, item)
-		}
-	default:
-		logger.Warn("unsupported slice type", zap.String("current support", "[]uint64, []float64"))
+	for _, item := range slice {
+		set = append(set, item)
 	}
 	return set
 }
@@ -193,7 +185,8 @@ func convertValueAtQuantile(valueAtQuantile pmetric.SummaryDataPointValueAtQuant
 	return quantiles, values
 }
 
-// doWithTx is a copy of clickhouseexporter.doWithTx. This function is in a temporary status, after this PR get merged,
+// doWithTx is a copy of clickhouseexporter.doWithTx, it starts a transaction to exec SQL in fn.
+// This function is in a temporary status, after this PR get merged,
 // there will be a PR to move all db function and tool function to internal package.
 func doWithTx(ctx context.Context, db *sql.DB, fn func(tx *sql.Tx) error) error {
 	tx, err := db.BeginTx(ctx, nil)
@@ -207,4 +200,14 @@ func doWithTx(ctx context.Context, db *sql.DB, fn func(tx *sql.Tx) error) error 
 		return err
 	}
 	return tx.Commit()
+}
+
+func newPlaceholder(count int) *string {
+	var b strings.Builder
+	for i := 0; i < count; i++ {
+		b.WriteString(",?")
+	}
+	b.WriteString("),")
+	placeholder := strings.Replace(b.String(), ",", "(", 1)
+	return &placeholder
 }
