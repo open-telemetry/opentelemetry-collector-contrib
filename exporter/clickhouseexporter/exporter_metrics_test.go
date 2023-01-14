@@ -27,7 +27,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap/zaptest"
-	_ "net/http/pprof"
 )
 
 // local dev test

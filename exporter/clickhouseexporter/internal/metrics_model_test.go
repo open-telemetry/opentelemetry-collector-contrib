@@ -15,7 +15,6 @@
 package internal
 
 import (
-	"go.uber.org/zap/zaptest"
 	"testing"
 	"time"
 
@@ -23,6 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/zap/zaptest"
 )
 
 func Test_attributesToMap(t *testing.T) {

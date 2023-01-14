@@ -66,7 +66,7 @@ func NewMetricsTable(tableName string, ttlDays uint, db *sql.DB) error {
 	if ttlDays > 0 {
 		ttlExpr = fmt.Sprintf(`TTL toDateTime(TimeUnix) + toIntervalDay(%d)`, ttlDays)
 	}
-	for table, _ := range supportedMetricTypes {
+	for table := range supportedMetricTypes {
 		query := fmt.Sprintf(table, tableName, ttlExpr)
 		if _, err := db.Exec(query); err != nil {
 			return fmt.Errorf("exec create metrics table sql: %w", err)
