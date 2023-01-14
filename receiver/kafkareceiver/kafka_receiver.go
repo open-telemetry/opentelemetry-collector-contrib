@@ -615,9 +615,9 @@ func (c *logsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSess
 				session.Commit()
 			}
 
-			// Should return when `session.Context()` is done.
-			// If not, will raise `ErrRebalanceInProgress` or `read tcp <ip>:<port>: i/o timeout` when kafka rebalance. see:
-			// https://github.com/Shopify/sarama/issues/1192
+		// Should return when `session.Context()` is done.
+		// If not, will raise `ErrRebalanceInProgress` or `read tcp <ip>:<port>: i/o timeout` when kafka rebalance. see:
+		// https://github.com/Shopify/sarama/issues/1192
 		case <-session.Context().Done():
 			return nil
 		}

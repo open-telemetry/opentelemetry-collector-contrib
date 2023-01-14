@@ -423,6 +423,56 @@ func TestMetricsConsumerGroupHandler(t *testing.T) {
 	wg.Wait()
 }
 
+func TestMetricsConsumerGroupHandler_session_done(t *testing.T) {
+	view.Unregister(MetricViews()...)
+	views := MetricViews()
+	require.NoError(t, view.Register(views...))
+	defer view.Unregister(views...)
+
+	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: receivertest.NewNopCreateSettings()})
+	require.NoError(t, err)
+	c := metricsConsumerGroupHandler{
+		unmarshaler:  newPdataMetricsUnmarshaler(&pmetric.ProtoUnmarshaler{}, defaultEncoding),
+		logger:       zap.NewNop(),
+		ready:        make(chan bool),
+		nextConsumer: consumertest.NewNop(),
+		obsrecv:      obsrecv,
+	}
+
+	ctx, cancelFunc := context.WithCancel(context.Background())
+	testSession := testConsumerGroupSession{ctx: ctx}
+	require.NoError(t, c.Setup(testSession))
+	_, ok := <-c.ready
+	assert.False(t, ok)
+	viewData, err := view.RetrieveData(statPartitionStart.Name())
+	require.NoError(t, err)
+	assert.Equal(t, 1, len(viewData))
+	distData := viewData[0].Data.(*view.SumData)
+	assert.Equal(t, float64(1), distData.Value)
+
+	require.NoError(t, c.Cleanup(testSession))
+	viewData, err = view.RetrieveData(statPartitionClose.Name())
+	require.NoError(t, err)
+	assert.Equal(t, 1, len(viewData))
+	distData = viewData[0].Data.(*view.SumData)
+	assert.Equal(t, float64(1), distData.Value)
+
+	groupClaim := testConsumerGroupClaim{
+		messageChan: make(chan *sarama.ConsumerMessage),
+	}
+	defer close(groupClaim.messageChan)
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		require.NoError(t, c.ConsumeClaim(testSession, groupClaim))
+		wg.Done()
+	}()
+
+	groupClaim.messageChan <- &sarama.ConsumerMessage{}
+	cancelFunc()
+	wg.Wait()
+}
+
 func TestMetricsConsumerGroupHandler_error_unmarshal(t *testing.T) {
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: receivertest.NewNopCreateSettings()})
 	require.NoError(t, err)
@@ -614,6 +664,56 @@ func TestLogsConsumerGroupHandler(t *testing.T) {
 
 	groupClaim.messageChan <- &sarama.ConsumerMessage{}
 	close(groupClaim.messageChan)
+	wg.Wait()
+}
+
+func TestLogsConsumerGroupHandler_session_done(t *testing.T) {
+	view.Unregister(MetricViews()...)
+	views := MetricViews()
+	require.NoError(t, view.Register(views...))
+	defer view.Unregister(views...)
+
+	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: receivertest.NewNopCreateSettings()})
+	require.NoError(t, err)
+	c := logsConsumerGroupHandler{
+		unmarshaler:  newPdataLogsUnmarshaler(&plog.ProtoUnmarshaler{}, defaultEncoding),
+		logger:       zap.NewNop(),
+		ready:        make(chan bool),
+		nextConsumer: consumertest.NewNop(),
+		obsrecv:      obsrecv,
+	}
+
+	ctx, cancelFunc := context.WithCancel(context.Background())
+	testSession := testConsumerGroupSession{ctx: ctx}
+	require.NoError(t, c.Setup(testSession))
+	_, ok := <-c.ready
+	assert.False(t, ok)
+	viewData, err := view.RetrieveData(statPartitionStart.Name())
+	require.NoError(t, err)
+	assert.Equal(t, 1, len(viewData))
+	distData := viewData[0].Data.(*view.SumData)
+	assert.Equal(t, float64(1), distData.Value)
+
+	require.NoError(t, c.Cleanup(testSession))
+	viewData, err = view.RetrieveData(statPartitionClose.Name())
+	require.NoError(t, err)
+	assert.Equal(t, 1, len(viewData))
+	distData = viewData[0].Data.(*view.SumData)
+	assert.Equal(t, float64(1), distData.Value)
+
+	groupClaim := testConsumerGroupClaim{
+		messageChan: make(chan *sarama.ConsumerMessage),
+	}
+	defer close(groupClaim.messageChan)
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		require.NoError(t, c.ConsumeClaim(testSession, groupClaim))
+		wg.Done()
+	}()
+
+	groupClaim.messageChan <- &sarama.ConsumerMessage{}
+	cancelFunc()
 	wg.Wait()
 }
 
