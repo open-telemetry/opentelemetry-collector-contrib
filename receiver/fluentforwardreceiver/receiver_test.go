@@ -31,6 +31,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
 )
 
 func setupServer(t *testing.T) (func() net.Conn, *consumertest.LogsSink, *observer.ObservedLogs, context.CancelFunc) {
@@ -113,8 +115,7 @@ func TestMessageEvent(t *testing.T) {
 		return len(converted) == 1
 	}, 5*time.Second, 10*time.Millisecond)
 
-	converted[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Sort()
-	require.EqualValues(t, Logs(Log{
+	require.NoError(t, comparetest.CompareLogs(Logs(Log{
 		Timestamp: 1593031012000000000,
 		Body:      pcommon.NewValueStr("..."),
 		Attributes: map[string]interface{}{
@@ -123,8 +124,7 @@ func TestMessageEvent(t *testing.T) {
 			"fluent.tag":     "b00a67eb6458",
 			"source":         "stdout",
 		},
-	},
-	), converted[0])
+	}), converted[0]))
 }
 
 func TestForwardEvent(t *testing.T) {
@@ -145,10 +145,7 @@ func TestForwardEvent(t *testing.T) {
 		return len(converted) == 1
 	}, 5*time.Second, 10*time.Millisecond)
 
-	ls := converted[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
-	ls.At(0).Attributes().Sort()
-	ls.At(1).Attributes().Sort()
-	require.EqualValues(t, Logs(
+	require.NoError(t, comparetest.CompareLogs(Logs(
 		Log{
 			Timestamp: 1593032377776693638,
 			Body:      pcommon.NewValueEmpty(),
@@ -175,7 +172,7 @@ func TestForwardEvent(t *testing.T) {
 				"fluent.tag": "mem.0",
 			},
 		},
-	), converted[0])
+	), converted[0]))
 }
 
 func TestEventAcknowledgment(t *testing.T) {
@@ -227,11 +224,7 @@ func TestForwardPackedEvent(t *testing.T) {
 		return len(converted) == 1
 	}, 5*time.Second, 10*time.Millisecond)
 
-	ls := converted[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
-	for i := 0; i < ls.Len(); i++ {
-		ls.At(i).Attributes().Sort()
-	}
-	require.EqualValues(t, Logs(
+	require.NoError(t, comparetest.CompareLogs(Logs(
 		Log{
 			Timestamp: 1593032517024597622,
 			Body:      pcommon.NewValueStr("starting fluentd worker pid=17 ppid=7 worker=0"),
@@ -272,7 +265,7 @@ func TestForwardPackedEvent(t *testing.T) {
 				"worker":     0,
 			},
 		},
-	), converted[0])
+	), converted[0]))
 }
 
 func TestForwardPackedCompressedEvent(t *testing.T) {
@@ -293,11 +286,7 @@ func TestForwardPackedCompressedEvent(t *testing.T) {
 		return len(converted) == 1
 	}, 5*time.Second, 10*time.Millisecond)
 
-	ls := converted[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
-	for i := 0; i < ls.Len(); i++ {
-		ls.At(i).Attributes().Sort()
-	}
-	require.EqualValues(t, Logs(
+	require.NoError(t, comparetest.CompareLogs(Logs(
 		Log{
 			Timestamp: 1593032426012197420,
 			Body:      pcommon.NewValueStr("starting fluentd worker pid=17 ppid=7 worker=0"),
@@ -338,7 +327,7 @@ func TestForwardPackedCompressedEvent(t *testing.T) {
 				"worker":     0,
 			},
 		},
-	), converted[0])
+	), converted[0]))
 }
 
 func TestUnixEndpoint(t *testing.T) {
