@@ -108,6 +108,10 @@ golint:
 goimpi: $(IMPI)
 	@$(MAKE) $(FOR_GROUP_TARGET) TARGET="impi"
 
+.PHONY: gogci
+gogci: install-tools
+	@$(MAKE) $(FOR_GROUP_TARGET) TARGET="gci"
+
 .PHONY: goporto
 goporto: $(PORTO)
 	$(PORTO) -w --include-internal --skip-dirs "^cmd$$" ./

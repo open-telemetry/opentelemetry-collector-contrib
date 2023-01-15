@@ -4,6 +4,7 @@ go 1.18
 
 require (
 	github.com/client9/misspell v0.3.4
+	github.com/daixiang0/gci v0.9.0
 	github.com/golangci/golangci-lint v1.50.1
 	github.com/google/addlicense v1.1.0
 	github.com/jcchavezs/porto v0.4.0
@@ -49,7 +50,6 @@ require (
 	github.com/chavacava/garif v0.0.0-20220630083739-93517212f375 // indirect
 	github.com/cloudflare/circl v1.1.0 // indirect
 	github.com/curioswitch/go-reassign v0.2.0 // indirect
-	github.com/daixiang0/gci v0.8.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/denis-tingaikin/go-header v0.4.3 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect

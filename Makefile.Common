@@ -22,6 +22,7 @@ GOCMD?= go
 GOTEST=$(GOCMD) test
 GOOS=$(shell $(GOCMD) env GOOS)
 GOARCH=$(shell $(GOCMD) env GOARCH)
+<<<<<<< HEAD
 
 # In order to help reduce toil related to managing tooling for the open telemetry collector
 # this section of the makefile looks at only requiring command definitions to be defined
@@ -57,6 +58,15 @@ CHECKDOC            := $(TOOLS_BIN_DIR)/checkdoc
 CROSSLINK           := $(TOOLS_BIN_DIR)/crosslink
 GOJUNIT             := $(TOOLS_BIN_DIR)/go-junit-report 
 
+=======
+ADDLICENCESE= addlicense
+MDLINKCHECK=markdown-link-check
+MISSPELL=misspell -error
+MISSPELL_CORRECTION=misspell -w
+LINT=golangci-lint
+IMPI=impi
+GCI=gci
+>>>>>>> 59406ce0e1 ([chore] adopt GCI to manage imports)
 # BUILD_TYPE should be one of (dev, release).
 BUILD_TYPE?=release
 RUNNING_ON_GITHUB_ACTION=$(GITHUB_ACTIONS)
@@ -160,6 +170,7 @@ checklinks:
 fmt: $(GOIMPORTS)
 	gofmt  -w -s ./
 	$(GOIMPORTS) -w  -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+	goimports -w  -local github.com/open-telemetry/opentelemetry-collector-contrib ./
 
 .PHONY: lint
 lint: $(LINT) checklicense misspell
@@ -182,6 +193,10 @@ misspell-correction: $(TOOLS_BIN_DIR)/misspell
 .PHONY: impi
 impi: $(IMPI)
 	@$(IMPI) --local github.com/open-telemetry/opentelemetry-collector-contrib --scheme stdThirdPartyLocal ./...
+
+.PHONY: gci
+gci:
+	@$(GCI) write ./ -s standard -s default -s "prefix(github.com/open-telemetry/opentelemetry-collector-contrib)"
 
 .PHONY: moddownload
 moddownload:
