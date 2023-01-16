@@ -52,8 +52,8 @@ func TestExporter_pushMetricsData(t *testing.T) {
 			}
 			return nil
 		})
-		exporter := newTestMetricsExporter(t, defaultDSN)
-		err := exporter.pushMetricsData(context.TODO(), simpleMetrics(1))
+		exporter := newTestMetricsExporter(t, "tcp://127.0.0.1:9000/db")
+		err := exporter.pushMetricsData(context.TODO(), simpleMetrics(2))
 		require.Error(t, err)
 	})
 	t.Run("check Resource metadata and scope metadata", func(t *testing.T) {
