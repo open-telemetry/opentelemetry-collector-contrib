@@ -13,7 +13,7 @@ require (
 	github.com/stretchr/testify v1.8.1
 	go.opentelemetry.io/collector v0.69.0
 	go.opentelemetry.io/collector/component v0.69.0
-	go.opentelemetry.io/collector/confmap v0.69.0
+	go.opentelemetry.io/collector/confmap v0.69.1
 	go.opentelemetry.io/collector/consumer v0.69.0
 	go.opentelemetry.io/collector/pdata v1.0.0-rc3
 	go.opentelemetry.io/collector/semconv v0.69.0
@@ -63,7 +63,7 @@ require (
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/uber/jaeger-client-go v2.30.0+incompatible // indirect
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
-	go.opentelemetry.io/collector/featuregate v0.69.0 // indirect
+	go.opentelemetry.io/collector/featuregate v0.69.1 // indirect
 	go.opentelemetry.io/otel v1.11.2 // indirect
 	go.opentelemetry.io/otel/metric v0.34.0 // indirect
 	go.opentelemetry.io/otel/trace v1.11.2 // indirect
