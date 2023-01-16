@@ -168,13 +168,11 @@ func CompareMetricSlices(expected, actual pmetric.MetricSlice) error {
 			return fmt.Errorf("metric DataType does not match expected: %s, actual: %s", expectedMetric.Type(), actualMetric.Type())
 		}
 
-		var expectedDataPoints pmetric.NumberDataPointSlice
-		var actualDataPoints pmetric.NumberDataPointSlice
-
 		switch actualMetric.Type() {
 		case pmetric.MetricTypeGauge:
-			expectedDataPoints = expectedMetric.Gauge().DataPoints()
-			actualDataPoints = actualMetric.Gauge().DataPoints()
+			if err := CompareNumberDataPointSlices(expectedMetric.Gauge().DataPoints(), actualMetric.Gauge().DataPoints()); err != nil {
+				return multierr.Combine(fmt.Errorf("datapoints for metric: `%s`, do not match expected", actualMetric.Name()), err)
+			}
 		case pmetric.MetricTypeSum:
 			if actualMetric.Sum().AggregationTemporality() != expectedMetric.Sum().AggregationTemporality() {
 				return fmt.Errorf("metric AggregationTemporality does not match expected: %s, actual: %s", expectedMetric.Sum().AggregationTemporality(), actualMetric.Sum().AggregationTemporality())
@@ -182,12 +180,27 @@ func CompareMetricSlices(expected, actual pmetric.MetricSlice) error {
 			if actualMetric.Sum().IsMonotonic() != expectedMetric.Sum().IsMonotonic() {
 				return fmt.Errorf("metric IsMonotonic does not match expected: %t, actual: %t", expectedMetric.Sum().IsMonotonic(), actualMetric.Sum().IsMonotonic())
 			}
-			expectedDataPoints = expectedMetric.Sum().DataPoints()
-			actualDataPoints = actualMetric.Sum().DataPoints()
-		}
-
-		if err := CompareNumberDataPointSlices(expectedDataPoints, actualDataPoints); err != nil {
-			return multierr.Combine(fmt.Errorf("datapoints for metric: `%s`, do not match expected", actualMetric.Name()), err)
+			if err := CompareNumberDataPointSlices(expectedMetric.Sum().DataPoints(), actualMetric.Sum().DataPoints()); err != nil {
+				return multierr.Combine(fmt.Errorf("datapoints for metric: `%s`, do not match expected", actualMetric.Name()), err)
+			}
+		case pmetric.MetricTypeHistogram:
+			if actualMetric.Histogram().AggregationTemporality() != expectedMetric.Histogram().AggregationTemporality() {
+				return fmt.Errorf("metric AggregationTemporality does not match expected: %s, actual: %s", expectedMetric.Histogram().AggregationTemporality(), actualMetric.Histogram().AggregationTemporality())
+			}
+			if err := CompareHistogramDataPointSlices(expectedMetric.Histogram().DataPoints(), actualMetric.Histogram().DataPoints()); err != nil {
+				return multierr.Combine(fmt.Errorf("datapoints for metric: `%s`, do not match expected", actualMetric.Name()), err)
+			}
+		case pmetric.MetricTypeExponentialHistogram:
+			if actualMetric.ExponentialHistogram().AggregationTemporality() != expectedMetric.ExponentialHistogram().AggregationTemporality() {
+				return fmt.Errorf("metric AggregationTemporality does not match expected: %s, actual: %s", expectedMetric.ExponentialHistogram().AggregationTemporality(), actualMetric.ExponentialHistogram().AggregationTemporality())
+			}
+			if err := CompareExponentialHistogramDataPointSlices(expectedMetric.ExponentialHistogram().DataPoints(), actualMetric.ExponentialHistogram().DataPoints()); err != nil {
+				return multierr.Combine(fmt.Errorf("datapoints for metric: `%s`, do not match expected", actualMetric.Name()), err)
+			}
+		case pmetric.MetricTypeSummary:
+			if err := CompareSummaryDataPointSlices(expectedMetric.Summary().DataPoints(), actualMetric.Summary().DataPoints()); err != nil {
+				return multierr.Combine(fmt.Errorf("datapoints for metric: `%s`, do not match expected", actualMetric.Name()), err)
+			}
 		}
 	}
 	return nil
@@ -248,7 +261,7 @@ func CompareNumberDataPointSlices(expected, actual pmetric.NumberDataPointSlice)
 // an error if they don't match. The error describes what didn't match.
 func CompareNumberDataPoints(expected, actual pmetric.NumberDataPoint) error {
 	if expected.ValueType() != actual.ValueType() {
-		return fmt.Errorf("metric datapoint types don't match: expected type: %s, actual type: %s", numberTypeToString(expected.ValueType()), numberTypeToString(actual.ValueType()))
+		return fmt.Errorf("metric datapoint types don't match: expected type: %s, actual type: %s", expected.ValueType(), actual.ValueType())
 	}
 	if expected.IntValue() != actual.IntValue() {
 		return fmt.Errorf("metric datapoint IntVal doesn't match expected: %d, actual: %d", expected.IntValue(), actual.IntValue())
@@ -259,13 +272,302 @@ func CompareNumberDataPoints(expected, actual pmetric.NumberDataPoint) error {
 	return nil
 }
 
-func numberTypeToString(t pmetric.NumberDataPointValueType) string {
-	switch t {
-	case pmetric.NumberDataPointValueTypeInt:
-		return "int"
-	case pmetric.NumberDataPointValueTypeDouble:
-		return "double"
-	default:
-		return "none"
+// CompareHistogramDataPointSlices compares each part of two given HistogramDataPointSlices and returns
+// an error if they don't match. The error describes what didn't match.
+func CompareHistogramDataPointSlices(expected, actual pmetric.HistogramDataPointSlice) error {
+	if expected.Len() != actual.Len() {
+		return fmt.Errorf("number of datapoints does not match expected: %d, actual: %d", expected.Len(), actual.Len())
 	}
+
+	numPoints := expected.Len()
+
+	// Keep track of matching data points so that each point can only be matched once
+	matchingDPS := make(map[pmetric.HistogramDataPoint]pmetric.HistogramDataPoint, numPoints)
+
+	var errs error
+	for e := 0; e < numPoints; e++ {
+		edp := expected.At(e)
+		var foundMatch bool
+		for a := 0; a < numPoints; a++ {
+			adp := actual.At(a)
+			if _, ok := matchingDPS[adp]; ok {
+				continue
+			}
+			if reflect.DeepEqual(edp.Attributes().AsRaw(), adp.Attributes().AsRaw()) {
+				foundMatch = true
+				matchingDPS[adp] = edp
+				break
+			}
+		}
+
+		if !foundMatch {
+			errs = multierr.Append(errs, fmt.Errorf("metric missing expected datapoint with attributes: %v", edp.Attributes().AsRaw()))
+		}
+	}
+
+	for i := 0; i < numPoints; i++ {
+		if _, ok := matchingDPS[actual.At(i)]; !ok {
+			errs = multierr.Append(errs, fmt.Errorf("metric has extra datapoint with attributes: %v", actual.At(i).Attributes().AsRaw()))
+		}
+	}
+
+	if errs != nil {
+		return errs
+	}
+
+	for adp, edp := range matchingDPS {
+		if err := CompareHistogramDataPoints(edp, adp); err != nil {
+			return multierr.Combine(fmt.Errorf("datapoint with attributes: %v, does not match expected", adp.Attributes().AsRaw()), err)
+		}
+	}
+	return nil
+}
+
+// CompareHistogramDataPoints compares each part of two given HistogramDataPoints and returns
+// an error if they don't match. The error describes what didn't match.
+func CompareHistogramDataPoints(expected, actual pmetric.HistogramDataPoint) error {
+	if expected.HasSum() != actual.HasSum() {
+		return fmt.Errorf("metric datapoint HasSum doesn't match expected: %t, actual: %t", expected.HasSum(), actual.HasSum())
+	}
+	if expected.HasSum() && expected.Sum() != actual.Sum() {
+		return fmt.Errorf("metric datapoint Sum doesn't match expected: %f, actual: %f", expected.Sum(), actual.Sum())
+	}
+	if expected.HasMin() != actual.HasMin() {
+		return fmt.Errorf("metric datapoint HasMin doesn't match expected: %t, actual: %t", expected.HasMin(), actual.HasMin())
+	}
+	if expected.HasMin() && expected.Min() != actual.Min() {
+		return fmt.Errorf("metric datapoint Min doesn't match expected: %f, actual: %f", expected.Min(), actual.Min())
+	}
+	if expected.HasMax() != actual.HasMax() {
+		return fmt.Errorf("metric datapoint HasMax doesn't match expected: %t, actual: %t", expected.HasMax(), actual.HasMax())
+	}
+	if expected.HasMax() && expected.Max() != actual.Max() {
+		return fmt.Errorf("metric datapoint Max doesn't match expected: %f, actual: %f", expected.Max(), actual.Max())
+	}
+	if expected.Count() != actual.Count() {
+		return fmt.Errorf("metric datapoint Count doesn't match expected: %d, actual: %d", expected.Count(), actual.Count())
+	}
+	if expected.StartTimestamp() != actual.StartTimestamp() {
+		return fmt.Errorf("metric datapoint StartTimestamp doesn't match expected: %d, actual: %d", expected.StartTimestamp(), actual.StartTimestamp())
+	}
+	if expected.Timestamp() != actual.Timestamp() {
+		return fmt.Errorf("metric datapoint Timestamp doesn't match expected: %d, actual: %d", expected.Timestamp(), actual.Timestamp())
+	}
+	if expected.Flags() != actual.Flags() {
+		return fmt.Errorf("metric datapoint Flags doesn't match expected: %d, actual: %d", expected.Flags(), actual.Flags())
+	}
+	if !reflect.DeepEqual(expected.BucketCounts(), actual.BucketCounts()) {
+		return fmt.Errorf("metric datapoint BucketCounts doesn't match expected: %v, actual: %v", expected.BucketCounts().AsRaw(), actual.BucketCounts().AsRaw())
+	}
+	if !reflect.DeepEqual(expected.ExplicitBounds(), actual.ExplicitBounds()) {
+		return fmt.Errorf("metric datapoint ExplicitBounds doesn't match expected: %v, actual: %v", expected.ExplicitBounds().AsRaw(), actual.ExplicitBounds().AsRaw())
+	}
+	if !reflect.DeepEqual(expected.Attributes().AsRaw(), actual.Attributes().AsRaw()) {
+		return fmt.Errorf("metric datapoint Attributes doesn't match expected: %v, actual: %v", expected.Attributes().AsRaw(), actual.Attributes().AsRaw())
+	}
+	return nil
+}
+
+// CompareExponentialHistogramDataPointSlices compares each part of two given ExponentialHistogramDataPointSlices and returns
+// an error if they don't match. The error describes what didn't match.
+func CompareExponentialHistogramDataPointSlices(expected, actual pmetric.ExponentialHistogramDataPointSlice) error {
+	if expected.Len() != actual.Len() {
+		return fmt.Errorf("number of datapoints does not match expected: %d, actual: %d", expected.Len(), actual.Len())
+	}
+
+	numPoints := expected.Len()
+
+	// Keep track of matching data points so that each point can only be matched once
+	matchingDPS := make(map[pmetric.ExponentialHistogramDataPoint]pmetric.ExponentialHistogramDataPoint, numPoints)
+
+	var errs error
+	for e := 0; e < numPoints; e++ {
+		edp := expected.At(e)
+		var foundMatch bool
+		for a := 0; a < numPoints; a++ {
+			adp := actual.At(a)
+			if _, ok := matchingDPS[adp]; ok {
+				continue
+			}
+			if reflect.DeepEqual(edp.Attributes().AsRaw(), adp.Attributes().AsRaw()) {
+				foundMatch = true
+				matchingDPS[adp] = edp
+				break
+			}
+		}
+
+		if !foundMatch {
+			errs = multierr.Append(errs, fmt.Errorf("metric missing expected datapoint with attributes: %v", edp.Attributes().AsRaw()))
+		}
+	}
+
+	for i := 0; i < numPoints; i++ {
+		if _, ok := matchingDPS[actual.At(i)]; !ok {
+			errs = multierr.Append(errs, fmt.Errorf("metric has extra datapoint with attributes: %v", actual.At(i).Attributes().AsRaw()))
+		}
+	}
+
+	if errs != nil {
+		return errs
+	}
+
+	for adp, edp := range matchingDPS {
+		if err := CompareExponentialHistogramDataPoints(edp, adp); err != nil {
+			return multierr.Combine(fmt.Errorf("datapoint with attributes: %v, does not match expected", adp.Attributes().AsRaw()), err)
+		}
+	}
+	return nil
+}
+
+// CompareExponentialHistogramDataPoints compares each part of two given ExponentialHistogramDataPoints and returns
+// an error if they don't match. The error describes what didn't match.
+func CompareExponentialHistogramDataPoints(expected, actual pmetric.ExponentialHistogramDataPoint) error {
+	if expected.HasSum() != actual.HasSum() {
+		return fmt.Errorf("metric datapoint HasSum doesn't match expected: %t, actual: %t", expected.HasSum(), actual.HasSum())
+	}
+	if expected.HasSum() && expected.Sum() != actual.Sum() {
+		return fmt.Errorf("metric datapoint Sum doesn't match expected: %f, actual: %f", expected.Sum(), actual.Sum())
+	}
+	if expected.HasMin() != actual.HasMin() {
+		return fmt.Errorf("metric datapoint HasMin doesn't match expected: %t, actual: %t", expected.HasMin(), actual.HasMin())
+	}
+	if expected.HasMin() && expected.Min() != actual.Min() {
+		return fmt.Errorf("metric datapoint Min doesn't match expected: %f, actual: %f", expected.Min(), actual.Min())
+	}
+	if expected.HasMax() != actual.HasMax() {
+		return fmt.Errorf("metric datapoint HasMax doesn't match expected: %t, actual: %t", expected.HasMax(), actual.HasMax())
+	}
+	if expected.HasMax() && expected.Max() != actual.Max() {
+		return fmt.Errorf("metric datapoint Max doesn't match expected: %f, actual: %f", expected.Max(), actual.Max())
+	}
+	if expected.Count() != actual.Count() {
+		return fmt.Errorf("metric datapoint Count doesn't match expected: %d, actual: %d", expected.Count(), actual.Count())
+	}
+	if expected.ZeroCount() != actual.ZeroCount() {
+		return fmt.Errorf("metric datapoint ZeroCount doesn't match expected: %d, actual: %d", expected.ZeroCount(), actual.ZeroCount())
+	}
+	if expected.StartTimestamp() != actual.StartTimestamp() {
+		return fmt.Errorf("metric datapoint StartTimestamp doesn't match expected: %d, actual: %d", expected.StartTimestamp(), actual.StartTimestamp())
+	}
+	if expected.Timestamp() != actual.Timestamp() {
+		return fmt.Errorf("metric datapoint Timestamp doesn't match expected: %d, actual: %d", expected.Timestamp(), actual.Timestamp())
+	}
+	if expected.Flags() != actual.Flags() {
+		return fmt.Errorf("metric datapoint Flags doesn't match expected: %d, actual: %d", expected.Flags(), actual.Flags())
+	}
+	if expected.Scale() != actual.Scale() {
+		return fmt.Errorf("metric datapoint Scale doesn't match expected: %v, actual: %v", expected.Scale(), actual.Scale())
+	}
+	if expected.Negative().Offset() != actual.Negative().Offset() {
+		return fmt.Errorf("metric datapoint Negative Offset doesn't match expected: %v, actual: %v", expected.Negative().Offset(), actual.Negative().Offset())
+	}
+	if !reflect.DeepEqual(expected.Negative().BucketCounts(), actual.Negative().BucketCounts()) {
+		return fmt.Errorf("metric datapoint Negative BucketCounts doesn't match expected: %v, actual: %v",
+			expected.Negative().BucketCounts().AsRaw(), actual.Negative().BucketCounts().AsRaw())
+	}
+	if expected.Positive().Offset() != actual.Positive().Offset() {
+		return fmt.Errorf("metric datapoint Positive Offset doesn't match expected: %v, actual: %v", expected.Positive().Offset(), actual.Positive().Offset())
+	}
+	if !reflect.DeepEqual(expected.Positive().BucketCounts(), actual.Positive().BucketCounts()) {
+		return fmt.Errorf("metric datapoint Positive BucketCounts doesn't match expected: %v, actual: %v",
+			expected.Positive().BucketCounts().AsRaw(), actual.Positive().BucketCounts().AsRaw())
+	}
+	if !reflect.DeepEqual(expected.Attributes().AsRaw(), actual.Attributes().AsRaw()) {
+		return fmt.Errorf("metric datapoint Attributes doesn't match expected: %v, actual: %v", expected.Attributes().AsRaw(), actual.Attributes().AsRaw())
+	}
+	return nil
+}
+
+// CompareSummaryDataPointSlices compares each part of two given SummaryDataPoint slices and returns
+// an error if they don't match. The error describes what didn't match.
+func CompareSummaryDataPointSlices(expected, actual pmetric.SummaryDataPointSlice) error {
+	numPoints := expected.Len()
+	if numPoints != actual.Len() {
+		return fmt.Errorf("metric datapoint slice length doesn't match expected: %d, actual: %d", numPoints, actual.Len())
+	}
+
+	matchingDPS := map[pmetric.SummaryDataPoint]pmetric.SummaryDataPoint{}
+	var errs error
+	for e := 0; e < numPoints; e++ {
+		edp := expected.At(e)
+		var foundMatch bool
+		for a := 0; a < numPoints; a++ {
+			adp := actual.At(a)
+			if _, ok := matchingDPS[adp]; ok {
+				continue
+			}
+			if reflect.DeepEqual(edp.Attributes().AsRaw(), adp.Attributes().AsRaw()) {
+				foundMatch = true
+				matchingDPS[adp] = edp
+				break
+			}
+		}
+
+		if !foundMatch {
+			errs = multierr.Append(errs, fmt.Errorf("metric missing expected datapoint with attributes: %v", edp.Attributes().AsRaw()))
+		}
+	}
+
+	for i := 0; i < numPoints; i++ {
+		if _, ok := matchingDPS[actual.At(i)]; !ok {
+			errs = multierr.Append(errs, fmt.Errorf("metric has extra datapoint with attributes: %v", actual.At(i).Attributes().AsRaw()))
+		}
+	}
+
+	if errs != nil {
+		return errs
+	}
+
+	for adp, edp := range matchingDPS {
+		if err := CompareSummaryDataPoints(edp, adp); err != nil {
+			return multierr.Combine(fmt.Errorf("datapoint with attributes: %v, does not match expected", adp.Attributes().AsRaw()), err)
+		}
+	}
+	return nil
+}
+
+// CompareSummaryDataPoints compares each part of two given SummaryDataPoint and returns
+// an error if they don't match. The error describes what didn't match.
+func CompareSummaryDataPoints(expected, actual pmetric.SummaryDataPoint) error {
+	if expected.Count() != actual.Count() {
+		return fmt.Errorf("metric datapoint Count doesn't match expected: %d, actual: %d", expected.Count(), actual.Count())
+	}
+	if expected.Sum() != actual.Sum() {
+		return fmt.Errorf("metric datapoint Sum doesn't match expected: %f, actual: %f", expected.Sum(), actual.Sum())
+	}
+	if expected.StartTimestamp() != actual.StartTimestamp() {
+		return fmt.Errorf("metric datapoint StartTimestamp doesn't match expected: %d, actual: %d", expected.StartTimestamp(), actual.StartTimestamp())
+	}
+	if expected.Timestamp() != actual.Timestamp() {
+		return fmt.Errorf("metric datapoint Timestamp doesn't match expected: %d, actual: %d", expected.Timestamp(), actual.Timestamp())
+	}
+	if expected.Flags() != actual.Flags() {
+		return fmt.Errorf("metric datapoint Flags doesn't match expected: %d, actual: %d", expected.Flags(), actual.Flags())
+	}
+	if !reflect.DeepEqual(expected.Attributes().AsRaw(), actual.Attributes().AsRaw()) {
+		return fmt.Errorf("metric datapoint Attributes doesn't match expected: %v, actual: %v", expected.Attributes().AsRaw(), actual.Attributes().AsRaw())
+	}
+	if expected.QuantileValues().Len() != actual.QuantileValues().Len() {
+		return fmt.Errorf("metric datapoint QuantileValues length doesn't match expected: %d, actual: %d", expected.QuantileValues().Len(), actual.QuantileValues().Len())
+	}
+
+	eqvs, acvs := pmetric.NewSummaryDataPointValueAtQuantileSlice(), pmetric.NewSummaryDataPointValueAtQuantileSlice()
+	expected.QuantileValues().CopyTo(eqvs)
+	actual.QuantileValues().CopyTo(acvs)
+
+	eqvs.Sort(sortSummaryDataPointValueAtQuantileSlice)
+	acvs.Sort(sortSummaryDataPointValueAtQuantileSlice)
+
+	for i := 0; i < eqvs.Len(); i++ {
+		eqv, acv := eqvs.At(i), acvs.At(i)
+		if eqv.Quantile() != acv.Quantile() {
+			return fmt.Errorf("metric datapoint quantile doesn't match expected: %f, actual: %f", eqv.Quantile(), acv.Quantile())
+		}
+		if eqv.Value() != acv.Value() {
+			return fmt.Errorf("metric datapoint value at quantile %f doesn't match expected: %f, actual: %f",
+				eqv.Quantile(), eqv.Value(), acv.Value())
+		}
+	}
+
+	return nil
 }
