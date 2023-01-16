@@ -61,6 +61,7 @@ func SetLogger(l *zap.Logger) {
 	logger = l
 }
 
+// NewMetricsTable create metric tables with an expiry time to storage metric telemetry data
 func NewMetricsTable(tableName string, ttlDays uint, db *sql.DB) error {
 	var ttlExpr string
 	if ttlDays > 0 {
@@ -75,6 +76,7 @@ func NewMetricsTable(tableName string, ttlDays uint, db *sql.DB) error {
 	return nil
 }
 
+// NewMetricsModel create a model for contain different metric data
 func NewMetricsModel(tableName string) map[pmetric.MetricType]MetricsModel {
 	return map[pmetric.MetricType]MetricsModel{
 		pmetric.MetricTypeGauge: &gaugeMetrics{
@@ -95,6 +97,7 @@ func NewMetricsModel(tableName string) map[pmetric.MetricType]MetricsModel {
 	}
 }
 
+// InsertMetrics insert metric data into clickhouse concurrently
 func InsertMetrics(ctx context.Context, db *sql.DB, metricsMap map[pmetric.MetricType]MetricsModel) error {
 	errsChan := make(chan error, len(supportedMetricTypes))
 	wg := &sync.WaitGroup{}
