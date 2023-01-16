@@ -99,7 +99,7 @@ func generateFile(tmplFile string, outputFile string, md metadata) error {
 				},
 				"stringsJoin": strings.Join,
 				"inc":         func(i int) int { return i + 1 },
-			}).ParseFS(templateFS, tmplFile))
+			}).ParseFS(templateFS, strings.Replace(tmplFile, "\\", "/", -1)))
 
 	buf := bytes.Buffer{}
 
