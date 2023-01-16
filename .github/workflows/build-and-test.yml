@@ -563,6 +563,7 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: collector-binaries
+          path: ./bin/
       - name: Download Packages
         uses: actions/download-artifact@v3
         with:
