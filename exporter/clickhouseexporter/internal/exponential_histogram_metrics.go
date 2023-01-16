@@ -168,7 +168,6 @@ func (e *expHistogramMetrics) insert(ctx context.Context, db *sql.DB) error {
 
 	start := time.Now()
 	err := doWithTx(ctx, db, func(tx *sql.Tx) error {
-
 		_, err := tx.ExecContext(ctx, fmt.Sprintf("%s %s", e.insertSQL, strings.TrimSuffix(b.String(), ",")), valueArgs...)
 		return err
 	})

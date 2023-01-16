@@ -29,12 +29,6 @@ import (
 	"go.uber.org/zap/zaptest"
 )
 
-// local dev test
-func Test_newMetricsExporter(t *testing.T) {
-	exporter := newTestMetricsExporter(t, defaultDSN)
-	mustPushMetricsData(t, exporter, simpleMetrics(1000))
-}
-
 func TestExporter_pushMetricsData(t *testing.T) {
 	t.Parallel()
 	t.Run("push success", func(t *testing.T) {
