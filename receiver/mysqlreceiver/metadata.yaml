@@ -26,6 +26,10 @@ attributes:
     description: The prepare statement command types.
     type: string
     enum: [execute, close, fetch, prepare, reset, send_long_data]
+  command:
+    description: The command types.
+    type: string
+    enum: [delete, insert, select, update]
   connection_error:
     name_override: error
     description: The connection error type.
@@ -221,6 +225,16 @@ metrics:
       monotonic: true
       aggregation: cumulative
     attributes: [prepared_statements_command]
+  mysql.commands:
+    enabled: false
+    description: The number of times each type of command has been executed.
+    unit: 1
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: true
+      aggregation: cumulative
+    attributes: [command]
   mysql.handlers:
     enabled: true
     description: The number of requests to various MySQL handlers.
