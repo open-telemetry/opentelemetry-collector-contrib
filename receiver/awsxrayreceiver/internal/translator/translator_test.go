@@ -28,6 +28,7 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
 )
 
 type perSpanProperties struct {
@@ -117,7 +118,7 @@ func TestTranslation(t *testing.T) {
 					testCase+": one segment should translate to 1 ResourceSpans")
 
 				actualRs := actualTraces.ResourceSpans().At(0)
-				compare2ResourceSpans(t, testCase, expectedRs, actualRs)
+				assert.NoError(t, comparetest.CompareResourceSpans(expectedRs, actualRs))
 			},
 		},
 		{
@@ -517,7 +518,7 @@ func TestTranslation(t *testing.T) {
 					"one segment should translate to 1 ResourceSpans")
 
 				actualRs := actualTraces.ResourceSpans().At(0)
-				compare2ResourceSpans(t, testCase, expectedRs, actualRs)
+				assert.NoError(t, comparetest.CompareResourceSpans(expectedRs, actualRs))
 			},
 		},
 		{
@@ -552,7 +553,7 @@ func TestTranslation(t *testing.T) {
 					testCase+": one segment should translate to 1 ResourceSpans")
 
 				actualRs := actualTraces.ResourceSpans().At(0)
-				compare2ResourceSpans(t, testCase, expectedRs, actualRs)
+				assert.NoError(t, comparetest.CompareResourceSpans(expectedRs, actualRs))
 			},
 		},
 		{
@@ -601,7 +602,7 @@ func TestTranslation(t *testing.T) {
 					testCase+": one segment should translate to 1 ResourceSpans")
 
 				actualRs := actualTraces.ResourceSpans().At(0)
-				compare2ResourceSpans(t, testCase, expectedRs, actualRs)
+				assert.NoError(t, comparetest.CompareResourceSpans(expectedRs, actualRs))
 			},
 		},
 		{
@@ -636,7 +637,7 @@ func TestTranslation(t *testing.T) {
 					testCase+": one segment should translate to 1 ResourceSpans")
 
 				actualRs := actualTraces.ResourceSpans().At(0)
-				compare2ResourceSpans(t, testCase, expectedRs, actualRs)
+				assert.NoError(t, comparetest.CompareResourceSpans(expectedRs, actualRs))
 			},
 		},
 		{
@@ -697,7 +698,7 @@ func TestTranslation(t *testing.T) {
 					testCase+": one segment should translate to 1 ResourceSpans")
 
 				actualRs := actualTraces.ResourceSpans().At(0)
-				compare2ResourceSpans(t, testCase, expectedRs, actualRs)
+				assert.NoError(t, comparetest.CompareResourceSpans(expectedRs, actualRs))
 			},
 		},
 		{
@@ -741,7 +742,7 @@ func TestTranslation(t *testing.T) {
 					testCase+": one segment should translate to 1 ResourceSpans")
 
 				actualRs := actualTraces.ResourceSpans().At(0)
-				compare2ResourceSpans(t, testCase, expectedRs, actualRs)
+				assert.NoError(t, comparetest.CompareResourceSpans(expectedRs, actualRs))
 			},
 		},
 		{
@@ -785,7 +786,7 @@ func TestTranslation(t *testing.T) {
 					testCase+": one segment should translate to 1 ResourceSpans")
 
 				actualRs := actualTraces.ResourceSpans().At(0)
-				compare2ResourceSpans(t, testCase, expectedRs, actualRs)
+				assert.NoError(t, comparetest.CompareResourceSpans(expectedRs, actualRs))
 			},
 		},
 		{
@@ -981,77 +982,6 @@ func initResourceSpans(t *testing.T, expectedSeg *awsxray.Segment,
 		}
 	}
 	return rs
-}
-
-// note that this function causes side effects on the expected (
-// abbrev. as exp) and actual ResourceSpans (abbrev. as act):
-// 1. clears the resource attributes on both exp and act, after verifying
-// .  both sets are the same.
-//  2. clears the span attributes of all the
-//     spans on both exp and act, after going through all the spans
-//
-// .  on both exp and act and verify that all the attributes match.
-//  3. similarly, for all the events and their attributes within a span,
-//     this function performs the same equality verification, then clears
-//     up all the attribute.
-//
-// The reason for doing so is just to be able to use deep equal via assert.Equal()
-func compare2ResourceSpans(t *testing.T, testCase string, exp, act ptrace.ResourceSpans) {
-	assert.Equal(t, exp.ScopeSpans().Len(),
-		act.ScopeSpans().Len(),
-		testCase+": ScopeSpans.Len() differ")
-
-	exp.Resource().Attributes().Sort()
-	act.Resource().Attributes().Sort()
-	assert.Equal(t,
-		exp.Resource().Attributes(),
-		act.Resource().Attributes(),
-		testCase+": Resource.Attributes() differ")
-
-	actSpans := act.ScopeSpans().At(0).Spans()
-	expSpans := exp.ScopeSpans().At(0).Spans()
-	assert.Equal(t,
-		expSpans.Len(),
-		actSpans.Len(),
-		testCase+": span.Len() differ",
-	)
-
-	for i := 0; i < expSpans.Len(); i++ {
-		expS := expSpans.At(i)
-		actS := actSpans.At(i)
-
-		assert.Equal(t,
-			expS.Attributes().AsRaw(),
-			actS.Attributes().AsRaw(),
-			fmt.Sprintf("%s: span[%s].Attributes() differ", testCase, expS.SpanID()),
-		)
-		expS.Attributes().Clear()
-		actS.Attributes().Clear()
-
-		expEvts := expS.Events()
-		actEvts := actS.Events()
-		assert.Equal(t,
-			expEvts.Len(),
-			actEvts.Len(),
-			fmt.Sprintf("%s: span[%s].Events().Len() differ", testCase, expS.SpanID()),
-		)
-
-		for j := 0; j < expEvts.Len(); j++ {
-			expEvt := expEvts.At(j)
-			actEvt := actEvts.At(j)
-
-			assert.Equal(t,
-				expEvt.Attributes().AsRaw(),
-				actEvt.Attributes().AsRaw(),
-				fmt.Sprintf("%s: span[%s], event[%d].Attributes() differ", testCase, expS.SpanID(), j),
-			)
-			expEvt.Attributes().Clear()
-			actEvt.Attributes().Clear()
-		}
-	}
-
-	assert.Equal(t, exp, act,
-		testCase+": actual ResourceSpans differ from the expected")
 }
 
 func TestDecodeXRayTraceID(t *testing.T) {
