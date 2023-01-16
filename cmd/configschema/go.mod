@@ -68,7 +68,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.42.0-rc.3.0.20230105173916-a8aabce52617 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/log v0.42.0-rc.3.0.20230105173916-a8aabce52617 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.42.0-rc.3.0.20230105173916-a8aabce52617 // indirect
-	github.com/DataDog/datadog-api-client-go/v2 v2.6.1 // indirect
+	github.com/DataDog/datadog-api-client-go/v2 v2.7.0 // indirect
 	github.com/DataDog/datadog-go/v5 v5.1.1 // indirect
 	github.com/DataDog/go-tuf v0.3.0--fix-localmeta-fork // indirect
 	github.com/DataDog/gohai v0.0.0-20220718130825-1776f9beb9cc // indirect
@@ -84,7 +84,7 @@ require (
 	github.com/ReneKroon/ttlcache/v2 v2.11.0 // indirect
 	github.com/SAP/go-hdb v0.111.8 // indirect
 	github.com/SermoDigital/jose v0.9.2-0.20161205224733-f6df55f235c2 // indirect
-	github.com/Shopify/sarama v1.37.2 // indirect
+	github.com/Shopify/sarama v1.38.0 // indirect
 	github.com/Showmax/go-fqdn v1.0.0 // indirect
 	github.com/aerospike/aerospike-client-go/v6 v6.8.0 // indirect
 	github.com/alecthomas/participle/v2 v2.0.0-beta.5 // indirect
@@ -202,7 +202,7 @@ require (
 	github.com/golang/mock v1.6.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
-	github.com/google/cadvisor v0.47.0 // indirect
+	github.com/google/cadvisor v0.47.1 // indirect
 	github.com/google/flatbuffers v2.0.8+incompatible // indirect
 	github.com/google/gnostic v0.5.7-v3refs // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
@@ -527,7 +527,7 @@ require (
 	github.com/signalfx/golib/v3 v3.3.46 // indirect
 	github.com/signalfx/sapm-proto v0.12.0 // indirect
 	github.com/signalfx/signalfx-agent/pkg/apm v0.0.0-20220920175102-539ae8d8ba8e // indirect
-	github.com/sijms/go-ora/v2 v2.5.21 // indirect
+	github.com/sijms/go-ora/v2 v2.5.23 // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
 	github.com/snowflakedb/gosnowflake v1.6.16 // indirect
 	github.com/soheilhy/cmux v0.1.5 // indirect
@@ -604,7 +604,7 @@ require (
 	golang.org/x/tools v0.4.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	gonum.org/v1/gonum v0.12.0 // indirect
-	google.golang.org/api v0.106.0 // indirect
+	google.golang.org/api v0.107.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20221227171554-f9683d7f8bef // indirect
 	google.golang.org/grpc v1.52.0 // indirect
