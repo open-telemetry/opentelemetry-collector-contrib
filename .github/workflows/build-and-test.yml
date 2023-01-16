@@ -114,7 +114,7 @@ jobs:
       - name: Lint
         run: make -j2 golint GROUP=${{ matrix.group }}
   lint:
-    if: ${{ always() }}
+    if: ${{ github.actor != 'dependabot[bot]' && always() }}
     runs-on: ubuntu-latest
     needs: [setup-environment, lint-matrix]
     steps:
@@ -241,7 +241,7 @@ jobs:
           test_path: |
             ./**/foresight-test*.txt
   unittest:
-    if: ${{ always() }}
+    if: ${{ github.actor != 'dependabot[bot]' && always() }}
     strategy:
       matrix:
         go-version: [1.19, 1.18]
