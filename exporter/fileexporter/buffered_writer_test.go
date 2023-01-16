@@ -16,6 +16,7 @@ package fileexporter
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"os"
 	"path"
@@ -28,6 +29,10 @@ import (
 
 const (
 	msg = "it is a beautiful world"
+
+	SizeByte     = 1
+	SizeKiloByte = 1 << (10 * iota)
+	SizeMegaByte
 )
 
 type NopWriteCloser struct {
@@ -64,22 +69,34 @@ func BenchmarkWriter(b *testing.B) {
 		return f
 	}
 
-	for name, w := range map[string]io.WriteCloser{
-		"discard":          &NopWriteCloser{io.Discard},
-		"buffered-discard": newBufferedWriterCloser(&NopWriteCloser{io.Discard}),
-		"raw-file":         tempfile(b),
-		"buffered-file":    newBufferedWriterCloser(tempfile(b)),
+	for _, payloadSize := range []int{
+		10 * SizeKiloByte,
+		100 * SizeKiloByte,
+		SizeMegaByte,
+		10 * SizeMegaByte,
 	} {
-		w := w
-		b.Run(name, func(b *testing.B) {
-			b.ReportAllocs()
-			b.ResetTimer()
+		payload := make([]byte, payloadSize)
+		for i := 0; i < payloadSize; i++ {
+			payload[i] = 'a'
+		}
+		for name, w := range map[string]io.WriteCloser{
+			"discard":          &NopWriteCloser{io.Discard},
+			"buffered-discard": newBufferedWriterCloser(&NopWriteCloser{io.Discard}),
+			"raw-file":         tempfile(b),
+			"buffered-file":    newBufferedWriterCloser(tempfile(b)),
+		} {
+			w := w
+			b.Run(fmt.Sprintf("%s_%d_bytes", name, payloadSize), func(b *testing.B) {
+				b.ReportAllocs()
+				b.ResetTimer()
 
-			var err error
-			for i := 0; i < b.N; i++ {
-				_, err = w.Write([]byte(msg))
-			}
-			benchmarkErr = multierr.Combine(err, w.Close())
-		})
+				var err error
+				for i := 0; i < b.N; i++ {
+					_, err = w.Write(payload)
+				}
+				benchmarkErr = multierr.Combine(err, w.Close())
+			})
+		}
 	}
+
 }

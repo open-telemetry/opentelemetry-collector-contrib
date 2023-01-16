@@ -24,7 +24,7 @@ import (
 // bufferedWriteCloser is intended to use more memory
 // in order to optimize writing to disk to help improve performance.
 type bufferedWriteCloser struct {
-	wrapped   io.Closer
+	wrapped  io.Closer
 	buffered *bufio.Writer
 }
 
@@ -34,7 +34,7 @@ var (
 
 func newBufferedWriterCloser(f io.WriteCloser) io.WriteCloser {
 	return &bufferedWriteCloser{
-		wraped:   f,
+		wrapped:  f,
 		buffered: bufio.NewWriter(f),
 	}
 }
@@ -46,6 +46,6 @@ func (bwc *bufferedWriteCloser) Write(p []byte) (n int, err error) {
 func (bwc *bufferedWriteCloser) Close() error {
 	return multierr.Combine(
 		bwc.buffered.Flush(),
-		bwc.wraped.Close(),
+		bwc.wrapped.Close(),
 	)
 }
