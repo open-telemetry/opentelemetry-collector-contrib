@@ -7,10 +7,10 @@ require (
 	github.com/DataDog/datadog-agent/pkg/trace v0.42.0-rc.2.0.20221215161218-ae4a2b6bc233
 	github.com/DataDog/sketches-go v1.4.1
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.69.0
-	go.opentelemetry.io/collector/component v0.69.0
-	go.opentelemetry.io/collector/consumer v0.69.0
-	go.opentelemetry.io/collector/pdata v1.0.0-rc3
+	go.opentelemetry.io/collector v0.69.2-0.20230112233839-f2a0133bf677
+	go.opentelemetry.io/collector/component v0.69.2-0.20230112233839-f2a0133bf677
+	go.opentelemetry.io/collector/consumer v0.69.2-0.20230112233839-f2a0133bf677
+	go.opentelemetry.io/collector/pdata v1.0.0-rc3.0.20230112233839-f2a0133bf677
 	go.uber.org/zap v1.24.0
 	google.golang.org/protobuf v1.28.1
 )
@@ -42,7 +42,7 @@ require (
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/karrick/godirwalk v1.17.0 // indirect
-	github.com/knadh/koanf v1.4.4 // indirect
+	github.com/knadh/koanf v1.4.5 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20220517141722-cf486979b281 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
@@ -63,9 +63,9 @@ require (
 	github.com/tklauser/go-sysconf v0.3.11 // indirect
 	github.com/tklauser/numcpus v0.6.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
-	go.opentelemetry.io/collector/confmap v0.69.0 // indirect
-	go.opentelemetry.io/collector/featuregate v0.69.0 // indirect
-	go.opentelemetry.io/collector/semconv v0.69.0 // indirect
+	go.opentelemetry.io/collector/confmap v0.69.2-0.20230112233839-f2a0133bf677 // indirect
+	go.opentelemetry.io/collector/featuregate v0.69.2-0.20230112233839-f2a0133bf677 // indirect
+	go.opentelemetry.io/collector/semconv v0.69.2-0.20230112233839-f2a0133bf677 // indirect
 	go.opentelemetry.io/otel v1.11.2 // indirect
 	go.opentelemetry.io/otel/metric v0.34.0 // indirect
 	go.opentelemetry.io/otel/trace v1.11.2 // indirect
