@@ -117,7 +117,7 @@ pkg/translator/jaeger/                                   @open-telemetry/collect
 pkg/translator/loki/                                     @open-telemetry/collector-contrib-approvers @gouthamve @jpkrohling @kovrus @mar4uk
 pkg/translator/opencensus/                               @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 pkg/translator/prometheus/                               @open-telemetry/collector-contrib-approvers @dashpole @bertysentry
-pkg/translator/prometheusremotewrite/                    @open-telemetry/collector-contrib-approvers @Aneurysm9
+pkg/translator/prometheusremotewrite/                    @open-telemetry/collector-contrib-approvers @Aneurysm9 @kovrus
 pkg/translator/signalfx/                                 @open-telemetry/collector-contrib-approvers @pmcollins @pjanotti @dmitryax
 pkg/translator/zipkin/                                   @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 pkg/winperfcounters/                                     @open-telemetry/collector-contrib-approvers @dashpole @mrod1598 @binaryfissiongames
