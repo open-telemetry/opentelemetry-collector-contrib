@@ -7,8 +7,8 @@ require (
 	github.com/stretchr/testify v1.8.1
 	go.opentelemetry.io/collector v0.69.0
 	go.opentelemetry.io/collector/component v0.69.0
-	go.opentelemetry.io/collector/confmap v0.69.0
-	go.opentelemetry.io/collector/featuregate v0.69.0
+	go.opentelemetry.io/collector/confmap v0.69.1
+	go.opentelemetry.io/collector/featuregate v0.69.1
 )
 
 require (
