@@ -8,7 +8,7 @@ require (
 	github.com/openzipkin/zipkin-go v0.4.1
 	github.com/stretchr/testify v1.8.1
 	go.opentelemetry.io/collector/pdata v1.0.0-rc3
-	go.opentelemetry.io/collector/semconv v0.69.0
+	go.opentelemetry.io/collector/semconv v0.69.1
 )
 
 require (
