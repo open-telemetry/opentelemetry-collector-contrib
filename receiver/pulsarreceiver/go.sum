@@ -493,8 +493,8 @@ go.opentelemetry.io/collector/featuregate v0.69.0 h1:TI6zcWszEbAP1UGyVIWFDKoltaP
 go.opentelemetry.io/collector/featuregate v0.69.0/go.mod h1:tewuFKJYalWBU0bmNKg++MC1ipINXUr6szYzOw2p1GI=
 go.opentelemetry.io/collector/pdata v1.0.0-rc3 h1:CPvzMeempJcr6KgHY2mHN8yWHNyrOVA18gWh2Fi68fY=
 go.opentelemetry.io/collector/pdata v1.0.0-rc3/go.mod h1:3gknzI1BqPVbEprOIbtaPQgPAYvjRf8kdkpGMJjv14E=
-go.opentelemetry.io/collector/semconv v0.69.0 h1:B4eMTnWM4ZRQS4RI/SZaTRoDcT6eFVPEymH7qJ31Pmk=
-go.opentelemetry.io/collector/semconv v0.69.0/go.mod h1:5o9yhOa+ABt7g2E5JABDxGZ1PQPbtfxrKNbYn+LOTXU=
+go.opentelemetry.io/collector/semconv v0.69.1 h1:XIMh3uPTWBF/9iD6R2wP3kCyw455z2nTwqshFdiDNco=
+go.opentelemetry.io/collector/semconv v0.69.1/go.mod h1:5o9yhOa+ABt7g2E5JABDxGZ1PQPbtfxrKNbYn+LOTXU=
 go.opentelemetry.io/otel v1.11.2 h1:YBZcQlsVekzFsFbjygXMOXSs6pialIZxcjfO/mBDmR0=
 go.opentelemetry.io/otel v1.11.2/go.mod h1:7p4EUV+AqgdlNV9gL97IgUZiVR3yrFXYo53f9BM3tRI=
 go.opentelemetry.io/otel/metric v0.34.0 h1:MCPoQxcg/26EuuJwpYN1mZTeCYAUGx8ABxfW07YkjP8=
