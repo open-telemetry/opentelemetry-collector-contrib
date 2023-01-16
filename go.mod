@@ -1032,6 +1032,3 @@ exclude github.com/DataDog/agent-payload/v5 v5.0.59
 
 // see https://github.com/mattn/go-ieproxy/issues/45
 replace github.com/mattn/go-ieproxy => github.com/mattn/go-ieproxy v0.0.1
-
-// fork containing a line-buffered logger which should improve logging performance for loki
-replace github.com/go-kit/log => github.com/dannykopping/go-kit-log v0.2.2-0.20221002180827-5591c1641b6b

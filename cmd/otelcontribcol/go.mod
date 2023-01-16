@@ -1002,9 +1002,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5clo
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver => ../../receiver/kubeletstatsreceiver
 
-// fork containing a line-buffered logger which should improve logging performance for loki
-replace github.com/go-kit/log => github.com/dannykopping/go-kit-log v0.2.2-0.20221002180827-5591c1641b6b
-
 // see https://github.com/mattn/go-ieproxy/issues/45
 replace github.com/mattn/go-ieproxy => github.com/mattn/go-ieproxy v0.0.1
 

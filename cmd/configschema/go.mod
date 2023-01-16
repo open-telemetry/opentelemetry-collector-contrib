@@ -1022,6 +1022,3 @@ exclude github.com/docker/distribution v2.8.0+incompatible
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter => ../../internal/filter
 
 retract v0.65.0
-
-// fork containing a line-buffered logger which should improve logging performance for loki
-replace github.com/go-kit/log => github.com/dannykopping/go-kit-log v0.2.2-0.20221002180827-5591c1641b6b

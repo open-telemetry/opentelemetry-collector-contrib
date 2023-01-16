@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/go-kit/log v0.2.1
-	github.com/grafana/loki v1.6.2-0.20230113165304-5eba0286563c
+	github.com/grafana/loki v1.6.2-0.20230116134839-2597429c893c
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.69.0
 	github.com/prometheus/client_golang v1.14.0
 	github.com/prometheus/common v0.39.0
@@ -35,8 +35,8 @@ require (
 	github.com/Azure/go-autorest/tracing v0.6.0 // indirect
 	github.com/HdrHistogram/hdrhistogram-go v1.1.2 // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
-	github.com/Masterminds/semver/v3 v3.1.1 // indirect
-	github.com/Masterminds/sprig/v3 v3.2.2 // indirect
+	github.com/Masterminds/semver/v3 v3.2.0 // indirect
+	github.com/Masterminds/sprig/v3 v3.2.3 // indirect
 	github.com/Microsoft/go-winio v0.5.1 // indirect
 	github.com/Shopify/sarama v1.30.0 // indirect
 	github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137 // indirect
@@ -105,9 +105,9 @@ require (
 	github.com/gophercloud/gophercloud v1.1.1 // indirect
 	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/grafana/cloudflare-go v0.0.0-20230110200409-c627cf6792f2 // indirect
-	github.com/grafana/dskit v0.0.0-20221212120341-3e308a49441b // indirect
+	github.com/grafana/dskit v0.0.0-20230109170026-7242706251b9 // indirect
 	github.com/grafana/go-gelf/v2 v2.0.1 // indirect
-	github.com/grafana/gomemcache v0.0.0-20221213170046-b5da8a745d41 // indirect
+	github.com/grafana/gomemcache v0.0.0-20230105173749-11f792309e1f // indirect
 	github.com/grafana/regexp v0.0.0-20221122212121-6b5c0a4cb7fd // indirect
 	github.com/grafana/tail v0.0.0-20221214082743-3a1c242a4d7b // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0 // indirect
@@ -125,7 +125,7 @@ require (
 	github.com/hashicorp/memberlist v0.5.0 // indirect
 	github.com/hashicorp/serf v0.10.1 // indirect
 	github.com/heroku/x v0.0.50 // indirect
-	github.com/huandu/xstrings v1.3.1 // indirect
+	github.com/huandu/xstrings v1.3.3 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/influxdata/go-syslog/v3 v3.0.1-0.20210608084020-ac565dc76ba6 // indirect
 	github.com/influxdata/telegraf v1.16.3 // indirect
@@ -236,9 +236,6 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
-
-// fork containing a line-buffered logger which should improve logging performance for loki
-replace github.com/go-kit/log => github.com/dannykopping/go-kit-log v0.2.2-0.20221002180827-5591c1641b6b
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza => ../../pkg/stanza
 
