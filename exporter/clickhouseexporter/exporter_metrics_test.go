@@ -52,7 +52,9 @@ func TestExporter_pushMetricsData(t *testing.T) {
 			}
 			return nil
 		})
-		exporter := newTestMetricsExporter(t, "tcp://127.0.0.1:9000/db")
+		exporter := newTestMetricsExporter(t, "tcp://127.0.0.1:9000/db", func(config *Config) {
+			config.DSN = "tcp://127.0.0.1:9000/db"
+		})
 		err := exporter.pushMetricsData(context.TODO(), simpleMetrics(2))
 		require.Error(t, err)
 	})
