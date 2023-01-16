@@ -10,7 +10,7 @@ require (
 	go.opentelemetry.io/collector/confmap v0.69.2-0.20230112233839-f2a0133bf677
 	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.69.2-0.20230112233839-f2a0133bf677
 	golang.org/x/oauth2 v0.0.0-20221014153046-6fdb5e3db783
-	google.golang.org/api v0.106.0
+	google.golang.org/api v0.107.0
 )
 
 require (
