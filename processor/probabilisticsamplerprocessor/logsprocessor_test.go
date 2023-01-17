@@ -98,7 +98,7 @@ func TestLogsSampling(t *testing.T) {
 				SamplingPercentage: 50,
 				AttributeSource:    traceIDAttributeSource,
 			},
-			received: 52,
+			received: 45, // 52
 		},
 		{
 			name: "sampling_source no sampling",
@@ -177,16 +177,7 @@ func TestLogsSampling(t *testing.T) {
 			if len(sunk) > 0 && sunk[0].ResourceLogs().Len() > 0 {
 				numReceived = sunk[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().Len()
 			}
-			//assert.Equal(t, tt.received, numReceived)
-			assert.True(t, Abs(tt.received-numReceived) < 10)
+			assert.Equal(t, tt.received, numReceived)
 		})
 	}
-}
-
-// Abs returns the absolute value of x.
-func Abs(x int) int {
-	if x < 0 {
-		return -x
-	}
-	return x
 }

@@ -68,7 +68,6 @@ func calculateThreshold(ratio float64) uint64 {
 	// doesn't fit into bits that are used to store digits for float64 in Golang
 	boundary := new(big.Float).SetInt(new(big.Int).SetUint64(math.MaxUint64))
 	res, _ := boundary.Mul(boundary, big.NewFloat(ratio)).Uint64()
-	
 	return res
 }
 
