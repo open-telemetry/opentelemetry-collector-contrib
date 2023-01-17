@@ -38,12 +38,12 @@ func TestCompareTraces(t *testing.T) {
 		{
 			name: "ignore-one-resource-attribute",
 			compareOptions: []TracesCompareOption{
-				IgnoreResourceAttributeValue("testKey1"),
+				IgnoreResourceAttributeValue("host.name"),
 			},
 			withoutOptions: expectation{
 				err: multierr.Combine(
-					errors.New("missing expected resource with attributes: map[testKey1:different-teststringvalue1]"),
-					errors.New("extra resource with attributes: map[testKey1:teststringvalue1]"),
+					errors.New("missing expected resource with attributes: map[host.name:different-node1]"),
+					errors.New("extra resource with attributes: map[host.name:host1]"),
 				),
 				reason: "An unpredictable resource attribute will cause failures if not ignored.",
 			},
