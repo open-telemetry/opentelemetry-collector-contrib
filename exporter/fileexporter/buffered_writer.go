@@ -32,7 +32,7 @@ var (
 	_ io.WriteCloser = (*bufferedWriteCloser)(nil)
 )
 
-func newBufferedWriterCloser(f io.WriteCloser) io.WriteCloser {
+func newBufferedWriteCloser(f io.WriteCloser) io.WriteCloser {
 	return &bufferedWriteCloser{
 		wrapped:  f,
 		buffered: bufio.NewWriter(f),
