@@ -4,9 +4,9 @@
             "resource": {
                 "attributes": [
                     {
-                        "key": "testKey1",
+                        "key": "host.name",
                         "value": {
-                            "stringValue": "teststringvalue1"
+                            "stringValue": "host1"
                         }
                     }
                 ],
