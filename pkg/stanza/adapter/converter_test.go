@@ -184,7 +184,6 @@ func TestConvert(t *testing.T) {
 	require.Equal(t, 1, pLogs.ResourceLogs().Len())
 	rls := pLogs.ResourceLogs().At(0)
 	resAttrs := rls.Resource().Attributes()
-	resAttrs.Sort()
 
 	if assert.Equal(t, 5, resAttrs.Len()) {
 		m := pcommon.NewMap()
@@ -193,7 +192,7 @@ func TestConvert(t *testing.T) {
 		m.PutInt("int", 123)
 		m.PutEmptyMap("object")
 		m.PutStr("string", "hello")
-		assert.EqualValues(t, m, resAttrs)
+		assert.Equal(t, m.AsRaw(), resAttrs.AsRaw())
 	}
 
 	ills := rls.ScopeLogs()
@@ -204,31 +203,28 @@ func TestConvert(t *testing.T) {
 
 	lr := logs.At(0)
 	lrAttrs := lr.Attributes()
-	lrAttrs.Sort()
 
 	assert.Equal(t, plog.SeverityNumberError, lr.SeverityNumber())
 	assert.Equal(t, "E", lr.SeverityText())
 
 	if assert.Equal(t, 5, lrAttrs.Len()) {
-		lrAttrs.Sort()
 		m := pcommon.NewMap()
 		m.PutBool("bool", true)
 		m.PutDouble("double", 12.34)
 		m.PutInt("int", 123)
 		m.PutEmptyMap("object")
 		m.PutStr("string", "hello")
-		assert.EqualValues(t, m, lrAttrs)
+		assert.EqualValues(t, m.AsRaw(), lrAttrs.AsRaw())
 	}
 
 	if assert.Equal(t, pcommon.ValueTypeMap, lr.Body().Type()) {
-		lr.Body().Map().Sort()
 		m := pcommon.NewMap()
 		m.PutBool("bool", true)
 		m.PutEmptyBytes("bytes").FromRaw([]byte("asdf"))
 		m.PutDouble("double", 12.34)
 		m.PutInt("int", 123)
 		m.PutStr("string", "hello")
-		assert.EqualValues(t, m, lr.Body().Map())
+		assert.EqualValues(t, m.AsRaw(), lr.Body().Map().AsRaw())
 	}
 }
 

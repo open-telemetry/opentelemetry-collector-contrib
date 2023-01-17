@@ -16,13 +16,10 @@ package deltatorateprocessor // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"fmt"
-
-	"go.opentelemetry.io/collector/config"
 )
 
 // Config defines the configuration for the processor.
 type Config struct {
-	config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	// List of delta sum metrics to convert to rates
 	Metrics []string `mapstructure:"metrics"`

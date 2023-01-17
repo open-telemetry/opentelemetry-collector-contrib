@@ -151,7 +151,7 @@ reconnectionLoop:
 			service := s.factory()
 			defer service.close(ctx)
 
-			if err := service.dial(); err != nil {
+			if err := service.dial(ctx); err != nil {
 				s.settings.Logger.Debug("Encountered error while connecting messaging service", zap.Error(err))
 				s.metrics.recordFailedReconnection()
 				return

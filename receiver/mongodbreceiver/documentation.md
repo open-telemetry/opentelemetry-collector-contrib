@@ -288,6 +288,16 @@ metrics:
     enabled: true
 ```
 
+### mongodb.health
+
+The health status of the server.
+
+A value of '1' indicates healthy. A value of '0' indicates unhealthy.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
 ### mongodb.lock.acquire.count
 
 Number of times the lock was acquired in the specified mode.
@@ -351,6 +361,42 @@ Number of times the lock acquisitions encountered deadlocks.
 | database | The name of a database. | Any Str |
 | lock_type | The Resource over which the Lock controls access | Str: ``parallel_batch_write_mode``, ``replication_state_transition``, ``global``, ``database``, ``collection``, ``mutex``, ``metadata``, ``oplog`` |
 | lock_mode | The mode of Lock which denotes the degree of access | Str: ``shared``, ``exclusive``, ``intent_shared``, ``intent_exclusive`` |
+
+### mongodb.operation.latency.time
+
+The latency of operations.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| us | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| operation | The MongoDB operation with regards to latency | Str: ``read``, ``write``, ``command`` |
+
+### mongodb.operation.repl.count
+
+The number of replicated operations executed.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {operations} | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| operation | The MongoDB operation being counted. | Str: ``insert``, ``query``, ``update``, ``delete``, ``getmore``, ``command`` |
+
+### mongodb.uptime
+
+The amount of time that the server has been running.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| ms | Sum | Int | Cumulative | true |
 
 ## Resource Attributes
 

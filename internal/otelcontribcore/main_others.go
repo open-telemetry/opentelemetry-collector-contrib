@@ -17,8 +17,8 @@
 
 package otelcontribcore // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelcontribcore"
 
-import "go.opentelemetry.io/collector/service"
+import "go.opentelemetry.io/collector/otelcol"
 
-func run(params service.CollectorSettings) error {
+func run(params otelcol.CollectorSettings) error {
 	return runInteractive(params)
 }

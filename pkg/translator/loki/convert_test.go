@@ -19,6 +19,7 @@ import (
 
 	"github.com/prometheus/common/model"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -158,6 +159,20 @@ func TestConvertAttributesToLabels(t *testing.T) {
 				"pod.name":  "pod-123",
 			},
 		},
+		{
+			desc: "nested attributes",
+			attrsAvailable: map[string]interface{}{
+				"host": map[string]interface{}{
+					"name": "guarana",
+				},
+				"pod.name": "pod-123",
+			},
+			attrsToSelect: attrsToSelectSlice,
+			expected: model.LabelSet{
+				"host.name": "guarana",
+				"pod.name":  "pod-123",
+			},
+		},
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
@@ -212,4 +227,22 @@ func TestRemoveAttributes(t *testing.T) {
 			assert.Equal(t, tC.expected, attrs.AsRaw())
 		})
 	}
+}
+
+func TestGetNestedAttribute(t *testing.T) {
+	// prepare
+	attrs := pcommon.NewMap()
+	err := attrs.FromRaw(map[string]interface{}{
+		"host": map[string]interface{}{
+			"name": "guarana",
+		},
+	})
+	require.NoError(t, err)
+
+	// test
+	attr, ok := getNestedAttribute("host.name", attrs)
+
+	// verify
+	assert.Equal(t, "guarana", attr.AsString())
+	assert.True(t, ok)
 }

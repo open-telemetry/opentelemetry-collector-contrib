@@ -21,7 +21,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -39,16 +38,15 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, ""),
 			expected: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				ClusterURI:       "https://CLUSTER.kusto.windows.net",
-				ApplicationID:    "f80da32c-108c-415c-a19e-643f461a677a",
-				ApplicationKey:   "xx-xx-xx-xx",
-				TenantID:         "21ff9e36-fbaa-43c8-98ba-00431ea10bc3",
-				Database:         "oteldb",
-				MetricTable:      "OTELMetrics",
-				LogTable:         "OTELLogs",
-				TraceTable:       "OTELTraces",
-				IngestionType:    managedIngestType,
+				ClusterURI:     "https://CLUSTER.kusto.windows.net",
+				ApplicationID:  "f80da32c-108c-415c-a19e-643f461a677a",
+				ApplicationKey: "xx-xx-xx-xx",
+				TenantID:       "21ff9e36-fbaa-43c8-98ba-00431ea10bc3",
+				Database:       "oteldb",
+				MetricTable:    "OTELMetrics",
+				LogTable:       "OTELLogs",
+				TraceTable:     "OTELTraces",
+				IngestionType:  managedIngestType,
 			},
 		},
 		{

@@ -21,7 +21,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -42,6 +42,8 @@ const (
 	stability = component.StabilityLevelBeta
 
 	defaultHTTPTimeout = time.Second * 5
+
+	defaultMaxConns = 100
 )
 
 // NewFactory creates a factory for SignalFx exporter.
@@ -56,18 +58,21 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
+	maxConnCount := defaultMaxConns
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: defaultHTTPTimeout},
-		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
-		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
+		RetrySettings: exporterhelper.NewDefaultRetrySettings(),
+		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Timeout:             defaultHTTPTimeout,
+			MaxIdleConns:        &maxConnCount,
+			MaxIdleConnsPerHost: &maxConnCount,
+		},
 		AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
 			AccessTokenPassthrough: true,
 		},
 		DeltaTranslationTTL:           3600,
 		Correlation:                   correlation.DefaultConfig(),
 		NonAlphanumericDimensionChars: "_-.",
-		MaxConnections:                100,
 	}
 }
 
@@ -79,17 +84,17 @@ func createTracesExporter(
 	cfg := eCfg.(*Config)
 	corrCfg := cfg.Correlation
 
-	if corrCfg.Endpoint == "" {
+	if corrCfg.HTTPClientSettings.Endpoint == "" {
 		apiURL, err := cfg.getAPIURL()
 		if err != nil {
 			return nil, fmt.Errorf("unable to create API URL: %w", err)
 		}
-		corrCfg.Endpoint = apiURL.String()
+		corrCfg.HTTPClientSettings.Endpoint = apiURL.String()
 	}
 	if cfg.AccessToken == "" {
 		return nil, errors.New("access_token is required")
 	}
-	set.Logger.Info("Correlation tracking enabled", zap.String("endpoint", corrCfg.Endpoint))
+	set.Logger.Info("Correlation tracking enabled", zap.String("endpoint", corrCfg.HTTPClientSettings.Endpoint))
 	tracker := correlation.NewTracker(corrCfg, cfg.AccessToken, set)
 
 	return exporterhelper.NewTracesExporter(
@@ -114,7 +119,7 @@ func createMetricsExporter(
 		return nil, err
 	}
 
-	exp, err := newSignalFxExporter(cfg, set.Logger)
+	exp, err := newSignalFxExporter(cfg, set)
 	if err != nil {
 		return nil, err
 	}
@@ -127,7 +132,8 @@ func createMetricsExporter(
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithRetry(cfg.RetrySettings),
-		exporterhelper.WithQueue(cfg.QueueSettings))
+		exporterhelper.WithQueue(cfg.QueueSettings),
+		exporterhelper.WithStart(exp.start))
 
 	if err != nil {
 		return nil, err
@@ -191,7 +197,7 @@ func createLogsExporter(
 ) (exporter.Logs, error) {
 	expCfg := cfg.(*Config)
 
-	exp, err := newEventExporter(expCfg, set.Logger)
+	exp, err := newEventExporter(expCfg, set)
 	if err != nil {
 		return nil, err
 	}
@@ -204,7 +210,8 @@ func createLogsExporter(
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithRetry(expCfg.RetrySettings),
-		exporterhelper.WithQueue(expCfg.QueueSettings))
+		exporterhelper.WithQueue(expCfg.QueueSettings),
+		exporterhelper.WithStart(exp.startLogs))
 
 	if err != nil {
 		return nil, err

@@ -15,14 +15,11 @@
 package awsproxy // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsproxy"
 
 import (
-	"go.opentelemetry.io/collector/config"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy"
 )
 
 // Config defines the configuration for an AWS X-Ray proxy.
 type Config struct {
-	config.ExtensionSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	// ProxyServer defines configurations related to the local TCP proxy server.
 	ProxyConfig proxy.Config `mapstructure:",squash"`

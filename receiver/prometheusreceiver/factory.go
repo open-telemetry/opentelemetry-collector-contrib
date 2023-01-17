@@ -20,7 +20,6 @@ import (
 
 	_ "github.com/prometheus/prometheus/discovery/install" // init() of this package registers service discovery impl.
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/receiver"
@@ -29,9 +28,19 @@ import (
 // This file implements config for Prometheus receiver.
 
 const (
-	typeStr   = "prometheus"
-	stability = component.StabilityLevelBeta
+	typeStr                = "prometheus"
+	stability              = component.StabilityLevelBeta
+	useCreatedMetricGateID = "receiver.prometheusreceiver.UseCreatedMetric"
 )
+
+func init() {
+	featuregate.GetRegistry().MustRegisterID(
+		useCreatedMetricGateID,
+		featuregate.StageAlpha,
+		featuregate.WithRegisterDescription("When enabled, the Prometheus receiver will"+
+			" retrieve the start time for Summary, Histogram and Sum metrics from _created metric"),
+	)
+}
 
 var errRenamingDisallowed = errors.New("metric renaming using metric_relabel_configs is disallowed")
 
@@ -44,9 +53,7 @@ func NewFactory() receiver.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
-	}
+	return &Config{}
 }
 
 func createMetricsReceiver(

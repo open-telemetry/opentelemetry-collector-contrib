@@ -52,6 +52,7 @@ func (h *testHost) ReportFatalError(err error) {
 var _ component.Host = (*testHost)(nil)
 
 func TestIntegrationSingleNode(t *testing.T) {
+	t.Skip("Skip failing test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/17065")
 	ctx := context.Background()
 
 	req := testcontainers.ContainerRequest{

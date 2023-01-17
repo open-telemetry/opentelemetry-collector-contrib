@@ -61,7 +61,7 @@ func NewLogServiceClient(config *Config, logger *zap.Logger) (LogServiceClient, 
 	producerConfig := producer.GetDefaultProducerConfig()
 	producerConfig.Endpoint = config.Endpoint
 	producerConfig.AccessKeyID = config.AccessKeyID
-	producerConfig.AccessKeySecret = config.AccessKeySecret
+	producerConfig.AccessKeySecret = string(config.AccessKeySecret)
 	if config.ECSRamRole != "" || config.TokenFilePath != "" {
 		tokenUpdateFunc, _ := slsutil.NewTokenUpdateFunc(config.ECSRamRole, config.TokenFilePath)
 		producerConfig.UpdateStsToken = tokenUpdateFunc

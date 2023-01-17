@@ -23,7 +23,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
@@ -43,10 +42,9 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "default"),
 			expected: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
-				RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
-				TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),
+				QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
+				RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
+				TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
 				Encoding: Encoding{
 					Name:        "otlp",
 					Compression: "none",
@@ -61,7 +59,6 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, ""),
 			expected: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				RetrySettings: exporterhelper.RetrySettings{
 					Enabled:         false,
 					MaxInterval:     30 * time.Second,

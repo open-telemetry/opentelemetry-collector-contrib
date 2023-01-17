@@ -22,26 +22,14 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 )
 
-func newHumioFactory(t *testing.T) exporter.Factory {
-	factories, err := componenttest.NopFactories()
-	require.NoError(t, err)
-
-	factory := NewFactory()
-	factories.Exporters[typeStr] = factory
-
-	return factory
-}
-
 func TestCreateTracesExporter(t *testing.T) {
 	// Arrange
-	factory := newHumioFactory(t)
+	factory := NewFactory()
 	testCases := []struct {
 		desc              string
 		cfg               component.Config
@@ -51,8 +39,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		{
 			desc: "Valid trace configuration",
 			cfg: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				Tag:              TagNone,
+				Tag: TagNone,
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "http://localhost:8080",
 				},
@@ -65,8 +52,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		{
 			desc: "Unsanitizable trace configuration",
 			cfg: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				Tag:              TagNone,
+				Tag: TagNone,
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "\n",
 				},
@@ -76,8 +62,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		{
 			desc: "Missing ingest token",
 			cfg: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				Tag:              TagNone,
+				Tag: TagNone,
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "http://localhost:8080",
 				},
@@ -87,8 +72,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		{
 			desc: "Invalid client configuration",
 			cfg: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				Tag:              TagNone,
+				Tag: TagNone,
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "http://localhost:8080",
 					TLSSetting: configtls.TLSClientSetting{
@@ -140,7 +124,7 @@ func TestCreateTracesExporter(t *testing.T) {
 }
 
 func TestCreateMetricsExporter(t *testing.T) {
-	factory := newHumioFactory(t)
+	factory := NewFactory()
 	mExp, err := factory.CreateMetricsExporter(
 		context.Background(),
 		exportertest.NewNopCreateSettings(),
@@ -152,7 +136,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 }
 
 func TestCreateLogsExporter(t *testing.T) {
-	factory := newHumioFactory(t)
+	factory := NewFactory()
 	lExp, err := factory.CreateLogsExporter(
 		context.Background(),
 		exportertest.NewNopCreateSettings(),

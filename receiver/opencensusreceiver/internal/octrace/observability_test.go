@@ -16,6 +16,7 @@ package octrace
 
 import (
 	"context"
+	"runtime"
 	"testing"
 	"time"
 
@@ -40,7 +41,10 @@ import (
 // test is to ensure exactness, but with the mentioned views registered, the
 // output will be quite noisy.
 func TestEnsureRecordedMetrics(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetryWithID(component.NewID("opencensus"))
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping test on Windows, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/17574")
+	}
+	tt, err := obsreporttest.SetupTelemetry(component.NewID("opencensus"))
 	require.NoError(t, err)
 	defer func() {
 		require.NoError(t, tt.Shutdown(context.Background()))
@@ -64,7 +68,7 @@ func TestEnsureRecordedMetrics(t *testing.T) {
 }
 
 func TestEnsureRecordedMetrics_zeroLengthSpansSender(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetryWithID(component.NewID("opencensus"))
+	tt, err := obsreporttest.SetupTelemetry(component.NewID("opencensus"))
 	require.NoError(t, err)
 	defer func() {
 		require.NoError(t, tt.Shutdown(context.Background()))
@@ -87,7 +91,7 @@ func TestEnsureRecordedMetrics_zeroLengthSpansSender(t *testing.T) {
 }
 
 func TestExportSpanLinkingMaintainsParentLink(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetryWithID(component.NewID("opencensus"))
+	tt, err := obsreporttest.SetupTelemetry(component.NewID("opencensus"))
 	require.NoError(t, err)
 	defer func() {
 		require.NoError(t, tt.Shutdown(context.Background()))

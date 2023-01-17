@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/otelcol"
 	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema"
@@ -26,7 +26,7 @@ import (
 
 // GenerateFiles is the entry point for cfgmetadatagen. Component factories are
 // passed in so it can be used by other distros.
-func GenerateFiles(factories component.Factories, sourceDir string, outputDir string) error {
+func GenerateFiles(factories otelcol.Factories, sourceDir string, outputDir string) error {
 	dr := configschema.NewDirResolver(sourceDir, configschema.DefaultModule)
 	writer := newMetadataFileWriter(outputDir)
 	configs := configschema.GetAllCfgInfos(factories)

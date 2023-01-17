@@ -1,0 +1,19 @@
+default:
+all_metrics:
+  haproxy.connection_rate:
+    enabled: true
+  haproxy.idle_percent:
+    enabled: true
+  haproxy.requests:
+    enabled: true
+  haproxy.sessions.count:
+    enabled: true
+no_metrics:
+  haproxy.connection_rate:
+    enabled: false
+  haproxy.idle_percent:
+    enabled: false
+  haproxy.requests:
+    enabled: false
+  haproxy.sessions.count:
+    enabled: false

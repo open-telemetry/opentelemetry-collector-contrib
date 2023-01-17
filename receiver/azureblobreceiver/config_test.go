@@ -22,12 +22,11 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
+	factories, err := otelcoltest.NopFactories()
 	assert.NoError(t, err)
 
 	factory := NewFactory()
@@ -47,7 +46,6 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(
 		t,
 		&Config{
-			ReceiverSettings: config.NewReceiverSettings(component.NewIDWithName(typeStr, "2")),
 			ConnectionString: goodConnectionString,
 			Logs:             LogsConfig{ContainerName: logsContainerName},
 			Traces:           TracesConfig{ContainerName: tracesContainerName},

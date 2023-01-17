@@ -44,6 +44,10 @@ func (fakeClient) retrieveInfo() (string, error) {
 	return readFile("info")
 }
 
+func (fakeClient) close() error {
+	return nil
+}
+
 func readFile(fname string) (string, error) {
 	file, err := os.ReadFile(filepath.Join("testdata", fname+".txt"))
 	if err != nil {
