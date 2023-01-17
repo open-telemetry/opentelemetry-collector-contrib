@@ -12,6 +12,7 @@ require (
 	go.opentelemetry.io/collector/confmap v0.69.2-0.20230112233839-f2a0133bf677
 	go.opentelemetry.io/collector/consumer v0.69.2-0.20230112233839-f2a0133bf677
 	go.opentelemetry.io/collector/pdata v1.0.0-rc3.0.20230112233839-f2a0133bf677
+	go.uber.org/multierr v1.9.0
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 )
 
