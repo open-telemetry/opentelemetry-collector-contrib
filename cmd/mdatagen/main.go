@@ -23,7 +23,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"text/template"
 )
@@ -48,11 +47,7 @@ func run(ymlPath string) error {
 		return fmt.Errorf("failed loading %v: %w", ymlPath, err)
 	}
 
-	_, filename, _, ok := runtime.Caller(0)
-	if !ok {
-		return errors.New("unable to determine filename")
-	}
-	tmplDir := filepath.Join(filepath.Dir(filename), "templates")
+	tmplDir := "templates"
 
 	codeDir := filepath.Join(ymlDir, "internal", "metadata")
 	if err = os.MkdirAll(filepath.Join(codeDir, "testdata"), 0700); err != nil {
@@ -104,7 +99,11 @@ func generateFile(tmplFile string, outputFile string, md metadata) error {
 				},
 				"stringsJoin": strings.Join,
 				"inc":         func(i int) int { return i + 1 },
-			}).ParseFiles(tmplFile))
+				// ParseFS delegates the parsing of the files to `Glob`
+				// which uses the `\` as a special character.
+				// Meaning on windows based machines, the `\` needs to be replaced
+				// with a `/` for it to find the file.
+			}).ParseFS(templateFS, strings.ReplaceAll(tmplFile, "\\", "/")))
 
 	buf := bytes.Buffer{}
 
