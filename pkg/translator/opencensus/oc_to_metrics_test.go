@@ -24,6 +24,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
 
@@ -132,7 +133,7 @@ func TestOCToMetrics(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			got := OCToMetrics(test.oc.Node, test.oc.Resource, test.oc.Metrics)
-			assert.EqualValues(t, test.internal, got)
+			assert.NoError(t, comparetest.CompareMetrics(test.internal, got))
 		})
 	}
 }
