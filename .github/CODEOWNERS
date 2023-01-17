@@ -141,6 +141,7 @@ processor/resourcedetectionprocessor/                    @open-telemetry/collect
 processor/resourceprocessor/                             @open-telemetry/collector-contrib-approvers @dmitryax
 processor/resourcedetectionprocessor/internal/azure/     @open-telemetry/collector-contrib-approvers @mx-psi
 processor/resourcedetectionprocessor/internal/heroku/    @open-telemetry/collector-contrib-approvers @atoulme
+processor/resourcedetectionprocessor/internal/openshift/ @open-telemetry/collector-contrib-approvers @frzifus
 processor/routingprocessor/                              @open-telemetry/collector-contrib-approvers @jpkrohling @kovrus
 processor/schemaprocessor/                               @open-telemetry/collector-contrib-approvers @MovieStoreGuy
 processor/servicegraphprocessor/                         @open-telemetry/collector-contrib-approvers @jpkrohling @mapno
