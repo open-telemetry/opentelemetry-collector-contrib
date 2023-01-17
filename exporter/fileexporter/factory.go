@@ -146,7 +146,11 @@ func newFileExporter(conf *Config, writer io.WriteCloser) *fileExporter {
 
 func buildFileWriter(cfg *Config) (io.WriteCloser, error) {
 	if cfg.Rotation == nil {
-		return os.OpenFile(cfg.Path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
+		f, err := os.OpenFile(cfg.Path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
+		if err != nil {
+			return nil, err
+		}
+		return newBufferedWriteCloser(f), nil
 	}
 	return &lumberjack.Logger{
 		Filename:   cfg.Path,
