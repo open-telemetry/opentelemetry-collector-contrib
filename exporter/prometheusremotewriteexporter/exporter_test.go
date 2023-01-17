@@ -52,6 +52,9 @@ func Test_NewPRWExporter(t *testing.T) {
 		TargetInfo: &TargetInfo{
 			Enabled: true,
 		},
+		CreatedMetric: &CreatedMetric{
+			Enabled: false,
+		},
 	}
 	buildInfo := component.BuildInfo{
 		Description: "OpenTelemetry Collector",
@@ -124,9 +127,8 @@ func Test_NewPRWExporter(t *testing.T) {
 			}
 			assert.NoError(t, err)
 			require.NotNil(t, prwe)
-			assert.NotNil(t, prwe.namespace)
+			assert.NotNil(t, prwe.exporterSettings)
 			assert.NotNil(t, prwe.endpointURL)
-			assert.NotNil(t, prwe.externalLabels)
 			assert.NotNil(t, prwe.closeChan)
 			assert.NotNil(t, prwe.wg)
 			assert.NotNil(t, prwe.userAgentHeader)
@@ -144,6 +146,9 @@ func Test_Start(t *testing.T) {
 		ExternalLabels:  map[string]string{},
 		TargetInfo: &TargetInfo{
 			Enabled: true,
+		},
+		CreatedMetric: &CreatedMetric{
+			Enabled: false,
 		},
 	}
 	buildInfo := component.BuildInfo{
@@ -472,7 +477,7 @@ func Test_PushMetrics(t *testing.T) {
 			name:               "intSum_case",
 			metrics:            intSumBatch,
 			reqTestFunc:        checkFunc,
-			expectedTimeSeries: 3,
+			expectedTimeSeries: 5,
 			httpResponseCode:   http.StatusAccepted,
 		},
 		{
@@ -685,6 +690,9 @@ func Test_PushMetrics(t *testing.T) {
 						TargetInfo: &TargetInfo{
 							Enabled: true,
 						},
+						CreatedMetric: &CreatedMetric{
+							Enabled: true,
+						},
 					}
 
 					if useWAL {
@@ -866,6 +874,9 @@ func TestWALOnExporterRoundTrip(t *testing.T) {
 		},
 		TargetInfo: &TargetInfo{
 			Enabled: true,
+		},
+		CreatedMetric: &CreatedMetric{
+			Enabled: false,
 		},
 	}
 

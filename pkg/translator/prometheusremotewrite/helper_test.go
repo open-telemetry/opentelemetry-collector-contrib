@@ -19,6 +19,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/timestamp"
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/stretchr/testify/assert"
@@ -648,6 +649,348 @@ func TestMostRecentTimestampInMetric(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			got := mostRecentTimestampInMetric(tc.input)
 			assert.Exactly(t, tc.expected, got)
+		})
+	}
+}
+
+func TestAddSingleNumberDataPoint(t *testing.T) {
+	ts := pcommon.Timestamp(time.Now().UnixNano())
+	tests := []struct {
+		name   string
+		metric func() pmetric.Metric
+		want   func() map[string]*prompb.TimeSeries
+	}{
+		{
+			name: "monotonic cumulative sum with start timestamp",
+			metric: func() pmetric.Metric {
+				metric := pmetric.NewMetric()
+				metric.SetName("test_sum")
+				metric.SetEmptySum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				metric.SetEmptySum().SetIsMonotonic(true)
+
+				dp := metric.Sum().DataPoints().AppendEmpty()
+				dp.SetDoubleValue(1)
+				dp.SetTimestamp(ts)
+				dp.SetStartTimestamp(ts)
+
+				return metric
+			},
+			want: func() map[string]*prompb.TimeSeries {
+				labels := []prompb.Label{
+					{Name: model.MetricNameLabel, Value: "test_sum"},
+				}
+				createdLabels := []prompb.Label{
+					{Name: model.MetricNameLabel, Value: "test_sum" + createdSuffix},
+				}
+				return map[string]*prompb.TimeSeries{
+					timeSeriesSignature(pmetric.MetricTypeSum.String(), &labels): {
+						Labels: labels,
+						Samples: []prompb.Sample{
+							{Value: 1, Timestamp: convertTimeStamp(ts)},
+						},
+					},
+					timeSeriesSignature(pmetric.MetricTypeSum.String(), &createdLabels): {
+						Labels: createdLabels,
+						Samples: []prompb.Sample{
+							{Value: float64(convertTimeStamp(ts))},
+						},
+					},
+				}
+			},
+		},
+		{
+			name: "monotonic cumulative sum with no start time",
+			metric: func() pmetric.Metric {
+				metric := pmetric.NewMetric()
+				metric.SetName("test_sum")
+				metric.SetEmptySum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				metric.SetEmptySum().SetIsMonotonic(true)
+
+				dp := metric.Sum().DataPoints().AppendEmpty()
+				dp.SetTimestamp(ts)
+
+				return metric
+			},
+			want: func() map[string]*prompb.TimeSeries {
+				labels := []prompb.Label{
+					{Name: model.MetricNameLabel, Value: "test_sum"},
+				}
+				return map[string]*prompb.TimeSeries{
+					timeSeriesSignature(pmetric.MetricTypeSum.String(), &labels): {
+						Labels: labels,
+						Samples: []prompb.Sample{
+							{Value: 0, Timestamp: convertTimeStamp(ts)},
+						},
+					},
+				}
+			},
+		},
+		{
+			name: "non-monotonic cumulative sum with start time",
+			metric: func() pmetric.Metric {
+				metric := pmetric.NewMetric()
+				metric.SetName("test_sum")
+				metric.SetEmptySum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				metric.SetEmptySum().SetIsMonotonic(false)
+
+				dp := metric.Sum().DataPoints().AppendEmpty()
+				dp.SetTimestamp(ts)
+
+				return metric
+			},
+			want: func() map[string]*prompb.TimeSeries {
+				labels := []prompb.Label{
+					{Name: model.MetricNameLabel, Value: "test_sum"},
+				}
+				return map[string]*prompb.TimeSeries{
+					timeSeriesSignature(pmetric.MetricTypeSum.String(), &labels): {
+						Labels: labels,
+						Samples: []prompb.Sample{
+							{Value: 0, Timestamp: convertTimeStamp(ts)},
+						},
+					},
+				}
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			metric := tt.metric()
+
+			got := make(map[string]*prompb.TimeSeries)
+			for x := 0; x < metric.Sum().DataPoints().Len(); x++ {
+				addSingleNumberDataPoint(
+					metric.Sum().DataPoints().At(x),
+					pcommon.NewResource(),
+					metric,
+					Settings{
+						ExportCreatedMetric: true,
+					},
+					got,
+				)
+			}
+
+			assert.Equal(t, tt.want(), got)
+		})
+	}
+}
+
+func TestAddSingleSummaryDataPoint(t *testing.T) {
+	ts := pcommon.Timestamp(time.Now().UnixNano())
+	tests := []struct {
+		name   string
+		metric func() pmetric.Metric
+		want   func() map[string]*prompb.TimeSeries
+	}{
+		{
+			name: "summary with start time",
+			metric: func() pmetric.Metric {
+				metric := pmetric.NewMetric()
+				metric.SetName("test_summary")
+				metric.SetEmptySummary()
+
+				dp := metric.Summary().DataPoints().AppendEmpty()
+				dp.SetTimestamp(ts)
+				dp.SetStartTimestamp(ts)
+
+				return metric
+			},
+			want: func() map[string]*prompb.TimeSeries {
+				labels := []prompb.Label{
+					{Name: model.MetricNameLabel, Value: "test_summary" + countStr},
+				}
+				createdLabels := []prompb.Label{
+					{Name: model.MetricNameLabel, Value: "test_summary" + createdSuffix},
+				}
+				sumLabels := []prompb.Label{
+					{Name: model.MetricNameLabel, Value: "test_summary" + sumStr},
+				}
+				return map[string]*prompb.TimeSeries{
+					timeSeriesSignature(pmetric.MetricTypeSummary.String(), &labels): {
+						Labels: labels,
+						Samples: []prompb.Sample{
+							{Value: 0, Timestamp: convertTimeStamp(ts)},
+						},
+					},
+					timeSeriesSignature(pmetric.MetricTypeSummary.String(), &sumLabels): {
+						Labels: sumLabels,
+						Samples: []prompb.Sample{
+							{Value: 0, Timestamp: convertTimeStamp(ts)},
+						},
+					},
+					timeSeriesSignature(pmetric.MetricTypeSummary.String(), &createdLabels): {
+						Labels: createdLabels,
+						Samples: []prompb.Sample{
+							{Value: float64(convertTimeStamp(ts))},
+						},
+					},
+				}
+			},
+		},
+		{
+			name: "summary without start time",
+			metric: func() pmetric.Metric {
+				metric := pmetric.NewMetric()
+				metric.SetName("test_summary")
+				metric.SetEmptySummary()
+
+				dp := metric.Summary().DataPoints().AppendEmpty()
+				dp.SetTimestamp(ts)
+
+				return metric
+			},
+			want: func() map[string]*prompb.TimeSeries {
+				labels := []prompb.Label{
+					{Name: model.MetricNameLabel, Value: "test_summary" + countStr},
+				}
+				sumLabels := []prompb.Label{
+					{Name: model.MetricNameLabel, Value: "test_summary" + sumStr},
+				}
+				return map[string]*prompb.TimeSeries{
+					timeSeriesSignature(pmetric.MetricTypeSummary.String(), &labels): {
+						Labels: labels,
+						Samples: []prompb.Sample{
+							{Value: 0, Timestamp: convertTimeStamp(ts)},
+						},
+					},
+					timeSeriesSignature(pmetric.MetricTypeSummary.String(), &sumLabels): {
+						Labels: sumLabels,
+						Samples: []prompb.Sample{
+							{Value: 0, Timestamp: convertTimeStamp(ts)},
+						},
+					},
+				}
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			metric := tt.metric()
+
+			got := make(map[string]*prompb.TimeSeries)
+			for x := 0; x < metric.Summary().DataPoints().Len(); x++ {
+				addSingleSummaryDataPoint(
+					metric.Summary().DataPoints().At(x),
+					pcommon.NewResource(),
+					metric,
+					Settings{
+						ExportCreatedMetric: true,
+					},
+					got,
+				)
+			}
+			assert.Equal(t, tt.want(), got)
+		})
+	}
+}
+
+func TestAddSingleHistogramDataPoint(t *testing.T) {
+	ts := pcommon.Timestamp(time.Now().UnixNano())
+	tests := []struct {
+		name   string
+		metric func() pmetric.Metric
+		want   func() map[string]*prompb.TimeSeries
+	}{
+		{
+			name: "histogram with start time",
+			metric: func() pmetric.Metric {
+				metric := pmetric.NewMetric()
+				metric.SetName("test_hist")
+				metric.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+
+				pt := metric.Histogram().DataPoints().AppendEmpty()
+				pt.SetTimestamp(ts)
+				pt.SetStartTimestamp(ts)
+
+				return metric
+			},
+			want: func() map[string]*prompb.TimeSeries {
+				labels := []prompb.Label{
+					{Name: model.MetricNameLabel, Value: "test_hist" + countStr},
+				}
+				createdLabels := []prompb.Label{
+					{Name: model.MetricNameLabel, Value: "test_hist" + createdSuffix},
+				}
+				infLabels := []prompb.Label{
+					{Name: model.MetricNameLabel, Value: "test_hist_bucket"},
+					{Name: model.BucketLabel, Value: "+Inf"},
+				}
+				return map[string]*prompb.TimeSeries{
+					timeSeriesSignature(pmetric.MetricTypeHistogram.String(), &infLabels): {
+						Labels: infLabels,
+						Samples: []prompb.Sample{
+							{Value: 0, Timestamp: convertTimeStamp(ts)},
+						},
+					},
+					timeSeriesSignature(pmetric.MetricTypeHistogram.String(), &labels): {
+						Labels: labels,
+						Samples: []prompb.Sample{
+							{Value: 0, Timestamp: convertTimeStamp(ts)},
+						},
+					},
+					timeSeriesSignature(pmetric.MetricTypeHistogram.String(), &createdLabels): {
+						Labels: createdLabels,
+						Samples: []prompb.Sample{
+							{Value: float64(convertTimeStamp(ts))},
+						},
+					},
+				}
+			},
+		},
+		{
+			name: "histogram without start time",
+			metric: func() pmetric.Metric {
+				metric := pmetric.NewMetric()
+				metric.SetName("test_hist")
+				metric.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+
+				pt := metric.Histogram().DataPoints().AppendEmpty()
+				pt.SetTimestamp(ts)
+
+				return metric
+			},
+			want: func() map[string]*prompb.TimeSeries {
+				labels := []prompb.Label{
+					{Name: model.MetricNameLabel, Value: "test_hist" + countStr},
+				}
+				infLabels := []prompb.Label{
+					{Name: model.MetricNameLabel, Value: "test_hist_bucket"},
+					{Name: model.BucketLabel, Value: "+Inf"},
+				}
+				return map[string]*prompb.TimeSeries{
+					timeSeriesSignature(pmetric.MetricTypeHistogram.String(), &infLabels): {
+						Labels: infLabels,
+						Samples: []prompb.Sample{
+							{Value: 0, Timestamp: convertTimeStamp(ts)},
+						},
+					},
+					timeSeriesSignature(pmetric.MetricTypeHistogram.String(), &labels): {
+						Labels: labels,
+						Samples: []prompb.Sample{
+							{Value: 0, Timestamp: convertTimeStamp(ts)},
+						},
+					},
+				}
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			metric := tt.metric()
+
+			got := make(map[string]*prompb.TimeSeries)
+			for x := 0; x < metric.Histogram().DataPoints().Len(); x++ {
+				addSingleHistogramDataPoint(
+					metric.Histogram().DataPoints().At(x),
+					pcommon.NewResource(),
+					metric,
+					Settings{
+						ExportCreatedMetric: true,
+					},
+					got,
+				)
+			}
+			assert.Equal(t, tt.want(), got)
 		})
 	}
 }
