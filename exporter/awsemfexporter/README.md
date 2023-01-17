@@ -64,6 +64,7 @@ A metric descriptor section allows the schema of a metric to be overwritten befo
 | `unit` | The overwritten value of unit. The [MetricDatum](https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_MetricDatum.html) contains a ful list of supported unit values. |         |
 | `overwrite` | `true` if the schema should be overwritten with the given specification, otherwise it will only be configured if empty. |   false   |
 
+**Note:** As of Jan 17 2023, under cloudwatch when you declare metrics on the log event within "Metrics" section - this section can have up to 100 metric definition objects which means that you can have up to 100 metrics defined in that section. This array **MUST NOT** contain more than 100 MetricDefinition objects.
 
 ## AWS Credential Configuration
 
