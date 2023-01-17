@@ -121,7 +121,7 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 func attributesToMap(attributes pcommon.Map) map[string]string {
 	m := make(map[string]string, attributes.Len())
 	attributes.Range(func(k string, v pcommon.Value) bool {
-		m[k] = v.Str()
+		m[k] = v.AsString()
 		return true
 	})
 	return m
