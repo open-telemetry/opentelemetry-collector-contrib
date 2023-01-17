@@ -49,7 +49,6 @@ func prepareResource(attrMap pcommon.Map, selectedKeys []string) pcommon.Resourc
 			val.CopyTo(res.Attributes().PutEmpty(key))
 		}
 	}
-	res.Attributes().Sort()
 	return res
 }
 
@@ -64,7 +63,6 @@ func filterAttributeMap(attrMap pcommon.Map, selectedKeys []string) pcommon.Map 
 		val, _ := attrMap.Get(key)
 		val.CopyTo(filteredAttrMap.PutEmpty(key))
 	}
-	filteredAttrMap.Sort()
 	return filteredAttrMap
 }
 
