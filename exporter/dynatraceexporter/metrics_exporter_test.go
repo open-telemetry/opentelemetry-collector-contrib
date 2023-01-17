@@ -538,6 +538,53 @@ func Test_exporter_send_NotFound(t *testing.T) {
 	}
 }
 
+func Test_exporter_send_TooManyRequests(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusTooManyRequests)
+		_, _ = w.Write([]byte{})
+	}))
+	defer ts.Close()
+
+	e := &exporter{
+		settings: componenttest.NewNopTelemetrySettings(),
+		cfg: &config.Config{
+			APIToken:           "token",
+			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
+			Prefix:             "prefix",
+			DefaultDimensions:  map[string]string{},
+		},
+		client: ts.Client(),
+	}
+	err := e.send(context.Background(), []string{""})
+
+	assert.True(t, consumererror.IsPermanent(err), "Expected error to be permanent %v", err)
+	assert.False(t, e.isDisabled, "Expected exporter to not be disabled")
+}
+
+func Test_exporter_send_MiscellaneousErrorCode(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusExpectationFailed)
+		_, _ = w.Write([]byte{})
+	}))
+	defer ts.Close()
+
+	e := &exporter{
+		settings: componenttest.NewNopTelemetrySettings(),
+		cfg: &config.Config{
+			APIToken:           "token",
+			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
+			Prefix:             "prefix",
+			DefaultDimensions:  map[string]string{},
+		},
+		client: ts.Client(),
+	}
+	err := e.send(context.Background(), []string{""})
+
+	assert.ErrorContains(t, err, "417 Expectation Failed")
+	assert.True(t, consumererror.IsPermanent(err), "Expected error to be permanent %v", err)
+	assert.False(t, e.isDisabled, "Expected exporter to not be disabled")
+}
+
 func Test_exporter_send_chunking(t *testing.T) {
 	sentChunks := 0
 
