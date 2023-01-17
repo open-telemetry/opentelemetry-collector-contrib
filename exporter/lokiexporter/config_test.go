@@ -15,6 +15,7 @@
 package lokiexporter
 
 import (
+	"fmt"
 	"path/filepath"
 	"testing"
 	"time"
@@ -163,4 +164,44 @@ func TestIsLegacy(t *testing.T) {
 
 func stringp(str string) *string {
 	return &str
+}
+
+func TestConfigValidate(t *testing.T) {
+	testCases := []struct {
+		desc string
+		cfg  *Config
+		err  error
+	}{
+		{
+			desc: "QueueSettings are invalid",
+			cfg:  &Config{QueueSettings: exporterhelper.QueueSettings{QueueSize: -1, Enabled: true}},
+			err:  fmt.Errorf("queue settings has invalid configuration"),
+		},
+		{
+			desc: "Endpoint is invalid",
+			cfg:  &Config{},
+			err:  fmt.Errorf("\"endpoint\" must be a valid URL"),
+		},
+		{
+			desc: "Config is valid",
+			cfg: &Config{
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: "https://loki.example.com",
+				},
+			},
+			err: nil,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			err := tc.cfg.Validate()
+			if tc.err != nil {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tc.err.Error())
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
 }
