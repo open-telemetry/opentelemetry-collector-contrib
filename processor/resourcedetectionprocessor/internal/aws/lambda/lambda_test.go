@@ -21,6 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/processor/processortest"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 )
 
@@ -34,8 +35,8 @@ func TestNewDetector(t *testing.T) {
 func TestEKS(t *testing.T) {
 	ctx := context.Background()
 
-	// TODO
-	// t.Setenv("AWS_LAMBDA_FUNCTION_NAME", "test-function-name")
+	const functionName = "TestFunctionName"
+	t.Setenv(awsLambdaFunctionNameEnvVar, functionName)
 
 	// Call Lambda Resource detector to detect resources
 	lambdaDetector := &Detector{logger: zap.NewNop()}
@@ -44,8 +45,9 @@ func TestEKS(t *testing.T) {
 	require.NotNil(t, res)
 
 	assert.Equal(t, map[string]interface{}{
-		"cloud.provider": "aws",
-		"cloud.platform": "aws_lambda",
+		conventions.AttributeCloudProvider: conventions.AttributeCloudProviderAWS,
+		conventions.AttributeCloudPlatform: conventions.AttributeCloudPlatformAWSLambda,
+		conventions.AttributeFaaSName:      functionName,
 	}, res.Attributes().AsRaw(), "Resource object returned is incorrect")
 }
 
