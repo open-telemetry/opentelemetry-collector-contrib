@@ -240,6 +240,40 @@ processors:
     override: false
 ```
 
+### AWS Lambda
+
+Uses the AWS Lambda [runtime environment variables](https://docs.aws.amazon.com/lambda/latest/dg/configuration-envvars.html#configuration-envvars-runtime)
+to retrieve the following resource attributes:
+
+[Cloud semantic conventions](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/cloud.md)
+
+* `cloud.provider` (`"aws"`)
+* `cloud.platform` (`"aws_lambda"`)
+* `cloud.region` (`$AWS_REGION`)
+
+[Function as a Service semantic conventions](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/faas.md)
+and [AWS Lambda semantic conventions](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/instrumentation/aws-lambda.md#resource-detector)
+
+* `faas.name` (`$AWS_LAMBDA_FUNCTION_NAME`)
+* `faas.version` (`$AWS_LAMBDA_FUNCTION_VERSION`)
+* `faas.instance` (`$AWS_LAMBDA_LOG_STREAM_NAME`)
+* `faas.max_memory` (`$AWS_LAMBDA_FUNCTION_MEMORY_SIZE`)
+
+[AWS Logs semantic conventions](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/cloud_provider/aws/logs.md)
+
+* `aws.log.group.names` (`$AWS_LAMBDA_LOG_GROUP_NAME`)
+* `aws.log.stream.names` (`$AWS_LAMBDA_LOG_STREAM_NAME`)
+
+Example:
+
+```yaml
+processors:
+  resourcedetection/lambda:
+    detectors: [env, lambda]
+    timeout: 2s
+    override: false
+```
+
 ### Azure
 
 Queries the [Azure Instance Metadata Service](https://aka.ms/azureimds) to retrieve the following resource attributes:
