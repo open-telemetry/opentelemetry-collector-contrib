@@ -46,7 +46,7 @@ func TestBufferedWrites(t *testing.T) {
 	t.Parallel()
 
 	b := bytes.NewBuffer(nil)
-	w := newBufferedWriterCloser(&NopWriteCloser{b})
+	w := newBufferedWriteCloser(&NopWriteCloser{b})
 
 	_, err := w.Write([]byte(msg))
 	require.NoError(t, err, "Must not error when writing data")
@@ -81,9 +81,9 @@ func BenchmarkWriter(b *testing.B) {
 		}
 		for name, w := range map[string]io.WriteCloser{
 			"discard":          &NopWriteCloser{io.Discard},
-			"buffered-discard": newBufferedWriterCloser(&NopWriteCloser{io.Discard}),
+			"buffered-discard": newBufferedWriteCloser(&NopWriteCloser{io.Discard}),
 			"raw-file":         tempfile(b),
-			"buffered-file":    newBufferedWriterCloser(tempfile(b)),
+			"buffered-file":    newBufferedWriteCloser(tempfile(b)),
 		} {
 			w := w
 			b.Run(fmt.Sprintf("%s_%d_bytes", name, payloadSize), func(b *testing.B) {
