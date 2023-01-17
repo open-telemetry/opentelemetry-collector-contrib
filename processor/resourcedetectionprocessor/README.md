@@ -353,7 +353,7 @@ processors:
 ## Configuration
 
 ```yaml
-# a list of resource detectors to run, valid options are: "env", "system", "gce", "gke", "ec2", "ecs", "elastic_beanstalk", "eks", "azure", "heroku"
+# a list of resource detectors to run, valid options are: "env", "system", "gce", "gke", "ec2", "ecs", "elastic_beanstalk", "eks", "lambda", "azure", "heroku"
 detectors: [ <string> ]
 # determines if existing resource attributes should be overridden or preserved, defaults to true
 override: <bool>
@@ -372,6 +372,7 @@ Note that if multiple detectors are inserting the same attribute name, the first
 
 ### AWS
 
+* lambda
 * elastic_beanstalk
 * eks
 * ecs
