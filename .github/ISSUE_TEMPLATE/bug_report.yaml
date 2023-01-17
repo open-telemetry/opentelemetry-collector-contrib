@@ -131,6 +131,7 @@ body:
       - processor/resourcedetection
       - processor/resourcedetection/internal/azure
       - processor/resourcedetection/internal/heroku
+      - processor/resourcedetection/internal/openshift
       - processor/routing
       - processor/schema
       - processor/servicegraph
