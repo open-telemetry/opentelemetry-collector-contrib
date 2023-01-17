@@ -347,6 +347,23 @@ func Test_createLabelSet(t *testing.T) {
 	}
 }
 
+func BenchmarkCreateAttributes(b *testing.B) {
+	r := pcommon.NewResource()
+	ext := map[string]string{}
+
+	m := pcommon.NewMap()
+	m.PutStr("test-string-key2", "test-value-2")
+	m.PutStr("test-string-key1", "test-value-1")
+	m.PutInt("test-int-key", 123)
+	m.PutBool("test-bool-key", true)
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		createAttributes(r, m, ext)
+	}
+}
+
 // Test_addExemplars checks addExemplars updates the map it receives correctly based on the exemplars and bucket bounds data it receives.
 func Test_addExemplars(t *testing.T) {
 	type testCase struct {
