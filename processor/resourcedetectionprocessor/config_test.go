@@ -89,7 +89,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "lambda"),
 			expected: &Config{
-				Detectors: []string{"env", "lambda"},
+				Detectors:          []string{"env", "lambda"},
 				HTTPClientSettings: cfg,
 				Override:           false,
 			},
