@@ -80,7 +80,6 @@ func TestAddSingleGaugeNumberDataPoint(t *testing.T) {
 
 func TestAddSingleSumNumberDataPoint(t *testing.T) {
 	ts := pcommon.Timestamp(time.Now().UnixNano())
-	//ts := uint64(time.Now().UnixNano())
 	tests := []struct {
 		name   string
 		metric func() pmetric.Metric
@@ -106,7 +105,7 @@ func TestAddSingleSumNumberDataPoint(t *testing.T) {
 						Samples: []prompb.Sample{
 							{
 								Value:     1,
-								Timestamp: convertTimeStamp(pcommon.Timestamp(ts)),
+								Timestamp: convertTimeStamp(ts),
 							}},
 					},
 				}
@@ -133,7 +132,7 @@ func TestAddSingleSumNumberDataPoint(t *testing.T) {
 						Labels: labels,
 						Samples: []prompb.Sample{{
 							Value:     1,
-							Timestamp: convertTimeStamp(pcommon.Timestamp(ts)),
+							Timestamp: convertTimeStamp(ts),
 						}},
 						Exemplars: []prompb.Exemplar{
 							{Value: 2},
