@@ -1184,3 +1184,48 @@ func TestEncodings(t *testing.T) {
 		})
 	}
 }
+
+func TestDeleteAfterRead(t *testing.T) {
+	t.Parallel()
+
+	files := 10
+	linesPerFile := 10
+	totalLines := files * linesPerFile
+
+	expectedTokens := make([][]byte, 0, totalLines)
+	actualTokens := make([][]byte, 0, totalLines)
+
+	tempDir := t.TempDir()
+	temps := make([]*os.File, 0, files)
+	for i := 0; i < files; i++ {
+		temps = append(temps, openTemp(t, tempDir))
+	}
+
+	// Write logs to each file
+	for i, temp := range temps {
+		for j := 0; j < linesPerFile; j++ {
+			line := tokenWithLength(100)
+			message := fmt.Sprintf("%s %d %d", line, i, j)
+			_, err := temp.WriteString(message + "\n")
+			require.NoError(t, err)
+			expectedTokens = append(expectedTokens, []byte(message))
+		}
+		require.NoError(t, temp.Close())
+	}
+
+	cfg := NewConfig().includeDir(tempDir)
+	cfg.StartAt = "beginning"
+	cfg.DeleteAfterRead = true
+	emitCalls := make(chan *emitParams, totalLines)
+	operator := buildTestManagerWithEmit(t, cfg, emitCalls)
+
+	operator.poll(context.Background())
+	actualTokens = append(actualTokens, waitForNTokens(t, emitCalls, totalLines)...)
+
+	require.ElementsMatch(t, expectedTokens, actualTokens)
+
+	for _, temp := range temps {
+		_, err := os.Stat(temp.Name())
+		require.True(t, os.IsNotExist(err))
+	}
+}
