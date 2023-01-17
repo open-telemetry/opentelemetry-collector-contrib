@@ -42,6 +42,7 @@ type MetricsSettings struct {
 	MysqlBufferPoolPages         MetricSettings `mapstructure:"mysql.buffer_pool.pages"`
 	MysqlBufferPoolUsage         MetricSettings `mapstructure:"mysql.buffer_pool.usage"`
 	MysqlClientNetworkIo         MetricSettings `mapstructure:"mysql.client.network.io"`
+	MysqlCommands                MetricSettings `mapstructure:"mysql.commands"`
 	MysqlConnectionCount         MetricSettings `mapstructure:"mysql.connection.count"`
 	MysqlConnectionErrors        MetricSettings `mapstructure:"mysql.connection.errors"`
 	MysqlDoubleWrites            MetricSettings `mapstructure:"mysql.double_writes"`
@@ -100,6 +101,9 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		MysqlClientNetworkIo: MetricSettings{
+			Enabled: false,
+		},
+		MysqlCommands: MetricSettings{
 			Enabled: false,
 		},
 		MysqlConnectionCount: MetricSettings{
@@ -340,6 +344,40 @@ var MapAttributeCacheStatus = map[string]AttributeCacheStatus{
 	"hit":      AttributeCacheStatusHit,
 	"miss":     AttributeCacheStatusMiss,
 	"overflow": AttributeCacheStatusOverflow,
+}
+
+// AttributeCommand specifies the a value command attribute.
+type AttributeCommand int
+
+const (
+	_ AttributeCommand = iota
+	AttributeCommandDelete
+	AttributeCommandInsert
+	AttributeCommandSelect
+	AttributeCommandUpdate
+)
+
+// String returns the string representation of the AttributeCommand.
+func (av AttributeCommand) String() string {
+	switch av {
+	case AttributeCommandDelete:
+		return "delete"
+	case AttributeCommandInsert:
+		return "insert"
+	case AttributeCommandSelect:
+		return "select"
+	case AttributeCommandUpdate:
+		return "update"
+	}
+	return ""
+}
+
+// MapAttributeCommand is a helper map of string to AttributeCommand attribute value.
+var MapAttributeCommand = map[string]AttributeCommand{
+	"delete": AttributeCommandDelete,
+	"insert": AttributeCommandInsert,
+	"select": AttributeCommandSelect,
+	"update": AttributeCommandUpdate,
 }
 
 // AttributeConnectionError specifies the a value connection_error attribute.
@@ -1494,6 +1532,59 @@ func (m *metricMysqlClientNetworkIo) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlClientNetworkIo(settings MetricSettings) metricMysqlClientNetworkIo {
 	m := metricMysqlClientNetworkIo{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlCommands struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.commands metric with initial data.
+func (m *metricMysqlCommands) init() {
+	m.data.SetName("mysql.commands")
+	m.data.SetDescription("The number of times each type of command has been executed.")
+	m.data.SetUnit("1")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricMysqlCommands) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, commandAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("command", commandAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlCommands) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlCommands) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlCommands(settings MetricSettings) metricMysqlCommands {
+	m := metricMysqlCommands{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3380,6 +3471,7 @@ type MetricsBuilder struct {
 	metricMysqlBufferPoolPages         metricMysqlBufferPoolPages
 	metricMysqlBufferPoolUsage         metricMysqlBufferPoolUsage
 	metricMysqlClientNetworkIo         metricMysqlClientNetworkIo
+	metricMysqlCommands                metricMysqlCommands
 	metricMysqlConnectionCount         metricMysqlConnectionCount
 	metricMysqlConnectionErrors        metricMysqlConnectionErrors
 	metricMysqlDoubleWrites            metricMysqlDoubleWrites
@@ -3439,6 +3531,7 @@ func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, opt
 		metricMysqlBufferPoolPages:         newMetricMysqlBufferPoolPages(ms.MysqlBufferPoolPages),
 		metricMysqlBufferPoolUsage:         newMetricMysqlBufferPoolUsage(ms.MysqlBufferPoolUsage),
 		metricMysqlClientNetworkIo:         newMetricMysqlClientNetworkIo(ms.MysqlClientNetworkIo),
+		metricMysqlCommands:                newMetricMysqlCommands(ms.MysqlCommands),
 		metricMysqlConnectionCount:         newMetricMysqlConnectionCount(ms.MysqlConnectionCount),
 		metricMysqlConnectionErrors:        newMetricMysqlConnectionErrors(ms.MysqlConnectionErrors),
 		metricMysqlDoubleWrites:            newMetricMysqlDoubleWrites(ms.MysqlDoubleWrites),
@@ -3540,6 +3633,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricMysqlBufferPoolPages.emit(ils.Metrics())
 	mb.metricMysqlBufferPoolUsage.emit(ils.Metrics())
 	mb.metricMysqlClientNetworkIo.emit(ils.Metrics())
+	mb.metricMysqlCommands.emit(ils.Metrics())
 	mb.metricMysqlConnectionCount.emit(ils.Metrics())
 	mb.metricMysqlConnectionErrors.emit(ils.Metrics())
 	mb.metricMysqlDoubleWrites.emit(ils.Metrics())
@@ -3651,6 +3745,16 @@ func (mb *MetricsBuilder) RecordMysqlClientNetworkIoDataPoint(ts pcommon.Timesta
 		return fmt.Errorf("failed to parse int64 for MysqlClientNetworkIo, value was %s: %w", inputVal, err)
 	}
 	mb.metricMysqlClientNetworkIo.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String())
+	return nil
+}
+
+// RecordMysqlCommandsDataPoint adds a data point to mysql.commands metric.
+func (mb *MetricsBuilder) RecordMysqlCommandsDataPoint(ts pcommon.Timestamp, inputVal string, commandAttributeValue AttributeCommand) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlCommands, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlCommands.recordDataPoint(mb.startTime, ts, val, commandAttributeValue.String())
 	return nil
 }
 
