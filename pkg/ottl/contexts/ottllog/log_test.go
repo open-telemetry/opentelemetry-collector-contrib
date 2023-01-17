@@ -41,8 +41,8 @@ func Test_newPathGetSetter(t *testing.T) {
 	newAttrs := pcommon.NewMap()
 	newAttrs.PutStr("hello", "world")
 
-	newStorage := pcommon.NewMap()
-	newStorage.PutStr("temp", "value")
+	newCache := pcommon.NewMap()
+	newCache.PutStr("temp", "value")
 
 	newPMap := pcommon.NewMap()
 	pMap2 := newPMap.PutEmptyMap("k2")
@@ -58,7 +58,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		path     []ottl.Field
 		orig     interface{}
 		newVal   interface{}
-		modified func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, storage pcommon.Map)
+		modified func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map)
 	}{
 		{
 			name: "time_unix_nano",
@@ -69,7 +69,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig:   int64(100_000_000),
 			newVal: int64(200_000_000),
-			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, storage pcommon.Map) {
+			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
 				log.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
 			},
 		},
@@ -82,7 +82,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig:   int64(500_000_000),
 			newVal: int64(200_000_000),
-			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, storage pcommon.Map) {
+			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
 				log.SetObservedTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
 			},
 		},
@@ -95,7 +95,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig:   int64(plog.SeverityNumberFatal),
 			newVal: int64(3),
-			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, storage pcommon.Map) {
+			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
 				log.SetSeverityNumber(plog.SeverityNumberTrace3)
 			},
 		},
@@ -108,7 +108,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig:   "blue screen of death",
 			newVal: "black screen of death",
-			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, storage pcommon.Map) {
+			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
 				log.SetSeverityText("black screen of death")
 			},
 		},
@@ -121,7 +121,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig:   "body",
 			newVal: "head",
-			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, storage pcommon.Map) {
+			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
 				log.Body().SetStr("head")
 			},
 		},
@@ -134,7 +134,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig:   int64(4),
 			newVal: int64(5),
-			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, storage pcommon.Map) {
+			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
 				log.SetFlags(plog.LogRecordFlags(5))
 			},
 		},
@@ -147,7 +147,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig:   pcommon.TraceID(traceID),
 			newVal: pcommon.TraceID(traceID2),
-			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, storage pcommon.Map) {
+			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
 				log.SetTraceID(traceID2)
 			},
 		},
@@ -160,7 +160,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig:   pcommon.SpanID(spanID),
 			newVal: pcommon.SpanID(spanID2),
-			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, storage pcommon.Map) {
+			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
 				log.SetSpanID(spanID2)
 			},
 		},
@@ -176,7 +176,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig:   hex.EncodeToString(traceID[:]),
 			newVal: hex.EncodeToString(traceID2[:]),
-			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, storage pcommon.Map) {
+			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
 				log.SetTraceID(traceID2)
 			},
 		},
@@ -192,35 +192,35 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig:   hex.EncodeToString(spanID[:]),
 			newVal: hex.EncodeToString(spanID2[:]),
-			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, storage pcommon.Map) {
+			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
 				log.SetSpanID(spanID2)
 			},
 		},
 		{
-			name: "tmp",
+			name: "cache",
 			path: []ottl.Field{
 				{
-					Name: "tmp",
+					Name: "cache",
 				},
 			},
 			orig:   pcommon.NewMap(),
-			newVal: newStorage,
-			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, storage pcommon.Map) {
-				newStorage.CopyTo(storage)
+			newVal: newCache,
+			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
+				newCache.CopyTo(cache)
 			},
 		},
 		{
-			name: "tmp access",
+			name: "cache access",
 			path: []ottl.Field{
 				{
-					Name:   "tmp",
+					Name:   "cache",
 					MapKey: ottltest.Strp("temp"),
 				},
 			},
 			orig:   nil,
 			newVal: "new value",
-			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, storage pcommon.Map) {
-				storage.PutStr("temp", "new value")
+			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
+				cache.PutStr("temp", "new value")
 			},
 		},
 		{
@@ -232,7 +232,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig:   refLog.Attributes(),
 			newVal: newAttrs,
-			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, storage pcommon.Map) {
+			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
 				newAttrs.CopyTo(log.Attributes())
 			},
 		},
@@ -246,7 +246,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig:   "val",
 			newVal: "newVal",
-			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, storage pcommon.Map) {
+			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
 				log.Attributes().PutStr("str", "newVal")
 			},
 		},
@@ -260,7 +260,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig:   true,
 			newVal: false,
-			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, storage pcommon.Map) {
+			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
 				log.Attributes().PutBool("bool", false)
 			},
 		},
@@ -274,7 +274,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig:   int64(10),
 			newVal: int64(20),
-			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, storage pcommon.Map) {
+			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
 				log.Attributes().PutInt("int", 20)
 			},
 		},
@@ -288,7 +288,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig:   float64(1.2),
 			newVal: float64(2.4),
-			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, storage pcommon.Map) {
+			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
 				log.Attributes().PutDouble("double", 2.4)
 			},
 		},
@@ -302,7 +302,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig:   []byte{1, 3, 2},
 			newVal: []byte{2, 3, 4},
-			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, storage pcommon.Map) {
+			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
 				log.Attributes().PutEmptyBytes("bytes").FromRaw([]byte{2, 3, 4})
 			},
 		},
@@ -319,7 +319,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				return val.Slice()
 			}(),
 			newVal: []string{"new"},
-			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, storage pcommon.Map) {
+			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
 				log.Attributes().PutEmptySlice("arr_str").AppendEmpty().SetStr("new")
 			},
 		},
@@ -336,7 +336,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				return val.Slice()
 			}(),
 			newVal: []bool{false},
-			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, storage pcommon.Map) {
+			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
 				log.Attributes().PutEmptySlice("arr_bool").AppendEmpty().SetBool(false)
 			},
 		},
@@ -353,7 +353,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				return val.Slice()
 			}(),
 			newVal: []int64{20},
-			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, storage pcommon.Map) {
+			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
 				log.Attributes().PutEmptySlice("arr_int").AppendEmpty().SetInt(20)
 			},
 		},
@@ -370,7 +370,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				return val.Slice()
 			}(),
 			newVal: []float64{2.0},
-			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, storage pcommon.Map) {
+			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
 				log.Attributes().PutEmptySlice("arr_float").AppendEmpty().SetDouble(2.0)
 			},
 		},
@@ -387,7 +387,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				return val.Slice()
 			}(),
 			newVal: [][]byte{{9, 6, 4}},
-			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, storage pcommon.Map) {
+			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
 				log.Attributes().PutEmptySlice("arr_bytes").AppendEmpty().SetEmptyBytes().FromRaw([]byte{9, 6, 4})
 			},
 		},
@@ -404,7 +404,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				return val.Map()
 			}(),
 			newVal: newPMap,
-			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, storage pcommon.Map) {
+			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
 				m := log.Attributes().PutEmptyMap("pMap")
 				m2 := m.PutEmptyMap("k2")
 				m2.PutStr("k1", "string")
@@ -423,7 +423,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				return val.Map()
 			}(),
 			newVal: newMap,
-			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, storage pcommon.Map) {
+			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
 				m := log.Attributes().PutEmptyMap("map")
 				m2 := m.PutEmptyMap("k2")
 				m2.PutStr("k1", "string")
@@ -438,7 +438,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig:   int64(10),
 			newVal: int64(20),
-			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, storage pcommon.Map) {
+			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
 				log.SetDroppedAttributesCount(20)
 			},
 		},
@@ -451,7 +451,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig:   refIS,
 			newVal: pcommon.NewInstrumentationScope(),
-			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, storage pcommon.Map) {
+			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
 				pcommon.NewInstrumentationScope().CopyTo(il)
 			},
 		},
@@ -464,7 +464,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig:   refResource,
 			newVal: pcommon.NewResource(),
-			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, storage pcommon.Map) {
+			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
 				pcommon.NewResource().CopyTo(resource)
 			},
 		},
@@ -486,13 +486,13 @@ func Test_newPathGetSetter(t *testing.T) {
 			assert.Nil(t, err)
 
 			exSpan, exIl, exRes := createTelemetry()
-			exStorage := pcommon.NewMap()
-			tt.modified(exSpan, exIl, exRes, exStorage)
+			exCache := pcommon.NewMap()
+			tt.modified(exSpan, exIl, exRes, exCache)
 
 			assert.Equal(t, exSpan, log)
 			assert.Equal(t, exIl, il)
 			assert.Equal(t, exRes, resource)
-			assert.Equal(t, exStorage, tCtx.getStorage())
+			assert.Equal(t, exCache, tCtx.getCache())
 		})
 	}
 }

@@ -7,10 +7,10 @@ In general, the Resource Context supports accessing pdata using the field names 
 
 The following fields are the exception.
 
-| path      | field accessed                                                                                                                               | type                                                                    |
-|-----------|----------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------|
-| tmp       | the value of the current transform context's temporary storage. tmp can be used for temporary storage of data during complex transformations | pcommon.Map                                                             |
-| tmp\[""\] | the value of an item in storage                                                                                                              | string, bool, int64, float64, pcommon.Map, pcommon.Slice, []byte or nil |
+| path        | field accessed                                                                                                                                     | type                                                                    |
+|-------------|----------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------|
+| cache       | the value of the current transform context's temporary cache. cache can be used as a temporary placeholder for data during complex transformations | pcommon.Map                                                             |
+| cache\[""\] | the value of an item in cache                                                                                                                      | string, bool, int64, float64, pcommon.Map, pcommon.Slice, []byte or nil |
 
 ## Enums
 

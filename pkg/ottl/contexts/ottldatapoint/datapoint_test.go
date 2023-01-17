@@ -27,44 +27,44 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
-func Test_newPathGetSetter_Tmp(t *testing.T) {
-	newStorage := pcommon.NewMap()
-	newStorage.PutStr("temp", "value")
+func Test_newPathGetSetter_Cache(t *testing.T) {
+	newCache := pcommon.NewMap()
+	newCache.PutStr("temp", "value")
 
 	tests := []struct {
 		name      string
 		path      []ottl.Field
 		orig      interface{}
 		newVal    interface{}
-		modified  func(storage pcommon.Map)
+		modified  func(cache pcommon.Map)
 		valueType pmetric.NumberDataPointValueType
 	}{
 
 		{
-			name: "tmp",
+			name: "cache",
 			path: []ottl.Field{
 				{
-					Name: "tmp",
+					Name: "cache",
 				},
 			},
 			orig:   pcommon.NewMap(),
-			newVal: newStorage,
-			modified: func(storage pcommon.Map) {
-				newStorage.CopyTo(storage)
+			newVal: newCache,
+			modified: func(cache pcommon.Map) {
+				newCache.CopyTo(cache)
 			},
 		},
 		{
-			name: "tmp access",
+			name: "cache access",
 			path: []ottl.Field{
 				{
-					Name:   "tmp",
+					Name:   "cache",
 					MapKey: ottltest.Strp("temp"),
 				},
 			},
 			orig:   nil,
 			newVal: "new value",
-			modified: func(storage pcommon.Map) {
-				storage.PutStr("temp", "new value")
+			modified: func(cache pcommon.Map) {
+				cache.PutStr("temp", "new value")
 			},
 		},
 	}
@@ -84,10 +84,10 @@ func Test_newPathGetSetter_Tmp(t *testing.T) {
 			err = accessor.Set(context.Background(), ctx, tt.newVal)
 			assert.Nil(t, err)
 
-			exStorage := pcommon.NewMap()
-			tt.modified(exStorage)
+			exCache := pcommon.NewMap()
+			tt.modified(exCache)
 
-			assert.Equal(t, exStorage, ctx.getStorage())
+			assert.Equal(t, exCache, ctx.getCache())
 		})
 	}
 }
