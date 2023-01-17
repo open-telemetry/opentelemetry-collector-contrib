@@ -5,7 +5,7 @@ change_type: bug_fix
 component: clickhousexporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Clickhouse string type cast function of insert flow changed because of missing span values
+note: Clickhouse string type cast function of insert flow changed because of missing span values.
 
 # One or more tracking issues related to the change
 issues: []
