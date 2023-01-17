@@ -42,6 +42,7 @@ type TracesCompareOption interface {
 type CompareOption interface {
 	MetricsCompareOption
 	LogsCompareOption
+	TracesCompareOption
 }
 
 // IgnoreMetricValues is a MetricsCompareOption that clears all metric values.
@@ -201,6 +202,18 @@ func (opt ignoreResourceAttributeValue) maskLogsResourceAttributeValue(metrics p
 	rls := metrics.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
 		opt.maskResourceAttributeValue(rls.At(i).Resource())
+	}
+}
+
+func (opt ignoreResourceAttributeValue) applyOnTraces(expected, actual ptrace.Traces) {
+	opt.maskTracesResourceAttributeValue(expected)
+	opt.maskTracesResourceAttributeValue(actual)
+}
+
+func (opt ignoreResourceAttributeValue) maskTracesResourceAttributeValue(traces ptrace.Traces) {
+	rss := traces.ResourceSpans()
+	for i := 0; i < rss.Len(); i++ {
+		opt.maskResourceAttributeValue(rss.At(i).Resource())
 	}
 }
 
