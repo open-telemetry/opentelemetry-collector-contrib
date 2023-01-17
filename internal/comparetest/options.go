@@ -288,3 +288,25 @@ func maskObservedTimestamp(logs plog.Logs, ts pcommon.Timestamp) {
 		}
 	}
 }
+
+// IgnoreResourceOrder is a CompareOption that ignores the order of resource traces/metrics/logs.
+func IgnoreResourceOrder() CompareOption {
+	return ignoreResourceOrder{}
+}
+
+type ignoreResourceOrder struct{}
+
+func (opt ignoreResourceOrder) applyOnTraces(expected, actual ptrace.Traces) {
+	expected.ResourceSpans().Sort(sortResourceSpans)
+	actual.ResourceSpans().Sort(sortResourceSpans)
+}
+
+func (opt ignoreResourceOrder) applyOnMetrics(expected, actual pmetric.Metrics) {
+	expected.ResourceMetrics().Sort(sortResourceMetrics)
+	actual.ResourceMetrics().Sort(sortResourceMetrics)
+}
+
+func (opt ignoreResourceOrder) applyOnLogs(expected, actual plog.Logs) {
+	expected.ResourceLogs().Sort(sortResourceLogs)
+	actual.ResourceLogs().Sort(sortResourceLogs)
+}
