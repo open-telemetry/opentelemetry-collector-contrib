@@ -22,12 +22,40 @@ GOCMD?= go
 GOTEST=$(GOCMD) test
 GOOS=$(shell $(GOCMD) env GOOS)
 GOARCH=$(shell $(GOCMD) env GOARCH)
-ADDLICENCESE= addlicense
-MDLINKCHECK=markdown-link-check
-MISSPELL=misspell -error
-MISSPELL_CORRECTION=misspell -w
-LINT=golangci-lint
-IMPI=impi
+
+# In order to help reduce toil related to managing tooling for the open telemetry collector
+# this section of the makefile looks at only requiring command definitions to be defined
+# as part of $(TOOLS_MOD_DIR)/tools.go, following the existing practice.
+# Modifying the tools' `go.mod` file will trigger a rebuild of the tools to help
+# ensure that all contributors are using the most recent version to make builds repeatable everywhere.
+TOOLS_MOD_DIR    := $(PWD)/internal/tools
+TOOLS_MOD_REGEX  := "\s+_\s+\".*\""
+TOOLS_PKG_NAMES  := $(shell grep -E $(TOOLS_MOD_REGEX) < $(TOOLS_MOD_DIR)/tools.go | tr -d " _\"")
+TOOLS_BIN_DIR    := $(PWD)/.tools
+TOOLS_BIN_NAMES  := $(addprefix $(TOOLS_BIN_DIR)/, $(notdir $(TOOLS_PKG_NAMES)))
+
+.PHONY: install-tools
+install-tools: $(TOOLS_BIN_NAMES)
+
+$(TOOLS_BIN_DIR):
+	mkdir -p $(PWD)/bin
+
+$(TOOLS_BIN_NAMES): $(TOOLS_BIN_DIR) $(TOOLS_MOD_DIR)/go.mod
+	cd $(TOOLS_MOD_DIR) && $(GOCMD) build -o $@ -trimpath $(filter %/$(notdir $@),$(TOOLS_PKG_NAMES))
+
+ADDLICENCESE        := $(TOOLS_BIN_DIR)/addlicense
+MDLINKCHECK         := $(TOOLS_BIN_DIR)/markdown-link-check
+MISSPELL            := $(TOOLS_BIN_DIR)/misspell -error
+MISSPELL_CORRECTION := $(TOOLS_BIN_DIR)/misspell -w
+LINT                := $(TOOLS_BIN_DIR)/golangci-lint
+IMPI                := $(TOOLS_BIN_DIR)/impi
+MULITMOD            := $(TOOLS_BIN_DIR)/multimod
+CHLOGGEN            := $(TOOLS_BIN_DIR)/chloggen
+GOIMPORTS           := $(TOOLS_BIN_DIR)/goimports
+PORTO               := $(TOOLS_BIN_DIR)/porto
+CHECKDOC            := $(TOOLS_BIN_DIR)/checkdoc
+CROSSLINK           := $(TOOLS_BIN_DIR)/crosslink
+
 # BUILD_TYPE should be one of (dev, release).
 BUILD_TYPE?=release
 RUNNING_ON_GITHUB_ACTION=$(GITHUB_ACTIONS)
@@ -99,7 +127,7 @@ benchmark:
 	$(GOTEST) -bench=. -run=notests --tags=$(GO_BUILD_TAGS) $(ALL_PKGS)
 
 .PHONY: addlicense
-addlicense:
+addlicense: $(ADDLICENCESE)
 	@ADDLICENCESEOUT=`$(ADDLICENCESE) -y "" -c 'The OpenTelemetry Authors' $(ALL_SRC) 2>&1`; \
 		if [ "$$ADDLICENCESEOUT" ]; then \
 			echo "$(ADDLICENCESE) FAILED => add License errors:\n"; \
@@ -110,7 +138,7 @@ addlicense:
 		fi
 
 .PHONY: checklicense
-checklicense:
+checklicense: $(ADDLICENCESE)
 	@ADDLICENCESEOUT=`$(ADDLICENCESE) -check $(ALL_SRC) 2>&1`; \
 		if [ "$$ADDLICENCESEOUT" ]; then \
 			echo "$(ADDLICENCESE) FAILED => add License errors:\n"; \
@@ -128,12 +156,12 @@ checklinks:
 		$(MDLINKCHECK) -q -c $(SRC_ROOT)/.github/workflows/check_links_config.json || true
 
 .PHONY: fmt
-fmt:
+fmt: $(GOIMPORTS)
 	gofmt  -w -s ./
-	goimports -w  -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+	$(GOIMPORTS) -w  -local github.com/open-telemetry/opentelemetry-collector-contrib ./
 
 .PHONY: lint
-lint: checklicense misspell
+lint: $(LINT) checklicense misspell
 	$(LINT) run --allow-parallel-runners
 
 .PHONY: tidy
@@ -142,16 +170,16 @@ tidy:
 	$(GOCMD) mod tidy -compat=1.18
 
 .PHONY: misspell
-misspell:
+misspell: $(TOOLS_BIN_DIR)/misspell
 	@echo "running $(MISSPELL)"
 	@$(MISSPELL) $(ALL_SRC_AND_DOC)
 
 .PHONY: misspell-correction
-misspell-correction:
+misspell-correction: $(TOOLS_BIN_DIR)/misspell
 	$(MISSPELL_CORRECTION) $(ALL_SRC_AND_DOC)
 
 .PHONY: impi
-impi:
+impi: $(IMPI)
 	@$(IMPI) --local github.com/open-telemetry/opentelemetry-collector-contrib --scheme stdThirdPartyLocal ./...
 
 .PHONY: moddownload
