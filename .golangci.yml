@@ -122,6 +122,7 @@ linters:
     - errcheck
     - errorlint
     - exportloopref
+    - gci
     - gocritic
     - gofmt
     - goimports
