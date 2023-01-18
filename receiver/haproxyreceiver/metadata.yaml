@@ -40,6 +40,14 @@ attributes:
   status_code:
     description: Status code category, 1xx, 2xx, 3xx, 4xx, 5xx or other
     type: string
+    enum:
+      - "1xx"
+      - "2xx"
+      - "3xx"
+      - "4xx"
+      - "5xx"
+      - "other"
+
 
 metrics:
   haproxy.connections.rate:

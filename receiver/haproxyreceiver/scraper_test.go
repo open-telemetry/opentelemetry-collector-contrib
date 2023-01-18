@@ -69,7 +69,7 @@ func Test_scraper_readStats(t *testing.T) {
 	require.NotNil(t, m)
 	require.Equal(t, 6, m.ResourceMetrics().Len())
 	require.Equal(t, 1, m.ResourceMetrics().At(0).ScopeMetrics().Len())
-	require.Equal(t, 11, m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
+	require.Equal(t, 10, m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
 	metric := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
 	assert.Equal(t, "haproxy.bytes.input", metric.Name())
 	assert.Equal(t, int64(1444), metric.Sum().DataPoints().At(0).IntValue())
