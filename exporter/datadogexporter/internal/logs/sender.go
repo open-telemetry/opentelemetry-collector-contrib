@@ -87,6 +87,7 @@ func (s *Sender) SubmitLogs(ctx context.Context, payload []datadogV2.HTTPLogItem
 			opts.Ddtags = datadog.PtrString(tags)
 		}
 
+		// Batches consecutive log items with the same tags to be submitted together
 		if prevDdtags == tags {
 			logItemBatch = append(logItemBatch, logItem)
 		} else {
