@@ -18,12 +18,16 @@ import (
 	"bytes"
 	"context"
 	"encoding/csv"
+	"fmt"
 	"net"
+	"strconv"
 	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/haproxyreceiver/internal/metadata"
@@ -51,15 +55,156 @@ func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		return pmetric.NewMetrics(), err
 	}
 
+	var scrapeErrors []error
+
 	now := pcommon.NewTimestampFromTime(time.Now())
 	for _, record := range records {
-		err = s.metricsBuilder.RecordHaproxySessionsCountDataPoint(now, record["scur"], record["pxname"], record["svname"])
+		err = s.metricsBuilder.RecordHaproxySessionsCountDataPoint(now, record["scur"])
 		if err != nil {
-			return pmetric.NewMetrics(), err
+			scrapeErrors = append(scrapeErrors, err)
 		}
+		err = s.metricsBuilder.RecordHaproxyConnectionsRateDataPoint(now, record["conn_rate"])
+		if err != nil {
+			scrapeErrors = append(scrapeErrors, err)
+		}
+		err = s.metricsBuilder.RecordHaproxyConnectionsTotalDataPoint(now, record["conn_tot"])
+		if err != nil {
+			scrapeErrors = append(scrapeErrors, err)
+		}
+		err = s.metricsBuilder.RecordHaproxyConnectionsTotalDataPoint(now, record["conn_tot"])
+		if err != nil {
+			scrapeErrors = append(scrapeErrors, err)
+		}
+		err = s.metricsBuilder.RecordHaproxyServerSelectedTotalDataPoint(now, record["lbtot"])
+		if err != nil {
+			scrapeErrors = append(scrapeErrors, err)
+		}
+		err = s.metricsBuilder.RecordHaproxyBytesInputDataPoint(now, record["bin"])
+		if err != nil {
+			scrapeErrors = append(scrapeErrors, err)
+		}
+		err = s.metricsBuilder.RecordHaproxyBytesOutputDataPoint(now, record["bout"])
+		if err != nil {
+			scrapeErrors = append(scrapeErrors, err)
+		}
+		err = s.metricsBuilder.RecordHaproxyClientsCanceledDataPoint(now, record["cli_abrt"])
+		if err != nil {
+			scrapeErrors = append(scrapeErrors, err)
+		}
+		err = s.metricsBuilder.RecordHaproxyCompressionBypassDataPoint(now, record["comp_byp"])
+		if err != nil {
+			scrapeErrors = append(scrapeErrors, err)
+		}
+		err = s.metricsBuilder.RecordHaproxyCompressionInputDataPoint(now, record["comp_in"])
+		if err != nil {
+			scrapeErrors = append(scrapeErrors, err)
+		}
+		err = s.metricsBuilder.RecordHaproxyCompressionOutputDataPoint(now, record["comp_out"])
+		if err != nil {
+			scrapeErrors = append(scrapeErrors, err)
+		}
+		err = s.metricsBuilder.RecordHaproxyCompressionCountDataPoint(now, record["comp_rsp"])
+		if err != nil {
+			scrapeErrors = append(scrapeErrors, err)
+		}
+		err = s.metricsBuilder.RecordHaproxyRequestsDeniedDataPoint(now, record["dreq"])
+		if err != nil {
+			scrapeErrors = append(scrapeErrors, err)
+		}
+		err = s.metricsBuilder.RecordHaproxyResponsesDeniedDataPoint(now, record["dresp"])
+		if err != nil {
+			scrapeErrors = append(scrapeErrors, err)
+		}
+		err = s.metricsBuilder.RecordHaproxyResponsesDeniedDataPoint(now, record["dresp"])
+		if err != nil {
+			scrapeErrors = append(scrapeErrors, err)
+		}
+		err = s.metricsBuilder.RecordHaproxyDowntimeDataPoint(now, record["downtime"])
+		if err != nil {
+			scrapeErrors = append(scrapeErrors, err)
+		}
+		err = s.metricsBuilder.RecordHaproxyConnectionsErrorsDataPoint(now, record["econ"])
+		if err != nil {
+			scrapeErrors = append(scrapeErrors, err)
+		}
+		err = s.metricsBuilder.RecordHaproxyRequestsErrorsDataPoint(now, record["ereq"])
+		if err != nil {
+			scrapeErrors = append(scrapeErrors, err)
+		}
+		aborts := record["srv_abrt"]
+		eresp := record["eresp"]
+		abortsVal, err := strconv.ParseInt(aborts, 10, 64)
+		if err != nil {
+			scrapeErrors = append(scrapeErrors, fmt.Errorf("failed to parse int64 for HaproxyResponsesErrors, value was %s: %w", aborts, err))
+		}
+		erespVal, err := strconv.ParseInt(eresp, 10, 64)
+		if err != nil {
+			scrapeErrors = append(scrapeErrors, fmt.Errorf("failed to parse int64 for HaproxyResponsesErrors, value was %s: %w", eresp, err))
+		}
+		s.metricsBuilder.RecordHaproxyResponsesErrorsDataPoint(now, abortsVal+erespVal)
+		err = s.metricsBuilder.RecordHaproxyFailedChecksDataPoint(now, record["chkfail"])
+		if err != nil {
+			scrapeErrors = append(scrapeErrors, err)
+		}
+		err = s.metricsBuilder.RecordHaproxyRequestsRedispatchedDataPoint(now, record["wredis"])
+		if err != nil {
+			scrapeErrors = append(scrapeErrors, err)
+		}
+		err = s.metricsBuilder.RecordHaproxyRequestsTotalDataPoint(now, record["hrsp_1xx"], "1xx")
+		if err != nil {
+			scrapeErrors = append(scrapeErrors, err)
+		}
+		err = s.metricsBuilder.RecordHaproxyRequestsTotalDataPoint(now, record["hrsp_2xx"], "2xx")
+		if err != nil {
+			scrapeErrors = append(scrapeErrors, err)
+		}
+		err = s.metricsBuilder.RecordHaproxyRequestsTotalDataPoint(now, record["hrsp_3xx"], "3xx")
+		if err != nil {
+			scrapeErrors = append(scrapeErrors, err)
+		}
+		err = s.metricsBuilder.RecordHaproxyRequestsTotalDataPoint(now, record["hrsp_4xx"], "4xx")
+		if err != nil {
+			scrapeErrors = append(scrapeErrors, err)
+		}
+		err = s.metricsBuilder.RecordHaproxyRequestsTotalDataPoint(now, record["hrsp_5xx"], "5xx")
+		if err != nil {
+			scrapeErrors = append(scrapeErrors, err)
+		}
+		err = s.metricsBuilder.RecordHaproxyRequestsTotalDataPoint(now, record["hrsp_other"], "other")
+		if err != nil {
+			scrapeErrors = append(scrapeErrors, err)
+		}
+		err = s.metricsBuilder.RecordHaproxyConnectionsRetriesDataPoint(now, record["wretr"])
+		if err != nil {
+			scrapeErrors = append(scrapeErrors, err)
+		}
+		err = s.metricsBuilder.RecordHaproxySessionsTotalDataPoint(now, record["stot"])
+		if err != nil {
+			scrapeErrors = append(scrapeErrors, err)
+		}
+		err = s.metricsBuilder.RecordHaproxyRequestsQueuedDataPoint(now, record["qcur"])
+		if err != nil {
+			scrapeErrors = append(scrapeErrors, err)
+		}
+		err = s.metricsBuilder.RecordHaproxyRequestsRateDataPoint(now, record["req_rate"])
+		if err != nil {
+			scrapeErrors = append(scrapeErrors, err)
+		}
+		err = s.metricsBuilder.RecordHaproxySessionsAverageDataPoint(now, record["ttime"])
+		if err != nil {
+			scrapeErrors = append(scrapeErrors, err)
+		}
+		err = s.metricsBuilder.RecordHaproxySessionsRateDataPoint(now, record["rate"])
+		if err != nil {
+			scrapeErrors = append(scrapeErrors, err)
+		}
+		s.metricsBuilder.EmitForResource(metadata.WithProxyName(record["pxname"]), metadata.WithServiceName(record["svname"]), metadata.WithHaproxyAddr(s.endpoint))
 	}
 
-	return s.metricsBuilder.Emit(metadata.WithHaproxyAddr(s.endpoint)), nil
+	if len(scrapeErrors) > 0 {
+		return s.metricsBuilder.Emit(), scrapererror.NewPartialScrapeError(multierr.Combine(scrapeErrors...), len(scrapeErrors))
+	}
+	return s.metricsBuilder.Emit(), nil
 }
 
 func (s *scraper) readStats(c net.Conn) ([]map[string]string, error) {
