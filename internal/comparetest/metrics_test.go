@@ -543,7 +543,10 @@ func TestCompareMetrics(t *testing.T) {
 				IgnoreResourceOrder(),
 			},
 			withoutOptions: expectation{
-				err:    errors.New("ResourceMetrics with attributes map[node_id:BB903] expected at index 1, found a at index 2"),
+				err: multierr.Combine(
+					errors.New("ResourceMetrics with attributes map[node_id:BB903] expected at index 1, found a at index 2"),
+					errors.New("ResourceMetrics with attributes map[node_id:BB904] expected at index 2, found a at index 1"),
+				),
 				reason: "Resource order mismatch will cause failures if not ignored.",
 			},
 			withOptions: expectation{
@@ -573,10 +576,37 @@ func TestCompareMetrics(t *testing.T) {
 			},
 		},
 		{
-			name: "sort-unordered-metric-slice",
+			name: "ignore-metrics-order",
+			compareOptions: []MetricsCompareOption{
+				IgnoreMetricsOrder(),
+			},
 			withoutOptions: expectation{
+				err: errors.New("metrics are out of order, metric aerospike.namespace.memory." +
+					"free expected at index 0, actual: aerospike.namespace.scan.count"),
+				reason: "metrics with different order should cause a failure.",
+			},
+			withOptions: expectation{
 				err:    nil,
-				reason: "the underbred metric slices was properly sorted.",
+				reason: "metrics with different order should not cause a failure if IgnoreMetricsOrder is applied.",
+			},
+		},
+		{
+			name: "ignore-data-points-order",
+			compareOptions: []MetricsCompareOption{
+				IgnoreMetricDataPointsOrder(),
+			},
+			withoutOptions: expectation{
+				err: multierr.Combine(
+					errors.New("datapoints for metric: `aerospike.namespace.scan.count`, do not match expected"),
+					errors.New("datapoints are out of order, datapoint with attributes map[result:complete type:aggr] expected at index 1, found a at index 2"),
+					errors.New("datapoints are out of order, datapoint with attributes map[result:error type:aggr] expected at index 2, found a at index 3"),
+					errors.New("datapoints are out of order, datapoint with attributes map[result:abort type:basic] expected at index 3, found a at index 1"),
+				),
+				reason: "datapoints with different order should cause a failure.",
+			},
+			withOptions: expectation{
+				err:    nil,
+				reason: "datapoints with different order should not cause a failure if IgnoreMetricsOrder is applied.",
 			},
 		},
 		{

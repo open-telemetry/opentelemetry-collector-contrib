@@ -61,7 +61,8 @@ func TestScraper(t *testing.T) {
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 
-	require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics, comparetest.IgnoreResourceOrder()))
+	require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics, comparetest.IgnoreResourceOrder(),
+		comparetest.IgnoreMetricDataPointsOrder()))
 }
 
 func TestScraperNoDatabaseSingle(t *testing.T) {
@@ -80,7 +81,8 @@ func TestScraperNoDatabaseSingle(t *testing.T) {
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 
-	require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics, comparetest.IgnoreResourceOrder()))
+	require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics, comparetest.IgnoreResourceOrder(),
+		comparetest.IgnoreMetricDataPointsOrder()))
 }
 
 func TestScraperNoDatabaseMultiple(t *testing.T) {
@@ -99,7 +101,8 @@ func TestScraperNoDatabaseMultiple(t *testing.T) {
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 
-	require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics, comparetest.IgnoreResourceOrder()))
+	require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics, comparetest.IgnoreResourceOrder(),
+		comparetest.IgnoreMetricDataPointsOrder()))
 }
 
 func TestScraperWithResourceAttributeFeatureGate(t *testing.T) {
@@ -116,7 +119,8 @@ func TestScraperWithResourceAttributeFeatureGate(t *testing.T) {
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 
-	require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics, comparetest.IgnoreResourceOrder()))
+	require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics, comparetest.IgnoreResourceOrder(),
+		comparetest.IgnoreMetricDataPointsOrder()))
 }
 
 func TestScraperWithResourceAttributeFeatureGateSingle(t *testing.T) {
@@ -133,7 +137,8 @@ func TestScraperWithResourceAttributeFeatureGateSingle(t *testing.T) {
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 
-	require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics, comparetest.IgnoreResourceOrder()))
+	require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics, comparetest.IgnoreResourceOrder(),
+		comparetest.IgnoreMetricDataPointsOrder()))
 }
 
 type mockClientFactory struct{ mock.Mock }

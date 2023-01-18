@@ -46,7 +46,7 @@ func CompareTraces(expected, actual ptrace.Traces, options ...TracesCompareOptio
 	matchingResources := make(map[ptrace.ResourceSpans]ptrace.ResourceSpans, numResources)
 
 	var errs error
-	var outOfOrderErr error
+	var outOfOrderErrs error
 	for e := 0; e < numResources; e++ {
 		er := expectedSpans.At(e)
 		var foundMatch bool
@@ -58,9 +58,10 @@ func CompareTraces(expected, actual ptrace.Traces, options ...TracesCompareOptio
 			if reflect.DeepEqual(er.Resource().Attributes().AsRaw(), ar.Resource().Attributes().AsRaw()) {
 				foundMatch = true
 				matchingResources[ar] = er
-				if e != a && outOfOrderErr == nil {
-					outOfOrderErr = fmt.Errorf("ResourceTraces with attributes %v expected at index %d, "+
-						"found a at index %d", er.Resource().Attributes().AsRaw(), e, a)
+				if e != a {
+					outOfOrderErrs = multierr.Append(outOfOrderErrs,
+						fmt.Errorf("ResourceTraces with attributes %v expected at index %d, "+
+							"found a at index %d", er.Resource().Attributes().AsRaw(), e, a))
 				}
 				break
 			}
@@ -79,9 +80,8 @@ func CompareTraces(expected, actual ptrace.Traces, options ...TracesCompareOptio
 	if errs != nil {
 		return errs
 	}
-
-	if outOfOrderErr != nil {
-		return outOfOrderErr
+	if outOfOrderErrs != nil {
+		return outOfOrderErrs
 	}
 
 	for ar, er := range matchingResources {
@@ -96,21 +96,13 @@ func CompareTraces(expected, actual ptrace.Traces, options ...TracesCompareOptio
 // CompareResourceSpans compares each part of two given ResourceSpans and returns
 // an error if they don't match. The error describes what didn't match.
 func CompareResourceSpans(expected, actual ptrace.ResourceSpans) error {
-	exp, act := ptrace.NewResourceSpans(), ptrace.NewResourceSpans()
-	expected.CopyTo(exp)
-	actual.CopyTo(act)
-
-	eilms := exp.ScopeSpans()
-	ailms := act.ScopeSpans()
+	eilms := expected.ScopeSpans()
+	ailms := actual.ScopeSpans()
 
 	if eilms.Len() != ailms.Len() {
 		return fmt.Errorf("number of instrumentation libraries does not match expected: %d, actual: %d", eilms.Len(),
 			ailms.Len())
 	}
-
-	// sort InstrumentationLibrary
-	eilms.Sort(sortSpansInstrumentationLibrary)
-	ailms.Sort(sortSpansInstrumentationLibrary)
 
 	for i := 0; i < eilms.Len(); i++ {
 		eilm, ailm := eilms.At(i), ailms.At(i)
@@ -132,34 +124,33 @@ func CompareResourceSpans(expected, actual ptrace.ResourceSpans) error {
 // CompareSpanSlices compares each part of two given SpanSlices and returns
 // an error if they don't match. The error describes what didn't match.
 func CompareSpanSlices(expected, actual ptrace.SpanSlice) error {
-	exp, act := ptrace.NewSpanSlice(), ptrace.NewSpanSlice()
-	expected.CopyTo(exp)
-	actual.CopyTo(act)
-
-	if exp.Len() != act.Len() {
-		return fmt.Errorf("number of spans does not match expected: %d, actual: %d", exp.Len(), act.Len())
+	if expected.Len() != actual.Len() {
+		return fmt.Errorf("number of spans does not match expected: %d, actual: %d", expected.Len(), actual.Len())
 	}
 
-	exp.Sort(sortSpanSlice)
-	act.Sort(sortSpanSlice)
-
-	numSpans := exp.Len()
+	numSpans := expected.Len()
 
 	// Keep track of matching spans so that each span can only be matched once
 	matchingSpans := make(map[ptrace.Span]ptrace.Span, numSpans)
 
 	var errs error
+	var outOfOrderErrs error
 	for e := 0; e < numSpans; e++ {
-		elr := exp.At(e)
+		elr := expected.At(e)
 		var foundMatch bool
 		for a := 0; a < numSpans; a++ {
-			alr := act.At(a)
+			alr := actual.At(a)
 			if _, ok := matchingSpans[alr]; ok {
 				continue
 			}
 			if reflect.DeepEqual(elr.Attributes().AsRaw(), alr.Attributes().AsRaw()) {
 				foundMatch = true
 				matchingSpans[alr] = elr
+				if e != a {
+					outOfOrderErrs = multierr.Append(outOfOrderErrs,
+						fmt.Errorf("span with attributes %v expected at index %d, "+
+							"found a at index %d", elr.Attributes().AsRaw(), e, a))
+				}
 				break
 			}
 		}
@@ -169,13 +160,17 @@ func CompareSpanSlices(expected, actual ptrace.SpanSlice) error {
 	}
 
 	for i := 0; i < numSpans; i++ {
-		if _, ok := matchingSpans[act.At(i)]; !ok {
-			errs = multierr.Append(errs, fmt.Errorf("span has extra record with attributes: %v", act.At(i).Attributes().AsRaw()))
+		if _, ok := matchingSpans[actual.At(i)]; !ok {
+			errs = multierr.Append(errs, fmt.Errorf("span has extra record with attributes: %v",
+				actual.At(i).Attributes().AsRaw()))
 		}
 	}
 
 	if errs != nil {
 		return errs
+	}
+	if outOfOrderErrs != nil {
+		return outOfOrderErrs
 	}
 
 	for alr, elr := range matchingSpans {

@@ -297,16 +297,98 @@ func IgnoreResourceOrder() CompareOption {
 type ignoreResourceOrder struct{}
 
 func (opt ignoreResourceOrder) applyOnTraces(expected, actual ptrace.Traces) {
-	expected.ResourceSpans().Sort(sortResourceSpans)
-	actual.ResourceSpans().Sort(sortResourceSpans)
+	sortResourceSpansSlice(expected.ResourceSpans())
+	sortResourceSpansSlice(actual.ResourceSpans())
 }
 
 func (opt ignoreResourceOrder) applyOnMetrics(expected, actual pmetric.Metrics) {
-	expected.ResourceMetrics().Sort(sortResourceMetrics)
-	actual.ResourceMetrics().Sort(sortResourceMetrics)
+	sortResourceMetricsSlice(expected.ResourceMetrics())
+	sortResourceMetricsSlice(actual.ResourceMetrics())
 }
 
 func (opt ignoreResourceOrder) applyOnLogs(expected, actual plog.Logs) {
-	expected.ResourceLogs().Sort(sortResourceLogs)
-	actual.ResourceLogs().Sort(sortResourceLogs)
+	sortResourceLogsSlice(expected.ResourceLogs())
+	sortResourceLogsSlice(actual.ResourceLogs())
+}
+
+// IgnoreScopeOrder is a CompareOption that ignores the order of instrumentation scope traces/metrics/logs.
+func IgnoreScopeOrder() CompareOption {
+	return ignoreScopeOrder{}
+}
+
+type ignoreScopeOrder struct{}
+
+func (opt ignoreScopeOrder) applyOnTraces(expected, actual ptrace.Traces) {
+	sortScopeSpansSlices(expected)
+	sortScopeSpansSlices(actual)
+}
+
+func (opt ignoreScopeOrder) applyOnMetrics(expected, actual pmetric.Metrics) {
+	sortScopeMetricsSlices(expected)
+	sortScopeMetricsSlices(actual)
+}
+
+func (opt ignoreScopeOrder) applyOnLogs(expected, actual plog.Logs) {
+	sortScopeLogsSlices(expected)
+	sortScopeLogsSlices(actual)
+}
+
+// IgnoreMetricsOrder is a CompareOption that ignores the order of metrics.
+func IgnoreMetricsOrder() MetricsCompareOption {
+	return ignoreMetricsOrder{}
+}
+
+type ignoreMetricsOrder struct{}
+
+func (opt ignoreMetricsOrder) applyOnMetrics(expected, actual pmetric.Metrics) {
+	sortMetricSlices(expected)
+	sortMetricSlices(actual)
+}
+
+// IgnoreMetricDataPointsOrder is a CompareOption that ignores the order of metrics.
+func IgnoreMetricDataPointsOrder() MetricsCompareOption {
+	return ignoreMetricDataPointsOrder{}
+}
+
+type ignoreMetricDataPointsOrder struct{}
+
+func (opt ignoreMetricDataPointsOrder) applyOnMetrics(expected, actual pmetric.Metrics) {
+	sortMetricDataPointSlices(expected)
+	sortMetricDataPointSlices(actual)
+}
+
+// IgnoreSummaryDataPointValueAtQuantileSliceOrder is a CompareOption that ignores the order of summary data point quantile slice.
+func IgnoreSummaryDataPointValueAtQuantileSliceOrder() MetricsCompareOption {
+	return ignoreSummaryDataPointValueAtQuantileSliceOrder{}
+}
+
+type ignoreSummaryDataPointValueAtQuantileSliceOrder struct{}
+
+func (opt ignoreSummaryDataPointValueAtQuantileSliceOrder) applyOnMetrics(expected, actual pmetric.Metrics) {
+	sortSummaryDataPointValueAtQuantileSlices(expected)
+	sortSummaryDataPointValueAtQuantileSlices(actual)
+}
+
+// IgnoreSpansOrder is a CompareOption that ignores the order of spans.
+func IgnoreSpansOrder() TracesCompareOption {
+	return ignoreSpansOrder{}
+}
+
+type ignoreSpansOrder struct{}
+
+func (opt ignoreSpansOrder) applyOnTraces(expected, actual ptrace.Traces) {
+	sortSpanSlices(expected)
+	sortSpanSlices(actual)
+}
+
+// IgnoreLogRecordsOrder is a CompareOption that ignores the order of logs.
+func IgnoreLogRecordsOrder() LogsCompareOption {
+	return ignoreLogRecordsOrder{}
+}
+
+type ignoreLogRecordsOrder struct{}
+
+func (opt ignoreLogRecordsOrder) applyOnLogs(expected, actual plog.Logs) {
+	sortLogRecordSlices(expected)
+	sortLogRecordSlices(actual)
 }

@@ -46,7 +46,7 @@ func CompareLogs(expected, actual plog.Logs, options ...LogsCompareOption) error
 	matchingResources := make(map[plog.ResourceLogs]plog.ResourceLogs, numResources)
 
 	var errs error
-	var outOfOrderErr error
+	var outOfOrderErrs error
 	for e := 0; e < numResources; e++ {
 		er := expectedLogs.At(e)
 		var foundMatch bool
@@ -58,9 +58,10 @@ func CompareLogs(expected, actual plog.Logs, options ...LogsCompareOption) error
 			if reflect.DeepEqual(er.Resource().Attributes().AsRaw(), ar.Resource().Attributes().AsRaw()) {
 				foundMatch = true
 				matchingResources[ar] = er
-				if e != a && outOfOrderErr == nil {
-					outOfOrderErr = fmt.Errorf("ResourceLogs with attributes %v expected at index %d, "+
-						"found a at index %d", er.Resource().Attributes().AsRaw(), e, a)
+				if e != a {
+					outOfOrderErrs = multierr.Append(outOfOrderErrs,
+						fmt.Errorf("ResourceLogs with attributes %v expected at index %d, "+
+							"found a at index %d", er.Resource().Attributes().AsRaw(), e, a))
 				}
 				break
 			}
@@ -79,9 +80,8 @@ func CompareLogs(expected, actual plog.Logs, options ...LogsCompareOption) error
 	if errs != nil {
 		return errs
 	}
-
-	if outOfOrderErr != nil {
-		return outOfOrderErr
+	if outOfOrderErrs != nil {
+		return outOfOrderErrs
 	}
 
 	for ar, er := range matchingResources {
@@ -96,21 +96,13 @@ func CompareLogs(expected, actual plog.Logs, options ...LogsCompareOption) error
 // CompareResourceLogs compares each part of two given ResourceLogs and returns
 // an error if they don't match. The error describes what didn't match.
 func CompareResourceLogs(expected, actual plog.ResourceLogs) error {
-	exp, act := plog.NewResourceLogs(), plog.NewResourceLogs()
-	expected.CopyTo(exp)
-	actual.CopyTo(act)
-
-	eilms := exp.ScopeLogs()
-	ailms := act.ScopeLogs()
+	eilms := expected.ScopeLogs()
+	ailms := actual.ScopeLogs()
 
 	if eilms.Len() != ailms.Len() {
 		return fmt.Errorf("number of instrumentation libraries does not match expected: %d, actual: %d", eilms.Len(),
 			ailms.Len())
 	}
-
-	// sort InstrumentationLibrary
-	eilms.Sort(sortLogsInstrumentationLibrary)
-	ailms.Sort(sortLogsInstrumentationLibrary)
 
 	for i := 0; i < eilms.Len(); i++ {
 		eilm, ailm := eilms.At(i), ailms.At(i)
@@ -132,34 +124,33 @@ func CompareResourceLogs(expected, actual plog.ResourceLogs) error {
 // CompareLogRecordSlices compares each part of two given LogRecordSlices and returns
 // an error if they don't match. The error describes what didn't match.
 func CompareLogRecordSlices(expected, actual plog.LogRecordSlice) error {
-	exp, act := plog.NewLogRecordSlice(), plog.NewLogRecordSlice()
-	expected.CopyTo(exp)
-	actual.CopyTo(act)
-
-	if exp.Len() != act.Len() {
-		return fmt.Errorf("number of log records does not match expected: %d, actual: %d", exp.Len(), act.Len())
+	if expected.Len() != actual.Len() {
+		return fmt.Errorf("number of log records does not match expected: %d, actual: %d", expected.Len(), actual.Len())
 	}
 
-	exp.Sort(sortLogRecordSlice)
-	act.Sort(sortLogRecordSlice)
-
-	numLogRecords := exp.Len()
+	numLogRecords := expected.Len()
 
 	// Keep track of matching records so that each record can only be matched once
 	matchingLogRecords := make(map[plog.LogRecord]plog.LogRecord, numLogRecords)
 
 	var errs error
+	var outOfOrderErrs error
 	for e := 0; e < numLogRecords; e++ {
-		elr := exp.At(e)
+		elr := expected.At(e)
 		var foundMatch bool
 		for a := 0; a < numLogRecords; a++ {
-			alr := act.At(a)
+			alr := actual.At(a)
 			if _, ok := matchingLogRecords[alr]; ok {
 				continue
 			}
 			if reflect.DeepEqual(elr.Attributes().AsRaw(), alr.Attributes().AsRaw()) {
 				foundMatch = true
 				matchingLogRecords[alr] = elr
+				if e != a {
+					outOfOrderErrs = multierr.Append(outOfOrderErrs,
+						fmt.Errorf("LogRecord with attributes %v expected at index %d, "+
+							"found a at index %d", elr.Attributes().AsRaw(), e, a))
+				}
 				break
 			}
 		}
@@ -169,13 +160,17 @@ func CompareLogRecordSlices(expected, actual plog.LogRecordSlice) error {
 	}
 
 	for i := 0; i < numLogRecords; i++ {
-		if _, ok := matchingLogRecords[act.At(i)]; !ok {
-			errs = multierr.Append(errs, fmt.Errorf("log has extra record with attributes: %v", act.At(i).Attributes().AsRaw()))
+		if _, ok := matchingLogRecords[actual.At(i)]; !ok {
+			errs = multierr.Append(errs, fmt.Errorf("log has extra record with attributes: %v",
+				actual.At(i).Attributes().AsRaw()))
 		}
 	}
 
 	if errs != nil {
 		return errs
+	}
+	if outOfOrderErrs != nil {
+		return outOfOrderErrs
 	}
 
 	for alr, elr := range matchingLogRecords {

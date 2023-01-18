@@ -114,6 +114,7 @@ func TestScaperScrape(t *testing.T) {
 			compareOptions: []comparetest.MetricsCompareOption{
 				comparetest.IgnoreMetricAttributeValue("http.url"),
 				comparetest.IgnoreMetricValues("httpcheck.duration"),
+				comparetest.IgnoreMetricDataPointsOrder(),
 			},
 		},
 		{
@@ -129,6 +130,7 @@ func TestScaperScrape(t *testing.T) {
 			compareOptions: []comparetest.MetricsCompareOption{
 				comparetest.IgnoreMetricAttributeValue("http.url"),
 				comparetest.IgnoreMetricValues("httpcheck.duration"),
+				comparetest.IgnoreMetricDataPointsOrder(),
 			},
 		},
 		{
@@ -144,6 +146,7 @@ func TestScaperScrape(t *testing.T) {
 			compareOptions: []comparetest.MetricsCompareOption{
 				comparetest.IgnoreMetricValues("httpcheck.duration"),
 				comparetest.IgnoreMetricAttributeValue("error.message"),
+				comparetest.IgnoreMetricDataPointsOrder(),
 			},
 		},
 	}

@@ -167,8 +167,8 @@ func TestMongodbIntegration(t *testing.T) {
 			expectedMetrics, err := golden.ReadMetrics(expectedFile)
 			require.NoError(t, err)
 
-			err = comparetest.CompareMetrics(expectedMetrics, actualMetrics, comparetest.IgnoreMetricValues())
-			require.NoError(t, err)
+			require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics, comparetest.IgnoreMetricValues(),
+				comparetest.IgnoreMetricDataPointsOrder()))
 		})
 	}
 }
