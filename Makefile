@@ -105,7 +105,7 @@ golint:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="lint"
 
 .PHONY: goimpi
-goimpi: $(TOOLS_BIN_DIR)/impi
+goimpi: $(IMPI)
 	@$(MAKE) $(FOR_GROUP_TARGET) TARGET="impi"
 
 .PHONY: goporto
