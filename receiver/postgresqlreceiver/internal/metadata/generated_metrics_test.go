@@ -156,7 +156,6 @@ func TestMetricsBuilder(t *testing.T) {
 			rm := metrics.ResourceMetrics().At(0)
 			attrCount := 0
 			enabledAttrCount := 0
-			enabled := mb.resourceAttributesSettings.PostgresqlDatabaseName.Enabled
 			attrVal, ok := rm.Resource().Attributes().Get("postgresql.database.name")
 			attrCount++
 			assert.Equal(t, mb.resourceAttributesSettings.PostgresqlDatabaseName.Enabled, ok)
@@ -164,7 +163,6 @@ func TestMetricsBuilder(t *testing.T) {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
-			enabled = mb.resourceAttributesSettings.PostgresqlIndexName.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("postgresql.index.name")
 			attrCount++
 			assert.Equal(t, mb.resourceAttributesSettings.PostgresqlIndexName.Enabled, ok)
@@ -172,7 +170,6 @@ func TestMetricsBuilder(t *testing.T) {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
-			enabled = mb.resourceAttributesSettings.PostgresqlTableName.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("postgresql.table.name")
 			attrCount++
 			assert.Equal(t, mb.resourceAttributesSettings.PostgresqlTableName.Enabled, ok)

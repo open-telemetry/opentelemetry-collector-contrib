@@ -17,7 +17,7 @@ resource_attributes:
     enabled: true
 
   optional.resource.attr:
-    description: explicitly disabled ResourceAttribute
+    description: Explicitly disabled ResourceAttribute.
     type: string
     enabled: false
 

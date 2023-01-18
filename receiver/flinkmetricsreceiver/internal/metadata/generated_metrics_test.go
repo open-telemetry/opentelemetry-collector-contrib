@@ -184,7 +184,6 @@ func TestMetricsBuilder(t *testing.T) {
 			rm := metrics.ResourceMetrics().At(0)
 			attrCount := 0
 			enabledAttrCount := 0
-			enabled := mb.resourceAttributesSettings.FlinkJobName.Enabled
 			attrVal, ok := rm.Resource().Attributes().Get("flink.job.name")
 			attrCount++
 			assert.Equal(t, mb.resourceAttributesSettings.FlinkJobName.Enabled, ok)
@@ -192,7 +191,6 @@ func TestMetricsBuilder(t *testing.T) {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
-			enabled = mb.resourceAttributesSettings.FlinkResourceType.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("flink.resource.type")
 			attrCount++
 			assert.Equal(t, mb.resourceAttributesSettings.FlinkResourceType.Enabled, ok)
@@ -200,7 +198,6 @@ func TestMetricsBuilder(t *testing.T) {
 				enabledAttrCount++
 				assert.Equal(t, "jobmanager", attrVal.Str())
 			}
-			enabled = mb.resourceAttributesSettings.FlinkSubtaskIndex.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("flink.subtask.index")
 			attrCount++
 			assert.Equal(t, mb.resourceAttributesSettings.FlinkSubtaskIndex.Enabled, ok)
@@ -208,7 +205,6 @@ func TestMetricsBuilder(t *testing.T) {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
-			enabled = mb.resourceAttributesSettings.FlinkTaskName.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("flink.task.name")
 			attrCount++
 			assert.Equal(t, mb.resourceAttributesSettings.FlinkTaskName.Enabled, ok)
@@ -216,7 +212,6 @@ func TestMetricsBuilder(t *testing.T) {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
-			enabled = mb.resourceAttributesSettings.FlinkTaskmanagerID.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("flink.taskmanager.id")
 			attrCount++
 			assert.Equal(t, mb.resourceAttributesSettings.FlinkTaskmanagerID.Enabled, ok)
@@ -224,7 +219,6 @@ func TestMetricsBuilder(t *testing.T) {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
-			enabled = mb.resourceAttributesSettings.HostName.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("host.name")
 			attrCount++
 			assert.Equal(t, mb.resourceAttributesSettings.HostName.Enabled, ok)

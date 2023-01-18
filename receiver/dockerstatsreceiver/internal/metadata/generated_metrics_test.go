@@ -270,7 +270,6 @@ func TestMetricsBuilder(t *testing.T) {
 			rm := metrics.ResourceMetrics().At(0)
 			attrCount := 0
 			enabledAttrCount := 0
-			enabled := mb.resourceAttributesSettings.ContainerHostname.Enabled
 			attrVal, ok := rm.Resource().Attributes().Get("container.hostname")
 			attrCount++
 			assert.Equal(t, mb.resourceAttributesSettings.ContainerHostname.Enabled, ok)
@@ -278,7 +277,6 @@ func TestMetricsBuilder(t *testing.T) {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
-			enabled = mb.resourceAttributesSettings.ContainerID.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("container.id")
 			attrCount++
 			assert.Equal(t, mb.resourceAttributesSettings.ContainerID.Enabled, ok)
@@ -286,7 +284,6 @@ func TestMetricsBuilder(t *testing.T) {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
-			enabled = mb.resourceAttributesSettings.ContainerImageName.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("container.image.name")
 			attrCount++
 			assert.Equal(t, mb.resourceAttributesSettings.ContainerImageName.Enabled, ok)
@@ -294,7 +291,6 @@ func TestMetricsBuilder(t *testing.T) {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
-			enabled = mb.resourceAttributesSettings.ContainerName.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("container.name")
 			attrCount++
 			assert.Equal(t, mb.resourceAttributesSettings.ContainerName.Enabled, ok)
@@ -302,7 +298,6 @@ func TestMetricsBuilder(t *testing.T) {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
-			enabled = mb.resourceAttributesSettings.ContainerRuntime.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("container.runtime")
 			attrCount++
 			assert.Equal(t, mb.resourceAttributesSettings.ContainerRuntime.Enabled, ok)

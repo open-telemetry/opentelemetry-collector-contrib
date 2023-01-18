@@ -122,7 +122,6 @@ func TestMetricsBuilder(t *testing.T) {
 			rm := metrics.ResourceMetrics().At(0)
 			attrCount := 0
 			enabledAttrCount := 0
-			enabled := mb.resourceAttributesSettings.ProcessCommand.Enabled
 			attrVal, ok := rm.Resource().Attributes().Get("process.command")
 			attrCount++
 			assert.Equal(t, mb.resourceAttributesSettings.ProcessCommand.Enabled, ok)
@@ -130,7 +129,6 @@ func TestMetricsBuilder(t *testing.T) {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
-			enabled = mb.resourceAttributesSettings.ProcessCommandLine.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("process.command_line")
 			attrCount++
 			assert.Equal(t, mb.resourceAttributesSettings.ProcessCommandLine.Enabled, ok)
@@ -138,7 +136,6 @@ func TestMetricsBuilder(t *testing.T) {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
-			enabled = mb.resourceAttributesSettings.ProcessExecutableName.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("process.executable.name")
 			attrCount++
 			assert.Equal(t, mb.resourceAttributesSettings.ProcessExecutableName.Enabled, ok)
@@ -146,7 +143,6 @@ func TestMetricsBuilder(t *testing.T) {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
-			enabled = mb.resourceAttributesSettings.ProcessExecutablePath.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("process.executable.path")
 			attrCount++
 			assert.Equal(t, mb.resourceAttributesSettings.ProcessExecutablePath.Enabled, ok)
@@ -154,7 +150,6 @@ func TestMetricsBuilder(t *testing.T) {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
-			enabled = mb.resourceAttributesSettings.ProcessOwner.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("process.owner")
 			attrCount++
 			assert.Equal(t, mb.resourceAttributesSettings.ProcessOwner.Enabled, ok)
@@ -162,7 +157,6 @@ func TestMetricsBuilder(t *testing.T) {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
-			enabled = mb.resourceAttributesSettings.ProcessParentPid.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("process.parent_pid")
 			attrCount++
 			assert.Equal(t, mb.resourceAttributesSettings.ProcessParentPid.Enabled, ok)
@@ -170,7 +164,6 @@ func TestMetricsBuilder(t *testing.T) {
 				enabledAttrCount++
 				assert.EqualValues(t, 1, attrVal.Int())
 			}
-			enabled = mb.resourceAttributesSettings.ProcessPid.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("process.pid")
 			attrCount++
 			assert.Equal(t, mb.resourceAttributesSettings.ProcessPid.Enabled, ok)

@@ -92,7 +92,6 @@ func TestMetricsBuilder(t *testing.T) {
 			rm := metrics.ResourceMetrics().At(0)
 			attrCount := 0
 			enabledAttrCount := 0
-			enabled := mb.resourceAttributesSettings.RabbitmqNodeName.Enabled
 			attrVal, ok := rm.Resource().Attributes().Get("rabbitmq.node.name")
 			attrCount++
 			assert.Equal(t, mb.resourceAttributesSettings.RabbitmqNodeName.Enabled, ok)
@@ -100,7 +99,6 @@ func TestMetricsBuilder(t *testing.T) {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
-			enabled = mb.resourceAttributesSettings.RabbitmqQueueName.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("rabbitmq.queue.name")
 			attrCount++
 			assert.Equal(t, mb.resourceAttributesSettings.RabbitmqQueueName.Enabled, ok)
@@ -108,7 +106,6 @@ func TestMetricsBuilder(t *testing.T) {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
-			enabled = mb.resourceAttributesSettings.RabbitmqVhostName.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("rabbitmq.vhost.name")
 			attrCount++
 			assert.Equal(t, mb.resourceAttributesSettings.RabbitmqVhostName.Enabled, ok)

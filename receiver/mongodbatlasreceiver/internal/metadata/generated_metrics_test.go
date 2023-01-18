@@ -320,7 +320,6 @@ func TestMetricsBuilder(t *testing.T) {
 			rm := metrics.ResourceMetrics().At(0)
 			attrCount := 0
 			enabledAttrCount := 0
-			enabled := mb.resourceAttributesSettings.MongodbAtlasDbName.Enabled
 			attrVal, ok := rm.Resource().Attributes().Get("mongodb_atlas.db.name")
 			attrCount++
 			assert.Equal(t, mb.resourceAttributesSettings.MongodbAtlasDbName.Enabled, ok)
@@ -328,7 +327,6 @@ func TestMetricsBuilder(t *testing.T) {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
-			enabled = mb.resourceAttributesSettings.MongodbAtlasDiskPartition.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("mongodb_atlas.disk.partition")
 			attrCount++
 			assert.Equal(t, mb.resourceAttributesSettings.MongodbAtlasDiskPartition.Enabled, ok)
@@ -336,7 +334,6 @@ func TestMetricsBuilder(t *testing.T) {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
-			enabled = mb.resourceAttributesSettings.MongodbAtlasHostName.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("mongodb_atlas.host.name")
 			attrCount++
 			assert.Equal(t, mb.resourceAttributesSettings.MongodbAtlasHostName.Enabled, ok)
@@ -344,7 +341,6 @@ func TestMetricsBuilder(t *testing.T) {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
-			enabled = mb.resourceAttributesSettings.MongodbAtlasOrgName.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("mongodb_atlas.org_name")
 			attrCount++
 			assert.Equal(t, mb.resourceAttributesSettings.MongodbAtlasOrgName.Enabled, ok)
@@ -352,7 +348,6 @@ func TestMetricsBuilder(t *testing.T) {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
-			enabled = mb.resourceAttributesSettings.MongodbAtlasProcessID.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("mongodb_atlas.process.id")
 			attrCount++
 			assert.Equal(t, mb.resourceAttributesSettings.MongodbAtlasProcessID.Enabled, ok)
@@ -360,7 +355,6 @@ func TestMetricsBuilder(t *testing.T) {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
-			enabled = mb.resourceAttributesSettings.MongodbAtlasProcessPort.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("mongodb_atlas.process.port")
 			attrCount++
 			assert.Equal(t, mb.resourceAttributesSettings.MongodbAtlasProcessPort.Enabled, ok)
@@ -368,7 +362,6 @@ func TestMetricsBuilder(t *testing.T) {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
-			enabled = mb.resourceAttributesSettings.MongodbAtlasProcessTypeName.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("mongodb_atlas.process.type_name")
 			attrCount++
 			assert.Equal(t, mb.resourceAttributesSettings.MongodbAtlasProcessTypeName.Enabled, ok)
@@ -376,7 +369,6 @@ func TestMetricsBuilder(t *testing.T) {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
-			enabled = mb.resourceAttributesSettings.MongodbAtlasProjectID.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("mongodb_atlas.project.id")
 			attrCount++
 			assert.Equal(t, mb.resourceAttributesSettings.MongodbAtlasProjectID.Enabled, ok)
@@ -384,7 +376,6 @@ func TestMetricsBuilder(t *testing.T) {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
-			enabled = mb.resourceAttributesSettings.MongodbAtlasProjectName.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("mongodb_atlas.project.name")
 			attrCount++
 			assert.Equal(t, mb.resourceAttributesSettings.MongodbAtlasProjectName.Enabled, ok)

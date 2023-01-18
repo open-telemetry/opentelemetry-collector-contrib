@@ -411,7 +411,6 @@ func TestMetricsBuilder(t *testing.T) {
 			rm := metrics.ResourceMetrics().At(0)
 			attrCount := 0
 			enabledAttrCount := 0
-			enabled := mb.resourceAttributesSettings.ElasticsearchClusterName.Enabled
 			attrVal, ok := rm.Resource().Attributes().Get("elasticsearch.cluster.name")
 			attrCount++
 			assert.Equal(t, mb.resourceAttributesSettings.ElasticsearchClusterName.Enabled, ok)
@@ -419,7 +418,6 @@ func TestMetricsBuilder(t *testing.T) {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
-			enabled = mb.resourceAttributesSettings.ElasticsearchIndexName.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("elasticsearch.index.name")
 			attrCount++
 			assert.Equal(t, mb.resourceAttributesSettings.ElasticsearchIndexName.Enabled, ok)
@@ -427,7 +425,6 @@ func TestMetricsBuilder(t *testing.T) {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
-			enabled = mb.resourceAttributesSettings.ElasticsearchNodeName.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("elasticsearch.node.name")
 			attrCount++
 			assert.Equal(t, mb.resourceAttributesSettings.ElasticsearchNodeName.Enabled, ok)
@@ -435,7 +432,6 @@ func TestMetricsBuilder(t *testing.T) {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
-			enabled = mb.resourceAttributesSettings.ElasticsearchNodeVersion.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("elasticsearch.node.version")
 			attrCount++
 			assert.Equal(t, mb.resourceAttributesSettings.ElasticsearchNodeVersion.Enabled, ok)
