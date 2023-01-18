@@ -109,8 +109,8 @@ goimpi: $(TOOLS_BIN_DIR)/impi
 	@$(MAKE) $(FOR_GROUP_TARGET) TARGET="impi"
 
 .PHONY: goporto
-goporto: $(TOOLS_BIN_DIR)/porto
-	$(TOOLS_BIN_DIR)/porto -w --include-internal --skip-dirs "^cmd$$" ./
+goporto: $(PORTO)
+	$(PORTO) -w --include-internal --skip-dirs "^cmd$$" ./
 
 .PHONY: for-all
 for-all:
@@ -126,9 +126,9 @@ COMMIT?=HEAD
 MODSET?=contrib-core
 REMOTE?=git@github.com:open-telemetry/opentelemetry-collector-contrib.git
 .PHONY: push-tags
-push-tags:
-	$(TOOLS_BIN_DIR)/multimod verify
-	set -e; for tag in `$(TOOLS_BIN_DIR)/multimod tag -m ${MODSET} -c ${COMMIT} --print-tags | grep -v "Using" `; do \
+push-tags: $(MULITMOD) 
+	$(MULITMOD) verify
+	set -e; for tag in `$(MULITMOD) tag -m ${MODSET} -c ${COMMIT} --print-tags | grep -v "Using" `; do \
 		echo "pushing tag $${tag}"; \
 		git push ${REMOTE} $${tag}; \
 	done;
@@ -236,20 +236,20 @@ mdatagen-test:
 
 FILENAME?=$(shell git branch --show-current)
 .PHONY: chlog-new
-chlog-new: $(TOOLS_BIN_DIR)/chloggen
-	$(TOOLS_BIN_DIR)/chloggen new --filename $(FILENAME)
+chlog-new: $(CHLOGGEN)
+	$(CHLOGGEN) new --filename $(FILENAME)
 
 .PHONY: chlog-validate
-chlog-validate: $(TOOLS_BIN_DIR)/chloggen
-	$(TOOLS_BIN_DIR)/chloggen validate
+chlog-validate: $(CHLOGGEN)
+	$(CHLOGGEN) validate
 
 .PHONY: chlog-preview
-chlog-preview: $(TOOLS_BIN_DIR)/chloggen
-	$(TOOLS_BIN_DIR)/chloggen update --dry
+chlog-preview: $(CHLOGGEN)
+	$(CHLOGGEN) update --dry
 
 .PHONY: chlog-update
-chlog-update: $(TOOLS_BIN_DIR)/chloggen
-	$(TOOLS_BIN_DIR)/chloggen update --version $(VERSION)
+chlog-update: $(CHLOGGEN)
+	$(CHLOGGEN) update --version $(VERSION)
 
 # Build the Collector executable.
 .PHONY: otelcontribcol
@@ -303,8 +303,8 @@ build-examples:
 
 # Verify existence of READMEs for components specified as default components in the collector.
 .PHONY: checkdoc
-checkdoc: $(TOOLS_BIN_DIR)/checkdoc
-	$(TOOLS_BIN_DIR)/checkdoc --project-path $(CURDIR) --component-rel-path $(COMP_REL_PATH) --module-name $(MOD_NAME)
+checkdoc: $(CHECKDOC)
+	$(CHECKDOC) --project-path $(CURDIR) --component-rel-path $(COMP_REL_PATH) --module-name $(MOD_NAME)
 
 .PHONY: all-checklinks
 all-checklinks:
@@ -331,24 +331,24 @@ certs:
 	$(foreach dir, $(CERT_DIRS), $(call exec-command, @internal/buildscripts/gen-certs.sh -o $(dir)))
 
 .PHONY: multimod-verify
-multimod-verify: $(TOOLS_BIN_DIR)/multimod
+multimod-verify: $(MULITMOD)
 	@echo "Validating versions.yaml"
-	$(TOOLS_BIN_DIR)/multimod verify
+	$(MULITMOD) verify
 
 .PHONY: multimod-prerelease
-multimod-prerelease: $(TOOLS_BIN_DIR)/multimod
-	$(TOOLS_BIN_DIR)/multimod prerelease -s=true -b=false -v ./versions.yaml -m contrib-base
+multimod-prerelease: $(MULITMOD)
+	$(MULITMOD) prerelease -s=true -b=false -v ./versions.yaml -m contrib-base
 	$(MAKE) gotidy
 
 .PHONY: multimod-sync
-multimod-sync: $(TOOLS_BIN_DIR)/multimod
-	$(TOOLS_BIN_DIR)/multimod sync -a=true -s=true -o ../opentelemetry-collector
+multimod-sync: $(MULITMOD)
+	$(MULITMOD) sync -a=true -s=true -o ../opentelemetry-collector
 	$(MAKE) gotidy
 
 .PHONY: crosslink
-crosslink: $(TOOLS_BIN_DIR)/crosslink
+crosslink: $(CROSSLINK)
 	@echo "Executing crosslink"
-	$(TOOLS_BIN_DIR)/crosslink --root=$(shell pwd)
+	$(CROSSLINK) --root=$(shell pwd)
 
 .PHONY: clean
 clean:

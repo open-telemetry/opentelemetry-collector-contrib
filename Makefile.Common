@@ -31,7 +31,7 @@ GOARCH=$(shell $(GOCMD) env GOARCH)
 TOOLS_MOD_DIR    := $(PWD)/internal/tools
 TOOLS_MOD_REGEX  := "\s+_\s+\".*\""
 TOOLS_PKG_NAMES  := $(shell grep -E $(TOOLS_MOD_REGEX) < $(TOOLS_MOD_DIR)/tools.go | tr -d " _\"")
-TOOLS_BIN_DIR    := $(PWD)/bin
+TOOLS_BIN_DIR    := $(PWD)/.tools
 TOOLS_BIN_NAMES  := $(addprefix $(TOOLS_BIN_DIR)/, $(notdir $(TOOLS_PKG_NAMES)))
 
 .PHONY: install-tools
@@ -49,6 +49,12 @@ MISSPELL            := $(TOOLS_BIN_DIR)/misspell -error
 MISSPELL_CORRECTION := $(TOOLS_BIN_DIR)/misspell -w
 LINT                := $(TOOLS_BIN_DIR)/golangci-lint
 IMPI                := $(TOOLS_BIN_DIR)/impi
+MULITMOD            := $(TOOLS_BIN_DIR)/multimod
+CHLOGGEN            := $(TOOLS_BIN_DIR)/chloggen
+GOIMPORTS           := $(TOOLS_BIN_DIR)/goimports
+PORTO               := $(TOOLS_BIN_DIR)/porto
+CHECKDOC            := $(TOOLS_BIN_DIR)/checkdoc
+CROSSLINK           := $(TOOLS_BIN_DIR)/crosslink
 
 # BUILD_TYPE should be one of (dev, release).
 BUILD_TYPE?=release
@@ -150,9 +156,9 @@ checklinks:
 		$(MDLINKCHECK) -q -c $(SRC_ROOT)/.github/workflows/check_links_config.json || true
 
 .PHONY: fmt
-fmt: $(TOOLS_BIN_DIR)/goimports
+fmt: $(GOIMPORTS)
 	gofmt  -w -s ./
-	$(TOOLS_BIN_DIR)/goimports -w  -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+	$(GOIMPORTS) -w  -local github.com/open-telemetry/opentelemetry-collector-contrib ./
 
 .PHONY: lint
 lint: $(LINT) checklicense misspell
