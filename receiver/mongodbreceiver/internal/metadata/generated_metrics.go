@@ -160,6 +160,38 @@ func DefaultMetricsSettings() MetricsSettings {
 	}
 }
 
+// ResourceAttributeSettings provides common settings for a particular metric.
+type ResourceAttributeSettings struct {
+	Enabled bool `mapstructure:"enabled"`
+
+	enabledProvidedByUser bool
+}
+
+func (ras *ResourceAttributeSettings) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(ras, confmap.WithErrorUnused())
+	if err != nil {
+		return err
+	}
+	ras.enabledProvidedByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ResourceAttributesSettings provides settings for mongodbreceiver metrics.
+type ResourceAttributesSettings struct {
+	Database ResourceAttributeSettings `mapstructure:"database"`
+}
+
+func DefaultResourceAttributesSettings() ResourceAttributesSettings {
+	return ResourceAttributesSettings{
+		Database: ResourceAttributeSettings{
+			Enabled: true,
+		},
+	}
+}
+
 // AttributeConnectionType specifies the a value connection_type attribute.
 type AttributeConnectionType int
 
@@ -1984,6 +2016,7 @@ type MetricsBuilder struct {
 	resourceCapacity                    int                 // maximum observed number of resource attributes.
 	metricsBuffer                       pmetric.Metrics     // accumulates metrics data before emitting.
 	buildInfo                           component.BuildInfo // contains version information
+	resourceAttributesSettings          ResourceAttributesSettings
 	metricMongodbCacheOperations        metricMongodbCacheOperations
 	metricMongodbCollectionCount        metricMongodbCollectionCount
 	metricMongodbConnectionCount        metricMongodbConnectionCount
@@ -2026,11 +2059,19 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
+// WithResourceAttributesSettings sets ResourceAttributeSettings on the metrics builder.
+func WithResourceAttributesSettings(ras ResourceAttributesSettings) metricBuilderOption {
+	return func(mb *MetricsBuilder) {
+		mb.resourceAttributesSettings = ras
+	}
+}
+
 func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                           pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                       pmetric.NewMetrics(),
 		buildInfo:                           settings.BuildInfo,
+		resourceAttributesSettings:          DefaultResourceAttributesSettings(),
 		metricMongodbCacheOperations:        newMetricMongodbCacheOperations(ms.MongodbCacheOperations),
 		metricMongodbCollectionCount:        newMetricMongodbCollectionCount(ms.MongodbCollectionCount),
 		metricMongodbConnectionCount:        newMetricMongodbConnectionCount(ms.MongodbConnectionCount),
@@ -2079,19 +2120,21 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(pmetric.ResourceMetrics)
+type ResourceMetricsOption func(ResourceAttributesSettings, pmetric.ResourceMetrics)
 
 // WithDatabase sets provided value as "database" attribute for current resource.
 func WithDatabase(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("database", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.Database.Enabled {
+			rm.Resource().Attributes().PutStr("database", val)
+		}
 	}
 }
 
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
@@ -2150,8 +2193,9 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricMongodbSessionCount.emit(ils.Metrics())
 	mb.metricMongodbStorageSize.emit(ils.Metrics())
 	mb.metricMongodbUptime.emit(ils.Metrics())
+
 	for _, op := range rmo {
-		op(rm)
+		op(mb.resourceAttributesSettings, rm)
 	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)

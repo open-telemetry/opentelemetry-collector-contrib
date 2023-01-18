@@ -67,7 +67,8 @@ metrics:
 
 ## Resource Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| string.enum.resource.attr | Resource attribute with a known set of string values. | Str: ``one``, ``two`` |
-| string.resource.attr | Resource attribute with any string value. | Any Str |
+| Name | Description | Values | Enabled |
+| ---- | ----------- | ------ | ------- |
+| optional.resource.attr | Explicitly disabled ResourceAttribute. | Any Str | false |
+| string.enum.resource.attr | Resource attribute with a known set of string values. | Str: ``one``, ``two`` | true |
+| string.resource.attr | Resource attribute with any string value. | Any Str | true |

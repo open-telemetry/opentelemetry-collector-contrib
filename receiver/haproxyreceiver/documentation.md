@@ -60,12 +60,12 @@ Current sessions. Corresponds to HAProxy's `scur` metric.
 
 ## Resource Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| haproxy.addr | address:port or "unix". IPv6 has brackets around the address. | Any Str |
-| haproxy.algo | load balancing algorithm | Any Str |
-| haproxy.iid | unique proxy id | Any Str |
-| haproxy.pid | process id (0 for first instance, 1 for second, ...) | Any Str |
-| haproxy.sid | server id (unique inside a proxy) | Any Str |
-| haproxy.type | (0=frontend, 1=backend, 2=server, 3=socket/listener) | Any Str |
-| haproxy.url | The path to the HAProxy socket or HTTP URL. | Any Str |
+| Name | Description | Values | Enabled |
+| ---- | ----------- | ------ | ------- |
+| haproxy.addr | address:port or "unix". IPv6 has brackets around the address. | Any Str | true |
+| haproxy.algo | load balancing algorithm | Any Str | true |
+| haproxy.iid | unique proxy id | Any Str | true |
+| haproxy.pid | process id (0 for first instance, 1 for second, ...) | Any Str | true |
+| haproxy.sid | server id (unique inside a proxy) | Any Str | true |
+| haproxy.type | (0=frontend, 1=backend, 2=server, 3=socket/listener) | Any Str | true |
+| haproxy.url | The path to the HAProxy socket or HTTP URL. | Any Str | true |
