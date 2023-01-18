@@ -10,7 +10,7 @@ else
 endif
 
 # SRC_ROOT is the top of the source tree.
-SRC_ROOT := $(PWD)
+SRC_ROOT := $(realpath $(dir $(lastword $(MAKEFILE_LIST))))
 
 # build tags required by any component should be defined as an independent variables and later added to GO_BUILD_TAGS below
 GO_BUILD_TAGS=""
@@ -24,9 +24,9 @@ GOOS=$(shell $(GOCMD) env GOOS)
 GOARCH=$(shell $(GOCMD) env GOARCH)
 
 # In order to help reduce toil related to managing tooling for the open telemetry collector
-# this section of the makefile looks at only requiring command definitions to be defined 
+# this section of the makefile looks at only requiring command definitions to be defined
 # as part of $(TOOLS_MOD_DIR)/tools.go, following the existing practice.
-# Modifying the tools' `go.mod` file will trigger a rebuild of the tools to help 
+# Modifying the tools' `go.mod` file will trigger a rebuild of the tools to help
 # ensure that all contributors are using the most recent version to make builds repeatable everywhere.
 TOOLS_MOD_DIR    := $(PWD)/internal/tools
 TOOLS_MOD_REGEX  := "\s+_\s+\".*\""
@@ -121,7 +121,7 @@ benchmark:
 	$(GOTEST) -bench=. -run=notests --tags=$(GO_BUILD_TAGS) $(ALL_PKGS)
 
 .PHONY: addlicense
-addlicense:
+addlicense: $(ADDLICENCESE)
 	@ADDLICENCESEOUT=`$(ADDLICENCESE) -y "" -c 'The OpenTelemetry Authors' $(ALL_SRC) 2>&1`; \
 		if [ "$$ADDLICENCESEOUT" ]; then \
 			echo "$(ADDLICENCESE) FAILED => add License errors:\n"; \
@@ -132,7 +132,7 @@ addlicense:
 		fi
 
 .PHONY: checklicense
-checklicense:
+checklicense: $(ADDLICENCESE)
 	@ADDLICENCESEOUT=`$(ADDLICENCESE) -check $(ALL_SRC) 2>&1`; \
 		if [ "$$ADDLICENCESEOUT" ]; then \
 			echo "$(ADDLICENCESE) FAILED => add License errors:\n"; \
@@ -150,12 +150,12 @@ checklinks:
 		$(MDLINKCHECK) -q -c $(SRC_ROOT)/.github/workflows/check_links_config.json || true
 
 .PHONY: fmt
-fmt:
+fmt: $(TOOLS_BIN_DIR)/goimports
 	gofmt  -w -s ./
-	goimports -w  -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+	$(TOOLS_BIN_DIR)/goimports -w  -local github.com/open-telemetry/opentelemetry-collector-contrib ./
 
 .PHONY: lint
-lint: checklicense misspell
+lint: $(LINT) checklicense misspell
 	$(LINT) run --allow-parallel-runners
 
 .PHONY: tidy
@@ -164,16 +164,16 @@ tidy:
 	$(GOCMD) mod tidy -compat=1.18
 
 .PHONY: misspell
-misspell:
+misspell: $(TOOLS_BIN_DIR)/misspell
 	@echo "running $(MISSPELL)"
 	@$(MISSPELL) $(ALL_SRC_AND_DOC)
 
 .PHONY: misspell-correction
-misspell-correction:
+misspell-correction: $(TOOLS_BIN_DIR)/misspell
 	$(MISSPELL_CORRECTION) $(ALL_SRC_AND_DOC)
 
 .PHONY: impi
-impi:
+impi: $(IMPI)
 	@$(IMPI) --local github.com/open-telemetry/opentelemetry-collector-contrib --scheme stdThirdPartyLocal ./...
 
 .PHONY: moddownload
