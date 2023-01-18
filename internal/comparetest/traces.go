@@ -40,16 +40,13 @@ func CompareTraces(expected, actual ptrace.Traces, options ...TracesCompareOptio
 			actualSpans.Len())
 	}
 
-	// sort ResourceSpans
-	expectedSpans.Sort(sortResourceSpans)
-	actualSpans.Sort(sortResourceSpans)
-
 	numResources := expectedSpans.Len()
 
 	// Keep track of matching resources so that each can only be matched once
 	matchingResources := make(map[ptrace.ResourceSpans]ptrace.ResourceSpans, numResources)
 
 	var errs error
+	var outOfOrderErr error
 	for e := 0; e < numResources; e++ {
 		er := expectedSpans.At(e)
 		var foundMatch bool
@@ -61,6 +58,10 @@ func CompareTraces(expected, actual ptrace.Traces, options ...TracesCompareOptio
 			if reflect.DeepEqual(er.Resource().Attributes().AsRaw(), ar.Resource().Attributes().AsRaw()) {
 				foundMatch = true
 				matchingResources[ar] = er
+				if e != a && outOfOrderErr == nil {
+					outOfOrderErr = fmt.Errorf("ResourceTraces with attributes %v expected at index %d, "+
+						"found a at index %d", er.Resource().Attributes().AsRaw(), e, a)
+				}
 				break
 			}
 		}
@@ -77,6 +78,10 @@ func CompareTraces(expected, actual ptrace.Traces, options ...TracesCompareOptio
 
 	if errs != nil {
 		return errs
+	}
+
+	if outOfOrderErr != nil {
+		return outOfOrderErr
 	}
 
 	for ar, er := range matchingResources {

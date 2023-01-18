@@ -93,7 +93,10 @@ func TestElasticsearchIntegration(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		comparetest.CompareMetrics(expectedMetrics, actualMtrics, comparetest.IgnoreMetricValues(), comparetest.IgnoreResourceAttributeValue("elasticsearch.node.name"))
+		comparetest.CompareMetrics(expectedMetrics, actualMtrics,
+			comparetest.IgnoreResourceOrder(),
+			comparetest.IgnoreMetricValues(),
+			comparetest.IgnoreResourceAttributeValue("elasticsearch.node.name"))
 	})
 	t.Run("Running elasticsearch 7.16.3", func(t *testing.T) {
 		t.Parallel()
@@ -125,7 +128,10 @@ func TestElasticsearchIntegration(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		comparetest.CompareMetrics(expectedMetrics, actualMtrics, comparetest.IgnoreMetricValues(), comparetest.IgnoreResourceAttributeValue("elasticsearch.node.name"))
+		comparetest.CompareMetrics(expectedMetrics, actualMtrics,
+			comparetest.IgnoreResourceOrder(),
+			comparetest.IgnoreMetricValues(),
+			comparetest.IgnoreResourceAttributeValue("elasticsearch.node.name"))
 	})
 }
 

@@ -47,7 +47,7 @@ func TestScraper(t *testing.T) {
 	actualMetrics, err := sc.Scrape(context.Background())
 	require.NoError(t, err)
 
-	require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics))
+	require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics, comparetest.IgnoreResourceOrder()))
 }
 
 func TestDisabledMetrics(t *testing.T) {
@@ -112,7 +112,7 @@ func TestDisabledMetrics(t *testing.T) {
 	actualMetrics, err := sc.Scrape(context.Background())
 	require.NoError(t, err)
 
-	require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics))
+	require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics, comparetest.IgnoreResourceOrder()))
 }
 
 type queryJSON struct {

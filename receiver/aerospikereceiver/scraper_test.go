@@ -153,7 +153,7 @@ func TestScrape_CollectClusterMetrics(t *testing.T) {
 	require.EqualError(t, err, "failed to parse int64 for AerospikeNamespaceMemoryUsage, value was badval: strconv.ParseInt: parsing \"badval\": invalid syntax")
 
 	expectedMetrics := expectedMB.Emit()
-	require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics))
+	require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics, comparetest.IgnoreResourceOrder()))
 
 	require.NoError(t, receiver.shutdown(context.Background()))
 
