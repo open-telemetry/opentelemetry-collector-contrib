@@ -10,6 +10,8 @@ resource_attributes:
   <attribute.name>:
     # Required: description of the attribute.
     description:
+    # Optional: Whether the resource attribute is emitted by default.
+    enabled: bool
     # Required: attribute value type.
     type: <string|int|double|bool|bytes>
 

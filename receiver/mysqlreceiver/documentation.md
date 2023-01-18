@@ -599,6 +599,6 @@ The number of hits, misses or overflows for open tables cache lookups.
 
 ## Resource Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| mysql.instance.endpoint | Endpoint of the MySQL instance. | Any Str |
+| Name | Description | Values | Enabled |
+| ---- | ----------- | ------ | ------- |
+| mysql.instance.endpoint | Endpoint of the MySQL instance. | Any Str | true |

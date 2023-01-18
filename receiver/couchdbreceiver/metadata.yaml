@@ -4,6 +4,7 @@ resource_attributes:
   couchdb.node.name:
     description: The name of the node.
     type: string
+    enabled: true
 
 attributes:
   http.method:

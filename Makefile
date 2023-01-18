@@ -233,6 +233,7 @@ generate:
 mdatagen-test:
 	cd cmd/mdatagen && $(GOCMD) install .
 	cd cmd/mdatagen && $(GOCMD) generate ./...
+	cd cmd/mdatagen && $(GOCMD) test ./...
 
 FILENAME?=$(shell git branch --show-current)
 .PHONY: chlog-new
