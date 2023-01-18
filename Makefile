@@ -203,22 +203,6 @@ for-other-target: $(OTHER_MODS)
 all-pwd:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="pwd"
 
-TOOLS_MOD_DIR := ./internal/tools
-.PHONY: install-tools
-install-tools:
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install github.com/client9/misspell/cmd/misspell
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install github.com/golangci/golangci-lint/cmd/golangci-lint
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install github.com/google/addlicense
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install github.com/jstemmer/go-junit-report
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install github.com/pavius/impi/cmd/impi
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install github.com/tcnksm/ghr
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install go.opentelemetry.io/build-tools/checkdoc
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install go.opentelemetry.io/build-tools/issuegenerator
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install golang.org/x/tools/cmd/goimports
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install go.opentelemetry.io/build-tools/multimod
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install github.com/jcchavezs/porto/cmd/porto
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install go.opentelemetry.io/build-tools/crosslink
-
 .PHONY: run
 run:
 	cd ./cmd/otelcontribcol && GO111MODULE=on $(GOCMD) run --race . --config ../../${RUN_CONFIG} ${RUN_ARGS}
