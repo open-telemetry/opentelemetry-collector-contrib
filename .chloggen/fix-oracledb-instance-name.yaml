@@ -5,7 +5,7 @@ change_type: bug_fix
 component: oracledbreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: the resource attribute oracledb.instance.name now captures the database name.
+note: "the resource attribute `oracledb.instance.name` now captures the database name."
 
 # One or more tracking issues related to the change
 issues: [17850]
