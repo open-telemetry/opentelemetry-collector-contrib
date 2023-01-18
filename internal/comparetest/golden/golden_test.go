@@ -46,7 +46,7 @@ func TestWriteMetrics(t *testing.T) {
 	require.NoError(t, err)
 
 	if runtime.GOOS == "windows" {
-		// ioutil adds a '\r' that we don't actually expect
+		// os.ReadFile adds a '\r' that we don't actually expect
 		expectedBytes = bytes.ReplaceAll(expectedBytes, []byte("\r\n"), []byte("\n"))
 	}
 
@@ -183,7 +183,7 @@ func TestWriteLogs(t *testing.T) {
 	require.NoError(t, err)
 
 	if runtime.GOOS == "windows" {
-		// ioutil adds a '\r' that we don't actually expect
+		// os.ReadFile adds a '\r' that we don't actually expect
 		expectedBytes = bytes.ReplaceAll(expectedBytes, []byte("\r\n"), []byte("\n"))
 	}
 
@@ -248,7 +248,7 @@ func TestWriteTraces(t *testing.T) {
 	require.NoError(t, err)
 
 	if runtime.GOOS == "windows" {
-		// ioutil adds a '\r' that we don't actually expect
+		// os.ReadFile adds a '\r' that we don't actually expect
 		expectedBytes = bytes.ReplaceAll(expectedBytes, []byte("\r\n"), []byte("\n"))
 	}
 
