@@ -239,120 +239,120 @@ func TestMetricsBuilder(t *testing.T) {
 			enabled := mb.resourceAttributesSettings.AwsVolumeID.Enabled
 			attrVal, ok := rm.Resource().Attributes().Get("aws.volume.id")
 			attrCount++
-			assert.Equal(t, enabled, ok)
-			if enabled {
+			assert.Equal(t, mb.resourceAttributesSettings.AwsVolumeID.Enabled, ok)
+			if mb.resourceAttributesSettings.AwsVolumeID.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			enabled = mb.resourceAttributesSettings.ContainerID.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("container.id")
 			attrCount++
-			assert.Equal(t, enabled, ok)
-			if enabled {
+			assert.Equal(t, mb.resourceAttributesSettings.ContainerID.Enabled, ok)
+			if mb.resourceAttributesSettings.ContainerID.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			enabled = mb.resourceAttributesSettings.FsType.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("fs.type")
 			attrCount++
-			assert.Equal(t, enabled, ok)
-			if enabled {
+			assert.Equal(t, mb.resourceAttributesSettings.FsType.Enabled, ok)
+			if mb.resourceAttributesSettings.FsType.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			enabled = mb.resourceAttributesSettings.GcePdName.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("gce.pd.name")
 			attrCount++
-			assert.Equal(t, enabled, ok)
-			if enabled {
+			assert.Equal(t, mb.resourceAttributesSettings.GcePdName.Enabled, ok)
+			if mb.resourceAttributesSettings.GcePdName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			enabled = mb.resourceAttributesSettings.GlusterfsEndpointsName.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("glusterfs.endpoints.name")
 			attrCount++
-			assert.Equal(t, enabled, ok)
-			if enabled {
+			assert.Equal(t, mb.resourceAttributesSettings.GlusterfsEndpointsName.Enabled, ok)
+			if mb.resourceAttributesSettings.GlusterfsEndpointsName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			enabled = mb.resourceAttributesSettings.GlusterfsPath.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("glusterfs.path")
 			attrCount++
-			assert.Equal(t, enabled, ok)
-			if enabled {
+			assert.Equal(t, mb.resourceAttributesSettings.GlusterfsPath.Enabled, ok)
+			if mb.resourceAttributesSettings.GlusterfsPath.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			enabled = mb.resourceAttributesSettings.K8sContainerName.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("k8s.container.name")
 			attrCount++
-			assert.Equal(t, enabled, ok)
-			if enabled {
+			assert.Equal(t, mb.resourceAttributesSettings.K8sContainerName.Enabled, ok)
+			if mb.resourceAttributesSettings.K8sContainerName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			enabled = mb.resourceAttributesSettings.K8sNamespaceName.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("k8s.namespace.name")
 			attrCount++
-			assert.Equal(t, enabled, ok)
-			if enabled {
+			assert.Equal(t, mb.resourceAttributesSettings.K8sNamespaceName.Enabled, ok)
+			if mb.resourceAttributesSettings.K8sNamespaceName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			enabled = mb.resourceAttributesSettings.K8sNodeName.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("k8s.node.name")
 			attrCount++
-			assert.Equal(t, enabled, ok)
-			if enabled {
+			assert.Equal(t, mb.resourceAttributesSettings.K8sNodeName.Enabled, ok)
+			if mb.resourceAttributesSettings.K8sNodeName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			enabled = mb.resourceAttributesSettings.K8sPersistentvolumeclaimName.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("k8s.persistentvolumeclaim.name")
 			attrCount++
-			assert.Equal(t, enabled, ok)
-			if enabled {
+			assert.Equal(t, mb.resourceAttributesSettings.K8sPersistentvolumeclaimName.Enabled, ok)
+			if mb.resourceAttributesSettings.K8sPersistentvolumeclaimName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			enabled = mb.resourceAttributesSettings.K8sPodName.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("k8s.pod.name")
 			attrCount++
-			assert.Equal(t, enabled, ok)
-			if enabled {
+			assert.Equal(t, mb.resourceAttributesSettings.K8sPodName.Enabled, ok)
+			if mb.resourceAttributesSettings.K8sPodName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			enabled = mb.resourceAttributesSettings.K8sPodUID.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("k8s.pod.uid")
 			attrCount++
-			assert.Equal(t, enabled, ok)
-			if enabled {
+			assert.Equal(t, mb.resourceAttributesSettings.K8sPodUID.Enabled, ok)
+			if mb.resourceAttributesSettings.K8sPodUID.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			enabled = mb.resourceAttributesSettings.K8sVolumeName.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("k8s.volume.name")
 			attrCount++
-			assert.Equal(t, enabled, ok)
-			if enabled {
+			assert.Equal(t, mb.resourceAttributesSettings.K8sVolumeName.Enabled, ok)
+			if mb.resourceAttributesSettings.K8sVolumeName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			enabled = mb.resourceAttributesSettings.K8sVolumeType.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("k8s.volume.type")
 			attrCount++
-			assert.Equal(t, enabled, ok)
-			if enabled {
+			assert.Equal(t, mb.resourceAttributesSettings.K8sVolumeType.Enabled, ok)
+			if mb.resourceAttributesSettings.K8sVolumeType.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			enabled = mb.resourceAttributesSettings.Partition.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("partition")
 			attrCount++
-			assert.Equal(t, enabled, ok)
-			if enabled {
+			assert.Equal(t, mb.resourceAttributesSettings.Partition.Enabled, ok)
+			if mb.resourceAttributesSettings.Partition.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}

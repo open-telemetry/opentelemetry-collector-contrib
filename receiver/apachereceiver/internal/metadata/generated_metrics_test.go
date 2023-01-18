@@ -119,16 +119,16 @@ func TestMetricsBuilder(t *testing.T) {
 			enabled := mb.resourceAttributesSettings.ApacheServerName.Enabled
 			attrVal, ok := rm.Resource().Attributes().Get("apache.server.name")
 			attrCount++
-			assert.Equal(t, enabled, ok)
-			if enabled {
+			assert.Equal(t, mb.resourceAttributesSettings.ApacheServerName.Enabled, ok)
+			if mb.resourceAttributesSettings.ApacheServerName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			enabled = mb.resourceAttributesSettings.ApacheServerPort.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("apache.server.port")
 			attrCount++
-			assert.Equal(t, enabled, ok)
-			if enabled {
+			assert.Equal(t, mb.resourceAttributesSettings.ApacheServerPort.Enabled, ok)
+			if mb.resourceAttributesSettings.ApacheServerPort.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}

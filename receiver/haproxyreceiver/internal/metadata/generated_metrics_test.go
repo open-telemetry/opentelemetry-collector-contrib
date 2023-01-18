@@ -87,56 +87,56 @@ func TestMetricsBuilder(t *testing.T) {
 			enabled := mb.resourceAttributesSettings.HaproxyAddr.Enabled
 			attrVal, ok := rm.Resource().Attributes().Get("haproxy.addr")
 			attrCount++
-			assert.Equal(t, enabled, ok)
-			if enabled {
+			assert.Equal(t, mb.resourceAttributesSettings.HaproxyAddr.Enabled, ok)
+			if mb.resourceAttributesSettings.HaproxyAddr.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			enabled = mb.resourceAttributesSettings.HaproxyAlgo.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("haproxy.algo")
 			attrCount++
-			assert.Equal(t, enabled, ok)
-			if enabled {
+			assert.Equal(t, mb.resourceAttributesSettings.HaproxyAlgo.Enabled, ok)
+			if mb.resourceAttributesSettings.HaproxyAlgo.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			enabled = mb.resourceAttributesSettings.HaproxyIid.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("haproxy.iid")
 			attrCount++
-			assert.Equal(t, enabled, ok)
-			if enabled {
+			assert.Equal(t, mb.resourceAttributesSettings.HaproxyIid.Enabled, ok)
+			if mb.resourceAttributesSettings.HaproxyIid.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			enabled = mb.resourceAttributesSettings.HaproxyPid.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("haproxy.pid")
 			attrCount++
-			assert.Equal(t, enabled, ok)
-			if enabled {
+			assert.Equal(t, mb.resourceAttributesSettings.HaproxyPid.Enabled, ok)
+			if mb.resourceAttributesSettings.HaproxyPid.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			enabled = mb.resourceAttributesSettings.HaproxySid.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("haproxy.sid")
 			attrCount++
-			assert.Equal(t, enabled, ok)
-			if enabled {
+			assert.Equal(t, mb.resourceAttributesSettings.HaproxySid.Enabled, ok)
+			if mb.resourceAttributesSettings.HaproxySid.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			enabled = mb.resourceAttributesSettings.HaproxyType.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("haproxy.type")
 			attrCount++
-			assert.Equal(t, enabled, ok)
-			if enabled {
+			assert.Equal(t, mb.resourceAttributesSettings.HaproxyType.Enabled, ok)
+			if mb.resourceAttributesSettings.HaproxyType.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			enabled = mb.resourceAttributesSettings.HaproxyURL.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("haproxy.url")
 			attrCount++
-			assert.Equal(t, enabled, ok)
-			if enabled {
+			assert.Equal(t, mb.resourceAttributesSettings.HaproxyURL.Enabled, ok)
+			if mb.resourceAttributesSettings.HaproxyURL.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}

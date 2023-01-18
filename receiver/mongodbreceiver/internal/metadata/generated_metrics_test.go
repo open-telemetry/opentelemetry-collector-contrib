@@ -183,8 +183,8 @@ func TestMetricsBuilder(t *testing.T) {
 			enabled := mb.resourceAttributesSettings.Database.Enabled
 			attrVal, ok := rm.Resource().Attributes().Get("database")
 			attrCount++
-			assert.Equal(t, enabled, ok)
-			if enabled {
+			assert.Equal(t, mb.resourceAttributesSettings.Database.Enabled, ok)
+			if mb.resourceAttributesSettings.Database.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}

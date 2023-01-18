@@ -151,8 +151,8 @@ func TestMetricsBuilder(t *testing.T) {
 			enabled := mb.resourceAttributesSettings.SqlserverDatabaseName.Enabled
 			attrVal, ok := rm.Resource().Attributes().Get("sqlserver.database.name")
 			attrCount++
-			assert.Equal(t, enabled, ok)
-			if enabled {
+			assert.Equal(t, mb.resourceAttributesSettings.SqlserverDatabaseName.Enabled, ok)
+			if mb.resourceAttributesSettings.SqlserverDatabaseName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}

@@ -125,56 +125,56 @@ func TestMetricsBuilder(t *testing.T) {
 			enabled := mb.resourceAttributesSettings.ProcessCommand.Enabled
 			attrVal, ok := rm.Resource().Attributes().Get("process.command")
 			attrCount++
-			assert.Equal(t, enabled, ok)
-			if enabled {
+			assert.Equal(t, mb.resourceAttributesSettings.ProcessCommand.Enabled, ok)
+			if mb.resourceAttributesSettings.ProcessCommand.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			enabled = mb.resourceAttributesSettings.ProcessCommandLine.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("process.command_line")
 			attrCount++
-			assert.Equal(t, enabled, ok)
-			if enabled {
+			assert.Equal(t, mb.resourceAttributesSettings.ProcessCommandLine.Enabled, ok)
+			if mb.resourceAttributesSettings.ProcessCommandLine.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			enabled = mb.resourceAttributesSettings.ProcessExecutableName.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("process.executable.name")
 			attrCount++
-			assert.Equal(t, enabled, ok)
-			if enabled {
+			assert.Equal(t, mb.resourceAttributesSettings.ProcessExecutableName.Enabled, ok)
+			if mb.resourceAttributesSettings.ProcessExecutableName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			enabled = mb.resourceAttributesSettings.ProcessExecutablePath.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("process.executable.path")
 			attrCount++
-			assert.Equal(t, enabled, ok)
-			if enabled {
+			assert.Equal(t, mb.resourceAttributesSettings.ProcessExecutablePath.Enabled, ok)
+			if mb.resourceAttributesSettings.ProcessExecutablePath.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			enabled = mb.resourceAttributesSettings.ProcessOwner.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("process.owner")
 			attrCount++
-			assert.Equal(t, enabled, ok)
-			if enabled {
+			assert.Equal(t, mb.resourceAttributesSettings.ProcessOwner.Enabled, ok)
+			if mb.resourceAttributesSettings.ProcessOwner.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			enabled = mb.resourceAttributesSettings.ProcessParentPid.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("process.parent_pid")
 			attrCount++
-			assert.Equal(t, enabled, ok)
-			if enabled {
+			assert.Equal(t, mb.resourceAttributesSettings.ProcessParentPid.Enabled, ok)
+			if mb.resourceAttributesSettings.ProcessParentPid.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, 1, attrVal.Int())
 			}
 			enabled = mb.resourceAttributesSettings.ProcessPid.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("process.pid")
 			attrCount++
-			assert.Equal(t, enabled, ok)
-			if enabled {
+			assert.Equal(t, mb.resourceAttributesSettings.ProcessPid.Enabled, ok)
+			if mb.resourceAttributesSettings.ProcessPid.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, 1, attrVal.Int())
 			}

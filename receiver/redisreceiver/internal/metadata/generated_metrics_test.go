@@ -199,8 +199,8 @@ func TestMetricsBuilder(t *testing.T) {
 			enabled := mb.resourceAttributesSettings.RedisVersion.Enabled
 			attrVal, ok := rm.Resource().Attributes().Get("redis.version")
 			attrCount++
-			assert.Equal(t, enabled, ok)
-			if enabled {
+			assert.Equal(t, mb.resourceAttributesSettings.RedisVersion.Enabled, ok)
+			if mb.resourceAttributesSettings.RedisVersion.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}

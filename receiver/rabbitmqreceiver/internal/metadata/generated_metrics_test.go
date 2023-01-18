@@ -95,24 +95,24 @@ func TestMetricsBuilder(t *testing.T) {
 			enabled := mb.resourceAttributesSettings.RabbitmqNodeName.Enabled
 			attrVal, ok := rm.Resource().Attributes().Get("rabbitmq.node.name")
 			attrCount++
-			assert.Equal(t, enabled, ok)
-			if enabled {
+			assert.Equal(t, mb.resourceAttributesSettings.RabbitmqNodeName.Enabled, ok)
+			if mb.resourceAttributesSettings.RabbitmqNodeName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			enabled = mb.resourceAttributesSettings.RabbitmqQueueName.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("rabbitmq.queue.name")
 			attrCount++
-			assert.Equal(t, enabled, ok)
-			if enabled {
+			assert.Equal(t, mb.resourceAttributesSettings.RabbitmqQueueName.Enabled, ok)
+			if mb.resourceAttributesSettings.RabbitmqQueueName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			enabled = mb.resourceAttributesSettings.RabbitmqVhostName.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("rabbitmq.vhost.name")
 			attrCount++
-			assert.Equal(t, enabled, ok)
-			if enabled {
+			assert.Equal(t, mb.resourceAttributesSettings.RabbitmqVhostName.Enabled, ok)
+			if mb.resourceAttributesSettings.RabbitmqVhostName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}

@@ -323,72 +323,72 @@ func TestMetricsBuilder(t *testing.T) {
 			enabled := mb.resourceAttributesSettings.MongodbAtlasDbName.Enabled
 			attrVal, ok := rm.Resource().Attributes().Get("mongodb_atlas.db.name")
 			attrCount++
-			assert.Equal(t, enabled, ok)
-			if enabled {
+			assert.Equal(t, mb.resourceAttributesSettings.MongodbAtlasDbName.Enabled, ok)
+			if mb.resourceAttributesSettings.MongodbAtlasDbName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			enabled = mb.resourceAttributesSettings.MongodbAtlasDiskPartition.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("mongodb_atlas.disk.partition")
 			attrCount++
-			assert.Equal(t, enabled, ok)
-			if enabled {
+			assert.Equal(t, mb.resourceAttributesSettings.MongodbAtlasDiskPartition.Enabled, ok)
+			if mb.resourceAttributesSettings.MongodbAtlasDiskPartition.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			enabled = mb.resourceAttributesSettings.MongodbAtlasHostName.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("mongodb_atlas.host.name")
 			attrCount++
-			assert.Equal(t, enabled, ok)
-			if enabled {
+			assert.Equal(t, mb.resourceAttributesSettings.MongodbAtlasHostName.Enabled, ok)
+			if mb.resourceAttributesSettings.MongodbAtlasHostName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			enabled = mb.resourceAttributesSettings.MongodbAtlasOrgName.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("mongodb_atlas.org_name")
 			attrCount++
-			assert.Equal(t, enabled, ok)
-			if enabled {
+			assert.Equal(t, mb.resourceAttributesSettings.MongodbAtlasOrgName.Enabled, ok)
+			if mb.resourceAttributesSettings.MongodbAtlasOrgName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			enabled = mb.resourceAttributesSettings.MongodbAtlasProcessID.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("mongodb_atlas.process.id")
 			attrCount++
-			assert.Equal(t, enabled, ok)
-			if enabled {
+			assert.Equal(t, mb.resourceAttributesSettings.MongodbAtlasProcessID.Enabled, ok)
+			if mb.resourceAttributesSettings.MongodbAtlasProcessID.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			enabled = mb.resourceAttributesSettings.MongodbAtlasProcessPort.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("mongodb_atlas.process.port")
 			attrCount++
-			assert.Equal(t, enabled, ok)
-			if enabled {
+			assert.Equal(t, mb.resourceAttributesSettings.MongodbAtlasProcessPort.Enabled, ok)
+			if mb.resourceAttributesSettings.MongodbAtlasProcessPort.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			enabled = mb.resourceAttributesSettings.MongodbAtlasProcessTypeName.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("mongodb_atlas.process.type_name")
 			attrCount++
-			assert.Equal(t, enabled, ok)
-			if enabled {
+			assert.Equal(t, mb.resourceAttributesSettings.MongodbAtlasProcessTypeName.Enabled, ok)
+			if mb.resourceAttributesSettings.MongodbAtlasProcessTypeName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			enabled = mb.resourceAttributesSettings.MongodbAtlasProjectID.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("mongodb_atlas.project.id")
 			attrCount++
-			assert.Equal(t, enabled, ok)
-			if enabled {
+			assert.Equal(t, mb.resourceAttributesSettings.MongodbAtlasProjectID.Enabled, ok)
+			if mb.resourceAttributesSettings.MongodbAtlasProjectID.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			enabled = mb.resourceAttributesSettings.MongodbAtlasProjectName.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("mongodb_atlas.project.name")
 			attrCount++
-			assert.Equal(t, enabled, ok)
-			if enabled {
+			assert.Equal(t, mb.resourceAttributesSettings.MongodbAtlasProjectName.Enabled, ok)
+			if mb.resourceAttributesSettings.MongodbAtlasProjectName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}

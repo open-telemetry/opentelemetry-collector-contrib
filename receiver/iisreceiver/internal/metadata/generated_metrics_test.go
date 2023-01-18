@@ -119,16 +119,16 @@ func TestMetricsBuilder(t *testing.T) {
 			enabled := mb.resourceAttributesSettings.IisApplicationPool.Enabled
 			attrVal, ok := rm.Resource().Attributes().Get("iis.application_pool")
 			attrCount++
-			assert.Equal(t, enabled, ok)
-			if enabled {
+			assert.Equal(t, mb.resourceAttributesSettings.IisApplicationPool.Enabled, ok)
+			if mb.resourceAttributesSettings.IisApplicationPool.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			enabled = mb.resourceAttributesSettings.IisSite.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("iis.site")
 			attrCount++
-			assert.Equal(t, enabled, ok)
-			if enabled {
+			assert.Equal(t, mb.resourceAttributesSettings.IisSite.Enabled, ok)
+			if mb.resourceAttributesSettings.IisSite.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}

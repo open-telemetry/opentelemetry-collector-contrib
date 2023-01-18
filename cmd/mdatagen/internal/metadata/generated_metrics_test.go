@@ -94,24 +94,24 @@ func TestMetricsBuilder(t *testing.T) {
 			enabled := mb.resourceAttributesSettings.OptionalResourceAttr.Enabled
 			attrVal, ok := rm.Resource().Attributes().Get("optional.resource.attr")
 			attrCount++
-			assert.Equal(t, enabled, ok)
-			if enabled {
+			assert.Equal(t, mb.resourceAttributesSettings.OptionalResourceAttr.Enabled, ok)
+			if mb.resourceAttributesSettings.OptionalResourceAttr.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			enabled = mb.resourceAttributesSettings.StringEnumResourceAttr.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("string.enum.resource.attr")
 			attrCount++
-			assert.Equal(t, enabled, ok)
-			if enabled {
+			assert.Equal(t, mb.resourceAttributesSettings.StringEnumResourceAttr.Enabled, ok)
+			if mb.resourceAttributesSettings.StringEnumResourceAttr.Enabled {
 				enabledAttrCount++
 				assert.Equal(t, "one", attrVal.Str())
 			}
 			enabled = mb.resourceAttributesSettings.StringResourceAttr.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("string.resource.attr")
 			attrCount++
-			assert.Equal(t, enabled, ok)
-			if enabled {
+			assert.Equal(t, mb.resourceAttributesSettings.StringResourceAttr.Enabled, ok)
+			if mb.resourceAttributesSettings.StringResourceAttr.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}

@@ -215,48 +215,48 @@ func TestMetricsBuilder(t *testing.T) {
 			enabled := mb.resourceAttributesSettings.VcenterClusterName.Enabled
 			attrVal, ok := rm.Resource().Attributes().Get("vcenter.cluster.name")
 			attrCount++
-			assert.Equal(t, enabled, ok)
-			if enabled {
+			assert.Equal(t, mb.resourceAttributesSettings.VcenterClusterName.Enabled, ok)
+			if mb.resourceAttributesSettings.VcenterClusterName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			enabled = mb.resourceAttributesSettings.VcenterDatastoreName.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("vcenter.datastore.name")
 			attrCount++
-			assert.Equal(t, enabled, ok)
-			if enabled {
+			assert.Equal(t, mb.resourceAttributesSettings.VcenterDatastoreName.Enabled, ok)
+			if mb.resourceAttributesSettings.VcenterDatastoreName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			enabled = mb.resourceAttributesSettings.VcenterHostName.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("vcenter.host.name")
 			attrCount++
-			assert.Equal(t, enabled, ok)
-			if enabled {
+			assert.Equal(t, mb.resourceAttributesSettings.VcenterHostName.Enabled, ok)
+			if mb.resourceAttributesSettings.VcenterHostName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			enabled = mb.resourceAttributesSettings.VcenterResourcePoolName.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("vcenter.resource_pool.name")
 			attrCount++
-			assert.Equal(t, enabled, ok)
-			if enabled {
+			assert.Equal(t, mb.resourceAttributesSettings.VcenterResourcePoolName.Enabled, ok)
+			if mb.resourceAttributesSettings.VcenterResourcePoolName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			enabled = mb.resourceAttributesSettings.VcenterVMID.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("vcenter.vm.id")
 			attrCount++
-			assert.Equal(t, enabled, ok)
-			if enabled {
+			assert.Equal(t, mb.resourceAttributesSettings.VcenterVMID.Enabled, ok)
+			if mb.resourceAttributesSettings.VcenterVMID.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			enabled = mb.resourceAttributesSettings.VcenterVMName.Enabled
 			attrVal, ok = rm.Resource().Attributes().Get("vcenter.vm.name")
 			attrCount++
-			assert.Equal(t, enabled, ok)
-			if enabled {
+			assert.Equal(t, mb.resourceAttributesSettings.VcenterVMName.Enabled, ok)
+			if mb.resourceAttributesSettings.VcenterVMName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}

@@ -103,8 +103,8 @@ func TestMetricsBuilder(t *testing.T) {
 			enabled := mb.resourceAttributesSettings.CouchdbNodeName.Enabled
 			attrVal, ok := rm.Resource().Attributes().Get("couchdb.node.name")
 			attrCount++
-			assert.Equal(t, enabled, ok)
-			if enabled {
+			assert.Equal(t, mb.resourceAttributesSettings.CouchdbNodeName.Enabled, ok)
+			if mb.resourceAttributesSettings.CouchdbNodeName.Enabled {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
