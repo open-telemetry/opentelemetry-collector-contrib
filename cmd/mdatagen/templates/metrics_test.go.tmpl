@@ -106,7 +106,6 @@ func TestMetricsBuilder(t *testing.T) {
 			attrCount := 0
 			enabledAttrCount := 0
 			{{- range $name, $info := .ResourceAttributes }}
-				enabled {{ $assignSign }} mb.resourceAttributesSettings.{{ $name.Render }}.Enabled
 				attrVal, ok {{ $assignSign }} rm.Resource().Attributes().Get("{{ $name }}")
 				attrCount++
 				assert.Equal(t, mb.resourceAttributesSettings.{{ $name.Render }}.Enabled, ok)
