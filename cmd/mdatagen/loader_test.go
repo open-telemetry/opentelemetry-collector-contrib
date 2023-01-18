@@ -50,7 +50,7 @@ func Test_loadMetadata(t *testing.T) {
 						},
 					},
 					"optional.resource.attr": {
-						Description: "explicitly disabled ResourceAttribute",
+						Description: "Explicitly disabled ResourceAttribute.",
 						Enabled:     false,
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
