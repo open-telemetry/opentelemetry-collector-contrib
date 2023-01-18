@@ -39,7 +39,7 @@ func (exporter *logExporter) onLogData(context context.Context, logData plog.Log
 			logs := scopeLogs.At(j).LogRecords()
 			for k := 0; k < logs.Len(); k++ {
 				envelope := logPacker.LogRecordToEnvelope(logs.At(k))
-				envelope.IKey = exporter.config.InstrumentationKey
+				envelope.IKey = string(exporter.config.InstrumentationKey)
 				exporter.transportChannel.Send(envelope)
 			}
 		}

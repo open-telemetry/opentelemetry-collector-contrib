@@ -214,7 +214,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 			wantErr: nil,
 		},
 		{
-			name: "Events with different resource attributes",
+			name: "group_events_by_resource_attributes",
 			events: []*splunk.Event{
 				{
 					Time:       &time,

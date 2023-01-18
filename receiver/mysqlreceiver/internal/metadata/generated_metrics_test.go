@@ -86,6 +86,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordMysqlClientNetworkIoDataPoint(ts, "1", AttributeDirection(1))
 
 			allMetricsCount++
+			mb.RecordMysqlCommandsDataPoint(ts, "1", AttributeCommand(1))
+
+			allMetricsCount++
 			mb.RecordMysqlConnectionCountDataPoint(ts, "1")
 
 			allMetricsCount++
@@ -349,6 +352,23 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("kind")
 					assert.True(t, ok)
 					assert.Equal(t, "received", attrVal.Str())
+				case "mysql.commands":
+					assert.False(t, validatedMetrics["mysql.commands"], "Found a duplicate in the metrics slice: mysql.commands")
+					validatedMetrics["mysql.commands"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The number of times each type of command has been executed.", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("command")
+					assert.True(t, ok)
+					assert.Equal(t, "delete", attrVal.Str())
 				case "mysql.connection.count":
 					assert.False(t, validatedMetrics["mysql.connection.count"], "Found a duplicate in the metrics slice: mysql.connection.count")
 					validatedMetrics["mysql.connection.count"] = true

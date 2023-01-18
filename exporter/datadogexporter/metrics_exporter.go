@@ -168,12 +168,12 @@ func (exp *metricsExporter) pushSketches(ctx context.Context, sl sketches.Sketch
 	}
 
 	if err != nil {
-		return fmt.Errorf("failed to do sketches HTTP request: %w", err)
+		return clientutil.WrapError(fmt.Errorf("failed to do sketches HTTP request: %w", err), resp)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode >= 400 {
-		return fmt.Errorf("error when sending payload to %s: %s", sketches.SketchSeriesEndpoint, resp.Status)
+		return clientutil.WrapError(fmt.Errorf("error when sending payload to %s: %s", sketches.SketchSeriesEndpoint, resp.Status), resp)
 	}
 	return nil
 }
@@ -223,14 +223,12 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metr
 		err = nil
 		if len(ms) > 0 {
 			exp.params.Logger.Debug("exporting native Datadog payload", zap.Any("metric", ms))
-			err = multierr.Append(
-				err,
-				exp.retrier.DoWithRetries(ctx, func(context.Context) error {
-					ctx = clientutil.GetRequestContext(ctx, string(exp.cfg.API.Key))
-					_, _, merr := exp.metricsAPI.SubmitMetrics(ctx, datadogV2.MetricPayload{Series: ms})
-					return merr
-				}),
-			)
+			_, experr := exp.retrier.DoWithRetries(ctx, func(context.Context) error {
+				ctx = clientutil.GetRequestContext(ctx, string(exp.cfg.API.Key))
+				_, httpresp, merr := exp.metricsAPI.SubmitMetrics(ctx, datadogV2.MetricPayload{Series: ms})
+				return clientutil.WrapError(merr, httpresp)
+			})
+			err = multierr.Append(err, experr)
 		}
 	} else {
 		var ms []zorkian.Metric
@@ -240,23 +238,19 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metr
 		err = nil
 		if len(ms) > 0 {
 			exp.params.Logger.Debug("exporting Zorkian Datadog payload", zap.Any("metric", ms))
-			err = multierr.Append(
-				err,
-				exp.retrier.DoWithRetries(ctx, func(context.Context) error {
-					return exp.client.PostMetrics(ms)
-				}),
-			)
+			_, experr := exp.retrier.DoWithRetries(ctx, func(context.Context) error {
+				return exp.client.PostMetrics(ms)
+			})
+			err = multierr.Append(err, experr)
 		}
 	}
 
 	if len(sl) > 0 {
 		exp.params.Logger.Debug("exporting sketches payload", zap.Any("sketches", sl))
-		err = multierr.Append(
-			err,
-			exp.retrier.DoWithRetries(ctx, func(ctx context.Context) error {
-				return exp.pushSketches(ctx, sl)
-			}),
-		)
+		_, experr := exp.retrier.DoWithRetries(ctx, func(ctx context.Context) error {
+			return exp.pushSketches(ctx, sl)
+		})
+		err = multierr.Append(err, experr)
 	}
 
 	if len(sp) > 0 {

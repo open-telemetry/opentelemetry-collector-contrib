@@ -1,4 +1,12 @@
 resourcedetection:
+resourcedetection/openshift:
+  detectors: [openshift]
+  timeout: 2s
+  override: false
+  openshift:
+    address: "127.0.0.1:4444"
+    token: "some_token"
+
 resourcedetection/gcp:
   detectors: [env, gcp]
   timeout: 2s

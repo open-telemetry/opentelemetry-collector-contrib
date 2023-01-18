@@ -16,10 +16,10 @@ package sapmexporter // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"errors"
-	"fmt"
 	"net/url"
 
 	sapmclient "github.com/signalfx/sapm-proto/client"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -27,7 +27,6 @@ import (
 
 const (
 	defaultEndpointScheme = "https"
-	defaultNumWorkers     = 8
 )
 
 // Config defines configuration for SAPM exporter.
@@ -38,7 +37,7 @@ type Config struct {
 	Endpoint string `mapstructure:"endpoint"`
 
 	// AccessToken is the authentication token provided by SignalFx.
-	AccessToken string `mapstructure:"access_token"`
+	AccessToken configopaque.String `mapstructure:"access_token"`
 
 	// NumWorkers is the number of workers that should be used to export traces.
 	// Exporter can make as many requests in parallel as the number of workers. Defaults to 8.
@@ -60,33 +59,26 @@ type Config struct {
 	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
 }
 
-func (c *Config) validate() error {
+func (c *Config) Validate() error {
 	if c.Endpoint == "" {
 		return errors.New("`endpoint` not specified")
 	}
-
-	e, err := url.Parse(c.Endpoint)
+	_, err := url.Parse(c.Endpoint)
 	if err != nil {
 		return err
-	}
-
-	if e.Scheme == "" {
-		e.Scheme = defaultEndpointScheme
-	}
-	c.Endpoint = e.String()
-	return nil
-}
-
-func (c *Config) Validate() error {
-	if err := c.QueueSettings.Validate(); err != nil {
-		return fmt.Errorf("sending_queue settings has invalid configuration: %w", err)
 	}
 	return nil
 }
 
 func (c *Config) clientOptions() []sapmclient.Option {
+	e, _ := url.Parse(c.Endpoint)
+	endpoint := c.Endpoint
+	if e.Scheme == "" {
+		e.Scheme = defaultEndpointScheme
+		endpoint = e.String()
+	}
 	opts := []sapmclient.Option{
-		sapmclient.WithEndpoint(c.Endpoint),
+		sapmclient.WithEndpoint(endpoint),
 	}
 	if c.NumWorkers > 0 {
 		opts = append(opts, sapmclient.WithWorkers(c.NumWorkers))
@@ -97,7 +89,7 @@ func (c *Config) clientOptions() []sapmclient.Option {
 	}
 
 	if c.AccessToken != "" {
-		opts = append(opts, sapmclient.WithAccessToken(c.AccessToken))
+		opts = append(opts, sapmclient.WithAccessToken(string(c.AccessToken)))
 	}
 
 	if c.DisableCompression {

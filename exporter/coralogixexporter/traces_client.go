@@ -66,7 +66,7 @@ func (e *tracesExporter) start(ctx context.Context, host component.Host) (err er
 	if e.config.Traces.Headers == nil {
 		e.config.Traces.Headers = make(map[string]string)
 	}
-	e.config.Traces.Headers["Authorization"] = "Bearer " + e.config.PrivateKey
+	e.config.Traces.Headers["Authorization"] = "Bearer " + string(e.config.PrivateKey)
 
 	e.callOptions = []grpc.CallOption{
 		grpc.WaitForReady(e.config.Traces.WaitForReady),
@@ -81,16 +81,14 @@ func (e *tracesExporter) pushTraces(ctx context.Context, td ptrace.Traces) error
 	for i := 0; i < rss.Len(); i++ {
 		resourceSpan := rss.At(i)
 		appName, subsystem := e.config.getMetadataFromResource(resourceSpan.Resource())
+		resourceSpan.Resource().Attributes().PutStr(cxAppNameAttrName, appName)
+		resourceSpan.Resource().Attributes().PutStr(cxSubsystemNameAttrName, subsystem)
 
-		tr := ptrace.NewTraces()
-		newRss := tr.ResourceSpans().AppendEmpty()
-		resourceSpan.CopyTo(newRss)
-		req := ptraceotlp.NewExportRequestFromTraces(tr)
+	}
 
-		_, err := e.traceExporter.Export(e.enhanceContext(ctx, appName, subsystem), req, e.callOptions...)
-		if err != nil {
-			return processError(err)
-		}
+	_, err := e.traceExporter.Export(e.enhanceContext(ctx), ptraceotlp.NewExportRequestFromTraces(td), e.callOptions...)
+	if err != nil {
+		return processError(err)
 	}
 
 	return nil
@@ -99,14 +97,11 @@ func (e *tracesExporter) shutdown(context.Context) error {
 	return e.clientConn.Close()
 }
 
-func (e *tracesExporter) enhanceContext(ctx context.Context, appName, subSystemName string) context.Context {
+func (e *tracesExporter) enhanceContext(ctx context.Context) context.Context {
 	headers := make(map[string]string)
 	for k, v := range e.config.Traces.Headers {
 		headers[k] = v
 	}
-
-	headers["CX-Application-Name"] = appName
-	headers["CX-Subsystem-Name"] = subSystemName
 
 	return metadata.NewOutgoingContext(ctx, metadata.New(headers))
 }

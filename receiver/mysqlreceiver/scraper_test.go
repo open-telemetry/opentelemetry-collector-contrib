@@ -57,6 +57,7 @@ func TestScrape(t *testing.T) {
 
 		cfg.Metrics.MysqlClientNetworkIo.Enabled = true
 		cfg.Metrics.MysqlPreparedStatements.Enabled = true
+		cfg.Metrics.MysqlCommands.Enabled = true
 
 		cfg.Metrics.MysqlReplicaSQLDelay.Enabled = true
 		cfg.Metrics.MysqlReplicaTimeBehindSource.Enabled = true

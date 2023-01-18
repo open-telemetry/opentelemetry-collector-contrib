@@ -380,6 +380,20 @@ The number of transmitted bytes between server and clients.
 | ---- | ----------- | ------ |
 | kind | The name of the transmission direction. | Str: ``received``, ``sent`` |
 
+### mysql.commands
+
+The number of times each type of command has been executed.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| 1 | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| command | The command types. | Str: ``delete``, ``insert``, ``select``, ``update`` |
+
 ### mysql.connection.count
 
 The number of connection attempts (successful or not) to the MySQL server.

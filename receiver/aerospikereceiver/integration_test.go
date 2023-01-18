@@ -80,8 +80,13 @@ func populateMetrics(t *testing.T, host *as.Host) {
 	clientPolicy.Timeout = 60 * time.Second
 	// minconns is used to populate the client connections metric
 	clientPolicy.MinConnectionsPerNode = 50
-	c, err := as.NewClientWithPolicyAndHost(clientPolicy, host)
-	require.NoError(t, err)
+
+	var c *as.Client
+	var clientErr error
+	require.Eventually(t, func() bool {
+		c, clientErr = as.NewClientWithPolicyAndHost(clientPolicy, host)
+		return clientErr == nil
+	}, 2*time.Minute, 1*time.Second, "failed to populate metrics")
 
 	ns := "test"
 	set := "integration"
