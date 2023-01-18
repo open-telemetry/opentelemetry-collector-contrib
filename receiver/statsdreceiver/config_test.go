@@ -20,6 +20,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lightstep/go-expohisto/structure"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -148,11 +149,74 @@ func TestValidate(t *testing.T) {
 			},
 			expectedErr: fmt.Sprintf(observerTypeNotSupportErr, "gauge1"),
 		},
+		{
+			name: "invalidHistogram",
+			cfg: &Config{
+				AggregationInterval: 20 * time.Second,
+				TimerHistogramMapping: []protocol.TimerHistogramMapping{
+					{
+						StatsdType:   "timing",
+						ObserverType: "gauge",
+						Histogram: protocol.HistogramConfig{
+							MaxSize: 100,
+						},
+					},
+				},
+			},
+			expectedErr: "histogram configuration requires observer_type: histogram",
+		},
+		{
+			name: "negativeAggregationInterval",
+			cfg: &Config{
+				AggregationInterval: -1,
+				TimerHistogramMapping: []protocol.TimerHistogramMapping{
+					{StatsdType: "timing", ObserverType: "gauge"},
+				},
+			},
+			expectedErr: "aggregation_interval must be a positive duration",
+		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			require.EqualError(t, test.cfg.validate(), test.expectedErr)
+			require.EqualError(t, test.cfg.Validate(), test.expectedErr)
 		})
+	}
+}
+func TestConfig_Validate_MaxSize(t *testing.T) {
+	for _, maxSize := range []int32{structure.MaximumMaxSize + 1, -1, -structure.MaximumMaxSize} {
+		cfg := &Config{
+			AggregationInterval: 20 * time.Second,
+			TimerHistogramMapping: []protocol.TimerHistogramMapping{
+				{
+					StatsdType:   "timing",
+					ObserverType: "histogram",
+					Histogram: protocol.HistogramConfig{
+						MaxSize: maxSize,
+					},
+				},
+			},
+		}
+		err := cfg.Validate()
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "histogram max_size out of range")
+	}
+}
+func TestConfig_Validate_HistogramGoodConfig(t *testing.T) {
+	for _, maxSize := range []int32{structure.MaximumMaxSize, 0, 2} {
+		cfg := &Config{
+			AggregationInterval: 20 * time.Second,
+			TimerHistogramMapping: []protocol.TimerHistogramMapping{
+				{
+					StatsdType:   "timing",
+					ObserverType: "histogram",
+					Histogram: protocol.HistogramConfig{
+						MaxSize: maxSize,
+					},
+				},
+			},
+		}
+		err := cfg.Validate()
+		assert.NoError(t, err)
 	}
 }
