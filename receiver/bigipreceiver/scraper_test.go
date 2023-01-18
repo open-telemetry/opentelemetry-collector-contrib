@@ -272,7 +272,7 @@ func TestScaperScrape(t *testing.T) {
 
 			expectedMetrics := tc.expectedMetricGen(t)
 
-			err = comparetest.CompareMetrics(expectedMetrics, actualMetrics)
+			err = comparetest.CompareMetrics(expectedMetrics, actualMetrics, comparetest.IgnoreResourceOrder())
 			require.NoError(t, err)
 		})
 	}

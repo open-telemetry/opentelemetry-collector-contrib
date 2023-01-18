@@ -6,11 +6,10 @@
                     {
                         "key": "host.name",
                         "value": {
-                            "stringValue": "different-node1"
+                            "stringValue": "host1"
                         }
                     }
-                ],
-                "droppedAttributesCount": 0
+                ]
             },
             "scopeSpans": [
                 {
@@ -82,8 +81,7 @@
                     },
                     "schemaUrl": "https://opentelemetry.io/schemas/1.6.1"
                 }
-            ],
-            "schemaUrl": "https://opentelemetry.io/schemas/1.6.1"
+            ]
         },
         {
             "resource": {

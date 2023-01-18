@@ -40,16 +40,13 @@ func CompareLogs(expected, actual plog.Logs, options ...LogsCompareOption) error
 			actualLogs.Len())
 	}
 
-	// sort ResourceLogs
-	expectedLogs.Sort(sortResourceLogs)
-	actualLogs.Sort(sortResourceLogs)
-
 	numResources := expectedLogs.Len()
 
 	// Keep track of matching resources so that each can only be matched once
 	matchingResources := make(map[plog.ResourceLogs]plog.ResourceLogs, numResources)
 
 	var errs error
+	var outOfOrderErr error
 	for e := 0; e < numResources; e++ {
 		er := expectedLogs.At(e)
 		var foundMatch bool
@@ -61,6 +58,10 @@ func CompareLogs(expected, actual plog.Logs, options ...LogsCompareOption) error
 			if reflect.DeepEqual(er.Resource().Attributes().AsRaw(), ar.Resource().Attributes().AsRaw()) {
 				foundMatch = true
 				matchingResources[ar] = er
+				if e != a && outOfOrderErr == nil {
+					outOfOrderErr = fmt.Errorf("ResourceLogs with attributes %v expected at index %d, "+
+						"found a at index %d", er.Resource().Attributes().AsRaw(), e, a)
+				}
 				break
 			}
 		}
@@ -77,6 +78,10 @@ func CompareLogs(expected, actual plog.Logs, options ...LogsCompareOption) error
 
 	if errs != nil {
 		return errs
+	}
+
+	if outOfOrderErr != nil {
+		return outOfOrderErr
 	}
 
 	for ar, er := range matchingResources {

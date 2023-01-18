@@ -156,6 +156,7 @@ func TestPostgreSQLIntegration(t *testing.T) {
 
 			require.NoError(t, comparetest.CompareMetrics(
 				expectedMetrics, actualMetrics,
+				comparetest.IgnoreResourceOrder(),
 				comparetest.IgnoreMetricValues(),
 				comparetest.IgnoreSubsequentDataPoints("postgresql.backends"),
 			))

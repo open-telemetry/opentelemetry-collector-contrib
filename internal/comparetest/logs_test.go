@@ -53,6 +53,20 @@ func TestCompareLogs(t *testing.T) {
 			},
 		},
 		{
+			name: "ignore-resource-order",
+			compareOptions: []LogsCompareOption{
+				IgnoreResourceOrder(),
+			},
+			withoutOptions: expectation{
+				err:    errors.New("ResourceLogs with attributes map[testKey1:one] expected at index 0, found a at index 1"),
+				reason: "Resource order mismatch will cause failures if not ignored.",
+			},
+			withOptions: expectation{
+				err:    nil,
+				reason: "Ignored resource order mismatch should not cause a failure.",
+			},
+		},
+		{
 			name: "resource-instrumentation-library-extra",
 			withoutOptions: expectation{
 				err:    errors.New("number of instrumentation libraries does not match expected: 1, actual: 2"),

@@ -37,16 +37,13 @@ func CompareMetrics(expected, actual pmetric.Metrics, options ...MetricsCompareO
 			actualMetrics.Len())
 	}
 
-	// sort ResourceMetrics
-	expectedMetrics.Sort(sortResourceMetrics)
-	actualMetrics.Sort(sortResourceMetrics)
-
 	numResources := expectedMetrics.Len()
 
 	// Keep track of matching resources so that each can only be matched once
 	matchingResources := make(map[pmetric.ResourceMetrics]pmetric.ResourceMetrics, numResources)
 
 	var errs error
+	var outOfOrderErr error
 	for e := 0; e < numResources; e++ {
 		er := expectedMetrics.At(e)
 		var foundMatch bool
@@ -58,6 +55,10 @@ func CompareMetrics(expected, actual pmetric.Metrics, options ...MetricsCompareO
 			if reflect.DeepEqual(er.Resource().Attributes().AsRaw(), ar.Resource().Attributes().AsRaw()) {
 				foundMatch = true
 				matchingResources[ar] = er
+				if e != a && outOfOrderErr == nil {
+					outOfOrderErr = fmt.Errorf("ResourceMetrics with attributes %v expected at index %d, "+
+						"found a at index %d", er.Resource().Attributes().AsRaw(), e, a)
+				}
 				break
 			}
 		}
@@ -75,6 +76,10 @@ func CompareMetrics(expected, actual pmetric.Metrics, options ...MetricsCompareO
 
 	if errs != nil {
 		return errs
+	}
+
+	if outOfOrderErr != nil {
+		return outOfOrderErr
 	}
 
 	for ar, er := range matchingResources {

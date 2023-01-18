@@ -52,6 +52,21 @@ func TestCompareTraces(t *testing.T) {
 				reason: "The unpredictable resource attribute was ignored on each resource that carried it.",
 			},
 		},
+		{
+			name: "ignore-resource-order",
+			compareOptions: []TracesCompareOption{
+				IgnoreResourceOrder(),
+			},
+			withoutOptions: expectation{
+				err: errors.New("ResourceTraces with attributes map[host.name:host1] expected at index 0, " +
+					"found a at index 1"),
+				reason: "Resource order mismatch will cause failures if not ignored.",
+			},
+			withOptions: expectation{
+				err:    nil,
+				reason: "Ignored resource order mismatch should not cause a failure.",
+			},
+		},
 	}
 
 	for _, tc := range tcs {

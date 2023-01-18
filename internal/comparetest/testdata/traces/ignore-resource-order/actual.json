@@ -6,11 +6,62 @@
                     {
                         "key": "host.name",
                         "value": {
-                            "stringValue": "different-node1"
+                            "stringValue": "host2"
                         }
                     }
-                ],
-                "droppedAttributesCount": 0
+                ]
+            },
+            "scopeSpans": [
+                {
+                    "spans": [
+                        {
+                            "attributes": [
+                                {
+                                    "key": "testKey3",
+                                    "value": {
+                                        "stringValue": "teststringvalue3"
+                                    }
+                                },
+                                {
+                                    "key": "testKey4",
+                                    "value": {
+                                        "stringValue": "teststringvalue4"
+                                    }
+                                }
+                            ],
+                            "droppedAttributesCount": 0,
+                            "endTimeUnixNano": "11651379494838206464",
+                            "startTimeUnixNano": "11651379494838206464",
+                            "status": {},
+                            "events": [],
+                            "droppedEventsCount": 0,
+                            "links": [],
+                            "droppedLinksCount": 0,
+                            "name": "",
+                            "kind": 2,
+                            "parentSpanId": "",
+                            "traceState": "",
+                            "spanId": "",
+                            "traceId": ""
+                        }
+                    ],
+                    "scope": {
+                        "name": "collector",
+                        "version": "v0.1.0"
+                    }
+                }
+            ]
+        },
+        {
+            "resource": {
+                "attributes": [
+                    {
+                        "key": "host.name",
+                        "value": {
+                            "stringValue": "host1"
+                        }
+                    }
+                ]
             },
             "scopeSpans": [
                 {
@@ -81,59 +132,6 @@
                         "version": "v0.1.0"
                     },
                     "schemaUrl": "https://opentelemetry.io/schemas/1.6.1"
-                }
-            ],
-            "schemaUrl": "https://opentelemetry.io/schemas/1.6.1"
-        },
-        {
-            "resource": {
-                "attributes": [
-                    {
-                        "key": "host.name",
-                        "value": {
-                            "stringValue": "host2"
-                        }
-                    }
-                ]
-            },
-            "scopeSpans": [
-                {
-                    "spans": [
-                        {
-                            "attributes": [
-                                {
-                                    "key": "testKey3",
-                                    "value": {
-                                        "stringValue": "teststringvalue3"
-                                    }
-                                },
-                                {
-                                    "key": "testKey4",
-                                    "value": {
-                                        "stringValue": "teststringvalue4"
-                                    }
-                                }
-                            ],
-                            "droppedAttributesCount": 0,
-                            "endTimeUnixNano": "11651379494838206464",
-                            "startTimeUnixNano": "11651379494838206464",
-                            "status": {},
-                            "events": [],
-                            "droppedEventsCount": 0,
-                            "links": [],
-                            "droppedLinksCount": 0,
-                            "name": "",
-                            "kind": 2,
-                            "parentSpanId": "",
-                            "traceState": "",
-                            "spanId": "",
-                            "traceId": ""
-                        }
-                    ],
-                    "scope": {
-                        "name": "collector",
-                        "version": "v0.1.0"
-                    }
                 }
             ]
         }

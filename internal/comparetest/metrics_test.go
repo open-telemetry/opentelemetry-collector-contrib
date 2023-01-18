@@ -538,18 +538,32 @@ func TestCompareMetrics(t *testing.T) {
 			},
 		},
 		{
+			name: "ignore-resource-order",
+			compareOptions: []MetricsCompareOption{
+				IgnoreResourceOrder(),
+			},
+			withoutOptions: expectation{
+				err:    errors.New("ResourceMetrics with attributes map[node_id:BB903] expected at index 1, found a at index 2"),
+				reason: "Resource order mismatch will cause failures if not ignored.",
+			},
+			withOptions: expectation{
+				err:    nil,
+				reason: "Ignored resource order mismatch should not cause a failure.",
+			},
+		},
+		{
 			name: "ignore-one-resource-attribute-multiple-resources",
 			compareOptions: []MetricsCompareOption{
 				IgnoreResourceAttributeValue("node_id"),
 			},
 			withoutOptions: expectation{
 				err: multierr.Combine(
-					errors.New("missing expected resource with attributes: map[namespace:BB904-test node_id:BB904-expected]"),
 					errors.New("missing expected resource with attributes: map[namespace:BB902-test node_id:BB902-expected]"),
+					errors.New("missing expected resource with attributes: map[namespace:BB904-test node_id:BB904-expected]"),
 					errors.New("missing expected resource with attributes: map[namespace:BB903-test node_id:BB903-expected]"),
+					errors.New("extra resource with attributes: map[namespace:BB902-test node_id:BB902-actual]"),
 					errors.New("extra resource with attributes: map[namespace:BB904-test node_id:BB904-actual]"),
 					errors.New("extra resource with attributes: map[namespace:BB903-test node_id:BB903-actual]"),
-					errors.New("extra resource with attributes: map[namespace:BB902-test node_id:BB902-actual]"),
 				),
 				reason: "An unpredictable resource attribute will cause failures if not ignored.",
 			},
