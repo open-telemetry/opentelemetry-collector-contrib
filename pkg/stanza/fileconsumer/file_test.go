@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -1212,6 +1213,10 @@ func TestDeleteAfterRead(t *testing.T) {
 		}
 		require.NoError(t, temp.Close())
 	}
+
+	require.NoError(t, featuregate.GetRegistry().Apply(map[string]bool{
+		allowFileDeletion: true,
+	}))
 
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"

@@ -75,6 +75,9 @@ type Config struct {
 
 // Build will build a file input operator from the supplied configuration
 func (c Config) Build(logger *zap.SugaredLogger, emit EmitFunc) (*Manager, error) {
+	if c.DeleteAfterRead && !featuregate.GetRegistry().IsEnabled(allowFileDeletion) {
+		return nil, fmt.Errorf("`delete_after_read` requires feature gate `%s`", allowFileDeletion)
+	}
 	if err := c.validate(); err != nil {
 		return nil, err
 	}
@@ -179,9 +182,6 @@ func (c Config) validate() error {
 	}
 
 	if c.DeleteAfterRead && c.StartAt == "end" {
-		if !featuregate.GetRegistry().IsEnabled(allowFileDeletion) {
-			return fmt.Errorf("`delete_after_read` requires `%s` feature gate", allowFileDeletion)
-		}
 		return fmt.Errorf("`delete_after_read` cannot be used with `start_at: end`")
 	}
 
