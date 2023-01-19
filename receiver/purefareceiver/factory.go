@@ -15,6 +15,7 @@
 package purefareceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver"
 
 // This file implements Factory for Array scraper.
+
 import (
 	"context"
 	"fmt"

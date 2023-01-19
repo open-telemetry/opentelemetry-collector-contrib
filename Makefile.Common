@@ -48,7 +48,6 @@ MDLINKCHECK         := $(TOOLS_BIN_DIR)/markdown-link-check
 MISSPELL            := $(TOOLS_BIN_DIR)/misspell -error
 MISSPELL_CORRECTION := $(TOOLS_BIN_DIR)/misspell -w
 LINT                := $(TOOLS_BIN_DIR)/golangci-lint
-IMPI                := $(TOOLS_BIN_DIR)/impi
 MULITMOD            := $(TOOLS_BIN_DIR)/multimod
 CHLOGGEN            := $(TOOLS_BIN_DIR)/chloggen
 GOIMPORTS           := $(TOOLS_BIN_DIR)/goimports
@@ -91,7 +90,7 @@ all-pkg-dirs:
 .DEFAULT_GOAL := common
 
 .PHONY: common
-common: checklicense impi lint misspell
+common: checklicense lint misspell
 
 .PHONY: test
 test:
@@ -178,10 +177,6 @@ misspell: $(TOOLS_BIN_DIR)/misspell
 .PHONY: misspell-correction
 misspell-correction: $(TOOLS_BIN_DIR)/misspell
 	$(MISSPELL_CORRECTION) $(ALL_SRC_AND_DOC)
-
-.PHONY: impi
-impi: $(IMPI)
-	@$(IMPI) --local github.com/open-telemetry/opentelemetry-collector-contrib --scheme stdThirdPartyLocal ./...
 
 .PHONY: moddownload
 moddownload:
