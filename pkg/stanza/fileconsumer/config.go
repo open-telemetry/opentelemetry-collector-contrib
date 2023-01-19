@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/bmatcuk/doublestar/v4"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
@@ -28,7 +29,17 @@ import (
 const (
 	defaultMaxLogSize         = 1024 * 1024
 	defaultMaxConcurrentFiles = 1024
+	allowFileDeletion         = "filelog.allowFileDeletion"
 )
+
+func init() {
+	featuregate.GetRegistry().MustRegisterID(
+		allowFileDeletion,
+		featuregate.StageAlpha,
+		featuregate.WithRegisterDescription("When enabled, allows usage of the `delete_after_read` setting."),
+		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16314"),
+	)
+}
 
 // NewConfig creates a new input config with default values
 func NewConfig() *Config {
@@ -58,11 +69,15 @@ type Config struct {
 	FingerprintSize         helper.ByteSize       `mapstructure:"fingerprint_size,omitempty"`
 	MaxLogSize              helper.ByteSize       `mapstructure:"max_log_size,omitempty"`
 	MaxConcurrentFiles      int                   `mapstructure:"max_concurrent_files,omitempty"`
+	DeleteAfterRead         bool                  `mapstructure:"delete_after_read,omitempty"`
 	Splitter                helper.SplitterConfig `mapstructure:",squash,omitempty"`
 }
 
 // Build will build a file input operator from the supplied configuration
 func (c Config) Build(logger *zap.SugaredLogger, emit EmitFunc) (*Manager, error) {
+	if c.DeleteAfterRead && !featuregate.GetRegistry().IsEnabled(allowFileDeletion) {
+		return nil, fmt.Errorf("`delete_after_read` requires feature gate `%s`", allowFileDeletion)
+	}
 	if err := c.validate(); err != nil {
 		return nil, err
 	}
@@ -123,12 +138,13 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit EmitFunc, factory s
 			splitterFactory: factory,
 			encodingConfig:  c.Splitter.EncodingConfig,
 		},
-		finder:        c.Finder,
-		roller:        newRoller(),
-		pollInterval:  c.PollInterval,
-		maxBatchFiles: c.MaxConcurrentFiles / 2,
-		knownFiles:    make([]*Reader, 0, 10),
-		seenPaths:     make(map[string]struct{}, 100),
+		finder:          c.Finder,
+		roller:          newRoller(),
+		pollInterval:    c.PollInterval,
+		maxBatchFiles:   c.MaxConcurrentFiles / 2,
+		deleteAfterRead: c.DeleteAfterRead,
+		knownFiles:      make([]*Reader, 0, 10),
+		seenPaths:       make(map[string]struct{}, 100),
 	}, nil
 }
 
@@ -163,6 +179,10 @@ func (c Config) validate() error {
 
 	if c.FingerprintSize < MinFingerprintSize {
 		return fmt.Errorf("`fingerprint_size` must be at least %d bytes", MinFingerprintSize)
+	}
+
+	if c.DeleteAfterRead && c.StartAt == "end" {
+		return fmt.Errorf("`delete_after_read` cannot be used with `start_at: end`")
 	}
 
 	_, err := c.Splitter.EncodingConfig.Build()
