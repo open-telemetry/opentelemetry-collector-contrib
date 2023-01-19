@@ -53,6 +53,12 @@ output:
 
 # all available settings of specific linters
 linters-settings:
+  gci:
+    sections:
+      - standard
+      - default
+      - prefix(github.com/open-telemetry/opentelemetry-collector-contrib)
+
   govet:
     # report about shadowed variables
     check-shadowing: true

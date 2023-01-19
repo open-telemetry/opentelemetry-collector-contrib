@@ -159,7 +159,6 @@ checklinks:
 fmt: $(GOIMPORTS)
 	gofmt  -w -s ./
 	$(GOIMPORTS) -w  -local github.com/open-telemetry/opentelemetry-collector-contrib ./
-	goimports -w  -local github.com/open-telemetry/opentelemetry-collector-contrib ./
 
 .PHONY: lint
 lint: $(LINT) checklicense misspell
