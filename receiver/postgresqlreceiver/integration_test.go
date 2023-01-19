@@ -159,6 +159,7 @@ func TestPostgreSQLIntegration(t *testing.T) {
 				comparetest.IgnoreResourceOrder(),
 				comparetest.IgnoreMetricValues(),
 				comparetest.IgnoreSubsequentDataPoints("postgresql.backends"),
+				comparetest.IgnoreMetricDataPointsOrder(),
 			))
 		})
 	}
