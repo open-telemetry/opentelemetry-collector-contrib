@@ -38,7 +38,7 @@ TOOLS_BIN_NAMES  := $(addprefix $(TOOLS_BIN_DIR)/, $(notdir $(TOOLS_PKG_NAMES)))
 install-tools: $(TOOLS_BIN_NAMES)
 
 $(TOOLS_BIN_DIR):
-	mkdir -p $(PWD)/bin
+	mkdir -p $@
 
 $(TOOLS_BIN_NAMES): $(TOOLS_BIN_DIR) $(TOOLS_MOD_DIR)/go.mod
 	cd $(TOOLS_MOD_DIR) && $(GOCMD) build -o $@ -trimpath $(filter %/$(notdir $@),$(TOOLS_PKG_NAMES))
@@ -55,6 +55,7 @@ GOIMPORTS           := $(TOOLS_BIN_DIR)/goimports
 PORTO               := $(TOOLS_BIN_DIR)/porto
 CHECKDOC            := $(TOOLS_BIN_DIR)/checkdoc
 CROSSLINK           := $(TOOLS_BIN_DIR)/crosslink
+GOJUNIT             := $(TOOLS_BIN_DIR)/go-junit-report 
 
 # BUILD_TYPE should be one of (dev, release).
 BUILD_TYPE?=release
