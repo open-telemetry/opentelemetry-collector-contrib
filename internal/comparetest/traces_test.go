@@ -58,8 +58,10 @@ func TestCompareTraces(t *testing.T) {
 				IgnoreResourceOrder(),
 			},
 			withoutOptions: expectation{
-				err: errors.New("ResourceTraces with attributes map[host.name:host1] expected at index 0, " +
-					"found a at index 1"),
+				err: multierr.Combine(
+					errors.New("ResourceTraces with attributes map[host.name:host1] expected at index 0, found a at index 1"),
+					errors.New("ResourceTraces with attributes map[host.name:host2] expected at index 1, found a at index 0"),
+				),
 				reason: "Resource order mismatch will cause failures if not ignored.",
 			},
 			withOptions: expectation{

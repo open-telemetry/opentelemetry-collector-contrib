@@ -5,7 +5,7 @@ change_type: enhancement
 component: internal/comparetest
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Do not ignore order of Resource[Metrics|Traces|Logs] by default, use an option for that.
+note: Do not ignore order of any slices by default, use an options for that.
 
 # One or more tracking issues related to the change
 issues: [17551]
