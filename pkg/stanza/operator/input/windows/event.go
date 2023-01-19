@@ -89,6 +89,24 @@ func (e *Event) Close() error {
 	return nil
 }
 
+func (e *Event) RenderRaw(buffer Buffer) (EventRaw, error) {
+	if e.handle == 0 {
+		return EventRaw{}, fmt.Errorf("event handle does not exist")
+	}
+
+	bufferUsed, _, err := evtRender(0, e.handle, EvtRenderEventXML, buffer.SizeBytes(), buffer.FirstByte())
+	if err == ErrorInsufficientBuffer {
+		buffer.UpdateSizeBytes(*bufferUsed)
+		return e.RenderRaw(buffer)
+	}
+	bytes, err := buffer.ReadWideChars(*bufferUsed)
+	if err != nil {
+		return EventRaw{}, fmt.Errorf("failed to read bytes from buffer: %w", err)
+	}
+
+	return unmarshalEventRaw(bytes)
+}
+
 // NewEvent will create a new event from an event handle.
 func NewEvent(handle uintptr) Event {
 	return Event{
