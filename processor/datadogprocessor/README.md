@@ -2,7 +2,7 @@
 
 | Status                   |               |
 |--------------------------|---------------|
-| Stability                | [development] |
+| Stability                | [beta]        |
 | Supported pipeline types | traces        |
 | Distributions            | [contrib]     |
 
@@ -96,5 +96,5 @@ When using in conjunction with the Datadog Agent's OTLP Ingest, the minimum requ
 
 If not using the Datadog backend, the processor will still create valid RED metrics, but in that situation you may prefer to use the [spanmetricsprocessor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/spanmetricsprocessor) instead.
 
-[development]: https://github.com/open-telemetry/opentelemetry-collector#development
+[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
