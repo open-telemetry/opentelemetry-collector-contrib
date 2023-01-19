@@ -561,7 +561,7 @@ ORDER BY (MetricName, Attributes, toUnixTimestamp64Nano(TimeUnix))
 SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
 ```
 
-#### summary
+#### Summary
 
 ```clickhouse
 CREATE TABLE IF NOT EXISTS otel.otel_metrics_summary (
