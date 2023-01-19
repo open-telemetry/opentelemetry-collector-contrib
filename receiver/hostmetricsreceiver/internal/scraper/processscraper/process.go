@@ -15,8 +15,6 @@
 package processscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper"
 
 import (
-	"fmt"
-	"os/user"
 	"strings"
 	"time"
 
