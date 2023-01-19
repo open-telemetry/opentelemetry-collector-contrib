@@ -6,7 +6,7 @@ list-tests:
 
 .PHONY: run-tests
 run-tests:
-	./runtests.sh
+	GOJUNIT=$(GOJUNIT) ./runtests.sh
 
 .PHONY: list-loadtest-tests
 list-loadtest-tests:
