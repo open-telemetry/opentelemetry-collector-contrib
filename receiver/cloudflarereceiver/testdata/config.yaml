@@ -1,0 +1,21 @@
+cloudflare/default:
+  auth:
+    email: email@email.com
+    key: abc123
+  zone: 023e105f4ecef8ad9ca31a8372d0c353
+
+cloudflare/token:
+  auth:
+    token: abc123token
+  zone: 023e105f4ecef8ad9ca31a8372d0c353
+
+cloudflare/custom:
+  poll_interval: 2m
+  auth:
+    email: otel@email.com
+    key: abc123key
+  zone: 2
+  logs:
+    count: 50
+    sample: 0.5
+    fields: [ClientIP, ClientRequestHost, ClientRequestMethod, ClientRequestURI, EdgeEndTimestamp, EdgeResponseBytes, EdgeResponseStatus, EdgeStartTimestamp, RayID]
