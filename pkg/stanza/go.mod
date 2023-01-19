@@ -17,6 +17,7 @@ require (
 	go.opentelemetry.io/collector/component v0.69.2-0.20230112233839-f2a0133bf677
 	go.opentelemetry.io/collector/confmap v0.69.2-0.20230112233839-f2a0133bf677
 	go.opentelemetry.io/collector/consumer v0.69.2-0.20230112233839-f2a0133bf677
+	go.opentelemetry.io/collector/featuregate v0.69.2-0.20230112233839-f2a0133bf677
 	go.opentelemetry.io/collector/pdata v1.0.0-rc3.0.20230112233839-f2a0133bf677
 	go.uber.org/atomic v1.10.0
 	go.uber.org/multierr v1.9.0
@@ -44,7 +45,6 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/featuregate v0.69.2-0.20230112233839-f2a0133bf677 // indirect
 	go.opentelemetry.io/otel v1.11.2 // indirect
 	go.opentelemetry.io/otel/metric v0.34.0 // indirect
 	go.opentelemetry.io/otel/trace v1.11.2 // indirect
