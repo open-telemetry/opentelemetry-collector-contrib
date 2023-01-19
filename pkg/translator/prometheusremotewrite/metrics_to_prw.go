@@ -22,12 +22,15 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"
+
+	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 type Settings struct {
-	Namespace         string
-	ExternalLabels    map[string]string
-	DisableTargetInfo bool
+	Namespace           string
+	ExternalLabels      map[string]string
+	DisableTargetInfo   bool
+	ExportCreatedMetric bool
 }
 
 // FromMetrics converts pmetric.Metrics to prometheus remote write format.
@@ -68,7 +71,6 @@ func FromMetrics(md pmetric.Metrics, settings Settings) (tsMap map[string]*promp
 					if err := addNumberDataPointSlice(dataPoints, resource, metric, settings, tsMap); err != nil {
 						errs = multierr.Append(errs, err)
 					}
-
 				case pmetric.MetricTypeHistogram:
 					dataPoints := metric.Histogram().DataPoints()
 					if dataPoints.Len() == 0 {
@@ -76,6 +78,24 @@ func FromMetrics(md pmetric.Metrics, settings Settings) (tsMap map[string]*promp
 					}
 					for x := 0; x < dataPoints.Len(); x++ {
 						addSingleHistogramDataPoint(dataPoints.At(x), resource, metric, settings, tsMap)
+					}
+				case pmetric.MetricTypeExponentialHistogram:
+					dataPoints := metric.ExponentialHistogram().DataPoints()
+					if dataPoints.Len() == 0 {
+						errs = multierr.Append(errs, fmt.Errorf("empty data points. %s is dropped", metric.Name()))
+					}
+					name := prometheustranslator.BuildPromCompliantName(metric, settings.Namespace)
+					for x := 0; x < dataPoints.Len(); x++ {
+						errs = multierr.Append(
+							errs,
+							addSingleExponentialHistogramDataPoint(
+								name,
+								dataPoints.At(x),
+								resource,
+								settings,
+								tsMap,
+							),
+						)
 					}
 				case pmetric.MetricTypeSummary:
 					dataPoints := metric.Summary().DataPoints()

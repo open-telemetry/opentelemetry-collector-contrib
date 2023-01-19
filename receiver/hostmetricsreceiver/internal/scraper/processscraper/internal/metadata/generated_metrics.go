@@ -97,6 +97,62 @@ func DefaultMetricsSettings() MetricsSettings {
 	}
 }
 
+// ResourceAttributeSettings provides common settings for a particular metric.
+type ResourceAttributeSettings struct {
+	Enabled bool `mapstructure:"enabled"`
+
+	enabledProvidedByUser bool
+}
+
+func (ras *ResourceAttributeSettings) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(ras, confmap.WithErrorUnused())
+	if err != nil {
+		return err
+	}
+	ras.enabledProvidedByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ResourceAttributesSettings provides settings for hostmetricsreceiver/process metrics.
+type ResourceAttributesSettings struct {
+	ProcessCommand        ResourceAttributeSettings `mapstructure:"process.command"`
+	ProcessCommandLine    ResourceAttributeSettings `mapstructure:"process.command_line"`
+	ProcessExecutableName ResourceAttributeSettings `mapstructure:"process.executable.name"`
+	ProcessExecutablePath ResourceAttributeSettings `mapstructure:"process.executable.path"`
+	ProcessOwner          ResourceAttributeSettings `mapstructure:"process.owner"`
+	ProcessParentPid      ResourceAttributeSettings `mapstructure:"process.parent_pid"`
+	ProcessPid            ResourceAttributeSettings `mapstructure:"process.pid"`
+}
+
+func DefaultResourceAttributesSettings() ResourceAttributesSettings {
+	return ResourceAttributesSettings{
+		ProcessCommand: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		ProcessCommandLine: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		ProcessExecutableName: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		ProcessExecutablePath: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		ProcessOwner: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		ProcessParentPid: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		ProcessPid: ResourceAttributeSettings{
+			Enabled: true,
+		},
+	}
+}
+
 // AttributeContextSwitchType specifies the a value context_switch_type attribute.
 type AttributeContextSwitchType int
 
@@ -935,6 +991,7 @@ type MetricsBuilder struct {
 	resourceCapacity                 int                 // maximum observed number of resource attributes.
 	metricsBuffer                    pmetric.Metrics     // accumulates metrics data before emitting.
 	buildInfo                        component.BuildInfo // contains version information
+	resourceAttributesSettings       ResourceAttributesSettings
 	metricProcessContextSwitches     metricProcessContextSwitches
 	metricProcessCPUTime             metricProcessCPUTime
 	metricProcessCPUUtilization      metricProcessCPUUtilization
@@ -961,6 +1018,13 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
+// WithResourceAttributesSettings sets ResourceAttributeSettings on the metrics builder.
+func WithResourceAttributesSettings(ras ResourceAttributesSettings) metricBuilderOption {
+	return func(mb *MetricsBuilder) {
+		mb.resourceAttributesSettings = ras
+	}
+}
+
 func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	if ms.ProcessMemoryPhysicalUsage.enabledSetByUser {
 		settings.Logger.Warn("[WARNING] `process.memory.physical_usage` should not be configured: The metric is deprecated and will be removed in v0.72.0. Please use `process.memory.usage` instead. See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/hostmetricsreceiver#transition-to-process-memory-metric-names-aligned-with-opentelemetry-specification for more details.")
@@ -972,6 +1036,7 @@ func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, opt
 		startTime:                        pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                    pmetric.NewMetrics(),
 		buildInfo:                        settings.BuildInfo,
+		resourceAttributesSettings:       DefaultResourceAttributesSettings(),
 		metricProcessContextSwitches:     newMetricProcessContextSwitches(ms.ProcessContextSwitches),
 		metricProcessCPUTime:             newMetricProcessCPUTime(ms.ProcessCPUTime),
 		metricProcessCPUUtilization:      newMetricProcessCPUUtilization(ms.ProcessCPUUtilization),
@@ -1004,61 +1069,75 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(pmetric.ResourceMetrics)
+type ResourceMetricsOption func(ResourceAttributesSettings, pmetric.ResourceMetrics)
 
 // WithProcessCommand sets provided value as "process.command" attribute for current resource.
 func WithProcessCommand(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("process.command", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.ProcessCommand.Enabled {
+			rm.Resource().Attributes().PutStr("process.command", val)
+		}
 	}
 }
 
 // WithProcessCommandLine sets provided value as "process.command_line" attribute for current resource.
 func WithProcessCommandLine(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("process.command_line", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.ProcessCommandLine.Enabled {
+			rm.Resource().Attributes().PutStr("process.command_line", val)
+		}
 	}
 }
 
 // WithProcessExecutableName sets provided value as "process.executable.name" attribute for current resource.
 func WithProcessExecutableName(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("process.executable.name", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.ProcessExecutableName.Enabled {
+			rm.Resource().Attributes().PutStr("process.executable.name", val)
+		}
 	}
 }
 
 // WithProcessExecutablePath sets provided value as "process.executable.path" attribute for current resource.
 func WithProcessExecutablePath(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("process.executable.path", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.ProcessExecutablePath.Enabled {
+			rm.Resource().Attributes().PutStr("process.executable.path", val)
+		}
 	}
 }
 
 // WithProcessOwner sets provided value as "process.owner" attribute for current resource.
 func WithProcessOwner(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("process.owner", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.ProcessOwner.Enabled {
+			rm.Resource().Attributes().PutStr("process.owner", val)
+		}
 	}
 }
 
 // WithProcessParentPid sets provided value as "process.parent_pid" attribute for current resource.
 func WithProcessParentPid(val int64) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutInt("process.parent_pid", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.ProcessParentPid.Enabled {
+			rm.Resource().Attributes().PutInt("process.parent_pid", val)
+		}
 	}
 }
 
 // WithProcessPid sets provided value as "process.pid" attribute for current resource.
 func WithProcessPid(val int64) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutInt("process.pid", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.ProcessPid.Enabled {
+			rm.Resource().Attributes().PutInt("process.pid", val)
+		}
 	}
 }
 
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
@@ -1102,8 +1181,9 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricProcessPagingFaults.emit(ils.Metrics())
 	mb.metricProcessSignalsPending.emit(ils.Metrics())
 	mb.metricProcessThreads.emit(ils.Metrics())
+
 	for _, op := range rmo {
-		op(rm)
+		op(mb.resourceAttributesSettings, rm)
 	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)

@@ -128,3 +128,7 @@ func sortSpanSlice(a, b ptrace.Span) bool {
 	bAttrs := pdatautil.MapHash(b.Attributes())
 	return bytes.Compare(aAttrs[:], bAttrs[:]) < 0
 }
+
+func sortSummaryDataPointValueAtQuantileSlice(a, b pmetric.SummaryDataPointValueAtQuantile) bool {
+	return a.Quantile() < b.Quantile()
+}

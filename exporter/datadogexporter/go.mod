@@ -7,11 +7,11 @@ require (
 	github.com/DataDog/datadog-agent/pkg/otlp/model v0.42.0-rc.3.0.20230105173916-a8aabce52617
 	github.com/DataDog/datadog-agent/pkg/quantile v0.42.0-rc.3.0.20230105173916-a8aabce52617
 	github.com/DataDog/datadog-agent/pkg/trace v0.42.0-rc.3.0.20230105173916-a8aabce52617
-	github.com/DataDog/datadog-api-client-go/v2 v2.6.1
+	github.com/DataDog/datadog-api-client-go/v2 v2.7.0
 	github.com/DataDog/gohai v0.0.0-20220718130825-1776f9beb9cc
 	github.com/DataDog/sketches-go v1.4.1
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v0.34.3-0.20221202192616-0186b89ba914
-	github.com/aws/aws-sdk-go v1.44.176
+	github.com/aws/aws-sdk-go v1.44.180
 	github.com/cenkalti/backoff/v4 v4.2.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.69.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.69.0
@@ -24,15 +24,15 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.69.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.69.0
-	go.opentelemetry.io/collector/component v0.69.0
-	go.opentelemetry.io/collector/confmap v0.69.0
-	go.opentelemetry.io/collector/consumer v0.69.0
-	go.opentelemetry.io/collector/featuregate v0.69.0
-	go.opentelemetry.io/collector/pdata v1.0.0-rc3
-	go.opentelemetry.io/collector/processor/batchprocessor v0.69.0
-	go.opentelemetry.io/collector/receiver/otlpreceiver v0.69.0
-	go.opentelemetry.io/collector/semconv v0.69.0
+	go.opentelemetry.io/collector v0.69.2-0.20230112233839-f2a0133bf677
+	go.opentelemetry.io/collector/component v0.69.2-0.20230112233839-f2a0133bf677
+	go.opentelemetry.io/collector/confmap v0.69.2-0.20230112233839-f2a0133bf677
+	go.opentelemetry.io/collector/consumer v0.69.2-0.20230112233839-f2a0133bf677
+	go.opentelemetry.io/collector/featuregate v0.69.2-0.20230112233839-f2a0133bf677
+	go.opentelemetry.io/collector/pdata v1.0.0-rc3.0.20230112233839-f2a0133bf677
+	go.opentelemetry.io/collector/processor/batchprocessor v0.69.2-0.20230112233839-f2a0133bf677
+	go.opentelemetry.io/collector/receiver/otlpreceiver v0.69.2-0.20230112233839-f2a0133bf677
+	go.opentelemetry.io/collector/semconv v0.69.2-0.20230112233839-f2a0133bf677
 	go.uber.org/multierr v1.9.0
 	go.uber.org/zap v1.24.0
 	google.golang.org/protobuf v1.28.1
@@ -111,7 +111,7 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/karrick/godirwalk v1.17.0 // indirect
 	github.com/klauspost/compress v1.15.14 // indirect
-	github.com/knadh/koanf v1.4.4 // indirect
+	github.com/knadh/koanf v1.4.5 // indirect
 	github.com/leoluk/perflib_exporter v0.2.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20220517141722-cf486979b281 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
@@ -172,7 +172,7 @@ require (
 	golang.org/x/sys v0.4.0 // indirect
 	golang.org/x/term v0.4.0 // indirect
 	golang.org/x/text v0.6.0 // indirect
-	golang.org/x/time v0.0.0-20220411224347-583f2d630306 // indirect
+	golang.org/x/time v0.3.0 // indirect
 	gonum.org/v1/gonum v0.12.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20221202195650-67e5cbc046fd // indirect

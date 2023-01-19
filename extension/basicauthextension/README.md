@@ -35,7 +35,7 @@ extensions:
     htpasswd: 
       file: .htpasswd
       inline: |
-        ${env:BASIC_AUTH_USERNAME}:${env:BASIC_AUTH_PASSWORD}
+        ${BASIC_AUTH_USERNAME}:${BASIC_AUTH_PASSWORD}
   
   basicauth/client:
     client_auth: 

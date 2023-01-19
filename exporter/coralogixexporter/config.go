@@ -27,7 +27,9 @@ import (
 const (
 	typeStr = "coralogix"
 	// The stability level of the exporter.
-	stability = component.StabilityLevelBeta
+	stability               = component.StabilityLevelBeta
+	cxAppNameAttrName       = "cx.application.name"
+	cxSubsystemNameAttrName = "cx.subsystem.name"
 )
 
 // Config defines by Coralogix.

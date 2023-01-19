@@ -61,7 +61,7 @@ func TestScraper(t *testing.T) {
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 
-	require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics))
+	require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics, comparetest.IgnoreResourceOrder()))
 }
 
 func TestScraperNoDatabaseSingle(t *testing.T) {
@@ -80,7 +80,7 @@ func TestScraperNoDatabaseSingle(t *testing.T) {
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 
-	require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics))
+	require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics, comparetest.IgnoreResourceOrder()))
 }
 
 func TestScraperNoDatabaseMultiple(t *testing.T) {
@@ -99,7 +99,7 @@ func TestScraperNoDatabaseMultiple(t *testing.T) {
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 
-	require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics))
+	require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics, comparetest.IgnoreResourceOrder()))
 }
 
 func TestScraperWithResourceAttributeFeatureGate(t *testing.T) {
@@ -116,7 +116,7 @@ func TestScraperWithResourceAttributeFeatureGate(t *testing.T) {
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 
-	require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics))
+	require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics, comparetest.IgnoreResourceOrder()))
 }
 
 func TestScraperWithResourceAttributeFeatureGateSingle(t *testing.T) {
@@ -133,7 +133,7 @@ func TestScraperWithResourceAttributeFeatureGateSingle(t *testing.T) {
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 
-	require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics))
+	require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics, comparetest.IgnoreResourceOrder()))
 }
 
 type mockClientFactory struct{ mock.Mock }

@@ -15,7 +15,6 @@
 package splunkhecreceiver
 
 import (
-	"sort"
 	"testing"
 	"time"
 
@@ -24,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
@@ -306,7 +306,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			md, numDroppedTimeseries := splunkHecToMetricsData(zap.NewNop(), []*splunk.Event{tt.splunkDataPoint}, func(resource pcommon.Resource) {}, tt.hecConfig)
 			assert.Equal(t, tt.wantDroppedTimeseries, numDroppedTimeseries)
-			assert.EqualValues(t, tt.wantMetricsData, sortMetricsAndLabels(md))
+			assert.NoError(t, comparetest.CompareMetrics(tt.wantMetricsData, md))
 		})
 	}
 }
@@ -488,40 +488,4 @@ func int64Ptr(i int64) *int64 {
 func float64Ptr(f float64) *float64 {
 	l := f
 	return &l
-}
-
-func sortMetricsAndLabels(md pmetric.Metrics) pmetric.Metrics {
-	for i := 0; i < md.ResourceMetrics().Len(); i++ {
-		rm := md.ResourceMetrics().At(i)
-		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
-			ilm := rm.ScopeMetrics().At(j)
-			internalSortMetricsAndLabels(ilm.Metrics())
-		}
-	}
-	return md
-}
-
-func internalSortMetricsAndLabels(metrics pmetric.MetricSlice) {
-	dest := pmetric.NewMetricSlice()
-	metricsMap := make(map[string]pmetric.Metric)
-	for k := 0; k < metrics.Len(); k++ {
-		m := metrics.At(k)
-		metricsMap[m.Name()] = m
-		if m.Type() == pmetric.MetricTypeGauge {
-			dps := m.Gauge().DataPoints()
-			for l := 0; l < dps.Len(); l++ {
-				dps.At(l).Attributes().Sort()
-			}
-		}
-	}
-
-	metricNames := make([]string, 0, len(metricsMap))
-	for name := range metricsMap {
-		metricNames = append(metricNames, name)
-	}
-	sort.Strings(metricNames)
-	for _, name := range metricNames {
-		metricsMap[name].CopyTo(dest.AppendEmpty())
-	}
-	dest.CopyTo(metrics)
 }

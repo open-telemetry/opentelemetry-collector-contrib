@@ -32,7 +32,7 @@ const (
 	// The value of "type" key in configuration.
 	typeStr = "carbon"
 	// The stability level of the receiver.
-	stability = component.StabilityLevelStable
+	stability = component.StabilityLevelBeta
 )
 
 // NewFactory creates a factory for Carbon receiver.

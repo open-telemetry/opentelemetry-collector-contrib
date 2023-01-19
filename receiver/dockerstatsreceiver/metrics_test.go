@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
 )
 
@@ -64,7 +65,6 @@ func metricsData(
 	for k, v := range rLabels {
 		rsAttr.PutStr(k, v)
 	}
-	rsAttr.Sort()
 
 	mdMetrics := rs.ScopeMetrics().AppendEmpty().Metrics()
 	mdMetrics.EnsureCapacity(len(metrics))
@@ -187,17 +187,6 @@ func mergeMaps(maps ...map[string]string) map[string]string {
 	return merged
 }
 
-func assertMetricsDataEqual(
-	t *testing.T,
-	now pcommon.Timestamp,
-	expected []Metric,
-	labels map[string]string,
-	actual pmetric.ResourceMetrics,
-) {
-	actual.Resource().Attributes().Sort()
-	assert.Equal(t, metricsData(now, labels, expected...), actual)
-}
-
 func TestZeroValueStats(t *testing.T) {
 	stats := &dtypes.StatsJSON{
 		Stats: dtypes.Stats{
@@ -227,7 +216,7 @@ func TestZeroValueStats(t *testing.T) {
 		{name: "container.memory.percent", mtype: MetricTypeDoubleGauge, unit: "1", labelKeys: nil, values: []Value{{labelValues: nil, doubleValue: 0}}},
 		{name: "container.memory.usage.max", mtype: MetricTypeGauge, unit: "By", labelKeys: nil, values: []Value{{labelValues: nil, value: 0}}},
 	}
-	assertMetricsDataEqual(t, now, metrics, nil, md)
+	assert.NoError(t, comparetest.CompareResourceMetrics(metricsData(now, nil, metrics...), md))
 }
 
 func statsJSON(t *testing.T) *dtypes.StatsJSON {
@@ -269,7 +258,7 @@ func TestStatsToDefaultMetrics(t *testing.T) {
 	now := pcommon.NewTimestampFromTime(time.Now())
 	md := ContainerStatsToMetrics(now, stats, containers, config)
 
-	assertMetricsDataEqual(t, now, defaultMetrics(), nil, md)
+	assert.NoError(t, comparetest.CompareResourceMetrics(metricsData(now, nil, defaultMetrics()...), md))
 }
 
 func TestStatsToAllMetrics(t *testing.T) {
@@ -365,7 +354,7 @@ func TestStatsToAllMetrics(t *testing.T) {
 		{name: "container.network.io.usage.tx_packets", mtype: MetricTypeCumulative, unit: "1", labelKeys: []string{"interface"}, values: []Value{{labelValues: []string{"eth0"}, value: 9050}}},
 	}
 
-	assertMetricsDataEqual(t, now, metrics, nil, md)
+	assert.NoError(t, comparetest.CompareResourceMetrics(metricsData(now, nil, metrics...), md))
 }
 
 func TestEnvVarToMetricLabels(t *testing.T) {
@@ -386,7 +375,7 @@ func TestEnvVarToMetricLabels(t *testing.T) {
 		"my.other.env.to.metric.label": "my_other_env_var_value",
 	}
 
-	assertMetricsDataEqual(t, now, defaultMetrics(), expectedLabels, md)
+	assert.NoError(t, comparetest.CompareResourceMetrics(metricsData(now, expectedLabels, defaultMetrics()...), md))
 }
 
 func TestContainerLabelToMetricLabels(t *testing.T) {
@@ -407,5 +396,5 @@ func TestContainerLabelToMetricLabels(t *testing.T) {
 		"my.other.docker.to.metric.label": "other_specified_docker_label_value",
 	}
 
-	assertMetricsDataEqual(t, now, defaultMetrics(), expectedLabels, md)
+	assert.NoError(t, comparetest.CompareResourceMetrics(metricsData(now, expectedLabels, defaultMetrics()...), md))
 }

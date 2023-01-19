@@ -314,12 +314,39 @@ processors:
     detectors: [env, heroku]
     timeout: 2s
     override: false
+
+### Openshift
+
+Queries the OpenShift and Kubernetes API to retrieve the following resource attributes:
+
+    * cloud.provider
+    * cloud.platform
+    * cloud.region
+    * k8s.cluster.name
+    * k8s.cluster.version
+    * openshift.cluster.version
+
+Your service account needs `read` access to the API endpoints `/apis/config.openshift.io/v1/clusterversions/version/status`, `/apis/config.openshift.io/v1/infrastructures/cluster/status` and `/version`.
+By default, the API address is determined from the environment variables `KUBERNETES_SERVICE_HOST`, `KUBERNETES_SERVICE_PORT` and the service token is read from `/var/run/secrets/kubernetes.io/serviceaccount/token`.
+The determination of the API address and the service token is skipped if they are set in the configuration.
+
+Example:
+
+```yaml
+processors:
+  resourcedetection/openshift:
+    detectors: [openshift]
+    timeout: 2s
+    override: false
+    openshift: # optional
+      address: "https://api.example.com"
+      token: "token"
 ```
 
 ## Configuration
 
 ```yaml
-# a list of resource detectors to run, valid options are: "env", "system", "gce", "gke", "ec2", "ecs", "elastic_beanstalk", "eks", "azure", "heroku"
+# a list of resource detectors to run, valid options are: "env", "system", "gce", "gke", "ec2", "ecs", "elastic_beanstalk", "eks", "azure", "heroku", "openshift"
 detectors: [ <string> ]
 # determines if existing resource attributes should be overridden or preserved, defaults to true
 override: <bool>

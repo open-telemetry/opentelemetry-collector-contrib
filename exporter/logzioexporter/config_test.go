@@ -133,3 +133,10 @@ func TestCheckAndWarnDeprecatedOptions(t *testing.T) {
 	expected.QueueSettings.QueueSize = 10
 	assert.Equal(t, expected, actualCfg)
 }
+
+func TestNullTokenConfig(tester *testing.T) {
+	cfg := Config{
+		Region: "eu",
+	}
+	assert.Error(tester, cfg.Validate(), "Empty token should produce error")
+}

@@ -42,6 +42,7 @@ type TracesCompareOption interface {
 type CompareOption interface {
 	MetricsCompareOption
 	LogsCompareOption
+	TracesCompareOption
 }
 
 // IgnoreMetricValues is a MetricsCompareOption that clears all metric values.
@@ -204,6 +205,18 @@ func (opt ignoreResourceAttributeValue) maskLogsResourceAttributeValue(metrics p
 	}
 }
 
+func (opt ignoreResourceAttributeValue) applyOnTraces(expected, actual ptrace.Traces) {
+	opt.maskTracesResourceAttributeValue(expected)
+	opt.maskTracesResourceAttributeValue(actual)
+}
+
+func (opt ignoreResourceAttributeValue) maskTracesResourceAttributeValue(traces ptrace.Traces) {
+	rss := traces.ResourceSpans()
+	for i := 0; i < rss.Len(); i++ {
+		opt.maskResourceAttributeValue(rss.At(i).Resource())
+	}
+}
+
 func (opt ignoreResourceAttributeValue) maskResourceAttributeValue(res pcommon.Resource) {
 	if _, ok := res.Attributes().Get(opt.attributeName); ok {
 		res.Attributes().Remove(opt.attributeName)
@@ -274,4 +287,26 @@ func maskObservedTimestamp(logs plog.Logs, ts pcommon.Timestamp) {
 			}
 		}
 	}
+}
+
+// IgnoreResourceOrder is a CompareOption that ignores the order of resource traces/metrics/logs.
+func IgnoreResourceOrder() CompareOption {
+	return ignoreResourceOrder{}
+}
+
+type ignoreResourceOrder struct{}
+
+func (opt ignoreResourceOrder) applyOnTraces(expected, actual ptrace.Traces) {
+	expected.ResourceSpans().Sort(sortResourceSpans)
+	actual.ResourceSpans().Sort(sortResourceSpans)
+}
+
+func (opt ignoreResourceOrder) applyOnMetrics(expected, actual pmetric.Metrics) {
+	expected.ResourceMetrics().Sort(sortResourceMetrics)
+	actual.ResourceMetrics().Sort(sortResourceMetrics)
+}
+
+func (opt ignoreResourceOrder) applyOnLogs(expected, actual plog.Logs) {
+	expected.ResourceLogs().Sort(sortResourceLogs)
+	actual.ResourceLogs().Sort(sortResourceLogs)
 }

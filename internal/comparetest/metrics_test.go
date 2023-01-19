@@ -270,7 +270,7 @@ func TestCompareMetrics(t *testing.T) {
 				err: multierr.Combine(
 					errors.New("datapoints for metric: `gauge.one`, do not match expected"),
 					errors.New("datapoint with attributes: map[], does not match expected"),
-					errors.New("metric datapoint types don't match: expected type: int, actual type: double"),
+					errors.New("metric datapoint types don't match: expected type: Int, actual type: Double"),
 				),
 				reason: "A data point with the wrong type of value should cause a failure.",
 			},
@@ -281,9 +281,124 @@ func TestCompareMetrics(t *testing.T) {
 				err: multierr.Combine(
 					errors.New("datapoints for metric: `gauge.one`, do not match expected"),
 					errors.New("datapoint with attributes: map[], does not match expected"),
-					errors.New("metric datapoint types don't match: expected type: double, actual type: int"),
+					errors.New("metric datapoint types don't match: expected type: Double, actual type: Int"),
 				),
 				reason: "A data point with the wrong type of value should cause a failure.",
+			},
+		},
+		{
+			name: "histogram-data-point-count-mismatch",
+			withoutOptions: expectation{
+				err: multierr.Combine(
+					errors.New("datapoints for metric: `histogram.one`, do not match expected"),
+					errors.New("datapoint with attributes: map[], does not match expected"),
+					errors.New("metric datapoint Count doesn't match expected: 123, actual: 654"),
+				),
+				reason: "A data point with the wrong bucket count should cause a failure.",
+			},
+		},
+		{
+			name: "histogram-data-point-sum-mismatch",
+			withoutOptions: expectation{
+				err: multierr.Combine(
+					errors.New("datapoints for metric: `histogram.one`, do not match expected"),
+					errors.New("datapoint with attributes: map[], does not match expected"),
+					errors.New("metric datapoint Sum doesn't match expected: 123.456000, actual: 654.321000"),
+				),
+			},
+		},
+		{
+			name: "histogram-data-point-buckets-mismatch",
+			withoutOptions: expectation{
+				err: multierr.Combine(
+					errors.New("datapoints for metric: `histogram.one`, do not match expected"),
+					errors.New("datapoint with attributes: map[], does not match expected"),
+					errors.New("metric datapoint BucketCounts doesn't match expected: [1 2 3], actual: [3 2 1]"),
+				),
+			},
+		},
+		{
+			name: "exp-histogram-data-point-count-mismatch",
+			withoutOptions: expectation{
+				err: multierr.Combine(
+					errors.New("datapoints for metric: `exponential_histogram.one`, do not match expected"),
+					errors.New("datapoint with attributes: map[], does not match expected"),
+					errors.New("metric datapoint Count doesn't match expected: 123, actual: 654"),
+				),
+				reason: "A data point with the wrong bucket count should cause a failure.",
+			},
+		},
+		{
+			name: "exp-histogram-data-point-sum-mismatch",
+			withoutOptions: expectation{
+				err: multierr.Combine(
+					errors.New("datapoints for metric: `exponential_histogram.one`, do not match expected"),
+					errors.New("datapoint with attributes: map[], does not match expected"),
+					errors.New("metric datapoint Sum doesn't match expected: 123.456000, actual: 654.321000"),
+				),
+			},
+		},
+		{
+			name: "exp-histogram-data-point-positive-buckets-mismatch",
+			withoutOptions: expectation{
+				err: multierr.Combine(
+					errors.New("datapoints for metric: `exponential_histogram.one`, do not match expected"),
+					errors.New("datapoint with attributes: map[], does not match expected"),
+					errors.New("metric datapoint Positive BucketCounts doesn't match expected: [1 2 3], "+
+						"actual: [3 2 1]"),
+				),
+			},
+		},
+		{
+			name: "exp-histogram-data-point-negative-offset-mismatch",
+			withoutOptions: expectation{
+				err: multierr.Combine(
+					errors.New("datapoints for metric: `exponential_histogram.one`, do not match expected"),
+					errors.New("datapoint with attributes: map[], does not match expected"),
+					errors.New("metric datapoint Negative Offset doesn't match expected: 10, actual: 1"),
+				),
+			},
+		},
+		{
+			name: "summary-data-point-count-mismatch",
+			withoutOptions: expectation{
+				err: multierr.Combine(
+					errors.New("datapoints for metric: `summary.one`, do not match expected"),
+					errors.New("datapoint with attributes: map[], does not match expected"),
+					errors.New("metric datapoint Count doesn't match expected: 123, actual: 654"),
+				),
+				reason: "A data point with the wrong bucket count should cause a failure.",
+			},
+		},
+		{
+			name: "summary-data-point-sum-mismatch",
+			withoutOptions: expectation{
+				err: multierr.Combine(
+					errors.New("datapoints for metric: `summary.one`, do not match expected"),
+					errors.New("datapoint with attributes: map[], does not match expected"),
+					errors.New("metric datapoint Sum doesn't match expected: 123.456000, actual: 654.321000"),
+				),
+			},
+		},
+		{
+			name: "summary-data-point-quantile-values-length-mismatch",
+			withoutOptions: expectation{
+				err: multierr.Combine(
+					errors.New("datapoints for metric: `summary.one`, do not match expected"),
+					errors.New("datapoint with attributes: map[], does not match expected"),
+					errors.New("metric datapoint QuantileValues length doesn't match expected: 3, actual: 2"),
+				),
+			},
+		},
+		{
+			name: "summary-data-point-quantile-values-mismatch",
+			withoutOptions: expectation{
+				err: multierr.Combine(
+					errors.New("datapoints for metric: `summary.one`, do not match expected"),
+					errors.New("datapoint with attributes: map[], does not match expected"),
+					errors.New("metric datapoint value at quantile 0.990000 doesn't match expected: 99.000000, "+
+						"actual: 110.000000"),
+				),
 			},
 		},
 		{
@@ -423,18 +538,32 @@ func TestCompareMetrics(t *testing.T) {
 			},
 		},
 		{
+			name: "ignore-resource-order",
+			compareOptions: []MetricsCompareOption{
+				IgnoreResourceOrder(),
+			},
+			withoutOptions: expectation{
+				err:    errors.New("ResourceMetrics with attributes map[node_id:BB903] expected at index 1, found a at index 2"),
+				reason: "Resource order mismatch will cause failures if not ignored.",
+			},
+			withOptions: expectation{
+				err:    nil,
+				reason: "Ignored resource order mismatch should not cause a failure.",
+			},
+		},
+		{
 			name: "ignore-one-resource-attribute-multiple-resources",
 			compareOptions: []MetricsCompareOption{
 				IgnoreResourceAttributeValue("node_id"),
 			},
 			withoutOptions: expectation{
 				err: multierr.Combine(
-					errors.New("missing expected resource with attributes: map[namespace:BB904-test node_id:BB904-expected]"),
 					errors.New("missing expected resource with attributes: map[namespace:BB902-test node_id:BB902-expected]"),
+					errors.New("missing expected resource with attributes: map[namespace:BB904-test node_id:BB904-expected]"),
 					errors.New("missing expected resource with attributes: map[namespace:BB903-test node_id:BB903-expected]"),
+					errors.New("extra resource with attributes: map[namespace:BB902-test node_id:BB902-actual]"),
 					errors.New("extra resource with attributes: map[namespace:BB904-test node_id:BB904-actual]"),
 					errors.New("extra resource with attributes: map[namespace:BB903-test node_id:BB903-actual]"),
-					errors.New("extra resource with attributes: map[namespace:BB902-test node_id:BB902-actual]"),
 				),
 				reason: "An unpredictable resource attribute will cause failures if not ignored.",
 			},
