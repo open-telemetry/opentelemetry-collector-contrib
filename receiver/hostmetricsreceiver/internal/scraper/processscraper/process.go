@@ -17,6 +17,7 @@ package processscraper // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"strings"
 	"time"
+	"runtime"
 
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/process"
@@ -130,7 +131,7 @@ func getProcessHandlesInternal() (processHandles, error) {
 
 func parentPid(handle processHandle, pid int32) (int32, error) {
 	// special case for pid 0
-	if pid == 0 {
+	if pid == 0 || (pid == 1 && runtime.GOOS == "darwin"){
 		return 0, nil
 	}
 	parent, err := handle.Parent()
