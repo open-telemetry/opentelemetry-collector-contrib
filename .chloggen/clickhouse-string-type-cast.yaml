@@ -8,7 +8,7 @@ component: clickhousexporter
 note: Clickhouse string type cast function of insert flow changed because of missing span values.
 
 # One or more tracking issues related to the change
-issues: []
+issues: [17834]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
