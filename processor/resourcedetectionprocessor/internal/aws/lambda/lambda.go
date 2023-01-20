@@ -50,12 +50,12 @@ func NewDetector(set processor.CreateSettings, _ internal.DetectorConfig) (inter
 	return &detector{logger: set.Logger}, nil
 }
 
-func (detector *detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
+func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
 	res := pcommon.NewResource()
 
 	functionName, ok := os.LookupEnv(awsLambdaFunctionNameEnvVar)
 	if !ok || functionName == "" {
-		detector.logger.Debug("Unable to identify AWS Lambda environment", zap.Error(err))
+		d.logger.Debug("Unable to identify AWS Lambda environment", zap.Error(err))
 		return res, "", err
 	}
 
