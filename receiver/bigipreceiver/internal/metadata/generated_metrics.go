@@ -148,6 +148,62 @@ func DefaultMetricsSettings() MetricsSettings {
 	}
 }
 
+// ResourceAttributeSettings provides common settings for a particular metric.
+type ResourceAttributeSettings struct {
+	Enabled bool `mapstructure:"enabled"`
+
+	enabledProvidedByUser bool
+}
+
+func (ras *ResourceAttributeSettings) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(ras, confmap.WithErrorUnused())
+	if err != nil {
+		return err
+	}
+	ras.enabledProvidedByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ResourceAttributesSettings provides settings for bigipreceiver metrics.
+type ResourceAttributesSettings struct {
+	BigipNodeIPAddress            ResourceAttributeSettings `mapstructure:"bigip.node.ip_address"`
+	BigipNodeName                 ResourceAttributeSettings `mapstructure:"bigip.node.name"`
+	BigipPoolName                 ResourceAttributeSettings `mapstructure:"bigip.pool.name"`
+	BigipPoolMemberIPAddress      ResourceAttributeSettings `mapstructure:"bigip.pool_member.ip_address"`
+	BigipPoolMemberName           ResourceAttributeSettings `mapstructure:"bigip.pool_member.name"`
+	BigipVirtualServerDestination ResourceAttributeSettings `mapstructure:"bigip.virtual_server.destination"`
+	BigipVirtualServerName        ResourceAttributeSettings `mapstructure:"bigip.virtual_server.name"`
+}
+
+func DefaultResourceAttributesSettings() ResourceAttributesSettings {
+	return ResourceAttributesSettings{
+		BigipNodeIPAddress: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		BigipNodeName: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		BigipPoolName: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		BigipPoolMemberIPAddress: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		BigipPoolMemberName: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		BigipVirtualServerDestination: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		BigipVirtualServerName: ResourceAttributeSettings{
+			Enabled: true,
+		},
+	}
+}
+
 // AttributeActiveStatus specifies the a value active.status attribute.
 type AttributeActiveStatus int
 
@@ -1659,6 +1715,7 @@ type MetricsBuilder struct {
 	resourceCapacity                        int                 // maximum observed number of resource attributes.
 	metricsBuffer                           pmetric.Metrics     // accumulates metrics data before emitting.
 	buildInfo                               component.BuildInfo // contains version information
+	resourceAttributesSettings              ResourceAttributesSettings
 	metricBigipNodeAvailability             metricBigipNodeAvailability
 	metricBigipNodeConnectionCount          metricBigipNodeConnectionCount
 	metricBigipNodeDataTransmitted          metricBigipNodeDataTransmitted
@@ -1698,11 +1755,19 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
+// WithResourceAttributesSettings sets ResourceAttributeSettings on the metrics builder.
+func WithResourceAttributesSettings(ras ResourceAttributesSettings) metricBuilderOption {
+	return func(mb *MetricsBuilder) {
+		mb.resourceAttributesSettings = ras
+	}
+}
+
 func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                               pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                           pmetric.NewMetrics(),
 		buildInfo:                               settings.BuildInfo,
+		resourceAttributesSettings:              DefaultResourceAttributesSettings(),
 		metricBigipNodeAvailability:             newMetricBigipNodeAvailability(ms.BigipNodeAvailability),
 		metricBigipNodeConnectionCount:          newMetricBigipNodeConnectionCount(ms.BigipNodeConnectionCount),
 		metricBigipNodeDataTransmitted:          newMetricBigipNodeDataTransmitted(ms.BigipNodeDataTransmitted),
@@ -1748,61 +1813,75 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(pmetric.ResourceMetrics)
+type ResourceMetricsOption func(ResourceAttributesSettings, pmetric.ResourceMetrics)
 
 // WithBigipNodeIPAddress sets provided value as "bigip.node.ip_address" attribute for current resource.
 func WithBigipNodeIPAddress(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("bigip.node.ip_address", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.BigipNodeIPAddress.Enabled {
+			rm.Resource().Attributes().PutStr("bigip.node.ip_address", val)
+		}
 	}
 }
 
 // WithBigipNodeName sets provided value as "bigip.node.name" attribute for current resource.
 func WithBigipNodeName(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("bigip.node.name", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.BigipNodeName.Enabled {
+			rm.Resource().Attributes().PutStr("bigip.node.name", val)
+		}
 	}
 }
 
 // WithBigipPoolName sets provided value as "bigip.pool.name" attribute for current resource.
 func WithBigipPoolName(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("bigip.pool.name", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.BigipPoolName.Enabled {
+			rm.Resource().Attributes().PutStr("bigip.pool.name", val)
+		}
 	}
 }
 
 // WithBigipPoolMemberIPAddress sets provided value as "bigip.pool_member.ip_address" attribute for current resource.
 func WithBigipPoolMemberIPAddress(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("bigip.pool_member.ip_address", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.BigipPoolMemberIPAddress.Enabled {
+			rm.Resource().Attributes().PutStr("bigip.pool_member.ip_address", val)
+		}
 	}
 }
 
 // WithBigipPoolMemberName sets provided value as "bigip.pool_member.name" attribute for current resource.
 func WithBigipPoolMemberName(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("bigip.pool_member.name", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.BigipPoolMemberName.Enabled {
+			rm.Resource().Attributes().PutStr("bigip.pool_member.name", val)
+		}
 	}
 }
 
 // WithBigipVirtualServerDestination sets provided value as "bigip.virtual_server.destination" attribute for current resource.
 func WithBigipVirtualServerDestination(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("bigip.virtual_server.destination", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.BigipVirtualServerDestination.Enabled {
+			rm.Resource().Attributes().PutStr("bigip.virtual_server.destination", val)
+		}
 	}
 }
 
 // WithBigipVirtualServerName sets provided value as "bigip.virtual_server.name" attribute for current resource.
 func WithBigipVirtualServerName(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("bigip.virtual_server.name", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.BigipVirtualServerName.Enabled {
+			rm.Resource().Attributes().PutStr("bigip.virtual_server.name", val)
+		}
 	}
 }
 
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
@@ -1858,8 +1937,9 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricBigipVirtualServerEnabled.emit(ils.Metrics())
 	mb.metricBigipVirtualServerPacketCount.emit(ils.Metrics())
 	mb.metricBigipVirtualServerRequestCount.emit(ils.Metrics())
+
 	for _, op := range rmo {
-		op(rm)
+		op(mb.resourceAttributesSettings, rm)
 	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)

@@ -25,102 +25,17 @@
           },
           "metrics": [
             {
-              "name": "apache.uptime",
-              "description": "The amount of time that the server has been running in seconds.",
-              "unit": "s",
-              "sum": {
+              "name": "apache.cpu.load",
+              "description": "Current load of the CPU.",
+              "unit": "%",
+              "gauge": {
                 "dataPoints": [
                   {
                     "attributes": [],
                     "timeUnixNano": "1632495518500962000",
-                    "asInt": "410"
+                    "asDouble": "0.66"
                   }
-                ],
-                "aggregationTemporality": 2,
-                "isMonotonic": true
-              }
-            },
-            {
-              "name": "apache.current_connections",
-              "description": "The number of active connections currently attached to the HTTP server.",
-              "unit": "{connections}",
-              "sum": {
-                "dataPoints": [
-                  {
-                    "attributes": [],
-                    "timeUnixNano": "1632495518500962000",
-                    "asInt": "110"
-                  }
-                ],
-                "aggregationTemporality": 2,
-                "isMonotonic": false
-              }
-            },
-            {
-              "name": "apache.workers",
-              "description": "The number of workers currently attached to the HTTP server.",
-              "unit": "{workers}",
-              "sum": {
-                "dataPoints": [
-                  {
-                    "attributes": [
-                      {
-                        "key": "state",
-                        "value": {
-                          "stringValue": "busy"
-                        }
-                      }
-                    ],
-                    "timeUnixNano": "1632495518500962000",
-                    "asInt": "13"
-                  },
-                  {
-                    "attributes": [
-                      {
-                        "key": "state",
-                        "value": {
-                          "stringValue": "idle"
-                        }
-                      }
-                    ],
-                    "timeUnixNano": "1632495518500962000",
-                    "asInt": "227"
-                  }
-                ],
-                "aggregationTemporality": 2,
-                "isMonotonic": false
-              }
-            },
-            {
-              "name": "apache.requests",
-              "description": "The number of requests serviced by the HTTP server per second.",
-              "unit": "{requests}",
-              "sum": {
-                "dataPoints": [
-                  {
-                    "attributes": [],
-                    "timeUnixNano": "1632495518500962000",
-                    "asInt": "14169"
-                  }
-                ],
-                "aggregationTemporality": 2,
-                "isMonotonic": true
-              }
-            },
-            {
-              "name": "apache.traffic",
-              "description": "Total HTTP server traffic.",
-              "unit": "By",
-              "sum": {
-                "dataPoints": [
-                  {
-                    "attributes": [],
-                    "timeUnixNano": "1632495518500962000",
-                    "asInt": "21411840"
-                  }
-                ],
-                "aggregationTemporality": 2,
-                "isMonotonic": true
+                ]
               }
             },
             {
@@ -207,17 +122,19 @@
               }
             },
             {
-              "name": "apache.cpu.load",
-              "description": "Current load of the CPU.",
-              "unit": "%",
-              "gauge": {
+              "name": "apache.current_connections",
+              "description": "The number of active connections currently attached to the HTTP server.",
+              "unit": "{connections}",
+              "sum": {
                 "dataPoints": [
                   {
                     "attributes": [],
                     "timeUnixNano": "1632495518500962000",
-                    "asDouble": "0.66"
+                    "asInt": "110"
                   }
-                ]
+                ],
+                "aggregationTemporality": 2,
+                "isMonotonic": false
               }
             },
             {
@@ -230,20 +147,6 @@
                     "attributes": [],
                     "timeUnixNano": "1632495518500962000",
                     "asDouble": "0.9"
-                  }
-                ]
-              }
-            },
-            {
-              "name": "apache.load.5",
-              "description": "The average server load during the last 5 minutes.",
-              "unit": "%",
-              "gauge": {
-                "dataPoints": [
-                  {
-                    "attributes": [],
-                    "timeUnixNano": "1632495518500962000",
-                    "asDouble": "0.4"
                   }
                 ]
               }
@@ -263,6 +166,20 @@
               }
             },
             {
+              "name": "apache.load.5",
+              "description": "The average server load during the last 5 minutes.",
+              "unit": "%",
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "attributes": [],
+                    "timeUnixNano": "1632495518500962000",
+                    "asDouble": "0.4"
+                  }
+                ]
+              }
+            },
+            {
               "name": "apache.request.time",
               "description": "Total time spent on handling requests.",
               "unit": "ms",
@@ -272,6 +189,22 @@
                     "attributes": [],
                     "timeUnixNano": "1632495518500962000",
                     "asInt": "1501"
+                  }
+                ],
+                "aggregationTemporality": 2,
+                "isMonotonic": true
+              }
+            },
+            {
+              "name": "apache.requests",
+              "description": "The number of requests serviced by the HTTP server per second.",
+              "unit": "{requests}",
+              "sum": {
+                "dataPoints": [
+                  {
+                    "attributes": [],
+                    "timeUnixNano": "1632495518500962000",
+                    "asInt": "14169"
                   }
                 ],
                 "aggregationTemporality": 2,
@@ -415,6 +348,73 @@
                     ],
                     "timeUnixNano": "1632495518500962000",
                     "asInt": "4"
+                  }
+                ],
+                "aggregationTemporality": 2,
+                "isMonotonic": false
+              }
+            },
+            {
+              "name": "apache.traffic",
+              "description": "Total HTTP server traffic.",
+              "unit": "By",
+              "sum": {
+                "dataPoints": [
+                  {
+                    "attributes": [],
+                    "timeUnixNano": "1632495518500962000",
+                    "asInt": "21411840"
+                  }
+                ],
+                "aggregationTemporality": 2,
+                "isMonotonic": true
+              }
+            },
+            {
+              "name": "apache.uptime",
+              "description": "The amount of time that the server has been running in seconds.",
+              "unit": "s",
+              "sum": {
+                "dataPoints": [
+                  {
+                    "attributes": [],
+                    "timeUnixNano": "1632495518500962000",
+                    "asInt": "410"
+                  }
+                ],
+                "aggregationTemporality": 2,
+                "isMonotonic": true
+              }
+            },
+            {
+              "name": "apache.workers",
+              "description": "The number of workers currently attached to the HTTP server.",
+              "unit": "{workers}",
+              "sum": {
+                "dataPoints": [
+                  {
+                    "attributes": [
+                      {
+                        "key": "state",
+                        "value": {
+                          "stringValue": "busy"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1632495518500962000",
+                    "asInt": "13"
+                  },
+                  {
+                    "attributes": [
+                      {
+                        "key": "state",
+                        "value": {
+                          "stringValue": "idle"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1632495518500962000",
+                    "asInt": "227"
                   }
                 ],
                 "aggregationTemporality": 2,

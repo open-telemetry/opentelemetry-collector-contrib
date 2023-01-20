@@ -45,16 +45,16 @@ Use the following config to avoid getting FQDN and apply hostname provided by OS
 ```yaml
 processors:
   resourcedetection/system:
-    detectors: ["system"]
+    detectors: ['system']
     system:
-      hostname_sources: ["os"]
+      hostname_sources: ['os']
 ```
 
-* all valid options for `hostname_sources`:
-    * "dns"
-    * "os"
-    * "cname"
-    * "lookup"
+- all valid options for `hostname_sources`:
+  - "dns"
+  - "os"
+  - "cname"
+  - "lookup"
 
 #### Hostname Sources
 
@@ -92,7 +92,6 @@ Docker detection does not work on macOS.
 
 In a Heroku application, the [dyno id](https://devcenter.heroku.com/articles/dyno-metadata) is the identifier of the virtualized environment ("dyno") where the application runs.
 
-
 Example:
 
 ```yaml
@@ -103,46 +102,75 @@ processors:
     override: false
 ```
 
-### GCE Metadata
+### GCP Metadata
 
 Uses the [Google Cloud Client Libraries for Go](https://github.com/googleapis/google-cloud-go)
-to read resource information from the [GCE metadata server](https://cloud.google.com/compute/docs/storing-retrieving-metadata) to retrieve the following resource attributes:
+to read resource information from the [metadata server](https://cloud.google.com/compute/docs/storing-retrieving-metadata) and environment variables to detect which GCP platform the
+application is running on, and detect the appropriate attributes for that platform. Regardless
+of the GCP platform the application is running on, use the gcp detector:
+
+Example:
+
+```yaml
+processors:
+  resourcedetection/gcp:
+    detectors: [env, gcp]
+    timeout: 2s
+    override: false
+```
+
+#### GCE Metadata
 
     * cloud.provider ("gcp")
     * cloud.platform ("gcp_compute_engine")
-    * cloud.account.id
-    * cloud.region
-    * cloud.availability_zone
-    * host.id
-    * host.image.id
-    * host.type
+    * cloud.account.id (project id)
+    * cloud.region  (e.g. us-central1)
+    * cloud.availability_zone (e.g. us-central1-c)
+    * host.id (instance id)
+    * host.name (instance name)
+    * host.type (machine type)
 
-Example:
-
-```yaml
-processors:
-  resourcedetection/gce:
-    detectors: [env, gce]
-    timeout: 2s
-    override: false
-```
-
-### GKE: Google Kubernetes Engine
+#### GKE Metadata
 
     * cloud.provider ("gcp")
-    * cloud.platform ("gcp_gke")
-    * k8s.cluster.name (name of the GKE cluster)
+    * cloud.platform ("gcp_kubernetes_engine")
+    * cloud.account.id (project id)
+    * cloud.region (only for regional GKE clusters; e.g. "us-central1")
+    * cloud.availability_zone (only for zonal GKE clusters; e.g. "us-central1-c")
+    * k8s.cluster.name
+    * host.id (instance id)
+    * host.name (instance name; only when workload identity is disabled)
 
-Example:
+#### Google Cloud Run Metadata
 
-```yaml
-processors:
-  resourcedetection/gke:
-    detectors: [env, gke]
-    timeout: 2s
-    override: false
-```
+    * cloud.provider ("gcp")
+    * cloud.platform ("gcp_cloud_run")
+    * cloud.account.id (project id)
+    * cloud.region (e.g. "us-central1")
+    * faas.id (instance id)
+    * faas.name (service name)
+    * faas.version (service revision)
 
+#### Google Cloud Functions Metadata
+
+    * cloud.provider ("gcp")
+    * cloud.platform ("gcp_cloud_functions")
+    * cloud.account.id (project id)
+    * cloud.region (e.g. "us-central1")
+    * faas.id (instance id)
+    * faas.name (function name)
+    * faas.version (function version)
+
+#### Google App Engine Metadata
+
+    * cloud.provider ("gcp")
+    * cloud.platform ("gcp_app_engine")
+    * cloud.account.id (project id)
+    * cloud.region (e.g. "us-central1")
+    * cloud.availability_zone (e.g. "us-central1-c")
+    * faas.id (instance id)
+    * faas.name (service name)
+    * faas.version (service version)
 
 ### AWS EC2
 
@@ -162,10 +190,11 @@ It also can optionally gather tags for the EC2 instance that the collector is ru
 Note that in order to fetch EC2 tags, the IAM role assigned to the EC2 instance must have a policy that includes the `ec2:DescribeTags` permission.
 
 EC2 custom configuration example:
+
 ```yaml
 processors:
   resourcedetection/ec2:
-    detectors: ["ec2"]
+    detectors: ['ec2']
     ec2:
       # A list of regex's to match tag keys to add as resource attributes can be specified
       tags:
@@ -247,22 +276,22 @@ to retrieve the following resource attributes:
 
 [Cloud semantic conventions](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/cloud.md)
 
-* `cloud.provider` (`"aws"`)
-* `cloud.platform` (`"aws_lambda"`)
-* `cloud.region` (`$AWS_REGION`)
+- `cloud.provider` (`"aws"`)
+- `cloud.platform` (`"aws_lambda"`)
+- `cloud.region` (`$AWS_REGION`)
 
 [Function as a Service semantic conventions](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/faas.md)
 and [AWS Lambda semantic conventions](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/instrumentation/aws-lambda.md#resource-detector)
 
-* `faas.name` (`$AWS_LAMBDA_FUNCTION_NAME`)
-* `faas.version` (`$AWS_LAMBDA_FUNCTION_VERSION`)
-* `faas.instance` (`$AWS_LAMBDA_LOG_STREAM_NAME`)
-* `faas.max_memory` (`$AWS_LAMBDA_FUNCTION_MEMORY_SIZE`)
+- `faas.name` (`$AWS_LAMBDA_FUNCTION_NAME`)
+- `faas.version` (`$AWS_LAMBDA_FUNCTION_VERSION`)
+- `faas.instance` (`$AWS_LAMBDA_LOG_STREAM_NAME`)
+- `faas.max_memory` (`$AWS_LAMBDA_FUNCTION_MEMORY_SIZE`)
 
 [AWS Logs semantic conventions](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/cloud_provider/aws/logs.md)
 
-* `aws.log.group.names` (`$AWS_LAMBDA_LOG_GROUP_NAME`)
-* `aws.log.stream.names` (`$AWS_LAMBDA_LOG_STREAM_NAME`)
+- `aws.log.group.names` (`$AWS_LAMBDA_LOG_GROUP_NAME`)
+- `aws.log.stream.names` (`$AWS_LAMBDA_LOG_STREAM_NAME`)
 
 Example:
 
@@ -301,8 +330,8 @@ processors:
 
 ### Azure AKS
 
-  * cloud.provider ("azure")
-  * cloud.platform ("azure_aks")
+- cloud.provider ("azure")
+- cloud.platform ("azure_aks")
 
 ```yaml
 processors:
@@ -316,10 +345,10 @@ processors:
 
 Queries a [consul agent](https://www.consul.io/docs/agent) and reads its' [configuration endpoint](https://www.consul.io/api-docs/agent#read-configuration) to retrieve the following resource attributes:
 
-  * cloud.region (consul datacenter)
-  * host.id (consul node id)
-  * host.name (consul node name)
-  * *exploded consul metadata* - reads all key:value pairs in [consul metadata](https://www.consul.io/docs/agent/options#_node_meta) into label:labelvalue pairs.
+- cloud.region (consul datacenter)
+- host.id (consul node id)
+- host.name (consul node name)
+- _exploded consul metadata_ - reads all key:value pairs in [consul metadata](https://www.consul.io/docs/agent/options#_node_meta) into label:labelvalue pairs.
 
 ```yaml
 processors:
@@ -335,30 +364,57 @@ processors:
 
 Queries [Heroku metadata](https://devcenter.heroku.com/articles/dyno-metadata) to retrieve the following resource attributes:
 
-* heroku.release.version (identifier for the current release)
-* heroku.release.creation_timestamp (time and date the release was created)
-* heroku.release.commit (commit hash for the current release)
-* heroku.app.name (application name)
-* heroku.app.id (unique identifier for the application)
-* heroku.dyno.id (dyno identifier. Used as host name)
+- heroku.release.version (identifier for the current release)
+- heroku.release.creation_timestamp (time and date the release was created)
+- heroku.release.commit (commit hash for the current release)
+- heroku.app.name (application name)
+- heroku.app.id (unique identifier for the application)
+- heroku.dyno.id (dyno identifier. Used as host name)
 
-```yaml
+````yaml
 processors:
   resourcedetection/heroku:
     detectors: [env, heroku]
     timeout: 2s
     override: false
-```
+
+### Openshift
+
+Queries the OpenShift and Kubernetes API to retrieve the following resource attributes:
+
+    * cloud.provider
+    * cloud.platform
+    * cloud.region
+    * k8s.cluster.name
+    * k8s.cluster.version
+    * openshift.cluster.version
+
+Your service account needs `read` access to the API endpoints `/apis/config.openshift.io/v1/clusterversions/version/status`, `/apis/config.openshift.io/v1/infrastructures/cluster/status` and `/version`.
+By default, the API address is determined from the environment variables `KUBERNETES_SERVICE_HOST`, `KUBERNETES_SERVICE_PORT` and the service token is read from `/var/run/secrets/kubernetes.io/serviceaccount/token`.
+The determination of the API address and the service token is skipped if they are set in the configuration.
+
+Example:
+
+```yaml
+processors:
+  resourcedetection/openshift:
+    detectors: [openshift]
+    timeout: 2s
+    override: false
+    openshift: # optional
+      address: "https://api.example.com"
+      token: "token"
+````
 
 ## Configuration
 
 ```yaml
-# a list of resource detectors to run, valid options are: "env", "system", "gce", "gke", "ec2", "ecs", "elastic_beanstalk", "eks", "lambda", "azure", "heroku"
-detectors: [ <string> ]
+# a list of resource detectors to run, valid options are: "env", "system", "gce", "gke", "ec2", "ecs", "elastic_beanstalk", "eks", "lambda", "azure", "heroku", "openshift"
+detectors: [<string>]
 # determines if existing resource attributes should be overridden or preserved, defaults to true
 override: <bool>
 # When included, only attributes in the list will be appened.  Applies to all detectors.
-attributes: [ <string> ]
+attributes: [<string>]
 ```
 
 ## Ordering
@@ -367,19 +423,19 @@ Note that if multiple detectors are inserting the same attribute name, the first
 
 ### GCP
 
-* gke
-* gce
+- gke
+- gce
 
 ### AWS
 
-* lambda
-* elastic_beanstalk
-* eks
-* ecs
-* ec2
+- lambda
+- elastic_beanstalk
+- eks
+- ecs
+- ec2
 
 The full list of settings exposed for this extension are documented [here](./config.go)
 with detailed sample configurations [here](./testdata/config.yaml).
 
-[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
-[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

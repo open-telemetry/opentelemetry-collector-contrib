@@ -60,7 +60,7 @@ func TestScrape(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics))
+		require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics, comparetest.IgnoreMetricDataPointsOrder()))
 	})
 
 	t.Run("scrape from couchdb 3.12", func(t *testing.T) {
@@ -76,7 +76,7 @@ func TestScrape(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics))
+		require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics, comparetest.IgnoreMetricDataPointsOrder()))
 	})
 
 	t.Run("scrape returns nothing", func(t *testing.T) {
@@ -177,7 +177,7 @@ func TestMetricSettings(t *testing.T) {
 	expected, err := golden.ReadMetrics(filepath.Join("testdata", "scraper", "only_db_ops.json"))
 	require.NoError(t, err)
 
-	require.NoError(t, comparetest.CompareMetrics(expected, metrics))
+	require.NoError(t, comparetest.CompareMetrics(expected, metrics, comparetest.IgnoreMetricDataPointsOrder()))
 	require.Equal(t, metrics.MetricCount(), 1)
 }
 

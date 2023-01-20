@@ -5,27 +5,32 @@ sem_conv_version: 1.9.0
 resource_attributes:
   process.pid:
     description: Process identifier (PID).
+    enabled: true
     type: int
   process.parent_pid:
     description: Parent Process identifier (PPID).
+    enabled: true
     type: int
   process.executable.name:
     description: >-
       The name of the process executable. On Linux based systems, can be set to the
       Name in proc/[pid]/status. On Windows, can be set to the base name of
       GetProcessImageFileNameW.
+    enabled: true
     type: string
   process.executable.path:
     description: >-
       The full path to the process executable. On Linux based systems, can be set to
       the target of proc/[pid]/exe. On Windows, can be set to the result of
       GetProcessImageFileNameW.
+    enabled: true
     type: string
   process.command:
     description: >-
       The command used to launch the process (i.e. the command name). On Linux based
       systems, can be set to the zeroth string in proc/[pid]/cmdline. On Windows, can
       be set to the first parameter extracted from GetCommandLineW.
+    enabled: true
     type: string
   process.command_line:
     description: >-
@@ -33,9 +38,11 @@ resource_attributes:
       full command. On Windows, can be set to the result of GetCommandLineW. Do not
       set this if you have to assemble it just for monitoring; use
       process.command_args instead.
+    enabled: true
     type: string
   process.owner:
     description: The username of the user that owns the process.
+    enabled: true
     type: string
 
 attributes:

@@ -306,7 +306,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			md, numDroppedTimeseries := splunkHecToMetricsData(zap.NewNop(), []*splunk.Event{tt.splunkDataPoint}, func(resource pcommon.Resource) {}, tt.hecConfig)
 			assert.Equal(t, tt.wantDroppedTimeseries, numDroppedTimeseries)
-			assert.NoError(t, comparetest.CompareMetrics(tt.wantMetricsData, md))
+			assert.NoError(t, comparetest.CompareMetrics(tt.wantMetricsData, md, comparetest.IgnoreMetricsOrder()))
 		})
 	}
 }

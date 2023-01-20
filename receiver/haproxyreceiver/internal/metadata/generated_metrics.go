@@ -58,6 +58,62 @@ func DefaultMetricsSettings() MetricsSettings {
 	}
 }
 
+// ResourceAttributeSettings provides common settings for a particular metric.
+type ResourceAttributeSettings struct {
+	Enabled bool `mapstructure:"enabled"`
+
+	enabledProvidedByUser bool
+}
+
+func (ras *ResourceAttributeSettings) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(ras, confmap.WithErrorUnused())
+	if err != nil {
+		return err
+	}
+	ras.enabledProvidedByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ResourceAttributesSettings provides settings for haproxyreceiver metrics.
+type ResourceAttributesSettings struct {
+	HaproxyAddr ResourceAttributeSettings `mapstructure:"haproxy.addr"`
+	HaproxyAlgo ResourceAttributeSettings `mapstructure:"haproxy.algo"`
+	HaproxyIid  ResourceAttributeSettings `mapstructure:"haproxy.iid"`
+	HaproxyPid  ResourceAttributeSettings `mapstructure:"haproxy.pid"`
+	HaproxySid  ResourceAttributeSettings `mapstructure:"haproxy.sid"`
+	HaproxyType ResourceAttributeSettings `mapstructure:"haproxy.type"`
+	HaproxyURL  ResourceAttributeSettings `mapstructure:"haproxy.url"`
+}
+
+func DefaultResourceAttributesSettings() ResourceAttributesSettings {
+	return ResourceAttributesSettings{
+		HaproxyAddr: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		HaproxyAlgo: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		HaproxyIid: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		HaproxyPid: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		HaproxySid: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		HaproxyType: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		HaproxyURL: ResourceAttributeSettings{
+			Enabled: true,
+		},
+	}
+}
+
 type metricHaproxyConnectionRate struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -270,6 +326,7 @@ type MetricsBuilder struct {
 	resourceCapacity            int                 // maximum observed number of resource attributes.
 	metricsBuffer               pmetric.Metrics     // accumulates metrics data before emitting.
 	buildInfo                   component.BuildInfo // contains version information
+	resourceAttributesSettings  ResourceAttributesSettings
 	metricHaproxyConnectionRate metricHaproxyConnectionRate
 	metricHaproxyIdlePercent    metricHaproxyIdlePercent
 	metricHaproxyRequests       metricHaproxyRequests
@@ -286,11 +343,19 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
+// WithResourceAttributesSettings sets ResourceAttributeSettings on the metrics builder.
+func WithResourceAttributesSettings(ras ResourceAttributesSettings) metricBuilderOption {
+	return func(mb *MetricsBuilder) {
+		mb.resourceAttributesSettings = ras
+	}
+}
+
 func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                   pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:               pmetric.NewMetrics(),
 		buildInfo:                   settings.BuildInfo,
+		resourceAttributesSettings:  DefaultResourceAttributesSettings(),
 		metricHaproxyConnectionRate: newMetricHaproxyConnectionRate(ms.HaproxyConnectionRate),
 		metricHaproxyIdlePercent:    newMetricHaproxyIdlePercent(ms.HaproxyIdlePercent),
 		metricHaproxyRequests:       newMetricHaproxyRequests(ms.HaproxyRequests),
@@ -313,61 +378,75 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(pmetric.ResourceMetrics)
+type ResourceMetricsOption func(ResourceAttributesSettings, pmetric.ResourceMetrics)
 
 // WithHaproxyAddr sets provided value as "haproxy.addr" attribute for current resource.
 func WithHaproxyAddr(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("haproxy.addr", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.HaproxyAddr.Enabled {
+			rm.Resource().Attributes().PutStr("haproxy.addr", val)
+		}
 	}
 }
 
 // WithHaproxyAlgo sets provided value as "haproxy.algo" attribute for current resource.
 func WithHaproxyAlgo(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("haproxy.algo", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.HaproxyAlgo.Enabled {
+			rm.Resource().Attributes().PutStr("haproxy.algo", val)
+		}
 	}
 }
 
 // WithHaproxyIid sets provided value as "haproxy.iid" attribute for current resource.
 func WithHaproxyIid(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("haproxy.iid", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.HaproxyIid.Enabled {
+			rm.Resource().Attributes().PutStr("haproxy.iid", val)
+		}
 	}
 }
 
 // WithHaproxyPid sets provided value as "haproxy.pid" attribute for current resource.
 func WithHaproxyPid(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("haproxy.pid", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.HaproxyPid.Enabled {
+			rm.Resource().Attributes().PutStr("haproxy.pid", val)
+		}
 	}
 }
 
 // WithHaproxySid sets provided value as "haproxy.sid" attribute for current resource.
 func WithHaproxySid(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("haproxy.sid", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.HaproxySid.Enabled {
+			rm.Resource().Attributes().PutStr("haproxy.sid", val)
+		}
 	}
 }
 
 // WithHaproxyType sets provided value as "haproxy.type" attribute for current resource.
 func WithHaproxyType(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("haproxy.type", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.HaproxyType.Enabled {
+			rm.Resource().Attributes().PutStr("haproxy.type", val)
+		}
 	}
 }
 
 // WithHaproxyURL sets provided value as "haproxy.url" attribute for current resource.
 func WithHaproxyURL(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("haproxy.url", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.HaproxyURL.Enabled {
+			rm.Resource().Attributes().PutStr("haproxy.url", val)
+		}
 	}
 }
 
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
@@ -400,8 +479,9 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricHaproxyIdlePercent.emit(ils.Metrics())
 	mb.metricHaproxyRequests.emit(ils.Metrics())
 	mb.metricHaproxySessionsCount.emit(ils.Metrics())
+
 	for _, op := range rmo {
-		op(rm)
+		op(mb.resourceAttributesSettings, rm)
 	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)

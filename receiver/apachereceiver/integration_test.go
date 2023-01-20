@@ -77,7 +77,8 @@ func TestApacheIntegration(t *testing.T) {
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 
-	require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics, comparetest.IgnoreMetricValues()))
+	require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics, comparetest.IgnoreMetricValues(),
+		comparetest.IgnoreMetricDataPointsOrder()))
 }
 
 func getContainer(t *testing.T, req testcontainers.ContainerRequest) testcontainers.Container {

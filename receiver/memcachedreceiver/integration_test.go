@@ -77,5 +77,6 @@ func TestIntegration(t *testing.T) {
 	expectedMetrics, err := unmarshaller.UnmarshalMetrics(expectedFileBytes)
 	require.NoError(t, err)
 
-	require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics, comparetest.IgnoreMetricValues()))
+	require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics, comparetest.IgnoreMetricValues(),
+		comparetest.IgnoreMetricDataPointsOrder()))
 }

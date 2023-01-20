@@ -8,11 +8,18 @@ resource_attributes:
   string.resource.attr:
     description: Resource attribute with any string value.
     type: string
+    enabled: true
 
   string.enum.resource.attr:
     description: Resource attribute with a known set of string values.
     type: string
     enum: [one, two]
+    enabled: true
+
+  optional.resource.attr:
+    description: Explicitly disabled ResourceAttribute.
+    type: string
+    enabled: false
 
 attributes:
   string_attr:
