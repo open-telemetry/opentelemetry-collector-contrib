@@ -162,7 +162,7 @@ func TestHonorTimeStampsWithTrue(t *testing.T) {
 		},
 	}
 
-	testComponent(t, targets, false, "", featuregate.GetRegistry())
+	testComponent(t, targets, false, "", featuregate.GlobalRegistry())
 }
 
 // TestHonorTimeStampsWithFalse validates that with honor_timestamp config set to false,
@@ -180,7 +180,7 @@ func TestHonorTimeStampsWithFalse(t *testing.T) {
 		},
 	}
 
-	testComponent(t, targets, false, "", featuregate.GetRegistry(), func(cfg *promcfg.Config) {
+	testComponent(t, targets, false, "", featuregate.GlobalRegistry(), func(cfg *promcfg.Config) {
 		for _, scrapeConfig := range cfg.ScrapeConfigs {
 			scrapeConfig.HonorTimestamps = false
 		}

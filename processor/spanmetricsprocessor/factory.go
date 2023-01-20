@@ -45,7 +45,7 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		AggregationTemporality: "AGGREGATION_TEMPORALITY_CUMULATIVE",
 		DimensionsCacheSize:    defaultDimensionsCacheSize,
-		skipSanitizeLabel:      featuregate.GetRegistry().IsEnabled(dropSanitizationGateID),
+		skipSanitizeLabel:      featuregate.GlobalRegistry().IsEnabled(dropSanitizationGateID),
 		MetricsFlushInterval:   15 * time.Second,
 	}
 }

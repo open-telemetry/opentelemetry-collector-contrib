@@ -96,7 +96,7 @@ func TestPostgreSQLIntegration(t *testing.T) {
 		{
 			name: "without_resource_attributes",
 			cfg: func(hostname string) *Config {
-				require.NoError(t, featuregate.GetRegistry().Apply(map[string]bool{
+				require.NoError(t, featuregate.GlobalRegistry().Apply(map[string]bool{
 					emitMetricsWithResourceAttributesFeatureGateID:    false,
 					emitMetricsWithoutResourceAttributesFeatureGateID: true,
 				}))
@@ -110,7 +110,7 @@ func TestPostgreSQLIntegration(t *testing.T) {
 				return cfg
 			},
 			cleanup: func() {
-				require.NoError(t, featuregate.GetRegistry().Apply(map[string]bool{
+				require.NoError(t, featuregate.GlobalRegistry().Apply(map[string]bool{
 					emitMetricsWithResourceAttributesFeatureGateID:    true,
 					emitMetricsWithoutResourceAttributesFeatureGateID: false,
 				}))

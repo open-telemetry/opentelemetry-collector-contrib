@@ -41,8 +41,8 @@ github.com/stretchr/testify v1.8.1 h1:w7B6lhMri9wdJUVmEZPGGhZzrYTPvgJArz7wNPgYKs
 github.com/stretchr/testify v1.8.1/go.mod h1:w2LPCIKwWwSfY2zedu0+kehJoqGctiVI29o6fzry7u4=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
-go.opentelemetry.io/collector/pdata v1.0.0-rc3.0.20230112233839-f2a0133bf677 h1:d/IkJgyznNlSF5tSjiTNq3AioD0duRE3vuyUG0Ei/nQ=
-go.opentelemetry.io/collector/pdata v1.0.0-rc3.0.20230112233839-f2a0133bf677/go.mod h1:NggifanH3PY9reO9gUtcP8IqNpAabT+aDOCFZoIa7Ts=
+go.opentelemetry.io/collector/pdata v1.0.0-rc3.0.20230120182939-d97f1eb5bf86 h1:VL5YyDiqWItXP4bfATcZdBzXyCR4XcW5piplFyRAzE4=
+go.opentelemetry.io/collector/pdata v1.0.0-rc3.0.20230120182939-d97f1eb5bf86/go.mod h1:ft/11i2R6Ld/DC543bAS4R30/W8heexIvNqtzmQpnLQ=
 go.uber.org/atomic v1.10.0 h1:9qC72Qh0+3MqyJbAn8YU5xVq1frD8bn3JtD2oXtafVQ=
 go.uber.org/atomic v1.10.0/go.mod h1:LUxbIzbOniOlMKjJjyPfpl4v+PKK2cNJn91OQbhoJI0=
 go.uber.org/multierr v1.9.0 h1:7fIwc/ZtS0q++VgcfqFDxSBZVv/Xo49/SYnDFupUwlI=

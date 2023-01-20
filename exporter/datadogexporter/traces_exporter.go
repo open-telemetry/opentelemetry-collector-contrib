@@ -166,7 +166,7 @@ func newTraceAgent(ctx context.Context, params exporter.CreateSettings, cfg *Con
 	}
 	acfg.OTLPReceiver.SpanNameRemappings = cfg.Traces.SpanNameRemappings
 	acfg.OTLPReceiver.SpanNameAsResourceName = cfg.Traces.SpanNameAsResourceName
-	acfg.OTLPReceiver.UsePreviewHostnameLogic = featuregate.GetRegistry().IsEnabled(metadata.HostnamePreviewFeatureGate)
+	acfg.OTLPReceiver.UsePreviewHostnameLogic = featuregate.GlobalRegistry().IsEnabled(metadata.HostnamePreviewFeatureGate)
 	acfg.Endpoints[0].APIKey = string(cfg.API.Key)
 	acfg.Ignore["resource"] = cfg.Traces.IgnoreResources
 	acfg.ReceiverPort = 0 // disable HTTP receiver

@@ -28,7 +28,7 @@ const (
 )
 
 func init() {
-	featuregate.GetRegistry().MustRegisterID(
+	featuregate.GlobalRegistry().MustRegisterID(
 		dropSanitizationGateID,
 		featuregate.StageAlpha,
 		featuregate.WithRegisterDescription("Controls whether to change labels starting with '_' to 'key_'"),
