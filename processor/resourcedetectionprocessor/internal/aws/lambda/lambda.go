@@ -40,17 +40,17 @@ const (
 	awsLambdaLogStreamNameEnvVar      = "AWS_LAMBDA_LOG_STREAM_NAME"
 )
 
-var _ internal.Detector = (*Detector)(nil)
+var _ internal.Detector = (*detector)(nil)
 
-type Detector struct {
+type detector struct {
 	logger *zap.Logger
 }
 
 func NewDetector(set processor.CreateSettings, _ internal.DetectorConfig) (internal.Detector, error) {
-	return &Detector{logger: set.Logger}, nil
+	return &detector{logger: set.Logger}, nil
 }
 
-func (detector *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
+func (detector *detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
 	res := pcommon.NewResource()
 
 	functionName, ok := os.LookupEnv(awsLambdaFunctionNameEnvVar)

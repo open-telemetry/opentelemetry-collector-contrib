@@ -39,7 +39,7 @@ func TestLambda(t *testing.T) {
 	t.Setenv(awsLambdaFunctionNameEnvVar, functionName)
 
 	// Call Lambda Resource detector to detect resources
-	lambdaDetector := &Detector{logger: zap.NewNop()}
+	lambdaDetector := &detector{logger: zap.NewNop()}
 	res, _, err := lambdaDetector.Detect(ctx)
 	require.NoError(t, err)
 	require.NotNil(t, res)
@@ -54,7 +54,7 @@ func TestLambda(t *testing.T) {
 // Tests Lambda resource detector not running in Lambda environment
 func TestNotLambda(t *testing.T) {
 	ctx := context.Background()
-	lambdaDetector := &Detector{logger: zap.NewNop()}
+	lambdaDetector := &detector{logger: zap.NewNop()}
 	res, _, err := lambdaDetector.Detect(ctx)
 	require.NoError(t, err)
 	require.NotNil(t, res)
