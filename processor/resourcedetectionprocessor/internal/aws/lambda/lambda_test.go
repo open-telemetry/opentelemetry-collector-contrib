@@ -32,7 +32,7 @@ func TestNewDetector(t *testing.T) {
 }
 
 // Tests Lambda resource detector running in Lambda environment
-func TestEKS(t *testing.T) {
+func TestLambda(t *testing.T) {
 	ctx := context.Background()
 
 	const functionName = "TestFunctionName"
