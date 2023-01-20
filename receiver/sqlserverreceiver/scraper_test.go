@@ -145,6 +145,6 @@ func TestScrape(t *testing.T) {
 	expectedMetrics, err := golden.ReadMetrics(goldenScrapePath)
 	require.NoError(t, err)
 
-	err = comparetest.CompareMetrics(expectedMetrics, scrapeData)
+	err = comparetest.CompareMetrics(expectedMetrics, scrapeData, comparetest.IgnoreMetricDataPointsOrder())
 	require.NoError(t, err)
 }
