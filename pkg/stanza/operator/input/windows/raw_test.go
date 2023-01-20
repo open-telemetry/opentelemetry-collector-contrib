@@ -88,7 +88,7 @@ func TestInvalidUnmarshalRaw(t *testing.T) {
 
 }
 func TestUnmarshalRaw(t *testing.T) {
-	data, err := os.ReadFile(filepath.Join("testdata", "rawSample.raw"))
+	data, err := os.ReadFile(filepath.Join("testdata", "xmlSample.xml"))
 	require.NoError(t, err)
 
 	event, err := unmarshalEventRaw(data)
