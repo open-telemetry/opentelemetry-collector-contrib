@@ -98,7 +98,7 @@ func TestLogsSampling(t *testing.T) {
 				SamplingPercentage: 50,
 				AttributeSource:    traceIDAttributeSource,
 			},
-			received: 45, // 52
+			received: 45,
 		},
 		{
 			name: "sampling_source no sampling",
