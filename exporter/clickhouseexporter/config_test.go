@@ -49,10 +49,11 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "full"),
 			expected: &Config{
-				DSN:             defaultDSN,
-				TTLDays:         3,
-				LogsTableName:   "otel_logs",
-				TracesTableName: "otel_traces",
+				DSN:              defaultDSN,
+				TTLDays:          3,
+				LogsTableName:    "otel_logs",
+				TracesTableName:  "otel_traces",
+				MetricsTableName: "otel_metrics",
 				TimeoutSettings: exporterhelper.TimeoutSettings{
 					Timeout: 5 * time.Second,
 				},
