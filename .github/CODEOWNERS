@@ -39,7 +39,7 @@ exporter/awsxrayexporter/                                @open-telemetry/collect
 exporter/azuremonitorexporter/                           @open-telemetry/collector-contrib-approvers @pcwiese
 exporter/azuredataexplorerexporter/                      @open-telemetry/collector-contrib-approvers @asaharan @ag-ramachandran
 exporter/carbonexporter/                                 @open-telemetry/collector-contrib-approvers @pjanotti
-exporter/clickhouseexporter/                             @open-telemetry/collector-contrib-approvers @hanjm @dmitryax
+exporter/clickhouseexporter/                             @open-telemetry/collector-contrib-approvers @hanjm @dmitryax @Frapschen
 exporter/coralogixexporter/                              @open-telemetry/collector-contrib-approvers @oded-dd @ofirshmuel
 exporter/datadogexporter/                                @open-telemetry/collector-contrib-approvers @KSerrania @mx-psi @gbbr @knusbaum @amenasria @dineshg13
 exporter/dynatraceexporter/                              @open-telemetry/collector-contrib-approvers @dyladan @arminru @evan-bradley
