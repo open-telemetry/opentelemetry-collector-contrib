@@ -16,6 +16,7 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"errors"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -92,6 +93,19 @@ type timeseriesKey struct {
 	aggTemporality pmetric.AggregationTemporality
 }
 
+// byReference implements sort.Interface for s based on the order of alphabetically sorted ref.
+type byReference struct {
+	s   []string
+	ref []string
+}
+
+func (br byReference) Len() int { return len(br.s) }
+func (br byReference) Swap(i, j int) {
+	br.s[i], br.s[j] = br.s[j], br.s[i]
+	br.ref[i], br.ref[j] = br.ref[j], br.ref[i]
+}
+func (br byReference) Less(i, j int) bool { return br.ref[i] < br.ref[j] }
+
 // timeseriesMap maps from a timeseries instance (metric * label values) to the timeseries info for
 // the instance.
 type timeseriesMap struct {
@@ -130,18 +144,21 @@ func (tsm *timeseriesMap) get(metric pmetric.Metric, kv pcommon.Map) (*timeserie
 }
 
 // Create a unique string signature for attributes values sorted by attribute keys.
-// NOTE: this function mutates the attributes map as a side effect.
-func getAttributesSignature(kv pcommon.Map) string {
-	labelValues := make([]string, 0, kv.Len())
-	kv.Sort()
-	kv.Range(func(_ string, attrValue pcommon.Value) bool {
+func getAttributesSignature(m pcommon.Map) string {
+	kv := byReference{
+		s:   make([]string, 0, m.Len()),
+		ref: make([]string, 0, m.Len()),
+	}
+	m.Range(func(k string, attrValue pcommon.Value) bool {
 		value := attrValue.Str()
 		if value != "" {
-			labelValues = append(labelValues, value)
+			kv.ref = append(kv.ref, k)
+			kv.s = append(kv.s, value)
 		}
 		return true
 	})
-	return strings.Join(labelValues, ",")
+	sort.Stable(kv)
+	return strings.Join(kv.s, ",")
 }
 
 // Remove timeseries that have aged out.
