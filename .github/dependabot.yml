@@ -347,10 +347,6 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
-    directory: "/internal/comparetest"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
     directory: "/internal/coreinternal"
     schedule:
       interval: "weekly"
@@ -400,6 +396,14 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/pkg/ottl"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/pkg/pdatatest"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/pkg/pdatautil"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -628,6 +632,10 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/receiver/googlecloudspannerreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/haproxyreceiver"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"

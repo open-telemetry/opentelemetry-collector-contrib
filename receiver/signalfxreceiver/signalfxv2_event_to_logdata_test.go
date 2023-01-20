@@ -25,7 +25,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 )
 
 func TestSignalFxV2EventsToLogData(t *testing.T) {
@@ -101,7 +101,7 @@ func TestSignalFxV2EventsToLogData(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			lrs := plog.NewLogRecordSlice()
 			signalFxV2EventsToLogRecords(tt.sfxEvents, lrs)
-			assert.NoError(t, comparetest.CompareLogRecordSlices(tt.expected, lrs))
+			assert.NoError(t, plogtest.CompareLogRecordSlices(tt.expected, lrs))
 		})
 	}
 }
