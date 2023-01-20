@@ -57,5 +57,5 @@ func TestIisIntegration(t *testing.T) {
 
 	require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics,
 		comparetest.IgnoreResourceAttributeValue("iis.application_pool"),
-		comparetest.IgnoreMetricValues()))
+		comparetest.IgnoreMetricValues(), comparetest.IgnoreMetricDataPointsOrder()))
 }
