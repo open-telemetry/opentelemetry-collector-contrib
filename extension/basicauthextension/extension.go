@@ -221,7 +221,7 @@ type basicAuthRoundTripper struct {
 
 func (b *basicAuthRoundTripper) RoundTrip(request *http.Request) (*http.Response, error) {
 	newRequest := request.Clone(request.Context())
-	newRequest.SetBasicAuth(b.authData.Username, b.authData.Password)
+	newRequest.SetBasicAuth(b.authData.Username, string(b.authData.Password))
 	return b.base.RoundTrip(newRequest)
 }
 
@@ -239,7 +239,7 @@ func (ba *basicAuth) perRPCCredentials() (creds.PerRPCCredentials, error) {
 	if strings.Contains(ba.clientAuth.Username, ":") {
 		return nil, errInvalidFormat
 	}
-	encoded := base64.StdEncoding.EncodeToString([]byte(ba.clientAuth.Username + ":" + ba.clientAuth.Password))
+	encoded := base64.StdEncoding.EncodeToString([]byte(ba.clientAuth.Username + ":" + string(ba.clientAuth.Password)))
 	return &perRPCAuth{
 		metadata: map[string]string{
 			"authorization": fmt.Sprintf("Basic %s", encoded),

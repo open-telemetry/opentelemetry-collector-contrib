@@ -4,6 +4,7 @@ name: snowflakereceiver
 resource_attributes:
   snowflake.account.name:
     description: Snowflake account being used by receiver.
+    enabled: true
     type: string
 
 attributes:

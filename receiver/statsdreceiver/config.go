@@ -34,7 +34,7 @@ type Config struct {
 	TimerHistogramMapping []protocol.TimerHistogramMapping `mapstructure:"timer_histogram_mapping"`
 }
 
-func (c *Config) validate() error {
+func (c *Config) Validate() error {
 	var errs error
 
 	if c.AggregationInterval <= 0 {

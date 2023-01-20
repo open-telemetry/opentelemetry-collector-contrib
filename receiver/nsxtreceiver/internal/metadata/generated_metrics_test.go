@@ -96,23 +96,37 @@ func TestMetricsBuilder(t *testing.T) {
 			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
 			rm := metrics.ResourceMetrics().At(0)
 			attrCount := 0
-			attrCount++
+			enabledAttrCount := 0
 			attrVal, ok := rm.Resource().Attributes().Get("device.id")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
 			attrCount++
+			assert.Equal(t, mb.resourceAttributesSettings.DeviceID.Enabled, ok)
+			if mb.resourceAttributesSettings.DeviceID.Enabled {
+				enabledAttrCount++
+				assert.EqualValues(t, "attr-val", attrVal.Str())
+			}
 			attrVal, ok = rm.Resource().Attributes().Get("nsxt.node.id")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
 			attrCount++
+			assert.Equal(t, mb.resourceAttributesSettings.NsxtNodeID.Enabled, ok)
+			if mb.resourceAttributesSettings.NsxtNodeID.Enabled {
+				enabledAttrCount++
+				assert.EqualValues(t, "attr-val", attrVal.Str())
+			}
 			attrVal, ok = rm.Resource().Attributes().Get("nsxt.node.name")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
 			attrCount++
+			assert.Equal(t, mb.resourceAttributesSettings.NsxtNodeName.Enabled, ok)
+			if mb.resourceAttributesSettings.NsxtNodeName.Enabled {
+				enabledAttrCount++
+				assert.EqualValues(t, "attr-val", attrVal.Str())
+			}
 			attrVal, ok = rm.Resource().Attributes().Get("nsxt.node.type")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			assert.Equal(t, attrCount, rm.Resource().Attributes().Len())
+			attrCount++
+			assert.Equal(t, mb.resourceAttributesSettings.NsxtNodeType.Enabled, ok)
+			if mb.resourceAttributesSettings.NsxtNodeType.Enabled {
+				enabledAttrCount++
+				assert.EqualValues(t, "attr-val", attrVal.Str())
+			}
+			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
+			assert.Equal(t, attrCount, 4)
 
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()

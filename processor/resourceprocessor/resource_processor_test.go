@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processortest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
@@ -110,8 +111,7 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 			require.NoError(t, err)
 			traces := ttn.AllTraces()
 			require.Len(t, traces, 1)
-			traces[0].ResourceSpans().At(0).Resource().Attributes().Sort()
-			assert.EqualValues(t, wantTraceData, traces[0])
+			assert.NoError(t, comparetest.CompareTraces(wantTraceData, traces[0]))
 
 			// Test metrics consumer
 			tmn := new(consumertest.MetricsSink)
@@ -125,8 +125,7 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 			require.NoError(t, err)
 			metrics := tmn.AllMetrics()
 			require.Len(t, metrics, 1)
-			metrics[0].ResourceMetrics().At(0).Resource().Attributes().Sort()
-			assert.EqualValues(t, wantMetricData, metrics[0])
+			assert.NoError(t, comparetest.CompareMetrics(wantMetricData, metrics[0]))
 
 			// Test logs consumer
 			tln := new(consumertest.LogsSink)
@@ -140,8 +139,7 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 			require.NoError(t, err)
 			logs := tln.AllLogs()
 			require.Len(t, logs, 1)
-			logs[0].ResourceLogs().At(0).Resource().Attributes().Sort()
-			assert.EqualValues(t, wantLogData, logs[0])
+			assert.NoError(t, comparetest.CompareLogs(wantLogData, logs[0]))
 		})
 	}
 }
@@ -155,7 +153,6 @@ func generateTraceData(attributes map[string]string) ptrace.Traces {
 	for k, v := range attributes {
 		resource.Attributes().PutStr(k, v)
 	}
-	resource.Attributes().Sort()
 	return td
 }
 
@@ -168,7 +165,6 @@ func generateMetricData(attributes map[string]string) pmetric.Metrics {
 	for k, v := range attributes {
 		resource.Attributes().PutStr(k, v)
 	}
-	resource.Attributes().Sort()
 	return md
 }
 
@@ -181,6 +177,5 @@ func generateLogData(attributes map[string]string) plog.Logs {
 	for k, v := range attributes {
 		resource.Attributes().PutStr(k, v)
 	}
-	resource.Attributes().Sort()
 	return ld
 }

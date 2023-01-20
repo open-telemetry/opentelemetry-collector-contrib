@@ -9,6 +9,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.69.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver v0.69.0
 	github.com/stretchr/testify v1.8.1
+	github.com/tilinna/clock v1.1.0
 	go.opentelemetry.io/collector v0.69.2-0.20230112233839-f2a0133bf677
 	go.opentelemetry.io/collector/component v0.69.2-0.20230112233839-f2a0133bf677
 	go.opentelemetry.io/collector/consumer v0.69.2-0.20230112233839-f2a0133bf677
@@ -18,7 +19,6 @@ require (
 	go.opentelemetry.io/collector/processor/batchprocessor v0.69.2-0.20230112233839-f2a0133bf677
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.69.2-0.20230112233839-f2a0133bf677
 	go.opentelemetry.io/collector/semconv v0.69.2-0.20230112233839-f2a0133bf677
-	go.uber.org/multierr v1.9.0
 	go.uber.org/zap v1.24.0
 	google.golang.org/grpc v1.52.0
 )
@@ -92,6 +92,7 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v0.34.0 // indirect
 	go.opentelemetry.io/otel/trace v1.11.2 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
+	go.uber.org/multierr v1.9.0 // indirect
 	golang.org/x/net v0.5.0 // indirect
 	golang.org/x/sys v0.4.0 // indirect
 	golang.org/x/text v0.6.0 // indirect

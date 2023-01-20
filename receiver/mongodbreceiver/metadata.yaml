@@ -3,6 +3,7 @@ name: mongodbreceiver
 resource_attributes:
   database:
     description: The name of a database.
+    enabled: true
     type: string
 
 attributes:

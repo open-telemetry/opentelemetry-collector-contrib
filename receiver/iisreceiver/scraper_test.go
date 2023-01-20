@@ -59,7 +59,7 @@ func TestScrape(t *testing.T) {
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 
-	require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics))
+	require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics, comparetest.IgnoreMetricDataPointsOrder()))
 }
 
 func TestScrapeFailure(t *testing.T) {

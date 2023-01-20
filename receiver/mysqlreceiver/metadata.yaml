@@ -3,6 +3,7 @@ name: mysqlreceiver
 resource_attributes:
   mysql.instance.endpoint:
     description: Endpoint of the MySQL instance.
+    enabled: true
     type: string
 
 attributes:

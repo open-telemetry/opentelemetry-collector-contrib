@@ -68,3 +68,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourceto
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus => ../../pkg/translator/opencensus
 
 retract v0.65.0
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest => ../../internal/comparetest

@@ -172,6 +172,38 @@ func DefaultMetricsSettings() MetricsSettings {
 	}
 }
 
+// ResourceAttributeSettings provides common settings for a particular metric.
+type ResourceAttributeSettings struct {
+	Enabled bool `mapstructure:"enabled"`
+
+	enabledProvidedByUser bool
+}
+
+func (ras *ResourceAttributeSettings) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(ras, confmap.WithErrorUnused())
+	if err != nil {
+		return err
+	}
+	ras.enabledProvidedByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ResourceAttributesSettings provides settings for redisreceiver metrics.
+type ResourceAttributesSettings struct {
+	RedisVersion ResourceAttributeSettings `mapstructure:"redis.version"`
+}
+
+func DefaultResourceAttributesSettings() ResourceAttributesSettings {
+	return ResourceAttributesSettings{
+		RedisVersion: ResourceAttributeSettings{
+			Enabled: true,
+		},
+	}
+}
+
 // AttributeRole specifies the a value role attribute.
 type AttributeRole int
 
@@ -1915,6 +1947,7 @@ type MetricsBuilder struct {
 	resourceCapacity                             int                 // maximum observed number of resource attributes.
 	metricsBuffer                                pmetric.Metrics     // accumulates metrics data before emitting.
 	buildInfo                                    component.BuildInfo // contains version information
+	resourceAttributesSettings                   ResourceAttributesSettings
 	metricRedisClientsBlocked                    metricRedisClientsBlocked
 	metricRedisClientsConnected                  metricRedisClientsConnected
 	metricRedisClientsMaxInputBuffer             metricRedisClientsMaxInputBuffer
@@ -1960,11 +1993,19 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
+// WithResourceAttributesSettings sets ResourceAttributeSettings on the metrics builder.
+func WithResourceAttributesSettings(ras ResourceAttributesSettings) metricBuilderOption {
+	return func(mb *MetricsBuilder) {
+		mb.resourceAttributesSettings = ras
+	}
+}
+
 func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                                    pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                                pmetric.NewMetrics(),
 		buildInfo:                                    settings.BuildInfo,
+		resourceAttributesSettings:                   DefaultResourceAttributesSettings(),
 		metricRedisClientsBlocked:                    newMetricRedisClientsBlocked(ms.RedisClientsBlocked),
 		metricRedisClientsConnected:                  newMetricRedisClientsConnected(ms.RedisClientsConnected),
 		metricRedisClientsMaxInputBuffer:             newMetricRedisClientsMaxInputBuffer(ms.RedisClientsMaxInputBuffer),
@@ -2016,19 +2057,21 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(pmetric.ResourceMetrics)
+type ResourceMetricsOption func(ResourceAttributesSettings, pmetric.ResourceMetrics)
 
 // WithRedisVersion sets provided value as "redis.version" attribute for current resource.
 func WithRedisVersion(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("redis.version", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.RedisVersion.Enabled {
+			rm.Resource().Attributes().PutStr("redis.version", val)
+		}
 	}
 }
 
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
@@ -2090,8 +2133,9 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricRedisRole.emit(ils.Metrics())
 	mb.metricRedisSlavesConnected.emit(ils.Metrics())
 	mb.metricRedisUptime.emit(ils.Metrics())
+
 	for _, op := range rmo {
-		op(rm)
+		op(mb.resourceAttributesSettings, rm)
 	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)

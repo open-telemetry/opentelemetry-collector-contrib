@@ -165,25 +165,25 @@ func createAttributes(resource pcommon.Resource, attributes pcommon.Map, externa
 
 	// Ensure attributes are sorted by key for consistent merging of keys which
 	// collide when sanitized.
-	// Sorting is done on a cloned map, as the original attributes map can read at
-	// the same time in different places.
-	cloneAttributes := pcommon.NewMap()
-	attributes.CopyTo(cloneAttributes)
-	cloneAttributes.Sort()
-	cloneAttributes.Range(func(key string, value pcommon.Value) bool {
-		var finalKey = prometheustranslator.NormalizeLabel(key)
+	labels := make([]prompb.Label, 0, attributes.Len())
+	attributes.Range(func(key string, value pcommon.Value) bool {
+		labels = append(labels, prompb.Label{Name: key, Value: value.AsString()})
+		return true
+	})
+	sort.Stable(ByLabelName(labels))
+
+	for _, label := range labels {
+		var finalKey = prometheustranslator.NormalizeLabel(label.Name)
 		if existingLabel, alreadyExists := l[finalKey]; alreadyExists {
-			existingLabel.Value = existingLabel.Value + ";" + value.AsString()
+			existingLabel.Value = existingLabel.Value + ";" + label.Value
 			l[finalKey] = existingLabel
 		} else {
 			l[finalKey] = prompb.Label{
 				Name:  finalKey,
-				Value: value.AsString(),
+				Value: label.Value,
 			}
 		}
-
-		return true
-	})
+	}
 
 	// Map service.name + service.namespace to job
 	if serviceName, ok := resource.Attributes().Get(conventions.AttributeServiceName); ok {

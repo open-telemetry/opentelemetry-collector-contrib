@@ -89,15 +89,9 @@
             "resource": {
                 "attributes": [
                     {
-                        "key": "testKey3",
+                        "key": "host.name",
                         "value": {
-                            "stringValue": "teststringvalue3"
-                        }
-                    },
-                    {
-                        "key": "testKey4",
-                        "value": {
-                            "stringValue": "teststringvalue4"
+                            "stringValue": "host2"
                         }
                     }
                 ]
