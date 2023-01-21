@@ -216,36 +216,11 @@ func toHumioAttributes(attrMaps ...pcommon.Map) map[string]interface{} {
 	attr := make(map[string]interface{})
 	for _, attrMap := range attrMaps {
 		attrMap.Range(func(k string, v pcommon.Value) bool {
-			attr[k] = toHumioAttributeValue(v)
+			attr[k] = v.AsRaw()
 			return true
 		})
 	}
 	return attr
-}
-
-func toHumioAttributeValue(rawVal pcommon.Value) interface{} {
-	switch rawVal.Type() {
-	case pcommon.ValueTypeStr:
-		return rawVal.Str()
-	case pcommon.ValueTypeInt:
-		return rawVal.Int()
-	case pcommon.ValueTypeDouble:
-		return rawVal.Double()
-	case pcommon.ValueTypeBool:
-		return rawVal.Bool()
-	case pcommon.ValueTypeMap:
-		return toHumioAttributes(rawVal.Map())
-	case pcommon.ValueTypeSlice:
-		arrVal := rawVal.Slice()
-		arr := make([]interface{}, 0, arrVal.Len())
-		for i := 0; i < arrVal.Len(); i++ {
-			arr = append(arr, toHumioAttributeValue(arrVal.At(i)))
-		}
-		return arr
-	}
-
-	// Also handles AttributeValueNULL
-	return nil
 }
 
 func tagFromSpan(evt *HumioStructuredEvent, strategy Tagger) string {
