@@ -102,7 +102,7 @@ func evtRender(context uintptr, fragment uintptr, flags uint32, bufferSize uint3
 	propertyCount := new(uint32)
 	_, _, err := renderProc.Call(context, fragment, uintptr(flags), uintptr(bufferSize), uintptr(unsafe.Pointer(buffer)), uintptr(unsafe.Pointer(bufferUsed)), uintptr(unsafe.Pointer(propertyCount)))
 	if err != ErrorSuccess {
-		return nil, nil, err
+		return bufferUsed, propertyCount, err
 	}
 
 	return bufferUsed, propertyCount, nil
