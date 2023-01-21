@@ -16,6 +16,7 @@ package jmxreceiver // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"context"
+	"os"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -47,6 +48,7 @@ func createDefaultConfig() component.Config {
 				Timeout: 5 * time.Second,
 			},
 		},
+		TempFolder: os.TempDir(),
 	}
 }
 

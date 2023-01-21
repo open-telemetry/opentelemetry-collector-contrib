@@ -71,6 +71,8 @@ type Config struct {
 	// Log level used by the JMX metric gatherer. Should be one of:
 	// `"trace"`, `"debug"`, `"info"`, `"warn"`, `"error"`, `"off"`
 	LogLevel string `mapstructure:"log_level"`
+	// The temporary folder used to store configuration for the JVM (uses the OS temporary folder by default).
+	TempFolder string `mapstructure:"temp_folder"`
 }
 
 // We don't embed the existing OTLP Exporter config as most fields are unsupported

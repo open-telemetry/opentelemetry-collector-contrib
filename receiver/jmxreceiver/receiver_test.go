@@ -16,9 +16,12 @@ package jmxreceiver
 
 import (
 	"context"
+	"os"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -30,11 +33,14 @@ import (
 
 func TestReceiver(t *testing.T) {
 	params := receivertest.NewNopCreateSettings()
+	tempDir := t.TempDir()
+
 	config := &Config{
 		Endpoint: "service:jmx:protocol:sap",
 		OTLPExporterConfig: otlpExporterConfig{
 			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
+		TempFolder: tempDir,
 	}
 
 	receiver := newJMXMetricReceiver(params, config, consumertest.NewNop())
@@ -43,6 +49,10 @@ func TestReceiver(t *testing.T) {
 	require.Same(t, config, receiver.config)
 
 	require.Nil(t, receiver.Start(context.Background(), componenttest.NewNopHost()))
+	fileinfo, err := os.Lstat(receiver.configFile)
+	assert.NoError(t, err)
+	assert.Greater(t, fileinfo.Size(), int64(0))
+	assert.True(t, strings.HasPrefix(receiver.configFile, tempDir))
 	require.Nil(t, receiver.Shutdown(context.Background()))
 }
 
