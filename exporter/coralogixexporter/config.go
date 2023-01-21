@@ -88,10 +88,10 @@ func (c *Config) Validate() error {
 
 	// check if headers exists
 	if len(c.GRPCClientSettings.Headers) == 0 {
-		c.GRPCClientSettings.Headers = map[string]string{}
+		c.GRPCClientSettings.Headers = make(map[string]configopaque.String)
 	}
-	c.GRPCClientSettings.Headers["ACCESS_TOKEN"] = string(c.PrivateKey)
-	c.GRPCClientSettings.Headers["appName"] = c.AppName
+	c.GRPCClientSettings.Headers["ACCESS_TOKEN"] = c.PrivateKey
+	c.GRPCClientSettings.Headers["appName"] = configopaque.String(c.AppName)
 	return nil
 }
 

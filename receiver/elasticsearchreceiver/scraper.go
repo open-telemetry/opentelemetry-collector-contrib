@@ -51,19 +51,19 @@ const (
 )
 
 func init() {
-	featuregate.GetRegistry().MustRegisterID(
+	featuregate.GlobalRegistry().MustRegisterID(
 		emitClusterHealthDetailedShardMetricsID,
 		featuregate.StageBeta,
 		featuregate.WithRegisterDescription("When enabled, the elasticsearch.cluster.shards metric will be emitted with two more datapoints."),
 		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/14635"),
 	)
-	featuregate.GetRegistry().MustRegisterID(
+	featuregate.GlobalRegistry().MustRegisterID(
 		emitAllIndexOperationMetricsID,
 		featuregate.StageBeta,
 		featuregate.WithRegisterDescription("When enabled, the elasticsearch.index.operation.* metrics will be emitted with all possible datapoints."),
 		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/14635"),
 	)
-	featuregate.GetRegistry().MustRegisterID(
+	featuregate.GlobalRegistry().MustRegisterID(
 		emitNodeVersionAttrID,
 		featuregate.StageAlpha,
 		featuregate.WithRegisterDescription("When enabled, all node metrics will be enriched with the node version resource attribute."),
@@ -95,9 +95,9 @@ func newElasticSearchScraper(
 		settings:                              settings.TelemetrySettings,
 		cfg:                                   cfg,
 		mb:                                    metadata.NewMetricsBuilder(cfg.Metrics, settings),
-		emitClusterHealthDetailedShardMetrics: featuregate.GetRegistry().IsEnabled(emitClusterHealthDetailedShardMetricsID),
-		emitAllIndexOperationMetrics:          featuregate.GetRegistry().IsEnabled(emitAllIndexOperationMetricsID),
-		emitNodeVersionAttr:                   featuregate.GetRegistry().IsEnabled(emitNodeVersionAttrID),
+		emitClusterHealthDetailedShardMetrics: featuregate.GlobalRegistry().IsEnabled(emitClusterHealthDetailedShardMetricsID),
+		emitAllIndexOperationMetrics:          featuregate.GlobalRegistry().IsEnabled(emitAllIndexOperationMetricsID),
+		emitNodeVersionAttr:                   featuregate.GlobalRegistry().IsEnabled(emitNodeVersionAttrID),
 	}
 
 	if !e.emitClusterHealthDetailedShardMetrics {

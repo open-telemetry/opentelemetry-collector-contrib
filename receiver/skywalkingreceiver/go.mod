@@ -6,12 +6,12 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/mux v1.8.0
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.69.2-0.20230112233839-f2a0133bf677
-	go.opentelemetry.io/collector/component v0.69.2-0.20230112233839-f2a0133bf677
-	go.opentelemetry.io/collector/confmap v0.69.2-0.20230112233839-f2a0133bf677
-	go.opentelemetry.io/collector/consumer v0.69.2-0.20230112233839-f2a0133bf677
-	go.opentelemetry.io/collector/pdata v1.0.0-rc3.0.20230112233839-f2a0133bf677
-	go.opentelemetry.io/collector/semconv v0.69.2-0.20230112233839-f2a0133bf677
+	go.opentelemetry.io/collector v0.69.2-0.20230120182939-d97f1eb5bf86
+	go.opentelemetry.io/collector/component v0.69.2-0.20230120182939-d97f1eb5bf86
+	go.opentelemetry.io/collector/confmap v0.69.2-0.20230120182939-d97f1eb5bf86
+	go.opentelemetry.io/collector/consumer v0.69.2-0.20230120182939-d97f1eb5bf86
+	go.opentelemetry.io/collector/pdata v1.0.0-rc3.0.20230120182939-d97f1eb5bf86
+	go.opentelemetry.io/collector/semconv v0.69.2-0.20230120182939-d97f1eb5bf86
 	go.uber.org/multierr v1.9.0
 	google.golang.org/grpc v1.52.0
 	google.golang.org/protobuf v1.28.1
@@ -40,7 +40,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/cors v1.8.3 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/featuregate v0.69.2-0.20230112233839-f2a0133bf677 // indirect
+	go.opentelemetry.io/collector/featuregate v0.69.2-0.20230120182939-d97f1eb5bf86 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.37.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.37.0 // indirect
 	go.opentelemetry.io/otel v1.11.2 // indirect
