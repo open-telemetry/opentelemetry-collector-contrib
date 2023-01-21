@@ -28,7 +28,7 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/ptracetest"
 )
 
 type perSpanProperties struct {
@@ -118,7 +118,7 @@ func TestTranslation(t *testing.T) {
 					testCase+": one segment should translate to 1 ResourceSpans")
 
 				actualRs := actualTraces.ResourceSpans().At(0)
-				assert.NoError(t, comparetest.CompareResourceSpans(expectedRs, actualRs))
+				assert.NoError(t, ptracetest.CompareResourceSpans(expectedRs, actualRs))
 			},
 		},
 		{
@@ -518,7 +518,7 @@ func TestTranslation(t *testing.T) {
 					"one segment should translate to 1 ResourceSpans")
 
 				actualRs := actualTraces.ResourceSpans().At(0)
-				assert.NoError(t, comparetest.CompareResourceSpans(expectedRs, actualRs))
+				assert.NoError(t, ptracetest.CompareResourceSpans(expectedRs, actualRs))
 			},
 		},
 		{
@@ -553,7 +553,7 @@ func TestTranslation(t *testing.T) {
 					testCase+": one segment should translate to 1 ResourceSpans")
 
 				actualRs := actualTraces.ResourceSpans().At(0)
-				assert.NoError(t, comparetest.CompareResourceSpans(expectedRs, actualRs))
+				assert.NoError(t, ptracetest.CompareResourceSpans(expectedRs, actualRs))
 			},
 		},
 		{
@@ -602,7 +602,7 @@ func TestTranslation(t *testing.T) {
 					testCase+": one segment should translate to 1 ResourceSpans")
 
 				actualRs := actualTraces.ResourceSpans().At(0)
-				assert.NoError(t, comparetest.CompareResourceSpans(expectedRs, actualRs))
+				assert.NoError(t, ptracetest.CompareResourceSpans(expectedRs, actualRs))
 			},
 		},
 		{
@@ -637,7 +637,7 @@ func TestTranslation(t *testing.T) {
 					testCase+": one segment should translate to 1 ResourceSpans")
 
 				actualRs := actualTraces.ResourceSpans().At(0)
-				assert.NoError(t, comparetest.CompareResourceSpans(expectedRs, actualRs))
+				assert.NoError(t, ptracetest.CompareResourceSpans(expectedRs, actualRs))
 			},
 		},
 		{
@@ -698,7 +698,7 @@ func TestTranslation(t *testing.T) {
 					testCase+": one segment should translate to 1 ResourceSpans")
 
 				actualRs := actualTraces.ResourceSpans().At(0)
-				assert.NoError(t, comparetest.CompareResourceSpans(expectedRs, actualRs))
+				assert.NoError(t, ptracetest.CompareResourceSpans(expectedRs, actualRs))
 			},
 		},
 		{
@@ -742,7 +742,7 @@ func TestTranslation(t *testing.T) {
 					testCase+": one segment should translate to 1 ResourceSpans")
 
 				actualRs := actualTraces.ResourceSpans().At(0)
-				assert.NoError(t, comparetest.CompareResourceSpans(expectedRs, actualRs))
+				assert.NoError(t, ptracetest.CompareResourceSpans(expectedRs, actualRs))
 			},
 		},
 		{
@@ -786,7 +786,7 @@ func TestTranslation(t *testing.T) {
 					testCase+": one segment should translate to 1 ResourceSpans")
 
 				actualRs := actualTraces.ResourceSpans().At(0)
-				assert.NoError(t, comparetest.CompareResourceSpans(expectedRs, actualRs))
+				assert.NoError(t, ptracetest.CompareResourceSpans(expectedRs, actualRs))
 			},
 		},
 		{

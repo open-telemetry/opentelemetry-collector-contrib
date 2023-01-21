@@ -26,9 +26,11 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processortest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/ptracetest"
 )
 
 var (
@@ -111,7 +113,7 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 			require.NoError(t, err)
 			traces := ttn.AllTraces()
 			require.Len(t, traces, 1)
-			assert.NoError(t, comparetest.CompareTraces(wantTraceData, traces[0]))
+			assert.NoError(t, ptracetest.CompareTraces(wantTraceData, traces[0]))
 
 			// Test metrics consumer
 			tmn := new(consumertest.MetricsSink)
@@ -125,7 +127,7 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 			require.NoError(t, err)
 			metrics := tmn.AllMetrics()
 			require.Len(t, metrics, 1)
-			assert.NoError(t, comparetest.CompareMetrics(wantMetricData, metrics[0]))
+			assert.NoError(t, pmetrictest.CompareMetrics(wantMetricData, metrics[0]))
 
 			// Test logs consumer
 			tln := new(consumertest.LogsSink)
@@ -139,7 +141,7 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 			require.NoError(t, err)
 			logs := tln.AllLogs()
 			require.Len(t, logs, 1)
-			assert.NoError(t, comparetest.CompareLogs(wantLogData, logs[0]))
+			assert.NoError(t, plogtest.CompareLogs(wantLogData, logs[0]))
 		})
 	}
 }

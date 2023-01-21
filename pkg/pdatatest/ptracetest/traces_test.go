@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package comparetest
+package ptracetest
 
 import (
 	"errors"
@@ -22,58 +22,59 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/multierr"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/internal"
 )
 
 func TestCompareTraces(t *testing.T) {
 	tcs := []struct {
 		name           string
-		compareOptions []TracesCompareOption
-		withoutOptions expectation
-		withOptions    expectation
+		compareOptions []CompareTracesOption
+		withoutOptions internal.Expectation
+		withOptions    internal.Expectation
 	}{
 		{
 			name: "equal",
 		},
 		{
 			name: "ignore-one-resource-attribute",
-			compareOptions: []TracesCompareOption{
+			compareOptions: []CompareTracesOption{
 				IgnoreResourceAttributeValue("host.name"),
 			},
-			withoutOptions: expectation{
-				err: multierr.Combine(
+			withoutOptions: internal.Expectation{
+				Err: multierr.Combine(
 					errors.New("missing expected resource with attributes: map[host.name:different-node1]"),
 					errors.New("extra resource with attributes: map[host.name:host1]"),
 				),
-				reason: "An unpredictable resource attribute will cause failures if not ignored.",
+				Reason: "An unpredictable resource attribute will cause failures if not ignored.",
 			},
-			withOptions: expectation{
-				err:    nil,
-				reason: "The unpredictable resource attribute was ignored on each resource that carried it.",
+			withOptions: internal.Expectation{
+				Err:    nil,
+				Reason: "The unpredictable resource attribute was ignored on each resource that carried it.",
 			},
 		},
 		{
 			name: "ignore-resource-order",
-			compareOptions: []TracesCompareOption{
-				IgnoreResourceOrder(),
+			compareOptions: []CompareTracesOption{
+				IgnoreResourceSpansOrder(),
 			},
-			withoutOptions: expectation{
-				err: multierr.Combine(
+			withoutOptions: internal.Expectation{
+				Err: multierr.Combine(
 					errors.New("ResourceTraces with attributes map[host.name:host1] expected at index 0, found a at index 1"),
 					errors.New("ResourceTraces with attributes map[host.name:host2] expected at index 1, found a at index 0"),
 				),
-				reason: "Resource order mismatch will cause failures if not ignored.",
+				Reason: "Resource order mismatch will cause failures if not ignored.",
 			},
-			withOptions: expectation{
-				err:    nil,
-				reason: "Ignored resource order mismatch should not cause a failure.",
+			withOptions: internal.Expectation{
+				Err:    nil,
+				Reason: "Ignored resource order mismatch should not cause a failure.",
 			},
 		},
 	}
 
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			dir := filepath.Join("testdata", "traces", tc.name)
+			dir := filepath.Join("testdata", tc.name)
 
 			expected, err := golden.ReadTraces(filepath.Join(dir, "expected.json"))
 			require.NoError(t, err)
@@ -82,14 +83,14 @@ func TestCompareTraces(t *testing.T) {
 			require.NoError(t, err)
 
 			err = CompareTraces(expected, actual)
-			tc.withoutOptions.validate(t, err)
+			tc.withoutOptions.Validate(t, err)
 
 			if tc.compareOptions == nil {
 				return
 			}
 
 			err = CompareTraces(expected, actual, tc.compareOptions...)
-			tc.withOptions.validate(t, err)
+			tc.withOptions.Validate(t, err)
 		})
 	}
 }
