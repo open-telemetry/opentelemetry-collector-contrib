@@ -34,8 +34,8 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver/internal/metadata"
 )
 
@@ -205,7 +205,7 @@ func TestScrapeV2(t *testing.T) {
 			expectedMetrics, err := golden.ReadMetrics(tc.expectedMetricsFile)
 
 			assert.NoError(t, err)
-			assert.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics, comparetest.IgnoreResourceOrder()))
+			assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceMetricsOrder()))
 		})
 	}
 }

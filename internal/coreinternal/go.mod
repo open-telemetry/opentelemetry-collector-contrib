@@ -3,7 +3,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/corein
 go 1.18
 
 require (
-	github.com/cespare/xxhash/v2 v2.2.0
 	github.com/stretchr/testify v1.8.1
 	go.opentelemetry.io/collector v0.69.2-0.20230120182939-d97f1eb5bf86
 	go.opentelemetry.io/collector/pdata v1.0.0-rc3.0.20230120182939-d97f1eb5bf86

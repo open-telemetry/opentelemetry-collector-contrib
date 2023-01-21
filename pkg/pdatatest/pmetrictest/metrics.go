@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package comparetest // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
+package pmetrictest // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 
 import (
 	"fmt"
@@ -22,7 +22,7 @@ import (
 	"go.uber.org/multierr"
 )
 
-func CompareMetrics(expected, actual pmetric.Metrics, options ...MetricsCompareOption) error {
+func CompareMetrics(expected, actual pmetric.Metrics, options ...CompareMetricsOption) error {
 	exp, act := pmetric.NewMetrics(), pmetric.NewMetrics()
 	expected.CopyTo(exp)
 	actual.CopyTo(act)

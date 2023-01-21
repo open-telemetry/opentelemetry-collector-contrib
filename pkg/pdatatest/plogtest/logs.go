@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package comparetest // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
+package plogtest // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 
 import (
 	"fmt"
@@ -24,7 +24,7 @@ import (
 
 // CompareLogs compares each part of two given Logs and returns
 // an error if they don't match. The error describes what didn't match.
-func CompareLogs(expected, actual plog.Logs, options ...LogsCompareOption) error {
+func CompareLogs(expected, actual plog.Logs, options ...CompareLogsOption) error {
 	exp, act := plog.NewLogs(), plog.NewLogs()
 	expected.CopyTo(exp)
 	actual.CopyTo(act)

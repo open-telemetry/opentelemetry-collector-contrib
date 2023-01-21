@@ -27,8 +27,8 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver/internal/metadata"
 )
@@ -56,7 +56,7 @@ func TestScrape(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(goldenScrapePath)
 		require.NoError(t, err)
 
-		err = comparetest.CompareMetrics(expectedMetrics, scrapeData)
+		err = pmetrictest.CompareMetrics(expectedMetrics, scrapeData)
 		require.NoError(t, err)
 
 		err = scraper.shutdown(context.Background())
@@ -91,7 +91,7 @@ func TestScrape(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(partialScrapePath)
 		require.NoError(t, err)
 
-		err = comparetest.CompareMetrics(expectedMetrics, scrapeData)
+		err = pmetrictest.CompareMetrics(expectedMetrics, scrapeData)
 		require.NoError(t, err)
 
 		err = scraper.shutdown(context.Background())

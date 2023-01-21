@@ -102,7 +102,6 @@ internal/docker/                                         @open-telemetry/collect
 internal/k8sconfig/                                      @open-telemetry/collector-contrib-approvers @pmcollins @dmitryax
 internal/kubelet/                                        @open-telemetry/collector-contrib-approvers @dmitryax
 internal/metadataproviders/                              @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole
-internal/comparetest/                                    @open-telemetry/collector-contrib-approvers @djaglowski
 internal/splunk/                                         @open-telemetry/collector-contrib-approvers @pmcollins @dmitryax
 internal/tools/                                          @open-telemetry/collector-contrib-approvers
 internal/coreinternal/                                   @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
@@ -110,9 +109,11 @@ internal/filter/                                         @open-telemetry/collect
 internal/sharedcomponent/                                @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 
 pkg/batchpersignal/                                      @open-telemetry/collector-contrib-approvers @jpkrohling
+pkg/ottl/                                                @open-telemetry/collector-contrib-approvers @TylerHelmuth @kentquirk @bogdandrutu @evan-bradley
+pkg/pdatatest/                                           @open-telemetry/collector-contrib-approvers @djaglowski
+pkg/pdatautil/                                           @open-telemetry/collector-contrib-approvers @dmitryax
 pkg/resourcetotelemetry/                                 @open-telemetry/collector-contrib-approvers @mx-psi
 pkg/stanza/                                              @open-telemetry/collector-contrib-approvers @djaglowski
-pkg/ottl/                                                @open-telemetry/collector-contrib-approvers @TylerHelmuth @kentquirk @bogdandrutu @evan-bradley
 pkg/translator/jaeger/                                   @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 pkg/translator/loki/                                     @open-telemetry/collector-contrib-approvers @gouthamve @jpkrohling @kovrus @mar4uk
 pkg/translator/opencensus/                               @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers

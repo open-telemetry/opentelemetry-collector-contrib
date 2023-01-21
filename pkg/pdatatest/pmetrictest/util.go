@@ -12,23 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package comparetest // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
+package pmetrictest // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 
 import (
-	"testing"
-
-	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-type expectation struct {
-	err    error
-	reason string
-}
-
-func (e expectation) validate(t *testing.T, err error) {
-	if e.err == nil {
-		require.NoError(t, err, e.reason)
-		return
+func metricsByName(metricSlice pmetric.MetricSlice) map[string]pmetric.Metric {
+	byName := make(map[string]pmetric.Metric, metricSlice.Len())
+	for i := 0; i < metricSlice.Len(); i++ {
+		a := metricSlice.At(i)
+		byName[a.Name()] = a
 	}
-	require.Equal(t, e.err, err, e.reason)
+	return byName
 }

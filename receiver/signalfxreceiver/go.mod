@@ -6,8 +6,8 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter v0.69.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.69.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest v0.69.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.69.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx v0.69.0
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3
 	github.com/stretchr/testify v1.8.1
@@ -51,6 +51,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.69.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.69.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.69.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.0.0-00010101000000-000000000000 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
@@ -84,7 +85,9 @@ require (
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter => ../../exporter/signalfxexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest => ../../internal/comparetest
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
 

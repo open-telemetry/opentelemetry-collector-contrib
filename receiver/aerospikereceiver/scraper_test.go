@@ -29,7 +29,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver/mocks"
 )
@@ -153,8 +153,8 @@ func TestScrape_CollectClusterMetrics(t *testing.T) {
 	require.EqualError(t, err, "failed to parse int64 for AerospikeNamespaceMemoryUsage, value was badval: strconv.ParseInt: parsing \"badval\": invalid syntax")
 
 	expectedMetrics := expectedMB.Emit()
-	require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics, comparetest.IgnoreResourceOrder(),
-		comparetest.IgnoreMetricDataPointsOrder()))
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricDataPointsOrder()))
 
 	require.NoError(t, receiver.shutdown(context.Background()))
 

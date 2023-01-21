@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/pdatautil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
 type tracesGroup struct {

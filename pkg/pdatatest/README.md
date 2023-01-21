@@ -1,4 +1,4 @@
-# comparetest
+# pdatatest
 
 This module provides a mechanism for capturing and comparing expected metric and log results.
 
@@ -23,7 +23,7 @@ func TestScraper(t *testing.T) {
   expectedMetrics, err := golden.ReadMetrics(expectedFile)
   require.NoError(t, err)
 
-  require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics))
+  require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics))
 }
 ```
 
@@ -49,7 +49,7 @@ func TestLogsSink(t *testing.T) {
   logs := sink.AllLogs()[0]
   expected, err := readLogs(filepath.Join("testdata", "logs", "expected.json"))
   require.NoError(t, err)
-  require.NoError(t, comparetest.CompareLogs(expected, logs))
+  require.NoError(t, pmetrictest.CompareLogs(expected, logs))
 }
 ```
 
@@ -89,6 +89,6 @@ func TestScraper(t *testing.T) {
   expectedMetrics, err := golden.ReadMetrics(expectedFile)
   require.NoError(t, err)
 
-  require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics))
+  require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics))
 }
 ```

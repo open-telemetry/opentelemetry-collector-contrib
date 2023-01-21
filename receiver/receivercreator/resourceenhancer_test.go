@@ -25,7 +25,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
 func Test_newResourceEnhancer(t *testing.T) {
@@ -252,7 +252,7 @@ func Test_resourceEnhancer_ConsumeMetrics(t *testing.T) {
 			metrics := tt.fields.nextConsumer.AllMetrics()
 
 			require.Len(t, metrics, 1)
-			require.NoError(t, comparetest.CompareMetrics(tt.want, metrics[0]))
+			require.NoError(t, pmetrictest.CompareMetrics(tt.want, metrics[0]))
 		})
 	}
 }

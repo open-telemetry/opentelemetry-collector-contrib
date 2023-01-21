@@ -23,7 +23,7 @@ import (
 	"github.com/tinylib/msgp/msgp"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 )
 
 func TestMessageEventConversion(t *testing.T) {
@@ -46,7 +46,7 @@ func TestMessageEventConversion(t *testing.T) {
 			},
 		},
 	).ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
-	require.NoError(t, comparetest.CompareLogRecords(expectedLog, event.LogRecords().At(0)))
+	require.NoError(t, plogtest.CompareLogRecords(expectedLog, event.LogRecords().At(0)))
 }
 
 func TestAttributeTypeConversion(t *testing.T) {
@@ -101,7 +101,7 @@ func TestAttributeTypeConversion(t *testing.T) {
 
 	le := event.LogRecords().At(0)
 
-	require.NoError(t, comparetest.CompareLogRecords(Logs(
+	require.NoError(t, plogtest.CompareLogRecords(Logs(
 		Log{
 			Timestamp: 5000000000000,
 			Body:      pcommon.NewValueEmpty(),
@@ -247,7 +247,7 @@ func TestBodyConversion(t *testing.T) {
 	cv := body.Map().PutEmptyMap("c")
 	cv.PutInt("d", 24)
 
-	require.NoError(t, comparetest.CompareLogRecords(Logs(
+	require.NoError(t, plogtest.CompareLogRecords(Logs(
 		Log{
 			Timestamp: 5000000000000,
 			Body:      body,
