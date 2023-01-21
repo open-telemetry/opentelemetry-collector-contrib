@@ -16,7 +16,6 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"errors"
-	"strings"
 	"sync"
 	"time"
 
@@ -24,6 +23,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	semconv "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/pdatautil"
 )
 
 // Notes on garbage collection (gc):
@@ -88,7 +89,7 @@ type summaryInfo struct {
 
 type timeseriesKey struct {
 	name           string
-	attributes     string
+	attributes     [16]byte
 	aggTemporality pmetric.AggregationTemporality
 }
 
@@ -130,18 +131,16 @@ func (tsm *timeseriesMap) get(metric pmetric.Metric, kv pcommon.Map) (*timeserie
 }
 
 // Create a unique string signature for attributes values sorted by attribute keys.
-// NOTE: this function mutates the attributes map as a side effect.
-func getAttributesSignature(kv pcommon.Map) string {
-	labelValues := make([]string, 0, kv.Len())
-	kv.Sort()
-	kv.Range(func(_ string, attrValue pcommon.Value) bool {
+func getAttributesSignature(m pcommon.Map) [16]byte {
+	clearedMap := pcommon.NewMap()
+	m.Range(func(k string, attrValue pcommon.Value) bool {
 		value := attrValue.Str()
 		if value != "" {
-			labelValues = append(labelValues, value)
+			clearedMap.PutStr(k, value)
 		}
 		return true
 	})
-	return strings.Join(labelValues, ",")
+	return pdatautil.MapHash(clearedMap)
 }
 
 // Remove timeseries that have aged out.
