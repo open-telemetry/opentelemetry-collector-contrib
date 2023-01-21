@@ -34,7 +34,7 @@ file/rotation_with_custom_settings:
 
 file/format_error:
   path: ./filename.log
-  Format: text
+  format: text
 
 file/compression_error:
   path: ./filename.log

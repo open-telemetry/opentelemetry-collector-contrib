@@ -34,7 +34,7 @@ const (
 )
 
 func init() {
-	featuregate.GetRegistry().MustRegisterID(
+	featuregate.GlobalRegistry().MustRegisterID(
 		useCreatedMetricGateID,
 		featuregate.StageAlpha,
 		featuregate.WithRegisterDescription("When enabled, the Prometheus receiver will"+
@@ -62,5 +62,5 @@ func createMetricsReceiver(
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
-	return newPrometheusReceiver(set, cfg.(*Config), nextConsumer, featuregate.GetRegistry()), nil
+	return newPrometheusReceiver(set, cfg.(*Config), nextConsumer, featuregate.GlobalRegistry()), nil
 }

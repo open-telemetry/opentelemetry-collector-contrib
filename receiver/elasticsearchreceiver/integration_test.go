@@ -59,7 +59,7 @@ var (
 
 func TestElasticsearchIntegration(t *testing.T) {
 	// Let this test check if it works with the features disabled and the unit test will test the feature enabled.
-	err := featuregate.GetRegistry().Apply(map[string]bool{emitClusterHealthDetailedShardMetricsID: false, emitAllIndexOperationMetricsID: false})
+	err := featuregate.GlobalRegistry().Apply(map[string]bool{emitClusterHealthDetailedShardMetricsID: false, emitAllIndexOperationMetricsID: false})
 	require.NoError(t, err)
 
 	//Starts an elasticsearch docker container

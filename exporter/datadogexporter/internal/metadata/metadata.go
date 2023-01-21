@@ -107,7 +107,7 @@ type Meta struct {
 // metadataFromAttributes gets metadata info from attributes following
 // OpenTelemetry semantic conventions
 func metadataFromAttributes(attrs pcommon.Map) *HostMetadata {
-	return metadataFromAttributesWithRegistry(featuregate.GetRegistry(), attrs)
+	return metadataFromAttributesWithRegistry(featuregate.GlobalRegistry(), attrs)
 }
 
 // metadataFromAttributesWithRegistry passes a registry explicitly to allow easier unit testing.

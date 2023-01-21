@@ -33,7 +33,7 @@ const (
 )
 
 func init() {
-	featuregate.GetRegistry().MustRegisterID(
+	featuregate.GlobalRegistry().MustRegisterID(
 		allowFileDeletion,
 		featuregate.StageAlpha,
 		featuregate.WithRegisterDescription("When enabled, allows usage of the `delete_after_read` setting."),
@@ -75,7 +75,7 @@ type Config struct {
 
 // Build will build a file input operator from the supplied configuration
 func (c Config) Build(logger *zap.SugaredLogger, emit EmitFunc) (*Manager, error) {
-	if c.DeleteAfterRead && !featuregate.GetRegistry().IsEnabled(allowFileDeletion) {
+	if c.DeleteAfterRead && !featuregate.GlobalRegistry().IsEnabled(allowFileDeletion) {
 		return nil, fmt.Errorf("`delete_after_read` requires feature gate `%s`", allowFileDeletion)
 	}
 	if err := c.validate(); err != nil {
