@@ -11,6 +11,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter v0.69.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter v0.69.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.69.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/cassandraexporter v0.69.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter v0.69.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter v0.69.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.69.0
@@ -38,7 +39,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter v0.69.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter v0.69.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter v0.69.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter v0.69.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/skywalkingexporter v0.69.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter v0.69.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter v0.69.0
@@ -142,7 +142,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/riakreceiver v0.69.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver v0.69.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver v0.69.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver v0.69.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver v0.69.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver v0.69.0
@@ -348,6 +347,7 @@ require (
 	github.com/go-stack/stack v1.8.1 // indirect
 	github.com/go-zookeeper/zk v1.0.3 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
+	github.com/gocql/gocql v1.3.1 // indirect
 	github.com/godbus/dbus v0.0.0-20190726142602-4481cbc300e2 // indirect
 	github.com/godbus/dbus/v5 v5.0.6 // indirect
 	github.com/gofrs/uuid v4.2.0+incompatible // indirect
@@ -380,6 +380,7 @@ require (
 	github.com/grobie/gomemcache v0.0.0-20180201122607-1f779c573665 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.15.0 // indirect
 	github.com/gsterjov/go-libsecret v0.0.0-20161001094733-a6f4afe4910c // indirect
+	github.com/hailocab/go-hostpool v0.0.0-20160125115350-e80d13ce29ed // indirect
 	github.com/hashicorp/consul/api v1.18.0 // indirect
 	github.com/hashicorp/cronexpr v1.1.1 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
@@ -531,7 +532,6 @@ require (
 	github.com/signalfx/gohistogram v0.0.0-20160107210732-1ccfd2ff5083 // indirect
 	github.com/signalfx/golib/v3 v3.3.46 // indirect
 	github.com/signalfx/sapm-proto v0.12.0 // indirect
-	github.com/signalfx/signalfx-agent/pkg/apm v0.0.0-20220920175102-539ae8d8ba8e // indirect
 	github.com/sijms/go-ora/v2 v2.5.23 // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
 	github.com/snowflakedb/gosnowflake v1.6.16 // indirect
@@ -684,6 +684,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azure
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter => ./exporter/carbonexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter => ./exporter/clickhouseexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/cassandraexporter => ./exporter/cassandraexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter => ./exporter/coralogixexporter
 
