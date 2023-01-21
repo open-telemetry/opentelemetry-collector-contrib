@@ -131,37 +131,12 @@ func EncodeLogfmt(lr plog.LogRecord, res pcommon.Resource, scope pcommon.Instrum
 }
 
 func serializeBodyJSON(body pcommon.Value) ([]byte, error) {
-	var str []byte
-	var err error
-	switch body.Type() {
-	case pcommon.ValueTypeEmpty:
+	if body.Type() == pcommon.ValueTypeEmpty {
 		// no body
-
-	case pcommon.ValueTypeStr:
-		str, err = json.Marshal(body.Str())
-
-	case pcommon.ValueTypeInt:
-		str, err = json.Marshal(body.Int())
-
-	case pcommon.ValueTypeDouble:
-		str, err = json.Marshal(body.Double())
-
-	case pcommon.ValueTypeBool:
-		str, err = json.Marshal(body.Bool())
-
-	case pcommon.ValueTypeMap:
-		str, err = json.Marshal(body.Map().AsRaw())
-
-	case pcommon.ValueTypeSlice:
-		str, err = json.Marshal(body.Slice().AsRaw())
-
-	case pcommon.ValueTypeBytes:
-		str, err = json.Marshal(body.Bytes().AsRaw())
-
-	default:
-		err = fmt.Errorf("unsuported body type to serialize")
+		return nil, nil
 	}
-	return str, err
+
+	return json.Marshal(body.AsRaw())
 }
 
 func bodyToKeyvals(body pcommon.Value) []interface{} {
