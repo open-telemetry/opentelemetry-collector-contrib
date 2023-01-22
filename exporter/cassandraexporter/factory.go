@@ -18,7 +18,11 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	return &Config{}
+	return &Config{
+		DSN:        "127.0.0.1",
+		Keyspace:   "otel",
+		TraceTable: "otel_spans",
+	}
 }
 
 func createTracesExporter(ctx context.Context, set exporter.CreateSettings, cfg component.Config) (exporter.Traces, error) {

@@ -39,6 +39,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter v0.69.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter v0.69.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter v0.69.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter v0.69.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/skywalkingexporter v0.69.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter v0.69.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter v0.69.0
@@ -142,6 +143,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/riakreceiver v0.69.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver v0.69.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver v0.69.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver v0.69.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver v0.69.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver v0.69.0
@@ -532,6 +534,7 @@ require (
 	github.com/signalfx/gohistogram v0.0.0-20160107210732-1ccfd2ff5083 // indirect
 	github.com/signalfx/golib/v3 v3.3.46 // indirect
 	github.com/signalfx/sapm-proto v0.12.0 // indirect
+	github.com/signalfx/signalfx-agent/pkg/apm v0.0.0-20220920175102-539ae8d8ba8e // indirect
 	github.com/sijms/go-ora/v2 v2.5.23 // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
 	github.com/snowflakedb/gosnowflake v1.6.16 // indirect

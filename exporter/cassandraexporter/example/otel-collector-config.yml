@@ -5,6 +5,9 @@ receivers:
         endpoint: 0.0.0.0:4317
 exporters:
   cassandra:
+    dsn: 127.0.0.1
+    keyspace: "otel"
+    trace_table: "otel_spans"
 
 service:
   pipelines:

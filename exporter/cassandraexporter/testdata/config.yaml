@@ -1,0 +1,4 @@
+cassandra:
+  dsn: 127.0.0.1
+  keyspace: "otel"
+  trace_table: "otel_spans"
