@@ -671,6 +671,9 @@ func TestCompareMetrics(t *testing.T) {
 					"where in different orders in expected vs actual, but comparison ignores order.",
 			},
 		},
+		{
+			name: "exemplar",
+		},
 	}
 
 	for _, tc := range tcs {
