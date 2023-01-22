@@ -272,6 +272,93 @@ func CompareNumberDataPoints(expected, actual pmetric.NumberDataPoint) error {
 	if expected.DoubleValue() != actual.DoubleValue() {
 		return fmt.Errorf("metric datapoint DoubleVal doesn't match expected: %f, actual: %f", expected.DoubleValue(), actual.DoubleValue())
 	}
+	if err := CompareExemplars(expected.Exemplars(), actual.Exemplars()); err != nil {
+		return multierr.Combine(fmt.Errorf("metric datapoint with exemplars: does not match expected"), err)
+	}
+	return nil
+}
+
+// CompareExemplars compares each part of two given ExemplarSlice and returns
+// an error if they don't match. The error describes what didn't match.
+func CompareExemplars(expected, actual pmetric.ExemplarSlice) error {
+	if expected.Len() != actual.Len() {
+		return fmt.Errorf("number of exemplars does not match expected: %d, actual: %d", expected.Len(), actual.Len())
+	}
+
+	numExemplars := expected.Len()
+
+	// Keep track of matching exemplars so that each exemplar can only be matched once
+	matchingExs := make(map[pmetric.Exemplar]pmetric.Exemplar, numExemplars)
+
+	var errs error
+	var outOfOrderErrs error
+	for e := 0; e < numExemplars; e++ {
+		eex := expected.At(e)
+		var foundMatch bool
+		for a := 0; a < numExemplars; a++ {
+			aex := actual.At(a)
+			if _, ok := matchingExs[aex]; ok {
+				continue
+			}
+			if reflect.DeepEqual(eex.FilteredAttributes().AsRaw(), aex.FilteredAttributes().AsRaw()) {
+				foundMatch = true
+				matchingExs[aex] = eex
+				if e != a {
+					outOfOrderErrs = multierr.Append(outOfOrderErrs, fmt.Errorf("exemplars are out of order, "+
+						"exemplar with attributes %v expected at index %d, "+
+						"found a at index %d", eex.FilteredAttributes().AsRaw(), e, a))
+				}
+				break
+			}
+		}
+
+		if !foundMatch {
+			errs = multierr.Append(errs, fmt.Errorf("exemplars missing expected exemplar with filtered attributes: %v", eex.FilteredAttributes().AsRaw()))
+		}
+	}
+
+	for i := 0; i < numExemplars; i++ {
+		if _, ok := matchingExs[actual.At(i)]; !ok {
+			errs = multierr.Append(errs, fmt.Errorf("exemplars has extra exemplar with attributes: %v", actual.At(i).FilteredAttributes().AsRaw()))
+		}
+	}
+
+	if errs != nil {
+		return errs
+	}
+	if outOfOrderErrs != nil {
+		return outOfOrderErrs
+	}
+
+	for aex, eex := range matchingExs {
+		if err := CompareExemplar(eex, aex); err != nil {
+			return multierr.Combine(fmt.Errorf("exemplar with filtered attributes: %v, does not match expected", aex.FilteredAttributes().AsRaw()), err)
+		}
+	}
+	return nil
+}
+
+// CompareExemplars compares each part of two given pmetric.Exemplar and returns
+// an error if they don't match. The error describes what didn't match.
+func CompareExemplar(expected, actual pmetric.Exemplar) error {
+	if expected.ValueType() != actual.ValueType() {
+		return fmt.Errorf("exemplar types don't match: expected type: %s, actual type: %s", expected.ValueType(), actual.ValueType())
+	}
+	if expected.DoubleValue() != actual.DoubleValue() {
+		return fmt.Errorf("exemplar DoubleVal doesn't match expected: %f, actual: %f", expected.DoubleValue(), actual.DoubleValue())
+	}
+	if expected.IntValue() != actual.IntValue() {
+		return fmt.Errorf("exemplar IntValue doesn't match expected: %d, actual: %d", expected.IntValue(), actual.IntValue())
+	}
+	if expected.Timestamp() != actual.Timestamp() {
+		return fmt.Errorf("exemplar timestamp doesn't match expected: %d, actual: %d", expected.Timestamp(), actual.Timestamp())
+	}
+	if expected.TraceID() != actual.TraceID() {
+		return fmt.Errorf("exemplar traceID doesn't match expected: %s, actual: %s", expected.TraceID(), actual.TraceID())
+	}
+	if expected.SpanID() != actual.SpanID() {
+		return fmt.Errorf("exemplar spanID doesn't match expected: %s, actual: %s", expected.SpanID(), actual.SpanID())
+	}
 	return nil
 }
 
@@ -376,6 +463,9 @@ func CompareHistogramDataPoints(expected, actual pmetric.HistogramDataPoint) err
 	}
 	if !reflect.DeepEqual(expected.Attributes().AsRaw(), actual.Attributes().AsRaw()) {
 		return fmt.Errorf("metric datapoint Attributes doesn't match expected: %v, actual: %v", expected.Attributes().AsRaw(), actual.Attributes().AsRaw())
+	}
+	if err := CompareExemplars(expected.Exemplars(), actual.Exemplars()); err != nil {
+		return multierr.Combine(fmt.Errorf("metric datapoint with exemplars: does not match expected"), err)
 	}
 	return nil
 }
@@ -495,6 +585,9 @@ func CompareExponentialHistogramDataPoints(expected, actual pmetric.ExponentialH
 	}
 	if !reflect.DeepEqual(expected.Attributes().AsRaw(), actual.Attributes().AsRaw()) {
 		return fmt.Errorf("metric datapoint Attributes doesn't match expected: %v, actual: %v", expected.Attributes().AsRaw(), actual.Attributes().AsRaw())
+	}
+	if err := CompareExemplars(expected.Exemplars(), actual.Exemplars()); err != nil {
+		return multierr.Combine(fmt.Errorf("metric datapoint with exemplars: does not match expected"), err)
 	}
 	return nil
 }
