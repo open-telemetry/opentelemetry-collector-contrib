@@ -38,6 +38,8 @@ type TransformContext struct {
 	cache                pcommon.Map
 }
 
+type Option func(*ottl.Parser[TransformContext])
+
 func NewTransformContext(logRecord plog.LogRecord, instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource) TransformContext {
 	return TransformContext{
 		logRecord:            logRecord,
@@ -63,8 +65,17 @@ func (tCtx TransformContext) getCache() pcommon.Map {
 	return tCtx.cache
 }
 
-func NewParser(functions map[string]interface{}, telemetrySettings component.TelemetrySettings) ottl.Parser[TransformContext] {
-	return ottl.NewParser[TransformContext](functions, parsePath, parseEnum, telemetrySettings)
+func NewParser(functions map[string]interface{}, telemetrySettings component.TelemetrySettings, options ...Option) ottl.Parser[TransformContext] {
+	p := ottl.NewParser[TransformContext](
+		functions,
+		parsePath,
+		telemetrySettings,
+		ottl.WithEnumParser[TransformContext](parseEnum),
+	)
+	for _, opt := range options {
+		opt(&p)
+	}
+	return p
 }
 
 var symbolTable = map[ottl.EnumSymbol]ottl.Enum{
