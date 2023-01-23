@@ -40,7 +40,7 @@ func TestReceiver(t *testing.T) {
 		OTLPExporterConfig: otlpExporterConfig{
 			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
-		TempFolder: tempDir,
+		TempDir: tempDir,
 	}
 
 	receiver := newJMXMetricReceiver(params, config, consumertest.NewNop())

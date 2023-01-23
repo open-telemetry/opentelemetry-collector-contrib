@@ -48,7 +48,7 @@ func createDefaultConfig() component.Config {
 				Timeout: 5 * time.Second,
 			},
 		},
-		TempFolder: os.TempDir(),
+		TempDir: os.TempDir(),
 	}
 }
 

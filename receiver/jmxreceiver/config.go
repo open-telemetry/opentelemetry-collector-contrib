@@ -72,7 +72,7 @@ type Config struct {
 	// `"trace"`, `"debug"`, `"info"`, `"warn"`, `"error"`, `"off"`
 	LogLevel string `mapstructure:"log_level"`
 	// The temporary folder used to store configuration for the JVM (uses the OS temporary folder by default).
-	TempFolder string `mapstructure:"temp_folder"`
+	TempDir string `mapstructure:"temp_dir"`
 }
 
 // We don't embed the existing OTLP Exporter config as most fields are unsupported

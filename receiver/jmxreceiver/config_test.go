@@ -76,7 +76,7 @@ func TestLoadConfig(t *testing.T) {
 				ResourceAttributes: map[string]string{
 					"one": "two",
 				},
-				TempFolder: os.TempDir(),
+				TempDir: os.TempDir(),
 			},
 		},
 		{
@@ -92,7 +92,7 @@ func TestLoadConfig(t *testing.T) {
 						Timeout: 5 * time.Second,
 					},
 				},
-				TempFolder: os.TempDir(),
+				TempDir: os.TempDir(),
 			},
 		},
 		{
@@ -108,7 +108,7 @@ func TestLoadConfig(t *testing.T) {
 						Timeout: 5 * time.Second,
 					},
 				},
-				TempFolder: os.TempDir(),
+				TempDir: os.TempDir(),
 			},
 		},
 		{
@@ -125,7 +125,7 @@ func TestLoadConfig(t *testing.T) {
 						Timeout: 5 * time.Second,
 					},
 				},
-				TempFolder: os.TempDir(),
+				TempDir: os.TempDir(),
 			},
 		},
 		{
@@ -142,7 +142,7 @@ func TestLoadConfig(t *testing.T) {
 						Timeout: -100 * time.Millisecond,
 					},
 				},
-				TempFolder: os.TempDir(),
+				TempDir: os.TempDir(),
 			},
 		},
 
@@ -161,7 +161,7 @@ func TestLoadConfig(t *testing.T) {
 						Timeout: 5 * time.Second,
 					},
 				},
-				TempFolder: os.TempDir(),
+				TempDir: os.TempDir(),
 			},
 		},
 		{
@@ -178,7 +178,7 @@ func TestLoadConfig(t *testing.T) {
 						Timeout: 5 * time.Second,
 					},
 				},
-				TempFolder: os.TempDir(),
+				TempDir: os.TempDir(),
 			},
 		},
 		{
@@ -196,7 +196,7 @@ func TestLoadConfig(t *testing.T) {
 						Timeout: 5 * time.Second,
 					},
 				},
-				TempFolder: os.TempDir(),
+				TempDir: os.TempDir(),
 			},
 		},
 		{
@@ -213,7 +213,7 @@ func TestLoadConfig(t *testing.T) {
 						Timeout: 5 * time.Second,
 					},
 				},
-				TempFolder: os.TempDir(),
+				TempDir: os.TempDir(),
 			},
 		},
 	}

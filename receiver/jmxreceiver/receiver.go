@@ -76,7 +76,7 @@ func (jmx *jmxMetricReceiver) Start(ctx context.Context, host component.Host) er
 		return err
 	}
 
-	tmpFile, err := os.CreateTemp(jmx.config.TempFolder, "jmx-config-*.properties")
+	tmpFile, err := os.CreateTemp(jmx.config.TempDir, "jmx-config-*.properties")
 	if err != nil {
 		return fmt.Errorf("failed to get tmp file for jmxreceiver config: %w", err)
 	}
