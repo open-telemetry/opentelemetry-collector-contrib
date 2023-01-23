@@ -13,4 +13,4 @@ issues: [14757]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: Adds a configuration property allowing the user to decide where to place the temporary properties file used by the JMX receiver Java process.
+subtext: Adds an optional configuration property allowing the user to decide where to place the temporary properties file used by the JMX receiver Java process.
