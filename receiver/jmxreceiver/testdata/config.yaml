@@ -24,6 +24,7 @@ jmx/all:
     one: two
   additional_jars:
     - testdata/fake_additional.jar
+  temp_dir: /opt/otel/run
 jmx/missingendpoint:
   jar_path: testdata/fake_jmx.jar
   target_system: jvm

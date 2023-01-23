@@ -76,7 +76,7 @@ func TestLoadConfig(t *testing.T) {
 				ResourceAttributes: map[string]string{
 					"one": "two",
 				},
-				TempDir: os.TempDir(),
+				TempDir: "/opt/otel/run",
 			},
 		},
 		{
