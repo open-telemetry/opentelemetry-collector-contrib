@@ -13,12 +13,12 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.69.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.0.0-00010101000000-000000000000
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.69.2-0.20230121222757-51c9139d1c2f
-	go.opentelemetry.io/collector/component v0.69.2-0.20230121222757-51c9139d1c2f
-	go.opentelemetry.io/collector/confmap v0.69.2-0.20230121222757-51c9139d1c2f
-	go.opentelemetry.io/collector/consumer v0.69.2-0.20230121222757-51c9139d1c2f
-	go.opentelemetry.io/collector/featuregate v0.69.2-0.20230121222757-51c9139d1c2f
-	go.opentelemetry.io/collector/pdata v1.0.0-rc3.0.20230121222757-51c9139d1c2f
+	go.opentelemetry.io/collector v0.70.0
+	go.opentelemetry.io/collector/component v0.70.0
+	go.opentelemetry.io/collector/confmap v0.70.0
+	go.opentelemetry.io/collector/consumer v0.70.0
+	go.opentelemetry.io/collector/featuregate v0.70.0
+	go.opentelemetry.io/collector/pdata v1.0.0-rc4
 	go.uber.org/atomic v1.10.0
 	go.uber.org/multierr v1.9.0
 	go.uber.org/zap v1.24.0
@@ -34,7 +34,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
-	github.com/knadh/koanf v1.4.5 // indirect
+	github.com/knadh/koanf v1.5.0 // indirect
 	github.com/leodido/ragel-machinery v0.0.0-20181214104525-299bdde78165 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
