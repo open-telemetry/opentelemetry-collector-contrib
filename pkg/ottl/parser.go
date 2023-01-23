@@ -63,8 +63,11 @@ func NewParser[K any](
 	options ...Option[K],
 ) Parser[K] {
 	p := Parser[K]{
-		functions:         functions,
-		pathParser:        pathParser,
+		functions:  functions,
+		pathParser: pathParser,
+		enumParser: func(*EnumSymbol) (*Enum, error) {
+			return nil, fmt.Errorf("enums aren't supported for the current context: %T", new(K))
+		},
 		telemetrySettings: settings,
 	}
 	for _, opt := range options {
