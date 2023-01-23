@@ -68,19 +68,19 @@ type ReloadIntervals struct {
 func (c *Config) Validate() error {
 	var err error
 
-	if c.Settings.ReloadIntervals.Array.String() == "" {
+	if len(c.Settings.ReloadIntervals.Array.String()) == 0 {
 		err = multierr.Append(err, errors.New("Arrays not provided and is required"))
 	}
-	if c.Settings.ReloadIntervals.Host.String() == "" {
+	if len(c.Settings.ReloadIntervals.Host.String()) == 0 {
 		err = multierr.Append(err, errors.New("Hosts not provided and is required"))
 	}
-	if c.Settings.ReloadIntervals.Directories.String() == "" {
+	if len(c.Settings.ReloadIntervals.Directories.String()) == 0 {
 		err = multierr.Append(err, errors.New("Directories not provided and is required"))
 	}
-	if c.Settings.ReloadIntervals.Pods.String() == "" {
+	if len(c.Settings.ReloadIntervals.Pods.String()) == 0 {
 		err = multierr.Append(err, errors.New("Pods not provided and is required"))
 	}
-	if c.Settings.ReloadIntervals.Volumes.String() == "" {
+	if len(c.Settings.ReloadIntervals.Volumes.String()) == 0 {
 		err = multierr.Append(err, errors.New("Volumes not provided and is required"))
 	}
 
