@@ -54,21 +54,21 @@ func TestScrape(t *testing.T) {
 		{
 			name: "Standard",
 			config: Config{
-				Metrics: metadata.DefaultMetricsSettings(),
+				Metrics: metadata.DefaultMetricsBuilderConfig(),
 			},
 			expectNetworkMetrics: true,
 		},
 		{
 			name: "Standard with direction removed",
 			config: Config{
-				Metrics: metadata.DefaultMetricsSettings(),
+				Metrics: metadata.DefaultMetricsBuilderConfig(),
 			},
 			expectNetworkMetrics: true,
 		},
 		{
 			name: "Validate Start Time",
 			config: Config{
-				Metrics: metadata.DefaultMetricsSettings(),
+				Metrics: metadata.DefaultMetricsBuilderConfig(),
 			},
 			bootTimeFunc:         func() (uint64, error) { return 100, nil },
 			expectNetworkMetrics: true,
@@ -77,7 +77,7 @@ func TestScrape(t *testing.T) {
 		{
 			name: "Include Filter that matches nothing",
 			config: Config{
-				Metrics: metadata.DefaultMetricsSettings(),
+				Metrics: metadata.DefaultMetricsBuilderConfig(),
 				Include: MatchConfig{filterset.Config{MatchType: "strict"}, []string{"@*^#&*$^#)"}},
 			},
 			expectNetworkMetrics: false,
@@ -85,7 +85,7 @@ func TestScrape(t *testing.T) {
 		{
 			name: "Invalid Include Filter",
 			config: Config{
-				Metrics: metadata.DefaultMetricsSettings(),
+				Metrics: metadata.DefaultMetricsBuilderConfig(),
 				Include: MatchConfig{Interfaces: []string{"test"}},
 			},
 			newErrRegex: "^error creating network interface include filters:",
@@ -93,7 +93,7 @@ func TestScrape(t *testing.T) {
 		{
 			name: "Invalid Exclude Filter",
 			config: Config{
-				Metrics: metadata.DefaultMetricsSettings(),
+				Metrics: metadata.DefaultMetricsBuilderConfig(),
 				Exclude: MatchConfig{Interfaces: []string{"test"}},
 			},
 			newErrRegex: "^error creating network interface exclude filters:",
@@ -118,7 +118,7 @@ func TestScrape(t *testing.T) {
 		{
 			name: "Conntrack error ignored if metric disabled",
 			config: Config{
-				Metrics: metadata.DefaultMetricsSettings(), // conntrack metrics are disabled by default
+				Metrics: metadata.DefaultMetricsBuilderConfig(), // conntrack metrics are disabled by default
 			},
 			conntrackFunc:        func() ([]net.FilterStat, error) { return nil, errors.New("conntrack failed") },
 			expectNetworkMetrics: true,

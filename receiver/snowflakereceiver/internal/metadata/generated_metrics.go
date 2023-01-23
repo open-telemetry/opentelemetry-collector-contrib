@@ -2107,6 +2107,12 @@ func newMetricSnowflakeTotalElapsedTimeAvg(settings MetricSettings) metricSnowfl
 	return m
 }
 
+// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
+type MetricsBuilderConfig struct {
+	MetricsSettings            MetricsSettings            `mapstructure:"metrics,squash"`
+	ResourceAttributesSettings ResourceAttributesSettings `mapstructure:"resource_attributes,squash"`
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
@@ -2170,47 +2176,54 @@ func WithResourceAttributesSettings(ras ResourceAttributesSettings) metricBuilde
 	}
 }
 
-func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
+func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+	return MetricsBuilderConfig{
+		MetricsSettings:            DefaultMetricsSettings(),
+		ResourceAttributesSettings: DefaultResourceAttributesSettings(),
+	}
+}
+
+func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                                            pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                                        pmetric.NewMetrics(),
 		buildInfo:                                            settings.BuildInfo,
-		resourceAttributesSettings:                           DefaultResourceAttributesSettings(),
-		metricSnowflakeBillingCloudServiceTotal:              newMetricSnowflakeBillingCloudServiceTotal(ms.SnowflakeBillingCloudServiceTotal),
-		metricSnowflakeBillingTotalCreditTotal:               newMetricSnowflakeBillingTotalCreditTotal(ms.SnowflakeBillingTotalCreditTotal),
-		metricSnowflakeBillingVirtualWarehouseTotal:          newMetricSnowflakeBillingVirtualWarehouseTotal(ms.SnowflakeBillingVirtualWarehouseTotal),
-		metricSnowflakeBillingWarehouseCloudServiceTotal:     newMetricSnowflakeBillingWarehouseCloudServiceTotal(ms.SnowflakeBillingWarehouseCloudServiceTotal),
-		metricSnowflakeBillingWarehouseTotalCreditTotal:      newMetricSnowflakeBillingWarehouseTotalCreditTotal(ms.SnowflakeBillingWarehouseTotalCreditTotal),
-		metricSnowflakeBillingWarehouseVirtualWarehouseTotal: newMetricSnowflakeBillingWarehouseVirtualWarehouseTotal(ms.SnowflakeBillingWarehouseVirtualWarehouseTotal),
-		metricSnowflakeDatabaseBytesScannedAvg:               newMetricSnowflakeDatabaseBytesScannedAvg(ms.SnowflakeDatabaseBytesScannedAvg),
-		metricSnowflakeDatabaseQueryCount:                    newMetricSnowflakeDatabaseQueryCount(ms.SnowflakeDatabaseQueryCount),
-		metricSnowflakeLoginsTotal:                           newMetricSnowflakeLoginsTotal(ms.SnowflakeLoginsTotal),
-		metricSnowflakePipeCreditsUsedTotal:                  newMetricSnowflakePipeCreditsUsedTotal(ms.SnowflakePipeCreditsUsedTotal),
-		metricSnowflakeQueryBlocked:                          newMetricSnowflakeQueryBlocked(ms.SnowflakeQueryBlocked),
-		metricSnowflakeQueryBytesDeletedAvg:                  newMetricSnowflakeQueryBytesDeletedAvg(ms.SnowflakeQueryBytesDeletedAvg),
-		metricSnowflakeQueryBytesSpilledLocalAvg:             newMetricSnowflakeQueryBytesSpilledLocalAvg(ms.SnowflakeQueryBytesSpilledLocalAvg),
-		metricSnowflakeQueryBytesSpilledRemoteAvg:            newMetricSnowflakeQueryBytesSpilledRemoteAvg(ms.SnowflakeQueryBytesSpilledRemoteAvg),
-		metricSnowflakeQueryBytesWrittenAvg:                  newMetricSnowflakeQueryBytesWrittenAvg(ms.SnowflakeQueryBytesWrittenAvg),
-		metricSnowflakeQueryCompilationTimeAvg:               newMetricSnowflakeQueryCompilationTimeAvg(ms.SnowflakeQueryCompilationTimeAvg),
-		metricSnowflakeQueryDataScannedCacheAvg:              newMetricSnowflakeQueryDataScannedCacheAvg(ms.SnowflakeQueryDataScannedCacheAvg),
-		metricSnowflakeQueryExecuted:                         newMetricSnowflakeQueryExecuted(ms.SnowflakeQueryExecuted),
-		metricSnowflakeQueryExecutionTimeAvg:                 newMetricSnowflakeQueryExecutionTimeAvg(ms.SnowflakeQueryExecutionTimeAvg),
-		metricSnowflakeQueryPartitionsScannedAvg:             newMetricSnowflakeQueryPartitionsScannedAvg(ms.SnowflakeQueryPartitionsScannedAvg),
-		metricSnowflakeQueryQueuedOverload:                   newMetricSnowflakeQueryQueuedOverload(ms.SnowflakeQueryQueuedOverload),
-		metricSnowflakeQueryQueuedProvision:                  newMetricSnowflakeQueryQueuedProvision(ms.SnowflakeQueryQueuedProvision),
-		metricSnowflakeQueuedOverloadTimeAvg:                 newMetricSnowflakeQueuedOverloadTimeAvg(ms.SnowflakeQueuedOverloadTimeAvg),
-		metricSnowflakeQueuedProvisioningTimeAvg:             newMetricSnowflakeQueuedProvisioningTimeAvg(ms.SnowflakeQueuedProvisioningTimeAvg),
-		metricSnowflakeQueuedRepairTimeAvg:                   newMetricSnowflakeQueuedRepairTimeAvg(ms.SnowflakeQueuedRepairTimeAvg),
-		metricSnowflakeRowsDeletedAvg:                        newMetricSnowflakeRowsDeletedAvg(ms.SnowflakeRowsDeletedAvg),
-		metricSnowflakeRowsInsertedAvg:                       newMetricSnowflakeRowsInsertedAvg(ms.SnowflakeRowsInsertedAvg),
-		metricSnowflakeRowsProducedAvg:                       newMetricSnowflakeRowsProducedAvg(ms.SnowflakeRowsProducedAvg),
-		metricSnowflakeRowsUnloadedAvg:                       newMetricSnowflakeRowsUnloadedAvg(ms.SnowflakeRowsUnloadedAvg),
-		metricSnowflakeRowsUpdatedAvg:                        newMetricSnowflakeRowsUpdatedAvg(ms.SnowflakeRowsUpdatedAvg),
-		metricSnowflakeSessionIDCount:                        newMetricSnowflakeSessionIDCount(ms.SnowflakeSessionIDCount),
-		metricSnowflakeStorageFailsafeBytesTotal:             newMetricSnowflakeStorageFailsafeBytesTotal(ms.SnowflakeStorageFailsafeBytesTotal),
-		metricSnowflakeStorageStageBytesTotal:                newMetricSnowflakeStorageStageBytesTotal(ms.SnowflakeStorageStageBytesTotal),
-		metricSnowflakeStorageStorageBytesTotal:              newMetricSnowflakeStorageStorageBytesTotal(ms.SnowflakeStorageStorageBytesTotal),
-		metricSnowflakeTotalElapsedTimeAvg:                   newMetricSnowflakeTotalElapsedTimeAvg(ms.SnowflakeTotalElapsedTimeAvg),
+		resourceAttributesSettings:                           mbc.ResourceAttributesSettings,
+		metricSnowflakeBillingCloudServiceTotal:              newMetricSnowflakeBillingCloudServiceTotal(mbc.MetricsSettings.SnowflakeBillingCloudServiceTotal),
+		metricSnowflakeBillingTotalCreditTotal:               newMetricSnowflakeBillingTotalCreditTotal(mbc.MetricsSettings.SnowflakeBillingTotalCreditTotal),
+		metricSnowflakeBillingVirtualWarehouseTotal:          newMetricSnowflakeBillingVirtualWarehouseTotal(mbc.MetricsSettings.SnowflakeBillingVirtualWarehouseTotal),
+		metricSnowflakeBillingWarehouseCloudServiceTotal:     newMetricSnowflakeBillingWarehouseCloudServiceTotal(mbc.MetricsSettings.SnowflakeBillingWarehouseCloudServiceTotal),
+		metricSnowflakeBillingWarehouseTotalCreditTotal:      newMetricSnowflakeBillingWarehouseTotalCreditTotal(mbc.MetricsSettings.SnowflakeBillingWarehouseTotalCreditTotal),
+		metricSnowflakeBillingWarehouseVirtualWarehouseTotal: newMetricSnowflakeBillingWarehouseVirtualWarehouseTotal(mbc.MetricsSettings.SnowflakeBillingWarehouseVirtualWarehouseTotal),
+		metricSnowflakeDatabaseBytesScannedAvg:               newMetricSnowflakeDatabaseBytesScannedAvg(mbc.MetricsSettings.SnowflakeDatabaseBytesScannedAvg),
+		metricSnowflakeDatabaseQueryCount:                    newMetricSnowflakeDatabaseQueryCount(mbc.MetricsSettings.SnowflakeDatabaseQueryCount),
+		metricSnowflakeLoginsTotal:                           newMetricSnowflakeLoginsTotal(mbc.MetricsSettings.SnowflakeLoginsTotal),
+		metricSnowflakePipeCreditsUsedTotal:                  newMetricSnowflakePipeCreditsUsedTotal(mbc.MetricsSettings.SnowflakePipeCreditsUsedTotal),
+		metricSnowflakeQueryBlocked:                          newMetricSnowflakeQueryBlocked(mbc.MetricsSettings.SnowflakeQueryBlocked),
+		metricSnowflakeQueryBytesDeletedAvg:                  newMetricSnowflakeQueryBytesDeletedAvg(mbc.MetricsSettings.SnowflakeQueryBytesDeletedAvg),
+		metricSnowflakeQueryBytesSpilledLocalAvg:             newMetricSnowflakeQueryBytesSpilledLocalAvg(mbc.MetricsSettings.SnowflakeQueryBytesSpilledLocalAvg),
+		metricSnowflakeQueryBytesSpilledRemoteAvg:            newMetricSnowflakeQueryBytesSpilledRemoteAvg(mbc.MetricsSettings.SnowflakeQueryBytesSpilledRemoteAvg),
+		metricSnowflakeQueryBytesWrittenAvg:                  newMetricSnowflakeQueryBytesWrittenAvg(mbc.MetricsSettings.SnowflakeQueryBytesWrittenAvg),
+		metricSnowflakeQueryCompilationTimeAvg:               newMetricSnowflakeQueryCompilationTimeAvg(mbc.MetricsSettings.SnowflakeQueryCompilationTimeAvg),
+		metricSnowflakeQueryDataScannedCacheAvg:              newMetricSnowflakeQueryDataScannedCacheAvg(mbc.MetricsSettings.SnowflakeQueryDataScannedCacheAvg),
+		metricSnowflakeQueryExecuted:                         newMetricSnowflakeQueryExecuted(mbc.MetricsSettings.SnowflakeQueryExecuted),
+		metricSnowflakeQueryExecutionTimeAvg:                 newMetricSnowflakeQueryExecutionTimeAvg(mbc.MetricsSettings.SnowflakeQueryExecutionTimeAvg),
+		metricSnowflakeQueryPartitionsScannedAvg:             newMetricSnowflakeQueryPartitionsScannedAvg(mbc.MetricsSettings.SnowflakeQueryPartitionsScannedAvg),
+		metricSnowflakeQueryQueuedOverload:                   newMetricSnowflakeQueryQueuedOverload(mbc.MetricsSettings.SnowflakeQueryQueuedOverload),
+		metricSnowflakeQueryQueuedProvision:                  newMetricSnowflakeQueryQueuedProvision(mbc.MetricsSettings.SnowflakeQueryQueuedProvision),
+		metricSnowflakeQueuedOverloadTimeAvg:                 newMetricSnowflakeQueuedOverloadTimeAvg(mbc.MetricsSettings.SnowflakeQueuedOverloadTimeAvg),
+		metricSnowflakeQueuedProvisioningTimeAvg:             newMetricSnowflakeQueuedProvisioningTimeAvg(mbc.MetricsSettings.SnowflakeQueuedProvisioningTimeAvg),
+		metricSnowflakeQueuedRepairTimeAvg:                   newMetricSnowflakeQueuedRepairTimeAvg(mbc.MetricsSettings.SnowflakeQueuedRepairTimeAvg),
+		metricSnowflakeRowsDeletedAvg:                        newMetricSnowflakeRowsDeletedAvg(mbc.MetricsSettings.SnowflakeRowsDeletedAvg),
+		metricSnowflakeRowsInsertedAvg:                       newMetricSnowflakeRowsInsertedAvg(mbc.MetricsSettings.SnowflakeRowsInsertedAvg),
+		metricSnowflakeRowsProducedAvg:                       newMetricSnowflakeRowsProducedAvg(mbc.MetricsSettings.SnowflakeRowsProducedAvg),
+		metricSnowflakeRowsUnloadedAvg:                       newMetricSnowflakeRowsUnloadedAvg(mbc.MetricsSettings.SnowflakeRowsUnloadedAvg),
+		metricSnowflakeRowsUpdatedAvg:                        newMetricSnowflakeRowsUpdatedAvg(mbc.MetricsSettings.SnowflakeRowsUpdatedAvg),
+		metricSnowflakeSessionIDCount:                        newMetricSnowflakeSessionIDCount(mbc.MetricsSettings.SnowflakeSessionIDCount),
+		metricSnowflakeStorageFailsafeBytesTotal:             newMetricSnowflakeStorageFailsafeBytesTotal(mbc.MetricsSettings.SnowflakeStorageFailsafeBytesTotal),
+		metricSnowflakeStorageStageBytesTotal:                newMetricSnowflakeStorageStageBytesTotal(mbc.MetricsSettings.SnowflakeStorageStageBytesTotal),
+		metricSnowflakeStorageStorageBytesTotal:              newMetricSnowflakeStorageStorageBytesTotal(mbc.MetricsSettings.SnowflakeStorageStorageBytesTotal),
+		metricSnowflakeTotalElapsedTimeAvg:                   newMetricSnowflakeTotalElapsedTimeAvg(mbc.MetricsSettings.SnowflakeTotalElapsedTimeAvg),
 	}
 	for _, op := range options {
 		op(mb)

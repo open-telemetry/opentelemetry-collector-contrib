@@ -59,7 +59,7 @@ func TestScrape(t *testing.T) {
 
 	scraper := newScraper(
 		&Config{
-			Metrics: metadata.DefaultMetricsSettings(),
+			MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 		},
 		receivertest.NewNopCreateSettings(),
 	)
@@ -80,7 +80,7 @@ func TestScrapeTransportNodeErrors(t *testing.T) {
 	mockClient.On("TransportNodes", mock.Anything).Return(nil, errUnauthorized)
 	scraper := newScraper(
 		&Config{
-			Metrics: metadata.DefaultMetricsSettings(),
+			MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 		},
 		receivertest.NewNopCreateSettings(),
 	)
@@ -98,7 +98,7 @@ func TestScrapeClusterNodeErrors(t *testing.T) {
 	mockClient.On("TransportNodes", mock.Anything).Return(loadTestTransportNodes())
 	scraper := newScraper(
 		&Config{
-			Metrics: metadata.DefaultMetricsSettings(),
+			MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 		},
 		receivertest.NewNopCreateSettings(),
 	)
@@ -113,7 +113,7 @@ func TestStartClientAlreadySet(t *testing.T) {
 	mockClient := mockServer(t)
 	scraper := newScraper(
 		&Config{
-			Metrics: metadata.DefaultMetricsSettings(),
+			MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			HTTPClientSettings: confighttp.HTTPClientSettings{
 				Endpoint: mockClient.URL,
 			},
@@ -127,7 +127,7 @@ func TestStartClientAlreadySet(t *testing.T) {
 func TestStartBadUrl(t *testing.T) {
 	scraper := newScraper(
 		&Config{
-			Metrics: metadata.DefaultMetricsSettings(),
+			MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			HTTPClientSettings: confighttp.HTTPClientSettings{
 				Endpoint: "\x00",
 			},
@@ -145,7 +145,7 @@ func TestScraperRecordNoStat(t *testing.T) {
 			HTTPClientSettings: confighttp.HTTPClientSettings{
 				Endpoint: "http://localhost",
 			},
-			Metrics: metadata.DefaultMetricsSettings(),
+			MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 		},
 		receivertest.NewNopCreateSettings(),
 	)

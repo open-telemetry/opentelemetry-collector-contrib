@@ -35,7 +35,7 @@ func TestLoadConfig(t *testing.T) {
 	t.Parallel()
 
 	factory := NewFactory()
-	metricCfg := metadata.DefaultMetricsSettings()
+	metricCfg := metadata.DefaultMetricsBuilderConfig()
 	metricCfg.ProcessRuntimeMemstatsTotalAlloc.Enabled = true
 	metricCfg.ProcessRuntimeMemstatsMallocs.Enabled = false
 

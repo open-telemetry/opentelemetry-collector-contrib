@@ -616,6 +616,12 @@ func newMetricCouchdbHttpdViews(settings MetricSettings) metricCouchdbHttpdViews
 	return m
 }
 
+// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
+type MetricsBuilderConfig struct {
+	MetricsSettings            MetricsSettings            `mapstructure:"metrics,squash"`
+	ResourceAttributesSettings ResourceAttributesSettings `mapstructure:"resource_attributes,squash"`
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
@@ -652,20 +658,27 @@ func WithResourceAttributesSettings(ras ResourceAttributesSettings) metricBuilde
 	}
 }
 
-func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
+func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+	return MetricsBuilderConfig{
+		MetricsSettings:            DefaultMetricsSettings(),
+		ResourceAttributesSettings: DefaultResourceAttributesSettings(),
+	}
+}
+
+func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                       pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                   pmetric.NewMetrics(),
 		buildInfo:                       settings.BuildInfo,
-		resourceAttributesSettings:      DefaultResourceAttributesSettings(),
-		metricCouchdbAverageRequestTime: newMetricCouchdbAverageRequestTime(ms.CouchdbAverageRequestTime),
-		metricCouchdbDatabaseOpen:       newMetricCouchdbDatabaseOpen(ms.CouchdbDatabaseOpen),
-		metricCouchdbDatabaseOperations: newMetricCouchdbDatabaseOperations(ms.CouchdbDatabaseOperations),
-		metricCouchdbFileDescriptorOpen: newMetricCouchdbFileDescriptorOpen(ms.CouchdbFileDescriptorOpen),
-		metricCouchdbHttpdBulkRequests:  newMetricCouchdbHttpdBulkRequests(ms.CouchdbHttpdBulkRequests),
-		metricCouchdbHttpdRequests:      newMetricCouchdbHttpdRequests(ms.CouchdbHttpdRequests),
-		metricCouchdbHttpdResponses:     newMetricCouchdbHttpdResponses(ms.CouchdbHttpdResponses),
-		metricCouchdbHttpdViews:         newMetricCouchdbHttpdViews(ms.CouchdbHttpdViews),
+		resourceAttributesSettings:      mbc.ResourceAttributesSettings,
+		metricCouchdbAverageRequestTime: newMetricCouchdbAverageRequestTime(mbc.MetricsSettings.CouchdbAverageRequestTime),
+		metricCouchdbDatabaseOpen:       newMetricCouchdbDatabaseOpen(mbc.MetricsSettings.CouchdbDatabaseOpen),
+		metricCouchdbDatabaseOperations: newMetricCouchdbDatabaseOperations(mbc.MetricsSettings.CouchdbDatabaseOperations),
+		metricCouchdbFileDescriptorOpen: newMetricCouchdbFileDescriptorOpen(mbc.MetricsSettings.CouchdbFileDescriptorOpen),
+		metricCouchdbHttpdBulkRequests:  newMetricCouchdbHttpdBulkRequests(mbc.MetricsSettings.CouchdbHttpdBulkRequests),
+		metricCouchdbHttpdRequests:      newMetricCouchdbHttpdRequests(mbc.MetricsSettings.CouchdbHttpdRequests),
+		metricCouchdbHttpdResponses:     newMetricCouchdbHttpdResponses(mbc.MetricsSettings.CouchdbHttpdResponses),
+		metricCouchdbHttpdViews:         newMetricCouchdbHttpdViews(mbc.MetricsSettings.CouchdbHttpdViews),
 	}
 	for _, op := range options {
 		op(mb)

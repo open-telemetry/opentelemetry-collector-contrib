@@ -48,7 +48,7 @@ func TestScrape(t *testing.T) {
 		{
 			name: "Standard",
 			config: &Config{
-				Metrics: metadata.DefaultMetricsSettings(),
+				Metrics: metadata.DefaultMetricsBuilderConfig(),
 			},
 			expectedMetricCount: 1,
 		},
@@ -71,7 +71,7 @@ func TestScrape(t *testing.T) {
 			virtualMemoryFunc: func() (*mem.VirtualMemoryStat, error) { return nil, errors.New("err1") },
 			expectedErr:       "err1",
 			config: &Config{
-				Metrics: metadata.DefaultMetricsSettings(),
+				Metrics: metadata.DefaultMetricsBuilderConfig(),
 			},
 			expectedMetricCount: 1,
 		},
@@ -80,7 +80,7 @@ func TestScrape(t *testing.T) {
 			bootTimeFunc:      func() (uint64, error) { return 100, errors.New("err1") },
 			initializationErr: "err1",
 			config: &Config{
-				Metrics: metadata.DefaultMetricsSettings(),
+				Metrics: metadata.DefaultMetricsBuilderConfig(),
 			},
 			expectedMetricCount: 1,
 		},

@@ -51,7 +51,7 @@ func newApacheScraper(
 	a := &apacheScraper{
 		settings:   settings.TelemetrySettings,
 		cfg:        cfg,
-		mb:         metadata.NewMetricsBuilder(cfg.Metrics, settings),
+		mb:         metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
 		serverName: serverName,
 		port:       port,
 	}

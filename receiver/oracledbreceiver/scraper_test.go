@@ -119,7 +119,7 @@ func TestScraper_Scrape(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			metricsBuilder := metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), receivertest.NewNopCreateSettings())
+			metricsBuilder := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings())
 
 			scrpr := scraper{
 				logger:         zap.NewNop(),
@@ -129,7 +129,7 @@ func TestScraper_Scrape(t *testing.T) {
 				},
 				clientProviderFunc: test.dbclientFn,
 				id:                 component.ID{},
-				metricsSettings:    metadata.DefaultMetricsSettings(),
+				metricsSettings:    metadata.DefaultMetricsBuilderConfig(),
 			}
 			err := scrpr.start(context.Background(), componenttest.NewNopHost())
 			defer func() {

@@ -438,6 +438,12 @@ func newMetricRabbitmqMessagePublished(settings MetricSettings) metricRabbitmqMe
 	return m
 }
 
+// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
+type MetricsBuilderConfig struct {
+	MetricsSettings            MetricsSettings            `mapstructure:"metrics,squash"`
+	ResourceAttributesSettings ResourceAttributesSettings `mapstructure:"resource_attributes,squash"`
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
@@ -472,18 +478,25 @@ func WithResourceAttributesSettings(ras ResourceAttributesSettings) metricBuilde
 	}
 }
 
-func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
+func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+	return MetricsBuilderConfig{
+		MetricsSettings:            DefaultMetricsSettings(),
+		ResourceAttributesSettings: DefaultResourceAttributesSettings(),
+	}
+}
+
+func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                         pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                     pmetric.NewMetrics(),
 		buildInfo:                         settings.BuildInfo,
-		resourceAttributesSettings:        DefaultResourceAttributesSettings(),
-		metricRabbitmqConsumerCount:       newMetricRabbitmqConsumerCount(ms.RabbitmqConsumerCount),
-		metricRabbitmqMessageAcknowledged: newMetricRabbitmqMessageAcknowledged(ms.RabbitmqMessageAcknowledged),
-		metricRabbitmqMessageCurrent:      newMetricRabbitmqMessageCurrent(ms.RabbitmqMessageCurrent),
-		metricRabbitmqMessageDelivered:    newMetricRabbitmqMessageDelivered(ms.RabbitmqMessageDelivered),
-		metricRabbitmqMessageDropped:      newMetricRabbitmqMessageDropped(ms.RabbitmqMessageDropped),
-		metricRabbitmqMessagePublished:    newMetricRabbitmqMessagePublished(ms.RabbitmqMessagePublished),
+		resourceAttributesSettings:        mbc.ResourceAttributesSettings,
+		metricRabbitmqConsumerCount:       newMetricRabbitmqConsumerCount(mbc.MetricsSettings.RabbitmqConsumerCount),
+		metricRabbitmqMessageAcknowledged: newMetricRabbitmqMessageAcknowledged(mbc.MetricsSettings.RabbitmqMessageAcknowledged),
+		metricRabbitmqMessageCurrent:      newMetricRabbitmqMessageCurrent(mbc.MetricsSettings.RabbitmqMessageCurrent),
+		metricRabbitmqMessageDelivered:    newMetricRabbitmqMessageDelivered(mbc.MetricsSettings.RabbitmqMessageDelivered),
+		metricRabbitmqMessageDropped:      newMetricRabbitmqMessageDropped(mbc.MetricsSettings.RabbitmqMessageDropped),
+		metricRabbitmqMessagePublished:    newMetricRabbitmqMessagePublished(mbc.MetricsSettings.RabbitmqMessagePublished),
 	}
 	for _, op := range options {
 		op(mb)

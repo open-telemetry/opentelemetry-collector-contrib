@@ -1788,6 +1788,12 @@ func newMetricFlinkTaskRecordCount(settings MetricSettings) metricFlinkTaskRecor
 	return m
 }
 
+// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
+type MetricsBuilderConfig struct {
+	MetricsSettings            MetricsSettings            `mapstructure:"metrics,squash"`
+	ResourceAttributesSettings ResourceAttributesSettings `mapstructure:"resource_attributes,squash"`
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
@@ -1845,41 +1851,48 @@ func WithResourceAttributesSettings(ras ResourceAttributesSettings) metricBuilde
 	}
 }
 
-func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
+func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+	return MetricsBuilderConfig{
+		MetricsSettings:            DefaultMetricsSettings(),
+		ResourceAttributesSettings: DefaultResourceAttributesSettings(),
+	}
+}
+
+func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                               pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                           pmetric.NewMetrics(),
 		buildInfo:                               settings.BuildInfo,
-		resourceAttributesSettings:              DefaultResourceAttributesSettings(),
-		metricFlinkJobCheckpointCount:           newMetricFlinkJobCheckpointCount(ms.FlinkJobCheckpointCount),
-		metricFlinkJobCheckpointInProgress:      newMetricFlinkJobCheckpointInProgress(ms.FlinkJobCheckpointInProgress),
-		metricFlinkJobLastCheckpointSize:        newMetricFlinkJobLastCheckpointSize(ms.FlinkJobLastCheckpointSize),
-		metricFlinkJobLastCheckpointTime:        newMetricFlinkJobLastCheckpointTime(ms.FlinkJobLastCheckpointTime),
-		metricFlinkJobRestartCount:              newMetricFlinkJobRestartCount(ms.FlinkJobRestartCount),
-		metricFlinkJvmClassLoaderClassesLoaded:  newMetricFlinkJvmClassLoaderClassesLoaded(ms.FlinkJvmClassLoaderClassesLoaded),
-		metricFlinkJvmCPULoad:                   newMetricFlinkJvmCPULoad(ms.FlinkJvmCPULoad),
-		metricFlinkJvmCPUTime:                   newMetricFlinkJvmCPUTime(ms.FlinkJvmCPUTime),
-		metricFlinkJvmGcCollectionsCount:        newMetricFlinkJvmGcCollectionsCount(ms.FlinkJvmGcCollectionsCount),
-		metricFlinkJvmGcCollectionsTime:         newMetricFlinkJvmGcCollectionsTime(ms.FlinkJvmGcCollectionsTime),
-		metricFlinkJvmMemoryDirectTotalCapacity: newMetricFlinkJvmMemoryDirectTotalCapacity(ms.FlinkJvmMemoryDirectTotalCapacity),
-		metricFlinkJvmMemoryDirectUsed:          newMetricFlinkJvmMemoryDirectUsed(ms.FlinkJvmMemoryDirectUsed),
-		metricFlinkJvmMemoryHeapCommitted:       newMetricFlinkJvmMemoryHeapCommitted(ms.FlinkJvmMemoryHeapCommitted),
-		metricFlinkJvmMemoryHeapMax:             newMetricFlinkJvmMemoryHeapMax(ms.FlinkJvmMemoryHeapMax),
-		metricFlinkJvmMemoryHeapUsed:            newMetricFlinkJvmMemoryHeapUsed(ms.FlinkJvmMemoryHeapUsed),
-		metricFlinkJvmMemoryMappedTotalCapacity: newMetricFlinkJvmMemoryMappedTotalCapacity(ms.FlinkJvmMemoryMappedTotalCapacity),
-		metricFlinkJvmMemoryMappedUsed:          newMetricFlinkJvmMemoryMappedUsed(ms.FlinkJvmMemoryMappedUsed),
-		metricFlinkJvmMemoryMetaspaceCommitted:  newMetricFlinkJvmMemoryMetaspaceCommitted(ms.FlinkJvmMemoryMetaspaceCommitted),
-		metricFlinkJvmMemoryMetaspaceMax:        newMetricFlinkJvmMemoryMetaspaceMax(ms.FlinkJvmMemoryMetaspaceMax),
-		metricFlinkJvmMemoryMetaspaceUsed:       newMetricFlinkJvmMemoryMetaspaceUsed(ms.FlinkJvmMemoryMetaspaceUsed),
-		metricFlinkJvmMemoryNonheapCommitted:    newMetricFlinkJvmMemoryNonheapCommitted(ms.FlinkJvmMemoryNonheapCommitted),
-		metricFlinkJvmMemoryNonheapMax:          newMetricFlinkJvmMemoryNonheapMax(ms.FlinkJvmMemoryNonheapMax),
-		metricFlinkJvmMemoryNonheapUsed:         newMetricFlinkJvmMemoryNonheapUsed(ms.FlinkJvmMemoryNonheapUsed),
-		metricFlinkJvmThreadsCount:              newMetricFlinkJvmThreadsCount(ms.FlinkJvmThreadsCount),
-		metricFlinkMemoryManagedTotal:           newMetricFlinkMemoryManagedTotal(ms.FlinkMemoryManagedTotal),
-		metricFlinkMemoryManagedUsed:            newMetricFlinkMemoryManagedUsed(ms.FlinkMemoryManagedUsed),
-		metricFlinkOperatorRecordCount:          newMetricFlinkOperatorRecordCount(ms.FlinkOperatorRecordCount),
-		metricFlinkOperatorWatermarkOutput:      newMetricFlinkOperatorWatermarkOutput(ms.FlinkOperatorWatermarkOutput),
-		metricFlinkTaskRecordCount:              newMetricFlinkTaskRecordCount(ms.FlinkTaskRecordCount),
+		resourceAttributesSettings:              mbc.ResourceAttributesSettings,
+		metricFlinkJobCheckpointCount:           newMetricFlinkJobCheckpointCount(mbc.MetricsSettings.FlinkJobCheckpointCount),
+		metricFlinkJobCheckpointInProgress:      newMetricFlinkJobCheckpointInProgress(mbc.MetricsSettings.FlinkJobCheckpointInProgress),
+		metricFlinkJobLastCheckpointSize:        newMetricFlinkJobLastCheckpointSize(mbc.MetricsSettings.FlinkJobLastCheckpointSize),
+		metricFlinkJobLastCheckpointTime:        newMetricFlinkJobLastCheckpointTime(mbc.MetricsSettings.FlinkJobLastCheckpointTime),
+		metricFlinkJobRestartCount:              newMetricFlinkJobRestartCount(mbc.MetricsSettings.FlinkJobRestartCount),
+		metricFlinkJvmClassLoaderClassesLoaded:  newMetricFlinkJvmClassLoaderClassesLoaded(mbc.MetricsSettings.FlinkJvmClassLoaderClassesLoaded),
+		metricFlinkJvmCPULoad:                   newMetricFlinkJvmCPULoad(mbc.MetricsSettings.FlinkJvmCPULoad),
+		metricFlinkJvmCPUTime:                   newMetricFlinkJvmCPUTime(mbc.MetricsSettings.FlinkJvmCPUTime),
+		metricFlinkJvmGcCollectionsCount:        newMetricFlinkJvmGcCollectionsCount(mbc.MetricsSettings.FlinkJvmGcCollectionsCount),
+		metricFlinkJvmGcCollectionsTime:         newMetricFlinkJvmGcCollectionsTime(mbc.MetricsSettings.FlinkJvmGcCollectionsTime),
+		metricFlinkJvmMemoryDirectTotalCapacity: newMetricFlinkJvmMemoryDirectTotalCapacity(mbc.MetricsSettings.FlinkJvmMemoryDirectTotalCapacity),
+		metricFlinkJvmMemoryDirectUsed:          newMetricFlinkJvmMemoryDirectUsed(mbc.MetricsSettings.FlinkJvmMemoryDirectUsed),
+		metricFlinkJvmMemoryHeapCommitted:       newMetricFlinkJvmMemoryHeapCommitted(mbc.MetricsSettings.FlinkJvmMemoryHeapCommitted),
+		metricFlinkJvmMemoryHeapMax:             newMetricFlinkJvmMemoryHeapMax(mbc.MetricsSettings.FlinkJvmMemoryHeapMax),
+		metricFlinkJvmMemoryHeapUsed:            newMetricFlinkJvmMemoryHeapUsed(mbc.MetricsSettings.FlinkJvmMemoryHeapUsed),
+		metricFlinkJvmMemoryMappedTotalCapacity: newMetricFlinkJvmMemoryMappedTotalCapacity(mbc.MetricsSettings.FlinkJvmMemoryMappedTotalCapacity),
+		metricFlinkJvmMemoryMappedUsed:          newMetricFlinkJvmMemoryMappedUsed(mbc.MetricsSettings.FlinkJvmMemoryMappedUsed),
+		metricFlinkJvmMemoryMetaspaceCommitted:  newMetricFlinkJvmMemoryMetaspaceCommitted(mbc.MetricsSettings.FlinkJvmMemoryMetaspaceCommitted),
+		metricFlinkJvmMemoryMetaspaceMax:        newMetricFlinkJvmMemoryMetaspaceMax(mbc.MetricsSettings.FlinkJvmMemoryMetaspaceMax),
+		metricFlinkJvmMemoryMetaspaceUsed:       newMetricFlinkJvmMemoryMetaspaceUsed(mbc.MetricsSettings.FlinkJvmMemoryMetaspaceUsed),
+		metricFlinkJvmMemoryNonheapCommitted:    newMetricFlinkJvmMemoryNonheapCommitted(mbc.MetricsSettings.FlinkJvmMemoryNonheapCommitted),
+		metricFlinkJvmMemoryNonheapMax:          newMetricFlinkJvmMemoryNonheapMax(mbc.MetricsSettings.FlinkJvmMemoryNonheapMax),
+		metricFlinkJvmMemoryNonheapUsed:         newMetricFlinkJvmMemoryNonheapUsed(mbc.MetricsSettings.FlinkJvmMemoryNonheapUsed),
+		metricFlinkJvmThreadsCount:              newMetricFlinkJvmThreadsCount(mbc.MetricsSettings.FlinkJvmThreadsCount),
+		metricFlinkMemoryManagedTotal:           newMetricFlinkMemoryManagedTotal(mbc.MetricsSettings.FlinkMemoryManagedTotal),
+		metricFlinkMemoryManagedUsed:            newMetricFlinkMemoryManagedUsed(mbc.MetricsSettings.FlinkMemoryManagedUsed),
+		metricFlinkOperatorRecordCount:          newMetricFlinkOperatorRecordCount(mbc.MetricsSettings.FlinkOperatorRecordCount),
+		metricFlinkOperatorWatermarkOutput:      newMetricFlinkOperatorWatermarkOutput(mbc.MetricsSettings.FlinkOperatorWatermarkOutput),
+		metricFlinkTaskRecordCount:              newMetricFlinkTaskRecordCount(mbc.MetricsSettings.FlinkTaskRecordCount),
 	}
 	for _, op := range options {
 		op(mb)

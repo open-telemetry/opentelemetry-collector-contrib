@@ -94,8 +94,8 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	expected := factory.CreateDefaultConfig().(*Config)
-	expected.Metrics = metadata.DefaultMetricsSettings()
-	expected.Metrics.SaphanaCPUUsed.Enabled = false
+	expected.MetricsBuilderConfig = metadata.DefaultMetricsBuilderConfig()
+	expected.MetricsBuilderConfig.MetricsSettings.SaphanaCPUUsed.Enabled = false
 	expected.Endpoint = "example.com:30015"
 	expected.Username = "otel"
 	expected.Password = "password"

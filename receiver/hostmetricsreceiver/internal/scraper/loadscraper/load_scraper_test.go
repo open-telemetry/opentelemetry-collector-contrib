@@ -59,14 +59,14 @@ func TestScrape(t *testing.T) {
 			name:        testStandard,
 			saveMetrics: true,
 			config: &Config{
-				Metrics: metadata.DefaultMetricsSettings(),
+				Metrics: metadata.DefaultMetricsBuilderConfig(),
 			},
 		},
 		{
 			name:        testAverage,
 			saveMetrics: true,
 			config: &Config{
-				Metrics:    metadata.DefaultMetricsSettings(),
+				Metrics:    metadata.DefaultMetricsBuilderConfig(),
 				CPUAverage: true,
 			},
 			bootTimeFunc: func() (uint64, error) { return bootTime, nil },
@@ -75,7 +75,7 @@ func TestScrape(t *testing.T) {
 			name:     "Load Error",
 			loadFunc: func() (*load.AvgStat, error) { return nil, errors.New("err1") },
 			config: &Config{
-				Metrics: metadata.DefaultMetricsSettings(),
+				Metrics: metadata.DefaultMetricsBuilderConfig(),
 			},
 			expectedErr: "err1",
 		},

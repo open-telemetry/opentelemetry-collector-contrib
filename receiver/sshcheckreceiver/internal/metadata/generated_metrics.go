@@ -402,6 +402,12 @@ func newMetricSshcheckStatus(settings MetricSettings) metricSshcheckStatus {
 	return m
 }
 
+// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
+type MetricsBuilderConfig struct {
+	MetricsSettings            MetricsSettings            `mapstructure:"metrics,squash"`
+	ResourceAttributesSettings ResourceAttributesSettings `mapstructure:"resource_attributes,squash"`
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
@@ -436,18 +442,25 @@ func WithResourceAttributesSettings(ras ResourceAttributesSettings) metricBuilde
 	}
 }
 
-func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
+func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+	return MetricsBuilderConfig{
+		MetricsSettings:            DefaultMetricsSettings(),
+		ResourceAttributesSettings: DefaultResourceAttributesSettings(),
+	}
+}
+
+func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                  pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:              pmetric.NewMetrics(),
 		buildInfo:                  settings.BuildInfo,
-		resourceAttributesSettings: DefaultResourceAttributesSettings(),
-		metricSshcheckDuration:     newMetricSshcheckDuration(ms.SshcheckDuration),
-		metricSshcheckError:        newMetricSshcheckError(ms.SshcheckError),
-		metricSshcheckSftpDuration: newMetricSshcheckSftpDuration(ms.SshcheckSftpDuration),
-		metricSshcheckSftpError:    newMetricSshcheckSftpError(ms.SshcheckSftpError),
-		metricSshcheckSftpStatus:   newMetricSshcheckSftpStatus(ms.SshcheckSftpStatus),
-		metricSshcheckStatus:       newMetricSshcheckStatus(ms.SshcheckStatus),
+		resourceAttributesSettings: mbc.ResourceAttributesSettings,
+		metricSshcheckDuration:     newMetricSshcheckDuration(mbc.MetricsSettings.SshcheckDuration),
+		metricSshcheckError:        newMetricSshcheckError(mbc.MetricsSettings.SshcheckError),
+		metricSshcheckSftpDuration: newMetricSshcheckSftpDuration(mbc.MetricsSettings.SshcheckSftpDuration),
+		metricSshcheckSftpError:    newMetricSshcheckSftpError(mbc.MetricsSettings.SshcheckSftpError),
+		metricSshcheckSftpStatus:   newMetricSshcheckSftpStatus(mbc.MetricsSettings.SshcheckSftpStatus),
+		metricSshcheckStatus:       newMetricSshcheckStatus(mbc.MetricsSettings.SshcheckStatus),
 	}
 	for _, op := range options {
 		op(mb)

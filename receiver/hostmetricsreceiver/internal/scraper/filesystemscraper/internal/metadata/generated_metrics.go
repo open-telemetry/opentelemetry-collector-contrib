@@ -278,6 +278,12 @@ func newMetricSystemFilesystemUtilization(settings MetricSettings) metricSystemF
 	return m
 }
 
+// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
+type MetricsBuilderConfig struct {
+	MetricsSettings            MetricsSettings            `mapstructure:"metrics,squash"`
+	ResourceAttributesSettings ResourceAttributesSettings `mapstructure:"resource_attributes,squash"`
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
@@ -309,15 +315,22 @@ func WithResourceAttributesSettings(ras ResourceAttributesSettings) metricBuilde
 	}
 }
 
-func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
+func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+	return MetricsBuilderConfig{
+		MetricsSettings:            DefaultMetricsSettings(),
+		ResourceAttributesSettings: DefaultResourceAttributesSettings(),
+	}
+}
+
+func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                         pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                     pmetric.NewMetrics(),
 		buildInfo:                         settings.BuildInfo,
-		resourceAttributesSettings:        DefaultResourceAttributesSettings(),
-		metricSystemFilesystemInodesUsage: newMetricSystemFilesystemInodesUsage(ms.SystemFilesystemInodesUsage),
-		metricSystemFilesystemUsage:       newMetricSystemFilesystemUsage(ms.SystemFilesystemUsage),
-		metricSystemFilesystemUtilization: newMetricSystemFilesystemUtilization(ms.SystemFilesystemUtilization),
+		resourceAttributesSettings:        mbc.ResourceAttributesSettings,
+		metricSystemFilesystemInodesUsage: newMetricSystemFilesystemInodesUsage(mbc.MetricsSettings.SystemFilesystemInodesUsage),
+		metricSystemFilesystemUsage:       newMetricSystemFilesystemUsage(mbc.MetricsSettings.SystemFilesystemUsage),
+		metricSystemFilesystemUtilization: newMetricSystemFilesystemUtilization(mbc.MetricsSettings.SystemFilesystemUtilization),
 	}
 	for _, op := range options {
 		op(mb)

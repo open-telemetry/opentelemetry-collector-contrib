@@ -1939,6 +1939,12 @@ func newMetricRedisUptime(settings MetricSettings) metricRedisUptime {
 	return m
 }
 
+// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
+type MetricsBuilderConfig struct {
+	MetricsSettings            MetricsSettings            `mapstructure:"metrics,squash"`
+	ResourceAttributesSettings ResourceAttributesSettings `mapstructure:"resource_attributes,squash"`
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
@@ -2000,45 +2006,52 @@ func WithResourceAttributesSettings(ras ResourceAttributesSettings) metricBuilde
 	}
 }
 
-func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
+func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+	return MetricsBuilderConfig{
+		MetricsSettings:            DefaultMetricsSettings(),
+		ResourceAttributesSettings: DefaultResourceAttributesSettings(),
+	}
+}
+
+func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                                    pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                                pmetric.NewMetrics(),
 		buildInfo:                                    settings.BuildInfo,
-		resourceAttributesSettings:                   DefaultResourceAttributesSettings(),
-		metricRedisClientsBlocked:                    newMetricRedisClientsBlocked(ms.RedisClientsBlocked),
-		metricRedisClientsConnected:                  newMetricRedisClientsConnected(ms.RedisClientsConnected),
-		metricRedisClientsMaxInputBuffer:             newMetricRedisClientsMaxInputBuffer(ms.RedisClientsMaxInputBuffer),
-		metricRedisClientsMaxOutputBuffer:            newMetricRedisClientsMaxOutputBuffer(ms.RedisClientsMaxOutputBuffer),
-		metricRedisCmdCalls:                          newMetricRedisCmdCalls(ms.RedisCmdCalls),
-		metricRedisCmdUsec:                           newMetricRedisCmdUsec(ms.RedisCmdUsec),
-		metricRedisCommands:                          newMetricRedisCommands(ms.RedisCommands),
-		metricRedisCommandsProcessed:                 newMetricRedisCommandsProcessed(ms.RedisCommandsProcessed),
-		metricRedisConnectionsReceived:               newMetricRedisConnectionsReceived(ms.RedisConnectionsReceived),
-		metricRedisConnectionsRejected:               newMetricRedisConnectionsRejected(ms.RedisConnectionsRejected),
-		metricRedisCPUTime:                           newMetricRedisCPUTime(ms.RedisCPUTime),
-		metricRedisDbAvgTTL:                          newMetricRedisDbAvgTTL(ms.RedisDbAvgTTL),
-		metricRedisDbExpires:                         newMetricRedisDbExpires(ms.RedisDbExpires),
-		metricRedisDbKeys:                            newMetricRedisDbKeys(ms.RedisDbKeys),
-		metricRedisKeysEvicted:                       newMetricRedisKeysEvicted(ms.RedisKeysEvicted),
-		metricRedisKeysExpired:                       newMetricRedisKeysExpired(ms.RedisKeysExpired),
-		metricRedisKeyspaceHits:                      newMetricRedisKeyspaceHits(ms.RedisKeyspaceHits),
-		metricRedisKeyspaceMisses:                    newMetricRedisKeyspaceMisses(ms.RedisKeyspaceMisses),
-		metricRedisLatestFork:                        newMetricRedisLatestFork(ms.RedisLatestFork),
-		metricRedisMaxmemory:                         newMetricRedisMaxmemory(ms.RedisMaxmemory),
-		metricRedisMemoryFragmentationRatio:          newMetricRedisMemoryFragmentationRatio(ms.RedisMemoryFragmentationRatio),
-		metricRedisMemoryLua:                         newMetricRedisMemoryLua(ms.RedisMemoryLua),
-		metricRedisMemoryPeak:                        newMetricRedisMemoryPeak(ms.RedisMemoryPeak),
-		metricRedisMemoryRss:                         newMetricRedisMemoryRss(ms.RedisMemoryRss),
-		metricRedisMemoryUsed:                        newMetricRedisMemoryUsed(ms.RedisMemoryUsed),
-		metricRedisNetInput:                          newMetricRedisNetInput(ms.RedisNetInput),
-		metricRedisNetOutput:                         newMetricRedisNetOutput(ms.RedisNetOutput),
-		metricRedisRdbChangesSinceLastSave:           newMetricRedisRdbChangesSinceLastSave(ms.RedisRdbChangesSinceLastSave),
-		metricRedisReplicationBacklogFirstByteOffset: newMetricRedisReplicationBacklogFirstByteOffset(ms.RedisReplicationBacklogFirstByteOffset),
-		metricRedisReplicationOffset:                 newMetricRedisReplicationOffset(ms.RedisReplicationOffset),
-		metricRedisRole:                              newMetricRedisRole(ms.RedisRole),
-		metricRedisSlavesConnected:                   newMetricRedisSlavesConnected(ms.RedisSlavesConnected),
-		metricRedisUptime:                            newMetricRedisUptime(ms.RedisUptime),
+		resourceAttributesSettings:                   mbc.ResourceAttributesSettings,
+		metricRedisClientsBlocked:                    newMetricRedisClientsBlocked(mbc.MetricsSettings.RedisClientsBlocked),
+		metricRedisClientsConnected:                  newMetricRedisClientsConnected(mbc.MetricsSettings.RedisClientsConnected),
+		metricRedisClientsMaxInputBuffer:             newMetricRedisClientsMaxInputBuffer(mbc.MetricsSettings.RedisClientsMaxInputBuffer),
+		metricRedisClientsMaxOutputBuffer:            newMetricRedisClientsMaxOutputBuffer(mbc.MetricsSettings.RedisClientsMaxOutputBuffer),
+		metricRedisCmdCalls:                          newMetricRedisCmdCalls(mbc.MetricsSettings.RedisCmdCalls),
+		metricRedisCmdUsec:                           newMetricRedisCmdUsec(mbc.MetricsSettings.RedisCmdUsec),
+		metricRedisCommands:                          newMetricRedisCommands(mbc.MetricsSettings.RedisCommands),
+		metricRedisCommandsProcessed:                 newMetricRedisCommandsProcessed(mbc.MetricsSettings.RedisCommandsProcessed),
+		metricRedisConnectionsReceived:               newMetricRedisConnectionsReceived(mbc.MetricsSettings.RedisConnectionsReceived),
+		metricRedisConnectionsRejected:               newMetricRedisConnectionsRejected(mbc.MetricsSettings.RedisConnectionsRejected),
+		metricRedisCPUTime:                           newMetricRedisCPUTime(mbc.MetricsSettings.RedisCPUTime),
+		metricRedisDbAvgTTL:                          newMetricRedisDbAvgTTL(mbc.MetricsSettings.RedisDbAvgTTL),
+		metricRedisDbExpires:                         newMetricRedisDbExpires(mbc.MetricsSettings.RedisDbExpires),
+		metricRedisDbKeys:                            newMetricRedisDbKeys(mbc.MetricsSettings.RedisDbKeys),
+		metricRedisKeysEvicted:                       newMetricRedisKeysEvicted(mbc.MetricsSettings.RedisKeysEvicted),
+		metricRedisKeysExpired:                       newMetricRedisKeysExpired(mbc.MetricsSettings.RedisKeysExpired),
+		metricRedisKeyspaceHits:                      newMetricRedisKeyspaceHits(mbc.MetricsSettings.RedisKeyspaceHits),
+		metricRedisKeyspaceMisses:                    newMetricRedisKeyspaceMisses(mbc.MetricsSettings.RedisKeyspaceMisses),
+		metricRedisLatestFork:                        newMetricRedisLatestFork(mbc.MetricsSettings.RedisLatestFork),
+		metricRedisMaxmemory:                         newMetricRedisMaxmemory(mbc.MetricsSettings.RedisMaxmemory),
+		metricRedisMemoryFragmentationRatio:          newMetricRedisMemoryFragmentationRatio(mbc.MetricsSettings.RedisMemoryFragmentationRatio),
+		metricRedisMemoryLua:                         newMetricRedisMemoryLua(mbc.MetricsSettings.RedisMemoryLua),
+		metricRedisMemoryPeak:                        newMetricRedisMemoryPeak(mbc.MetricsSettings.RedisMemoryPeak),
+		metricRedisMemoryRss:                         newMetricRedisMemoryRss(mbc.MetricsSettings.RedisMemoryRss),
+		metricRedisMemoryUsed:                        newMetricRedisMemoryUsed(mbc.MetricsSettings.RedisMemoryUsed),
+		metricRedisNetInput:                          newMetricRedisNetInput(mbc.MetricsSettings.RedisNetInput),
+		metricRedisNetOutput:                         newMetricRedisNetOutput(mbc.MetricsSettings.RedisNetOutput),
+		metricRedisRdbChangesSinceLastSave:           newMetricRedisRdbChangesSinceLastSave(mbc.MetricsSettings.RedisRdbChangesSinceLastSave),
+		metricRedisReplicationBacklogFirstByteOffset: newMetricRedisReplicationBacklogFirstByteOffset(mbc.MetricsSettings.RedisReplicationBacklogFirstByteOffset),
+		metricRedisReplicationOffset:                 newMetricRedisReplicationOffset(mbc.MetricsSettings.RedisReplicationOffset),
+		metricRedisRole:                              newMetricRedisRole(mbc.MetricsSettings.RedisRole),
+		metricRedisSlavesConnected:                   newMetricRedisSlavesConnected(mbc.MetricsSettings.RedisSlavesConnected),
+		metricRedisUptime:                            newMetricRedisUptime(mbc.MetricsSettings.RedisUptime),
 	}
 	for _, op := range options {
 		op(mb)

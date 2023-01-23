@@ -155,7 +155,7 @@ func TestLoadConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 
-	defaultMetrics := metadata.DefaultMetricsSettings()
+	defaultMetrics := metadata.DefaultMetricsBuilderConfig()
 	defaultMetrics.ElasticsearchNodeFsDiskAvailable.Enabled = false
 	tests := []struct {
 		id       component.ID

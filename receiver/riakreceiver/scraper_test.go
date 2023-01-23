@@ -145,7 +145,7 @@ func TestScaperScrape(t *testing.T) {
 			},
 			setupCfg: func() *Config {
 				cfg := createDefaultConfig().(*Config)
-				cfg.Metrics = metadata.MetricsSettings{
+				cfg.MetricsBuilderConfig.MetricsSettings = metadata.MetricsSettings{
 					RiakMemoryLimit: metadata.MetricSettings{
 						Enabled: false,
 					},

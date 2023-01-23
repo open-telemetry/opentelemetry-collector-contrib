@@ -873,6 +873,12 @@ func newMetricProcessThreads(settings MetricSettings) metricProcessThreads {
 	return m
 }
 
+// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
+type MetricsBuilderConfig struct {
+	MetricsSettings            MetricsSettings            `mapstructure:"metrics,squash"`
+	ResourceAttributesSettings ResourceAttributesSettings `mapstructure:"resource_attributes,squash"`
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
@@ -913,24 +919,31 @@ func WithResourceAttributesSettings(ras ResourceAttributesSettings) metricBuilde
 	}
 }
 
-func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
+func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+	return MetricsBuilderConfig{
+		MetricsSettings:            DefaultMetricsSettings(),
+		ResourceAttributesSettings: DefaultResourceAttributesSettings(),
+	}
+}
+
+func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                        pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                    pmetric.NewMetrics(),
 		buildInfo:                        settings.BuildInfo,
-		resourceAttributesSettings:       DefaultResourceAttributesSettings(),
-		metricProcessContextSwitches:     newMetricProcessContextSwitches(ms.ProcessContextSwitches),
-		metricProcessCPUTime:             newMetricProcessCPUTime(ms.ProcessCPUTime),
-		metricProcessCPUUtilization:      newMetricProcessCPUUtilization(ms.ProcessCPUUtilization),
-		metricProcessDiskIo:              newMetricProcessDiskIo(ms.ProcessDiskIo),
-		metricProcessDiskOperations:      newMetricProcessDiskOperations(ms.ProcessDiskOperations),
-		metricProcessMemoryUsage:         newMetricProcessMemoryUsage(ms.ProcessMemoryUsage),
-		metricProcessMemoryUtilization:   newMetricProcessMemoryUtilization(ms.ProcessMemoryUtilization),
-		metricProcessMemoryVirtual:       newMetricProcessMemoryVirtual(ms.ProcessMemoryVirtual),
-		metricProcessOpenFileDescriptors: newMetricProcessOpenFileDescriptors(ms.ProcessOpenFileDescriptors),
-		metricProcessPagingFaults:        newMetricProcessPagingFaults(ms.ProcessPagingFaults),
-		metricProcessSignalsPending:      newMetricProcessSignalsPending(ms.ProcessSignalsPending),
-		metricProcessThreads:             newMetricProcessThreads(ms.ProcessThreads),
+		resourceAttributesSettings:       mbc.ResourceAttributesSettings,
+		metricProcessContextSwitches:     newMetricProcessContextSwitches(mbc.MetricsSettings.ProcessContextSwitches),
+		metricProcessCPUTime:             newMetricProcessCPUTime(mbc.MetricsSettings.ProcessCPUTime),
+		metricProcessCPUUtilization:      newMetricProcessCPUUtilization(mbc.MetricsSettings.ProcessCPUUtilization),
+		metricProcessDiskIo:              newMetricProcessDiskIo(mbc.MetricsSettings.ProcessDiskIo),
+		metricProcessDiskOperations:      newMetricProcessDiskOperations(mbc.MetricsSettings.ProcessDiskOperations),
+		metricProcessMemoryUsage:         newMetricProcessMemoryUsage(mbc.MetricsSettings.ProcessMemoryUsage),
+		metricProcessMemoryUtilization:   newMetricProcessMemoryUtilization(mbc.MetricsSettings.ProcessMemoryUtilization),
+		metricProcessMemoryVirtual:       newMetricProcessMemoryVirtual(mbc.MetricsSettings.ProcessMemoryVirtual),
+		metricProcessOpenFileDescriptors: newMetricProcessOpenFileDescriptors(mbc.MetricsSettings.ProcessOpenFileDescriptors),
+		metricProcessPagingFaults:        newMetricProcessPagingFaults(mbc.MetricsSettings.ProcessPagingFaults),
+		metricProcessSignalsPending:      newMetricProcessSignalsPending(mbc.MetricsSettings.ProcessSignalsPending),
+		metricProcessThreads:             newMetricProcessThreads(mbc.MetricsSettings.ProcessThreads),
 	}
 	for _, op := range options {
 		op(mb)

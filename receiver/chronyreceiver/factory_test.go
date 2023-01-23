@@ -47,6 +47,15 @@ func TestCreatingMetricsReceiver(t *testing.T) {
 	t.Parallel()
 
 	factory := NewFactory()
+	mbc := metadata.DefaultMetricsBuilderConfig()
+	mbc.MetricsSettings = metadata.MetricsSettings{
+		NtpTimeCorrection: metadata.MetricSettings{
+			Enabled: true,
+		},
+		NtpSkew: metadata.MetricSettings{
+			Enabled: true,
+		},
+	}
 	mem, err := factory.CreateMetricsReceiver(
 		context.Background(),
 		receivertest.NewNopCreateSettings(),
@@ -54,16 +63,9 @@ func TestCreatingMetricsReceiver(t *testing.T) {
 			ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 				CollectionInterval: 30 * time.Second,
 			},
-			MetricsSettings: metadata.MetricsSettings{
-				NtpTimeCorrection: metadata.MetricSettings{
-					Enabled: true,
-				},
-				NtpSkew: metadata.MetricSettings{
-					Enabled: true,
-				},
-			},
-			Endpoint: "udp://localhost:323",
-			Timeout:  10 * time.Second,
+			MetricsBuilderConfig: mbc,
+			Endpoint:             "udp://localhost:323",
+			Timeout:              10 * time.Second,
 		},
 		consumertest.NewNop(),
 	)

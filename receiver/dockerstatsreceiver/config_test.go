@@ -66,12 +66,12 @@ func TestLoadConfig(t *testing.T) {
 					"MY_ENVIRONMENT_VARIABLE":       "my-metric-label",
 					"MY_OTHER_ENVIRONMENT_VARIABLE": "my-other-metric-label",
 				},
-				MetricsConfig: func() metadata.MetricsSettings {
-					m := metadata.DefaultMetricsSettings()
-					m.ContainerCPUUsageSystem = metadata.MetricSettings{
+				MetricsBuilderConfig: func() metadata.MetricsBuilderConfig {
+					m := metadata.DefaultMetricsBuilderConfig()
+					m.MetricsSettings.ContainerCPUUsageSystem = metadata.MetricSettings{
 						Enabled: false,
 					}
-					m.ContainerMemoryTotalRss = metadata.MetricSettings{
+					m.MetricsSettings.ContainerMemoryTotalRss = metadata.MetricSettings{
 						Enabled: true,
 					}
 					return m

@@ -1261,6 +1261,12 @@ func newMetricActiveDirectoryDsThreadCount(settings MetricSettings) metricActive
 	return m
 }
 
+// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
+type MetricsBuilderConfig struct {
+	MetricsSettings            MetricsSettings            `mapstructure:"metrics,squash"`
+	ResourceAttributesSettings ResourceAttributesSettings `mapstructure:"resource_attributes,squash"`
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
@@ -1307,30 +1313,37 @@ func WithResourceAttributesSettings(ras ResourceAttributesSettings) metricBuilde
 	}
 }
 
-func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
+func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+	return MetricsBuilderConfig{
+		MetricsSettings:            DefaultMetricsSettings(),
+		ResourceAttributesSettings: DefaultResourceAttributesSettings(),
+	}
+}
+
+func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                       pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                   pmetric.NewMetrics(),
 		buildInfo:                       settings.BuildInfo,
-		resourceAttributesSettings:      DefaultResourceAttributesSettings(),
-		metricActiveDirectoryDsBindRate: newMetricActiveDirectoryDsBindRate(ms.ActiveDirectoryDsBindRate),
-		metricActiveDirectoryDsLdapBindLastSuccessfulTime:                newMetricActiveDirectoryDsLdapBindLastSuccessfulTime(ms.ActiveDirectoryDsLdapBindLastSuccessfulTime),
-		metricActiveDirectoryDsLdapBindRate:                              newMetricActiveDirectoryDsLdapBindRate(ms.ActiveDirectoryDsLdapBindRate),
-		metricActiveDirectoryDsLdapClientSessionCount:                    newMetricActiveDirectoryDsLdapClientSessionCount(ms.ActiveDirectoryDsLdapClientSessionCount),
-		metricActiveDirectoryDsLdapSearchRate:                            newMetricActiveDirectoryDsLdapSearchRate(ms.ActiveDirectoryDsLdapSearchRate),
-		metricActiveDirectoryDsNameCacheHitRate:                          newMetricActiveDirectoryDsNameCacheHitRate(ms.ActiveDirectoryDsNameCacheHitRate),
-		metricActiveDirectoryDsNotificationQueued:                        newMetricActiveDirectoryDsNotificationQueued(ms.ActiveDirectoryDsNotificationQueued),
-		metricActiveDirectoryDsOperationRate:                             newMetricActiveDirectoryDsOperationRate(ms.ActiveDirectoryDsOperationRate),
-		metricActiveDirectoryDsReplicationNetworkIo:                      newMetricActiveDirectoryDsReplicationNetworkIo(ms.ActiveDirectoryDsReplicationNetworkIo),
-		metricActiveDirectoryDsReplicationObjectRate:                     newMetricActiveDirectoryDsReplicationObjectRate(ms.ActiveDirectoryDsReplicationObjectRate),
-		metricActiveDirectoryDsReplicationOperationPending:               newMetricActiveDirectoryDsReplicationOperationPending(ms.ActiveDirectoryDsReplicationOperationPending),
-		metricActiveDirectoryDsReplicationPropertyRate:                   newMetricActiveDirectoryDsReplicationPropertyRate(ms.ActiveDirectoryDsReplicationPropertyRate),
-		metricActiveDirectoryDsReplicationSyncObjectPending:              newMetricActiveDirectoryDsReplicationSyncObjectPending(ms.ActiveDirectoryDsReplicationSyncObjectPending),
-		metricActiveDirectoryDsReplicationSyncRequestCount:               newMetricActiveDirectoryDsReplicationSyncRequestCount(ms.ActiveDirectoryDsReplicationSyncRequestCount),
-		metricActiveDirectoryDsReplicationValueRate:                      newMetricActiveDirectoryDsReplicationValueRate(ms.ActiveDirectoryDsReplicationValueRate),
-		metricActiveDirectoryDsSecurityDescriptorPropagationsEventQueued: newMetricActiveDirectoryDsSecurityDescriptorPropagationsEventQueued(ms.ActiveDirectoryDsSecurityDescriptorPropagationsEventQueued),
-		metricActiveDirectoryDsSuboperationRate:                          newMetricActiveDirectoryDsSuboperationRate(ms.ActiveDirectoryDsSuboperationRate),
-		metricActiveDirectoryDsThreadCount:                               newMetricActiveDirectoryDsThreadCount(ms.ActiveDirectoryDsThreadCount),
+		resourceAttributesSettings:      mbc.ResourceAttributesSettings,
+		metricActiveDirectoryDsBindRate: newMetricActiveDirectoryDsBindRate(mbc.MetricsSettings.ActiveDirectoryDsBindRate),
+		metricActiveDirectoryDsLdapBindLastSuccessfulTime:                newMetricActiveDirectoryDsLdapBindLastSuccessfulTime(mbc.MetricsSettings.ActiveDirectoryDsLdapBindLastSuccessfulTime),
+		metricActiveDirectoryDsLdapBindRate:                              newMetricActiveDirectoryDsLdapBindRate(mbc.MetricsSettings.ActiveDirectoryDsLdapBindRate),
+		metricActiveDirectoryDsLdapClientSessionCount:                    newMetricActiveDirectoryDsLdapClientSessionCount(mbc.MetricsSettings.ActiveDirectoryDsLdapClientSessionCount),
+		metricActiveDirectoryDsLdapSearchRate:                            newMetricActiveDirectoryDsLdapSearchRate(mbc.MetricsSettings.ActiveDirectoryDsLdapSearchRate),
+		metricActiveDirectoryDsNameCacheHitRate:                          newMetricActiveDirectoryDsNameCacheHitRate(mbc.MetricsSettings.ActiveDirectoryDsNameCacheHitRate),
+		metricActiveDirectoryDsNotificationQueued:                        newMetricActiveDirectoryDsNotificationQueued(mbc.MetricsSettings.ActiveDirectoryDsNotificationQueued),
+		metricActiveDirectoryDsOperationRate:                             newMetricActiveDirectoryDsOperationRate(mbc.MetricsSettings.ActiveDirectoryDsOperationRate),
+		metricActiveDirectoryDsReplicationNetworkIo:                      newMetricActiveDirectoryDsReplicationNetworkIo(mbc.MetricsSettings.ActiveDirectoryDsReplicationNetworkIo),
+		metricActiveDirectoryDsReplicationObjectRate:                     newMetricActiveDirectoryDsReplicationObjectRate(mbc.MetricsSettings.ActiveDirectoryDsReplicationObjectRate),
+		metricActiveDirectoryDsReplicationOperationPending:               newMetricActiveDirectoryDsReplicationOperationPending(mbc.MetricsSettings.ActiveDirectoryDsReplicationOperationPending),
+		metricActiveDirectoryDsReplicationPropertyRate:                   newMetricActiveDirectoryDsReplicationPropertyRate(mbc.MetricsSettings.ActiveDirectoryDsReplicationPropertyRate),
+		metricActiveDirectoryDsReplicationSyncObjectPending:              newMetricActiveDirectoryDsReplicationSyncObjectPending(mbc.MetricsSettings.ActiveDirectoryDsReplicationSyncObjectPending),
+		metricActiveDirectoryDsReplicationSyncRequestCount:               newMetricActiveDirectoryDsReplicationSyncRequestCount(mbc.MetricsSettings.ActiveDirectoryDsReplicationSyncRequestCount),
+		metricActiveDirectoryDsReplicationValueRate:                      newMetricActiveDirectoryDsReplicationValueRate(mbc.MetricsSettings.ActiveDirectoryDsReplicationValueRate),
+		metricActiveDirectoryDsSecurityDescriptorPropagationsEventQueued: newMetricActiveDirectoryDsSecurityDescriptorPropagationsEventQueued(mbc.MetricsSettings.ActiveDirectoryDsSecurityDescriptorPropagationsEventQueued),
+		metricActiveDirectoryDsSuboperationRate:                          newMetricActiveDirectoryDsSuboperationRate(mbc.MetricsSettings.ActiveDirectoryDsSuboperationRate),
+		metricActiveDirectoryDsThreadCount:                               newMetricActiveDirectoryDsThreadCount(mbc.MetricsSettings.ActiveDirectoryDsThreadCount),
 	}
 	for _, op := range options {
 		op(mb)

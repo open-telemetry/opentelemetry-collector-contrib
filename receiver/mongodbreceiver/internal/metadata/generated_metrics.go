@@ -2008,6 +2008,12 @@ func newMetricMongodbUptime(settings MetricSettings) metricMongodbUptime {
 	return m
 }
 
+// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
+type MetricsBuilderConfig struct {
+	MetricsSettings            MetricsSettings            `mapstructure:"metrics,squash"`
+	ResourceAttributesSettings ResourceAttributesSettings `mapstructure:"resource_attributes,squash"`
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
@@ -2066,42 +2072,49 @@ func WithResourceAttributesSettings(ras ResourceAttributesSettings) metricBuilde
 	}
 }
 
-func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
+func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+	return MetricsBuilderConfig{
+		MetricsSettings:            DefaultMetricsSettings(),
+		ResourceAttributesSettings: DefaultResourceAttributesSettings(),
+	}
+}
+
+func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                           pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                       pmetric.NewMetrics(),
 		buildInfo:                           settings.BuildInfo,
-		resourceAttributesSettings:          DefaultResourceAttributesSettings(),
-		metricMongodbCacheOperations:        newMetricMongodbCacheOperations(ms.MongodbCacheOperations),
-		metricMongodbCollectionCount:        newMetricMongodbCollectionCount(ms.MongodbCollectionCount),
-		metricMongodbConnectionCount:        newMetricMongodbConnectionCount(ms.MongodbConnectionCount),
-		metricMongodbCursorCount:            newMetricMongodbCursorCount(ms.MongodbCursorCount),
-		metricMongodbCursorTimeoutCount:     newMetricMongodbCursorTimeoutCount(ms.MongodbCursorTimeoutCount),
-		metricMongodbDataSize:               newMetricMongodbDataSize(ms.MongodbDataSize),
-		metricMongodbDatabaseCount:          newMetricMongodbDatabaseCount(ms.MongodbDatabaseCount),
-		metricMongodbDocumentOperationCount: newMetricMongodbDocumentOperationCount(ms.MongodbDocumentOperationCount),
-		metricMongodbExtentCount:            newMetricMongodbExtentCount(ms.MongodbExtentCount),
-		metricMongodbGlobalLockTime:         newMetricMongodbGlobalLockTime(ms.MongodbGlobalLockTime),
-		metricMongodbHealth:                 newMetricMongodbHealth(ms.MongodbHealth),
-		metricMongodbIndexAccessCount:       newMetricMongodbIndexAccessCount(ms.MongodbIndexAccessCount),
-		metricMongodbIndexCount:             newMetricMongodbIndexCount(ms.MongodbIndexCount),
-		metricMongodbIndexSize:              newMetricMongodbIndexSize(ms.MongodbIndexSize),
-		metricMongodbLockAcquireCount:       newMetricMongodbLockAcquireCount(ms.MongodbLockAcquireCount),
-		metricMongodbLockAcquireTime:        newMetricMongodbLockAcquireTime(ms.MongodbLockAcquireTime),
-		metricMongodbLockAcquireWaitCount:   newMetricMongodbLockAcquireWaitCount(ms.MongodbLockAcquireWaitCount),
-		metricMongodbLockDeadlockCount:      newMetricMongodbLockDeadlockCount(ms.MongodbLockDeadlockCount),
-		metricMongodbMemoryUsage:            newMetricMongodbMemoryUsage(ms.MongodbMemoryUsage),
-		metricMongodbNetworkIoReceive:       newMetricMongodbNetworkIoReceive(ms.MongodbNetworkIoReceive),
-		metricMongodbNetworkIoTransmit:      newMetricMongodbNetworkIoTransmit(ms.MongodbNetworkIoTransmit),
-		metricMongodbNetworkRequestCount:    newMetricMongodbNetworkRequestCount(ms.MongodbNetworkRequestCount),
-		metricMongodbObjectCount:            newMetricMongodbObjectCount(ms.MongodbObjectCount),
-		metricMongodbOperationCount:         newMetricMongodbOperationCount(ms.MongodbOperationCount),
-		metricMongodbOperationLatencyTime:   newMetricMongodbOperationLatencyTime(ms.MongodbOperationLatencyTime),
-		metricMongodbOperationReplCount:     newMetricMongodbOperationReplCount(ms.MongodbOperationReplCount),
-		metricMongodbOperationTime:          newMetricMongodbOperationTime(ms.MongodbOperationTime),
-		metricMongodbSessionCount:           newMetricMongodbSessionCount(ms.MongodbSessionCount),
-		metricMongodbStorageSize:            newMetricMongodbStorageSize(ms.MongodbStorageSize),
-		metricMongodbUptime:                 newMetricMongodbUptime(ms.MongodbUptime),
+		resourceAttributesSettings:          mbc.ResourceAttributesSettings,
+		metricMongodbCacheOperations:        newMetricMongodbCacheOperations(mbc.MetricsSettings.MongodbCacheOperations),
+		metricMongodbCollectionCount:        newMetricMongodbCollectionCount(mbc.MetricsSettings.MongodbCollectionCount),
+		metricMongodbConnectionCount:        newMetricMongodbConnectionCount(mbc.MetricsSettings.MongodbConnectionCount),
+		metricMongodbCursorCount:            newMetricMongodbCursorCount(mbc.MetricsSettings.MongodbCursorCount),
+		metricMongodbCursorTimeoutCount:     newMetricMongodbCursorTimeoutCount(mbc.MetricsSettings.MongodbCursorTimeoutCount),
+		metricMongodbDataSize:               newMetricMongodbDataSize(mbc.MetricsSettings.MongodbDataSize),
+		metricMongodbDatabaseCount:          newMetricMongodbDatabaseCount(mbc.MetricsSettings.MongodbDatabaseCount),
+		metricMongodbDocumentOperationCount: newMetricMongodbDocumentOperationCount(mbc.MetricsSettings.MongodbDocumentOperationCount),
+		metricMongodbExtentCount:            newMetricMongodbExtentCount(mbc.MetricsSettings.MongodbExtentCount),
+		metricMongodbGlobalLockTime:         newMetricMongodbGlobalLockTime(mbc.MetricsSettings.MongodbGlobalLockTime),
+		metricMongodbHealth:                 newMetricMongodbHealth(mbc.MetricsSettings.MongodbHealth),
+		metricMongodbIndexAccessCount:       newMetricMongodbIndexAccessCount(mbc.MetricsSettings.MongodbIndexAccessCount),
+		metricMongodbIndexCount:             newMetricMongodbIndexCount(mbc.MetricsSettings.MongodbIndexCount),
+		metricMongodbIndexSize:              newMetricMongodbIndexSize(mbc.MetricsSettings.MongodbIndexSize),
+		metricMongodbLockAcquireCount:       newMetricMongodbLockAcquireCount(mbc.MetricsSettings.MongodbLockAcquireCount),
+		metricMongodbLockAcquireTime:        newMetricMongodbLockAcquireTime(mbc.MetricsSettings.MongodbLockAcquireTime),
+		metricMongodbLockAcquireWaitCount:   newMetricMongodbLockAcquireWaitCount(mbc.MetricsSettings.MongodbLockAcquireWaitCount),
+		metricMongodbLockDeadlockCount:      newMetricMongodbLockDeadlockCount(mbc.MetricsSettings.MongodbLockDeadlockCount),
+		metricMongodbMemoryUsage:            newMetricMongodbMemoryUsage(mbc.MetricsSettings.MongodbMemoryUsage),
+		metricMongodbNetworkIoReceive:       newMetricMongodbNetworkIoReceive(mbc.MetricsSettings.MongodbNetworkIoReceive),
+		metricMongodbNetworkIoTransmit:      newMetricMongodbNetworkIoTransmit(mbc.MetricsSettings.MongodbNetworkIoTransmit),
+		metricMongodbNetworkRequestCount:    newMetricMongodbNetworkRequestCount(mbc.MetricsSettings.MongodbNetworkRequestCount),
+		metricMongodbObjectCount:            newMetricMongodbObjectCount(mbc.MetricsSettings.MongodbObjectCount),
+		metricMongodbOperationCount:         newMetricMongodbOperationCount(mbc.MetricsSettings.MongodbOperationCount),
+		metricMongodbOperationLatencyTime:   newMetricMongodbOperationLatencyTime(mbc.MetricsSettings.MongodbOperationLatencyTime),
+		metricMongodbOperationReplCount:     newMetricMongodbOperationReplCount(mbc.MetricsSettings.MongodbOperationReplCount),
+		metricMongodbOperationTime:          newMetricMongodbOperationTime(mbc.MetricsSettings.MongodbOperationTime),
+		metricMongodbSessionCount:           newMetricMongodbSessionCount(mbc.MetricsSettings.MongodbSessionCount),
+		metricMongodbStorageSize:            newMetricMongodbStorageSize(mbc.MetricsSettings.MongodbStorageSize),
+		metricMongodbUptime:                 newMetricMongodbUptime(mbc.MetricsSettings.MongodbUptime),
 	}
 	for _, op := range options {
 		op(mb)

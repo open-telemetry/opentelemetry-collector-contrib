@@ -49,27 +49,27 @@ func TestScrape(t *testing.T) {
 	testCases := []testCase{
 		{
 			name:                "Standard",
-			metricsConfig:       metadata.DefaultMetricsSettings(),
+			metricsConfig:       metadata.DefaultMetricsBuilderConfig(),
 			expectedMetricCount: 1,
 		},
 		{
 			name:                "Validate Start Time",
 			bootTimeFunc:        func() (uint64, error) { return 100, nil },
-			metricsConfig:       metadata.DefaultMetricsSettings(),
+			metricsConfig:       metadata.DefaultMetricsBuilderConfig(),
 			expectedMetricCount: 1,
 			expectedStartTime:   100 * 1e9,
 		},
 		{
 			name:                "Boot Time Error",
 			bootTimeFunc:        func() (uint64, error) { return 0, errors.New("err1") },
-			metricsConfig:       metadata.DefaultMetricsSettings(),
+			metricsConfig:       metadata.DefaultMetricsBuilderConfig(),
 			expectedMetricCount: 1,
 			initializationErr:   "err1",
 		},
 		{
 			name:                "Times Error",
 			timesFunc:           func(bool) ([]cpu.TimesStat, error) { return nil, errors.New("err2") },
-			metricsConfig:       metadata.DefaultMetricsSettings(),
+			metricsConfig:       metadata.DefaultMetricsBuilderConfig(),
 			expectedMetricCount: 1,
 			expectedErr:         "err2",
 		},
@@ -148,7 +148,7 @@ func TestScrape_CpuUtilization(t *testing.T) {
 	testCases := []testCase{
 		{
 			name:                "Standard",
-			metricsConfig:       metadata.DefaultMetricsSettings(),
+			metricsConfig:       metadata.DefaultMetricsBuilderConfig(),
 			expectedMetricCount: 1,
 			times:               true,
 			utilization:         false,
@@ -227,7 +227,7 @@ func TestScrape_CpuUtilization(t *testing.T) {
 
 // Error in calculation should be returned as PartialScrapeError
 func TestScrape_CpuUtilizationError(t *testing.T) {
-	scraper := newCPUScraper(context.Background(), receivertest.NewNopCreateSettings(), &Config{Metrics: metadata.DefaultMetricsSettings()})
+	scraper := newCPUScraper(context.Background(), receivertest.NewNopCreateSettings(), &Config{Metrics: metadata.DefaultMetricsBuilderConfig()})
 	// mock times function to force an error in next scrape
 	scraper.times = func(bool) ([]cpu.TimesStat, error) {
 		return []cpu.TimesStat{{CPU: "1", System: 1, User: 2}}, nil

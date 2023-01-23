@@ -41,13 +41,13 @@ type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	configssh.SSHClientSettings             `mapstructure:",squash"`
 
-	CheckSFTP bool                     `mapstructure:"check_sftp"`
-	Metrics   metadata.MetricsSettings `mapstructure:"metrics"`
+	CheckSFTP            bool                          `mapstructure:"check_sftp"`
+	MetricsBuilderConfig metadata.MetricsBuilderConfig `mapstructure:",squash"`
 }
 
 // SFTPEnabled tells whether SFTP metrics are Enabled in MetricsSettings.
 func (c Config) SFTPEnabled() bool {
-	return (c.CheckSFTP || c.Metrics.SshcheckSftpDuration.Enabled || c.Metrics.SshcheckSftpStatus.Enabled)
+	return (c.CheckSFTP || c.MetricsBuilderConfig.MetricsSettings.SshcheckSftpDuration.Enabled || c.MetricsBuilderConfig.MetricsSettings.SshcheckSftpStatus.Enabled)
 }
 
 func (c Config) Validate() (err error) {

@@ -497,6 +497,12 @@ func newMetricSystemDiskWeightedIoTime(settings MetricSettings) metricSystemDisk
 	return m
 }
 
+// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
+type MetricsBuilderConfig struct {
+	MetricsSettings            MetricsSettings            `mapstructure:"metrics,squash"`
+	ResourceAttributesSettings ResourceAttributesSettings `mapstructure:"resource_attributes,squash"`
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
@@ -532,19 +538,26 @@ func WithResourceAttributesSettings(ras ResourceAttributesSettings) metricBuilde
 	}
 }
 
-func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
+func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+	return MetricsBuilderConfig{
+		MetricsSettings:            DefaultMetricsSettings(),
+		ResourceAttributesSettings: DefaultResourceAttributesSettings(),
+	}
+}
+
+func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                         pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                     pmetric.NewMetrics(),
 		buildInfo:                         settings.BuildInfo,
-		resourceAttributesSettings:        DefaultResourceAttributesSettings(),
-		metricSystemDiskIo:                newMetricSystemDiskIo(ms.SystemDiskIo),
-		metricSystemDiskIoTime:            newMetricSystemDiskIoTime(ms.SystemDiskIoTime),
-		metricSystemDiskMerged:            newMetricSystemDiskMerged(ms.SystemDiskMerged),
-		metricSystemDiskOperationTime:     newMetricSystemDiskOperationTime(ms.SystemDiskOperationTime),
-		metricSystemDiskOperations:        newMetricSystemDiskOperations(ms.SystemDiskOperations),
-		metricSystemDiskPendingOperations: newMetricSystemDiskPendingOperations(ms.SystemDiskPendingOperations),
-		metricSystemDiskWeightedIoTime:    newMetricSystemDiskWeightedIoTime(ms.SystemDiskWeightedIoTime),
+		resourceAttributesSettings:        mbc.ResourceAttributesSettings,
+		metricSystemDiskIo:                newMetricSystemDiskIo(mbc.MetricsSettings.SystemDiskIo),
+		metricSystemDiskIoTime:            newMetricSystemDiskIoTime(mbc.MetricsSettings.SystemDiskIoTime),
+		metricSystemDiskMerged:            newMetricSystemDiskMerged(mbc.MetricsSettings.SystemDiskMerged),
+		metricSystemDiskOperationTime:     newMetricSystemDiskOperationTime(mbc.MetricsSettings.SystemDiskOperationTime),
+		metricSystemDiskOperations:        newMetricSystemDiskOperations(mbc.MetricsSettings.SystemDiskOperations),
+		metricSystemDiskPendingOperations: newMetricSystemDiskPendingOperations(mbc.MetricsSettings.SystemDiskPendingOperations),
+		metricSystemDiskWeightedIoTime:    newMetricSystemDiskWeightedIoTime(mbc.MetricsSettings.SystemDiskWeightedIoTime),
 	}
 	for _, op := range options {
 		op(mb)

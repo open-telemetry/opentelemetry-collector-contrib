@@ -949,6 +949,12 @@ func newMetricZookeeperZnodeCount(settings MetricSettings) metricZookeeperZnodeC
 	return m
 }
 
+// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
+type MetricsBuilderConfig struct {
+	MetricsSettings            MetricsSettings            `mapstructure:"metrics,squash"`
+	ResourceAttributesSettings ResourceAttributesSettings `mapstructure:"resource_attributes,squash"`
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
@@ -992,27 +998,34 @@ func WithResourceAttributesSettings(ras ResourceAttributesSettings) metricBuilde
 	}
 }
 
-func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
+func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+	return MetricsBuilderConfig{
+		MetricsSettings:            DefaultMetricsSettings(),
+		ResourceAttributesSettings: DefaultResourceAttributesSettings(),
+	}
+}
+
+func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                       pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                   pmetric.NewMetrics(),
 		buildInfo:                       settings.BuildInfo,
-		resourceAttributesSettings:      DefaultResourceAttributesSettings(),
-		metricZookeeperConnectionActive: newMetricZookeeperConnectionActive(ms.ZookeeperConnectionActive),
-		metricZookeeperDataTreeEphemeralNodeCount:  newMetricZookeeperDataTreeEphemeralNodeCount(ms.ZookeeperDataTreeEphemeralNodeCount),
-		metricZookeeperDataTreeSize:                newMetricZookeeperDataTreeSize(ms.ZookeeperDataTreeSize),
-		metricZookeeperFileDescriptorLimit:         newMetricZookeeperFileDescriptorLimit(ms.ZookeeperFileDescriptorLimit),
-		metricZookeeperFileDescriptorOpen:          newMetricZookeeperFileDescriptorOpen(ms.ZookeeperFileDescriptorOpen),
-		metricZookeeperFollowerCount:               newMetricZookeeperFollowerCount(ms.ZookeeperFollowerCount),
-		metricZookeeperFsyncExceededThresholdCount: newMetricZookeeperFsyncExceededThresholdCount(ms.ZookeeperFsyncExceededThresholdCount),
-		metricZookeeperLatencyAvg:                  newMetricZookeeperLatencyAvg(ms.ZookeeperLatencyAvg),
-		metricZookeeperLatencyMax:                  newMetricZookeeperLatencyMax(ms.ZookeeperLatencyMax),
-		metricZookeeperLatencyMin:                  newMetricZookeeperLatencyMin(ms.ZookeeperLatencyMin),
-		metricZookeeperPacketCount:                 newMetricZookeeperPacketCount(ms.ZookeeperPacketCount),
-		metricZookeeperRequestActive:               newMetricZookeeperRequestActive(ms.ZookeeperRequestActive),
-		metricZookeeperSyncPending:                 newMetricZookeeperSyncPending(ms.ZookeeperSyncPending),
-		metricZookeeperWatchCount:                  newMetricZookeeperWatchCount(ms.ZookeeperWatchCount),
-		metricZookeeperZnodeCount:                  newMetricZookeeperZnodeCount(ms.ZookeeperZnodeCount),
+		resourceAttributesSettings:      mbc.ResourceAttributesSettings,
+		metricZookeeperConnectionActive: newMetricZookeeperConnectionActive(mbc.MetricsSettings.ZookeeperConnectionActive),
+		metricZookeeperDataTreeEphemeralNodeCount:  newMetricZookeeperDataTreeEphemeralNodeCount(mbc.MetricsSettings.ZookeeperDataTreeEphemeralNodeCount),
+		metricZookeeperDataTreeSize:                newMetricZookeeperDataTreeSize(mbc.MetricsSettings.ZookeeperDataTreeSize),
+		metricZookeeperFileDescriptorLimit:         newMetricZookeeperFileDescriptorLimit(mbc.MetricsSettings.ZookeeperFileDescriptorLimit),
+		metricZookeeperFileDescriptorOpen:          newMetricZookeeperFileDescriptorOpen(mbc.MetricsSettings.ZookeeperFileDescriptorOpen),
+		metricZookeeperFollowerCount:               newMetricZookeeperFollowerCount(mbc.MetricsSettings.ZookeeperFollowerCount),
+		metricZookeeperFsyncExceededThresholdCount: newMetricZookeeperFsyncExceededThresholdCount(mbc.MetricsSettings.ZookeeperFsyncExceededThresholdCount),
+		metricZookeeperLatencyAvg:                  newMetricZookeeperLatencyAvg(mbc.MetricsSettings.ZookeeperLatencyAvg),
+		metricZookeeperLatencyMax:                  newMetricZookeeperLatencyMax(mbc.MetricsSettings.ZookeeperLatencyMax),
+		metricZookeeperLatencyMin:                  newMetricZookeeperLatencyMin(mbc.MetricsSettings.ZookeeperLatencyMin),
+		metricZookeeperPacketCount:                 newMetricZookeeperPacketCount(mbc.MetricsSettings.ZookeeperPacketCount),
+		metricZookeeperRequestActive:               newMetricZookeeperRequestActive(mbc.MetricsSettings.ZookeeperRequestActive),
+		metricZookeeperSyncPending:                 newMetricZookeeperSyncPending(mbc.MetricsSettings.ZookeeperSyncPending),
+		metricZookeeperWatchCount:                  newMetricZookeeperWatchCount(mbc.MetricsSettings.ZookeeperWatchCount),
+		metricZookeeperZnodeCount:                  newMetricZookeeperZnodeCount(mbc.MetricsSettings.ZookeeperZnodeCount),
 	}
 	for _, op := range options {
 		op(mb)

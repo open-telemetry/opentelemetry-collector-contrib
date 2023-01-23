@@ -281,6 +281,12 @@ func newMetricOptionalMetric(settings MetricSettings) metricOptionalMetric {
 	return m
 }
 
+// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
+type MetricsBuilderConfig struct {
+	MetricsSettings            MetricsSettings            `mapstructure:"metrics,squash"`
+	ResourceAttributesSettings ResourceAttributesSettings `mapstructure:"resource_attributes,squash"`
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
@@ -312,24 +318,31 @@ func WithResourceAttributesSettings(ras ResourceAttributesSettings) metricBuilde
 	}
 }
 
-func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
-	if !ms.DefaultMetric.enabledSetByUser {
+func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+	return MetricsBuilderConfig{
+		MetricsSettings:            DefaultMetricsSettings(),
+		ResourceAttributesSettings: DefaultResourceAttributesSettings(),
+	}
+}
+
+func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
+	if !mbc.MetricsSettings.DefaultMetric.enabledSetByUser {
 		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `default.metric`: This metric will be disabled by default soon.")
 	}
-	if ms.DefaultMetricToBeRemoved.Enabled {
+	if mbc.MetricsSettings.DefaultMetricToBeRemoved.Enabled {
 		settings.Logger.Warn("[WARNING] `default.metric.to_be_removed` should not be enabled: This metric is deprecated and will be removed soon.")
 	}
-	if ms.OptionalMetric.enabledSetByUser {
+	if mbc.MetricsSettings.OptionalMetric.enabledSetByUser {
 		settings.Logger.Warn("[WARNING] `optional.metric` should not be configured: This metric is deprecated and will be removed soon.")
 	}
 	mb := &MetricsBuilder{
 		startTime:                      pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                  pmetric.NewMetrics(),
 		buildInfo:                      settings.BuildInfo,
-		resourceAttributesSettings:     DefaultResourceAttributesSettings(),
-		metricDefaultMetric:            newMetricDefaultMetric(ms.DefaultMetric),
-		metricDefaultMetricToBeRemoved: newMetricDefaultMetricToBeRemoved(ms.DefaultMetricToBeRemoved),
-		metricOptionalMetric:           newMetricOptionalMetric(ms.OptionalMetric),
+		resourceAttributesSettings:     mbc.ResourceAttributesSettings,
+		metricDefaultMetric:            newMetricDefaultMetric(mbc.MetricsSettings.DefaultMetric),
+		metricDefaultMetricToBeRemoved: newMetricDefaultMetricToBeRemoved(mbc.MetricsSettings.DefaultMetricToBeRemoved),
+		metricOptionalMetric:           newMetricOptionalMetric(mbc.MetricsSettings.OptionalMetric),
 	}
 	for _, op := range options {
 		op(mb)

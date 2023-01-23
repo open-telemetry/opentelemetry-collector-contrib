@@ -90,7 +90,7 @@ func TestScrape(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			metricsSettings := metadata.DefaultMetricsSettings()
+			metricsSettings := metadata.DefaultMetricsBuilderConfig()
 			if test.mutateMetricsSettings != nil {
 				test.mutateMetricsSettings(t, &metricsSettings)
 			}
@@ -343,11 +343,11 @@ func getMetricSlice(t *testing.T, rm pmetric.ResourceMetrics) pmetric.MetricSlic
 func TestScrapeMetrics_NewError(t *testing.T) {
 	skipTestOnUnsupportedOS(t)
 
-	_, err := newProcessScraper(receivertest.NewNopCreateSettings(), &Config{Include: MatchConfig{Names: []string{"test"}}, Metrics: metadata.DefaultMetricsSettings()})
+	_, err := newProcessScraper(receivertest.NewNopCreateSettings(), &Config{Include: MatchConfig{Names: []string{"test"}}, Metrics: metadata.DefaultMetricsBuilderConfig()})
 	require.Error(t, err)
 	require.Regexp(t, "^error creating process include filters:", err.Error())
 
-	_, err = newProcessScraper(receivertest.NewNopCreateSettings(), &Config{Exclude: MatchConfig{Names: []string{"test"}}, Metrics: metadata.DefaultMetricsSettings()})
+	_, err = newProcessScraper(receivertest.NewNopCreateSettings(), &Config{Exclude: MatchConfig{Names: []string{"test"}}, Metrics: metadata.DefaultMetricsBuilderConfig()})
 	require.Error(t, err)
 	require.Regexp(t, "^error creating process exclude filters:", err.Error())
 }
@@ -355,7 +355,7 @@ func TestScrapeMetrics_NewError(t *testing.T) {
 func TestScrapeMetrics_GetProcessesError(t *testing.T) {
 	skipTestOnUnsupportedOS(t)
 
-	scraper, err := newProcessScraper(receivertest.NewNopCreateSettings(), &Config{Metrics: metadata.DefaultMetricsSettings()})
+	scraper, err := newProcessScraper(receivertest.NewNopCreateSettings(), &Config{Metrics: metadata.DefaultMetricsBuilderConfig()})
 	require.NoError(t, err, "Failed to create process scraper: %v", err)
 
 	scraper.getProcessHandles = func() (processHandles, error) { return nil, errors.New("err1") }
@@ -569,7 +569,7 @@ func TestScrapeMetrics_Filtered(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			scrapeProcessDelay, _ := time.ParseDuration(test.scrapeProcessDelay)
-			metricsSettings := metadata.DefaultMetricsSettings()
+			metricsSettings := metadata.DefaultMetricsBuilderConfig()
 			enableLinuxOnlyMetrics(&metricsSettings)
 
 			config := &Config{
@@ -766,7 +766,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 				t.Skipf("skipping test %v on %v", test.name, runtime.GOOS)
 			}
 
-			metricsSettings := metadata.DefaultMetricsSettings()
+			metricsSettings := metadata.DefaultMetricsBuilderConfig()
 			enableOptionalMetrics(&metricsSettings)
 
 			scraper, err := newProcessScraper(receivertest.NewNopCreateSettings(), &Config{Metrics: metricsSettings})
@@ -905,7 +905,7 @@ func TestScrapeMetrics_MuteProcessNameError(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			config := &Config{Metrics: metadata.DefaultMetricsSettings()}
+			config := &Config{Metrics: metadata.DefaultMetricsBuilderConfig()}
 			if !test.omitConfigField {
 				config.MuteProcessNameError = test.muteProcessNameError
 			}
@@ -957,7 +957,7 @@ func newErroringHandleMock() *processHandleMock {
 func TestScrapeMetrics_DontCheckDisabledMetrics(t *testing.T) {
 	skipTestOnUnsupportedOS(t)
 
-	metricSettings := metadata.DefaultMetricsSettings()
+	metricSettings := metadata.DefaultMetricsBuilderConfig()
 
 	metricSettings.ProcessCPUTime.Enabled = false
 	metricSettings.ProcessDiskIo.Enabled = false

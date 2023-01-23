@@ -26,7 +26,7 @@ import (
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	confignet.TCPAddr                       `mapstructure:",squash"`
-	Metrics                                 metadata.MetricsSettings `mapstructure:"metrics"`
+	MetricsBuilderConfig                    metadata.MetricsBuilderConfig `mapstructure:",squash"`
 
 	// Timeout within which requests should be completed.
 	Timeout time.Duration `mapstructure:"timeout"`

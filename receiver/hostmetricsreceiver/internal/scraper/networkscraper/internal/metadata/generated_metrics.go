@@ -516,6 +516,12 @@ func newMetricSystemNetworkPackets(settings MetricSettings) metricSystemNetworkP
 	return m
 }
 
+// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
+type MetricsBuilderConfig struct {
+	MetricsSettings            MetricsSettings            `mapstructure:"metrics,squash"`
+	ResourceAttributesSettings ResourceAttributesSettings `mapstructure:"resource_attributes,squash"`
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
@@ -551,19 +557,26 @@ func WithResourceAttributesSettings(ras ResourceAttributesSettings) metricBuilde
 	}
 }
 
-func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
+func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+	return MetricsBuilderConfig{
+		MetricsSettings:            DefaultMetricsSettings(),
+		ResourceAttributesSettings: DefaultResourceAttributesSettings(),
+	}
+}
+
+func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                         pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                     pmetric.NewMetrics(),
 		buildInfo:                         settings.BuildInfo,
-		resourceAttributesSettings:        DefaultResourceAttributesSettings(),
-		metricSystemNetworkConnections:    newMetricSystemNetworkConnections(ms.SystemNetworkConnections),
-		metricSystemNetworkConntrackCount: newMetricSystemNetworkConntrackCount(ms.SystemNetworkConntrackCount),
-		metricSystemNetworkConntrackMax:   newMetricSystemNetworkConntrackMax(ms.SystemNetworkConntrackMax),
-		metricSystemNetworkDropped:        newMetricSystemNetworkDropped(ms.SystemNetworkDropped),
-		metricSystemNetworkErrors:         newMetricSystemNetworkErrors(ms.SystemNetworkErrors),
-		metricSystemNetworkIo:             newMetricSystemNetworkIo(ms.SystemNetworkIo),
-		metricSystemNetworkPackets:        newMetricSystemNetworkPackets(ms.SystemNetworkPackets),
+		resourceAttributesSettings:        mbc.ResourceAttributesSettings,
+		metricSystemNetworkConnections:    newMetricSystemNetworkConnections(mbc.MetricsSettings.SystemNetworkConnections),
+		metricSystemNetworkConntrackCount: newMetricSystemNetworkConntrackCount(mbc.MetricsSettings.SystemNetworkConntrackCount),
+		metricSystemNetworkConntrackMax:   newMetricSystemNetworkConntrackMax(mbc.MetricsSettings.SystemNetworkConntrackMax),
+		metricSystemNetworkDropped:        newMetricSystemNetworkDropped(mbc.MetricsSettings.SystemNetworkDropped),
+		metricSystemNetworkErrors:         newMetricSystemNetworkErrors(mbc.MetricsSettings.SystemNetworkErrors),
+		metricSystemNetworkIo:             newMetricSystemNetworkIo(mbc.MetricsSettings.SystemNetworkIo),
+		metricSystemNetworkPackets:        newMetricSystemNetworkPackets(mbc.MetricsSettings.SystemNetworkPackets),
 	}
 	for _, op := range options {
 		op(mb)

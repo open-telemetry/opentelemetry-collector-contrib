@@ -98,7 +98,7 @@ func TestScrape_Errors(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			metricsConfig := metadata.DefaultMetricsSettings()
+			metricsConfig := metadata.DefaultMetricsBuilderConfig()
 			metricsConfig.SystemPagingUtilization.Enabled = true
 
 			scraper := newPagingScraper(context.Background(), receivertest.NewNopCreateSettings(), &Config{Metrics: metricsConfig})
@@ -170,7 +170,7 @@ func TestStart_Error(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			metricsConfig := metadata.DefaultMetricsSettings()
+			metricsConfig := metadata.DefaultMetricsBuilderConfig()
 			metricsConfig.SystemPagingUtilization.Enabled = true
 
 			scraper := newPagingScraper(context.Background(), receivertest.NewNopCreateSettings(), &Config{Metrics: metricsConfig})

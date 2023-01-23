@@ -40,7 +40,7 @@ var allTCPStates = []string{
 }
 
 func (s *scraper) recordNetworkConntrackMetrics() error {
-	if !s.config.Metrics.SystemNetworkConntrackCount.Enabled && !s.config.Metrics.SystemNetworkConntrackMax.Enabled {
+	if !s.config.MetricsBuilderConfig.MetricsSettings.SystemNetworkConntrackCount.Enabled && !s.config.MetricsBuilderConfig.MetricsSettings.SystemNetworkConntrackMax.Enabled {
 		return nil
 	}
 

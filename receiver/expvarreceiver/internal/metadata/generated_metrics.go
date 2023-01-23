@@ -1493,6 +1493,12 @@ func newMetricProcessRuntimeMemstatsTotalAlloc(settings MetricSettings) metricPr
 	return m
 }
 
+// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
+type MetricsBuilderConfig struct {
+	MetricsSettings            MetricsSettings            `mapstructure:"metrics,squash"`
+	ResourceAttributesSettings ResourceAttributesSettings `mapstructure:"resource_attributes,squash"`
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
@@ -1547,38 +1553,45 @@ func WithResourceAttributesSettings(ras ResourceAttributesSettings) metricBuilde
 	}
 }
 
-func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
+func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+	return MetricsBuilderConfig{
+		MetricsSettings:            DefaultMetricsSettings(),
+		ResourceAttributesSettings: DefaultResourceAttributesSettings(),
+	}
+}
+
+func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                                 pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                             pmetric.NewMetrics(),
 		buildInfo:                                 settings.BuildInfo,
-		resourceAttributesSettings:                DefaultResourceAttributesSettings(),
-		metricProcessRuntimeMemstatsBuckHashSys:   newMetricProcessRuntimeMemstatsBuckHashSys(ms.ProcessRuntimeMemstatsBuckHashSys),
-		metricProcessRuntimeMemstatsFrees:         newMetricProcessRuntimeMemstatsFrees(ms.ProcessRuntimeMemstatsFrees),
-		metricProcessRuntimeMemstatsGcCPUFraction: newMetricProcessRuntimeMemstatsGcCPUFraction(ms.ProcessRuntimeMemstatsGcCPUFraction),
-		metricProcessRuntimeMemstatsGcSys:         newMetricProcessRuntimeMemstatsGcSys(ms.ProcessRuntimeMemstatsGcSys),
-		metricProcessRuntimeMemstatsHeapAlloc:     newMetricProcessRuntimeMemstatsHeapAlloc(ms.ProcessRuntimeMemstatsHeapAlloc),
-		metricProcessRuntimeMemstatsHeapIdle:      newMetricProcessRuntimeMemstatsHeapIdle(ms.ProcessRuntimeMemstatsHeapIdle),
-		metricProcessRuntimeMemstatsHeapInuse:     newMetricProcessRuntimeMemstatsHeapInuse(ms.ProcessRuntimeMemstatsHeapInuse),
-		metricProcessRuntimeMemstatsHeapObjects:   newMetricProcessRuntimeMemstatsHeapObjects(ms.ProcessRuntimeMemstatsHeapObjects),
-		metricProcessRuntimeMemstatsHeapReleased:  newMetricProcessRuntimeMemstatsHeapReleased(ms.ProcessRuntimeMemstatsHeapReleased),
-		metricProcessRuntimeMemstatsHeapSys:       newMetricProcessRuntimeMemstatsHeapSys(ms.ProcessRuntimeMemstatsHeapSys),
-		metricProcessRuntimeMemstatsLastPause:     newMetricProcessRuntimeMemstatsLastPause(ms.ProcessRuntimeMemstatsLastPause),
-		metricProcessRuntimeMemstatsLookups:       newMetricProcessRuntimeMemstatsLookups(ms.ProcessRuntimeMemstatsLookups),
-		metricProcessRuntimeMemstatsMallocs:       newMetricProcessRuntimeMemstatsMallocs(ms.ProcessRuntimeMemstatsMallocs),
-		metricProcessRuntimeMemstatsMcacheInuse:   newMetricProcessRuntimeMemstatsMcacheInuse(ms.ProcessRuntimeMemstatsMcacheInuse),
-		metricProcessRuntimeMemstatsMcacheSys:     newMetricProcessRuntimeMemstatsMcacheSys(ms.ProcessRuntimeMemstatsMcacheSys),
-		metricProcessRuntimeMemstatsMspanInuse:    newMetricProcessRuntimeMemstatsMspanInuse(ms.ProcessRuntimeMemstatsMspanInuse),
-		metricProcessRuntimeMemstatsMspanSys:      newMetricProcessRuntimeMemstatsMspanSys(ms.ProcessRuntimeMemstatsMspanSys),
-		metricProcessRuntimeMemstatsNextGc:        newMetricProcessRuntimeMemstatsNextGc(ms.ProcessRuntimeMemstatsNextGc),
-		metricProcessRuntimeMemstatsNumForcedGc:   newMetricProcessRuntimeMemstatsNumForcedGc(ms.ProcessRuntimeMemstatsNumForcedGc),
-		metricProcessRuntimeMemstatsNumGc:         newMetricProcessRuntimeMemstatsNumGc(ms.ProcessRuntimeMemstatsNumGc),
-		metricProcessRuntimeMemstatsOtherSys:      newMetricProcessRuntimeMemstatsOtherSys(ms.ProcessRuntimeMemstatsOtherSys),
-		metricProcessRuntimeMemstatsPauseTotal:    newMetricProcessRuntimeMemstatsPauseTotal(ms.ProcessRuntimeMemstatsPauseTotal),
-		metricProcessRuntimeMemstatsStackInuse:    newMetricProcessRuntimeMemstatsStackInuse(ms.ProcessRuntimeMemstatsStackInuse),
-		metricProcessRuntimeMemstatsStackSys:      newMetricProcessRuntimeMemstatsStackSys(ms.ProcessRuntimeMemstatsStackSys),
-		metricProcessRuntimeMemstatsSys:           newMetricProcessRuntimeMemstatsSys(ms.ProcessRuntimeMemstatsSys),
-		metricProcessRuntimeMemstatsTotalAlloc:    newMetricProcessRuntimeMemstatsTotalAlloc(ms.ProcessRuntimeMemstatsTotalAlloc),
+		resourceAttributesSettings:                mbc.ResourceAttributesSettings,
+		metricProcessRuntimeMemstatsBuckHashSys:   newMetricProcessRuntimeMemstatsBuckHashSys(mbc.MetricsSettings.ProcessRuntimeMemstatsBuckHashSys),
+		metricProcessRuntimeMemstatsFrees:         newMetricProcessRuntimeMemstatsFrees(mbc.MetricsSettings.ProcessRuntimeMemstatsFrees),
+		metricProcessRuntimeMemstatsGcCPUFraction: newMetricProcessRuntimeMemstatsGcCPUFraction(mbc.MetricsSettings.ProcessRuntimeMemstatsGcCPUFraction),
+		metricProcessRuntimeMemstatsGcSys:         newMetricProcessRuntimeMemstatsGcSys(mbc.MetricsSettings.ProcessRuntimeMemstatsGcSys),
+		metricProcessRuntimeMemstatsHeapAlloc:     newMetricProcessRuntimeMemstatsHeapAlloc(mbc.MetricsSettings.ProcessRuntimeMemstatsHeapAlloc),
+		metricProcessRuntimeMemstatsHeapIdle:      newMetricProcessRuntimeMemstatsHeapIdle(mbc.MetricsSettings.ProcessRuntimeMemstatsHeapIdle),
+		metricProcessRuntimeMemstatsHeapInuse:     newMetricProcessRuntimeMemstatsHeapInuse(mbc.MetricsSettings.ProcessRuntimeMemstatsHeapInuse),
+		metricProcessRuntimeMemstatsHeapObjects:   newMetricProcessRuntimeMemstatsHeapObjects(mbc.MetricsSettings.ProcessRuntimeMemstatsHeapObjects),
+		metricProcessRuntimeMemstatsHeapReleased:  newMetricProcessRuntimeMemstatsHeapReleased(mbc.MetricsSettings.ProcessRuntimeMemstatsHeapReleased),
+		metricProcessRuntimeMemstatsHeapSys:       newMetricProcessRuntimeMemstatsHeapSys(mbc.MetricsSettings.ProcessRuntimeMemstatsHeapSys),
+		metricProcessRuntimeMemstatsLastPause:     newMetricProcessRuntimeMemstatsLastPause(mbc.MetricsSettings.ProcessRuntimeMemstatsLastPause),
+		metricProcessRuntimeMemstatsLookups:       newMetricProcessRuntimeMemstatsLookups(mbc.MetricsSettings.ProcessRuntimeMemstatsLookups),
+		metricProcessRuntimeMemstatsMallocs:       newMetricProcessRuntimeMemstatsMallocs(mbc.MetricsSettings.ProcessRuntimeMemstatsMallocs),
+		metricProcessRuntimeMemstatsMcacheInuse:   newMetricProcessRuntimeMemstatsMcacheInuse(mbc.MetricsSettings.ProcessRuntimeMemstatsMcacheInuse),
+		metricProcessRuntimeMemstatsMcacheSys:     newMetricProcessRuntimeMemstatsMcacheSys(mbc.MetricsSettings.ProcessRuntimeMemstatsMcacheSys),
+		metricProcessRuntimeMemstatsMspanInuse:    newMetricProcessRuntimeMemstatsMspanInuse(mbc.MetricsSettings.ProcessRuntimeMemstatsMspanInuse),
+		metricProcessRuntimeMemstatsMspanSys:      newMetricProcessRuntimeMemstatsMspanSys(mbc.MetricsSettings.ProcessRuntimeMemstatsMspanSys),
+		metricProcessRuntimeMemstatsNextGc:        newMetricProcessRuntimeMemstatsNextGc(mbc.MetricsSettings.ProcessRuntimeMemstatsNextGc),
+		metricProcessRuntimeMemstatsNumForcedGc:   newMetricProcessRuntimeMemstatsNumForcedGc(mbc.MetricsSettings.ProcessRuntimeMemstatsNumForcedGc),
+		metricProcessRuntimeMemstatsNumGc:         newMetricProcessRuntimeMemstatsNumGc(mbc.MetricsSettings.ProcessRuntimeMemstatsNumGc),
+		metricProcessRuntimeMemstatsOtherSys:      newMetricProcessRuntimeMemstatsOtherSys(mbc.MetricsSettings.ProcessRuntimeMemstatsOtherSys),
+		metricProcessRuntimeMemstatsPauseTotal:    newMetricProcessRuntimeMemstatsPauseTotal(mbc.MetricsSettings.ProcessRuntimeMemstatsPauseTotal),
+		metricProcessRuntimeMemstatsStackInuse:    newMetricProcessRuntimeMemstatsStackInuse(mbc.MetricsSettings.ProcessRuntimeMemstatsStackInuse),
+		metricProcessRuntimeMemstatsStackSys:      newMetricProcessRuntimeMemstatsStackSys(mbc.MetricsSettings.ProcessRuntimeMemstatsStackSys),
+		metricProcessRuntimeMemstatsSys:           newMetricProcessRuntimeMemstatsSys(mbc.MetricsSettings.ProcessRuntimeMemstatsSys),
+		metricProcessRuntimeMemstatsTotalAlloc:    newMetricProcessRuntimeMemstatsTotalAlloc(mbc.MetricsSettings.ProcessRuntimeMemstatsTotalAlloc),
 	}
 	for _, op := range options {
 		op(mb)

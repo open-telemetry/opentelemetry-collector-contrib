@@ -30,7 +30,7 @@ const defaultEndpoint = "http://localhost:8081"
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	confighttp.HTTPClientSettings           `mapstructure:",squash"`
-	Metrics                                 metadata.MetricsSettings `mapstructure:"metrics"`
+	metadata.MetricsBuilderConfig           `mapstructure:",squash"`
 }
 
 // Validate validates the configuration by checking for missing or invalid fields

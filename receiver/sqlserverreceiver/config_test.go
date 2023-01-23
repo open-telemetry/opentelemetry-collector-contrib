@@ -34,7 +34,7 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "valid config",
 			cfg: &Config{
-				Metrics: metadata.DefaultMetricsSettings(),
+				Metrics: metadata.DefaultMetricsBuilderConfig(),
 			},
 		}, {
 			desc: "valid config with no metric settings",

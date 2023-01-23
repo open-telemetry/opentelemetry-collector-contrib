@@ -193,6 +193,12 @@ func newMetric{{ $name.Render }}(settings MetricSettings) metric{{ $name.Render 
 
 {{ end -}}
 
+// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
+type MetricsBuilderConfig struct {
+    MetricsSettings MetricsSettings `mapstructure:"metrics,squash"`
+    ResourceAttributesSettings ResourceAttributesSettings `mapstructure:"resource_attributes,squash"`
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
@@ -223,20 +229,27 @@ func WithResourceAttributesSettings(ras ResourceAttributesSettings) metricBuilde
     }
 }
 
-func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
+func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+   return MetricsBuilderConfig {
+        MetricsSettings: DefaultMetricsSettings(),
+        ResourceAttributesSettings: DefaultResourceAttributesSettings(),
+   }
+}
+
+func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	{{- range $name, $metric := .Metrics }}
 	{{- if $metric.Warnings.IfEnabled }}
-	if ms.{{ $name.Render }}.Enabled {
+	if mbc.MetricsSettings.{{ $name.Render }}.Enabled {
 		settings.Logger.Warn("[WARNING] `{{ $name }}` should not be enabled: {{ $metric.Warnings.IfEnabled }}")
 	}
 	{{- end }}
 	{{- if $metric.Warnings.IfEnabledNotSet }}
-	if !ms.{{ $name.Render }}.enabledSetByUser {
+	if !mbc.MetricsSettings.{{ $name.Render }}.enabledSetByUser {
 		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `{{ $name }}`: {{ $metric.Warnings.IfEnabledNotSet }}")
 	}
 	{{- end }}
 	{{- if $metric.Warnings.IfConfigured }}
-	if ms.{{ $name.Render }}.enabledSetByUser {
+	if mbc.MetricsSettings.{{ $name.Render }}.enabledSetByUser {
 		settings.Logger.Warn("[WARNING] `{{ $name }}` should not be configured: {{ $metric.Warnings.IfConfigured }}")
 	}
 	{{- end }}
@@ -245,9 +258,9 @@ func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, opt
 		startTime:                pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:            pmetric.NewMetrics(),
 		buildInfo:                settings.BuildInfo,
-		resourceAttributesSettings: DefaultResourceAttributesSettings(),
+		resourceAttributesSettings: mbc.ResourceAttributesSettings,
 		{{- range $name, $metric := .Metrics }}
-		metric{{ $name.Render }}: newMetric{{ $name.Render }}(ms.{{ $name.Render }}),
+		metric{{ $name.Render }}: newMetric{{ $name.Render }}(mbc.MetricsSettings.{{ $name.Render }}),
 		{{- end }}
 	}
 	for _, op := range options {

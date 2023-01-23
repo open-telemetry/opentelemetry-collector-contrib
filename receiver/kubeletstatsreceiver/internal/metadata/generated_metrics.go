@@ -2406,6 +2406,12 @@ func newMetricK8sVolumeInodesUsed(settings MetricSettings) metricK8sVolumeInodes
 	return m
 }
 
+// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
+type MetricsBuilderConfig struct {
+	MetricsSettings            MetricsSettings            `mapstructure:"metrics,squash"`
+	ResourceAttributesSettings ResourceAttributesSettings `mapstructure:"resource_attributes,squash"`
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
@@ -2476,54 +2482,61 @@ func WithResourceAttributesSettings(ras ResourceAttributesSettings) metricBuilde
 	}
 }
 
-func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
+func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+	return MetricsBuilderConfig{
+		MetricsSettings:            DefaultMetricsSettings(),
+		ResourceAttributesSettings: DefaultResourceAttributesSettings(),
+	}
+}
+
+func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                            pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                        pmetric.NewMetrics(),
 		buildInfo:                            settings.BuildInfo,
-		resourceAttributesSettings:           DefaultResourceAttributesSettings(),
-		metricContainerCPUTime:               newMetricContainerCPUTime(ms.ContainerCPUTime),
-		metricContainerCPUUtilization:        newMetricContainerCPUUtilization(ms.ContainerCPUUtilization),
-		metricContainerFilesystemAvailable:   newMetricContainerFilesystemAvailable(ms.ContainerFilesystemAvailable),
-		metricContainerFilesystemCapacity:    newMetricContainerFilesystemCapacity(ms.ContainerFilesystemCapacity),
-		metricContainerFilesystemUsage:       newMetricContainerFilesystemUsage(ms.ContainerFilesystemUsage),
-		metricContainerMemoryAvailable:       newMetricContainerMemoryAvailable(ms.ContainerMemoryAvailable),
-		metricContainerMemoryMajorPageFaults: newMetricContainerMemoryMajorPageFaults(ms.ContainerMemoryMajorPageFaults),
-		metricContainerMemoryPageFaults:      newMetricContainerMemoryPageFaults(ms.ContainerMemoryPageFaults),
-		metricContainerMemoryRss:             newMetricContainerMemoryRss(ms.ContainerMemoryRss),
-		metricContainerMemoryUsage:           newMetricContainerMemoryUsage(ms.ContainerMemoryUsage),
-		metricContainerMemoryWorkingSet:      newMetricContainerMemoryWorkingSet(ms.ContainerMemoryWorkingSet),
-		metricK8sNodeCPUTime:                 newMetricK8sNodeCPUTime(ms.K8sNodeCPUTime),
-		metricK8sNodeCPUUtilization:          newMetricK8sNodeCPUUtilization(ms.K8sNodeCPUUtilization),
-		metricK8sNodeFilesystemAvailable:     newMetricK8sNodeFilesystemAvailable(ms.K8sNodeFilesystemAvailable),
-		metricK8sNodeFilesystemCapacity:      newMetricK8sNodeFilesystemCapacity(ms.K8sNodeFilesystemCapacity),
-		metricK8sNodeFilesystemUsage:         newMetricK8sNodeFilesystemUsage(ms.K8sNodeFilesystemUsage),
-		metricK8sNodeMemoryAvailable:         newMetricK8sNodeMemoryAvailable(ms.K8sNodeMemoryAvailable),
-		metricK8sNodeMemoryMajorPageFaults:   newMetricK8sNodeMemoryMajorPageFaults(ms.K8sNodeMemoryMajorPageFaults),
-		metricK8sNodeMemoryPageFaults:        newMetricK8sNodeMemoryPageFaults(ms.K8sNodeMemoryPageFaults),
-		metricK8sNodeMemoryRss:               newMetricK8sNodeMemoryRss(ms.K8sNodeMemoryRss),
-		metricK8sNodeMemoryUsage:             newMetricK8sNodeMemoryUsage(ms.K8sNodeMemoryUsage),
-		metricK8sNodeMemoryWorkingSet:        newMetricK8sNodeMemoryWorkingSet(ms.K8sNodeMemoryWorkingSet),
-		metricK8sNodeNetworkErrors:           newMetricK8sNodeNetworkErrors(ms.K8sNodeNetworkErrors),
-		metricK8sNodeNetworkIo:               newMetricK8sNodeNetworkIo(ms.K8sNodeNetworkIo),
-		metricK8sPodCPUTime:                  newMetricK8sPodCPUTime(ms.K8sPodCPUTime),
-		metricK8sPodCPUUtilization:           newMetricK8sPodCPUUtilization(ms.K8sPodCPUUtilization),
-		metricK8sPodFilesystemAvailable:      newMetricK8sPodFilesystemAvailable(ms.K8sPodFilesystemAvailable),
-		metricK8sPodFilesystemCapacity:       newMetricK8sPodFilesystemCapacity(ms.K8sPodFilesystemCapacity),
-		metricK8sPodFilesystemUsage:          newMetricK8sPodFilesystemUsage(ms.K8sPodFilesystemUsage),
-		metricK8sPodMemoryAvailable:          newMetricK8sPodMemoryAvailable(ms.K8sPodMemoryAvailable),
-		metricK8sPodMemoryMajorPageFaults:    newMetricK8sPodMemoryMajorPageFaults(ms.K8sPodMemoryMajorPageFaults),
-		metricK8sPodMemoryPageFaults:         newMetricK8sPodMemoryPageFaults(ms.K8sPodMemoryPageFaults),
-		metricK8sPodMemoryRss:                newMetricK8sPodMemoryRss(ms.K8sPodMemoryRss),
-		metricK8sPodMemoryUsage:              newMetricK8sPodMemoryUsage(ms.K8sPodMemoryUsage),
-		metricK8sPodMemoryWorkingSet:         newMetricK8sPodMemoryWorkingSet(ms.K8sPodMemoryWorkingSet),
-		metricK8sPodNetworkErrors:            newMetricK8sPodNetworkErrors(ms.K8sPodNetworkErrors),
-		metricK8sPodNetworkIo:                newMetricK8sPodNetworkIo(ms.K8sPodNetworkIo),
-		metricK8sVolumeAvailable:             newMetricK8sVolumeAvailable(ms.K8sVolumeAvailable),
-		metricK8sVolumeCapacity:              newMetricK8sVolumeCapacity(ms.K8sVolumeCapacity),
-		metricK8sVolumeInodes:                newMetricK8sVolumeInodes(ms.K8sVolumeInodes),
-		metricK8sVolumeInodesFree:            newMetricK8sVolumeInodesFree(ms.K8sVolumeInodesFree),
-		metricK8sVolumeInodesUsed:            newMetricK8sVolumeInodesUsed(ms.K8sVolumeInodesUsed),
+		resourceAttributesSettings:           mbc.ResourceAttributesSettings,
+		metricContainerCPUTime:               newMetricContainerCPUTime(mbc.MetricsSettings.ContainerCPUTime),
+		metricContainerCPUUtilization:        newMetricContainerCPUUtilization(mbc.MetricsSettings.ContainerCPUUtilization),
+		metricContainerFilesystemAvailable:   newMetricContainerFilesystemAvailable(mbc.MetricsSettings.ContainerFilesystemAvailable),
+		metricContainerFilesystemCapacity:    newMetricContainerFilesystemCapacity(mbc.MetricsSettings.ContainerFilesystemCapacity),
+		metricContainerFilesystemUsage:       newMetricContainerFilesystemUsage(mbc.MetricsSettings.ContainerFilesystemUsage),
+		metricContainerMemoryAvailable:       newMetricContainerMemoryAvailable(mbc.MetricsSettings.ContainerMemoryAvailable),
+		metricContainerMemoryMajorPageFaults: newMetricContainerMemoryMajorPageFaults(mbc.MetricsSettings.ContainerMemoryMajorPageFaults),
+		metricContainerMemoryPageFaults:      newMetricContainerMemoryPageFaults(mbc.MetricsSettings.ContainerMemoryPageFaults),
+		metricContainerMemoryRss:             newMetricContainerMemoryRss(mbc.MetricsSettings.ContainerMemoryRss),
+		metricContainerMemoryUsage:           newMetricContainerMemoryUsage(mbc.MetricsSettings.ContainerMemoryUsage),
+		metricContainerMemoryWorkingSet:      newMetricContainerMemoryWorkingSet(mbc.MetricsSettings.ContainerMemoryWorkingSet),
+		metricK8sNodeCPUTime:                 newMetricK8sNodeCPUTime(mbc.MetricsSettings.K8sNodeCPUTime),
+		metricK8sNodeCPUUtilization:          newMetricK8sNodeCPUUtilization(mbc.MetricsSettings.K8sNodeCPUUtilization),
+		metricK8sNodeFilesystemAvailable:     newMetricK8sNodeFilesystemAvailable(mbc.MetricsSettings.K8sNodeFilesystemAvailable),
+		metricK8sNodeFilesystemCapacity:      newMetricK8sNodeFilesystemCapacity(mbc.MetricsSettings.K8sNodeFilesystemCapacity),
+		metricK8sNodeFilesystemUsage:         newMetricK8sNodeFilesystemUsage(mbc.MetricsSettings.K8sNodeFilesystemUsage),
+		metricK8sNodeMemoryAvailable:         newMetricK8sNodeMemoryAvailable(mbc.MetricsSettings.K8sNodeMemoryAvailable),
+		metricK8sNodeMemoryMajorPageFaults:   newMetricK8sNodeMemoryMajorPageFaults(mbc.MetricsSettings.K8sNodeMemoryMajorPageFaults),
+		metricK8sNodeMemoryPageFaults:        newMetricK8sNodeMemoryPageFaults(mbc.MetricsSettings.K8sNodeMemoryPageFaults),
+		metricK8sNodeMemoryRss:               newMetricK8sNodeMemoryRss(mbc.MetricsSettings.K8sNodeMemoryRss),
+		metricK8sNodeMemoryUsage:             newMetricK8sNodeMemoryUsage(mbc.MetricsSettings.K8sNodeMemoryUsage),
+		metricK8sNodeMemoryWorkingSet:        newMetricK8sNodeMemoryWorkingSet(mbc.MetricsSettings.K8sNodeMemoryWorkingSet),
+		metricK8sNodeNetworkErrors:           newMetricK8sNodeNetworkErrors(mbc.MetricsSettings.K8sNodeNetworkErrors),
+		metricK8sNodeNetworkIo:               newMetricK8sNodeNetworkIo(mbc.MetricsSettings.K8sNodeNetworkIo),
+		metricK8sPodCPUTime:                  newMetricK8sPodCPUTime(mbc.MetricsSettings.K8sPodCPUTime),
+		metricK8sPodCPUUtilization:           newMetricK8sPodCPUUtilization(mbc.MetricsSettings.K8sPodCPUUtilization),
+		metricK8sPodFilesystemAvailable:      newMetricK8sPodFilesystemAvailable(mbc.MetricsSettings.K8sPodFilesystemAvailable),
+		metricK8sPodFilesystemCapacity:       newMetricK8sPodFilesystemCapacity(mbc.MetricsSettings.K8sPodFilesystemCapacity),
+		metricK8sPodFilesystemUsage:          newMetricK8sPodFilesystemUsage(mbc.MetricsSettings.K8sPodFilesystemUsage),
+		metricK8sPodMemoryAvailable:          newMetricK8sPodMemoryAvailable(mbc.MetricsSettings.K8sPodMemoryAvailable),
+		metricK8sPodMemoryMajorPageFaults:    newMetricK8sPodMemoryMajorPageFaults(mbc.MetricsSettings.K8sPodMemoryMajorPageFaults),
+		metricK8sPodMemoryPageFaults:         newMetricK8sPodMemoryPageFaults(mbc.MetricsSettings.K8sPodMemoryPageFaults),
+		metricK8sPodMemoryRss:                newMetricK8sPodMemoryRss(mbc.MetricsSettings.K8sPodMemoryRss),
+		metricK8sPodMemoryUsage:              newMetricK8sPodMemoryUsage(mbc.MetricsSettings.K8sPodMemoryUsage),
+		metricK8sPodMemoryWorkingSet:         newMetricK8sPodMemoryWorkingSet(mbc.MetricsSettings.K8sPodMemoryWorkingSet),
+		metricK8sPodNetworkErrors:            newMetricK8sPodNetworkErrors(mbc.MetricsSettings.K8sPodNetworkErrors),
+		metricK8sPodNetworkIo:                newMetricK8sPodNetworkIo(mbc.MetricsSettings.K8sPodNetworkIo),
+		metricK8sVolumeAvailable:             newMetricK8sVolumeAvailable(mbc.MetricsSettings.K8sVolumeAvailable),
+		metricK8sVolumeCapacity:              newMetricK8sVolumeCapacity(mbc.MetricsSettings.K8sVolumeCapacity),
+		metricK8sVolumeInodes:                newMetricK8sVolumeInodes(mbc.MetricsSettings.K8sVolumeInodes),
+		metricK8sVolumeInodesFree:            newMetricK8sVolumeInodesFree(mbc.MetricsSettings.K8sVolumeInodesFree),
+		metricK8sVolumeInodesUsed:            newMetricK8sVolumeInodesUsed(mbc.MetricsSettings.K8sVolumeInodesUsed),
 	}
 	for _, op := range options {
 		op(mb)

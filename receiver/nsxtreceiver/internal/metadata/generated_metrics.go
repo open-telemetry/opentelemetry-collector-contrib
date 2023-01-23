@@ -582,6 +582,12 @@ func newMetricNsxtNodeNetworkPacketCount(settings MetricSettings) metricNsxtNode
 	return m
 }
 
+// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
+type MetricsBuilderConfig struct {
+	MetricsSettings            MetricsSettings            `mapstructure:"metrics,squash"`
+	ResourceAttributesSettings ResourceAttributesSettings `mapstructure:"resource_attributes,squash"`
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
@@ -617,19 +623,26 @@ func WithResourceAttributesSettings(ras ResourceAttributesSettings) metricBuilde
 	}
 }
 
-func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
+func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+	return MetricsBuilderConfig{
+		MetricsSettings:            DefaultMetricsSettings(),
+		ResourceAttributesSettings: DefaultResourceAttributesSettings(),
+	}
+}
+
+func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                           pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                       pmetric.NewMetrics(),
 		buildInfo:                           settings.BuildInfo,
-		resourceAttributesSettings:          DefaultResourceAttributesSettings(),
-		metricNsxtNodeCPUUtilization:        newMetricNsxtNodeCPUUtilization(ms.NsxtNodeCPUUtilization),
-		metricNsxtNodeFilesystemUsage:       newMetricNsxtNodeFilesystemUsage(ms.NsxtNodeFilesystemUsage),
-		metricNsxtNodeFilesystemUtilization: newMetricNsxtNodeFilesystemUtilization(ms.NsxtNodeFilesystemUtilization),
-		metricNsxtNodeMemoryCacheUsage:      newMetricNsxtNodeMemoryCacheUsage(ms.NsxtNodeMemoryCacheUsage),
-		metricNsxtNodeMemoryUsage:           newMetricNsxtNodeMemoryUsage(ms.NsxtNodeMemoryUsage),
-		metricNsxtNodeNetworkIo:             newMetricNsxtNodeNetworkIo(ms.NsxtNodeNetworkIo),
-		metricNsxtNodeNetworkPacketCount:    newMetricNsxtNodeNetworkPacketCount(ms.NsxtNodeNetworkPacketCount),
+		resourceAttributesSettings:          mbc.ResourceAttributesSettings,
+		metricNsxtNodeCPUUtilization:        newMetricNsxtNodeCPUUtilization(mbc.MetricsSettings.NsxtNodeCPUUtilization),
+		metricNsxtNodeFilesystemUsage:       newMetricNsxtNodeFilesystemUsage(mbc.MetricsSettings.NsxtNodeFilesystemUsage),
+		metricNsxtNodeFilesystemUtilization: newMetricNsxtNodeFilesystemUtilization(mbc.MetricsSettings.NsxtNodeFilesystemUtilization),
+		metricNsxtNodeMemoryCacheUsage:      newMetricNsxtNodeMemoryCacheUsage(mbc.MetricsSettings.NsxtNodeMemoryCacheUsage),
+		metricNsxtNodeMemoryUsage:           newMetricNsxtNodeMemoryUsage(mbc.MetricsSettings.NsxtNodeMemoryUsage),
+		metricNsxtNodeNetworkIo:             newMetricNsxtNodeNetworkIo(mbc.MetricsSettings.NsxtNodeNetworkIo),
+		metricNsxtNodeNetworkPacketCount:    newMetricNsxtNodeNetworkPacketCount(mbc.MetricsSettings.NsxtNodeNetworkPacketCount),
 	}
 	for _, op := range options {
 		op(mb)

@@ -59,7 +59,7 @@ func newIisReceiver(settings receiver.CreateSettings, cfg *Config, consumer cons
 		params:        settings.TelemetrySettings,
 		config:        cfg,
 		consumer:      consumer,
-		metricBuilder: metadata.NewMetricsBuilder(cfg.Metrics, settings),
+		metricBuilder: metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
 		newWatcher:    winperfcounters.NewWatcher,
 	}
 }

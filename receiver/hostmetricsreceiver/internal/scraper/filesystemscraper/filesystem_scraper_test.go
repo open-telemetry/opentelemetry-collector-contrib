@@ -57,13 +57,13 @@ func TestScrape(t *testing.T) {
 	testCases := []testCase{
 		{
 			name:          "Standard",
-			config:        Config{Metrics: metadata.DefaultMetricsSettings()},
+			config:        Config{Metrics: metadata.DefaultMetricsBuilderConfig()},
 			expectMetrics: true,
 		},
 		{
 			name: "Include single device filter",
 			config: Config{
-				Metrics:        metadata.DefaultMetricsSettings(),
+				Metrics:        metadata.DefaultMetricsBuilderConfig(),
 				IncludeDevices: DeviceMatchConfig{filterset.Config{MatchType: "strict"}, []string{"a"}},
 			},
 			partitionsFunc: func(bool) ([]disk.PartitionStat, error) {
@@ -78,7 +78,7 @@ func TestScrape(t *testing.T) {
 		{
 			name: "Include Device Filter that matches nothing",
 			config: Config{
-				Metrics:        metadata.DefaultMetricsSettings(),
+				Metrics:        metadata.DefaultMetricsBuilderConfig(),
 				IncludeDevices: DeviceMatchConfig{filterset.Config{MatchType: "strict"}, []string{"@*^#&*$^#)"}},
 			},
 			expectMetrics: false,
@@ -86,7 +86,7 @@ func TestScrape(t *testing.T) {
 		{
 			name: "Include device filtering that includes virtual partitions",
 			config: Config{
-				Metrics:          metadata.DefaultMetricsSettings(),
+				Metrics:          metadata.DefaultMetricsBuilderConfig(),
 				IncludeVirtualFS: true,
 				IncludeFSTypes:   FSTypeMatchConfig{Config: filterset.Config{MatchType: filterset.Strict}, FSTypes: []string{"tmpfs"}},
 			},
@@ -106,7 +106,7 @@ func TestScrape(t *testing.T) {
 		{
 			name: "Include filter with devices, filesystem type and mount points",
 			config: Config{
-				Metrics: metadata.DefaultMetricsSettings(),
+				Metrics: metadata.DefaultMetricsBuilderConfig(),
 				IncludeDevices: DeviceMatchConfig{
 					Config: filterset.Config{
 						MatchType: filterset.Strict,
@@ -175,7 +175,7 @@ func TestScrape(t *testing.T) {
 		{
 			name: "RootPath at /hostfs",
 			config: Config{
-				Metrics: metadata.DefaultMetricsSettings(),
+				Metrics: metadata.DefaultMetricsBuilderConfig(),
 			},
 			rootPath: filepath.Join("/", "hostfs"),
 			usageFunc: func(s string) (*disk.UsageStat, error) {
@@ -209,7 +209,7 @@ func TestScrape(t *testing.T) {
 		{
 			name: "Invalid Include Device Filter",
 			config: Config{
-				Metrics:        metadata.DefaultMetricsSettings(),
+				Metrics:        metadata.DefaultMetricsBuilderConfig(),
 				IncludeDevices: DeviceMatchConfig{Devices: []string{"test"}},
 			},
 			newErrRegex: "^error creating include_devices filter:",
@@ -217,7 +217,7 @@ func TestScrape(t *testing.T) {
 		{
 			name: "Invalid Exclude Device Filter",
 			config: Config{
-				Metrics:        metadata.DefaultMetricsSettings(),
+				Metrics:        metadata.DefaultMetricsBuilderConfig(),
 				ExcludeDevices: DeviceMatchConfig{Devices: []string{"test"}},
 			},
 			newErrRegex: "^error creating exclude_devices filter:",
@@ -225,7 +225,7 @@ func TestScrape(t *testing.T) {
 		{
 			name: "Invalid Include Filesystems Filter",
 			config: Config{
-				Metrics:        metadata.DefaultMetricsSettings(),
+				Metrics:        metadata.DefaultMetricsBuilderConfig(),
 				IncludeFSTypes: FSTypeMatchConfig{FSTypes: []string{"test"}},
 			},
 			newErrRegex: "^error creating include_fs_types filter:",
@@ -233,7 +233,7 @@ func TestScrape(t *testing.T) {
 		{
 			name: "Invalid Exclude Filesystems Filter",
 			config: Config{
-				Metrics:        metadata.DefaultMetricsSettings(),
+				Metrics:        metadata.DefaultMetricsBuilderConfig(),
 				ExcludeFSTypes: FSTypeMatchConfig{FSTypes: []string{"test"}},
 			},
 			newErrRegex: "^error creating exclude_fs_types filter:",
@@ -241,7 +241,7 @@ func TestScrape(t *testing.T) {
 		{
 			name: "Invalid Include Moountpoints Filter",
 			config: Config{
-				Metrics:            metadata.DefaultMetricsSettings(),
+				Metrics:            metadata.DefaultMetricsBuilderConfig(),
 				IncludeMountPoints: MountPointMatchConfig{MountPoints: []string{"test"}},
 			},
 			newErrRegex: "^error creating include_mount_points filter:",
@@ -249,7 +249,7 @@ func TestScrape(t *testing.T) {
 		{
 			name: "Invalid Exclude Moountpoints Filter",
 			config: Config{
-				Metrics:            metadata.DefaultMetricsSettings(),
+				Metrics:            metadata.DefaultMetricsBuilderConfig(),
 				ExcludeMountPoints: MountPointMatchConfig{MountPoints: []string{"test"}},
 			},
 			newErrRegex: "^error creating exclude_mount_points filter:",
@@ -262,7 +262,7 @@ func TestScrape(t *testing.T) {
 		{
 			name: "Partitions and error provided",
 			config: Config{
-				Metrics: metadata.DefaultMetricsSettings(),
+				Metrics: metadata.DefaultMetricsBuilderConfig(),
 				IncludeDevices: DeviceMatchConfig{
 					Config: filterset.Config{
 						MatchType: filterset.Strict,

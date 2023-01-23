@@ -136,7 +136,9 @@ type Config struct {
 
 	// Metrics defines what SNMP metrics will be collected for this receiver and is composed of metric
 	// names along with their metric configurations
+	// TODO hughesjj wait wat this doesn't look right
 	Metrics map[string]*MetricConfig `mapstructure:"metrics"`
+	//metadata.MetricConfig `mapstructure:"metrics"`
 }
 
 // ResourceAttributeConfig contains config info about all of the resource attributes that will be used by this receiver.

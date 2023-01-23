@@ -680,6 +680,12 @@ func newMetricKafkaTopicPartitions(settings MetricSettings) metricKafkaTopicPart
 	return m
 }
 
+// MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
+type MetricsBuilderConfig struct {
+	MetricsSettings            MetricsSettings            `mapstructure:"metrics,squash"`
+	ResourceAttributesSettings ResourceAttributesSettings `mapstructure:"resource_attributes,squash"`
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
@@ -719,23 +725,30 @@ func WithResourceAttributesSettings(ras ResourceAttributesSettings) metricBuilde
 	}
 }
 
-func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
+func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
+	return MetricsBuilderConfig{
+		MetricsSettings:            DefaultMetricsSettings(),
+		ResourceAttributesSettings: DefaultResourceAttributesSettings(),
+	}
+}
+
+func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                          pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                      pmetric.NewMetrics(),
 		buildInfo:                          settings.BuildInfo,
-		resourceAttributesSettings:         DefaultResourceAttributesSettings(),
-		metricKafkaBrokers:                 newMetricKafkaBrokers(ms.KafkaBrokers),
-		metricKafkaConsumerGroupLag:        newMetricKafkaConsumerGroupLag(ms.KafkaConsumerGroupLag),
-		metricKafkaConsumerGroupLagSum:     newMetricKafkaConsumerGroupLagSum(ms.KafkaConsumerGroupLagSum),
-		metricKafkaConsumerGroupMembers:    newMetricKafkaConsumerGroupMembers(ms.KafkaConsumerGroupMembers),
-		metricKafkaConsumerGroupOffset:     newMetricKafkaConsumerGroupOffset(ms.KafkaConsumerGroupOffset),
-		metricKafkaConsumerGroupOffsetSum:  newMetricKafkaConsumerGroupOffsetSum(ms.KafkaConsumerGroupOffsetSum),
-		metricKafkaPartitionCurrentOffset:  newMetricKafkaPartitionCurrentOffset(ms.KafkaPartitionCurrentOffset),
-		metricKafkaPartitionOldestOffset:   newMetricKafkaPartitionOldestOffset(ms.KafkaPartitionOldestOffset),
-		metricKafkaPartitionReplicas:       newMetricKafkaPartitionReplicas(ms.KafkaPartitionReplicas),
-		metricKafkaPartitionReplicasInSync: newMetricKafkaPartitionReplicasInSync(ms.KafkaPartitionReplicasInSync),
-		metricKafkaTopicPartitions:         newMetricKafkaTopicPartitions(ms.KafkaTopicPartitions),
+		resourceAttributesSettings:         mbc.ResourceAttributesSettings,
+		metricKafkaBrokers:                 newMetricKafkaBrokers(mbc.MetricsSettings.KafkaBrokers),
+		metricKafkaConsumerGroupLag:        newMetricKafkaConsumerGroupLag(mbc.MetricsSettings.KafkaConsumerGroupLag),
+		metricKafkaConsumerGroupLagSum:     newMetricKafkaConsumerGroupLagSum(mbc.MetricsSettings.KafkaConsumerGroupLagSum),
+		metricKafkaConsumerGroupMembers:    newMetricKafkaConsumerGroupMembers(mbc.MetricsSettings.KafkaConsumerGroupMembers),
+		metricKafkaConsumerGroupOffset:     newMetricKafkaConsumerGroupOffset(mbc.MetricsSettings.KafkaConsumerGroupOffset),
+		metricKafkaConsumerGroupOffsetSum:  newMetricKafkaConsumerGroupOffsetSum(mbc.MetricsSettings.KafkaConsumerGroupOffsetSum),
+		metricKafkaPartitionCurrentOffset:  newMetricKafkaPartitionCurrentOffset(mbc.MetricsSettings.KafkaPartitionCurrentOffset),
+		metricKafkaPartitionOldestOffset:   newMetricKafkaPartitionOldestOffset(mbc.MetricsSettings.KafkaPartitionOldestOffset),
+		metricKafkaPartitionReplicas:       newMetricKafkaPartitionReplicas(mbc.MetricsSettings.KafkaPartitionReplicas),
+		metricKafkaPartitionReplicasInSync: newMetricKafkaPartitionReplicasInSync(mbc.MetricsSettings.KafkaPartitionReplicasInSync),
+		metricKafkaTopicPartitions:         newMetricKafkaTopicPartitions(mbc.MetricsSettings.KafkaTopicPartitions),
 	}
 	for _, op := range options {
 		op(mb)
