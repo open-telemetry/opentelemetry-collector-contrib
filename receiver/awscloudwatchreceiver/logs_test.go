@@ -32,7 +32,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 )
 
 func TestStart(t *testing.T) {
@@ -79,7 +79,7 @@ func TestPrefixedConfig(t *testing.T) {
 	logs := sink.AllLogs()[0]
 	expected, err := readLogs(filepath.Join("testdata", "processed", "prefixed.json"))
 	require.NoError(t, err)
-	require.NoError(t, comparetest.CompareLogs(expected, logs, comparetest.IgnoreObservedTimestamp()))
+	require.NoError(t, plogtest.CompareLogs(expected, logs, plogtest.IgnoreObservedTimestamp()))
 }
 
 func TestPrefixedNamedStreamsConfig(t *testing.T) {
@@ -111,7 +111,7 @@ func TestPrefixedNamedStreamsConfig(t *testing.T) {
 	logs := sink.AllLogs()[0]
 	expected, err := readLogs(filepath.Join("testdata", "processed", "prefixed.json"))
 	require.NoError(t, err)
-	require.NoError(t, comparetest.CompareLogs(expected, logs, comparetest.IgnoreObservedTimestamp()))
+	require.NoError(t, plogtest.CompareLogs(expected, logs, plogtest.IgnoreObservedTimestamp()))
 }
 
 func TestDiscovery(t *testing.T) {

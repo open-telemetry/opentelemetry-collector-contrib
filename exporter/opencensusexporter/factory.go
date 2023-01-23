@@ -43,7 +43,6 @@ func NewFactory() exporter.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
-			Headers: map[string]string{},
 			// We almost read 0 bytes, so no need to tune ReadBufferSize.
 			WriteBufferSize: 512 * 1024,
 		},

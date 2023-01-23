@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -54,11 +55,9 @@ func TestLoadConfig(t *testing.T) {
 					Endpoint:        "https://",
 					Compression:     "gzip",
 					WriteBufferSize: 512 * 1024,
-					Headers:         map[string]string{},
 				},
 				Logs: configgrpc.GRPCClientSettings{
 					Endpoint: "https://",
-					Headers:  map[string]string{},
 				},
 				Traces: configgrpc.GRPCClientSettings{
 					Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
@@ -72,7 +71,6 @@ func TestLoadConfig(t *testing.T) {
 					ReadBufferSize:  0,
 					WriteBufferSize: 0,
 					WaitForReady:    false,
-					Headers:         map[string]string{},
 					BalancerName:    "",
 				},
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
@@ -87,7 +85,7 @@ func TestLoadConfig(t *testing.T) {
 					ReadBufferSize:  0,
 					WriteBufferSize: 0,
 					WaitForReady:    false,
-					Headers: map[string]string{
+					Headers: map[string]configopaque.String{
 						"ACCESS_TOKEN": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 						"appName":      "APP_NAME",
 					},
@@ -109,11 +107,9 @@ func TestLoadConfig(t *testing.T) {
 					Endpoint:        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 					Compression:     "gzip",
 					WriteBufferSize: 512 * 1024,
-					Headers:         map[string]string{},
 				},
 				Logs: configgrpc.GRPCClientSettings{
 					Endpoint: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-					Headers:  map[string]string{},
 				},
 				Traces: configgrpc.GRPCClientSettings{
 					Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
@@ -127,7 +123,6 @@ func TestLoadConfig(t *testing.T) {
 					ReadBufferSize:  0,
 					WriteBufferSize: 0,
 					WaitForReady:    false,
-					Headers:         map[string]string{},
 					BalancerName:    "",
 				},
 				AppNameAttributes:   []string{"service.namespace"},
@@ -144,7 +139,7 @@ func TestLoadConfig(t *testing.T) {
 					ReadBufferSize:  0,
 					WriteBufferSize: 0,
 					WaitForReady:    false,
-					Headers: map[string]string{
+					Headers: map[string]configopaque.String{
 						"ACCESS_TOKEN": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 						"appName":      "APP_NAME",
 					},

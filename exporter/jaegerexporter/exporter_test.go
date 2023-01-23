@@ -28,6 +28,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -63,7 +64,7 @@ func TestNew(t *testing.T) {
 			name: "createExporterWithHeaders",
 			config: Config{
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
-					Headers:     map[string]string{"extra-header": "header-value"},
+					Headers:     map[string]configopaque.String{"extra-header": "header-value"},
 					Endpoint:    "foo.bar",
 					Compression: "",
 					Keepalive:   nil,

@@ -38,6 +38,9 @@ func IsMatch[K any](target ottl.Getter[K], pattern string) (ottl.ExprFunc[K], er
 		if err != nil {
 			return nil, err
 		}
+		if val == nil {
+			return false, nil
+		}
 
 		switch v := val.(type) {
 		case string:

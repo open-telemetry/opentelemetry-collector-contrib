@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package comparetest // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
+package ptracetest // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/ptracetest"
 
 import (
 	"fmt"
@@ -24,7 +24,7 @@ import (
 
 // CompareTraces compares each part of two given Traces and returns
 // an error if they don't match. The error describes what didn't match.
-func CompareTraces(expected, actual ptrace.Traces, options ...TracesCompareOption) error {
+func CompareTraces(expected, actual ptrace.Traces, options ...CompareTracesOption) error {
 	exp, act := ptrace.NewTraces(), ptrace.NewTraces()
 	expected.CopyTo(exp)
 	actual.CopyTo(act)

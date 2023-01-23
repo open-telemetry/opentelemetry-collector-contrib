@@ -93,7 +93,7 @@ span/set_status_err:
 span/set_status_ok:
   include:
     attributes:
-      - Key: http.status_code
-        Value: 400
+      - key: http.status_code
+        value: 400
   status:
     code: "Ok"

@@ -34,8 +34,8 @@ import (
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
 func TestNewMongodbScraper(t *testing.T) {
@@ -325,8 +325,8 @@ func TestScraperScrape(t *testing.T) {
 			}
 			expectedMetrics := tc.expectedMetricGen(t)
 
-			require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics,
-				comparetest.IgnoreMetricDataPointsOrder()))
+			require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
+				pmetrictest.IgnoreMetricDataPointsOrder()))
 		})
 	}
 }

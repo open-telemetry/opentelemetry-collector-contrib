@@ -84,7 +84,6 @@ body:
       - extension/storage/dbstorage
       - extension/storage/filestorage
       - internal/aws
-      - internal/comparetest
       - internal/core
       - internal/docker
       - internal/filter
@@ -98,6 +97,8 @@ body:
       - pkg/batchpersignal
       - pkg/experimentalmetricmetadata
       - pkg/ottl
+      - pkg/pdatatest
+      - pkg/pdatautil
       - pkg/resourcetotelemetry
       - pkg/stanza
       - pkg/translator/jaeger

@@ -40,15 +40,6 @@ func MergeStringMaps(maps ...map[string]string) map[string]string {
 	return ret
 }
 
-// CloneRawMap makes a shallow copy of a map[string]interface{}.
-func CloneRawMap(m map[string]interface{}) map[string]interface{} {
-	m2 := make(map[string]interface{}, len(m))
-	for k, v := range m {
-		m2[k] = v
-	}
-	return m2
-}
-
 // CloneStringMap makes a shallow copy of a map[string]string.
 func CloneStringMap(m map[string]string) map[string]string {
 	m2 := make(map[string]string, len(m))

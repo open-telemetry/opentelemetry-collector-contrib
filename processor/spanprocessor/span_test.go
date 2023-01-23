@@ -27,10 +27,10 @@ import (
 	"go.opentelemetry.io/collector/processor/processortest"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/ptracetest"
 )
 
 func TestNewTracesProcessor(t *testing.T) {
@@ -61,7 +61,7 @@ func runIndividualTestCase(t *testing.T, tt testCase, tp processor.Traces) {
 	t.Run(tt.inputName, func(t *testing.T) {
 		td := generateTraceData(tt.serviceName, tt.inputName, tt.inputAttributes)
 		assert.NoError(t, tp.ConsumeTraces(context.Background(), td))
-		assert.NoError(t, comparetest.CompareTraces(generateTraceData(tt.serviceName, tt.outputName,
+		assert.NoError(t, ptracetest.CompareTraces(generateTraceData(tt.serviceName, tt.outputName,
 			tt.outputAttributes), td))
 	})
 }
@@ -125,7 +125,7 @@ func TestSpanProcessor_NilEmptyData(t *testing.T) {
 		tt := testCases[i]
 		t.Run(tt.name, func(t *testing.T) {
 			assert.NoError(t, tp.ConsumeTraces(context.Background(), tt.input))
-			assert.NoError(t, comparetest.CompareTraces(tt.output, tt.input))
+			assert.NoError(t, ptracetest.CompareTraces(tt.output, tt.input))
 		})
 	}
 }
@@ -328,7 +328,7 @@ func TestSpanProcessor_Separator(t *testing.T) {
 		})
 	assert.NoError(t, tp.ConsumeTraces(context.Background(), traceData))
 
-	assert.NoError(t, comparetest.CompareTraces(generateTraceData(
+	assert.NoError(t, ptracetest.CompareTraces(generateTraceData(
 		"",
 		"bob",
 		map[string]interface{}{
@@ -357,7 +357,7 @@ func TestSpanProcessor_NoSeparatorMultipleKeys(t *testing.T) {
 		})
 	assert.NoError(t, tp.ConsumeTraces(context.Background(), traceData))
 
-	assert.NoError(t, comparetest.CompareTraces(generateTraceData(
+	assert.NoError(t, ptracetest.CompareTraces(generateTraceData(
 		"",
 		"bob123",
 		map[string]interface{}{
@@ -390,7 +390,7 @@ func TestSpanProcessor_SeparatorMultipleKeys(t *testing.T) {
 		})
 	assert.NoError(t, tp.ConsumeTraces(context.Background(), traceData))
 
-	assert.NoError(t, comparetest.CompareTraces(generateTraceData(
+	assert.NoError(t, ptracetest.CompareTraces(generateTraceData(
 		"",
 		"bob::123::234.129312::true",
 		map[string]interface{}{
@@ -422,7 +422,7 @@ func TestSpanProcessor_NilName(t *testing.T) {
 		})
 	assert.NoError(t, tp.ConsumeTraces(context.Background(), traceData))
 
-	assert.NoError(t, comparetest.CompareTraces(generateTraceData(
+	assert.NoError(t, ptracetest.CompareTraces(generateTraceData(
 		"",
 		"bob",
 		map[string]interface{}{
@@ -661,7 +661,7 @@ func TestSpanProcessor_setStatusCodeConditionally(t *testing.T) {
 
 			assert.NoError(t, tp.ConsumeTraces(context.Background(), td))
 
-			assert.NoError(t, comparetest.CompareTraces(generateTraceDataSetStatus(tc.outputStatusCode,
+			assert.NoError(t, ptracetest.CompareTraces(generateTraceDataSetStatus(tc.outputStatusCode,
 				tc.outputStatusDescription, tc.inputAttributes), td))
 		})
 	}
