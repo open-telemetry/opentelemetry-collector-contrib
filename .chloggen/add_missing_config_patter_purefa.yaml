@@ -5,7 +5,7 @@ change_type: bug_fix
 component: receiver/purefareceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add missing scrapers to the config file
+note: Updating documentation to include required configuration fields.
 
 # One or more tracking issues related to the change
 issues: [14886]
