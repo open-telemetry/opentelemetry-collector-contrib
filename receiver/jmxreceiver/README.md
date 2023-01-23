@@ -186,7 +186,7 @@ Corresponds to the `org.slf4j.simpleLogger.defaultLogLevel` property.
 
 ### temp_dir (default: operating system temporary directory)
 
-The location of the directory where the receiver will store configuration used by the Java process. The configuration is typically stored as a properties file, as a temporary file that is deleted on exit of the collector.
+The location of the directory where the receiver will store configuration used by the Java process. The configuration is typically stored as a properties file, which is deleted on exit of the collector.
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
