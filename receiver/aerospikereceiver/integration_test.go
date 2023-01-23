@@ -271,7 +271,7 @@ func TestAerospikeIntegration(t *testing.T) {
 
 	ctx := context.Background()
 	req := testcontainers.ContainerRequest{
-		Image:        "aerospike/aerospike-server:6.2.0.0",
+		Image:        "aerospike:ce-6.2.0.2",
 		ExposedPorts: []string{"3000/tcp"},
 		WaitingFor:   wait.ForListeningPort("3000/tcp"),
 	}
