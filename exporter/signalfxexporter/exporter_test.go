@@ -987,11 +987,11 @@ func TestConsumeMetadata(t *testing.T) {
 				})
 			dimClient.Start()
 
-			se := signalfxExporter{
+			se := &signalfxExporter{
 				pushMetadata: dimClient.PushMetadata,
 			}
 			sme := signalfMetadataExporter{
-				pushMetadata: se.pushMetadata,
+				exporter: se,
 			}
 
 			err = sme.ConsumeMetadata(tt.args.metadata)
@@ -1294,11 +1294,11 @@ func TestTLSAPIConnection(t *testing.T) {
 				})
 			dimClient.Start()
 
-			se := signalfxExporter{
+			se := &signalfxExporter{
 				pushMetadata: dimClient.PushMetadata,
 			}
 			sme := signalfMetadataExporter{
-				pushMetadata: se.pushMetadata,
+				exporter: se,
 			}
 
 			err = sme.ConsumeMetadata(metadata)
