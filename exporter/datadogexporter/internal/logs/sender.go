@@ -16,8 +16,6 @@ package logs // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"context"
-	"net/http"
-
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -71,7 +69,7 @@ func (s *Sender) SubmitLogs(ctx context.Context, payload []datadogV2.HTTPLogItem
 	for i, p := range payload {
 		tags = p.GetDdtags()
 		// Batches consecutive log items with the same tags to be submitted together
-		if prevtags == tags && i > 0 {
+		if prevtags == tags || i == 0 {
 			batch = append(batch, p)
 		} else {
 			if err := s.handleSubmitLog(ctx, batch, prevtags); err != nil {
@@ -93,19 +91,15 @@ func (s *Sender) handleSubmitLog(ctx context.Context, batch []datadogV2.HTTPLogI
 		WithDdtags(tags)
 	_, r, err := s.api.SubmitLog(ctx, batch, opts)
 	if err != nil {
-		return s.handleSubmitLogError(err, r)
+		if r != nil {
+			b := make([]byte, 1024) // 1KB message max
+			n, _ := r.Body.Read(b)  // ignore any error
+			s.logger.Error("Failed to send logs", zap.Error(err), zap.String("msg", string(b[:n])), zap.String("status_code", r.Status))
+			return err
+		}
+		// If response is nil assume permanent error.
+		// The error will be logged by the exporter helper.
+		return consumererror.NewPermanent(err)
 	}
 	return nil
-}
-
-func (s *Sender) handleSubmitLogError(err error, r *http.Response) error {
-	if r != nil {
-		b := make([]byte, 1024) // 1KB message max
-		n, _ := r.Body.Read(b)  // ignore any error
-		s.logger.Error("Failed to send logs", zap.Error(err), zap.String("msg", string(b[:n])), zap.String("status_code", r.Status))
-		return err
-	}
-	// If response is nil assume permanent error.
-	// The error will be logged by the exporter helper.
-	return consumererror.NewPermanent(err)
 }
