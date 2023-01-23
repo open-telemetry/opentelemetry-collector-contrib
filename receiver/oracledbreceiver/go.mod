@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracle
 go 1.18
 
 require (
-	github.com/sijms/go-ora/v2 v2.5.23
+	github.com/sijms/go-ora/v2 v2.5.24
 	github.com/stretchr/testify v1.8.1
 	go.opentelemetry.io/collector v0.69.2-0.20230121222757-51c9139d1c2f
 	go.opentelemetry.io/collector/component v0.69.2-0.20230121222757-51c9139d1c2f
