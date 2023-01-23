@@ -61,7 +61,7 @@ func CompareLogs(expected, actual plog.Logs, options ...CompareLogsOption) error
 				if e != a {
 					outOfOrderErrs = multierr.Append(outOfOrderErrs,
 						fmt.Errorf("ResourceLogs with attributes %v expected at index %d, "+
-							"found at index %d", er.Resource().Attributes().AsRaw(), e, a))
+							"found a at index %d", er.Resource().Attributes().AsRaw(), e, a))
 				}
 				break
 			}
@@ -86,8 +86,7 @@ func CompareLogs(expected, actual plog.Logs, options ...CompareLogsOption) error
 
 	for ar, er := range matchingResources {
 		if err := CompareResourceLogs(er, ar); err != nil {
-			return multierr.Combine(fmt.Errorf("ResourceLogs with attributes %v does not match expected",
-				ar.Resource().Attributes().AsRaw()), err)
+			return err
 		}
 	}
 
@@ -97,91 +96,39 @@ func CompareLogs(expected, actual plog.Logs, options ...CompareLogsOption) error
 // CompareResourceLogs compares each part of two given ResourceLogs and returns
 // an error if they don't match. The error describes what didn't match.
 func CompareResourceLogs(expected, actual plog.ResourceLogs) error {
-	if !reflect.DeepEqual(expected.Resource().Attributes().AsRaw(), actual.Resource().Attributes().AsRaw()) {
-		return fmt.Errorf("resource attributes do not match expected: %v, actual: %v",
-			expected.Resource().Attributes().AsRaw(), actual.Resource().Attributes().AsRaw())
+	eilms := expected.ScopeLogs()
+	ailms := actual.ScopeLogs()
+
+	if eilms.Len() != ailms.Len() {
+		return fmt.Errorf("number of instrumentation libraries does not match expected: %d, actual: %d", eilms.Len(),
+			ailms.Len())
 	}
 
-	esls := expected.ScopeLogs()
-	asls := actual.ScopeLogs()
+	for i := 0; i < eilms.Len(); i++ {
+		eilm, ailm := eilms.At(i), ailms.At(i)
+		eil, ail := eilm.Scope(), ailm.Scope()
 
-	if esls.Len() != asls.Len() {
-		return fmt.Errorf("number of scope logs does not match expected: %d, actual: %d", esls.Len(),
-			asls.Len())
-	}
-
-	numScopeLogs := esls.Len()
-
-	// Keep track of matching scope logs so that each record can only be matched once
-	matchingScopeLogs := make(map[plog.ScopeLogs]plog.ScopeLogs, numScopeLogs)
-
-	var errs error
-	var outOfOrderErrs error
-	for e := 0; e < numScopeLogs; e++ {
-		esl := expected.ScopeLogs().At(e)
-		var foundMatch bool
-		for a := 0; a < numScopeLogs; a++ {
-			asl := actual.ScopeLogs().At(a)
-			if _, ok := matchingScopeLogs[asl]; ok {
-				continue
-			}
-			if esl.Scope().Name() == asl.Scope().Name() {
-				foundMatch = true
-				matchingScopeLogs[asl] = esl
-				if e != a {
-					outOfOrderErrs = multierr.Append(outOfOrderErrs,
-						fmt.Errorf("ScopeLogs with scope name %s expected at index %d, found at index %d",
-							esl.Scope().Name(), e, a))
-				}
-				break
-			}
+		if eil.Name() != ail.Name() {
+			return fmt.Errorf("instrumentation library Name does not match expected: %s, actual: %s", eil.Name(), ail.Name())
 		}
-		if !foundMatch {
-			errs = multierr.Append(errs, fmt.Errorf("missing ScopeLogs with scope name: %s", esl.Scope().Name()))
+		if eil.Version() != ail.Version() {
+			return fmt.Errorf("instrumentation library Version does not match expected: %s, actual: %s", eil.Version(), ail.Version())
 		}
-	}
-
-	for i := 0; i < numScopeLogs; i++ {
-		if _, ok := matchingScopeLogs[actual.ScopeLogs().At(i)]; !ok {
-			errs = multierr.Append(errs, fmt.Errorf("unexpected ScopeLogs with scope name: %s",
-				actual.ScopeLogs().At(i).Scope().Name()))
-		}
-	}
-
-	if errs != nil {
-		return errs
-	}
-	if outOfOrderErrs != nil {
-		return outOfOrderErrs
-	}
-
-	for i := 0; i < esls.Len(); i++ {
-		if err := CompareScopeLogs(esls.At(i), asls.At(i)); err != nil {
-			return multierr.Combine(fmt.Errorf(`ScopeLogs with scope name "%s" do not match expected`,
-				esls.At(i).Scope().Name()), err)
+		if err := CompareLogRecordSlices(eilm.LogRecords(), ailm.LogRecords()); err != nil {
+			return err
 		}
 	}
 	return nil
 }
 
-// CompareScopeLogs compares each part of two given LogRecordSlices and returns
+// CompareLogRecordSlices compares each part of two given LogRecordSlices and returns
 // an error if they don't match. The error describes what didn't match.
-func CompareScopeLogs(expected, actual plog.ScopeLogs) error {
-	if expected.Scope().Name() != actual.Scope().Name() {
-		return fmt.Errorf("scope name does not match expected: %s, actual: %s",
-			expected.Scope().Name(), actual.Scope().Name())
-	}
-	if expected.Scope().Version() != actual.Scope().Version() {
-		return fmt.Errorf("scope version does not match expected: %s, actual: %s",
-			expected.Scope().Version(), actual.Scope().Version())
+func CompareLogRecordSlices(expected, actual plog.LogRecordSlice) error {
+	if expected.Len() != actual.Len() {
+		return fmt.Errorf("number of log records does not match expected: %d, actual: %d", expected.Len(), actual.Len())
 	}
 
-	if expected.LogRecords().Len() != actual.LogRecords().Len() {
-		return fmt.Errorf("number of log records does not match expected: %d, actual: %d",
-			expected.LogRecords().Len(), actual.LogRecords().Len())
-	}
-
-	numLogRecords := expected.LogRecords().Len()
+	numLogRecords := expected.Len()
 
 	// Keep track of matching records so that each record can only be matched once
 	matchingLogRecords := make(map[plog.LogRecord]plog.LogRecord, numLogRecords)
@@ -189,10 +136,10 @@ func CompareScopeLogs(expected, actual plog.ScopeLogs) error {
 	var errs error
 	var outOfOrderErrs error
 	for e := 0; e < numLogRecords; e++ {
-		elr := expected.LogRecords().At(e)
+		elr := expected.At(e)
 		var foundMatch bool
 		for a := 0; a < numLogRecords; a++ {
-			alr := actual.LogRecords().At(a)
+			alr := actual.At(a)
 			if _, ok := matchingLogRecords[alr]; ok {
 				continue
 			}
@@ -202,7 +149,7 @@ func CompareScopeLogs(expected, actual plog.ScopeLogs) error {
 				if e != a {
 					outOfOrderErrs = multierr.Append(outOfOrderErrs,
 						fmt.Errorf("LogRecord with attributes %v expected at index %d, "+
-							"found at index %d", elr.Attributes().AsRaw(), e, a))
+							"found a at index %d", elr.Attributes().AsRaw(), e, a))
 				}
 				break
 			}
@@ -213,9 +160,9 @@ func CompareScopeLogs(expected, actual plog.ScopeLogs) error {
 	}
 
 	for i := 0; i < numLogRecords; i++ {
-		if _, ok := matchingLogRecords[actual.LogRecords().At(i)]; !ok {
+		if _, ok := matchingLogRecords[actual.At(i)]; !ok {
 			errs = multierr.Append(errs, fmt.Errorf("log has extra record with attributes: %v",
-				actual.LogRecords().At(i).Attributes().AsRaw()))
+				actual.At(i).Attributes().AsRaw()))
 		}
 	}
 
@@ -227,21 +174,16 @@ func CompareScopeLogs(expected, actual plog.ScopeLogs) error {
 	}
 
 	for alr, elr := range matchingLogRecords {
-		if err := CompareLogRecord(alr, elr); err != nil {
-			return multierr.Combine(fmt.Errorf("log record with attributes %v does not match expected", alr.Attributes().AsRaw()), err)
+		if err := CompareLogRecords(alr, elr); err != nil {
+			return multierr.Combine(fmt.Errorf("log record with attributes: %v, does not match expected", alr.Attributes().AsRaw()), err)
 		}
 	}
 	return nil
 }
 
-// CompareLogRecord compares each part of two given LogRecord and returns
+// CompareLogRecords compares each part of two given LogRecord and returns
 // an error if they don't match. The error describes what didn't match.
-func CompareLogRecord(expected, actual plog.LogRecord) error {
-	if !reflect.DeepEqual(expected.Attributes().AsRaw(), actual.Attributes().AsRaw()) {
-		return fmt.Errorf("log record attributes do not match expected: %v, actual: %v",
-			expected.Attributes().AsRaw(), actual.Attributes().AsRaw())
-	}
-
+func CompareLogRecords(expected, actual plog.LogRecord) error {
 	if expected.Flags() != actual.Flags() {
 		return fmt.Errorf("log record Flags doesn't match expected: %d, actual: %d",
 			expected.Flags(),
@@ -267,7 +209,7 @@ func CompareLogRecord(expected, actual plog.LogRecord) error {
 	}
 
 	if expected.SeverityNumber() != actual.SeverityNumber() {
-		return fmt.Errorf("log record SeverityNumber doesn't match expected: %s, actual: %s",
+		return fmt.Errorf("log record SeverityNumber doesn't match expected: %d, actual: %d",
 			expected.SeverityNumber(),
 			actual.SeverityNumber())
 	}

@@ -51,9 +51,9 @@ func TestSignalFxV2EventsToLogData(t *testing.T) {
 		}
 	}
 
-	buildDefaultLogs := func() plog.ScopeLogs {
-		sl := plog.NewScopeLogs()
-		l := sl.LogRecords().AppendEmpty()
+	buildDefaultLogs := func() plog.LogRecordSlice {
+		logSlice := plog.NewLogRecordSlice()
+		l := logSlice.AppendEmpty()
 		l.SetTimestamp(pcommon.NewTimestampFromTime(now.Truncate(time.Millisecond)))
 		attrs := l.Attributes()
 		attrs.PutStr("com.splunk.signalfx.event_type", "shutdown")
@@ -69,13 +69,13 @@ func TestSignalFxV2EventsToLogData(t *testing.T) {
 		propMap.PutDouble("temp", 40.5)
 		propMap.PutEmpty("nullProp")
 
-		return sl
+		return logSlice
 	}
 
 	tests := []struct {
 		name      string
 		sfxEvents []*sfxpb.Event
-		expected  plog.ScopeLogs
+		expected  plog.LogRecordSlice
 	}{
 		{
 			name:      "default",
@@ -89,9 +89,9 @@ func TestSignalFxV2EventsToLogData(t *testing.T) {
 				e.Category = nil
 				return []*sfxpb.Event{e}
 			}(),
-			expected: func() plog.ScopeLogs {
+			expected: func() plog.LogRecordSlice {
 				lrs := buildDefaultLogs()
-				lrs.LogRecords().At(0).Attributes().PutEmpty("com.splunk.signalfx.event_category")
+				lrs.At(0).Attributes().PutEmpty("com.splunk.signalfx.event_category")
 				return lrs
 			}(),
 		},
@@ -99,9 +99,9 @@ func TestSignalFxV2EventsToLogData(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sl := plog.NewScopeLogs()
-			signalFxV2EventsToLogRecords(tt.sfxEvents, sl.LogRecords())
-			assert.NoError(t, plogtest.CompareScopeLogs(tt.expected, sl))
+			lrs := plog.NewLogRecordSlice()
+			signalFxV2EventsToLogRecords(tt.sfxEvents, lrs)
+			assert.NoError(t, plogtest.CompareLogRecordSlices(tt.expected, lrs))
 		})
 	}
 }
