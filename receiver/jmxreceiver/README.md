@@ -42,6 +42,8 @@ receivers:
     log_level: info
     additional_jars:
       - /path/to/other.jar
+    # temporary folder for Java configuration file, defaults to OS temporary directory
+    temp_dir: "/var/run/"
 ```
 
 ### jar_path (default: `/opt/opentelemetry-java-contrib-jmx-metrics.jar`)
@@ -181,6 +183,10 @@ Corresponds to the `otel.resource.attributes` property.
 SLF4J log level for the JMX metrics gatherer. Must be one of: `"trace"`, `"debug"`, `"info"`, `"warn"`, `"error"`, `"off"`. If not provided, will attempt to match to the current log level of the collector.
 
 Corresponds to the `org.slf4j.simpleLogger.defaultLogLevel` property.
+
+### temp_dir (default: operating system temporary directory)
+
+The location of the directory where the receiver will store configuration used by the Java process. The configuration is typically stored as a properties file, as a temporary file that is deleted on exit of the collector.
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

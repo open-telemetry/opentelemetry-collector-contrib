@@ -71,7 +71,7 @@ type Config struct {
 	// Log level used by the JMX metric gatherer. Should be one of:
 	// `"trace"`, `"debug"`, `"info"`, `"warn"`, `"error"`, `"off"`
 	LogLevel string `mapstructure:"log_level"`
-	// The temporary folder used to store configuration for the JVM (uses the OS temporary folder by default).
+	// The temporary directory used to store configuration for the JVM (uses the OS temporary folder by default).
 	TempDir string `mapstructure:"temp_dir"`
 }
 
