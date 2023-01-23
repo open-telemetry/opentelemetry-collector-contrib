@@ -64,20 +64,20 @@ func (s *Sender) SubmitLogs(ctx context.Context, payload []datadogV2.HTTPLogItem
 		s.logger.Debug("Submitting logs", zap.Any("payload", payload))
 	}
 	var (
-		tags, prevtags string
-		batch          []datadogV2.HTTPLogItem
+		tags, prevtags string                  // keeps track of the ddtags of log items for grouping purposes
+		batch          []datadogV2.HTTPLogItem // stores consecutive log items to be submitted together
 	)
 	// Correctly sets apiSubmitLogRequest ddtags field based on tags from translator Transform method
-	for i, logItem := range payload {
-		tags = logItem.GetDdtags()
+	for i, p := range payload {
+		tags = p.GetDdtags()
 		// Batches consecutive log items with the same tags to be submitted together
 		if prevtags == tags && i > 0 {
-			batch = append(batch, logItem)
+			batch = append(batch, p)
 		} else {
 			if err := s.handleSubmitLog(ctx, batch, prevtags); err != nil {
 				return err
 			}
-			batch = []datadogV2.HTTPLogItem{logItem}
+			batch = []datadogV2.HTTPLogItem{p}
 		}
 		prevtags = tags
 	}
