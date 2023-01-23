@@ -194,15 +194,15 @@ func (s *Parser) parse(value interface{}) (interface{}, error) {
 // parseRFC3164 will parse an RFC3164 syslog message.
 func (s *Parser) parseRFC3164(syslogMessage *rfc3164.SyslogMessage) (map[string]interface{}, error) {
 	value := map[string]interface{}{
-		"timestamp": syslogMessage.Timestamp,
-		"priority":  syslogMessage.Priority,
-		"facility":  syslogMessage.Facility,
-		"severity":  syslogMessage.Severity,
-		"hostname":  syslogMessage.Hostname,
-		"appname":   syslogMessage.Appname,
-		"proc_id":   syslogMessage.ProcID,
-		"msg_id":    syslogMessage.MsgID,
-		"message":   syslogMessage.Message,
+		"timestamp":       syslogMessage.Timestamp,
+		"syslog_priority": syslogMessage.Priority,
+		"syslog_facility": syslogMessage.Facility,
+		"syslog_severity": syslogMessage.Severity,
+		"host":            syslogMessage.Hostname,
+		"syslog_appname":  syslogMessage.Appname,
+		"syslog_proc_id":  syslogMessage.ProcID,
+		"syslog_msg_id":   syslogMessage.MsgID,
+		"message":         syslogMessage.Message,
 	}
 	return s.toSafeMap(value)
 }
@@ -210,17 +210,17 @@ func (s *Parser) parseRFC3164(syslogMessage *rfc3164.SyslogMessage) (map[string]
 // parseRFC5424 will parse an RFC5424 syslog message.
 func (s *Parser) parseRFC5424(syslogMessage *rfc5424.SyslogMessage) (map[string]interface{}, error) {
 	value := map[string]interface{}{
-		"timestamp":       syslogMessage.Timestamp,
-		"priority":        syslogMessage.Priority,
-		"facility":        syslogMessage.Facility,
-		"severity":        syslogMessage.Severity,
-		"hostname":        syslogMessage.Hostname,
-		"appname":         syslogMessage.Appname,
-		"proc_id":         syslogMessage.ProcID,
-		"msg_id":          syslogMessage.MsgID,
-		"message":         syslogMessage.Message,
-		"structured_data": syslogMessage.StructuredData,
-		"version":         syslogMessage.Version,
+		"timestamp":              syslogMessage.Timestamp,
+		"syslog_priority":        syslogMessage.Priority,
+		"syslog_facility":        syslogMessage.Facility,
+		"syslog_severity":        syslogMessage.Severity,
+		"host":                   syslogMessage.Hostname,
+		"syslog_appname":         syslogMessage.Appname,
+		"syslog_proc_id":         syslogMessage.ProcID,
+		"syslog_msg_id":          syslogMessage.MsgID,
+		"message":                syslogMessage.Message,
+		"syslog_structured_data": syslogMessage.StructuredData,
+		"syslog_version":         syslogMessage.Version,
 	}
 	return s.toSafeMap(value)
 }
