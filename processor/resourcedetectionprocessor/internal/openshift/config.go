@@ -17,9 +17,14 @@ package openshift // import "github.com/open-telemetry/opentelemetry-collector-c
 import (
 	"fmt"
 	"os"
+
+	"go.opentelemetry.io/collector/config/configtls"
 )
 
-const defaultServiceTokenPath = "/var/run/secrets/kubernetes.io/serviceaccount/token" //#nosec
+const (
+	defaultServiceTokenPath = "/var/run/secrets/kubernetes.io/serviceaccount/token"  //#nosec
+	defaultCAPath           = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt" //#nosec
+)
 
 func readK8STokenFromFile() (string, error) {
 	token, err := os.ReadFile(defaultServiceTokenPath)
@@ -49,6 +54,10 @@ type Config struct {
 
 	// Token is used to identify against the openshift api server
 	Token string `mapstructure:"token"`
+
+	// TLSSettings contains TLS configurations that are specific to client
+	// connection used to communicate with the Openshift API.
+	TLSSettings configtls.TLSClientSetting `mapstructure:"tls"`
 }
 
 // MergeWithDefaults fills unset fields with default values.
@@ -67,6 +76,10 @@ func (c *Config) MergeWithDefaults() error {
 			return err
 		}
 		c.Address = addr
+	}
+
+	if !c.TLSSettings.Insecure && c.TLSSettings.CAFile == "" {
+		c.TLSSettings.CAFile = defaultCAPath
 	}
 	return nil
 }
