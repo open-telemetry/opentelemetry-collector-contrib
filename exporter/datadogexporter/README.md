@@ -18,13 +18,13 @@ Visit the [official documentation](https://docs.datadoghq.com/tracing/trace_coll
 
 This error indicates the payload size sent by the Datadog exporter exceeds the size limit (see previous examples https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16834, https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/17566).
 
-This is usually caused by the pipepline batching too many telemetry data before sending to the Datadog exporter. To fix that, try lowering `send_batch_size` and `send_batch_max_size` in your batchprocessor config. You might want to have a separate batch processor dedicated for datadog exporter if other exporters expect a larger batch size, e.g.
+This is usually caused by the pipeline batching too many telemetry data before sending to the Datadog exporter. To fix that, try lowering `send_batch_size` and `send_batch_max_size` in your batchprocessor config. You might want to have a separate batch processor dedicated for datadog exporter if other exporters expect a larger batch size, e.g.
 ```
 processors:
   batch:  # To be used by other exporters
     timeout: 1s
     # Default value for send_batch_size is 8192
-  batch/2:
+  batch/datadog:
     send_batch_max_size: 100
     send_batch_size: 10
     timeout: 10s
@@ -33,14 +33,14 @@ service:
   pipelines:
     metrics:
       receivers: ...
-      processors: [batch/2]
+      processors: [batch/datadog]
       exporters: [datadog]
 ```
 
-The exact values for `send_batch_size` and `send_batch_max_size` depends on your specific workload. Also note that, Datadog intake has different payload size limits for the 3 singal types:
-- 3.2MB for Trace intake
-- 1MB for Log intake
-- 500KB uncompressed, or 5MB after decompression for Metrics V2 intake
+The exact values for `send_batch_size` and `send_batch_max_size` depends on your specific workload. Also note that, Datadog intake has different payload size limits for the 3 signal types:
+- Trace intake: 3.2MB
+- Log intake: https://docs.datadoghq.com/api/latest/logs/
+- Metrics V2 intake: https://docs.datadoghq.com/api/latest/metrics/#submit-metrics
 
 
 [beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
