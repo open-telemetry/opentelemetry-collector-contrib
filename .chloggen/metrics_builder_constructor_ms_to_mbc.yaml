@@ -5,7 +5,7 @@ change_type: enhancement # breaking?
 component: mdatagen
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Changes MetricsBuilder constructor from MetricsSettings to MetricsBuilderConfig
+note: Turn on the ability to enable/disable resource attributes by embedding MetricsSettings and ResourceAttributesSettings into as scraping receivers as MetricsBuilderConfig
 
 # One or more tracking issues related to the change
 issues: []
