@@ -166,7 +166,7 @@ func convertFromLogs(workerItem fromConverterWorkerItem) []*entry.Entry {
 		entry := entry.Entry{}
 
 		entry.ScopeName = workerItem.Scope.Scope().Name()
-		entry.Resource = valueToMap(workerItem.Resource.Attributes())
+		entry.Resource = workerItem.Resource.Attributes().AsRaw()
 		convertFrom(record, &entry)
 		result = append(result, &entry)
 	}
@@ -207,8 +207,8 @@ func convertFrom(src plog.LogRecord, ent *entry.Entry) {
 	ent.Severity = fromPdataSevMap[src.SeverityNumber()]
 	ent.SeverityText = src.SeverityText()
 
-	ent.Attributes = valueToMap(src.Attributes())
-	ent.Body = valueToInterface(src.Body())
+	ent.Attributes = src.Attributes().AsRaw()
+	ent.Body = src.Body().AsRaw()
 
 	if !src.TraceID().IsEmpty() {
 		buffer := src.TraceID()
@@ -222,42 +222,6 @@ func convertFrom(src plog.LogRecord, ent *entry.Entry) {
 		a := make([]byte, 4)
 		binary.LittleEndian.PutUint32(a, uint32(src.Flags()))
 		ent.TraceFlags = []byte{a[0]}
-	}
-}
-
-func valueToMap(value pcommon.Map) map[string]interface{} {
-	rawMap := map[string]interface{}{}
-	value.Range(func(k string, v pcommon.Value) bool {
-		rawMap[k] = valueToInterface(v)
-		return true
-	})
-	return rawMap
-}
-
-func valueToInterface(value pcommon.Value) interface{} {
-	switch value.Type() {
-	case pcommon.ValueTypeEmpty:
-		return nil
-	case pcommon.ValueTypeStr:
-		return value.Str()
-	case pcommon.ValueTypeBool:
-		return value.Bool()
-	case pcommon.ValueTypeDouble:
-		return value.Double()
-	case pcommon.ValueTypeInt:
-		return value.Int()
-	case pcommon.ValueTypeBytes:
-		return value.Bytes().AsRaw()
-	case pcommon.ValueTypeMap:
-		return value.Map().AsRaw()
-	case pcommon.ValueTypeSlice:
-		arr := make([]interface{}, 0, value.Slice().Len())
-		for i := 0; i < value.Slice().Len(); i++ {
-			arr = append(arr, valueToInterface(value.Slice().At(i)))
-		}
-		return arr
-	default:
-		return value.AsString()
 	}
 }
 
