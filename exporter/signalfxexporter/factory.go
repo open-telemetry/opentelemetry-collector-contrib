@@ -149,8 +149,8 @@ func createMetricsExporter(
 	}
 
 	return &signalfMetadataExporter{
-		Metrics:      me,
-		pushMetadata: exp.pushMetadata,
+		Metrics:  me,
+		exporter: exp,
 	}, nil
 }
 
