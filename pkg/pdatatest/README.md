@@ -1,94 +1,48 @@
 # pdatatest
 
-This module provides a mechanism for capturing and comparing expected metric and log results.
+This module provides a test helpers for comparing metric, log and traces. The main functions are: 
+- `pmetrictest.CompareMetrics` 
+- `plogtest.CompareLogs` 
+- `ptrace.CompareTraces` 
+
+These functions compare the actual result with the expected result and return an error if they are not equal. 
+The error contains a detailed description of the differences. The module also provides several options to customize 
+the comparison by ignoring certain fields, attributes, or slices order. The module also provides helper functions 
+for comparing other embedded pdata types such as `pmetric.ResourceMetrics`, `pmetric.ScopeMetrics`, `plog.LogRecord`,
+`ptrace.Span`, etc.   
 
 ## Typical Usage
 
-A scraper test typically looks something like this:
-
 ```go
-func TestScraper(t *testing.T) {
-  cfg := createDefaultConfig().(*Config)
-  require.NoError(t, component.ValidateConfig(cfg))
+func TestMetricsScraper(t *testing.T) {
+	scraper := newScraper(componenttest.NewNopReceiverCreateSettings(), createDefaultConfig().(*Config))
+	require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()))
+	actualMetrics, err := require.NoError(t, scraper.scrape(context.Background()))
+	require.NoError(t, err)
 
-  scraper := newScraper(componenttest.NewNopReceiverCreateSettings(), cfg)
+	expectedFile, err := readMetrics(filepath.Join("testdata", "expected.json"))
+	require.NoError(err)
 
-  err := scraper.start(context.Background(), componenttest.NewNopHost())
-  require.NoError(t, err)
-
-  actualMetrics, err := scraper.scrape(context.Background())
-  require.NoError(t, err)
-
-  expectedFile := filepath.Join("testdata", "scraper", "expected.json")
-  expectedMetrics, err := golden.ReadMetrics(expectedFile)
-  require.NoError(t, err)
-
-  require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics))
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics))
 }
 ```
 
 ```go
-func TestLogsSink(t *testing.T) {
-  cfg := createDefaultConfig().(*Config)
-  require.NoError(t, component.ValidateConfig(cfg))
+func TestLogsReceiver(t *testing.T) {
+	sink := &consumertest.LogsSink{}
+	rcvr := newLogsReceiver(createDefaultConfig().(*Config), zap.NewNop(), sink)
+	rcvr.client = defaultMockClient()
+	require.NoError(t,  rcvr.Start(context.Background(), componenttest.NewNopHost()))
+	require.Eventually(t, func() bool {
+		return sink.LogRecordCount() > 0
+	}, 2*time.Second, 10*time.Millisecond)
+	err = rcvr.Shutdown(context.Background())
+	require.NoError(t, err)
+	actualLogs := sink.AllLogs()[0]
 
-  sink := &consumertest.LogsSink{}
-  alertRcvr := newLogsReceiver(cfg, zap.NewNop(), sink)
-  alertRcvr.client = defaultMockClient()
+	expectedLogs, err := readLogs(filepath.Join("testdata", "logs", "expected.json"))
+	require.NoError(t, err)
 
-  err := alertRcvr.Start(context.Background(), componenttest.NewNopHost())
-  require.NoError(t, err)
-
-  require.Eventually(t, func() bool {
-    return sink.LogRecordCount() > 0
-  }, 2*time.Second, 10*time.Millisecond)
-
-  err = alertRcvr.Shutdown(context.Background())
-  require.NoError(t, err)
-
-  logs := sink.AllLogs()[0]
-  expected, err := readLogs(filepath.Join("testdata", "logs", "expected.json"))
-  require.NoError(t, err)
-  require.NoError(t, pmetrictest.CompareLogs(expected, logs))
-}
-```
-
-## Generating an expected result file
-
-The easiest way to capture the expected result in a file is `golden.WriteMetrics` or `golden.WriteLogs`.
-
-When writing a new test:
-1. Write the test as if the expected file exists.
-2. Follow the steps below for updating an existing test.
-
-When updating an existing test:
-1. Add a call to `golden.WriteMetrics` or `golden.WriteLogs` or in the appropriate place.
-2. Run the test once.
-3. Remove the call to `golden.WriteMetrics` or `golden.WriteLogs`.
-
-NOTE: `golden.WriteMetrics` will always mark the test as failed. This behavior is
-necessary to ensure the function is removed after the golden file is written.
-
-```go
-func TestScraper(t *testing.T) {
-  cfg := createDefaultConfig().(*Config)
-  require.NoError(t, component.ValidateConfig(cfg))
-
-  scraper := newScraper(componenttest.NewNopReceiverCreateSettings(), cfg)
-
-  err := scraper.start(context.Background(), componenttest.NewNopHost())
-  require.NoError(t, err)
-
-  actualMetrics, err := scraper.scrape(context.Background())
-  require.NoError(t, err)
-
-  expectedFile := filepath.Join("testdata", "scraper", "expected.json")
-
-  golden.WriteMetrics(t, expectedFile, actualMetrics) // This line is temporary! TODO remove this!!
-
-  expectedMetrics, err := golden.ReadMetrics(expectedFile)
-  require.NoError(t, err)
-
-  require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics))
+	require.NoError(t, pmetrictest.CompareLogs(expectedLogs, actualLogs))
 }
 ```
