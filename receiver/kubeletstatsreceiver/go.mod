@@ -13,9 +13,9 @@ require (
 	go.opentelemetry.io/collector/pdata v1.0.0-rc3.0.20230121222757-51c9139d1c2f
 	go.opentelemetry.io/collector/semconv v0.69.2-0.20230121222757-51c9139d1c2f
 	go.uber.org/zap v1.24.0
-	k8s.io/api v0.26.0
-	k8s.io/apimachinery v0.26.0
-	k8s.io/client-go v0.26.0
+	k8s.io/api v0.26.1
+	k8s.io/apimachinery v0.26.1
+	k8s.io/client-go v0.26.1
 	k8s.io/kubelet v0.26.0
 )
 
