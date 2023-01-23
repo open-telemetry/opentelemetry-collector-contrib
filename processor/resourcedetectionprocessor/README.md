@@ -45,16 +45,16 @@ Use the following config to avoid getting FQDN and apply hostname provided by OS
 ```yaml
 processors:
   resourcedetection/system:
-    detectors: ['system']
+    detectors: ["system"]
     system:
-      hostname_sources: ['os']
+      hostname_sources: ["os"]
 ```
 
-- all valid options for `hostname_sources`:
-  - "dns"
-  - "os"
-  - "cname"
-  - "lookup"
+* all valid options for `hostname_sources`:
+    * "dns"
+    * "os"
+    * "cname"
+    * "lookup"
 
 #### Hostname Sources
 
@@ -91,6 +91,7 @@ Docker detection does not work on macOS.
 ### Heroku dyno id
 
 In a Heroku application, the [dyno id](https://devcenter.heroku.com/articles/dyno-metadata) is the identifier of the virtualized environment ("dyno") where the application runs.
+
 
 Example:
 
@@ -190,11 +191,10 @@ It also can optionally gather tags for the EC2 instance that the collector is ru
 Note that in order to fetch EC2 tags, the IAM role assigned to the EC2 instance must have a policy that includes the `ec2:DescribeTags` permission.
 
 EC2 custom configuration example:
-
 ```yaml
 processors:
   resourcedetection/ec2:
-    detectors: ['ec2']
+    detectors: ["ec2"]
     ec2:
       # A list of regex's to match tag keys to add as resource attributes can be specified
       tags:
@@ -276,22 +276,22 @@ to retrieve the following resource attributes:
 
 [Cloud semantic conventions](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/cloud.md)
 
-- `cloud.provider` (`"aws"`)
-- `cloud.platform` (`"aws_lambda"`)
-- `cloud.region` (`$AWS_REGION`)
+* `cloud.provider` (`"aws"`)
+* `cloud.platform` (`"aws_lambda"`)
+* `cloud.region` (`$AWS_REGION`)
 
 [Function as a Service semantic conventions](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/faas.md)
 and [AWS Lambda semantic conventions](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/instrumentation/aws-lambda.md#resource-detector)
 
-- `faas.name` (`$AWS_LAMBDA_FUNCTION_NAME`)
-- `faas.version` (`$AWS_LAMBDA_FUNCTION_VERSION`)
-- `faas.instance` (`$AWS_LAMBDA_LOG_STREAM_NAME`)
-- `faas.max_memory` (`$AWS_LAMBDA_FUNCTION_MEMORY_SIZE`)
+* `faas.name` (`$AWS_LAMBDA_FUNCTION_NAME`)
+* `faas.version` (`$AWS_LAMBDA_FUNCTION_VERSION`)
+* `faas.instance` (`$AWS_LAMBDA_LOG_STREAM_NAME`)
+* `faas.max_memory` (`$AWS_LAMBDA_FUNCTION_MEMORY_SIZE`)
 
 [AWS Logs semantic conventions](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/cloud_provider/aws/logs.md)
 
-- `aws.log.group.names` (`$AWS_LAMBDA_LOG_GROUP_NAME`)
-- `aws.log.stream.names` (`$AWS_LAMBDA_LOG_STREAM_NAME`)
+* `aws.log.group.names` (`$AWS_LAMBDA_LOG_GROUP_NAME`)
+* `aws.log.stream.names` (`$AWS_LAMBDA_LOG_STREAM_NAME`)
 
 Example:
 
@@ -330,8 +330,8 @@ processors:
 
 ### Azure AKS
 
-- cloud.provider ("azure")
-- cloud.platform ("azure_aks")
+  * cloud.provider ("azure")
+  * cloud.platform ("azure_aks")
 
 ```yaml
 processors:
@@ -345,10 +345,10 @@ processors:
 
 Queries a [consul agent](https://www.consul.io/docs/agent) and reads its' [configuration endpoint](https://www.consul.io/api-docs/agent#read-configuration) to retrieve the following resource attributes:
 
-- cloud.region (consul datacenter)
-- host.id (consul node id)
-- host.name (consul node name)
-- _exploded consul metadata_ - reads all key:value pairs in [consul metadata](https://www.consul.io/docs/agent/options#_node_meta) into label:labelvalue pairs.
+  * cloud.region (consul datacenter)
+  * host.id (consul node id)
+  * host.name (consul node name)
+  * *exploded consul metadata* - reads all key:value pairs in [consul metadata](https://www.consul.io/docs/agent/options#_node_meta) into label:labelvalue pairs.
 
 ```yaml
 processors:
@@ -364,14 +364,14 @@ processors:
 
 Queries [Heroku metadata](https://devcenter.heroku.com/articles/dyno-metadata) to retrieve the following resource attributes:
 
-- heroku.release.version (identifier for the current release)
-- heroku.release.creation_timestamp (time and date the release was created)
-- heroku.release.commit (commit hash for the current release)
-- heroku.app.name (application name)
-- heroku.app.id (unique identifier for the application)
-- heroku.dyno.id (dyno identifier. Used as host name)
+* heroku.release.version (identifier for the current release)
+* heroku.release.creation_timestamp (time and date the release was created)
+* heroku.release.commit (commit hash for the current release)
+* heroku.app.name (application name)
+* heroku.app.id (unique identifier for the application)
+* heroku.dyno.id (dyno identifier. Used as host name)
 
-````yaml
+```yaml
 processors:
   resourcedetection/heroku:
     detectors: [env, heroku]
@@ -404,17 +404,17 @@ processors:
     openshift: # optional
       address: "https://api.example.com"
       token: "token"
-````
+```
 
 ## Configuration
 
 ```yaml
 # a list of resource detectors to run, valid options are: "env", "system", "gce", "gke", "ec2", "ecs", "elastic_beanstalk", "eks", "lambda", "azure", "heroku", "openshift"
-detectors: [<string>]
+detectors: [ <string> ]
 # determines if existing resource attributes should be overridden or preserved, defaults to true
 override: <bool>
 # When included, only attributes in the list will be appened.  Applies to all detectors.
-attributes: [<string>]
+attributes: [ <string> ]
 ```
 
 ## Ordering
@@ -423,19 +423,19 @@ Note that if multiple detectors are inserting the same attribute name, the first
 
 ### GCP
 
-- gke
-- gce
+* gke
+* gce
 
 ### AWS
 
-- lambda
-- elastic_beanstalk
-- eks
-- ecs
-- ec2
+* lambda
+* elastic_beanstalk
+* eks
+* ecs
+* ec2
 
 The full list of settings exposed for this extension are documented [here](./config.go)
 with detailed sample configurations [here](./testdata/config.yaml).
 
-[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
-[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
