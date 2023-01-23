@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudf
 go 1.19
 
 require (
-	github.com/cloudflare/cloudflare-go v0.58.1
+	github.com/cloudflare/cloudflare-go v0.59.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest v0.69.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.69.0
 	github.com/stretchr/testify v1.8.1

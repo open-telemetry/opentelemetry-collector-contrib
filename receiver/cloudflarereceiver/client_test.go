@@ -15,7 +15,9 @@
 package cloudflarereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudflarereceiver"
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -23,8 +25,9 @@ import (
 	"testing"
 
 	"github.com/cloudflare/cloudflare-go"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudflarereceiver/internal/models"
 	"github.com/stretchr/testify/require"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudflarereceiver/internal/models"
 )
 
 func TestNewClient(t *testing.T) {
@@ -84,7 +87,7 @@ func TestNewClient(t *testing.T) {
 
 	for _, tc := range testCase {
 		t.Run(tc.desc, func(t *testing.T) {
-			ac, err := newCloudflareClient(tc.cfg)
+			ac, err := newCloudflareClient(tc.cfg, defaultBaseURL)
 			if tc.expectError != nil {
 				require.Nil(t, ac)
 				require.Contains(t, err.Error(), tc.expectError.Error())
@@ -103,7 +106,8 @@ var (
 	mux *http.ServeMux
 
 	// client is the API client being tested.
-	cc client
+	cc  client
+	api *cloudflare.API
 
 	// server is a test HTTP server used to provide mock API responses.
 	server *httptest.Server
@@ -133,56 +137,176 @@ func setup(opts ...cloudflare.Option) {
 			Count:  defaultCount,
 			Fields: defaultFields,
 		},
-	})
-	cc.SetEndpoint(server.URL)
+	}, server.URL)
 }
 
 func teardown() {
 	server.Close()
 }
 
-// func TestMakeRequest(t *testing.T) {
-// 	setup()
-// 	defer teardown()
+func TestMakeRequest(t *testing.T) {
+	testCases := []struct {
+		desc     string
+		testFunc func(*testing.T)
+	}{
+		{
+			desc: "Successful call",
+			testFunc: func(*testing.T) {
+				setup()
+				defer teardown()
+				handler := func(w http.ResponseWriter, r *http.Request) {
+					require.Equal(t, http.MethodGet, r.Method, "Expected method 'GET', got %s", r.Method)
+					w.Header().Set("content-type", "application/json")
+					fmt.Fprintf(w, `{
+						"errors": [],
+						"messages": [],
+						"result": [
+							{
+								"ClientIP": "89.163.253.200",
+								"ClientRequestHost": "www.theburritobot0.com",
+								"ClientRequestMethod": "GET",
+								"ClientRequestURI": "/static/img/testimonial-hipster.png",
+								"EdgeEndTimestamp": 1506702504461999900,
+								"EdgeResponseBytes": 69045,
+								"EdgeResponseStatus": 200,
+								"EdgeStartTimestamp": 1506702504433000200,
+								"RayID": "3a6050bcbe121a87"
+							},
+							{
+								"ClientIP": "89.163.253.201",
+								"ClientRequestHost": "www.theburritobot1.com",
+								"ClientRequestMethod": "GET",
+								"ClientRequestURI": "/static/img/testimonial-hipster.png",
+								"EdgeEndTimestamp": 1506702504461999900,
+								"EdgeResponseBytes": 69045,
+								"EdgeResponseStatus": 200,
+								"EdgeStartTimestamp": 1506702504433000200,
+								"RayID": "3a6050bcbe121a87"
+							}
+						],
+						"success": true
+					}`)
+				}
 
-// 	handler := func(w http.ResponseWriter, r *http.Request) {
-// 		require.Equal(t, http.MethodGet, r.Method, "Expected method 'GET', got %s", r.Method)
-// 		w.Header().Set("content-type", "application/json")
-// 		fmt.Fprintf(w, `{
-// 		"ClientIP": "89.163.242.206",
-// 		"ClientRequestHost": "www.theburritobot.com",
-// 		"ClientRequestMethod": "GET",
-// 		"ClientRequestURI": "/static/img/testimonial-hipster.png",
-// 		"EdgeEndTimestamp": 1506702504461999900,
-// 		"EdgeResponseBytes": 69045,
-// 		"EdgeResponseStatus": 200,
-// 		"EdgeStartTimestamp": 1506702504433000200,
-// 		"RayID": "3a6050bcbe121a87"
-// 	}`)
-// 	}
+				pattern := "/zones/023e105f4ecef8ad9ca31a8372d0c353/logs/received"
+				mux.HandleFunc(pattern, handler)
+				want := []*models.Log{
+					{
+						ClientIP:            "89.163.253.200",
+						ClientRequestHost:   "www.theburritobot0.com",
+						ClientRequestMethod: "GET",
+						ClientRequestURI:    "/static/img/testimonial-hipster.png",
+						EdgeEndTimestamp:    1506702504461999900,
+						EdgeResponseBytes:   69045,
+						EdgeResponseStatus:  200,
+						EdgeStartTimestamp:  1506702504433000200,
+						RayID:               "3a6050bcbe121a87",
+					},
+					{
+						ClientIP:            "89.163.253.201",
+						ClientRequestHost:   "www.theburritobot1.com",
+						ClientRequestMethod: "GET",
+						ClientRequestURI:    "/static/img/testimonial-hipster.png",
+						EdgeEndTimestamp:    1506702504461999900,
+						EdgeResponseBytes:   69045,
+						EdgeResponseStatus:  200,
+						EdgeStartTimestamp:  1506702504433000200,
+						RayID:               "3a6050bcbe121a87",
+					},
+				}
 
-// 	// pattern := "http://127.0.0.1:51068/zones/023e105f4ecef8ad9ca31a8372d0c353/logs/received?start=2023-01-17T22:18:01-05:00&end=2023-01-17T22:18:11-05:00&fields=ClientIP,ClientRequestHost,ClientRequestMethod,ClientRequestURI,EdgeEndTimestamp,EdgeResponseBytes,EdgeResponseStatus,EdgeStartTimestamp,RayID&sample=1.000000"
-// 	// pattern := "http://127.0.0.1:51068/zones/023e105f4ecef8ad9ca31a8372d0c353/logs/received?start=2023-01-17T22:18:01-05:00&end=2023-01-17T22:18:11-05:00&fields=ClientIP,ClientRequestHost,ClientRequestMethod,ClientRequestURI,EdgeEndTimestamp,EdgeResponseBytes,EdgeResponseStatus,EdgeStartTimestamp,RayID&sample=1.000000"
-// 	// mux.HandleFunc(pattern, handler)
-// 	mux.HandleFunc("/zones/023e105f4ecef8ad9ca31a8372d0c353/logs/received", handler)
-// 	want := []*models.Log{
-// 		{
-// 			ClientIP:            "89.163.242.206",
-// 			ClientRequestHost:   "www.theburritobot.com",
-// 			ClientRequestMethod: "GET",
-// 			ClientRequestURI:    "/static/img/testimonial-hipster.png",
-// 			EdgeEndTimestamp:    1506702504461999900,
-// 			EdgeResponseBytes:   69045,
-// 			EdgeResponseStatus:  200,
-// 			EdgeStartTimestamp:  1506702504433000200,
-// 			RayID:               "3a6050bcbe121a87",
-// 		},
-// 	}
+				actual, err := cc.MakeRequest(context.Background(), startTime, endTime)
+				require.NoError(t, err)
+				require.Equal(t, want, actual)
+			},
+		},
+		{
+			desc: "Unauthorized response",
+			testFunc: func(*testing.T) {
+				setup()
+				defer teardown()
+				handler := func(w http.ResponseWriter, r *http.Request) {
+					require.Equal(t, http.MethodGet, r.Method, "Expected method 'GET', got %s", r.Method)
+					w.Header().Set("content-type", "application/json")
+					w.WriteHeader(http.StatusUnauthorized)
+				}
 
-// 	actual, err := cc.MakeRequest(context.Background(), server.URL, "2023-01-17T22:18:01-05:00", "2023-01-17T22:18:11-05:00")
-// 	require.NoError(t, err)
-// 	require.Equal(t, want, actual)
-// }
+				pattern := "/zones/023e105f4ecef8ad9ca31a8372d0c353/logs/received"
+				mux.HandleFunc(pattern, handler)
+				expectedError := errors.New("failed to retrieve Cloudflare logs: error unmarshalling the JSON response error body: unexpected end of JSON input")
+
+				_, err := cc.MakeRequest(context.Background(), startTime, endTime)
+				require.Error(t, err)
+				require.ErrorContains(t, expectedError, err.Error())
+			},
+		},
+		{
+			desc: "Bad response",
+			testFunc: func(*testing.T) {
+				setup()
+				defer teardown()
+
+				handler := func(w http.ResponseWriter, r *http.Request) {
+					require.Equal(t, http.MethodGet, r.Method, "Expected method 'GET', got %s", r.Method)
+					w.Header().Set("content-type", "application/json")
+					_, err := w.Write([]byte("{}"))
+					require.NoError(t, err)
+				}
+
+				pattern := "/zones/023e105f4ecef8ad9ca31a8372d0c353/logs/received"
+				mux.HandleFunc(pattern, handler)
+				expectedError := errors.New("failed to unmarshal response body: unexpected end of JSON input")
+
+				_, err := cc.MakeRequest(context.Background(), startTime, endTime)
+				require.Error(t, err)
+				require.ErrorContains(t, expectedError, err.Error())
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, tc.testFunc)
+	}
+}
+
+func TestMakeRequestBadResponse(t *testing.T) {
+	setup()
+	defer teardown()
+
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, http.MethodGet, r.Method, "Expected method 'GET', got %s", r.Method)
+		w.Header().Set("content-type", "application/json")
+		w.WriteHeader(http.StatusUnauthorized)
+	}
+
+	pattern := "/zones/023e105f4ecef8ad9ca31a8372d0c353/logs/received"
+	mux.HandleFunc(pattern, handler)
+	expectedError := errors.New("failed to retrieve Cloudflare logs: error unmarshalling the JSON response error body: unexpected end of JSON input")
+
+	_, err := cc.MakeRequest(context.Background(), startTime, endTime)
+	require.Error(t, err)
+	require.ErrorContains(t, expectedError, err.Error())
+}
+
+func TestMakeRequestBadPayload(t *testing.T) {
+	setup()
+	defer teardown()
+
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, http.MethodGet, r.Method, "Expected method 'GET', got %s", r.Method)
+		w.Header().Set("content-type", "application/json")
+		_, err := w.Write([]byte("{}"))
+		require.NoError(t, err)
+	}
+
+	pattern := "/zones/023e105f4ecef8ad9ca31a8372d0c353/logs/received"
+	mux.HandleFunc(pattern, handler)
+	expectedError := errors.New("failed to unmarshal response body: unexpected end of JSON input")
+
+	_, err := cc.MakeRequest(context.Background(), startTime, endTime)
+	require.Error(t, err)
+	require.ErrorContains(t, expectedError, err.Error())
+}
 
 func TestBuildEndpoint(t *testing.T) {
 	zone := "123abc"
@@ -201,11 +325,11 @@ func TestBuildEndpoint(t *testing.T) {
 			Fields: []string{"ClientIP", "ClientRequestHost", "EdgeEndTimestamp", "EdgeResponseStatus"},
 		},
 	}
-	client, err := newCloudflareClient(cfg)
+	client, err := newCloudflareClient(cfg, defaultBaseURL)
 	require.NoError(t, err)
-	endpoint := client.BuildEndpoint(defaultBaseURL, startTime, endTime)
+	endpoint := client.BuildEndpoint(startTime, endTime)
 
-	expectedEndpoint := fmt.Sprintf("https://api.cloudflare.com/client/v4/zones/%s/logs/received?start=%s&end=%s&%s", zone, startTime, endTime, logsFields)
+	expectedEndpoint := fmt.Sprintf("/zones/%s/logs/received?start=%s&end=%s&%s", zone, startTime, endTime, logsFields)
 	require.Equal(t, expectedEndpoint, endpoint)
 }
 

@@ -113,7 +113,7 @@ func TestPoll(t *testing.T) {
 
 func TestPollError(t *testing.T) {
 	mockClient := mocks.MockClient{}
-	mockClient.On("MakeRequest", mock.Anything, defaultBaseURL, mock.Anything, mock.Anything).Return(nil, errors.New("an error"))
+	mockClient.On("MakeRequest", mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("an error"))
 	recv := testRecv()
 	recv.client = &mockClient
 
@@ -124,7 +124,7 @@ func TestPollError(t *testing.T) {
 
 func TestStorageUpdate(t *testing.T) {
 	mockClient := mocks.MockClient{}
-	mockClient.On("MakeRequest", mock.Anything, defaultBaseURL, mock.Anything, mock.Anything).Return([]*models.Log{}, nil)
+	mockClient.On("MakeRequest", mock.Anything, mock.Anything, mock.Anything).Return([]*models.Log{}, nil)
 
 	recv := testRecv()
 	recv.client = &mockClient
@@ -213,7 +213,7 @@ func testClient(filePath string) (*mocks.MockClient, error) {
 		return nil, err
 	}
 
-	mockClient.On("MakeRequest", mock.Anything, defaultBaseURL, mock.Anything, mock.Anything).Return(response, nil)
+	mockClient.On("MakeRequest", mock.Anything, mock.Anything, mock.Anything).Return(response, nil)
 
 	return &mockClient, nil
 }

@@ -54,7 +54,7 @@ type logsReceiver struct {
 }
 
 func newLogsReceiver(params rcvr.CreateSettings, cfg *Config, consumer consumer.Logs) (*logsReceiver, error) {
-	client, err := newCloudflareClient(cfg)
+	client, err := newCloudflareClient(cfg, defaultBaseURL)
 	if err != nil {
 		return nil, err
 	}
@@ -139,7 +139,7 @@ func (l *logsReceiver) poll(ctx context.Context) error {
 }
 
 func (l *logsReceiver) pollForLogs(ctx context.Context, startTime, endTime string) error {
-	resp, err := l.client.MakeRequest(ctx, defaultBaseURL, startTime, endTime)
+	resp, err := l.client.MakeRequest(ctx, startTime, endTime)
 	if err != nil {
 		l.logger.Error("unable to retrieve logs from Cloudflare", zap.Error(err))
 		return err

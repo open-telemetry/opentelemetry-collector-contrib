@@ -28,12 +28,13 @@ import (
 )
 
 type client interface {
-	MakeRequest(ctx context.Context, baseURL string, startTime string, endTime string) ([]*models.Log, error)
-	BuildEndpoint(baseURL string, startTime string, endTime string) string
-	SetEndpoint(endpoint string)
+	MakeRequest(ctx context.Context, startTime string, endTime string) ([]*models.Log, error)
+	BuildEndpoint(startTime string, endTime string) string
 }
 
 var _ client = (*cloudflareClient)(nil)
+
+var defaultBaseURL = "https://api.cloudflare.com/client/v4"
 
 type cloudflareClient struct {
 	api      *cloudflare.API
@@ -41,7 +42,7 @@ type cloudflareClient struct {
 	endpoint string
 }
 
-func newCloudflareClient(cfg *Config) (client, error) {
+func newCloudflareClient(cfg *Config, baseURL string) (client, error) {
 	var api *cloudflare.API
 	var err error
 	if cfg.Auth.XAuthEmail != "" && cfg.Auth.XAuthKey != "" {
@@ -51,6 +52,7 @@ func newCloudflareClient(cfg *Config) (client, error) {
 	} else {
 		return nil, errInvalidAuthenticationConfigured
 	}
+	api.BaseURL = baseURL
 
 	if err != nil {
 		return nil, err
@@ -63,9 +65,9 @@ func newCloudflareClient(cfg *Config) (client, error) {
 	}, nil
 }
 
-func (c *cloudflareClient) MakeRequest(ctx context.Context, baseURL string, startTime string, endTime string) ([]*models.Log, error) {
+func (c *cloudflareClient) MakeRequest(ctx context.Context, startTime string, endTime string) ([]*models.Log, error) {
 	var parameters interface{}
-	endpoint := c.BuildEndpoint(baseURL, startTime, endTime)
+	endpoint := c.BuildEndpoint(startTime, endTime)
 
 	body, err := c.api.Raw(ctx, http.MethodGet, endpoint, parameters, http.Header{})
 	if err != nil {
@@ -81,14 +83,9 @@ func (c *cloudflareClient) MakeRequest(ctx context.Context, baseURL string, star
 	return logs, nil
 }
 
-var defaultBaseURL = "https://api.cloudflare.com/client/v4"
+func (c *cloudflareClient) BuildEndpoint(startTime string, endTime string) string {
+	url := fmt.Sprintf("/zones/%s/logs/received", c.cfg.Zone)
 
-func (c *cloudflareClient) SetEndpoint(endpoint string) {
-	c.endpoint = endpoint
-}
-
-func (c *cloudflareClient) BuildEndpoint(baseURL string, startTime string, endTime string) string {
-	url := fmt.Sprintf("%s/zones/%s/logs/received", baseURL, c.cfg.Zone)
 	fieldsList := strings.Join(c.cfg.Logs.Fields, ",")
 	endpoint := fmt.Sprintf("%s?start=%s&end=%s&fields=%s&sample=%f", url, startTime, endTime, fieldsList, c.cfg.Logs.Sample)
 	if c.cfg.Logs.Count != 0 {

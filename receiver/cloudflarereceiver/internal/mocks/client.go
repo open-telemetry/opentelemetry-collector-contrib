@@ -14,13 +14,13 @@ type MockClient struct {
 	mock.Mock
 }
 
-// BuildEndpoint provides a mock function with given fields: baseURL, startTime, endTime
-func (_m *MockClient) BuildEndpoint(baseURL string, startTime string, endTime string) string {
-	ret := _m.Called(baseURL, startTime, endTime)
+// BuildEndpoint provides a mock function with given fields: startTime, endTime
+func (_m *MockClient) BuildEndpoint(startTime string, endTime string) string {
+	ret := _m.Called(startTime, endTime)
 
 	var r0 string
-	if rf, ok := ret.Get(0).(func(string, string, string) string); ok {
-		r0 = rf(baseURL, startTime, endTime)
+	if rf, ok := ret.Get(0).(func(string, string) string); ok {
+		r0 = rf(startTime, endTime)
 	} else {
 		r0 = ret.Get(0).(string)
 	}
@@ -28,13 +28,13 @@ func (_m *MockClient) BuildEndpoint(baseURL string, startTime string, endTime st
 	return r0
 }
 
-// MakeRequest provides a mock function with given fields: ctx, baseURL, startTime, endTime
-func (_m *MockClient) MakeRequest(ctx context.Context, baseURL string, startTime string, endTime string) ([]*models.Log, error) {
-	ret := _m.Called(ctx, baseURL, startTime, endTime)
+// MakeRequest provides a mock function with given fields: ctx, startTime, endTime
+func (_m *MockClient) MakeRequest(ctx context.Context, startTime string, endTime string) ([]*models.Log, error) {
+	ret := _m.Called(ctx, startTime, endTime)
 
 	var r0 []*models.Log
-	if rf, ok := ret.Get(0).(func(context.Context, string, string, string) []*models.Log); ok {
-		r0 = rf(ctx, baseURL, startTime, endTime)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) []*models.Log); ok {
+		r0 = rf(ctx, startTime, endTime)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]*models.Log)
@@ -42,8 +42,8 @@ func (_m *MockClient) MakeRequest(ctx context.Context, baseURL string, startTime
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, string, string, string) error); ok {
-		r1 = rf(ctx, baseURL, startTime, endTime)
+	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = rf(ctx, startTime, endTime)
 	} else {
 		r1 = ret.Error(1)
 	}

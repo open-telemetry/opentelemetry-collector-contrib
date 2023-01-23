@@ -28,3 +28,11 @@ type Log struct {
 	EdgeStartTimestamp  int64  `json:"EdgeStartTimestamp"`
 	RayID               string `json:"RayID"`
 }
+
+// Response holds the raw return response from using the cloudflare API.
+type Response struct {
+	Errors   []interface{} `json:"errors"`
+	Messages []interface{} `json:"messages"`
+	Result   []Log         `json:"result"`
+	Success  bool          `json:"success"`
+}
