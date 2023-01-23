@@ -355,7 +355,7 @@ func makeXRayAttributes(attributes map[string]pcommon.Value, resource pcommon.Re
 				key = fixAnnotationKey(key)
 				annotations[key] = annoVal
 			} else {
-				metaVal := metadataValue(value)
+				metaVal := value.AsRaw()
 				if metaVal != nil {
 					defaultMetadata[key] = metaVal
 				}
@@ -381,7 +381,7 @@ func makeXRayAttributes(attributes map[string]pcommon.Value, resource pcommon.Re
 					annotations[key] = annoVal
 				}
 			} else {
-				metaVal := metadataValue(value)
+				metaVal := value.AsRaw()
 				if metaVal != nil {
 					defaultMetadata[key] = metaVal
 				}
@@ -406,34 +406,6 @@ func annotationValue(value pcommon.Value) interface{} {
 		return value.Double()
 	case pcommon.ValueTypeBool:
 		return value.Bool()
-	}
-	return nil
-}
-
-func metadataValue(value pcommon.Value) interface{} {
-	switch value.Type() {
-	case pcommon.ValueTypeStr:
-		return value.Str()
-	case pcommon.ValueTypeInt:
-		return value.Int()
-	case pcommon.ValueTypeDouble:
-		return value.Double()
-	case pcommon.ValueTypeBool:
-		return value.Bool()
-	case pcommon.ValueTypeMap:
-		converted := map[string]interface{}{}
-		value.Map().Range(func(key string, value pcommon.Value) bool {
-			converted[key] = metadataValue(value)
-			return true
-		})
-		return converted
-	case pcommon.ValueTypeSlice:
-		arrVal := value.Slice()
-		converted := make([]interface{}, arrVal.Len())
-		for i := 0; i < arrVal.Len(); i++ {
-			converted[i] = metadataValue(arrVal.At(i))
-		}
-		return converted
 	}
 	return nil
 }
