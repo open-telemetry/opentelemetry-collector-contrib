@@ -96,6 +96,11 @@ func CompareTraces(expected, actual ptrace.Traces, options ...CompareTracesOptio
 // CompareResourceSpans compares each part of two given ResourceSpans and returns
 // an error if they don't match. The error describes what didn't match.
 func CompareResourceSpans(expected, actual ptrace.ResourceSpans) error {
+	if !reflect.DeepEqual(expected.Resource().Attributes().AsRaw(), actual.Resource().Attributes().AsRaw()) {
+		return fmt.Errorf("resource attributes do not match expected: %v, actual: %v",
+			expected.Resource().Attributes().AsRaw(), actual.Resource().Attributes().AsRaw())
+	}
+
 	eilms := expected.ScopeSpans()
 	ailms := actual.ScopeSpans()
 
@@ -105,30 +110,31 @@ func CompareResourceSpans(expected, actual ptrace.ResourceSpans) error {
 	}
 
 	for i := 0; i < eilms.Len(); i++ {
-		eilm, ailm := eilms.At(i), ailms.At(i)
-		eil, ail := eilm.Scope(), ailm.Scope()
-
-		if eil.Name() != ail.Name() {
-			return fmt.Errorf("instrumentation library Name does not match expected: %s, actual: %s", eil.Name(), ail.Name())
-		}
-		if eil.Version() != ail.Version() {
-			return fmt.Errorf("instrumentation library Version does not match expected: %s, actual: %s", eil.Version(), ail.Version())
-		}
-		if err := CompareSpanSlices(eilm.Spans(), ailm.Spans()); err != nil {
+		if err := CompareScopeSpans(eilms.At(i), ailms.At(i)); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-// CompareSpanSlices compares each part of two given SpanSlices and returns
+// CompareScopeSpans compares each part of two given SpanSlices and returns
 // an error if they don't match. The error describes what didn't match.
-func CompareSpanSlices(expected, actual ptrace.SpanSlice) error {
-	if expected.Len() != actual.Len() {
-		return fmt.Errorf("number of spans does not match expected: %d, actual: %d", expected.Len(), actual.Len())
+func CompareScopeSpans(expected, actual ptrace.ScopeSpans) error {
+	if expected.Scope().Name() != actual.Scope().Name() {
+		return fmt.Errorf("scope Name does not match expected: %s, actual: %s",
+			expected.Scope().Name(), actual.Scope().Name())
+	}
+	if expected.Scope().Version() != actual.Scope().Version() {
+		return fmt.Errorf("scope Version does not match expected: %s, actual: %s",
+			expected.Scope().Version(), actual.Scope().Version())
 	}
 
-	numSpans := expected.Len()
+	if expected.Spans().Len() != actual.Spans().Len() {
+		return fmt.Errorf("number of spans does not match expected: %d, actual: %d",
+			expected.Spans().Len(), actual.Spans().Len())
+	}
+
+	numSpans := expected.Spans().Len()
 
 	// Keep track of matching spans so that each span can only be matched once
 	matchingSpans := make(map[ptrace.Span]ptrace.Span, numSpans)
@@ -136,10 +142,10 @@ func CompareSpanSlices(expected, actual ptrace.SpanSlice) error {
 	var errs error
 	var outOfOrderErrs error
 	for e := 0; e < numSpans; e++ {
-		elr := expected.At(e)
+		elr := expected.Spans().At(e)
 		var foundMatch bool
 		for a := 0; a < numSpans; a++ {
-			alr := actual.At(a)
+			alr := actual.Spans().At(a)
 			if _, ok := matchingSpans[alr]; ok {
 				continue
 			}
@@ -160,9 +166,8 @@ func CompareSpanSlices(expected, actual ptrace.SpanSlice) error {
 	}
 
 	for i := 0; i < numSpans; i++ {
-		if _, ok := matchingSpans[actual.At(i)]; !ok {
-			errs = multierr.Append(errs, fmt.Errorf("span has extra record with attributes: %v",
-				actual.At(i).Attributes().AsRaw()))
+		if _, ok := matchingSpans[actual.Spans().At(i)]; !ok {
+			errs = multierr.Append(errs, fmt.Errorf("unexpected span: %s", actual.Spans().At(i).Name()))
 		}
 	}
 
@@ -173,17 +178,21 @@ func CompareSpanSlices(expected, actual ptrace.SpanSlice) error {
 		return outOfOrderErrs
 	}
 
-	for alr, elr := range matchingSpans {
-		if err := CompareSpans(alr, elr); err != nil {
-			return multierr.Combine(fmt.Errorf("span with attributes: %v, does not match expected %v", alr.Attributes().AsRaw(), elr.Attributes().AsRaw()), err)
+	for as, es := range matchingSpans {
+		if err := CompareSpan(as, es); err != nil {
+			return multierr.Combine(fmt.Errorf("span %s does not match expected", as.Name()), err)
 		}
 	}
 	return nil
 }
 
-// CompareSpans compares each part of two given Span and returns
+// CompareSpan compares each part of two given Span and returns
 // an error if they don't match. The error describes what didn't match.
-func CompareSpans(expected, actual ptrace.Span) error {
+func CompareSpan(expected, actual ptrace.Span) error {
+	if !reflect.DeepEqual(expected.Attributes().AsRaw(), actual.Attributes().AsRaw()) {
+		return fmt.Errorf("span attributes do not match expected: %v, actual: %v",
+			expected.Attributes().AsRaw(), actual.Attributes().AsRaw())
+	}
 	if expected.TraceID() != actual.TraceID() {
 		return fmt.Errorf("span TraceID doesn't match expected: %d, actual: %d",
 			expected.TraceID(),

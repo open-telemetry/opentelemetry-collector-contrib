@@ -20,6 +20,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
@@ -87,14 +89,14 @@ func TestCompareLogs(t *testing.T) {
 		{
 			name: "resource-instrumentation-library-name-mismatch",
 			withoutOptions: internal.Expectation{
-				Err:    errors.New("instrumentation library Name does not match expected: one, actual: two"),
+				Err:    errors.New("scope name does not match expected: one, actual: two"),
 				Reason: "An instrumentation library with a different name is a different library.",
 			},
 		},
 		{
 			name: "resource-instrumentation-library-version-mismatch",
 			withoutOptions: internal.Expectation{
-				Err:    errors.New("instrumentation library Version does not match expected: 1.0, actual: 2.0"),
+				Err:    errors.New("scope version does not match expected: 1.0, actual: 2.0"),
 				Reason: "An instrumentation library with a different version is a different library.",
 			},
 		},
@@ -262,6 +264,299 @@ func TestCompareLogs(t *testing.T) {
 
 			err = CompareLogs(expected, actual, tc.compareOptions...)
 			tc.withOptions.Validate(t, err)
+		})
+	}
+}
+
+func TestCompareResourceLogs(t *testing.T) {
+	tests := []struct {
+		name     string
+		expected plog.ResourceLogs
+		actual   plog.ResourceLogs
+		err      internal.Expectation
+	}{
+		{
+			name: "equal",
+			expected: func() plog.ResourceLogs {
+				rl := plog.NewResourceLogs()
+				rl.Resource().Attributes().PutStr("key1", "value1")
+				l := rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+				l.Attributes().PutStr("log-attr1", "value1")
+				l.Body().SetStr("log-body")
+				return rl
+			}(),
+			actual: func() plog.ResourceLogs {
+				rl := plog.NewResourceLogs()
+				rl.Resource().Attributes().PutStr("key1", "value1")
+				l := rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+				l.Attributes().PutStr("log-attr1", "value1")
+				l.Body().SetStr("log-body")
+				return rl
+			}(),
+		},
+		{
+			name: "resource-attributes-mismatch",
+			expected: func() plog.ResourceLogs {
+				rl := plog.NewResourceLogs()
+				rl.Resource().Attributes().PutStr("key1", "value1")
+				rl.Resource().Attributes().PutStr("key2", "value2")
+				return rl
+			}(),
+			actual: func() plog.ResourceLogs {
+				rl := plog.NewResourceLogs()
+				rl.Resource().Attributes().PutStr("key1", "value1")
+				return rl
+			}(),
+			err: internal.Expectation{
+				Err:    errors.New("resource attributes do not match expected: map[key1:value1 key2:value2], actual: map[key1:value1]"),
+				Reason: "A log record records with different order should cause a failure",
+			},
+		},
+		{
+			name: "scope-logs-number-mismatch",
+			expected: func() plog.ResourceLogs {
+				rl := plog.NewResourceLogs()
+				rl.ScopeLogs().AppendEmpty()
+				rl.ScopeLogs().AppendEmpty()
+				return rl
+			}(),
+			actual: func() plog.ResourceLogs {
+				rl := plog.NewResourceLogs()
+				rl.ScopeLogs().AppendEmpty()
+				return rl
+			}(),
+			err: internal.Expectation{
+				Err:    errors.New("number of instrumentation libraries does not match expected: 2, actual: 1"),
+				Reason: "Scope logs with different number should cause a failure",
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			test.err.Validate(t, CompareResourceLogs(test.expected, test.actual))
+		})
+	}
+}
+
+func TestCompareScopeLogs(t *testing.T) {
+	tests := []struct {
+		name     string
+		expected plog.ScopeLogs
+		actual   plog.ScopeLogs
+		err      internal.Expectation
+	}{
+		{
+			name: "equal",
+			expected: func() plog.ScopeLogs {
+				sl := plog.NewScopeLogs()
+				sl.Scope().SetName("scope-name")
+				l := sl.LogRecords().AppendEmpty()
+				l.Attributes().PutStr("log-attr1", "value1")
+				l.Body().SetStr("log-body")
+				return sl
+			}(),
+			actual: func() plog.ScopeLogs {
+				sl := plog.NewScopeLogs()
+				sl.Scope().SetName("scope-name")
+				l := sl.LogRecords().AppendEmpty()
+				l.Attributes().PutStr("log-attr1", "value1")
+				l.Body().SetStr("log-body")
+				return sl
+			}(),
+		},
+		{
+			name: "scope-name-mismatch",
+			expected: func() plog.ScopeLogs {
+				sl := plog.NewScopeLogs()
+				sl.Scope().SetName("scope-name")
+				return sl
+			}(),
+			actual: func() plog.ScopeLogs {
+				sl := plog.NewScopeLogs()
+				sl.Scope().SetName("scope-name-2")
+				return sl
+			}(),
+			err: internal.Expectation{
+				Err: errors.New("scope name does not match expected: scope-name, actual: scope-name-2"),
+			},
+		},
+		{
+			name: "scope-version-mismatch",
+			expected: func() plog.ScopeLogs {
+				sl := plog.NewScopeLogs()
+				sl.Scope().SetVersion("scope-version")
+				return sl
+			}(),
+			actual: func() plog.ScopeLogs {
+				sl := plog.NewScopeLogs()
+				sl.Scope().SetVersion("scope-version-2")
+				return sl
+			}(),
+			err: internal.Expectation{
+				Err:    errors.New("scope version does not match expected: scope-version, actual: scope-version-2"),
+				Reason: "Scope logs with different versions should cause a failure",
+			},
+		},
+		{
+			name: "log-records-number-mismatch",
+			expected: func() plog.ScopeLogs {
+				sl := plog.NewScopeLogs()
+				sl.LogRecords().AppendEmpty()
+				sl.LogRecords().AppendEmpty()
+				return sl
+			}(),
+			actual: func() plog.ScopeLogs {
+				sl := plog.NewScopeLogs()
+				sl.LogRecords().AppendEmpty()
+				return sl
+			}(),
+			err: internal.Expectation{
+				Err:    errors.New("number of log records does not match expected: 2, actual: 1"),
+				Reason: "Log records with different number should cause a failure",
+			},
+		},
+		{
+			name: "log-records-order-mismatch",
+			expected: func() plog.ScopeLogs {
+				sl := plog.NewScopeLogs()
+				l := sl.LogRecords().AppendEmpty()
+				l.Attributes().PutStr("log-attr1", "value1")
+				l.Body().SetStr("log-body")
+				l = sl.LogRecords().AppendEmpty()
+				l.Attributes().PutStr("log-attr2", "value2")
+				l.Body().SetStr("log-body-2")
+				return sl
+			}(),
+			actual: func() plog.ScopeLogs {
+				sl := plog.NewScopeLogs()
+				l := sl.LogRecords().AppendEmpty()
+				l.Attributes().PutStr("log-attr2", "value2")
+				l.Body().SetStr("log-body-2")
+				l = sl.LogRecords().AppendEmpty()
+				l.Attributes().PutStr("log-attr1", "value1")
+				l.Body().SetStr("log-body")
+				return sl
+			}(),
+			err: internal.Expectation{
+				Err: multierr.Combine(
+					errors.New("LogRecord with attributes map[log-attr1:value1] expected at index 0, found a at index 1"),
+					errors.New("LogRecord with attributes map[log-attr2:value2] expected at index 1, found a at index 0"),
+				),
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			test.err.Validate(t, CompareScopeLogs(test.expected, test.actual))
+		})
+	}
+}
+
+func TestCompareLogRecord(t *testing.T) {
+	tests := []struct {
+		name     string
+		expected plog.LogRecord
+		actual   plog.LogRecord
+		err      internal.Expectation
+	}{
+		{
+			name: "equal",
+			expected: func() plog.LogRecord {
+				lr := plog.NewLogRecord()
+				lr.Attributes().PutStr("key1", "value1")
+				lr.Attributes().PutStr("key2", "value1")
+				lr.Body().SetStr("log-body")
+				lr.SetTimestamp(pcommon.Timestamp(123456789))
+				lr.SetSeverityNumber(plog.SeverityNumberInfo)
+				lr.SetSeverityText("INFO")
+				return lr
+			}(),
+			actual: func() plog.LogRecord {
+				lr := plog.NewLogRecord()
+				lr.Attributes().PutStr("key1", "value1")
+				lr.Attributes().PutStr("key2", "value1")
+				lr.Body().SetStr("log-body")
+				lr.SetTimestamp(pcommon.Timestamp(123456789))
+				lr.SetSeverityNumber(plog.SeverityNumberInfo)
+				lr.SetSeverityText("INFO")
+				return lr
+			}(),
+		},
+		{
+			name: "attributes-mismatch",
+			expected: func() plog.LogRecord {
+				lr := plog.NewLogRecord()
+				lr.Attributes().PutStr("key1", "value1")
+				lr.Attributes().PutStr("key2", "value1")
+				return lr
+			}(),
+			actual: func() plog.LogRecord {
+				lr := plog.NewLogRecord()
+				lr.Attributes().PutStr("key1", "value1")
+				lr.Attributes().PutStr("key2", "value2")
+				return lr
+			}(),
+			err: internal.Expectation{
+				Err: errors.New("log record attributes do not match expected: map[key1:value1 key2:value1], " +
+					"actual: map[key1:value1 key2:value2]"),
+				Reason: "Log records with different attributes should cause a failure",
+			},
+		},
+		{
+			name: "body-mismatch",
+			expected: func() plog.LogRecord {
+				lr := plog.NewLogRecord()
+				lr.Body().SetStr("log-body")
+				return lr
+			}(),
+			actual: func() plog.LogRecord {
+				lr := plog.NewLogRecord()
+				lr.Body().SetStr("log-body-2")
+				return lr
+			}(),
+			err: internal.Expectation{
+				Err:    errors.New("log record Body doesn't match expected: log-body, actual: log-body-2"),
+				Reason: "Log records with different body should cause a failure",
+			},
+		},
+		{
+			name: "timestamp-mismatch",
+			expected: func() plog.LogRecord {
+				lr := plog.NewLogRecord()
+				lr.SetTimestamp(pcommon.Timestamp(123456789))
+				return lr
+			}(),
+			actual: func() plog.LogRecord {
+				lr := plog.NewLogRecord()
+				lr.SetTimestamp(pcommon.Timestamp(987654321))
+				return lr
+			}(),
+			err: internal.Expectation{
+				Err:    errors.New("log record Timestamp doesn't match expected: 123456789, actual: 987654321"),
+				Reason: "Log records with different timestamp should cause a failure",
+			},
+		},
+		{
+			name: "severity-number-mismatch",
+			expected: func() plog.LogRecord {
+				lr := plog.NewLogRecord()
+				lr.SetSeverityNumber(plog.SeverityNumberInfo)
+				return lr
+			}(),
+			actual: func() plog.LogRecord {
+				lr := plog.NewLogRecord()
+				lr.SetSeverityNumber(plog.SeverityNumberWarn)
+				return lr
+			}(),
+			err: internal.Expectation{
+				Err:    errors.New("log record SeverityNumber doesn't match expected: 9, actual: 13"),
+				Reason: "Log records with different severity number should cause a failure",
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			test.err.Validate(t, CompareLogRecord(test.expected, test.actual))
 		})
 	}
 }
