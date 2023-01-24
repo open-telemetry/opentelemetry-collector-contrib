@@ -5,9 +5,9 @@ go 1.18
 require (
 	github.com/antonmedv/expr v1.10.3
 	github.com/census-instrumentation/opencensus-proto v0.4.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.69.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.0.0-00010101000000-000000000000
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.69.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.70.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.70.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.70.0
 	github.com/spf13/cast v1.5.0
 	github.com/stretchr/testify v1.8.1
 	go.opentelemetry.io/collector v0.70.0
@@ -44,8 +44,8 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.69.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.0.0-00010101000000-000000000000 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.70.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.70.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
 	github.com/prometheus/client_golang v1.14.0 // indirect

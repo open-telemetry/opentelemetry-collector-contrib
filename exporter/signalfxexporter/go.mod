@@ -5,12 +5,12 @@ go 1.18
 require (
 	github.com/gobwas/glob v0.2.3
 	github.com/gogo/protobuf v1.3.2
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.69.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.69.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.69.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.69.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.69.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx v0.69.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.70.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.70.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.70.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.70.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.70.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx v0.70.0
 	github.com/shirou/gopsutil/v3 v3.22.12
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3
 	github.com/signalfx/signalfx-agent/pkg/apm v0.0.0-20220920175102-539ae8d8ba8e
