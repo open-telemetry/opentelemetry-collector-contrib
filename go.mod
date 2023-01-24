@@ -141,7 +141,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/riakreceiver v0.70.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver v0.70.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver v0.70.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver v0.70.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver v0.70.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver v0.70.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver v0.70.0
@@ -218,7 +218,7 @@ require (
 	github.com/Azure/go-autorest/tracing v0.6.0 // indirect
 	github.com/ClickHouse/ch-go v0.50.0 // indirect
 	github.com/ClickHouse/clickhouse-go/v2 v2.4.3 // indirect
-	github.com/DataDog/agent-payload/v5 v5.0.60 // indirect
+	github.com/DataDog/agent-payload/v5 v5.0.67 // indirect
 	github.com/DataDog/datadog-agent/pkg/obfuscate v0.42.0-rc.3.0.20230105173916-a8aabce52617 // indirect
 	github.com/DataDog/datadog-agent/pkg/otlp/model v0.42.0-rc.3.0.20230105173916-a8aabce52617 // indirect
 	github.com/DataDog/datadog-agent/pkg/quantile v0.42.0-rc.3.0.20230105173916-a8aabce52617 // indirect
@@ -245,19 +245,19 @@ require (
 	github.com/SermoDigital/jose v0.9.2-0.20161205224733-f6df55f235c2 // indirect
 	github.com/Shopify/sarama v1.38.1 // indirect
 	github.com/Showmax/go-fqdn v1.0.0 // indirect
-	github.com/aerospike/aerospike-client-go/v6 v6.9.0 // indirect
+	github.com/aerospike/aerospike-client-go/v6 v6.9.1 // indirect
 	github.com/alecthomas/participle/v2 v2.0.0-beta.5 // indirect
 	github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137 // indirect
 	github.com/aliyun/aliyun-log-go-sdk v0.1.43 // indirect
 	github.com/andybalholm/brotli v1.0.4 // indirect
-	github.com/antonmedv/expr v1.10.3 // indirect
+	github.com/antonmedv/expr v1.10.4 // indirect
 	github.com/apache/arrow/go/arrow v0.0.0-20211112161151-bc219186db40 // indirect
 	github.com/apache/pulsar-client-go v0.8.1 // indirect
 	github.com/apache/pulsar-client-go/oauth2 v0.0.0-20220120090717-25e59572242e // indirect
 	github.com/apache/thrift v0.17.0 // indirect
 	github.com/ardielle/ardielle-go v1.5.2 // indirect
 	github.com/armon/go-metrics v0.4.0 // indirect
-	github.com/aws/aws-sdk-go v1.44.184 // indirect
+	github.com/aws/aws-sdk-go v1.44.185 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.17.3 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.4.10 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.18.8 // indirect
@@ -620,7 +620,7 @@ require (
 	k8s.io/klog v1.0.0 // indirect
 	k8s.io/klog/v2 v2.80.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20221207184640-f3cff1453715 // indirect
-	k8s.io/kubelet v0.26.0 // indirect
+	k8s.io/kubelet v0.26.1 // indirect
 	k8s.io/utils v0.0.0-20221128185143-99ec85e7a448 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
