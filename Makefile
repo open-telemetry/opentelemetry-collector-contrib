@@ -248,11 +248,21 @@ chlog-preview: $(CHLOGGEN)
 chlog-update: $(CHLOGGEN)
 	$(CHLOGGEN) update --version $(VERSION)
 
+.PHONY: genotelcontribcol
+genotelcontribcol: $(BUILDER)
+	$(BUILDER) --skip-compilation --config cmd/otelcontribcol/builder-config.yaml --output-path cmd/otelcontribcol
+	$(MAKE) -C cmd/otelcontribcol fmt
+
 # Build the Collector executable.
 .PHONY: otelcontribcol
 otelcontribcol:
 	cd ./cmd/otelcontribcol && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/otelcontribcol_$(GOOS)_$(GOARCH)$(EXTENSION) \
 		$(BUILD_INFO) -tags $(GO_BUILD_TAGS) .
+
+.PHONY: genoteltestbedcol
+genoteltestbedcol: $(BUILDER)
+	$(BUILDER) --skip-compilation --config cmd/oteltestbedcol/builder-config.yaml --output-path cmd/oteltestbedcol
+	$(MAKE) -C cmd/oteltestbedcol fmt
 
 # Build the Collector executable, with only components used in testbed.
 .PHONY: oteltestbedcol
