@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 )
 
@@ -110,7 +110,7 @@ func TestRoundTrip(t *testing.T) {
 
 	pLogs := Convert(entries[0])
 
-	require.NoError(t, comparetest.CompareLogs(initialLogs, pLogs))
+	require.NoError(t, plogtest.CompareLogs(initialLogs, pLogs))
 }
 
 func TestConvertFrom(t *testing.T) {

@@ -27,8 +27,8 @@ import (
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
 type metricsGroupingTest struct {
@@ -98,7 +98,7 @@ func TestMetricsGrouping(t *testing.T) {
 
 				got := next.AllMetrics()
 				require.Equal(t, 1, len(got))
-				require.NoError(t, comparetest.CompareMetrics(expected, got[0], comparetest.IgnoreMetricValues()))
+				require.NoError(t, pmetrictest.CompareMetrics(expected, got[0], pmetrictest.IgnoreMetricValues()))
 
 				assert.NoError(t, mtp.Shutdown(context.Background()))
 			})

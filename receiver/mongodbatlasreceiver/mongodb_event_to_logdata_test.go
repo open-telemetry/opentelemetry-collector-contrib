@@ -337,46 +337,22 @@ func assertString(t *testing.T, m pcommon.Map, key, expected string) {
 	t.Helper()
 
 	v, ok := m.Get(key)
-	if !ok {
-		assert.Fail(t, "Couldn't find key %s in map", key)
-		return
-	}
-
-	if v.Type() != pcommon.ValueTypeStr {
-		assert.Fail(t, "Value for key %s was expected be STRING but was %s", key, v.Type().String())
-	}
-
-	assert.Equal(t, expected, v.Str())
+	require.True(t, ok)
+	assert.Equal(t, expected, v.AsRaw())
 }
 
 func assertInt(t *testing.T, m pcommon.Map, key string, expected int64) {
 	t.Helper()
 
 	v, ok := m.Get(key)
-	if !ok {
-		assert.Fail(t, "Couldn't find key %s in map", key)
-		return
-	}
-
-	if v.Type() != pcommon.ValueTypeInt {
-		assert.Fail(t, "Value for key %s was expected be INT but was %s", key, v.Type().String())
-	}
-
-	assert.Equal(t, expected, v.Int())
+	require.True(t, ok)
+	assert.Equal(t, expected, v.AsRaw())
 }
 
 func assertBool(t *testing.T, m pcommon.Map, key string, expected bool) {
 	t.Helper()
 
 	v, ok := m.Get(key)
-	if !ok {
-		assert.Fail(t, "Couldn't find key %s in map", key)
-		return
-	}
-
-	if v.Type() != pcommon.ValueTypeBool {
-		assert.Fail(t, "Value for key %s was expected be BOOL but was %s", key, v.Type().String())
-	}
-
-	assert.Equal(t, expected, v.Bool())
+	require.True(t, ok)
+	assert.Equal(t, expected, v.AsRaw())
 }

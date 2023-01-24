@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	semconv "go.opentelemetry.io/collector/semconv/v1.8.0"
 	"go.uber.org/zap"
@@ -668,5 +669,24 @@ func runScript(t *testing.T, ma MetricsAdjuster, job, instance string, tests []*
 			test.adjusted.ResourceMetrics().At(0).Resource().Attributes().PutStr(semconv.AttributeServiceName, job)
 			assert.EqualValues(t, test.adjusted, adjusted)
 		})
+	}
+}
+
+func BenchmarkGetAttributesSignature(b *testing.B) {
+	attrs := pcommon.NewMap()
+	attrs.PutStr("key1", "some-random-test-value-1")
+	attrs.PutStr("key2", "some-random-test-value-2")
+	attrs.PutStr("key6", "some-random-test-value-6")
+	attrs.PutStr("key3", "some-random-test-value-3")
+	attrs.PutStr("key4", "some-random-test-value-4")
+	attrs.PutStr("key5", "some-random-test-value-5")
+	attrs.PutStr("key7", "some-random-test-value-7")
+	attrs.PutStr("key8", "some-random-test-value-8")
+
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	for i := 0; i < b.N; i++ {
+		getAttributesSignature(attrs)
 	}
 }

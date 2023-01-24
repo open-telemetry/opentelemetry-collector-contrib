@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	exp "go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -67,9 +68,9 @@ func (e *exporter) start(ctx context.Context, host component.Host) (err error) {
 
 	e.metricExporter = pmetricotlp.NewGRPCClient(e.clientConn)
 	if e.config.Metrics.Headers == nil {
-		e.config.Metrics.Headers = make(map[string]string)
+		e.config.Metrics.Headers = make(map[string]configopaque.String)
 	}
-	e.config.Metrics.Headers["Authorization"] = "Bearer " + string(e.config.PrivateKey)
+	e.config.Metrics.Headers["Authorization"] = configopaque.String("Bearer " + string(e.config.PrivateKey))
 
 	e.callOptions = []grpc.CallOption{
 		grpc.WaitForReady(e.config.Metrics.WaitForReady),
@@ -101,12 +102,11 @@ func (e *exporter) shutdown(context.Context) error {
 }
 
 func (e *exporter) enhanceContext(ctx context.Context) context.Context {
-	headers := make(map[string]string)
-	for k, v := range e.config.Metrics.Headers {
-		headers[k] = v
+	md := metadata.New(nil)
+	for k, v := range e.config.Logs.Headers {
+		md.Set(k, string(v))
 	}
-
-	return metadata.NewOutgoingContext(ctx, metadata.New(headers))
+	return metadata.NewOutgoingContext(ctx, md)
 }
 
 // Send a trace or metrics request to the server. "perform" function is expected to make

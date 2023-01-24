@@ -220,6 +220,21 @@
               }
             },
             {
+              "name": "process.runtime.memstats.mcache_sys",
+              "description": "Bytes of memory obtained from the OS for mcache structures.",
+              "unit": "By",
+              "sum": {
+                "dataPoints": [
+                  {
+                    "startTimeUnixNano": "1653023581589787000",
+                    "timeUnixNano": "1653023581592037000",
+                    "asInt": "15600"
+                  }
+                ],
+                "aggregationTemporality": 2
+              }
+            },
+            {
               "name": "process.runtime.memstats.mspan_inuse",
               "description": "Bytes of allocated mspan structures.",
               "unit": "By",
@@ -244,21 +259,6 @@
                     "startTimeUnixNano": "1653023581589787000",
                     "timeUnixNano": "1653023581592037000",
                     "asInt": "81600"
-                  }
-                ],
-                "aggregationTemporality": 2
-              }
-            },
-            {
-              "name": "process.runtime.memstats.mcache_sys",
-              "description": "Bytes of memory obtained from the OS for mcache structures.",
-              "unit": "By",
-              "sum": {
-                "dataPoints": [
-                  {
-                    "startTimeUnixNano": "1653023581589787000",
-                    "timeUnixNano": "1653023581592037000",
-                    "asInt": "15600"
                   }
                 ],
                 "aggregationTemporality": 2

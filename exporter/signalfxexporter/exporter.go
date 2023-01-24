@@ -54,11 +54,11 @@ type baseLogsExporter struct {
 
 type signalfMetadataExporter struct {
 	exporter.Metrics
-	pushMetadata func(metadata []*metadata.MetadataUpdate) error
+	exporter *signalfxExporter
 }
 
 func (sme *signalfMetadataExporter) ConsumeMetadata(metadata []*metadata.MetadataUpdate) error {
-	return sme.pushMetadata(metadata)
+	return sme.exporter.pushMetadata(metadata)
 }
 
 type signalfxExporter struct {

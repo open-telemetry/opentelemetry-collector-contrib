@@ -34,7 +34,7 @@ const (
 )
 
 func init() {
-	featuregate.GetRegistry().MustRegisterID(
+	featuregate.GlobalRegistry().MustRegisterID(
 		useScraperV2ID,
 		featuregate.StageStable,
 		featuregate.WithRegisterDescription("When enabled, the receiver will use the function ScrapeV2 to collect metrics. This allows each metric to be turned off/on via config. The new metrics are slightly different to the legacy implementation."),
@@ -72,7 +72,7 @@ func createMetricsReceiver(
 	dsr := newReceiver(params, dockerConfig)
 
 	scrapeFunc := dsr.scrape
-	if featuregate.GetRegistry().IsEnabled(useScraperV2ID) {
+	if featuregate.GlobalRegistry().IsEnabled(useScraperV2ID) {
 		scrapeFunc = dsr.scrapeV2
 	} else {
 		params.Logger.Warn(

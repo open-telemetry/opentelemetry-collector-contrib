@@ -26,7 +26,6 @@ import (
 	"go.uber.org/zap"
 )
 
-// This will be removed and imported from pkg/sqlquery once https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/14321 is merged.
 type dbClient interface {
 	metricRows(ctx context.Context) ([]metricRow, error)
 }

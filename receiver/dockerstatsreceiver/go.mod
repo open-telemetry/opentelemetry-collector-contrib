@@ -3,19 +3,20 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/docker
 go 1.18
 
 require (
-	github.com/docker/docker v20.10.22+incompatible
+	github.com/docker/docker v20.10.23+incompatible
 	github.com/google/go-cmp v0.5.9
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest v0.69.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.69.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.70.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.70.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.70.0
 	github.com/stretchr/testify v1.8.1
 	github.com/testcontainers/testcontainers-go v0.17.0
-	go.opentelemetry.io/collector v0.69.2-0.20230112233839-f2a0133bf677
-	go.opentelemetry.io/collector/component v0.69.2-0.20230112233839-f2a0133bf677
-	go.opentelemetry.io/collector/confmap v0.69.2-0.20230112233839-f2a0133bf677
-	go.opentelemetry.io/collector/consumer v0.69.2-0.20230112233839-f2a0133bf677
-	go.opentelemetry.io/collector/featuregate v0.69.2-0.20230112233839-f2a0133bf677
-	go.opentelemetry.io/collector/pdata v1.0.0-rc3.0.20230112233839-f2a0133bf677
-	go.opentelemetry.io/collector/semconv v0.69.2-0.20230112233839-f2a0133bf677
+	go.opentelemetry.io/collector v0.70.0
+	go.opentelemetry.io/collector/component v0.70.0
+	go.opentelemetry.io/collector/confmap v0.70.0
+	go.opentelemetry.io/collector/consumer v0.70.0
+	go.opentelemetry.io/collector/featuregate v0.70.0
+	go.opentelemetry.io/collector/pdata v1.0.0-rc4
+	go.opentelemetry.io/collector/semconv v0.70.0
 	go.uber.org/multierr v1.9.0
 	go.uber.org/zap v1.24.0
 )
@@ -37,8 +38,8 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.15.14 // indirect
-	github.com/knadh/koanf v1.4.5 // indirect
+	github.com/klauspost/compress v1.15.15 // indirect
+	github.com/knadh/koanf v1.5.0 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
@@ -49,7 +50,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.69.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.70.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.0-rc2 // indirect
 	github.com/opencontainers/runc v1.1.3 // indirect
@@ -74,7 +75,9 @@ require (
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker => ../../internal/docker
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest => ../../internal/comparetest
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
 
