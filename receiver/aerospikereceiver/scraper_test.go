@@ -154,7 +154,7 @@ func TestScrape_CollectClusterMetrics(t *testing.T) {
 
 	expectedMetrics := expectedMB.Emit()
 	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceMetricsOrder(),
-		pmetrictest.IgnoreMetricDataPointsOrder()))
+		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 
 	require.NoError(t, receiver.shutdown(context.Background()))
 

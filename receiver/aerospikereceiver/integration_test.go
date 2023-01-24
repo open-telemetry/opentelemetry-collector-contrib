@@ -324,7 +324,7 @@ func TestAerospikeIntegration(t *testing.T) {
 
 	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreMetricValues(),
 		pmetrictest.IgnoreResourceAttributeValue("aerospike.node.name"),
-		pmetrictest.IgnoreMetricDataPointsOrder()))
+		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 
 	// now do a run in cluster mode
 	cfg.CollectClusterMetrics = true
@@ -348,6 +348,6 @@ func TestAerospikeIntegration(t *testing.T) {
 
 	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreMetricValues(),
 		pmetrictest.IgnoreResourceAttributeValue("aerospike.node.name"),
-		pmetrictest.IgnoreMetricDataPointsOrder()))
+		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 
 }

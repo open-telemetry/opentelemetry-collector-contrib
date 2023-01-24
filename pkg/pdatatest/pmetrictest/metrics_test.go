@@ -511,9 +511,34 @@ func TestCompareMetrics(t *testing.T) {
 			},
 		},
 		{
-			name: "ignore-timestamp",
+			name: "ignore-start-timestamp",
+			compareOptions: []CompareMetricsOption{
+				IgnoreStartTimestamp(),
+			},
 			withoutOptions: internal.Expectation{
-				Err:    nil,
+				Err: multierr.Combine(
+					errors.New("ResourceMetrics with attributes map[] does not match expected"),
+					errors.New(`ScopeMetrics with scope name "" does not match expected`),
+					errors.New("metric gauge.one does not match expected"),
+					errors.New("datapoint with attributes: map[], does not match expected"),
+					errors.New("metric datapoint StartTimestamp doesn't match expected: 0, actual: 11651379494838206464"),
+				),
+				Reason: "Timestamps are always ignored, so no error is expected.",
+			},
+		},
+		{
+			name: "ignore-timestamp",
+			compareOptions: []CompareMetricsOption{
+				IgnoreTimestamp(),
+			},
+			withoutOptions: internal.Expectation{
+				Err: multierr.Combine(
+					errors.New("ResourceMetrics with attributes map[] does not match expected"),
+					errors.New(`ScopeMetrics with scope name "" does not match expected`),
+					errors.New("metric gauge.one does not match expected"),
+					errors.New("datapoint with attributes: map[], does not match expected"),
+					errors.New("metric datapoint Timestamp doesn't match expected: 0, actual: 11651379494838206464"),
+				),
 				Reason: "Timestamps are always ignored, so no error is expected.",
 			},
 		},

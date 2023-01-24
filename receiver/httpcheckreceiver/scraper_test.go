@@ -115,6 +115,8 @@ func TestScaperScrape(t *testing.T) {
 				pmetrictest.IgnoreMetricAttributeValue("http.url"),
 				pmetrictest.IgnoreMetricValues("httpcheck.duration"),
 				pmetrictest.IgnoreMetricDataPointsOrder(),
+				pmetrictest.IgnoreStartTimestamp(),
+				pmetrictest.IgnoreTimestamp(),
 			},
 		},
 		{
@@ -131,6 +133,8 @@ func TestScaperScrape(t *testing.T) {
 				pmetrictest.IgnoreMetricAttributeValue("http.url"),
 				pmetrictest.IgnoreMetricValues("httpcheck.duration"),
 				pmetrictest.IgnoreMetricDataPointsOrder(),
+				pmetrictest.IgnoreStartTimestamp(),
+				pmetrictest.IgnoreTimestamp(),
 			},
 		},
 		{
@@ -147,6 +151,8 @@ func TestScaperScrape(t *testing.T) {
 				pmetrictest.IgnoreMetricValues("httpcheck.duration"),
 				pmetrictest.IgnoreMetricAttributeValue("error.message"),
 				pmetrictest.IgnoreMetricDataPointsOrder(),
+				pmetrictest.IgnoreStartTimestamp(),
+				pmetrictest.IgnoreTimestamp(),
 			},
 		},
 	}
