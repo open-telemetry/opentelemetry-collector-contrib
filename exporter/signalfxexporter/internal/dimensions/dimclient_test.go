@@ -108,18 +108,20 @@ func setup(t *testing.T) (*DimensionClient, chan dim, *atomic.Int32, context.Can
 	require.NoError(t, err, "failed to get server URL", err)
 
 	ctx, cancel := context.WithCancel(context.Background())
-	go func() {
-		<-ctx.Done()
-		server.Close()
-	}()
-
-	client := NewDimensionClient(ctx, DimensionClientOptions{
+	client := NewDimensionClient(DimensionClientOptions{
 		APIURL:                serverURL,
 		LogUpdates:            true,
 		Logger:                zap.NewNop(),
 		SendDelay:             1,
 		PropertiesMaxBuffered: 10,
 	})
+
+	go func() {
+		<-ctx.Done()
+		client.Stop()
+		server.Close()
+	}()
+
 	client.Start()
 
 	return client, dimCh, forcedResp, cancel

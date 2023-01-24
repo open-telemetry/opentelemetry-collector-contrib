@@ -739,6 +739,12 @@ func generateLargeEventBatch() plog.Logs {
 	return out
 }
 
+func TestConsumeMetadataNotStarted(t *testing.T) {
+	exporter := &signalfxExporter{}
+	err := exporter.pushMetadata([]*metadata.MetadataUpdate{})
+	require.ErrorContains(t, err, "exporter has not started")
+}
+
 func TestConsumeMetadata(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	converter, err := translation.NewMetricsConverter(
@@ -975,9 +981,8 @@ func TestConsumeMetadata(t *testing.T) {
 			logger := zap.NewNop()
 
 			dimClient := dimensions.NewDimensionClient(
-				context.Background(),
 				dimensions.DimensionClientOptions{
-					Token:                 "",
+					Token:                 "foo",
 					APIURL:                serverURL,
 					LogUpdates:            true,
 					Logger:                logger,
@@ -988,8 +993,11 @@ func TestConsumeMetadata(t *testing.T) {
 			dimClient.Start()
 
 			se := &signalfxExporter{
-				pushMetadata: dimClient.PushMetadata,
+				dimClient: dimClient,
 			}
+			defer func() {
+				_ = se.shutdown(context.Background())
+			}()
 			sme := signalfMetadataExporter{
 				exporter: se,
 			}
@@ -1281,7 +1289,6 @@ func TestTLSAPIConnection(t *testing.T) {
 			serverURL, err := url.Parse(tt.config.APIURL)
 			assert.NoError(t, err)
 			dimClient := dimensions.NewDimensionClient(
-				context.Background(),
 				dimensions.DimensionClientOptions{
 					Token:                 "",
 					APIURL:                serverURL,
@@ -1295,7 +1302,7 @@ func TestTLSAPIConnection(t *testing.T) {
 			dimClient.Start()
 
 			se := &signalfxExporter{
-				pushMetadata: dimClient.PushMetadata,
+				dimClient: dimClient,
 			}
 			sme := signalfMetadataExporter{
 				exporter: se,

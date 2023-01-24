@@ -29,7 +29,6 @@
 package dimensions // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/dimensions"
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -43,12 +42,12 @@ type ReqSender struct {
 	client               *http.Client
 	requests             chan *http.Request
 	workerCount          uint
-	ctx                  context.Context
 	additionalDimensions map[string]string
 	runningWorkers       *atomic.Int64
+	stopChan             chan struct{}
 }
 
-func NewReqSender(ctx context.Context, client *http.Client,
+func NewReqSender(client *http.Client,
 	workerCount uint, diagnosticDimensions map[string]string) *ReqSender {
 	return &ReqSender{
 		client:               client,
@@ -56,8 +55,8 @@ func NewReqSender(ctx context.Context, client *http.Client,
 		// Unbuffered so that it blocks clients
 		requests:       make(chan *http.Request),
 		workerCount:    workerCount,
-		ctx:            ctx,
 		runningWorkers: atomic.NewInt64(0),
+		stopChan:       make(chan struct{}, 1),
 	}
 }
 
@@ -85,7 +84,7 @@ func (rs *ReqSender) processRequests() {
 
 	for {
 		select {
-		case <-rs.ctx.Done():
+		case <-rs.stopChan:
 			return
 		case req := <-rs.requests:
 			if err := rs.sendRequest(req); err != nil {
@@ -112,6 +111,10 @@ func (rs *ReqSender) sendRequest(req *http.Request) error {
 	onRequestFailed(req, statusCode, err)
 
 	return err
+}
+
+func (rs *ReqSender) Stop() {
+	close(rs.stopChan)
 }
 
 type key int
