@@ -85,7 +85,7 @@ func TestScrape(t *testing.T) {
 		require.NoError(t, err)
 
 		require.NoError(t, pmetrictest.CompareMetrics(actualMetrics, expectedMetrics,
-			pmetrictest.IgnoreMetricDataPointsOrder()))
+			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 	})
 
 	t.Run("scrape has partial failure", func(t *testing.T) {
@@ -119,7 +119,8 @@ func TestScrape(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 		assert.NoError(t, pmetrictest.CompareMetrics(actualMetrics, expectedMetrics,
-			pmetrictest.IgnoreMetricDataPointsOrder()))
+			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(),
+			pmetrictest.IgnoreTimestamp()))
 
 		var partialError scrapererror.PartialScrapeError
 		require.True(t, errors.As(scrapeErr, &partialError), "returned error was not PartialScrapeError")

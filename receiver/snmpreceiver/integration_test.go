@@ -86,7 +86,8 @@ func TestSnmpReceiverIntegration(t *testing.T) {
 			expectedFile := filepath.Join("testdata", "integration", testCase.expectedResultsFilename)
 			expectedMetrics, err := golden.ReadMetrics(expectedFile)
 			require.NoError(t, err)
-			err = pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreMetricsOrder())
+			err = pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreMetricsOrder(),
+				pmetrictest.IgnoreTimestamp())
 			require.NoError(t, err)
 		})
 	}

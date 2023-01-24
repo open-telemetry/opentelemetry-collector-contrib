@@ -160,6 +160,8 @@ func TestPostgreSQLIntegration(t *testing.T) {
 				pmetrictest.IgnoreMetricValues(),
 				pmetrictest.IgnoreSubsequentDataPoints("postgresql.backends"),
 				pmetrictest.IgnoreMetricDataPointsOrder(),
+				pmetrictest.IgnoreStartTimestamp(),
+				pmetrictest.IgnoreTimestamp(),
 			))
 		})
 	}

@@ -62,7 +62,7 @@ func TestScraper(t *testing.T) {
 
 	// The port is random, so we shouldn't check if this value matches.
 	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
-		pmetrictest.IgnoreMetricDataPointsOrder()))
+		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 }
 
 func TestScraperFailedStart(t *testing.T) {
