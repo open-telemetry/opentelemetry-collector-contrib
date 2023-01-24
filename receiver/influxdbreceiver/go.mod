@@ -6,7 +6,7 @@ require (
 	github.com/influxdata/influxdb-observability/common v0.2.35
 	github.com/influxdata/influxdb-observability/influx2otel v0.2.35
 	github.com/influxdata/line-protocol/v2 v2.2.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.69.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.70.0
 	go.opentelemetry.io/collector v0.70.0
 	go.opentelemetry.io/collector/component v0.70.0
 	go.opentelemetry.io/collector/consumer v0.70.0
