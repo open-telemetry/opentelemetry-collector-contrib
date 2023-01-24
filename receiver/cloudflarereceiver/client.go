@@ -45,11 +45,12 @@ type cloudflareClient struct {
 func newCloudflareClient(cfg *Config, baseURL string) (client, error) {
 	var api *cloudflare.API
 	var err error
-	if cfg.Auth.XAuthEmail != "" && cfg.Auth.XAuthKey != "" {
+	switch {
+	case cfg.Auth.XAuthEmail != "" && cfg.Auth.XAuthKey != "":
 		api, err = cloudflare.New(cfg.Auth.XAuthKey, cfg.Auth.XAuthEmail)
-	} else if cfg.Auth.APIToken != "" {
+	case cfg.Auth.APIToken != "":
 		api, err = cloudflare.NewWithAPIToken(cfg.Auth.APIToken)
-	} else {
+	default:
 		return nil, errInvalidAuthenticationConfigured
 	}
 	api.BaseURL = baseURL
@@ -89,7 +90,7 @@ func (c *cloudflareClient) BuildEndpoint(startTime string, endTime string) strin
 	fieldsList := strings.Join(c.cfg.Logs.Fields, ",")
 	endpoint := fmt.Sprintf("%s?start=%s&end=%s&fields=%s&sample=%f", url, startTime, endTime, fieldsList, c.cfg.Logs.Sample)
 	if c.cfg.Logs.Count != 0 {
-		endpoint = endpoint + fmt.Sprintf("&count=%v", c.cfg.Logs.Count)
+		endpoint += fmt.Sprintf("&count=%v", c.cfg.Logs.Count)
 	}
 
 	return endpoint

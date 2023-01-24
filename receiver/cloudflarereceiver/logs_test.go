@@ -103,7 +103,6 @@ func TestPoll(t *testing.T) {
 			require.NoError(t, recv.Shutdown(context.Background()))
 			logs := logSink.AllLogs()[0]
 
-			// writeLogs(tc.goldenFile, logs)
 			expected, err := readLogs(filepath.Join("testdata", "processed", tc.goldenFile))
 			require.NoError(t, err)
 			require.NoError(t, comparetest.CompareLogs(expected, logs, comparetest.IgnoreObservedTimestamp()))
@@ -166,13 +165,6 @@ func TestBadStorageClientError(t *testing.T) {
 	err = recv.Shutdown(context.Background())
 	require.Error(t, err)
 	require.ErrorContains(t, errors.New("missing storage client"), err.Error())
-}
-
-func writeLogs(file string, pLogs plog.Logs) {
-	marshaler := plog.JSONMarshaler{}
-	data, _ := marshaler.MarshalLogs(pLogs)
-
-	os.WriteFile(filepath.Join("testdata", "processed", file), data, 666)
 }
 
 func readLogs(path string) (plog.Logs, error) {

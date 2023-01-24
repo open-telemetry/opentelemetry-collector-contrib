@@ -24,7 +24,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/cloudflare/cloudflare-go"
 	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudflarereceiver/internal/models"
@@ -106,8 +105,7 @@ var (
 	mux *http.ServeMux
 
 	// client is the API client being tested.
-	cc  client
-	api *cloudflare.API
+	cc client
 
 	// server is a test HTTP server used to provide mock API responses.
 	server *httptest.Server
@@ -116,13 +114,10 @@ var (
 	endTime   = "2023-01-17T22:18:11-05:00"
 )
 
-func setup(opts ...cloudflare.Option) {
+func setup() {
 	// test server
 	mux = http.NewServeMux()
 	server = httptest.NewServer(mux)
-
-	// disable rate limits and retries in testing - prepended so any provided value overrides this
-	opts = append([]cloudflare.Option{cloudflare.UsingRateLimit(100000), cloudflare.UsingRetryPolicy(0, 0, 0)}, opts...)
 
 	// Cloudflare client configured to use test server
 	cc, _ = newCloudflareClient(&Config{
@@ -325,9 +320,9 @@ func TestBuildEndpoint(t *testing.T) {
 			Fields: []string{"ClientIP", "ClientRequestHost", "EdgeEndTimestamp", "EdgeResponseStatus"},
 		},
 	}
-	client, err := newCloudflareClient(cfg, defaultBaseURL)
+	cloudflareClient, err := newCloudflareClient(cfg, defaultBaseURL)
 	require.NoError(t, err)
-	endpoint := client.BuildEndpoint(startTime, endTime)
+	endpoint := cloudflareClient.BuildEndpoint(startTime, endTime)
 
 	expectedEndpoint := fmt.Sprintf("/zones/%s/logs/received?start=%s&end=%s&%s", zone, startTime, endTime, logsFields)
 	require.Equal(t, expectedEndpoint, endpoint)

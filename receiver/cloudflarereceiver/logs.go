@@ -54,7 +54,7 @@ type logsReceiver struct {
 }
 
 func newLogsReceiver(params rcvr.CreateSettings, cfg *Config, consumer consumer.Logs) (*logsReceiver, error) {
-	client, err := newCloudflareClient(cfg, defaultBaseURL)
+	cloudflareClient, err := newCloudflareClient(cfg, defaultBaseURL)
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +69,7 @@ func newLogsReceiver(params rcvr.CreateSettings, cfg *Config, consumer consumer.
 		doneChan:      make(chan bool),
 		id:            params.ID,
 		storageID:     cfg.StorageID,
-		client:        client,
+		client:        cloudflareClient,
 	}, nil
 }
 
@@ -93,7 +93,7 @@ func (l *logsReceiver) Shutdown(ctx context.Context) error {
 	return l.writeCheckpoint(ctx)
 }
 
-func (l *logsReceiver) startPolling(ctx context.Context, host component.Host) {
+func (l *logsReceiver) startPolling(ctx context.Context, _ component.Host) {
 	l.logger.Debug("starting cloudflare receiver in retrieval mode")
 
 	err := l.syncPersistence(ctx)
