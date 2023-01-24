@@ -73,6 +73,16 @@ func MapHash(m pcommon.Map) [16]byte {
 	return hw.hashSum128()
 }
 
+// MapKeysHash return a hash for the keys of the provided map.
+// Maps with the same underlying keys in different order produce the same deterministic hash value.
+func MapKeysHash(m pcommon.Map) [16]byte {
+	hw := hashWriterPool.Get().(*hashWriter)
+	defer hashWriterPool.Put(hw)
+	hw.h.Reset()
+	hw.writeMapKeysHash(m)
+	return hw.hashSum128()
+}
+
 // ValueHash return a hash for the provided pcommon.Value.
 func ValueHash(v pcommon.Value) [16]byte {
 	hw := hashWriterPool.Get().(*hashWriter)
@@ -96,6 +106,21 @@ func (hw *hashWriter) writeMapHash(m pcommon.Map) {
 		hw.strBuf = append(hw.strBuf, k...)
 		hw.h.Write(hw.strBuf)
 		hw.writeValueHash(v)
+	}
+}
+
+func (hw *hashWriter) writeMapKeysHash(m pcommon.Map) {
+	hw.keysBuf = hw.keysBuf[:0]
+	m.Range(func(k string, v pcommon.Value) bool {
+		hw.keysBuf = append(hw.keysBuf, k)
+		return true
+	})
+	sort.Strings(hw.keysBuf)
+	for _, k := range hw.keysBuf {
+		hw.strBuf = hw.strBuf[:0]
+		hw.strBuf = append(hw.strBuf, keyPrefix...)
+		hw.strBuf = append(hw.strBuf, k...)
+		hw.h.Write(hw.strBuf)
 	}
 }
 

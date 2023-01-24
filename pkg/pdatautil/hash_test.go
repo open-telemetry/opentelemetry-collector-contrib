@@ -136,6 +136,99 @@ func TestMapHash(t *testing.T) {
 	}
 }
 
+func TestMapKeysHash(t *testing.T) {
+	tests := []struct {
+		name  string
+		maps  []pcommon.Map
+		equal bool
+	}{
+		{
+			name:  "empty_maps",
+			maps:  []pcommon.Map{pcommon.NewMap(), pcommon.NewMap()},
+			equal: true,
+		},
+		{
+			name: "same_maps_different_order",
+			maps: func() []pcommon.Map {
+				m := []pcommon.Map{pcommon.NewMap(), pcommon.NewMap()}
+				m[0].PutStr("k1", "v1")
+				m[0].PutInt("k2", 1)
+				m[0].PutDouble("k3", 1)
+				m[0].PutBool("k4", true)
+				m[0].PutEmptyBytes("k5").FromRaw([]byte("abc"))
+				sl := m[0].PutEmptySlice("k6")
+				sl.AppendEmpty().SetStr("str")
+				sl.AppendEmpty().SetBool(true)
+				m0 := m[0].PutEmptyMap("k")
+				m0.PutInt("k1", 1)
+				m0.PutDouble("k2", 10)
+
+				m1 := m[1].PutEmptyMap("k")
+				m1.PutDouble("k2", 10)
+				m1.PutInt("k1", 1)
+				m[1].PutEmptyBytes("k5").FromRaw([]byte("abc"))
+				m[1].PutBool("k4", true)
+				sl = m[1].PutEmptySlice("k6")
+				sl.AppendEmpty().SetStr("str")
+				sl.AppendEmpty().SetBool(true)
+				m[1].PutInt("k2", 1)
+				m[1].PutStr("k1", "v1")
+				m[1].PutDouble("k3", 1)
+
+				return m
+			}(),
+			equal: true,
+		},
+		{
+			name: "same_map_keys_different_values",
+			maps: func() []pcommon.Map {
+				m := []pcommon.Map{pcommon.NewMap(), pcommon.NewMap()}
+
+				m[0].PutStr("k1", "v1")
+				m[1].PutStr("k1", "v9")
+				m[0].PutInt("k2", 1)
+				m[1].PutInt("k2", 9)
+				m[0].PutDouble("k3", 1)
+				m[1].PutDouble("k3", 9)
+				m[0].PutBool("k4", true)
+				m[1].PutBool("k4", false)
+				m[0].PutEmptyBytes("k5").FromRaw([]byte("abc"))
+				m[1].PutEmptyBytes("k5").FromRaw([]byte("xyz"))
+				sl := m[0].PutEmptySlice("k6")
+				sl.AppendEmpty().SetStr("str")
+				sl.AppendEmpty().SetBool(true)
+				sl = m[1].PutEmptySlice("k6")
+				sl.AppendEmpty().SetStr("STRING")
+				sl.AppendEmpty().SetBool(false)
+				m0 := m[0].PutEmptyMap("k")
+				m0.PutInt("k1", 1)
+				m0.PutDouble("k2", 10)
+				m1 := m[1].PutEmptyMap("k")
+				m1.PutInt("k1", 9)
+				m1.PutDouble("k2", 19)
+
+				return m
+			}(),
+			equal: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			for i := 0; i < len(tt.maps); i++ {
+				for j := i + 1; j < len(tt.maps); j++ {
+					if tt.equal {
+						assert.Equal(t, MapKeysHash(tt.maps[i]), MapKeysHash(tt.maps[j]),
+							"maps %d %v and %d %v must have the same hash", i, tt.maps[i].AsRaw(), j, tt.maps[j].AsRaw())
+					} else {
+						assert.NotEqual(t, MapKeysHash(tt.maps[i]), MapKeysHash(tt.maps[j]),
+							"maps %d %v and %d %v must have different hashes", i, tt.maps[i].AsRaw(), j, tt.maps[j].AsRaw())
+					}
+				}
+			}
+		})
+	}
+}
+
 func TestValueHash(t *testing.T) {
 	tests := []struct {
 		name   string
