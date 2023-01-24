@@ -6,7 +6,9 @@
 | Supported pipeline types | traces, metrics, logs |
 | Distributions            | [contrib]             |
 
-This exporter can be used to send metrics and traces to Google Cloud Monitoring and Trace (formerly known as Stackdriver) respectively.
+This exporter can be used to send traces to [Google Cloud Monitoring](https://cloud.google.com/monitoring)
+(formerly Stackdriver), traces to [Google Cloud Trace](https://cloud.google.com/trace),
+and logs to [Google Cloud Logging](https://cloud.google.com/logging).
 
 ## Getting started
 
