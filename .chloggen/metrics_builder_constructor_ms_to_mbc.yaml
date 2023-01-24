@@ -14,7 +14,7 @@ issues: []
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Currently, the only way to add configurative functionality to mdatagen is by using a bunch of WithBlah options to the constructor.
+  Currently, the only way to add configurative functionality to mdatagen is by using a bunch of WithResourceAttributesSettings options to the constructor.
   This PR changes the first argument to the NewMetricsBuilder constructor to be of type MetricsBuilderConfig,
   which is a new class that wraps both MetricsSettings and ResourceAttributesSettings, and may be (hopefully) easily extended with more
   configuration in the future.
