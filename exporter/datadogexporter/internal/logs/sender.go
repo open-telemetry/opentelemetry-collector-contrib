@@ -71,12 +71,12 @@ func (s *Sender) SubmitLogs(ctx context.Context, payload []datadogV2.HTTPLogItem
 		// Batches consecutive log items with the same tags to be submitted together
 		if prevtags == tags || i == 0 {
 			batch = append(batch, p)
-		} else {
-			if err := s.handleSubmitLog(ctx, batch, prevtags); err != nil {
-				return err
-			}
-			batch = []datadogV2.HTTPLogItem{p}
+			continue
 		}
+		if err := s.handleSubmitLog(ctx, batch, prevtags); err != nil {
+			return err
+		}
+		batch = []datadogV2.HTTPLogItem{p}
 		prevtags = tags
 	}
 	if err := s.handleSubmitLog(ctx, batch, tags); err != nil {
