@@ -15,24 +15,8 @@
 package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/internal"
 
 import (
-	"testing"
-
-	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
-
-type Expectation struct {
-	Err    error
-	Reason string
-}
-
-func (e Expectation) Validate(t *testing.T, err error) {
-	if e.Err == nil {
-		require.NoError(t, err, e.Reason)
-		return
-	}
-	require.Equal(t, e.Err, err, e.Reason)
-}
 
 func MaskResourceAttributeValue(res pcommon.Resource, attr string) {
 	if _, ok := res.Attributes().Get(attr); ok {
