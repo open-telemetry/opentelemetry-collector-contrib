@@ -56,8 +56,8 @@ func TestScrape(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(goldenScrapePath)
 		require.NoError(t, err)
 
-		err = pmetrictest.CompareMetrics(expectedMetrics, scrapeData)
-		require.NoError(t, err)
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, scrapeData, pmetrictest.IgnoreStartTimestamp(),
+			pmetrictest.IgnoreTimestamp()))
 
 		err = scraper.shutdown(context.Background())
 		require.NoError(t, err)
@@ -91,8 +91,8 @@ func TestScrape(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(partialScrapePath)
 		require.NoError(t, err)
 
-		err = pmetrictest.CompareMetrics(expectedMetrics, scrapeData)
-		require.NoError(t, err)
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, scrapeData, pmetrictest.IgnoreStartTimestamp(),
+			pmetrictest.IgnoreTimestamp()))
 
 		err = scraper.shutdown(context.Background())
 		require.NoError(t, err)
