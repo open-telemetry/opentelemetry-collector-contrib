@@ -127,7 +127,7 @@ func TestLogsExporter(t *testing.T) {
 			},
 		},
 		{
-			name: "ddtags 2",
+			name: "ddtags submits same tags",
 			args: args{
 				ld: func() plog.Logs {
 					lrr := testdata.GenerateLogsTwoLogRecordsSameResource()
@@ -169,7 +169,7 @@ func TestLogsExporter(t *testing.T) {
 			},
 		},
 		{
-			name: "ddtags 3",
+			name: "ddtags submits different tags",
 			args: args{
 				ld: func() plog.Logs {
 					lrr := testdata.GenerateLogsTwoLogRecordsSameResource()
