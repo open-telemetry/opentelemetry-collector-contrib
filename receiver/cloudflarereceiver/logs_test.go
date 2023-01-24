@@ -36,7 +36,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudflarereceiver/internal/mocks"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudflarereceiver/internal/models"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 )
 
 func TestStart(t *testing.T) {
@@ -105,7 +105,7 @@ func TestPoll(t *testing.T) {
 
 			expected, err := readLogs(filepath.Join("testdata", "processed", tc.goldenFile))
 			require.NoError(t, err)
-			require.NoError(t, comparetest.CompareLogs(expected, logs, comparetest.IgnoreObservedTimestamp()))
+			require.NoError(t, plogtest.CompareLogs(expected, logs, plogtest.IgnoreObservedTimestamp()))
 		})
 	}
 }

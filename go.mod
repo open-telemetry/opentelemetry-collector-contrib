@@ -95,6 +95,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver v0.71.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.71.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver v0.71.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudflarereceiver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudfoundryreceiver v0.71.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver v0.71.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver v0.71.0
@@ -294,6 +295,7 @@ require (
 	github.com/checkpoint-restore/go-criu/v5 v5.3.0 // indirect
 	github.com/cihub/seelog v0.0.0-20170130134532-f561c5e57575 // indirect
 	github.com/cilium/ebpf v0.8.1 // indirect
+	github.com/cloudflare/cloudflare-go v0.59.0 // indirect
 	github.com/cloudfoundry-incubator/uaago v0.0.0-20190307164349-8136b7bbe76e // indirect
 	github.com/cncf/udpa/go v0.0.0-20210930031921-04548b0d99d4 // indirect
 	github.com/cncf/xds/go v0.0.0-20220314180256-7f1daf1720fc // indirect
@@ -892,6 +894,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigip
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver => ./receiver/carbonreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver => ./receiver/chronyreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudflarereceiver => ./receiver/cloudflarereceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudfoundryreceiver => ./receiver/cloudfoundryreceiver
 
