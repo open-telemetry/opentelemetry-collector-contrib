@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -167,9 +168,7 @@ func TestCauseWithStatusMessage(t *testing.T) {
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, cause)
 	w := testWriters.borrow()
-	if err := w.Encode(cause); err != nil {
-		assert.Fail(t, "invalid json")
-	}
+	require.NoError(t, w.Encode(cause))
 	jsonStr := w.String()
 	testWriters.release(w)
 	assert.True(t, strings.Contains(jsonStr, errorMsg))
@@ -194,9 +193,7 @@ func TestCauseWithHttpStatusMessage(t *testing.T) {
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, cause)
 	w := testWriters.borrow()
-	if err := w.Encode(cause); err != nil {
-		assert.Fail(t, "invalid json")
-	}
+	require.NoError(t, w.Encode(cause))
 	jsonStr := w.String()
 	testWriters.release(w)
 	assert.True(t, strings.Contains(jsonStr, errorMsg))
