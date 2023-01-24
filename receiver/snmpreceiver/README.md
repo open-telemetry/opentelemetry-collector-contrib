@@ -145,9 +145,9 @@ receivers:
     security_level: auth_priv
     user: otel
     auth_type: "MD5"
-    auth_password: $SNMP_AUTH_PASSWORD
+    auth_password: ${env:SNMP_AUTH_PASSWORD}
     privacy_type: "DES"
-    privacy_password: $SNMP_PRIVACY_PASSWORD
+    privacy_password: ${env:SNMP_PRIVACY_PASSWORD}
 
     resource_attributes:
       resource_attr.name.1:
@@ -241,5 +241,5 @@ receivers:
 
 The full list of settings exposed for this receiver are documented [here](./config.go) with detailed sample configurations [here](./testdata/config.yaml).
 
-[alpha]: https://github.com/open-telemetry/opentelemetry-collector#development
+[alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

@@ -20,6 +20,8 @@ all_metrics:
     enabled: true
   mongodb.global_lock.time:
     enabled: true
+  mongodb.health:
+    enabled: true
   mongodb.index.access.count:
     enabled: true
   mongodb.index.count:
@@ -55,6 +57,8 @@ all_metrics:
   mongodb.session.count:
     enabled: true
   mongodb.storage.size:
+    enabled: true
+  mongodb.uptime:
     enabled: true
 no_metrics:
   mongodb.cache.operations:
@@ -77,6 +81,8 @@ no_metrics:
     enabled: false
   mongodb.global_lock.time:
     enabled: false
+  mongodb.health:
+    enabled: false
   mongodb.index.access.count:
     enabled: false
   mongodb.index.count:
@@ -112,4 +118,6 @@ no_metrics:
   mongodb.session.count:
     enabled: false
   mongodb.storage.size:
+    enabled: false
+  mongodb.uptime:
     enabled: false

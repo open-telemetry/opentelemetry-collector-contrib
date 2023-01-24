@@ -29,7 +29,7 @@ import (
 const enableHistogramSupportGateID = "processor.cumulativetodeltaprocessor.EnableHistogramSupport"
 
 func init() {
-	featuregate.GetRegistry().MustRegisterID(
+	featuregate.GlobalRegistry().MustRegisterID(
 		enableHistogramSupportGateID,
 		featuregate.StageStable,
 		featuregate.WithRegisterDescription("Enables histogram conversion support"),
@@ -53,7 +53,7 @@ func newCumulativeToDeltaProcessor(config *Config, logger *zap.Logger) *cumulati
 		logger:                  logger,
 		deltaCalculator:         tracking.NewMetricTracker(ctx, logger, config.MaxStaleness),
 		cancelFunc:              cancel,
-		histogramSupportEnabled: featuregate.GetRegistry().IsEnabled(enableHistogramSupportGateID),
+		histogramSupportEnabled: featuregate.GlobalRegistry().IsEnabled(enableHistogramSupportGateID),
 	}
 	if len(config.Include.Metrics) > 0 {
 		p.includeFS, _ = filterset.CreateFilterSet(config.Include.Metrics, &config.Include.Config)

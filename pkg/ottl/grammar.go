@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package ottl // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+
 import (
 	"encoding/hex"
 	"fmt"

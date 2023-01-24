@@ -19,11 +19,12 @@ import (
 	"strconv"
 	"time"
 
-	aws "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
+
+	aws "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics"
 )
 
 const (
@@ -62,7 +63,7 @@ type dataPoint struct {
 //   - pmetric.NumberDataPointSlice
 //   - pmetric.HistogramDataPointSlice
 //   - pmetric.SummaryDataPointSlice
-type dataPointSlice interface {
+type dataPoints interface {
 	Len() int
 	// CalculateDeltaDatapoints calculates the delta datapoint from the DataPointSlice at i-th index
 	// for some type (Counter, Summary)
@@ -117,7 +118,7 @@ type summaryMetricEntry struct {
 	count uint64
 }
 
-// At retrieves the NumberDataPoint at the given index and performs rate/delta calculation if necessary.
+// CalculateDeltaDatapoints retrieves the NumberDataPoint at the given index and performs rate/delta calculation if necessary.
 func (dps numberDataPointSlice) CalculateDeltaDatapoints(i int, instrumentationLibraryName string, detailedMetrics bool) ([]dataPoint, bool) {
 	metric := dps.NumberDataPointSlice.At(i)
 	labels := createLabels(metric.Attributes(), instrumentationLibraryName)
@@ -149,7 +150,7 @@ func (dps numberDataPointSlice) CalculateDeltaDatapoints(i int, instrumentationL
 	return []dataPoint{dataPoint{name: dps.metricName, value: metricVal, labels: labels, timestampMs: timestampMs}}, retained
 }
 
-// At retrieves the HistogramDataPoint at the given index.
+// CalculateDeltaDatapoints retrieves the HistogramDataPoint at the given index.
 func (dps histogramDataPointSlice) CalculateDeltaDatapoints(i int, instrumentationLibraryName string, detailedMetrics bool) ([]dataPoint, bool) {
 	metric := dps.HistogramDataPointSlice.At(i)
 	labels := createLabels(metric.Attributes(), instrumentationLibraryName)
@@ -168,7 +169,7 @@ func (dps histogramDataPointSlice) CalculateDeltaDatapoints(i int, instrumentati
 	}}, true
 }
 
-// At retrieves the SummaryDataPoint at the given index.
+// CalculateDeltaDatapoints retrieves the SummaryDataPoint at the given index and perform calculation with sum and count while retain the quantile value.
 func (dps summaryDataPointSlice) CalculateDeltaDatapoints(i int, instrumentationLibraryName string, detailedMetrics bool) ([]dataPoint, bool) {
 	metric := dps.SummaryDataPointSlice.At(i)
 	labels := createLabels(metric.Attributes(), instrumentationLibraryName)
@@ -235,7 +236,7 @@ func createLabels(attributes pcommon.Map, instrLibName string) map[string]string
 }
 
 // getDataPoints retrieves data points from OT Metric.
-func getDataPoints(pmd pmetric.Metric, metadata cWMetricMetadata, logger *zap.Logger) dataPointSlice {
+func getDataPoints(pmd pmetric.Metric, metadata cWMetricMetadata, logger *zap.Logger) dataPoints {
 	metricMetadata := deltaMetricMetadata{
 		adjustToDelta: false,
 		metricName:    pmd.Name(),
@@ -244,7 +245,7 @@ func getDataPoints(pmd pmetric.Metric, metadata cWMetricMetadata, logger *zap.Lo
 		logStream:     metadata.logStream,
 	}
 
-	var dps dataPointSlice
+	var dps dataPoints
 
 	switch pmd.Type() {
 	case pmetric.MetricTypeGauge:

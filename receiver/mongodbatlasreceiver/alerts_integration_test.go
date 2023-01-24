@@ -44,6 +44,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 )
 
 var testPayloads = []string{
@@ -114,7 +115,7 @@ func TestAlertsReceiver(t *testing.T) {
 			expectedLogs, err := readLogs(filepath.Join("testdata", "alerts", "golden", payloadName))
 			require.NoError(t, err)
 
-			require.NoError(t, compareLogs(expectedLogs, logs))
+			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreObservedTimestamp()))
 		})
 	}
 }
@@ -187,7 +188,7 @@ func TestAlertsReceiverTLS(t *testing.T) {
 			expectedLogs, err := readLogs(filepath.Join("testdata", "alerts", "golden", payloadName))
 			require.NoError(t, err)
 
-			require.NoError(t, compareLogs(expectedLogs, logs))
+			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreObservedTimestamp()))
 		})
 	}
 }
@@ -208,7 +209,9 @@ func TestAtlasPoll(t *testing.T) {
 	}
 
 	mockClient.On("GetProject", mock.Anything, testProjectName).Return(&mongodbatlas.Project{
-		ID: testProjectID,
+		ID:    testProjectID,
+		Name:  testProjectName,
+		OrgID: testOrgID,
 	}, nil)
 	mockClient.On("GetAlerts", mock.Anything, testProjectID, mock.Anything).Return(alerts, false, nil)
 
@@ -253,7 +256,7 @@ func TestAtlasPoll(t *testing.T) {
 	logs := sink.AllLogs()[0]
 	expectedLogs, err := readLogs(filepath.Join("testdata", "alerts", "golden", "retrieved-logs.json"))
 	require.NoError(t, err)
-	require.NoError(t, compareLogs(expectedLogs, logs))
+	require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreObservedTimestamp()))
 }
 
 func calculateHMACb64(secret string, payload []byte) (string, error) {

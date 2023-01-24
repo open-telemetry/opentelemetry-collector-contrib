@@ -3,30 +3,39 @@ name: mongoatlasreceiver
 resource_attributes:
   mongodb_atlas.org_name:
     description: Organization Name
+    enabled: true
     type: string
   mongodb_atlas.project.name:
     description: Project Name
+    enabled: true
     type: string
   mongodb_atlas.project.id:
     description: Project ID
+    enabled: true
     type: string
   mongodb_atlas.host.name:
     description: Hostname of the process
+    enabled: true
     type: string
   mongodb_atlas.process.port:
     description: Port process is bound to
+    enabled: true
     type: string
   mongodb_atlas.process.type_name:
     description: Process type
+    enabled: true
     type: string
   mongodb_atlas.process.id:
     description: ID of the process
+    enabled: true
     type: string
   mongodb_atlas.db.name:
     description: Name of the Database
+    enabled: true
     type: string
   mongodb_atlas.disk.partition:
     description: Name of a disk partition
+    enabled: true
     type: string
 
 attributes:

@@ -107,7 +107,7 @@ type Meta struct {
 // metadataFromAttributes gets metadata info from attributes following
 // OpenTelemetry semantic conventions
 func metadataFromAttributes(attrs pcommon.Map) *HostMetadata {
-	return metadataFromAttributesWithRegistry(featuregate.GetRegistry(), attrs)
+	return metadataFromAttributesWithRegistry(featuregate.GlobalRegistry(), attrs)
 }
 
 // metadataFromAttributesWithRegistry passes a registry explicitly to allow easier unit testing.
@@ -206,7 +206,7 @@ func pushMetadata(pcfg PusherConfig, params exporter.CreateSettings, metadata *H
 func pushMetadataWithRetry(retrier *clientutil.Retrier, params exporter.CreateSettings, pcfg PusherConfig, hostMetadata *HostMetadata) {
 	params.Logger.Debug("Sending host metadata payload", zap.Any("payload", hostMetadata))
 
-	err := retrier.DoWithRetries(context.Background(), func(context.Context) error {
+	_, err := retrier.DoWithRetries(context.Background(), func(context.Context) error {
 		return pushMetadata(pcfg, params, hostMetadata)
 	})
 

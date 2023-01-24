@@ -24,7 +24,7 @@ import (
 const dropSanitizationGate = "pkg.translator.prometheus.PermissiveLabelSanitization"
 
 func init() {
-	featuregate.GetRegistry().MustRegisterID(
+	featuregate.GlobalRegistry().MustRegisterID(
 		dropSanitizationGate,
 		featuregate.StageAlpha,
 		featuregate.WithRegisterDescription("Controls whether to change labels starting with '_' to 'key_'."),
@@ -52,7 +52,7 @@ func NormalizeLabel(label string) string {
 	// If label starts with a number, prepend with "key_"
 	if unicode.IsDigit(rune(label[0])) {
 		label = "key_" + label
-	} else if strings.HasPrefix(label, "_") && !strings.HasPrefix(label, "__") && !featuregate.GetRegistry().IsEnabled(dropSanitizationGate) {
+	} else if strings.HasPrefix(label, "_") && !strings.HasPrefix(label, "__") && !featuregate.GlobalRegistry().IsEnabled(dropSanitizationGate) {
 		label = "key" + label
 	}
 

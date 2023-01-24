@@ -48,7 +48,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 	}{
 		{
 			name:               "Double gauge",
-			metric:             generateTestGaugeMetric("foo", "double"),
+			metric:             generateTestGaugeMetric("foo", doubleValueType),
 			expectedMetricType: pmetric.MetricTypeGauge,
 			expectedLabels:     map[string]string{oTellibDimensionKey: instrumentationLibName, "label1": "value1"},
 			expectedMetricInfo: map[string]*metricInfo{
@@ -60,7 +60,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 		},
 		{
 			name:               "Int sum",
-			metric:             generateTestSumMetric("foo", "int"),
+			metric:             generateTestSumMetric("foo", intValueType),
 			expectedMetricType: pmetric.MetricTypeSum,
 			expectedLabels:     map[string]string{oTellibDimensionKey: instrumentationLibName, "label1": "value1"},
 			expectedMetricInfo: map[string]*metricInfo{
@@ -137,11 +137,11 @@ func TestAddToGroupedMetric(t *testing.T) {
 
 		groupedMetrics := make(map[interface{}]*groupedMetric)
 		generateMetrics := []pmetric.Metrics{
-			generateTestGaugeMetric("int-gauge", "int"),
-			generateTestGaugeMetric("double-gauge", "double"),
+			generateTestGaugeMetric("int-gauge", intValueType),
+			generateTestGaugeMetric("double-gauge", doubleValueType),
 			generateTestHistogramMetric("histogram"),
-			generateTestSumMetric("int-sum", "int"),
-			generateTestSumMetric("double-sum", "double"),
+			generateTestSumMetric("int-sum", intValueType),
+			generateTestSumMetric("double-sum", doubleValueType),
 			generateTestSummaryMetric("summary"),
 		}
 
@@ -335,11 +335,11 @@ func TestAddKubernetesWrapper(t *testing.T) {
 
 func BenchmarkAddToGroupedMetric(b *testing.B) {
 	generateMetrics := []pmetric.Metrics{
-		generateTestGaugeMetric("int-gauge", "int"),
-		generateTestGaugeMetric("int-gauge", "double"),
+		generateTestGaugeMetric("int-gauge", intValueType),
+		generateTestGaugeMetric("int-gauge", doubleValueType),
 		generateTestHistogramMetric("histogram"),
-		generateTestSumMetric("int-sum", "int"),
-		generateTestSumMetric("double-sum", "double"),
+		generateTestSumMetric("int-sum", intValueType),
+		generateTestSumMetric("double-sum", doubleValueType),
 		generateTestSummaryMetric("summary"),
 	}
 

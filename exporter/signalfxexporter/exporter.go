@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
@@ -53,11 +54,11 @@ type baseLogsExporter struct {
 
 type signalfMetadataExporter struct {
 	exporter.Metrics
-	pushMetadata func(metadata []*metadata.MetadataUpdate) error
+	exporter *signalfxExporter
 }
 
 func (sme *signalfMetadataExporter) ConsumeMetadata(metadata []*metadata.MetadataUpdate) error {
-	return sme.pushMetadata(metadata)
+	return sme.exporter.pushMetadata(metadata)
 }
 
 type signalfxExporter struct {
@@ -77,7 +78,7 @@ type exporterOptions struct {
 	apiURL            *url.URL
 	apiTLSSettings    configtls.TLSClientSetting
 	httpTimeout       time.Duration
-	token             string
+	token             configopaque.String
 	logDataPoints     bool
 	logDimUpdate      bool
 	metricTranslator  *translation.MetricTranslator
@@ -229,11 +230,14 @@ func (se *signalfxExporter) startLogs(_ context.Context, host component.Host) er
 func (se *signalfxExporter) createClient(host component.Host) (*http.Client, error) {
 	se.config.HTTPClientSettings.TLSSetting = se.config.IngestTLSSettings
 
-	if se.config.HTTPClientSettings.MaxIdleConns == nil {
-		se.config.HTTPClientSettings.MaxIdleConns = &se.config.MaxConnections
-	}
-	if se.config.HTTPClientSettings.MaxIdleConnsPerHost == nil {
-		se.config.HTTPClientSettings.MaxIdleConnsPerHost = &se.config.MaxConnections
+	if se.config.MaxConnections != 0 && (se.config.MaxIdleConns == nil || se.config.HTTPClientSettings.MaxIdleConnsPerHost == nil) {
+		se.logger.Warn("You are using the deprecated `max_connections` option that will be removed soon; use `max_idle_conns` and/or `max_idle_conns_per_host` instead: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/signalfxexporter#advanced-configuration")
+		if se.config.HTTPClientSettings.MaxIdleConns == nil {
+			se.config.HTTPClientSettings.MaxIdleConns = &se.config.MaxConnections
+		}
+		if se.config.HTTPClientSettings.MaxIdleConnsPerHost == nil {
+			se.config.HTTPClientSettings.MaxIdleConnsPerHost = &se.config.MaxConnections
+		}
 	}
 	if se.config.HTTPClientSettings.IdleConnTimeout == nil {
 		defaultIdleConnTimeout := 30 * time.Second
@@ -264,7 +268,7 @@ func buildHeaders(config *Config) map[string]string {
 	}
 
 	if config.AccessToken != "" {
-		headers[splunk.SFxAccessTokenHeader] = config.AccessToken
+		headers[splunk.SFxAccessTokenHeader] = string(config.AccessToken)
 	}
 
 	// Add any custom headers from the config. They will override the pre-defined

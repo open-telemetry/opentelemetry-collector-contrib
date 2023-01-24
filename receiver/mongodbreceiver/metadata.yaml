@@ -3,6 +3,7 @@ name: mongodbreceiver
 resource_attributes:
   database:
     description: The name of a database.
+    enabled: true
     type: string
 
 attributes:
@@ -324,3 +325,22 @@ metrics:
       aggregation: cumulative
       monotonic: true
     attributes: [database, lock_type, lock_mode]
+  mongodb.health:
+    enabled: false
+    description: The health status of the server.
+    extended_documentation:
+      A value of '1' indicates healthy.
+      A value of '0' indicates unhealthy.
+    unit: 1
+    gauge:
+      value_type: int
+    attributes: [ ]
+  mongodb.uptime:
+    enabled: false
+    description: The amount of time that the server has been running.
+    unit: ms
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation: cumulative
+    attributes: [ ]

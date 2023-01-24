@@ -30,8 +30,8 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
 func TestScrape(t *testing.T) {
@@ -57,6 +57,7 @@ func TestScrape(t *testing.T) {
 
 		cfg.Metrics.MysqlClientNetworkIo.Enabled = true
 		cfg.Metrics.MysqlPreparedStatements.Enabled = true
+		cfg.Metrics.MysqlCommands.Enabled = true
 
 		cfg.Metrics.MysqlReplicaSQLDelay.Enabled = true
 		cfg.Metrics.MysqlReplicaTimeBehindSource.Enabled = true
@@ -83,7 +84,8 @@ func TestScrape(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		require.NoError(t, comparetest.CompareMetrics(actualMetrics, expectedMetrics))
+		require.NoError(t, pmetrictest.CompareMetrics(actualMetrics, expectedMetrics,
+			pmetrictest.IgnoreMetricDataPointsOrder()))
 	})
 
 	t.Run("scrape has partial failure", func(t *testing.T) {
@@ -116,7 +118,8 @@ func TestScrape(t *testing.T) {
 		expectedFile := filepath.Join("testdata", "scraper", "expected_partial.json")
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
-		assert.NoError(t, comparetest.CompareMetrics(actualMetrics, expectedMetrics))
+		assert.NoError(t, pmetrictest.CompareMetrics(actualMetrics, expectedMetrics,
+			pmetrictest.IgnoreMetricDataPointsOrder()))
 
 		var partialError scrapererror.PartialScrapeError
 		require.True(t, errors.As(scrapeErr, &partialError), "returned error was not PartialScrapeError")

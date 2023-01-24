@@ -24,11 +24,11 @@ package tools // import "github.com/open-telemetry/opentelemetry-collector-contr
 
 import (
 	_ "github.com/client9/misspell/cmd/misspell"
+	_ "github.com/daixiang0/gci"
 	_ "github.com/golangci/golangci-lint/cmd/golangci-lint"
 	_ "github.com/google/addlicense"
 	_ "github.com/jcchavezs/porto/cmd/porto"
 	_ "github.com/jstemmer/go-junit-report"
-	_ "github.com/pavius/impi/cmd/impi"
 	_ "github.com/tcnksm/ghr"
 	_ "go.opentelemetry.io/build-tools/checkdoc"
 	_ "go.opentelemetry.io/build-tools/chloggen"

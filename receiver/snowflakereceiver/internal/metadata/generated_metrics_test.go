@@ -7,15 +7,17 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 func TestDefaultMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	mb := NewMetricsBuilder(DefaultMetricsSettings(), component.BuildInfo{}, WithStartTime(start))
+	mb := NewMetricsBuilder(DefaultMetricsSettings(), receivertest.NewNopCreateSettings(), WithStartTime(start))
 	enabledMetrics := make(map[string]bool)
 
 	mb.RecordSnowflakeBillingCloudServiceTotalDataPoint(ts, 1, "attr-val")
@@ -43,30 +45,28 @@ func TestDefaultMetrics(t *testing.T) {
 	enabledMetrics["snowflake.query.blocked"] = true
 	mb.RecordSnowflakeQueryBlockedDataPoint(ts, 1, "attr-val")
 
-	enabledMetrics["snowflake.query.bytes_deleted.total"] = true
-	mb.RecordSnowflakeQueryBytesDeletedTotalDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
+	enabledMetrics["snowflake.query.bytes_deleted.avg"] = true
+	mb.RecordSnowflakeQueryBytesDeletedAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
 
-	mb.RecordSnowflakeQueryBytesScannedTotalDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
+	mb.RecordSnowflakeQueryBytesSpilledLocalAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
 
-	mb.RecordSnowflakeQueryBytesSpilledLocalTotalDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
+	mb.RecordSnowflakeQueryBytesSpilledRemoteAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
 
-	mb.RecordSnowflakeQueryBytesSpilledRemoteTotalDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
+	enabledMetrics["snowflake.query.bytes_written.avg"] = true
+	mb.RecordSnowflakeQueryBytesWrittenAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
 
-	enabledMetrics["snowflake.query.bytes_written.total"] = true
-	mb.RecordSnowflakeQueryBytesWrittenTotalDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
-
-	enabledMetrics["snowflake.query.compilation_time.total"] = true
-	mb.RecordSnowflakeQueryCompilationTimeTotalDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
+	enabledMetrics["snowflake.query.compilation_time.avg"] = true
+	mb.RecordSnowflakeQueryCompilationTimeAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
 
 	mb.RecordSnowflakeQueryDataScannedCacheAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
 
 	enabledMetrics["snowflake.query.executed"] = true
 	mb.RecordSnowflakeQueryExecutedDataPoint(ts, 1, "attr-val")
 
-	enabledMetrics["snowflake.query.execution_time.total"] = true
-	mb.RecordSnowflakeQueryExecutionTimeTotalDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
+	enabledMetrics["snowflake.query.execution_time.avg"] = true
+	mb.RecordSnowflakeQueryExecutionTimeAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
 
-	mb.RecordSnowflakeQueryPartitionsScannedTotalDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
+	mb.RecordSnowflakeQueryPartitionsScannedAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
 
 	enabledMetrics["snowflake.query.queued_overload"] = true
 	mb.RecordSnowflakeQueryQueuedOverloadDataPoint(ts, 1, "attr-val")
@@ -77,27 +77,21 @@ func TestDefaultMetrics(t *testing.T) {
 	enabledMetrics["snowflake.queued_overload_time.avg"] = true
 	mb.RecordSnowflakeQueuedOverloadTimeAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
 
-	mb.RecordSnowflakeQueuedOverloadTimeTotalDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
-
 	enabledMetrics["snowflake.queued_provisioning_time.avg"] = true
 	mb.RecordSnowflakeQueuedProvisioningTimeAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
-
-	mb.RecordSnowflakeQueuedProvisioningTimeTotalDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
 
 	enabledMetrics["snowflake.queued_repair_time.avg"] = true
 	mb.RecordSnowflakeQueuedRepairTimeAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
 
-	mb.RecordSnowflakeQueuedRepairTimeTotalDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
+	mb.RecordSnowflakeRowsDeletedAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
 
-	mb.RecordSnowflakeRowsDeletedTotalDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
+	mb.RecordSnowflakeRowsInsertedAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
 
-	mb.RecordSnowflakeRowsInsertedTotalDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
+	mb.RecordSnowflakeRowsProducedAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
 
-	mb.RecordSnowflakeRowsProducedTotalDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
+	mb.RecordSnowflakeRowsUnloadedAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
 
-	mb.RecordSnowflakeRowsUnloadedTotalDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
-
-	mb.RecordSnowflakeRowsUpdatedTotalDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
+	mb.RecordSnowflakeRowsUpdatedAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
 
 	mb.RecordSnowflakeSessionIDCountDataPoint(ts, 1, "attr-val")
 
@@ -111,8 +105,6 @@ func TestDefaultMetrics(t *testing.T) {
 
 	enabledMetrics["snowflake.total_elapsed_time.avg"] = true
 	mb.RecordSnowflakeTotalElapsedTimeAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
-
-	mb.RecordSnowflakeTotalElapsedTimeTotalDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
 
 	metrics := mb.Emit()
 
@@ -132,7 +124,7 @@ func TestDefaultMetrics(t *testing.T) {
 func TestAllMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	settings := MetricsSettings{
+	metricsSettings := MetricsSettings{
 		SnowflakeBillingCloudServiceTotal:              MetricSettings{Enabled: true},
 		SnowflakeBillingTotalCreditTotal:               MetricSettings{Enabled: true},
 		SnowflakeBillingVirtualWarehouseTotal:          MetricSettings{Enabled: true},
@@ -144,37 +136,37 @@ func TestAllMetrics(t *testing.T) {
 		SnowflakeLoginsTotal:                           MetricSettings{Enabled: true},
 		SnowflakePipeCreditsUsedTotal:                  MetricSettings{Enabled: true},
 		SnowflakeQueryBlocked:                          MetricSettings{Enabled: true},
-		SnowflakeQueryBytesDeletedTotal:                MetricSettings{Enabled: true},
-		SnowflakeQueryBytesScannedTotal:                MetricSettings{Enabled: true},
-		SnowflakeQueryBytesSpilledLocalTotal:           MetricSettings{Enabled: true},
-		SnowflakeQueryBytesSpilledRemoteTotal:          MetricSettings{Enabled: true},
-		SnowflakeQueryBytesWrittenTotal:                MetricSettings{Enabled: true},
-		SnowflakeQueryCompilationTimeTotal:             MetricSettings{Enabled: true},
+		SnowflakeQueryBytesDeletedAvg:                  MetricSettings{Enabled: true},
+		SnowflakeQueryBytesSpilledLocalAvg:             MetricSettings{Enabled: true},
+		SnowflakeQueryBytesSpilledRemoteAvg:            MetricSettings{Enabled: true},
+		SnowflakeQueryBytesWrittenAvg:                  MetricSettings{Enabled: true},
+		SnowflakeQueryCompilationTimeAvg:               MetricSettings{Enabled: true},
 		SnowflakeQueryDataScannedCacheAvg:              MetricSettings{Enabled: true},
 		SnowflakeQueryExecuted:                         MetricSettings{Enabled: true},
-		SnowflakeQueryExecutionTimeTotal:               MetricSettings{Enabled: true},
-		SnowflakeQueryPartitionsScannedTotal:           MetricSettings{Enabled: true},
+		SnowflakeQueryExecutionTimeAvg:                 MetricSettings{Enabled: true},
+		SnowflakeQueryPartitionsScannedAvg:             MetricSettings{Enabled: true},
 		SnowflakeQueryQueuedOverload:                   MetricSettings{Enabled: true},
 		SnowflakeQueryQueuedProvision:                  MetricSettings{Enabled: true},
 		SnowflakeQueuedOverloadTimeAvg:                 MetricSettings{Enabled: true},
-		SnowflakeQueuedOverloadTimeTotal:               MetricSettings{Enabled: true},
 		SnowflakeQueuedProvisioningTimeAvg:             MetricSettings{Enabled: true},
-		SnowflakeQueuedProvisioningTimeTotal:           MetricSettings{Enabled: true},
 		SnowflakeQueuedRepairTimeAvg:                   MetricSettings{Enabled: true},
-		SnowflakeQueuedRepairTimeTotal:                 MetricSettings{Enabled: true},
-		SnowflakeRowsDeletedTotal:                      MetricSettings{Enabled: true},
-		SnowflakeRowsInsertedTotal:                     MetricSettings{Enabled: true},
-		SnowflakeRowsProducedTotal:                     MetricSettings{Enabled: true},
-		SnowflakeRowsUnloadedTotal:                     MetricSettings{Enabled: true},
-		SnowflakeRowsUpdatedTotal:                      MetricSettings{Enabled: true},
+		SnowflakeRowsDeletedAvg:                        MetricSettings{Enabled: true},
+		SnowflakeRowsInsertedAvg:                       MetricSettings{Enabled: true},
+		SnowflakeRowsProducedAvg:                       MetricSettings{Enabled: true},
+		SnowflakeRowsUnloadedAvg:                       MetricSettings{Enabled: true},
+		SnowflakeRowsUpdatedAvg:                        MetricSettings{Enabled: true},
 		SnowflakeSessionIDCount:                        MetricSettings{Enabled: true},
 		SnowflakeStorageFailsafeBytesTotal:             MetricSettings{Enabled: true},
 		SnowflakeStorageStageBytesTotal:                MetricSettings{Enabled: true},
 		SnowflakeStorageStorageBytesTotal:              MetricSettings{Enabled: true},
 		SnowflakeTotalElapsedTimeAvg:                   MetricSettings{Enabled: true},
-		SnowflakeTotalElapsedTimeTotal:                 MetricSettings{Enabled: true},
 	}
-	mb := NewMetricsBuilder(settings, component.BuildInfo{}, WithStartTime(start))
+	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+	settings := receivertest.NewNopCreateSettings()
+	settings.Logger = zap.New(observedZapCore)
+	mb := NewMetricsBuilder(metricsSettings, settings, WithStartTime(start))
+
+	assert.Equal(t, 0, observedLogs.Len())
 
 	mb.RecordSnowflakeBillingCloudServiceTotalDataPoint(ts, 1, "attr-val")
 	mb.RecordSnowflakeBillingTotalCreditTotalDataPoint(ts, 1, "attr-val")
@@ -187,51 +179,38 @@ func TestAllMetrics(t *testing.T) {
 	mb.RecordSnowflakeLoginsTotalDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 	mb.RecordSnowflakePipeCreditsUsedTotalDataPoint(ts, 1, "attr-val")
 	mb.RecordSnowflakeQueryBlockedDataPoint(ts, 1, "attr-val")
-	mb.RecordSnowflakeQueryBytesDeletedTotalDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
-	mb.RecordSnowflakeQueryBytesScannedTotalDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
-	mb.RecordSnowflakeQueryBytesSpilledLocalTotalDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
-	mb.RecordSnowflakeQueryBytesSpilledRemoteTotalDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
-	mb.RecordSnowflakeQueryBytesWrittenTotalDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
-	mb.RecordSnowflakeQueryCompilationTimeTotalDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
+	mb.RecordSnowflakeQueryBytesDeletedAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
+	mb.RecordSnowflakeQueryBytesSpilledLocalAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
+	mb.RecordSnowflakeQueryBytesSpilledRemoteAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
+	mb.RecordSnowflakeQueryBytesWrittenAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
+	mb.RecordSnowflakeQueryCompilationTimeAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
 	mb.RecordSnowflakeQueryDataScannedCacheAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
 	mb.RecordSnowflakeQueryExecutedDataPoint(ts, 1, "attr-val")
-	mb.RecordSnowflakeQueryExecutionTimeTotalDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
-	mb.RecordSnowflakeQueryPartitionsScannedTotalDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
+	mb.RecordSnowflakeQueryExecutionTimeAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
+	mb.RecordSnowflakeQueryPartitionsScannedAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
 	mb.RecordSnowflakeQueryQueuedOverloadDataPoint(ts, 1, "attr-val")
 	mb.RecordSnowflakeQueryQueuedProvisionDataPoint(ts, 1, "attr-val")
 	mb.RecordSnowflakeQueuedOverloadTimeAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
-	mb.RecordSnowflakeQueuedOverloadTimeTotalDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
 	mb.RecordSnowflakeQueuedProvisioningTimeAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
-	mb.RecordSnowflakeQueuedProvisioningTimeTotalDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
 	mb.RecordSnowflakeQueuedRepairTimeAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
-	mb.RecordSnowflakeQueuedRepairTimeTotalDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
-	mb.RecordSnowflakeRowsDeletedTotalDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
-	mb.RecordSnowflakeRowsInsertedTotalDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
-	mb.RecordSnowflakeRowsProducedTotalDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
-	mb.RecordSnowflakeRowsUnloadedTotalDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
-	mb.RecordSnowflakeRowsUpdatedTotalDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
+	mb.RecordSnowflakeRowsDeletedAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
+	mb.RecordSnowflakeRowsInsertedAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
+	mb.RecordSnowflakeRowsProducedAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
+	mb.RecordSnowflakeRowsUnloadedAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
+	mb.RecordSnowflakeRowsUpdatedAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
 	mb.RecordSnowflakeSessionIDCountDataPoint(ts, 1, "attr-val")
 	mb.RecordSnowflakeStorageFailsafeBytesTotalDataPoint(ts, 1)
 	mb.RecordSnowflakeStorageStageBytesTotalDataPoint(ts, 1)
 	mb.RecordSnowflakeStorageStorageBytesTotalDataPoint(ts, 1)
 	mb.RecordSnowflakeTotalElapsedTimeAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
-	mb.RecordSnowflakeTotalElapsedTimeTotalDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
 
-	metrics := mb.Emit(WithSnowflakeAccountName("attr-val"), WithSnowflakeUsername("attr-val"), WithSnowflakeWarehouseName("attr-val"))
+	metrics := mb.Emit(WithSnowflakeAccountName("attr-val"))
 
 	assert.Equal(t, 1, metrics.ResourceMetrics().Len())
 	rm := metrics.ResourceMetrics().At(0)
 	attrCount := 0
 	attrCount++
 	attrVal, ok := rm.Resource().Attributes().Get("snowflake.account.name")
-	assert.True(t, ok)
-	assert.EqualValues(t, "attr-val", attrVal.Str())
-	attrCount++
-	attrVal, ok = rm.Resource().Attributes().Get("snowflake.username")
-	assert.True(t, ok)
-	assert.EqualValues(t, "attr-val", attrVal.Str())
-	attrCount++
-	attrVal, ok = rm.Resource().Attributes().Get("snowflake.warehouse.name")
 	assert.True(t, ok)
 	assert.EqualValues(t, "attr-val", attrVal.Str())
 	assert.Equal(t, attrCount, rm.Resource().Attributes().Len())
@@ -246,7 +225,7 @@ func TestAllMetrics(t *testing.T) {
 		case "snowflake.billing.cloud_service.total":
 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Reported total credits used in the cloud service.", ms.At(i).Description())
+			assert.Equal(t, "Reported total credits used in the cloud service over the last 24 hour window.", ms.At(i).Description())
 			assert.Equal(t, "{credits}", ms.At(i).Unit())
 			dp := ms.At(i).Gauge().DataPoints().At(0)
 			assert.Equal(t, start, dp.StartTimestamp())
@@ -260,7 +239,7 @@ func TestAllMetrics(t *testing.T) {
 		case "snowflake.billing.total_credit.total":
 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Reported total credits used across account.", ms.At(i).Description())
+			assert.Equal(t, "Reported total credits used across account over the last 24 hour window.", ms.At(i).Description())
 			assert.Equal(t, "{credits}", ms.At(i).Unit())
 			dp := ms.At(i).Gauge().DataPoints().At(0)
 			assert.Equal(t, start, dp.StartTimestamp())
@@ -274,7 +253,7 @@ func TestAllMetrics(t *testing.T) {
 		case "snowflake.billing.virtual_warehouse.total":
 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Reported total credits used by virtual warehouse service.", ms.At(i).Description())
+			assert.Equal(t, "Reported total credits used by virtual warehouse service over the last 24 hour window.", ms.At(i).Description())
 			assert.Equal(t, "{credits}", ms.At(i).Unit())
 			dp := ms.At(i).Gauge().DataPoints().At(0)
 			assert.Equal(t, start, dp.StartTimestamp())
@@ -288,7 +267,7 @@ func TestAllMetrics(t *testing.T) {
 		case "snowflake.billing.warehouse.cloud_service.total":
 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Credits used across cloud service for given warehouse.", ms.At(i).Description())
+			assert.Equal(t, "Credits used across cloud service for given warehouse over the last 24 hour window.", ms.At(i).Description())
 			assert.Equal(t, "{credits}", ms.At(i).Unit())
 			dp := ms.At(i).Gauge().DataPoints().At(0)
 			assert.Equal(t, start, dp.StartTimestamp())
@@ -302,7 +281,7 @@ func TestAllMetrics(t *testing.T) {
 		case "snowflake.billing.warehouse.total_credit.total":
 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Total credits used associated with given warehouse.", ms.At(i).Description())
+			assert.Equal(t, "Total credits used associated with given warehouse over the last 24 hour window.", ms.At(i).Description())
 			assert.Equal(t, "{credits}", ms.At(i).Unit())
 			dp := ms.At(i).Gauge().DataPoints().At(0)
 			assert.Equal(t, start, dp.StartTimestamp())
@@ -316,7 +295,7 @@ func TestAllMetrics(t *testing.T) {
 		case "snowflake.billing.warehouse.virtual_warehouse.total":
 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Total credits used by virtual warehouse service for given warehouse.", ms.At(i).Description())
+			assert.Equal(t, "Total credits used by virtual warehouse service for given warehouse over the last 24 hour window.", ms.At(i).Description())
 			assert.Equal(t, "{credits}", ms.At(i).Unit())
 			dp := ms.At(i).Gauge().DataPoints().At(0)
 			assert.Equal(t, start, dp.StartTimestamp())
@@ -330,7 +309,7 @@ func TestAllMetrics(t *testing.T) {
 		case "snowflake.database.bytes_scanned.avg":
 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Average bytes scanned in a database.", ms.At(i).Description())
+			assert.Equal(t, "Average bytes scanned in a database over the last 24 hour window.", ms.At(i).Description())
 			assert.Equal(t, "By", ms.At(i).Unit())
 			dp := ms.At(i).Gauge().DataPoints().At(0)
 			assert.Equal(t, start, dp.StartTimestamp())
@@ -362,7 +341,7 @@ func TestAllMetrics(t *testing.T) {
 		case "snowflake.database.query.count":
 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Total query count for database.", ms.At(i).Description())
+			assert.Equal(t, "Total query count for database over the last 24 hour window.", ms.At(i).Description())
 			assert.Equal(t, "1", ms.At(i).Unit())
 			dp := ms.At(i).Gauge().DataPoints().At(0)
 			assert.Equal(t, start, dp.StartTimestamp())
@@ -394,7 +373,7 @@ func TestAllMetrics(t *testing.T) {
 		case "snowflake.logins.total":
 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Total login attempts for account.", ms.At(i).Description())
+			assert.Equal(t, "Total login attempts for account over the last 24 hour window.", ms.At(i).Description())
 			assert.Equal(t, "1", ms.At(i).Unit())
 			dp := ms.At(i).Gauge().DataPoints().At(0)
 			assert.Equal(t, start, dp.StartTimestamp())
@@ -414,7 +393,7 @@ func TestAllMetrics(t *testing.T) {
 		case "snowflake.pipe.credits_used.total":
 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Snow pipe credits contotaled.", ms.At(i).Description())
+			assert.Equal(t, "Snow pipe credits contotaled over the last 24 hour window.", ms.At(i).Description())
 			assert.Equal(t, "{credits}", ms.At(i).Unit())
 			dp := ms.At(i).Gauge().DataPoints().At(0)
 			assert.Equal(t, start, dp.StartTimestamp())
@@ -428,7 +407,7 @@ func TestAllMetrics(t *testing.T) {
 		case "snowflake.query.blocked":
 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Blocked query count for warehouse.", ms.At(i).Description())
+			assert.Equal(t, "Blocked query count for warehouse over the last 24 hour window.", ms.At(i).Description())
 			assert.Equal(t, "1", ms.At(i).Unit())
 			dp := ms.At(i).Gauge().DataPoints().At(0)
 			assert.Equal(t, start, dp.StartTimestamp())
@@ -439,16 +418,16 @@ func TestAllMetrics(t *testing.T) {
 			assert.True(t, ok)
 			assert.EqualValues(t, "attr-val", attrVal.Str())
 			validatedMetrics["snowflake.query.blocked"] = struct{}{}
-		case "snowflake.query.bytes_deleted.total":
+		case "snowflake.query.bytes_deleted.avg":
 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Total bytes deleted in database.", ms.At(i).Description())
+			assert.Equal(t, "Average bytes deleted in database over the last 24 hour window.", ms.At(i).Description())
 			assert.Equal(t, "By", ms.At(i).Unit())
 			dp := ms.At(i).Gauge().DataPoints().At(0)
 			assert.Equal(t, start, dp.StartTimestamp())
 			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
+			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+			assert.Equal(t, float64(1), dp.DoubleValue())
 			attrVal, ok := dp.Attributes().Get("schema_name")
 			assert.True(t, ok)
 			assert.EqualValues(t, "attr-val", attrVal.Str())
@@ -470,17 +449,17 @@ func TestAllMetrics(t *testing.T) {
 			attrVal, ok = dp.Attributes().Get("warehouse_size")
 			assert.True(t, ok)
 			assert.EqualValues(t, "attr-val", attrVal.Str())
-			validatedMetrics["snowflake.query.bytes_deleted.total"] = struct{}{}
-		case "snowflake.query.bytes_scanned.total":
+			validatedMetrics["snowflake.query.bytes_deleted.avg"] = struct{}{}
+		case "snowflake.query.bytes_spilled.local.avg":
 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Total bytes scanend in database.", ms.At(i).Description())
+			assert.Equal(t, "Avergae bytes spilled (intermediate results do not fit in memory) by local storage over the last 24 hour window.", ms.At(i).Description())
 			assert.Equal(t, "By", ms.At(i).Unit())
 			dp := ms.At(i).Gauge().DataPoints().At(0)
 			assert.Equal(t, start, dp.StartTimestamp())
 			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
+			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+			assert.Equal(t, float64(1), dp.DoubleValue())
 			attrVal, ok := dp.Attributes().Get("schema_name")
 			assert.True(t, ok)
 			assert.EqualValues(t, "attr-val", attrVal.Str())
@@ -502,17 +481,17 @@ func TestAllMetrics(t *testing.T) {
 			attrVal, ok = dp.Attributes().Get("warehouse_size")
 			assert.True(t, ok)
 			assert.EqualValues(t, "attr-val", attrVal.Str())
-			validatedMetrics["snowflake.query.bytes_scanned.total"] = struct{}{}
-		case "snowflake.query.bytes_spilled.local.total":
+			validatedMetrics["snowflake.query.bytes_spilled.local.avg"] = struct{}{}
+		case "snowflake.query.bytes_spilled.remote.avg":
 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Total bytes spilled (intermediate results do not fit in memory) by local storage.", ms.At(i).Description())
+			assert.Equal(t, "Avergae bytes spilled (intermediate results do not fit in memory) by remote storage over the last 24 hour window.", ms.At(i).Description())
 			assert.Equal(t, "By", ms.At(i).Unit())
 			dp := ms.At(i).Gauge().DataPoints().At(0)
 			assert.Equal(t, start, dp.StartTimestamp())
 			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
+			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+			assert.Equal(t, float64(1), dp.DoubleValue())
 			attrVal, ok := dp.Attributes().Get("schema_name")
 			assert.True(t, ok)
 			assert.EqualValues(t, "attr-val", attrVal.Str())
@@ -534,17 +513,17 @@ func TestAllMetrics(t *testing.T) {
 			attrVal, ok = dp.Attributes().Get("warehouse_size")
 			assert.True(t, ok)
 			assert.EqualValues(t, "attr-val", attrVal.Str())
-			validatedMetrics["snowflake.query.bytes_spilled.local.total"] = struct{}{}
-		case "snowflake.query.bytes_spilled.remote.total":
+			validatedMetrics["snowflake.query.bytes_spilled.remote.avg"] = struct{}{}
+		case "snowflake.query.bytes_written.avg":
 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Total bytes spilled (intermediate results do not fit in memory) by remote storage.", ms.At(i).Description())
+			assert.Equal(t, "Average bytes written by database over the last 24 hour window.", ms.At(i).Description())
 			assert.Equal(t, "By", ms.At(i).Unit())
 			dp := ms.At(i).Gauge().DataPoints().At(0)
 			assert.Equal(t, start, dp.StartTimestamp())
 			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
+			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+			assert.Equal(t, float64(1), dp.DoubleValue())
 			attrVal, ok := dp.Attributes().Get("schema_name")
 			assert.True(t, ok)
 			assert.EqualValues(t, "attr-val", attrVal.Str())
@@ -566,43 +545,11 @@ func TestAllMetrics(t *testing.T) {
 			attrVal, ok = dp.Attributes().Get("warehouse_size")
 			assert.True(t, ok)
 			assert.EqualValues(t, "attr-val", attrVal.Str())
-			validatedMetrics["snowflake.query.bytes_spilled.remote.total"] = struct{}{}
-		case "snowflake.query.bytes_written.total":
+			validatedMetrics["snowflake.query.bytes_written.avg"] = struct{}{}
+		case "snowflake.query.compilation_time.avg":
 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Total bytes written by database.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("schema_name")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("execution_status")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("error_message")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("query_type")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("warehouse_name")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("database_name")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("warehouse_size")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			validatedMetrics["snowflake.query.bytes_written.total"] = struct{}{}
-		case "snowflake.query.compilation_time.total":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Total time taken to compile query.", ms.At(i).Description())
+			assert.Equal(t, "Average time taken to compile query over the last 24 hour window.", ms.At(i).Description())
 			assert.Equal(t, "s", ms.At(i).Unit())
 			dp := ms.At(i).Gauge().DataPoints().At(0)
 			assert.Equal(t, start, dp.StartTimestamp())
@@ -630,11 +577,11 @@ func TestAllMetrics(t *testing.T) {
 			attrVal, ok = dp.Attributes().Get("warehouse_size")
 			assert.True(t, ok)
 			assert.EqualValues(t, "attr-val", attrVal.Str())
-			validatedMetrics["snowflake.query.compilation_time.total"] = struct{}{}
+			validatedMetrics["snowflake.query.compilation_time.avg"] = struct{}{}
 		case "snowflake.query.data_scanned_cache.avg":
 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Average percentage of data scanned from cache.", ms.At(i).Description())
+			assert.Equal(t, "Average percentage of data scanned from cache over the last 24 hour window.", ms.At(i).Description())
 			assert.Equal(t, "1", ms.At(i).Unit())
 			dp := ms.At(i).Gauge().DataPoints().At(0)
 			assert.Equal(t, start, dp.StartTimestamp())
@@ -666,7 +613,7 @@ func TestAllMetrics(t *testing.T) {
 		case "snowflake.query.executed":
 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Executed query count for warehouse.", ms.At(i).Description())
+			assert.Equal(t, "Executed query count for warehouse over the last 24 hour window.", ms.At(i).Description())
 			assert.Equal(t, "1", ms.At(i).Unit())
 			dp := ms.At(i).Gauge().DataPoints().At(0)
 			assert.Equal(t, start, dp.StartTimestamp())
@@ -677,10 +624,10 @@ func TestAllMetrics(t *testing.T) {
 			assert.True(t, ok)
 			assert.EqualValues(t, "attr-val", attrVal.Str())
 			validatedMetrics["snowflake.query.executed"] = struct{}{}
-		case "snowflake.query.execution_time.total":
+		case "snowflake.query.execution_time.avg":
 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Total time spent executing queries in database.", ms.At(i).Description())
+			assert.Equal(t, "Average time spent executing queries in database over the last 24 hour window.", ms.At(i).Description())
 			assert.Equal(t, "s", ms.At(i).Unit())
 			dp := ms.At(i).Gauge().DataPoints().At(0)
 			assert.Equal(t, start, dp.StartTimestamp())
@@ -708,17 +655,17 @@ func TestAllMetrics(t *testing.T) {
 			attrVal, ok = dp.Attributes().Get("warehouse_size")
 			assert.True(t, ok)
 			assert.EqualValues(t, "attr-val", attrVal.Str())
-			validatedMetrics["snowflake.query.execution_time.total"] = struct{}{}
-		case "snowflake.query.partitions_scanned.total":
+			validatedMetrics["snowflake.query.execution_time.avg"] = struct{}{}
+		case "snowflake.query.partitions_scanned.avg":
 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Number of partitions scanned during query so far.", ms.At(i).Description())
+			assert.Equal(t, "Number of partitions scanned during query so far over the last 24 hour window.", ms.At(i).Description())
 			assert.Equal(t, "1", ms.At(i).Unit())
 			dp := ms.At(i).Gauge().DataPoints().At(0)
 			assert.Equal(t, start, dp.StartTimestamp())
 			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
+			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+			assert.Equal(t, float64(1), dp.DoubleValue())
 			attrVal, ok := dp.Attributes().Get("schema_name")
 			assert.True(t, ok)
 			assert.EqualValues(t, "attr-val", attrVal.Str())
@@ -740,11 +687,11 @@ func TestAllMetrics(t *testing.T) {
 			attrVal, ok = dp.Attributes().Get("warehouse_size")
 			assert.True(t, ok)
 			assert.EqualValues(t, "attr-val", attrVal.Str())
-			validatedMetrics["snowflake.query.partitions_scanned.total"] = struct{}{}
+			validatedMetrics["snowflake.query.partitions_scanned.avg"] = struct{}{}
 		case "snowflake.query.queued_overload":
 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Overloaded query count for warehouse.", ms.At(i).Description())
+			assert.Equal(t, "Overloaded query count for warehouse over the last 24 hour window.", ms.At(i).Description())
 			assert.Equal(t, "1", ms.At(i).Unit())
 			dp := ms.At(i).Gauge().DataPoints().At(0)
 			assert.Equal(t, start, dp.StartTimestamp())
@@ -758,7 +705,7 @@ func TestAllMetrics(t *testing.T) {
 		case "snowflake.query.queued_provision":
 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Number of compute resources queued for provisioning.", ms.At(i).Description())
+			assert.Equal(t, "Number of compute resources queued for provisioning over the last 24 hour window.", ms.At(i).Description())
 			assert.Equal(t, "1", ms.At(i).Unit())
 			dp := ms.At(i).Gauge().DataPoints().At(0)
 			assert.Equal(t, start, dp.StartTimestamp())
@@ -772,7 +719,7 @@ func TestAllMetrics(t *testing.T) {
 		case "snowflake.queued_overload_time.avg":
 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Average time spent in warehouse queue due to warehouse being overloaded.", ms.At(i).Description())
+			assert.Equal(t, "Average time spent in warehouse queue due to warehouse being overloaded over the last 24 hour window.", ms.At(i).Description())
 			assert.Equal(t, "s", ms.At(i).Unit())
 			dp := ms.At(i).Gauge().DataPoints().At(0)
 			assert.Equal(t, start, dp.StartTimestamp())
@@ -801,42 +748,10 @@ func TestAllMetrics(t *testing.T) {
 			assert.True(t, ok)
 			assert.EqualValues(t, "attr-val", attrVal.Str())
 			validatedMetrics["snowflake.queued_overload_time.avg"] = struct{}{}
-		case "snowflake.queued_overload_time.total":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Total time spent in warehouse queue due to warehouse being overloaded.", ms.At(i).Description())
-			assert.Equal(t, "s", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("schema_name")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("execution_status")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("error_message")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("query_type")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("warehouse_name")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("database_name")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("warehouse_size")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			validatedMetrics["snowflake.queued_overload_time.total"] = struct{}{}
 		case "snowflake.queued_provisioning_time.avg":
 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Average time spent in warehouse queue waiting for resources to provision.", ms.At(i).Description())
+			assert.Equal(t, "Average time spent in warehouse queue waiting for resources to provision over the last 24 hour window.", ms.At(i).Description())
 			assert.Equal(t, "s", ms.At(i).Unit())
 			dp := ms.At(i).Gauge().DataPoints().At(0)
 			assert.Equal(t, start, dp.StartTimestamp())
@@ -865,42 +780,10 @@ func TestAllMetrics(t *testing.T) {
 			assert.True(t, ok)
 			assert.EqualValues(t, "attr-val", attrVal.Str())
 			validatedMetrics["snowflake.queued_provisioning_time.avg"] = struct{}{}
-		case "snowflake.queued_provisioning_time.total":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Total time spent in warehouse queue waiting for resources to provision.", ms.At(i).Description())
-			assert.Equal(t, "s", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("schema_name")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("execution_status")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("error_message")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("query_type")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("warehouse_name")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("database_name")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("warehouse_size")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			validatedMetrics["snowflake.queued_provisioning_time.total"] = struct{}{}
 		case "snowflake.queued_repair_time.avg":
 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Average time spent in warehouse queue waiting for compute resources to be repaired.", ms.At(i).Description())
+			assert.Equal(t, "Average time spent in warehouse queue waiting for compute resources to be repaired over the last 24 hour window.", ms.At(i).Description())
 			assert.Equal(t, "s", ms.At(i).Unit())
 			dp := ms.At(i).Gauge().DataPoints().At(0)
 			assert.Equal(t, start, dp.StartTimestamp())
@@ -929,48 +812,16 @@ func TestAllMetrics(t *testing.T) {
 			assert.True(t, ok)
 			assert.EqualValues(t, "attr-val", attrVal.Str())
 			validatedMetrics["snowflake.queued_repair_time.avg"] = struct{}{}
-		case "snowflake.queued_repair_time.total":
+		case "snowflake.rows_deleted.avg":
 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Total time spent in warehouse queue waiting for compute resources to be repaired.", ms.At(i).Description())
-			assert.Equal(t, "s", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("schema_name")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("execution_status")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("error_message")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("query_type")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("warehouse_name")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("database_name")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("warehouse_size")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			validatedMetrics["snowflake.queued_repair_time.total"] = struct{}{}
-		case "snowflake.rows_deleted.total":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Number of rows deleted from a table (or tables).", ms.At(i).Description())
+			assert.Equal(t, "Number of rows deleted from a table (or tables) over the last 24 hour window.", ms.At(i).Description())
 			assert.Equal(t, "{rows}", ms.At(i).Unit())
 			dp := ms.At(i).Gauge().DataPoints().At(0)
 			assert.Equal(t, start, dp.StartTimestamp())
 			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
+			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+			assert.Equal(t, float64(1), dp.DoubleValue())
 			attrVal, ok := dp.Attributes().Get("schema_name")
 			assert.True(t, ok)
 			assert.EqualValues(t, "attr-val", attrVal.Str())
@@ -992,17 +843,17 @@ func TestAllMetrics(t *testing.T) {
 			attrVal, ok = dp.Attributes().Get("warehouse_size")
 			assert.True(t, ok)
 			assert.EqualValues(t, "attr-val", attrVal.Str())
-			validatedMetrics["snowflake.rows_deleted.total"] = struct{}{}
-		case "snowflake.rows_inserted.total":
+			validatedMetrics["snowflake.rows_deleted.avg"] = struct{}{}
+		case "snowflake.rows_inserted.avg":
 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Number of rows inserted into a table (or tables).", ms.At(i).Description())
+			assert.Equal(t, "Number of rows inserted into a table (or tables) over the last 24 hour window.", ms.At(i).Description())
 			assert.Equal(t, "{rows}", ms.At(i).Unit())
 			dp := ms.At(i).Gauge().DataPoints().At(0)
 			assert.Equal(t, start, dp.StartTimestamp())
 			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
+			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+			assert.Equal(t, float64(1), dp.DoubleValue())
 			attrVal, ok := dp.Attributes().Get("schema_name")
 			assert.True(t, ok)
 			assert.EqualValues(t, "attr-val", attrVal.Str())
@@ -1024,17 +875,17 @@ func TestAllMetrics(t *testing.T) {
 			attrVal, ok = dp.Attributes().Get("warehouse_size")
 			assert.True(t, ok)
 			assert.EqualValues(t, "attr-val", attrVal.Str())
-			validatedMetrics["snowflake.rows_inserted.total"] = struct{}{}
-		case "snowflake.rows_produced.total":
+			validatedMetrics["snowflake.rows_inserted.avg"] = struct{}{}
+		case "snowflake.rows_produced.avg":
 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Total number of rows produced by statement.", ms.At(i).Description())
+			assert.Equal(t, "Average number of rows produced by statement over the last 24 hour window.", ms.At(i).Description())
 			assert.Equal(t, "{rows}", ms.At(i).Unit())
 			dp := ms.At(i).Gauge().DataPoints().At(0)
 			assert.Equal(t, start, dp.StartTimestamp())
 			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
+			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+			assert.Equal(t, float64(1), dp.DoubleValue())
 			attrVal, ok := dp.Attributes().Get("schema_name")
 			assert.True(t, ok)
 			assert.EqualValues(t, "attr-val", attrVal.Str())
@@ -1056,17 +907,17 @@ func TestAllMetrics(t *testing.T) {
 			attrVal, ok = dp.Attributes().Get("warehouse_size")
 			assert.True(t, ok)
 			assert.EqualValues(t, "attr-val", attrVal.Str())
-			validatedMetrics["snowflake.rows_produced.total"] = struct{}{}
-		case "snowflake.rows_unloaded.total":
+			validatedMetrics["snowflake.rows_produced.avg"] = struct{}{}
+		case "snowflake.rows_unloaded.avg":
 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Total number of rows unloaded during data export.", ms.At(i).Description())
+			assert.Equal(t, "Average number of rows unloaded during data export over the last 24 hour window.", ms.At(i).Description())
 			assert.Equal(t, "{rows}", ms.At(i).Unit())
 			dp := ms.At(i).Gauge().DataPoints().At(0)
 			assert.Equal(t, start, dp.StartTimestamp())
 			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
+			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+			assert.Equal(t, float64(1), dp.DoubleValue())
 			attrVal, ok := dp.Attributes().Get("schema_name")
 			assert.True(t, ok)
 			assert.EqualValues(t, "attr-val", attrVal.Str())
@@ -1088,17 +939,17 @@ func TestAllMetrics(t *testing.T) {
 			attrVal, ok = dp.Attributes().Get("warehouse_size")
 			assert.True(t, ok)
 			assert.EqualValues(t, "attr-val", attrVal.Str())
-			validatedMetrics["snowflake.rows_unloaded.total"] = struct{}{}
-		case "snowflake.rows_updated.total":
+			validatedMetrics["snowflake.rows_unloaded.avg"] = struct{}{}
+		case "snowflake.rows_updated.avg":
 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Total number of rows updated in a table.", ms.At(i).Description())
+			assert.Equal(t, "Average number of rows updated in a table over the last 24 hour window.", ms.At(i).Description())
 			assert.Equal(t, "{rows}", ms.At(i).Unit())
 			dp := ms.At(i).Gauge().DataPoints().At(0)
 			assert.Equal(t, start, dp.StartTimestamp())
 			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
+			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+			assert.Equal(t, float64(1), dp.DoubleValue())
 			attrVal, ok := dp.Attributes().Get("schema_name")
 			assert.True(t, ok)
 			assert.EqualValues(t, "attr-val", attrVal.Str())
@@ -1120,11 +971,11 @@ func TestAllMetrics(t *testing.T) {
 			attrVal, ok = dp.Attributes().Get("warehouse_size")
 			assert.True(t, ok)
 			assert.EqualValues(t, "attr-val", attrVal.Str())
-			validatedMetrics["snowflake.rows_updated.total"] = struct{}{}
+			validatedMetrics["snowflake.rows_updated.avg"] = struct{}{}
 		case "snowflake.session_id.count":
 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Distinct session id's associated with snowflake username.", ms.At(i).Description())
+			assert.Equal(t, "Distinct session id's associated with snowflake username over the last 24 hour window.", ms.At(i).Description())
 			assert.Equal(t, "1", ms.At(i).Unit())
 			dp := ms.At(i).Gauge().DataPoints().At(0)
 			assert.Equal(t, start, dp.StartTimestamp())
@@ -1171,7 +1022,7 @@ func TestAllMetrics(t *testing.T) {
 		case "snowflake.total_elapsed_time.avg":
 			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Average elapsed time.", ms.At(i).Description())
+			assert.Equal(t, "Average elapsed time over the last 24 hour window.", ms.At(i).Description())
 			assert.Equal(t, "s", ms.At(i).Unit())
 			dp := ms.At(i).Gauge().DataPoints().At(0)
 			assert.Equal(t, start, dp.StartTimestamp())
@@ -1200,38 +1051,6 @@ func TestAllMetrics(t *testing.T) {
 			assert.True(t, ok)
 			assert.EqualValues(t, "attr-val", attrVal.Str())
 			validatedMetrics["snowflake.total_elapsed_time.avg"] = struct{}{}
-		case "snowflake.total_elapsed_time.total":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Total elapsed time.", ms.At(i).Description())
-			assert.Equal(t, "s", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("schema_name")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("execution_status")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("error_message")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("query_type")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("warehouse_name")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("database_name")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("warehouse_size")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			validatedMetrics["snowflake.total_elapsed_time.total"] = struct{}{}
 		}
 	}
 	assert.Equal(t, allMetricsCount, len(validatedMetrics))
@@ -1240,7 +1059,7 @@ func TestAllMetrics(t *testing.T) {
 func TestNoMetrics(t *testing.T) {
 	start := pcommon.Timestamp(1_000_000_000)
 	ts := pcommon.Timestamp(1_000_001_000)
-	settings := MetricsSettings{
+	metricsSettings := MetricsSettings{
 		SnowflakeBillingCloudServiceTotal:              MetricSettings{Enabled: false},
 		SnowflakeBillingTotalCreditTotal:               MetricSettings{Enabled: false},
 		SnowflakeBillingVirtualWarehouseTotal:          MetricSettings{Enabled: false},
@@ -1252,37 +1071,37 @@ func TestNoMetrics(t *testing.T) {
 		SnowflakeLoginsTotal:                           MetricSettings{Enabled: false},
 		SnowflakePipeCreditsUsedTotal:                  MetricSettings{Enabled: false},
 		SnowflakeQueryBlocked:                          MetricSettings{Enabled: false},
-		SnowflakeQueryBytesDeletedTotal:                MetricSettings{Enabled: false},
-		SnowflakeQueryBytesScannedTotal:                MetricSettings{Enabled: false},
-		SnowflakeQueryBytesSpilledLocalTotal:           MetricSettings{Enabled: false},
-		SnowflakeQueryBytesSpilledRemoteTotal:          MetricSettings{Enabled: false},
-		SnowflakeQueryBytesWrittenTotal:                MetricSettings{Enabled: false},
-		SnowflakeQueryCompilationTimeTotal:             MetricSettings{Enabled: false},
+		SnowflakeQueryBytesDeletedAvg:                  MetricSettings{Enabled: false},
+		SnowflakeQueryBytesSpilledLocalAvg:             MetricSettings{Enabled: false},
+		SnowflakeQueryBytesSpilledRemoteAvg:            MetricSettings{Enabled: false},
+		SnowflakeQueryBytesWrittenAvg:                  MetricSettings{Enabled: false},
+		SnowflakeQueryCompilationTimeAvg:               MetricSettings{Enabled: false},
 		SnowflakeQueryDataScannedCacheAvg:              MetricSettings{Enabled: false},
 		SnowflakeQueryExecuted:                         MetricSettings{Enabled: false},
-		SnowflakeQueryExecutionTimeTotal:               MetricSettings{Enabled: false},
-		SnowflakeQueryPartitionsScannedTotal:           MetricSettings{Enabled: false},
+		SnowflakeQueryExecutionTimeAvg:                 MetricSettings{Enabled: false},
+		SnowflakeQueryPartitionsScannedAvg:             MetricSettings{Enabled: false},
 		SnowflakeQueryQueuedOverload:                   MetricSettings{Enabled: false},
 		SnowflakeQueryQueuedProvision:                  MetricSettings{Enabled: false},
 		SnowflakeQueuedOverloadTimeAvg:                 MetricSettings{Enabled: false},
-		SnowflakeQueuedOverloadTimeTotal:               MetricSettings{Enabled: false},
 		SnowflakeQueuedProvisioningTimeAvg:             MetricSettings{Enabled: false},
-		SnowflakeQueuedProvisioningTimeTotal:           MetricSettings{Enabled: false},
 		SnowflakeQueuedRepairTimeAvg:                   MetricSettings{Enabled: false},
-		SnowflakeQueuedRepairTimeTotal:                 MetricSettings{Enabled: false},
-		SnowflakeRowsDeletedTotal:                      MetricSettings{Enabled: false},
-		SnowflakeRowsInsertedTotal:                     MetricSettings{Enabled: false},
-		SnowflakeRowsProducedTotal:                     MetricSettings{Enabled: false},
-		SnowflakeRowsUnloadedTotal:                     MetricSettings{Enabled: false},
-		SnowflakeRowsUpdatedTotal:                      MetricSettings{Enabled: false},
+		SnowflakeRowsDeletedAvg:                        MetricSettings{Enabled: false},
+		SnowflakeRowsInsertedAvg:                       MetricSettings{Enabled: false},
+		SnowflakeRowsProducedAvg:                       MetricSettings{Enabled: false},
+		SnowflakeRowsUnloadedAvg:                       MetricSettings{Enabled: false},
+		SnowflakeRowsUpdatedAvg:                        MetricSettings{Enabled: false},
 		SnowflakeSessionIDCount:                        MetricSettings{Enabled: false},
 		SnowflakeStorageFailsafeBytesTotal:             MetricSettings{Enabled: false},
 		SnowflakeStorageStageBytesTotal:                MetricSettings{Enabled: false},
 		SnowflakeStorageStorageBytesTotal:              MetricSettings{Enabled: false},
 		SnowflakeTotalElapsedTimeAvg:                   MetricSettings{Enabled: false},
-		SnowflakeTotalElapsedTimeTotal:                 MetricSettings{Enabled: false},
 	}
-	mb := NewMetricsBuilder(settings, component.BuildInfo{}, WithStartTime(start))
+	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+	settings := receivertest.NewNopCreateSettings()
+	settings.Logger = zap.New(observedZapCore)
+	mb := NewMetricsBuilder(metricsSettings, settings, WithStartTime(start))
+
+	assert.Equal(t, 0, observedLogs.Len())
 	mb.RecordSnowflakeBillingCloudServiceTotalDataPoint(ts, 1, "attr-val")
 	mb.RecordSnowflakeBillingTotalCreditTotalDataPoint(ts, 1, "attr-val")
 	mb.RecordSnowflakeBillingVirtualWarehouseTotalDataPoint(ts, 1, "attr-val")
@@ -1294,35 +1113,30 @@ func TestNoMetrics(t *testing.T) {
 	mb.RecordSnowflakeLoginsTotalDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
 	mb.RecordSnowflakePipeCreditsUsedTotalDataPoint(ts, 1, "attr-val")
 	mb.RecordSnowflakeQueryBlockedDataPoint(ts, 1, "attr-val")
-	mb.RecordSnowflakeQueryBytesDeletedTotalDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
-	mb.RecordSnowflakeQueryBytesScannedTotalDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
-	mb.RecordSnowflakeQueryBytesSpilledLocalTotalDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
-	mb.RecordSnowflakeQueryBytesSpilledRemoteTotalDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
-	mb.RecordSnowflakeQueryBytesWrittenTotalDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
-	mb.RecordSnowflakeQueryCompilationTimeTotalDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
+	mb.RecordSnowflakeQueryBytesDeletedAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
+	mb.RecordSnowflakeQueryBytesSpilledLocalAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
+	mb.RecordSnowflakeQueryBytesSpilledRemoteAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
+	mb.RecordSnowflakeQueryBytesWrittenAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
+	mb.RecordSnowflakeQueryCompilationTimeAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
 	mb.RecordSnowflakeQueryDataScannedCacheAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
 	mb.RecordSnowflakeQueryExecutedDataPoint(ts, 1, "attr-val")
-	mb.RecordSnowflakeQueryExecutionTimeTotalDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
-	mb.RecordSnowflakeQueryPartitionsScannedTotalDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
+	mb.RecordSnowflakeQueryExecutionTimeAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
+	mb.RecordSnowflakeQueryPartitionsScannedAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
 	mb.RecordSnowflakeQueryQueuedOverloadDataPoint(ts, 1, "attr-val")
 	mb.RecordSnowflakeQueryQueuedProvisionDataPoint(ts, 1, "attr-val")
 	mb.RecordSnowflakeQueuedOverloadTimeAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
-	mb.RecordSnowflakeQueuedOverloadTimeTotalDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
 	mb.RecordSnowflakeQueuedProvisioningTimeAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
-	mb.RecordSnowflakeQueuedProvisioningTimeTotalDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
 	mb.RecordSnowflakeQueuedRepairTimeAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
-	mb.RecordSnowflakeQueuedRepairTimeTotalDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
-	mb.RecordSnowflakeRowsDeletedTotalDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
-	mb.RecordSnowflakeRowsInsertedTotalDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
-	mb.RecordSnowflakeRowsProducedTotalDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
-	mb.RecordSnowflakeRowsUnloadedTotalDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
-	mb.RecordSnowflakeRowsUpdatedTotalDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
+	mb.RecordSnowflakeRowsDeletedAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
+	mb.RecordSnowflakeRowsInsertedAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
+	mb.RecordSnowflakeRowsProducedAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
+	mb.RecordSnowflakeRowsUnloadedAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
+	mb.RecordSnowflakeRowsUpdatedAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
 	mb.RecordSnowflakeSessionIDCountDataPoint(ts, 1, "attr-val")
 	mb.RecordSnowflakeStorageFailsafeBytesTotalDataPoint(ts, 1)
 	mb.RecordSnowflakeStorageStageBytesTotalDataPoint(ts, 1)
 	mb.RecordSnowflakeStorageStorageBytesTotalDataPoint(ts, 1)
 	mb.RecordSnowflakeTotalElapsedTimeAvgDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
-	mb.RecordSnowflakeTotalElapsedTimeTotalDataPoint(ts, 1, "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val", "attr-val")
 
 	metrics := mb.Emit()
 

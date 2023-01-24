@@ -2,6 +2,6 @@ nsxt:
   collection_interval: 1m
   endpoint: https://nsx-manager-endpoint
   username: admin
-  password: $NSXT_PASSWORD
+  password: ${env:NSXT_PASSWORD}
   tls:
     insecure: true

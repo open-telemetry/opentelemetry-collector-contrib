@@ -98,7 +98,7 @@ func TestLogsSampling(t *testing.T) {
 				SamplingPercentage: 50,
 				AttributeSource:    traceIDAttributeSource,
 			},
-			received: 52,
+			received: 45,
 		},
 		{
 			name: "sampling_source no sampling",
@@ -125,7 +125,7 @@ func TestLogsSampling(t *testing.T) {
 				AttributeSource:    recordAttributeSource,
 				FromAttribute:      "foo",
 			},
-			received: 79,
+			received: 23,
 		},
 		{
 			name: "sampling_priority",

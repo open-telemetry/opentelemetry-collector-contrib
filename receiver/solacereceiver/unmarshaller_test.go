@@ -969,9 +969,7 @@ func TestUnmarshallerBaggageString(t *testing.T) {
 			if testCase.expected != nil {
 				expected := pcommon.NewMap()
 				testCase.expected(expected)
-				expected.Sort()
-				actual.Sort()
-				assert.Equal(t, expected, actual)
+				assert.Equal(t, expected.AsRaw(), actual.AsRaw())
 			} else {
 				// assert we didn't add anything if we don't have a result map
 				assert.Equal(t, 0, actual.Len())

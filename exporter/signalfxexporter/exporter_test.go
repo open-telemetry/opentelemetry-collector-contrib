@@ -425,7 +425,7 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 				cfg.HTTPClientSettings.Headers[k] = configopaque.String(v)
 			}
 			cfg.HTTPClientSettings.Headers["test_header_"] = configopaque.String(tt.name)
-			cfg.AccessToken = fromHeaders
+			cfg.AccessToken = configopaque.String(fromHeaders)
 			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
 			sfxExp, err := NewFactory().CreateMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
 			require.NoError(t, err)
@@ -499,11 +499,8 @@ func makeSampleResourceLogs() plog.Logs {
 	propMap.PutBool("isActive", true)
 	propMap.PutInt("rack", 5)
 	propMap.PutDouble("temp", 40.5)
-	propMap.Sort()
 	attrs.PutInt("com.splunk.signalfx.event_category", int64(sfxpb.EventCategory_USER_DEFINED))
 	attrs.PutStr("com.splunk.signalfx.event_type", "shutdown")
-
-	l.Attributes().Sort()
 
 	return out
 }
@@ -682,7 +679,7 @@ func TestConsumeLogsDataWithAccessTokenPassthrough(t *testing.T) {
 			cfg.APIURL = server.URL
 			cfg.Headers = make(map[string]configopaque.String)
 			cfg.Headers["test_header_"] = configopaque.String(tt.name)
-			cfg.AccessToken = fromHeaders
+			cfg.AccessToken = configopaque.String(fromHeaders)
 			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
 			sfxExp, err := NewFactory().CreateLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
 			require.NoError(t, err)
@@ -990,11 +987,11 @@ func TestConsumeMetadata(t *testing.T) {
 				})
 			dimClient.Start()
 
-			se := signalfxExporter{
+			se := &signalfxExporter{
 				pushMetadata: dimClient.PushMetadata,
 			}
 			sme := signalfMetadataExporter{
-				pushMetadata: se.pushMetadata,
+				exporter: se,
 			}
 
 			err = sme.ConsumeMetadata(tt.args.metadata)
@@ -1297,11 +1294,11 @@ func TestTLSAPIConnection(t *testing.T) {
 				})
 			dimClient.Start()
 
-			se := signalfxExporter{
+			se := &signalfxExporter{
 				pushMetadata: dimClient.PushMetadata,
 			}
 			sme := signalfMetadataExporter{
-				pushMetadata: se.pushMetadata,
+				exporter: se,
 			}
 
 			err = sme.ConsumeMetadata(metadata)

@@ -75,7 +75,7 @@ type RegexParserConfig struct {
 type RegexRule struct {
 	// Regular expression from which named matches are used to extract label
 	// keys and values from Carbon metric paths.
-	Regexp string `mapstrucutre:"regexp"`
+	Regexp string `mapstructure:"regexp"`
 
 	// NamePrefix is the prefix added to the metric name after extracting the
 	// parts that will form labels and final metric name.

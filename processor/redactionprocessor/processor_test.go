@@ -76,7 +76,7 @@ func TestRedactUnknownAttributes(t *testing.T) {
 	for k, v := range allowed {
 		val, ok := attr.Get(k)
 		assert.True(t, ok)
-		assert.True(t, v.Equal(val))
+		assert.Equal(t, v.AsRaw(), val.AsRaw())
 	}
 	for k := range redacted {
 		_, ok := attr.Get(k)
@@ -107,7 +107,7 @@ func TestAllowAllKeys(t *testing.T) {
 	for k, v := range allowed {
 		val, ok := attr.Get(k)
 		assert.True(t, ok)
-		assert.True(t, v.Equal(val))
+		assert.Equal(t, v.AsRaw(), val.AsRaw())
 	}
 	value, _ := attr.Get("name")
 	assert.Equal(t, "placeholder", value.Str())
@@ -139,7 +139,7 @@ func TestAllowAllKeysMaskValues(t *testing.T) {
 	for k, v := range allowed {
 		val, ok := attr.Get(k)
 		assert.True(t, ok)
-		assert.True(t, v.Equal(val))
+		assert.Equal(t, v.AsRaw(), val.AsRaw())
 	}
 	value, _ := attr.Get("credit_card")
 	assert.Equal(t, "placeholder ****", value.Str())
@@ -341,7 +341,8 @@ func TestMultipleBlockValues(t *testing.T) {
 	assert.True(t, ok)
 	sort.Strings(blockedKeys)
 	assert.Equal(t, strings.Join(blockedKeys, ","), maskedValues.Str())
-	maskedValues.Equal(pcommon.NewValueStr(strings.Join(blockedKeys, ",")))
+	assert.Equal(t, pcommon.ValueTypeStr, maskedValues.Type())
+	assert.Equal(t, strings.Join(blockedKeys, ","), maskedValues.Str())
 	maskedValueCount, ok := attr.Get(maskedValueCount)
 	assert.True(t, ok)
 	assert.Equal(t, int64(len(blockedKeys)), maskedValueCount.Int())

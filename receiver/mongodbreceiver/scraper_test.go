@@ -34,8 +34,8 @@ import (
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
 func TestNewMongodbScraper(t *testing.T) {
@@ -103,6 +103,8 @@ var (
 				"failed to collect metric mongodb.operation.repl.count with attribute(s) insert: could not find key for metric",
 				"failed to collect metric mongodb.operation.repl.count with attribute(s) query: could not find key for metric",
 				"failed to collect metric mongodb.operation.repl.count with attribute(s) update: could not find key for metric",
+				"failed to collect metric mongodb.health: could not find key for metric",
+				"failed to collect metric mongodb.uptime: could not find key for metric",
 			}, "; "))
 	errAllClientFailedFetch = errors.New(
 		strings.Join(
@@ -293,6 +295,8 @@ func TestScraperScrape(t *testing.T) {
 			// Enable any metrics set to `false` by default
 			scraperCfg.Metrics.MongodbOperationLatencyTime.Enabled = true
 			scraperCfg.Metrics.MongodbOperationReplCount.Enabled = true
+			scraperCfg.Metrics.MongodbUptime.Enabled = true
+			scraperCfg.Metrics.MongodbHealth.Enabled = true
 
 			scraper := newMongodbScraper(receivertest.NewNopCreateSettings(), scraperCfg)
 			scraper.client = tc.setupMockClient(t)
@@ -321,8 +325,8 @@ func TestScraperScrape(t *testing.T) {
 			}
 			expectedMetrics := tc.expectedMetricGen(t)
 
-			err = comparetest.CompareMetrics(expectedMetrics, actualMetrics)
-			require.NoError(t, err)
+			require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
+				pmetrictest.IgnoreMetricDataPointsOrder()))
 		})
 	}
 }

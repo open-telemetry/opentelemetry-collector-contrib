@@ -192,7 +192,7 @@ func (c *client) pushLogRecords(ctx context.Context, lds plog.ResourceLogsSlice,
 		}
 
 		// Parsing log record to Splunk event.
-		event := mapLogRecordToSplunkEvent(res.Resource(), logs.At(k), c.config, c.logger)
+		event := mapLogRecordToSplunkEvent(res.Resource(), logs.At(k), c.config)
 		// JSON encoding event and writing to buffer.
 		b, err := jsoniter.Marshal(event)
 		if err != nil {
@@ -320,7 +320,7 @@ func (c *client) pushTracesData(ctx context.Context, tds ptrace.ResourceSpansSli
 		}
 
 		// Parsing span record to Splunk event.
-		event := mapSpanToSplunkEvent(res.Resource(), spans.At(k), c.config, c.logger)
+		event := mapSpanToSplunkEvent(res.Resource(), spans.At(k), c.config)
 		// JSON encoding event and writing to buffer.
 		b, err := jsoniter.Marshal(event)
 		if err != nil {

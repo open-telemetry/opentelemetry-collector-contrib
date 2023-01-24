@@ -20,18 +20,26 @@ import (
 	"testing"
 	"time"
 
-	aws "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
+
+	aws "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics"
+)
+
+type metricValueType string
+
+const (
+	intValueType    metricValueType = "int"
+	doubleValueType metricValueType = "double"
 )
 
 const instrLibName = "cloudwatch-otel"
 
-func generateTestGaugeMetric(name string, valueType string) pmetric.Metrics {
+func generateTestGaugeMetric(name string, valueType metricValueType) pmetric.Metrics {
 	otelMetrics := pmetric.NewMetrics()
 	rs := otelMetrics.ResourceMetrics().AppendEmpty()
 	metrics := rs.ScopeMetrics().AppendEmpty().Metrics()
@@ -43,7 +51,7 @@ func generateTestGaugeMetric(name string, valueType string) pmetric.Metrics {
 	gaugeDatapoint.Attributes().PutStr("label1", "value1")
 
 	switch valueType {
-	case "double":
+	case doubleValueType:
 		gaugeDatapoint.SetDoubleValue(0.1)
 	default:
 		gaugeDatapoint.SetIntValue(1)
@@ -51,7 +59,7 @@ func generateTestGaugeMetric(name string, valueType string) pmetric.Metrics {
 	return otelMetrics
 }
 
-func generateTestSumMetric(name string, valueType string) pmetric.Metrics {
+func generateTestSumMetric(name string, valueType metricValueType) pmetric.Metrics {
 	otelMetrics := pmetric.NewMetrics()
 	rs := otelMetrics.ResourceMetrics().AppendEmpty()
 	metrics := rs.ScopeMetrics().AppendEmpty().Metrics()
@@ -67,7 +75,7 @@ func generateTestSumMetric(name string, valueType string) pmetric.Metrics {
 		sumDatapoint := sumMetric.DataPoints().AppendEmpty()
 		sumDatapoint.Attributes().PutStr("label1", "value1")
 		switch valueType {
-		case "double":
+		case doubleValueType:
 			sumDatapoint.SetDoubleValue(float64(i) * 0.1)
 		default:
 			sumDatapoint.SetIntValue(int64(i))
@@ -448,20 +456,20 @@ func TestGetDataPoints(t *testing.T) {
 		name                   string
 		isPrometheusMetrics    bool
 		metric                 pmetric.Metrics
-		expectedDatapointSlice dataPointSlice
+		expectedDatapointSlice dataPoints
 		expectedAttributes     map[string]interface{}
 	}{
 		{
 			name:                   "Int gauge",
 			isPrometheusMetrics:    false,
-			metric:                 generateTestGaugeMetric("foo", "int"),
+			metric:                 generateTestGaugeMetric("foo", intValueType),
 			expectedDatapointSlice: numberDataPointSlice{normalDeltraMetricMetadata, pmetric.NumberDataPointSlice{}},
 			expectedAttributes:     map[string]interface{}{"label1": "value1"},
 		},
 		{
 			name:                   "Double sum",
 			isPrometheusMetrics:    false,
-			metric:                 generateTestSumMetric("foo", "double"),
+			metric:                 generateTestSumMetric("foo", doubleValueType),
 			expectedDatapointSlice: numberDataPointSlice{cumulativeDeltaMetricMetadata, pmetric.NumberDataPointSlice{}},
 			expectedAttributes:     map[string]interface{}{"label1": "value1"},
 		},
@@ -570,11 +578,11 @@ func TestGetDataPoints(t *testing.T) {
 
 func BenchmarkGetAndCalculateDeltaDataPoints(b *testing.B) {
 	generateMetrics := []pmetric.Metrics{
-		generateTestGaugeMetric("int-gauge", "int"),
-		generateTestGaugeMetric("int-gauge", "double"),
+		generateTestGaugeMetric("int-gauge", intValueType),
+		generateTestGaugeMetric("int-gauge", doubleValueType),
 		generateTestHistogramMetric("histogram"),
-		generateTestSumMetric("int-sum", "int"),
-		generateTestSumMetric("double-sum", "double"),
+		generateTestSumMetric("int-sum", intValueType),
+		generateTestSumMetric("double-sum", doubleValueType),
 		generateTestSummaryMetric("summary"),
 	}
 

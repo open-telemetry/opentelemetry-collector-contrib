@@ -2,7 +2,7 @@
 
 | Status                   |               |
 | ------------------------ |---------------|
-| Stability                | [stable]      |
+| Stability                | [beta]        |
 | Supported pipeline types | metrics, logs |
 | Distributions            | [contrib]     |
 
@@ -68,5 +68,5 @@ service:
       exporters: [signalfx]
 ```
 
-[stable]: https://github.com/open-telemetry/opentelemetry-collector#stable
+[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
