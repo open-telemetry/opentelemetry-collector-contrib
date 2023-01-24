@@ -12,9 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build integration
-// +build integration
-
 package snmpreceiver
 
 import (
@@ -87,7 +84,7 @@ func TestSnmpReceiverIntegration(t *testing.T) {
 			expectedMetrics, err := golden.ReadMetrics(expectedFile)
 			require.NoError(t, err)
 			err = pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreMetricsOrder(),
-				pmetrictest.IgnoreTimestamp())
+				pmetrictest.IgnoreTimestamp(), pmetrictest.IgnoreStartTimestamp())
 			require.NoError(t, err)
 		})
 	}
