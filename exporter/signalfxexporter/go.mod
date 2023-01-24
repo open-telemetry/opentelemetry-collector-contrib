@@ -15,12 +15,12 @@ require (
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3
 	github.com/signalfx/signalfx-agent/pkg/apm v0.0.0-20220920175102-539ae8d8ba8e
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.69.2-0.20230121222757-51c9139d1c2f
-	go.opentelemetry.io/collector/component v0.69.2-0.20230121222757-51c9139d1c2f
-	go.opentelemetry.io/collector/confmap v0.69.2-0.20230121222757-51c9139d1c2f
-	go.opentelemetry.io/collector/consumer v0.69.2-0.20230121222757-51c9139d1c2f
-	go.opentelemetry.io/collector/pdata v1.0.0-rc3.0.20230121222757-51c9139d1c2f
-	go.opentelemetry.io/collector/semconv v0.69.2-0.20230121222757-51c9139d1c2f
+	go.opentelemetry.io/collector v0.70.0
+	go.opentelemetry.io/collector/component v0.70.0
+	go.opentelemetry.io/collector/confmap v0.70.0
+	go.opentelemetry.io/collector/consumer v0.70.0
+	go.opentelemetry.io/collector/pdata v1.0.0-rc4
+	go.opentelemetry.io/collector/semconv v0.70.0
 	go.uber.org/atomic v1.10.0
 	go.uber.org/multierr v1.9.0
 	go.uber.org/zap v1.24.0
@@ -43,7 +43,7 @@ require (
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.15.15 // indirect
-	github.com/knadh/koanf v1.4.5 // indirect
+	github.com/knadh/koanf v1.5.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
@@ -64,7 +64,7 @@ require (
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/featuregate v0.69.2-0.20230121222757-51c9139d1c2f // indirect
+	go.opentelemetry.io/collector/featuregate v0.70.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.37.0 // indirect
 	go.opentelemetry.io/otel v1.11.2 // indirect
 	go.opentelemetry.io/otel/metric v0.34.0 // indirect
