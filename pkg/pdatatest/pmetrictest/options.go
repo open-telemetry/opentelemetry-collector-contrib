@@ -17,6 +17,7 @@ package pmetrictest // import "github.com/open-telemetry/opentelemetry-collector
 import (
 	"bytes"
 	"fmt"
+	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -86,6 +87,90 @@ func maskDataPointSliceValues(dataPoints pmetric.NumberDataPointSlice) {
 		dataPoint := dataPoints.At(i)
 		dataPoint.SetIntValue(0)
 		dataPoint.SetDoubleValue(0)
+	}
+}
+
+// IgnoreTimestamp is a CompareMetricsOption that clears Timestamp fields on all the data points.
+func IgnoreTimestamp() CompareMetricsOption {
+	return compareMetricsOptionFunc(func(expected, actual pmetric.Metrics) {
+		now := pcommon.NewTimestampFromTime(time.Now())
+		maskTimestamp(expected, now)
+		maskTimestamp(actual, now)
+	})
+}
+
+func maskTimestamp(metrics pmetric.Metrics, ts pcommon.Timestamp) {
+	rms := metrics.ResourceMetrics()
+	for i := 0; i < rms.Len(); i++ {
+		for j := 0; j < rms.At(i).ScopeMetrics().Len(); j++ {
+			for k := 0; k < rms.At(i).ScopeMetrics().At(j).Metrics().Len(); k++ {
+				m := rms.At(i).ScopeMetrics().At(j).Metrics().At(k)
+				switch m.Type() {
+				case pmetric.MetricTypeGauge:
+					for l := 0; l < m.Gauge().DataPoints().Len(); l++ {
+						m.Gauge().DataPoints().At(l).SetTimestamp(ts)
+					}
+				case pmetric.MetricTypeSum:
+					for l := 0; l < m.Sum().DataPoints().Len(); l++ {
+						m.Sum().DataPoints().At(l).SetTimestamp(ts)
+					}
+				case pmetric.MetricTypeHistogram:
+					for l := 0; l < m.Histogram().DataPoints().Len(); l++ {
+						m.Histogram().DataPoints().At(l).SetTimestamp(ts)
+					}
+				case pmetric.MetricTypeExponentialHistogram:
+					for l := 0; l < m.ExponentialHistogram().DataPoints().Len(); l++ {
+						m.ExponentialHistogram().DataPoints().At(l).SetTimestamp(ts)
+					}
+				case pmetric.MetricTypeSummary:
+					for l := 0; l < m.Summary().DataPoints().Len(); l++ {
+						m.Summary().DataPoints().At(l).SetTimestamp(ts)
+					}
+				}
+			}
+		}
+	}
+}
+
+// IgnoreStartTimestamp is a CompareMetricsOption that clears StartTimestamp fields on all the data points.
+func IgnoreStartTimestamp() CompareMetricsOption {
+	return compareMetricsOptionFunc(func(expected, actual pmetric.Metrics) {
+		now := pcommon.NewTimestampFromTime(time.Now())
+		maskStartTimestamp(expected, now)
+		maskStartTimestamp(actual, now)
+	})
+}
+
+func maskStartTimestamp(metrics pmetric.Metrics, ts pcommon.Timestamp) {
+	rms := metrics.ResourceMetrics()
+	for i := 0; i < rms.Len(); i++ {
+		for j := 0; j < rms.At(i).ScopeMetrics().Len(); j++ {
+			for k := 0; k < rms.At(i).ScopeMetrics().At(j).Metrics().Len(); k++ {
+				m := rms.At(i).ScopeMetrics().At(j).Metrics().At(k)
+				switch m.Type() {
+				case pmetric.MetricTypeGauge:
+					for l := 0; l < m.Gauge().DataPoints().Len(); l++ {
+						m.Gauge().DataPoints().At(l).SetStartTimestamp(ts)
+					}
+				case pmetric.MetricTypeSum:
+					for l := 0; l < m.Sum().DataPoints().Len(); l++ {
+						m.Sum().DataPoints().At(l).SetStartTimestamp(ts)
+					}
+				case pmetric.MetricTypeHistogram:
+					for l := 0; l < m.Histogram().DataPoints().Len(); l++ {
+						m.Histogram().DataPoints().At(l).SetStartTimestamp(ts)
+					}
+				case pmetric.MetricTypeExponentialHistogram:
+					for l := 0; l < m.ExponentialHistogram().DataPoints().Len(); l++ {
+						m.ExponentialHistogram().DataPoints().At(l).SetStartTimestamp(ts)
+					}
+				case pmetric.MetricTypeSummary:
+					for l := 0; l < m.Summary().DataPoints().Len(); l++ {
+						m.Summary().DataPoints().At(l).SetStartTimestamp(ts)
+					}
+				}
+			}
+		}
 	}
 }
 

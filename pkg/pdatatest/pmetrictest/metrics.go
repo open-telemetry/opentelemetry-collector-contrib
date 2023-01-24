@@ -355,6 +355,12 @@ func compareNumberDataPointSlices(expected, actual pmetric.NumberDataPointSlice)
 // CompareNumberDataPoint compares each part of two given NumberDataPoints and returns
 // an error if they don't match. The error describes what didn't match.
 func CompareNumberDataPoint(expected, actual pmetric.NumberDataPoint) error {
+	if expected.StartTimestamp() != actual.StartTimestamp() {
+		return fmt.Errorf("metric datapoint StartTimestamp doesn't match expected: %d, actual: %d", expected.StartTimestamp(), actual.StartTimestamp())
+	}
+	if expected.Timestamp() != actual.Timestamp() {
+		return fmt.Errorf("metric datapoint Timestamp doesn't match expected: %d, actual: %d", expected.Timestamp(), actual.Timestamp())
+	}
 	if expected.ValueType() != actual.ValueType() {
 		return fmt.Errorf("metric datapoint types don't match: expected type: %s, actual type: %s", expected.ValueType(), actual.ValueType())
 	}

@@ -23,7 +23,8 @@ func TestMetricsScraper(t *testing.T) {
 	expectedFile, err := readMetrics(filepath.Join("testdata", "expected.json"))
 	require.NoError(err)
 
-	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics))
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreStartTimestamp(), 
+		pmetrictest.IgnoreTimestamp()))))
 }
 ```
 
