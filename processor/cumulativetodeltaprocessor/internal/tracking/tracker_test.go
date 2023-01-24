@@ -16,10 +16,11 @@ package tracking
 
 import (
 	"context"
-	"reflect"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/atomic"
@@ -124,13 +125,15 @@ func TestMetricTracker_Convert(t *testing.T) {
 				Value:    tt.value,
 			}
 
-			if gotOut, valid := m.Convert(floatPoint); !valid || !reflect.DeepEqual(gotOut.StartTimestamp, tt.wantOut.StartTimestamp) || !reflect.DeepEqual(gotOut.FloatValue, tt.wantOut.FloatValue) {
-				t.Errorf("MetricTracker.Convert(MetricTypeSum) = %v, want %v", gotOut, tt.wantOut)
-			}
+			gotOut, valid := m.Convert(floatPoint)
+			require.True(t, valid)
+			assert.Equal(t, tt.wantOut.StartTimestamp, gotOut.StartTimestamp)
+			assert.Equal(t, tt.wantOut.FloatValue, gotOut.FloatValue)
 
-			if gotOut, valid := m.Convert(intPoint); !valid || !reflect.DeepEqual(gotOut.StartTimestamp, tt.wantOut.StartTimestamp) || !reflect.DeepEqual(gotOut.IntValue, tt.wantOut.IntValue) {
-				t.Errorf("MetricTracker.Convert(MetricTypeIntSum) = %v, want %v", gotOut, tt.wantOut)
-			}
+			gotOut, valid = m.Convert(intPoint)
+			require.True(t, valid)
+			assert.Equal(t, tt.wantOut.StartTimestamp, gotOut.StartTimestamp)
+			assert.Equal(t, tt.wantOut.IntValue, gotOut.IntValue)
 		})
 	}
 
@@ -205,10 +208,7 @@ func Test_metricTracker_removeStale(t *testing.T) {
 				gotOut[key.(string)] = value.(*State)
 				return true
 			})
-
-			if !reflect.DeepEqual(gotOut, tt.wantOut) {
-				t.Errorf("MetricTracker.removeStale() = %v, want %v", gotOut, tt.wantOut)
-			}
+			assert.Equal(t, tt.wantOut, gotOut)
 		})
 	}
 }
@@ -237,18 +237,9 @@ func Test_metricTracker_sweeper(t *testing.T) {
 	for i := 1; i <= 2; i++ {
 		staleBefore := <-sweepEvent
 		tickTime := time.Since(start) + tr.maxStaleness*time.Duration(i)
-		if closed.Load() {
-			t.Fatalf("Sweeper returned prematurely.")
-		}
-
-		if tickTime < tr.maxStaleness {
-			t.Errorf("Sweeper tick time is too fast. (%v, want %v)", tickTime, tr.maxStaleness)
-		}
-
-		staleTime := staleBefore.AsTime()
-		if time.Since(staleTime) < tr.maxStaleness {
-			t.Errorf("Sweeper called with invalid staleBefore value = %v", staleTime)
-		}
+		require.False(t, closed.Load())
+		assert.Less(t, tr.maxStaleness, tickTime)
+		assert.Less(t, tr.maxStaleness, time.Since(staleBefore.AsTime()))
 	}
 	cancel()
 	for range sweepEvent {

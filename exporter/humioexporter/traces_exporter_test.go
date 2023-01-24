@@ -182,9 +182,7 @@ func TestPushTraceData_TransientOnPartialFailure(t *testing.T) {
 	assert.False(t, consumererror.IsPermanent(err))
 
 	tErr := consumererror.Traces{}
-	if ok := errors.As(err, &tErr); !ok {
-		assert.Fail(t, "PushTraceData did not return a Traces error")
-	}
+	require.ErrorAs(t, err, &tErr)
 	assert.Equal(t, 1, tErr.GetTraces().ResourceSpans().Len())
 }
 
