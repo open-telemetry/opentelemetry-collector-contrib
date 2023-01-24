@@ -211,6 +211,21 @@ func TestMapKeysHash(t *testing.T) {
 			}(),
 			equal: true,
 		},
+		{
+			name: "different_maps",
+			maps: func() []pcommon.Map {
+				m := []pcommon.Map{pcommon.NewMap(), pcommon.NewMap()}
+				m[0].PutStr("k1", "v1")
+				m[0].PutInt("k2", 1)
+				m[0].PutDouble("k3", 1)
+
+				m[1].PutStr("k1", "v1")
+				m[1].PutDouble("k3", 1)
+
+				return m
+			}(),
+			equal: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
