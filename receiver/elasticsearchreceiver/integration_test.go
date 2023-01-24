@@ -62,7 +62,7 @@ func TestElasticsearchIntegration(t *testing.T) {
 	err := featuregate.GlobalRegistry().Apply(map[string]bool{emitClusterHealthDetailedShardMetricsID: false, emitAllIndexOperationMetricsID: false})
 	require.NoError(t, err)
 
-	//Starts an elasticsearch docker container
+	// Starts an elasticsearch docker container
 	t.Run("Running elasticsearch 7.9", func(t *testing.T) {
 		t.Parallel()
 		container := getContainer(t, containerRequest7_9_3)
@@ -87,13 +87,13 @@ func TestElasticsearchIntegration(t *testing.T) {
 		}, 2*time.Minute, 1*time.Second, "failed to receive more than 0 metrics")
 		require.NoError(t, rcvr.Shutdown(context.Background()))
 
-		actualMtrics := consumer.AllMetrics()[0]
+		actualMetrics := consumer.AllMetrics()[0]
 
 		expectedFile := filepath.Join("testdata", "integration", "expected.7_9_3.json")
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		pmetrictest.CompareMetrics(expectedMetrics, actualMtrics,
+		pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, //nolint:errcheck
 			pmetrictest.IgnoreResourceMetricsOrder(),
 			pmetrictest.IgnoreMetricValues(),
 			pmetrictest.IgnoreResourceAttributeValue("elasticsearch.node.name"))
@@ -122,13 +122,13 @@ func TestElasticsearchIntegration(t *testing.T) {
 		}, 2*time.Minute, 1*time.Second, "failed to receive more than 0 metrics")
 		require.NoError(t, rcvr.Shutdown(context.Background()))
 
-		actualMtrics := consumer.AllMetrics()[0]
+		actualMetrics := consumer.AllMetrics()[0]
 
 		expectedFile := filepath.Join("testdata", "integration", "expected.7_16_3.json")
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		pmetrictest.CompareMetrics(expectedMetrics, actualMtrics,
+		pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, //nolint:errcheck
 			pmetrictest.IgnoreResourceMetricsOrder(),
 			pmetrictest.IgnoreMetricValues(),
 			pmetrictest.IgnoreResourceAttributeValue("elasticsearch.node.name"))
