@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
@@ -127,6 +128,7 @@ func TestStorageUpdate(t *testing.T) {
 
 	recv := testRecv()
 	recv.client = &mockClient
+	recv.storageClient = storage.NewNopClient()
 	// Expect the new to be replace by the last record time since it is not nil
 	recv.record = &logRecord{LastRecordedTime: time.Now()}
 

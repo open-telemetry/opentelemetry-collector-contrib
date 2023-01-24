@@ -77,7 +77,8 @@ func (l *logsReceiver) Start(ctx context.Context, host component.Host) error {
 	l.logger.Debug("starting to poll for Cloudflare logs")
 	storageClient, err := adapter.GetStorageClient(ctx, host, l.storageID, l.id)
 	if err != nil {
-		l.logger.Error("failed to set up storage: %w", zap.Error(err))
+		l.logger.Error("failed to set up storage client: %w", zap.Error(err))
+		return fmt.Errorf("unable to set up storage client: %w", err)
 	}
 
 	l.storageClient = storageClient
@@ -94,7 +95,7 @@ func (l *logsReceiver) Shutdown(ctx context.Context) error {
 }
 
 func (l *logsReceiver) startPolling(ctx context.Context, _ component.Host) {
-	l.logger.Debug("starting cloudflare receiver in retrieval mode")
+	l.logger.Debug("starting cloudflare receiver")
 
 	err := l.syncPersistence(ctx)
 	if err != nil {
@@ -121,7 +122,6 @@ func (l *logsReceiver) startPolling(ctx context.Context, _ component.Host) {
 }
 
 func (l *logsReceiver) poll(ctx context.Context) error {
-	var errs error
 	startTime := l.nextStartTime
 	if l.record != nil {
 		startTime = l.record.LastRecordedTime.Format(time.RFC3339)
@@ -135,7 +135,7 @@ func (l *logsReceiver) poll(ctx context.Context) error {
 	}
 
 	l.nextStartTime = endTime
-	return errs
+	return l.writeCheckpoint(ctx)
 }
 
 func (l *logsReceiver) pollForLogs(ctx context.Context, startTime, endTime string) error {
