@@ -69,6 +69,7 @@ func TestSnmpReceiverIntegration(t *testing.T) {
 			factories.Receivers[typeStr] = factory
 			configFile := filepath.Join("testdata", "integration", testCase.configFilename)
 			cfg, err := otelcoltest.LoadConfigAndValidate(configFile, factories)
+			require.NoError(t, err)
 			snmpConfig := cfg.Receivers[component.NewID(typeStr)].(*Config)
 
 			consumer := new(consumertest.MetricsSink)
