@@ -430,6 +430,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver v0.71.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.71.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver v0.71.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudflarereceiver v0.71.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudfoundryreceiver v0.71.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver v0.71.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver v0.71.0 // indirect
@@ -893,6 +894,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couch
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver => ../../receiver/carbonreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver => ../../receiver/chronyreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudflarereceiver => ../../receiver/cloudflarereceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudfoundryreceiver => ../../receiver/cloudfoundryreceiver
 
