@@ -30,6 +30,6 @@ func TestFactory_Type(t *testing.T) {
 func TestFactory_CreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.Equal(t, cfg, &struct{}{})
+	assert.Equal(t, cfg, &Config{})
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
