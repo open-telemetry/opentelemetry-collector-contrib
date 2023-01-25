@@ -28,13 +28,13 @@ import (
 func Test_isMatch(t *testing.T) {
 	tests := []struct {
 		name     string
-		target   ottl.Getter[interface{}]
+		target   ottl.StringGetter[interface{}]
 		pattern  string
 		expected bool
 	}{
 		{
 			name: "replace match true",
-			target: &ottl.StandardGetSetter[interface{}]{
+			target: &ottl.StandardStringGetter[interface{}]{
 				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
 					return "hello world", nil
 				},
@@ -44,7 +44,7 @@ func Test_isMatch(t *testing.T) {
 		},
 		{
 			name: "replace match false",
-			target: &ottl.StandardGetSetter[interface{}]{
+			target: &ottl.StandardStringGetter[interface{}]{
 				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
 					return "goodbye world", nil
 				},
@@ -54,7 +54,7 @@ func Test_isMatch(t *testing.T) {
 		},
 		{
 			name: "replace match complex",
-			target: &ottl.StandardGetSetter[interface{}]{
+			target: &ottl.StandardStringGetter[interface{}]{
 				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
 					return "-12.001", nil
 				},
@@ -63,50 +63,8 @@ func Test_isMatch(t *testing.T) {
 			expected: true,
 		},
 		{
-			name: "target bool",
-			target: &ottl.StandardGetSetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
-					return true, nil
-				},
-			},
-			pattern:  "true",
-			expected: true,
-		},
-		{
-			name: "target int",
-			target: &ottl.StandardGetSetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
-					return int64(1), nil
-				},
-			},
-			pattern:  `\d`,
-			expected: true,
-		},
-		{
-			name: "target float",
-			target: &ottl.StandardGetSetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
-					return 1.1, nil
-				},
-			},
-			pattern:  `\d\.\d`,
-			expected: true,
-		},
-		{
-			name: "target pcommon.Value",
-			target: &ottl.StandardGetSetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
-					v := pcommon.NewValueEmpty()
-					v.SetStr("test")
-					return v, nil
-				},
-			},
-			pattern:  `test`,
-			expected: true,
-		},
-		{
 			name: "nil target",
-			target: &ottl.StandardGetSetter[interface{}]{
+			target: &ottl.StandardStringGetter[interface{}]{
 				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
 					return nil, nil
 				},
@@ -127,7 +85,7 @@ func Test_isMatch(t *testing.T) {
 }
 
 func Test_isMatch_validation(t *testing.T) {
-	target := &ottl.StandardGetSetter[interface{}]{
+	target := &ottl.StandardStringGetter[interface{}]{
 		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
 			return "anything", nil
 		},
@@ -137,14 +95,57 @@ func Test_isMatch_validation(t *testing.T) {
 }
 
 func Test_isMatch_error(t *testing.T) {
-	target := &ottl.StandardGetSetter[interface{}]{
-		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
-			v := ottl.Path{}
-			return v, nil
+	tests := []struct {
+		name    string
+		target  ottl.StringGetter[interface{}]
+		pattern string
+	}{
+		{
+			name: "target bool",
+			target: &ottl.StandardStringGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return true, nil
+				},
+			},
+			pattern: "true",
+		},
+		{
+			name: "target int",
+			target: &ottl.StandardStringGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return int64(1), nil
+				},
+			},
+			pattern: `\d`,
+		},
+		{
+			name: "target float",
+			target: &ottl.StandardStringGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return 1.1, nil
+				},
+			},
+			pattern: `\d\.\d`,
+		},
+		{
+			name: "target pcommon.Value",
+			target: &ottl.StandardStringGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					v := pcommon.NewValueEmpty()
+					v.SetStr("test")
+					return v, nil
+				},
+			},
+			pattern: `test`,
 		},
 	}
-	exprFunc, err := IsMatch[interface{}](target, "test")
-	assert.NoError(t, err)
-	_, err = exprFunc(context.Background(), nil)
-	require.Error(t, err)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			exprFunc, err := IsMatch(tt.target, tt.pattern)
+			assert.NoError(t, err)
+			_, err = exprFunc(context.Background(), nil)
+			require.Error(t, err)
+		})
+	}
+
 }

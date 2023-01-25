@@ -42,6 +42,10 @@ type GetSetter[K any] interface {
 	Setter[K]
 }
 
+type StringGetter[K any] interface {
+	Get(ctx context.Context, tCtx K) (*string, error)
+}
+
 type StandardGetSetter[K any] struct {
 	Getter func(ctx context.Context, tCx K) (interface{}, error)
 	Setter func(ctx context.Context, tCx K, val interface{}) error
@@ -87,6 +91,25 @@ func (l *listGetter[K]) Get(ctx context.Context, tCtx K) (interface{}, error) {
 	}
 
 	return evaluated, nil
+}
+
+type StandardStringGetter[K any] struct {
+	Getter func(ctx context.Context, tCx K) (interface{}, error)
+}
+
+func (g StandardStringGetter[K]) Get(ctx context.Context, tCtx K) (*string, error) {
+	val, err := g.Getter(ctx, tCtx)
+	if err != nil {
+		return nil, err
+	}
+	if val == nil {
+		return nil, nil
+	}
+	strVal, ok := val.(string)
+	if !ok {
+		return nil, fmt.Errorf("value was not a string")
+	}
+	return &strVal, nil
 }
 
 func (p *Parser[K]) newGetter(val value) (Getter[K], error) {
