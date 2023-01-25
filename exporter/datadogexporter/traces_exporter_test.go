@@ -112,13 +112,7 @@ func (testlogger) Flush() {}
 func TestTracesSource(t *testing.T) {
 	reqs := make(chan []byte, 1)
 	metricsServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var expectedMetricEndpoint string
-		if isMetricExportV2Enabled() {
-			expectedMetricEndpoint = testutil.MetricV2Endpoint
-		} else {
-			expectedMetricEndpoint = testutil.MetricV1Endpoint
-		}
-		if r.URL.Path != expectedMetricEndpoint {
+		if r.URL.Path != testutil.MetricV2Endpoint {
 			// we only want to capture series payloads
 			return
 		}
@@ -163,21 +157,6 @@ func TestTracesSource(t *testing.T) {
 	exporter, err := f.CreateTracesExporter(context.Background(), params, &cfg)
 	assert.NoError(err)
 
-	// Payload specifies a sub-set of a Zorkian metrics series payload.
-	type Payload struct {
-		Series []struct {
-			Host string   `json:"host,omitempty"`
-			Tags []string `json:"tags,omitempty"`
-		} `json:"series"`
-	}
-	// getHostTags extracts the host and tags from the Zorkian metrics series payload
-	// body found in data.
-	getHostTags := func(data []byte) (host string, tags []string) {
-		var p Payload
-		assert.NoError(json.Unmarshal(data, &p))
-		assert.Len(p.Series, 1)
-		return p.Series[0].Host, p.Series[0].Tags
-	}
 	// getHostTagsV2 extracts the host and tags from the native DatadogV2 metrics series payload
 	// body found in data.
 	getHostTagsV2 := func(data []byte) (host string, tags []string) {
@@ -224,13 +203,7 @@ func TestTracesSource(t *testing.T) {
 			timeout := time.After(time.Second)
 			select {
 			case data := <-reqs:
-				var host string
-				var tags []string
-				if isMetricExportV2Enabled() {
-					host, tags = getHostTagsV2(data)
-				} else {
-					host, tags = getHostTags(data)
-				}
+				host, tags := getHostTagsV2(data)
 				assert.Equal(tt.host, host)
 				assert.EqualValues(tt.tags, tags)
 			case <-timeout:

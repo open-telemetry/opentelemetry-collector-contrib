@@ -48,7 +48,6 @@ type DatadogServer struct {
 /* #nosec G101 -- This is a false positive, these are API endpoints rather than credentials */
 const (
 	ValidateAPIKeyEndpoint = "/api/v1/validate"
-	MetricV1Endpoint       = "/api/v1/series"
 	MetricV2Endpoint       = "/api/v2/series"
 	SketchesMetricEndpoint = "/api/beta/sketches"
 	MetadataEndpoint       = "/intake"
@@ -61,7 +60,6 @@ func DatadogServerMock(overwriteHandlerFuncs ...OverwriteHandleFunc) *DatadogSer
 
 	handlers := map[string]http.HandlerFunc{
 		ValidateAPIKeyEndpoint: validateAPIKeyEndpoint,
-		MetricV1Endpoint:       metricsEndpoint,
 		MetricV2Endpoint:       metricsV2Endpoint,
 		MetadataEndpoint:       newMetadataEndpoint(metadataChan),
 		"/":                    func(w http.ResponseWriter, r *http.Request) {},
@@ -132,18 +130,6 @@ func validateAPIKeyEndpointInvalid(w http.ResponseWriter, r *http.Request) {
 
 type metricsResponse struct {
 	Status string `json:"status"`
-}
-
-func metricsEndpoint(w http.ResponseWriter, r *http.Request) {
-	res := metricsResponse{Status: "ok"}
-	resJSON, _ := json.Marshal(res)
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusAccepted)
-	_, err := w.Write(resJSON)
-	if err != nil {
-		log.Fatalln(err)
-	}
 }
 
 func metricsV2Endpoint(w http.ResponseWriter, r *http.Request) {
