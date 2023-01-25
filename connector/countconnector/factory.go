@@ -41,11 +41,7 @@ func NewFactory() connector.Factory {
 
 // createDefaultConfig creates the default configuration.
 func createDefaultConfig() component.Config {
-<<<<<<< HEAD
 	return &Config{}
-=======
-	return &struct{}{}
->>>>>>> 8811b83ca2 ([connector/count] Add outline and documentation)
 }
 
 // createTracesToMetrics creates a traces to metrics connector based on provided config.
