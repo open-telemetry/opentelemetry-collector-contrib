@@ -181,6 +181,9 @@ func TestDefaultReceivers(t *testing.T) {
 			skipLifecyle: true, // Requires a pubsub subscription
 		},
 		{
+			receiver: "haproxy",
+		},
+		{
 			receiver: "hostmetrics",
 		},
 		{
