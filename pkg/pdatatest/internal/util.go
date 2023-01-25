@@ -15,11 +15,23 @@
 package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/internal"
 
 import (
+	"fmt"
+
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.uber.org/multierr"
 )
 
 func MaskResourceAttributeValue(res pcommon.Resource, attr string) {
 	if _, ok := res.Attributes().Get(attr); ok {
 		res.Attributes().Remove(attr)
 	}
+}
+
+// AddErrPrefix adds a prefix to every multierr error.
+func AddErrPrefix(prefix string, in error) error {
+	var out error
+	for _, err := range multierr.Errors(in) {
+		out = multierr.Append(out, fmt.Errorf("%s: %w", prefix, err))
+	}
+	return out
 }
