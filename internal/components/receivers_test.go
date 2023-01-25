@@ -390,6 +390,10 @@ func TestDefaultReceivers(t *testing.T) {
 			skipLifecyle: true, // Requires a running windows process
 		},
 		{
+			receiver: "sshcheck",
+		},
+
+		{
 			receiver: "statsd",
 		},
 		{
