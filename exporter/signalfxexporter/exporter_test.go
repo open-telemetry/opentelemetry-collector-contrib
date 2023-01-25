@@ -981,6 +981,7 @@ func TestConsumeMetadata(t *testing.T) {
 			logger := zap.NewNop()
 
 			dimClient := dimensions.NewDimensionClient(
+				context.Background(),
 				dimensions.DimensionClientOptions{
 					Token:                 "foo",
 					APIURL:                serverURL,
@@ -1288,7 +1289,10 @@ func TestTLSAPIConnection(t *testing.T) {
 			require.NoError(t, err)
 			serverURL, err := url.Parse(tt.config.APIURL)
 			assert.NoError(t, err)
+			cancellable, cancelFn := context.WithCancel(context.Background())
+			defer cancelFn()
 			dimClient := dimensions.NewDimensionClient(
+				cancellable,
 				dimensions.DimensionClientOptions{
 					Token:                 "",
 					APIURL:                serverURL,

@@ -42,6 +42,7 @@ import (
 // updates are currently not done by this port.
 type DimensionClient struct {
 	sync.RWMutex
+	ctx           context.Context
 	Token         configopaque.String
 	APIURL        *url.URL
 	client        *http.Client
@@ -64,7 +65,6 @@ type DimensionClient struct {
 	logUpdates       bool
 	logger           *zap.Logger
 	metricsConverter translation.MetricsConverter
-	stopChan         chan struct{}
 }
 
 type queuedDimension struct {
@@ -84,7 +84,7 @@ type DimensionClientOptions struct {
 }
 
 // NewDimensionClient returns a new client
-func NewDimensionClient(options DimensionClientOptions) *DimensionClient {
+func NewDimensionClient(ctx context.Context, options DimensionClientOptions) *DimensionClient {
 	client := &http.Client{
 		Timeout: 10 * time.Second,
 		Transport: &http.Transport{
@@ -101,9 +101,10 @@ func NewDimensionClient(options DimensionClientOptions) *DimensionClient {
 			TLSClientConfig:     options.APITLSConfig,
 		},
 	}
-	sender := NewReqSender(client, 20, map[string]string{"client": "dimension"})
+	sender := NewReqSender(ctx, client, 20, map[string]string{"client": "dimension"})
 
 	return &DimensionClient{
+		ctx:              ctx,
 		Token:            options.Token,
 		APIURL:           options.APIURL,
 		sendDelay:        time.Duration(options.SendDelay) * time.Second,
@@ -120,7 +121,6 @@ func NewDimensionClient(options DimensionClientOptions) *DimensionClient {
 
 // Start the client's processing queue
 func (dc *DimensionClient) Start() {
-	dc.stopChan = make(chan struct{}, 1)
 	go dc.processQueue()
 }
 
@@ -182,7 +182,7 @@ func mergeTags(tagSets ...map[string]bool) map[string]bool {
 func (dc *DimensionClient) processQueue() {
 	for {
 		select {
-		case <-dc.stopChan:
+		case <-dc.ctx.Done():
 			return
 		case delayedDimUpdate := <-dc.delayedQueue:
 			now := dc.now()
@@ -324,9 +324,4 @@ func (dc *DimensionClient) makePatchRequest(dim *DimensionUpdate) (*http.Request
 	req.Header.Add("X-SF-TOKEN", string(dc.Token))
 
 	return req, nil
-}
-
-func (dc *DimensionClient) Stop() {
-	dc.requestSender.Stop()
-	close(dc.stopChan)
 }
