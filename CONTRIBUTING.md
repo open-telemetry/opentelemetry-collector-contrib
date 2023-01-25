@@ -175,7 +175,7 @@ OpenTelemetry community members, and anyone else who would like to contribute.
 
 #### Triagers
 
-One way those with triager permissions in the Collector contrib can help move issues along is through adding missing component labels,
+Contributors with [triager](https://github.com/open-telemetry/opentelemetry-collector-contrib/#contributing) permissions can help move issues along is through adding missing component labels,
 which helps organize issues and triggers automations to ping code owners. They can also use their familiarity with the Collector and
 its processes to investigate issues themselves or point issue openers to another resource or someone else who may know more.
 
