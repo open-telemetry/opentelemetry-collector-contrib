@@ -174,8 +174,15 @@ func TestProcessorConcurrentShutdown(t *testing.T) {
 		}()
 	}
 	wg.Wait()
-	allLogs := observedLogs.All()
-	require.NotEmpty(t, allLogs)
+
+	// Allow time for log observer to sync all logs emitted.
+	// Even though the WaitGroup has been given the "done" signal, there's still a potential race condition
+	// between the WaitGroup being unblocked and when the logs will be flushed.
+	var allLogs []observer.LoggedEntry
+	assert.Eventually(t, func() bool {
+		allLogs = observedLogs.All()
+		return assert.NotEmpty(t, allLogs)
+	}, time.Second, time.Millisecond*10)
 
 	// Starting spanmetricsprocessor...
 	// Started spanmetricsprocessor...
@@ -288,13 +295,13 @@ func TestProcessorConsumeMetricsErrors(t *testing.T) {
 	wg.Wait()
 
 	// Allow time for log observer to sync all logs emitted.
-	// Unfortunately, we can't tell the log observer to wait until all logs have been synced/received.
-	// Core/Logger.Sync() does not appear to achieve the desired behavior of syncing observedLogs with the logger.
-	time.Sleep(time.Millisecond)
-
-	// Verify
-	allLogs := observedLogs.All()
-	require.NotEmpty(t, allLogs)
+	// Even though the WaitGroup has been given the "done" signal, there's still a potential race condition
+	// between the WaitGroup being unblocked and when the logs will be flushed.
+	var allLogs []observer.LoggedEntry
+	assert.Eventually(t, func() bool {
+		allLogs = observedLogs.All()
+		return assert.NotEmpty(t, allLogs)
+	}, time.Second, time.Millisecond*10)
 
 	assert.Equal(t, "Failed ConsumeMetrics", allLogs[0].Message)
 }
