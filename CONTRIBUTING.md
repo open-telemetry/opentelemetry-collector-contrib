@@ -170,23 +170,24 @@ definitions to keep in mind when triaging issues.
 
 ### Roles
 
-Determinining the root cause of issues is a shared responsibility between those with triager permissions, code owners,
-OpenTelemetry community members, and anyone else who would like to contribute.
+Determining the root cause of issues is a shared responsibility between those with triager permissions, code owners,
+OpenTelemetry community members, issue authors, and anyone else who would like to contribute.
 
 #### Triagers
 
-Contributors with [triager](https://github.com/open-telemetry/opentelemetry-collector-contrib/#contributing) permissions can help move issues along is through adding missing component labels,
-which helps organize issues and triggers automations to notify code owners. They can also use their familiarity with the Collector and
-its components to investigate issues themselves. Alternatively, they may point issue authors to another resource or someone else who may know more.
+Contributors with [triager](https://github.com/open-telemetry/opentelemetry-collector-contrib/#contributing) permissions can help move
+issues along by adding missing component labels, which help organize issues and trigger automations to notify code owners. They can
+also use their familiarity with the Collector and its components to investigate issues themselves. Alternatively, they may point issue
+authors to another resource or someone else who may know more.
 
 #### Code Owners
 
 In many cases, the code owners for an issue are the best resource to help determine the root cause of a bug or whether an enhancement
 is fit to be added to a component. Code owners will be notified by repository automations when:
 
-* a component label is added to an issue
-* an issue is opened
-* the issue becomes stale
+- a component label is added to an issue
+- an issue is opened
+- the issue becomes stale
 
 Code owners may not have triager permissions on the repository,
 so they can help triage through investigation and by participating in discussions. They can also help organize issues by
@@ -229,9 +230,11 @@ triaged and is ready for work. If someone who is assigned to an issue is no long
 | `priority:p0`        | A critical security vulnerability or Collector panic using a default or common configuration unrelated to a specific component.                                                                         |
 | `priority:p1`        | An urgent issue that should be worked on quickly, before most other issues.                                                                                                                             |
 | `priority:p2`        | A standard bug or enhancement.                                                                                                                                                                          |
-| `priority:p3`        | A technical improvement, insignificant bug, or other minor issue. Generally something that is considered a "nice to have."                                                                              |
+| `priority:p3`        | A technical improvement, lower priority bug, or other minor issue. Generally something that is considered a "nice to have."                                                                               |
+| `release:blocker`    | This issue must be resolved before the next Collector version can be released.                                                                                                                          |
 | `Sponsor Needed`     | A new component has been proposed, but implementation is not ready to begin. This can be because a sponsor has not yet been decided, or because some details on the component still need to be decided. |
 | `Accepted Component` | A sponsor has elected to take on a component and implementation is ready to begin.                                                                                                                      |
+| `Vendor Specific Component` | This should be applied to any component proposal where the functionality for the component is particular to a vendor. |
 
 ### Adding Labels via Comments
 
