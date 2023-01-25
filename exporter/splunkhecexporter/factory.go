@@ -16,7 +16,6 @@ package splunkhecexporter // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -164,10 +163,6 @@ func createLogsExporter(
 	config component.Config,
 ) (exporter exporter.Logs, err error) {
 	cfg := config.(*Config)
-
-	if !cfg.LogDataEnabled && !cfg.ProfilingDataEnabled {
-		return nil, errors.New(`either "log_data_enabled" or "profiling_data_enabled" has to be true`)
-	}
 
 	c := &client{
 		config:            cfg,
