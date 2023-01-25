@@ -182,7 +182,7 @@ its components to investigate issues themselves. Alternatively, they may point i
 #### Code Owners
 
 In many cases, the code owners for an issue are the best resource to help determine the root cause of a bug or whether an enhancement
-is fit to be added to a component. Code owners will be notified by repository automation when:
+is fit to be added to a component. Code owners will be notified by repository automations when:
 
 * a component label is added to an issue
 * an issue is opened
@@ -220,7 +220,7 @@ triaged and is ready for work. If someone who is assigned to an issue is no long
 | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `bug`                | Something that is advertised or intended to work isn't working as expected.                                                                                                                             |
 | `enhancement`        | Something that isn't an advertised feature that would be useful to users or maintainers.                                                                                                                |
-| `flaky test`        | A test unexpectedly failed during CI, showing that there is a problem with the code base that code owners may want to investigate.  |
+| `flaky test`         | A test unexpectedly failed during CI, showing that there is a problem with the tests or test setup that is causing the tests to intermittently fail.                                                    |
 | `good first issue`   | Implementing this issue would not require specialized or in-depth knowledge about the component and is ideal for a new or first-time contributor to take.                                               |
 | `help wanted`        | The code owners for this component do not expect to have time to work on it soon, and would welcome help from contributors.                                                                             |
 | `needs discussion`   | This issue needs more input from the maintainers or community before work can be started.                                                                                                               |
