@@ -545,13 +545,13 @@ func TestPushMetricsDataWithErr(t *testing.T) {
 func TestNewExporterWithoutConfig(t *testing.T) {
 	factory := NewFactory()
 	expCfg := factory.CreateDefaultConfig().(*Config)
+	settings := exportertest.NewNopCreateSettings()
 	t.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "fake")
 
-	assert.Nil(t, expCfg.logger)
-	exp, err := newEmfPusher(expCfg, exportertest.NewNopCreateSettings())
+	exp, err := newEmfPusher(expCfg, settings)
 	assert.NotNil(t, err)
 	assert.Nil(t, exp)
-	assert.NotNil(t, expCfg.logger)
+	assert.Equal(t, settings.Logger, expCfg.logger)
 }
 
 func TestNewExporterWithMetricDeclarations(t *testing.T) {
@@ -633,11 +633,11 @@ func TestWrapErrorIfBadRequest(t *testing.T) {
 func TestNewEmfExporterWithoutConfig(t *testing.T) {
 	factory := NewFactory()
 	expCfg := factory.CreateDefaultConfig().(*Config)
+	settings := exportertest.NewNopCreateSettings()
 	t.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "fake")
 
-	assert.Nil(t, expCfg.logger)
-	exp, err := newEmfExporter(expCfg, exportertest.NewNopCreateSettings())
+	exp, err := newEmfExporter(expCfg, settings)
 	assert.NotNil(t, err)
 	assert.Nil(t, exp)
-	assert.NotNil(t, expCfg.logger)
+	assert.Equal(t, settings.Logger, expCfg.logger)
 }

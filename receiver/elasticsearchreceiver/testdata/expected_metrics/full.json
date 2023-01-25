@@ -14,6 +14,12 @@
                   "value": {
                      "stringValue": "917e13e55eed"
                   }
+               },
+               {
+                  "key": "elasticsearch.node.version",
+                  "value": {
+                     "stringValue": "7.17.7"
+                  }
                }
             ]
          },
@@ -794,21 +800,6 @@
                      "unit": "By"
                   },
                   {
-                     "description": "Total amount of memory used for the query cache across all shards assigned to the node.",
-                     "name": "elasticsearch.node.cache.size",
-                     "sum": {
-                        "aggregationTemporality": 2,
-                        "dataPoints": [
-                           {
-                              "asInt": "394",
-                              "startTimeUnixNano": "1670395732182417000",
-                              "timeUnixNano": "1670395732187524000"
-                           }
-                        ]
-                     },
-                     "unit": "By"
-                  },
-                  {
                      "description": "Total count of query cache misses across all shards assigned to selected nodes.",
                      "name": "elasticsearch.node.cache.count",
                      "sum": {
@@ -912,6 +903,21 @@
                               ],
                               "startTimeUnixNano": "1661811689941624000",
                               "timeUnixNano": "1661811689943245000"
+                           }
+                        ]
+                     },
+                     "unit": "By"
+                  },
+                  {
+                     "description": "Total amount of memory used for the query cache across all shards assigned to the node.",
+                     "name": "elasticsearch.node.cache.size",
+                     "sum": {
+                        "aggregationTemporality": 2,
+                        "dataPoints": [
+                           {
+                              "asInt": "394",
+                              "startTimeUnixNano": "1670395732182417000",
+                              "timeUnixNano": "1670395732187524000"
                            }
                         ]
                      },
@@ -1050,7 +1056,7 @@
                      },
                      "unit": "By"
                   },
-		                    {
+                  {
                      "description": "The amount of unallocated disk space across all file stores for this node.",
                      "name": "elasticsearch.node.fs.disk.free",
                      "sum": {
@@ -1334,6 +1340,80 @@
                      "unit": "{operations}"
                   },
                   {
+                     "description": "The number of hits and misses resulting from GET operations.",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "512",
+                              "attributes": [
+                                 {
+                                    "key": "result",
+                                    "value": {
+                                       "stringValue": "hit"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811026803971000",
+                              "timeUnixNano": "1661811026805343000"
+                           },
+                           {
+                              "asInt": "512",
+                              "attributes": [
+                                 {
+                                    "key": "result",
+                                    "value": {
+                                       "stringValue": "miss"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811026803971000",
+                              "timeUnixNano": "1661811026805343000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "name": "elasticsearch.node.operations.get.completed",
+                     "unit": "{operations}"
+                  },
+                  {
+                     "description": "The time spent on hits and misses resulting from GET operations.",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "209",
+                              "attributes": [
+                                 {
+                                    "key": "result",
+                                    "value": {
+                                       "stringValue": "hit"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811026803971000",
+                              "timeUnixNano": "1661811026805343000"
+                           },
+                           {
+                              "asInt": "124",
+                              "attributes": [
+                                 {
+                                    "key": "result",
+                                    "value": {
+                                       "stringValue": "miss"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811026803971000",
+                              "timeUnixNano": "1661811026805343000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "name": "elasticsearch.node.operations.get.time",
+                     "unit": "ms"
+                  },
+                  {
                      "description": "Time spent on operations by a node.",
                      "name": "elasticsearch.node.operations.time",
                      "sum": {
@@ -1485,80 +1565,6 @@
                         ],
                         "isMonotonic": true
                      },
-                     "unit": "ms"
-                  },
-                  {
-                     "description": "The number of hits and misses resulting from GET operations.",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "dataPoints": [
-                           {
-                              "asInt": "512",
-                              "attributes": [
-                                 {
-                                    "key": "result",
-                                    "value": {
-                                       "stringValue": "hit"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1661811026803971000",
-                              "timeUnixNano": "1661811026805343000"
-                           },
-                           {
-                              "asInt": "512",
-                              "attributes": [
-                                 {
-                                    "key": "result",
-                                    "value": {
-                                       "stringValue": "miss"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1661811026803971000",
-                              "timeUnixNano": "1661811026805343000"
-                           }
-                        ],
-                        "isMonotonic": true
-                     },
-                     "name": "elasticsearch.node.operations.get.completed",
-                     "unit": "{operations}"
-                  },
-                  {
-                     "description": "The time spent on hits and misses resulting from GET operations.",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "dataPoints": [
-                           {
-                              "asInt": "209",
-                              "attributes": [
-                                 {
-                                    "key": "result",
-                                    "value": {
-                                       "stringValue": "hit"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1661811026803971000",
-                              "timeUnixNano": "1661811026805343000"
-                           },
-                           {
-                              "asInt": "124",
-                              "attributes": [
-                                 {
-                                    "key": "result",
-                                    "value": {
-                                       "stringValue": "miss"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1661811026803971000",
-                              "timeUnixNano": "1661811026805343000"
-                           }
-                        ],
-                        "isMonotonic": true
-                     },
-                     "name": "elasticsearch.node.operations.get.time",
                      "unit": "ms"
                   },
                   {
@@ -1716,6 +1722,69 @@
                         ]
                      },
                      "unit": "{compilations}"
+                  },
+                  {
+                     "description": "Size of memory for segment object of a node.",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "100",
+                              "attributes": [
+                                 {
+                                    "key": "object",
+                                    "value": {
+                                       "stringValue": "doc_value"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
+                           },
+                           {
+                              "asInt": "200",
+                              "attributes": [
+                                 {
+                                    "key": "object",
+                                    "value": {
+                                       "stringValue": "fixed_bit_set"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
+                           },
+                           {
+                              "asInt": "300",
+                              "attributes": [
+                                 {
+                                    "key": "object",
+                                    "value": {
+                                       "stringValue": "index_writer"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
+                           },
+                           {
+                              "asInt": "400",
+                              "attributes": [
+                                 {
+                                    "key": "object",
+                                    "value": {
+                                       "stringValue": "term"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
+                           }
+                        ],
+                        "isMonotonic": false
+                     },
+                     "name": "elasticsearch.node.segments.memory",
+                     "unit": "By"
                   },
                   {
                      "description": "Total data set size of all shards assigned to the node. This includes the size of shards not stored fully on the node, such as the cache for partially mounted indices.",
@@ -2195,6 +2264,20 @@
                      "unit": "By"
                   },
                   {
+                     "description": "Fraction of heap memory usage",
+                     "gauge": {
+                        "dataPoints": [
+                           {
+                              "asDouble": "0.56",
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
+                           }
+                        ]
+                     },
+                     "name": "jvm.memory.heap.utilization",
+                     "unit": "1"
+                  },
+                  {
                      "description": "The amount of memory that is guaranteed to be available for non-heap purposes",
                      "gauge": {
                         "dataPoints": [
@@ -2331,83 +2414,6 @@
                      },
                      "name": "jvm.threads.count",
                      "unit": "1"
-                  },
-                  {
-                     "description": "Fraction of heap memory usage",
-                     "gauge": {
-                        "dataPoints": [
-                           {
-                              "asDouble": "0.56",
-                              "startTimeUnixNano": "1661811689941624000",
-                              "timeUnixNano": "1661811689943245000"
-                           }
-                        ]
-                     },
-                     "name": "jvm.memory.heap.utilization",
-                     "unit": "1"
-                  },
-                  {
-                     "description": "Size of memory for segment object of a node.",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "dataPoints": [
-                           {
-                              "asInt": "100",
-                              "attributes": [
-                                 {
-                                    "key": "object",
-                                    "value": {
-                                       "stringValue": "doc_value"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1661811689941624000",
-                              "timeUnixNano": "1661811689943245000"
-                           },
-                           {
-                              "asInt": "200",
-                              "attributes": [
-                                 {
-                                    "key": "object",
-                                    "value": {
-                                       "stringValue": "fixed_bit_set"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1661811689941624000",
-                              "timeUnixNano": "1661811689943245000"
-                           },
-                           {
-                              "asInt": "300",
-                              "attributes": [
-                                 {
-                                    "key": "object",
-                                    "value": {
-                                       "stringValue": "index_writer"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1661811689941624000",
-                              "timeUnixNano": "1661811689943245000"
-                           },
-                           {
-                              "asInt": "400",
-                              "attributes": [
-                                 {
-                                    "key": "object",
-                                    "value": {
-                                       "stringValue": "term"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1661811689941624000",
-                              "timeUnixNano": "1661811689943245000"
-                           }
-                        ],
-                        "isMonotonic": false
-                     },
-                     "name": "elasticsearch.node.segments.memory",
-                     "unit": "By"
                   }
                ],
                "scope": {
@@ -2509,6 +2515,43 @@
                         ]
                      },
                      "unit": "{fetches}"
+                  },
+                  {
+                     "description": "The number of evictions from the cache for indices in cluster.",
+                     "name": "elasticsearch.cluster.indices.cache.evictions",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "isMonotonic": true,
+                        "dataPoints": [
+                           {
+                              "asInt": "2",
+                              "attributes": [
+                                 {
+                                    "key": "cache_name",
+                                    "value": {
+                                       "stringValue": "fielddata"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
+                           },
+                           {
+                              "asInt": "3",
+                              "attributes": [
+                                 {
+                                    "key": "cache_name",
+                                    "value": {
+                                       "stringValue": "query"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
+                           }
+                        ]
+                     },
+                     "unit": "{evictions}"
                   },
                   {
                      "description": "The total number of nodes in the cluster.",
@@ -2641,43 +2684,6 @@
                      },
                      "name": "jvm.memory.heap.used",
                      "unit": "By"
-                  },
-                  {
-                     "description": "The number of evictions from the cache for indices in cluster.",
-                     "name": "elasticsearch.cluster.indices.cache.evictions",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "isMonotonic": true,
-                        "dataPoints": [
-                           {
-                              "asInt": "2",
-                              "attributes": [
-                                 {
-                                    "key": "cache_name",
-                                    "value": {
-                                       "stringValue": "fielddata"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1661811689941624000",
-                              "timeUnixNano": "1661811689943245000"
-                           },
-                           {
-                              "asInt": "3",
-                              "attributes": [
-                                 {
-                                    "key": "cache_name",
-                                    "value": {
-                                       "stringValue": "query"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1661811689941624000",
-                              "timeUnixNano": "1661811689943245000"
-                           }
-                        ]
-                     },
-                     "unit": "{evictions}"
                   }
                ],
                "scope": {
@@ -2708,6 +2714,228 @@
             {
                "metrics": [
                   {
+                     "description": "The number of evictions from the cache for an index.",
+                     "name": "elasticsearch.index.cache.evictions",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "isMonotonic": true,
+                        "dataPoints": [
+                           {
+                              "asInt": "2",
+                              "attributes": [
+                                 {
+                                    "key": "cache_name",
+                                    "value": {
+                                       "stringValue": "query"
+                                    }
+                                 },
+                                 {
+                                    "key": "aggregation",
+                                    "value": {
+                                       "stringValue": "primary_shards"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
+                           },
+                           {
+                              "asInt": "2",
+                              "attributes": [
+                                 {
+                                    "key": "cache_name",
+                                    "value": {
+                                       "stringValue": "query"
+                                    }
+                                 },
+                                 {
+                                    "key": "aggregation",
+                                    "value": {
+                                       "stringValue": "total"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
+                           }
+                        ]
+                     },
+                     "unit": "{evictions}"
+                  },
+                  {
+                     "description": "The size in bytes of the cache for an index.",
+                     "name": "elasticsearch.index.cache.memory.usage",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "isMonotonic": false,
+                        "dataPoints": [
+                           {
+                              "asInt": "3",
+                              "attributes": [
+                                 {
+                                    "key": "cache_name",
+                                    "value": {
+                                       "stringValue": "fielddata"
+                                    }
+                                 },
+                                 {
+                                    "key": "aggregation",
+                                    "value": {
+                                       "stringValue": "primary_shards"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
+                           },
+                           {
+                              "asInt": "3",
+                              "attributes": [
+                                 {
+                                    "key": "cache_name",
+                                    "value": {
+                                       "stringValue": "fielddata"
+                                    }
+                                 },
+                                 {
+                                    "key": "aggregation",
+                                    "value": {
+                                       "stringValue": "total"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
+                           },
+                           {
+                              "asInt": "12",
+                              "attributes": [
+                                 {
+                                    "key": "cache_name",
+                                    "value": {
+                                       "stringValue": "query"
+                                    }
+                                 },
+                                 {
+                                    "key": "aggregation",
+                                    "value": {
+                                       "stringValue": "primary_shards"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
+                           },
+                           {
+                              "asInt": "12",
+                              "attributes": [
+                                 {
+                                    "key": "cache_name",
+                                    "value": {
+                                       "stringValue": "query"
+                                    }
+                                 },
+                                 {
+                                    "key": "aggregation",
+                                    "value": {
+                                       "stringValue": "total"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
+                           }
+                        ]
+                     },
+                     "unit": "By"
+                  },
+                  {
+                     "description": "The number of elements of the query cache for an index.",
+                     "name": "elasticsearch.index.cache.size",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "isMonotonic": false,
+                        "dataPoints": [
+                           {
+                              "asInt": "3",
+                              "attributes": [
+                                 {
+                                    "key": "aggregation",
+                                    "value": {
+                                       "stringValue": "primary_shards"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
+                           },
+                           {
+                              "asInt": "3",
+                              "attributes": [
+                                 {
+                                    "key": "aggregation",
+                                    "value": {
+                                       "stringValue": "total"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
+                           }
+                        ]
+                     },
+                     "unit": "1"
+                  },
+                  {
+                     "description": "The number of documents for an index.",
+                     "name": "elasticsearch.index.documents",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "isMonotonic": false,
+                        "dataPoints": [
+                           {
+                              "asInt": "40",
+                              "attributes": [
+                                 {
+                                    "key": "state",
+                                    "value": {
+                                       "stringValue": "active"
+                                    }
+                                 },
+                                 {
+                                    "key": "aggregation",
+                                    "value": {
+                                       "stringValue": "total"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
+                           },
+                           {
+                              "asInt": "40",
+                              "attributes": [
+                                 {
+                                    "key": "state",
+                                    "value": {
+                                       "stringValue": "active"
+                                    }
+                                 },
+                                 {
+                                    "key": "aggregation",
+                                    "value": {
+                                       "stringValue": "primary_shards"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
+                           }
+                        ]
+                     },
+                     "unit": "{documents}"
+                  },
+                  {
                      "description": "The number of operations completed for an index.",
                      "name": "elasticsearch.index.operations.completed",
                      "sum": {
@@ -3135,6 +3363,54 @@
                         ]
                      },
                      "unit": "{operations}"
+                  },
+                  {
+                     "description": "The total number of documents in merge operations for an index.",
+                     "name": "elasticsearch.index.operations.merge.docs_count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "isMonotonic": true,
+                        "dataPoints": [
+                           {
+                              "asInt": "5",
+                              "attributes": [
+                                 {
+                                    "key": "aggregation",
+                                    "value": {
+                                       "stringValue": "total"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
+                           }
+                        ]
+                     },
+                     "unit": "{documents}"
+                  },
+                  {
+                     "description": "The total size of merged segments for an index.",
+                     "name": "elasticsearch.index.operations.merge.size",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "isMonotonic": true,
+                        "dataPoints": [
+                           {
+                              "asInt": "64",
+                              "attributes": [
+                                 {
+                                    "key": "aggregation",
+                                    "value": {
+                                       "stringValue": "total"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
+                           }
+                        ]
+                     },
+                     "unit": "By"
                   },
                   {
                      "description": "Time spent on operations for an index.",
@@ -3566,78 +3842,6 @@
                      "unit": "ms"
                   },
                   {
-                     "description": "The size of the shards assigned to this index.",
-                     "name": "elasticsearch.index.shards.size",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "isMonotonic": false,
-                        "dataPoints": [
-                           {
-                              "asInt": "40230884",
-                              "attributes": [
-                                 {
-                                    "key": "aggregation",
-                                    "value": {
-                                       "stringValue": "total"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1661811689941624000",
-                              "timeUnixNano": "1661811689943245000"
-                           }
-                        ]
-                     },
-                     "unit": "By"
-                  },
-                  {
-                     "description": "The total size of merged segments for an index.",
-                     "name": "elasticsearch.index.operations.merge.size",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "isMonotonic": true,
-                        "dataPoints": [
-                           {
-                              "asInt": "64",
-                              "attributes": [
-                                 {
-                                    "key": "aggregation",
-                                    "value": {
-                                       "stringValue": "total"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1661811689941624000",
-                              "timeUnixNano": "1661811689943245000"
-                           }
-                        ]
-                     },
-                     "unit": "By"
-                  },
-                  {
-                     "description": "The total number of documents in merge operations for an index.",
-                     "name": "elasticsearch.index.operations.merge.docs_count",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "isMonotonic": true,
-                        "dataPoints": [
-                           {
-                              "asInt": "5",
-                              "attributes": [
-                                 {
-                                    "key": "aggregation",
-                                    "value": {
-                                       "stringValue": "total"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1661811689941624000",
-                              "timeUnixNano": "1661811689943245000"
-                           }
-                        ]
-                     },
-                     "unit": "{documents}"
-                  },
-                  {
                      "description": "Number of segments of an index.",
                      "name": "elasticsearch.index.segments.count",
                      "sum": {
@@ -3673,43 +3877,6 @@
                         ]
                      },
                      "unit": "{segments}"
-                  },
-                  {
-                     "description": "Size of segments of an index.",
-                     "name": "elasticsearch.index.segments.size",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "isMonotonic": false,
-                        "dataPoints": [
-                           {
-                              "asInt": "5460",
-                              "attributes": [
-                                 {
-                                    "key": "aggregation",
-                                    "value": {
-                                       "stringValue": "total"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1661811689941624000",
-                              "timeUnixNano": "1661811689943245000"
-                           },
-                           {
-                              "asInt": "5460",
-                              "attributes": [
-                                 {
-                                    "key": "aggregation",
-                                    "value": {
-                                       "stringValue": "primary_shards"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1661811689941624000",
-                              "timeUnixNano": "1661811689943245000"
-                           }
-                        ]
-                     },
-                     "unit": "By"
                   },
                   {
                      "description": "Size of memory for segment object of an index.",
@@ -3875,6 +4042,67 @@
                      "unit": "By"
                   },
                   {
+                     "description": "Size of segments of an index.",
+                     "name": "elasticsearch.index.segments.size",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "isMonotonic": false,
+                        "dataPoints": [
+                           {
+                              "asInt": "5460",
+                              "attributes": [
+                                 {
+                                    "key": "aggregation",
+                                    "value": {
+                                       "stringValue": "total"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
+                           },
+                           {
+                              "asInt": "5460",
+                              "attributes": [
+                                 {
+                                    "key": "aggregation",
+                                    "value": {
+                                       "stringValue": "primary_shards"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
+                           }
+                        ]
+                     },
+                     "unit": "By"
+                  },
+                  {
+                     "description": "The size of the shards assigned to this index.",
+                     "name": "elasticsearch.index.shards.size",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "isMonotonic": false,
+                        "dataPoints": [
+                           {
+                              "asInt": "40230884",
+                              "attributes": [
+                                 {
+                                    "key": "aggregation",
+                                    "value": {
+                                       "stringValue": "total"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
+                           }
+                        ]
+                     },
+                     "unit": "By"
+                  },
+                  {
                      "description": "Number of transaction log operations for an index.",
                      "name": "elasticsearch.index.translog.operations",
                      "sum": {
@@ -3921,228 +4149,6 @@
                         ]
                      },
                      "unit": "By"
-                  },
-                  {
-                     "description": "The size in bytes of the cache for an index.",
-                     "name": "elasticsearch.index.cache.memory.usage",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "isMonotonic": false,
-                        "dataPoints": [
-                           {
-                              "asInt": "3",
-                              "attributes": [
-                                 {
-                                    "key": "cache_name",
-                                    "value": {
-                                       "stringValue": "fielddata"
-                                    }
-                                 },
-                                 {
-                                    "key": "aggregation",
-                                    "value": {
-                                       "stringValue": "primary_shards"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1661811689941624000",
-                              "timeUnixNano": "1661811689943245000"
-                           },
-                           {
-                              "asInt": "3",
-                              "attributes": [
-                                 {
-                                    "key": "cache_name",
-                                    "value": {
-                                       "stringValue": "fielddata"
-                                    }
-                                 },
-                                 {
-                                    "key": "aggregation",
-                                    "value": {
-                                       "stringValue": "total"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1661811689941624000",
-                              "timeUnixNano": "1661811689943245000"
-                           },
-                           {
-                              "asInt": "12",
-                              "attributes": [
-                                 {
-                                    "key": "cache_name",
-                                    "value": {
-                                       "stringValue": "query"
-                                    }
-                                 },
-                                 {
-                                    "key": "aggregation",
-                                    "value": {
-                                       "stringValue": "primary_shards"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1661811689941624000",
-                              "timeUnixNano": "1661811689943245000"
-                           },
-                           {
-                              "asInt": "12",
-                              "attributes": [
-                                 {
-                                    "key": "cache_name",
-                                    "value": {
-                                       "stringValue": "query"
-                                    }
-                                 },
-                                 {
-                                    "key": "aggregation",
-                                    "value": {
-                                       "stringValue": "total"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1661811689941624000",
-                              "timeUnixNano": "1661811689943245000"
-                           }
-                        ]
-                     },
-                     "unit": "By"
-                  },
-                  {
-                     "description": "The number of elements of the query cache for an index.",
-                     "name": "elasticsearch.index.cache.size",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "isMonotonic": false,
-                        "dataPoints": [
-                           {
-                              "asInt": "3",
-                              "attributes": [
-                                 {
-                                    "key": "aggregation",
-                                    "value": {
-                                       "stringValue": "primary_shards"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1661811689941624000",
-                              "timeUnixNano": "1661811689943245000"
-                           },
-                           {
-                              "asInt": "3",
-                              "attributes": [
-                                 {
-                                    "key": "aggregation",
-                                    "value": {
-                                       "stringValue": "total"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1661811689941624000",
-                              "timeUnixNano": "1661811689943245000"
-                           }
-                        ]
-                     },
-                     "unit": "1"
-                  },
-                  {
-                     "description": "The number of evictions from the cache for an index.",
-                     "name": "elasticsearch.index.cache.evictions",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "isMonotonic": true,
-                        "dataPoints": [
-                           {
-                              "asInt": "2",
-                              "attributes": [
-                                 {
-                                    "key": "cache_name",
-                                    "value": {
-                                       "stringValue": "query"
-                                    }
-                                 },
-                                 {
-                                    "key": "aggregation",
-                                    "value": {
-                                       "stringValue": "primary_shards"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1661811689941624000",
-                              "timeUnixNano": "1661811689943245000"
-                           },
-                           {
-                              "asInt": "2",
-                              "attributes": [
-                                 {
-                                    "key": "cache_name",
-                                    "value": {
-                                       "stringValue": "query"
-                                    }
-                                 },
-                                 {
-                                    "key": "aggregation",
-                                    "value": {
-                                       "stringValue": "total"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1661811689941624000",
-                              "timeUnixNano": "1661811689943245000"
-                           }
-                        ]
-                     },
-                     "unit": "{evictions}"
-                  },
-                  {
-                     "description": "The number of documents for an index.",
-                     "name": "elasticsearch.index.documents",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "isMonotonic": false,
-                        "dataPoints": [
-                           {
-                              "asInt": "40",
-                              "attributes": [
-                                 {
-                                    "key": "state",
-                                    "value": {
-                                       "stringValue": "active"
-                                    }
-                                 },
-                                 {
-                                    "key": "aggregation",
-                                    "value": {
-                                       "stringValue": "total"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1661811689941624000",
-                              "timeUnixNano": "1661811689943245000"
-                           },
-                           {
-                              "asInt": "40",
-                              "attributes": [
-                                 {
-                                    "key": "state",
-                                    "value": {
-                                       "stringValue": "active"
-                                    }
-                                 },
-                                 {
-                                    "key": "aggregation",
-                                    "value": {
-                                       "stringValue": "primary_shards"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1661811689941624000",
-                              "timeUnixNano": "1661811689943245000"
-                           }
-                        ]
-                     },
-                     "unit": "{documents}"
                   }
                ],
                "scope": {
@@ -4173,6 +4179,228 @@
             {
                "metrics": [
                   {
+                     "description": "The number of evictions from the cache for an index.",
+                     "name": "elasticsearch.index.cache.evictions",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "isMonotonic": true,
+                        "dataPoints": [
+                           {
+                              "asInt": "2",
+                              "attributes": [
+                                 {
+                                    "key": "cache_name",
+                                    "value": {
+                                       "stringValue": "query"
+                                    }
+                                 },
+                                 {
+                                    "key": "aggregation",
+                                    "value": {
+                                       "stringValue": "primary_shards"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
+                           },
+                           {
+                              "asInt": "2",
+                              "attributes": [
+                                 {
+                                    "key": "cache_name",
+                                    "value": {
+                                       "stringValue": "query"
+                                    }
+                                 },
+                                 {
+                                    "key": "aggregation",
+                                    "value": {
+                                       "stringValue": "total"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
+                           }
+                        ]
+                     },
+                     "unit": "{evictions}"
+                  },
+                  {
+                     "description": "The size in bytes of the cache for an index.",
+                     "name": "elasticsearch.index.cache.memory.usage",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "isMonotonic": false,
+                        "dataPoints": [
+                           {
+                              "asInt": "3",
+                              "attributes": [
+                                 {
+                                    "key": "cache_name",
+                                    "value": {
+                                       "stringValue": "fielddata"
+                                    }
+                                 },
+                                 {
+                                    "key": "aggregation",
+                                    "value": {
+                                       "stringValue": "primary_shards"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
+                           },
+                           {
+                              "asInt": "3",
+                              "attributes": [
+                                 {
+                                    "key": "cache_name",
+                                    "value": {
+                                       "stringValue": "fielddata"
+                                    }
+                                 },
+                                 {
+                                    "key": "aggregation",
+                                    "value": {
+                                       "stringValue": "total"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
+                           },
+                           {
+                              "asInt": "12",
+                              "attributes": [
+                                 {
+                                    "key": "cache_name",
+                                    "value": {
+                                       "stringValue": "query"
+                                    }
+                                 },
+                                 {
+                                    "key": "aggregation",
+                                    "value": {
+                                       "stringValue": "primary_shards"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
+                           },
+                           {
+                              "asInt": "12",
+                              "attributes": [
+                                 {
+                                    "key": "cache_name",
+                                    "value": {
+                                       "stringValue": "query"
+                                    }
+                                 },
+                                 {
+                                    "key": "aggregation",
+                                    "value": {
+                                       "stringValue": "total"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
+                           }
+                        ]
+                     },
+                     "unit": "By"
+                  },
+                  {
+                     "description": "The number of elements of the query cache for an index.",
+                     "name": "elasticsearch.index.cache.size",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "isMonotonic": false,
+                        "dataPoints": [
+                           {
+                              "asInt": "3",
+                              "attributes": [
+                                 {
+                                    "key": "aggregation",
+                                    "value": {
+                                       "stringValue": "primary_shards"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
+                           },
+                           {
+                              "asInt": "3",
+                              "attributes": [
+                                 {
+                                    "key": "aggregation",
+                                    "value": {
+                                       "stringValue": "total"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
+                           }
+                        ]
+                     },
+                     "unit": "1"
+                  },
+                  {
+                     "description": "The number of documents for an index.",
+                     "name": "elasticsearch.index.documents",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "isMonotonic": false,
+                        "dataPoints": [
+                           {
+                              "asInt": "40",
+                              "attributes": [
+                                 {
+                                    "key": "state",
+                                    "value": {
+                                       "stringValue": "active"
+                                    }
+                                 },
+                                 {
+                                    "key": "aggregation",
+                                    "value": {
+                                       "stringValue": "total"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
+                           },
+                           {
+                              "asInt": "40",
+                              "attributes": [
+                                 {
+                                    "key": "state",
+                                    "value": {
+                                       "stringValue": "active"
+                                    }
+                                 },
+                                 {
+                                    "key": "aggregation",
+                                    "value": {
+                                       "stringValue": "primary_shards"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
+                           }
+                        ]
+                     },
+                     "unit": "{documents}"
+                  },
+                  {
                      "description": "The number of operations completed for an index.",
                      "name": "elasticsearch.index.operations.completed",
                      "sum": {
@@ -4600,6 +4828,54 @@
                         ]
                      },
                      "unit": "{operations}"
+                  },
+                  {
+                     "description": "The total number of documents in merge operations for an index.",
+                     "name": "elasticsearch.index.operations.merge.docs_count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "isMonotonic": true,
+                        "dataPoints": [
+                           {
+                              "asInt": "5",
+                              "attributes": [
+                                 {
+                                    "key": "aggregation",
+                                    "value": {
+                                       "stringValue": "total"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
+                           }
+                        ]
+                     },
+                     "unit": "{documents}"
+                  },
+                  {
+                     "description": "The total size of merged segments for an index.",
+                     "name": "elasticsearch.index.operations.merge.size",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "isMonotonic": true,
+                        "dataPoints": [
+                           {
+                              "asInt": "64",
+                              "attributes": [
+                                 {
+                                    "key": "aggregation",
+                                    "value": {
+                                       "stringValue": "total"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
+                           }
+                        ]
+                     },
+                     "unit": "By"
                   },
                   {
                      "description": "Time spent on operations for an index.",
@@ -5031,78 +5307,6 @@
                      "unit": "ms"
                   },
                   {
-                     "description": "The size of the shards assigned to this index.",
-                     "name": "elasticsearch.index.shards.size",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "isMonotonic": false,
-                        "dataPoints": [
-                           {
-                              "asInt": "40230884",
-                              "attributes": [
-                                 {
-                                    "key": "aggregation",
-                                    "value": {
-                                       "stringValue": "total"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1661811689941624000",
-                              "timeUnixNano": "1661811689943245000"
-                           }
-                        ]
-                     },
-                     "unit": "By"
-                  },
-                  {
-                     "description": "The total size of merged segments for an index.",
-                     "name": "elasticsearch.index.operations.merge.size",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "isMonotonic": true,
-                        "dataPoints": [
-                           {
-                              "asInt": "64",
-                              "attributes": [
-                                 {
-                                    "key": "aggregation",
-                                    "value": {
-                                       "stringValue": "total"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1661811689941624000",
-                              "timeUnixNano": "1661811689943245000"
-                           }
-                        ]
-                     },
-                     "unit": "By"
-                  },
-                  {
-                     "description": "The total number of documents in merge operations for an index.",
-                     "name": "elasticsearch.index.operations.merge.docs_count",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "isMonotonic": true,
-                        "dataPoints": [
-                           {
-                              "asInt": "5",
-                              "attributes": [
-                                 {
-                                    "key": "aggregation",
-                                    "value": {
-                                       "stringValue": "total"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1661811689941624000",
-                              "timeUnixNano": "1661811689943245000"
-                           }
-                        ]
-                     },
-                     "unit": "{documents}"
-                  },
-                  {
                      "description": "Number of segments of an index.",
                      "name": "elasticsearch.index.segments.count",
                      "sum": {
@@ -5138,43 +5342,6 @@
                         ]
                      },
                      "unit": "{segments}"
-                  },
-                  {
-                     "description": "Size of segments of an index.",
-                     "name": "elasticsearch.index.segments.size",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "isMonotonic": false,
-                        "dataPoints": [
-                           {
-                              "asInt": "5460",
-                              "attributes": [
-                                 {
-                                    "key": "aggregation",
-                                    "value": {
-                                       "stringValue": "total"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1661811689941624000",
-                              "timeUnixNano": "1661811689943245000"
-                           },
-                           {
-                              "asInt": "5460",
-                              "attributes": [
-                                 {
-                                    "key": "aggregation",
-                                    "value": {
-                                       "stringValue": "primary_shards"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1661811689941624000",
-                              "timeUnixNano": "1661811689943245000"
-                           }
-                        ]
-                     },
-                     "unit": "By"
                   },
                   {
                      "description": "Size of memory for segment object of an index.",
@@ -5340,6 +5507,67 @@
                      "unit": "By"
                   },
                   {
+                     "description": "Size of segments of an index.",
+                     "name": "elasticsearch.index.segments.size",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "isMonotonic": false,
+                        "dataPoints": [
+                           {
+                              "asInt": "5460",
+                              "attributes": [
+                                 {
+                                    "key": "aggregation",
+                                    "value": {
+                                       "stringValue": "total"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
+                           },
+                           {
+                              "asInt": "5460",
+                              "attributes": [
+                                 {
+                                    "key": "aggregation",
+                                    "value": {
+                                       "stringValue": "primary_shards"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
+                           }
+                        ]
+                     },
+                     "unit": "By"
+                  },
+                  {
+                     "description": "The size of the shards assigned to this index.",
+                     "name": "elasticsearch.index.shards.size",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "isMonotonic": false,
+                        "dataPoints": [
+                           {
+                              "asInt": "40230884",
+                              "attributes": [
+                                 {
+                                    "key": "aggregation",
+                                    "value": {
+                                       "stringValue": "total"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1661811689941624000",
+                              "timeUnixNano": "1661811689943245000"
+                           }
+                        ]
+                     },
+                     "unit": "By"
+                  },
+                  {
                      "description": "Number of transaction log operations for an index.",
                      "name": "elasticsearch.index.translog.operations",
                      "sum": {
@@ -5386,228 +5614,6 @@
                         ]
                      },
                      "unit": "By"
-                  },
-                  {
-                     "description": "The size in bytes of the cache for an index.",
-                     "name": "elasticsearch.index.cache.memory.usage",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "isMonotonic": false,
-                        "dataPoints": [
-                           {
-                              "asInt": "3",
-                              "attributes": [
-                                 {
-                                    "key": "cache_name",
-                                    "value": {
-                                       "stringValue": "fielddata"
-                                    }
-                                 },
-                                 {
-                                    "key": "aggregation",
-                                    "value": {
-                                       "stringValue": "primary_shards"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1661811689941624000",
-                              "timeUnixNano": "1661811689943245000"
-                           },
-                           {
-                              "asInt": "3",
-                              "attributes": [
-                                 {
-                                    "key": "cache_name",
-                                    "value": {
-                                       "stringValue": "fielddata"
-                                    }
-                                 },
-                                 {
-                                    "key": "aggregation",
-                                    "value": {
-                                       "stringValue": "total"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1661811689941624000",
-                              "timeUnixNano": "1661811689943245000"
-                           },
-                           {
-                              "asInt": "12",
-                              "attributes": [
-                                 {
-                                    "key": "cache_name",
-                                    "value": {
-                                       "stringValue": "query"
-                                    }
-                                 },
-                                 {
-                                    "key": "aggregation",
-                                    "value": {
-                                       "stringValue": "primary_shards"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1661811689941624000",
-                              "timeUnixNano": "1661811689943245000"
-                           },
-                           {
-                              "asInt": "12",
-                              "attributes": [
-                                 {
-                                    "key": "cache_name",
-                                    "value": {
-                                       "stringValue": "query"
-                                    }
-                                 },
-                                 {
-                                    "key": "aggregation",
-                                    "value": {
-                                       "stringValue": "total"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1661811689941624000",
-                              "timeUnixNano": "1661811689943245000"
-                           }
-                        ]
-                     },
-                     "unit": "By"
-                  },
-                  {
-                     "description": "The number of elements of the query cache for an index.",
-                     "name": "elasticsearch.index.cache.size",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "isMonotonic": false,
-                        "dataPoints": [
-                           {
-                              "asInt": "3",
-                              "attributes": [
-                                 {
-                                    "key": "aggregation",
-                                    "value": {
-                                       "stringValue": "primary_shards"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1661811689941624000",
-                              "timeUnixNano": "1661811689943245000"
-                           },
-                           {
-                              "asInt": "3",
-                              "attributes": [
-                                 {
-                                    "key": "aggregation",
-                                    "value": {
-                                       "stringValue": "total"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1661811689941624000",
-                              "timeUnixNano": "1661811689943245000"
-                           }
-                        ]
-                     },
-                     "unit": "1"
-                  },
-                  {
-                     "description": "The number of evictions from the cache for an index.",
-                     "name": "elasticsearch.index.cache.evictions",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "isMonotonic": true,
-                        "dataPoints": [
-                           {
-                              "asInt": "2",
-                              "attributes": [
-                                 {
-                                    "key": "cache_name",
-                                    "value": {
-                                       "stringValue": "query"
-                                    }
-                                 },
-                                 {
-                                    "key": "aggregation",
-                                    "value": {
-                                       "stringValue": "primary_shards"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1661811689941624000",
-                              "timeUnixNano": "1661811689943245000"
-                           },
-                           {
-                              "asInt": "2",
-                              "attributes": [
-                                 {
-                                    "key": "cache_name",
-                                    "value": {
-                                       "stringValue": "query"
-                                    }
-                                 },
-                                 {
-                                    "key": "aggregation",
-                                    "value": {
-                                       "stringValue": "total"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1661811689941624000",
-                              "timeUnixNano": "1661811689943245000"
-                           }
-                        ]
-                     },
-                     "unit": "{evictions}"
-                  },
-                  {
-                     "description": "The number of documents for an index.",
-                     "name": "elasticsearch.index.documents",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "isMonotonic": false,
-                        "dataPoints": [
-                           {
-                              "asInt": "40",
-                              "attributes": [
-                                 {
-                                    "key": "state",
-                                    "value": {
-                                       "stringValue": "active"
-                                    }
-                                 },
-                                 {
-                                    "key": "aggregation",
-                                    "value": {
-                                       "stringValue": "total"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1661811689941624000",
-                              "timeUnixNano": "1661811689943245000"
-                           },
-                           {
-                              "asInt": "40",
-                              "attributes": [
-                                 {
-                                    "key": "state",
-                                    "value": {
-                                       "stringValue": "active"
-                                    }
-                                 },
-                                 {
-                                    "key": "aggregation",
-                                    "value": {
-                                       "stringValue": "primary_shards"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1661811689941624000",
-                              "timeUnixNano": "1661811689943245000"
-                           }
-                        ]
-                     },
-                     "unit": "{documents}"
                   }
                ],
                "scope": {

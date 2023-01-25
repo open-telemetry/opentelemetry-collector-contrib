@@ -302,6 +302,9 @@ func getDelay(elapsed time.Duration, healthyProcessDuration time.Duration, crash
 
 // Shutdown stops the underlying Prometheus receiver.
 func (per *prometheusExecReceiver) Shutdown(ctx context.Context) error {
+	if per.shutdownCh == nil {
+		return nil
+	}
 	close(per.shutdownCh)
 	return nil
 }

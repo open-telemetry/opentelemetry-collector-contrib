@@ -65,7 +65,7 @@ func newBearerTokenAuth(cfg *Config, logger *zap.Logger) *BearerTokenAuth {
 	}
 	return &BearerTokenAuth{
 		scheme:      cfg.Scheme,
-		tokenString: cfg.BearerToken,
+		tokenString: string(cfg.BearerToken),
 		filename:    cfg.Filename,
 		logger:      logger,
 	}

@@ -263,18 +263,18 @@
                      "unit": "By"
                   },
                   {
-                     "description": "The number of times each type of prepared statement command has been issued.",
-                     "name": "mysql.prepared_statements",
+                     "description": "The number of transmitted bytes between server and clients.",
+                     "name": "mysql.client.network.io",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "165",
+                              "asInt": "8",
                               "attributes": [
                                  {
-                                    "key": "command",
+                                    "key": "kind",
                                     "value": {
-                                       "stringValue": "prepare"
+                                       "stringValue": "received"
                                     }
                                  }
                               ],
@@ -282,12 +282,36 @@
                               "timeUnixNano": "1644862687825772000"
                            },
                            {
-                              "asInt": "163",
+                              "asInt": "9",
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "sent"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "By"
+                  },
+                  {
+                     "description": "The number of times each type of command has been executed.",
+                     "name": "mysql.commands",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "50",
                               "attributes": [
                                  {
                                     "key": "command",
                                     "value": {
-                                       "stringValue": "close"
+                                       "stringValue": "delete"
                                     }
                                  }
                               ],
@@ -295,12 +319,12 @@
                               "timeUnixNano": "1644862687825772000"
                            },
                            {
-                              "asInt": "167",
+                              "asInt": "78",
                               "attributes": [
                                  {
                                     "key": "command",
                                     "value": {
-                                       "stringValue": "send_long_data"
+                                       "stringValue": "insert"
                                     }
                                  }
                               ],
@@ -308,12 +332,12 @@
                               "timeUnixNano": "1644862687825772000"
                            },
                            {
-                              "asInt": "166",
+                              "asInt": "106",
                               "attributes": [
                                  {
                                     "key": "command",
                                     "value": {
-                                       "stringValue": "reset"
+                                       "stringValue": "select"
                                     }
                                  }
                               ],
@@ -321,25 +345,12 @@
                               "timeUnixNano": "1644862687825772000"
                            },
                            {
-                              "asInt": "162",
+                              "asInt": "173",
                               "attributes": [
                                  {
                                     "key": "command",
                                     "value": {
-                                       "stringValue": "execute"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1644862687825728000",
-                              "timeUnixNano": "1644862687825772000"
-                           },
-                           {
-                              "asInt": "164",
-                              "attributes": [
-                                 {
-                                    "key": "command",
-                                    "value": {
-                                       "stringValue": "fetch"
+                                       "stringValue": "update"
                                     }
                                  }
                               ],
@@ -352,86 +363,13 @@
                      "unit": "1"
                   },
                   {
-                     "description": "[DEPRECATED] The number of times each type of command has been executed.",
-                     "name": "mysql.commands",
+                     "description": "The number of connection attempts (successful or not) to the MySQL server.",
+                     "name": "mysql.connection.count",
                      "sum": {
-                        "aggregationTemporality": 2,
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "165",
-                              "attributes": [
-                                 {
-                                    "key": "command",
-                                    "value": {
-                                       "stringValue": "prepare"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1644862687825728000",
-                              "timeUnixNano": "1644862687825772000"
-                           },
-                           {
-                              "asInt": "163",
-                              "attributes": [
-                                 {
-                                    "key": "command",
-                                    "value": {
-                                       "stringValue": "close"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1644862687825728000",
-                              "timeUnixNano": "1644862687825772000"
-                           },
-                           {
-                              "asInt": "167",
-                              "attributes": [
-                                 {
-                                    "key": "command",
-                                    "value": {
-                                       "stringValue": "send_long_data"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1644862687825728000",
-                              "timeUnixNano": "1644862687825772000"
-                           },
-                           {
-                              "asInt": "166",
-                              "attributes": [
-                                 {
-                                    "key": "command",
-                                    "value": {
-                                       "stringValue": "reset"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1644862687825728000",
-                              "timeUnixNano": "1644862687825772000"
-                           },
-                           {
-                              "asInt": "162",
-                              "attributes": [
-                                 {
-                                    "key": "command",
-                                    "value": {
-                                       "stringValue": "execute"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1644862687825728000",
-                              "timeUnixNano": "1644862687825772000"
-                           },
-                           {
-                              "asInt": "164",
-                              "attributes": [
-                                 {
-                                    "key": "command",
-                                    "value": {
-                                       "stringValue": "fetch"
-                                    }
-                                 }
-                              ],
+                              "asInt": "188",
                               "startTimeUnixNano": "1644862687825728000",
                               "timeUnixNano": "1644862687825772000"
                            }
@@ -812,640 +750,6 @@
                      "unit": "1"
                   },
                   {
-                     "description": "The number of MySQL locks.",
-                     "name": "mysql.locks",
-                     "sum": {
-                        "aggregationTemporality": 2,
-                        "dataPoints": [
-                           {
-                              "asInt": "441",
-                              "attributes": [
-                                 {
-                                    "key": "kind",
-                                    "value": {
-                                       "stringValue": "waited"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1644862687825728000",
-                              "timeUnixNano": "1644862687825772000"
-                           },
-                           {
-                              "asInt": "440",
-                              "attributes": [
-                                 {
-                                    "key": "kind",
-                                    "value": {
-                                       "stringValue": "immediate"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1644862687825728000",
-                              "timeUnixNano": "1644862687825772000"
-                           }
-                        ],
-                        "isMonotonic": true
-                     },
-                     "unit": "1"
-                  },
-                  {
-                     "description": "The number of InnoDB log operations.",
-                     "name": "mysql.log_operations",
-                     "sum": {
-                        "aggregationTemporality": 2,
-                        "dataPoints": [
-                           {
-                              "asInt": "255",
-                              "attributes": [
-                                 {
-                                    "key": "operation",
-                                    "value": {
-                                       "stringValue": "writes"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1644862687825728000",
-                              "timeUnixNano": "1644862687825772000"
-                           },
-                           {
-                              "asInt": "254",
-                              "attributes": [
-                                 {
-                                    "key": "operation",
-                                    "value": {
-                                       "stringValue": "write_requests"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1644862687825728000",
-                              "timeUnixNano": "1644862687825772000"
-                           },
-                           {
-                              "asInt": "253",
-                              "attributes": [
-                                 {
-                                    "key": "operation",
-                                    "value": {
-                                       "stringValue": "waits"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1644862687825728000",
-                              "timeUnixNano": "1644862687825772000"
-                           }
-                        ],
-                        "isMonotonic": true
-                     },
-                     "unit": "1"
-                  },
-                  {
-                     "description": "The number of InnoDB operations.",
-                     "name": "mysql.operations",
-                     "sum": {
-                        "aggregationTemporality": 2,
-                        "dataPoints": [
-                           {
-                              "asInt": "248",
-                              "attributes": [
-                                 {
-                                    "key": "operation",
-                                    "value": {
-                                       "stringValue": "reads"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1644862687825728000",
-                              "timeUnixNano": "1644862687825772000"
-                           },
-                           {
-                              "asInt": "243",
-                              "attributes": [
-                                 {
-                                    "key": "operation",
-                                    "value": {
-                                       "stringValue": "fsyncs"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1644862687825728000",
-                              "timeUnixNano": "1644862687825772000"
-                           },
-                           {
-                              "asInt": "249",
-                              "attributes": [
-                                 {
-                                    "key": "operation",
-                                    "value": {
-                                       "stringValue": "writes"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1644862687825728000",
-                              "timeUnixNano": "1644862687825772000"
-                           }
-                        ],
-                        "isMonotonic": true
-                     },
-                     "unit": "1"
-                  },
-                  {
-                     "description": "The number of InnoDB page operations.",
-                     "name": "mysql.page_operations",
-                     "sum": {
-                        "aggregationTemporality": 2,
-                        "dataPoints": [
-                           {
-                              "asInt": "263",
-                              "attributes": [
-                                 {
-                                    "key": "operation",
-                                    "value": {
-                                       "stringValue": "written"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1644862687825728000",
-                              "timeUnixNano": "1644862687825772000"
-                           },
-                           {
-                              "asInt": "261",
-                              "attributes": [
-                                 {
-                                    "key": "operation",
-                                    "value": {
-                                       "stringValue": "created"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1644862687825728000",
-                              "timeUnixNano": "1644862687825772000"
-                           },
-                           {
-                              "asInt": "262",
-                              "attributes": [
-                                 {
-                                    "key": "operation",
-                                    "value": {
-                                       "stringValue": "read"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1644862687825728000",
-                              "timeUnixNano": "1644862687825772000"
-                           }
-                        ],
-                        "isMonotonic": true
-                     },
-                     "unit": "1"
-                  },
-                  {
-                     "description": "The number of InnoDB row locks.",
-                     "name": "mysql.row_locks",
-                     "sum": {
-                        "aggregationTemporality": 2,
-                        "dataPoints": [
-                           {
-                              "asInt": "266",
-                              "attributes": [
-                                 {
-                                    "key": "kind",
-                                    "value": {
-                                       "stringValue": "time"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1644862687825728000",
-                              "timeUnixNano": "1644862687825772000"
-                           },
-                           {
-                              "asInt": "269",
-                              "attributes": [
-                                 {
-                                    "key": "kind",
-                                    "value": {
-                                       "stringValue": "waits"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1644862687825728000",
-                              "timeUnixNano": "1644862687825772000"
-                           }
-                        ],
-                        "isMonotonic": true
-                     },
-                     "unit": "1"
-                  },
-                  {
-                     "description": "The number of InnoDB row operations.",
-                     "name": "mysql.row_operations",
-                     "sum": {
-                        "aggregationTemporality": 2,
-                        "dataPoints": [
-                           {
-                              "asInt": "270",
-                              "attributes": [
-                                 {
-                                    "key": "operation",
-                                    "value": {
-                                       "stringValue": "deleted"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1644862687825728000",
-                              "timeUnixNano": "1644862687825772000"
-                           },
-                           {
-                              "asInt": "273",
-                              "attributes": [
-                                 {
-                                    "key": "operation",
-                                    "value": {
-                                       "stringValue": "updated"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1644862687825728000",
-                              "timeUnixNano": "1644862687825772000"
-                           },
-                           {
-                              "asInt": "272",
-                              "attributes": [
-                                 {
-                                    "key": "operation",
-                                    "value": {
-                                       "stringValue": "read"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1644862687825728000",
-                              "timeUnixNano": "1644862687825772000"
-                           },
-                           {
-                              "asInt": "271",
-                              "attributes": [
-                                 {
-                                    "key": "operation",
-                                    "value": {
-                                       "stringValue": "inserted"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1644862687825728000",
-                              "timeUnixNano": "1644862687825772000"
-                           }
-                        ],
-                        "isMonotonic": true
-                     },
-                     "unit": "1"
-                  },
-                  {
-                     "description": "The number of MySQL sorts.",
-                     "name": "mysql.sorts",
-                     "sum": {
-                        "aggregationTemporality": 2,
-                        "dataPoints": [
-                           {
-                              "asInt": "416",
-                              "attributes": [
-                                 {
-                                    "key": "kind",
-                                    "value": {
-                                       "stringValue": "merge_passes"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1644862687825728000",
-                              "timeUnixNano": "1644862687825772000"
-                           },
-                           {
-                              "asInt": "417",
-                              "attributes": [
-                                 {
-                                    "key": "kind",
-                                    "value": {
-                                       "stringValue": "range"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1644862687825728000",
-                              "timeUnixNano": "1644862687825772000"
-                           },
-                           {
-                              "asInt": "418",
-                              "attributes": [
-                                 {
-                                    "key": "kind",
-                                    "value": {
-                                       "stringValue": "rows"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1644862687825728000",
-                              "timeUnixNano": "1644862687825772000"
-                           },
-                           {
-                              "asInt": "419",
-                              "attributes": [
-                                 {
-                                    "key": "kind",
-                                    "value": {
-                                       "stringValue": "scan"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1644862687825728000",
-                              "timeUnixNano": "1644862687825772000"
-                           }
-                        ],
-                        "isMonotonic": true
-                     },
-                     "unit": "1"
-                  },
-                  {
-                     "description": "The state of MySQL threads.",
-                     "name": "mysql.threads",
-                     "sum": {
-                        "aggregationTemporality": 2,
-                        "dataPoints": [
-                           {
-                              "asInt": "450",
-                              "attributes": [
-                                 {
-                                    "key": "kind",
-                                    "value": {
-                                       "stringValue": "created"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1644862687825728000",
-                              "timeUnixNano": "1644862687825772000"
-                           },
-                           {
-                              "asInt": "451",
-                              "attributes": [
-                                 {
-                                    "key": "kind",
-                                    "value": {
-                                       "stringValue": "running"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1644862687825728000",
-                              "timeUnixNano": "1644862687825772000"
-                           },
-                           {
-                              "asInt": "449",
-                              "attributes": [
-                                 {
-                                    "key": "kind",
-                                    "value": {
-                                       "stringValue": "connected"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1644862687825728000",
-                              "timeUnixNano": "1644862687825772000"
-                           },
-                           {
-                              "asInt": "448",
-                              "attributes": [
-                                 {
-                                    "key": "kind",
-                                    "value": {
-                                       "stringValue": "cached"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1644862687825728000",
-                              "timeUnixNano": "1644862687825772000"
-                           }
-                        ]
-                     },
-                     "unit": "1"
-                  },
-                  {
-                     "description": "The total count of I/O wait events for a table.",
-                     "name": "mysql.table.io.wait.count",
-                     "sum": {
-                        "aggregationTemporality": 2,
-                        "isMonotonic": true,
-                        "dataPoints": [
-                           {
-                              "asInt": "1",
-                              "attributes": [
-                                 {
-                                    "key": "operation",
-                                    "value": {
-                                       "stringValue": "delete"
-                                    }
-                                 },
-                                 {
-                                    "key": "table",
-                                    "value": {
-                                       "stringValue": "a_table"
-                                    }
-                                 },
-                                 {
-                                    "key": "schema",
-                                    "value": {
-                                       "stringValue": "a_schema"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1644862687825728000",
-                              "timeUnixNano": "1644862687825772000"
-                           },
-                           {
-                              "asInt": "2",
-                              "attributes": [
-                                 {
-                                    "key": "operation",
-                                    "value": {
-                                       "stringValue": "fetch"
-                                    }
-                                 },
-                                 {
-                                    "key": "table",
-                                    "value": {
-                                       "stringValue": "a_table"
-                                    }
-                                 },
-                                 {
-                                    "key": "schema",
-                                    "value": {
-                                       "stringValue": "a_schema"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1644862687825728000",
-                              "timeUnixNano": "1644862687825772000"
-                           },
-                           {
-                              "asInt": "3",
-                              "attributes": [
-                                 {
-                                    "key": "operation",
-                                    "value": {
-                                       "stringValue": "insert"
-                                    }
-                                 },
-                                 {
-                                    "key": "table",
-                                    "value": {
-                                       "stringValue": "a_table"
-                                    }
-                                 },
-                                 {
-                                    "key": "schema",
-                                    "value": {
-                                       "stringValue": "a_schema"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1644862687825728000",
-                              "timeUnixNano": "1644862687825772000"
-                           },
-                           {
-                              "asInt": "4",
-                              "attributes": [
-                                 {
-                                    "key": "operation",
-                                    "value": {
-                                       "stringValue": "update"
-                                    }
-                                 },
-                                 {
-                                    "key": "table",
-                                    "value": {
-                                       "stringValue": "a_table"
-                                    }
-                                 },
-                                 {
-                                    "key": "schema",
-                                    "value": {
-                                       "stringValue": "a_schema"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1644862687825728000",
-                              "timeUnixNano": "1644862687825772000"
-                           }
-                        ]
-                     },
-                     "unit": "1"
-                  },
-                  {
-                     "description": "The total time of I/O wait events for a table.",
-                     "name": "mysql.table.io.wait.time",
-                     "sum": {
-                        "aggregationTemporality": 2,
-                        "isMonotonic": true,
-                        "dataPoints": [
-                           {
-                              "asInt": "5",
-                              "attributes": [
-                                 {
-                                    "key": "operation",
-                                    "value": {
-                                       "stringValue": "delete"
-                                    }
-                                 },
-                                 {
-                                    "key": "table",
-                                    "value": {
-                                       "stringValue": "a_table"
-                                    }
-                                 },
-                                 {
-                                    "key": "schema",
-                                    "value": {
-                                       "stringValue": "a_schema"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1644862687825728000",
-                              "timeUnixNano": "1644862687825772000"
-                           },
-                           {
-                              "asInt": "6",
-                              "attributes": [
-                                 {
-                                    "key": "operation",
-                                    "value": {
-                                       "stringValue": "fetch"
-                                    }
-                                 },
-                                 {
-                                    "key": "table",
-                                    "value": {
-                                       "stringValue": "a_table"
-                                    }
-                                 },
-                                 {
-                                    "key": "schema",
-                                    "value": {
-                                       "stringValue": "a_schema"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1644862687825728000",
-                              "timeUnixNano": "1644862687825772000"
-                           },
-                           {
-                              "asInt": "7",
-                              "attributes": [
-                                 {
-                                    "key": "operation",
-                                    "value": {
-                                       "stringValue": "insert"
-                                    }
-                                 },
-                                 {
-                                    "key": "table",
-                                    "value": {
-                                       "stringValue": "a_table"
-                                    }
-                                 },
-                                 {
-                                    "key": "schema",
-                                    "value": {
-                                       "stringValue": "a_schema"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1644862687825728000",
-                              "timeUnixNano": "1644862687825772000"
-                           },
-                           {
-                              "asInt": "8",
-                              "attributes": [
-                                 {
-                                    "key": "operation",
-                                    "value": {
-                                       "stringValue": "update"
-                                    }
-                                 },
-                                 {
-                                    "key": "table",
-                                    "value": {
-                                       "stringValue": "a_table"
-                                    }
-                                 },
-                                 {
-                                    "key": "schema",
-                                    "value": {
-                                       "stringValue": "a_schema"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1644862687825728000",
-                              "timeUnixNano": "1644862687825772000"
-                           }
-                        ]
-                     },
-                     "unit": "ns"
-                  },
-                  {
                      "description": "The total count of I/O wait events for an index.",
                      "name": "mysql.index.io.wait.count",
                      "sum": {
@@ -1716,13 +1020,84 @@
                      "unit": "ns"
                   },
                   {
-                     "description": "The number of connection attempts (successful or not) to the MySQL server.",
-                     "name": "mysql.connection.count",
+                     "description": "The number of joins that perform table scans.",
+                     "name": "mysql.joins",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "isMonotonic": true,
                         "dataPoints": [
                            {
-                              "asInt": "188",
+                              "asInt": "408",
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "full"
+                                    }
+                                 }                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "409",
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "full_range"
+                                    }
+                                 }                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "410",
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "range"
+                                    }
+                                 }                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "411",
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "range_check"
+                                    }
+                                 }                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "412",
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "scan"
+                                    }
+                                 }                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           }
+                        ]
+                     },
+                     "unit": "1"
+                  },
+                  {
+                     "description": "The number of attempts to connect to locked user accounts.",
+                     "name": "mysql.locked_connects",
+                     "sum": {
+                        "aggregationTemporality": 2,
+                        "dataPoints": [
+                           {
+                              "asInt": "293",
                               "startTimeUnixNano": "1644862687825728000",
                               "timeUnixNano": "1644862687825772000"
                            }
@@ -1732,18 +1107,18 @@
                      "unit": "1"
                   },
                   {
-                     "description": "The number of transmitted bytes between server and clients.",
-                     "name": "mysql.client.network.io",
+                     "description": "The number of MySQL locks.",
+                     "name": "mysql.locks",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
-                              "asInt": "8",
+                              "asInt": "441",
                               "attributes": [
                                  {
                                     "key": "kind",
                                     "value": {
-                                       "stringValue": "received"
+                                       "stringValue": "waited"
                                     }
                                  }
                               ],
@@ -1751,12 +1126,12 @@
                               "timeUnixNano": "1644862687825772000"
                            },
                            {
-                              "asInt": "9",
+                              "asInt": "440",
                               "attributes": [
                                  {
                                     "key": "kind",
                                     "value": {
-                                       "stringValue": "sent"
+                                       "stringValue": "immediate"
                                     }
                                  }
                               ],
@@ -1766,7 +1141,625 @@
                         ],
                         "isMonotonic": true
                      },
-                     "unit": "By"
+                     "unit": "1"
+                  },
+                  {
+                     "description": "The number of InnoDB log operations.",
+                     "name": "mysql.log_operations",
+                     "sum": {
+                        "aggregationTemporality": 2,
+                        "dataPoints": [
+                           {
+                              "asInt": "255",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "writes"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "254",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "write_requests"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "253",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "waits"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "1"
+                  },
+                  {
+                     "description": "The number of mysqlx connections.",
+                     "name": "mysql.mysqlx_connections",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "isMonotonic": true,
+                        "dataPoints": [
+                           {
+                              "asInt": "307",
+                              "attributes": [
+                                 {
+                                    "key": "status",
+                                    "value": {
+                                       "stringValue": "accepted"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "308",
+                              "attributes": [
+                                 {
+                                    "key": "status",
+                                    "value": {
+                                       "stringValue": "closed"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "309",
+                              "attributes": [
+                                 {
+                                    "key": "status",
+                                    "value": {
+                                       "stringValue": "rejected"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           }
+                        ]
+                     },
+                     "unit": "1"
+                  },
+                  {
+                     "description": "The number of worker threads available.",
+                     "name": "mysql.mysqlx_worker_threads",
+                     "sum": {
+                        "aggregationTemporality": 2,
+                        "dataPoints": [
+                           {
+                              "asInt": "363",
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "available"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "364",
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "active"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           }
+                        ],
+                        "isMonotonic": false
+                     },
+                     "unit": "1"
+                  },
+                  {
+                     "description": "The number of opened resources.",
+                     "name": "mysql.opened_resources",
+                     "sum": {
+                        "aggregationTemporality": 2,
+                        "dataPoints": [
+                           {
+                              "asInt": "371",
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "file"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "372",
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "table_definition"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "373",
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "table"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "1"
+                  },
+                  {
+                     "description": "The number of InnoDB operations.",
+                     "name": "mysql.operations",
+                     "sum": {
+                        "aggregationTemporality": 2,
+                        "dataPoints": [
+                           {
+                              "asInt": "248",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "reads"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "243",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "fsyncs"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "249",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "writes"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "1"
+                  },
+                  {
+                     "description": "The number of InnoDB page operations.",
+                     "name": "mysql.page_operations",
+                     "sum": {
+                        "aggregationTemporality": 2,
+                        "dataPoints": [
+                           {
+                              "asInt": "263",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "written"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "261",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "created"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "262",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "read"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "1"
+                  },
+                  {
+                     "description": "The number of times each type of prepared statement command has been issued.",
+                     "name": "mysql.prepared_statements",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "165",
+                              "attributes": [
+                                 {
+                                    "key": "command",
+                                    "value": {
+                                       "stringValue": "prepare"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "163",
+                              "attributes": [
+                                 {
+                                    "key": "command",
+                                    "value": {
+                                       "stringValue": "close"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "167",
+                              "attributes": [
+                                 {
+                                    "key": "command",
+                                    "value": {
+                                       "stringValue": "send_long_data"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "166",
+                              "attributes": [
+                                 {
+                                    "key": "command",
+                                    "value": {
+                                       "stringValue": "reset"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "162",
+                              "attributes": [
+                                 {
+                                    "key": "command",
+                                    "value": {
+                                       "stringValue": "execute"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "164",
+                              "attributes": [
+                                 {
+                                    "key": "command",
+                                    "value": {
+                                       "stringValue": "fetch"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "1"
+                  },
+                  {
+                     "description": "The number of statements executed by the server. This includes only statements sent to the server by clients.",
+                     "name": "mysql.query.client.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "407",
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "1"
+                  },
+                  {
+                     "description": "The number of statements executed by the server.",
+                     "name": "mysql.query.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "406",
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "1"
+                  },
+                  {
+                     "description": "The number of slow queries.",
+                     "name": "mysql.query.slow.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "415",
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "1"                  },
+                  {
+                     "description": "The number of seconds that the replica must lag the source.",
+                     "name": "mysql.replica.sql_delay",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "isMonotonic": false,
+                        "dataPoints": [
+                           {
+                              "asInt": "8",
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           }
+                        ]
+                     },
+                     "unit": "s"
+                  },
+                  {
+                     "description": "This field is an indication of how “late” the replica is.",
+                     "name": "mysql.replica.time_behind_source",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "isMonotonic": false,
+                        "dataPoints": [
+                           {
+                              "asInt": "5",
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           }
+                        ]
+                     },
+                     "unit": "s"
+                  },
+                  {
+                     "description": "The number of InnoDB row locks.",
+                     "name": "mysql.row_locks",
+                     "sum": {
+                        "aggregationTemporality": 2,
+                        "dataPoints": [
+                           {
+                              "asInt": "266",
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "time"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "269",
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "waits"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "1"
+                  },
+                  {
+                     "description": "The number of InnoDB row operations.",
+                     "name": "mysql.row_operations",
+                     "sum": {
+                        "aggregationTemporality": 2,
+                        "dataPoints": [
+                           {
+                              "asInt": "270",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "deleted"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "273",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "updated"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "272",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "read"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "271",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "inserted"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "1"
+                  },
+                  {
+                     "description": "The number of MySQL sorts.",
+                     "name": "mysql.sorts",
+                     "sum": {
+                        "aggregationTemporality": 2,
+                        "dataPoints": [
+                           {
+                              "asInt": "416",
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "merge_passes"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "417",
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "range"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "418",
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "rows"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "419",
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "scan"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "1"
                   },
                   {
                      "description": "Summary of current and recent statement events.",
@@ -2124,18 +2117,31 @@
                      "unit": "ns"
                   },
                   {
-                     "description": "The number of worker threads available.",
-                     "name": "mysql.mysqlx_worker_threads",
+                     "description": "The total count of I/O wait events for a table.",
+                     "name": "mysql.table.io.wait.count",
                      "sum": {
                         "aggregationTemporality": 2,
+                        "isMonotonic": true,
                         "dataPoints": [
                            {
-                              "asInt": "363",
+                              "asInt": "1",
                               "attributes": [
                                  {
-                                    "key": "kind",
+                                    "key": "operation",
                                     "value": {
-                                       "stringValue": "available"
+                                       "stringValue": "delete"
+                                    }
+                                 },
+                                 {
+                                    "key": "table",
+                                    "value": {
+                                       "stringValue": "a_table"
+                                    }
+                                 },
+                                 {
+                                    "key": "schema",
+                                    "value": {
+                                       "stringValue": "a_schema"
                                     }
                                  }
                               ],
@@ -2143,36 +2149,110 @@
                               "timeUnixNano": "1644862687825772000"
                            },
                            {
-                              "asInt": "364",
+                              "asInt": "2",
                               "attributes": [
                                  {
-                                    "key": "kind",
+                                    "key": "operation",
                                     "value": {
-                                       "stringValue": "active"
+                                       "stringValue": "fetch"
+                                    }
+                                 },
+                                 {
+                                    "key": "table",
+                                    "value": {
+                                       "stringValue": "a_table"
+                                    }
+                                 },
+                                 {
+                                    "key": "schema",
+                                    "value": {
+                                       "stringValue": "a_schema"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "3",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "insert"
+                                    }
+                                 },
+                                 {
+                                    "key": "table",
+                                    "value": {
+                                       "stringValue": "a_table"
+                                    }
+                                 },
+                                 {
+                                    "key": "schema",
+                                    "value": {
+                                       "stringValue": "a_schema"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "4",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "update"
+                                    }
+                                 },
+                                 {
+                                    "key": "table",
+                                    "value": {
+                                       "stringValue": "a_table"
+                                    }
+                                 },
+                                 {
+                                    "key": "schema",
+                                    "value": {
+                                       "stringValue": "a_schema"
                                     }
                                  }
                               ],
                               "startTimeUnixNano": "1644862687825728000",
                               "timeUnixNano": "1644862687825772000"
                            }
-                        ],
-                        "isMonotonic": false
+                        ]
                      },
                      "unit": "1"
                   },
                   {
-                     "description": "The number of opened resources.",
-                     "name": "mysql.opened_resources",
+                     "description": "The total time of I/O wait events for a table.",
+                     "name": "mysql.table.io.wait.time",
                      "sum": {
                         "aggregationTemporality": 2,
+                        "isMonotonic": true,
                         "dataPoints": [
                            {
-                              "asInt": "371",
+                              "asInt": "5",
                               "attributes": [
                                  {
-                                    "key": "kind",
+                                    "key": "operation",
                                     "value": {
-                                       "stringValue": "file"
+                                       "stringValue": "delete"
+                                    }
+                                 },
+                                 {
+                                    "key": "table",
+                                    "value": {
+                                       "stringValue": "a_table"
+                                    }
+                                 },
+                                 {
+                                    "key": "schema",
+                                    "value": {
+                                       "stringValue": "a_schema"
                                     }
                                  }
                               ],
@@ -2180,12 +2260,24 @@
                               "timeUnixNano": "1644862687825772000"
                            },
                            {
-                              "asInt": "372",
+                              "asInt": "6",
                               "attributes": [
                                  {
-                                    "key": "kind",
+                                    "key": "operation",
                                     "value": {
-                                       "stringValue": "table_definition"
+                                       "stringValue": "fetch"
+                                    }
+                                 },
+                                 {
+                                    "key": "table",
+                                    "value": {
+                                       "stringValue": "a_table"
+                                    }
+                                 },
+                                 {
+                                    "key": "schema",
+                                    "value": {
+                                       "stringValue": "a_schema"
                                     }
                                  }
                               ],
@@ -2193,22 +2285,58 @@
                               "timeUnixNano": "1644862687825772000"
                            },
                            {
-                              "asInt": "373",
+                              "asInt": "7",
                               "attributes": [
                                  {
-                                    "key": "kind",
+                                    "key": "operation",
                                     "value": {
-                                       "stringValue": "table"
+                                       "stringValue": "insert"
+                                    }
+                                 },
+                                 {
+                                    "key": "table",
+                                    "value": {
+                                       "stringValue": "a_table"
+                                    }
+                                 },
+                                 {
+                                    "key": "schema",
+                                    "value": {
+                                       "stringValue": "a_schema"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "8",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "update"
+                                    }
+                                 },
+                                 {
+                                    "key": "table",
+                                    "value": {
+                                       "stringValue": "a_table"
+                                    }
+                                 },
+                                 {
+                                    "key": "schema",
+                                    "value": {
+                                       "stringValue": "a_schema"
                                     }
                                  }
                               ],
                               "startTimeUnixNano": "1644862687825728000",
                               "timeUnixNano": "1644862687825772000"
                            }
-                        ],
-                        "isMonotonic": true
+                        ]
                      },
-                     "unit": "1"
+                     "unit": "ns"
                   },
                   {
                      "description": "The total table lock wait read events.",
@@ -2751,13 +2879,47 @@
                      "unit": "ns"
                   },
                   {
-                     "description": "The number of attempts to connect to locked user accounts.",
-                     "name": "mysql.locked_connects",
+                     "description": "The number of hits, misses or overflows for open tables cache lookups.",
+                     "name": "mysql.table_open_cache",
                      "sum": {
-                        "aggregationTemporality": 2,
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "293",
+                              "asInt": "442",
+                              "attributes": [
+                                 {
+                                    "key": "status",
+                                    "value": {
+                                       "stringValue": "hit"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "443",
+                              "attributes": [
+                                 {
+                                    "key": "status",
+                                    "value": {
+                                       "stringValue": "miss"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1644862687825728000",
+                              "timeUnixNano": "1644862687825772000"
+                           },
+                           {
+                              "asInt": "444",
+                              "attributes": [
+                                 {
+                                    "key": "status",
+                                    "value": {
+                                       "stringValue": "overflow"
+                                    }
+                                 }
+                              ],
                               "startTimeUnixNano": "1644862687825728000",
                               "timeUnixNano": "1644862687825772000"
                            }
@@ -2767,19 +2929,18 @@
                      "unit": "1"
                   },
                   {
-                     "description": "The number of mysqlx connections.",
-                     "name": "mysql.mysqlx_connections",
+                     "description": "The state of MySQL threads.",
+                     "name": "mysql.threads",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "isMonotonic": true,
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
-                              "asInt": "307",
+                              "asInt": "450",
                               "attributes": [
                                  {
-                                    "key": "status",
+                                    "key": "kind",
                                     "value": {
-                                       "stringValue": "accepted"
+                                       "stringValue": "created"
                                     }
                                  }
                               ],
@@ -2787,12 +2948,12 @@
                               "timeUnixNano": "1644862687825772000"
                            },
                            {
-                              "asInt": "308",
+                              "asInt": "451",
                               "attributes": [
                                  {
-                                    "key": "status",
+                                    "key": "kind",
                                     "value": {
-                                       "stringValue": "closed"
+                                       "stringValue": "running"
                                     }
                                  }
                               ],
@@ -2800,86 +2961,28 @@
                               "timeUnixNano": "1644862687825772000"
                            },
                            {
-                              "asInt": "309",
+                              "asInt": "449",
                               "attributes": [
                                  {
-                                    "key": "status",
+                                    "key": "kind",
                                     "value": {
-                                       "stringValue": "rejected"
+                                       "stringValue": "connected"
                                     }
                                  }
                               ],
                               "startTimeUnixNano": "1644862687825728000",
                               "timeUnixNano": "1644862687825772000"
-                           }
-                        ]
-                     },
-                     "unit": "1"
-                  },
-                  {
-                     "description": "The number of joins that perform table scans.",
-                     "name": "mysql.joins",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "isMonotonic": true,
-                        "dataPoints": [
-                           {
-                              "asInt": "408",
-                              "attributes": [
-                                 {
-                                    "key": "kind",
-                                    "value": {
-                                       "stringValue": "full"
-                                    }
-                                 }                              ],
-                              "startTimeUnixNano": "1644862687825728000",
-                              "timeUnixNano": "1644862687825772000"
                            },
                            {
-                              "asInt": "409",
+                              "asInt": "448",
                               "attributes": [
                                  {
                                     "key": "kind",
                                     "value": {
-                                       "stringValue": "full_range"
+                                       "stringValue": "cached"
                                     }
-                                 }                              ],
-                              "startTimeUnixNano": "1644862687825728000",
-                              "timeUnixNano": "1644862687825772000"
-                           },
-                           {
-                              "asInt": "410",
-                              "attributes": [
-                                 {
-                                    "key": "kind",
-                                    "value": {
-                                       "stringValue": "range"
-                                    }
-                                 }                              ],
-                              "startTimeUnixNano": "1644862687825728000",
-                              "timeUnixNano": "1644862687825772000"
-                           },
-                           {
-                              "asInt": "411",
-                              "attributes": [
-                                 {
-                                    "key": "kind",
-                                    "value": {
-                                       "stringValue": "range_check"
-                                    }
-                                 }                              ],
-                              "startTimeUnixNano": "1644862687825728000",
-                              "timeUnixNano": "1644862687825772000"
-                           },
-                           {
-                              "asInt": "412",
-                              "attributes": [
-                                 {
-                                    "key": "kind",
-                                    "value": {
-                                       "stringValue": "scan"
-                                    }
-                                 }                              ],
+                                 }
+                              ],
                               "startTimeUnixNano": "1644862687825728000",
                               "timeUnixNano": "1644862687825772000"
                            }
@@ -2936,135 +3039,6 @@
                         ]
                      },
                      "unit": "1"
-                  },
-                  {
-                     "description": "The number of hits, misses or overflows for open tables cache lookups.",
-                     "name": "mysql.table_open_cache",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "dataPoints": [
-                           {
-                              "asInt": "442",
-                              "attributes": [
-                                 {
-                                    "key": "status",
-                                    "value": {
-                                       "stringValue": "hit"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1644862687825728000",
-                              "timeUnixNano": "1644862687825772000"
-                           },
-                           {
-                              "asInt": "443",
-                              "attributes": [
-                                 {
-                                    "key": "status",
-                                    "value": {
-                                       "stringValue": "miss"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1644862687825728000",
-                              "timeUnixNano": "1644862687825772000"
-                           },
-                           {
-                              "asInt": "444",
-                              "attributes": [
-                                 {
-                                    "key": "status",
-                                    "value": {
-                                       "stringValue": "overflow"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1644862687825728000",
-                              "timeUnixNano": "1644862687825772000"
-                           }
-                        ],
-                        "isMonotonic": true
-                     },
-                     "unit": "1"
-                  },
-                  {
-                     "description": "The number of statements executed by the server. This includes only statements sent to the server by clients.",
-                     "name": "mysql.query.client.count",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "dataPoints": [
-                           {
-                              "asInt": "407",
-                              "startTimeUnixNano": "1644862687825728000",
-                              "timeUnixNano": "1644862687825772000"
-                           }
-                        ],
-                        "isMonotonic": true
-                     },
-                     "unit": "1"
-                  },
-                  {
-                     "description": "The number of statements executed by the server.",
-                     "name": "mysql.query.count",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "dataPoints": [
-                           {
-                              "asInt": "406",
-                              "startTimeUnixNano": "1644862687825728000",
-                              "timeUnixNano": "1644862687825772000"
-                           }
-                        ],
-                        "isMonotonic": true
-                     },
-                     "unit": "1"
-                  },
-                  {
-                     "description": "The number of slow queries.",
-                     "name": "mysql.query.slow.count",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "dataPoints": [
-                           {
-                              "asInt": "415",
-                              "startTimeUnixNano": "1644862687825728000",
-                              "timeUnixNano": "1644862687825772000"
-                           }
-                        ],
-                        "isMonotonic": true
-                     },
-                     "unit": "1"                  },
-                  {
-                     "description": "This field is an indication of how “late” the replica is.",
-                     "name": "mysql.replica.time_behind_source",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "isMonotonic": false,
-                        "dataPoints": [
-                           {
-                              "asInt": "5",
-                              "startTimeUnixNano": "1644862687825728000",
-                              "timeUnixNano": "1644862687825772000"
-                           }
-                        ]
-                     },
-                     "unit": "s"
-                  },
-                  {
-                     "description": "The number of seconds that the replica must lag the source.",
-                     "name": "mysql.replica.sql_delay",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "isMonotonic": false,
-                        "dataPoints": [
-                           {
-                              "asInt": "8",
-                              "startTimeUnixNano": "1644862687825728000",
-                              "timeUnixNano": "1644862687825772000"
-                           }
-                        ]
-                     },
-                     "unit": "s"
                   }
                ]
             }

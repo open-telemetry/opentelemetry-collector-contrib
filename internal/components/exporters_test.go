@@ -49,7 +49,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5cloudexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/humioexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter"
@@ -352,14 +351,6 @@ func TestDefaultExporters(t *testing.T) {
 			exporter: "googlecloudpubsub",
 		},
 		{
-			exporter: "humio",
-			getConfigFn: func() component.Config {
-				cfg := expFactories["humio"].CreateDefaultConfig().(*humioexporter.Config)
-				cfg.Endpoint = "http://" + endpoint
-				return cfg
-			},
-		},
-		{
 			exporter: "influxdb",
 			getConfigFn: func() component.Config {
 				cfg := expFactories["influxdb"].CreateDefaultConfig().(*influxdbexporter.Config)
@@ -457,12 +448,11 @@ func TestDefaultExporters(t *testing.T) {
 			require.True(t, ok)
 			assert.Equal(t, tt.exporter, factory.Type())
 
-			if tt.skipLifecycle {
-				t.Skip("Skipping lifecycle test", tt.exporter)
-				return
-			}
+			verifyExporterShutdown(t, factory, tt.getConfigFn)
 
-			verifyExporterLifecycle(t, factory, tt.getConfigFn)
+			if !tt.skipLifecycle {
+				verifyExporterLifecycle(t, factory, tt.getConfigFn)
+			}
 		})
 	}
 }
@@ -505,6 +495,35 @@ func verifyExporterLifecycle(t *testing.T, factory exporter.Factory, getConfigFn
 		for _, exp := range exps {
 			assert.NoError(t, exp.Shutdown(ctx))
 		}
+	}
+}
+
+// verifyExporterShutdown is used to test if an exporter type can be shutdown without being started first.
+func verifyExporterShutdown(tb testing.TB, factory exporter.Factory, getConfigFn getExporterConfigFn) {
+	ctx := context.Background()
+	expCreateSettings := exportertest.NewNopCreateSettings()
+
+	if getConfigFn == nil {
+		getConfigFn = factory.CreateDefaultConfig
+	}
+
+	createFns := []createExporterFn{
+		wrapCreateLogsExp(factory),
+		wrapCreateTracesExp(factory),
+		wrapCreateMetricsExp(factory),
+	}
+
+	for _, createFn := range createFns {
+		r, err := createFn(ctx, expCreateSettings, getConfigFn())
+		if errors.Is(err, component.ErrDataTypeIsNotSupported) {
+			continue
+		}
+		if r == nil {
+			continue
+		}
+		assert.NotPanics(tb, func() {
+			assert.NoError(tb, r.Shutdown(ctx))
+		})
 	}
 }
 

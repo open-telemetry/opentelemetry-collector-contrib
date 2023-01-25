@@ -67,7 +67,7 @@ func newInfluxHTTPWriter(logger common.Logger, config *Config, host component.Ho
 
 		if config.V1Compatibility.Username != "" && config.V1Compatibility.Password != "" {
 			var basicAuth []byte
-			base64.StdEncoding.Encode(basicAuth, []byte(config.V1Compatibility.Username+":"+config.V1Compatibility.Password))
+			base64.StdEncoding.Encode(basicAuth, []byte(config.V1Compatibility.Username+":"+string(config.V1Compatibility.Password)))
 			config.HTTPClientSettings.Headers["Authorization"] = configopaque.String("Basic " + string(basicAuth))
 		}
 	} else {
@@ -75,7 +75,7 @@ func newInfluxHTTPWriter(logger common.Logger, config *Config, host component.Ho
 		queryValues.Set("bucket", config.Bucket)
 
 		if config.Token != "" {
-			config.HTTPClientSettings.Headers["Authorization"] = configopaque.String("Token " + config.Token)
+			config.HTTPClientSettings.Headers["Authorization"] = "Token " + config.Token
 		}
 	}
 

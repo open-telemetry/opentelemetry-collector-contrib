@@ -51,6 +51,10 @@ type Config struct {
 }
 
 func (c *Config) Validate() error {
+	if err := c.QueueSettings.Validate(); err != nil {
+		return fmt.Errorf("queue settings has invalid configuration: %w", err)
+	}
+
 	if _, err := url.Parse(c.Endpoint); c.Endpoint == "" || err != nil {
 		return fmt.Errorf("\"endpoint\" must be a valid URL")
 	}

@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.8.0"
@@ -60,13 +61,13 @@ func TestClientSpanWithRpcAwsSdkClientAttributes(t *testing.T) {
 	resource := constructDefaultResource()
 	span := constructClientSpan(parentSpanID, spanName, 0, "OK", attributes)
 
-	segment, _ := MakeSegment(span, resource, nil, false)
+	segment, _ := MakeSegment(span, resource, nil, false, nil)
 	assert.Equal(t, "DynamoDB", *segment.Name)
 	assert.Equal(t, conventions.AttributeCloudProviderAWS, *segment.Namespace)
 	assert.Equal(t, "GetItem", *segment.AWS.Operation)
 	assert.Equal(t, "subsegment", *segment.Type)
 
-	jsonStr, err := MakeSegmentDocumentString(span, resource, nil, false)
+	jsonStr, err := MakeSegmentDocumentString(span, resource, nil, false, nil)
 
 	assert.NotNil(t, jsonStr)
 	assert.Nil(t, err)
@@ -93,13 +94,13 @@ func TestClientSpanWithLegacyAwsSdkClientAttributes(t *testing.T) {
 	resource := constructDefaultResource()
 	span := constructClientSpan(parentSpanID, spanName, 0, "OK", attributes)
 
-	segment, _ := MakeSegment(span, resource, nil, false)
+	segment, _ := MakeSegment(span, resource, nil, false, nil)
 	assert.Equal(t, "DynamoDB", *segment.Name)
 	assert.Equal(t, conventions.AttributeCloudProviderAWS, *segment.Namespace)
 	assert.Equal(t, "GetItem", *segment.AWS.Operation)
 	assert.Equal(t, "subsegment", *segment.Type)
 
-	jsonStr, err := MakeSegmentDocumentString(span, resource, nil, false)
+	jsonStr, err := MakeSegmentDocumentString(span, resource, nil, false, nil)
 
 	assert.NotNil(t, jsonStr)
 	assert.Nil(t, err)
@@ -125,7 +126,7 @@ func TestClientSpanWithPeerService(t *testing.T) {
 	resource := constructDefaultResource()
 	span := constructClientSpan(parentSpanID, spanName, 0, "OK", attributes)
 
-	segment, _ := MakeSegment(span, resource, nil, false)
+	segment, _ := MakeSegment(span, resource, nil, false, nil)
 	assert.Equal(t, "cats-table", *segment.Name)
 }
 
@@ -148,7 +149,7 @@ func TestServerSpanWithInternalServerError(t *testing.T) {
 	timeEvents := constructTimedEventsWithSentMessageEvent(span.StartTimestamp())
 	timeEvents.CopyTo(span.Events())
 
-	segment, _ := MakeSegment(span, resource, nil, false)
+	segment, _ := MakeSegment(span, resource, nil, false, nil)
 
 	assert.NotNil(t, segment)
 	assert.NotNil(t, segment.Cause)
@@ -175,7 +176,7 @@ func TestServerSpanWithThrottle(t *testing.T) {
 	timeEvents := constructTimedEventsWithSentMessageEvent(span.StartTimestamp())
 	timeEvents.CopyTo(span.Events())
 
-	segment, _ := MakeSegment(span, resource, nil, false)
+	segment, _ := MakeSegment(span, resource, nil, false, nil)
 
 	assert.NotNil(t, segment)
 	assert.NotNil(t, segment.Cause)
@@ -191,7 +192,7 @@ func TestServerSpanNoParentId(t *testing.T) {
 	resource := constructDefaultResource()
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeOk, "OK", nil)
 
-	segment, _ := MakeSegment(span, resource, nil, false)
+	segment, _ := MakeSegment(span, resource, nil, false, nil)
 
 	assert.Empty(t, segment.ParentID)
 }
@@ -206,7 +207,7 @@ func TestSpanNoParentId(t *testing.T) {
 	span.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Now().Add(10)))
 	resource := pcommon.NewResource()
-	segment, _ := MakeSegment(span, resource, nil, false)
+	segment, _ := MakeSegment(span, resource, nil, false, nil)
 
 	assert.Empty(t, segment.ParentID)
 	assert.Nil(t, segment.Type)
@@ -222,7 +223,7 @@ func TestSpanWithNoStatus(t *testing.T) {
 	span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Now().Add(10)))
 
 	resource := pcommon.NewResource()
-	segment, _ := MakeSegment(span, resource, nil, false)
+	segment, _ := MakeSegment(span, resource, nil, false, nil)
 	assert.NotNil(t, segment)
 }
 
@@ -242,7 +243,7 @@ func TestClientSpanWithDbComponent(t *testing.T) {
 	resource := constructDefaultResource()
 	span := constructClientSpan(parentSpanID, spanName, ptrace.StatusCodeUnset, "OK", attributes)
 
-	segment, _ := MakeSegment(span, resource, nil, false)
+	segment, _ := MakeSegment(span, resource, nil, false, nil)
 
 	assert.NotNil(t, segment)
 	assert.NotNil(t, segment.SQL)
@@ -259,9 +260,7 @@ func TestClientSpanWithDbComponent(t *testing.T) {
 	assert.Equal(t, "remote", *segment.Namespace)
 
 	w := testWriters.borrow()
-	if err := w.Encode(segment); err != nil {
-		assert.Fail(t, "invalid json")
-	}
+	require.NoError(t, w.Encode(segment))
 	jsonStr := w.String()
 	testWriters.release(w)
 	assert.True(t, strings.Contains(jsonStr, spanName))
@@ -282,7 +281,7 @@ func TestClientSpanWithHttpHost(t *testing.T) {
 	resource := constructDefaultResource()
 	span := constructClientSpan(parentSpanID, spanName, ptrace.StatusCodeUnset, "OK", attributes)
 
-	segment, _ := MakeSegment(span, resource, nil, false)
+	segment, _ := MakeSegment(span, resource, nil, false, nil)
 
 	assert.NotNil(t, segment)
 	assert.Equal(t, "foo.com", *segment.Name)
@@ -301,7 +300,7 @@ func TestClientSpanWithoutHttpHost(t *testing.T) {
 	resource := constructDefaultResource()
 	span := constructClientSpan(parentSpanID, spanName, ptrace.StatusCodeUnset, "OK", attributes)
 
-	segment, _ := MakeSegment(span, resource, nil, false)
+	segment, _ := MakeSegment(span, resource, nil, false, nil)
 
 	assert.NotNil(t, segment)
 	assert.Equal(t, "bar.com", *segment.Name)
@@ -321,7 +320,7 @@ func TestClientSpanWithRpcHost(t *testing.T) {
 	resource := constructDefaultResource()
 	span := constructClientSpan(parentSpanID, spanName, ptrace.StatusCodeUnset, "OK", attributes)
 
-	segment, _ := MakeSegment(span, resource, nil, false)
+	segment, _ := MakeSegment(span, resource, nil, false, nil)
 
 	assert.NotNil(t, segment)
 	assert.Equal(t, "com.foo.AnimalService", *segment.Name)
@@ -343,7 +342,7 @@ func TestSpanWithInvalidTraceId(t *testing.T) {
 	traceID[0] = 0x11
 	span.SetTraceID(traceID)
 
-	_, err := MakeSegmentDocumentString(span, resource, nil, false)
+	_, err := MakeSegmentDocumentString(span, resource, nil, false, nil)
 
 	assert.NotNil(t, err)
 }
@@ -391,7 +390,7 @@ func TestServerSpanWithNilAttributes(t *testing.T) {
 	timeEvents.CopyTo(span.Events())
 	pcommon.NewMap().CopyTo(span.Attributes())
 
-	segment, _ := MakeSegment(span, resource, nil, false)
+	segment, _ := MakeSegment(span, resource, nil, false, nil)
 
 	assert.NotNil(t, segment)
 	assert.NotNil(t, segment.Cause)
@@ -408,7 +407,7 @@ func TestSpanWithAttributesDefaultNotIndexed(t *testing.T) {
 	resource := constructDefaultResource()
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
 
-	segment, _ := MakeSegment(span, resource, nil, false)
+	segment, _ := MakeSegment(span, resource, nil, false, nil)
 
 	assert.NotNil(t, segment)
 	assert.Equal(t, 0, len(segment.Annotations))
@@ -435,7 +434,7 @@ func TestSpanWithResourceNotStoredIfSubsegment(t *testing.T) {
 	resource := constructDefaultResource()
 	span := constructClientSpan(parentSpanID, spanName, ptrace.StatusCodeError, "ERROR", attributes)
 
-	segment, _ := MakeSegment(span, resource, nil, false)
+	segment, _ := MakeSegment(span, resource, nil, false, nil)
 
 	assert.NotNil(t, segment)
 	assert.Equal(t, 0, len(segment.Annotations))
@@ -458,7 +457,7 @@ func TestSpanWithAttributesPartlyIndexed(t *testing.T) {
 	resource := constructDefaultResource()
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
 
-	segment, _ := MakeSegment(span, resource, []string{"attr1@1", "not_exist"}, false)
+	segment, _ := MakeSegment(span, resource, []string{"attr1@1", "not_exist"}, false, nil)
 
 	assert.NotNil(t, segment)
 	assert.Equal(t, 1, len(segment.Annotations))
@@ -475,7 +474,7 @@ func TestSpanWithAttributesAllIndexed(t *testing.T) {
 	resource := constructDefaultResource()
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeOk, "OK", attributes)
 
-	segment, _ := MakeSegment(span, resource, []string{"attr1@1", "not_exist"}, true)
+	segment, _ := MakeSegment(span, resource, []string{"attr1@1", "not_exist"}, true, nil)
 
 	assert.NotNil(t, segment)
 	assert.Equal(t, "val1", segment.Annotations["attr1_1"])
@@ -496,7 +495,7 @@ func TestResourceAttributesCanBeIndexed(t *testing.T) {
 		"otel.resource.bool.key",
 		"otel.resource.map.key",
 		"otel.resource.array.key",
-	}, false)
+	}, false, nil)
 
 	assert.NotNil(t, segment)
 	assert.Equal(t, 4, len(segment.Annotations))
@@ -528,7 +527,7 @@ func TestResourceAttributesNotIndexedIfSubsegment(t *testing.T) {
 		"otel.resource.bool.key",
 		"otel.resource.map.key",
 		"otel.resource.array.key",
-	}, false)
+	}, false, nil)
 
 	assert.NotNil(t, segment)
 	assert.Empty(t, segment.Annotations)
@@ -545,7 +544,7 @@ func TestOriginNotAws(t *testing.T) {
 	attrs.PutStr(conventions.AttributeHostID, "instance-123")
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
 
-	segment, _ := MakeSegment(span, resource, []string{}, false)
+	segment, _ := MakeSegment(span, resource, []string{}, false, nil)
 
 	assert.NotNil(t, segment)
 	assert.Nil(t, segment.Origin)
@@ -562,7 +561,7 @@ func TestOriginEc2(t *testing.T) {
 	attrs.PutStr(conventions.AttributeHostID, "instance-123")
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
 
-	segment, _ := MakeSegment(span, resource, []string{}, false)
+	segment, _ := MakeSegment(span, resource, []string{}, false, nil)
 
 	assert.NotNil(t, segment)
 	assert.Equal(t, OriginEC2, *segment.Origin)
@@ -580,7 +579,7 @@ func TestOriginEcs(t *testing.T) {
 	attrs.PutStr(conventions.AttributeContainerName, "container-123")
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
 
-	segment, _ := MakeSegment(span, resource, []string{}, false)
+	segment, _ := MakeSegment(span, resource, []string{}, false, nil)
 
 	assert.NotNil(t, segment)
 	assert.Equal(t, OriginECS, *segment.Origin)
@@ -599,7 +598,7 @@ func TestOriginEcsEc2(t *testing.T) {
 	attrs.PutStr(conventions.AttributeContainerName, "container-123")
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
 
-	segment, _ := MakeSegment(span, resource, []string{}, false)
+	segment, _ := MakeSegment(span, resource, []string{}, false, nil)
 
 	assert.NotNil(t, segment)
 	assert.Equal(t, OriginECSEC2, *segment.Origin)
@@ -618,7 +617,7 @@ func TestOriginEcsFargate(t *testing.T) {
 	attrs.PutStr(conventions.AttributeContainerName, "container-123")
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
 
-	segment, _ := MakeSegment(span, resource, []string{}, false)
+	segment, _ := MakeSegment(span, resource, []string{}, false, nil)
 
 	assert.NotNil(t, segment)
 	assert.Equal(t, OriginECSFargate, *segment.Origin)
@@ -637,7 +636,7 @@ func TestOriginEb(t *testing.T) {
 	attrs.PutStr(conventions.AttributeServiceInstanceID, "service-123")
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
 
-	segment, _ := MakeSegment(span, resource, []string{}, false)
+	segment, _ := MakeSegment(span, resource, []string{}, false, nil)
 
 	assert.NotNil(t, segment)
 	assert.Equal(t, OriginEB, *segment.Origin)
@@ -668,7 +667,7 @@ func TestOriginEks(t *testing.T) {
 	attrs.PutStr(conventions.AttributeHostType, "m5.xlarge")
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
 
-	segment, _ := MakeSegment(span, resource, []string{}, false)
+	segment, _ := MakeSegment(span, resource, []string{}, false, nil)
 
 	assert.NotNil(t, segment)
 	assert.Equal(t, OriginEKS, *segment.Origin)
@@ -684,7 +683,7 @@ func TestOriginAppRunner(t *testing.T) {
 	attrs.PutStr(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSAppRunner)
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
 
-	segment, _ := MakeSegment(span, resource, []string{}, false)
+	segment, _ := MakeSegment(span, resource, []string{}, false, nil)
 
 	assert.NotNil(t, segment)
 	assert.Equal(t, OriginAppRunner, *segment.Origin)
@@ -699,7 +698,7 @@ func TestOriginBlank(t *testing.T) {
 	attrs.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
 
-	segment, _ := MakeSegment(span, resource, []string{}, false)
+	segment, _ := MakeSegment(span, resource, []string{}, false, nil)
 
 	assert.NotNil(t, segment)
 	assert.Nil(t, segment.Origin)
@@ -719,7 +718,7 @@ func TestOriginPrefersInfraService(t *testing.T) {
 	attrs.PutStr(conventions.AttributeServiceInstanceID, "service-123")
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
 
-	segment, _ := MakeSegment(span, resource, []string{}, false)
+	segment, _ := MakeSegment(span, resource, []string{}, false, nil)
 
 	assert.NotNil(t, segment)
 	assert.Equal(t, OriginEC2, *segment.Origin)
@@ -749,7 +748,7 @@ func TestFilteredAttributesMetadata(t *testing.T) {
 	mapValue.PutDouble("value1", -987.65)
 	mapValue.PutBool("value2", true)
 
-	segment, _ := MakeSegment(span, resource, []string{}, false)
+	segment, _ := MakeSegment(span, resource, []string{}, false, nil)
 
 	assert.NotNil(t, segment)
 	assert.Nil(t, segment.Metadata["default"]["null_value"])
@@ -762,6 +761,46 @@ func TestFilteredAttributesMetadata(t *testing.T) {
 		"value1": -987.65,
 		"value2": true,
 	}, segment.Metadata["default"]["map_value"])
+}
+
+func TestSegmentWithLogGroupsFromConfig(t *testing.T) {
+	spanName := "/api/locations"
+	parentSpanID := newSegmentID()
+	attributes := make(map[string]interface{})
+	resource := constructDefaultResource()
+	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
+	timeEvents := constructTimedEventsWithSentMessageEvent(span.StartTimestamp())
+	timeEvents.CopyTo(span.Events())
+	pcommon.NewMap().CopyTo(span.Attributes())
+
+	segment, _ := MakeSegment(span, resource, nil, false, []string{"my-logGroup-1"})
+
+	cwl := []awsxray.LogGroupMetadata{{
+		LogGroup: awsxray.String("my-logGroup-1"),
+	}}
+
+	assert.Equal(t, cwl, segment.AWS.CWLogs)
+}
+
+func TestSegmentWith2LogGroupsFromConfig(t *testing.T) {
+	spanName := "/api/locations"
+	parentSpanID := newSegmentID()
+	attributes := make(map[string]interface{})
+	resource := constructDefaultResource()
+	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
+	timeEvents := constructTimedEventsWithSentMessageEvent(span.StartTimestamp())
+	timeEvents.CopyTo(span.Events())
+	pcommon.NewMap().CopyTo(span.Attributes())
+
+	segment, _ := MakeSegment(span, resource, nil, false, []string{"my-logGroup-1", "my-logGroup-2"})
+
+	cwl := []awsxray.LogGroupMetadata{{
+		LogGroup: awsxray.String("my-logGroup-1"),
+	}, {
+		LogGroup: awsxray.String("my-logGroup-2"),
+	}}
+
+	assert.Equal(t, cwl, segment.AWS.CWLogs)
 }
 
 func constructClientSpan(parentSpanID pcommon.SpanID, name string, code ptrace.StatusCode, message string, attributes map[string]interface{}) ptrace.Span {

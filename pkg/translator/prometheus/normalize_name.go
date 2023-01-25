@@ -86,7 +86,7 @@ const normalizeNameGateID = "pkg.translator.prometheus.NormalizeName"
 
 func init() {
 	// Register the feature gates
-	featuregate.GetRegistry().MustRegisterID(
+	featuregate.GlobalRegistry().MustRegisterID(
 		normalizeNameGateID,
 		featuregate.StageAlpha,
 		featuregate.WithRegisterDescription("Controls whether metrics names are automatically normalized to follow Prometheus naming convention"),
@@ -106,7 +106,7 @@ func BuildPromCompliantName(metric pmetric.Metric, namespace string) string {
 	var metricName string
 
 	// Full normalization following standard Prometheus naming conventions
-	if featuregate.GetRegistry().IsEnabled(normalizeNameGateID) {
+	if featuregate.GlobalRegistry().IsEnabled(normalizeNameGateID) {
 		return normalizeName(metric, namespace)
 	}
 

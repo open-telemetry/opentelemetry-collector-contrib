@@ -56,11 +56,6 @@ func newTracesReceiver(config *Config, set receiver.CreateSettings, nextConsumer
 		return nil, component.ErrNilNextConsumer
 	}
 
-	if err := config.Validate(); err != nil {
-		set.Logger.Warn("Error validating configuration", zap.Any("error", err))
-		return nil, err
-	}
-
 	factory, err := newAMQPMessagingServiceFactory(config, set.Logger)
 	if err != nil {
 		set.Logger.Warn("Error validating messaging service configuration", zap.Any("error", err))

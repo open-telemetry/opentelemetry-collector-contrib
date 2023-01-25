@@ -175,6 +175,10 @@ func (m metric) Data() MetricData {
 type warnings struct {
 	// A warning that will be displayed if the metric is enabled in user config.
 	IfEnabled string `mapstructure:"if_enabled"`
+	// A warning that will be displayed if `enabled` field is not set explicitly in user config.
+	IfEnabledNotSet string `mapstructure:"if_enabled_not_set"`
+	// A warning that will be displayed if the metrics is configured by user in any way.
+	IfConfigured string `mapstructure:"if_configured"`
 }
 
 type attribute struct {
@@ -182,8 +186,10 @@ type attribute struct {
 	Description string `mapstructure:"description"`
 	// NameOverride can be used to override the attribute name.
 	NameOverride string `mapstructure:"name_override"`
+	// Enabled defines whether the attribute is enabled by default.
+	Enabled bool `mapstructure:"enabled" validate:"required"`
 	// Enum can optionally describe the set of values to which the attribute can belong.
-	Enum []string
+	Enum []string `mapstructure:"enum"`
 	// Type is an attribute type.
 	Type ValueType `mapstructure:"type"`
 }
