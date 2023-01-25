@@ -181,7 +181,7 @@ func TestProcessorConcurrentShutdown(t *testing.T) {
 	var allLogs []observer.LoggedEntry
 	assert.Eventually(t, func() bool {
 		allLogs = observedLogs.All()
-		return assert.NotEmpty(t, allLogs)
+		return len(allLogs) > 0
 	}, time.Second, time.Millisecond*10)
 
 	// Starting spanmetricsprocessor...
@@ -300,7 +300,7 @@ func TestProcessorConsumeMetricsErrors(t *testing.T) {
 	var allLogs []observer.LoggedEntry
 	assert.Eventually(t, func() bool {
 		allLogs = observedLogs.All()
-		return assert.NotEmpty(t, allLogs)
+		return len(allLogs) > 0
 	}, time.Second, time.Millisecond*10)
 
 	assert.Equal(t, "Failed ConsumeMetrics", allLogs[0].Message)
@@ -419,7 +419,7 @@ func TestMetricKeyCache(t *testing.T) {
 	require.NoError(t, err)
 	// 2 key was cached, 1 key was evicted and cleaned after the processing
 	assert.Eventually(t, func() bool {
-		return assert.Equal(t, DimensionsCacheSize, p.metricKeyToDimensions.Len())
+		return p.metricKeyToDimensions.Len() == DimensionsCacheSize
 	}, 10*time.Second, time.Millisecond*100)
 
 	// consume another batch of traces
@@ -428,7 +428,7 @@ func TestMetricKeyCache(t *testing.T) {
 
 	// 2 key was cached, other keys were evicted and cleaned after the processing
 	assert.Eventually(t, func() bool {
-		return assert.Equal(t, DimensionsCacheSize, p.metricKeyToDimensions.Len())
+		return p.metricKeyToDimensions.Len() == DimensionsCacheSize
 	}, 10*time.Second, time.Millisecond*100)
 }
 
