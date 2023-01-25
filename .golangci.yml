@@ -133,6 +133,7 @@ linters:
     - tenv
     - unconvert
     - unparam
+    - unused
 
 issues:
   # Excluding configuration per-path, per-linter, per-text and per-source
