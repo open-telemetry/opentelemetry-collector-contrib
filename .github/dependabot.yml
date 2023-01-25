@@ -751,6 +751,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/receiver/purefbreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/receiver/rabbitmqreceiver"
     schedule:
       interval: "weekly"
