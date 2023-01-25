@@ -72,20 +72,14 @@ func Start(cfg *Config) error {
 	}
 
 	if err != nil {
-		logger.Error("failed to obtain OTLP exporter", zap.Error(err))
-		return err
+		return fmt.Errorf("failed to obtain OTLP exporter: %w", err)
 	}
 	defer func() {
 		logger.Info("stopping the exporter")
 		if tempError := exp.Shutdown(context.Background()); tempError != nil {
 			logger.Error("failed to stop the exporter", zap.Error(tempError))
-			err = tempError
-			return
 		}
 	}()
-	if err != nil {
-		return err
-	}
 
 	reader := sdkmetric.NewPeriodicReader(exp, sdkmetric.WithInterval(cfg.ReportingInterval))
 

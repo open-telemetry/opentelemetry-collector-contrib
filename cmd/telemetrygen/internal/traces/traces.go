@@ -73,33 +73,22 @@ func Start(cfg *Config) error {
 	}
 
 	if err != nil {
-		logger.Error("failed to obtain OTLP exporter", zap.Error(err))
-		return err
+		return fmt.Errorf("failed to obtain OTLP exporter: %w", err)
 	}
 	defer func() {
 		logger.Info("stopping the exporter")
 		if tempError := exp.Shutdown(context.Background()); tempError != nil {
 			logger.Error("failed to stop the exporter", zap.Error(tempError))
-			err = tempError
-			return
 		}
 	}()
-	if err != nil {
-		return err
-	}
 
 	ssp := sdktrace.NewBatchSpanProcessor(exp, sdktrace.WithBatchTimeout(time.Second))
 	defer func() {
 		logger.Info("stop the batch span processor")
 		if tempError := ssp.Shutdown(context.Background()); tempError != nil {
 			logger.Error("failed to stop the batch span processor", zap.Error(err))
-			err = tempError
-			return
 		}
 	}()
-	if err != nil {
-		return err
-	}
 
 	var attributes []attribute.KeyValue
 	// may be overridden by `-otlp-attributes service.name="foo"`
