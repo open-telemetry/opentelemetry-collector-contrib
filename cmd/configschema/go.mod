@@ -265,6 +265,7 @@ require (
 	github.com/klauspost/compress v1.15.15 // indirect
 	github.com/knadh/koanf v1.5.0 // indirect
 	github.com/kolo/xmlrpc v0.0.0-20220921171641-a4b6fa1dd06b // indirect
+	github.com/kr/fs v0.1.0 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/leodido/ragel-machinery v0.0.0-20181214104525-299bdde78165 // indirect
 	github.com/leoluk/perflib_exporter v0.2.0 // indirect
@@ -476,6 +477,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver v0.70.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver v0.70.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver v0.70.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshcheckreceiver v0.70.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver v0.70.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver v0.70.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver v0.70.0 // indirect
@@ -504,6 +506,7 @@ require (
 	github.com/pierrec/lz4/v4 v4.1.17 // indirect
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
+	github.com/pkg/sftp v1.13.5 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/power-devops/perfstat v0.0.0-20220216144756-c35f1ee13d7c // indirect
 	github.com/pquerna/cachecontrol v0.1.0 // indirect
@@ -1025,3 +1028,5 @@ exclude github.com/docker/distribution v2.8.0+incompatible
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter => ../../internal/filter
 
 retract v0.65.0
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshcheckreceiver => ../../receiver/sshcheckreceiver

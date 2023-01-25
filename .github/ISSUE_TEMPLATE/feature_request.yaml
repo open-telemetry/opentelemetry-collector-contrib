@@ -203,6 +203,7 @@ body:
       - receiver/splunkhec
       - receiver/sqlquery
       - receiver/sqlserver
+      - receiver/sshcheck
       - receiver/statsd
       - receiver/syslog
       - receiver/tcplog
