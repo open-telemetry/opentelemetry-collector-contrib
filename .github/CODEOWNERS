@@ -51,8 +51,8 @@ exporter/googlemanagedprometheusexporter/                @open-telemetry/collect
 exporter/googlecloudpubsubexporter/                      @open-telemetry/collector-contrib-approvers @alexvanboxel
 exporter/influxdbexporter/                               @open-telemetry/collector-contrib-approvers @jacobmarble
 exporter/instanaexporter/                                @open-telemetry/collector-contrib-approvers @jpkrohling @hickeyma
-exporter/jaegerexporter/                                 @open-telemetry/collector-contrib-approvers @jpkrohling
-exporter/jaegerthrifthttpexporter/                       @open-telemetry/collector-contrib-approvers @jpkrohling @pavolloffay
+exporter/jaegerexporter/                                 @open-telemetry/collector-contrib-approvers @jpkrohling @frzifus
+exporter/jaegerthrifthttpexporter/                       @open-telemetry/collector-contrib-approvers @jpkrohling @pavolloffay @frzifus
 exporter/kafkaexporter/                                  @open-telemetry/collector-contrib-approvers @pavolloffay @MovieStoreGuy
 exporter/loadbalancingexporter/                          @open-telemetry/collector-contrib-approvers @jpkrohling
 exporter/logicmonitorexporter/                           @open-telemetry/collector-contrib-approvers @bogdandrutu @khyatigandhi6 @avadhut123pisal
@@ -81,7 +81,7 @@ extension/bearertokenauthextension/                      @open-telemetry/collect
 extension/headerssetterextension/                        @open-telemetry/collector-contrib-approvers @jpkrohling @kovrus
 extension/healthcheckextension/                          @open-telemetry/collector-contrib-approvers @jpkrohling
 extension/httpforwarder                                  @open-telemetry/collector-contrib-approvers @atoulme
-extension/jaegerremotesampling/                          @open-telemetry/collector-contrib-approvers @jpkrohling
+extension/jaegerremotesampling/                          @open-telemetry/collector-contrib-approvers @jpkrohling @frzifus
 extension/oauth2clientauthextension/                     @open-telemetry/collector-contrib-approvers @pavankrish123 @jpkrohling
 extension/observer/                                      @open-telemetry/collector-contrib-approvers @dmitryax @rmfitzpatrick
 extension/observer/dockerobserver/                       @open-telemetry/collector-contrib-approvers @MovieStoreGuy
