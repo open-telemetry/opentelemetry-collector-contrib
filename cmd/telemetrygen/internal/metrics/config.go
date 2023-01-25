@@ -16,62 +16,17 @@
 package metrics
 
 import (
-	"fmt"
-	"strings"
-	"sync"
 	"time"
 
 	"github.com/spf13/pflag"
-	"go.uber.org/atomic"
-	"go.uber.org/zap"
-	"golang.org/x/time/rate"
-)
 
-var (
-	errFormatOTLPAttributes       = fmt.Errorf("value should be of the format key=\"value\"")
-	errDoubleQuotesOTLPAttributes = fmt.Errorf("value should be a string wrapped in double quotes")
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
 )
 
 // Config describes the test scenario.
 type Config struct {
-	WorkerCount       int
-	NumMetrics        int
-	Rate              int64
-	TotalDuration     time.Duration
-	ReportingInterval time.Duration
-
-	// OTLP config
-	Endpoint           string
-	Insecure           bool
-	UseHTTP            bool
-	Headers            KeyValue
-	ResourceAttributes KeyValue
-}
-
-type KeyValue map[string]string
-
-var _ pflag.Value = (*KeyValue)(nil)
-
-func (v *KeyValue) String() string {
-	return ""
-}
-
-func (v *KeyValue) Set(s string) error {
-	kv := strings.SplitN(s, "=", 2)
-	if len(kv) != 2 {
-		return errFormatOTLPAttributes
-	}
-	val := kv[1]
-	if len(val) < 2 || !strings.HasPrefix(val, "\"") || !strings.HasSuffix(val, "\"") {
-		return errDoubleQuotesOTLPAttributes
-	}
-
-	(*v)[kv[0]] = val[1 : len(val)-1]
-	return nil
-}
-
-func (v *KeyValue) Type() string {
-	return "map[string]string"
+	common.Config
+	NumMetrics int
 }
 
 // Flags registers config flags.
@@ -95,44 +50,4 @@ func (c *Config) Flags(fs *pflag.FlagSet) {
 	c.ResourceAttributes = make(map[string]string)
 	fs.Var(&c.ResourceAttributes, "otlp-attributes", "Custom resource attributes to use. The value is expected in the format key=\"value\"."+
 		"Flag may be repeated to set multiple attributes (e.g -otlp-attributes key1=\"value1\" -otlp-attributes key2=\"value2\")")
-}
-
-// Run executes the test scenario.
-func Run(c *Config, logger *zap.Logger) error {
-	if c.TotalDuration > 0 {
-		c.NumMetrics = 0
-	} else if c.NumMetrics <= 0 {
-		return fmt.Errorf("either `metrics` or `duration` must be greater than 0")
-	}
-
-	limit := rate.Limit(c.Rate)
-	if c.Rate == 0 {
-		limit = rate.Inf
-		logger.Info("generation of metrics isn't being throttled")
-	} else {
-		logger.Info("generation of metrics is limited", zap.Float64("per-second", float64(limit)))
-	}
-
-	wg := sync.WaitGroup{}
-	running := atomic.NewBool(true)
-
-	for i := 0; i < c.WorkerCount; i++ {
-		wg.Add(1)
-		w := worker{
-			numMetrics:     c.NumMetrics,
-			limitPerSecond: limit,
-			totalDuration:  c.TotalDuration,
-			running:        running,
-			wg:             &wg,
-			logger:         logger.With(zap.Int("worker", i)),
-		}
-
-		go w.simulateMetrics()
-	}
-	if c.TotalDuration > 0 {
-		time.Sleep(c.TotalDuration)
-		running.Store(false)
-	}
-	wg.Wait()
-	return nil
 }

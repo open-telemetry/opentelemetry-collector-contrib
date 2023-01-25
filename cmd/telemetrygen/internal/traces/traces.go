@@ -17,9 +17,9 @@ package traces
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
-	grpcZap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
@@ -28,18 +28,19 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
+	"go.uber.org/atomic"
 	"go.uber.org/zap"
+	"golang.org/x/time/rate"
 	"google.golang.org/grpc"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
 )
 
 func Start(cfg *Config) error {
-	logger, err := zap.NewDevelopment()
+	logger, err := common.CreateLogger()
 	if err != nil {
-		return fmt.Errorf("failed to obtain logger: %w", err)
+		return err
 	}
-	grpcZap.ReplaceGrpcLoggerV2(logger.WithOptions(
-		zap.AddCallerSkip(3),
-	))
 
 	grpcExpOpt := []otlptracegrpc.Option{
 		otlptracegrpc.WithEndpoint(cfg.Endpoint),
@@ -103,12 +104,7 @@ func Start(cfg *Config) error {
 	var attributes []attribute.KeyValue
 	// may be overridden by `-otlp-attributes service.name="foo"`
 	attributes = append(attributes, semconv.ServiceNameKey.String(cfg.ServiceName))
-
-	if len(cfg.ResourceAttributes) > 0 {
-		for k, v := range cfg.ResourceAttributes {
-			attributes = append(attributes, attribute.String(k, v))
-		}
-	}
+	attributes = append(attributes, cfg.GetAttributes()...)
 
 	tracerProvider := sdktrace.NewTracerProvider(
 		sdktrace.WithResource(resource.NewWithAttributes(semconv.SchemaURL, attributes...)),
@@ -122,5 +118,46 @@ func Start(cfg *Config) error {
 		return err
 	}
 
+	return nil
+}
+
+// Run executes the test scenario.
+func Run(c *Config, logger *zap.Logger) error {
+	if c.TotalDuration > 0 {
+		c.NumTraces = 0
+	} else if c.NumTraces <= 0 {
+		return fmt.Errorf("either `traces` or `duration` must be greater than 0")
+	}
+
+	limit := rate.Limit(c.Rate)
+	if c.Rate == 0 {
+		limit = rate.Inf
+		logger.Info("generation of traces isn't being throttled")
+	} else {
+		logger.Info("generation of traces is limited", zap.Float64("per-second", float64(limit)))
+	}
+
+	wg := sync.WaitGroup{}
+	running := atomic.NewBool(true)
+
+	for i := 0; i < c.WorkerCount; i++ {
+		wg.Add(1)
+		w := worker{
+			numTraces:        c.NumTraces,
+			propagateContext: c.PropagateContext,
+			limitPerSecond:   limit,
+			totalDuration:    c.TotalDuration,
+			running:          running,
+			wg:               &wg,
+			logger:           logger.With(zap.Int("worker", i)),
+		}
+
+		go w.simulateTraces()
+	}
+	if c.TotalDuration > 0 {
+		time.Sleep(c.TotalDuration)
+		running.Store(false)
+	}
+	wg.Wait()
 	return nil
 }

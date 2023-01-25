@@ -18,27 +18,28 @@ package metrics
 import (
 	"context"
 	"fmt"
+	"sync"
+	"time"
 
-	grpcZap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
-	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
 	"go.opentelemetry.io/otel/metric/global"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
+	"go.uber.org/atomic"
 	"go.uber.org/zap"
+	"golang.org/x/time/rate"
 	"google.golang.org/grpc"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
 )
 
 func Start(cfg *Config) error {
-	logger, err := zap.NewDevelopment()
+	logger, err := common.CreateLogger()
 	if err != nil {
-		return fmt.Errorf("failed to obtain logger: %w", err)
+		return err
 	}
-	grpcZap.ReplaceGrpcLoggerV2(logger.WithOptions(
-		zap.AddCallerSkip(3),
-	))
 
 	grpcExpOpt := []otlpmetricgrpc.Option{
 		otlpmetricgrpc.WithEndpoint(cfg.Endpoint),
@@ -86,18 +87,10 @@ func Start(cfg *Config) error {
 		return err
 	}
 
-	var attributes []attribute.KeyValue
-
-	if len(cfg.ResourceAttributes) > 0 {
-		for k, v := range cfg.ResourceAttributes {
-			attributes = append(attributes, attribute.String(k, v))
-		}
-	}
-
 	reader := sdkmetric.NewPeriodicReader(exp, sdkmetric.WithInterval(cfg.ReportingInterval))
 
 	meterProvider := sdkmetric.NewMeterProvider(
-		sdkmetric.WithResource(resource.NewWithAttributes(semconv.SchemaURL, attributes...)),
+		sdkmetric.WithResource(resource.NewWithAttributes(semconv.SchemaURL, cfg.GetAttributes()...)),
 		sdkmetric.WithReader(reader),
 	)
 
@@ -108,5 +101,45 @@ func Start(cfg *Config) error {
 		return err
 	}
 
+	return nil
+}
+
+// Run executes the test scenario.
+func Run(c *Config, logger *zap.Logger) error {
+	if c.TotalDuration > 0 {
+		c.NumMetrics = 0
+	} else if c.NumMetrics <= 0 {
+		return fmt.Errorf("either `metrics` or `duration` must be greater than 0")
+	}
+
+	limit := rate.Limit(c.Rate)
+	if c.Rate == 0 {
+		limit = rate.Inf
+		logger.Info("generation of metrics isn't being throttled")
+	} else {
+		logger.Info("generation of metrics is limited", zap.Float64("per-second", float64(limit)))
+	}
+
+	wg := sync.WaitGroup{}
+	running := atomic.NewBool(true)
+
+	for i := 0; i < c.WorkerCount; i++ {
+		wg.Add(1)
+		w := worker{
+			numMetrics:     c.NumMetrics,
+			limitPerSecond: limit,
+			totalDuration:  c.TotalDuration,
+			running:        running,
+			wg:             &wg,
+			logger:         logger.With(zap.Int("worker", i)),
+		}
+
+		go w.simulateMetrics()
+	}
+	if c.TotalDuration > 0 {
+		time.Sleep(c.TotalDuration)
+		running.Store(false)
+	}
+	wg.Wait()
 	return nil
 }

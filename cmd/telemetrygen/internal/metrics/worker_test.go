@@ -25,6 +25,8 @@ import (
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
 )
 
 func TestFixedNumberOfMetrics(t *testing.T) {
@@ -34,8 +36,10 @@ func TestFixedNumberOfMetrics(t *testing.T) {
 	global.SetMeterProvider(metricProvider)
 
 	cfg := &Config{
-		NumMetrics:  1,
-		WorkerCount: 1,
+		Config: common.Config{
+			WorkerCount: 1,
+		},
+		NumMetrics: 1,
 	}
 
 	// test
@@ -58,9 +62,11 @@ func TestRateOfMetrics(t *testing.T) {
 	global.SetMeterProvider(metricProvider)
 
 	cfg := &Config{
-		Rate:          10,
-		TotalDuration: time.Second / 2,
-		WorkerCount:   1,
+		Config: common.Config{
+			Rate:          10,
+			TotalDuration: time.Second / 2,
+			WorkerCount:   1,
+		},
 	}
 
 	// sanity check
@@ -88,8 +94,10 @@ func TestUnthrottled(t *testing.T) {
 	global.SetMeterProvider(metricProvider)
 
 	cfg := &Config{
-		TotalDuration: 1 * time.Second,
-		WorkerCount:   1,
+		Config: common.Config{
+			TotalDuration: 1 * time.Second,
+			WorkerCount:   1,
+		},
 	}
 
 	// sanity check
