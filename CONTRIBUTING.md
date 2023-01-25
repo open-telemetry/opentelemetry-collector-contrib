@@ -182,7 +182,7 @@ its processes to investigate issues themselves or point issue openers to another
 #### Code Owners
 
 In many cases, the code owners for an issue are the best resource to help determine the root cause of a bug or whether an enhancement
-is fit to be added to a component. Code owners can be pinged if a by adding a component label to an issue, or will be pinged by
+is fit to be added to a component. Code owners can be pinged by adding a component label to an issue, or will be pinged by
 repository automations when an issue is opened or becomes stale. Code owners may not have triager permissions on the repository,
 so they can help triage through investigation and by participating in discussions. They can also help organize issues by
 [adding labels via comments](#adding-labels-via-comments).
