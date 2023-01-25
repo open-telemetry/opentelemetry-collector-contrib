@@ -220,6 +220,7 @@ receiver/splunkhecreceiver/                              @open-telemetry/collect
 receiver/snowflakereceiver/                              @open-telemetry/collector-contrib-approvers @dmitryax @shalper2
 receiver/sqlqueryreceiver/                               @open-telemetry/collector-contrib-approvers @dmitryax @pmcollins
 receiver/sqlserverreceiver/                              @open-telemetry/collector-contrib-approvers @djaglowski @StefanKurek
+receiver/sshcheckreceiver/                              @open-telemetry/collector-contrib-approvers @nslaughter @codeboten
 receiver/statsdreceiver/                                 @open-telemetry/collector-contrib-approvers @jmacd @dmitryax
 receiver/syslogreceiver/                                 @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/tcplogreceiver/                                 @open-telemetry/collector-contrib-approvers @djaglowski

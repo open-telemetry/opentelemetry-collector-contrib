@@ -638,3 +638,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/prob
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogprocessor => ../../processor/datadogprocessor
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver => ../../receiver/azureblobreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshcheckreceiver => ../../receiver/sshcheckreceiver
