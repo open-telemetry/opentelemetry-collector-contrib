@@ -25,7 +25,6 @@ import (
 
 	"github.com/DataDog/agent-payload/v5/gogen"
 	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
-	"github.com/DataDog/datadog-agent/pkg/otlp/model/translator"
 	"github.com/DataDog/datadog-agent/pkg/trace/pb"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"github.com/stretchr/testify/assert"
@@ -35,7 +34,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
@@ -348,24 +346,6 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 			}
 		})
 	}
-}
-
-func createTestMetricsWithStats() pmetric.Metrics {
-	md := createTestMetrics(map[string]string{
-		conventions.AttributeDeploymentEnvironment: "dev",
-		"custom_attribute":                         "custom_value",
-	})
-	dest := md.ResourceMetrics()
-	logger, _ := zap.NewDevelopment()
-	trans, err := translator.New(logger)
-	if err != nil {
-		panic(err)
-	}
-	src := trans.
-		StatsPayloadToMetrics(pb.StatsPayload{Stats: testutil.StatsPayloads}).
-		ResourceMetrics()
-	src.MoveAndAppendTo(dest)
-	return md
 }
 
 func createTestMetrics(additionalAttributes map[string]string) pmetric.Metrics {
