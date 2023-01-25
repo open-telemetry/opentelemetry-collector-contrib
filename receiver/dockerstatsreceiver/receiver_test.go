@@ -205,7 +205,8 @@ func TestScrapeV2(t *testing.T) {
 			expectedMetrics, err := golden.ReadMetrics(tc.expectedMetricsFile)
 
 			assert.NoError(t, err)
-			assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceMetricsOrder()))
+			assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
+				pmetrictest.IgnoreResourceMetricsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 		})
 	}
 }

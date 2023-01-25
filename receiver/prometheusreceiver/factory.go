@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 
+	promconfig "github.com/prometheus/prometheus/config"
 	_ "github.com/prometheus/prometheus/discovery/install" // init() of this package registers service discovery impl.
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -53,7 +54,11 @@ func NewFactory() receiver.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	return &Config{}
+	return &Config{
+		PrometheusConfig: &promconfig.Config{
+			GlobalConfig: promconfig.DefaultGlobalConfig,
+		},
+	}
 }
 
 func createMetricsReceiver(

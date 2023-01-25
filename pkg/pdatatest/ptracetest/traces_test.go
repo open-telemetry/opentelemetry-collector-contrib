@@ -19,20 +19,20 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/internal"
 )
 
 func TestCompareTraces(t *testing.T) {
 	tcs := []struct {
 		name           string
 		compareOptions []CompareTracesOption
-		withoutOptions internal.Expectation
-		withOptions    internal.Expectation
+		withoutOptions error
+		withOptions    error
 	}{
 		{
 			name: "equal",
@@ -42,34 +42,22 @@ func TestCompareTraces(t *testing.T) {
 			compareOptions: []CompareTracesOption{
 				IgnoreResourceAttributeValue("host.name"),
 			},
-			withoutOptions: internal.Expectation{
-				Err: multierr.Combine(
-					errors.New("missing expected resource with attributes: map[host.name:different-node1]"),
-					errors.New("extra resource with attributes: map[host.name:host1]"),
-				),
-				Reason: "An unpredictable resource attribute will cause failures if not ignored.",
-			},
-			withOptions: internal.Expectation{
-				Err:    nil,
-				Reason: "The unpredictable resource attribute was ignored on each resource that carried it.",
-			},
+			withoutOptions: multierr.Combine(
+				errors.New("missing expected resource with attributes: map[host.name:different-node1]"),
+				errors.New("extra resource with attributes: map[host.name:host1]"),
+			),
+			withOptions: nil,
 		},
 		{
 			name: "ignore-resource-order",
 			compareOptions: []CompareTracesOption{
 				IgnoreResourceSpansOrder(),
 			},
-			withoutOptions: internal.Expectation{
-				Err: multierr.Combine(
-					errors.New("ResourceTraces with attributes map[host.name:host1] expected at index 0, found at index 1"),
-					errors.New("ResourceTraces with attributes map[host.name:host2] expected at index 1, found at index 0"),
-				),
-				Reason: "Resource order mismatch will cause failures if not ignored.",
-			},
-			withOptions: internal.Expectation{
-				Err:    nil,
-				Reason: "Ignored resource order mismatch should not cause a failure.",
-			},
+			withoutOptions: multierr.Combine(
+				errors.New("ResourceTraces with attributes map[host.name:host1] expected at index 0, found at index 1"),
+				errors.New("ResourceTraces with attributes map[host.name:host2] expected at index 1, found at index 0"),
+			),
+			withOptions: nil,
 		},
 	}
 
@@ -83,15 +71,13 @@ func TestCompareTraces(t *testing.T) {
 			actual, err := golden.ReadTraces(filepath.Join(dir, "actual.json"))
 			require.NoError(t, err)
 
-			err = CompareTraces(expected, actual)
-			tc.withoutOptions.Validate(t, err)
+			assert.Equal(t, tc.withoutOptions, CompareTraces(expected, actual))
 
 			if tc.compareOptions == nil {
 				return
 			}
 
-			err = CompareTraces(expected, actual, tc.compareOptions...)
-			tc.withOptions.Validate(t, err)
+			assert.Equal(t, tc.withOptions, CompareTraces(expected, actual, tc.compareOptions...))
 		})
 	}
 }
@@ -101,7 +87,7 @@ func TestCompareResourceSpans(t *testing.T) {
 		name     string
 		expected ptrace.ResourceSpans
 		actual   ptrace.ResourceSpans
-		err      internal.Expectation
+		err      error
 	}{
 		{
 			name: "equal",
@@ -140,10 +126,7 @@ func TestCompareResourceSpans(t *testing.T) {
 				rs.Resource().Attributes().PutStr("host.name", "host2")
 				return rs
 			}(),
-			err: internal.Expectation{
-				Err:    errors.New("resource attributes do not match expected: map[host.name:host1], actual: map[host.name:host2]"),
-				Reason: "Different resources should cause a failure.",
-			},
+			err: errors.New("resource attributes do not match expected: map[host.name:host1], actual: map[host.name:host2]"),
 		},
 		{
 			name: "scopes-number-mismatch",
@@ -158,10 +141,7 @@ func TestCompareResourceSpans(t *testing.T) {
 				rs.ScopeSpans().AppendEmpty()
 				return rs
 			}(),
-			err: internal.Expectation{
-				Err:    errors.New("number of scope spans does not match expected: 2, actual: 1"),
-				Reason: "Different number of scope spans should cause a failure.",
-			},
+			err: errors.New("number of scope spans does not match expected: 2, actual: 1"),
 		},
 		{
 			name: "scope-name-mismatch",
@@ -177,13 +157,10 @@ func TestCompareResourceSpans(t *testing.T) {
 				ss.Scope().SetName("scope2")
 				return rs
 			}(),
-			err: internal.Expectation{
-				Err: multierr.Combine(
-					errors.New("ScopeSpans missing with scope name: scope1"),
-					errors.New("unexpected ScopeSpans with scope name: scope2"),
-				),
-				Reason: "Different scope names should cause a failure.",
-			},
+			err: multierr.Combine(
+				errors.New("ScopeSpans missing with scope name: scope1"),
+				errors.New("unexpected ScopeSpans with scope name: scope2"),
+			),
 		},
 		{
 			name: "scopes-order-mismatch",
@@ -199,19 +176,15 @@ func TestCompareResourceSpans(t *testing.T) {
 				rs.ScopeSpans().AppendEmpty().Scope().SetName("scope1")
 				return rs
 			}(),
-			err: internal.Expectation{
-				Err: multierr.Combine(
-					errors.New("ScopeSpans with scope name scope1 expected at index 0, found at index 1"),
-					errors.New("ScopeSpans with scope name scope2 expected at index 1, found at index 0"),
-				),
-				Reason: "Different scope spans order should cause a failure.",
-			},
+			err: multierr.Combine(
+				errors.New("ScopeSpans with scope name scope1 expected at index 0, found at index 1"),
+				errors.New("ScopeSpans with scope name scope2 expected at index 1, found at index 0"),
+			),
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			err := CompareResourceSpans(test.expected, test.actual)
-			test.err.Validate(t, err)
+			assert.Equal(t, test.err, CompareResourceSpans(test.expected, test.actual))
 		})
 	}
 }
@@ -221,7 +194,7 @@ func TestCompareScopeSpans(t *testing.T) {
 		name     string
 		expected ptrace.ScopeSpans
 		actual   ptrace.ScopeSpans
-		err      internal.Expectation
+		err      error
 	}{
 		{
 			name: "equal",
@@ -256,10 +229,7 @@ func TestCompareScopeSpans(t *testing.T) {
 				ss.Scope().SetName("scope2")
 				return ss
 			}(),
-			err: internal.Expectation{
-				Err:    errors.New("scope Name does not match expected: scope1, actual: scope2"),
-				Reason: "Different scope names should cause a failure.",
-			},
+			err: errors.New("scope Name does not match expected: scope1, actual: scope2"),
 		},
 		{
 			name: "spans-number-mismatch",
@@ -274,10 +244,7 @@ func TestCompareScopeSpans(t *testing.T) {
 				ss.Spans().AppendEmpty()
 				return ss
 			}(),
-			err: internal.Expectation{
-				Err:    errors.New("number of spans does not match expected: 2, actual: 1"),
-				Reason: "Different number of spans should cause a failure.",
-			},
+			err: errors.New("number of spans does not match expected: 2, actual: 1"),
 		},
 		{
 			name: "spans-order-mismatch",
@@ -293,19 +260,15 @@ func TestCompareScopeSpans(t *testing.T) {
 				ss.Spans().AppendEmpty().SetName("span1")
 				return ss
 			}(),
-			err: internal.Expectation{
-				Err: multierr.Combine(
-					errors.New("span span1 expected at index 0, found at index 1"),
-					errors.New("span span2 expected at index 1, found at index 0"),
-				),
-				Reason: "Different span order should cause a failure.",
-			},
+			err: multierr.Combine(
+				errors.New("span span1 expected at index 0, found at index 1"),
+				errors.New("span span2 expected at index 1, found at index 0"),
+			),
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			err := CompareScopeSpans(test.expected, test.actual)
-			test.err.Validate(t, err)
+			assert.Equal(t, test.err, CompareScopeSpans(test.expected, test.actual))
 		})
 	}
 }
@@ -315,7 +278,7 @@ func TestCompareSpan(t *testing.T) {
 		name     string
 		expected ptrace.Span
 		actual   ptrace.Span
-		err      internal.Expectation
+		err      error
 	}{
 		{
 			name: "equal",
@@ -346,10 +309,7 @@ func TestCompareSpan(t *testing.T) {
 				s.SetName("span2")
 				return s
 			}(),
-			err: internal.Expectation{
-				Err:    errors.New("span Name doesn't match expected: span1, actual: span2"),
-				Reason: "Different span names should cause a failure.",
-			},
+			err: errors.New("span Name doesn't match expected: span1, actual: span2"),
 		},
 		{
 			name: "start-timestamp-mismatch",
@@ -363,10 +323,7 @@ func TestCompareSpan(t *testing.T) {
 				s.SetStartTimestamp(456)
 				return s
 			}(),
-			err: internal.Expectation{
-				Err:    errors.New("span StartTimestamp doesn't match expected: 123, actual: 456"),
-				Reason: "Different span start timestamps should cause a failure.",
-			},
+			err: errors.New("span StartTimestamp doesn't match expected: 123, actual: 456"),
 		},
 		{
 			name: "end-timestamp-mismatch",
@@ -380,10 +337,7 @@ func TestCompareSpan(t *testing.T) {
 				s.SetEndTimestamp(456)
 				return s
 			}(),
-			err: internal.Expectation{
-				Err:    errors.New("span EndTimestamp doesn't match expected: 123, actual: 456"),
-				Reason: "Different span end timestamps should cause a failure.",
-			},
+			err: errors.New("span EndTimestamp doesn't match expected: 123, actual: 456"),
 		},
 		{
 			name: "attributes-number-mismatch",
@@ -399,16 +353,12 @@ func TestCompareSpan(t *testing.T) {
 				s.Attributes().PutStr("attr2", "value1")
 				return s
 			}(),
-			err: internal.Expectation{
-				Err:    errors.New("span attributes do not match expected: map[attr1:value1 attr2:value2], actual: map[attr1:value1 attr2:value1]"),
-				Reason: "Different span attributes should cause a failure.",
-			},
+			err: errors.New("span attributes do not match expected: map[attr1:value1 attr2:value2], actual: map[attr1:value1 attr2:value1]"),
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			err := CompareSpan(test.expected, test.actual)
-			test.err.Validate(t, err)
+			assert.Equal(t, test.err, CompareSpan(test.expected, test.actual))
 		})
 	}
 }

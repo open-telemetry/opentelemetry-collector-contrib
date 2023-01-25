@@ -71,7 +71,7 @@ func testScrape(ctx context.Context, t *testing.T, cfg *Config) {
 	expectedMetrics, err := golden.ReadMetrics(goldenPath)
 	require.NoError(t, err)
 
-	err = pmetrictest.CompareMetrics(expectedMetrics, metrics)
+	err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp())
 	require.NoError(t, err)
 	require.NoError(t, scraper.Shutdown(ctx))
 }

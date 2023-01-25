@@ -124,7 +124,8 @@ func TestAllMetrics(t *testing.T) {
 	expectedFile := filepath.Join("testdata", "metrics", "expected_all_metrics.json")
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
-	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics))
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
+		pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 }
 
 func TestNoMetrics(t *testing.T) {
