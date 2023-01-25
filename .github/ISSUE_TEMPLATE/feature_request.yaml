@@ -187,6 +187,7 @@ body:
       - receiver/promtail
       - receiver/pulsar
       - receiver/purefa
+      - receiver/purefb
       - receiver/rabbitmq
       - receiver/receivercreator
       - receiver/redis

@@ -455,6 +455,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tanzu
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver => ../../receiver/purefareceiver
 
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefbreceiver => ../../receiver/purefbreceiver
+
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver => ../../receiver/postgresqlreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor => ../../processor/resourceprocessor

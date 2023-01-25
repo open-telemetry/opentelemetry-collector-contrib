@@ -337,6 +337,9 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "purefa",
 		},
 		{
+			receiver: "purefb",
+		},
+		{
 			receiver: "receiver_creator",
 		},
 		{
