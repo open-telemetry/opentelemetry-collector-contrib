@@ -40,6 +40,10 @@ import (
 	metadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 )
 
+var (
+	errNotStarted = errors.New("exporter has not started")
+)
+
 // TODO: Find a place for this to be shared.
 type baseMetricsExporter struct {
 	component.Component
@@ -66,10 +70,11 @@ type signalfxExporter struct {
 	logger             *zap.Logger
 	telemetrySettings  component.TelemetrySettings
 	pushMetricsData    func(ctx context.Context, md pmetric.Metrics) (droppedTimeSeries int, err error)
-	pushMetadata       func(metadata []*metadata.MetadataUpdate) error
 	pushLogsData       func(ctx context.Context, ld plog.Logs) (droppedLogRecords int, err error)
 	hostMetadataSyncer *hostmetadata.Syncer
 	converter          *translation.MetricsConverter
+	dimClient          *dimensions.DimensionClient
+	cancelFn           func()
 }
 
 type exporterOptions struct {
@@ -118,7 +123,7 @@ func newSignalFxExporter(
 	}, nil
 }
 
-func (se *signalfxExporter) start(_ context.Context, host component.Host) (err error) {
+func (se *signalfxExporter) start(ctx context.Context, host component.Host) (err error) {
 	options, err := se.config.getOptionsFromConfig()
 	if err != nil {
 		return err
@@ -147,9 +152,11 @@ func (se *signalfxExporter) start(_ context.Context, host component.Host) (err e
 	if err != nil {
 		return fmt.Errorf("could not load API TLS config: %w", err)
 	}
+	cancellable, cancelFn := context.WithCancel(ctx)
+	se.cancelFn = cancelFn
 
 	dimClient := dimensions.NewDimensionClient(
-		context.Background(),
+		cancellable,
 		dimensions.DimensionClientOptions{
 			Token:        options.token,
 			APIURL:       options.apiURL,
@@ -171,8 +178,8 @@ func (se *signalfxExporter) start(_ context.Context, host component.Host) (err e
 	if se.config.SyncHostMetadata {
 		hms = hostmetadata.NewSyncer(se.logger, dimClient)
 	}
+	se.dimClient = dimClient
 	se.pushMetricsData = dpClient.pushMetricsData
-	se.pushMetadata = dimClient.PushMetadata
 	se.hostMetadataSyncer = hms
 	return nil
 }
@@ -258,6 +265,20 @@ func (se *signalfxExporter) pushMetrics(ctx context.Context, md pmetric.Metrics)
 func (se *signalfxExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 	_, err := se.pushLogsData(ctx, ld)
 	return err
+}
+
+func (se *signalfxExporter) shutdown(ctx context.Context) error {
+	if se.cancelFn != nil {
+		se.cancelFn()
+	}
+	return nil
+}
+
+func (se *signalfxExporter) pushMetadata(metadata []*metadata.MetadataUpdate) error {
+	if se.dimClient == nil {
+		return errNotStarted
+	}
+	return se.dimClient.PushMetadata(metadata)
 }
 
 func buildHeaders(config *Config) map[string]string {
