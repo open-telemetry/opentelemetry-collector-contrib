@@ -883,8 +883,8 @@ func newMetricApacheWorkers(settings MetricSettings) metricApacheWorkers {
 
 // MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
 type MetricsBuilderConfig struct {
-	MetricsSettings            MetricsSettings            `mapstructure:",squash"`
-	ResourceAttributesSettings ResourceAttributesSettings `mapstructure:",squash"`
+	Metrics            MetricsSettings            `mapstructure:",squash"`
+	ResourceAttributes ResourceAttributesSettings `mapstructure:",squash"`
 }
 
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
@@ -922,18 +922,18 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	return MetricsBuilderConfig{
-		MetricsSettings:            DefaultMetricsSettings(),
-		ResourceAttributesSettings: DefaultResourceAttributesSettings(),
+		Metrics:            DefaultMetricsSettings(),
+		ResourceAttributes: DefaultResourceAttributesSettings(),
 	}
 }
 
-func (mbc MetricsBuilderConfig) WithMetricsSettings(ms MetricsSettings) MetricsBuilderConfig {
-	mbc.MetricsSettings = ms
+func (mbc MetricsBuilderConfig) WithMetrics(ms MetricsSettings) MetricsBuilderConfig {
+	mbc.Metrics = ms
 	return mbc
 }
 
-func (mbc MetricsBuilderConfig) WithResourceAttributesSettings(ras ResourceAttributesSettings) MetricsBuilderConfig {
-	mbc.ResourceAttributesSettings = ras
+func (mbc MetricsBuilderConfig) WithResourceAttributes(ras ResourceAttributesSettings) MetricsBuilderConfig {
+	mbc.ResourceAttributes = ras
 	return mbc
 }
 
@@ -942,19 +942,19 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		startTime:                      pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                  pmetric.NewMetrics(),
 		buildInfo:                      settings.BuildInfo,
-		resourceAttributesSettings:     mbc.ResourceAttributesSettings,
-		metricApacheCPULoad:            newMetricApacheCPULoad(mbc.MetricsSettings.ApacheCPULoad),
-		metricApacheCPUTime:            newMetricApacheCPUTime(mbc.MetricsSettings.ApacheCPUTime),
-		metricApacheCurrentConnections: newMetricApacheCurrentConnections(mbc.MetricsSettings.ApacheCurrentConnections),
-		metricApacheLoad1:              newMetricApacheLoad1(mbc.MetricsSettings.ApacheLoad1),
-		metricApacheLoad15:             newMetricApacheLoad15(mbc.MetricsSettings.ApacheLoad15),
-		metricApacheLoad5:              newMetricApacheLoad5(mbc.MetricsSettings.ApacheLoad5),
-		metricApacheRequestTime:        newMetricApacheRequestTime(mbc.MetricsSettings.ApacheRequestTime),
-		metricApacheRequests:           newMetricApacheRequests(mbc.MetricsSettings.ApacheRequests),
-		metricApacheScoreboard:         newMetricApacheScoreboard(mbc.MetricsSettings.ApacheScoreboard),
-		metricApacheTraffic:            newMetricApacheTraffic(mbc.MetricsSettings.ApacheTraffic),
-		metricApacheUptime:             newMetricApacheUptime(mbc.MetricsSettings.ApacheUptime),
-		metricApacheWorkers:            newMetricApacheWorkers(mbc.MetricsSettings.ApacheWorkers),
+		resourceAttributesSettings:     mbc.ResourceAttributes,
+		metricApacheCPULoad:            newMetricApacheCPULoad(mbc.Metrics.ApacheCPULoad),
+		metricApacheCPUTime:            newMetricApacheCPUTime(mbc.Metrics.ApacheCPUTime),
+		metricApacheCurrentConnections: newMetricApacheCurrentConnections(mbc.Metrics.ApacheCurrentConnections),
+		metricApacheLoad1:              newMetricApacheLoad1(mbc.Metrics.ApacheLoad1),
+		metricApacheLoad15:             newMetricApacheLoad15(mbc.Metrics.ApacheLoad15),
+		metricApacheLoad5:              newMetricApacheLoad5(mbc.Metrics.ApacheLoad5),
+		metricApacheRequestTime:        newMetricApacheRequestTime(mbc.Metrics.ApacheRequestTime),
+		metricApacheRequests:           newMetricApacheRequests(mbc.Metrics.ApacheRequests),
+		metricApacheScoreboard:         newMetricApacheScoreboard(mbc.Metrics.ApacheScoreboard),
+		metricApacheTraffic:            newMetricApacheTraffic(mbc.Metrics.ApacheTraffic),
+		metricApacheUptime:             newMetricApacheUptime(mbc.Metrics.ApacheUptime),
+		metricApacheWorkers:            newMetricApacheWorkers(mbc.Metrics.ApacheWorkers),
 	}
 	for _, op := range options {
 		op(mb)

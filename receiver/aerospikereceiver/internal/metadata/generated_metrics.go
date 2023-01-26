@@ -1193,8 +1193,8 @@ func newMetricAerospikeNodeQueryTracked(settings MetricSettings) metricAerospike
 
 // MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
 type MetricsBuilderConfig struct {
-	MetricsSettings            MetricsSettings            `mapstructure:",squash"`
-	ResourceAttributesSettings ResourceAttributesSettings `mapstructure:",squash"`
+	Metrics            MetricsSettings            `mapstructure:",squash"`
+	ResourceAttributes ResourceAttributesSettings `mapstructure:",squash"`
 }
 
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
@@ -1234,18 +1234,18 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	return MetricsBuilderConfig{
-		MetricsSettings:            DefaultMetricsSettings(),
-		ResourceAttributesSettings: DefaultResourceAttributesSettings(),
+		Metrics:            DefaultMetricsSettings(),
+		ResourceAttributes: DefaultResourceAttributesSettings(),
 	}
 }
 
-func (mbc MetricsBuilderConfig) WithMetricsSettings(ms MetricsSettings) MetricsBuilderConfig {
-	mbc.MetricsSettings = ms
+func (mbc MetricsBuilderConfig) WithMetrics(ms MetricsSettings) MetricsBuilderConfig {
+	mbc.Metrics = ms
 	return mbc
 }
 
-func (mbc MetricsBuilderConfig) WithResourceAttributesSettings(ras ResourceAttributesSettings) MetricsBuilderConfig {
-	mbc.ResourceAttributesSettings = ras
+func (mbc MetricsBuilderConfig) WithResourceAttributes(ras ResourceAttributesSettings) MetricsBuilderConfig {
+	mbc.ResourceAttributes = ras
 	return mbc
 }
 
@@ -1254,21 +1254,21 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		startTime:                             pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                         pmetric.NewMetrics(),
 		buildInfo:                             settings.BuildInfo,
-		resourceAttributesSettings:            mbc.ResourceAttributesSettings,
-		metricAerospikeNamespaceDiskAvailable: newMetricAerospikeNamespaceDiskAvailable(mbc.MetricsSettings.AerospikeNamespaceDiskAvailable),
-		metricAerospikeNamespaceGeojsonRegionQueryCells:         newMetricAerospikeNamespaceGeojsonRegionQueryCells(mbc.MetricsSettings.AerospikeNamespaceGeojsonRegionQueryCells),
-		metricAerospikeNamespaceGeojsonRegionQueryFalsePositive: newMetricAerospikeNamespaceGeojsonRegionQueryFalsePositive(mbc.MetricsSettings.AerospikeNamespaceGeojsonRegionQueryFalsePositive),
-		metricAerospikeNamespaceGeojsonRegionQueryPoints:        newMetricAerospikeNamespaceGeojsonRegionQueryPoints(mbc.MetricsSettings.AerospikeNamespaceGeojsonRegionQueryPoints),
-		metricAerospikeNamespaceGeojsonRegionQueryRequests:      newMetricAerospikeNamespaceGeojsonRegionQueryRequests(mbc.MetricsSettings.AerospikeNamespaceGeojsonRegionQueryRequests),
-		metricAerospikeNamespaceMemoryFree:                      newMetricAerospikeNamespaceMemoryFree(mbc.MetricsSettings.AerospikeNamespaceMemoryFree),
-		metricAerospikeNamespaceMemoryUsage:                     newMetricAerospikeNamespaceMemoryUsage(mbc.MetricsSettings.AerospikeNamespaceMemoryUsage),
-		metricAerospikeNamespaceQueryCount:                      newMetricAerospikeNamespaceQueryCount(mbc.MetricsSettings.AerospikeNamespaceQueryCount),
-		metricAerospikeNamespaceScanCount:                       newMetricAerospikeNamespaceScanCount(mbc.MetricsSettings.AerospikeNamespaceScanCount),
-		metricAerospikeNamespaceTransactionCount:                newMetricAerospikeNamespaceTransactionCount(mbc.MetricsSettings.AerospikeNamespaceTransactionCount),
-		metricAerospikeNodeConnectionCount:                      newMetricAerospikeNodeConnectionCount(mbc.MetricsSettings.AerospikeNodeConnectionCount),
-		metricAerospikeNodeConnectionOpen:                       newMetricAerospikeNodeConnectionOpen(mbc.MetricsSettings.AerospikeNodeConnectionOpen),
-		metricAerospikeNodeMemoryFree:                           newMetricAerospikeNodeMemoryFree(mbc.MetricsSettings.AerospikeNodeMemoryFree),
-		metricAerospikeNodeQueryTracked:                         newMetricAerospikeNodeQueryTracked(mbc.MetricsSettings.AerospikeNodeQueryTracked),
+		resourceAttributesSettings:            mbc.ResourceAttributes,
+		metricAerospikeNamespaceDiskAvailable: newMetricAerospikeNamespaceDiskAvailable(mbc.Metrics.AerospikeNamespaceDiskAvailable),
+		metricAerospikeNamespaceGeojsonRegionQueryCells:         newMetricAerospikeNamespaceGeojsonRegionQueryCells(mbc.Metrics.AerospikeNamespaceGeojsonRegionQueryCells),
+		metricAerospikeNamespaceGeojsonRegionQueryFalsePositive: newMetricAerospikeNamespaceGeojsonRegionQueryFalsePositive(mbc.Metrics.AerospikeNamespaceGeojsonRegionQueryFalsePositive),
+		metricAerospikeNamespaceGeojsonRegionQueryPoints:        newMetricAerospikeNamespaceGeojsonRegionQueryPoints(mbc.Metrics.AerospikeNamespaceGeojsonRegionQueryPoints),
+		metricAerospikeNamespaceGeojsonRegionQueryRequests:      newMetricAerospikeNamespaceGeojsonRegionQueryRequests(mbc.Metrics.AerospikeNamespaceGeojsonRegionQueryRequests),
+		metricAerospikeNamespaceMemoryFree:                      newMetricAerospikeNamespaceMemoryFree(mbc.Metrics.AerospikeNamespaceMemoryFree),
+		metricAerospikeNamespaceMemoryUsage:                     newMetricAerospikeNamespaceMemoryUsage(mbc.Metrics.AerospikeNamespaceMemoryUsage),
+		metricAerospikeNamespaceQueryCount:                      newMetricAerospikeNamespaceQueryCount(mbc.Metrics.AerospikeNamespaceQueryCount),
+		metricAerospikeNamespaceScanCount:                       newMetricAerospikeNamespaceScanCount(mbc.Metrics.AerospikeNamespaceScanCount),
+		metricAerospikeNamespaceTransactionCount:                newMetricAerospikeNamespaceTransactionCount(mbc.Metrics.AerospikeNamespaceTransactionCount),
+		metricAerospikeNodeConnectionCount:                      newMetricAerospikeNodeConnectionCount(mbc.Metrics.AerospikeNodeConnectionCount),
+		metricAerospikeNodeConnectionOpen:                       newMetricAerospikeNodeConnectionOpen(mbc.Metrics.AerospikeNodeConnectionOpen),
+		metricAerospikeNodeMemoryFree:                           newMetricAerospikeNodeMemoryFree(mbc.Metrics.AerospikeNodeMemoryFree),
+		metricAerospikeNodeQueryTracked:                         newMetricAerospikeNodeQueryTracked(mbc.Metrics.AerospikeNodeQueryTracked),
 	}
 	for _, op := range options {
 		op(mb)

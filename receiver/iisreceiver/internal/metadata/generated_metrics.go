@@ -812,8 +812,8 @@ func newMetricIisUptime(settings MetricSettings) metricIisUptime {
 
 // MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
 type MetricsBuilderConfig struct {
-	MetricsSettings            MetricsSettings            `mapstructure:",squash"`
-	ResourceAttributesSettings ResourceAttributesSettings `mapstructure:",squash"`
+	Metrics            MetricsSettings            `mapstructure:",squash"`
+	ResourceAttributes ResourceAttributesSettings `mapstructure:",squash"`
 }
 
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
@@ -851,18 +851,18 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	return MetricsBuilderConfig{
-		MetricsSettings:            DefaultMetricsSettings(),
-		ResourceAttributesSettings: DefaultResourceAttributesSettings(),
+		Metrics:            DefaultMetricsSettings(),
+		ResourceAttributes: DefaultResourceAttributesSettings(),
 	}
 }
 
-func (mbc MetricsBuilderConfig) WithMetricsSettings(ms MetricsSettings) MetricsBuilderConfig {
-	mbc.MetricsSettings = ms
+func (mbc MetricsBuilderConfig) WithMetrics(ms MetricsSettings) MetricsBuilderConfig {
+	mbc.Metrics = ms
 	return mbc
 }
 
-func (mbc MetricsBuilderConfig) WithResourceAttributesSettings(ras ResourceAttributesSettings) MetricsBuilderConfig {
-	mbc.ResourceAttributesSettings = ras
+func (mbc MetricsBuilderConfig) WithResourceAttributes(ras ResourceAttributesSettings) MetricsBuilderConfig {
+	mbc.ResourceAttributes = ras
 	return mbc
 }
 
@@ -871,19 +871,19 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		startTime:                       pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                   pmetric.NewMetrics(),
 		buildInfo:                       settings.BuildInfo,
-		resourceAttributesSettings:      mbc.ResourceAttributesSettings,
-		metricIisConnectionActive:       newMetricIisConnectionActive(mbc.MetricsSettings.IisConnectionActive),
-		metricIisConnectionAnonymous:    newMetricIisConnectionAnonymous(mbc.MetricsSettings.IisConnectionAnonymous),
-		metricIisConnectionAttemptCount: newMetricIisConnectionAttemptCount(mbc.MetricsSettings.IisConnectionAttemptCount),
-		metricIisNetworkBlocked:         newMetricIisNetworkBlocked(mbc.MetricsSettings.IisNetworkBlocked),
-		metricIisNetworkFileCount:       newMetricIisNetworkFileCount(mbc.MetricsSettings.IisNetworkFileCount),
-		metricIisNetworkIo:              newMetricIisNetworkIo(mbc.MetricsSettings.IisNetworkIo),
-		metricIisRequestCount:           newMetricIisRequestCount(mbc.MetricsSettings.IisRequestCount),
-		metricIisRequestQueueAgeMax:     newMetricIisRequestQueueAgeMax(mbc.MetricsSettings.IisRequestQueueAgeMax),
-		metricIisRequestQueueCount:      newMetricIisRequestQueueCount(mbc.MetricsSettings.IisRequestQueueCount),
-		metricIisRequestRejected:        newMetricIisRequestRejected(mbc.MetricsSettings.IisRequestRejected),
-		metricIisThreadActive:           newMetricIisThreadActive(mbc.MetricsSettings.IisThreadActive),
-		metricIisUptime:                 newMetricIisUptime(mbc.MetricsSettings.IisUptime),
+		resourceAttributesSettings:      mbc.ResourceAttributes,
+		metricIisConnectionActive:       newMetricIisConnectionActive(mbc.Metrics.IisConnectionActive),
+		metricIisConnectionAnonymous:    newMetricIisConnectionAnonymous(mbc.Metrics.IisConnectionAnonymous),
+		metricIisConnectionAttemptCount: newMetricIisConnectionAttemptCount(mbc.Metrics.IisConnectionAttemptCount),
+		metricIisNetworkBlocked:         newMetricIisNetworkBlocked(mbc.Metrics.IisNetworkBlocked),
+		metricIisNetworkFileCount:       newMetricIisNetworkFileCount(mbc.Metrics.IisNetworkFileCount),
+		metricIisNetworkIo:              newMetricIisNetworkIo(mbc.Metrics.IisNetworkIo),
+		metricIisRequestCount:           newMetricIisRequestCount(mbc.Metrics.IisRequestCount),
+		metricIisRequestQueueAgeMax:     newMetricIisRequestQueueAgeMax(mbc.Metrics.IisRequestQueueAgeMax),
+		metricIisRequestQueueCount:      newMetricIisRequestQueueCount(mbc.Metrics.IisRequestQueueCount),
+		metricIisRequestRejected:        newMetricIisRequestRejected(mbc.Metrics.IisRequestRejected),
+		metricIisThreadActive:           newMetricIisThreadActive(mbc.Metrics.IisThreadActive),
+		metricIisUptime:                 newMetricIisUptime(mbc.Metrics.IisUptime),
 	}
 	for _, op := range options {
 		op(mb)

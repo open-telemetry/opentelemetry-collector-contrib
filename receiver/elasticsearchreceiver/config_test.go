@@ -156,7 +156,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	defaultMetrics := metadata.DefaultMetricsBuilderConfig()
-	defaultMetrics.MetricsSettings.ElasticsearchNodeFsDiskAvailable.Enabled = false
+	defaultMetrics.Metrics.ElasticsearchNodeFsDiskAvailable.Enabled = false
 	tests := []struct {
 		id       component.ID
 		expected component.Config

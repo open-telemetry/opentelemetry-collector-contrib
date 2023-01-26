@@ -1709,8 +1709,8 @@ func newMetricBigipVirtualServerRequestCount(settings MetricSettings) metricBigi
 
 // MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
 type MetricsBuilderConfig struct {
-	MetricsSettings            MetricsSettings            `mapstructure:",squash"`
-	ResourceAttributesSettings ResourceAttributesSettings `mapstructure:",squash"`
+	Metrics            MetricsSettings            `mapstructure:",squash"`
+	ResourceAttributes ResourceAttributesSettings `mapstructure:",squash"`
 }
 
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
@@ -1763,18 +1763,18 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	return MetricsBuilderConfig{
-		MetricsSettings:            DefaultMetricsSettings(),
-		ResourceAttributesSettings: DefaultResourceAttributesSettings(),
+		Metrics:            DefaultMetricsSettings(),
+		ResourceAttributes: DefaultResourceAttributesSettings(),
 	}
 }
 
-func (mbc MetricsBuilderConfig) WithMetricsSettings(ms MetricsSettings) MetricsBuilderConfig {
-	mbc.MetricsSettings = ms
+func (mbc MetricsBuilderConfig) WithMetrics(ms MetricsSettings) MetricsBuilderConfig {
+	mbc.Metrics = ms
 	return mbc
 }
 
-func (mbc MetricsBuilderConfig) WithResourceAttributesSettings(ras ResourceAttributesSettings) MetricsBuilderConfig {
-	mbc.ResourceAttributesSettings = ras
+func (mbc MetricsBuilderConfig) WithResourceAttributes(ras ResourceAttributesSettings) MetricsBuilderConfig {
+	mbc.ResourceAttributes = ras
 	return mbc
 }
 
@@ -1783,34 +1783,34 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		startTime:                               pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                           pmetric.NewMetrics(),
 		buildInfo:                               settings.BuildInfo,
-		resourceAttributesSettings:              mbc.ResourceAttributesSettings,
-		metricBigipNodeAvailability:             newMetricBigipNodeAvailability(mbc.MetricsSettings.BigipNodeAvailability),
-		metricBigipNodeConnectionCount:          newMetricBigipNodeConnectionCount(mbc.MetricsSettings.BigipNodeConnectionCount),
-		metricBigipNodeDataTransmitted:          newMetricBigipNodeDataTransmitted(mbc.MetricsSettings.BigipNodeDataTransmitted),
-		metricBigipNodeEnabled:                  newMetricBigipNodeEnabled(mbc.MetricsSettings.BigipNodeEnabled),
-		metricBigipNodePacketCount:              newMetricBigipNodePacketCount(mbc.MetricsSettings.BigipNodePacketCount),
-		metricBigipNodeRequestCount:             newMetricBigipNodeRequestCount(mbc.MetricsSettings.BigipNodeRequestCount),
-		metricBigipNodeSessionCount:             newMetricBigipNodeSessionCount(mbc.MetricsSettings.BigipNodeSessionCount),
-		metricBigipPoolAvailability:             newMetricBigipPoolAvailability(mbc.MetricsSettings.BigipPoolAvailability),
-		metricBigipPoolConnectionCount:          newMetricBigipPoolConnectionCount(mbc.MetricsSettings.BigipPoolConnectionCount),
-		metricBigipPoolDataTransmitted:          newMetricBigipPoolDataTransmitted(mbc.MetricsSettings.BigipPoolDataTransmitted),
-		metricBigipPoolEnabled:                  newMetricBigipPoolEnabled(mbc.MetricsSettings.BigipPoolEnabled),
-		metricBigipPoolMemberCount:              newMetricBigipPoolMemberCount(mbc.MetricsSettings.BigipPoolMemberCount),
-		metricBigipPoolPacketCount:              newMetricBigipPoolPacketCount(mbc.MetricsSettings.BigipPoolPacketCount),
-		metricBigipPoolRequestCount:             newMetricBigipPoolRequestCount(mbc.MetricsSettings.BigipPoolRequestCount),
-		metricBigipPoolMemberAvailability:       newMetricBigipPoolMemberAvailability(mbc.MetricsSettings.BigipPoolMemberAvailability),
-		metricBigipPoolMemberConnectionCount:    newMetricBigipPoolMemberConnectionCount(mbc.MetricsSettings.BigipPoolMemberConnectionCount),
-		metricBigipPoolMemberDataTransmitted:    newMetricBigipPoolMemberDataTransmitted(mbc.MetricsSettings.BigipPoolMemberDataTransmitted),
-		metricBigipPoolMemberEnabled:            newMetricBigipPoolMemberEnabled(mbc.MetricsSettings.BigipPoolMemberEnabled),
-		metricBigipPoolMemberPacketCount:        newMetricBigipPoolMemberPacketCount(mbc.MetricsSettings.BigipPoolMemberPacketCount),
-		metricBigipPoolMemberRequestCount:       newMetricBigipPoolMemberRequestCount(mbc.MetricsSettings.BigipPoolMemberRequestCount),
-		metricBigipPoolMemberSessionCount:       newMetricBigipPoolMemberSessionCount(mbc.MetricsSettings.BigipPoolMemberSessionCount),
-		metricBigipVirtualServerAvailability:    newMetricBigipVirtualServerAvailability(mbc.MetricsSettings.BigipVirtualServerAvailability),
-		metricBigipVirtualServerConnectionCount: newMetricBigipVirtualServerConnectionCount(mbc.MetricsSettings.BigipVirtualServerConnectionCount),
-		metricBigipVirtualServerDataTransmitted: newMetricBigipVirtualServerDataTransmitted(mbc.MetricsSettings.BigipVirtualServerDataTransmitted),
-		metricBigipVirtualServerEnabled:         newMetricBigipVirtualServerEnabled(mbc.MetricsSettings.BigipVirtualServerEnabled),
-		metricBigipVirtualServerPacketCount:     newMetricBigipVirtualServerPacketCount(mbc.MetricsSettings.BigipVirtualServerPacketCount),
-		metricBigipVirtualServerRequestCount:    newMetricBigipVirtualServerRequestCount(mbc.MetricsSettings.BigipVirtualServerRequestCount),
+		resourceAttributesSettings:              mbc.ResourceAttributes,
+		metricBigipNodeAvailability:             newMetricBigipNodeAvailability(mbc.Metrics.BigipNodeAvailability),
+		metricBigipNodeConnectionCount:          newMetricBigipNodeConnectionCount(mbc.Metrics.BigipNodeConnectionCount),
+		metricBigipNodeDataTransmitted:          newMetricBigipNodeDataTransmitted(mbc.Metrics.BigipNodeDataTransmitted),
+		metricBigipNodeEnabled:                  newMetricBigipNodeEnabled(mbc.Metrics.BigipNodeEnabled),
+		metricBigipNodePacketCount:              newMetricBigipNodePacketCount(mbc.Metrics.BigipNodePacketCount),
+		metricBigipNodeRequestCount:             newMetricBigipNodeRequestCount(mbc.Metrics.BigipNodeRequestCount),
+		metricBigipNodeSessionCount:             newMetricBigipNodeSessionCount(mbc.Metrics.BigipNodeSessionCount),
+		metricBigipPoolAvailability:             newMetricBigipPoolAvailability(mbc.Metrics.BigipPoolAvailability),
+		metricBigipPoolConnectionCount:          newMetricBigipPoolConnectionCount(mbc.Metrics.BigipPoolConnectionCount),
+		metricBigipPoolDataTransmitted:          newMetricBigipPoolDataTransmitted(mbc.Metrics.BigipPoolDataTransmitted),
+		metricBigipPoolEnabled:                  newMetricBigipPoolEnabled(mbc.Metrics.BigipPoolEnabled),
+		metricBigipPoolMemberCount:              newMetricBigipPoolMemberCount(mbc.Metrics.BigipPoolMemberCount),
+		metricBigipPoolPacketCount:              newMetricBigipPoolPacketCount(mbc.Metrics.BigipPoolPacketCount),
+		metricBigipPoolRequestCount:             newMetricBigipPoolRequestCount(mbc.Metrics.BigipPoolRequestCount),
+		metricBigipPoolMemberAvailability:       newMetricBigipPoolMemberAvailability(mbc.Metrics.BigipPoolMemberAvailability),
+		metricBigipPoolMemberConnectionCount:    newMetricBigipPoolMemberConnectionCount(mbc.Metrics.BigipPoolMemberConnectionCount),
+		metricBigipPoolMemberDataTransmitted:    newMetricBigipPoolMemberDataTransmitted(mbc.Metrics.BigipPoolMemberDataTransmitted),
+		metricBigipPoolMemberEnabled:            newMetricBigipPoolMemberEnabled(mbc.Metrics.BigipPoolMemberEnabled),
+		metricBigipPoolMemberPacketCount:        newMetricBigipPoolMemberPacketCount(mbc.Metrics.BigipPoolMemberPacketCount),
+		metricBigipPoolMemberRequestCount:       newMetricBigipPoolMemberRequestCount(mbc.Metrics.BigipPoolMemberRequestCount),
+		metricBigipPoolMemberSessionCount:       newMetricBigipPoolMemberSessionCount(mbc.Metrics.BigipPoolMemberSessionCount),
+		metricBigipVirtualServerAvailability:    newMetricBigipVirtualServerAvailability(mbc.Metrics.BigipVirtualServerAvailability),
+		metricBigipVirtualServerConnectionCount: newMetricBigipVirtualServerConnectionCount(mbc.Metrics.BigipVirtualServerConnectionCount),
+		metricBigipVirtualServerDataTransmitted: newMetricBigipVirtualServerDataTransmitted(mbc.Metrics.BigipVirtualServerDataTransmitted),
+		metricBigipVirtualServerEnabled:         newMetricBigipVirtualServerEnabled(mbc.Metrics.BigipVirtualServerEnabled),
+		metricBigipVirtualServerPacketCount:     newMetricBigipVirtualServerPacketCount(mbc.Metrics.BigipVirtualServerPacketCount),
+		metricBigipVirtualServerRequestCount:    newMetricBigipVirtualServerRequestCount(mbc.Metrics.BigipVirtualServerRequestCount),
 	}
 	for _, op := range options {
 		op(mb)

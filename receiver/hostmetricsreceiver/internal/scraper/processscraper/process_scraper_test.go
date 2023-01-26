@@ -92,7 +92,7 @@ func TestScrape(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			metricsBuilderConfig := metadata.DefaultMetricsBuilderConfig()
 			if test.mutateMetricsSettings != nil {
-				test.mutateMetricsSettings(t, &metricsBuilderConfig.MetricsSettings)
+				test.mutateMetricsSettings(t, &metricsBuilderConfig.Metrics)
 			}
 			scraper, err := newProcessScraper(receivertest.NewNopCreateSettings(), &Config{MetricsBuilderConfig: metricsBuilderConfig})
 			if test.mutateScraper != nil {
@@ -123,38 +123,38 @@ func TestScrape(t *testing.T) {
 			require.Greater(t, md.ResourceMetrics().Len(), 1)
 			assertProcessResourceAttributesExist(t, md.ResourceMetrics())
 			assertCPUTimeMetricValid(t, md.ResourceMetrics(), expectedStartTime)
-			if metricsBuilderConfig.MetricsSettings.ProcessCPUUtilization.Enabled {
+			if metricsBuilderConfig.Metrics.ProcessCPUUtilization.Enabled {
 				assertCPUUtilizationMetricValid(t, md.ResourceMetrics(), expectedStartTime)
 			} else {
 				assertMetricMissing(t, md.ResourceMetrics(), "process.cpu.utilization")
 			}
 			assertMemoryUsageMetricValid(t, md.ResourceMetrics(), expectedStartTime)
 			assertDiskIoMetricValid(t, md.ResourceMetrics(), expectedStartTime)
-			if metricsBuilderConfig.MetricsSettings.ProcessDiskOperations.Enabled {
+			if metricsBuilderConfig.Metrics.ProcessDiskOperations.Enabled {
 				assertDiskOperationsMetricValid(t, md.ResourceMetrics(), expectedStartTime)
 			} else {
 				assertMetricMissing(t, md.ResourceMetrics(), "process.disk.operations")
 			}
-			if metricsBuilderConfig.MetricsSettings.ProcessPagingFaults.Enabled {
+			if metricsBuilderConfig.Metrics.ProcessPagingFaults.Enabled {
 				assertPagingMetricValid(t, md.ResourceMetrics(), expectedStartTime)
 			}
-			if metricsBuilderConfig.MetricsSettings.ProcessSignalsPending.Enabled {
+			if metricsBuilderConfig.Metrics.ProcessSignalsPending.Enabled {
 				assertSignalsPendingMetricValid(t, md.ResourceMetrics(), expectedStartTime)
 			}
-			if metricsBuilderConfig.MetricsSettings.ProcessMemoryUtilization.Enabled {
+			if metricsBuilderConfig.Metrics.ProcessMemoryUtilization.Enabled {
 				assertMemoryUtilizationMetricValid(t, md.ResourceMetrics(), expectedStartTime)
 			}
-			if metricsBuilderConfig.MetricsSettings.ProcessThreads.Enabled {
+			if metricsBuilderConfig.Metrics.ProcessThreads.Enabled {
 				assertThreadsCountValid(t, md.ResourceMetrics(), expectedStartTime)
 			} else {
 				assertMetricMissing(t, md.ResourceMetrics(), "process.threads")
 			}
-			if metricsBuilderConfig.MetricsSettings.ProcessContextSwitches.Enabled {
+			if metricsBuilderConfig.Metrics.ProcessContextSwitches.Enabled {
 				assertContextSwitchMetricValid(t, md.ResourceMetrics(), expectedStartTime)
 			} else {
 				assertMetricMissing(t, md.ResourceMetrics(), "process.context_switches")
 			}
-			if metricsBuilderConfig.MetricsSettings.ProcessOpenFileDescriptors.Enabled {
+			if metricsBuilderConfig.Metrics.ProcessOpenFileDescriptors.Enabled {
 				assertOpenFileDescriptorMetricValid(t, md.ResourceMetrics(), expectedStartTime)
 			} else {
 				assertMetricMissing(t, md.ResourceMetrics(), "process.open_file_descriptors")
@@ -570,7 +570,7 @@ func TestScrapeMetrics_Filtered(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			scrapeProcessDelay, _ := time.ParseDuration(test.scrapeProcessDelay)
 			metricsBuilderConfig := metadata.DefaultMetricsBuilderConfig()
-			enableLinuxOnlyMetrics(&metricsBuilderConfig.MetricsSettings)
+			enableLinuxOnlyMetrics(&metricsBuilderConfig.Metrics)
 
 			config := &Config{
 				MetricsBuilderConfig: metricsBuilderConfig,
@@ -767,7 +767,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			}
 
 			metricsBuilderConfig := metadata.DefaultMetricsBuilderConfig()
-			enableOptionalMetrics(&metricsBuilderConfig.MetricsSettings)
+			enableOptionalMetrics(&metricsBuilderConfig.Metrics)
 
 			scraper, err := newProcessScraper(receivertest.NewNopCreateSettings(), &Config{MetricsBuilderConfig: metricsBuilderConfig})
 			require.NoError(t, err, "Failed to create process scraper: %v", err)
@@ -959,11 +959,11 @@ func TestScrapeMetrics_DontCheckDisabledMetrics(t *testing.T) {
 
 	metricsBuilderConfig := metadata.DefaultMetricsBuilderConfig()
 
-	metricsBuilderConfig.MetricsSettings.ProcessCPUTime.Enabled = false
-	metricsBuilderConfig.MetricsSettings.ProcessDiskIo.Enabled = false
-	metricsBuilderConfig.MetricsSettings.ProcessDiskOperations.Enabled = false
-	metricsBuilderConfig.MetricsSettings.ProcessMemoryUsage.Enabled = false
-	metricsBuilderConfig.MetricsSettings.ProcessMemoryVirtual.Enabled = false
+	metricsBuilderConfig.Metrics.ProcessCPUTime.Enabled = false
+	metricsBuilderConfig.Metrics.ProcessDiskIo.Enabled = false
+	metricsBuilderConfig.Metrics.ProcessDiskOperations.Enabled = false
+	metricsBuilderConfig.Metrics.ProcessMemoryUsage.Enabled = false
+	metricsBuilderConfig.Metrics.ProcessMemoryVirtual.Enabled = false
 
 	t.Run("Metrics don't log errors when disabled", func(t *testing.T) {
 		config := &Config{MetricsBuilderConfig: metricsBuilderConfig}

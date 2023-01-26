@@ -3602,8 +3602,8 @@ func newMetricContainerNetworkIoUsageTxPackets(settings MetricSettings) metricCo
 
 // MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
 type MetricsBuilderConfig struct {
-	MetricsSettings            MetricsSettings            `mapstructure:",squash"`
-	ResourceAttributesSettings ResourceAttributesSettings `mapstructure:",squash"`
+	Metrics            MetricsSettings            `mapstructure:",squash"`
+	ResourceAttributes ResourceAttributesSettings `mapstructure:",squash"`
 }
 
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
@@ -3692,18 +3692,18 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	return MetricsBuilderConfig{
-		MetricsSettings:            DefaultMetricsSettings(),
-		ResourceAttributesSettings: DefaultResourceAttributesSettings(),
+		Metrics:            DefaultMetricsSettings(),
+		ResourceAttributes: DefaultResourceAttributesSettings(),
 	}
 }
 
-func (mbc MetricsBuilderConfig) WithMetricsSettings(ms MetricsSettings) MetricsBuilderConfig {
-	mbc.MetricsSettings = ms
+func (mbc MetricsBuilderConfig) WithMetrics(ms MetricsSettings) MetricsBuilderConfig {
+	mbc.Metrics = ms
 	return mbc
 }
 
-func (mbc MetricsBuilderConfig) WithResourceAttributesSettings(ras ResourceAttributesSettings) MetricsBuilderConfig {
-	mbc.ResourceAttributesSettings = ras
+func (mbc MetricsBuilderConfig) WithResourceAttributes(ras ResourceAttributesSettings) MetricsBuilderConfig {
+	mbc.ResourceAttributes = ras
 	return mbc
 }
 
@@ -3712,70 +3712,70 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		startTime:                                        pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                                    pmetric.NewMetrics(),
 		buildInfo:                                        settings.BuildInfo,
-		resourceAttributesSettings:                       mbc.ResourceAttributesSettings,
-		metricContainerBlockioIoMergedRecursive:          newMetricContainerBlockioIoMergedRecursive(mbc.MetricsSettings.ContainerBlockioIoMergedRecursive),
-		metricContainerBlockioIoQueuedRecursive:          newMetricContainerBlockioIoQueuedRecursive(mbc.MetricsSettings.ContainerBlockioIoQueuedRecursive),
-		metricContainerBlockioIoServiceBytesRecursive:    newMetricContainerBlockioIoServiceBytesRecursive(mbc.MetricsSettings.ContainerBlockioIoServiceBytesRecursive),
-		metricContainerBlockioIoServiceTimeRecursive:     newMetricContainerBlockioIoServiceTimeRecursive(mbc.MetricsSettings.ContainerBlockioIoServiceTimeRecursive),
-		metricContainerBlockioIoServicedRecursive:        newMetricContainerBlockioIoServicedRecursive(mbc.MetricsSettings.ContainerBlockioIoServicedRecursive),
-		metricContainerBlockioIoTimeRecursive:            newMetricContainerBlockioIoTimeRecursive(mbc.MetricsSettings.ContainerBlockioIoTimeRecursive),
-		metricContainerBlockioIoWaitTimeRecursive:        newMetricContainerBlockioIoWaitTimeRecursive(mbc.MetricsSettings.ContainerBlockioIoWaitTimeRecursive),
-		metricContainerBlockioSectorsRecursive:           newMetricContainerBlockioSectorsRecursive(mbc.MetricsSettings.ContainerBlockioSectorsRecursive),
-		metricContainerCPUPercent:                        newMetricContainerCPUPercent(mbc.MetricsSettings.ContainerCPUPercent),
-		metricContainerCPUThrottlingDataPeriods:          newMetricContainerCPUThrottlingDataPeriods(mbc.MetricsSettings.ContainerCPUThrottlingDataPeriods),
-		metricContainerCPUThrottlingDataThrottledPeriods: newMetricContainerCPUThrottlingDataThrottledPeriods(mbc.MetricsSettings.ContainerCPUThrottlingDataThrottledPeriods),
-		metricContainerCPUThrottlingDataThrottledTime:    newMetricContainerCPUThrottlingDataThrottledTime(mbc.MetricsSettings.ContainerCPUThrottlingDataThrottledTime),
-		metricContainerCPUUsageKernelmode:                newMetricContainerCPUUsageKernelmode(mbc.MetricsSettings.ContainerCPUUsageKernelmode),
-		metricContainerCPUUsagePercpu:                    newMetricContainerCPUUsagePercpu(mbc.MetricsSettings.ContainerCPUUsagePercpu),
-		metricContainerCPUUsageSystem:                    newMetricContainerCPUUsageSystem(mbc.MetricsSettings.ContainerCPUUsageSystem),
-		metricContainerCPUUsageTotal:                     newMetricContainerCPUUsageTotal(mbc.MetricsSettings.ContainerCPUUsageTotal),
-		metricContainerCPUUsageUsermode:                  newMetricContainerCPUUsageUsermode(mbc.MetricsSettings.ContainerCPUUsageUsermode),
-		metricContainerMemoryActiveAnon:                  newMetricContainerMemoryActiveAnon(mbc.MetricsSettings.ContainerMemoryActiveAnon),
-		metricContainerMemoryActiveFile:                  newMetricContainerMemoryActiveFile(mbc.MetricsSettings.ContainerMemoryActiveFile),
-		metricContainerMemoryCache:                       newMetricContainerMemoryCache(mbc.MetricsSettings.ContainerMemoryCache),
-		metricContainerMemoryDirty:                       newMetricContainerMemoryDirty(mbc.MetricsSettings.ContainerMemoryDirty),
-		metricContainerMemoryHierarchicalMemoryLimit:     newMetricContainerMemoryHierarchicalMemoryLimit(mbc.MetricsSettings.ContainerMemoryHierarchicalMemoryLimit),
-		metricContainerMemoryHierarchicalMemswLimit:      newMetricContainerMemoryHierarchicalMemswLimit(mbc.MetricsSettings.ContainerMemoryHierarchicalMemswLimit),
-		metricContainerMemoryInactiveAnon:                newMetricContainerMemoryInactiveAnon(mbc.MetricsSettings.ContainerMemoryInactiveAnon),
-		metricContainerMemoryInactiveFile:                newMetricContainerMemoryInactiveFile(mbc.MetricsSettings.ContainerMemoryInactiveFile),
-		metricContainerMemoryMappedFile:                  newMetricContainerMemoryMappedFile(mbc.MetricsSettings.ContainerMemoryMappedFile),
-		metricContainerMemoryPercent:                     newMetricContainerMemoryPercent(mbc.MetricsSettings.ContainerMemoryPercent),
-		metricContainerMemoryPgfault:                     newMetricContainerMemoryPgfault(mbc.MetricsSettings.ContainerMemoryPgfault),
-		metricContainerMemoryPgmajfault:                  newMetricContainerMemoryPgmajfault(mbc.MetricsSettings.ContainerMemoryPgmajfault),
-		metricContainerMemoryPgpgin:                      newMetricContainerMemoryPgpgin(mbc.MetricsSettings.ContainerMemoryPgpgin),
-		metricContainerMemoryPgpgout:                     newMetricContainerMemoryPgpgout(mbc.MetricsSettings.ContainerMemoryPgpgout),
-		metricContainerMemoryRss:                         newMetricContainerMemoryRss(mbc.MetricsSettings.ContainerMemoryRss),
-		metricContainerMemoryRssHuge:                     newMetricContainerMemoryRssHuge(mbc.MetricsSettings.ContainerMemoryRssHuge),
-		metricContainerMemorySwap:                        newMetricContainerMemorySwap(mbc.MetricsSettings.ContainerMemorySwap),
-		metricContainerMemoryTotalActiveAnon:             newMetricContainerMemoryTotalActiveAnon(mbc.MetricsSettings.ContainerMemoryTotalActiveAnon),
-		metricContainerMemoryTotalActiveFile:             newMetricContainerMemoryTotalActiveFile(mbc.MetricsSettings.ContainerMemoryTotalActiveFile),
-		metricContainerMemoryTotalCache:                  newMetricContainerMemoryTotalCache(mbc.MetricsSettings.ContainerMemoryTotalCache),
-		metricContainerMemoryTotalDirty:                  newMetricContainerMemoryTotalDirty(mbc.MetricsSettings.ContainerMemoryTotalDirty),
-		metricContainerMemoryTotalInactiveAnon:           newMetricContainerMemoryTotalInactiveAnon(mbc.MetricsSettings.ContainerMemoryTotalInactiveAnon),
-		metricContainerMemoryTotalInactiveFile:           newMetricContainerMemoryTotalInactiveFile(mbc.MetricsSettings.ContainerMemoryTotalInactiveFile),
-		metricContainerMemoryTotalMappedFile:             newMetricContainerMemoryTotalMappedFile(mbc.MetricsSettings.ContainerMemoryTotalMappedFile),
-		metricContainerMemoryTotalPgfault:                newMetricContainerMemoryTotalPgfault(mbc.MetricsSettings.ContainerMemoryTotalPgfault),
-		metricContainerMemoryTotalPgmajfault:             newMetricContainerMemoryTotalPgmajfault(mbc.MetricsSettings.ContainerMemoryTotalPgmajfault),
-		metricContainerMemoryTotalPgpgin:                 newMetricContainerMemoryTotalPgpgin(mbc.MetricsSettings.ContainerMemoryTotalPgpgin),
-		metricContainerMemoryTotalPgpgout:                newMetricContainerMemoryTotalPgpgout(mbc.MetricsSettings.ContainerMemoryTotalPgpgout),
-		metricContainerMemoryTotalRss:                    newMetricContainerMemoryTotalRss(mbc.MetricsSettings.ContainerMemoryTotalRss),
-		metricContainerMemoryTotalRssHuge:                newMetricContainerMemoryTotalRssHuge(mbc.MetricsSettings.ContainerMemoryTotalRssHuge),
-		metricContainerMemoryTotalSwap:                   newMetricContainerMemoryTotalSwap(mbc.MetricsSettings.ContainerMemoryTotalSwap),
-		metricContainerMemoryTotalUnevictable:            newMetricContainerMemoryTotalUnevictable(mbc.MetricsSettings.ContainerMemoryTotalUnevictable),
-		metricContainerMemoryTotalWriteback:              newMetricContainerMemoryTotalWriteback(mbc.MetricsSettings.ContainerMemoryTotalWriteback),
-		metricContainerMemoryUnevictable:                 newMetricContainerMemoryUnevictable(mbc.MetricsSettings.ContainerMemoryUnevictable),
-		metricContainerMemoryUsageLimit:                  newMetricContainerMemoryUsageLimit(mbc.MetricsSettings.ContainerMemoryUsageLimit),
-		metricContainerMemoryUsageMax:                    newMetricContainerMemoryUsageMax(mbc.MetricsSettings.ContainerMemoryUsageMax),
-		metricContainerMemoryUsageTotal:                  newMetricContainerMemoryUsageTotal(mbc.MetricsSettings.ContainerMemoryUsageTotal),
-		metricContainerMemoryWriteback:                   newMetricContainerMemoryWriteback(mbc.MetricsSettings.ContainerMemoryWriteback),
-		metricContainerNetworkIoUsageRxBytes:             newMetricContainerNetworkIoUsageRxBytes(mbc.MetricsSettings.ContainerNetworkIoUsageRxBytes),
-		metricContainerNetworkIoUsageRxDropped:           newMetricContainerNetworkIoUsageRxDropped(mbc.MetricsSettings.ContainerNetworkIoUsageRxDropped),
-		metricContainerNetworkIoUsageRxErrors:            newMetricContainerNetworkIoUsageRxErrors(mbc.MetricsSettings.ContainerNetworkIoUsageRxErrors),
-		metricContainerNetworkIoUsageRxPackets:           newMetricContainerNetworkIoUsageRxPackets(mbc.MetricsSettings.ContainerNetworkIoUsageRxPackets),
-		metricContainerNetworkIoUsageTxBytes:             newMetricContainerNetworkIoUsageTxBytes(mbc.MetricsSettings.ContainerNetworkIoUsageTxBytes),
-		metricContainerNetworkIoUsageTxDropped:           newMetricContainerNetworkIoUsageTxDropped(mbc.MetricsSettings.ContainerNetworkIoUsageTxDropped),
-		metricContainerNetworkIoUsageTxErrors:            newMetricContainerNetworkIoUsageTxErrors(mbc.MetricsSettings.ContainerNetworkIoUsageTxErrors),
-		metricContainerNetworkIoUsageTxPackets:           newMetricContainerNetworkIoUsageTxPackets(mbc.MetricsSettings.ContainerNetworkIoUsageTxPackets),
+		resourceAttributesSettings:                       mbc.ResourceAttributes,
+		metricContainerBlockioIoMergedRecursive:          newMetricContainerBlockioIoMergedRecursive(mbc.Metrics.ContainerBlockioIoMergedRecursive),
+		metricContainerBlockioIoQueuedRecursive:          newMetricContainerBlockioIoQueuedRecursive(mbc.Metrics.ContainerBlockioIoQueuedRecursive),
+		metricContainerBlockioIoServiceBytesRecursive:    newMetricContainerBlockioIoServiceBytesRecursive(mbc.Metrics.ContainerBlockioIoServiceBytesRecursive),
+		metricContainerBlockioIoServiceTimeRecursive:     newMetricContainerBlockioIoServiceTimeRecursive(mbc.Metrics.ContainerBlockioIoServiceTimeRecursive),
+		metricContainerBlockioIoServicedRecursive:        newMetricContainerBlockioIoServicedRecursive(mbc.Metrics.ContainerBlockioIoServicedRecursive),
+		metricContainerBlockioIoTimeRecursive:            newMetricContainerBlockioIoTimeRecursive(mbc.Metrics.ContainerBlockioIoTimeRecursive),
+		metricContainerBlockioIoWaitTimeRecursive:        newMetricContainerBlockioIoWaitTimeRecursive(mbc.Metrics.ContainerBlockioIoWaitTimeRecursive),
+		metricContainerBlockioSectorsRecursive:           newMetricContainerBlockioSectorsRecursive(mbc.Metrics.ContainerBlockioSectorsRecursive),
+		metricContainerCPUPercent:                        newMetricContainerCPUPercent(mbc.Metrics.ContainerCPUPercent),
+		metricContainerCPUThrottlingDataPeriods:          newMetricContainerCPUThrottlingDataPeriods(mbc.Metrics.ContainerCPUThrottlingDataPeriods),
+		metricContainerCPUThrottlingDataThrottledPeriods: newMetricContainerCPUThrottlingDataThrottledPeriods(mbc.Metrics.ContainerCPUThrottlingDataThrottledPeriods),
+		metricContainerCPUThrottlingDataThrottledTime:    newMetricContainerCPUThrottlingDataThrottledTime(mbc.Metrics.ContainerCPUThrottlingDataThrottledTime),
+		metricContainerCPUUsageKernelmode:                newMetricContainerCPUUsageKernelmode(mbc.Metrics.ContainerCPUUsageKernelmode),
+		metricContainerCPUUsagePercpu:                    newMetricContainerCPUUsagePercpu(mbc.Metrics.ContainerCPUUsagePercpu),
+		metricContainerCPUUsageSystem:                    newMetricContainerCPUUsageSystem(mbc.Metrics.ContainerCPUUsageSystem),
+		metricContainerCPUUsageTotal:                     newMetricContainerCPUUsageTotal(mbc.Metrics.ContainerCPUUsageTotal),
+		metricContainerCPUUsageUsermode:                  newMetricContainerCPUUsageUsermode(mbc.Metrics.ContainerCPUUsageUsermode),
+		metricContainerMemoryActiveAnon:                  newMetricContainerMemoryActiveAnon(mbc.Metrics.ContainerMemoryActiveAnon),
+		metricContainerMemoryActiveFile:                  newMetricContainerMemoryActiveFile(mbc.Metrics.ContainerMemoryActiveFile),
+		metricContainerMemoryCache:                       newMetricContainerMemoryCache(mbc.Metrics.ContainerMemoryCache),
+		metricContainerMemoryDirty:                       newMetricContainerMemoryDirty(mbc.Metrics.ContainerMemoryDirty),
+		metricContainerMemoryHierarchicalMemoryLimit:     newMetricContainerMemoryHierarchicalMemoryLimit(mbc.Metrics.ContainerMemoryHierarchicalMemoryLimit),
+		metricContainerMemoryHierarchicalMemswLimit:      newMetricContainerMemoryHierarchicalMemswLimit(mbc.Metrics.ContainerMemoryHierarchicalMemswLimit),
+		metricContainerMemoryInactiveAnon:                newMetricContainerMemoryInactiveAnon(mbc.Metrics.ContainerMemoryInactiveAnon),
+		metricContainerMemoryInactiveFile:                newMetricContainerMemoryInactiveFile(mbc.Metrics.ContainerMemoryInactiveFile),
+		metricContainerMemoryMappedFile:                  newMetricContainerMemoryMappedFile(mbc.Metrics.ContainerMemoryMappedFile),
+		metricContainerMemoryPercent:                     newMetricContainerMemoryPercent(mbc.Metrics.ContainerMemoryPercent),
+		metricContainerMemoryPgfault:                     newMetricContainerMemoryPgfault(mbc.Metrics.ContainerMemoryPgfault),
+		metricContainerMemoryPgmajfault:                  newMetricContainerMemoryPgmajfault(mbc.Metrics.ContainerMemoryPgmajfault),
+		metricContainerMemoryPgpgin:                      newMetricContainerMemoryPgpgin(mbc.Metrics.ContainerMemoryPgpgin),
+		metricContainerMemoryPgpgout:                     newMetricContainerMemoryPgpgout(mbc.Metrics.ContainerMemoryPgpgout),
+		metricContainerMemoryRss:                         newMetricContainerMemoryRss(mbc.Metrics.ContainerMemoryRss),
+		metricContainerMemoryRssHuge:                     newMetricContainerMemoryRssHuge(mbc.Metrics.ContainerMemoryRssHuge),
+		metricContainerMemorySwap:                        newMetricContainerMemorySwap(mbc.Metrics.ContainerMemorySwap),
+		metricContainerMemoryTotalActiveAnon:             newMetricContainerMemoryTotalActiveAnon(mbc.Metrics.ContainerMemoryTotalActiveAnon),
+		metricContainerMemoryTotalActiveFile:             newMetricContainerMemoryTotalActiveFile(mbc.Metrics.ContainerMemoryTotalActiveFile),
+		metricContainerMemoryTotalCache:                  newMetricContainerMemoryTotalCache(mbc.Metrics.ContainerMemoryTotalCache),
+		metricContainerMemoryTotalDirty:                  newMetricContainerMemoryTotalDirty(mbc.Metrics.ContainerMemoryTotalDirty),
+		metricContainerMemoryTotalInactiveAnon:           newMetricContainerMemoryTotalInactiveAnon(mbc.Metrics.ContainerMemoryTotalInactiveAnon),
+		metricContainerMemoryTotalInactiveFile:           newMetricContainerMemoryTotalInactiveFile(mbc.Metrics.ContainerMemoryTotalInactiveFile),
+		metricContainerMemoryTotalMappedFile:             newMetricContainerMemoryTotalMappedFile(mbc.Metrics.ContainerMemoryTotalMappedFile),
+		metricContainerMemoryTotalPgfault:                newMetricContainerMemoryTotalPgfault(mbc.Metrics.ContainerMemoryTotalPgfault),
+		metricContainerMemoryTotalPgmajfault:             newMetricContainerMemoryTotalPgmajfault(mbc.Metrics.ContainerMemoryTotalPgmajfault),
+		metricContainerMemoryTotalPgpgin:                 newMetricContainerMemoryTotalPgpgin(mbc.Metrics.ContainerMemoryTotalPgpgin),
+		metricContainerMemoryTotalPgpgout:                newMetricContainerMemoryTotalPgpgout(mbc.Metrics.ContainerMemoryTotalPgpgout),
+		metricContainerMemoryTotalRss:                    newMetricContainerMemoryTotalRss(mbc.Metrics.ContainerMemoryTotalRss),
+		metricContainerMemoryTotalRssHuge:                newMetricContainerMemoryTotalRssHuge(mbc.Metrics.ContainerMemoryTotalRssHuge),
+		metricContainerMemoryTotalSwap:                   newMetricContainerMemoryTotalSwap(mbc.Metrics.ContainerMemoryTotalSwap),
+		metricContainerMemoryTotalUnevictable:            newMetricContainerMemoryTotalUnevictable(mbc.Metrics.ContainerMemoryTotalUnevictable),
+		metricContainerMemoryTotalWriteback:              newMetricContainerMemoryTotalWriteback(mbc.Metrics.ContainerMemoryTotalWriteback),
+		metricContainerMemoryUnevictable:                 newMetricContainerMemoryUnevictable(mbc.Metrics.ContainerMemoryUnevictable),
+		metricContainerMemoryUsageLimit:                  newMetricContainerMemoryUsageLimit(mbc.Metrics.ContainerMemoryUsageLimit),
+		metricContainerMemoryUsageMax:                    newMetricContainerMemoryUsageMax(mbc.Metrics.ContainerMemoryUsageMax),
+		metricContainerMemoryUsageTotal:                  newMetricContainerMemoryUsageTotal(mbc.Metrics.ContainerMemoryUsageTotal),
+		metricContainerMemoryWriteback:                   newMetricContainerMemoryWriteback(mbc.Metrics.ContainerMemoryWriteback),
+		metricContainerNetworkIoUsageRxBytes:             newMetricContainerNetworkIoUsageRxBytes(mbc.Metrics.ContainerNetworkIoUsageRxBytes),
+		metricContainerNetworkIoUsageRxDropped:           newMetricContainerNetworkIoUsageRxDropped(mbc.Metrics.ContainerNetworkIoUsageRxDropped),
+		metricContainerNetworkIoUsageRxErrors:            newMetricContainerNetworkIoUsageRxErrors(mbc.Metrics.ContainerNetworkIoUsageRxErrors),
+		metricContainerNetworkIoUsageRxPackets:           newMetricContainerNetworkIoUsageRxPackets(mbc.Metrics.ContainerNetworkIoUsageRxPackets),
+		metricContainerNetworkIoUsageTxBytes:             newMetricContainerNetworkIoUsageTxBytes(mbc.Metrics.ContainerNetworkIoUsageTxBytes),
+		metricContainerNetworkIoUsageTxDropped:           newMetricContainerNetworkIoUsageTxDropped(mbc.Metrics.ContainerNetworkIoUsageTxDropped),
+		metricContainerNetworkIoUsageTxErrors:            newMetricContainerNetworkIoUsageTxErrors(mbc.Metrics.ContainerNetworkIoUsageTxErrors),
+		metricContainerNetworkIoUsageTxPackets:           newMetricContainerNetworkIoUsageTxPackets(mbc.Metrics.ContainerNetworkIoUsageTxPackets),
 	}
 	for _, op := range options {
 		op(mb)

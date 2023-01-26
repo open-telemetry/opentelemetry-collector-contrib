@@ -47,7 +47,7 @@ func TestScrape(t *testing.T) {
 	}
 
 	disabledMetric := metadata.DefaultMetricsBuilderConfig()
-	disabledMetric.MetricsSettings.SystemCPUTime.Enabled = false
+	disabledMetric.Metrics.SystemCPUTime.Enabled = false
 
 	testCases := []testCase{
 		{
@@ -178,7 +178,7 @@ func TestScrape_CpuUtilization(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			settings := test.metricsConfig
-			if test.metricsConfig.MetricsSettings == (metadata.MetricsSettings{}) {
+			if test.metricsConfig.Metrics == (metadata.MetricsSettings{}) {
 				settings = settings.WithMetricsSettings(metadata.MetricsSettings{
 					SystemCPUTime: metadata.MetricSettings{
 						Enabled: test.times,

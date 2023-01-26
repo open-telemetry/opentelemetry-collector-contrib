@@ -823,8 +823,8 @@ func newMetricMemcachedThreads(settings MetricSettings) metricMemcachedThreads {
 
 // MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
 type MetricsBuilderConfig struct {
-	MetricsSettings            MetricsSettings            `mapstructure:",squash"`
-	ResourceAttributesSettings ResourceAttributesSettings `mapstructure:",squash"`
+	Metrics            MetricsSettings            `mapstructure:",squash"`
+	ResourceAttributes ResourceAttributesSettings `mapstructure:",squash"`
 }
 
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
@@ -861,18 +861,18 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	return MetricsBuilderConfig{
-		MetricsSettings:            DefaultMetricsSettings(),
-		ResourceAttributesSettings: DefaultResourceAttributesSettings(),
+		Metrics:            DefaultMetricsSettings(),
+		ResourceAttributes: DefaultResourceAttributesSettings(),
 	}
 }
 
-func (mbc MetricsBuilderConfig) WithMetricsSettings(ms MetricsSettings) MetricsBuilderConfig {
-	mbc.MetricsSettings = ms
+func (mbc MetricsBuilderConfig) WithMetrics(ms MetricsSettings) MetricsBuilderConfig {
+	mbc.Metrics = ms
 	return mbc
 }
 
-func (mbc MetricsBuilderConfig) WithResourceAttributesSettings(ras ResourceAttributesSettings) MetricsBuilderConfig {
-	mbc.ResourceAttributesSettings = ras
+func (mbc MetricsBuilderConfig) WithResourceAttributes(ras ResourceAttributesSettings) MetricsBuilderConfig {
+	mbc.ResourceAttributes = ras
 	return mbc
 }
 
@@ -881,18 +881,18 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		startTime:                         pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                     pmetric.NewMetrics(),
 		buildInfo:                         settings.BuildInfo,
-		resourceAttributesSettings:        mbc.ResourceAttributesSettings,
-		metricMemcachedBytes:              newMetricMemcachedBytes(mbc.MetricsSettings.MemcachedBytes),
-		metricMemcachedCommands:           newMetricMemcachedCommands(mbc.MetricsSettings.MemcachedCommands),
-		metricMemcachedConnectionsCurrent: newMetricMemcachedConnectionsCurrent(mbc.MetricsSettings.MemcachedConnectionsCurrent),
-		metricMemcachedConnectionsTotal:   newMetricMemcachedConnectionsTotal(mbc.MetricsSettings.MemcachedConnectionsTotal),
-		metricMemcachedCPUUsage:           newMetricMemcachedCPUUsage(mbc.MetricsSettings.MemcachedCPUUsage),
-		metricMemcachedCurrentItems:       newMetricMemcachedCurrentItems(mbc.MetricsSettings.MemcachedCurrentItems),
-		metricMemcachedEvictions:          newMetricMemcachedEvictions(mbc.MetricsSettings.MemcachedEvictions),
-		metricMemcachedNetwork:            newMetricMemcachedNetwork(mbc.MetricsSettings.MemcachedNetwork),
-		metricMemcachedOperationHitRatio:  newMetricMemcachedOperationHitRatio(mbc.MetricsSettings.MemcachedOperationHitRatio),
-		metricMemcachedOperations:         newMetricMemcachedOperations(mbc.MetricsSettings.MemcachedOperations),
-		metricMemcachedThreads:            newMetricMemcachedThreads(mbc.MetricsSettings.MemcachedThreads),
+		resourceAttributesSettings:        mbc.ResourceAttributes,
+		metricMemcachedBytes:              newMetricMemcachedBytes(mbc.Metrics.MemcachedBytes),
+		metricMemcachedCommands:           newMetricMemcachedCommands(mbc.Metrics.MemcachedCommands),
+		metricMemcachedConnectionsCurrent: newMetricMemcachedConnectionsCurrent(mbc.Metrics.MemcachedConnectionsCurrent),
+		metricMemcachedConnectionsTotal:   newMetricMemcachedConnectionsTotal(mbc.Metrics.MemcachedConnectionsTotal),
+		metricMemcachedCPUUsage:           newMetricMemcachedCPUUsage(mbc.Metrics.MemcachedCPUUsage),
+		metricMemcachedCurrentItems:       newMetricMemcachedCurrentItems(mbc.Metrics.MemcachedCurrentItems),
+		metricMemcachedEvictions:          newMetricMemcachedEvictions(mbc.Metrics.MemcachedEvictions),
+		metricMemcachedNetwork:            newMetricMemcachedNetwork(mbc.Metrics.MemcachedNetwork),
+		metricMemcachedOperationHitRatio:  newMetricMemcachedOperationHitRatio(mbc.Metrics.MemcachedOperationHitRatio),
+		metricMemcachedOperations:         newMetricMemcachedOperations(mbc.Metrics.MemcachedOperations),
+		metricMemcachedThreads:            newMetricMemcachedThreads(mbc.Metrics.MemcachedThreads),
 	}
 	for _, op := range options {
 		op(mb)

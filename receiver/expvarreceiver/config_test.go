@@ -36,8 +36,8 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	metricCfg := metadata.DefaultMetricsBuilderConfig()
-	metricCfg.MetricsSettings.ProcessRuntimeMemstatsTotalAlloc.Enabled = true
-	metricCfg.MetricsSettings.ProcessRuntimeMemstatsMallocs.Enabled = false
+	metricCfg.Metrics.ProcessRuntimeMemstatsTotalAlloc.Enabled = true
+	metricCfg.Metrics.ProcessRuntimeMemstatsMallocs.Enabled = false
 
 	tests := []struct {
 		id           component.ID

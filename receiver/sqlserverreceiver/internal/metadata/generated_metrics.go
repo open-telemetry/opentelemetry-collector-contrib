@@ -1166,8 +1166,8 @@ func newMetricSqlserverUserConnectionCount(settings MetricSettings) metricSqlser
 
 // MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
 type MetricsBuilderConfig struct {
-	MetricsSettings            MetricsSettings            `mapstructure:",squash"`
-	ResourceAttributesSettings ResourceAttributesSettings `mapstructure:",squash"`
+	Metrics            MetricsSettings            `mapstructure:",squash"`
+	ResourceAttributes ResourceAttributesSettings `mapstructure:",squash"`
 }
 
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
@@ -1213,18 +1213,18 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	return MetricsBuilderConfig{
-		MetricsSettings:            DefaultMetricsSettings(),
-		ResourceAttributesSettings: DefaultResourceAttributesSettings(),
+		Metrics:            DefaultMetricsSettings(),
+		ResourceAttributes: DefaultResourceAttributesSettings(),
 	}
 }
 
-func (mbc MetricsBuilderConfig) WithMetricsSettings(ms MetricsSettings) MetricsBuilderConfig {
-	mbc.MetricsSettings = ms
+func (mbc MetricsBuilderConfig) WithMetrics(ms MetricsSettings) MetricsBuilderConfig {
+	mbc.Metrics = ms
 	return mbc
 }
 
-func (mbc MetricsBuilderConfig) WithResourceAttributesSettings(ras ResourceAttributesSettings) MetricsBuilderConfig {
-	mbc.ResourceAttributesSettings = ras
+func (mbc MetricsBuilderConfig) WithResourceAttributes(ras ResourceAttributesSettings) MetricsBuilderConfig {
+	mbc.ResourceAttributes = ras
 	return mbc
 }
 
@@ -1233,27 +1233,27 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		startTime:                                  pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                              pmetric.NewMetrics(),
 		buildInfo:                                  settings.BuildInfo,
-		resourceAttributesSettings:                 mbc.ResourceAttributesSettings,
-		metricSqlserverBatchRequestRate:            newMetricSqlserverBatchRequestRate(mbc.MetricsSettings.SqlserverBatchRequestRate),
-		metricSqlserverBatchSQLCompilationRate:     newMetricSqlserverBatchSQLCompilationRate(mbc.MetricsSettings.SqlserverBatchSQLCompilationRate),
-		metricSqlserverBatchSQLRecompilationRate:   newMetricSqlserverBatchSQLRecompilationRate(mbc.MetricsSettings.SqlserverBatchSQLRecompilationRate),
-		metricSqlserverLockWaitRate:                newMetricSqlserverLockWaitRate(mbc.MetricsSettings.SqlserverLockWaitRate),
-		metricSqlserverLockWaitTimeAvg:             newMetricSqlserverLockWaitTimeAvg(mbc.MetricsSettings.SqlserverLockWaitTimeAvg),
-		metricSqlserverPageBufferCacheHitRatio:     newMetricSqlserverPageBufferCacheHitRatio(mbc.MetricsSettings.SqlserverPageBufferCacheHitRatio),
-		metricSqlserverPageCheckpointFlushRate:     newMetricSqlserverPageCheckpointFlushRate(mbc.MetricsSettings.SqlserverPageCheckpointFlushRate),
-		metricSqlserverPageLazyWriteRate:           newMetricSqlserverPageLazyWriteRate(mbc.MetricsSettings.SqlserverPageLazyWriteRate),
-		metricSqlserverPageLifeExpectancy:          newMetricSqlserverPageLifeExpectancy(mbc.MetricsSettings.SqlserverPageLifeExpectancy),
-		metricSqlserverPageOperationRate:           newMetricSqlserverPageOperationRate(mbc.MetricsSettings.SqlserverPageOperationRate),
-		metricSqlserverPageSplitRate:               newMetricSqlserverPageSplitRate(mbc.MetricsSettings.SqlserverPageSplitRate),
-		metricSqlserverTransactionRate:             newMetricSqlserverTransactionRate(mbc.MetricsSettings.SqlserverTransactionRate),
-		metricSqlserverTransactionWriteRate:        newMetricSqlserverTransactionWriteRate(mbc.MetricsSettings.SqlserverTransactionWriteRate),
-		metricSqlserverTransactionLogFlushDataRate: newMetricSqlserverTransactionLogFlushDataRate(mbc.MetricsSettings.SqlserverTransactionLogFlushDataRate),
-		metricSqlserverTransactionLogFlushRate:     newMetricSqlserverTransactionLogFlushRate(mbc.MetricsSettings.SqlserverTransactionLogFlushRate),
-		metricSqlserverTransactionLogFlushWaitRate: newMetricSqlserverTransactionLogFlushWaitRate(mbc.MetricsSettings.SqlserverTransactionLogFlushWaitRate),
-		metricSqlserverTransactionLogGrowthCount:   newMetricSqlserverTransactionLogGrowthCount(mbc.MetricsSettings.SqlserverTransactionLogGrowthCount),
-		metricSqlserverTransactionLogShrinkCount:   newMetricSqlserverTransactionLogShrinkCount(mbc.MetricsSettings.SqlserverTransactionLogShrinkCount),
-		metricSqlserverTransactionLogUsage:         newMetricSqlserverTransactionLogUsage(mbc.MetricsSettings.SqlserverTransactionLogUsage),
-		metricSqlserverUserConnectionCount:         newMetricSqlserverUserConnectionCount(mbc.MetricsSettings.SqlserverUserConnectionCount),
+		resourceAttributesSettings:                 mbc.ResourceAttributes,
+		metricSqlserverBatchRequestRate:            newMetricSqlserverBatchRequestRate(mbc.Metrics.SqlserverBatchRequestRate),
+		metricSqlserverBatchSQLCompilationRate:     newMetricSqlserverBatchSQLCompilationRate(mbc.Metrics.SqlserverBatchSQLCompilationRate),
+		metricSqlserverBatchSQLRecompilationRate:   newMetricSqlserverBatchSQLRecompilationRate(mbc.Metrics.SqlserverBatchSQLRecompilationRate),
+		metricSqlserverLockWaitRate:                newMetricSqlserverLockWaitRate(mbc.Metrics.SqlserverLockWaitRate),
+		metricSqlserverLockWaitTimeAvg:             newMetricSqlserverLockWaitTimeAvg(mbc.Metrics.SqlserverLockWaitTimeAvg),
+		metricSqlserverPageBufferCacheHitRatio:     newMetricSqlserverPageBufferCacheHitRatio(mbc.Metrics.SqlserverPageBufferCacheHitRatio),
+		metricSqlserverPageCheckpointFlushRate:     newMetricSqlserverPageCheckpointFlushRate(mbc.Metrics.SqlserverPageCheckpointFlushRate),
+		metricSqlserverPageLazyWriteRate:           newMetricSqlserverPageLazyWriteRate(mbc.Metrics.SqlserverPageLazyWriteRate),
+		metricSqlserverPageLifeExpectancy:          newMetricSqlserverPageLifeExpectancy(mbc.Metrics.SqlserverPageLifeExpectancy),
+		metricSqlserverPageOperationRate:           newMetricSqlserverPageOperationRate(mbc.Metrics.SqlserverPageOperationRate),
+		metricSqlserverPageSplitRate:               newMetricSqlserverPageSplitRate(mbc.Metrics.SqlserverPageSplitRate),
+		metricSqlserverTransactionRate:             newMetricSqlserverTransactionRate(mbc.Metrics.SqlserverTransactionRate),
+		metricSqlserverTransactionWriteRate:        newMetricSqlserverTransactionWriteRate(mbc.Metrics.SqlserverTransactionWriteRate),
+		metricSqlserverTransactionLogFlushDataRate: newMetricSqlserverTransactionLogFlushDataRate(mbc.Metrics.SqlserverTransactionLogFlushDataRate),
+		metricSqlserverTransactionLogFlushRate:     newMetricSqlserverTransactionLogFlushRate(mbc.Metrics.SqlserverTransactionLogFlushRate),
+		metricSqlserverTransactionLogFlushWaitRate: newMetricSqlserverTransactionLogFlushWaitRate(mbc.Metrics.SqlserverTransactionLogFlushWaitRate),
+		metricSqlserverTransactionLogGrowthCount:   newMetricSqlserverTransactionLogGrowthCount(mbc.Metrics.SqlserverTransactionLogGrowthCount),
+		metricSqlserverTransactionLogShrinkCount:   newMetricSqlserverTransactionLogShrinkCount(mbc.Metrics.SqlserverTransactionLogShrinkCount),
+		metricSqlserverTransactionLogUsage:         newMetricSqlserverTransactionLogUsage(mbc.Metrics.SqlserverTransactionLogUsage),
+		metricSqlserverUserConnectionCount:         newMetricSqlserverUserConnectionCount(mbc.Metrics.SqlserverUserConnectionCount),
 	}
 	for _, op := range options {
 		op(mb)

@@ -584,8 +584,8 @@ func newMetricNsxtNodeNetworkPacketCount(settings MetricSettings) metricNsxtNode
 
 // MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
 type MetricsBuilderConfig struct {
-	MetricsSettings            MetricsSettings            `mapstructure:",squash"`
-	ResourceAttributesSettings ResourceAttributesSettings `mapstructure:",squash"`
+	Metrics            MetricsSettings            `mapstructure:",squash"`
+	ResourceAttributes ResourceAttributesSettings `mapstructure:",squash"`
 }
 
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
@@ -618,18 +618,18 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	return MetricsBuilderConfig{
-		MetricsSettings:            DefaultMetricsSettings(),
-		ResourceAttributesSettings: DefaultResourceAttributesSettings(),
+		Metrics:            DefaultMetricsSettings(),
+		ResourceAttributes: DefaultResourceAttributesSettings(),
 	}
 }
 
-func (mbc MetricsBuilderConfig) WithMetricsSettings(ms MetricsSettings) MetricsBuilderConfig {
-	mbc.MetricsSettings = ms
+func (mbc MetricsBuilderConfig) WithMetrics(ms MetricsSettings) MetricsBuilderConfig {
+	mbc.Metrics = ms
 	return mbc
 }
 
-func (mbc MetricsBuilderConfig) WithResourceAttributesSettings(ras ResourceAttributesSettings) MetricsBuilderConfig {
-	mbc.ResourceAttributesSettings = ras
+func (mbc MetricsBuilderConfig) WithResourceAttributes(ras ResourceAttributesSettings) MetricsBuilderConfig {
+	mbc.ResourceAttributes = ras
 	return mbc
 }
 
@@ -638,14 +638,14 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		startTime:                           pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                       pmetric.NewMetrics(),
 		buildInfo:                           settings.BuildInfo,
-		resourceAttributesSettings:          mbc.ResourceAttributesSettings,
-		metricNsxtNodeCPUUtilization:        newMetricNsxtNodeCPUUtilization(mbc.MetricsSettings.NsxtNodeCPUUtilization),
-		metricNsxtNodeFilesystemUsage:       newMetricNsxtNodeFilesystemUsage(mbc.MetricsSettings.NsxtNodeFilesystemUsage),
-		metricNsxtNodeFilesystemUtilization: newMetricNsxtNodeFilesystemUtilization(mbc.MetricsSettings.NsxtNodeFilesystemUtilization),
-		metricNsxtNodeMemoryCacheUsage:      newMetricNsxtNodeMemoryCacheUsage(mbc.MetricsSettings.NsxtNodeMemoryCacheUsage),
-		metricNsxtNodeMemoryUsage:           newMetricNsxtNodeMemoryUsage(mbc.MetricsSettings.NsxtNodeMemoryUsage),
-		metricNsxtNodeNetworkIo:             newMetricNsxtNodeNetworkIo(mbc.MetricsSettings.NsxtNodeNetworkIo),
-		metricNsxtNodeNetworkPacketCount:    newMetricNsxtNodeNetworkPacketCount(mbc.MetricsSettings.NsxtNodeNetworkPacketCount),
+		resourceAttributesSettings:          mbc.ResourceAttributes,
+		metricNsxtNodeCPUUtilization:        newMetricNsxtNodeCPUUtilization(mbc.Metrics.NsxtNodeCPUUtilization),
+		metricNsxtNodeFilesystemUsage:       newMetricNsxtNodeFilesystemUsage(mbc.Metrics.NsxtNodeFilesystemUsage),
+		metricNsxtNodeFilesystemUtilization: newMetricNsxtNodeFilesystemUtilization(mbc.Metrics.NsxtNodeFilesystemUtilization),
+		metricNsxtNodeMemoryCacheUsage:      newMetricNsxtNodeMemoryCacheUsage(mbc.Metrics.NsxtNodeMemoryCacheUsage),
+		metricNsxtNodeMemoryUsage:           newMetricNsxtNodeMemoryUsage(mbc.Metrics.NsxtNodeMemoryUsage),
+		metricNsxtNodeNetworkIo:             newMetricNsxtNodeNetworkIo(mbc.Metrics.NsxtNodeNetworkIo),
+		metricNsxtNodeNetworkPacketCount:    newMetricNsxtNodeNetworkPacketCount(mbc.Metrics.NsxtNodeNetworkPacketCount),
 	}
 	for _, op := range options {
 		op(mb)

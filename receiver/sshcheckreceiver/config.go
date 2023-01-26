@@ -47,7 +47,7 @@ type Config struct {
 
 // SFTPEnabled tells whether SFTP metrics are Enabled in MetricsSettings.
 func (c Config) SFTPEnabled() bool {
-	return (c.CheckSFTP || c.MetricsBuilderConfig.MetricsSettings.SshcheckSftpDuration.Enabled || c.MetricsBuilderConfig.MetricsSettings.SshcheckSftpStatus.Enabled)
+	return (c.CheckSFTP || c.MetricsBuilderConfig.Metrics.SshcheckSftpDuration.Enabled || c.MetricsBuilderConfig.Metrics.SshcheckSftpStatus.Enabled)
 }
 
 func (c Config) Validate() (err error) {

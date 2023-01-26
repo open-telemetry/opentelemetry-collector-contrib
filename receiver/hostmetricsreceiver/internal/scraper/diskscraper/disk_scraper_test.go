@@ -91,7 +91,7 @@ func TestScrape(t *testing.T) {
 			name: "Disable one metric",
 			config: (func() Config {
 				config := Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()}
-				config.MetricsSettings.SystemDiskIo.Enabled = false
+				config.Metrics.SystemDiskIo.Enabled = false
 				return config
 			})(),
 			expectMetrics: metricsLen - 1,

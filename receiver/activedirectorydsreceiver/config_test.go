@@ -37,7 +37,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	overriddenMetricsBuilderConfig := metadata.DefaultMetricsBuilderConfig()
-	overriddenMetricsBuilderConfig.MetricsSettings.ActiveDirectoryDsReplicationObjectRate.Enabled = false
+	overriddenMetricsBuilderConfig.Metrics.ActiveDirectoryDsReplicationObjectRate.Enabled = false
 	tests := []struct {
 		id       component.ID
 		expected component.Config

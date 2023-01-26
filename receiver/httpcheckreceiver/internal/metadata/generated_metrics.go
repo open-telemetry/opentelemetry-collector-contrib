@@ -242,8 +242,8 @@ func newMetricHttpcheckStatus(settings MetricSettings) metricHttpcheckStatus {
 
 // MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
 type MetricsBuilderConfig struct {
-	MetricsSettings            MetricsSettings            `mapstructure:",squash"`
-	ResourceAttributesSettings ResourceAttributesSettings `mapstructure:",squash"`
+	Metrics            MetricsSettings            `mapstructure:",squash"`
+	ResourceAttributes ResourceAttributesSettings `mapstructure:",squash"`
 }
 
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
@@ -272,18 +272,18 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	return MetricsBuilderConfig{
-		MetricsSettings:            DefaultMetricsSettings(),
-		ResourceAttributesSettings: DefaultResourceAttributesSettings(),
+		Metrics:            DefaultMetricsSettings(),
+		ResourceAttributes: DefaultResourceAttributesSettings(),
 	}
 }
 
-func (mbc MetricsBuilderConfig) WithMetricsSettings(ms MetricsSettings) MetricsBuilderConfig {
-	mbc.MetricsSettings = ms
+func (mbc MetricsBuilderConfig) WithMetrics(ms MetricsSettings) MetricsBuilderConfig {
+	mbc.Metrics = ms
 	return mbc
 }
 
-func (mbc MetricsBuilderConfig) WithResourceAttributesSettings(ras ResourceAttributesSettings) MetricsBuilderConfig {
-	mbc.ResourceAttributesSettings = ras
+func (mbc MetricsBuilderConfig) WithResourceAttributes(ras ResourceAttributesSettings) MetricsBuilderConfig {
+	mbc.ResourceAttributes = ras
 	return mbc
 }
 
@@ -292,10 +292,10 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		startTime:                  pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:              pmetric.NewMetrics(),
 		buildInfo:                  settings.BuildInfo,
-		resourceAttributesSettings: mbc.ResourceAttributesSettings,
-		metricHttpcheckDuration:    newMetricHttpcheckDuration(mbc.MetricsSettings.HttpcheckDuration),
-		metricHttpcheckError:       newMetricHttpcheckError(mbc.MetricsSettings.HttpcheckError),
-		metricHttpcheckStatus:      newMetricHttpcheckStatus(mbc.MetricsSettings.HttpcheckStatus),
+		resourceAttributesSettings: mbc.ResourceAttributes,
+		metricHttpcheckDuration:    newMetricHttpcheckDuration(mbc.Metrics.HttpcheckDuration),
+		metricHttpcheckError:       newMetricHttpcheckError(mbc.Metrics.HttpcheckError),
+		metricHttpcheckStatus:      newMetricHttpcheckStatus(mbc.Metrics.HttpcheckStatus),
 	}
 	for _, op := range options {
 		op(mb)

@@ -41,7 +41,7 @@ func TestScrape(t *testing.T) {
 	}
 
 	config := metadata.DefaultMetricsBuilderConfig()
-	config.MetricsSettings.SystemPagingUtilization.Enabled = true
+	config.Metrics.SystemPagingUtilization.Enabled = true
 
 	testCases := []testCase{
 		{

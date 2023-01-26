@@ -195,8 +195,8 @@ func newMetric{{ $name.Render }}(settings MetricSettings) metric{{ $name.Render 
 
 // MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
 type MetricsBuilderConfig struct {
-    MetricsSettings MetricsSettings `mapstructure:",squash"`
-    ResourceAttributesSettings ResourceAttributesSettings `mapstructure:",squash"`
+    Metrics MetricsSettings `mapstructure:",squash"`
+    ResourceAttributes ResourceAttributesSettings `mapstructure:",squash"`
 }
 
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
@@ -225,35 +225,35 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
    return MetricsBuilderConfig {
-        MetricsSettings: DefaultMetricsSettings(),
-        ResourceAttributesSettings: DefaultResourceAttributesSettings(),
+        Metrics: DefaultMetricsSettings(),
+        ResourceAttributes: DefaultResourceAttributesSettings(),
    }
 }
 
-func (mbc MetricsBuilderConfig) WithMetricsSettings(ms MetricsSettings) MetricsBuilderConfig {
-    mbc.MetricsSettings = ms
+func (mbc MetricsBuilderConfig) WithMetrics(ms MetricsSettings) MetricsBuilderConfig {
+    mbc.Metrics = ms
     return mbc
 }
 
-func (mbc MetricsBuilderConfig) WithResourceAttributesSettings(ras ResourceAttributesSettings) MetricsBuilderConfig {
-    mbc.ResourceAttributesSettings = ras
+func (mbc MetricsBuilderConfig) WithResourceAttributes(ras ResourceAttributesSettings) MetricsBuilderConfig {
+    mbc.ResourceAttributes = ras
     return mbc
 }
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	{{- range $name, $metric := .Metrics }}
 	{{- if $metric.Warnings.IfEnabled }}
-	if mbc.MetricsSettings.{{ $name.Render }}.Enabled {
+	if mbc.Metrics.{{ $name.Render }}.Enabled {
 		settings.Logger.Warn("[WARNING] `{{ $name }}` should not be enabled: {{ $metric.Warnings.IfEnabled }}")
 	}
 	{{- end }}
 	{{- if $metric.Warnings.IfEnabledNotSet }}
-	if !mbc.MetricsSettings.{{ $name.Render }}.enabledSetByUser {
+	if !mbc.Metrics.{{ $name.Render }}.enabledSetByUser {
 		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `{{ $name }}`: {{ $metric.Warnings.IfEnabledNotSet }}")
 	}
 	{{- end }}
 	{{- if $metric.Warnings.IfConfigured }}
-	if mbc.MetricsSettings.{{ $name.Render }}.enabledSetByUser {
+	if mbc.Metrics.{{ $name.Render }}.enabledSetByUser {
 		settings.Logger.Warn("[WARNING] `{{ $name }}` should not be configured: {{ $metric.Warnings.IfConfigured }}")
 	}
 	{{- end }}
@@ -262,9 +262,9 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		startTime:                pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:            pmetric.NewMetrics(),
 		buildInfo:                settings.BuildInfo,
-		resourceAttributesSettings: mbc.ResourceAttributesSettings,
+		resourceAttributesSettings: mbc.ResourceAttributes,
 		{{- range $name, $metric := .Metrics }}
-		metric{{ $name.Render }}: newMetric{{ $name.Render }}(mbc.MetricsSettings.{{ $name.Render }}),
+		metric{{ $name.Render }}: newMetric{{ $name.Render }}(mbc.Metrics.{{ $name.Render }}),
 		{{- end }}
 	}
 	for _, op := range options {

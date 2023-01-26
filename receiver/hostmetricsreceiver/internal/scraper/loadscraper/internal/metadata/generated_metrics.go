@@ -229,8 +229,8 @@ func newMetricSystemCPULoadAverage5m(settings MetricSettings) metricSystemCPULoa
 
 // MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
 type MetricsBuilderConfig struct {
-	MetricsSettings            MetricsSettings            `mapstructure:",squash"`
-	ResourceAttributesSettings ResourceAttributesSettings `mapstructure:",squash"`
+	Metrics            MetricsSettings            `mapstructure:",squash"`
+	ResourceAttributes ResourceAttributesSettings `mapstructure:",squash"`
 }
 
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
@@ -259,18 +259,18 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	return MetricsBuilderConfig{
-		MetricsSettings:            DefaultMetricsSettings(),
-		ResourceAttributesSettings: DefaultResourceAttributesSettings(),
+		Metrics:            DefaultMetricsSettings(),
+		ResourceAttributes: DefaultResourceAttributesSettings(),
 	}
 }
 
-func (mbc MetricsBuilderConfig) WithMetricsSettings(ms MetricsSettings) MetricsBuilderConfig {
-	mbc.MetricsSettings = ms
+func (mbc MetricsBuilderConfig) WithMetrics(ms MetricsSettings) MetricsBuilderConfig {
+	mbc.Metrics = ms
 	return mbc
 }
 
-func (mbc MetricsBuilderConfig) WithResourceAttributesSettings(ras ResourceAttributesSettings) MetricsBuilderConfig {
-	mbc.ResourceAttributesSettings = ras
+func (mbc MetricsBuilderConfig) WithResourceAttributes(ras ResourceAttributesSettings) MetricsBuilderConfig {
+	mbc.ResourceAttributes = ras
 	return mbc
 }
 
@@ -279,10 +279,10 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		startTime:                     pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                 pmetric.NewMetrics(),
 		buildInfo:                     settings.BuildInfo,
-		resourceAttributesSettings:    mbc.ResourceAttributesSettings,
-		metricSystemCPULoadAverage15m: newMetricSystemCPULoadAverage15m(mbc.MetricsSettings.SystemCPULoadAverage15m),
-		metricSystemCPULoadAverage1m:  newMetricSystemCPULoadAverage1m(mbc.MetricsSettings.SystemCPULoadAverage1m),
-		metricSystemCPULoadAverage5m:  newMetricSystemCPULoadAverage5m(mbc.MetricsSettings.SystemCPULoadAverage5m),
+		resourceAttributesSettings:    mbc.ResourceAttributes,
+		metricSystemCPULoadAverage15m: newMetricSystemCPULoadAverage15m(mbc.Metrics.SystemCPULoadAverage15m),
+		metricSystemCPULoadAverage1m:  newMetricSystemCPULoadAverage1m(mbc.Metrics.SystemCPULoadAverage1m),
+		metricSystemCPULoadAverage5m:  newMetricSystemCPULoadAverage5m(mbc.Metrics.SystemCPULoadAverage5m),
 	}
 	for _, op := range options {
 		op(mb)

@@ -1572,8 +1572,8 @@ func newMetricHaproxySessionsTotal(settings MetricSettings) metricHaproxySession
 
 // MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
 type MetricsBuilderConfig struct {
-	MetricsSettings            MetricsSettings            `mapstructure:",squash"`
-	ResourceAttributesSettings ResourceAttributesSettings `mapstructure:",squash"`
+	Metrics            MetricsSettings            `mapstructure:",squash"`
+	ResourceAttributes ResourceAttributesSettings `mapstructure:",squash"`
 }
 
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
@@ -1625,18 +1625,18 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	return MetricsBuilderConfig{
-		MetricsSettings:            DefaultMetricsSettings(),
-		ResourceAttributesSettings: DefaultResourceAttributesSettings(),
+		Metrics:            DefaultMetricsSettings(),
+		ResourceAttributes: DefaultResourceAttributesSettings(),
 	}
 }
 
-func (mbc MetricsBuilderConfig) WithMetricsSettings(ms MetricsSettings) MetricsBuilderConfig {
-	mbc.MetricsSettings = ms
+func (mbc MetricsBuilderConfig) WithMetrics(ms MetricsSettings) MetricsBuilderConfig {
+	mbc.Metrics = ms
 	return mbc
 }
 
-func (mbc MetricsBuilderConfig) WithResourceAttributesSettings(ras ResourceAttributesSettings) MetricsBuilderConfig {
-	mbc.ResourceAttributesSettings = ras
+func (mbc MetricsBuilderConfig) WithResourceAttributes(ras ResourceAttributesSettings) MetricsBuilderConfig {
+	mbc.ResourceAttributes = ras
 	return mbc
 }
 
@@ -1645,33 +1645,33 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		startTime:                         pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                     pmetric.NewMetrics(),
 		buildInfo:                         settings.BuildInfo,
-		resourceAttributesSettings:        mbc.ResourceAttributesSettings,
-		metricHaproxyBytesInput:           newMetricHaproxyBytesInput(mbc.MetricsSettings.HaproxyBytesInput),
-		metricHaproxyBytesOutput:          newMetricHaproxyBytesOutput(mbc.MetricsSettings.HaproxyBytesOutput),
-		metricHaproxyClientsCanceled:      newMetricHaproxyClientsCanceled(mbc.MetricsSettings.HaproxyClientsCanceled),
-		metricHaproxyCompressionBypass:    newMetricHaproxyCompressionBypass(mbc.MetricsSettings.HaproxyCompressionBypass),
-		metricHaproxyCompressionCount:     newMetricHaproxyCompressionCount(mbc.MetricsSettings.HaproxyCompressionCount),
-		metricHaproxyCompressionInput:     newMetricHaproxyCompressionInput(mbc.MetricsSettings.HaproxyCompressionInput),
-		metricHaproxyCompressionOutput:    newMetricHaproxyCompressionOutput(mbc.MetricsSettings.HaproxyCompressionOutput),
-		metricHaproxyConnectionsErrors:    newMetricHaproxyConnectionsErrors(mbc.MetricsSettings.HaproxyConnectionsErrors),
-		metricHaproxyConnectionsRate:      newMetricHaproxyConnectionsRate(mbc.MetricsSettings.HaproxyConnectionsRate),
-		metricHaproxyConnectionsRetries:   newMetricHaproxyConnectionsRetries(mbc.MetricsSettings.HaproxyConnectionsRetries),
-		metricHaproxyConnectionsTotal:     newMetricHaproxyConnectionsTotal(mbc.MetricsSettings.HaproxyConnectionsTotal),
-		metricHaproxyDowntime:             newMetricHaproxyDowntime(mbc.MetricsSettings.HaproxyDowntime),
-		metricHaproxyFailedChecks:         newMetricHaproxyFailedChecks(mbc.MetricsSettings.HaproxyFailedChecks),
-		metricHaproxyRequestsDenied:       newMetricHaproxyRequestsDenied(mbc.MetricsSettings.HaproxyRequestsDenied),
-		metricHaproxyRequestsErrors:       newMetricHaproxyRequestsErrors(mbc.MetricsSettings.HaproxyRequestsErrors),
-		metricHaproxyRequestsQueued:       newMetricHaproxyRequestsQueued(mbc.MetricsSettings.HaproxyRequestsQueued),
-		metricHaproxyRequestsRate:         newMetricHaproxyRequestsRate(mbc.MetricsSettings.HaproxyRequestsRate),
-		metricHaproxyRequestsRedispatched: newMetricHaproxyRequestsRedispatched(mbc.MetricsSettings.HaproxyRequestsRedispatched),
-		metricHaproxyRequestsTotal:        newMetricHaproxyRequestsTotal(mbc.MetricsSettings.HaproxyRequestsTotal),
-		metricHaproxyResponsesDenied:      newMetricHaproxyResponsesDenied(mbc.MetricsSettings.HaproxyResponsesDenied),
-		metricHaproxyResponsesErrors:      newMetricHaproxyResponsesErrors(mbc.MetricsSettings.HaproxyResponsesErrors),
-		metricHaproxyServerSelectedTotal:  newMetricHaproxyServerSelectedTotal(mbc.MetricsSettings.HaproxyServerSelectedTotal),
-		metricHaproxySessionsAverage:      newMetricHaproxySessionsAverage(mbc.MetricsSettings.HaproxySessionsAverage),
-		metricHaproxySessionsCount:        newMetricHaproxySessionsCount(mbc.MetricsSettings.HaproxySessionsCount),
-		metricHaproxySessionsRate:         newMetricHaproxySessionsRate(mbc.MetricsSettings.HaproxySessionsRate),
-		metricHaproxySessionsTotal:        newMetricHaproxySessionsTotal(mbc.MetricsSettings.HaproxySessionsTotal),
+		resourceAttributesSettings:        mbc.ResourceAttributes,
+		metricHaproxyBytesInput:           newMetricHaproxyBytesInput(mbc.Metrics.HaproxyBytesInput),
+		metricHaproxyBytesOutput:          newMetricHaproxyBytesOutput(mbc.Metrics.HaproxyBytesOutput),
+		metricHaproxyClientsCanceled:      newMetricHaproxyClientsCanceled(mbc.Metrics.HaproxyClientsCanceled),
+		metricHaproxyCompressionBypass:    newMetricHaproxyCompressionBypass(mbc.Metrics.HaproxyCompressionBypass),
+		metricHaproxyCompressionCount:     newMetricHaproxyCompressionCount(mbc.Metrics.HaproxyCompressionCount),
+		metricHaproxyCompressionInput:     newMetricHaproxyCompressionInput(mbc.Metrics.HaproxyCompressionInput),
+		metricHaproxyCompressionOutput:    newMetricHaproxyCompressionOutput(mbc.Metrics.HaproxyCompressionOutput),
+		metricHaproxyConnectionsErrors:    newMetricHaproxyConnectionsErrors(mbc.Metrics.HaproxyConnectionsErrors),
+		metricHaproxyConnectionsRate:      newMetricHaproxyConnectionsRate(mbc.Metrics.HaproxyConnectionsRate),
+		metricHaproxyConnectionsRetries:   newMetricHaproxyConnectionsRetries(mbc.Metrics.HaproxyConnectionsRetries),
+		metricHaproxyConnectionsTotal:     newMetricHaproxyConnectionsTotal(mbc.Metrics.HaproxyConnectionsTotal),
+		metricHaproxyDowntime:             newMetricHaproxyDowntime(mbc.Metrics.HaproxyDowntime),
+		metricHaproxyFailedChecks:         newMetricHaproxyFailedChecks(mbc.Metrics.HaproxyFailedChecks),
+		metricHaproxyRequestsDenied:       newMetricHaproxyRequestsDenied(mbc.Metrics.HaproxyRequestsDenied),
+		metricHaproxyRequestsErrors:       newMetricHaproxyRequestsErrors(mbc.Metrics.HaproxyRequestsErrors),
+		metricHaproxyRequestsQueued:       newMetricHaproxyRequestsQueued(mbc.Metrics.HaproxyRequestsQueued),
+		metricHaproxyRequestsRate:         newMetricHaproxyRequestsRate(mbc.Metrics.HaproxyRequestsRate),
+		metricHaproxyRequestsRedispatched: newMetricHaproxyRequestsRedispatched(mbc.Metrics.HaproxyRequestsRedispatched),
+		metricHaproxyRequestsTotal:        newMetricHaproxyRequestsTotal(mbc.Metrics.HaproxyRequestsTotal),
+		metricHaproxyResponsesDenied:      newMetricHaproxyResponsesDenied(mbc.Metrics.HaproxyResponsesDenied),
+		metricHaproxyResponsesErrors:      newMetricHaproxyResponsesErrors(mbc.Metrics.HaproxyResponsesErrors),
+		metricHaproxyServerSelectedTotal:  newMetricHaproxyServerSelectedTotal(mbc.Metrics.HaproxyServerSelectedTotal),
+		metricHaproxySessionsAverage:      newMetricHaproxySessionsAverage(mbc.Metrics.HaproxySessionsAverage),
+		metricHaproxySessionsCount:        newMetricHaproxySessionsCount(mbc.Metrics.HaproxySessionsCount),
+		metricHaproxySessionsRate:         newMetricHaproxySessionsRate(mbc.Metrics.HaproxySessionsRate),
+		metricHaproxySessionsTotal:        newMetricHaproxySessionsTotal(mbc.Metrics.HaproxySessionsTotal),
 	}
 	for _, op := range options {
 		op(mb)
