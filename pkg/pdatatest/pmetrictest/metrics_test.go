@@ -177,6 +177,10 @@ func TestCompareMetrics(t *testing.T) {
 			withoutOptions: errors.New(`resource "map[]": scope "": metric "gauge.one": datapoint "map[]": value type doesn't match expected: Double, actual: Int`),
 		},
 		{
+			name:           "data-point-flags-mismatch",
+			withoutOptions: errors.New(`resource "map[]": scope "": metric "sum.one": datapoint "map[]": flags don't match expected: 1, actual: 0`),
+		},
+		{
 			name:           "histogram-data-point-count-mismatch",
 			withoutOptions: errors.New(`resource "map[]": scope "": metric "histogram.one": datapoint "map[]": count doesn't match expected: 123, actual: 654`),
 		},
@@ -444,7 +448,7 @@ func TestCompareMetrics(t *testing.T) {
 			if tc.withOptions == nil {
 				assert.NoError(t, err)
 			} else {
-				assert.EqualError(t, tc.withOptions, err.Error())
+				assert.EqualError(t, err, tc.withOptions.Error())
 			}
 		})
 	}
