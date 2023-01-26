@@ -61,22 +61,22 @@ func TestCompareLogs(t *testing.T) {
 			withOptions: nil,
 		},
 		{
-			name:           "resource-instrumentation-library-extra",
+			name:           "scope-extra",
 			withoutOptions: errors.New(`resource "map[]": number of scopes doesn't match expected: 1, actual: 2`),
 		},
 		{
-			name:           "resource-instrumentation-library-missing",
+			name:           "scope-missing",
 			withoutOptions: errors.New(`resource "map[]": number of scopes doesn't match expected: 2, actual: 1`),
 		},
 		{
-			name: "resource-instrumentation-library-name-mismatch",
+			name: "scope-name-mismatch",
 			withoutOptions: multierr.Combine(
 				errors.New(`resource "map[]": missing expected scope: one`),
 				errors.New(`resource "map[]": unexpected scope: two`),
 			),
 		},
 		{
-			name:           "resource-instrumentation-library-version-mismatch",
+			name:           "scope-version-mismatch",
 			withoutOptions: errors.New(`resource "map[]": scope "one": version doesn't match expected: 1.0, actual: 2.0`),
 		},
 		{
