@@ -40,29 +40,29 @@ func TestScrape(t *testing.T) {
 		cfg.Username = "otel"
 		cfg.Password = "otel"
 		cfg.NetAddr = confignet.NetAddr{Endpoint: "localhost:3306"}
-		cfg.MetricsBuilderConfig.MetricsSettingsMysqlStatementEventCount.Enabled = true
-		cfg.MetricsBuilderConfig.MetricsSettingsMysqlStatementEventWaitTime.Enabled = true
-		cfg.MetricsBuilderConfig.MetricsSettingsMysqlConnectionErrors.Enabled = true
-		cfg.MetricsBuilderConfig.MetricsSettingsMysqlMysqlxWorkerThreads.Enabled = true
-		cfg.MetricsBuilderConfig.MetricsSettingsMysqlJoins.Enabled = true
-		cfg.MetricsBuilderConfig.MetricsSettingsMysqlTableOpenCache.Enabled = true
-		cfg.MetricsBuilderConfig.MetricsSettingsMysqlQueryClientCount.Enabled = true
-		cfg.MetricsBuilderConfig.MetricsSettingsMysqlQueryCount.Enabled = true
-		cfg.MetricsBuilderConfig.MetricsSettingsMysqlQuerySlowCount.Enabled = true
+		cfg.MetricsBuilderConfig.MetricsSettings.MysqlStatementEventCount.Enabled = true
+		cfg.MetricsBuilderConfig.MetricsSettings.MysqlStatementEventWaitTime.Enabled = true
+		cfg.MetricsBuilderConfig.MetricsSettings.MysqlConnectionErrors.Enabled = true
+		cfg.MetricsBuilderConfig.MetricsSettings.MysqlMysqlxWorkerThreads.Enabled = true
+		cfg.MetricsBuilderConfig.MetricsSettings.MysqlJoins.Enabled = true
+		cfg.MetricsBuilderConfig.MetricsSettings.MysqlTableOpenCache.Enabled = true
+		cfg.MetricsBuilderConfig.MetricsSettings.MysqlQueryClientCount.Enabled = true
+		cfg.MetricsBuilderConfig.MetricsSettings.MysqlQueryCount.Enabled = true
+		cfg.MetricsBuilderConfig.MetricsSettings.MysqlQuerySlowCount.Enabled = true
 
-		cfg.MetricsBuilderConfig.MetricsSettingsMysqlTableLockWaitReadCount.Enabled = true
-		cfg.MetricsBuilderConfig.MetricsSettingsMysqlTableLockWaitReadTime.Enabled = true
-		cfg.MetricsBuilderConfig.MetricsSettingsMysqlTableLockWaitWriteCount.Enabled = true
-		cfg.MetricsBuilderConfig.MetricsSettingsMysqlTableLockWaitWriteTime.Enabled = true
+		cfg.MetricsBuilderConfig.MetricsSettings.MysqlTableLockWaitReadCount.Enabled = true
+		cfg.MetricsBuilderConfig.MetricsSettings.MysqlTableLockWaitReadTime.Enabled = true
+		cfg.MetricsBuilderConfig.MetricsSettings.MysqlTableLockWaitWriteCount.Enabled = true
+		cfg.MetricsBuilderConfig.MetricsSettings.MysqlTableLockWaitWriteTime.Enabled = true
 
-		cfg.MetricsBuilderConfig.MetricsSettingsMysqlClientNetworkIo.Enabled = true
-		cfg.MetricsBuilderConfig.MetricsSettingsMysqlPreparedStatements.Enabled = true
-		cfg.MetricsBuilderConfig.MetricsSettingsMysqlCommands.Enabled = true
+		cfg.MetricsBuilderConfig.MetricsSettings.MysqlClientNetworkIo.Enabled = true
+		cfg.MetricsBuilderConfig.MetricsSettings.MysqlPreparedStatements.Enabled = true
+		cfg.MetricsBuilderConfig.MetricsSettings.MysqlCommands.Enabled = true
 
-		cfg.MetricsBuilderConfig.MetricsSettingsMysqlReplicaSQLDelay.Enabled = true
-		cfg.MetricsBuilderConfig.MetricsSettingsMysqlReplicaTimeBehindSource.Enabled = true
+		cfg.MetricsBuilderConfig.MetricsSettings.MysqlReplicaSQLDelay.Enabled = true
+		cfg.MetricsBuilderConfig.MetricsSettings.MysqlReplicaTimeBehindSource.Enabled = true
 
-		cfg.MetricsBuilderConfig.MetricsSettingsMysqlConnectionCount.Enabled = true
+		cfg.MetricsBuilderConfig.MetricsSettings.MysqlConnectionCount.Enabled = true
 
 		scraper := newMySQLScraper(receivertest.NewNopCreateSettings(), cfg)
 		scraper.sqlclient = &mockClient{
@@ -93,13 +93,13 @@ func TestScrape(t *testing.T) {
 		cfg.Username = "otel"
 		cfg.Password = "otel"
 		cfg.NetAddr = confignet.NetAddr{Endpoint: "localhost:3306"}
-		cfg.MetricsBuilderConfig.MetricsSettingsMysqlReplicaSQLDelay.Enabled = true
-		cfg.MetricsBuilderConfig.MetricsSettingsMysqlReplicaTimeBehindSource.Enabled = true
+		cfg.MetricsBuilderConfig.MetricsSettings.MysqlReplicaSQLDelay.Enabled = true
+		cfg.MetricsBuilderConfig.MetricsSettings.MysqlReplicaTimeBehindSource.Enabled = true
 
-		cfg.MetricsBuilderConfig.MetricsSettingsMysqlTableLockWaitReadCount.Enabled = true
-		cfg.MetricsBuilderConfig.MetricsSettingsMysqlTableLockWaitReadTime.Enabled = true
-		cfg.MetricsBuilderConfig.MetricsSettingsMysqlTableLockWaitWriteCount.Enabled = true
-		cfg.MetricsBuilderConfig.MetricsSettingsMysqlTableLockWaitWriteTime.Enabled = true
+		cfg.MetricsBuilderConfig.MetricsSettings.MysqlTableLockWaitReadCount.Enabled = true
+		cfg.MetricsBuilderConfig.MetricsSettings.MysqlTableLockWaitReadTime.Enabled = true
+		cfg.MetricsBuilderConfig.MetricsSettings.MysqlTableLockWaitWriteCount.Enabled = true
+		cfg.MetricsBuilderConfig.MetricsSettings.MysqlTableLockWaitWriteTime.Enabled = true
 
 		scraper := newMySQLScraper(receivertest.NewNopCreateSettings(), cfg)
 		scraper.sqlclient = &mockClient{

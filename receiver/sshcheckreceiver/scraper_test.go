@@ -118,7 +118,7 @@ func TestScraper(t *testing.T) {
 			cfg.Endpoint = c.Endpoint
 			cfg.IgnoreHostKey = true
 			if tc.enableSFTP {
-				cfg.MetricsBuilderConfig.MetricsSettings.SshcheckSftpStatus.Enabled = true
+				cfg.MetricsBuilderConfig.MetricsSettings..SshcheckSftpStatus.Enabled = true
 				cfg.MetricsBuilderConfig.MetricsSettings.SshcheckSftpDuration.Enabled = true
 			}
 
