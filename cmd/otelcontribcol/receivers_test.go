@@ -16,7 +16,7 @@
 //go:build !windows
 // +build !windows
 
-package components
+package main
 
 import (
 	"context"
@@ -51,7 +51,7 @@ import (
 )
 
 func TestDefaultReceivers(t *testing.T) {
-	allFactories, err := Components()
+	allFactories, err := components()
 	assert.NoError(t, err)
 
 	rcvrFactories := allFactories.Receivers

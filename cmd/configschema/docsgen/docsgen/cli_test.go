@@ -30,7 +30,7 @@ import (
 	"go.opentelemetry.io/collector/otelcol"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/components"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema/internal/components"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver"
 )
 

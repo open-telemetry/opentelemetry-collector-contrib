@@ -21,7 +21,7 @@ import (
 	"path/filepath"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema/cfgmetadatagen/cfgmetadatagen"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/components"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema/internal/components"
 )
 
 func main() {

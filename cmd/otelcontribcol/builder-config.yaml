@@ -12,6 +12,7 @@ extensions:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsproxy v0.70.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension v0.70.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension v0.70.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/fluentbitextension v0.70.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension v0.70.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension v0.70.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder v0.70.0
@@ -57,6 +58,7 @@ exporters:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter v0.70.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter v0.70.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter v0.70.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/parquetexporter v0.70.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter v0.70.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter v0.70.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter v0.70.0
@@ -104,8 +106,11 @@ receivers:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver v0.70.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver v0.70.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver v0.70.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver v0.70.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver v0.70.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver v0.70.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.70.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver v0.70.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudfoundryreceiver v0.70.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver v0.70.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver v0.70.0
