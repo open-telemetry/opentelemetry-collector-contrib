@@ -3,7 +3,8 @@
 ## Overview
 The Datadog APM Receiver accepts traces in the Datadog Trace Agent Format
 
-###Supported Datadog APIs
+### Supported Datadog APIs
+
 - v0.3 (msgpack and json)
 - v0.4 (msgpack and json)
 - v0.5 (msgpack custom format)
@@ -27,3 +28,8 @@ Default: `localhost:8126`
 The read timeout of the HTTP Server
 
 Default: 60s
+
+### HTTP Service Config
+
+
+https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp#server-configuration

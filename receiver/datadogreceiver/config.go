@@ -18,12 +18,12 @@ package datadogreceiver // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"time"
 
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/obsreport"
 )
 
 type Config struct {
-	config.ReceiverSettings       `mapstructure:",squash"`
+	obsreport.ReceiverSettings    `mapstructure:",squash"`
 	confighttp.HTTPServerSettings `mapstructure:",squash"`
 	// ReadTimeout of the http server
 	ReadTimeout time.Duration `mapstructure:"read_timeout"`

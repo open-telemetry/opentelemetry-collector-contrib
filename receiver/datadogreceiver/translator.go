@@ -57,11 +57,11 @@ func toTraces(traces datadogpb.Traces, req *http.Request) ptrace.Traces {
 
 			attrs := newSpan.Attributes()
 			attrs.EnsureCapacity(len(span.GetMeta()) + 1)
-			attrs.InsertString(semconv.AttributeServiceName, span.Service)
+			attrs.PutStr(semconv.AttributeServiceName, span.Service)
 			for k, v := range span.GetMeta() {
 				k = translateDataDogKeyToOtel(k)
 				if len(k) > 0 {
-					attrs.InsertString(k, v)
+					attrs.PutStr(k, v)
 				}
 			}
 
@@ -136,11 +136,11 @@ func uInt64ToTraceID(high, low uint64) pcommon.TraceID {
 	traceID := [16]byte{}
 	binary.BigEndian.PutUint64(traceID[:8], high)
 	binary.BigEndian.PutUint64(traceID[8:], low)
-	return pcommon.NewTraceID(traceID)
+	return traceID
 }
 
 func uInt64ToSpanID(id uint64) pcommon.SpanID {
 	spanID := [8]byte{}
 	binary.BigEndian.PutUint64(spanID[:], id)
-	return pcommon.NewSpanID(spanID)
+	return spanID
 }

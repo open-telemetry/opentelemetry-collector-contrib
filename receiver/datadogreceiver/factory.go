@@ -19,9 +19,10 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/receiver"
 )
 
 const (
@@ -29,17 +30,17 @@ const (
 )
 
 // NewFactory creates a factory for DataDog receiver.
-func NewFactory() component.ReceiverFactory {
-	return component.NewReceiverFactory(
+func NewFactory() receiver.Factory {
+	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesReceiver(createTracesReceiver))
+		receiver.WithTraces(createTracesReceiver, component.StabilityLevelBeta))
 
 }
 
-func createDefaultConfig() config.Receiver {
+func createDefaultConfig() component.Config {
 	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+		ReceiverSettings: obsreport.ReceiverSettings{ReceiverID: component.NewID(typeStr)},
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: "localhost:8126",
 		},
@@ -48,11 +49,10 @@ func createDefaultConfig() config.Receiver {
 }
 
 func createTracesReceiver(
-	_ context.Context,
-	params component.ReceiverCreateSettings,
-	cfg config.Receiver,
-	nextConsumer consumer.Traces,
-) (component.TracesReceiver, error) {
-	oCfg := cfg.(*Config)
-	return newDataDogReceiver(oCfg, nextConsumer, params)
+	ctx context.Context,
+	params receiver.CreateSettings,
+	cfg component.Config,
+	consumer consumer.Traces) (receiver.Traces, error) {
+	rcfg := cfg.(*Config)
+	return newDataDogReceiver(rcfg, consumer, params)
 }

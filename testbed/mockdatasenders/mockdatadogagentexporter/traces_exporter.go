@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package mockdatadogagentexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatareceivers/mockawsxrayreceiver"
+package mockdatadogagentexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatasenders/mockdatadogagentexporter"
 
 import (
 	"bytes"
@@ -21,15 +21,14 @@ import (
 	"fmt"
 	"net/http"
 
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/ptrace"
-
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
 	"github.com/tinylib/msgp/msgp"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 type ddExporter struct {
@@ -38,10 +37,10 @@ type ddExporter struct {
 	clientSettings *confighttp.HTTPClientSettings
 }
 
-func createExporter(cfg *Config) *ddExporter {
+func createExporter(c *Config) *ddExporter {
 	dd := &ddExporter{
-		endpoint:       cfg.Endpoint,
-		clientSettings: &cfg.HTTPClientSettings,
+		endpoint:       c.Endpoint,
+		clientSettings: &c.HTTPClientSettings,
 		client:         nil,
 	}
 
@@ -50,7 +49,7 @@ func createExporter(cfg *Config) *ddExporter {
 
 // start creates the http client
 func (dd *ddExporter) start(_ context.Context, host component.Host) (err error) {
-	dd.client, err = dd.clientSettings.ToClient(host.GetExtensions(), componenttest.NewNopTelemetrySettings())
+	dd.client, err = dd.clientSettings.ToClient(host, componenttest.NewNopTelemetrySettings())
 	return
 }
 
@@ -79,9 +78,12 @@ func (dd *ddExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
 					newSpan.GetMeta()[k] = v.AsString()
 					return true
 				})
-				var traceIDBytes = span.TraceID().Bytes()
-				var spanIDBytes = span.SpanID().Bytes()
-				var parentIDBytes = span.ParentSpanID().Bytes()
+				var traceIDBytes [16]byte
+				var spanIDBytes [8]byte
+				var parentIDBytes [8]byte
+				traceIDBytes = span.TraceID()
+				spanIDBytes = span.SpanID()
+				parentIDBytes = span.ParentSpanID()
 				binary.BigEndian.PutUint64(traceIDBytes[:], newSpan.TraceID)
 				binary.BigEndian.PutUint64(spanIDBytes[:], newSpan.SpanID)
 				binary.BigEndian.PutUint64(parentIDBytes[:], newSpan.ParentID)

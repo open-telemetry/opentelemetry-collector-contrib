@@ -25,25 +25,30 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/receiver"
 )
 
 type datadogReceiver struct {
 	config       *Config
-	params       component.ReceiverCreateSettings
+	params       receiver.CreateSettings
 	nextConsumer consumer.Traces
 	server       *http.Server
 	shutdownWG   sync.WaitGroup
-	obs          *obsreport.Receiver
+	tReceiver    *obsreport.Receiver
 
 	startOnce sync.Once
 	stopOnce  sync.Once
 }
 
-func newDataDogReceiver(config *Config, nextConsumer consumer.Traces, params component.ReceiverCreateSettings) (component.TracesReceiver, error) {
+func newDataDogReceiver(config *Config, nextConsumer consumer.Traces, params receiver.CreateSettings) (receiver.Traces, error) {
 	if nextConsumer == nil {
 		return nil, component.ErrNilNextConsumer
 	}
 
+	instance, err := obsreport.NewReceiver(obsreport.ReceiverSettings{LongLivedCtx: false, ReceiverID: config.ReceiverID, Transport: "http", ReceiverCreateSettings: params})
+	if err != nil {
+		return nil, err
+	}
 	return &datadogReceiver{
 		params:       params,
 		config:       config,
@@ -52,7 +57,7 @@ func newDataDogReceiver(config *Config, nextConsumer consumer.Traces, params com
 			ReadTimeout: config.ReadTimeout,
 			Addr:        config.HTTPServerSettings.Endpoint,
 		},
-		obs: obsreport.NewReceiver(obsreport.ReceiverSettings{LongLivedCtx: false, ReceiverID: config.ReceiverSettings.ID(), Transport: "http", ReceiverCreateSettings: params}),
+		tReceiver: instance,
 	}, nil
 }
 
@@ -81,18 +86,17 @@ func (ddr *datadogReceiver) Shutdown(ctx context.Context) (err error) {
 }
 
 func (ddr *datadogReceiver) handleTraces(w http.ResponseWriter, req *http.Request) {
-	obsCtx := ddr.obs.StartTracesOp(req.Context())
+	obsCtx := ddr.tReceiver.StartTracesOp(req.Context())
 	var err error
 	var spanCount int
 	defer func(spanCount *int) {
-		ddr.obs.EndTracesOp(obsCtx, "datadog", *spanCount, err)
+		ddr.tReceiver.EndTracesOp(obsCtx, "datadog", *spanCount, err)
 	}(&spanCount)
 	var ddTraces datadogpb.Traces
 
 	err = decodeRequest(req, &ddTraces)
 	if err != nil {
 		http.Error(w, "Unable to unmarshal reqs", http.StatusInternalServerError)
-		return
 	}
 
 	otelTraces := toTraces(ddTraces, req)
