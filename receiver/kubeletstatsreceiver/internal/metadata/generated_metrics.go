@@ -2408,8 +2408,8 @@ func newMetricK8sVolumeInodesUsed(settings MetricSettings) metricK8sVolumeInodes
 
 // MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
 type MetricsBuilderConfig struct {
-	MetricsSettings            MetricsSettings            `mapstructure:"metrics,squash"`
-	ResourceAttributesSettings ResourceAttributesSettings `mapstructure:"resource_attributes,squash"`
+	MetricsSettings            MetricsSettings            `mapstructure:",squash"`
+	ResourceAttributesSettings ResourceAttributesSettings `mapstructure:",squash"`
 }
 
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
