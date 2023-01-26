@@ -54,8 +54,8 @@ func TestNewFactory(t *testing.T) {
 						Endpoint: defaultEndpoint,
 						Timeout:  10 * time.Second,
 					},
-					Metrics: metadata.DefaultMetricsBuilderConfig(),
-					Method:  "GET",
+					MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+					Method:               "GET",
 				}
 
 				require.Equal(t, expectedCfg, factory.CreateDefaultConfig())

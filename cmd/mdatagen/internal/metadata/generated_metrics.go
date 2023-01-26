@@ -318,6 +318,16 @@ func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	}
 }
 
+func (mbc MetricsBuilderConfig) WithMetricsSettings(ms MetricsSettings) MetricsBuilderConfig {
+	mbc.MetricsSettings = ms
+	return mbc
+}
+
+func (mbc MetricsBuilderConfig) WithResourceAttributesSettings(ras ResourceAttributesSettings) MetricsBuilderConfig {
+	mbc.ResourceAttributesSettings = ras
+	return mbc
+}
+
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	if !mbc.MetricsSettings.DefaultMetric.enabledSetByUser {
 		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `default.metric`: This metric will be disabled by default soon.")

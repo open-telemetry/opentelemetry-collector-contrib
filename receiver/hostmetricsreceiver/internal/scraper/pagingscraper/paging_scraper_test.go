@@ -41,20 +41,20 @@ func TestScrape(t *testing.T) {
 	}
 
 	config := metadata.DefaultMetricsBuilderConfig()
-	config.SystemPagingUtilization.Enabled = true
+	config.MetricsSettings.SystemPagingUtilization.Enabled = true
 
 	testCases := []testCase{
 		{
 			name:   "Standard",
-			config: Config{Metrics: config},
+			config: Config{MetricsBuilderConfig: config},
 		},
 		{
 			name:   "Standard with direction removed",
-			config: Config{Metrics: config},
+			config: Config{MetricsBuilderConfig: config},
 		},
 		{
 			name:   "Validate Start Time",
-			config: Config{Metrics: config},
+			config: Config{MetricsBuilderConfig: config},
 			mutateScraper: func(s *scraper) {
 				s.bootTime = func() (uint64, error) { return 100, nil }
 			},
@@ -62,7 +62,7 @@ func TestScrape(t *testing.T) {
 		},
 		{
 			name:   "Boot Time Error",
-			config: Config{Metrics: config},
+			config: Config{MetricsBuilderConfig: config},
 			mutateScraper: func(s *scraper) {
 				s.bootTime = func() (uint64, error) { return 0, errors.New("err1") }
 			},

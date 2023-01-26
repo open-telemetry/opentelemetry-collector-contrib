@@ -56,7 +56,7 @@ func TestNewFactory(t *testing.T) {
 					SSHClientSettings: configssh.SSHClientSettings{
 						Timeout: 10 * time.Second,
 					},
-					Metrics: metadata.DefaultMetricsSettings(),
+					MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 				}
 
 				require.Equal(t, expectedCfg, factory.CreateDefaultConfig())

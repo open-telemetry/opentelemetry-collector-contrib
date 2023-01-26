@@ -46,19 +46,19 @@ func TestScrape(t *testing.T) {
 	testCases := []testCase{
 		{
 			name:          "Standard",
-			config:        Config{Metrics: metadata.DefaultMetricsBuilderConfig()},
+			config:        Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()},
 			expectMetrics: metricsLen,
 		},
 		{
 			name:              "Validate Start Time",
-			config:            Config{Metrics: metadata.DefaultMetricsBuilderConfig()},
+			config:            Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()},
 			bootTimeFunc:      func() (uint64, error) { return 100, nil },
 			expectMetrics:     metricsLen,
 			expectedStartTime: 100 * 1e9,
 		},
 		{
 			name:              "Boot Time Error",
-			config:            Config{Metrics: metadata.DefaultMetricsBuilderConfig()},
+			config:            Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()},
 			bootTimeFunc:      func() (uint64, error) { return 0, errors.New("err1") },
 			initializationErr: "err1",
 			expectMetrics:     metricsLen,
@@ -66,32 +66,32 @@ func TestScrape(t *testing.T) {
 		{
 			name: "Include Filter that matches nothing",
 			config: Config{
-				Metrics: metadata.DefaultMetricsBuilderConfig(),
-				Include: MatchConfig{filterset.Config{MatchType: "strict"}, []string{"@*^#&*$^#)"}},
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				Include:              MatchConfig{filterset.Config{MatchType: "strict"}, []string{"@*^#&*$^#)"}},
 			},
 			expectMetrics: 0,
 		},
 		{
 			name: "Invalid Include Filter",
 			config: Config{
-				Metrics: metadata.DefaultMetricsBuilderConfig(),
-				Include: MatchConfig{Devices: []string{"test"}},
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				Include:              MatchConfig{Devices: []string{"test"}},
 			},
 			newErrRegex: "^error creating device include filters:",
 		},
 		{
 			name: "Invalid Exclude Filter",
 			config: Config{
-				Metrics: metadata.DefaultMetricsBuilderConfig(),
-				Exclude: MatchConfig{Devices: []string{"test"}},
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				Exclude:              MatchConfig{Devices: []string{"test"}},
 			},
 			newErrRegex: "^error creating device exclude filters:",
 		},
 		{
 			name: "Disable one metric",
 			config: (func() Config {
-				config := Config{Metrics: metadata.DefaultMetricsBuilderConfig()}
-				config.Metrics.SystemDiskIo.Enabled = false
+				config := Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()}
+				config.MetricsSettings.SystemDiskIo.Enabled = false
 				return config
 			})(),
 			expectMetrics: metricsLen - 1,

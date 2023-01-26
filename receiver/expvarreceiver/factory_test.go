@@ -53,7 +53,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 			HTTPClientSettings: confighttp.HTTPClientSettings{
 				Endpoint: defaultEndpoint,
 			},
-			MetricsConfig: metadata.DefaultMetricsBuilderConfig(),
+			MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 		},
 		consumertest.NewNop(),
 	)

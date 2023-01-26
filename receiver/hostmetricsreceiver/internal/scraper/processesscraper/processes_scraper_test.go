@@ -76,7 +76,7 @@ func TestScrape(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			scraper := newProcessesScraper(context.Background(), receivertest.NewNopCreateSettings(), &Config{
-				Metrics: metadata.DefaultMetricsBuilderConfig(),
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			})
 			err := scraper.start(context.Background(), componenttest.NewNopHost())
 			assert.NoError(t, err, "Failed to initialize processes scraper: %v", err)

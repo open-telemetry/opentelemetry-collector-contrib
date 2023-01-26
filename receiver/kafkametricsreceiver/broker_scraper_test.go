@@ -110,7 +110,7 @@ func TestBrokerScraper_scrape(t *testing.T) {
 	bs := brokerScraper{
 		client:   client,
 		settings: receivertest.NewNopCreateSettings(),
-		config:   Config{Metrics: metadata.DefaultMetricsBuilderConfig()},
+		config:   Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()},
 	}
 	require.NoError(t, bs.start(context.Background(), componenttest.NewNopHost()))
 	md, err := bs.scrape(context.Background())
