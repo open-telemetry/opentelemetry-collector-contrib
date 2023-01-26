@@ -19,7 +19,6 @@ import (
 )
 
 var (
-	errMissingAction        = fmt.Errorf("missing header action, must be 'insert', 'update', 'upsert', or 'delete'")
 	errMissingHeader        = fmt.Errorf("missing header name")
 	errMissingHeadersConfig = fmt.Errorf("missing headers configuration")
 	errMissingSource        = fmt.Errorf("missing header source, must be 'from_context' or 'value'")
@@ -61,10 +60,6 @@ func (cfg *Config) Validate() error {
 		return errMissingHeadersConfig
 	}
 	for _, header := range cfg.HeadersConfig {
-		if header.Action == "" {
-			return errMissingAction
-		}
-
 		if header.Key == nil || *header.Key == "" {
 			return errMissingHeader
 		}

@@ -55,7 +55,6 @@ func TestLoadConfig(t *testing.T) {
 
 					{
 						Key:         stringp("User-ID"),
-						Action:      UPSERT,
 						FromContext: nil,
 						Value:       stringp("user_id"),
 					},
@@ -187,7 +186,7 @@ func TestValidateConfig(t *testing.T) {
 					Value: stringp("from config"),
 				},
 			},
-			errMissingAction,
+			nil,
 		},
 		{
 			"headers configuration is missing",

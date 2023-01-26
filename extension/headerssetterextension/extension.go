@@ -21,6 +21,7 @@ import (
 	"net/http"
 
 	"go.opentelemetry.io/collector/extension/auth"
+	"go.uber.org/zap"
 	"google.golang.org/grpc/credentials"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension/internal/action"
@@ -32,7 +33,7 @@ type Header struct {
 	source source.Source
 }
 
-func newHeadersSetterExtension(cfg *Config) (auth.Client, error) {
+func newHeadersSetterExtension(cfg *Config, logger *zap.Logger) (auth.Client, error) {
 	if cfg == nil {
 		return nil, errors.New("extension configuration is not provided")
 	}
@@ -61,7 +62,8 @@ func newHeadersSetterExtension(cfg *Config) (auth.Client, error) {
 		case DELETE:
 			a = action.Delete{Key: *header.Key}
 		default:
-			return nil, errors.New("header action is not provided")
+			a = action.Upsert{Key: *header.Key}
+			logger.Warn("Please set the header action explicitly")
 		}
 		headers = append(headers, Header{action: a, source: s})
 	}

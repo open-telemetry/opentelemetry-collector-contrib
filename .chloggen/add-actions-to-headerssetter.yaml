@@ -14,10 +14,11 @@ issues: [16581, 7596]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  This change will break the existing extension configurations. Therefore, please
-  update configurations to use one of the following actions:
-        - `insert`: Inserts the new header if it does not exist.
-        - `update`: Updates the header value if it exists.
-        - `upsert`: Inserts a header if it does not exist and updates the header
-          if it exists.
-        - `delete`: Deletes the header.
+  Please update configurations to use the action that suits your requirements:
+    - `insert`: Inserts the new header if it does not exist.
+    - `update`: Updates the header value if it exists.
+    - `upsert`: Inserts a header if it does not exist and updates the header
+       if it exists.
+    - `delete`: Deletes the header.
+  The default action is `upsert`, however, in future, the action will be
+  explicitly required.

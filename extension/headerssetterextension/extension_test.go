@@ -36,7 +36,7 @@ func (m *mockRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) 
 func TestRoundTripper(t *testing.T) {
 	for _, tt := range tests {
 		t.Run("round_tripper", func(t *testing.T) {
-			ext, err := newHeadersSetterExtension(tt.cfg)
+			ext, err := newHeadersSetterExtension(tt.cfg, nil)
 			assert.NoError(t, err)
 			assert.NotNil(t, ext)
 
@@ -71,7 +71,7 @@ func TestRoundTripper(t *testing.T) {
 func TestPerRPCCredentials(t *testing.T) {
 	for _, tt := range tests {
 		t.Run("", func(t *testing.T) {
-			ext, err := newHeadersSetterExtension(tt.cfg)
+			ext, err := newHeadersSetterExtension(tt.cfg, nil)
 			assert.NoError(t, err)
 			assert.NotNil(t, ext)
 

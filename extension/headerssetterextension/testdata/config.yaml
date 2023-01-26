@@ -8,7 +8,6 @@ headers_setter/1:
       action: update
       from_context: "user_id"
     - key: User-ID
-      action: upsert
       value: "user_id"
     - key: User-ID
       action: delete

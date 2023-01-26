@@ -20,7 +20,7 @@ The following settings are required:
 - `headers`: a list of header configuration objects that specify headers and
   their value sources. Each configuration object has the following properties:
     - `key`: The header name.
-    - `action`: An action to perform on the header. Supported actions are:
+    - `action` (default: `upsert`): An action to perform on the header. Supported actions are:
         - `insert`: Inserts the new header if it does not exist.
         - `update`: Updates the header value if it exists.
         - `upsert`: Inserts a header if it does not exist and updates the header
