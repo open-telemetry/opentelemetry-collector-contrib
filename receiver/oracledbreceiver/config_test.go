@@ -40,7 +40,7 @@ func TestParseConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 	assert.Equal(t, "oracle://otel:password@localhost:51521/XE", cfg.DataSource)
-	settings := cfg.Metrics.Metrics
+	settings := cfg.MetricsBuilderConfig.Metrics
 	assert.False(t, settings.OracledbTablespaceSizeUsage.Enabled)
 	assert.False(t, settings.OracledbExchangeDeadlocks.Enabled)
 }

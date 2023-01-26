@@ -54,7 +54,7 @@ func TestChronyScraper(t *testing.T) {
 		{
 			scenario: "Successfully read default tracking information",
 			conf: &Config{
-				Metrics: metadata.DefaultMetricsBuilderConfig(),
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			},
 			mockTracking: &chrony.Tracking{
 				SkewPPM:           1000.300,
@@ -106,7 +106,7 @@ func TestChronyScraper(t *testing.T) {
 		{
 			scenario: "client failed to connect to chronyd",
 			conf: &Config{
-				Metrics: metadata.DefaultMetricsBuilderConfig(),
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			},
 			mockTracking: nil,
 			mockErr:      errInvalidValue,
