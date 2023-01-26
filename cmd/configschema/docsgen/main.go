@@ -19,7 +19,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema/docsgen/docsgen"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/components"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema/internal/components"
 )
 
 func main() {

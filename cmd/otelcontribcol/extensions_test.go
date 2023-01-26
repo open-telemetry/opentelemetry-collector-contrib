@@ -16,7 +16,7 @@
 //go:build !windows
 // +build !windows
 
-package components
+package main
 
 import (
 	"context"
@@ -52,7 +52,7 @@ import (
 )
 
 func TestDefaultExtensions(t *testing.T) {
-	allFactories, err := Components()
+	allFactories, err := components()
 	require.NoError(t, err)
 
 	extFactories := allFactories.Extensions
