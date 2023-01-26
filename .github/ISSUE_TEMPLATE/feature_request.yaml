@@ -19,6 +19,7 @@ body:
       - cmd/telemetrygen
       - cmd/tracegen
       - confmap/provider/s3provider
+      - connector/count
       - examples/demo
       - exporter/alibabacloudlogservice
       - exporter/awscloudwatchlogs

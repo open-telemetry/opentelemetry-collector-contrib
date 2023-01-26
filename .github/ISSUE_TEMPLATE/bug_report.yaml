@@ -25,6 +25,7 @@ body:
       - cmd/telemetrygen
       - cmd/tracegen
       - confmap/provider/s3provider
+      - connector/count
       - examples/demo
       - exporter/alibabacloudlogservice
       - exporter/awscloudwatchlogs
@@ -229,7 +230,7 @@ body:
       description: Please provide as much detail as you reasonably can.
       value: |
         ## Description
-      
+
         ## Steps to Reproduce
 
         ## Expected Result
