@@ -41,7 +41,7 @@ func createDefaultConfig() config.Receiver {
 	return &Config{
 		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		HTTPServerSettings: confighttp.HTTPServerSettings{
-			Endpoint: "0.0.0.0:8126",
+			Endpoint: "localhost:8126",
 		},
 		ReadTimeout: 60 * time.Second,
 	}
