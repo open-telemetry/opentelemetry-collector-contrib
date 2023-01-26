@@ -22,7 +22,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -119,8 +118,8 @@ func TestScraper(t *testing.T) {
 			cfg.Endpoint = c.Endpoint
 			cfg.IgnoreHostKey = true
 			if tc.enableSFTP {
-				cfg.Metrics.SshcheckSftpStatus.Enabled = true
-				cfg.Metrics.SshcheckSftpDuration.Enabled = true
+				cfg.MetricsBuilderConfig.MetricsSettings.SshcheckSftpStatus.Enabled = true
+				cfg.MetricsBuilderConfig.MetricsSettings.SshcheckSftpDuration.Enabled = true
 			}
 
 			settings := receivertest.NewNopCreateSettings()
