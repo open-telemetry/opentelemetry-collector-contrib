@@ -2,6 +2,8 @@
 
 set -e
 
+GOJUNITREPORTCMD=${GOJUNIT:-go-junit-report}
+
 TESTS_DIR=${TESTS_DIR:-tests}
 
 cd ${TESTS_DIR}
@@ -18,7 +20,7 @@ RUN_TESTBED=1 go test -v ${TEST_ARGS} 2>&1 | tee -a results/testoutput.log ./for
 
 testStatus=${PIPESTATUS[0]}
 
-go-junit-report < results/testoutput.log > results/junit/results.xml
+${GOJUNITREPORTCMD} < results/testoutput.log > results/junit/results.xml
 
 bash -c "cat results/TESTRESULTS.md | ${TEST_COLORIZE}"
 

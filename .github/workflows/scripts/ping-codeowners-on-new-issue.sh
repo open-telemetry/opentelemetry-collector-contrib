@@ -65,7 +65,7 @@ for COMPONENT in ${BODY_COMPONENTS}; do
     fi
 
     PING_LINES+="- ${COMPONENT}: ${CODEOWNERS}\n"
-    PINGED_COMPONENTS["${TITLE_COMPONENT}"]=1
+    PINGED_COMPONENTS["${COMPONENT}"]=1
 
     if (( "${#COMPONENT}" > 50 )); then
       echo "'${COMPONENT}' exceeds GitHub's 50-character limit on labels, skipping adding a label"
@@ -85,7 +85,7 @@ if [[ -n "${LABELS}" ]]; then
   # 2. The call to edit the issue will fail if any of the
   #    labels doesn't exist. We can be reasonably sure that
   #    all labels will exist since they come from a known set.
-  echo gh issue edit "${ISSUE}" --add-label "${LABELS}" || true
+  gh issue edit "${ISSUE}" --add-label "${LABELS}" || true
 fi
 
 if [[ -n "${PING_LINES}" ]]; then

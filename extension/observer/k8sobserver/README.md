@@ -9,7 +9,7 @@ Kubernetes pod, port, and node endpoints via the Kubernetes API.
 extensions:
   k8s_observer:
     auth_type: serviceAccount
-    node: ${K8S_NODE_NAME}
+    node: ${env:K8S_NODE_NAME}
     observe_pods: true
     observe_nodes: true
 

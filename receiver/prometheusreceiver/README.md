@@ -50,6 +50,16 @@ you must escape them using `$$`.
 prometheus --config.file=prom.yaml
 ```
 
+**Feature gates**:
+
+- `receiver.prometheusreceiver.UseCreatedMetric`: Start time for Summary, Histogram 
+  and Sum metrics can be retrieved from `_created` metrics. Currently, this behaviour
+  is disabled by default. To enable it, use the following feature gate option:
+
+```shell
+"--feature-gates=receiver.prometheusreceiver.UseCreatedMetric"
+```
+
 You can copy and paste that same configuration under:
 
 ```yaml

@@ -92,7 +92,9 @@ func createLogsReceiver(_ context.Context, settings rcvr.CreateSettings, configu
 		if err != nil {
 			obsrecv.EndLogsOp(ctx, typeStr, 0, err)
 		} else {
-			err = logs.ConsumeLogs(ctx, l)
+			if l.ResourceLogs().Len() != 0 {
+				err = logs.ConsumeLogs(ctx, l)
+			}
 			obsrecv.EndLogsOp(ctx, typeStr, l.LogRecordCount(), err)
 		}
 	})
@@ -121,7 +123,9 @@ func createMetricsReceiver(_ context.Context, settings rcvr.CreateSettings, conf
 		if err != nil {
 			obsrecv.EndMetricsOp(ctx, typeStr, 0, err)
 		} else {
-			err = metrics.ConsumeMetrics(ctx, m)
+			if m.ResourceMetrics().Len() != 0 {
+				err = metrics.ConsumeMetrics(ctx, m)
+			}
 			obsrecv.EndMetricsOp(ctx, typeStr, m.MetricCount(), err)
 		}
 	})
@@ -150,7 +154,9 @@ func createTracesReceiver(ctx context.Context, settings rcvr.CreateSettings, con
 		if err != nil {
 			obsrecv.EndTracesOp(ctx, typeStr, 0, err)
 		} else {
-			err = traces.ConsumeTraces(ctx, t)
+			if t.ResourceSpans().Len() != 0 {
+				err = traces.ConsumeTraces(ctx, t)
+			}
 			obsrecv.EndTracesOp(ctx, typeStr, t.SpanCount(), err)
 		}
 	})

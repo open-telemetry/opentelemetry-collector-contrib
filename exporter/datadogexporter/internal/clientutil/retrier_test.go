@@ -17,9 +17,12 @@ package clientutil // import "github.com/open-telemetry/opentelemetry-collector-
 import (
 	"context"
 	"errors"
+	"fmt"
+	"net/http"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
@@ -32,8 +35,9 @@ func TestDoWithRetries(t *testing.T) {
 	retrier := NewRetrier(zap.NewNop(), exporterhelper.NewDefaultRetrySettings(), scrubber)
 	ctx := context.Background()
 
-	err := retrier.DoWithRetries(ctx, func(context.Context) error { return nil })
+	retryNum, err := retrier.DoWithRetries(ctx, func(context.Context) error { return nil })
 	require.NoError(t, err)
+	assert.Equal(t, retryNum, int64(0))
 
 	retrier = NewRetrier(zap.NewNop(),
 		exporterhelper.RetrySettings{
@@ -44,6 +48,20 @@ func TestDoWithRetries(t *testing.T) {
 		},
 		scrubber,
 	)
-	err = retrier.DoWithRetries(ctx, func(context.Context) error { return errors.New("action failed") })
+	retryNum, err = retrier.DoWithRetries(ctx, func(context.Context) error { return errors.New("action failed") })
 	require.Error(t, err)
+	assert.Greater(t, retryNum, int64(0))
+}
+
+func TestNoRetriesOnPermanentError(t *testing.T) {
+	scrubber := scrub.NewScrubber()
+	retrier := NewRetrier(zap.NewNop(), exporterhelper.NewDefaultRetrySettings(), scrubber)
+	ctx := context.Background()
+	respNonRetriable := http.Response{StatusCode: 404}
+
+	retryNum, err := retrier.DoWithRetries(ctx, func(context.Context) error {
+		return WrapError(fmt.Errorf("test"), &respNonRetriable)
+	})
+	require.Error(t, err)
+	assert.Equal(t, retryNum, int64(0))
 }

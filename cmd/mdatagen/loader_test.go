@@ -36,13 +36,22 @@ func Test_loadMetadata(t *testing.T) {
 				ResourceAttributes: map[attributeName]attribute{
 					"string.resource.attr": {
 						Description: "Resource attribute with any string value.",
+						Enabled:     true,
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
 						},
 					},
 					"string.enum.resource.attr": {
 						Description: "Resource attribute with a known set of string values.",
+						Enabled:     true,
 						Enum:        []string{"one", "two"},
+						Type: ValueType{
+							ValueType: pcommon.ValueTypeStr,
+						},
+					},
+					"optional.resource.attr": {
+						Description: "Explicitly disabled ResourceAttribute.",
+						Enabled:     false,
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
 						},

@@ -1,3 +1,5 @@
+**Tracegen has been deprecated, use [telemetrygen](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/cmd/telemetrygen) instead.**
+
 # Trace generator for OpenTelemetry
 
 This utility simulates a client generating traces, useful for testing and demonstration purposes.
