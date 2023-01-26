@@ -686,8 +686,7 @@ jobs:
         run: ./.github/workflows/scripts/set_release_tag.sh
       - name: Create Github Release
         run: |
-          mkdir -p dist/
-          ghr -t $GITHUB_TOKEN -u open-telemetry -r opentelemetry-collector-contrib --replace $RELEASE_TAG dist/
+          ./.tools/ghr -t $GITHUB_TOKEN -u open-telemetry -r opentelemetry-collector-contrib --replace $RELEASE_TAG
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_TAG: ${{ steps.github_tag.outputs.tag }}
