@@ -47,7 +47,7 @@ by the Span Resource object. X-Ray uses this data to generate inferred segments 
 
 ## Exporter Configuration
 
-The following exporter configuration parameters are supported. They mirror and have the same affect as the
+The following exporter configuration parameters are supported. They mirror and have the same effect as the
 comparable AWS X-Ray Daemon configuration values.
 
 | Name                   | Description                                                                        | Default |
