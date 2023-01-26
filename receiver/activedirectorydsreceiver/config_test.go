@@ -36,8 +36,8 @@ func TestLoadConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 
-	defaultMetricsBuilderConfig := metadata.DefaultMetricsBuilderConfig()
-	defaultMetricsBuilderConfig.MetricsSettings.ActiveDirectoryDsReplicationObjectRate.Enabled = false
+	overriddenMetricsBuilderConfig := metadata.DefaultMetricsBuilderConfig()
+	overriddenMetricsBuilderConfig.MetricsSettings.ActiveDirectoryDsReplicationObjectRate.Enabled = false
 	tests := []struct {
 		id       component.ID
 		expected component.Config
@@ -47,12 +47,12 @@ func TestLoadConfig(t *testing.T) {
 			expected: createDefaultConfig(),
 		},
 		{
-			id: component.NewIDWithName(typeStr, ""),
+			id: component.NewIDWithName(typeStr, "overridden-config"),
 			expected: &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 					CollectionInterval: 2 * time.Minute,
 				},
-				MetricsBuilderConfig: defaultMetricsBuilderConfig,
+				MetricsBuilderConfig: overriddenMetricsBuilderConfig,
 			},
 		},
 	}
