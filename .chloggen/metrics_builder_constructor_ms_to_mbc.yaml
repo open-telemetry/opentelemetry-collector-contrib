@@ -8,7 +8,7 @@ component: mdatagen
 note: Turn on the ability to enable/disable resource attributes by embedding MetricsSettings and ResourceAttributesSettings into all scraping receivers as MetricsBuilderConfig
 
 # One or more tracking issues related to the change
-issues: []
+issues: [16373]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
