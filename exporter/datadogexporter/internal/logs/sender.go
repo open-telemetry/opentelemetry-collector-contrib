@@ -69,8 +69,8 @@ func (s *Sender) SubmitLogs(ctx context.Context, payload []datadogV2.HTTPLogItem
 	// Correctly sets apiSubmitLogRequest ddtags field based on tags from translator Transform method
 	for i, p := range payload {
 		tags = p.GetDdtags()
-		// Batches consecutive log items with the same tags to be submitted together
 		if prevtags == tags || i == 0 {
+			// Batches consecutive log items with the same tags to be submitted together
 			batch = append(batch, p)
 			continue
 		}
