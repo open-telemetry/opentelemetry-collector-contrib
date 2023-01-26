@@ -63,7 +63,8 @@ func newHeadersSetterExtension(cfg *Config, logger *zap.Logger) (auth.Client, er
 			a = action.Delete{Key: *header.Key}
 		default:
 			a = action.Upsert{Key: *header.Key}
-			logger.Warn("Please set the header action explicitly")
+			logger.Warn("The action was not provided, using 'upsert'." +
+				" In future versions, we'll require this to be explicitly set")
 		}
 		headers = append(headers, Header{action: a, source: s})
 	}

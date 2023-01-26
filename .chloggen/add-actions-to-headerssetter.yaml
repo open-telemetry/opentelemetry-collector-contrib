@@ -20,5 +20,5 @@ subtext: |
     - `upsert`: Inserts a header if it does not exist and updates the header
        if it exists.
     - `delete`: Deletes the header.
-  The default action is `upsert`, however, in future, the action will be
-  explicitly required.
+  The default action is `upsert`, however, in future versions, we'll require this
+  to be explicitly set.
