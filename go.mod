@@ -174,7 +174,6 @@ require (
 	go.opentelemetry.io/collector/processor/batchprocessor v0.70.0
 	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.70.0
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.70.0
-	golang.org/x/sys v0.4.0
 )
 
 require (
@@ -600,6 +599,7 @@ require (
 	golang.org/x/net v0.5.0 // indirect
 	golang.org/x/oauth2 v0.4.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
+	golang.org/x/sys v0.4.0 // indirect
 	golang.org/x/term v0.4.0 // indirect
 	golang.org/x/text v0.6.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
