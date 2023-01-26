@@ -8,9 +8,9 @@ require (
 	github.com/stretchr/testify v1.7.1
 	github.com/tinylib/msgp v1.1.2
 	github.com/vmihailenco/msgpack/v4 v4.3.12
-	go.opentelemetry.io/collector v0.53.0
-	go.opentelemetry.io/collector/pdata v0.53.0
-	go.opentelemetry.io/collector/semconv v0.53.0
+	go.opentelemetry.io/collector v0.70.0
+	go.opentelemetry.io/collector/pdata v1.0.0-rc4
+	go.opentelemetry.io/collector/semconv v0.70.0
 )
 
 require (
