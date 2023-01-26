@@ -242,12 +242,12 @@ func CompareSpan(expected, actual ptrace.Span) error {
 	}
 
 	if expected.TraceID() != actual.TraceID() {
-		errs = multierr.Append(errs, fmt.Errorf("trace ID doesn't match expected: %d, actual: %d",
+		errs = multierr.Append(errs, fmt.Errorf("trace ID doesn't match expected: %s, actual: %s",
 			expected.TraceID(), actual.TraceID()))
 	}
 
 	if expected.SpanID() != actual.SpanID() {
-		errs = multierr.Append(errs, fmt.Errorf("span ID doesn't match expected: %d, actual: %d",
+		errs = multierr.Append(errs, fmt.Errorf("span ID doesn't match expected: %s, actual: %s",
 			expected.SpanID(), actual.SpanID()))
 	}
 
@@ -257,7 +257,7 @@ func CompareSpan(expected, actual ptrace.Span) error {
 	}
 
 	if expected.ParentSpanID() != actual.ParentSpanID() {
-		errs = multierr.Append(errs, fmt.Errorf("parent span ID doesn't match expected: %d, actual: %d",
+		errs = multierr.Append(errs, fmt.Errorf("parent span ID doesn't match expected: %s, actual: %s",
 			expected.ParentSpanID(), actual.ParentSpanID()))
 	}
 
@@ -287,8 +287,7 @@ func CompareSpan(expected, actual ptrace.Span) error {
 	}
 
 	if !reflect.DeepEqual(expected.Events(), actual.Events()) {
-		errs = multierr.Append(errs, fmt.Errorf("events doesn't match expected: %v, actual: %v",
-			expected.Events(), actual.Events()))
+		errs = multierr.Append(errs, fmt.Errorf("events doesn't match"))
 	}
 
 	if expected.DroppedEventsCount() != actual.DroppedEventsCount() {
@@ -297,8 +296,7 @@ func CompareSpan(expected, actual ptrace.Span) error {
 	}
 
 	if !reflect.DeepEqual(expected.Links(), actual.Links()) {
-		errs = multierr.Append(errs, fmt.Errorf("links doesn't match expected: %v, actual: %v",
-			expected.Links(), actual.Links()))
+		errs = multierr.Append(errs, fmt.Errorf("links doesn't match"))
 	}
 
 	if expected.DroppedLinksCount() != actual.DroppedLinksCount() {
@@ -307,8 +305,7 @@ func CompareSpan(expected, actual ptrace.Span) error {
 	}
 
 	if !reflect.DeepEqual(expected.Status(), actual.Status()) {
-		errs = multierr.Append(errs, fmt.Errorf("status doesn't match expected: %v, actual: %v",
-			expected.Status(), actual.Status()))
+		errs = multierr.Append(errs, fmt.Errorf("status doesn't match"))
 	}
 
 	return errs
