@@ -43,6 +43,6 @@ func createDefaultConfig() component.Config {
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 			CollectionInterval: defaultCollectionInterval,
 		},
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		Metrics: metadata.DefaultMetricsBuilderConfig(),
 	}
 }

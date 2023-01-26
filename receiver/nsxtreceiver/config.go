@@ -30,9 +30,10 @@ import (
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	confighttp.HTTPClientSettings           `mapstructure:",squash"`
-	MetricsBuilderConfig                    metadata.MetricsBuilderConfig `mapstructure:",squash"`
-	Username                                string                        `mapstructure:"username"`
-	Password                                string                        `mapstructure:"password"`
+	metadata.MetricsBuilderConfig           `mapstructure:",squash"`
+	ResourceAttributes                      metadata.ResourceAttributesSettings `mapstructure:",squash"`
+	Username                                string                              `mapstructure:"username"`
+	Password                                string                              `mapstructure:"password"`
 }
 
 // Validate returns if the NSX configuration is valid

@@ -42,14 +42,14 @@ var (
 // Config is the receiver configuration
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	Endpoint                                string        `mapstructure:"endpoint"`
-	TLSName                                 string        `mapstructure:"tlsname"`
-	Username                                string        `mapstructure:"username"`
-	Password                                string        `mapstructure:"password"`
-	CollectClusterMetrics                   bool          `mapstructure:"collect_cluster_metrics"`
-	Timeout                                 time.Duration `mapstructure:"timeout"`
-	metadata.MetricsBuilderConfig           `mapstructure:",squash"`
-	TLS                                     *configtls.TLSClientSetting `mapstructure:"tls,omitempty"`
+	Endpoint                                string                        `mapstructure:"endpoint"`
+	TLSName                                 string                        `mapstructure:"tlsname"`
+	Username                                string                        `mapstructure:"username"`
+	Password                                string                        `mapstructure:"password"`
+	CollectClusterMetrics                   bool                          `mapstructure:"collect_cluster_metrics"`
+	Timeout                                 time.Duration                 `mapstructure:"timeout"`
+	MetricsBuilderConfig                    metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	TLS                                     *configtls.TLSClientSetting   `mapstructure:"tls,omitempty"`
 }
 
 // Validate validates the values of the given Config, and returns an error if validation fails

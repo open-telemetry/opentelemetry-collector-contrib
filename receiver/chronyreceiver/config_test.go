@@ -46,7 +46,7 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, &Config{
 		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(typeStr),
-		MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
+		Metrics:                   metadata.DefaultMetricsBuilderConfig(),
 		Endpoint:                  "udp://localhost:3030",
 		Timeout:                   10 * time.Second,
 	}, cfg)

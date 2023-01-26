@@ -4282,8 +4282,19 @@ func newMetricMongodbatlasSystemPagingUsageMax(settings MetricSettings) metricMo
 
 // MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
 type MetricsBuilderConfig struct {
-	Metrics            MetricsSettings            `mapstructure:",squash"`
-	ResourceAttributes ResourceAttributesSettings `mapstructure:",squash"`
+	Metrics            MetricsSettings            `mapstructure:"metrics"`
+	ResourceAttributes ResourceAttributesSettings `mapstructure:"resource_attributes"`
+}
+
+func (mbc *MetricsBuilderConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(mbc, confmap.WithErrorUnused())
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations

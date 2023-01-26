@@ -55,7 +55,7 @@ func TestScrape(t *testing.T) {
 		{
 			name: "All metrics enabled",
 			config: &Config{
-				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig().WithMetricsSettings(metadata.MetricsSettings{
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig().WithMetrics(metadata.MetricsSettings{
 					SystemMemoryUtilization: metadata.MetricSettings{
 						Enabled: true,
 					},
@@ -154,7 +154,7 @@ func TestScrape_MemoryUtilization(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			scraperConfig := Config{
-				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig().WithMetricsSettings(metadata.MetricsSettings{
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig().WithMetrics(metadata.MetricsSettings{
 					SystemMemoryUtilization: metadata.MetricSettings{
 						Enabled: true,
 					},

@@ -52,7 +52,7 @@ func TestLoadConfig(t *testing.T) {
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 					CollectionInterval: 2 * time.Minute,
 				},
-				MetricsBuilderConfig: overriddenMetricsBuilderConfig,
+				Metrics: overriddenMetricsBuilderConfig,
 			},
 		},
 	}
