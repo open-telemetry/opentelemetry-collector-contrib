@@ -283,8 +283,8 @@ func newMetricOptionalMetric(settings MetricSettings) metricOptionalMetric {
 
 // MetricsBuilderConfig is a structural subset of an otherwise 1-1 copy of metadata.yaml
 type MetricsBuilderConfig struct {
-	Metrics            MetricsSettings            `mapstructure:"metrics"`
-	ResourceAttributes ResourceAttributesSettings `mapstructure:"resource_attributes"`
+	MetricsSettings            MetricsSettings            `mapstructure:"metrics,squash"`
+	ResourceAttributesSettings ResourceAttributesSettings `mapstructure:"resource_attributes,squash"`
 }
 
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
