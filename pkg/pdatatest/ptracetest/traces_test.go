@@ -43,8 +43,8 @@ func TestCompareTraces(t *testing.T) {
 				IgnoreResourceAttributeValue("host.name"),
 			},
 			withoutOptions: multierr.Combine(
-				errors.New("missing expected resource with attributes: map[host.name:different-node1]"),
-				errors.New("extra resource with attributes: map[host.name:host1]"),
+				errors.New("missing expected resource: map[host.name:different-node1]"),
+				errors.New("unexpected resource: map[host.name:host1]"),
 			),
 			withOptions: nil,
 		},
@@ -54,8 +54,8 @@ func TestCompareTraces(t *testing.T) {
 				IgnoreResourceSpansOrder(),
 			},
 			withoutOptions: multierr.Combine(
-				errors.New("ResourceTraces with attributes map[host.name:host1] expected at index 0, found at index 1"),
-				errors.New("ResourceTraces with attributes map[host.name:host2] expected at index 1, found at index 0"),
+				errors.New(`resources are out of order: resource "map[host.name:host1]" expected at index 0, found at index 1`),
+				errors.New(`resources are out of order: resource "map[host.name:host2]" expected at index 1, found at index 0`),
 			),
 			withOptions: nil,
 		},
@@ -71,13 +71,23 @@ func TestCompareTraces(t *testing.T) {
 			actual, err := golden.ReadTraces(filepath.Join(dir, "actual.json"))
 			require.NoError(t, err)
 
-			assert.Equal(t, tc.withoutOptions, CompareTraces(expected, actual))
+			err = CompareTraces(expected, actual)
+			if tc.withoutOptions == nil {
+				assert.NoError(t, err)
+			} else {
+				assert.EqualError(t, tc.withoutOptions, err.Error())
+			}
 
 			if tc.compareOptions == nil {
 				return
 			}
 
-			assert.Equal(t, tc.withOptions, CompareTraces(expected, actual, tc.compareOptions...))
+			err = CompareTraces(expected, actual, tc.compareOptions...)
+			if tc.withOptions == nil {
+				assert.NoError(t, err)
+			} else {
+				assert.EqualError(t, tc.withOptions, err.Error())
+			}
 		})
 	}
 }
@@ -126,7 +136,7 @@ func TestCompareResourceSpans(t *testing.T) {
 				rs.Resource().Attributes().PutStr("host.name", "host2")
 				return rs
 			}(),
-			err: errors.New("resource attributes do not match expected: map[host.name:host1], actual: map[host.name:host2]"),
+			err: errors.New("attributes don't match expected: map[host.name:host1], actual: map[host.name:host2]"),
 		},
 		{
 			name: "scopes-number-mismatch",
@@ -141,7 +151,7 @@ func TestCompareResourceSpans(t *testing.T) {
 				rs.ScopeSpans().AppendEmpty()
 				return rs
 			}(),
-			err: errors.New("number of scope spans does not match expected: 2, actual: 1"),
+			err: errors.New("number of scopes doesn't match expected: 2, actual: 1"),
 		},
 		{
 			name: "scope-name-mismatch",
@@ -158,8 +168,8 @@ func TestCompareResourceSpans(t *testing.T) {
 				return rs
 			}(),
 			err: multierr.Combine(
-				errors.New("ScopeSpans missing with scope name: scope1"),
-				errors.New("unexpected ScopeSpans with scope name: scope2"),
+				errors.New("missing expected scope: scope1"),
+				errors.New("unexpected scope: scope2"),
 			),
 		},
 		{
@@ -177,8 +187,8 @@ func TestCompareResourceSpans(t *testing.T) {
 				return rs
 			}(),
 			err: multierr.Combine(
-				errors.New("ScopeSpans with scope name scope1 expected at index 0, found at index 1"),
-				errors.New("ScopeSpans with scope name scope2 expected at index 1, found at index 0"),
+				errors.New("scopes are out of order: scope scope1 expected at index 0, found at index 1"),
+				errors.New("scopes are out of order: scope scope2 expected at index 1, found at index 0"),
 			),
 		},
 	}
@@ -229,7 +239,7 @@ func TestCompareScopeSpans(t *testing.T) {
 				ss.Scope().SetName("scope2")
 				return ss
 			}(),
-			err: errors.New("scope Name does not match expected: scope1, actual: scope2"),
+			err: errors.New("name doesn't match expected: scope1, actual: scope2"),
 		},
 		{
 			name: "spans-number-mismatch",
@@ -244,7 +254,7 @@ func TestCompareScopeSpans(t *testing.T) {
 				ss.Spans().AppendEmpty()
 				return ss
 			}(),
-			err: errors.New("number of spans does not match expected: 2, actual: 1"),
+			err: errors.New("number of spans doesn't match expected: 2, actual: 1"),
 		},
 		{
 			name: "spans-order-mismatch",
@@ -261,8 +271,8 @@ func TestCompareScopeSpans(t *testing.T) {
 				return ss
 			}(),
 			err: multierr.Combine(
-				errors.New("span span1 expected at index 0, found at index 1"),
-				errors.New("span span2 expected at index 1, found at index 0"),
+				errors.New(`spans are out of order: span "span1" expected at index 0, found at index 1`),
+				errors.New(`spans are out of order: span "span2" expected at index 1, found at index 0`),
 			),
 		},
 	}
@@ -309,7 +319,7 @@ func TestCompareSpan(t *testing.T) {
 				s.SetName("span2")
 				return s
 			}(),
-			err: errors.New("span Name doesn't match expected: span1, actual: span2"),
+			err: errors.New("name doesn't match expected: span1, actual: span2"),
 		},
 		{
 			name: "start-timestamp-mismatch",
@@ -323,7 +333,7 @@ func TestCompareSpan(t *testing.T) {
 				s.SetStartTimestamp(456)
 				return s
 			}(),
-			err: errors.New("span StartTimestamp doesn't match expected: 123, actual: 456"),
+			err: errors.New("start timestamp doesn't match expected: 123, actual: 456"),
 		},
 		{
 			name: "end-timestamp-mismatch",
@@ -337,10 +347,10 @@ func TestCompareSpan(t *testing.T) {
 				s.SetEndTimestamp(456)
 				return s
 			}(),
-			err: errors.New("span EndTimestamp doesn't match expected: 123, actual: 456"),
+			err: errors.New("end timestamp doesn't match expected: 123, actual: 456"),
 		},
 		{
-			name: "attributes-number-mismatch",
+			name: "attributes-mismatch",
 			expected: func() ptrace.Span {
 				s := ptrace.NewSpan()
 				s.Attributes().PutStr("attr1", "value1")
@@ -353,7 +363,7 @@ func TestCompareSpan(t *testing.T) {
 				s.Attributes().PutStr("attr2", "value1")
 				return s
 			}(),
-			err: errors.New("span attributes do not match expected: map[attr1:value1 attr2:value2], actual: map[attr1:value1 attr2:value1]"),
+			err: errors.New("attributes don't match expected: map[attr1:value1 attr2:value2], actual: map[attr1:value1 attr2:value1]"),
 		},
 	}
 	for _, test := range tests {
