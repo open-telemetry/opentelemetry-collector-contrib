@@ -184,7 +184,7 @@ func TestCompareTraces(t *testing.T) {
 		{
 			name: "scopespans-spans-status-mismatch",
 			withoutOptions: multierr.Combine(
-				errors.New("resource \"map[host.name:node1]\": scope \"collector\": span \"\": status doesn't match"),
+				errors.New(`resource "map[host.name:node1]": scope "collector": span "": status code doesn't match expected: Ok, actual: Unset`),
 			),
 		},
 	}

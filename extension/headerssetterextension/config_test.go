@@ -28,12 +28,13 @@ func TestLoadConfig(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		id       component.ID
-		expected component.Config
+		id            component.ID
+		expected      component.Config
+		expectedError error
 	}{
 		{
-			id:       component.NewID(typeStr),
-			expected: NewFactory().CreateDefaultConfig(),
+			id:            component.NewIDWithName(typeStr, ""),
+			expectedError: errMissingHeadersConfig,
 		},
 		{
 			id: component.NewIDWithName(typeStr, "1"),
@@ -41,13 +42,25 @@ func TestLoadConfig(t *testing.T) {
 				HeadersConfig: []HeaderConfig{
 					{
 						Key:         stringp("X-Scope-OrgID"),
+						Action:      INSERT,
 						FromContext: stringp("tenant_id"),
 						Value:       nil,
 					},
 					{
 						Key:         stringp("User-ID"),
+						Action:      UPDATE,
 						FromContext: stringp("user_id"),
 						Value:       nil,
+					},
+
+					{
+						Key:         stringp("User-ID"),
+						FromContext: nil,
+						Value:       stringp("user_id"),
+					},
+					{
+						Key:    stringp("User-ID"),
+						Action: DELETE,
 					},
 				},
 			},
@@ -60,8 +73,15 @@ func TestLoadConfig(t *testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig()
 			sub, err := cm.Sub(tt.id.String())
+
 			require.NoError(t, err)
 			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+			if tt.expectedError != nil {
+				assert.Error(t, component.ValidateConfig(cfg), tt.expectedError)
+				return
+			}
+			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -77,8 +97,9 @@ func TestValidateConfig(t *testing.T) {
 			"header value from config property",
 			[]HeaderConfig{
 				{
-					Key:   stringp("name"),
-					Value: stringp("from config"),
+					Key:    stringp("name"),
+					Action: INSERT,
+					Value:  stringp("from config"),
 				},
 			},
 			nil,
@@ -88,6 +109,7 @@ func TestValidateConfig(t *testing.T) {
 			[]HeaderConfig{
 				{
 					Key:         stringp("name"),
+					Action:      INSERT,
 					FromContext: stringp("from config"),
 				},
 			},
@@ -96,14 +118,20 @@ func TestValidateConfig(t *testing.T) {
 		{
 			"missing header name for from value",
 			[]HeaderConfig{
-				{Value: stringp("test")},
+				{
+					Action: INSERT,
+					Value:  stringp("test"),
+				},
 			},
 			errMissingHeader,
 		},
 		{
 			"missing header name for from context",
 			[]HeaderConfig{
-				{FromContext: stringp("test")},
+				{
+					Action:      INSERT,
+					FromContext: stringp("test"),
+				},
 			},
 			errMissingHeader,
 		},
@@ -112,6 +140,7 @@ func TestValidateConfig(t *testing.T) {
 			[]HeaderConfig{
 				{
 					Key:         stringp("name"),
+					Action:      INSERT,
 					Value:       stringp("from config"),
 					FromContext: stringp("from context"),
 				},
@@ -122,10 +151,42 @@ func TestValidateConfig(t *testing.T) {
 			"header value source is missing",
 			[]HeaderConfig{
 				{
-					Key: stringp("name"),
+					Key:    stringp("name"),
+					Action: INSERT,
 				},
 			},
 			errMissingSource,
+		},
+		{
+			"delete header action",
+			[]HeaderConfig{
+				{
+					Key:    stringp("name"),
+					Action: DELETE,
+				},
+			},
+			nil,
+		},
+		{
+			"insert header action",
+			[]HeaderConfig{
+				{
+					Key:    stringp("name"),
+					Action: INSERT,
+					Value:  stringp("from config"),
+				},
+			},
+			nil,
+		},
+		{
+			"missing header action",
+			[]HeaderConfig{
+				{
+					Key:   stringp("name"),
+					Value: stringp("from config"),
+				},
+			},
+			nil,
 		},
 		{
 			"headers configuration is missing",
