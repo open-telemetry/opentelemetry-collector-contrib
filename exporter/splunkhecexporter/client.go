@@ -18,6 +18,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"net/http"
+	"net/url"
 	"sync"
 
 	jsoniter "github.com/json-iterator/go"
@@ -34,10 +36,12 @@ import (
 
 // client sends the data to the splunk backend.
 type client struct {
-	config    *Config
-	logger    *zap.Logger
-	wg        sync.WaitGroup
-	hecWorker hecWorker
+	config            *Config
+	logger            *zap.Logger
+	wg                sync.WaitGroup
+	telemetrySettings component.TelemetrySettings
+	hecWorker         hecWorker
+	buildInfo         component.BuildInfo
 }
 
 func (c *client) pushMetricsData(
@@ -615,6 +619,73 @@ func (c *client) stop(context.Context) error {
 	return nil
 }
 
-func (c *client) start(context.Context, component.Host) (err error) {
+func (c *client) start(ctx context.Context, host component.Host) (err error) {
+
+	httpClient, err := buildHTTPClient(c.config, host, c.telemetrySettings)
+	if err != nil {
+		return err
+	}
+
+	if c.config.HecHealthCheckEnabled {
+		healthCheckURL, _ := c.config.getURL()
+		healthCheckURL.Path = c.config.HealthPath
+		if err := checkHecHealth(httpClient, healthCheckURL); err != nil {
+			return fmt.Errorf("health check failed: %w", err)
+		}
+	}
+	url, _ := c.config.getURL()
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(c.config, c.buildInfo)}
 	return nil
+}
+
+func checkHecHealth(client *http.Client, healthCheckURL *url.URL) error {
+
+	req, err := http.NewRequest("GET", healthCheckURL.String(), nil)
+	if err != nil {
+		return consumererror.NewPermanent(err)
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	err = splunk.HandleHTTPCode(resp)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func buildHTTPClient(config *Config, host component.Host, telemetrySettings component.TelemetrySettings) (*http.Client, error) {
+	// we handle compression explicitly.
+	config.HTTPClientSettings.Compression = ""
+	if config.MaxConnections != 0 && (config.MaxIdleConns == nil || config.HTTPClientSettings.MaxIdleConnsPerHost == nil) {
+		telemetrySettings.Logger.Warn("You are using the deprecated `max_connections` option that will be removed soon; use `max_idle_conns` and/or `max_idle_conns_per_host` instead: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/splunkhecexporter#advanced-configuration")
+		intMaxConns := int(config.MaxConnections)
+		if config.HTTPClientSettings.MaxIdleConns == nil {
+			config.HTTPClientSettings.MaxIdleConns = &intMaxConns
+		}
+		if config.HTTPClientSettings.MaxIdleConnsPerHost == nil {
+			config.HTTPClientSettings.MaxIdleConnsPerHost = &intMaxConns
+		}
+	}
+	return config.ToClient(host, telemetrySettings)
+}
+
+func buildHTTPHeaders(config *Config, buildInfo component.BuildInfo) map[string]string {
+	appVersion := config.SplunkAppVersion
+	if appVersion == "" {
+		appVersion = buildInfo.Version
+	}
+	return map[string]string{
+		"Connection":           "keep-alive",
+		"Content-Type":         "application/json",
+		"User-Agent":           config.SplunkAppName + "/" + appVersion,
+		"Authorization":        splunk.HECTokenHeader + " " + string(config.Token),
+		"__splunk_app_name":    config.SplunkAppName,
+		"__splunk_app_version": config.SplunkAppVersion,
+	}
 }

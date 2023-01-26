@@ -34,6 +34,7 @@ import (
 	jsoniter "github.com/json-iterator/go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -208,7 +209,7 @@ func runMetricsExport(cfg *Config, metrics pmetric.Metrics, expectedBatchesNum i
 	}
 
 	factory := NewFactory()
-	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
+	cfg.HTTPClientSettings.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	cfg.Token = "1234-1234"
 
 	rr := make(chan receivedRequest)
@@ -258,7 +259,7 @@ func runTraceExport(testConfig *Config, traces ptrace.Traces, expectedBatchesNum
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
+	cfg.HTTPClientSettings.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	cfg.DisableCompression = testConfig.DisableCompression
 	cfg.MaxContentLengthTraces = testConfig.MaxContentLengthTraces
 	cfg.Token = "1234-1234"
@@ -319,7 +320,7 @@ func runLogExport(cfg *Config, ld plog.Logs, expectedBatchesNum int, t *testing.
 		panic(err)
 	}
 
-	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
+	cfg.HTTPClientSettings.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	cfg.Token = "1234-1234"
 
 	rr := make(chan receivedRequest)
@@ -881,7 +882,7 @@ func TestErrorReceived(t *testing.T) {
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
+	cfg.HTTPClientSettings.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	// Disable QueueSettings to ensure that we execute the request when calling ConsumeTraces
 	// otherwise we will not see the error.
 	cfg.QueueSettings.Enabled = false
@@ -930,7 +931,7 @@ func TestInvalidURL(t *testing.T) {
 	cfg.QueueSettings.Enabled = false
 	// Disable retries to not wait too much time for the return error.
 	cfg.RetrySettings.Enabled = false
-	cfg.Endpoint = "ftp://example.com:134"
+	cfg.HTTPClientSettings.Endpoint = "ftp://example.com:134"
 	cfg.Token = "1234-1234"
 	params := exportertest.NewNopCreateSettings()
 	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
@@ -955,12 +956,6 @@ func TestInvalidJson(t *testing.T) {
 	}
 	_, err := jsoniter.Marshal(badEvent)
 	assert.Error(t, err)
-}
-
-func TestStartAlwaysReturnsNil(t *testing.T) {
-	c := client{}
-	err := c.start(context.Background(), componenttest.NewNopHost())
-	assert.NoError(t, err)
 }
 
 func Test_pushLogData_nil_Logs(t *testing.T) {
@@ -1095,7 +1090,7 @@ func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
 
 	// An HTTP client that returns status code 400 and response body responseBody.
 	httpClient, _ := newTestClient(400, responseBody)
-	splunkClient.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config)}
+	splunkClient.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo())}
 	// Sending logs using the client.
 	err := splunkClient.pushLogData(context.Background(), logs)
 	// TODO: Uncomment after consumererror.Logs implements method Unwrap.
@@ -1106,7 +1101,7 @@ func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
 
 	// An HTTP client that returns some other status code other than 400 and response body responseBody.
 	httpClient, _ = newTestClient(500, responseBody)
-	splunkClient.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config)}
+	splunkClient.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo())}
 	// Sending logs using the client.
 	err = splunkClient.pushLogData(context.Background(), logs)
 	// TODO: Uncomment after consumererror.Logs implements method Unwrap.
@@ -1132,7 +1127,7 @@ func Test_pushLogData_ShouldReturnUnsentLogsOnly(t *testing.T) {
 
 	// The first record is to be sent successfully, the second one should not
 	httpClient, _ := newTestClientWithPresetResponses([]int{200, 400}, []string{"OK", "NOK"})
-	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config)}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo())}
 
 	err := c.pushLogData(context.Background(), logs)
 	require.Error(t, err)
@@ -1157,7 +1152,7 @@ func Test_pushLogData_ShouldAddHeadersForProfilingData(t *testing.T) {
 	var headers *[]http.Header
 
 	httpClient, headers := newTestClient(200, "OK")
-	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config)}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo())}
 
 	// A 300-byte buffer only fits one record (around 200 bytes), so each record will be sent separately
 	c.config.MaxContentLengthLogs, c.config.DisableCompression = 300, true
@@ -1223,7 +1218,7 @@ func benchPushLogData(b *testing.B, numResources int, numProfiling int, numNonPr
 	}
 
 	httpClient, _ := newTestClient(200, "OK")
-	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config)}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo())}
 
 	c.config.MaxContentLengthLogs = bufSize
 	logs := createLogDataWithCustomLibraries(numResources, []string{"otel.logs", "otel.profiling"}, []int{numNonProfiling, numProfiling})
@@ -1241,7 +1236,7 @@ func Test_pushLogData_Small_MaxContentLength(t *testing.T) {
 	c := client{
 		config:    config,
 		logger:    zaptest.NewLogger(t),
-		hecWorker: &defaultHecWorker{&url.URL{Scheme: "http", Host: "splunk"}, http.DefaultClient, buildHTTPHeaders(config)},
+		hecWorker: &defaultHecWorker{&url.URL{Scheme: "http", Host: "splunk"}, http.DefaultClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo())},
 	}
 	c.config.MaxContentLengthLogs = 1
 
