@@ -107,6 +107,6 @@ service:
 ```
 
 [in development]:https://github.com/open-telemetry/opentelemetry-collector#in-development
-[Connectors README]:../README.md
+[Connectors README]:https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md
 [Exporter Pipeline Type]:../README.md#exporter-pipeline-type
 [Receiver Pipeline Type]:../README.md#receiver-pipeline-type
