@@ -96,12 +96,10 @@ func CompareLogs(expected, actual plog.Logs, options ...CompareLogsOption) error
 // CompareResourceLogs compares each part of two given ResourceLogs and returns
 // an error if they don't match. The error describes what didn't match.
 func CompareResourceLogs(expected, actual plog.ResourceLogs) error {
-	var errs error
-
-	if !reflect.DeepEqual(expected.Resource().Attributes().AsRaw(), actual.Resource().Attributes().AsRaw()) {
-		errs = multierr.Append(errs, fmt.Errorf("attributes don't match expected: %v, actual: %v",
-			expected.Resource().Attributes().AsRaw(), actual.Resource().Attributes().AsRaw()))
-	}
+	errs := multierr.Combine(
+		internal.CompareResource(expected.Resource(), actual.Resource()),
+		internal.CompareSchemaURL(expected.SchemaUrl(), actual.SchemaUrl()),
+	)
 
 	esls := expected.ScopeLogs()
 	asls := actual.ScopeLogs()
@@ -166,16 +164,10 @@ func CompareResourceLogs(expected, actual plog.ResourceLogs) error {
 // CompareScopeLogs compares each part of two given LogRecordSlices and returns
 // an error if they don't match. The error describes what didn't match.
 func CompareScopeLogs(expected, actual plog.ScopeLogs) error {
-	var errs error
-
-	if expected.Scope().Name() != actual.Scope().Name() {
-		errs = multierr.Append(errs, fmt.Errorf("name doesn't match expected: %s, actual: %s",
-			expected.Scope().Name(), actual.Scope().Name()))
-	}
-	if expected.Scope().Version() != actual.Scope().Version() {
-		errs = multierr.Append(errs, fmt.Errorf("version doesn't match expected: %s, actual: %s",
-			expected.Scope().Version(), actual.Scope().Version()))
-	}
+	errs := multierr.Combine(
+		internal.CompareInstrumentationScope(expected.Scope(), actual.Scope()),
+		internal.CompareSchemaURL(expected.SchemaUrl(), actual.SchemaUrl()),
+	)
 
 	if expected.LogRecords().Len() != actual.LogRecords().Len() {
 		errs = multierr.Append(errs, fmt.Errorf("number of log records doesn't match expected: %d, actual: %d",
@@ -237,21 +229,14 @@ func CompareScopeLogs(expected, actual plog.ScopeLogs) error {
 // CompareLogRecord compares each part of two given LogRecord and returns
 // an error if they don't match. The error describes what didn't match.
 func CompareLogRecord(expected, actual plog.LogRecord) error {
-	var errs error
-
-	if !reflect.DeepEqual(expected.Attributes().AsRaw(), actual.Attributes().AsRaw()) {
-		errs = multierr.Append(errs, fmt.Errorf("attributes don't match expected: %v, actual: %v",
-			expected.Attributes().AsRaw(), actual.Attributes().AsRaw()))
-	}
+	errs := multierr.Combine(
+		internal.CompareAttributes(expected.Attributes(), actual.Attributes()),
+		internal.CompareDroppedAttributesCount(expected.DroppedAttributesCount(), actual.DroppedAttributesCount()),
+	)
 
 	if expected.Flags() != actual.Flags() {
 		errs = multierr.Append(errs, fmt.Errorf("flags doesn't match expected: %d, actual: %d",
 			expected.Flags(), actual.Flags()))
-	}
-
-	if expected.DroppedAttributesCount() != actual.DroppedAttributesCount() {
-		errs = multierr.Append(errs, fmt.Errorf("dropped attributes count doesn't match expected: %d, actual: %d",
-			expected.DroppedAttributesCount(), actual.DroppedAttributesCount()))
 	}
 
 	if expected.Timestamp() != actual.Timestamp() {
