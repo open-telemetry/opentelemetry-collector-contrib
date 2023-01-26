@@ -1,10 +1,10 @@
 # File Receiver
 
-| Status                   |               |
-|--------------------------|---------------|
-| Stability                | [development] |
-| Supported pipeline types | metrics       |
-| Distributions            | [contrib]     |
+| Status                   |                       |
+|--------------------------|-----------------------|
+| Stability                | [development]         |
+| Supported pipeline types | metrics, traces, logs |
+| Distributions            | [contrib]             |
 
 The File Receiver reads the output of a
 [File Exporter](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/fileexporter),
