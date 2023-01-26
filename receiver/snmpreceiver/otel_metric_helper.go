@@ -86,7 +86,7 @@ type otelMetricHelper struct {
 	metricsByResource map[string]map[string]*pmetric.Metric
 	// This is the ResourceMetricsSlice that will contain all newly created resources and metrics
 	resourceMetricsSlice pmetric.ResourceMetricsSlice
-	// This is the timestamp that should be added to all created data points
+	// This is the start timestamp that should be added to all cumulative sum data points
 	dataPointStartTime pcommon.Timestamp
 	// This is the timestamp that should be added to all created data points
 	dataPointTime pcommon.Timestamp
