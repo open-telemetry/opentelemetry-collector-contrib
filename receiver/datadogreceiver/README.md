@@ -14,14 +14,14 @@ Example:
 ```yaml
 receivers:
   datadog:
-    endpoint: 0.0.0.0:8126
+    endpoint: localhost:8126
     read_timeout: 60s
 ```
 
 ### endpoint (Optional)
 The address and port on which this receiver listens for traces on
 
-Default: `0.0.0.0:8126`
+Default: `localhost:8126`
 
 ### read_timeout (Optional)
 The read timeout of the HTTP Server
