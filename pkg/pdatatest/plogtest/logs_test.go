@@ -172,7 +172,7 @@ func TestCompareLogs(t *testing.T) {
 			if tc.withOptions == nil {
 				assert.NoError(t, err)
 			} else {
-				assert.EqualError(t, tc.withOptions, err.Error())
+				assert.EqualError(t, err, tc.withOptions.Error())
 			}
 		})
 	}
@@ -218,6 +218,20 @@ func TestCompareResourceLogs(t *testing.T) {
 				return rl
 			}(),
 			err: errors.New("attributes don't match expected: map[key1:value1 key2:value2], actual: map[key1:value1]"),
+		},
+		{
+			name: "resource-schema-url-mismatch",
+			expected: func() plog.ResourceLogs {
+				rl := plog.NewResourceLogs()
+				rl.SetSchemaUrl("schema-url")
+				return rl
+			}(),
+			actual: func() plog.ResourceLogs {
+				rl := plog.NewResourceLogs()
+				rl.SetSchemaUrl("schema-url-2")
+				return rl
+			}(),
+			err: errors.New("schema url doesn't match expected: schema-url, actual: schema-url-2"),
 		},
 		{
 			name: "scope-logs-number-mismatch",
@@ -295,6 +309,40 @@ func TestCompareScopeLogs(t *testing.T) {
 				return sl
 			}(),
 			err: errors.New("version doesn't match expected: scope-version, actual: scope-version-2"),
+		},
+		{
+			name: "scope-attributes-mismatch",
+			expected: func() plog.ScopeLogs {
+				sl := plog.NewScopeLogs()
+				sl.Scope().Attributes().PutStr("scope-attr1", "value1")
+				sl.Scope().Attributes().PutStr("scope-attr2", "value2")
+				return sl
+			}(),
+			actual: func() plog.ScopeLogs {
+				sl := plog.NewScopeLogs()
+				sl.Scope().Attributes().PutStr("scope-attr1", "value1")
+				sl.Scope().SetDroppedAttributesCount(1)
+				return sl
+			}(),
+			err: multierr.Combine(
+				errors.New("attributes don't match expected: map[scope-attr1:value1 scope-attr2:value2], "+
+					"actual: map[scope-attr1:value1]"),
+				errors.New("dropped attributes count doesn't match expected: 0, actual: 1"),
+			),
+		},
+		{
+			name: "scope-schema-url-mismatch",
+			expected: func() plog.ScopeLogs {
+				rl := plog.NewScopeLogs()
+				rl.SetSchemaUrl("schema-url")
+				return rl
+			}(),
+			actual: func() plog.ScopeLogs {
+				rl := plog.NewScopeLogs()
+				rl.SetSchemaUrl("schema-url-2")
+				return rl
+			}(),
+			err: errors.New("schema url doesn't match expected: schema-url, actual: schema-url-2"),
 		},
 		{
 			name: "log-records-number-mismatch",

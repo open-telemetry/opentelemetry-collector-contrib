@@ -97,12 +97,10 @@ func CompareTraces(expected, actual ptrace.Traces, options ...CompareTracesOptio
 // CompareResourceSpans compares each part of two given ResourceSpans and returns
 // an error if they don't match. The error describes what didn't match.
 func CompareResourceSpans(expected, actual ptrace.ResourceSpans) error {
-	var errs error
-
-	if !reflect.DeepEqual(expected.Resource().Attributes().AsRaw(), actual.Resource().Attributes().AsRaw()) {
-		errs = multierr.Append(errs, fmt.Errorf("attributes don't match expected: %v, actual: %v",
-			expected.Resource().Attributes().AsRaw(), actual.Resource().Attributes().AsRaw()))
-	}
+	errs := multierr.Combine(
+		internal.CompareResource(expected.Resource(), actual.Resource()),
+		internal.CompareSchemaURL(expected.SchemaUrl(), actual.SchemaUrl()),
+	)
 
 	if expected.ScopeSpans().Len() != actual.ScopeSpans().Len() {
 		errs = multierr.Append(errs, fmt.Errorf("number of scopes doesn't match expected: %d, actual: %d",
@@ -164,16 +162,10 @@ func CompareResourceSpans(expected, actual ptrace.ResourceSpans) error {
 // CompareScopeSpans compares each part of two given SpanSlices and returns
 // an error if they don't match. The error describes what didn't match.
 func CompareScopeSpans(expected, actual ptrace.ScopeSpans) error {
-	var errs error
-
-	if expected.Scope().Name() != actual.Scope().Name() {
-		errs = multierr.Append(errs, fmt.Errorf("name doesn't match expected: %s, actual: %s",
-			expected.Scope().Name(), actual.Scope().Name()))
-	}
-	if expected.Scope().Version() != actual.Scope().Version() {
-		errs = multierr.Append(errs, fmt.Errorf("version doesn't match expected: %s, actual: %s",
-			expected.Scope().Version(), actual.Scope().Version()))
-	}
+	errs := multierr.Combine(
+		internal.CompareInstrumentationScope(expected.Scope(), actual.Scope()),
+		internal.CompareSchemaURL(expected.SchemaUrl(), actual.SchemaUrl()),
+	)
 
 	if expected.Spans().Len() != actual.Spans().Len() {
 		errs = multierr.Append(errs, fmt.Errorf("number of spans doesn't match expected: %d, actual: %d",
@@ -234,12 +226,10 @@ func CompareScopeSpans(expected, actual ptrace.ScopeSpans) error {
 // CompareSpan compares each part of two given Span and returns
 // an error if they don't match. The error describes what didn't match.
 func CompareSpan(expected, actual ptrace.Span) error {
-	var errs error
-
-	if !reflect.DeepEqual(expected.Attributes().AsRaw(), actual.Attributes().AsRaw()) {
-		errs = multierr.Append(errs, fmt.Errorf("attributes don't match expected: %v, actual: %v",
-			expected.Attributes().AsRaw(), actual.Attributes().AsRaw()))
-	}
+	errs := multierr.Combine(
+		internal.CompareAttributes(expected.Attributes(), actual.Attributes()),
+		internal.CompareDroppedAttributesCount(expected.DroppedAttributesCount(), actual.DroppedAttributesCount()),
+	)
 
 	if expected.TraceID() != actual.TraceID() {
 		errs = multierr.Append(errs, fmt.Errorf("trace ID doesn't match expected: %s, actual: %s",
@@ -281,11 +271,6 @@ func CompareSpan(expected, actual ptrace.Span) error {
 			expected.EndTimestamp(), actual.EndTimestamp()))
 	}
 
-	if expected.DroppedAttributesCount() != actual.DroppedAttributesCount() {
-		errs = multierr.Append(errs, fmt.Errorf("dropped attributes count doesn't match expected: %d, actual: %d",
-			expected.DroppedAttributesCount(), actual.DroppedAttributesCount()))
-	}
-
 	if !reflect.DeepEqual(expected.Events(), actual.Events()) {
 		errs = multierr.Append(errs, fmt.Errorf("events doesn't match"))
 	}
@@ -304,8 +289,14 @@ func CompareSpan(expected, actual ptrace.Span) error {
 			expected.DroppedLinksCount(), actual.DroppedLinksCount()))
 	}
 
-	if !reflect.DeepEqual(expected.Status(), actual.Status()) {
-		errs = multierr.Append(errs, fmt.Errorf("status doesn't match"))
+	if expected.Status().Code() != actual.Status().Code() {
+		errs = multierr.Append(errs, fmt.Errorf("status code doesn't match expected: %v, actual: %v",
+			expected.Status().Code(), actual.Status().Code()))
+	}
+
+	if expected.Status().Message() != actual.Status().Message() {
+		errs = multierr.Append(errs, fmt.Errorf("status message doesn't match expected: %v, actual: %v",
+			expected.Status().Message(), actual.Status().Message()))
 	}
 
 	return errs

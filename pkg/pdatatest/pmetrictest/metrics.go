@@ -95,12 +95,10 @@ func CompareMetrics(expected, actual pmetric.Metrics, options ...CompareMetricsO
 }
 
 func CompareResourceMetrics(expected, actual pmetric.ResourceMetrics) error {
-	var errs error
-
-	if !reflect.DeepEqual(expected.Resource().Attributes().AsRaw(), actual.Resource().Attributes().AsRaw()) {
-		errs = multierr.Append(errs, fmt.Errorf("attributes don't match expected: %v, actual: %v",
-			expected.Resource().Attributes().AsRaw(), actual.Resource().Attributes().AsRaw()))
-	}
+	errs := multierr.Combine(
+		internal.CompareResource(expected.Resource(), actual.Resource()),
+		internal.CompareSchemaURL(expected.SchemaUrl(), actual.SchemaUrl()),
+	)
 
 	esms := expected.ScopeMetrics()
 	asms := actual.ScopeMetrics()
@@ -168,16 +166,10 @@ func CompareResourceMetrics(expected, actual pmetric.ResourceMetrics) error {
 // an error if they don't match. The error describes what didn't match. The
 // expected and actual values are clones before options are applied.
 func CompareScopeMetrics(expected, actual pmetric.ScopeMetrics) error {
-	var errs error
-
-	if expected.Scope().Name() != actual.Scope().Name() {
-		errs = multierr.Append(errs, fmt.Errorf("name doesn't match expected: %s, actual: %s",
-			expected.Scope().Name(), actual.Scope().Name()))
-	}
-	if expected.Scope().Version() != actual.Scope().Version() {
-		errs = multierr.Append(errs, fmt.Errorf("version doesn't match expected: %s, actual: %s",
-			expected.Scope().Version(), actual.Scope().Version()))
-	}
+	errs := multierr.Combine(
+		internal.CompareInstrumentationScope(expected.Scope(), actual.Scope()),
+		internal.CompareSchemaURL(expected.SchemaUrl(), actual.SchemaUrl()),
+	)
 
 	ems := expected.Metrics()
 	ams := actual.Metrics()
@@ -358,11 +350,7 @@ func compareNumberDataPointSlices(expected, actual pmetric.NumberDataPointSlice)
 // CompareNumberDataPoint compares each part of two given NumberDataPoints and returns
 // an error if they don't match. The error describes what didn't match.
 func CompareNumberDataPoint(expected, actual pmetric.NumberDataPoint) error {
-	var errs error
-	if !reflect.DeepEqual(expected.Attributes().AsRaw(), actual.Attributes().AsRaw()) {
-		errs = multierr.Append(errs, fmt.Errorf("attributes don't match expected: %v, actual: %v",
-			expected.Attributes().AsRaw(), actual.Attributes().AsRaw()))
-	}
+	errs := internal.CompareAttributes(expected.Attributes(), actual.Attributes())
 	if expected.StartTimestamp() != actual.StartTimestamp() {
 		errs = multierr.Append(errs, fmt.Errorf("start timestamp doesn't match expected: %d, "+
 			"actual: %d", expected.StartTimestamp(), actual.StartTimestamp()))
@@ -383,6 +371,10 @@ func CompareNumberDataPoint(expected, actual pmetric.NumberDataPoint) error {
 			errs = multierr.Append(errs, fmt.Errorf("double value doesn't match expected: %f, actual: %f",
 				expected.DoubleValue(), actual.DoubleValue()))
 		}
+	}
+	if expected.Flags() != actual.Flags() {
+		errs = multierr.Append(errs, fmt.Errorf("flags don't match expected: %d, actual: %d",
+			expected.Flags(), actual.Flags()))
 	}
 	errs = multierr.Append(errs, compareExemplarSlice(expected.Exemplars(), actual.Exemplars()))
 	return errs
@@ -540,7 +532,7 @@ func compareHistogramDataPointSlices(expected, actual pmetric.HistogramDataPoint
 // CompareHistogramDataPoints compares each part of two given HistogramDataPoints and returns
 // an error if they don't match. The error describes what didn't match.
 func CompareHistogramDataPoints(expected, actual pmetric.HistogramDataPoint) error {
-	var errs error
+	errs := internal.CompareAttributes(expected.Attributes(), actual.Attributes())
 	if expected.HasSum() != actual.HasSum() || expected.Sum() != actual.Sum() {
 		errStr := "sum doesn't match expected: "
 		if expected.HasSum() {
@@ -610,10 +602,6 @@ func CompareHistogramDataPoints(expected, actual pmetric.HistogramDataPoint) err
 		errs = multierr.Append(errs, fmt.Errorf("explicit bounds don't match expected: %v, "+
 			"actual: %v", expected.ExplicitBounds().AsRaw(), actual.ExplicitBounds().AsRaw()))
 	}
-	if !reflect.DeepEqual(expected.Attributes().AsRaw(), actual.Attributes().AsRaw()) {
-		errs = multierr.Append(errs, fmt.Errorf("attributes don't match expected: %v, actual: %v",
-			expected.Attributes().AsRaw(), actual.Attributes().AsRaw()))
-	}
 	errs = multierr.Append(errs, compareExemplarSlice(expected.Exemplars(), actual.Exemplars()))
 	return errs
 }
@@ -679,7 +667,7 @@ func compareExponentialHistogramDataPointSlice(expected, actual pmetric.Exponent
 // CompareExponentialHistogramDataPoint compares each part of two given ExponentialHistogramDataPoints and returns
 // an error if they don't match. The error describes what didn't match.
 func CompareExponentialHistogramDataPoint(expected, actual pmetric.ExponentialHistogramDataPoint) error {
-	var errs error
+	errs := internal.CompareAttributes(expected.Attributes(), actual.Attributes())
 	if expected.HasSum() != actual.HasSum() || expected.Sum() != actual.Sum() {
 		errStr := "sum doesn't match expected: "
 		if expected.HasSum() {
@@ -765,10 +753,6 @@ func CompareExponentialHistogramDataPoint(expected, actual pmetric.ExponentialHi
 		errs = multierr.Append(errs, fmt.Errorf("positive bucket counts don't match expected: %v, "+
 			"actual: %v", expected.Positive().BucketCounts().AsRaw(), actual.Positive().BucketCounts().AsRaw()))
 	}
-	if !reflect.DeepEqual(expected.Attributes().AsRaw(), actual.Attributes().AsRaw()) {
-		errs = multierr.Append(errs, fmt.Errorf("attributes don't match expected: %v, actual: %v",
-			expected.Attributes().AsRaw(), actual.Attributes().AsRaw()))
-	}
 	errs = multierr.Append(errs, compareExemplarSlice(expected.Exemplars(), actual.Exemplars()))
 	return errs
 }
@@ -831,7 +815,7 @@ func compareSummaryDataPointSlices(expected, actual pmetric.SummaryDataPointSlic
 // CompareSummaryDataPoint compares each part of two given SummaryDataPoint and returns
 // an error if they don't match. The error describes what didn't match.
 func CompareSummaryDataPoint(expected, actual pmetric.SummaryDataPoint) error {
-	var errs error
+	errs := internal.CompareAttributes(expected.Attributes(), actual.Attributes())
 
 	if expected.Count() != actual.Count() {
 		errs = multierr.Append(errs, fmt.Errorf("count doesn't match expected: %d, actual: %d",
@@ -852,10 +836,6 @@ func CompareSummaryDataPoint(expected, actual pmetric.SummaryDataPoint) error {
 	if expected.Flags() != actual.Flags() {
 		errs = multierr.Append(errs, fmt.Errorf("flags don't match expected: %d, actual: %d",
 			expected.Flags(), actual.Flags()))
-	}
-	if !reflect.DeepEqual(expected.Attributes().AsRaw(), actual.Attributes().AsRaw()) {
-		errs = multierr.Append(errs, fmt.Errorf("attributes doesn't match expected: %v, actual: %v",
-			expected.Attributes().AsRaw(), actual.Attributes().AsRaw()))
 	}
 	if expected.QuantileValues().Len() != actual.QuantileValues().Len() {
 		errs = multierr.Append(errs, fmt.Errorf("quantile values length doesn't match expected: %d, "+
