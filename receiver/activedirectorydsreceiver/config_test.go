@@ -54,7 +54,7 @@ func TestLoadConfig(t *testing.T) {
 				},
 				MetricsBuilderConfig: overriddenMetricsBuilderConfig,
 			},
-		}, //* '' has invalid keys: metrics
+		},
 	}
 
 	for _, tt := range tests {
