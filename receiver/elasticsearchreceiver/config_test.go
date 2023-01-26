@@ -156,7 +156,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	defaultMetrics := metadata.DefaultMetricsBuilderConfig()
-	defaultMetrics.ElasticsearchNodeFsDiskAvailable.Enabled = false
+	defaultMetrics.MetricsSettings.ElasticsearchNodeFsDiskAvailable.Enabled = false
 	tests := []struct {
 		id       component.ID
 		expected component.Config
@@ -174,9 +174,9 @@ func TestLoadConfig(t *testing.T) {
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 					CollectionInterval: 2 * time.Minute,
 				},
-				Metrics:  defaultMetrics,
-				Username: "otel",
-				Password: "password",
+				MetricsBuilderConfig: defaultMetrics,
+				Username:             "otel",
+				Password:             "password",
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Timeout:  10000000000,
 					Endpoint: "http://example.com:9200",
