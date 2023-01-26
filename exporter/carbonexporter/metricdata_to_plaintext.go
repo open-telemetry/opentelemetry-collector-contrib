@@ -15,12 +15,11 @@
 package carbonexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter"
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 
-	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 const (
@@ -59,12 +58,12 @@ const (
 //
 // Each metric point becomes a single string with the following format:
 //
-// 	"<path> <value> <timestamp>"
+//	"<path> <value> <timestamp>"
 //
 // The <path> contains the metric name and its tags and has the following,
 // format:
 //
-// 	<metric_name>[;tag0;...;tagN]
+//	<metric_name>[;tag0;...;tagN]
 //
 // <metric_name> is the name of the metric and terminates either at the first ';'
 // or at the end of the path.
@@ -77,86 +76,59 @@ const (
 // The <timestamp> is the Unix time text of when the measurement was made.
 //
 // The returned values are:
-// 	- a string concatenating all generated "lines" (each single one representing
-// 	  a single Carbon metric.
-//  - number of time series successfully converted to carbon.
-// 	- number of time series that could not be converted to Carbon.
-func metricDataToPlaintext(mds []*agentmetricspb.ExportMetricsServiceRequest) (string, int, int) {
-	if len(mds) == 0 {
-		return "", 0, 0
+//   - a string concatenating all generated "lines" (each single one representing
+//     a single Carbon metric.
+//   - number of time series successfully converted to carbon.
+//   - number of time series that could not be converted to Carbon.
+func metricDataToPlaintext(md pmetric.Metrics) string {
+	if md.DataPointCount() == 0 {
+		return ""
 	}
+
 	var sb strings.Builder
-	numTimeseriesDropped := 0
-	totalTimeseries := 0
 
-	for _, md := range mds {
-		for _, metric := range md.Metrics {
-			totalTimeseries++
-			descriptor := metric.MetricDescriptor
-			name := descriptor.GetName()
-			if name == "" {
-				numTimeseriesDropped += len(metric.Timeseries)
-				// TODO: observability for this, debug logging.
-				continue
-			}
-
-			tagKeys := buildSanitizedTagKeys(metric.MetricDescriptor.LabelKeys)
-
-			for _, ts := range metric.Timeseries {
-				if len(tagKeys) != len(ts.LabelValues) {
-					numTimeseriesDropped++
-					// TODO: observability with debug, something like the message below:
-					//	"inconsistent number of labelKeys(%d) and labelValues(%d) for metric %q",
-					//	len(tagKeys),
-					//	len(labelValues),
-					//	name)
-
+	for i := 0; i < md.ResourceMetrics().Len(); i++ {
+		rm := md.ResourceMetrics().At(i)
+		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+			sm := rm.ScopeMetrics().At(j)
+			for k := 0; k < sm.Metrics().Len(); k++ {
+				metric := sm.Metrics().At(k)
+				if metric.Name() == "" {
+					// TODO: log error info
 					continue
 				}
-
-				// From this point on all code below is safe to assume that
-				// len(tagKeys) is equal to len(labelValues).
-
-				for _, point := range ts.Points {
-					timestampStr := formatInt64(point.GetTimestamp().GetSeconds())
-
-					switch pv := point.Value.(type) {
-
-					case *metricspb.Point_Int64Value:
-						path := buildPath(name, tagKeys, ts.LabelValues)
-						valueStr := formatInt64(pv.Int64Value)
-						sb.WriteString(buildLine(path, valueStr, timestampStr))
-
-					case *metricspb.Point_DoubleValue:
-						path := buildPath(name, tagKeys, ts.LabelValues)
-						valueStr := formatFloatForValue(pv.DoubleValue)
-						sb.WriteString(buildLine(path, valueStr, timestampStr))
-
-					case *metricspb.Point_DistributionValue:
-						err := buildDistributionIntoBuilder(
-							&sb, name, tagKeys, ts.LabelValues, timestampStr, pv.DistributionValue)
-						if err != nil {
-							// TODO: log error info
-							numTimeseriesDropped++
-						}
-
-					case *metricspb.Point_SummaryValue:
-						err := buildSummaryIntoBuilder(
-							&sb, name, tagKeys, ts.LabelValues, timestampStr, pv.SummaryValue)
-						if err != nil {
-							// TODO: log error info
-							numTimeseriesDropped++
-						}
-					}
+				switch metric.Type() {
+				case pmetric.MetricTypeGauge:
+					formatNumberDataPoints(&sb, metric.Name(), metric.Gauge().DataPoints())
+				case pmetric.MetricTypeSum:
+					formatNumberDataPoints(&sb, metric.Name(), metric.Sum().DataPoints())
+				case pmetric.MetricTypeHistogram:
+					formatHistogramDataPoints(&sb, metric.Name(), metric.Histogram().DataPoints())
+				case pmetric.MetricTypeSummary:
+					formatSummaryDataPoints(&sb, metric.Name(), metric.Summary().DataPoints())
 				}
 			}
 		}
 	}
 
-	return sb.String(), totalTimeseries - numTimeseriesDropped, numTimeseriesDropped
+	return sb.String()
 }
 
-// buildDistributionIntoBuilder transforms a metric distribution into a series
+func formatNumberDataPoints(sb *strings.Builder, metricName string, dps pmetric.NumberDataPointSlice) {
+	for i := 0; i < dps.Len(); i++ {
+		dp := dps.At(i)
+		var valueStr string
+		switch dp.ValueType() {
+		case pmetric.NumberDataPointValueTypeInt:
+			valueStr = formatInt64(dp.IntValue())
+		case pmetric.NumberDataPointValueTypeDouble:
+			valueStr = formatFloatForValue(dp.DoubleValue())
+		}
+		sb.WriteString(buildLine(buildPath(metricName, dp.Attributes()), valueStr, formatTimestamp(dp.Timestamp())))
+	}
+}
+
+// formatHistogramDataPoints transforms a slice of histogram data points into a series
 // of Carbon metrics and injects them into the string builder.
 //
 // Carbon doesn't have direct support to distribution metrics they will be
@@ -170,49 +142,35 @@ func metricDataToPlaintext(mds []*agentmetricspb.ExportMetricsServiceRequest) (s
 // and will include a dimension "upper_bound" that specifies the maximum value in
 // that bucket. This metric specifies the number of events with a value that is
 // less than or equal to the upper bound.
-func buildDistributionIntoBuilder(
+func formatHistogramDataPoints(
 	sb *strings.Builder,
 	metricName string,
-	tagKeys []string,
-	labelValues []*metricspb.LabelValue,
-	timestampStr string,
-	distributionValue *metricspb.DistributionValue,
-) error {
-	buildCountAndSumIntoBuilder(
-		sb,
-		metricName,
-		tagKeys,
-		labelValues,
-		distributionValue.GetCount(),
-		distributionValue.GetSum(),
-		timestampStr)
+	dps pmetric.HistogramDataPointSlice,
+) {
+	for i := 0; i < dps.Len(); i++ {
+		dp := dps.At(i)
 
-	explicitBuckets := distributionValue.BucketOptions.GetExplicit()
-	if explicitBuckets == nil {
-		return fmt.Errorf(
-			"unknown bucket options type for metric %q",
-			metricName)
+		timestampStr := formatTimestamp(dp.Timestamp())
+		formatCountAndSum(sb, metricName, dp.Attributes(), dp.Count(), dp.Sum(), timestampStr)
+		if dp.ExplicitBounds().Len() == 0 {
+			continue
+		}
+
+		bounds := dp.ExplicitBounds().AsRaw()
+		carbonBounds := make([]string, len(bounds)+1)
+		for i := 0; i < len(bounds); i++ {
+			carbonBounds[i] = formatFloatForLabel(bounds[i])
+		}
+		carbonBounds[len(carbonBounds)-1] = infinityCarbonValue
+
+		bucketPath := buildPath(metricName+distributionBucketSuffix, dp.Attributes())
+		for j := 0; j < dp.BucketCounts().Len(); j++ {
+			sb.WriteString(buildLine(bucketPath+distributionUpperBoundTagBeforeValue+carbonBounds[j], formatUint64(dp.BucketCounts().At(j)), timestampStr))
+		}
 	}
-
-	bounds := explicitBuckets.Bounds
-	carbonBounds := make([]string, len(bounds)+1)
-	for i := 0; i < len(bounds); i++ {
-		carbonBounds[i] = formatFloatForLabel(bounds[i])
-	}
-	carbonBounds[len(carbonBounds)-1] = infinityCarbonValue
-
-	bucketPath := buildPath(metricName+distributionBucketSuffix, tagKeys, labelValues)
-	for i, bucket := range distributionValue.Buckets {
-		sb.WriteString(buildLine(
-			bucketPath+distributionUpperBoundTagBeforeValue+carbonBounds[i],
-			formatInt64(bucket.Count),
-			timestampStr))
-	}
-
-	return nil
 }
 
-// buildSummaryIntoBuilder transforms a metric summary into a series
+// formatSummaryDataPoints transforms a slice of summary data points into a series
 // of Carbon metrics and injects them into the string builder.
 //
 // Carbon doesn't have direct support to summary metrics they will be
@@ -224,39 +182,29 @@ func buildDistributionIntoBuilder(
 //
 // 3. Each quantile is represented by a metric named "<metricName>.quantile"
 // and will include a tag key "quantile" that specifies the quantile value.
-func buildSummaryIntoBuilder(
+func formatSummaryDataPoints(
 	sb *strings.Builder,
 	metricName string,
-	tagKeys []string,
-	labelValues []*metricspb.LabelValue,
-	timestampStr string,
-	summaryValue *metricspb.SummaryValue,
-) error {
-	buildCountAndSumIntoBuilder(
-		sb,
-		metricName,
-		tagKeys,
-		labelValues,
-		summaryValue.GetCount().GetValue(),
-		summaryValue.GetSum().GetValue(),
-		timestampStr)
+	dps pmetric.SummaryDataPointSlice,
+) {
+	for i := 0; i < dps.Len(); i++ {
+		dp := dps.At(i)
 
-	percentiles := summaryValue.GetSnapshot().GetPercentileValues()
-	if percentiles == nil {
-		return fmt.Errorf(
-			"unknown percentiles values for summary metric %q",
-			metricName)
+		timestampStr := formatTimestamp(dp.Timestamp())
+		formatCountAndSum(sb, metricName, dp.Attributes(), dp.Count(), dp.Sum(), timestampStr)
+
+		if dp.QuantileValues().Len() == 0 {
+			continue
+		}
+
+		quantilePath := buildPath(metricName+summaryQuantileSuffix, dp.Attributes())
+		for j := 0; j < dp.QuantileValues().Len(); j++ {
+			sb.WriteString(buildLine(
+				quantilePath+summaryQuantileTagBeforeValue+formatFloatForLabel(dp.QuantileValues().At(j).Quantile()*100),
+				formatFloatForValue(dp.QuantileValues().At(j).Value()),
+				timestampStr))
+		}
 	}
-
-	quantilePath := buildPath(metricName+summaryQuantileSuffix, tagKeys, labelValues)
-	for _, quantile := range percentiles {
-		sb.WriteString(buildLine(
-			quantilePath+summaryQuantileTagBeforeValue+formatFloatForLabel(quantile.GetPercentile()),
-			formatFloatForValue(quantile.GetValue()),
-			timestampStr))
-	}
-
-	return nil
 }
 
 // Carbon doesn't have direct support to distribution or summary metrics in both
@@ -266,77 +214,43 @@ func buildSummaryIntoBuilder(
 // 1. The total count will be represented by a metric named "<metricName>.count".
 //
 // 2. The total sum will be represented by a metruc with the original "<metricName>".
-//
-func buildCountAndSumIntoBuilder(
+func formatCountAndSum(
 	sb *strings.Builder,
 	metricName string,
-	tagKeys []string,
-	labelValues []*metricspb.LabelValue,
-	count int64,
+	attributes pcommon.Map,
+	count uint64,
 	sum float64,
 	timestampStr string,
 ) {
 	// Build count and sum metrics.
-	countPath := buildPath(metricName+countSuffix, tagKeys, labelValues)
-	valueStr := formatInt64(count)
+	countPath := buildPath(metricName+countSuffix, attributes)
+	valueStr := formatUint64(count)
 	sb.WriteString(buildLine(countPath, valueStr, timestampStr))
 
-	sumPath := buildPath(metricName, tagKeys, labelValues)
+	sumPath := buildPath(metricName, attributes)
 	valueStr = formatFloatForValue(sum)
 	sb.WriteString(buildLine(sumPath, valueStr, timestampStr))
 }
 
-// buildPath is used to build the <metric_path> per description above. It
-// assumes that the caller code already checked that len(tagKeys) is equal to
-// len(labelValues) and as such cannot fail to build the path.
-func buildPath(
-	name string,
-	tagKeys []string,
-	labelValues []*metricspb.LabelValue,
-) string {
-
-	if len(tagKeys) == 0 {
+// buildPath is used to build the <metric_path> per description above.
+func buildPath(name string, attributes pcommon.Map) string {
+	if attributes.Len() == 0 {
 		return name
 	}
 
 	var sb strings.Builder
 	sb.WriteString(name)
 
-	for i, label := range labelValues {
-		value := label.Value
-
-		switch value {
-		case "":
-			// Per Carbon the value must have length > 1 so put a place holder.
-			if label.HasValue {
-				value = tagValueEmptyPlaceholder
-			} else {
-				value = tagValueNotSetPlaceholder
-			}
-		default:
-			value = sanitizeTagValue(value)
+	attributes.Range(func(k string, v pcommon.Value) bool {
+		value := v.AsString()
+		if value == "" {
+			value = tagValueEmptyPlaceholder
 		}
-
-		sb.WriteString(tagPrefix + tagKeys[i] + tagKeyValueSeparator + value)
-	}
+		sb.WriteString(tagPrefix + sanitizeTagKey(k) + tagKeyValueSeparator + value)
+		return true
+	})
 
 	return sb.String()
-}
-
-// buildSanitizedTagKeys builds an slice with the sanitized label keys to be
-// used as tag keys on the Carbon metric.
-func buildSanitizedTagKeys(labelKeys []*metricspb.LabelKey) []string {
-	if len(labelKeys) == 0 {
-		return nil
-	}
-
-	tagKeys := make([]string, 0, len(labelKeys))
-	for _, labelKey := range labelKeys {
-		tagKey := sanitizeTagKey(labelKey.Key)
-		tagKeys = append(tagKeys, tagKey)
-	}
-
-	return tagKeys
 }
 
 // buildLine builds a single Carbon metric textual line, ie.: it already adds
@@ -386,6 +300,14 @@ func formatFloatForValue(f float64) string {
 	return strconv.FormatFloat(f, 'f', -1, 64)
 }
 
+func formatUint64(i uint64) string {
+	return strconv.FormatUint(i, 10)
+}
+
 func formatInt64(i int64) string {
 	return strconv.FormatInt(i, 10)
+}
+
+func formatTimestamp(timestamp pcommon.Timestamp) string {
+	return formatUint64(uint64(timestamp) / 1e9)
 }

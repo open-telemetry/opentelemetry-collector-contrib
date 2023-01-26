@@ -2,30 +2,170 @@
 
 # kafkametricsreceiver
 
-## Metrics
+## Default Metrics
 
-These are the metrics available for this scraper.
+The following metrics are emitted by default. Each of them can be disabled by applying the following configuration:
 
-| Name | Description | Unit | Type | Attributes |
-| ---- | ----------- | ---- | ---- | ---------- |
-| **kafka.brokers** | Number of brokers in the cluster. | {brokers} | Gauge(Int) | <ul> </ul> |
-| **kafka.consumer_group.lag** | Current approximate lag of consumer group at partition of topic | 1 | Gauge(Int) | <ul> <li>group</li> <li>topic</li> <li>partition</li> </ul> |
-| **kafka.consumer_group.lag_sum** | Current approximate sum of consumer group lag across all partitions of topic | 1 | Gauge(Int) | <ul> <li>group</li> <li>topic</li> </ul> |
-| **kafka.consumer_group.members** | Count of members in the consumer group | {members} | Gauge(Int) | <ul> <li>group</li> </ul> |
-| **kafka.consumer_group.offset** | Current offset of the consumer group at partition of topic | 1 | Gauge(Int) | <ul> <li>group</li> <li>topic</li> <li>partition</li> </ul> |
-| **kafka.consumer_group.offset_sum** | Sum of consumer group offset across partitions of topic | 1 | Gauge(Int) | <ul> <li>group</li> <li>topic</li> </ul> |
-| **kafka.partition.current_offset** | Current offset of partition of topic. | 1 | Gauge(Int) | <ul> <li>topic</li> <li>partition</li> </ul> |
-| **kafka.partition.oldest_offset** | Oldest offset of partition of topic | 1 | Gauge(Int) | <ul> <li>topic</li> <li>partition</li> </ul> |
-| **kafka.partition.replicas** | Number of replicas for partition of topic | {replicas} | Gauge(Int) | <ul> <li>topic</li> <li>partition</li> </ul> |
-| **kafka.partition.replicas_in_sync** | Number of synchronized replicas of partition | {replicas} | Gauge(Int) | <ul> <li>topic</li> <li>partition</li> </ul> |
-| **kafka.topic.partitions** | Number of partitions in topic. | {partitions} | Gauge(Int) | <ul> <li>topic</li> </ul> |
+```yaml
+metrics:
+  <metric_name>:
+    enabled: false
+```
 
-**Highlighted metrics** are emitted by default.
+### kafka.brokers
 
-## Metric attributes
+Number of brokers in the cluster.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {brokers} | Gauge | Int |
+
+### kafka.consumer_group.lag
+
+Current approximate lag of consumer group at partition of topic
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+#### Attributes
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| group | The ID (string) of a consumer group |  |
-| partition | The number (integer) of the partition |  |
-| topic | The ID (integer) of a topic |  |
+| group | The ID (string) of a consumer group | Any Str |
+| topic | The ID (integer) of a topic | Any Str |
+| partition | The number (integer) of the partition | Any Int |
+
+### kafka.consumer_group.lag_sum
+
+Current approximate sum of consumer group lag across all partitions of topic
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| group | The ID (string) of a consumer group | Any Str |
+| topic | The ID (integer) of a topic | Any Str |
+
+### kafka.consumer_group.members
+
+Count of members in the consumer group
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {members} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| group | The ID (string) of a consumer group | Any Str |
+
+### kafka.consumer_group.offset
+
+Current offset of the consumer group at partition of topic
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| group | The ID (string) of a consumer group | Any Str |
+| topic | The ID (integer) of a topic | Any Str |
+| partition | The number (integer) of the partition | Any Int |
+
+### kafka.consumer_group.offset_sum
+
+Sum of consumer group offset across partitions of topic
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| group | The ID (string) of a consumer group | Any Str |
+| topic | The ID (integer) of a topic | Any Str |
+
+### kafka.partition.current_offset
+
+Current offset of partition of topic.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| topic | The ID (integer) of a topic | Any Str |
+| partition | The number (integer) of the partition | Any Int |
+
+### kafka.partition.oldest_offset
+
+Oldest offset of partition of topic
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| topic | The ID (integer) of a topic | Any Str |
+| partition | The number (integer) of the partition | Any Int |
+
+### kafka.partition.replicas
+
+Number of replicas for partition of topic
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {replicas} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| topic | The ID (integer) of a topic | Any Str |
+| partition | The number (integer) of the partition | Any Int |
+
+### kafka.partition.replicas_in_sync
+
+Number of synchronized replicas of partition
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {replicas} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| topic | The ID (integer) of a topic | Any Str |
+| partition | The number (integer) of the partition | Any Int |
+
+### kafka.topic.partitions
+
+Number of partitions in topic.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {partitions} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| topic | The ID (integer) of a topic | Any Str |

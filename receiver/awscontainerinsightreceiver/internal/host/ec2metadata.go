@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package host // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/host"
 
 import (
@@ -64,7 +63,7 @@ func newEC2Metadata(ctx context.Context, session *session.Session, refreshInterv
 	}
 
 	shouldRefresh := func() bool {
-		//stop the refresh once we get instance ID and type successfully
+		// stop the refresh once we get instance ID and type successfully
 		return emd.instanceID == "" || emd.instanceType == "" || emd.instanceIP == ""
 	}
 

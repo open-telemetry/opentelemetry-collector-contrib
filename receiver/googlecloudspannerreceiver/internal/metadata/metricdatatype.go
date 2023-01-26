@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,20 +16,20 @@ package metadata // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import "go.opentelemetry.io/collector/pdata/pmetric"
 
-type MetricDataType interface {
-	MetricDataType() pmetric.MetricDataType
-	AggregationTemporality() pmetric.MetricAggregationTemporality
+type MetricType interface {
+	MetricType() pmetric.MetricType
+	AggregationTemporality() pmetric.AggregationTemporality
 	IsMonotonic() bool
 }
 
 type metricValueDataType struct {
-	dataType               pmetric.MetricDataType
-	aggregationTemporality pmetric.MetricAggregationTemporality
+	dataType               pmetric.MetricType
+	aggregationTemporality pmetric.AggregationTemporality
 	isMonotonic            bool
 }
 
-func NewMetricDataType(dataType pmetric.MetricDataType, aggregationTemporality pmetric.MetricAggregationTemporality,
-	isMonotonic bool) MetricDataType {
+func NewMetricType(dataType pmetric.MetricType, aggregationTemporality pmetric.AggregationTemporality,
+	isMonotonic bool) MetricType {
 	return metricValueDataType{
 		dataType:               dataType,
 		aggregationTemporality: aggregationTemporality,
@@ -37,11 +37,11 @@ func NewMetricDataType(dataType pmetric.MetricDataType, aggregationTemporality p
 	}
 }
 
-func (metricValueDataType metricValueDataType) MetricDataType() pmetric.MetricDataType {
+func (metricValueDataType metricValueDataType) MetricType() pmetric.MetricType {
 	return metricValueDataType.dataType
 }
 
-func (metricValueDataType metricValueDataType) AggregationTemporality() pmetric.MetricAggregationTemporality {
+func (metricValueDataType metricValueDataType) AggregationTemporality() pmetric.AggregationTemporality {
 	return metricValueDataType.aggregationTemporality
 }
 

@@ -65,6 +65,38 @@ func TestExporterTraceDataCallbackSingleSpan(t *testing.T) {
 	mockTransportChannel.AssertNumberOfCalls(t, "Send", 1)
 }
 
+// Tests the export onTraceData callback with a single Span with SpanEvents
+func TestExporterTraceDataCallbackSingleSpanWithSpanEvents(t *testing.T) {
+	mockTransportChannel := getMockTransportChannel()
+	config := createDefaultConfig().(*Config)
+	config.SpanEventsEnabled = true
+	exporter := getExporter(config, mockTransportChannel)
+
+	// re-use some test generation method(s) from trace_to_envelope_test
+	resource := getResource()
+	scope := getScope()
+	span := getDefaultHTTPServerSpan()
+
+	traces := ptrace.NewTraces()
+	rs := traces.ResourceSpans().AppendEmpty()
+	r := rs.Resource()
+	resource.CopyTo(r)
+	ilss := rs.ScopeSpans().AppendEmpty()
+	scope.CopyTo(ilss.Scope())
+
+	spanEvent1 := getSpanEvent("foo", map[string]interface{}{"foo": "bar"})
+	spanEvent1.CopyTo(span.Events().AppendEmpty())
+
+	spanEvent2 := getSpanEvent("bar", map[string]interface{}{"bar": "baz"})
+	spanEvent2.CopyTo(span.Events().AppendEmpty())
+
+	span.CopyTo(ilss.Spans().AppendEmpty())
+
+	assert.NoError(t, exporter.onTraceData(context.Background(), traces))
+
+	mockTransportChannel.AssertNumberOfCalls(t, "Send", 3)
+}
+
 // Tests the export onTraceData callback with a single Span that fails to produce an envelope
 func TestExporterTraceDataCallbackSingleSpanNoEnvelope(t *testing.T) {
 	mockTransportChannel := getMockTransportChannel()
@@ -77,7 +109,7 @@ func TestExporterTraceDataCallbackSingleSpanNoEnvelope(t *testing.T) {
 
 	// Make this a FaaS span, which will trigger an error, because conversion
 	// of them is currently not supported.
-	span.Attributes().InsertString(conventions.AttributeFaaSTrigger, "http")
+	span.Attributes().PutStr(conventions.AttributeFaaSTrigger, "http")
 
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()

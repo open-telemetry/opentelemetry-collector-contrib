@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"time"
 
-	"go.opentelemetry.io/collector/config"
+	"github.com/lightstep/go-expohisto/structure"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.uber.org/multierr"
 
@@ -27,16 +27,14 @@ import (
 
 // Config defines configuration for StatsD receiver.
 type Config struct {
-	config.ReceiverSettings `mapstructure:",squash"`
-	NetAddr                 confignet.NetAddr                `mapstructure:",squash"`
-	AggregationInterval     time.Duration                    `mapstructure:"aggregation_interval"`
-	EnableMetricType        bool                             `mapstructure:"enable_metric_type"`
-	IsMonotonicCounter      bool                             `mapstructure:"is_monotonic_counter"`
-	TimerHistogramMapping   []protocol.TimerHistogramMapping `mapstructure:"timer_histogram_mapping"`
+	NetAddr               confignet.NetAddr                `mapstructure:",squash"`
+	AggregationInterval   time.Duration                    `mapstructure:"aggregation_interval"`
+	EnableMetricType      bool                             `mapstructure:"enable_metric_type"`
+	IsMonotonicCounter    bool                             `mapstructure:"is_monotonic_counter"`
+	TimerHistogramMapping []protocol.TimerHistogramMapping `mapstructure:"timer_histogram_mapping"`
 }
 
-func (c *Config) validate() error {
-
+func (c *Config) Validate() error {
 	var errs error
 
 	if c.AggregationInterval <= 0 {
@@ -63,9 +61,21 @@ func (c *Config) validate() error {
 		}
 
 		switch eachMap.ObserverType {
-		case protocol.GaugeObserver, protocol.SummaryObserver:
+		case protocol.GaugeObserver, protocol.SummaryObserver, protocol.HistogramObserver:
 		default:
 			errs = multierr.Append(errs, fmt.Errorf("observer_type is not supported: %s", eachMap.ObserverType))
+		}
+
+		if eachMap.ObserverType == protocol.HistogramObserver {
+			if eachMap.Histogram.MaxSize != 0 && (eachMap.Histogram.MaxSize < structure.MinSize || eachMap.Histogram.MaxSize > structure.MaximumMaxSize) {
+				errs = multierr.Append(errs, fmt.Errorf("histogram max_size out of range: %v", eachMap.Histogram.MaxSize))
+			}
+		} else {
+			// Non-histogram observer w/ histogram config
+			var empty protocol.HistogramConfig
+			if eachMap.Histogram != empty {
+				errs = multierr.Append(errs, fmt.Errorf("histogram configuration requires observer_type: histogram"))
+			}
 		}
 	}
 

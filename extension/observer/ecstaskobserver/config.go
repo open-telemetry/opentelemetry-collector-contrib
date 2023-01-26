@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ import (
 	"net/url"
 	"time"
 
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 )
 
@@ -29,7 +28,6 @@ const (
 )
 
 type Config struct {
-	config.ExtensionSettings      `mapstructure:",squash"`
 	confighttp.HTTPClientSettings `mapstructure:",squash"`
 
 	// RefreshInterval determines the frequency at which the observer
@@ -53,8 +51,7 @@ func (c Config) Validate() error {
 
 func defaultConfig() Config {
 	return Config{
-		ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
-		RefreshInterval:   defaultRefreshInterval,
-		PortLabels:        []string{defaultPortLabel},
+		RefreshInterval: defaultRefreshInterval,
+		PortLabels:      []string{defaultPortLabel},
 	}
 }

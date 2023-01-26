@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package cpuscraper
 
 import (
@@ -28,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
@@ -86,7 +86,7 @@ func TestScrape(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper := newCPUScraper(context.Background(), componenttest.NewNopReceiverCreateSettings(), &Config{Metrics: test.metricsConfig})
+			scraper := newCPUScraper(context.Background(), receivertest.NewNopCreateSettings(), &Config{Metrics: test.metricsConfig})
 			if test.bootTimeFunc != nil {
 				scraper.bootTime = test.bootTimeFunc
 			}
@@ -190,13 +190,13 @@ func TestScrape_CpuUtilization(t *testing.T) {
 				}
 			}
 
-			scraper := newCPUScraper(context.Background(), componenttest.NewNopReceiverCreateSettings(), &Config{Metrics: settings})
+			scraper := newCPUScraper(context.Background(), receivertest.NewNopCreateSettings(), &Config{Metrics: settings})
 			err := scraper.start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, err, "Failed to initialize cpu scraper: %v", err)
 
 			_, err = scraper.scrape(context.Background())
 			require.NoError(t, err, "Failed to scrape metrics: %v", err)
-			//2nd scrape will trigger utilization metrics calculation
+			// 2nd scrape will trigger utilization metrics calculation
 			md, err := scraper.scrape(context.Background())
 			require.NoError(t, err, "Failed to scrape metrics: %v", err)
 
@@ -225,10 +225,10 @@ func TestScrape_CpuUtilization(t *testing.T) {
 	}
 }
 
-//Error in calculation should be returned as PartialScrapeError
+// Error in calculation should be returned as PartialScrapeError
 func TestScrape_CpuUtilizationError(t *testing.T) {
-	scraper := newCPUScraper(context.Background(), componenttest.NewNopReceiverCreateSettings(), &Config{Metrics: metadata.DefaultMetricsSettings()})
-	//mock times function to force an error in next scrape
+	scraper := newCPUScraper(context.Background(), receivertest.NewNopCreateSettings(), &Config{Metrics: metadata.DefaultMetricsSettings()})
+	// mock times function to force an error in next scrape
 	scraper.times = func(bool) ([]cpu.TimesStat, error) {
 		return []cpu.TimesStat{{CPU: "1", System: 1, User: 2}}, nil
 	}
@@ -236,12 +236,12 @@ func TestScrape_CpuUtilizationError(t *testing.T) {
 	require.NoError(t, err, "Failed to initialize cpu scraper: %v", err)
 
 	_, err = scraper.scrape(context.Background())
-	//Force error not finding CPU info
+	// Force error not finding CPU info
 	scraper.times = func(bool) ([]cpu.TimesStat, error) {
 		return []cpu.TimesStat{}, nil
 	}
 	require.NoError(t, err, "Failed to scrape metrics: %v", err)
-	//2nd scrape will trigger utilization metrics calculation
+	// 2nd scrape will trigger utilization metrics calculation
 	md, err := scraper.scrape(context.Background())
 	var partialScrapeErr scrapererror.PartialScrapeError
 	assert.ErrorAs(t, err, &partialScrapeErr)
@@ -255,7 +255,7 @@ func TestScrape_CpuUtilizationStandard(t *testing.T) {
 		},
 	}
 
-	//datapoint data
+	// datapoint data
 	type dpData struct {
 		val   float64
 		attrs map[string]string
@@ -297,9 +297,9 @@ func TestScrape_CpuUtilizationStandard(t *testing.T) {
 		},
 	}
 
-	cpuScraper := newCPUScraper(context.Background(), componenttest.NewNopReceiverCreateSettings(), &Config{Metrics: metricSettings})
+	cpuScraper := newCPUScraper(context.Background(), receivertest.NewNopCreateSettings(), &Config{Metrics: metricSettings})
 	for _, scrapeData := range scrapesData {
-		//mock TimeStats and Now
+		// mock TimeStats and Now
 		cpuScraper.times = func(_ bool) ([]cpu.TimesStat, error) {
 			return scrapeData.times, nil
 		}
@@ -313,7 +313,7 @@ func TestScrape_CpuUtilizationStandard(t *testing.T) {
 
 		md, err := cpuScraper.scrape(context.Background())
 		require.NoError(t, err)
-		//no metrics in the first scrape
+		// no metrics in the first scrape
 		if len(scrapeData.expectedDps) == 0 {
 			assert.Equal(t, 0, md.ResourceMetrics().Len())
 			continue
@@ -331,9 +331,9 @@ func TestScrape_CpuUtilizationStandard(t *testing.T) {
 		}
 		assert.Equal(t, expectedDataPoints, dp.Len())
 
-		//remove empty values to make the test more simple
+		// remove empty values to make the test more simple
 		dp.RemoveIf(func(n pmetric.NumberDataPoint) bool {
-			return n.DoubleVal() == 0.0
+			return n.DoubleValue() == 0.0
 		})
 
 		for idx, expectedDp := range scrapeData.expectedDps {
@@ -343,11 +343,11 @@ func TestScrape_CpuUtilizationStandard(t *testing.T) {
 }
 
 func assertDatapointValueAndStringAttributes(t *testing.T, dp pmetric.NumberDataPoint, value float64, attrs map[string]string) {
-	assert.InDelta(t, value, dp.DoubleVal(), 0.0001)
+	assert.InDelta(t, value, dp.DoubleValue(), 0.0001)
 	for k, v := range attrs {
 		cpuAttribute, exists := dp.Attributes().Get(k)
 		assert.True(t, exists)
-		assert.Equal(t, v, cpuAttribute.StringVal())
+		assert.Equal(t, v, cpuAttribute.Str())
 	}
 }
 
@@ -356,7 +356,7 @@ func assertCPUMetricValid(t *testing.T, metric pmetric.Metric, startTime pcommon
 	expected.SetName("system.cpu.time")
 	expected.SetDescription("Total CPU seconds broken down by different states.")
 	expected.SetUnit("s")
-	expected.SetDataType(pmetric.MetricDataTypeSum)
+	expected.SetEmptySum()
 	internal.AssertDescriptorEqual(t, expected, metric)
 	if startTime != 0 {
 		internal.AssertSumMetricStartTimeEquals(t, metric, startTime)
@@ -364,24 +364,24 @@ func assertCPUMetricValid(t *testing.T, metric pmetric.Metric, startTime pcommon
 	assert.GreaterOrEqual(t, metric.Sum().DataPoints().Len(), 4*runtime.NumCPU())
 	internal.AssertSumMetricHasAttribute(t, metric, 0, "cpu")
 	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "state",
-		pcommon.NewValueString(metadata.AttributeStateUser.String()))
+		pcommon.NewValueStr(metadata.AttributeStateUser.String()))
 	internal.AssertSumMetricHasAttributeValue(t, metric, 1, "state",
-		pcommon.NewValueString(metadata.AttributeStateSystem.String()))
+		pcommon.NewValueStr(metadata.AttributeStateSystem.String()))
 	internal.AssertSumMetricHasAttributeValue(t, metric, 2, "state",
-		pcommon.NewValueString(metadata.AttributeStateIdle.String()))
+		pcommon.NewValueStr(metadata.AttributeStateIdle.String()))
 	internal.AssertSumMetricHasAttributeValue(t, metric, 3, "state",
-		pcommon.NewValueString(metadata.AttributeStateInterrupt.String()))
+		pcommon.NewValueStr(metadata.AttributeStateInterrupt.String()))
 }
 
 func assertCPUMetricHasLinuxSpecificStateLabels(t *testing.T, metric pmetric.Metric) {
 	internal.AssertSumMetricHasAttributeValue(t, metric, 4, "state",
-		pcommon.NewValueString(metadata.AttributeStateNice.String()))
+		pcommon.NewValueStr(metadata.AttributeStateNice.String()))
 	internal.AssertSumMetricHasAttributeValue(t, metric, 5, "state",
-		pcommon.NewValueString(metadata.AttributeStateSoftirq.String()))
+		pcommon.NewValueStr(metadata.AttributeStateSoftirq.String()))
 	internal.AssertSumMetricHasAttributeValue(t, metric, 6, "state",
-		pcommon.NewValueString(metadata.AttributeStateSteal.String()))
+		pcommon.NewValueStr(metadata.AttributeStateSteal.String()))
 	internal.AssertSumMetricHasAttributeValue(t, metric, 7, "state",
-		pcommon.NewValueString(metadata.AttributeStateWait.String()))
+		pcommon.NewValueStr(metadata.AttributeStateWait.String()))
 }
 
 func assertCPUUtilizationMetricValid(t *testing.T, metric pmetric.Metric, startTime pcommon.Timestamp) {
@@ -389,29 +389,29 @@ func assertCPUUtilizationMetricValid(t *testing.T, metric pmetric.Metric, startT
 	expected.SetName("system.cpu.utilization")
 	expected.SetDescription("Percentage of CPU time broken down by different states.")
 	expected.SetUnit("1")
-	expected.SetDataType(pmetric.MetricDataTypeGauge)
+	expected.SetEmptyGauge()
 	internal.AssertDescriptorEqual(t, expected, metric)
 	if startTime != 0 {
 		internal.AssertGaugeMetricStartTimeEquals(t, metric, startTime)
 	}
 	internal.AssertGaugeMetricHasAttribute(t, metric, 0, "cpu")
 	internal.AssertGaugeMetricHasAttributeValue(t, metric, 0, "state",
-		pcommon.NewValueString(metadata.AttributeStateUser.String()))
+		pcommon.NewValueStr(metadata.AttributeStateUser.String()))
 	internal.AssertGaugeMetricHasAttributeValue(t, metric, 1, "state",
-		pcommon.NewValueString(metadata.AttributeStateSystem.String()))
+		pcommon.NewValueStr(metadata.AttributeStateSystem.String()))
 	internal.AssertGaugeMetricHasAttributeValue(t, metric, 2, "state",
-		pcommon.NewValueString(metadata.AttributeStateIdle.String()))
+		pcommon.NewValueStr(metadata.AttributeStateIdle.String()))
 	internal.AssertGaugeMetricHasAttributeValue(t, metric, 3, "state",
-		pcommon.NewValueString(metadata.AttributeStateInterrupt.String()))
+		pcommon.NewValueStr(metadata.AttributeStateInterrupt.String()))
 }
 
 func assertCPUUtilizationMetricHasLinuxSpecificStateLabels(t *testing.T, metric pmetric.Metric) {
 	internal.AssertGaugeMetricHasAttributeValue(t, metric, 4, "state",
-		pcommon.NewValueString(metadata.AttributeStateNice.String()))
+		pcommon.NewValueStr(metadata.AttributeStateNice.String()))
 	internal.AssertGaugeMetricHasAttributeValue(t, metric, 5, "state",
-		pcommon.NewValueString(metadata.AttributeStateSoftirq.String()))
+		pcommon.NewValueStr(metadata.AttributeStateSoftirq.String()))
 	internal.AssertGaugeMetricHasAttributeValue(t, metric, 6, "state",
-		pcommon.NewValueString(metadata.AttributeStateSteal.String()))
+		pcommon.NewValueStr(metadata.AttributeStateSteal.String()))
 	internal.AssertGaugeMetricHasAttributeValue(t, metric, 7, "state",
-		pcommon.NewValueString(metadata.AttributeStateWait.String()))
+		pcommon.NewValueStr(metadata.AttributeStateWait.String()))
 }

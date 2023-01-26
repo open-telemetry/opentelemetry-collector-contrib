@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -41,7 +41,7 @@ type couchDBClient struct {
 
 // newCouchDBClient creates a new client to make requests for the CouchDB receiver.
 func newCouchDBClient(cfg *Config, host component.Host, settings component.TelemetrySettings) (client, error) {
-	client, err := cfg.ToClient(host.GetExtensions(), settings)
+	client, err := cfg.ToClient(host, settings)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create HTTP Client: %w", err)
 	}

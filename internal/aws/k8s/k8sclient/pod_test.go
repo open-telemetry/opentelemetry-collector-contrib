@@ -12,12 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package k8sclient
 
 import (
 	"log"
-	"reflect"
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws/awsutil"
@@ -185,7 +183,7 @@ func TestPodClient_NamespaceToRunningPodNum(t *testing.T) {
 
 	fakeClientSet := fake.NewSimpleClientset()
 	client := newPodClient(fakeClientSet, zap.NewNop(), setOption)
-	client.store.Replace(podArray, "")
+	assert.NoError(t, client.store.Replace(podArray, ""))
 	client.refresh()
 
 	expectedMap := map[string]int{
@@ -194,7 +192,7 @@ func TestPodClient_NamespaceToRunningPodNum(t *testing.T) {
 	}
 	resultMap := client.NamespaceToRunningPodNum()
 	log.Printf("NamespaceToRunningPodNum (len=%v): %v", len(resultMap), awsutil.Prettify(resultMap))
-	assert.True(t, reflect.DeepEqual(resultMap, expectedMap))
+	assert.Equal(t, expectedMap, resultMap)
 	client.shutdown()
 	assert.True(t, client.stopped)
 }

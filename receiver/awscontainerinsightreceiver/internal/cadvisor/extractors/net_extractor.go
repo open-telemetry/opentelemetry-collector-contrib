@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package extractors // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor/extractors"
 
 import (
@@ -46,8 +45,13 @@ func (n *NetMetricExtractor) GetValue(info *cinfo.ContainerInfo, _ CPUMemInfoPro
 	var metrics []*CAdvisorMetric
 
 	// Just a protection here, there is no Container level Net metrics
-	if (containerType == ci.TypePod && info.Spec.Labels[containerNameLable] != infraContainerName) || containerType == ci.TypeContainer {
+	if containerType == ci.TypePod || containerType == ci.TypeContainer {
 		return metrics
+	}
+
+	// Rename type to pod so the metric name prefix is pod_
+	if containerType == ci.TypeInfraContainer {
+		containerType = ci.TypePod
 	}
 
 	curStats := GetStats(info)
@@ -60,7 +64,7 @@ func (n *NetMetricExtractor) GetValue(info *cinfo.ContainerInfo, _ CPUMemInfoPro
 		mType := getNetMetricType(containerType, n.logger)
 		netIfceMetric := make(map[string]interface{})
 
-		infoName := info.Name + containerType + cur.Name //used to identify the network interface
+		infoName := info.Name + containerType + cur.Name // used to identify the network interface
 		multiplier := float64(time.Second)
 		assignRateValueToField(&n.rateCalculator, netIfceMetric, ci.NetRxBytes, infoName, float64(cur.RxBytes), curStats.Timestamp, multiplier)
 		assignRateValueToField(&n.rateCalculator, netIfceMetric, ci.NetRxPackets, infoName, float64(cur.RxPackets), curStats.Timestamp, multiplier)

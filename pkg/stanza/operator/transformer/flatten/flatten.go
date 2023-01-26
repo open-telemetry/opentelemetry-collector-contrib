@@ -27,21 +27,28 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
+const operatorType = "flatten"
+
 func init() {
-	operator.Register("flatten", func() operator.Builder { return NewConfig("") })
+	operator.Register(operatorType, func() operator.Builder { return NewConfig() })
 }
 
 // NewConfig creates a new flatten operator config with default values
-func NewConfig(operatorID string) *Config {
+func NewConfig() *Config {
+	return NewConfigWithID(operatorType)
+}
+
+// NewConfigWithID creates a new flatten operator config with default values
+func NewConfigWithID(operatorID string) *Config {
 	return &Config{
-		TransformerConfig: helper.NewTransformerConfig(operatorID, "flatten"),
+		TransformerConfig: helper.NewTransformerConfig(operatorID, operatorType),
 	}
 }
 
 // Config is the configuration of a flatten operator
 type Config struct {
-	helper.TransformerConfig `mapstructure:",squash" yaml:",inline"`
-	Field                    entry.BodyField `mapstructure:"field" json:"field" yaml:"field"`
+	helper.TransformerConfig `mapstructure:",squash"`
+	Field                    entry.BodyField `mapstructure:"field"`
 }
 
 // Build will build a Flatten operator from the supplied configuration

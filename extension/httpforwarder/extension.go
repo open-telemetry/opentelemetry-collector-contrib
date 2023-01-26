@@ -23,6 +23,7 @@ import (
 	"net/url"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/extension"
 	"go.uber.org/zap"
 )
 
@@ -34,7 +35,7 @@ type httpForwarder struct {
 	config     *Config
 }
 
-var _ component.Extension = (*httpForwarder)(nil)
+var _ extension.Extension = (*httpForwarder)(nil)
 
 func (h *httpForwarder) Start(_ context.Context, host component.Host) error {
 	listener, err := h.config.Ingress.ToListener()
@@ -42,7 +43,7 @@ func (h *httpForwarder) Start(_ context.Context, host component.Host) error {
 		return fmt.Errorf("failed to bind to address %s: %w", h.config.Ingress.Endpoint, err)
 	}
 
-	httpClient, err := h.config.Egress.ToClient(host.GetExtensions(), h.settings)
+	httpClient, err := h.config.Egress.ToClient(host, h.settings)
 	if err != nil {
 		return fmt.Errorf("failed to create HTTP Client: %w", err)
 	}
@@ -66,6 +67,9 @@ func (h *httpForwarder) Start(_ context.Context, host component.Host) error {
 }
 
 func (h *httpForwarder) Shutdown(_ context.Context) error {
+	if h.server == nil {
+		return nil
+	}
 	return h.server.Close()
 }
 
@@ -79,7 +83,7 @@ func (h *httpForwarder) forwardRequest(writer http.ResponseWriter, request *http
 
 	// Add additional headers.
 	for k, v := range h.config.Egress.Headers {
-		forwarderRequest.Header.Add(k, v)
+		forwarderRequest.Header.Add(k, string(v))
 	}
 
 	// Add "Via" header for tracking purposes on both the outgoing requests and responses.
@@ -117,7 +121,7 @@ func addViaHeader(header http.Header, protocol string, host string) {
 	header.Add("Via", fmt.Sprintf("%s %s", protocol, host))
 }
 
-func newHTTPForwarder(config *Config, settings component.TelemetrySettings) (component.Extension, error) {
+func newHTTPForwarder(config *Config, settings component.TelemetrySettings) (extension.Extension, error) {
 	if config.Egress.Endpoint == "" {
 		return nil, errors.New("'egress.endpoint' config option cannot be empty")
 	}

@@ -20,7 +20,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math"
 	"net/http"
 	"net/url"
@@ -33,6 +32,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"
 
@@ -44,8 +44,6 @@ const maxBatchByteSize = 3000000
 
 // prwExporter converts OTLP metrics to Prometheus remote write TimeSeries and sends them to a remote endpoint.
 type prwExporter struct {
-	namespace       string
-	externalLabels  map[string]string
 	endpointURL     *url.URL
 	client          *http.Client
 	wg              *sync.WaitGroup
@@ -55,11 +53,12 @@ type prwExporter struct {
 	clientSettings  *confighttp.HTTPClientSettings
 	settings        component.TelemetrySettings
 
-	wal *prweWAL
+	wal              *prweWAL
+	exporterSettings prometheusremotewrite.Settings
 }
 
 // newPRWExporter initializes a new prwExporter instance and sets fields accordingly.
-func newPRWExporter(cfg *Config, set component.ExporterCreateSettings) (*prwExporter, error) {
+func newPRWExporter(cfg *Config, set exporter.CreateSettings) (*prwExporter, error) {
 	sanitizedLabels, err := validateAndSanitizeExternalLabels(cfg)
 	if err != nil {
 		return nil, err
@@ -73,8 +72,6 @@ func newPRWExporter(cfg *Config, set component.ExporterCreateSettings) (*prwExpo
 	userAgentHeader := fmt.Sprintf("%s/%s", strings.ReplaceAll(strings.ToLower(set.BuildInfo.Description), " ", "-"), set.BuildInfo.Version)
 
 	prwe := &prwExporter{
-		namespace:       cfg.Namespace,
-		externalLabels:  sanitizedLabels,
 		endpointURL:     endpointURL,
 		wg:              new(sync.WaitGroup),
 		closeChan:       make(chan struct{}),
@@ -82,6 +79,12 @@ func newPRWExporter(cfg *Config, set component.ExporterCreateSettings) (*prwExpo
 		concurrency:     cfg.RemoteWriteQueue.NumConsumers,
 		clientSettings:  &cfg.HTTPClientSettings,
 		settings:        set.TelemetrySettings,
+		exporterSettings: prometheusremotewrite.Settings{
+			Namespace:           cfg.Namespace,
+			ExternalLabels:      sanitizedLabels,
+			DisableTargetInfo:   !cfg.TargetInfo.Enabled,
+			ExportCreatedMetric: cfg.CreatedMetric.Enabled,
+		},
 	}
 	if cfg.WAL == nil {
 		return prwe, nil
@@ -96,7 +99,7 @@ func newPRWExporter(cfg *Config, set component.ExporterCreateSettings) (*prwExpo
 
 // Start creates the prometheus client
 func (prwe *prwExporter) Start(ctx context.Context, host component.Host) (err error) {
-	prwe.client, err = prwe.clientSettings.ToClient(host.GetExtensions(), prwe.settings)
+	prwe.client, err = prwe.clientSettings.ToClient(host, prwe.settings)
 	if err != nil {
 		return err
 	}
@@ -134,7 +137,7 @@ func (prwe *prwExporter) PushMetrics(ctx context.Context, md pmetric.Metrics) er
 	case <-prwe.closeChan:
 		return errors.New("shutdown has been called")
 	default:
-		tsMap, err := prometheusremotewrite.FromMetrics(md, prometheusremotewrite.Settings{Namespace: prwe.namespace, ExternalLabels: prwe.externalLabels})
+		tsMap, err := prometheusremotewrite.FromMetrics(md, prwe.exporterSettings)
 		if err != nil {
 			err = consumererror.NewPermanent(err)
 		}
@@ -156,6 +159,11 @@ func validateAndSanitizeExternalLabels(cfg *Config) (map[string]string, error) {
 }
 
 func (prwe *prwExporter) handleExport(ctx context.Context, tsMap map[string]*prompb.TimeSeries) error {
+	// There are no metrics to export, so return.
+	if len(tsMap) == 0 {
+		return nil
+	}
+
 	// Calls the helper function to convert and batch the TsMap to the desired format
 	requests, err := batchTimeSeries(tsMap, maxBatchByteSize)
 	if err != nil {
@@ -252,7 +260,7 @@ func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
 		return nil
 	}
-	body, err := ioutil.ReadAll(io.LimitReader(resp.Body, 256))
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 256))
 	rerr := fmt.Errorf("remote write returned HTTP status %v; err = %w: %s", resp.Status, err, body)
 	if resp.StatusCode >= 500 && resp.StatusCode < 600 {
 		return rerr

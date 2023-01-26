@@ -24,8 +24,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ec2/ec2iface"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/processor"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
@@ -47,7 +47,7 @@ type Detector struct {
 	logger           *zap.Logger
 }
 
-func NewDetector(set component.ProcessorCreateSettings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(set processor.CreateSettings, dcfg internal.DetectorConfig) (internal.Detector, error) {
 	cfg := dcfg.(Config)
 	sess, err := session.NewSession()
 	if err != nil {
@@ -82,15 +82,15 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	}
 
 	attr := res.Attributes()
-	attr.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-	attr.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSEC2)
-	attr.InsertString(conventions.AttributeCloudRegion, meta.Region)
-	attr.InsertString(conventions.AttributeCloudAccountID, meta.AccountID)
-	attr.InsertString(conventions.AttributeCloudAvailabilityZone, meta.AvailabilityZone)
-	attr.InsertString(conventions.AttributeHostID, meta.InstanceID)
-	attr.InsertString(conventions.AttributeHostImageID, meta.ImageID)
-	attr.InsertString(conventions.AttributeHostType, meta.InstanceType)
-	attr.InsertString(conventions.AttributeHostName, hostname)
+	attr.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
+	attr.PutStr(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSEC2)
+	attr.PutStr(conventions.AttributeCloudRegion, meta.Region)
+	attr.PutStr(conventions.AttributeCloudAccountID, meta.AccountID)
+	attr.PutStr(conventions.AttributeCloudAvailabilityZone, meta.AvailabilityZone)
+	attr.PutStr(conventions.AttributeHostID, meta.InstanceID)
+	attr.PutStr(conventions.AttributeHostImageID, meta.ImageID)
+	attr.PutStr(conventions.AttributeHostType, meta.InstanceType)
+	attr.PutStr(conventions.AttributeHostName, hostname)
 
 	if len(d.tagKeyRegexes) != 0 {
 		client := getHTTPClientSettings(ctx, d.logger)
@@ -99,7 +99,7 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 			return res, "", fmt.Errorf("failed fetching ec2 instance tags: %w", err)
 		}
 		for key, val := range tags {
-			attr.InsertString(tagPrefix+key, val)
+			attr.PutStr(tagPrefix+key, val)
 		}
 	}
 

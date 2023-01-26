@@ -1,4 +1,15 @@
 {
+	"network": {
+        "bytesIn": {
+            "$numberLong": "3056"
+        },
+        "bytesOut": {
+            "$numberLong": "5393"
+        },
+        "numRequests": {
+            "$numberLong": "20"
+        }
+    },
 	"asserts": {
 		"msg": {
 			"$numberInt": "0"
@@ -278,6 +289,40 @@
 	"uptimeMillis": {
 		"$numberLong": "58965"
 	},
+	"opLatencies": {
+		"commands": {
+			"latency": {
+				"$numberLong": "8631"
+			},
+			"ops": {
+				"$numberLong": "23"
+			}
+		},
+		"reads": {
+			"latency": {
+				"$numberLong": "0"
+			},
+			"ops": {
+				"$numberLong": "0"
+			}
+		},
+		"transactions": {
+			"latency": {
+				"$numberLong": "0"
+			},
+			"ops": {
+				"$numberLong": "0"
+			}
+		},
+		"writes": {
+			"latency": {
+				"$numberLong": "0"
+			},
+			"ops": {
+				"$numberLong": "0"
+			}
+		}
+	},
 	"opcounters": {
 		"command": {
 			"$numberInt": "20"
@@ -298,10 +343,61 @@
 			"$numberInt": "0"
 		}
 	},
+	"opcountersRepl": {
+		"command": {
+			"$numberInt": "27"
+		},
+		"delete": {
+			"$numberInt": "1"
+		},
+		"getmore": {
+			"$numberInt": "2"
+		},
+		"insert": {
+			"$numberInt": "3"
+		},
+		"query": {
+			"$numberInt": "4"
+		},
+		"update": {
+			"$numberInt": "5"
+		}
+	},
+	"metrics": {
+		"cursor": {
+            "timedOut": {
+                "$numberLong": "0"
+            },
+            "open": {
+                "pinned": {
+                    "$numberLong": "0"
+                },
+                "total": {
+                    "$numberLong": "0"
+                },
+                "noTimeout": {
+                    "$numberLong": "0"
+                }
+            }
+        }
+	},
+	"process": "mongod",
+	"storageEngine": {
+		"name": "wiredTiger",
+		"persistent": true,
+		"readOnly": false,
+		"supportsCommittedReads": true,
+		"supportsSnapshotReadConcern": true
+	},
 	"wiredTiger": {
 		"cache": {
 			"pages read into cache": 14,
 			"pages requested from the cache": 215
+		},
+		"session": {
+			"open session count": {
+				"$numberInt": "19"
+			}
 		}
 	},
 	"version": "4.0.25"

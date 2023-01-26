@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/datasource"
@@ -33,7 +34,7 @@ import (
 //go:embed "internal/metadataconfig/metadata.yaml"
 var metadataYaml []byte
 
-var _ component.MetricsReceiver = (*googleCloudSpannerReceiver)(nil)
+var _ receiver.Metrics = (*googleCloudSpannerReceiver)(nil)
 
 type googleCloudSpannerReceiver struct {
 	logger         *zap.Logger
@@ -80,6 +81,9 @@ func (r *googleCloudSpannerReceiver) Shutdown(context.Context) error {
 		projectReader.Shutdown()
 	}
 
+	if r.metricsBuilder == nil {
+		return nil
+	}
 	err := r.metricsBuilder.Shutdown()
 	if err != nil {
 		return err
@@ -108,8 +112,9 @@ func (r *googleCloudSpannerReceiver) initializeProjectReaders(ctx context.Contex
 	parsedMetadata []*metadata.MetricsMetadata) error {
 
 	readerConfig := statsreader.ReaderConfig{
-		BackfillEnabled:        r.config.BackfillEnabled,
-		TopMetricsQueryMaxRows: r.config.TopMetricsQueryMaxRows,
+		BackfillEnabled:                   r.config.BackfillEnabled,
+		TopMetricsQueryMaxRows:            r.config.TopMetricsQueryMaxRows,
+		HideTopnLockstatsRowrangestartkey: r.config.HideTopnLockstatsRowrangestartkey,
 	}
 
 	for _, project := range r.config.Projects {

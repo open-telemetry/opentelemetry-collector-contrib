@@ -23,9 +23,9 @@ import (
 	"time"
 
 	pubsub "cloud.google.com/go/pubsub/apiv1"
+	"cloud.google.com/go/pubsub/apiv1/pubsubpb"
 	"go.uber.org/atomic"
 	"go.uber.org/zap"
-	pubsubpb "google.golang.org/genproto/googleapis/pubsub/v1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -75,7 +75,6 @@ func NewHandler(
 		clientID:     clientID,
 		subscription: subscription,
 		pushMessage:  callback,
-		acks:         make([]string, 0),
 		ackBatchWait: 10 * time.Second,
 	}
 	return &handler, handler.initStream(ctx)
@@ -161,7 +160,7 @@ func (handler *StreamHandler) acknowledgeMessages() error {
 	request := pubsubpb.StreamingPullRequest{
 		AckIds: handler.acks,
 	}
-	handler.acks = make([]string, 0)
+	handler.acks = nil
 	return handler.stream.Send(&request)
 }
 

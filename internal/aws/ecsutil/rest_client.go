@@ -22,13 +22,22 @@ import (
 )
 
 func NewRestClient(baseEndpoint url.URL, clientSettings confighttp.HTTPClientSettings, settings component.TelemetrySettings) (RestClient, error) {
-	clientProvider := NewClientProvider(baseEndpoint, clientSettings, settings)
+	clientProvider := NewClientProvider(baseEndpoint, clientSettings, &nopHost{}, settings)
 
 	client, err := clientProvider.BuildClient()
 	if err != nil {
 		return nil, err
 	}
 	return NewRestClientFromClient(client), nil
+}
+
+// TODO: Instead of using this, expose it as a argument to NewRestClient.
+type nopHost struct {
+	component.Host
+}
+
+func (nh *nopHost) GetExtensions() map[component.ID]component.Component {
+	return map[component.ID]component.Component{}
 }
 
 // RestClient is swappable for testing.

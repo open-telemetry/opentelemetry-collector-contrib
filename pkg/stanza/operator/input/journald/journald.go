@@ -36,13 +36,21 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
+const operatorType = "journald_input"
+
 func init() {
-	operator.Register("journald_input", func() operator.Builder { return NewConfig("") })
+	operator.Register(operatorType, func() operator.Builder { return NewConfig() })
 }
 
-func NewConfig(operatorID string) *Config {
+// NewConfig creates a new input config with default values
+func NewConfig() *Config {
+	return NewConfigWithID(operatorType)
+}
+
+// NewConfigWithID creates a new input config with default values
+func NewConfigWithID(operatorID string) *Config {
 	return &Config{
-		InputConfig: helper.NewInputConfig(operatorID, "journald_input"),
+		InputConfig: helper.NewInputConfig(operatorID, operatorType),
 		StartAt:     "end",
 		Priority:    "info",
 	}
@@ -50,13 +58,13 @@ func NewConfig(operatorID string) *Config {
 
 // Config is the configuration of a journald input operator
 type Config struct {
-	helper.InputConfig `mapstructure:",squash" yaml:",inline"`
+	helper.InputConfig `mapstructure:",squash"`
 
-	Directory *string  `mapstructure:"directory,omitempty" json:"directory,omitempty" yaml:"directory,omitempty"`
-	Files     []string `mapstructure:"files,omitempty"     json:"files,omitempty"     yaml:"files,omitempty"`
-	StartAt   string   `mapstructure:"start_at,omitempty"  json:"start_at,omitempty"  yaml:"start_at,omitempty"`
-	Units     []string `mapstructure:"units,omitempty"     json:"units,omitempty"     yaml:"units,omitempty"`
-	Priority  string   `mapstructure:"priority,omitempty"  json:"priority,omitempty"  yaml:"priority,omitempty"`
+	Directory *string  `mapstructure:"directory,omitempty"`
+	Files     []string `mapstructure:"files,omitempty"`
+	StartAt   string   `mapstructure:"start_at,omitempty"`
+	Units     []string `mapstructure:"units,omitempty"`
+	Priority  string   `mapstructure:"priority,omitempty"`
 }
 
 // Build will build a journald input operator from the supplied configuration

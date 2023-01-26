@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@ func TestValidate(t *testing.T) {
 					Enabled:  true,
 					Endpoint: "0.0.0.0:7706",
 					Secret:   "some_secret",
+					Mode:     alertModeListen,
 				},
 			},
 		},
@@ -47,6 +48,7 @@ func TestValidate(t *testing.T) {
 				Alerts: AlertConfig{
 					Enabled: true,
 					Secret:  "some_secret",
+					Mode:    alertModeListen,
 				},
 			},
 			expectedErr: errNoEndpoint.Error(),
@@ -57,6 +59,7 @@ func TestValidate(t *testing.T) {
 				Alerts: AlertConfig{
 					Enabled:  true,
 					Endpoint: "0.0.0.0:7706",
+					Mode:     alertModeListen,
 				},
 			},
 			expectedErr: errNoSecret.Error(),
@@ -68,6 +71,7 @@ func TestValidate(t *testing.T) {
 					Enabled:  true,
 					Endpoint: "7706",
 					Secret:   "some_secret",
+					Mode:     alertModeListen,
 				},
 			},
 			expectedErr: "failed to split endpoint into 'host:port' pair",
@@ -79,6 +83,7 @@ func TestValidate(t *testing.T) {
 					Enabled:  true,
 					Endpoint: "0.0.0.0:7706",
 					Secret:   "some_secret",
+					Mode:     alertModeListen,
 					TLS: &configtls.TLSServerSetting{
 						TLSSetting: configtls.TLSSetting{
 							CertFile: "some_cert_file",
@@ -95,6 +100,7 @@ func TestValidate(t *testing.T) {
 					Enabled:  true,
 					Endpoint: "0.0.0.0:7706",
 					Secret:   "some_secret",
+					Mode:     alertModeListen,
 					TLS: &configtls.TLSServerSetting{
 						TLSSetting: configtls.TLSSetting{
 							KeyFile: "some_key_file",
@@ -103,6 +109,119 @@ func TestValidate(t *testing.T) {
 				},
 			},
 			expectedErr: errNoCert.Error(),
+		},
+		{
+			name: "Valid Logs Config",
+			input: Config{
+				Logs: LogConfig{
+					Enabled: true,
+					Projects: []*ProjectConfig{
+						{
+							Name:            "Project1",
+							EnableAuditLogs: false,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Invalid Logs Config",
+			input: Config{
+				Logs: LogConfig{
+					Enabled: true,
+				},
+			},
+			expectedErr: errNoProjects.Error(),
+		},
+		{
+			name: "Invalid ProjectConfig",
+			input: Config{
+				Logs: LogConfig{
+					Enabled: true,
+					Projects: []*ProjectConfig{
+						{
+							Name:            "Project1",
+							EnableAuditLogs: false,
+							ExcludeClusters: []string{"cluster1"},
+							IncludeClusters: []string{"cluster2"},
+						},
+					},
+				},
+			},
+			expectedErr: errClusterConfig.Error(),
+		},
+		{
+			name: "Invalid Alerts Retrieval ProjectConfig",
+			input: Config{
+				Alerts: AlertConfig{
+					Enabled: true,
+					Mode:    alertModePoll,
+					Projects: []*ProjectConfig{
+						{
+							Name:            "Project1",
+							EnableAuditLogs: false,
+							ExcludeClusters: []string{"cluster1"},
+							IncludeClusters: []string{"cluster2"},
+						},
+					},
+					PageSize: defaultAlertsPageSize,
+				},
+			},
+			expectedErr: errClusterConfig.Error(),
+		},
+		{
+			name: "Invalid Alerts Poll No Projects",
+			input: Config{
+				Alerts: AlertConfig{
+					Enabled:  true,
+					Mode:     alertModePoll,
+					Projects: []*ProjectConfig{},
+					PageSize: defaultAlertsPageSize,
+				},
+			},
+			expectedErr: errNoProjects.Error(),
+		},
+		{
+			name: "Valid Alerts Config",
+			input: Config{
+				Alerts: AlertConfig{
+					Enabled: true,
+					Mode:    alertModePoll,
+					Projects: []*ProjectConfig{
+						{
+							Name: "Project1",
+						},
+					},
+					PageSize: defaultAlertsPageSize,
+				},
+			},
+		},
+		{
+			name: "Invalid Alerts Mode",
+			input: Config{
+				Alerts: AlertConfig{
+					Enabled:  true,
+					Mode:     "invalid type",
+					Projects: []*ProjectConfig{},
+				},
+			},
+			expectedErr: errNoModeRecognized.Error(),
+		},
+		{
+			name: "Invalid Page Size",
+			input: Config{
+				Alerts: AlertConfig{
+					Enabled: true,
+					Mode:    alertModePoll,
+					Projects: []*ProjectConfig{
+						{
+							Name: "Test",
+						},
+					},
+					PageSize: -1,
+				},
+			},
+			expectedErr: errPageSizeIncorrect.Error(),
 		},
 	}
 

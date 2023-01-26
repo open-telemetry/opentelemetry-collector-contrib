@@ -19,8 +19,9 @@ import (
 	"time"
 
 	"github.com/prometheus/common/model"
-	"github.com/prometheus/prometheus/config"
+	promConfig "github.com/prometheus/prometheus/config"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -116,7 +117,7 @@ rpc_duration_seconds_sum 4900
 rpc_duration_seconds_count 900
 `
 
-func verifyTarget1(t *testing.T, td *testData, resourceMetrics []*pmetric.ResourceMetrics) {
+func verifyTarget1(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {
 	verifyNumValidScrapeResults(t, td, resourceMetrics)
 	m1 := resourceMetrics[0]
 
@@ -129,7 +130,7 @@ func verifyTarget1(t *testing.T, td *testData, resourceMetrics []*pmetric.Resour
 	ts1 := getTS(metrics1)
 	e1 := []testExpectation{
 		assertMetricPresent("go_threads",
-			compareMetricType(pmetric.MetricDataTypeGauge),
+			compareMetricType(pmetric.MetricTypeGauge),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -139,7 +140,7 @@ func verifyTarget1(t *testing.T, td *testData, resourceMetrics []*pmetric.Resour
 				},
 			}),
 		assertMetricPresent("http_requests_total",
-			compareMetricType(pmetric.MetricDataTypeSum),
+			compareMetricType(pmetric.MetricTypeSum),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -159,7 +160,7 @@ func verifyTarget1(t *testing.T, td *testData, resourceMetrics []*pmetric.Resour
 				},
 			}),
 		assertMetricPresent("http_request_duration_seconds",
-			compareMetricType(pmetric.MetricDataTypeHistogram),
+			compareMetricType(pmetric.MetricTypeHistogram),
 			[]dataPointExpectation{
 				{
 					histogramPointComparator: []histogramPointComparator{
@@ -170,7 +171,7 @@ func verifyTarget1(t *testing.T, td *testData, resourceMetrics []*pmetric.Resour
 				},
 			}),
 		assertMetricPresent("rpc_duration_seconds",
-			compareMetricType(pmetric.MetricDataTypeSummary),
+			compareMetricType(pmetric.MetricTypeSummary),
 			[]dataPointExpectation{
 				{
 					summaryPointComparator: []summaryPointComparator{
@@ -191,7 +192,7 @@ func verifyTarget1(t *testing.T, td *testData, resourceMetrics []*pmetric.Resour
 	ts2 := getTS(metricsScrape2)
 	e2 := []testExpectation{
 		assertMetricPresent("go_threads",
-			compareMetricType(pmetric.MetricDataTypeGauge),
+			compareMetricType(pmetric.MetricTypeGauge),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -201,7 +202,7 @@ func verifyTarget1(t *testing.T, td *testData, resourceMetrics []*pmetric.Resour
 				},
 			}),
 		assertMetricPresent("http_requests_total",
-			compareMetricType(pmetric.MetricDataTypeSum),
+			compareMetricType(pmetric.MetricTypeSum),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -221,7 +222,7 @@ func verifyTarget1(t *testing.T, td *testData, resourceMetrics []*pmetric.Resour
 				},
 			}),
 		assertMetricPresent("http_request_duration_seconds",
-			compareMetricType(pmetric.MetricDataTypeHistogram),
+			compareMetricType(pmetric.MetricTypeHistogram),
 			[]dataPointExpectation{
 				{
 					histogramPointComparator: []histogramPointComparator{
@@ -233,7 +234,7 @@ func verifyTarget1(t *testing.T, td *testData, resourceMetrics []*pmetric.Resour
 				},
 			}),
 		assertMetricPresent("rpc_duration_seconds",
-			compareMetricType(pmetric.MetricDataTypeSummary),
+			compareMetricType(pmetric.MetricTypeSummary),
 			[]dataPointExpectation{
 				{
 					summaryPointComparator: []summaryPointComparator{
@@ -254,7 +255,7 @@ func verifyTarget1(t *testing.T, td *testData, resourceMetrics []*pmetric.Resour
 	ts3 := getTS(metricsScrape3)
 	e3 := []testExpectation{
 		assertMetricPresent("go_threads",
-			compareMetricType(pmetric.MetricDataTypeGauge),
+			compareMetricType(pmetric.MetricTypeGauge),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -264,7 +265,7 @@ func verifyTarget1(t *testing.T, td *testData, resourceMetrics []*pmetric.Resour
 				},
 			}),
 		assertMetricPresent("http_requests_total",
-			compareMetricType(pmetric.MetricDataTypeSum),
+			compareMetricType(pmetric.MetricTypeSum),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -286,7 +287,7 @@ func verifyTarget1(t *testing.T, td *testData, resourceMetrics []*pmetric.Resour
 				},
 			}),
 		assertMetricPresent("http_request_duration_seconds",
-			compareMetricType(pmetric.MetricDataTypeHistogram),
+			compareMetricType(pmetric.MetricTypeHistogram),
 			[]dataPointExpectation{
 				{
 					histogramPointComparator: []histogramPointComparator{
@@ -298,7 +299,7 @@ func verifyTarget1(t *testing.T, td *testData, resourceMetrics []*pmetric.Resour
 				},
 			}),
 		assertMetricPresent("rpc_duration_seconds",
-			compareMetricType(pmetric.MetricDataTypeSummary),
+			compareMetricType(pmetric.MetricTypeSummary),
 			[]dataPointExpectation{
 				{
 					summaryPointComparator: []summaryPointComparator{
@@ -321,10 +322,30 @@ var target2Page1 = `
 # TYPE go_threads gauge
 go_threads 18
 
+# HELP http_request_duration_seconds A histogram of the request duration.
+# TYPE http_request_duration_seconds histogram
+http_request_duration_seconds_bucket{method="post",code="200",le="1"} 8
+http_request_duration_seconds_bucket{method="post",code="200",le="+Inf"} 10
+http_request_duration_seconds_sum{method="post",code="200"} 7
+http_request_duration_seconds_count{method="post",code="200"} 10
+http_request_duration_seconds_bucket{method="post",code="400",le="1"} 30
+http_request_duration_seconds_bucket{method="post",code="400",le="+Inf"} 50
+http_request_duration_seconds_sum{method="post",code="400"} 25
+http_request_duration_seconds_count{method="post",code="400"} 50
+
 # HELP http_requests_total The total number of HTTP requests.
 # TYPE http_requests_total counter
 http_requests_total{method="post",code="200"} 10
 http_requests_total{method="post",code="400"} 50
+
+# HELP rpc_duration_seconds A summary of the RPC duration in seconds.
+# TYPE rpc_duration_seconds summary
+rpc_duration_seconds{code="0" quantile="0.5"} 47
+rpc_duration_seconds_sum{code="0"} 100
+rpc_duration_seconds_count{code="0"} 50
+rpc_duration_seconds{code="5" quantile="0.5"} 35
+rpc_duration_seconds_sum{code="5"} 180
+rpc_duration_seconds_count{code="5"} 400
 `
 
 var target2Page2 = `
@@ -332,11 +353,38 @@ var target2Page2 = `
 # TYPE go_threads gauge
 go_threads 16
 
+# HELP http_request_duration_seconds A histogram of the request duration.
+# TYPE http_request_duration_seconds histogram
+http_request_duration_seconds_bucket{method="post",code="200",le="1"} 40
+http_request_duration_seconds_bucket{method="post",code="200",le="+Inf"} 50
+http_request_duration_seconds_sum{method="post",code="200"} 43
+http_request_duration_seconds_count{method="post",code="200"} 50
+http_request_duration_seconds_bucket{method="post",code="300",le="1"} 3
+http_request_duration_seconds_bucket{method="post",code="300",le="+Inf"} 3
+http_request_duration_seconds_sum{method="post",code="300"} 2
+http_request_duration_seconds_count{method="post",code="300"} 3
+http_request_duration_seconds_bucket{method="post",code="400",le="1"} 35
+http_request_duration_seconds_bucket{method="post",code="400",le="+Inf"} 60
+http_request_duration_seconds_sum{method="post",code="400"} 30
+http_request_duration_seconds_count{method="post",code="400"} 60
+
 # HELP http_requests_total The total number of HTTP requests.
 # TYPE http_requests_total counter
 http_requests_total{method="post",code="200"} 50
+http_requests_total{method="post",code="300"} 3
 http_requests_total{method="post",code="400"} 60
-http_requests_total{method="post",code="500"} 3
+
+# HELP rpc_duration_seconds A summary of the RPC duration in seconds.
+# TYPE rpc_duration_seconds summary
+rpc_duration_seconds{code="0" quantile="0.5"} 57
+rpc_duration_seconds_sum{code="0"} 110
+rpc_duration_seconds_count{code="0"} 60
+rpc_duration_seconds{code="3" quantile="0.5"} 42
+rpc_duration_seconds_sum{code="3"} 50
+rpc_duration_seconds_count{code="3"} 30
+rpc_duration_seconds{code="5" quantile="0.5"} 45
+rpc_duration_seconds_sum{code="5"} 190
+rpc_duration_seconds_count{code="5"} 410
 `
 
 var target2Page3 = `
@@ -344,11 +392,38 @@ var target2Page3 = `
 # TYPE go_threads gauge
 go_threads 16
 
+# HELP http_request_duration_seconds A histogram of the request duration.
+# TYPE http_request_duration_seconds histogram
+http_request_duration_seconds_bucket{method="post",code="200",le="1"} 40
+http_request_duration_seconds_bucket{method="post",code="200",le="+Inf"} 50
+http_request_duration_seconds_sum{method="post",code="200"} 43
+http_request_duration_seconds_count{method="post",code="200"} 50
+http_request_duration_seconds_bucket{method="post",code="300",le="1"} 3
+http_request_duration_seconds_bucket{method="post",code="300",le="+Inf"} 5
+http_request_duration_seconds_sum{method="post",code="300"} 7
+http_request_duration_seconds_count{method="post",code="300"} 5
+http_request_duration_seconds_bucket{method="post",code="400",le="1"} 35
+http_request_duration_seconds_bucket{method="post",code="400",le="+Inf"} 60
+http_request_duration_seconds_sum{method="post",code="400"} 30
+http_request_duration_seconds_count{method="post",code="400"} 60
+
 # HELP http_requests_total The total number of HTTP requests.
 # TYPE http_requests_total counter
 http_requests_total{method="post",code="200"} 50
+http_requests_total{method="post",code="300"} 5
 http_requests_total{method="post",code="400"} 60
-http_requests_total{method="post",code="500"} 5
+
+# HELP rpc_duration_seconds A summary of the RPC duration in seconds.
+# TYPE rpc_duration_seconds summary
+rpc_duration_seconds{code="0" quantile="0.5"} 67
+rpc_duration_seconds_sum{code="0"} 120
+rpc_duration_seconds_count{code="0"} 70
+rpc_duration_seconds{code="3" quantile="0.5"} 52
+rpc_duration_seconds_sum{code="3"} 60
+rpc_duration_seconds_count{code="3"} 40
+rpc_duration_seconds{code="5" quantile="0.5"} 55
+rpc_duration_seconds_sum{code="5"} 200
+rpc_duration_seconds_count{code="5"} 420
 `
 
 var target2Page4 = `
@@ -356,11 +431,38 @@ var target2Page4 = `
 # TYPE go_threads gauge
 go_threads 16
 
+# HELP http_request_duration_seconds A histogram of the request duration.
+# TYPE http_request_duration_seconds histogram
+http_request_duration_seconds_bucket{method="post",code="200",le="1"} 40
+http_request_duration_seconds_bucket{method="post",code="200",le="+Inf"} 49
+http_request_duration_seconds_sum{method="post",code="200"} 42
+http_request_duration_seconds_count{method="post",code="200"} 49
+http_request_duration_seconds_bucket{method="post",code="300",le="1"} 2
+http_request_duration_seconds_bucket{method="post",code="300",le="+Inf"} 3
+http_request_duration_seconds_sum{method="post",code="300"} 4
+http_request_duration_seconds_count{method="post",code="300"} 3
+http_request_duration_seconds_bucket{method="post",code="400",le="1"} 34
+http_request_duration_seconds_bucket{method="post",code="400",le="+Inf"} 59
+http_request_duration_seconds_sum{method="post",code="400"} 29
+http_request_duration_seconds_count{method="post",code="400"} 59
+
 # HELP http_requests_total The total number of HTTP requests.
 # TYPE http_requests_total counter
 http_requests_total{method="post",code="200"} 49
+http_requests_total{method="post",code="300"} 3
 http_requests_total{method="post",code="400"} 59
-http_requests_total{method="post",code="500"} 3
+
+# HELP rpc_duration_seconds A summary of the RPC duration in seconds.
+# TYPE rpc_duration_seconds summary
+rpc_duration_seconds{code="0" quantile="0.5"} 66
+rpc_duration_seconds_sum{code="0"} 119
+rpc_duration_seconds_count{code="0"} 69
+rpc_duration_seconds{code="3" quantile="0.5"} 51
+rpc_duration_seconds_sum{code="3"} 59
+rpc_duration_seconds_count{code="3"} 39
+rpc_duration_seconds{code="5" quantile="0.5"} 54
+rpc_duration_seconds_sum{code="5"} 199
+rpc_duration_seconds_count{code="5"} 419
 `
 
 var target2Page5 = `
@@ -368,18 +470,45 @@ var target2Page5 = `
 # TYPE go_threads gauge
 go_threads 16
 
+# HELP http_request_duration_seconds A histogram of the request duration.
+# TYPE http_request_duration_seconds histogram
+http_request_duration_seconds_bucket{method="post",code="200",le="1"} 41
+http_request_duration_seconds_bucket{method="post",code="200",le="+Inf"} 50
+http_request_duration_seconds_sum{method="post",code="200"} 43
+http_request_duration_seconds_count{method="post",code="200"} 50
+http_request_duration_seconds_bucket{method="post",code="300",le="1"} 4
+http_request_duration_seconds_bucket{method="post",code="300",le="+Inf"} 5
+http_request_duration_seconds_sum{method="post",code="300"} 4
+http_request_duration_seconds_count{method="post",code="300"} 5
+http_request_duration_seconds_bucket{method="post",code="400",le="1"} 34
+http_request_duration_seconds_bucket{method="post",code="400",le="+Inf"} 59
+http_request_duration_seconds_sum{method="post",code="400"} 29
+http_request_duration_seconds_count{method="post",code="400"} 59
+
 # HELP http_requests_total The total number of HTTP requests.
 # TYPE http_requests_total counter
 http_requests_total{method="post",code="200"} 50
+http_requests_total{method="post",code="300"} 5
 http_requests_total{method="post",code="400"} 59
-http_requests_total{method="post",code="500"} 5
+
+# HELP rpc_duration_seconds A summary of the RPC duration in seconds.
+# TYPE rpc_duration_seconds summary
+rpc_duration_seconds{code="0" quantile="0.5"} 76
+rpc_duration_seconds_sum{code="0"} 129
+rpc_duration_seconds_count{code="0"} 79
+rpc_duration_seconds{code="3" quantile="0.5"} 61
+rpc_duration_seconds_sum{code="3"} 69
+rpc_duration_seconds_count{code="3"} 49
+rpc_duration_seconds{code="5" quantile="0.5"} 64
+rpc_duration_seconds_sum{code="5"} 209
+rpc_duration_seconds_count{code="5"} 429
 `
 
-func verifyTarget2(t *testing.T, td *testData, resourceMetrics []*pmetric.ResourceMetrics) {
+func verifyTarget2(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {
 	verifyNumValidScrapeResults(t, td, resourceMetrics)
 	m1 := resourceMetrics[0]
-	// m1 has 2 metrics + 5 internal scraper metrics
-	assert.Equal(t, 7, metricsCount(m1))
+	// m1 has 4 metrics + 5 internal scraper metrics
+	assert.Equal(t, 9, metricsCount(m1))
 
 	wantAttributes := td.attributes
 
@@ -387,7 +516,7 @@ func verifyTarget2(t *testing.T, td *testData, resourceMetrics []*pmetric.Resour
 	ts1 := getTS(metrics1)
 	e1 := []testExpectation{
 		assertMetricPresent("go_threads",
-			compareMetricType(pmetric.MetricDataTypeGauge),
+			compareMetricType(pmetric.MetricTypeGauge),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -396,8 +525,28 @@ func verifyTarget2(t *testing.T, td *testData, resourceMetrics []*pmetric.Resour
 					},
 				},
 			}),
+		assertMetricPresent("http_request_duration_seconds",
+			compareMetricType(pmetric.MetricTypeHistogram),
+			[]dataPointExpectation{
+				{
+					histogramPointComparator: []histogramPointComparator{
+						compareHistogramStartTimestamp(ts1),
+						compareHistogramTimestamp(ts1),
+						compareHistogramAttributes(map[string]string{"method": "post", "code": "200"}),
+						compareHistogram(10, 7, []uint64{8, 2}),
+					},
+				},
+				{
+					histogramPointComparator: []histogramPointComparator{
+						compareHistogramStartTimestamp(ts1),
+						compareHistogramTimestamp(ts1),
+						compareHistogramAttributes(map[string]string{"method": "post", "code": "400"}),
+						compareHistogram(50, 25, []uint64{30, 20}),
+					},
+				},
+			}),
 		assertMetricPresent("http_requests_total",
-			compareMetricType(pmetric.MetricDataTypeSum),
+			compareMetricType(pmetric.MetricTypeSum),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -416,18 +565,38 @@ func verifyTarget2(t *testing.T, td *testData, resourceMetrics []*pmetric.Resour
 					},
 				},
 			}),
+		assertMetricPresent("rpc_duration_seconds",
+			compareMetricType(pmetric.MetricTypeSummary),
+			[]dataPointExpectation{
+				{
+					summaryPointComparator: []summaryPointComparator{
+						compareSummaryStartTimestamp(ts1),
+						compareSummaryTimestamp(ts1),
+						compareSummaryAttributes(map[string]string{"code": "0"}),
+						compareSummary(50, 100, [][]float64{{0.5, 47}}),
+					},
+				},
+				{
+					summaryPointComparator: []summaryPointComparator{
+						compareSummaryStartTimestamp(ts1),
+						compareSummaryTimestamp(ts1),
+						compareSummaryAttributes(map[string]string{"code": "5"}),
+						compareSummary(400, 180, [][]float64{{0.5, 35}}),
+					},
+				},
+			}),
 	}
 	doCompare(t, "scrape1", wantAttributes, m1, e1)
 
 	m2 := resourceMetrics[1]
-	// m2 has 2 metrics + 5 internal scraper metrics
-	assert.Equal(t, 7, metricsCount(m2))
+	// m2 has 4 metrics + 5 internal scraper metrics
+	assert.Equal(t, 9, metricsCount(m2))
 
 	metricsScrape2 := m2.ScopeMetrics().At(0).Metrics()
 	ts2 := getTS(metricsScrape2)
 	e2 := []testExpectation{
 		assertMetricPresent("go_threads",
-			compareMetricType(pmetric.MetricDataTypeGauge),
+			compareMetricType(pmetric.MetricTypeGauge),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -436,8 +605,36 @@ func verifyTarget2(t *testing.T, td *testData, resourceMetrics []*pmetric.Resour
 					},
 				},
 			}),
+		assertMetricPresent("http_request_duration_seconds",
+			compareMetricType(pmetric.MetricTypeHistogram),
+			[]dataPointExpectation{
+				{
+					histogramPointComparator: []histogramPointComparator{
+						compareHistogramStartTimestamp(ts1),
+						compareHistogramTimestamp(ts2),
+						compareHistogramAttributes(map[string]string{"method": "post", "code": "200"}),
+						compareHistogram(50, 43, []uint64{40, 10}),
+					},
+				},
+				{
+					histogramPointComparator: []histogramPointComparator{
+						compareHistogramStartTimestamp(ts2),
+						compareHistogramTimestamp(ts2),
+						compareHistogramAttributes(map[string]string{"method": "post", "code": "300"}),
+						compareHistogram(3, 2, []uint64{3, 0}),
+					},
+				},
+				{
+					histogramPointComparator: []histogramPointComparator{
+						compareHistogramStartTimestamp(ts1),
+						compareHistogramTimestamp(ts2),
+						compareHistogramAttributes(map[string]string{"method": "post", "code": "400"}),
+						compareHistogram(60, 30, []uint64{35, 25}),
+					},
+				},
+			}),
 		assertMetricPresent("http_requests_total",
-			compareMetricType(pmetric.MetricDataTypeSum),
+			compareMetricType(pmetric.MetricTypeSum),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -445,14 +642,6 @@ func verifyTarget2(t *testing.T, td *testData, resourceMetrics []*pmetric.Resour
 						compareTimestamp(ts2),
 						compareDoubleValue(50),
 						compareAttributes(map[string]string{"method": "post", "code": "200"}),
-					},
-				},
-				{
-					numberPointComparator: []numberPointComparator{
-						compareStartTimestamp(ts1),
-						compareTimestamp(ts2),
-						compareDoubleValue(60),
-						compareAttributes(map[string]string{"method": "post", "code": "400"}),
 					},
 				},
 				{
@@ -460,7 +649,43 @@ func verifyTarget2(t *testing.T, td *testData, resourceMetrics []*pmetric.Resour
 						compareStartTimestamp(ts2),
 						compareTimestamp(ts2),
 						compareDoubleValue(3),
-						compareAttributes(map[string]string{"method": "post", "code": "500"}),
+						compareAttributes(map[string]string{"method": "post", "code": "300"}),
+					},
+				},
+				{
+					numberPointComparator: []numberPointComparator{
+						compareStartTimestamp(ts1),
+						compareTimestamp(ts2),
+						compareDoubleValue(60),
+						compareAttributes(map[string]string{"method": "post", "code": "400"}),
+					},
+				},
+			}),
+		assertMetricPresent("rpc_duration_seconds",
+			compareMetricType(pmetric.MetricTypeSummary),
+			[]dataPointExpectation{
+				{
+					summaryPointComparator: []summaryPointComparator{
+						compareSummaryStartTimestamp(ts1),
+						compareSummaryTimestamp(ts2),
+						compareSummaryAttributes(map[string]string{"code": "0"}),
+						compareSummary(60, 110, [][]float64{{0.5, 57}}),
+					},
+				},
+				{
+					summaryPointComparator: []summaryPointComparator{
+						compareSummaryStartTimestamp(ts2),
+						compareSummaryTimestamp(ts2),
+						compareSummaryAttributes(map[string]string{"code": "3"}),
+						compareSummary(30, 50, [][]float64{{0.5, 42}}),
+					},
+				},
+				{
+					summaryPointComparator: []summaryPointComparator{
+						compareSummaryStartTimestamp(ts1),
+						compareSummaryTimestamp(ts2),
+						compareSummaryAttributes(map[string]string{"code": "5"}),
+						compareSummary(410, 190, [][]float64{{0.5, 45}}),
 					},
 				},
 			}),
@@ -468,14 +693,14 @@ func verifyTarget2(t *testing.T, td *testData, resourceMetrics []*pmetric.Resour
 	doCompare(t, "scrape2", wantAttributes, m2, e2)
 
 	m3 := resourceMetrics[2]
-	// m3 has 2 metrics + 5 internal scraper metrics
-	assert.Equal(t, 7, metricsCount(m3))
+	// m3 has 4 metrics + 5 internal scraper metrics
+	assert.Equal(t, 9, metricsCount(m3))
 
 	metricsScrape3 := m3.ScopeMetrics().At(0).Metrics()
 	ts3 := getTS(metricsScrape3)
 	e3 := []testExpectation{
 		assertMetricPresent("go_threads",
-			compareMetricType(pmetric.MetricDataTypeGauge),
+			compareMetricType(pmetric.MetricTypeGauge),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -484,8 +709,36 @@ func verifyTarget2(t *testing.T, td *testData, resourceMetrics []*pmetric.Resour
 					},
 				},
 			}),
+		assertMetricPresent("http_request_duration_seconds",
+			compareMetricType(pmetric.MetricTypeHistogram),
+			[]dataPointExpectation{
+				{
+					histogramPointComparator: []histogramPointComparator{
+						compareHistogramStartTimestamp(ts1),
+						compareHistogramTimestamp(ts3),
+						compareHistogramAttributes(map[string]string{"method": "post", "code": "200"}),
+						compareHistogram(50, 43, []uint64{40, 10}),
+					},
+				},
+				{
+					histogramPointComparator: []histogramPointComparator{
+						compareHistogramStartTimestamp(ts2),
+						compareHistogramTimestamp(ts3),
+						compareHistogramAttributes(map[string]string{"method": "post", "code": "300"}),
+						compareHistogram(5, 7, []uint64{3, 2}),
+					},
+				},
+				{
+					histogramPointComparator: []histogramPointComparator{
+						compareHistogramStartTimestamp(ts1),
+						compareHistogramTimestamp(ts3),
+						compareHistogramAttributes(map[string]string{"method": "post", "code": "400"}),
+						compareHistogram(60, 30, []uint64{35, 25}),
+					},
+				},
+			}),
 		assertMetricPresent("http_requests_total",
-			compareMetricType(pmetric.MetricDataTypeSum),
+			compareMetricType(pmetric.MetricTypeSum),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -497,18 +750,46 @@ func verifyTarget2(t *testing.T, td *testData, resourceMetrics []*pmetric.Resour
 				},
 				{
 					numberPointComparator: []numberPointComparator{
+						compareStartTimestamp(ts2),
+						compareTimestamp(ts3),
+						compareDoubleValue(5),
+						compareAttributes(map[string]string{"method": "post", "code": "300"}),
+					},
+				},
+				{
+					numberPointComparator: []numberPointComparator{
 						compareStartTimestamp(ts1),
 						compareTimestamp(ts3),
 						compareDoubleValue(60),
 						compareAttributes(map[string]string{"method": "post", "code": "400"}),
 					},
 				},
+			}),
+		assertMetricPresent("rpc_duration_seconds",
+			compareMetricType(pmetric.MetricTypeSummary),
+			[]dataPointExpectation{
 				{
-					numberPointComparator: []numberPointComparator{
-						compareStartTimestamp(ts2),
-						compareTimestamp(ts3),
-						compareDoubleValue(5),
-						compareAttributes(map[string]string{"method": "post", "code": "500"}),
+					summaryPointComparator: []summaryPointComparator{
+						compareSummaryStartTimestamp(ts1),
+						compareSummaryTimestamp(ts3),
+						compareSummaryAttributes(map[string]string{"code": "0"}),
+						compareSummary(70, 120, [][]float64{{0.5, 67}}),
+					},
+				},
+				{
+					summaryPointComparator: []summaryPointComparator{
+						compareSummaryStartTimestamp(ts2),
+						compareSummaryTimestamp(ts3),
+						compareSummaryAttributes(map[string]string{"code": "3"}),
+						compareSummary(40, 60, [][]float64{{0.5, 52}}),
+					},
+				},
+				{
+					summaryPointComparator: []summaryPointComparator{
+						compareSummaryStartTimestamp(ts1),
+						compareSummaryTimestamp(ts3),
+						compareSummaryAttributes(map[string]string{"code": "5"}),
+						compareSummary(420, 200, [][]float64{{0.5, 55}}),
 					},
 				},
 			}),
@@ -516,14 +797,14 @@ func verifyTarget2(t *testing.T, td *testData, resourceMetrics []*pmetric.Resour
 	doCompare(t, "scrape3", wantAttributes, m3, e3)
 
 	m4 := resourceMetrics[3]
-	// m4 has 2 metrics + 5 internal scraper metrics
-	assert.Equal(t, 7, metricsCount(m4))
+	// m4 has 4 metrics + 5 internal scraper metrics
+	assert.Equal(t, 9, metricsCount(m4))
 
 	metricsScrape4 := m4.ScopeMetrics().At(0).Metrics()
 	ts4 := getTS(metricsScrape4)
 	e4 := []testExpectation{
 		assertMetricPresent("go_threads",
-			compareMetricType(pmetric.MetricDataTypeGauge),
+			compareMetricType(pmetric.MetricTypeGauge),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -532,8 +813,36 @@ func verifyTarget2(t *testing.T, td *testData, resourceMetrics []*pmetric.Resour
 					},
 				},
 			}),
+		assertMetricPresent("http_request_duration_seconds",
+			compareMetricType(pmetric.MetricTypeHistogram),
+			[]dataPointExpectation{
+				{
+					histogramPointComparator: []histogramPointComparator{
+						compareHistogramStartTimestamp(ts4),
+						compareHistogramTimestamp(ts4),
+						compareHistogramAttributes(map[string]string{"method": "post", "code": "200"}),
+						compareHistogram(49, 42, []uint64{40, 9}),
+					},
+				},
+				{
+					histogramPointComparator: []histogramPointComparator{
+						compareHistogramStartTimestamp(ts4),
+						compareHistogramTimestamp(ts4),
+						compareHistogramAttributes(map[string]string{"method": "post", "code": "300"}),
+						compareHistogram(3, 4, []uint64{2, 1}),
+					},
+				},
+				{
+					histogramPointComparator: []histogramPointComparator{
+						compareHistogramStartTimestamp(ts4),
+						compareHistogramTimestamp(ts4),
+						compareHistogramAttributes(map[string]string{"method": "post", "code": "400"}),
+						compareHistogram(59, 29, []uint64{34, 25}),
+					},
+				},
+			}),
 		assertMetricPresent("http_requests_total",
-			compareMetricType(pmetric.MetricDataTypeSum),
+			compareMetricType(pmetric.MetricTypeSum),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -547,16 +856,44 @@ func verifyTarget2(t *testing.T, td *testData, resourceMetrics []*pmetric.Resour
 					numberPointComparator: []numberPointComparator{
 						compareStartTimestamp(ts4),
 						compareTimestamp(ts4),
-						compareDoubleValue(59),
-						compareAttributes(map[string]string{"method": "post", "code": "400"}),
+						compareDoubleValue(3),
+						compareAttributes(map[string]string{"method": "post", "code": "300"}),
 					},
 				},
 				{
 					numberPointComparator: []numberPointComparator{
 						compareStartTimestamp(ts4),
 						compareTimestamp(ts4),
-						compareDoubleValue(3),
-						compareAttributes(map[string]string{"method": "post", "code": "500"}),
+						compareDoubleValue(59),
+						compareAttributes(map[string]string{"method": "post", "code": "400"}),
+					},
+				},
+			}),
+		assertMetricPresent("rpc_duration_seconds",
+			compareMetricType(pmetric.MetricTypeSummary),
+			[]dataPointExpectation{
+				{
+					summaryPointComparator: []summaryPointComparator{
+						compareSummaryStartTimestamp(ts4),
+						compareSummaryTimestamp(ts4),
+						compareSummaryAttributes(map[string]string{"code": "0"}),
+						compareSummary(69, 119, [][]float64{{0.5, 66}}),
+					},
+				},
+				{
+					summaryPointComparator: []summaryPointComparator{
+						compareSummaryStartTimestamp(ts4),
+						compareSummaryTimestamp(ts4),
+						compareSummaryAttributes(map[string]string{"code": "3"}),
+						compareSummary(39, 59, [][]float64{{0.5, 51}}),
+					},
+				},
+				{
+					summaryPointComparator: []summaryPointComparator{
+						compareSummaryStartTimestamp(ts4),
+						compareSummaryTimestamp(ts4),
+						compareSummaryAttributes(map[string]string{"code": "5"}),
+						compareSummary(419, 199, [][]float64{{0.5, 54}}),
 					},
 				},
 			}),
@@ -564,14 +901,14 @@ func verifyTarget2(t *testing.T, td *testData, resourceMetrics []*pmetric.Resour
 	doCompare(t, "scrape4", wantAttributes, m4, e4)
 
 	m5 := resourceMetrics[4]
-	// m5 has 2 metrics + 5 internal scraper metrics
-	assert.Equal(t, 7, metricsCount(m5))
+	// m5 has 4 metrics + 5 internal scraper metrics
+	assert.Equal(t, 9, metricsCount(m5))
 
 	metricsScrape5 := m5.ScopeMetrics().At(0).Metrics()
 	ts5 := getTS(metricsScrape5)
 	e5 := []testExpectation{
 		assertMetricPresent("go_threads",
-			compareMetricType(pmetric.MetricDataTypeGauge),
+			compareMetricType(pmetric.MetricTypeGauge),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -580,8 +917,36 @@ func verifyTarget2(t *testing.T, td *testData, resourceMetrics []*pmetric.Resour
 					},
 				},
 			}),
+		assertMetricPresent("http_request_duration_seconds",
+			compareMetricType(pmetric.MetricTypeHistogram),
+			[]dataPointExpectation{
+				{
+					histogramPointComparator: []histogramPointComparator{
+						compareHistogramStartTimestamp(ts4),
+						compareHistogramTimestamp(ts5),
+						compareHistogramAttributes(map[string]string{"method": "post", "code": "200"}),
+						compareHistogram(50, 43, []uint64{41, 9}),
+					},
+				},
+				{
+					histogramPointComparator: []histogramPointComparator{
+						compareHistogramStartTimestamp(ts4),
+						compareHistogramTimestamp(ts5),
+						compareHistogramAttributes(map[string]string{"method": "post", "code": "300"}),
+						compareHistogram(5, 4, []uint64{4, 1}),
+					},
+				},
+				{
+					histogramPointComparator: []histogramPointComparator{
+						compareHistogramStartTimestamp(ts4),
+						compareHistogramTimestamp(ts5),
+						compareHistogramAttributes(map[string]string{"method": "post", "code": "400"}),
+						compareHistogram(59, 29, []uint64{34, 25}),
+					},
+				},
+			}),
 		assertMetricPresent("http_requests_total",
-			compareMetricType(pmetric.MetricDataTypeSum),
+			compareMetricType(pmetric.MetricTypeSum),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -595,16 +960,44 @@ func verifyTarget2(t *testing.T, td *testData, resourceMetrics []*pmetric.Resour
 					numberPointComparator: []numberPointComparator{
 						compareStartTimestamp(ts4),
 						compareTimestamp(ts5),
-						compareDoubleValue(59),
-						compareAttributes(map[string]string{"method": "post", "code": "400"}),
+						compareDoubleValue(5),
+						compareAttributes(map[string]string{"method": "post", "code": "300"}),
 					},
 				},
 				{
 					numberPointComparator: []numberPointComparator{
 						compareStartTimestamp(ts4),
 						compareTimestamp(ts5),
-						compareDoubleValue(5),
-						compareAttributes(map[string]string{"method": "post", "code": "500"}),
+						compareDoubleValue(59),
+						compareAttributes(map[string]string{"method": "post", "code": "400"}),
+					},
+				},
+			}),
+		assertMetricPresent("rpc_duration_seconds",
+			compareMetricType(pmetric.MetricTypeSummary),
+			[]dataPointExpectation{
+				{
+					summaryPointComparator: []summaryPointComparator{
+						compareSummaryStartTimestamp(ts4),
+						compareSummaryTimestamp(ts5),
+						compareSummaryAttributes(map[string]string{"code": "0"}),
+						compareSummary(79, 129, [][]float64{{0.5, 76}}),
+					},
+				},
+				{
+					summaryPointComparator: []summaryPointComparator{
+						compareSummaryStartTimestamp(ts4),
+						compareSummaryTimestamp(ts5),
+						compareSummaryAttributes(map[string]string{"code": "3"}),
+						compareSummary(49, 69, [][]float64{{0.5, 61}}),
+					},
+				},
+				{
+					summaryPointComparator: []summaryPointComparator{
+						compareSummaryStartTimestamp(ts4),
+						compareSummaryTimestamp(ts5),
+						compareSummaryAttributes(map[string]string{"code": "5"}),
+						compareSummary(429, 209, [][]float64{{0.5, 64}}),
 					},
 				},
 			}),
@@ -684,7 +1077,16 @@ rpc_duration_seconds_sum{foo="no_quantile"} 101
 rpc_duration_seconds_count{foo="no_quantile"} 55
 `
 
-func verifyTarget3(t *testing.T, td *testData, resourceMetrics []*pmetric.ResourceMetrics) {
+var target4Page1 = `
+# A simple counter
+# TYPE foo counter
+foo 0
+# Another counter with the same name but also _total suffix
+# TYPE foo_total counter
+foo_total 1
+`
+
+func verifyTarget3(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {
 	verifyNumValidScrapeResults(t, td, resourceMetrics)
 	m1 := resourceMetrics[0]
 	// m1 has 3 metrics + 5 internal scraper metrics
@@ -696,7 +1098,7 @@ func verifyTarget3(t *testing.T, td *testData, resourceMetrics []*pmetric.Resour
 	ts1 := getTS(metrics1)
 	e1 := []testExpectation{
 		assertMetricPresent("go_threads",
-			compareMetricType(pmetric.MetricDataTypeGauge),
+			compareMetricType(pmetric.MetricTypeGauge),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -706,7 +1108,7 @@ func verifyTarget3(t *testing.T, td *testData, resourceMetrics []*pmetric.Resour
 				},
 			}),
 		assertMetricPresent("http_request_duration_seconds",
-			compareMetricType(pmetric.MetricDataTypeHistogram),
+			compareMetricType(pmetric.MetricTypeHistogram),
 			[]dataPointExpectation{
 				{
 					histogramPointComparator: []histogramPointComparator{
@@ -718,7 +1120,7 @@ func verifyTarget3(t *testing.T, td *testData, resourceMetrics []*pmetric.Resour
 			}),
 		assertMetricAbsent("corrupted_hist"),
 		assertMetricPresent("rpc_duration_seconds",
-			compareMetricType(pmetric.MetricDataTypeSummary),
+			compareMetricType(pmetric.MetricTypeSummary),
 			[]dataPointExpectation{
 				{
 					summaryPointComparator: []summaryPointComparator{
@@ -748,7 +1150,7 @@ func verifyTarget3(t *testing.T, td *testData, resourceMetrics []*pmetric.Resour
 	ts2 := getTS(metricsScrape2)
 	e2 := []testExpectation{
 		assertMetricPresent("go_threads",
-			compareMetricType(pmetric.MetricDataTypeGauge),
+			compareMetricType(pmetric.MetricTypeGauge),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -758,7 +1160,7 @@ func verifyTarget3(t *testing.T, td *testData, resourceMetrics []*pmetric.Resour
 				},
 			}),
 		assertMetricPresent("http_request_duration_seconds",
-			compareMetricType(pmetric.MetricDataTypeHistogram),
+			compareMetricType(pmetric.MetricTypeHistogram),
 			[]dataPointExpectation{
 				{
 					histogramPointComparator: []histogramPointComparator{
@@ -770,7 +1172,7 @@ func verifyTarget3(t *testing.T, td *testData, resourceMetrics []*pmetric.Resour
 			}),
 		assertMetricAbsent("corrupted_hist"),
 		assertMetricPresent("rpc_duration_seconds",
-			compareMetricType(pmetric.MetricDataTypeSummary),
+			compareMetricType(pmetric.MetricTypeSummary),
 			[]dataPointExpectation{
 				{
 					summaryPointComparator: []summaryPointComparator{
@@ -791,6 +1193,42 @@ func verifyTarget3(t *testing.T, td *testData, resourceMetrics []*pmetric.Resour
 			}),
 	}
 	doCompare(t, "scrape2", wantAttributes, m2, e2)
+}
+
+func verifyTarget4(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {
+	verifyNumValidScrapeResults(t, td, resourceMetrics)
+	m1 := resourceMetrics[0]
+
+	// m1 has 2 metrics + 5 internal scraper metrics
+	assert.Equal(t, 7, metricsCount(m1))
+
+	wantAttributes := td.attributes
+
+	metrics1 := m1.ScopeMetrics().At(0).Metrics()
+	ts1 := getTS(metrics1)
+	e1 := []testExpectation{
+		assertMetricPresent("foo",
+			compareMetricIsMonotonic(true),
+			[]dataPointExpectation{
+				{
+					numberPointComparator: []numberPointComparator{
+						compareTimestamp(ts1),
+						compareDoubleValue(0),
+					},
+				},
+			}),
+		assertMetricPresent("foo_total",
+			compareMetricIsMonotonic(true),
+			[]dataPointExpectation{
+				{
+					numberPointComparator: []numberPointComparator{
+						compareTimestamp(ts1),
+						compareDoubleValue(1.0),
+					},
+				},
+			}),
+	}
+	doCompare(t, "scrape-infostatesetmetrics-1", wantAttributes, m1, e1)
 }
 
 // TestCoreMetricsEndToEnd end to end test executor
@@ -829,8 +1267,16 @@ func TestCoreMetricsEndToEnd(t *testing.T) {
 			},
 			validateFunc: verifyTarget3,
 		},
+		{
+			name: "target4",
+			pages: []mockPrometheusResponse{
+				{code: 200, data: target4Page1, useOpenMetrics: false},
+			},
+			validateFunc:    verifyTarget4,
+			validateScrapes: true,
+		},
 	}
-	testComponent(t, targets, false, "")
+	testComponent(t, targets, false, "", featuregate.GlobalRegistry())
 }
 
 var startTimeMetricPage = `
@@ -866,15 +1312,15 @@ var startTimeMetricPageStartTimestamp = &timestamppb.Timestamp{Seconds: 400, Nan
 // 6 metrics + 5 internal metrics
 const numStartTimeMetricPageTimeseries = 11
 
-func verifyStartTimeMetricPage(t *testing.T, td *testData, result []*pmetric.ResourceMetrics) {
+func verifyStartTimeMetricPage(t *testing.T, td *testData, result []pmetric.ResourceMetrics) {
 	verifyNumValidScrapeResults(t, td, result)
 	numTimeseries := 0
 	for _, rm := range result {
 		metrics := getMetrics(rm)
 		for i := 0; i < len(metrics); i++ {
 			timestamp := startTimeMetricPageStartTimestamp
-			switch metrics[i].DataType() {
-			case pmetric.MetricDataTypeGauge:
+			switch metrics[i].Type() {
+			case pmetric.MetricTypeGauge:
 				timestamp = nil
 				for j := 0; j < metrics[i].Gauge().DataPoints().Len(); j++ {
 					time := metrics[i].Gauge().DataPoints().At(j).StartTimestamp()
@@ -882,19 +1328,19 @@ func verifyStartTimeMetricPage(t *testing.T, td *testData, result []*pmetric.Res
 					numTimeseries++
 				}
 
-			case pmetric.MetricDataTypeSum:
+			case pmetric.MetricTypeSum:
 				for j := 0; j < metrics[i].Sum().DataPoints().Len(); j++ {
 					assert.Equal(t, timestamp.AsTime(), metrics[i].Sum().DataPoints().At(j).StartTimestamp().AsTime())
 					numTimeseries++
 				}
 
-			case pmetric.MetricDataTypeHistogram:
+			case pmetric.MetricTypeHistogram:
 				for j := 0; j < metrics[i].Histogram().DataPoints().Len(); j++ {
 					assert.Equal(t, timestamp.AsTime(), metrics[i].Histogram().DataPoints().At(j).StartTimestamp().AsTime())
 					numTimeseries++
 				}
 
-			case pmetric.MetricDataTypeSummary:
+			case pmetric.MetricTypeSummary:
 				for j := 0; j < metrics[i].Summary().DataPoints().Len(); j++ {
 					assert.Equal(t, timestamp.AsTime(), metrics[i].Summary().DataPoints().At(j).StartTimestamp().AsTime())
 					numTimeseries++
@@ -916,7 +1362,7 @@ func TestStartTimeMetric(t *testing.T) {
 			validateFunc: verifyStartTimeMetricPage,
 		},
 	}
-	testComponent(t, targets, true, "")
+	testComponent(t, targets, true, "", featuregate.GlobalRegistry())
 }
 
 var startTimeMetricRegexPage = `
@@ -965,7 +1411,7 @@ func TestStartTimeMetricRegex(t *testing.T) {
 			validateFunc: verifyStartTimeMetricPage,
 		},
 	}
-	testComponent(t, targets, true, "^(.+_)*process_start_time_seconds$")
+	testComponent(t, targets, true, "^(.+_)*process_start_time_seconds$", featuregate.GlobalRegistry())
 }
 
 // metric type is defined as 'untyped' in the first metric
@@ -994,11 +1440,11 @@ func TestUntypedMetrics(t *testing.T) {
 		},
 	}
 
-	testComponent(t, targets, false, "")
+	testComponent(t, targets, false, "", featuregate.GlobalRegistry())
 
 }
 
-func verifyUntypedMetrics(t *testing.T, td *testData, resourceMetrics []*pmetric.ResourceMetrics) {
+func verifyUntypedMetrics(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {
 	verifyNumValidScrapeResults(t, td, resourceMetrics)
 	m1 := resourceMetrics[0]
 
@@ -1011,7 +1457,7 @@ func verifyUntypedMetrics(t *testing.T, td *testData, resourceMetrics []*pmetric
 	ts1 := getTS(metrics1)
 	e1 := []testExpectation{
 		assertMetricPresent("http_requests_total",
-			compareMetricType(pmetric.MetricDataTypeGauge),
+			compareMetricType(pmetric.MetricTypeGauge),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -1029,7 +1475,7 @@ func verifyUntypedMetrics(t *testing.T, td *testData, resourceMetrics []*pmetric
 				},
 			}),
 		assertMetricPresent("redis_connected_clients",
-			compareMetricType(pmetric.MetricDataTypeGauge),
+			compareMetricType(pmetric.MetricTypeGauge),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -1053,18 +1499,18 @@ func verifyUntypedMetrics(t *testing.T, td *testData, resourceMetrics []*pmetric
 func TestGCInterval(t *testing.T) {
 	for _, tc := range []struct {
 		desc  string
-		input *config.Config
+		input *promConfig.Config
 		want  time.Duration
 	}{
 		{
 			desc:  "default",
-			input: &config.Config{},
+			input: &promConfig.Config{},
 			want:  defaultGCInterval,
 		},
 		{
 			desc: "global override",
-			input: &config.Config{
-				GlobalConfig: config.GlobalConfig{
+			input: &promConfig.Config{
+				GlobalConfig: promConfig.GlobalConfig{
 					ScrapeInterval: model.Duration(10 * time.Minute),
 				},
 			},
@@ -1072,8 +1518,8 @@ func TestGCInterval(t *testing.T) {
 		},
 		{
 			desc: "scrape config override",
-			input: &config.Config{
-				ScrapeConfigs: []*config.ScrapeConfig{
+			input: &promConfig.Config{
+				ScrapeConfigs: []*promConfig.ScrapeConfig{
 					{
 						ScrapeInterval: model.Duration(10 * time.Minute),
 					},

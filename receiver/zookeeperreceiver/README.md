@@ -1,10 +1,10 @@
 # Zookeeper Receiver
 
-| Status                   |                  |
-| ------------------------ | ---------------- |
-| Stability                | [in development] |
-| Supported pipeline types | traces           |
-| Distributions            | [contrib]        |
+| Status                   |               |
+| ------------------------ |---------------|
+| Stability                | [development] |
+| Supported pipeline types | metrics       |
+| Distributions            | [contrib]     |
 
 The Zookeeper receiver collects metrics from a Zookeeper instance, using the `mntr` command. The `mntr` 4 letter word command needs
 to be enabled for the receiver to be able to collect metrics.
@@ -23,5 +23,9 @@ receivers:
     collection_interval: 20s
 ```
 
-[in development]: https://github.com/open-telemetry/opentelemetry-collector#in-development
+## Metrics
+
+Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml) with further documentation in [documentation.md](./documentation.md)
+
+[development]: https://github.com/open-telemetry/opentelemetry-collector#development
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

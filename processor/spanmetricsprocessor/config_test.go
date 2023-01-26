@@ -21,13 +21,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
+	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
-	"go.opentelemetry.io/collector/service/servicetest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter"
@@ -43,18 +42,21 @@ func TestLoadConfig(t *testing.T) {
 		wantDimensions              []Dimension
 		wantDimensionsCacheSize     int
 		wantAggregationTemporality  string
+		wantMetricsFlushInterval    time.Duration
 	}{
 		{
 			configFile:                 "config-2-pipelines.yaml",
 			wantMetricsExporter:        "prometheus",
 			wantAggregationTemporality: cumulative,
 			wantDimensionsCacheSize:    500,
+			wantMetricsFlushInterval:   15 * time.Second, // Default.
 		},
 		{
 			configFile:                 "config-3-pipelines.yaml",
 			wantMetricsExporter:        "otlp/spanmetrics",
 			wantAggregationTemporality: cumulative,
 			wantDimensionsCacheSize:    defaultDimensionsCacheSize,
+			wantMetricsFlushInterval:   15 * time.Second, // Default.
 		},
 		{
 			configFile:          "config-full.yaml",
@@ -74,12 +76,13 @@ func TestLoadConfig(t *testing.T) {
 			},
 			wantDimensionsCacheSize:    1500,
 			wantAggregationTemporality: delta,
+			wantMetricsFlushInterval:   30 * time.Second,
 		},
 	}
 	for _, tc := range testcases {
 		t.Run(tc.configFile, func(t *testing.T) {
 			// Prepare
-			factories, err := componenttest.NopFactories()
+			factories, err := otelcoltest.NopFactories()
 			require.NoError(t, err)
 
 			factories.Receivers["otlp"] = otlpreceiver.NewFactory()
@@ -93,21 +96,21 @@ func TestLoadConfig(t *testing.T) {
 			factories.Exporters["jaeger"] = jaegerexporter.NewFactory()
 
 			// Test
-			cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", tc.configFile), factories)
+			cfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", tc.configFile), factories)
 
 			// Verify
 			require.NoError(t, err)
 			require.NotNil(t, cfg)
 			assert.Equal(t,
 				&Config{
-					ProcessorSettings:       config.NewProcessorSettings(config.NewComponentID(typeStr)),
 					MetricsExporter:         tc.wantMetricsExporter,
 					LatencyHistogramBuckets: tc.wantLatencyHistogramBuckets,
 					Dimensions:              tc.wantDimensions,
 					DimensionsCacheSize:     tc.wantDimensionsCacheSize,
 					AggregationTemporality:  tc.wantAggregationTemporality,
+					MetricsFlushInterval:    tc.wantMetricsFlushInterval,
 				},
-				cfg.Processors[config.NewComponentID(typeStr)],
+				cfg.Processors[component.NewID(typeStr)],
 			)
 		})
 	}
@@ -115,11 +118,11 @@ func TestLoadConfig(t *testing.T) {
 
 func TestGetAggregationTemporality(t *testing.T) {
 	cfg := &Config{AggregationTemporality: delta}
-	assert.Equal(t, pmetric.MetricAggregationTemporalityDelta, cfg.GetAggregationTemporality())
+	assert.Equal(t, pmetric.AggregationTemporalityDelta, cfg.GetAggregationTemporality())
 
 	cfg = &Config{AggregationTemporality: cumulative}
-	assert.Equal(t, pmetric.MetricAggregationTemporalityCumulative, cfg.GetAggregationTemporality())
+	assert.Equal(t, pmetric.AggregationTemporalityCumulative, cfg.GetAggregationTemporality())
 
 	cfg = &Config{}
-	assert.Equal(t, pmetric.MetricAggregationTemporalityCumulative, cfg.GetAggregationTemporality())
+	assert.Equal(t, pmetric.AggregationTemporalityCumulative, cfg.GetAggregationTemporality())
 }

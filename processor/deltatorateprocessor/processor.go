@@ -62,7 +62,7 @@ func (dtrp *deltaToRateProcessor) processMetrics(_ context.Context, md pmetric.M
 				if _, ok := dtrp.ConfiguredMetrics[metric.Name()]; !ok {
 					continue
 				}
-				if metric.DataType() != pmetric.MetricDataTypeSum || metric.Sum().AggregationTemporality() != pmetric.MetricAggregationTemporalityDelta {
+				if metric.Type() != pmetric.MetricTypeSum || metric.Sum().AggregationTemporality() != pmetric.AggregationTemporalityDelta {
 					dtrp.logger.Info(fmt.Sprintf("Configured metric for rate calculation %s is not a delta sum\n", metric.Name()))
 					continue
 				}
@@ -78,18 +78,19 @@ func (dtrp *deltaToRateProcessor) processMetrics(_ context.Context, md pmetric.M
 					var rate float64
 					switch fromDataPoint.ValueType() {
 					case pmetric.NumberDataPointValueTypeDouble:
-						rate = calculateRate(fromDataPoint.DoubleVal(), durationNanos)
+						rate = calculateRate(fromDataPoint.DoubleValue(), durationNanos)
 					case pmetric.NumberDataPointValueTypeInt:
-						rate = calculateRate(float64(fromDataPoint.IntVal()), durationNanos)
+						rate = calculateRate(float64(fromDataPoint.IntValue()), durationNanos)
 					default:
 						return md, consumererror.NewPermanent(fmt.Errorf("invalid data point type:%d", fromDataPoint.ValueType()))
 					}
-					newDp.SetDoubleVal(rate)
+					newDp.SetDoubleValue(rate)
 				}
 
-				metric.SetDataType(pmetric.MetricDataTypeGauge)
+				dps := metric.SetEmptyGauge().DataPoints()
+				dps.EnsureCapacity(newDoubleDataPointSlice.Len())
 				for d := 0; d < newDoubleDataPointSlice.Len(); d++ {
-					dp := metric.Gauge().DataPoints().AppendEmpty()
+					dp := dps.AppendEmpty()
 					newDoubleDataPointSlice.At(d).CopyTo(dp)
 				}
 			}

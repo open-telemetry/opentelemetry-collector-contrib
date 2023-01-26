@@ -18,13 +18,14 @@ import (
 	"context"
 	"errors"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/kinesis"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	awsconfig "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
+	"github.com/aws/aws-sdk-go-v2/service/kinesis"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -41,31 +42,66 @@ type Exporter struct {
 	batcher  batch.Encoder
 }
 
+// options is used to override the default shipped behavior
+// to allow for testing correct setup of components
+type options struct {
+	NewKinesisClient func(conf aws.Config, opts ...func(*kinesis.Options)) *kinesis.Client
+}
+
 var (
-	_ component.TracesExporter  = (*Exporter)(nil)
-	_ component.MetricsExporter = (*Exporter)(nil)
-	_ component.LogsExporter    = (*Exporter)(nil)
+	_ exporter.Traces  = (*Exporter)(nil)
+	_ exporter.Metrics = (*Exporter)(nil)
+	_ exporter.Logs    = (*Exporter)(nil)
 )
 
-func createExporter(c config.Exporter, log *zap.Logger) (*Exporter, error) {
+func createExporter(ctx context.Context, c component.Config, log *zap.Logger, opts ...func(opt *options)) (*Exporter, error) {
+	options := &options{
+		NewKinesisClient: kinesis.NewFromConfig,
+	}
+
+	for _, opt := range opts {
+		opt(options)
+	}
+
 	conf, ok := c.(*Config)
 	if !ok || conf == nil {
 		return nil, errors.New("incorrect config provided")
 	}
-	sess, err := session.NewSession(aws.NewConfig().WithRegion(conf.AWS.Region))
+
+	var configOpts []func(*awsconfig.LoadOptions) error
+	if conf.AWS.Region != "" {
+		configOpts = append(configOpts, func(lo *awsconfig.LoadOptions) error {
+			lo.Region = conf.AWS.Region
+			return nil
+		})
+	}
+
+	awsconf, err := awsconfig.LoadDefaultConfig(ctx, configOpts...)
 	if err != nil {
 		return nil, err
 	}
 
-	var cfgs []*aws.Config
+	var kinesisOpts []func(*kinesis.Options)
 	if conf.AWS.Role != "" {
-		cfgs = append(cfgs, &aws.Config{Credentials: stscreds.NewCredentials(sess, conf.AWS.Role)})
-	}
-	if conf.AWS.KinesisEndpoint != "" {
-		cfgs = append(cfgs, &aws.Config{Endpoint: aws.String(conf.AWS.KinesisEndpoint)})
+		kinesisOpts = append(kinesisOpts, func(o *kinesis.Options) {
+			o.Credentials = stscreds.NewAssumeRoleProvider(
+				sts.NewFromConfig(awsconf),
+				conf.AWS.Role,
+			)
+		})
 	}
 
-	producer, err := producer.NewBatcher(kinesis.New(sess, cfgs...), conf.AWS.StreamName,
+	if conf.AWS.KinesisEndpoint != "" {
+		kinesisOpts = append(kinesisOpts,
+			kinesis.WithEndpointResolver(
+				kinesis.EndpointResolverFromURL(conf.AWS.KinesisEndpoint),
+			),
+		)
+	}
+
+	producer, err := producer.NewBatcher(
+		options.NewKinesisClient(awsconf, kinesisOpts...),
+		conf.AWS.StreamName,
 		producer.WithLogger(log),
 	)
 	if err != nil {

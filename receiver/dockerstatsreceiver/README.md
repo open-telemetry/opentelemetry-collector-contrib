@@ -65,3 +65,27 @@ with detailed sample configurations [here](./testdata/config.yaml).
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+
+
+## Feature Gates
+
+See the [Collector feature gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) for an overview of feature gates in the collector.
+
+**STABLE**: `receiver.dockerstats.useScraperV2`
+
+The feature gate `receiver.dockerstats.useScraperV2` allows collection of selective metrics that is described in [documentation.md](./documentation.md). When the feature gate is disabled, the metrics settings are mostly ignored and not configurable with minor variation in metric name and attributes.
+
+This is considered a breaking change for existing users of this receiver, and it is recommended to migrate to the new implementation when possible. Leave this feature gate enabled to avoid having to migrate any visualisations or alerts.
+
+This feature gate is enabled by default, and eventually the old implementation will be removed (aiming for 0.71.0).
+
+### Migrating from ScraperV1 to ScraperV2
+
+There are some breaking changes from ScraperV1 to ScraperV2. The work done for these changes is tracked in [#9794](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9794).
+
+| Breaking Change                     | Action                                                                  |
+|-------------------------------------|-------------------------------------------------------------------------|
+| Many metrics are no longer emitted by default. | See [documentation.md](./documentation.md) to see which metrics are enabled by default. Enable/disable as desired. |
+| BlockIO metrics names changed. The type of operation is no longer in the metric name suffix, and is now in an attribute. For example `container.blockio.io_merged_recursive.read` becomes `container.blockio.io_merged_recursive` with an `operation:read` attribute. | Be aware of the metric name changes and make any adjustments to what your downstream expects from BlockIO metrics. |
+| Memory metrics measured in Bytes are now [non-monotonic sums](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md#opentelemetry-protocol-data-model-consumer-recommendations) instead of gauges. | Most likely there is no action. The aggregation type is different but the values are the same. Be aware of how your downstream handles gauges vs non-monotonic sums. |
+| Config option `provide_per_core_cpu_metrics` will be deprecated and removed. | Enable the `container.cpu.usage.percpu` metric as per [documentation.md](./documentation.md). |

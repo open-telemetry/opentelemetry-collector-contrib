@@ -12,11 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package k8sclient
 
 import (
-	"reflect"
 	"testing"
 	"time"
 
@@ -61,7 +59,7 @@ func TestJobClient_JobToCronJob(t *testing.T) {
 	for i := range jobArray {
 		jobs[i] = jobArray[i]
 	}
-	client.store.Replace(jobs, "")
+	assert.NoError(t, client.store.Replace(jobs, ""))
 
 	expectedMap := map[string]string{
 		"job-7f8459d648": "cronjobA",
@@ -70,7 +68,7 @@ func TestJobClient_JobToCronJob(t *testing.T) {
 		"job-7f8459d648": time.Now().Add(-24 * time.Hour),
 	}
 	resultMap := client.JobToCronJob()
-	assert.True(t, reflect.DeepEqual(resultMap, expectedMap))
+	assert.Equal(t, expectedMap, resultMap)
 	client.shutdown()
 	assert.True(t, client.stopped)
 }

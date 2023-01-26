@@ -1,13 +1,13 @@
 #!/bin/bash -ex
 
-git config user.name $GITHUB_ACTOR
-git config user.email $GITHUB_ACTOR@users.noreply.github.com
+git config user.name opentelemetrybot
+git config user.email 107717825+opentelemetrybot@users.noreply.github.com
 
 PR_NAME=dependabot-prs/`date +'%Y-%m-%dT%H%M%S'`
 git checkout -b $PR_NAME
 
 IFS=$'\n'
-requests=$(gh pr list --limit 200 --search "author:app/dependabot" --json number,title --template '{{range .}}{{tablerow .title}}{{end}}' | sort)
+requests=$( gh pr list --search "author:app/dependabot" --json title --jq '.[].title' | sort )
 message=""
 
 last_updated=""
@@ -40,4 +40,4 @@ git commit -m "dependabot updates `date`
 $message"
 git push origin $PR_NAME
 
-gh pr create --title "dependabot updates `date`" --body "$message" -l "Skip Changelog"
+gh pr create --title "[chore] dependabot updates `date`" --body "$message"

@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package host
 
 import (
@@ -185,7 +184,7 @@ func TestEBSVolume(t *testing.T) {
 	assert.Equal(t, 1, len(ebsIds))
 	assert.Equal(t, "aws://us-west-2b/vol-0d9f0816149eb2050", ebsIds["/dev/nvme1n1"])
 
-	//set e.hostMounts to an invalid path
+	// set e.hostMounts to an invalid path
 	hostMountsOption = func(e *ebsVolume) {
 		e.hostMounts = "/an-invalid-path"
 	}

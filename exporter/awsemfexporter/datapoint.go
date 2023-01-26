@@ -49,9 +49,9 @@ type dataPoint struct {
 }
 
 // dataPoints is a wrapper interface for:
-// 	- pmetric.NumberDataPointSlice
-// 	- pmetric.HistogramDataPointSlice
-//  - pmetric.SummaryDataPointSlice
+//   - pmetric.NumberDataPointSlice
+//   - pmetric.HistogramDataPointSlice
+//   - pmetric.SummaryDataPointSlice
 type dataPoints interface {
 	Len() int
 	// At gets the adjusted datapoint from the DataPointSlice at i-th index.
@@ -117,9 +117,9 @@ func (dps numberDataPointSlice) At(i int) (dataPoint, bool) {
 	var metricVal float64
 	switch metric.ValueType() {
 	case pmetric.NumberDataPointValueTypeDouble:
-		metricVal = metric.DoubleVal()
+		metricVal = metric.DoubleValue()
 	case pmetric.NumberDataPointValueTypeInt:
-		metricVal = float64(metric.IntVal())
+		metricVal = float64(metric.IntValue())
 	}
 
 	retained := true
@@ -217,11 +217,7 @@ func createLabels(attributes pcommon.Map, instrLibName string) map[string]string
 }
 
 // getDataPoints retrieves data points from OT Metric.
-func getDataPoints(pmd *pmetric.Metric, metadata cWMetricMetadata, logger *zap.Logger) (dps dataPoints) {
-	if pmd == nil {
-		return
-	}
-
+func getDataPoints(pmd pmetric.Metric, metadata cWMetricMetadata, logger *zap.Logger) (dps dataPoints) {
 	adjusterMetadata := deltaMetricMetadata{
 		false,
 		pmd.Name(),
@@ -231,29 +227,29 @@ func getDataPoints(pmd *pmetric.Metric, metadata cWMetricMetadata, logger *zap.L
 		metadata.logStream,
 	}
 
-	switch pmd.DataType() {
-	case pmetric.MetricDataTypeGauge:
+	switch pmd.Type() {
+	case pmetric.MetricTypeGauge:
 		metric := pmd.Gauge()
 		dps = numberDataPointSlice{
 			metadata.instrumentationLibraryName,
 			adjusterMetadata,
 			metric.DataPoints(),
 		}
-	case pmetric.MetricDataTypeSum:
+	case pmetric.MetricTypeSum:
 		metric := pmd.Sum()
-		adjusterMetadata.adjustToDelta = metric.AggregationTemporality() == pmetric.MetricAggregationTemporalityCumulative
+		adjusterMetadata.adjustToDelta = metric.AggregationTemporality() == pmetric.AggregationTemporalityCumulative
 		dps = numberDataPointSlice{
 			metadata.instrumentationLibraryName,
 			adjusterMetadata,
 			metric.DataPoints(),
 		}
-	case pmetric.MetricDataTypeHistogram:
+	case pmetric.MetricTypeHistogram:
 		metric := pmd.Histogram()
 		dps = histogramDataPointSlice{
 			metadata.instrumentationLibraryName,
 			metric.DataPoints(),
 		}
-	case pmetric.MetricDataTypeSummary:
+	case pmetric.MetricTypeSummary:
 		metric := pmd.Summary()
 		// For summaries coming from the prometheus receiver, the sum and count are cumulative, whereas for summaries
 		// coming from other sources, e.g. SDK, the sum and count are delta by being accumulated and reset periodically.
@@ -269,7 +265,7 @@ func getDataPoints(pmd *pmetric.Metric, metadata cWMetricMetadata, logger *zap.L
 		}
 	default:
 		logger.Warn("Unhandled metric data type.",
-			zap.String("DataType", pmd.DataType().String()),
+			zap.String("DataType", pmd.Type().String()),
 			zap.String("Name", pmd.Name()),
 			zap.String("Unit", pmd.Unit()),
 		)

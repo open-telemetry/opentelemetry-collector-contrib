@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package awsemfexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter"
 
 import (
@@ -39,11 +38,7 @@ type metricInfo struct {
 }
 
 // addToGroupedMetric processes OT metrics and adds them into GroupedMetric buckets
-func addToGroupedMetric(pmd *pmetric.Metric, groupedMetrics map[interface{}]*groupedMetric, metadata cWMetricMetadata, patternReplaceSucceeded bool, logger *zap.Logger, descriptor map[string]MetricDescriptor, config *Config) error {
-	if pmd == nil {
-		return nil
-	}
-
+func addToGroupedMetric(pmd pmetric.Metric, groupedMetrics map[interface{}]*groupedMetric, metadata cWMetricMetadata, patternReplaceSucceeded bool, logger *zap.Logger, descriptor map[string]MetricDescriptor, config *Config) error {
 	metricName := pmd.Name()
 	dps := getDataPoints(pmd, metadata, logger)
 	if dps == nil || dps.Len() == 0 {
@@ -68,10 +63,10 @@ func addToGroupedMetric(pmd *pmetric.Metric, groupedMetrics map[interface{}]*gro
 		// if patterns are provided for a valid key and that key doesn't exist in the resource attributes, it is replaced with `undefined`.
 		if !patternReplaceSucceeded {
 			if strings.Contains(metadata.logGroup, "undefined") {
-				metadata.logGroup, _ = replacePatterns(config.LogGroupName, labels, config.logger)
+				metadata.logGroup, _ = replacePatterns(config.LogGroupName, labels, logger)
 			}
 			if strings.Contains(metadata.logStream, "undefined") {
-				metadata.logStream, _ = replacePatterns(config.LogStreamName, labels, config.logger)
+				metadata.logStream, _ = replacePatterns(config.LogStreamName, labels, logger)
 			}
 		}
 
@@ -87,7 +82,7 @@ func addToGroupedMetric(pmd *pmetric.Metric, groupedMetrics map[interface{}]*gro
 		// Extra params to use when grouping metrics
 		groupKey := groupedMetricKey(metadata.groupedMetricMetadata, labels)
 		if _, ok := groupedMetrics[groupKey]; ok {
-			// if metricName already exists in metrics map, print warning log
+			// if MetricName already exists in metrics map, print warning log
 			if _, ok := groupedMetrics[groupKey].metrics[metricName]; ok {
 				logger.Warn(
 					"Duplicate metric found",
@@ -136,7 +131,7 @@ type internalPodOwnersObj struct {
 }
 
 func addKubernetesWrapper(labels map[string]string) {
-	//fill in obj
+	// fill in obj
 	filledInObj := kubernetesObj{
 		ContainerName: mapGetHelper(labels, "container"),
 		Docker: &internalDockerObj{
@@ -157,7 +152,7 @@ func addKubernetesWrapper(labels map[string]string) {
 		ServiceName: mapGetHelper(labels, "Service"),
 	}
 
-	//handle nested empty object
+	// handle nested empty object
 	if filledInObj.Docker.ContainerID == "" {
 		filledInObj.Docker = nil
 	}
@@ -187,11 +182,11 @@ func groupedMetricKey(metadata groupedMetricMetadata, labels map[string]string) 
 	return aws.NewKey(metadata, labels)
 }
 
-func translateUnit(metric *pmetric.Metric, descriptor map[string]MetricDescriptor) string {
+func translateUnit(metric pmetric.Metric, descriptor map[string]MetricDescriptor) string {
 	unit := metric.Unit()
 	if descriptor, exists := descriptor[metric.Name()]; exists {
-		if unit == "" || descriptor.overwrite {
-			return descriptor.unit
+		if unit == "" || descriptor.Overwrite {
+			return descriptor.Unit
 		}
 	}
 	switch unit {

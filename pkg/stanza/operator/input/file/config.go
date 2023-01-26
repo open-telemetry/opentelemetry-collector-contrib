@@ -22,22 +22,29 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
+const operatorType = "file_input"
+
 func init() {
-	operator.Register("file_input", func() operator.Builder { return NewConfig("") })
+	operator.Register(operatorType, func() operator.Builder { return NewConfig() })
 }
 
 // NewConfig creates a new input config with default values
-func NewConfig(operatorID string) *Config {
+func NewConfig() *Config {
+	return NewConfigWithID(operatorType)
+}
+
+// NewConfigWithID creates a new input config with default values
+func NewConfigWithID(operatorID string) *Config {
 	return &Config{
-		InputConfig: helper.NewInputConfig(operatorID, "file_input"),
+		InputConfig: helper.NewInputConfig(operatorID, operatorType),
 		Config:      *fileconsumer.NewConfig(),
 	}
 }
 
 // Config is the configuration of a file input operator
 type Config struct {
-	helper.InputConfig  `mapstructure:",squash" yaml:",inline"`
-	fileconsumer.Config `mapstructure:",squash" yaml:",inline"`
+	helper.InputConfig  `mapstructure:",squash"`
+	fileconsumer.Config `mapstructure:",squash"`
 }
 
 // Build will build a file input operator from the supplied configuration
@@ -47,7 +54,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		return nil, err
 	}
 
-	preEmitOptions := []preEmitOption{}
+	var preEmitOptions []preEmitOption
 	if c.IncludeFileName {
 		preEmitOptions = append(preEmitOptions, setFileName)
 	}
@@ -66,7 +73,9 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	}
 	if helper.IsNop(c.Config.Splitter.EncodingConfig.Encoding) {
 		toBody = func(token []byte) interface{} {
-			return token
+			copied := make([]byte, len(token))
+			copy(copied, token)
+			return copied
 		}
 	}
 

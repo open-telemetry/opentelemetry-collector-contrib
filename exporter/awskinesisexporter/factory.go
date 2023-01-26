@@ -18,7 +18,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/batch"
@@ -35,22 +35,21 @@ const (
 )
 
 // NewFactory creates a factory for Kinesis exporter.
-func NewFactory() component.ExporterFactory {
-	return component.NewExporterFactory(
+func NewFactory() exporter.Factory {
+	return exporter.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporterAndStabilityLevel(NewTracesExporter, stability),
-		component.WithMetricsExporterAndStabilityLevel(NewMetricsExporter, stability),
-		component.WithLogsExporterAndStabilityLevel(NewLogsExporter, stability),
+		exporter.WithTraces(NewTracesExporter, stability),
+		exporter.WithMetrics(NewMetricsExporter, stability),
+		exporter.WithLogs(NewLogsExporter, stability),
 	)
 }
 
-func createDefaultConfig() config.Exporter {
+func createDefaultConfig() component.Config {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-		TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),
-		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
-		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
+		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
+		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
+		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 		Encoding: Encoding{
 			Name:        defaultEncoding,
 			Compression: defaultCompression,
@@ -63,15 +62,16 @@ func createDefaultConfig() config.Exporter {
 	}
 }
 
-func NewTracesExporter(ctx context.Context, params component.ExporterCreateSettings, conf config.Exporter) (component.TracesExporter, error) {
-	exp, err := createExporter(conf, params.Logger)
+func NewTracesExporter(ctx context.Context, params exporter.CreateSettings, conf component.Config) (exporter.Traces, error) {
+	exp, err := createExporter(ctx, conf, params.Logger)
 	if err != nil {
 		return nil, err
 	}
 	c := conf.(*Config)
 	return exporterhelper.NewTracesExporter(
-		conf,
+		ctx,
 		params,
+		conf,
 		exp.ConsumeTraces,
 		exporterhelper.WithTimeout(c.TimeoutSettings),
 		exporterhelper.WithRetry(c.RetrySettings),
@@ -79,15 +79,16 @@ func NewTracesExporter(ctx context.Context, params component.ExporterCreateSetti
 	)
 }
 
-func NewMetricsExporter(ctx context.Context, params component.ExporterCreateSettings, conf config.Exporter) (component.MetricsExporter, error) {
-	exp, err := createExporter(conf, params.Logger)
+func NewMetricsExporter(ctx context.Context, params exporter.CreateSettings, conf component.Config) (exporter.Metrics, error) {
+	exp, err := createExporter(ctx, conf, params.Logger)
 	if err != nil {
 		return nil, err
 	}
 	c := conf.(*Config)
 	return exporterhelper.NewMetricsExporter(
-		c,
+		ctx,
 		params,
+		c,
 		exp.ConsumeMetrics,
 		exporterhelper.WithTimeout(c.TimeoutSettings),
 		exporterhelper.WithRetry(c.RetrySettings),
@@ -95,15 +96,16 @@ func NewMetricsExporter(ctx context.Context, params component.ExporterCreateSett
 	)
 }
 
-func NewLogsExporter(ctx context.Context, params component.ExporterCreateSettings, conf config.Exporter) (component.LogsExporter, error) {
-	exp, err := createExporter(conf, params.Logger)
+func NewLogsExporter(ctx context.Context, params exporter.CreateSettings, conf component.Config) (exporter.Logs, error) {
+	exp, err := createExporter(ctx, conf, params.Logger)
 	if err != nil {
 		return nil, err
 	}
 	c := conf.(*Config)
 	return exporterhelper.NewLogsExporter(
-		c,
+		ctx,
 		params,
+		c,
 		exp.ConsumeLogs,
 		exporterhelper.WithTimeout(c.TimeoutSettings),
 		exporterhelper.WithRetry(c.RetrySettings),

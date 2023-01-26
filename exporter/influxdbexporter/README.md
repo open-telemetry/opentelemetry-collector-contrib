@@ -12,14 +12,20 @@ This exporter supports sending tracing, metrics, and logging data to [InfluxDB](
 
 The following configuration options are supported:
 
-* `endpoint` (required) HTTP destination for line protocol
+* `endpoint` (required) HTTP/S destination for line protocol
+  - if path is set to root (/) or is unspecified, it will be changed to /api/v2/write.
 * `timeout` (default = 5s) Timeout for requests
 * `headers`: (optional) additional headers attached to each HTTP request
   - header `User-Agent` is `OpenTelemetry -> Influx` by default
   - if `token` (below) is set, then header `Authorization` will overridden with the given token
 * `org` (required) Name of InfluxDB organization that owns the destination bucket
-* `bucket` (required) InfluxDB bucket name to where signals will 
+* `bucket` (required) name of InfluxDB bucket to which signals will be written
 * `token` (optional) The authentication token for InfluxDB
+* `v1_compatibility` (optional) Options for exporting to InfluxDB v1.x
+  * `enabled` (optional) Use InfluxDB v1.x API if enabled
+  * `db` (required if enabled) Name of the InfluxDB database to which signals will be written
+  * `username` (optional) Basic auth username for authenticating with InfluxDB v1.x
+  * `password` (optional) Basic auth password for authenticating with InfluxDB v1.x
 * `metrics_schema` (default = telegraf-prometheus-v1) The chosen metrics schema to write; must be one of:
   * `telegraf-prometheus-v1`
   * `telegraf-prometheus-v2`
@@ -32,7 +38,7 @@ The following configuration options are supported:
   * `initial_interval` (default = 5s) Time to wait after the first failure before retrying
   * `max_interval` (default = 30s) Upper bound on backoff interval
   * `max_elapsed_time` (default = 120s) Maximum amount of time (including retries) spent trying to send a request/batch
-  
+
 The full list of settings exposed for this exporter are documented in [config.go](config.go).
 
 Example:

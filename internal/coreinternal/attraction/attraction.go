@@ -23,8 +23,6 @@ import (
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterhelper"
 )
 
 // Settings specifies the processor settings.
@@ -218,7 +216,8 @@ func NewAttrProc(settings *Settings) (*AttrProc, error) {
 			}
 			// Convert the raw value from the configuration to the internal trace representation of the value.
 			if a.Value != nil {
-				val, err := filterhelper.NewAttributeValueRaw(a.Value)
+				val := pcommon.NewValueEmpty()
+				err := val.FromRaw(a.Value)
 				if err != nil {
 					return nil, err
 				}
@@ -310,19 +309,31 @@ func (ap *AttrProc) Process(ctx context.Context, logger *zap.Logger, attrs pcomm
 			if !found {
 				continue
 			}
-			attrs.Insert(action.Key, av)
+			if _, found = attrs.Get(action.Key); found {
+				continue
+			}
+			av.CopyTo(attrs.PutEmpty(action.Key))
 		case UPDATE:
 			av, found := getSourceAttributeValue(ctx, action, attrs)
 			if !found {
 				continue
 			}
-			attrs.Update(action.Key, av)
+			val, found := attrs.Get(action.Key)
+			if !found {
+				continue
+			}
+			av.CopyTo(val)
 		case UPSERT:
 			av, found := getSourceAttributeValue(ctx, action, attrs)
 			if !found {
 				continue
 			}
-			attrs.Upsert(action.Key, av)
+			val, found := attrs.Get(action.Key)
+			if found {
+				av.CopyTo(val)
+			} else {
+				av.CopyTo(attrs.PutEmpty(action.Key))
+			}
 		case HASH:
 			hashAttribute(action.Key, attrs)
 
@@ -360,7 +371,7 @@ func getAttributeValueFromContext(ctx context.Context, key string) (pcommon.Valu
 
 		switch a := attr.(type) {
 		case string:
-			return pcommon.NewValueString(a), true
+			return pcommon.NewValueStr(a), true
 		case []string:
 			vals = a
 		default:
@@ -376,7 +387,7 @@ func getAttributeValueFromContext(ctx context.Context, key string) (pcommon.Valu
 		return pcommon.Value{}, false
 	}
 
-	return pcommon.NewValueString(strings.Join(vals, ";")), true
+	return pcommon.NewValueStr(strings.Join(vals, ";")), true
 }
 
 func getSourceAttributeValue(ctx context.Context, action attributeAction, attrs pcommon.Map) (pcommon.Value, bool) {
@@ -408,13 +419,13 @@ func extractAttributes(action attributeAction, attrs pcommon.Map) {
 	value, found := attrs.Get(action.Key)
 
 	// Extracting values only functions on strings.
-	if !found || value.Type() != pcommon.ValueTypeString {
+	if !found || value.Type() != pcommon.ValueTypeStr {
 		return
 	}
 
 	// Note: The number of matches will always be equal to number of
 	// subexpressions.
-	matches := action.Regex.FindStringSubmatch(value.StringVal())
+	matches := action.Regex.FindStringSubmatch(value.Str())
 	if matches == nil {
 		return
 	}
@@ -422,12 +433,12 @@ func extractAttributes(action attributeAction, attrs pcommon.Map) {
 	// Start from index 1, which is the first submatch (index 0 is the entire
 	// match).
 	for i := 1; i < len(matches); i++ {
-		attrs.UpsertString(action.AttrNames[i], matches[i])
+		attrs.PutStr(action.AttrNames[i], matches[i])
 	}
 }
 
 func getMatchingKeys(regexp *regexp.Regexp, attrs pcommon.Map) []string {
-	keys := []string{}
+	var keys []string
 
 	if regexp == nil {
 		return keys

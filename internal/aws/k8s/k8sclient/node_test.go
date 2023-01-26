@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck,gocritic
 package k8sclient
 
 import (
@@ -41,9 +40,9 @@ var nodeArray = []interface{}{
 				Time: time.Now(),
 			},
 			Labels: map[string]string{
-				"beta.kubernetes.io/arch":                  "amd64",
+				"kubernetes.io/arch":                       "amd64",
 				"beta.kubernetes.io/instance-type":         "t3.medium",
-				"beta.kubernetes.io/os":                    "linux",
+				"kubernetes.io/os":                         "linux",
 				"failure-domain.beta.kubernetes.io/region": "eu-west-1",
 				"failure-domain.beta.kubernetes.io/zone":   "eu-west-1c",
 				"kubernetes.io/hostname":                   "ip-192-168-200-63.eu-west-1.compute.internal",
@@ -131,11 +130,11 @@ var nodeArray = []interface{}{
 				Time: time.Now(),
 			},
 			Labels: map[string]string{
-				"beta.kubernetes.io/os":                    "linux",
+				"kubernetes.io/os":                         "linux",
 				"failure-domain.beta.kubernetes.io/region": "eu-west-1",
 				"failure-domain.beta.kubernetes.io/zone":   "eu-west-1a",
 				"kubernetes.io/hostname":                   "ip-192-168-76-61.eu-west-1.compute.internal",
-				"beta.kubernetes.io/arch":                  "amd64",
+				"kubernetes.io/arch":                       "amd64",
 				"beta.kubernetes.io/instance-type":         "t3.medium",
 			},
 			Annotations: map[string]string{
@@ -221,9 +220,9 @@ var nodeArray = []interface{}{
 				Time: time.Now(),
 			},
 			Labels: map[string]string{
-				"beta.kubernetes.io/arch":                  "amd64",
+				"kubernetes.io/arch":                       "amd64",
 				"beta.kubernetes.io/instance-type":         "t3.medium",
-				"beta.kubernetes.io/os":                    "linux",
+				"kubernetes.io/os":                         "linux",
 				"failure-domain.beta.kubernetes.io/region": "eu-west-1",
 				"failure-domain.beta.kubernetes.io/zone":   "eu-west-1b",
 				"kubernetes.io/hostname":                   "ip-192-168-153-1.eu-west-1.compute.internal",
@@ -247,7 +246,7 @@ var nodeArray = []interface{}{
 					Reason:  "KubeletHasSufficientMemory",
 					Message: "kubelet has sufficient memory available",
 				},
-				{ //This entry shows failed node
+				{ // This entry shows failed node
 					Type:   "DiskPressure",
 					Status: "True",
 					LastHeartbeatTime: metav1.Time{
@@ -305,7 +304,7 @@ func TestNodeClient(t *testing.T) {
 
 	fakeClientSet := fake.NewSimpleClientset()
 	client := newNodeClient(fakeClientSet, zap.NewNop(), setOption)
-	client.store.Replace(nodeArray, "")
+	assert.NoError(t, client.store.Replace(nodeArray, ""))
 
 	expectedClusterNodeCount := 3
 	expectedClusterFailedNodeCount := 1

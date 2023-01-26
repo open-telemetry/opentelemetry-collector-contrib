@@ -16,7 +16,6 @@ package file
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -37,7 +36,7 @@ func TestCleanStop(t *testing.T) {
 See this issue for details: https://github.com/census-instrumentation/opencensus-go/issues/1191#issuecomment-610440163`)
 	// defer goleak.VerifyNone(t)
 
-	operator, _, tempDir := newTestFileOperator(t, nil, nil)
+	operator, _, tempDir := newTestFileOperator(t, nil)
 	_ = openTemp(t, tempDir)
 	err := operator.Start(testutil.NewMockPersister("test"))
 	require.NoError(t, err)
@@ -53,7 +52,7 @@ func TestAddFileFields(t *testing.T) {
 	operator, logReceived, tempDir := newTestFileOperator(t, func(cfg *Config) {
 		cfg.IncludeFileName = true
 		cfg.IncludeFilePath = true
-	}, nil)
+	})
 
 	// Create a file, then start
 	temp := openTemp(t, tempDir)
@@ -78,12 +77,12 @@ func TestAddFileResolvedFields(t *testing.T) {
 		cfg.IncludeFilePath = true
 		cfg.IncludeFileNameResolved = true
 		cfg.IncludeFilePathResolved = true
-	}, nil)
+	})
 
 	// Create temp dir with log file
 	dir := t.TempDir()
 
-	file, err := ioutil.TempFile(dir, "")
+	file, err := os.CreateTemp(dir, "")
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		require.NoError(t, file.Close())
@@ -127,18 +126,18 @@ func TestAddFileResolvedFieldsWithChangeOfSymlinkTarget(t *testing.T) {
 		cfg.IncludeFilePath = true
 		cfg.IncludeFileNameResolved = true
 		cfg.IncludeFilePathResolved = true
-	}, nil)
+	})
 
 	// Create temp dir with log file
 	dir := t.TempDir()
 
-	file1, err := ioutil.TempFile(dir, "")
+	file1, err := os.CreateTemp(dir, "")
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		require.NoError(t, file1.Close())
 	})
 
-	file2, err := ioutil.TempFile(dir, "")
+	file2, err := os.CreateTemp(dir, "")
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		require.NoError(t, file2.Close())
@@ -198,7 +197,7 @@ func TestAddFileResolvedFieldsWithChangeOfSymlinkTarget(t *testing.T) {
 // read all the lines that are already there
 func TestReadExistingLogs(t *testing.T) {
 	t.Parallel()
-	operator, logReceived, tempDir := newTestFileOperator(t, nil, nil)
+	operator, logReceived, tempDir := newTestFileOperator(t, nil)
 
 	// Create a file, then start
 	temp := openTemp(t, tempDir)
@@ -263,7 +262,7 @@ func TestReadUsingNopEncoding(t *testing.T) {
 			operator, logReceived, tempDir := newTestFileOperator(t, func(cfg *Config) {
 				cfg.MaxLogSize = 8
 				cfg.Splitter.EncodingConfig.Encoding = "nop"
-			}, nil)
+			})
 			// Create a file, then start
 			temp := openTemp(t, tempDir)
 			bytesWritten, err := temp.Write(tc.input)
@@ -343,7 +342,7 @@ func TestNopEncodingDifferentLogSizes(t *testing.T) {
 			operator, logReceived, tempDir := newTestFileOperator(t, func(cfg *Config) {
 				cfg.MaxLogSize = tc.maxLogSize
 				cfg.Splitter.EncodingConfig.Encoding = "nop"
-			}, nil)
+			})
 			// Create a file, then start
 			temp := openTemp(t, tempDir)
 			bytesWritten, err := temp.Write(tc.input)
@@ -363,7 +362,7 @@ func TestNopEncodingDifferentLogSizes(t *testing.T) {
 // all the entries in that file are read from the beginning
 func TestReadNewLogs(t *testing.T) {
 	t.Parallel()
-	operator, logReceived, tempDir := newTestFileOperator(t, nil, nil)
+	operator, logReceived, tempDir := newTestFileOperator(t, nil)
 
 	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
 	defer func() {
@@ -383,7 +382,7 @@ func TestReadNewLogs(t *testing.T) {
 // we read any additional logs that are written after startup
 func TestReadExistingAndNewLogs(t *testing.T) {
 	t.Parallel()
-	operator, logReceived, tempDir := newTestFileOperator(t, nil, nil)
+	operator, logReceived, tempDir := newTestFileOperator(t, nil)
 
 	// Start with a file with an entry in it, and expect that entry
 	// to come through when we poll for the first time
@@ -407,9 +406,12 @@ func TestReadExistingAndNewLogs(t *testing.T) {
 // we don't read any entries that were in the file before startup
 func TestStartAtEnd(t *testing.T) {
 	t.Parallel()
+
+	var pollInterval time.Duration
 	operator, logReceived, tempDir := newTestFileOperator(t, func(cfg *Config) {
 		cfg.StartAt = "end"
-	}, nil)
+		pollInterval = cfg.PollInterval
+	})
 
 	temp := openTemp(t, tempDir)
 	writeString(t, temp, "testlog1\n")
@@ -419,7 +421,7 @@ func TestStartAtEnd(t *testing.T) {
 		require.NoError(t, operator.Stop())
 	}()
 
-	time.Sleep(2 * operator.fileConsumer.PollInterval)
+	time.Sleep(2 * pollInterval)
 
 	expectNoMessages(t, logReceived)
 
@@ -433,16 +435,19 @@ func TestStartAtEnd(t *testing.T) {
 // beginning
 func TestStartAtEndNewFile(t *testing.T) {
 	t.Parallel()
+
+	var pollInterval time.Duration
 	operator, logReceived, tempDir := newTestFileOperator(t, func(cfg *Config) {
 		cfg.StartAt = "end"
-	}, nil)
+		pollInterval = cfg.PollInterval
+	})
 
 	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
 	defer func() {
 		require.NoError(t, operator.Stop())
 	}()
 
-	time.Sleep(2 * operator.fileConsumer.PollInterval)
+	time.Sleep(2 * pollInterval)
 
 	temp := openTemp(t, tempDir)
 	writeString(t, temp, "testlog1\ntestlog2\n")
@@ -457,8 +462,8 @@ func TestNoNewline(t *testing.T) {
 	t.Parallel()
 	operator, logReceived, tempDir := newTestFileOperator(t, func(cfg *Config) {
 		cfg.Splitter = helper.NewSplitterConfig()
-		cfg.Splitter.Flusher.Period.Duration = time.Nanosecond
-	}, nil)
+		cfg.Splitter.Flusher.Period = time.Nanosecond
+	})
 
 	temp := openTemp(t, tempDir)
 	writeString(t, temp, "testlog1\ntestlog2")
@@ -475,7 +480,7 @@ func TestNoNewline(t *testing.T) {
 // SkipEmpty tests that the any empty lines are skipped
 func TestSkipEmpty(t *testing.T) {
 	t.Parallel()
-	operator, logReceived, tempDir := newTestFileOperator(t, nil, nil)
+	operator, logReceived, tempDir := newTestFileOperator(t, nil)
 
 	temp := openTemp(t, tempDir)
 	writeString(t, temp, "testlog1\n\ntestlog2\n")
@@ -493,7 +498,7 @@ func TestSkipEmpty(t *testing.T) {
 // close together still is read as a single entry
 func TestSplitWrite(t *testing.T) {
 	t.Parallel()
-	operator, logReceived, tempDir := newTestFileOperator(t, nil, nil)
+	operator, logReceived, tempDir := newTestFileOperator(t, nil)
 
 	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
 	defer func() {
@@ -509,7 +514,7 @@ func TestSplitWrite(t *testing.T) {
 
 func TestIgnoreEmptyFiles(t *testing.T) {
 	t.Parallel()
-	operator, logReceived, tempDir := newTestFileOperator(t, nil, nil)
+	operator, logReceived, tempDir := newTestFileOperator(t, nil)
 
 	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
 	defer func() {
@@ -532,7 +537,7 @@ func TestIgnoreEmptyFiles(t *testing.T) {
 
 func TestDecodeBufferIsResized(t *testing.T) {
 	t.Parallel()
-	operator, logReceived, tempDir := newTestFileOperator(t, nil, nil)
+	operator, logReceived, tempDir := newTestFileOperator(t, nil)
 
 	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
 	defer func() {
@@ -548,7 +553,7 @@ func TestDecodeBufferIsResized(t *testing.T) {
 
 func TestMultiFileSimple(t *testing.T) {
 	t.Parallel()
-	operator, logReceived, tempDir := newTestFileOperator(t, nil, nil)
+	operator, logReceived, tempDir := newTestFileOperator(t, nil)
 
 	temp1 := openTemp(t, tempDir)
 	temp2 := openTemp(t, tempDir)
@@ -569,7 +574,7 @@ func TestMultiFileParallel_PreloadedFiles(t *testing.T) {
 
 	getMessage := func(f, m int) string { return fmt.Sprintf("file %d, message %d", f, m) }
 
-	operator, logReceived, tempDir := newTestFileOperator(t, nil, nil)
+	operator, logReceived, tempDir := newTestFileOperator(t, nil)
 
 	numFiles := 10
 	numMessages := 100
@@ -607,7 +612,7 @@ func TestMultiFileParallel_LiveFiles(t *testing.T) {
 
 	getMessage := func(f, m int) string { return fmt.Sprintf("file %d, message %d", f, m) }
 
-	operator, logReceived, tempDir := newTestFileOperator(t, nil, nil)
+	operator, logReceived, tempDir := newTestFileOperator(t, nil)
 
 	numFiles := 10
 	numMessages := 100
@@ -648,7 +653,7 @@ func TestMultiFileParallel_LiveFiles(t *testing.T) {
 // its offsets after a restart
 func TestOffsetsAfterRestart(t *testing.T) {
 	t.Parallel()
-	operator, logReceived, tempDir := newTestFileOperator(t, nil, nil)
+	operator, logReceived, tempDir := newTestFileOperator(t, nil)
 	persister := testutil.NewMockPersister("test")
 
 	temp1 := openTemp(t, tempDir)
@@ -673,7 +678,7 @@ func TestOffsetsAfterRestart(t *testing.T) {
 
 func TestOffsetsAfterRestart_BigFiles(t *testing.T) {
 	t.Parallel()
-	operator, logReceived, tempDir := newTestFileOperator(t, nil, nil)
+	operator, logReceived, tempDir := newTestFileOperator(t, nil)
 	persister := testutil.NewMockPersister("test")
 
 	log1 := stringWithLength(2000)
@@ -699,7 +704,7 @@ func TestOffsetsAfterRestart_BigFiles(t *testing.T) {
 
 func TestOffsetsAfterRestart_BigFilesWrittenWhileOff(t *testing.T) {
 	t.Parallel()
-	operator, logReceived, tempDir := newTestFileOperator(t, nil, nil)
+	operator, logReceived, tempDir := newTestFileOperator(t, nil)
 	persister := testutil.NewMockPersister("test")
 
 	log1 := stringWithLength(2000)
@@ -726,7 +731,7 @@ func TestOffsetsAfterRestart_BigFilesWrittenWhileOff(t *testing.T) {
 
 func TestManyLogsDelivered(t *testing.T) {
 	t.Parallel()
-	operator, logReceived, tempDir := newTestFileOperator(t, nil, nil)
+	operator, logReceived, tempDir := newTestFileOperator(t, nil)
 
 	count := 1000
 	expectedMessages := make([]string, 0, count)

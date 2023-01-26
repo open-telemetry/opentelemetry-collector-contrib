@@ -15,11 +15,11 @@
 package splunkhecexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
 
 import (
+	"encoding/hex"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
@@ -32,7 +32,7 @@ const (
 	traceIDFieldKey = "trace_id"
 )
 
-func mapLogRecordToSplunkEvent(res pcommon.Resource, lr plog.LogRecord, config *Config, logger *zap.Logger) *splunk.Event {
+func mapLogRecordToSplunkEvent(res pcommon.Resource, lr plog.LogRecord, config *Config) *splunk.Event {
 	host := unknownHostName
 	source := config.Source
 	sourcetype := config.SourceType
@@ -44,95 +44,62 @@ func mapLogRecordToSplunkEvent(res pcommon.Resource, lr plog.LogRecord, config *
 	hostKey := config.HecToOtelAttrs.Host
 	severityTextKey := config.HecFields.SeverityText
 	severityNumberKey := config.HecFields.SeverityNumber
-	if spanID := lr.SpanID().HexString(); spanID != "" {
-		fields[spanIDFieldKey] = spanID
+	if spanID := lr.SpanID(); !spanID.IsEmpty() {
+		fields[spanIDFieldKey] = hex.EncodeToString(spanID[:])
 	}
-	if traceID := lr.TraceID().HexString(); traceID != "" {
-		fields[traceIDFieldKey] = traceID
+	if traceID := lr.TraceID(); !traceID.IsEmpty() {
+		fields[traceIDFieldKey] = hex.EncodeToString(traceID[:])
 	}
 	if lr.SeverityText() != "" {
 		fields[severityTextKey] = lr.SeverityText()
 	}
-	if lr.SeverityNumber() != plog.SeverityNumberUNDEFINED {
+	if lr.SeverityNumber() != plog.SeverityNumberUnspecified {
 		fields[severityNumberKey] = lr.SeverityNumber()
 	}
 
 	res.Attributes().Range(func(k string, v pcommon.Value) bool {
 		switch k {
 		case hostKey:
-			host = v.StringVal()
+			host = v.Str()
 		case sourceKey:
-			source = v.StringVal()
+			source = v.Str()
 		case sourceTypeKey:
-			sourcetype = v.StringVal()
+			sourcetype = v.Str()
 		case indexKey:
-			index = v.StringVal()
+			index = v.Str()
 		case splunk.HecTokenLabel:
 			// ignore
 		default:
-			fields[k] = convertAttributeValue(v, logger)
+			fields[k] = v.AsRaw()
 		}
 		return true
 	})
 	lr.Attributes().Range(func(k string, v pcommon.Value) bool {
 		switch k {
 		case hostKey:
-			host = v.StringVal()
+			host = v.Str()
 		case sourceKey:
-			source = v.StringVal()
+			source = v.Str()
 		case sourceTypeKey:
-			sourcetype = v.StringVal()
+			sourcetype = v.Str()
 		case indexKey:
-			index = v.StringVal()
+			index = v.Str()
 		case splunk.HecTokenLabel:
 			// ignore
 		default:
-			fields[k] = convertAttributeValue(v, logger)
+			fields[k] = v.AsRaw()
 		}
 		return true
 	})
 
-	eventValue := convertAttributeValue(lr.Body(), logger)
 	return &splunk.Event{
 		Time:       nanoTimestampToEpochMilliseconds(lr.Timestamp()),
 		Host:       host,
 		Source:     source,
 		SourceType: sourcetype,
 		Index:      index,
-		Event:      eventValue,
+		Event:      lr.Body().AsRaw(),
 		Fields:     fields,
-	}
-}
-
-func convertAttributeValue(value pcommon.Value, logger *zap.Logger) interface{} {
-	switch value.Type() {
-	case pcommon.ValueTypeInt:
-		return value.IntVal()
-	case pcommon.ValueTypeBool:
-		return value.BoolVal()
-	case pcommon.ValueTypeDouble:
-		return value.DoubleVal()
-	case pcommon.ValueTypeString:
-		return value.StringVal()
-	case pcommon.ValueTypeMap:
-		values := map[string]interface{}{}
-		value.MapVal().Range(func(k string, v pcommon.Value) bool {
-			values[k] = convertAttributeValue(v, logger)
-			return true
-		})
-		return values
-	case pcommon.ValueTypeSlice:
-		arrayVal := value.SliceVal()
-		values := make([]interface{}, arrayVal.Len())
-		for i := 0; i < arrayVal.Len(); i++ {
-			values[i] = convertAttributeValue(arrayVal.At(i), logger)
-		}
-		return values
-	case pcommon.ValueTypeEmpty:
-		return nil
-	default:
-		logger.Debug("Unhandled value type", zap.String("type", value.Type().String()))
-		return value
 	}
 }
 

@@ -18,7 +18,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -171,6 +170,7 @@ func TestDetailedPVCLabels(t *testing.T) {
 					Namespace: tt.pod.namespace,
 				},
 			}
+			ras := metadata.DefaultResourceAttributesSettings()
 			metadata := NewMetadata([]MetadataLabel{MetadataLabelVolumeType}, &v1.PodList{
 				Items: []v1.Pod{
 					{
@@ -197,10 +197,10 @@ func TestDetailedPVCLabels(t *testing.T) {
 
 			volumeResourceMetrics := pmetric.NewResourceMetrics()
 			for _, op := range ro {
-				op(volumeResourceMetrics)
+				op(ras, volumeResourceMetrics)
 			}
 
-			require.Equal(t, pcommon.NewMapFromRaw(tt.want).Sort(), volumeResourceMetrics.Resource().Attributes().Sort())
+			require.Equal(t, tt.want, volumeResourceMetrics.Resource().Attributes().AsRaw())
 		})
 	}
 }

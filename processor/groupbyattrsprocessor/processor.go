@@ -33,7 +33,7 @@ type groupByAttrsProcessor struct {
 // ProcessTraces process traces and groups traces by attribute.
 func (gap *groupByAttrsProcessor) processTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
 	rss := td.ResourceSpans()
-	groupedResourceSpans := newSpansGroupedByAttrs()
+	tg := newTracesGroup()
 
 	for i := 0; i < rss.Len(); i++ {
 		rs := rss.At(i)
@@ -56,24 +56,22 @@ func (gap *groupByAttrsProcessor) processTraces(ctx context.Context, td ptrace.T
 
 				// Lets combine the base resource attributes + the extracted (grouped) attributes
 				// and keep them in the grouping entry
-				groupedSpans := groupedResourceSpans.findOrCreateResource(rs.Resource(), requiredAttributes)
-				sp := matchingScopeSpans(groupedSpans, ils.Scope()).Spans().AppendEmpty()
+				groupedResourceSpans := tg.findOrCreateResourceSpans(rs.Resource(), requiredAttributes)
+				sp := matchingScopeSpans(groupedResourceSpans, ils.Scope()).Spans().AppendEmpty()
 				span.CopyTo(sp)
 			}
 		}
 	}
 
 	// Copy the grouped data into output
-	groupedTraces := ptrace.NewTraces()
-	groupedResourceSpans.MoveAndAppendTo(groupedTraces.ResourceSpans())
-	stats.Record(ctx, mDistSpanGroups.M(int64(groupedTraces.ResourceSpans().Len())))
+	stats.Record(ctx, mDistSpanGroups.M(int64(tg.traces.ResourceSpans().Len())))
 
-	return groupedTraces, nil
+	return tg.traces, nil
 }
 
 func (gap *groupByAttrsProcessor) processLogs(ctx context.Context, ld plog.Logs) (plog.Logs, error) {
 	rl := ld.ResourceLogs()
-	groupedResourceLogs := newLogsGroupedByAttrs()
+	lg := newLogsGroup()
 
 	for i := 0; i < rl.Len(); i++ {
 		ls := rl.At(i)
@@ -96,8 +94,8 @@ func (gap *groupByAttrsProcessor) processLogs(ctx context.Context, ld plog.Logs)
 
 				// Lets combine the base resource attributes + the extracted (grouped) attributes
 				// and keep them in the grouping entry
-				groupedLogs := groupedResourceLogs.findResourceOrElseCreate(ls.Resource(), requiredAttributes)
-				lr := matchingScopeLogs(groupedLogs, sl.Scope()).LogRecords().AppendEmpty()
+				groupedResourceLogs := lg.findOrCreateResourceLogs(ls.Resource(), requiredAttributes)
+				lr := matchingScopeLogs(groupedResourceLogs, sl.Scope()).LogRecords().AppendEmpty()
 				log.CopyTo(lr)
 			}
 		}
@@ -105,16 +103,14 @@ func (gap *groupByAttrsProcessor) processLogs(ctx context.Context, ld plog.Logs)
 	}
 
 	// Copy the grouped data into output
-	groupedLogs := plog.NewLogs()
-	groupedResourceLogs.MoveAndAppendTo(groupedLogs.ResourceLogs())
-	stats.Record(ctx, mDistLogGroups.M(int64(groupedLogs.ResourceLogs().Len())))
+	stats.Record(ctx, mDistLogGroups.M(int64(lg.logs.ResourceLogs().Len())))
 
-	return groupedLogs, nil
+	return lg.logs, nil
 }
 
 func (gap *groupByAttrsProcessor) processMetrics(ctx context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
 	rms := md.ResourceMetrics()
-	groupedResourceMetrics := newMetricsGroupedByAttrs()
+	mg := newMetricsGroup()
 
 	for i := 0; i < rms.Len(); i++ {
 		rm := rms.At(i)
@@ -125,40 +121,40 @@ func (gap *groupByAttrsProcessor) processMetrics(ctx context.Context, md pmetric
 			for k := 0; k < ilm.Metrics().Len(); k++ {
 				metric := ilm.Metrics().At(k)
 
-				switch metric.DataType() {
+				switch metric.Type() {
 
-				case pmetric.MetricDataTypeGauge:
+				case pmetric.MetricTypeGauge:
 					for pointIndex := 0; pointIndex < metric.Gauge().DataPoints().Len(); pointIndex++ {
 						dataPoint := metric.Gauge().DataPoints().At(pointIndex)
-						groupedMetric := gap.getGroupedMetricsFromAttributes(ctx, groupedResourceMetrics, rm, ilm, metric, dataPoint.Attributes())
+						groupedMetric := gap.getGroupedMetricsFromAttributes(ctx, mg, rm, ilm, metric, dataPoint.Attributes())
 						dataPoint.CopyTo(groupedMetric.Gauge().DataPoints().AppendEmpty())
 					}
 
-				case pmetric.MetricDataTypeSum:
+				case pmetric.MetricTypeSum:
 					for pointIndex := 0; pointIndex < metric.Sum().DataPoints().Len(); pointIndex++ {
 						dataPoint := metric.Sum().DataPoints().At(pointIndex)
-						groupedMetric := gap.getGroupedMetricsFromAttributes(ctx, groupedResourceMetrics, rm, ilm, metric, dataPoint.Attributes())
+						groupedMetric := gap.getGroupedMetricsFromAttributes(ctx, mg, rm, ilm, metric, dataPoint.Attributes())
 						dataPoint.CopyTo(groupedMetric.Sum().DataPoints().AppendEmpty())
 					}
 
-				case pmetric.MetricDataTypeSummary:
+				case pmetric.MetricTypeSummary:
 					for pointIndex := 0; pointIndex < metric.Summary().DataPoints().Len(); pointIndex++ {
 						dataPoint := metric.Summary().DataPoints().At(pointIndex)
-						groupedMetric := gap.getGroupedMetricsFromAttributes(ctx, groupedResourceMetrics, rm, ilm, metric, dataPoint.Attributes())
+						groupedMetric := gap.getGroupedMetricsFromAttributes(ctx, mg, rm, ilm, metric, dataPoint.Attributes())
 						dataPoint.CopyTo(groupedMetric.Summary().DataPoints().AppendEmpty())
 					}
 
-				case pmetric.MetricDataTypeHistogram:
+				case pmetric.MetricTypeHistogram:
 					for pointIndex := 0; pointIndex < metric.Histogram().DataPoints().Len(); pointIndex++ {
 						dataPoint := metric.Histogram().DataPoints().At(pointIndex)
-						groupedMetric := gap.getGroupedMetricsFromAttributes(ctx, groupedResourceMetrics, rm, ilm, metric, dataPoint.Attributes())
+						groupedMetric := gap.getGroupedMetricsFromAttributes(ctx, mg, rm, ilm, metric, dataPoint.Attributes())
 						dataPoint.CopyTo(groupedMetric.Histogram().DataPoints().AppendEmpty())
 					}
 
-				case pmetric.MetricDataTypeExponentialHistogram:
+				case pmetric.MetricTypeExponentialHistogram:
 					for pointIndex := 0; pointIndex < metric.ExponentialHistogram().DataPoints().Len(); pointIndex++ {
 						dataPoint := metric.ExponentialHistogram().DataPoints().At(pointIndex)
-						groupedMetric := gap.getGroupedMetricsFromAttributes(ctx, groupedResourceMetrics, rm, ilm, metric, dataPoint.Attributes())
+						groupedMetric := gap.getGroupedMetricsFromAttributes(ctx, mg, rm, ilm, metric, dataPoint.Attributes())
 						dataPoint.CopyTo(groupedMetric.ExponentialHistogram().DataPoints().AppendEmpty())
 					}
 
@@ -167,12 +163,9 @@ func (gap *groupByAttrsProcessor) processMetrics(ctx context.Context, md pmetric
 		}
 	}
 
-	// Copy the grouped data into output
-	groupedMetrics := pmetric.NewMetrics()
-	groupedResourceMetrics.MoveAndAppendTo(groupedMetrics.ResourceMetrics())
-	stats.Record(ctx, mDistMetricGroups.M(int64(groupedMetrics.ResourceMetrics().Len())))
+	stats.Record(ctx, mDistMetricGroups.M(int64(mg.metrics.ResourceMetrics().Len())))
 
-	return groupedMetrics, nil
+	return mg.metrics, nil
 }
 
 func deleteAttributes(attrsForRemoval, targetAttrs pcommon.Map) {
@@ -185,8 +178,8 @@ func deleteAttributes(attrsForRemoval, targetAttrs pcommon.Map) {
 // extractGroupingAttributes extracts the keys and values of the specified Attributes
 // that match with the attributes keys that is used for grouping
 // Returns:
-//  - whether any attribute matched (true) or none (false)
-//  - the extracted AttributeMap of matching keys and their corresponding values
+//   - whether any attribute matched (true) or none (false)
+//   - the extracted AttributeMap of matching keys and their corresponding values
 func (gap *groupByAttrsProcessor) extractGroupingAttributes(attrMap pcommon.Map) (bool, pcommon.Map) {
 
 	groupingAttributes := pcommon.NewMap()
@@ -195,7 +188,7 @@ func (gap *groupByAttrsProcessor) extractGroupingAttributes(attrMap pcommon.Map)
 	for _, attrKey := range gap.groupByKeys {
 		attrVal, found := attrMap.Get(attrKey)
 		if found {
-			groupingAttributes.Insert(attrKey, attrVal)
+			attrVal.CopyTo(groupingAttributes.PutEmpty(attrKey))
 			foundMatch = true
 		}
 	}
@@ -210,30 +203,35 @@ func getMetricInInstrumentationLibrary(ilm pmetric.ScopeMetrics, searchedMetric 
 	// (name and type)
 	for i := 0; i < ilm.Metrics().Len(); i++ {
 		metric := ilm.Metrics().At(i)
-		if metric.Name() == searchedMetric.Name() && metric.DataType() == searchedMetric.DataType() {
+		if metric.Name() == searchedMetric.Name() && metric.Type() == searchedMetric.Type() {
 			return metric
 		}
 	}
 
 	// We're here, which means that we haven't found our metric, so we need to create a new one, with the same name and type
 	metric := ilm.Metrics().AppendEmpty()
-	metric.SetDataType(searchedMetric.DataType())
 	metric.SetDescription(searchedMetric.Description())
 	metric.SetName(searchedMetric.Name())
 	metric.SetUnit(searchedMetric.Unit())
 
 	// Move other special type specific values
-	switch metric.DataType() {
+	switch searchedMetric.Type() {
 
-	case pmetric.MetricDataTypeHistogram:
-		metric.Histogram().SetAggregationTemporality(searchedMetric.Histogram().AggregationTemporality())
+	case pmetric.MetricTypeHistogram:
+		metric.SetEmptyHistogram().SetAggregationTemporality(searchedMetric.Histogram().AggregationTemporality())
 
-	case pmetric.MetricDataTypeExponentialHistogram:
-		metric.ExponentialHistogram().SetAggregationTemporality(searchedMetric.ExponentialHistogram().AggregationTemporality())
+	case pmetric.MetricTypeExponentialHistogram:
+		metric.SetEmptyExponentialHistogram().SetAggregationTemporality(searchedMetric.ExponentialHistogram().AggregationTemporality())
 
-	case pmetric.MetricDataTypeSum:
-		metric.Sum().SetAggregationTemporality(searchedMetric.Sum().AggregationTemporality())
+	case pmetric.MetricTypeSum:
+		metric.SetEmptySum().SetAggregationTemporality(searchedMetric.Sum().AggregationTemporality())
 		metric.Sum().SetIsMonotonic(searchedMetric.Sum().IsMonotonic())
+
+	case pmetric.MetricTypeGauge:
+		metric.SetEmptyGauge()
+
+	case pmetric.MetricTypeSummary:
+		metric.SetEmptySummary()
 
 	}
 
@@ -243,7 +241,7 @@ func getMetricInInstrumentationLibrary(ilm pmetric.ScopeMetrics, searchedMetric 
 // Returns the Metric in the appropriate Resource matching with the specified Attributes
 func (gap *groupByAttrsProcessor) getGroupedMetricsFromAttributes(
 	ctx context.Context,
-	groupedResourceMetrics *metricsGroupedByAttrs,
+	mg *metricsGroup,
 	originResourceMetrics pmetric.ResourceMetrics,
 	ilm pmetric.ScopeMetrics,
 	metric pmetric.Metric,
@@ -261,10 +259,10 @@ func (gap *groupByAttrsProcessor) getGroupedMetricsFromAttributes(
 	}
 
 	// Get the ResourceMetrics matching with these attributes
-	groupedResource := groupedResourceMetrics.findResourceOrElseCreate(originResourceMetrics.Resource(), requiredAttributes)
+	groupedResourceMetrics := mg.findOrCreateResourceMetrics(originResourceMetrics.Resource(), requiredAttributes)
 
 	// Get the corresponding instrumentation library
-	groupedInstrumentationLibrary := matchingScopeMetrics(groupedResource, ilm.Scope())
+	groupedInstrumentationLibrary := matchingScopeMetrics(groupedResourceMetrics, ilm.Scope())
 
 	// Return the metric in this resource
 	return getMetricInInstrumentationLibrary(groupedInstrumentationLibrary, metric)

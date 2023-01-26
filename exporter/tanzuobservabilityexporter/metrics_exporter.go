@@ -20,7 +20,7 @@ import (
 
 	"github.com/wavefronthq/wavefront-sdk-go/senders"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
@@ -28,14 +28,11 @@ type metricsExporter struct {
 	consumer *metricsConsumer
 }
 
-func createMetricsConsumer(hostName string, port int, settings component.TelemetrySettings, otelVersion string) (*metricsConsumer, error) {
-	s, err := senders.NewProxySender(&senders.ProxyConfiguration{
-		Host:                 hostName,
-		MetricsPort:          port,
-		DistributionPort:     port,
-		FlushIntervalSeconds: 1,
-		SDKMetricsTags:       map[string]string{"otel.metrics.collector_version": otelVersion},
-	})
+func createMetricsConsumer(config MetricsConfig, settings component.TelemetrySettings, otelVersion string) (*metricsConsumer, error) {
+	s, err := senders.NewSender(config.Endpoint,
+		senders.FlushIntervalSeconds(60),
+		senders.SDKMetricsTags(map[string]string{"otel.metrics.collector_version": otelVersion}),
+	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create proxy sender: %w", err)
 	}
@@ -50,13 +47,13 @@ func createMetricsConsumer(hostName string, port int, settings component.Telemet
 			newSummaryConsumer(s, settings),
 		},
 		s,
-		true), nil
+		true, config), nil
 }
 
-type metricsConsumerCreator func(hostName string, port int, settings component.TelemetrySettings, otelVersion string) (
+type metricsConsumerCreator func(config MetricsConfig, settings component.TelemetrySettings, otelVersion string) (
 	*metricsConsumer, error)
 
-func newMetricsExporter(settings component.ExporterCreateSettings, c config.Exporter, creator metricsConsumerCreator) (*metricsExporter, error) {
+func newMetricsExporter(settings exporter.CreateSettings, c component.Config, creator metricsConsumerCreator) (*metricsExporter, error) {
 	cfg, ok := c.(*Config)
 	if !ok {
 		return nil, fmt.Errorf("invalid config: %#v", c)
@@ -64,11 +61,10 @@ func newMetricsExporter(settings component.ExporterCreateSettings, c config.Expo
 	if !cfg.hasMetricsEndpoint() {
 		return nil, fmt.Errorf("metrics.endpoint required")
 	}
-	hostName, port, err := cfg.parseMetricsEndpoint()
-	if err != nil {
+	if _, _, err := cfg.parseMetricsEndpoint(); err != nil {
 		return nil, fmt.Errorf("failed to parse metrics.endpoint: %w", err)
 	}
-	consumer, err := creator(hostName, port, settings.TelemetrySettings, settings.BuildInfo.Version)
+	consumer, err := creator(cfg.Metrics, settings.TelemetrySettings, settings.BuildInfo.Version)
 	if err != nil {
 		return nil, err
 	}

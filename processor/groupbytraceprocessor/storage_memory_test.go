@@ -28,8 +28,8 @@ func TestMemoryCreateAndGetTrace(t *testing.T) {
 	st := newMemoryStorage()
 
 	traceIDs := []pcommon.TraceID{
-		pcommon.NewTraceID([16]byte{1, 2, 3, 4}),
-		pcommon.NewTraceID([16]byte{2, 3, 4, 5}),
+		pcommon.TraceID([16]byte{1, 2, 3, 4}),
+		pcommon.TraceID([16]byte{2, 3, 4, 5}),
 	}
 
 	baseTrace := ptrace.NewTraces()
@@ -62,7 +62,7 @@ func TestMemoryDeleteTrace(t *testing.T) {
 	// prepare
 	st := newMemoryStorage()
 
-	traceID := pcommon.NewTraceID([16]byte{1, 2, 3, 4})
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4})
 
 	trace := ptrace.NewTraces()
 	rss := trace.ResourceSpans()
@@ -89,7 +89,7 @@ func TestMemoryAppendSpans(t *testing.T) {
 	// prepare
 	st := newMemoryStorage()
 
-	traceID := pcommon.NewTraceID([16]byte{1, 2, 3, 4})
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4})
 
 	trace := ptrace.NewTraces()
 	rss := trace.ResourceSpans()
@@ -97,7 +97,7 @@ func TestMemoryAppendSpans(t *testing.T) {
 	ils := rs.ScopeSpans().AppendEmpty()
 	span := ils.Spans().AppendEmpty()
 	span.SetTraceID(traceID)
-	span.SetSpanID(pcommon.NewSpanID([8]byte{1, 2, 3, 4}))
+	span.SetSpanID([8]byte{1, 2, 3, 4})
 
 	assert.NoError(t, st.createOrAppend(traceID, trace))
 
@@ -108,7 +108,7 @@ func TestMemoryAppendSpans(t *testing.T) {
 	secondSpan := secondIls.Spans().AppendEmpty()
 	secondSpan.SetName("second-name")
 	secondSpan.SetTraceID(traceID)
-	secondSpan.SetSpanID(pcommon.NewSpanID([8]byte{5, 6, 7, 8}))
+	secondSpan.SetSpanID([8]byte{5, 6, 7, 8})
 
 	expected := []ptrace.ResourceSpans{
 		ptrace.NewResourceSpans(),
@@ -139,7 +139,7 @@ func TestMemoryAppendSpans(t *testing.T) {
 func TestMemoryTraceIsBeingCloned(t *testing.T) {
 	// prepare
 	st := newMemoryStorage()
-	traceID := pcommon.NewTraceID([16]byte{1, 2, 3, 4})
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4})
 
 	trace := ptrace.NewTraces()
 	rss := trace.ResourceSpans()
@@ -147,7 +147,7 @@ func TestMemoryTraceIsBeingCloned(t *testing.T) {
 	ils := rs.ScopeSpans().AppendEmpty()
 	span := ils.Spans().AppendEmpty()
 	span.SetTraceID(traceID)
-	span.SetSpanID(pcommon.NewSpanID([8]byte{1, 2, 3, 4}))
+	span.SetSpanID([8]byte{1, 2, 3, 4})
 	span.SetName("should-not-be-changed")
 
 	// test

@@ -23,13 +23,14 @@ import (
 	"github.com/shirou/gopsutil/v3/net"
 	"github.com/shirou/gopsutil/v3/process"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/extension"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
 
 type hostObserver struct {
-	observer.EndpointsWatcher
+	*observer.EndpointsWatcher
 }
 
 type endpointsLister struct {
@@ -42,20 +43,21 @@ type endpointsLister struct {
 	collectProcessDetails func(proc *process.Process) (*processDetails, error)
 }
 
-var _ component.Extension = (*hostObserver)(nil)
+var _ extension.Extension = (*hostObserver)(nil)
 
-func newObserver(logger *zap.Logger, config *Config) (component.Extension, error) {
+func newObserver(params extension.CreateSettings, config *Config) (extension.Extension, error) {
 	h := &hostObserver{
-		EndpointsWatcher: observer.EndpointsWatcher{
-			RefreshInterval: config.RefreshInterval,
-			Endpointslister: endpointsLister{
-				logger:                logger,
-				observerName:          config.ID().String(),
+		EndpointsWatcher: observer.NewEndpointsWatcher(
+			endpointsLister{
+				logger:                params.Logger,
+				observerName:          params.ID.String(),
 				getConnections:        getConnections,
 				getProcess:            process.NewProcess,
 				collectProcessDetails: collectProcessDetails,
 			},
-		},
+			config.RefreshInterval,
+			params.Logger,
+		),
 	}
 
 	return h, nil

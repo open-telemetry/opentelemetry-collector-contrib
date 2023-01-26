@@ -72,7 +72,7 @@ receivers:
   redis:
     endpoint: "localhost:6379"
     collection_interval: 10s
-    password: $REDIS_PASSWORD
+    password: ${env:REDIS_PASSWORD}
 ```
 
 > :information_source: As with all Open Telemetry configuration values, a
@@ -85,7 +85,7 @@ receivers:
   redis:
     endpoint: "localhost:6379"
     collection_interval: 10s
-    password: $REDIS_PASSWORD
+    password: ${env:REDIS_PASSWORD}
 ```
 
 The full list of settings exposed for this receiver are documented [here](./config.go)

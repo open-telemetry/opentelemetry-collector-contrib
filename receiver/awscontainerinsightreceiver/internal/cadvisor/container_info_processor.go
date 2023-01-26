@@ -15,7 +15,6 @@
 //go:build linux
 // +build linux
 
-// nolint:gocritic
 package cadvisor // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor"
 
 import (
@@ -71,7 +70,7 @@ func processContainers(cInfos []*cInfo.ContainerInfo, mInfo extractors.CPUMemInf
 			if key, ok := podKeys[outPodKey.cgroupPath]; !ok {
 				podKeys[outPodKey.cgroupPath] = *outPodKey
 			} else {
-				//collect the container ids associated with a pod
+				// collect the container ids associated with a pod
 				key.containerIds = append(key.containerIds, outPodKey.containerIds...)
 			}
 		}
@@ -117,7 +116,9 @@ func processContainer(info *cInfo.ContainerInfo, mInfo extractors.CPUMemInfoProv
 		namespace := info.Spec.Labels[namespaceLabel]
 		podName := info.Spec.Labels[podNameLabel]
 		podID := info.Spec.Labels[podIDLabel]
-		if containerName == "" || namespace == "" || podName == "" {
+		// NOTE: containerName can be empty for pause container on containerd
+		// https://github.com/containerd/cri/issues/922#issuecomment-423729537
+		if namespace == "" || podName == "" {
 			logger.Debug("Container labels are missing",
 				zap.String("containerName", containerName),
 				zap.String("namespace", namespace),
@@ -136,16 +137,23 @@ func processContainer(info *cInfo.ContainerInfo, mInfo extractors.CPUMemInfoProv
 		tags[ci.PodIDKey] = podID
 		tags[ci.K8sPodNameKey] = podName
 		tags[ci.K8sNamespace] = namespace
-		if containerName != infraContainerName {
+		switch containerName {
+		// For docker, pause container name is set to POD while containerd does not set it.
+		// See https://github.com/aws/amazon-cloudwatch-agent/issues/188
+		case "", infraContainerName:
+			// NOTE: the pod here is only used by NetMetricExtractor,
+			// other pod info like CPU, Mem are dealt within in processPod.
+			containerType = ci.TypeInfraContainer
+		default:
 			tags[ci.ContainerNamekey] = containerName
 			containerID := path.Base(info.Name)
 			tags[ci.ContainerIDkey] = containerID
 			pKey.containerIds = []string{containerID}
 			containerType = ci.TypeContainer
-		} else {
-			// NOTE: the pod here is only used by NetMetricExtractor,
-			// other pod info like CPU, Mem are dealt within in processPod.
-			containerType = ci.TypePod
+			// TODO(pvasir): wait for upstream fix https://github.com/google/cadvisor/issues/2785
+			if !info.Spec.HasFilesystem {
+				logger.Debug("D! containerd does not have container filesystem metrics from cadvisor, See https://github.com/google/cadvisor/issues/2785")
+			}
 		}
 	} else {
 		containerType = ci.TypeNode

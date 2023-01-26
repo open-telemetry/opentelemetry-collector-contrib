@@ -28,9 +28,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/exporter/otlphttpexporter"
 
@@ -38,21 +38,19 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsprometheusremotewriteexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
 	dtconf "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/config"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5cloudexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/humioexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
@@ -63,6 +61,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/parquetexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter"
@@ -83,13 +82,13 @@ func TestDefaultExporters(t *testing.T) {
 	endpoint := testutil.GetAvailableLocalAddress(t)
 
 	tests := []struct {
-		exporter      config.Type
+		exporter      component.Type
 		getConfigFn   getExporterConfigFn
 		skipLifecycle bool
 	}{
 		{
 			exporter: "file",
-			getConfigFn: func() config.Exporter {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["file"].CreateDefaultConfig().(*fileexporter.Config)
 				cfg.Path = filepath.Join(t.TempDir(), "random.file")
 				return cfg
@@ -97,7 +96,7 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "jaeger",
-			getConfigFn: func() config.Exporter {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["jaeger"].CreateDefaultConfig().(*jaegerexporter.Config)
 				cfg.Endpoint = endpoint
 				return cfg
@@ -105,7 +104,7 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "jaeger_thrift",
-			getConfigFn: func() config.Exporter {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["jaeger_thrift"].CreateDefaultConfig().(*jaegerthrifthttpexporter.Config)
 				cfg.Endpoint = "http://" + endpoint
 				return cfg
@@ -113,7 +112,7 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "kafka",
-			getConfigFn: func() config.Exporter {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["kafka"].CreateDefaultConfig().(*kafkaexporter.Config)
 				cfg.Brokers = []string{"invalid:9092"}
 				// this disables contacting the broker so we can successfully create the exporter
@@ -127,7 +126,7 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "opencensus",
-			getConfigFn: func() config.Exporter {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["opencensus"].CreateDefaultConfig().(*opencensusexporter.Config)
 				cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
 					Endpoint: endpoint,
@@ -137,7 +136,7 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "otlp",
-			getConfigFn: func() config.Exporter {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["otlp"].CreateDefaultConfig().(*otlpexporter.Config)
 				cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
 					Endpoint: endpoint,
@@ -147,7 +146,7 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "otlphttp",
-			getConfigFn: func() config.Exporter {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["otlphttp"].CreateDefaultConfig().(*otlphttpexporter.Config)
 				cfg.Endpoint = "http://" + endpoint
 				return cfg
@@ -155,7 +154,7 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "parquet",
-			getConfigFn: func() config.Exporter {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["parquet"].CreateDefaultConfig().(*parquetexporter.Config)
 				cfg.Path = t.TempDir()
 				return cfg
@@ -163,7 +162,7 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "prometheus",
-			getConfigFn: func() config.Exporter {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["prometheus"].CreateDefaultConfig().(*prometheusexporter.Config)
 				cfg.Endpoint = endpoint
 				return cfg
@@ -173,8 +172,16 @@ func TestDefaultExporters(t *testing.T) {
 			exporter: "prometheusremotewrite",
 		},
 		{
+			exporter: "pulsar",
+			getConfigFn: func() component.Config {
+				cfg := expFactories["pulsar"].CreateDefaultConfig().(*pulsarexporter.Config)
+				cfg.Endpoint = "unknown:6650"
+				return cfg
+			},
+		},
+		{
 			exporter: "sapm",
-			getConfigFn: func() config.Exporter {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["sapm"].CreateDefaultConfig().(*sapmexporter.Config)
 				cfg.Endpoint = "http://" + endpoint
 				return cfg
@@ -182,7 +189,7 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "signalfx",
-			getConfigFn: func() config.Exporter {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["signalfx"].CreateDefaultConfig().(*signalfxexporter.Config)
 				cfg.AccessToken = "my_fake_token"
 				cfg.IngestURL = "http://" + endpoint
@@ -192,7 +199,7 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "splunk_hec",
-			getConfigFn: func() config.Exporter {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["splunk_hec"].CreateDefaultConfig().(*splunkhecexporter.Config)
 				cfg.Token = "my_fake_token"
 				cfg.Endpoint = "http://" + endpoint
@@ -201,7 +208,7 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "zipkin",
-			getConfigFn: func() config.Exporter {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["zipkin"].CreateDefaultConfig().(*zipkinexporter.Config)
 				cfg.Endpoint = endpoint
 				return cfg
@@ -209,23 +216,15 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "awskinesis",
-			getConfigFn: func() config.Exporter {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["awskinesis"].CreateDefaultConfig().(*awskinesisexporter.Config)
 				cfg.AWS.KinesisEndpoint = endpoint
 				return cfg
 			},
 		},
 		{
-			exporter: "awsprometheusremotewrite",
-			getConfigFn: func() config.Exporter {
-				cfg := expFactories["awsprometheusremotewrite"].CreateDefaultConfig().(*awsprometheusremotewriteexporter.Config)
-				cfg.HTTPClientSettings.Endpoint = "http://" + endpoint
-				return cfg
-			},
-		},
-		{
 			exporter: "alibabacloud_logservice",
-			getConfigFn: func() config.Exporter {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["alibabacloud_logservice"].CreateDefaultConfig().(*alibabacloudlogserviceexporter.Config)
 				cfg.Endpoint = "http://" + endpoint
 				cfg.Project = "otel-testing"
@@ -235,7 +234,7 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "awscloudwatch",
-			getConfigFn: func() config.Exporter {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["awscloudwatch"].CreateDefaultConfig().(*awscloudwatchlogsexporter.Config)
 				cfg.Endpoint = "http://" + endpoint
 				cfg.Region = "local"
@@ -244,7 +243,7 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "awsemf",
-			getConfigFn: func() config.Exporter {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["awsemf"].CreateDefaultConfig().(*awsemfexporter.Config)
 				cfg.Endpoint = "http://" + endpoint
 				cfg.Region = "local"
@@ -253,7 +252,7 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "awsxray",
-			getConfigFn: func() config.Exporter {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["awsxray"].CreateDefaultConfig().(*awsxrayexporter.Config)
 				cfg.Endpoint = "http://" + endpoint
 				cfg.Region = "local"
@@ -261,8 +260,19 @@ func TestDefaultExporters(t *testing.T) {
 			},
 		},
 		{
+			exporter: "azuredataexplorer",
+			getConfigFn: func() component.Config {
+				cfg := expFactories["azuredataexplorer"].CreateDefaultConfig().(*azuredataexplorerexporter.Config)
+				cfg.ClusterURI = "http://" + endpoint
+				cfg.ApplicationID = "otel-app-id"
+				cfg.ApplicationKey = "otel-app-key"
+				cfg.TenantID = "otel-tenant-id"
+				return cfg
+			},
+		},
+		{
 			exporter: "azuremonitor",
-			getConfigFn: func() config.Exporter {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["azuremonitor"].CreateDefaultConfig().(*azuremonitorexporter.Config)
 				cfg.Endpoint = "http://" + endpoint
 
@@ -271,7 +281,7 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "carbon",
-			getConfigFn: func() config.Exporter {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["carbon"].CreateDefaultConfig().(*carbonexporter.Config)
 				cfg.Endpoint = "http://" + endpoint
 				return cfg
@@ -279,7 +289,7 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "clickhouse",
-			getConfigFn: func() config.Exporter {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["clickhouse"].CreateDefaultConfig().(*clickhouseexporter.Config)
 				cfg.DSN = "clickhouse://" + endpoint
 				return cfg
@@ -287,15 +297,15 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "coralogix",
-			getConfigFn: func() config.Exporter {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["coralogix"].CreateDefaultConfig().(*coralogixexporter.Config)
-				cfg.Endpoint = endpoint
+				cfg.Traces.Endpoint = endpoint
 				return cfg
 			},
 		},
 		{
 			exporter: "datadog",
-			getConfigFn: func() config.Exporter {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["datadog"].CreateDefaultConfig().(*datadogexporter.Config)
 				cfg.API.Key = "cutedogsgotoheaven"
 				return cfg
@@ -303,7 +313,7 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "dynatrace",
-			getConfigFn: func() config.Exporter {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["dynatrace"].CreateDefaultConfig().(*dtconf.Config)
 				cfg.Endpoint = "http://" + endpoint
 				cfg.APIToken = "dynamictracing"
@@ -311,16 +321,8 @@ func TestDefaultExporters(t *testing.T) {
 			},
 		},
 		{
-			exporter: "elastic",
-			getConfigFn: func() config.Exporter {
-				cfg := expFactories["elastic"].CreateDefaultConfig().(*elasticexporter.Config)
-				cfg.APMServerURL = "http://" + endpoint
-				return cfg
-			},
-		},
-		{
 			exporter: "elasticsearch",
-			getConfigFn: func() config.Exporter {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["elasticsearch"].CreateDefaultConfig().(*elasticsearchexporter.Config)
 				cfg.Endpoints = []string{"http://" + endpoint}
 				return cfg
@@ -328,7 +330,7 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "f5cloud",
-			getConfigFn: func() config.Exporter {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["f5cloud"].CreateDefaultConfig().(*f5cloudexporter.Config)
 				cfg.Endpoint = "http://" + endpoint
 				cfg.Source = "magic-source"
@@ -349,40 +351,32 @@ func TestDefaultExporters(t *testing.T) {
 			exporter: "googlecloudpubsub",
 		},
 		{
-			exporter: "honeycomb",
-			getConfigFn: func() config.Exporter {
-				cfg := expFactories["honeycomb"].CreateDefaultConfig().(*honeycombexporter.Config)
-				cfg.APIURL = "http://" + endpoint
-				cfg.APIKey = "busybeesworking"
-				return cfg
-			},
-		},
-		{
-			exporter: "humio",
-			getConfigFn: func() config.Exporter {
-				cfg := expFactories["humio"].CreateDefaultConfig().(*humioexporter.Config)
-				cfg.Endpoint = "http://" + endpoint
-				return cfg
-			},
-		},
-		{
 			exporter: "influxdb",
-			getConfigFn: func() config.Exporter {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["influxdb"].CreateDefaultConfig().(*influxdbexporter.Config)
 				cfg.Endpoint = "http://" + endpoint
 				return cfg
 			},
 		},
 		{
+			exporter: "instana",
+			getConfigFn: func() component.Config {
+				cfg := expFactories["instana"].CreateDefaultConfig().(*instanaexporter.Config)
+				cfg.Endpoint = "http://" + endpoint
+				cfg.AgentKey = "Key1"
+				return cfg
+			},
+		},
+		{
 			exporter: "loadbalancing",
-			getConfigFn: func() config.Exporter {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["loadbalancing"].CreateDefaultConfig().(*loadbalancingexporter.Config)
 				return cfg
 			},
 		},
 		{
 			exporter: "logzio",
-			getConfigFn: func() config.Exporter {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["logzio"].CreateDefaultConfig().(*logzioexporter.Config)
 				cfg.Endpoint = "http://" + endpoint
 				return cfg
@@ -390,7 +384,7 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "loki",
-			getConfigFn: func() config.Exporter {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["loki"].CreateDefaultConfig().(*lokiexporter.Config)
 				cfg.Endpoint = "http://" + endpoint
 				return cfg
@@ -398,7 +392,7 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "mezmo",
-			getConfigFn: func() config.Exporter {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["mezmo"].CreateDefaultConfig().(*mezmoexporter.Config)
 				cfg.Endpoint = "http://" + endpoint
 				return cfg
@@ -406,21 +400,21 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "sentry",
-			getConfigFn: func() config.Exporter {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["sentry"].CreateDefaultConfig().(*sentryexporter.Config)
 				return cfg
 			},
 		},
 		{
 			exporter: "skywalking",
-			getConfigFn: func() config.Exporter {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["skywalking"].CreateDefaultConfig().(*skywalkingexporter.Config)
 				return cfg
 			},
 		},
 		{
 			exporter: "sumologic",
-			getConfigFn: func() config.Exporter {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["sumologic"].CreateDefaultConfig().(*sumologicexporter.Config)
 				cfg.Endpoint = "http://" + endpoint
 
@@ -429,7 +423,7 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "tanzuobservability",
-			getConfigFn: func() config.Exporter {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["tanzuobservability"].CreateDefaultConfig().(*tanzuobservabilityexporter.Config)
 				cfg.Traces.Endpoint = "http://" + endpoint
 				return cfg
@@ -437,7 +431,7 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "tencentcloud_logservice",
-			getConfigFn: func() config.Exporter {
+			getConfigFn: func() component.Config {
 				cfg := expFactories["tencentcloud_logservice"].CreateDefaultConfig().(*tencentcloudlogserviceexporter.Config)
 
 				return cfg
@@ -453,14 +447,12 @@ func TestDefaultExporters(t *testing.T) {
 			factory, ok := expFactories[tt.exporter]
 			require.True(t, ok)
 			assert.Equal(t, tt.exporter, factory.Type())
-			assert.Equal(t, config.NewComponentID(tt.exporter), factory.CreateDefaultConfig().ID())
 
-			if tt.skipLifecycle {
-				t.Skip("Skipping lifecycle test", tt.exporter)
-				return
+			verifyExporterShutdown(t, factory, tt.getConfigFn)
+
+			if !tt.skipLifecycle {
+				verifyExporterLifecycle(t, factory, tt.getConfigFn)
 			}
-
-			verifyExporterLifecycle(t, factory, tt.getConfigFn)
 		})
 	}
 }
@@ -468,15 +460,15 @@ func TestDefaultExporters(t *testing.T) {
 // GetExporterConfigFn is used customize the configuration passed to the verification.
 // This is used to change ports or provide values required but not provided by the
 // default configuration.
-type getExporterConfigFn func() config.Exporter
+type getExporterConfigFn func() component.Config
 
 // verifyExporterLifecycle is used to test if an exporter type can handle the typical
 // lifecycle of a component. The getConfigFn parameter only need to be specified if
 // the test can't be done with the default configuration for the component.
-func verifyExporterLifecycle(t *testing.T, factory component.ExporterFactory, getConfigFn getExporterConfigFn) {
+func verifyExporterLifecycle(t *testing.T, factory exporter.Factory, getConfigFn getExporterConfigFn) {
 	ctx := context.Background()
 	host := newAssertNoErrorHost(t)
-	expCreateSettings := componenttest.NewNopExporterCreateSettings()
+	expCreateSettings := exportertest.NewNopCreateSettings()
 
 	cfg := factory.CreateDefaultConfig()
 	if getConfigFn != nil {
@@ -490,7 +482,7 @@ func verifyExporterLifecycle(t *testing.T, factory component.ExporterFactory, ge
 	}
 
 	for i := 0; i < 2; i++ {
-		var exps []component.Exporter
+		var exps []component.Component
 		for _, createFn := range createFns {
 			exp, err := createFn(ctx, expCreateSettings, cfg)
 			if errors.Is(err, component.ErrDataTypeIsNotSupported) {
@@ -506,26 +498,55 @@ func verifyExporterLifecycle(t *testing.T, factory component.ExporterFactory, ge
 	}
 }
 
+// verifyExporterShutdown is used to test if an exporter type can be shutdown without being started first.
+func verifyExporterShutdown(tb testing.TB, factory exporter.Factory, getConfigFn getExporterConfigFn) {
+	ctx := context.Background()
+	expCreateSettings := exportertest.NewNopCreateSettings()
+
+	if getConfigFn == nil {
+		getConfigFn = factory.CreateDefaultConfig
+	}
+
+	createFns := []createExporterFn{
+		wrapCreateLogsExp(factory),
+		wrapCreateTracesExp(factory),
+		wrapCreateMetricsExp(factory),
+	}
+
+	for _, createFn := range createFns {
+		r, err := createFn(ctx, expCreateSettings, getConfigFn())
+		if errors.Is(err, component.ErrDataTypeIsNotSupported) {
+			continue
+		}
+		if r == nil {
+			continue
+		}
+		assert.NotPanics(tb, func() {
+			assert.NoError(tb, r.Shutdown(ctx))
+		})
+	}
+}
+
 type createExporterFn func(
 	ctx context.Context,
-	set component.ExporterCreateSettings,
-	cfg config.Exporter,
-) (component.Exporter, error)
+	set exporter.CreateSettings,
+	cfg component.Config,
+) (component.Component, error)
 
-func wrapCreateLogsExp(factory component.ExporterFactory) createExporterFn {
-	return func(ctx context.Context, set component.ExporterCreateSettings, cfg config.Exporter) (component.Exporter, error) {
+func wrapCreateLogsExp(factory exporter.Factory) createExporterFn {
+	return func(ctx context.Context, set exporter.CreateSettings, cfg component.Config) (component.Component, error) {
 		return factory.CreateLogsExporter(ctx, set, cfg)
 	}
 }
 
-func wrapCreateTracesExp(factory component.ExporterFactory) createExporterFn {
-	return func(ctx context.Context, set component.ExporterCreateSettings, cfg config.Exporter) (component.Exporter, error) {
+func wrapCreateTracesExp(factory exporter.Factory) createExporterFn {
+	return func(ctx context.Context, set exporter.CreateSettings, cfg component.Config) (component.Component, error) {
 		return factory.CreateTracesExporter(ctx, set, cfg)
 	}
 }
 
-func wrapCreateMetricsExp(factory component.ExporterFactory) createExporterFn {
-	return func(ctx context.Context, set component.ExporterCreateSettings, cfg config.Exporter) (component.Exporter, error) {
+func wrapCreateMetricsExp(factory exporter.Factory) createExporterFn {
+	return func(ctx context.Context, set exporter.CreateSettings, cfg component.Config) (component.Component, error) {
 		return factory.CreateMetricsExporter(ctx, set, cfg)
 	}
 }

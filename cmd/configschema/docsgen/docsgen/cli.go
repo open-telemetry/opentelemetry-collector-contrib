@@ -17,14 +17,14 @@ package docsgen // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
 	"text/template"
 
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/otelcol"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema"
 )
@@ -34,17 +34,17 @@ const mdFileName = "config.md"
 // CLI is the entrypoint for this package's functionality. It handles command-
 // line arguments for the docsgen executable and produces config documentation
 // for the specified components.
-func CLI(factories component.Factories, dr configschema.DirResolver) {
+func CLI(factories otelcol.Factories, dr configschema.DirResolver) {
 	tableTmpl, err := tableTemplate()
 	if err != nil {
 		panic(err)
 	}
 
-	handleCLI(factories, dr, tableTmpl, ioutil.WriteFile, os.Stdout, os.Args...)
+	handleCLI(factories, dr, tableTmpl, os.WriteFile, os.Stdout, os.Args...)
 }
 
 func handleCLI(
-	factories component.Factories,
+	factories otelcol.Factories,
 	dr configschema.DirResolver,
 	tableTmpl *template.Template,
 	writeFile writeFileFunc,
@@ -74,7 +74,7 @@ func printLines(wr io.Writer, lines ...string) {
 func allComponents(
 	dr configschema.DirResolver,
 	tableTmpl *template.Template,
-	factories component.Factories,
+	factories otelcol.Factories,
 	writeFile writeFileFunc,
 ) {
 	configs := configschema.GetAllCfgInfos(factories)
@@ -86,7 +86,7 @@ func allComponents(
 func singleComponent(
 	dr configschema.DirResolver,
 	tableTmpl *template.Template,
-	factories component.Factories,
+	factories otelcol.Factories,
 	componentType, componentName string,
 	writeFile writeFileFunc,
 ) {
@@ -112,9 +112,10 @@ func writeConfigDoc(
 		panic(err)
 	}
 
-	f.Type = stripPrefix(f.Type)
-
 	mdBytes := renderHeader(string(ci.Type), ci.Group, f.Doc)
+
+	f.Name = typeToName(f.Type)
+
 	tableBytes, err := renderTable(tableTmpl, f)
 	if err != nil {
 		panic(err)
@@ -125,9 +126,10 @@ func writeConfigDoc(
 		mdBytes = append(mdBytes, durationBlock...)
 	}
 
-	dir, err := dr.PackageDir(v.Type().Elem())
-	if err != nil {
-		panic(err)
+	dir := dr.ReflectValueToProjectPath(v)
+	if dir == "" {
+		log.Printf("writeConfigDoc: skipping, local path not found for component: %s %s", ci.Group, ci.Type)
+		return
 	}
 	err = writeFile(filepath.Join(dir, mdFileName), mdBytes, 0644)
 	if err != nil {
@@ -135,7 +137,7 @@ func writeConfigDoc(
 	}
 }
 
-func stripPrefix(name string) string {
-	idx := strings.Index(name, ".")
-	return name[idx+1:]
+func typeToName(typ string) string {
+	idx := strings.IndexRune(typ, '.')
+	return typ[:idx]
 }

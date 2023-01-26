@@ -9,7 +9,7 @@
 Prometheus Remote Write Exporter sends OpenTelemetry metrics
 to Prometheus [remote write compatible
 backends](https://prometheus.io/docs/operating/integrations/)
-such as Cortex and Thanos.
+such as Cortex, Mimir, and Thanos.
 By default, this exporter requires TLS and offers queued retry capabilities.
 
 :warning: Non-cumulative monotonic, histogram, and summary OTLP metrics are
@@ -48,6 +48,12 @@ The following settings can be optionally configured:
   - `num_consumers`: minimum number of workers to use to fan out the outgoing requests.
 - `resource_to_telemetry_conversion`
   - `enabled` (default = false): If `enabled` is `true`, all the resource attributes will be converted to metric labels by default.
+- `target_info`: customize `target_info` metric
+  - `enabled` (default = true): If `enabled` is `true`, a `target_info` metric will be generated for each resource metric (see https://github.com/open-telemetry/opentelemetry-specification/pull/2381).
+- `export_created_metric`:
+  - `enabled` (default = false): If `enabled` is `true`, a `_created` metric is
+    exported for Summary, Histogram, and Monotonic Sum metric points if
+    `StartTimeUnixNano` is set.
 
 Example:
 

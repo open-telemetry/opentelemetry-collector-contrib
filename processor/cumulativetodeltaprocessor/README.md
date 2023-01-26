@@ -9,7 +9,7 @@
 
 ## Description
 
-The cumulative to delta processor (`cumulativetodeltaprocessor`) converts monotonic, cumulative sum metrics to monotonic, delta sum metrics. Non-monotonic sums are excluded.
+The cumulative to delta processor (`cumulativetodeltaprocessor`) converts monotonic, cumulative sum and histogram metrics to monotonic, delta metrics. Non-monotonic sums and exponential histograms are excluded.
 
 ## Configuration
 
@@ -20,7 +20,6 @@ The following settings can be optionally configured:
 - `include`: List of metrics names or patterns to convert to delta.
 - `exclude`: List of metrics names or patterns to not convert to delta.  **If a metric name matches both include and exclude, exclude takes precedence.**
 - `max_stale`: The total time a state entry will live past the time it was last seen. Set to 0 to retain state indefinitely. Default: 0
-- `metrics`: Deprecated. The processor uses metric names to identify a set of cumulative metrics and converts them to delta.
 
 If neither include nor exclude are supplied, no filtering is applied.
 
@@ -31,7 +30,7 @@ processors:
     # processor name: cumulativetodelta
     cumulativetodelta:
 
-        # list the exact cumulative sum metrics to convert to delta
+        # list the exact cumulative sum or histogram metrics to convert to delta
         include:
             metrics:
                 - <metric_1_name>
@@ -47,8 +46,8 @@ processors:
     # processor name: cumulativetodelta
     cumulativetodelta:
 
-        # Convert cumulative sum metrics to delta 
-        # if and only if 'metric' is in the name 
+        # Convert cumulative sum or histogram metrics to delta
+        # if and only if 'metric' is in the name
         include:
             metrics:
                 - "*metric*"
@@ -60,8 +59,8 @@ processors:
     # processor name: cumulativetodelta
     cumulativetodelta:
 
-        # Convert cumulative sum metrics to delta 
-        # if and only if 'metric' is not in the name 
+        # Convert cumulative sum or histogram metrics to delta
+        # if and only if 'metric' is not in the name
         exclude:
             metrics:
                 - "*metric*"
@@ -73,7 +72,7 @@ processors:
     # processor name: cumulativetodelta
     cumulativetodelta:
         # If include/exclude are not specified
-        # convert all cumulative sum metrics to delta
+        # convert all cumulative sum or histogram metrics to delta
 ```
 
 ## Warnings

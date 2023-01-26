@@ -76,7 +76,7 @@ func TestContainerResourceForStoppedContainer(t *testing.T) {
 	attrMap := r.Attributes()
 	getExitCodeAd, found := attrMap.Get(attributeContainerExitCode)
 	require.EqualValues(t, true, found)
-	require.EqualValues(t, 2, getExitCodeAd.IntVal())
+	require.EqualValues(t, 2, getExitCodeAd.Int())
 	require.EqualValues(t, 11, attrMap.Len())
 	expected := map[string]string{
 		conventions.AttributeContainerName:      "container-1",
@@ -174,7 +174,7 @@ func verifyAttributeMap(t *testing.T, expected map[string]string, found pcommon.
 		attributeVal, found := found.Get(key)
 		require.EqualValues(t, true, found)
 
-		require.EqualValues(t, val, attributeVal.StringVal())
+		require.EqualValues(t, val, attributeVal.Str())
 	}
 }
 

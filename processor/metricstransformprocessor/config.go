@@ -14,19 +14,12 @@
 
 package metricstransformprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor"
 
-import (
-	"go.opentelemetry.io/collector/config"
-)
-
 const (
 	// IncludeFieldName is the mapstructure field name for Include field
 	IncludeFieldName = "include"
 
 	// MatchTypeFieldName is the mapstructure field name for MatchType field
 	MatchTypeFieldName = "match_type"
-
-	// MetricNameFieldName is the mapstructure field name for MetricName field
-	MetricNameFieldName = "metric_name"
 
 	// ActionFieldName is the mapstructure field name for Action field
 	ActionFieldName = "action"
@@ -58,7 +51,6 @@ const (
 
 // Config defines configuration for Resource processor.
 type Config struct {
-	config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	// Transform specifies a list of transforms on metrics with each transform focusing on one metric.
 	Transforms []Transform `mapstructure:"transforms"`
@@ -72,10 +64,6 @@ type Transform struct {
 	// MetricIncludeFilter is used to select the metric(s) to operate on.
 	// REQUIRED
 	MetricIncludeFilter FilterConfig `mapstructure:",squash"`
-
-	// MetricName is used to select the metric to operate on.
-	// Deprecated: Use MetricIncludeFilter instead.
-	MetricName string `mapstructure:"metric_name"`
 
 	// --- SPECIFY THE ACTION TO TAKE ON THE MATCHED METRIC(S) ---
 

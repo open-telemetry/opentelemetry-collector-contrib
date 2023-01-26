@@ -20,7 +20,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -29,21 +28,21 @@ import (
 )
 
 func newTestParser(t *testing.T) *Parser {
-	config := NewConfig("test")
+	config := NewConfigWithID("test")
 	op, err := config.Build(testutil.Logger(t))
 	require.NoError(t, err)
 	return op.(*Parser)
 }
 
 func TestConfigBuild(t *testing.T) {
-	config := NewConfig("test")
+	config := NewConfigWithID("test")
 	op, err := config.Build(testutil.Logger(t))
 	require.NoError(t, err)
 	require.IsType(t, &Parser{}, op)
 }
 
 func TestConfigBuildFailure(t *testing.T) {
-	config := NewConfig("test")
+	config := NewConfigWithID("test")
 	config.OnError = "invalid_on_error"
 	_, err := config.Build(testutil.Logger(t))
 	require.Error(t, err)
@@ -151,7 +150,7 @@ func TestParser(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			cfg := NewConfig("test")
+			cfg := NewConfigWithID("test")
 			cfg.OutputIDs = []string{"fake"}
 			tc.configure(cfg)
 
@@ -170,36 +169,4 @@ func TestParser(t *testing.T) {
 			fake.ExpectEntry(t, tc.expect)
 		})
 	}
-}
-
-func TestJsonParserConfig(t *testing.T) {
-	expect := NewConfig("test")
-	expect.ParseFrom = entry.NewBodyField("from")
-	expect.ParseTo = entry.NewBodyField("to")
-
-	t.Run("mapstructure", func(t *testing.T) {
-		input := map[string]interface{}{
-			"id":         "test",
-			"type":       "json_parser",
-			"parse_from": "body.from",
-			"parse_to":   "body.to",
-			"on_error":   "send",
-		}
-		var actual Config
-		err := helper.UnmarshalMapstructure(input, &actual)
-		require.NoError(t, err)
-		require.Equal(t, expect, &actual)
-	})
-
-	t.Run("yaml", func(t *testing.T) {
-		input := `type: json_parser
-id: test
-on_error: "send"
-parse_from: body.from
-parse_to: body.to`
-		var actual Config
-		err := yaml.Unmarshal([]byte(input), &actual)
-		require.NoError(t, err)
-		require.Equal(t, expect, &actual)
-	})
 }

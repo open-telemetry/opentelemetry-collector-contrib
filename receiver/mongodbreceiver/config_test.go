@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,8 +21,10 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
 func TestValidate(t *testing.T) {
@@ -81,7 +83,7 @@ func TestValidate(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			hosts := []confignet.NetAddr{}
+			var hosts []confignet.NetAddr
 
 			for _, ep := range tc.endpoints {
 				hosts = append(hosts, confignet.NetAddr{
@@ -89,12 +91,12 @@ func TestValidate(t *testing.T) {
 				})
 			}
 
-			cfg := Config{
+			cfg := &Config{
 				Username: tc.username,
 				Password: tc.password,
 				Hosts:    hosts,
 			}
-			err := cfg.Validate()
+			err := component.ValidateConfig(cfg)
 			if tc.expected == nil {
 				require.Nil(t, err)
 			} else {
@@ -135,7 +137,7 @@ func TestBadTLSConfigs(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			cfg := Config{
+			cfg := &Config{
 				Username: "otel",
 				Password: "pword",
 				Hosts: []confignet.NetAddr{
@@ -145,7 +147,7 @@ func TestBadTLSConfigs(t *testing.T) {
 				},
 				TLSClientSetting: tc.tlsConfig,
 			}
-			err := cfg.Validate()
+			err := component.ValidateConfig(cfg)
 			if tc.expectError {
 				require.Error(t, err)
 			} else {
@@ -196,4 +198,28 @@ func TestOptionsTLS(t *testing.T) {
 	}
 	opts := cfg.ClientOptions()
 	require.NotNil(t, opts.TLSConfig)
+}
+
+func TestLoadConfig(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
+	require.NoError(t, err)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+	expected := factory.CreateDefaultConfig().(*Config)
+	expected.Hosts = []confignet.NetAddr{
+		{
+			Endpoint: "localhost:27017",
+		},
+	}
+	expected.Username = "otel"
+	expected.Password = "${env:MONGO_PASSWORD}"
+	expected.CollectionInterval = time.Minute
+
+	require.Equal(t, expected, cfg)
 }

@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package host // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/host"
 
 import (
@@ -191,7 +190,7 @@ func (e *ebsVolume) getEBSVolumeID(devName string) string {
 	return ""
 }
 
-//extract the ebs volume id used by kubernetes cluster
+// extract the ebs volume id used by kubernetes cluster
 func (e *ebsVolume) extractEbsIDsUsedByKubernetes() map[string]string {
 	ebsVolumeIDs := make(map[string]string)
 
@@ -210,7 +209,7 @@ func (e *ebsVolume) extractEbsIDsUsedByKubernetes() map[string]string {
 			continue
 		}
 
-		//example line: /dev/nvme1n1 /var/lib/kubelet/plugins/kubernetes.io/aws-ebs/mounts/aws/us-west-2b/vol-0d9f0816149eb2050 ext4 rw,relatime,data=ordered 0 0
+		// example line: /dev/nvme1n1 /var/lib/kubelet/plugins/kubernetes.io/aws-ebs/mounts/aws/us-west-2b/vol-0d9f0816149eb2050 ext4 rw,relatime,data=ordered 0 0
 		keys := strings.Split(lineStr, " ")
 		if len(keys) < 2 {
 			continue

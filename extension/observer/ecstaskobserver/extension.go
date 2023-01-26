@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import (
 	"strconv"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/extension"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
@@ -29,12 +30,12 @@ import (
 
 const runningStatus = "RUNNING"
 
-var _ component.Extension = (*ecsTaskObserver)(nil)
+var _ extension.Extension = (*ecsTaskObserver)(nil)
 var _ observer.EndpointsLister = (*ecsTaskObserver)(nil)
 var _ observer.Observable = (*ecsTaskObserver)(nil)
 
 type ecsTaskObserver struct {
-	component.Extension
+	extension.Extension
 	*observer.EndpointsWatcher
 	config           *Config
 	metadataProvider ecsutil.MetadataProvider

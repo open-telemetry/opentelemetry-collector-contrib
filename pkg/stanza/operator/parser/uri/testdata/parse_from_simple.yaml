@@ -1,2 +1,0 @@
-type: uri_parser
-parse_from: "body.from"

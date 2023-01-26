@@ -16,8 +16,7 @@ package udplogreceiver // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
-	"gopkg.in/yaml.v2"
+	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -30,7 +29,7 @@ const (
 )
 
 // NewFactory creates a factory for udp receiver
-func NewFactory() component.ReceiverFactory {
+func NewFactory() receiver.Factory {
 	return adapter.NewFactory(ReceiverType{}, stability)
 }
 
@@ -39,41 +38,32 @@ func NewFactory() component.ReceiverFactory {
 type ReceiverType struct{}
 
 // Type is the receiver type
-func (f ReceiverType) Type() config.Type {
+func (f ReceiverType) Type() component.Type {
 	return typeStr
 }
 
 // CreateDefaultConfig creates a config with type and version
-func (f ReceiverType) CreateDefaultConfig() config.Receiver {
+func (f ReceiverType) CreateDefaultConfig() component.Config {
 	return &UDPLogConfig{
 		BaseConfig: adapter.BaseConfig{
-			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			Operators:        adapter.OperatorConfigs{},
+			Operators: []operator.Config{},
 		},
-		Input: adapter.InputConfig{},
+		InputConfig: *udp.NewConfig(),
 	}
 }
 
 // BaseConfig gets the base config from config, for now
-func (f ReceiverType) BaseConfig(cfg config.Receiver) adapter.BaseConfig {
+func (f ReceiverType) BaseConfig(cfg component.Config) adapter.BaseConfig {
 	return cfg.(*UDPLogConfig).BaseConfig
 }
 
 // UDPLogConfig defines configuration for the udp receiver
 type UDPLogConfig struct {
+	InputConfig        udp.Config `mapstructure:",squash"`
 	adapter.BaseConfig `mapstructure:",squash"`
-	Input              adapter.InputConfig `mapstructure:",remain"`
 }
 
-// DecodeInputConfig unmarshals the input operator
-func (f ReceiverType) DecodeInputConfig(cfg config.Receiver) (*operator.Config, error) {
-	logConfig := cfg.(*UDPLogConfig)
-	yamlBytes, _ := yaml.Marshal(logConfig.Input)
-	inputCfg := udp.NewConfig("udp_input")
-
-	if err := yaml.Unmarshal(yamlBytes, &inputCfg); err != nil {
-		return nil, err
-	}
-
-	return &operator.Config{Builder: inputCfg}, nil
+// InputConfig unmarshals the input operator
+func (f ReceiverType) InputConfig(cfg component.Config) operator.Config {
+	return operator.NewConfig(&cfg.(*UDPLogConfig).InputConfig)
 }

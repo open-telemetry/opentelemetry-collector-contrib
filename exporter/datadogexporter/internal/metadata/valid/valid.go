@@ -15,7 +15,7 @@
 // This file includes software developed at Datadog (https://www.datadoghq.com/)
 // for the Datadog Agent (https://github.com/DataDog/datadog-agent)
 
-// nolint:gocritic
+// Package valid contains functions that validate hostnames
 package valid // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/valid"
 
 import (
@@ -39,13 +39,14 @@ var (
 func Hostname(hostname string) error {
 	const maxLength = 255
 
-	if hostname == "" {
+	switch {
+	case hostname == "":
 		return fmt.Errorf("hostname is empty")
-	} else if isLocal(hostname) {
+	case isLocal(hostname):
 		return fmt.Errorf("'%s' is a local hostname", hostname)
-	} else if len(hostname) > maxLength {
+	case len(hostname) > maxLength:
 		return fmt.Errorf("name exceeded the maximum length of %d characters", maxLength)
-	} else if !validHostnameRfc1123.MatchString(hostname) {
+	case !validHostnameRfc1123.MatchString(hostname):
 		return fmt.Errorf("'%s' is not RFC1123 compliant", hostname)
 	}
 	return nil

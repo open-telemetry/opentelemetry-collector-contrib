@@ -25,20 +25,20 @@ import (
 	"testing"
 	"time"
 
+	"github.com/DataDog/datadog-agent/pkg/otlp/model/attributes"
 	tracelog "github.com/DataDog/datadog-agent/pkg/trace/log"
+	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv "go.opentelemetry.io/collector/semconv/v1.6.1"
-	"go.opentelemetry.io/collector/service/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/attributes"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutils"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
 )
 
 func TestMain(m *testing.M) {
@@ -112,7 +112,13 @@ func (testlogger) Flush() {}
 func TestTracesSource(t *testing.T) {
 	reqs := make(chan []byte, 1)
 	metricsServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/api/v1/series" {
+		var expectedMetricEndpoint string
+		if isMetricExportV2Enabled() {
+			expectedMetricEndpoint = testutil.MetricV2Endpoint
+		} else {
+			expectedMetricEndpoint = testutil.MetricV1Endpoint
+		}
+		if r.URL.Path != expectedMetricEndpoint {
 			// we only want to capture series payloads
 			return
 		}
@@ -121,7 +127,8 @@ func TestTracesSource(t *testing.T) {
 			t.Fatalf("Metrics server handler error: %v", err)
 		}
 		reqs <- buf.Bytes()
-		w.Write([]byte("{\"status\": \"ok\"}")) // nolint:errcheck
+		_, err := w.Write([]byte("{\"status\": \"ok\"}"))
+		assert.NoError(t, err)
 	}))
 	defer metricsServer.Close()
 	tracesServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
@@ -130,14 +137,11 @@ func TestTracesSource(t *testing.T) {
 	defer tracesServer.Close()
 
 	cfg := Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		API: APIConfig{
 			Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 		},
 		TagsConfig: TagsConfig{
 			Hostname: "fallbackHostname",
-			Env:      "test_env",
-			Tags:     []string{"key:val"},
 		},
 		Metrics: MetricsConfig{
 			TCPAddr: confignet.TCPAddr{Endpoint: metricsServer.URL},
@@ -149,29 +153,39 @@ func TestTracesSource(t *testing.T) {
 	}
 
 	assert := assert.New(t)
-	params := componenttest.NewNopExporterCreateSettings()
+	params := exportertest.NewNopCreateSettings()
 	reg := featuregate.NewRegistry()
-	reg.Apply(map[string]bool{
+	reg.MustRegisterID(metadata.HostnamePreviewFeatureGate, featuregate.StageBeta)
+	assert.NoError(reg.Apply(map[string]bool{
 		metadata.HostnamePreviewFeatureGate: true,
-	})
+	}))
 	f := newFactoryWithRegistry(reg)
 	exporter, err := f.CreateTracesExporter(context.Background(), params, &cfg)
 	assert.NoError(err)
 
-	// Payload specifies a sub-set of a metrics series payload.
+	// Payload specifies a sub-set of a Zorkian metrics series payload.
 	type Payload struct {
 		Series []struct {
 			Host string   `json:"host,omitempty"`
 			Tags []string `json:"tags,omitempty"`
 		} `json:"series"`
 	}
-	// getHostTags extracts the host and tags from the metrics series payload
+	// getHostTags extracts the host and tags from the Zorkian metrics series payload
 	// body found in data.
 	getHostTags := func(data []byte) (host string, tags []string) {
 		var p Payload
 		assert.NoError(json.Unmarshal(data, &p))
 		assert.Len(p.Series, 1)
 		return p.Series[0].Host, p.Series[0].Tags
+	}
+	// getHostTagsV2 extracts the host and tags from the native DatadogV2 metrics series payload
+	// body found in data.
+	getHostTagsV2 := func(data []byte) (host string, tags []string) {
+		var p datadogV2.MetricPayload
+		assert.NoError(json.Unmarshal(data, &p))
+		assert.Len(p.Series, 1)
+		assert.Len(p.Series[0].Resources, 1)
+		return *p.Series[0].Resources[0].Name, p.Series[0].Tags
 	}
 	for _, tt := range []struct {
 		attrs map[string]interface{}
@@ -188,13 +202,6 @@ func TestTracesSource(t *testing.T) {
 				attributes.AttributeDatadogHostname: "customName",
 			},
 			host: "customName",
-			tags: []string{"version:latest", "command:otelcol"},
-		},
-		{
-			attrs: map[string]interface{}{
-				semconv.AttributeContainerID: "containerID",
-			},
-			host: "containerID",
 			tags: []string{"version:latest", "command:otelcol"},
 		},
 		{
@@ -217,9 +224,15 @@ func TestTracesSource(t *testing.T) {
 			timeout := time.After(time.Second)
 			select {
 			case data := <-reqs:
-				host, tags := getHostTags(data)
-				assert.Equal(host, tt.host)
-				assert.EqualValues(tags, tt.tags)
+				var host string
+				var tags []string
+				if isMetricExportV2Enabled() {
+					host, tags = getHostTagsV2(data)
+				} else {
+					host, tags = getHostTags(data)
+				}
+				assert.Equal(tt.host, host)
+				assert.EqualValues(tt.tags, tags)
 			case <-timeout:
 				t.Fatal("timeout")
 			}
@@ -228,7 +241,7 @@ func TestTracesSource(t *testing.T) {
 }
 
 func TestTraceExporter(t *testing.T) {
-	metricsServer := testutils.DatadogServerMock()
+	metricsServer := testutil.DatadogServerMock()
 	defer metricsServer.Close()
 
 	got := make(chan string, 1)
@@ -240,14 +253,11 @@ func TestTraceExporter(t *testing.T) {
 
 	defer server.Close()
 	cfg := Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		API: APIConfig{
 			Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 		},
 		TagsConfig: TagsConfig{
 			Hostname: "test-host",
-			Env:      "test_env",
-			Tags:     []string{"key:val"},
 		},
 		Metrics: MetricsConfig{
 			TCPAddr: confignet.TCPAddr{
@@ -263,7 +273,7 @@ func TestTraceExporter(t *testing.T) {
 		},
 	}
 
-	params := componenttest.NewNopExporterCreateSettings()
+	params := exportertest.NewNopCreateSettings()
 	f := NewFactory()
 	exporter, err := f.CreateTracesExporter(context.Background(), params, &cfg)
 	assert.NoError(t, err)
@@ -282,13 +292,13 @@ func TestTraceExporter(t *testing.T) {
 }
 
 func TestNewTracesExporter(t *testing.T) {
-	metricsServer := testutils.DatadogServerMock()
+	metricsServer := testutil.DatadogServerMock()
 	defer metricsServer.Close()
 
 	cfg := &Config{}
 	cfg.API.Key = "ddog_32_characters_long_api_key1"
 	cfg.Metrics.TCPAddr.Endpoint = metricsServer.URL
-	params := componenttest.NewNopExporterCreateSettings()
+	params := exportertest.NewNopCreateSettings()
 
 	// The client should have been created correctly
 	f := NewFactory()
@@ -298,7 +308,7 @@ func TestNewTracesExporter(t *testing.T) {
 }
 
 func TestPushTraceData(t *testing.T) {
-	server := testutils.DatadogServerMock()
+	server := testutil.DatadogServerMock()
 	defer server.Close()
 	cfg := &Config{
 		API: APIConfig{
@@ -306,8 +316,6 @@ func TestPushTraceData(t *testing.T) {
 		},
 		TagsConfig: TagsConfig{
 			Hostname: "test-host",
-			Env:      "test_env",
-			Tags:     []string{"key:val"},
 		},
 		Metrics: MetricsConfig{
 			TCPAddr: confignet.TCPAddr{Endpoint: server.URL},
@@ -322,12 +330,14 @@ func TestPushTraceData(t *testing.T) {
 		},
 	}
 
-	params := componenttest.NewNopExporterCreateSettings()
+	params := exportertest.NewNopCreateSettings()
 	f := NewFactory()
 	exp, err := f.CreateTracesExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 
-	err = exp.ConsumeTraces(context.Background(), testutils.TestTraces.Clone())
+	testTraces := ptrace.NewTraces()
+	testutil.TestTraces.CopyTo(testTraces)
+	err = exp.ConsumeTraces(context.Background(), testTraces)
 	assert.NoError(t, err)
 
 	body := <-server.MetadataChan
@@ -338,11 +348,11 @@ func TestPushTraceData(t *testing.T) {
 }
 
 func simpleTraces() ptrace.Traces {
-	return genTraces(pcommon.NewTraceID([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4}), nil)
+	return genTraces([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4}, nil)
 }
 
 func simpleTracesWithAttributes(attrs map[string]interface{}) ptrace.Traces {
-	return genTraces(pcommon.NewTraceID([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4}), attrs)
+	return genTraces([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4}, attrs)
 }
 
 func genTraces(traceID pcommon.TraceID, attrs map[string]interface{}) ptrace.Traces {
@@ -350,13 +360,11 @@ func genTraces(traceID pcommon.TraceID, attrs map[string]interface{}) ptrace.Tra
 	rspans := traces.ResourceSpans().AppendEmpty()
 	span := rspans.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetTraceID(traceID)
-	span.SetSpanID(pcommon.NewSpanID([8]byte{0, 0, 0, 0, 1, 2, 3, 4}))
+	span.SetSpanID([8]byte{0, 0, 0, 0, 1, 2, 3, 4})
 	if attrs == nil {
 		return traces
 	}
-	pcommon.NewMapFromRaw(attrs).Range(func(k string, v pcommon.Value) bool {
-		rspans.Resource().Attributes().Insert(k, v)
-		return true
-	})
+	//nolint:errcheck
+	rspans.Resource().Attributes().FromRaw(attrs)
 	return traces
 }

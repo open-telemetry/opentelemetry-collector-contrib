@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package host // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/host"
 
 import (
@@ -53,7 +52,7 @@ type ec2Tags struct {
 	client                ec2TagsClient
 	clusterName           string
 	autoScalingGroupName  string
-	isSucess              chan bool //only used in testing
+	isSucess              chan bool // only used in testing
 	logger                *zap.Logger
 }
 
@@ -76,7 +75,7 @@ func newEC2Tags(ctx context.Context, session *session.Session, instanceID string
 
 	shouldRefresh := func() bool {
 		if containerOrchestrator == ci.EKS {
-			//stop once we get the cluster name
+			// stop once we get the cluster name
 			return et.clusterName == ""
 		}
 		return et.autoScalingGroupName == ""

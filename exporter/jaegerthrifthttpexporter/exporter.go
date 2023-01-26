@@ -19,7 +19,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 
 	"github.com/apache/thrift/lib/go/thrift"
@@ -28,24 +27,23 @@ import (
 	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	jaegertranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 )
 
-func newTracesExporter(
-	config *Config,
-	params component.ExporterCreateSettings,
-) (component.TracesExporter, error) {
+func newTracesExporter(config *Config, params exporter.CreateSettings) (exporter.Traces, error) {
 	s := &jaegerThriftHTTPSender{
 		config:   config,
 		settings: params.TelemetrySettings,
 	}
 
 	return exporterhelper.NewTracesExporter(
-		config,
+		context.TODO(),
 		params,
+		config,
 		s.pushTraceData,
 		exporterhelper.WithStart(s.start),
 	)
@@ -61,7 +59,7 @@ type jaegerThriftHTTPSender struct {
 
 // start starts the exporter
 func (s *jaegerThriftHTTPSender) start(_ context.Context, host component.Host) (err error) {
-	s.client, err = s.config.HTTPClientSettings.ToClient(host.GetExtensions(), s.settings)
+	s.client, err = s.config.HTTPClientSettings.ToClient(host, s.settings)
 
 	if err != nil {
 		return consumererror.NewPermanent(err)
@@ -97,7 +95,7 @@ func (s *jaegerThriftHTTPSender) pushTraceData(
 			return consumererror.NewPermanent(err)
 		}
 
-		_, _ = io.Copy(ioutil.Discard, resp.Body)
+		_, _ = io.Copy(io.Discard, resp.Body)
 		resp.Body.Close()
 
 		if resp.StatusCode >= http.StatusBadRequest {

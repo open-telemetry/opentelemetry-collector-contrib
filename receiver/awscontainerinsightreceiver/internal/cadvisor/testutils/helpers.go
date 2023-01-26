@@ -12,13 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package testutils // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor/testutils"
 
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
+	"os"
 	"testing"
 
 	cinfo "github.com/google/cadvisor/info/v1"
@@ -26,7 +25,7 @@ import (
 )
 
 func LoadContainerInfo(t *testing.T, file string) []*cinfo.ContainerInfo {
-	info, err := ioutil.ReadFile(file)
+	info, err := os.ReadFile(file)
 	assert.Nil(t, err, "Fail to read file content")
 
 	var result []*cinfo.ContainerInfo
@@ -40,7 +39,7 @@ func LoadContainerInfo(t *testing.T, file string) []*cinfo.ContainerInfo {
 
 	var b bytes.Buffer
 	enc := json.NewEncoder(&b)
-	enc.Encode(result)
+	assert.NoError(t, enc.Encode(result))
 	return result
 }
 

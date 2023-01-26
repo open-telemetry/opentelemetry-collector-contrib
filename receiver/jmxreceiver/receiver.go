@@ -17,7 +17,6 @@ package jmxreceiver // import "github.com/open-telemetry/opentelemetry-collector
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"net/url"
 	"os"
@@ -28,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 	"go.uber.org/zap"
 
@@ -37,20 +37,20 @@ import (
 // jmxMainClass the class containing the main function for the JMX Metric Gatherer JAR
 const jmxMainClass = "io.opentelemetry.contrib.jmxmetrics.JmxMetrics"
 
-var _ component.MetricsReceiver = (*jmxMetricReceiver)(nil)
+var _ receiver.Metrics = (*jmxMetricReceiver)(nil)
 
 type jmxMetricReceiver struct {
 	logger       *zap.Logger
 	config       *Config
 	subprocess   *subprocess.Subprocess
-	params       component.ReceiverCreateSettings
-	otlpReceiver component.MetricsReceiver
+	params       receiver.CreateSettings
+	otlpReceiver receiver.Metrics
 	nextConsumer consumer.Metrics
 	configFile   string
 }
 
 func newJMXMetricReceiver(
-	params component.ReceiverCreateSettings,
+	params receiver.CreateSettings,
 	config *Config,
 	nextConsumer consumer.Metrics,
 ) *jmxMetricReceiver {
@@ -76,7 +76,7 @@ func (jmx *jmxMetricReceiver) Start(ctx context.Context, host component.Host) er
 		return err
 	}
 
-	tmpFile, err := ioutil.TempFile(os.TempDir(), "jmx-config-*.properties")
+	tmpFile, err := os.CreateTemp(os.TempDir(), "jmx-config-*.properties")
 	if err != nil {
 		return fmt.Errorf("failed to get tmp file for jmxreceiver config: %w", err)
 	}
@@ -119,6 +119,9 @@ func (jmx *jmxMetricReceiver) Start(ctx context.Context, host component.Host) er
 }
 
 func (jmx *jmxMetricReceiver) Shutdown(ctx context.Context) error {
+	if jmx.subprocess == nil {
+		return nil
+	}
 	jmx.logger.Debug("Shutting down JMX Receiver")
 	subprocessErr := jmx.subprocess.Shutdown(ctx)
 	otlpErr := jmx.otlpReceiver.Shutdown(ctx)
@@ -132,7 +135,7 @@ func (jmx *jmxMetricReceiver) Shutdown(ctx context.Context) error {
 	return removeErr
 }
 
-func (jmx *jmxMetricReceiver) buildOTLPReceiver() (component.MetricsReceiver, error) {
+func (jmx *jmxMetricReceiver) buildOTLPReceiver() (receiver.Metrics, error) {
 	endpoint := jmx.config.OTLPExporterConfig.Endpoint
 	host, port, err := net.SplitHostPort(endpoint)
 	if err != nil {
@@ -243,7 +246,7 @@ func (jmx *jmxMetricReceiver) buildJMXMetricGathererConfig() (string, error) {
 		config["otel.resource.attributes"] = strings.Join(attributes, ",")
 	}
 
-	content := []string{}
+	var content []string
 	for k, v := range config {
 		// Documentation of Java Properties format & escapes: https://docs.oracle.com/javase/7/docs/api/java/util/Properties.html#load(java.io.Reader)
 

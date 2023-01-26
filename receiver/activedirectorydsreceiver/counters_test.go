@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ package activedirectorydsreceiver
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -43,7 +43,7 @@ func TestGetWatchers(t *testing.T) {
 func getAvailableCounters(t *testing.T) []string {
 	prefix := fmt.Sprintf(`\%s(*)\`, object)
 
-	f, err := ioutil.ReadFile(filepath.Join("testdata", "counters.txt"))
+	f, err := os.ReadFile(filepath.Join("testdata", "counters.txt"))
 	require.NoError(t, err)
 
 	lines := regexp.MustCompile("\r?\n").Split(string(f), -1)

@@ -53,6 +53,7 @@ const (
 type metricCreator struct {
 	computedMetricStore map[string]int64
 	mb                  *metadata.MetricsBuilder
+	// Temporary feature gates while transitioning to metrics without a direction attribute
 }
 
 func newMetricCreator(mb *metadata.MetricsBuilder) *metricCreator {

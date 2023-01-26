@@ -16,8 +16,8 @@ package collectdreceiver
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"os"
+	"path/filepath"
 	"testing"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
@@ -27,12 +27,12 @@ import (
 )
 
 func TestDecodeEvent(t *testing.T) {
-	m1 := []*metricspb.Metric{}
+	var m1 []*metricspb.Metric
 
-	jsonData, err := loadFromJSON("./testdata/event.json")
+	jsonData, err := os.ReadFile(filepath.Join("testdata", "event.json"))
 	require.NoError(t, err)
 
-	records := []collectDRecord{}
+	var records []collectDRecord
 	err = json.Unmarshal(jsonData, &records)
 	require.NoError(t, err)
 
@@ -43,24 +43,13 @@ func TestDecodeEvent(t *testing.T) {
 	}
 }
 
-func loadFromJSON(path string) ([]byte, error) {
-	var body []byte
-	jsonFile, err := os.Open(path)
-	if err != nil {
-		return body, err
-	}
-	defer jsonFile.Close()
-
-	return ioutil.ReadAll(jsonFile)
-}
-
 func TestDecodeMetrics(t *testing.T) {
-	metrics := []*metricspb.Metric{}
+	var metrics []*metricspb.Metric
 
-	jsonData, err := loadFromJSON("./testdata/collectd.json")
+	jsonData, err := os.ReadFile(filepath.Join("testdata", "collectd.json"))
 	require.NoError(t, err)
 
-	records := []collectDRecord{}
+	var records []collectDRecord
 	err = json.Unmarshal(jsonData, &records)
 	require.NoError(t, err)
 

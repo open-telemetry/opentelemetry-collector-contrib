@@ -15,10 +15,14 @@
 package aerospikereceiver
 
 import (
+	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
 func TestValidate(t *testing.T) {
@@ -42,6 +46,13 @@ func TestValidate(t *testing.T) {
 			expected: errBadEndpoint,
 		},
 		{
+			name: "bad endpoint",
+			config: &Config{
+				Endpoint: "x;;ef;s;d:::ss:23423423423423423",
+			},
+			expected: errBadEndpoint,
+		},
+		{
 			name: "missing host",
 			config: &Config{
 				Endpoint: ":3001",
@@ -58,14 +69,14 @@ func TestValidate(t *testing.T) {
 		{
 			name: "bad port",
 			config: &Config{
-				Endpoint: "localhost:2.02",
+				Endpoint: "localhost:9999999999999999999",
 			},
 			expected: errBadPort,
 		},
 		{
 			name: "negative timeout",
 			config: &Config{
-				Endpoint: "localhost:3001",
+				Endpoint: "localhost:3000",
 				Timeout:  -1 * time.Second,
 			},
 			expected: errNegativeTimeout,
@@ -73,7 +84,7 @@ func TestValidate(t *testing.T) {
 		{
 			name: "password but no username",
 			config: &Config{
-				Endpoint: "localhost:3001",
+				Endpoint: "localhost:3000",
 				Username: "",
 				Password: "secret",
 			},
@@ -82,10 +93,36 @@ func TestValidate(t *testing.T) {
 		{
 			name: "username but no password",
 			config: &Config{
-				Endpoint: "localhost:3001",
+				Endpoint: "localhost:3000",
 				Username: "ro_user",
 			},
 			expected: errEmptyPassword,
+		},
+		{
+			name: "bad TLS config",
+			config: &Config{
+				Endpoint: "localhost:3000",
+				TLSName:  "tls1",
+				TLS: &configtls.TLSClientSetting{
+					Insecure: false,
+					TLSSetting: configtls.TLSSetting{
+						CAFile: "BADCAFILE",
+					},
+				},
+			},
+			expected: errFailedTLSLoad,
+		},
+		{
+			name: "empty tls name",
+			config: &Config{
+				Endpoint: "localhost:3000",
+				TLSName:  "",
+				TLS: &configtls.TLSClientSetting{
+					Insecure:   false,
+					TLSSetting: configtls.TLSSetting{},
+				},
+			},
+			expected: errEmptyEndpointTLSName,
 		},
 	}
 
@@ -95,4 +132,22 @@ func TestValidate(t *testing.T) {
 			require.ErrorIs(t, err, tc.expected)
 		})
 	}
+}
+
+func TestLoadConfig(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
+	require.NoError(t, err)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+	expected := factory.CreateDefaultConfig().(*Config)
+	expected.Endpoint = "localhost:3000"
+	expected.CollectionInterval = 30 * time.Second
+
+	require.Equal(t, expected, cfg)
 }

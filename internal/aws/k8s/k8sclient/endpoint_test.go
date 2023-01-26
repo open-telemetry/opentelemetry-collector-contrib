@@ -12,12 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package k8sclient
 
 import (
 	"log"
-	"reflect"
 	"testing"
 	"time"
 
@@ -376,7 +374,7 @@ func TestEpClient_PodKeyToServiceNames(t *testing.T) {
 	for i := range arrays {
 		arrays[i] = endpointsArray[i]
 	}
-	client.store.Replace(convertToInterfaceArray(endpointsArray), "")
+	assert.NoError(t, client.store.Replace(convertToInterfaceArray(endpointsArray), ""))
 
 	expectedMap := map[string][]string{
 		"namespace:default,podName:redis-master-rh2bd":           {"redis-master"},
@@ -390,13 +388,13 @@ func TestEpClient_PodKeyToServiceNames(t *testing.T) {
 	}
 	resultMap := client.PodKeyToServiceNames()
 	log.Printf("PodKeyToServiceNames (len=%v): %v", len(resultMap), awsutil.Prettify(resultMap))
-	assert.True(t, reflect.DeepEqual(resultMap, expectedMap))
+	assert.Equal(t, expectedMap, resultMap)
 }
 
 func TestEpClient_ServiceNameToPodNum(t *testing.T) {
 	client, stopChan := setUpEndpointClient()
 
-	client.store.Replace(convertToInterfaceArray(endpointsArray), "")
+	assert.NoError(t, client.store.Replace(convertToInterfaceArray(endpointsArray), ""))
 
 	expectedMap := map[Service]int{
 		NewService("redis-slave", "default"):  2,
@@ -406,7 +404,7 @@ func TestEpClient_ServiceNameToPodNum(t *testing.T) {
 	}
 	resultMap := client.ServiceToPodNum()
 	log.Printf("ServiceNameToPodNum (len=%v): %v", len(resultMap), awsutil.Prettify(resultMap))
-	assert.True(t, reflect.DeepEqual(resultMap, expectedMap))
+	assert.Equal(t, expectedMap, resultMap)
 	client.shutdown()
 	time.Sleep(2 * time.Millisecond)
 	select {

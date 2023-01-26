@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,33 +15,33 @@
 package schemaprocessor
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/schema"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/translation"
 )
 
 func TestLoadConfig(t *testing.T) {
 	t.Parallel()
 
-	factories, err := componenttest.NopFactories()
-	require.NoError(t, err, "Must not error on creating Nop factories")
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yml"))
+	require.NoError(t, err)
 
 	factory := NewFactory()
-	factories.Processors[typeStr] = factory
+	cfg := factory.CreateDefaultConfig()
 
-	cfg, err := servicetest.LoadConfigAndValidate(path.Join("testdata", "config.yml"), factories)
-	require.NoError(t, err, "Must not error when loading configuration")
+	sub, err := cm.Sub(component.NewIDWithName(typeStr, "with-all-options").String())
+	require.NoError(t, err)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-	pcfg := cfg.Processors[config.NewComponentIDWithName(typeStr, "with-all-options")]
-	assert.Equal(t, pcfg, &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "with-all-options")),
+	assert.Equal(t, &Config{
+		HTTPClientSettings: confighttp.NewDefaultHTTPClientSettings(),
 		Prefetch: []string{
 			"https://opentelemetry.io/schemas/1.9.0",
 		},
@@ -49,7 +49,7 @@ func TestLoadConfig(t *testing.T) {
 			"https://opentelemetry.io/schemas/1.4.2",
 			"https://example.com/otel/schemas/1.2.0",
 		},
-	})
+	}, cfg)
 }
 
 func TestConfigurationValidation(t *testing.T) {
@@ -64,12 +64,12 @@ func TestConfigurationValidation(t *testing.T) {
 		{
 			scenario:    "One target of incomplete schema family",
 			target:      []string{"opentelemetry.io/schemas/1.0.0"},
-			expectError: schema.ErrInvalidFamily,
+			expectError: translation.ErrInvalidFamily,
 		},
 		{
 			scenario:    "One target of incomplete schema identifier",
 			target:      []string{"https://opentelemetry.io/schemas/1"},
-			expectError: schema.ErrInvalidIdentifier,
+			expectError: translation.ErrInvalidVersion,
 		},
 		{
 			scenario: "Valid target(s)",
@@ -93,6 +93,6 @@ func TestConfigurationValidation(t *testing.T) {
 			Targets: tc.target,
 		}
 
-		assert.ErrorIs(t, cfg.Validate(), tc.expectError, tc.scenario)
+		assert.ErrorIs(t, component.ValidateConfig(cfg), tc.expectError, tc.scenario)
 	}
 }

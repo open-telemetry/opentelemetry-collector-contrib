@@ -25,10 +25,13 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/processor"
 	"go.uber.org/zap"
 )
 
-var _ component.TracesProcessor = (*redaction)(nil)
+const attrValuesSeparator = ","
+
+var _ processor.Traces = (*redaction)(nil)
 
 type redaction struct {
 	// Attribute keys allowed in a span
@@ -77,7 +80,7 @@ func (s *redaction) processResourceSpan(ctx context.Context, rs ptrace.ResourceS
 	rsAttrs := rs.Resource().Attributes()
 
 	// Attributes can be part of a resource span
-	s.processAttrs(ctx, &rsAttrs)
+	s.processAttrs(ctx, rsAttrs)
 
 	for j := 0; j < rs.ScopeSpans().Len(); j++ {
 		ils := rs.ScopeSpans().At(j)
@@ -86,13 +89,13 @@ func (s *redaction) processResourceSpan(ctx context.Context, rs ptrace.ResourceS
 			spanAttrs := span.Attributes()
 
 			// Attributes can also be part of span
-			s.processAttrs(ctx, &spanAttrs)
+			s.processAttrs(ctx, spanAttrs)
 		}
 	}
 }
 
 // processAttrs redacts the attributes of a resource span or a span
-func (s *redaction) processAttrs(_ context.Context, attributes *pcommon.Map) {
+func (s *redaction) processAttrs(_ context.Context, attributes pcommon.Map) {
 	// TODO: Use the context for recording metrics
 	var toDelete []string
 	var toBlock []string
@@ -116,14 +119,14 @@ func (s *redaction) processAttrs(_ context.Context, attributes *pcommon.Map) {
 		}
 
 		// Mask any blocked values for the other attributes
+		strVal := value.Str()
 		for _, compiledRE := range s.blockRegexList {
-			match := compiledRE.MatchString(value.StringVal())
+			match := compiledRE.MatchString(strVal)
 			if match {
 				toBlock = append(toBlock, k)
 
-				valueCopy := value.StringVal()
-				maskedValue := compiledRE.ReplaceAllString(valueCopy, "****")
-				attributes.Update(k, pcommon.NewValueString(maskedValue))
+				maskedValue := compiledRE.ReplaceAllString(strVal, "****")
+				value.SetStr(maskedValue)
 			}
 		}
 		return true
@@ -134,8 +137,8 @@ func (s *redaction) processAttrs(_ context.Context, attributes *pcommon.Map) {
 		attributes.Remove(k)
 	}
 	// Add diagnostic information to the span
-	s.summarizeRedactedSpan(toDelete, attributes)
-	s.summarizeMaskedSpan(toBlock, attributes)
+	s.addMetaAttrs(toDelete, attributes, redactedKeys, redactedKeyCount)
+	s.addMetaAttrs(toBlock, attributes, maskedValues, maskedValueCount)
 }
 
 // ConsumeTraces implements the SpanProcessor interface
@@ -149,35 +152,26 @@ func (s *redaction) ConsumeTraces(ctx context.Context, batch ptrace.Traces) erro
 	return err
 }
 
-// summarizeRedactedSpan adds diagnostic information about redacted attribute keys
-func (s *redaction) summarizeRedactedSpan(toDelete []string, attributes *pcommon.Map) {
-	redactedSpanCount := int64(len(toDelete))
-	if redactedSpanCount == 0 {
+// addMetaAttrs adds diagnostic information about redacted or masked attribute keys
+func (s *redaction) addMetaAttrs(redactedAttrs []string, attributes pcommon.Map, valuesAttr, countAttr string) {
+	redactedCount := int64(len(redactedAttrs))
+	if redactedCount == 0 {
 		return
 	}
+
 	// Record summary as span attributes
 	if s.config.Summary == debug {
-		sort.Strings(toDelete)
-		attributes.Insert(redactedKeys, pcommon.NewValueString(strings.Join(toDelete, ",")))
+		if existingVal, found := attributes.Get(valuesAttr); found && existingVal.Str() != "" {
+			redactedAttrs = append(redactedAttrs, strings.Split(existingVal.Str(), attrValuesSeparator)...)
+		}
+		sort.Strings(redactedAttrs)
+		attributes.PutStr(valuesAttr, strings.Join(redactedAttrs, attrValuesSeparator))
 	}
 	if s.config.Summary == info || s.config.Summary == debug {
-		attributes.Insert(redactedKeyCount, pcommon.NewValueInt(redactedSpanCount))
-	}
-}
-
-// summarizeMaskedSpan adds diagnostic information about masked attribute values
-func (s *redaction) summarizeMaskedSpan(toBlock []string, attributes *pcommon.Map) {
-	maskedSpanCount := int64(len(toBlock))
-	if maskedSpanCount == 0 {
-		return
-	}
-	// Records summary as span attributes
-	if s.config.Summary == debug {
-		sort.Strings(toBlock)
-		attributes.Insert(maskedValues, pcommon.NewValueString(strings.Join(toBlock, ",")))
-	}
-	if s.config.Summary == info || s.config.Summary == debug {
-		attributes.Insert(maskedValueCount, pcommon.NewValueInt(maskedSpanCount))
+		if existingVal, found := attributes.Get(countAttr); found {
+			redactedCount += existingVal.Int()
+		}
+		attributes.PutInt(countAttr, redactedCount)
 	}
 }
 

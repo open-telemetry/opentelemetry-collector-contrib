@@ -20,14 +20,14 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	rcvr "go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver/internal/metadata"
 )
 
 const (
@@ -37,26 +37,20 @@ const (
 
 type receiver struct {
 	config   *Config
-	settings component.ReceiverCreateSettings
+	settings rcvr.CreateSettings
 	client   *docker.Client
+	mb       *metadata.MetricsBuilder
 }
 
-func NewReceiver(
-	_ context.Context,
-	set component.ReceiverCreateSettings,
-	config *Config,
-	nextConsumer consumer.Metrics,
-) (component.MetricsReceiver, error) {
-	recv := receiver{
+func newReceiver(set rcvr.CreateSettings, config *Config) *receiver {
+	if config.ProvidePerCoreCPUMetrics {
+		config.MetricsConfig.ContainerCPUUsagePercpu.Enabled = config.ProvidePerCoreCPUMetrics
+	}
+	return &receiver{
 		config:   config,
 		settings: set,
+		mb:       metadata.NewMetricsBuilder(config.MetricsConfig, set),
 	}
-
-	scrp, err := scraperhelper.NewScraper(typeStr, recv.scrape, scraperhelper.WithStart(recv.start))
-	if err != nil {
-		return nil, err
-	}
-	return scraperhelper.NewScraperControllerReceiver(&recv.config.ScraperControllerSettings, set, nextConsumer, scraperhelper.AddScraper(scrp))
 }
 
 func (r *receiver) start(ctx context.Context, _ component.Host) error {
@@ -79,7 +73,7 @@ func (r *receiver) start(ctx context.Context, _ component.Host) error {
 }
 
 type result struct {
-	md  pmetric.Metrics
+	md  pmetric.ResourceMetrics
 	err error
 }
 
@@ -94,7 +88,7 @@ func (r *receiver) scrape(ctx context.Context) (pmetric.Metrics, error) {
 			defer wg.Done()
 			statsJSON, err := r.client.FetchContainerStatsAsJSON(ctx, c)
 			if err != nil {
-				results <- result{md: pmetric.Metrics{}, err: err}
+				results <- result{md: pmetric.ResourceMetrics{}, err: err}
 				return
 			}
 
@@ -115,7 +109,7 @@ func (r *receiver) scrape(ctx context.Context) (pmetric.Metrics, error) {
 			errs = multierr.Append(errs, scrapererror.NewPartialScrapeError(res.err, 0))
 			continue
 		}
-		res.md.ResourceMetrics().CopyTo(md.ResourceMetrics())
+		res.md.MoveTo(md.ResourceMetrics().AppendEmpty())
 	}
 
 	return md, errs

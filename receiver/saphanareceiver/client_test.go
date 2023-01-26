@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -71,9 +71,9 @@ func (m *testDBWrapper) QueryContext(ctx context.Context, query string) (resultW
 }
 
 func (m *testDBWrapper) mockQueryResult(query string, results [][]*string, err error) {
-	nullableResult := [][]sql.NullString{}
+	var nullableResult [][]sql.NullString
 	for _, row := range results {
-		nullableRow := []sql.NullString{}
+		var nullableRow []sql.NullString
 		for _, field := range row {
 			if field == nil {
 				nullableRow = append(nullableRow, sql.NullString{Valid: false})

@@ -12,15 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package ecsinfo
 
 import (
 	"bytes"
 	"context"
 	"errors"
-	"io/ioutil"
+	"io"
 	"net/http"
+	"os"
 	"testing"
 	"time"
 
@@ -45,12 +45,12 @@ func TestECSInstanceInfo(t *testing.T) {
 	instanceReadyC := make(chan bool)
 	hostIPProvider := &MockHostInfo{}
 
-	data, err := ioutil.ReadFile("./test/ecsinfo/clusterinfo")
+	data, err := os.ReadFile("./test/ecsinfo/clusterinfo")
 	respBody := string(data)
 
 	httpResponse := &http.Response{
 		StatusCode:    200,
-		Body:          ioutil.NopCloser(bytes.NewBufferString(respBody)),
+		Body:          io.NopCloser(bytes.NewBufferString(respBody)),
 		Header:        make(http.Header),
 		ContentLength: 5 * 1024,
 	}
@@ -60,7 +60,7 @@ func TestECSInstanceInfo(t *testing.T) {
 		err:      err,
 	}
 
-	//normal case
+	// normal case
 	ecsinstanceinfo := newECSInstanceInfo(ctx, hostIPProvider, time.Minute, zap.NewNop(), mockHTTP, instanceReadyC)
 
 	assert.NotNil(t, ecsinstanceinfo)
@@ -70,14 +70,14 @@ func TestECSInstanceInfo(t *testing.T) {
 	assert.Equal(t, "cluster_name", ecsinstanceinfo.GetClusterName())
 	assert.Equal(t, "container_instance_id", ecsinstanceinfo.GetContainerInstanceID())
 
-	//failed to get data
+	// failed to get data
 
 	err = errors.New("")
 
 	httpResponse = &http.Response{
 		Status:        "Bad Request",
 		StatusCode:    400,
-		Body:          ioutil.NopCloser(bytes.NewBufferString(respBody)),
+		Body:          io.NopCloser(bytes.NewBufferString(respBody)),
 		Header:        make(http.Header),
 		ContentLength: 5 * 1024,
 	}

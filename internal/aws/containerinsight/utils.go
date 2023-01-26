@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -180,7 +180,7 @@ func ConvertToOTLPMetrics(fields map[string]interface{}, tags map[string]string,
 			// convert from nanosecond to millisecond (as emf log use millisecond timestamp)
 			tagValue = strconv.FormatUint(timeNs/uint64(time.Millisecond), 10)
 		}
-		resource.Attributes().UpsertString(tagKey, tagValue)
+		resource.Attributes().PutStr(tagKey, tagValue)
 	}
 
 	ilms := rm.ScopeMetrics()
@@ -218,24 +218,22 @@ func ConvertToOTLPMetrics(fields map[string]interface{}, tags map[string]string,
 func intGauge(ilm pmetric.ScopeMetrics, metricName string, unit string, value int64, ts pcommon.Timestamp) {
 	metric := initMetric(ilm, metricName, unit)
 
-	metric.SetDataType(pmetric.MetricDataTypeGauge)
-	intGauge := metric.Gauge()
+	intGauge := metric.SetEmptyGauge()
 	dataPoints := intGauge.DataPoints()
 	dataPoint := dataPoints.AppendEmpty()
 
-	dataPoint.SetIntVal(value)
+	dataPoint.SetIntValue(value)
 	dataPoint.SetTimestamp(ts)
 }
 
 func doubleGauge(ilm pmetric.ScopeMetrics, metricName string, unit string, value float64, ts pcommon.Timestamp) {
 	metric := initMetric(ilm, metricName, unit)
 
-	metric.SetDataType(pmetric.MetricDataTypeGauge)
-	doubleGauge := metric.Gauge()
+	doubleGauge := metric.SetEmptyGauge()
 	dataPoints := doubleGauge.DataPoints()
 	dataPoint := dataPoints.AppendEmpty()
 
-	dataPoint.SetDoubleVal(value)
+	dataPoint.SetDoubleValue(value)
 	dataPoint.SetTimestamp(ts)
 }
 

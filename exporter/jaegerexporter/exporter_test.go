@@ -27,9 +27,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"google.golang.org/grpc"
@@ -48,7 +49,6 @@ func TestNew(t *testing.T) {
 		{
 			name: "createExporter",
 			config: Config{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Headers:     nil,
 					Endpoint:    "foo.bar",
@@ -63,9 +63,8 @@ func TestNew(t *testing.T) {
 		{
 			name: "createExporterWithHeaders",
 			config: Config{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
-					Headers:     map[string]string{"extra-header": "header-value"},
+					Headers:     map[string]configopaque.String{"extra-header": "header-value"},
 					Endpoint:    "foo.bar",
 					Compression: "",
 					Keepalive:   nil,
@@ -75,7 +74,6 @@ func TestNew(t *testing.T) {
 		{
 			name: "createBasicSecureExporter",
 			config: Config{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Headers:     nil,
 					Endpoint:    "foo.bar",
@@ -87,7 +85,6 @@ func TestNew(t *testing.T) {
 		{
 			name: "createSecureExporterWithClientTLS",
 			config: Config{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Headers:     nil,
 					Endpoint:    "foo.bar",
@@ -105,7 +102,6 @@ func TestNew(t *testing.T) {
 		{
 			name: "createSecureExporterWithKeepAlive",
 			config: Config{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Headers:     nil,
 					Endpoint:    "foo.bar",
@@ -128,7 +124,6 @@ func TestNew(t *testing.T) {
 		{
 			name: "createSecureExporterWithMissingFile",
 			config: Config{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Headers:     nil,
 					Endpoint:    "foo.bar",
@@ -147,7 +142,7 @@ func TestNew(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := newTracesExporter(&tt.config, componenttest.NewNopExporterCreateSettings())
+			got, err := newTracesExporter(&tt.config, exportertest.NewNopCreateSettings())
 			assert.NoError(t, err)
 			assert.NotNil(t, got)
 			t.Cleanup(func() {
@@ -222,14 +217,14 @@ func TestMutualTLS(t *testing.T) {
 			ServerName: "localhost",
 		},
 	}
-	exporter, err := factory.CreateTracesExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
+	exporter, err := factory.CreateTracesExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
 	require.NoError(t, err)
 	err = exporter.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, exporter.Shutdown(context.Background())) })
 
-	traceID := pcommon.NewTraceID([16]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15})
-	spanID := pcommon.NewSpanID([8]byte{0, 1, 2, 3, 4, 5, 6, 7})
+	traceID := pcommon.TraceID([16]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15})
+	spanID := pcommon.SpanID([8]byte{0, 1, 2, 3, 4, 5, 6, 7})
 
 	td := ptrace.NewTraces()
 	span := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
@@ -240,8 +235,7 @@ func TestMutualTLS(t *testing.T) {
 	require.NoError(t, err)
 	requestes := spanHandler.getRequests()
 	assert.Equal(t, 1, len(requestes))
-	tidBytes := traceID.Bytes()
-	jTraceID, err := model.TraceIDFromBytes(tidBytes[:])
+	jTraceID, err := model.TraceIDFromBytes(traceID[:])
 	require.NoError(t, err)
 	require.Len(t, requestes, 1)
 	require.Len(t, requestes[0].GetBatch().Spans, 1)

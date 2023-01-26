@@ -17,22 +17,25 @@ package metadata
 import (
 	"context"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"testing"
 
+	"github.com/DataDog/datadog-agent/pkg/otlp/model/attributes"
+	"github.com/DataDog/datadog-agent/pkg/otlp/model/attributes/azure"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/attributes"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/attributes/azure"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutils"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils/cache"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
 )
 
 var (
@@ -55,15 +58,15 @@ var (
 		Version: "1.0",
 	}
 
-	mockExporterCreateSettings = component.ExporterCreateSettings{
+	mockExporterCreateSettings = exporter.CreateSettings{
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 		BuildInfo:         mockBuildInfo,
 	}
 )
 
 func TestFillHostMetadata(t *testing.T) {
-	cache.Cache.Flush()
-	params := componenttest.NewNopExporterCreateSettings()
+	hostnameCache.Flush()
+	params := exportertest.NewNopCreateSettings()
 	params.BuildInfo = mockBuildInfo
 
 	pcfg := PusherConfig{
@@ -98,63 +101,158 @@ func TestFillHostMetadata(t *testing.T) {
 }
 
 func TestMetadataFromAttributes(t *testing.T) {
-	// AWS
-	attrsAWS := testutils.NewAttributeMap(map[string]string{
-		conventions.AttributeCloudProvider: conventions.AttributeCloudProviderAWS,
-		conventions.AttributeHostID:        "host-id",
-		conventions.AttributeHostName:      "ec2amaz-host-name",
-		"ec2.tag.tag1":                     "val1",
-		"ec2.tag.tag2":                     "val2",
-	})
-	metadataAWS := metadataFromAttributes(attrsAWS)
-	assert.Equal(t, metadataAWS.InternalHostname, "host-id")
-	assert.Equal(t, metadataAWS.Meta,
-		&Meta{
-			Hostname:    "host-id",
-			InstanceID:  "host-id",
-			EC2Hostname: "ec2amaz-host-name",
+	tests := []struct {
+		name                    string
+		attrs                   pcommon.Map
+		usePreviewHostnameLogic bool
+		expected                *HostMetadata
+	}{
+		{
+			name: "AWS (exporter.datadog.hostname.preview = false)",
+			attrs: testutil.NewAttributeMap(map[string]string{
+				conventions.AttributeCloudProvider: conventions.AttributeCloudProviderAWS,
+				conventions.AttributeHostID:        "host-id",
+				conventions.AttributeHostName:      "ec2amaz-host-name",
+				"ec2.tag.tag1":                     "val1",
+				"ec2.tag.tag2":                     "val2",
+			}),
+			expected: &HostMetadata{
+				InternalHostname: "host-id",
+				Meta: &Meta{
+					Hostname:    "host-id",
+					InstanceID:  "host-id",
+					EC2Hostname: "ec2amaz-host-name",
+				},
+				Tags: &HostTags{OTel: []string{"tag1:val1", "tag2:val2"}},
+			},
+		},
+		{
+			name: "AWS (exporter.datadog.hostname.preview = true)",
+			attrs: testutil.NewAttributeMap(map[string]string{
+				conventions.AttributeCloudProvider: conventions.AttributeCloudProviderAWS,
+				conventions.AttributeHostID:        "host-id",
+				conventions.AttributeHostName:      "ec2amaz-host-name",
+				"ec2.tag.tag1":                     "val1",
+				"ec2.tag.tag2":                     "val2",
+			}),
+			usePreviewHostnameLogic: true,
+			expected: &HostMetadata{
+				InternalHostname: "host-id",
+				Meta: &Meta{
+					Hostname:    "host-id",
+					InstanceID:  "host-id",
+					EC2Hostname: "ec2amaz-host-name",
+				},
+				Tags: &HostTags{OTel: []string{"tag1:val1", "tag2:val2"}},
+			},
+		},
+		{
+			name: "GCP (exporter.datadog.hostname.preview = false)",
+			attrs: testutil.NewAttributeMap(map[string]string{
+				conventions.AttributeCloudProvider:         conventions.AttributeCloudProviderGCP,
+				conventions.AttributeHostID:                "host-id",
+				conventions.AttributeCloudAccountID:        "project-id",
+				conventions.AttributeHostName:              "host-name",
+				conventions.AttributeHostType:              "host-type",
+				conventions.AttributeCloudAvailabilityZone: "cloud-zone",
+			}),
+			expected: &HostMetadata{
+				InternalHostname: "host-name",
+				Meta: &Meta{
+					Hostname:    "host-name",
+					HostAliases: []string{"host-name.project-id"},
+				},
+				Tags: &HostTags{
+					GCP: []string{"instance-id:host-id", "project:project-id", "zone:cloud-zone", "instance-type:host-type"},
+				},
+			},
+		},
+		{
+			name: "GCP (exporter.datadog.hostname.preview = true)",
+			attrs: testutil.NewAttributeMap(map[string]string{
+				conventions.AttributeCloudProvider:         conventions.AttributeCloudProviderGCP,
+				conventions.AttributeHostID:                "host-id",
+				conventions.AttributeCloudAccountID:        "project-id",
+				conventions.AttributeHostName:              "host-name",
+				conventions.AttributeHostType:              "host-type",
+				conventions.AttributeCloudAvailabilityZone: "cloud-zone",
+			}),
+			usePreviewHostnameLogic: true,
+			expected: &HostMetadata{
+				InternalHostname: "host-name.project-id",
+				Meta: &Meta{
+					Hostname: "host-name.project-id",
+				},
+				Tags: &HostTags{
+					GCP: []string{"instance-id:host-id", "project:project-id", "zone:cloud-zone", "instance-type:host-type"},
+				},
+			},
+		},
+		{
+			name: "Azure (exporter.datadog.hostname.preview = false)",
+			attrs: testutil.NewAttributeMap(map[string]string{
+				conventions.AttributeCloudProvider:  conventions.AttributeCloudProviderAzure,
+				conventions.AttributeHostName:       "azure-host-name",
+				conventions.AttributeCloudRegion:    "location",
+				conventions.AttributeHostID:         "azure-vm-id",
+				conventions.AttributeCloudAccountID: "subscriptionID",
+				azure.AttributeResourceGroupName:    "resourceGroup",
+			}),
+			expected: &HostMetadata{
+				InternalHostname: "azure-host-name",
+				Meta: &Meta{
+					Hostname:    "azure-host-name",
+					HostAliases: []string{"azure-vm-id"},
+				},
+				Tags: &HostTags{},
+			},
+		},
+		{
+			name: "Azure (exporter.datadog.hostname.preview = true)",
+			attrs: testutil.NewAttributeMap(map[string]string{
+				conventions.AttributeCloudProvider:  conventions.AttributeCloudProviderAzure,
+				conventions.AttributeHostName:       "azure-host-name",
+				conventions.AttributeCloudRegion:    "location",
+				conventions.AttributeHostID:         "azure-vm-id",
+				conventions.AttributeCloudAccountID: "subscriptionID",
+				azure.AttributeResourceGroupName:    "resourceGroup",
+			}),
+			usePreviewHostnameLogic: true,
+			expected: &HostMetadata{
+				InternalHostname: "azure-vm-id",
+				Meta: &Meta{
+					Hostname: "azure-vm-id",
+				},
+				Tags: &HostTags{},
+			},
+		},
+		{
+			name: "Custom name",
+			attrs: testutil.NewAttributeMap(map[string]string{
+				attributes.AttributeDatadogHostname: "custom-name",
+			}),
+			expected: &HostMetadata{
+				InternalHostname: "custom-name",
+				Meta: &Meta{
+					Hostname: "custom-name",
+				},
+				Tags: &HostTags{},
+			},
+		},
+	}
+
+	for _, testInstance := range tests {
+		t.Run(testInstance.name, func(t *testing.T) {
+			registry := featuregate.NewRegistry()
+			registry.MustRegisterID(HostnamePreviewFeatureGate, featuregate.StageBeta)
+			require.NoError(t, registry.Apply(map[string]bool{HostnamePreviewFeatureGate: testInstance.usePreviewHostnameLogic}))
+			metadata := metadataFromAttributesWithRegistry(registry, testInstance.attrs)
+			assert.Equal(t, testInstance.expected.InternalHostname, metadata.InternalHostname)
+			assert.Equal(t, testInstance.expected.Meta, metadata.Meta)
+			assert.ElementsMatch(t, testInstance.expected.Tags.GCP, metadata.Tags.GCP)
+			assert.ElementsMatch(t, testInstance.expected.Tags.OTel, metadata.Tags.OTel)
 		})
-	assert.ElementsMatch(t, metadataAWS.Tags.OTel, []string{"tag1:val1", "tag2:val2"})
-
-	// GCP
-	attrsGCP := testutils.NewAttributeMap(map[string]string{
-		conventions.AttributeCloudProvider:         conventions.AttributeCloudProviderGCP,
-		conventions.AttributeHostID:                "host-id",
-		conventions.AttributeCloudAccountID:        "project-id",
-		conventions.AttributeHostName:              "host-name",
-		conventions.AttributeHostType:              "host-type",
-		conventions.AttributeCloudAvailabilityZone: "cloud-zone",
-	})
-	metadataGCP := metadataFromAttributes(attrsGCP)
-	assert.Equal(t, metadataGCP.InternalHostname, "host-name")
-	assert.Equal(t, metadataGCP.Meta.Hostname, "host-name")
-	assert.ElementsMatch(t, metadataGCP.Meta.HostAliases, []string{"host-name.project-id"})
-	assert.ElementsMatch(t, metadataGCP.Tags.GCP,
-		[]string{"instance-id:host-id", "project:project-id", "zone:cloud-zone", "instance-type:host-type"})
-
-	// Azure
-	attrsAzure := testutils.NewAttributeMap(map[string]string{
-		conventions.AttributeCloudProvider:  conventions.AttributeCloudProviderAzure,
-		conventions.AttributeHostName:       "azure-host-name",
-		conventions.AttributeCloudRegion:    "location",
-		conventions.AttributeHostID:         "azure-vm-id",
-		conventions.AttributeCloudAccountID: "subscriptionID",
-		azure.AttributeResourceGroupName:    "resourceGroup",
-	})
-	metadataAzure := metadataFromAttributes(attrsAzure)
-	assert.Equal(t, metadataAzure.InternalHostname, "azure-host-name")
-	assert.Equal(t, metadataAzure.Meta.Hostname, "azure-host-name")
-	assert.ElementsMatch(t, metadataAzure.Meta.HostAliases, []string{"azure-vm-id"})
-
-	// Other
-	attrsOther := testutils.NewAttributeMap(map[string]string{
-		attributes.AttributeDatadogHostname: "custom-name",
-	})
-	metadataOther := metadataFromAttributes(attrsOther)
-	assert.Equal(t, metadataOther.InternalHostname, "custom-name")
-	assert.Equal(t, metadataOther.Meta, &Meta{Hostname: "custom-name"})
-	assert.Equal(t, metadataOther.Tags, &HostTags{})
-
+	}
 }
 
 func TestPushMetadata(t *testing.T) {
@@ -167,7 +265,7 @@ func TestPushMetadata(t *testing.T) {
 		assert.Equal(t, r.Header.Get("DD-Api-Key"), "apikey")
 		assert.Equal(t, r.Header.Get("User-Agent"), "otelcontribcol/1.0")
 
-		body, err := ioutil.ReadAll(r.Body)
+		body, err := io.ReadAll(r.Body)
 		require.NoError(t, err)
 
 		var recvMetadata HostMetadata
@@ -204,19 +302,19 @@ func TestPusher(t *testing.T) {
 		APIKey:              "apikey",
 		UseResourceMetadata: true,
 	}
-	params := componenttest.NewNopExporterCreateSettings()
+	params := exportertest.NewNopCreateSettings()
 	params.BuildInfo = mockBuildInfo
 
 	hostProvider, err := GetSourceProvider(componenttest.NewNopTelemetrySettings(), "")
 	require.NoError(t, err)
 
-	attrs := testutils.NewAttributeMap(map[string]string{
+	attrs := testutil.NewAttributeMap(map[string]string{
 		attributes.AttributeDatadogHostname: "datadog-hostname",
 	})
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	server := testutils.DatadogServerMock()
+	server := testutil.DatadogServerMock()
 	defer server.Close()
 	pcfg.MetricsEndpoint = server.URL
 

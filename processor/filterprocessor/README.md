@@ -8,11 +8,15 @@
 
 The filter processor can be configured to include or exclude:
 
-- logs, based on resource attributes using the `strict` or `regexp` match types
-- metrics based on metric name in the case of the `strict` or `regexp` match types,
+- Logs, based on OTTL conditions or resource attributes using the `strict` or `regexp` match types
+- Metrics based on OTTL Conditions or metric name in the case of the `strict` or `regexp` match types,
   or based on other metric attributes in the case of the `expr` match type.
   Please refer to [config.go](./config.go) for the config spec.
-- Spans based on span names, and resource attributes, all with full regex support
+- Data points based on OTTL conditions
+- Spans based on OTTL conditions or span names and resource attributes, all with full regex support
+- Span Events based on OTTL conditions.
+
+For OTTL conditions configuration see [OTTL](#ottl).  For all other options, continue reading.
 
 It takes a pipeline type, of which `logs` `metrics`, and `traces` are supported, followed
 by an action:
@@ -31,6 +35,17 @@ For logs:
 - `record_attributes`: RecordAttributes defines a list of possible record
   attributes to match logs against.
   A match occurs if any record attribute matches all expressions in this given list.
+- `severity_texts`: SeverityTexts defines a list of possible severity texts to match the logs against.
+  A match occurs if the record matches any expression in this given list.
+- `bodies`: Bodies defines a list of possible log bodies to match the logs against.
+  A match occurs if the record matches any expression in this given list.
+- `severity_number`: SeverityNumber defines how to match a record based on its SeverityNumber.
+  The following can be configured for matching a log record's SeverityNumber:
+  - `min`: Min defines the minimum severity with which a log record should match.
+    e.g. if this is "WARN", all log records with "WARN" severity and above (WARN[2-4], ERROR[2-4], FATAL[2-4]) are matched.
+    The list of valid severities that may be used for this option can be found [here](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#displaying-severity). You may use either the numerical "SeverityNumber" or the "Short Name"
+  - `match_undefined`: MatchUndefinedSeverity defines whether to match logs with undefined severity or not when using the `min_severity` matching option.
+    By default, this is `false`.
 
 For metrics:
 
@@ -75,16 +90,43 @@ processors:
         resource_attributes:
           - Key: host.name
             Value: just_this_one_hostname
-    logs/regexp:
+  filter/regexp:
+    logs:
+      include:
         match_type: regexp
         resource_attributes:
           - Key: host.name
             Value: prefix.*
-    logs/regexp_record:
+  filter/regexp_record:
+    logs:
+      include:
         match_type: regexp
         record_attributes:
           - Key: record_attr
             Value: prefix_.*
+  # Filter on severity text field
+  filter/severity_text:
+    logs:
+      include:
+        match_type: regexp
+        severity_texts:
+        - INFO[2-4]?
+        - WARN[2-4]?
+        - ERROR[2-4]?
+  # Filter out logs below INFO (no DEBUG or TRACE level logs),
+  # retaining logs with undefined severity
+  filter/severity_number:
+    logs:
+      include:
+        severity_number:
+          min: "INFO"
+          match_undefined: true
+  filter/bodies:
+    logs:
+      include:
+        match_type: regexp
+        bodies:
+        - ^IMPORTANT RECORD
 ```
 
 Refer to the config files in [testdata](./testdata) for detailed
@@ -103,6 +145,8 @@ Made available to the expression environment are the following:
 
 * `MetricName`
     a variable containing the current Metric's name
+* `MetricType`
+    a variable containing the current Metric's type: "Gauge", "Sum", "Histogram", "ExponentialHistogram" or "Summary".
 * `Label(name)`
     a function that takes a label name string as an argument and returns a string: the value of a label with that
     name if one exists, or ""
@@ -120,6 +164,7 @@ processors:
         match_type: expr
         expressions:
         - MetricName == "my.metric" && Label("my_label") == "abc123"
+        - MetricType == "Histogram"
 ```
 
 The above config will filter out any Metric that both has the name "my.metric" and has at least one datapoint
@@ -229,7 +274,7 @@ processors:
         services:
           - app_3
       exclude:
-        match_type: regex
+        match_type: regexp
         services:
           - app_1
           - app_2
@@ -245,6 +290,59 @@ processors:
         resources:
           - Key: container.host
             Value: (localhost|127.0.0.1)
+```
+
+## OTTL
+The [OpenTelemetry Transformation Language](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/README.md) is a language for interacting with telemetry within the collector in generic ways.
+The filterprocessor can be configured to use OTTL conditions to determine when to drop telemetry.
+If any condition is met, the telemetry is dropped (each condition is ORed together).
+Each configuration option corresponds with a different type of telemetry and OTTL Context.
+See the table below for details on each context and the fields it exposes.
+
+| Config              | OTTL Context                                                                                                                       |
+|---------------------|------------------------------------------------------------------------------------------------------------------------------------|
+| `traces.span`       | [Span](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottlspan/README.md)           |
+| `traces.spanevent`  | [SpanEvent](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottlspanevent/README.md) |
+| `metrics.metric`    | [Metric](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottlmetric/README.md)       |
+| `metrics.datapoint` | [DataPoint](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottldatapoint/README.md) |
+| `logs.log_record`   | [Log](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottllog/README.md)             |
+
+The OTTL allows the use of `and`, `or`, and `()` in conditions.
+See [OTTL Boolean Expressions](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/README.md#boolean-expressions) for more details.
+
+The filter processor has access to all the [factory functions of the OTTL](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/ottlfuncs#ottl-functions) 
+
+For conditions that apply to the same signal, such as spans and span events, if the "higher" level telemetry matches a condition and is dropped, the "lower" level condition will not be checked.
+This means that if a span is dropped but a span event condition was defined, the span event condition will not be checked.
+The same relationship applies to metrics and datapoints.
+
+If all span events for a span are dropped, the span will be left intact.
+If all datapoints for a metric are dropped, the metric will also be dropped.
+
+### OTTL Examples
+
+```yaml
+processors:
+  filter:
+    traces:
+      span:
+        - 'attributes["container.name"] == "app_container_1"'
+        - 'resource.attributes["host.name"] == "localhost"'
+        - 'name == "app_3"'
+      spanevent:
+        - 'attributes["grpc"] == true'
+        - 'IsMatch(name, ".*grpc.*") == true'
+    metrics:
+      metric:
+          - 'name == "my.metric" and attributes["my_label"] == "abc123"'
+          - 'type == METRIC_DATA_TYPE_HISTOGRAM'
+      datapoint:
+          - 'metric.type == METRIC_DATA_TYPE_SUMMARY'
+          - 'resource.attributes["service.name"] == "my_service_name"'
+    logs:
+      log_record:
+        - 'IsMatch(body, ".*password.*") == true'
+        - 'severity_number < SEVERITY_NUMBER_WARN'
 ```
 
 [alpha]:https://github.com/open-telemetry/opentelemetry-collector#alpha

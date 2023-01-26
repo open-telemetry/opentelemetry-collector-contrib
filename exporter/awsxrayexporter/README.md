@@ -47,7 +47,7 @@ by the Span Resource object. X-Ray uses this data to generate inferred segments 
 
 ## Exporter Configuration
 
-The following exporter configuration parameters are supported. They mirror and have the same affect as the
+The following exporter configuration parameters are supported. They mirror and have the same effect as the
 comparable AWS X-Ray Daemon configuration values.
 
 | Name                   | Description                                                                        | Default |
@@ -64,6 +64,23 @@ comparable AWS X-Ray Daemon configuration values.
 | `role_arn`             | IAM role to upload segments to a different account.                                |         |
 | `indexed_attributes`   | List of attribute names to be converted to X-Ray annotations.                      |         |
 | `index_all_attributes` | Enable or disable conversion of all OpenTelemetry attributes to X-Ray annotations. | false   |
+| `aws_log_groups`       | List of log group names for CloudWatch.                                             | []      |
+
+## Traces and logs correlation
+
+AWS X-Ray can be integrated with CloudWatch Logs to correlate traces with logs. For this integration to work, the X-Ray
+segments must have the AWS Property `cloudwatch_logs` set. This property is set using the AWS X-Ray exporter with the
+following values that are evaluated in this order:
+
+1. `aws.log.group.arns` resource attribute.
+2. `aws.log.group.names` resource attribute.
+3. `aws_log_groups` configuration property.
+
+In the case of multiple values are defined, the value with higher precedence will be used to set the `cloudwatch_logs` AWS Property.
+
+`aws.log.group.arns` and `aws.log.group.names` are slice resource attributes that can be set programmatically.
+Alternatively those resource attributes can be set using the [`OTEL_RESOURCE_ATTRIBUTES` environment variable](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/sdk.md#specifying-resource-information-via-an-environment-variable). In this case only a single log group/log group arn can
+be provided as a string rather than a slice.
 
 ## AWS Credential Configuration
 

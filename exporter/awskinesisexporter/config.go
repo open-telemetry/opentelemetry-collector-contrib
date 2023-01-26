@@ -17,7 +17,7 @@ package awskinesisexporter // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"fmt"
 
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -36,7 +36,6 @@ type Encoding struct {
 
 // Config contains the main configuration options for the awskinesis exporter
 type Config struct {
-	config.ExporterSettings        `mapstructure:",squash"`
 	exporterhelper.TimeoutSettings `mapstructure:",squash"`
 	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
 	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
@@ -47,6 +46,8 @@ type Config struct {
 	MaxRecordSize      int       `mapstructure:"max_record_size"`
 }
 
+var _ component.Config = (*Config)(nil)
+
 // Validate checks if the exporter configuration is valid
 func (cfg *Config) Validate() error {
 	if err := cfg.QueueSettings.Validate(); err != nil {
@@ -55,5 +56,3 @@ func (cfg *Config) Validate() error {
 
 	return nil
 }
-
-var _ config.Exporter = (*Config)(nil)

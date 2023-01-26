@@ -17,12 +17,12 @@ package tencentcloudlogserviceexporter
 import (
 	"encoding/json"
 	"os"
-	"reflect"
 	"sort"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -39,33 +39,24 @@ func (kv logKeyValuePairs) Len() int           { return len(kv) }
 func (kv logKeyValuePairs) Swap(i, j int)      { kv[i], kv[j] = kv[j], kv[i] }
 func (kv logKeyValuePairs) Less(i, j int) bool { return kv[i].Key < kv[j].Key }
 
-func getComplexAttributeValueMap() pcommon.Value {
-	mapVal := pcommon.NewValueMap()
-	mapValReal := mapVal.MapVal()
-	mapValReal.InsertBool("result", true)
-	mapValReal.InsertString("status", "ok")
-	mapValReal.InsertDouble("value", 1.3)
-	mapValReal.InsertInt("code", 200)
-	mapValReal.InsertNull("null")
-	arrayVal := pcommon.NewValueSlice()
-	arrayVal.SliceVal().AppendEmpty().SetStringVal("array")
-	mapValReal.Insert("array", arrayVal)
-
-	subMapVal := pcommon.NewValueMap()
-	subMapVal.MapVal().InsertString("data", "hello world")
-	mapValReal.Insert("map", subMapVal)
-
-	mapValReal.InsertString("status", "ok")
-	return mapVal
+func fillComplexAttributeValueMap(m pcommon.Map) {
+	m.PutBool("result", true)
+	m.PutStr("status", "ok")
+	m.PutDouble("value", 1.3)
+	m.PutInt("code", 200)
+	m.PutEmpty("null")
+	m.PutEmptySlice("array").AppendEmpty().SetStr("array")
+	m.PutEmptyMap("map").PutStr("data", "hello world")
+	m.PutStr("status", "ok")
 }
 
 func createLogData(numberOfLogs int) plog.Logs {
 	logs := plog.NewLogs()
 	logs.ResourceLogs().AppendEmpty() // Add an empty ResourceLogs
 	rl := logs.ResourceLogs().AppendEmpty()
-	rl.Resource().Attributes().InsertString("resouceKey", "resourceValue")
-	rl.Resource().Attributes().InsertString(conventions.AttributeServiceName, "test-log-service-exporter")
-	rl.Resource().Attributes().InsertString(conventions.AttributeHostName, "test-host")
+	rl.Resource().Attributes().PutStr("resouceKey", "resourceValue")
+	rl.Resource().Attributes().PutStr(conventions.AttributeServiceName, "test-log-service-exporter")
+	rl.Resource().Attributes().PutStr(conventions.AttributeHostName, "test-host")
 	sl := rl.ScopeLogs().AppendEmpty()
 	sl.Scope().SetName("collector")
 	sl.Scope().SetVersion("v0.1.0")
@@ -77,30 +68,27 @@ func createLogData(numberOfLogs int) plog.Logs {
 		case 0:
 			// do nothing, left body null
 		case 1:
-			logRecord.Body().SetBoolVal(true)
+			logRecord.Body().SetBool(true)
 		case 2:
-			logRecord.Body().SetIntVal(2.0)
+			logRecord.Body().SetInt(2.0)
 		case 3:
-			logRecord.Body().SetDoubleVal(3.0)
+			logRecord.Body().SetDouble(3.0)
 		case 4:
-			logRecord.Body().SetStringVal("4")
+			logRecord.Body().SetStr("4")
 		case 5:
-
-			logRecord.Attributes().Insert("map-value", getComplexAttributeValueMap())
-			logRecord.Body().SetStringVal("log contents")
+			fillComplexAttributeValueMap(logRecord.Attributes().PutEmptyMap("map-value"))
+			logRecord.Body().SetStr("log contents")
 		case 6:
-			arrayVal := pcommon.NewValueSlice()
-			arrayVal.SliceVal().AppendEmpty().SetStringVal("array")
-			logRecord.Attributes().Insert("array-value", arrayVal)
-			logRecord.Body().SetStringVal("log contents")
+			logRecord.Attributes().PutEmptySlice("array-value").AppendEmpty().SetStr("array")
+			logRecord.Body().SetStr("log contents")
 		default:
-			logRecord.Body().SetStringVal("log contents")
+			logRecord.Body().SetStr("log contents")
 		}
-		logRecord.Attributes().InsertString(conventions.AttributeServiceName, "myapp")
-		logRecord.Attributes().InsertString("my-label", "myapp-type")
-		logRecord.Attributes().InsertString(conventions.AttributeHostName, "myhost")
-		logRecord.Attributes().InsertString("custom", "custom")
-		logRecord.Attributes().InsertNull("null-value")
+		logRecord.Attributes().PutStr(conventions.AttributeServiceName, "myapp")
+		logRecord.Attributes().PutStr("my-label", "myapp-type")
+		logRecord.Attributes().PutStr(conventions.AttributeHostName, "myhost")
+		logRecord.Attributes().PutStr("custom", "custom")
+		logRecord.Attributes().PutEmpty("null-value")
 
 		logRecord.SetTimestamp(ts)
 	}
@@ -130,17 +118,11 @@ func TestConvertLogs(t *testing.T) {
 
 	wantLogs := make([][]logKeyValuePair, 0, validLogCount)
 	resultLogFile := "./testdata/logservice_log_data.json"
-	if err := loadFromJSON(resultLogFile, &wantLogs); err != nil {
-		t.Errorf("Failed load log key value pairs from %q: %v", resultLogFile, err)
-		return
-	}
+	require.NoError(t, loadFromJSON(resultLogFile, &wantLogs))
 	for j := 0; j < validLogCount; j++ {
-
 		sort.Sort(logKeyValuePairs(gotLogPairs[j]))
 		sort.Sort(logKeyValuePairs(wantLogs[j]))
-		if !reflect.DeepEqual(gotLogPairs[j], wantLogs[j]) {
-			t.Errorf("Unsuccessful conversion \nGot:\n\t%v\nWant:\n\t%v", gotLogPairs, wantLogs)
-		}
+		assert.Equal(t, wantLogs[j], gotLogPairs[j])
 	}
 }
 

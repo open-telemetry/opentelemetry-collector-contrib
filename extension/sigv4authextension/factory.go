@@ -20,7 +20,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/extension"
 )
 
 const (
@@ -29,20 +29,18 @@ const (
 )
 
 // NewFactory creates a factory for the Sigv4 Authenticator extension.
-func NewFactory() component.ExtensionFactory {
-	return component.NewExtensionFactory(typeStr, createDefaultConfig, createExtension)
+func NewFactory() extension.Factory {
+	return extension.NewFactory(typeStr, createDefaultConfig, createExtension, component.StabilityLevelBeta)
 }
 
 // createDefaultConfig() creates a Config struct with default values.
 // We only set the ID here.
-func createDefaultConfig() config.Extension {
-	return &Config{
-		ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
-	}
+func createDefaultConfig() component.Config {
+	return &Config{}
 }
 
 // createExtension() calls newSigv4Extension() in extension.go to create the extension.
-func createExtension(_ context.Context, set component.ExtensionCreateSettings, cfg config.Extension) (component.Extension, error) {
+func createExtension(_ context.Context, set extension.CreateSettings, cfg component.Config) (extension.Extension, error) {
 	awsSDKInfo := fmt.Sprintf("%s/%s", aws.SDKName, aws.SDKVersion)
 	return newSigv4Extension(cfg.(*Config), awsSDKInfo, set.Logger), nil
 }

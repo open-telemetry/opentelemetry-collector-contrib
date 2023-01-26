@@ -121,17 +121,16 @@ func (s *scraper) scrape(context.Context) (pmetric.Metrics, error) {
 		builtMetric.SetUnit(metricCfg.Unit)
 
 		if (metricCfg.Sum != SumMetric{}) {
-			builtMetric.SetDataType(pmetric.MetricDataTypeSum)
-			builtMetric.Sum().SetIsMonotonic(metricCfg.Sum.Monotonic)
+			builtMetric.SetEmptySum().SetIsMonotonic(metricCfg.Sum.Monotonic)
 
 			switch metricCfg.Sum.Aggregation {
 			case "cumulative":
-				builtMetric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+				builtMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 			case "delta":
-				builtMetric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+				builtMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 			}
 		} else {
-			builtMetric.SetDataType(pmetric.MetricDataTypeGauge)
+			builtMetric.SetEmptyGauge()
 		}
 
 		metrics[name] = builtMetric
@@ -150,9 +149,9 @@ func (s *scraper) scrape(context.Context) (pmetric.Metrics, error) {
 				metric = builtmetric
 			} else {
 				metric = metricSlice.AppendEmpty()
-				metric.SetDataType(pmetric.MetricDataTypeGauge)
 				metric.SetName(watcher.MetricRep.Name)
 				metric.SetUnit("1")
+				metric.SetEmptyGauge()
 			}
 
 			initializeMetricDps(metric, now, val, watcher.MetricRep.Attributes)
@@ -165,24 +164,24 @@ func initializeMetricDps(metric pmetric.Metric, now pcommon.Timestamp, counterVa
 	attributes map[string]string) {
 	var dps pmetric.NumberDataPointSlice
 
-	if metric.DataType() == pmetric.MetricDataTypeGauge {
+	if metric.Type() == pmetric.MetricTypeGauge {
 		dps = metric.Gauge().DataPoints()
 	} else {
 		dps = metric.Sum().DataPoints()
 	}
 
 	dp := dps.AppendEmpty()
+	if counterValue.InstanceName != "" {
+		dp.Attributes().PutStr(instanceLabelName, counterValue.InstanceName)
+	}
 	if attributes != nil {
 		for attKey, attVal := range attributes {
-			dp.Attributes().InsertString(attKey, attVal)
+			dp.Attributes().PutStr(attKey, attVal)
 		}
-	}
-	if counterValue.InstanceName != "" {
-		dp.Attributes().InsertString(instanceLabelName, counterValue.InstanceName)
 	}
 
 	dp.SetTimestamp(now)
-	dp.SetDoubleVal(counterValue.Value)
+	dp.SetDoubleValue(counterValue.Value)
 }
 
 func instancesFromConfig(oc ObjectConfig) []string {

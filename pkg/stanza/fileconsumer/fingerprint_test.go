@@ -16,8 +16,8 @@ package fileconsumer
 
 import (
 	"fmt"
-	"io/ioutil"
 	"math/rand"
+	"os"
 	"strings"
 	"testing"
 
@@ -31,8 +31,12 @@ func TestNewFingerprintDoesNotModifyOffset(t *testing.T) {
 
 	fileContents := fmt.Sprintf("%s%s%s\n", fingerprint, next, extra)
 
-	f, _, tempDir := newTestScenario(t, nil)
-	f.fingerprintSize = len(fingerprint)
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir)
+	cfg.StartAt = "beginning"
+	operator, _ := buildTestManager(t, cfg)
+
+	operator.readerFactory.readerConfig.fingerprintSize = len(fingerprint)
 
 	// Create a new file
 	temp := openTemp(t, tempDir)
@@ -47,7 +51,7 @@ func TestNewFingerprintDoesNotModifyOffset(t *testing.T) {
 	_, err = temp.Seek(0, 0)
 	require.NoError(t, err)
 
-	fp, err := f.NewFingerprint(temp)
+	fp, err := operator.readerFactory.newFingerprint(temp)
 	require.NoError(t, err)
 
 	// Validate the fingerprint is the correct size
@@ -122,8 +126,13 @@ func TestNewFingerprint(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			f, _, tempDir := newTestScenario(t, nil)
-			f.fingerprintSize = tc.fingerprintSize
+
+			tempDir := t.TempDir()
+			cfg := NewConfig().includeDir(tempDir)
+			cfg.StartAt = "beginning"
+			operator, _ := buildTestManager(t, cfg)
+
+			operator.readerFactory.readerConfig.fingerprintSize = tc.fingerprintSize
 
 			// Create a new file
 			temp := openTemp(t, tempDir)
@@ -134,7 +143,7 @@ func TestNewFingerprint(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, tc.fileSize, int(info.Size()))
 
-			fp, err := f.NewFingerprint(temp)
+			fp, err := operator.readerFactory.newFingerprint(temp)
 			require.NoError(t, err)
 
 			require.Equal(t, tc.expectedLen, len(fp.FirstBytes))
@@ -225,10 +234,14 @@ func TestFingerprintStartsWith(t *testing.T) {
 func TestFingerprintStartsWith_FromFile(t *testing.T) {
 	r := rand.New(rand.NewSource(112358))
 
-	operator, _, tempDir := newTestScenario(t, nil)
-	operator.fingerprintSize *= 10
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir)
+	cfg.StartAt = "beginning"
+	operator, _ := buildTestManager(t, cfg)
 
-	fileLength := 12 * operator.fingerprintSize
+	operator.readerFactory.readerConfig.fingerprintSize *= 10
+
+	fileLength := 12 * operator.readerFactory.readerConfig.fingerprintSize
 
 	// Make a []byte we can write one at a time
 	content := make([]byte, fileLength)
@@ -244,17 +257,17 @@ func TestFingerprintStartsWith_FromFile(t *testing.T) {
 		}
 	}
 
-	fullFile, err := ioutil.TempFile(tempDir, "")
+	fullFile, err := os.CreateTemp(tempDir, "")
 	require.NoError(t, err)
 	defer fullFile.Close()
 
 	_, err = fullFile.Write(content)
 	require.NoError(t, err)
 
-	fff, err := operator.NewFingerprint(fullFile)
+	fff, err := operator.readerFactory.newFingerprint(fullFile)
 	require.NoError(t, err)
 
-	partialFile, err := ioutil.TempFile(tempDir, "")
+	partialFile, err := os.CreateTemp(tempDir, "")
 	require.NoError(t, err)
 	defer partialFile.Close()
 
@@ -269,7 +282,7 @@ func TestFingerprintStartsWith_FromFile(t *testing.T) {
 		_, err = partialFile.Write(content[i:i])
 		require.NoError(t, err)
 
-		pff, err := operator.NewFingerprint(partialFile)
+		pff, err := operator.readerFactory.newFingerprint(partialFile)
 		require.NoError(t, err)
 
 		require.True(t, fff.StartsWith(pff))

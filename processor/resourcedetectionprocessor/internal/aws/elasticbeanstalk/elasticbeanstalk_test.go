@@ -18,15 +18,12 @@ import (
 	"context"
 	"errors"
 	"io"
-	"io/ioutil"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
+	"go.opentelemetry.io/collector/processor/processortest"
 )
 
 const xrayConf = "{\"deployment_id\":23,\"version_label\":\"env-version-1234\",\"environment_name\":\"BETA\"}"
@@ -43,7 +40,7 @@ func (mfs *mockFileSystem) Open(path string) (io.ReadCloser, error) {
 		return nil, errors.New("file not found")
 	}
 	mfs.path = path
-	f := ioutil.NopCloser(strings.NewReader(mfs.contents))
+	f := io.NopCloser(strings.NewReader(mfs.contents))
 	return f, nil
 }
 
@@ -52,7 +49,7 @@ func (mfs *mockFileSystem) IsWindows() bool {
 }
 
 func Test_newDetector(t *testing.T) {
-	d, err := NewDetector(componenttest.NewNopProcessorCreateSettings(), nil)
+	d, err := NewDetector(processortest.NewNopCreateSettings(), nil)
 
 	assert.Nil(t, err)
 	assert.NotNil(t, d)
@@ -97,15 +94,15 @@ func Test_AttributesDetectedSuccessfully(t *testing.T) {
 
 	want := pcommon.NewResource()
 	attr := want.Attributes()
-	attr.InsertString("cloud.provider", "aws")
-	attr.InsertString("cloud.platform", "aws_elastic_beanstalk")
-	attr.InsertString("deployment.environment", "BETA")
-	attr.InsertString("service.instance.id", "23")
-	attr.InsertString("service.version", "env-version-1234")
+	attr.PutStr("cloud.provider", "aws")
+	attr.PutStr("cloud.platform", "aws_elastic_beanstalk")
+	attr.PutStr("deployment.environment", "BETA")
+	attr.PutStr("service.instance.id", "23")
+	attr.PutStr("service.version", "env-version-1234")
 
 	r, _, err := d.Detect(context.TODO())
 
 	assert.Nil(t, err)
 	assert.NotNil(t, r)
-	assert.Equal(t, internal.AttributesToMap(want.Attributes()), internal.AttributesToMap(r.Attributes()))
+	assert.Equal(t, want.Attributes().AsRaw(), r.Attributes().AsRaw())
 }

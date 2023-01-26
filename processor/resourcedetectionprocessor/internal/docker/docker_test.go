@@ -25,7 +25,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/docker"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
 
 var _ docker.Provider = (*mockMetadata)(nil)
@@ -54,13 +53,11 @@ func TestDetect(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, conventions.SchemaURL, schemaURL)
 	md.AssertExpectations(t)
-	res.Attributes().Sort()
 
-	expected := internal.NewResource(map[string]interface{}{
+	expected := map[string]any{
 		conventions.AttributeHostName: "hostname",
 		conventions.AttributeOSType:   "darwin",
-	})
-	expected.Attributes().Sort()
+	}
 
-	assert.Equal(t, expected, res)
+	assert.Equal(t, expected, res.Attributes().AsRaw())
 }

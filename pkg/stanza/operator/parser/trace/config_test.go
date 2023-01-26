@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,72 +14,67 @@
 package trace
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper/operatortest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/operatortest"
 )
 
 func TestConfig(t *testing.T) {
-	cases := []operatortest.ConfigUnmarshalTest{
-		{
-			Name:   "default",
-			Expect: defaultCfg(),
-		},
-		{
-			Name: "on_error_drop",
-			Expect: func() *Config {
-				cfg := defaultCfg()
-				cfg.OnError = "drop"
-				return cfg
-			}(),
-		},
-		{
-			Name: "spanid",
-			Expect: func() *Config {
-				parseFrom := entry.NewBodyField("app_span_id")
-				cfg := helper.SpanIDConfig{}
-				cfg.ParseFrom = &parseFrom
+	operatortest.ConfigUnmarshalTests{
+		DefaultConfig: NewConfig(),
+		TestsFile:     filepath.Join(".", "testdata", "config.yaml"),
+		Tests: []operatortest.ConfigUnmarshalTest{
+			{
+				Name:   "default",
+				Expect: NewConfig(),
+			},
+			{
+				Name: "on_error_drop",
+				Expect: func() *Config {
+					cfg := NewConfig()
+					cfg.OnError = "drop"
+					return cfg
+				}(),
+			},
+			{
+				Name: "spanid",
+				Expect: func() *Config {
+					parseFrom := entry.NewBodyField("app_span_id")
+					cfg := helper.SpanIDConfig{}
+					cfg.ParseFrom = &parseFrom
 
-				c := defaultCfg()
-				c.SpanID = &cfg
-				return c
-			}(),
+					c := NewConfig()
+					c.SpanID = &cfg
+					return c
+				}(),
+			},
+			{
+				Name: "traceid",
+				Expect: func() *Config {
+					parseFrom := entry.NewBodyField("app_trace_id")
+					cfg := helper.TraceIDConfig{}
+					cfg.ParseFrom = &parseFrom
+
+					c := NewConfig()
+					c.TraceID = &cfg
+					return c
+				}(),
+			},
+			{
+				Name: "trace_flags",
+				Expect: func() *Config {
+					parseFrom := entry.NewBodyField("app_trace_flags_id")
+					cfg := helper.TraceFlagsConfig{}
+					cfg.ParseFrom = &parseFrom
+
+					c := NewConfig()
+					c.TraceFlags = &cfg
+					return c
+				}(),
+			},
 		},
-		{
-			Name: "traceid",
-			Expect: func() *Config {
-				parseFrom := entry.NewBodyField("app_trace_id")
-				cfg := helper.TraceIDConfig{}
-				cfg.ParseFrom = &parseFrom
-
-				c := defaultCfg()
-				c.TraceID = &cfg
-				return c
-			}(),
-		},
-		{
-			Name: "trace_flags",
-			Expect: func() *Config {
-				parseFrom := entry.NewBodyField("app_trace_flags_id")
-				cfg := helper.TraceFlagsConfig{}
-				cfg.ParseFrom = &parseFrom
-
-				c := defaultCfg()
-				c.TraceFlags = &cfg
-				return c
-			}(),
-		},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.Name, func(t *testing.T) {
-			tc.Run(t, defaultCfg())
-		})
-	}
-}
-
-func defaultCfg() *Config {
-	return NewConfig("trace_parser")
+	}.Run(t)
 }

@@ -11,7 +11,7 @@ the collector to export traces from multiples nodes/services in a single batch. 
 and some useful related utilities can be found [here](https://github.com/signalfx/sapm-proto/).
 
 > Please review the Collector's [security
-> documentation](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/security.md),
+> documentation](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/security-best-practices.md),
 > which contains recommendations on securing sensitive information such as the
 > API key required by this exporter.
 

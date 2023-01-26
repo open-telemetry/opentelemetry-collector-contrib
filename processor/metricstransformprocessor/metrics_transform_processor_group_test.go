@@ -22,13 +22,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/processor/processorhelper"
+	"go.opentelemetry.io/collector/processor/processortest"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
 type metricsGroupingTest struct {
@@ -78,9 +78,11 @@ func TestMetricsGrouping(t *testing.T) {
 					otlpDataModelGateEnabled: useOTLP,
 				}
 
-				mtp, err := processorhelper.NewMetricsProcessor(&Config{
-					ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
-				}, next, p.processMetrics, processorhelper.WithCapabilities(consumerCapabilities))
+				mtp, err := processorhelper.NewMetricsProcessor(
+					context.Background(),
+					processortest.NewNopCreateSettings(),
+					&Config{},
+					next, p.processMetrics, processorhelper.WithCapabilities(consumerCapabilities))
 				require.NoError(t, err)
 
 				caps := mtp.Capabilities()
@@ -96,7 +98,7 @@ func TestMetricsGrouping(t *testing.T) {
 
 				got := next.AllMetrics()
 				require.Equal(t, 1, len(got))
-				require.NoError(t, scrapertest.CompareMetrics(expected, got[0], scrapertest.IgnoreMetricValues()))
+				require.NoError(t, pmetrictest.CompareMetrics(expected, got[0], pmetrictest.IgnoreMetricValues()))
 
 				assert.NoError(t, mtp.Shutdown(context.Background()))
 			})

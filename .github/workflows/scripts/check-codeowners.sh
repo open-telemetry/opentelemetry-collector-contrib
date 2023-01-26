@@ -86,8 +86,29 @@ check_component_existence() {
   fi
 }
 
+check_entries_in_allowlist() {
+  NOT_ORPHANED=0
+  while IFS= read -r line
+  do
+    if [[ $line =~ ^[^#] ]]; then
+      COMPONENT_PATH=$(echo "$line" | cut -d" " -f1)
+      if grep -wq "^$COMPONENT_PATH/ " "$CODEOWNERS"; then
+        echo "\"$COMPONENT_PATH\" has an entry in CODEOWNERS file"
+        ((NOT_ORPHANED=NOT_ORPHANED+1))
+      fi
+    fi
+  done <"$ALLOWLIST"
+  echo "There are $NOT_ORPHANED component(s) that have owners but are present in ALLOWLIST file"
+  if [ "$NOT_ORPHANED" -gt 0 ]; then
+    exit 1
+  fi
+}
+
 if [[ "$1" == "check_code_owner_existence" ]];  then
   check_code_owner_existence
 elif [[ "$1" == "check_component_existence" ]]; then
   check_component_existence
+elif [[ "$1" == "check_entries_in_allowlist" ]]; then
+  check_entries_in_allowlist
 fi
+

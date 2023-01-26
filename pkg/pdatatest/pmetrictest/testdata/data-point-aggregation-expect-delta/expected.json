@@ -1,0 +1,18 @@
+{
+   "resourceMetrics": [
+      {
+         "scopeMetrics": [
+            {
+               "metrics": [
+                  {
+                     "name": "delta.one",
+                     "sum": {
+                        "aggregationTemporality": 1
+                     }
+                  }
+               ]
+            }
+         ]
+      }
+   ]
+}

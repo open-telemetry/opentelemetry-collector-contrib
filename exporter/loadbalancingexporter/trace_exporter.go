@@ -24,34 +24,30 @@ import (
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal"
 )
 
-var _ component.TracesExporter = (*traceExporterImp)(nil)
-
-var (
-	errNoTracesInBatch = errors.New("no traces were found in the batch")
-)
+var _ exporter.Traces = (*traceExporterImp)(nil)
 
 type traceExporterImp struct {
 	loadBalancer loadBalancer
+	routingKey   routingKey
 
 	stopped    bool
 	shutdownWg sync.WaitGroup
 }
 
 // Create new traces exporter
-func newTracesExporter(params component.ExporterCreateSettings, cfg config.Exporter) (*traceExporterImp, error) {
+func newTracesExporter(params exporter.CreateSettings, cfg component.Config) (*traceExporterImp, error) {
 	exporterFactory := otlpexporter.NewFactory()
 
-	lb, err := newLoadBalancer(params, cfg, func(ctx context.Context, endpoint string) (component.Exporter, error) {
+	lb, err := newLoadBalancer(params, cfg, func(ctx context.Context, endpoint string) (component.Component, error) {
 		oCfg := buildExporterConfig(cfg.(*Config), endpoint)
 		return exporterFactory.CreateTracesExporter(ctx, params, &oCfg)
 	})
@@ -59,14 +55,20 @@ func newTracesExporter(params component.ExporterCreateSettings, cfg config.Expor
 		return nil, err
 	}
 
-	return &traceExporterImp{
-		loadBalancer: lb,
-	}, nil
+	traceExporter := traceExporterImp{loadBalancer: lb, routingKey: traceIDRouting}
+
+	switch cfg.(*Config).RoutingKey {
+	case "service":
+		traceExporter.routingKey = svcRouting
+	case "traceID", "":
+	default:
+		return nil, fmt.Errorf("unsupported routing_key: %s", cfg.(*Config).RoutingKey)
+	}
+	return &traceExporter, nil
 }
 
 func buildExporterConfig(cfg *Config, endpoint string) otlpexporter.Config {
 	oCfg := cfg.Protocol.OTLP
-	oCfg.ExporterSettings = config.NewExporterSettings(config.NewComponentID("otlp"))
 	oCfg.Endpoint = endpoint
 	return oCfg
 }
@@ -96,54 +98,70 @@ func (e *traceExporterImp) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 }
 
 func (e *traceExporterImp) consumeTrace(ctx context.Context, td ptrace.Traces) error {
-	traceID := traceIDFromTraces(td)
-	if traceID == pcommon.InvalidTraceID() {
-		return errNoTracesInBatch
-	}
-
-	endpoint := e.loadBalancer.Endpoint(traceID)
-	exp, err := e.loadBalancer.Exporter(endpoint)
+	var exp component.Component
+	routingIds, err := routingIdentifiersFromTraces(td, e.routingKey)
 	if err != nil {
 		return err
 	}
+	for rid := range routingIds {
+		endpoint := e.loadBalancer.Endpoint([]byte(rid))
+		exp, err = e.loadBalancer.Exporter(endpoint)
+		if err != nil {
+			return err
+		}
 
-	te, ok := exp.(component.TracesExporter)
-	if !ok {
-		expectType := (*component.TracesExporter)(nil)
-		return fmt.Errorf("expected %T but got %T", expectType, exp)
+		te, ok := exp.(exporter.Traces)
+		if !ok {
+			return fmt.Errorf("unable to export traces, unexpected exporter type: expected exporter.Traces but got %T", exp)
+		}
+
+		start := time.Now()
+		err = te.ConsumeTraces(ctx, td)
+		duration := time.Since(start)
+
+		if err == nil {
+			_ = stats.RecordWithTags(
+				ctx,
+				[]tag.Mutator{tag.Upsert(endpointTagKey, endpoint), successTrueMutator},
+				mBackendLatency.M(duration.Milliseconds()))
+		} else {
+			_ = stats.RecordWithTags(
+				ctx,
+				[]tag.Mutator{tag.Upsert(endpointTagKey, endpoint), successFalseMutator},
+				mBackendLatency.M(duration.Milliseconds()))
+		}
 	}
-
-	start := time.Now()
-	err = te.ConsumeTraces(ctx, td)
-	duration := time.Since(start)
-	ctx, _ = tag.New(ctx, tag.Upsert(tag.MustNewKey("endpoint"), endpoint))
-
-	if err == nil {
-		sCtx, _ := tag.New(ctx, tag.Upsert(tag.MustNewKey("success"), "true"))
-		stats.Record(sCtx, mBackendLatency.M(duration.Milliseconds()))
-	} else {
-		fCtx, _ := tag.New(ctx, tag.Upsert(tag.MustNewKey("success"), "false"))
-		stats.Record(fCtx, mBackendLatency.M(duration.Milliseconds()))
-	}
-
 	return err
 }
 
-func traceIDFromTraces(td ptrace.Traces) pcommon.TraceID {
+func routingIdentifiersFromTraces(td ptrace.Traces, key routingKey) (map[string]bool, error) {
+	ids := make(map[string]bool)
 	rs := td.ResourceSpans()
 	if rs.Len() == 0 {
-		return pcommon.InvalidTraceID()
+		return nil, errors.New("empty resource spans")
 	}
 
 	ils := rs.At(0).ScopeSpans()
 	if ils.Len() == 0 {
-		return pcommon.InvalidTraceID()
+		return nil, errors.New("empty scope spans")
 	}
 
 	spans := ils.At(0).Spans()
 	if spans.Len() == 0 {
-		return pcommon.InvalidTraceID()
+		return nil, errors.New("empty spans")
 	}
 
-	return spans.At(0).TraceID()
+	if key == svcRouting {
+		for i := 0; i < rs.Len(); i++ {
+			svc, ok := rs.At(i).Resource().Attributes().Get("service.name")
+			if !ok {
+				return nil, errors.New("unable to get service name")
+			}
+			ids[svc.Str()] = true
+		}
+		return ids, nil
+	}
+	tid := spans.At(0).TraceID()
+	ids[string(tid[:])] = true
+	return ids, nil
 }

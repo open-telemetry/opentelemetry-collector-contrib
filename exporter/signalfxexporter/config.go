@@ -20,7 +20,9 @@ import (
 	"net/url"
 	"time"
 
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
@@ -34,17 +36,16 @@ const (
 	translationRulesConfigKey = "translation_rules"
 )
 
-var _ config.Unmarshallable = (*Config)(nil)
+var _ confmap.Unmarshaler = (*Config)(nil)
 
 // Config defines configuration for SignalFx exporter.
 type Config struct {
-	config.ExporterSettings        `mapstructure:",squash"`
-	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
-	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
+	exporterhelper.QueueSettings  `mapstructure:"sending_queue"`
+	exporterhelper.RetrySettings  `mapstructure:"retry_on_failure"`
+	confighttp.HTTPClientSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 
 	// AccessToken is the authentication token provided by SignalFx.
-	AccessToken string `mapstructure:"access_token"`
+	AccessToken configopaque.String `mapstructure:"access_token"`
 
 	// Realm is the SignalFx realm where data is going to be sent to.
 	Realm string `mapstructure:"realm"`
@@ -55,15 +56,17 @@ type Config struct {
 	// path: "/v2/datapoint" for metrics, and "/v2/event" for events.
 	IngestURL string `mapstructure:"ingest_url"`
 
+	// ingest_tls needs to be set if the exporter's IngestURL is pointing to a signalfx receiver
+	// with TLS enabled and using a self-signed certificate where its CA is not loaded in the system cert pool.
+	IngestTLSSettings configtls.TLSClientSetting `mapstructure:"ingest_tls,omitempty"`
+
 	// APIURL is the destination to where SignalFx metadata will be sent. This
 	// value takes precedence over the value of Realm
 	APIURL string `mapstructure:"api_url"`
 
-	// Headers are a set of headers to be added to the HTTP request sending
-	// trace data. These can override pre-defined header values used by the
-	// exporter, eg: "User-Agent" can be set to a custom value if specified
-	// here.
-	Headers map[string]string `mapstructure:"headers"`
+	// api_tls needs to be set if the exporter's APIURL is pointing to a httforwarder extension
+	// with TLS enabled and using a self-signed certificate where its CA is not loaded in the system cert pool.
+	APITLSSettings configtls.TLSClientSetting `mapstructure:"api_tls,omitempty"`
 
 	// Whether to log datapoints dispatched to Splunk Observability Cloud
 	LogDataPoints bool `mapstructure:"log_data_points"`
@@ -109,6 +112,7 @@ type Config struct {
 	NonAlphanumericDimensionChars string `mapstructure:"nonalphanumeric_dimension_chars"`
 
 	// MaxConnections is used to set a limit to the maximum idle HTTP connection the exporter can keep open.
+	// Deprecated: use HTTPClientSettings.MaxIdleConns or HTTPClientSettings.MaxIdleConnsPerHost instead.
 	MaxConnections int `mapstructure:"max_connections"`
 }
 
@@ -127,8 +131,8 @@ func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {
 		return nil, fmt.Errorf("invalid \"api_url\": %w", err)
 	}
 
-	if cfg.Timeout == 0 {
-		cfg.Timeout = 5 * time.Second
+	if cfg.HTTPClientSettings.Timeout == 0 {
+		cfg.HTTPClientSettings.Timeout = 5 * time.Second
 	}
 
 	metricTranslator, err := translation.NewMetricTranslator(cfg.TranslationRules, cfg.DeltaTranslationTTL)
@@ -137,13 +141,15 @@ func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {
 	}
 
 	return &exporterOptions{
-		ingestURL:        ingestURL,
-		apiURL:           apiURL,
-		httpTimeout:      cfg.Timeout,
-		token:            cfg.AccessToken,
-		logDataPoints:    cfg.LogDataPoints,
-		logDimUpdate:     cfg.LogDimensionUpdates,
-		metricTranslator: metricTranslator,
+		ingestURL:         ingestURL,
+		ingestTLSSettings: cfg.IngestTLSSettings,
+		apiURL:            apiURL,
+		apiTLSSettings:    cfg.APITLSSettings,
+		httpTimeout:       cfg.HTTPClientSettings.Timeout,
+		token:             cfg.AccessToken,
+		logDataPoints:     cfg.LogDataPoints,
+		logDimUpdate:      cfg.LogDimensionUpdates,
+		metricTranslator:  metricTranslator,
 	}, nil
 }
 
@@ -157,7 +163,7 @@ func (cfg *Config) validateConfig() error {
 			` "ingest_url" and "api_url" should be explicitly set`)
 	}
 
-	if cfg.Timeout < 0 {
+	if cfg.HTTPClientSettings.Timeout < 0 {
 		return errors.New(`cannot have a negative "timeout"`)
 	}
 

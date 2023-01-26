@@ -12,14 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package ecsinfo // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/ecsInfo"
 
 import (
 	"bufio"
 	"context"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"math"
 	"os"
@@ -55,7 +53,7 @@ type cgroupScannerProvider interface {
 	getCPUReserved() int64
 	getMemReserved() int64
 
-	//use for test
+	// use for test
 	getCPUReservedInTask(taskID string, clusterName string) int64
 	getMEMReservedInTask(taskID string, clusterName string, containers []ECSContainer) int64
 }
@@ -165,7 +163,7 @@ func (c *cgroupScanner) getMEMReservedInTask(taskID string, clusterName string, 
 	for _, container := range containers {
 		containerPath := filepath.Join(memPath, container.DockerID)
 
-		//soft limit first
+		// soft limit first
 		if softLimit, err := readInt64(containerPath, "memory.soft_limit_in_bytes"); err == nil && softLimit != kernelMagicCodeNotSet {
 			sum += softLimit
 			continue
@@ -183,7 +181,7 @@ func readString(dirpath string, file string) (string, error) {
 	cgroupFile := filepath.Join(dirpath, file)
 
 	// Read
-	out, err := ioutil.ReadFile(cgroupFile)
+	out, err := os.ReadFile(cgroupFile)
 	if err != nil {
 		// Ignore non-existent files
 		log.Printf("W! readString: Failed to read %q: %s", cgroupFile, err)
@@ -281,11 +279,12 @@ func getTaskCgroupPathFromARN(arn string) (string, error) {
 	}
 
 	result = strings.Split(result[5], "/")
-	if len(result) == 2 {
+	switch len(result) {
+	case 2:
 		return result[1], nil
-	} else if len(result) == 3 {
+	case 3:
 		return result[2], nil
-	} else {
+	default:
 		return "", fmt.Errorf("invalid ecs task arn: %q", arn)
 	}
 }

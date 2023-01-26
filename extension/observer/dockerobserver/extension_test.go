@@ -16,23 +16,20 @@ package dockerobserver
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 
 	dtypes "github.com/docker/docker/api/types"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
 
 func containerJSON(t *testing.T) dtypes.ContainerJSON {
-	containerRaw, err := ioutil.ReadFile(filepath.Join("testdata", "container.json"))
+	containerRaw, err := os.ReadFile(filepath.Join("testdata", "container.json"))
 	require.NoError(t, err)
 
 	var container dtypes.ContainerJSON
@@ -78,10 +75,10 @@ func TestCollectEndpointsDefaultConfig(t *testing.T) {
 	require.True(t, ok)
 
 	c := containerJSON(t)
-	cEndpoints := obvs.endpointsForContainer(&c)
+	cEndpoints := obvs.containerEndpoints(&c)
 
-	want := map[observer.EndpointID]observer.Endpoint{
-		"babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c:8080": {
+	want := []observer.Endpoint{
+		{
 			ID:     "babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c:8080",
 			Target: "172.17.0.2:80",
 			Details: &observer.Container{
@@ -107,29 +104,18 @@ func TestCollectEndpointsDefaultConfig(t *testing.T) {
 }
 
 func TestCollectEndpointsAllConfigSettings(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
-
-	factory := NewFactory()
-	factories.Extensions[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-
-	require.Nil(t, err)
-	require.NotNil(t, cfg)
-
-	extAllSettings := cfg.Extensions[config.NewComponentIDWithName(typeStr, "all_settings")]
-
-	ext, err := newObserver(zap.NewNop(), extAllSettings.(*Config))
+	extAllSettings := loadConfig(t, component.NewIDWithName(typeStr, "all_settings"))
+	ext, err := newObserver(zap.NewNop(), extAllSettings)
 	require.NoError(t, err)
 	require.NotNil(t, ext)
 
 	obvs := ext.(*dockerObserver)
 
 	c := containerJSON(t)
-	cEndpoints := obvs.endpointsForContainer(&c)
+	cEndpoints := obvs.containerEndpoints(&c)
 
-	want := map[observer.EndpointID]observer.Endpoint{
-		"babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c:8080": {
+	want := []observer.Endpoint{
+		{
 			ID:     "babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c:8080",
 			Target: "127.0.0.1:8080",
 			Details: &observer.Container{
@@ -155,29 +141,18 @@ func TestCollectEndpointsAllConfigSettings(t *testing.T) {
 }
 
 func TestCollectEndpointsUseHostnameIfPresent(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
-
-	factory := NewFactory()
-	factories.Extensions[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-
-	require.Nil(t, err)
-	require.NotNil(t, cfg)
-
-	extUseHostname := cfg.Extensions[config.NewComponentIDWithName(typeStr, "use_hostname_if_present")]
-
-	ext, err := newObserver(zap.NewNop(), extUseHostname.(*Config))
+	extUseHostname := loadConfig(t, component.NewIDWithName(typeStr, "use_hostname_if_present"))
+	ext, err := newObserver(zap.NewNop(), extUseHostname)
 	require.NoError(t, err)
 	require.NotNil(t, ext)
 
 	obvs := ext.(*dockerObserver)
 
 	c := containerJSON(t)
-	cEndpoints := obvs.endpointsForContainer(&c)
+	cEndpoints := obvs.containerEndpoints(&c)
 
-	want := map[observer.EndpointID]observer.Endpoint{
-		"babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c:8080": {
+	want := []observer.Endpoint{
+		{
 			ID:     "babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c:8080",
 			Target: "babc5a6d7af2:80",
 			Details: &observer.Container{
@@ -203,29 +178,18 @@ func TestCollectEndpointsUseHostnameIfPresent(t *testing.T) {
 }
 
 func TestCollectEndpointsUseHostBindings(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
-
-	factory := NewFactory()
-	factories.Extensions[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-
-	require.Nil(t, err)
-	require.NotNil(t, cfg)
-
-	extHostBindings := cfg.Extensions[config.NewComponentIDWithName(typeStr, "use_host_bindings")]
-
-	ext, err := newObserver(zap.NewNop(), extHostBindings.(*Config))
+	extHostBindings := loadConfig(t, component.NewIDWithName(typeStr, "use_host_bindings"))
+	ext, err := newObserver(zap.NewNop(), extHostBindings)
 	require.NoError(t, err)
 	require.NotNil(t, ext)
 
 	obvs := ext.(*dockerObserver)
 
 	c := containerJSON(t)
-	cEndpoints := obvs.endpointsForContainer(&c)
+	cEndpoints := obvs.containerEndpoints(&c)
 
-	want := map[observer.EndpointID]observer.Endpoint{
-		"babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c:8080": {
+	want := []observer.Endpoint{
+		{
 			ID:     "babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c:8080",
 			Target: "127.0.0.1:8080",
 			Details: &observer.Container{
@@ -251,29 +215,18 @@ func TestCollectEndpointsUseHostBindings(t *testing.T) {
 }
 
 func TestCollectEndpointsIgnoreNonHostBindings(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
-
-	factory := NewFactory()
-	factories.Extensions[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-
-	require.Nil(t, err)
-	require.NotNil(t, cfg)
-
-	extIgnoreHostBindings := cfg.Extensions[config.NewComponentIDWithName(typeStr, "ignore_non_host_bindings")]
-
-	ext, err := newObserver(zap.NewNop(), extIgnoreHostBindings.(*Config))
+	extIgnoreHostBindings := loadConfig(t, component.NewIDWithName(typeStr, "ignore_non_host_bindings"))
+	ext, err := newObserver(zap.NewNop(), extIgnoreHostBindings)
 	require.NoError(t, err)
 	require.NotNil(t, ext)
 
 	obvs := ext.(*dockerObserver)
 
 	c := containerJSON(t)
-	cEndpoints := obvs.endpointsForContainer(&c)
+	cEndpoints := obvs.containerEndpoints(&c)
 
-	want := map[observer.EndpointID]observer.Endpoint{
-		"babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c:8080": {
+	want := []observer.Endpoint{
+		{
 			ID:     "babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c:8080",
 			Target: "172.17.0.2:80",
 			Details: &observer.Container{
