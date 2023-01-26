@@ -55,6 +55,7 @@ PORTO               := $(TOOLS_BIN_DIR)/porto
 CHECKDOC            := $(TOOLS_BIN_DIR)/checkdoc
 CROSSLINK           := $(TOOLS_BIN_DIR)/crosslink
 GOJUNIT             := $(TOOLS_BIN_DIR)/go-junit-report 
+BUILDER             := $(TOOLS_BIN_DIR)/builder
 
 # BUILD_TYPE should be one of (dev, release).
 BUILD_TYPE?=release
