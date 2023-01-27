@@ -3,8 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/processor/datad
 go 1.18
 
 require (
-	github.com/DataDog/datadog-agent/pkg/otlp/model v0.42.0-rc.2.0.20221215161218-ae4a2b6bc233
-	github.com/DataDog/datadog-agent/pkg/trace v0.42.0-rc.2.0.20221215161218-ae4a2b6bc233
+	github.com/DataDog/datadog-agent/pkg/otlp/model v0.43.0-rc.1.0.20230127122216-3a2af8455772
+	github.com/DataDog/datadog-agent/pkg/trace v0.43.0-rc.1.0.20230127122216-3a2af8455772
 	github.com/DataDog/sketches-go v1.4.1
 	github.com/stretchr/testify v1.8.1
 	go.opentelemetry.io/collector v0.70.0
@@ -16,12 +16,13 @@ require (
 )
 
 require (
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.42.0-rc.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/quantile v0.42.0-rc.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.42.0-rc.2.0.20221215161218-ae4a2b6bc233 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.42.0-rc.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.42.0-rc.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.42.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.43.0-rc.1.0.20230127122216-3a2af8455772 // indirect
+	github.com/DataDog/datadog-agent/pkg/quantile v0.43.0-rc.1.0.20230127122216-3a2af8455772 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.43.0-rc.1.0.20230127122216-3a2af8455772 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.43.0-rc.1.0.20230127122216-3a2af8455772 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.43.0-rc.1.0.20230127122216-3a2af8455772 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/pointer v0.43.0-rc.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.43.0-rc.1.0.20230127122216-3a2af8455772 // indirect
 	github.com/DataDog/datadog-go/v5 v5.1.1 // indirect
 	github.com/DataDog/go-tuf v0.3.0--fix-localmeta-fork // indirect
 	github.com/Microsoft/go-winio v0.5.2 // indirect
@@ -30,7 +31,6 @@ require (
 	github.com/containerd/cgroups v1.0.4 // indirect
 	github.com/coreos/go-systemd/v22 v22.3.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/dgraph-io/ristretto v0.1.0 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
@@ -51,6 +51,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/opencontainers/runtime-spec v1.0.3-0.20210326190908-1c3f411f0417 // indirect
+	github.com/outcaste-io/ristretto v0.2.0 // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
 	github.com/philhofer/fwd v1.1.2 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
