@@ -6,3 +6,6 @@ component: tracegen
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: Removes tracegen tool now that trace functionality has been moved to telemetrygen.
+
+# One or more tracking issues related to the change
+issues: [9597]
