@@ -178,6 +178,8 @@ require (
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.70.0
 )
 
+require github.com/grafana/loki/pkg/push v0.0.0-20230127072203-4e8cc8d71928 // indirect
+
 require (
 	bitbucket.org/atlassian/go-asap/v2 v2.6.0 // indirect
 	cloud.google.com/go v0.107.0 // indirect
@@ -379,6 +381,7 @@ require (
 	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/gosnmp/gosnmp v1.35.0 // indirect
+	//github.com/grafana/loki/pkg/push v0.0.0-00010101000000-000000000000 // indirect
 	github.com/grafana/regexp v0.0.0-20221122212121-6b5c0a4cb7fd // indirect
 	github.com/grobie/gomemcache v0.0.0-20180201122607-1f779c573665 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.15.0 // indirect
@@ -1046,3 +1049,7 @@ exclude github.com/DataDog/agent-payload/v5 v5.0.59
 
 // see https://github.com/mattn/go-ieproxy/issues/45
 replace github.com/mattn/go-ieproxy => github.com/mattn/go-ieproxy v0.0.1
+
+//replace github.com/grafana/loki => /Users/mar4uk/go/mar4uk/loki
+//
+//replace github.com/grafana/loki/pkg/push => /Users/mar4uk/go/mar4uk/loki/pkg/push

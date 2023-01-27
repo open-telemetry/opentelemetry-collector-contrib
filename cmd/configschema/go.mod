@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/fatih/structtag v1.2.0
 	github.com/google/uuid v1.3.0
-	github.com/open-telemetry/opentelemetry-collector-contrib v0.70.0
+	github.com/open-telemetry/opentelemetry-collector-contrib v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver v0.70.0
 	github.com/stretchr/testify v1.8.1
 	go.opentelemetry.io/collector v0.70.0
@@ -15,6 +15,8 @@ require (
 	golang.org/x/text v0.6.0
 	gopkg.in/yaml.v2 v2.4.0
 )
+
+require github.com/grafana/loki/pkg/push v0.0.0-20230127072203-4e8cc8d71928 // indirect
 
 require (
 	bitbucket.org/atlassian/go-asap/v2 v2.6.0 // indirect
