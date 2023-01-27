@@ -49,10 +49,10 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "full"),
 			expected: &Config{
-				Endpoint:         defaultEndpoint,
-				Database:         "otel",
-				Username:         "foo",
-				Password:         "bar",
+				Endpoint: defaultEndpoint,
+				Database: "otel",
+				Username: "foo",
+				Password: "bar",
 				Params: map[string]string{
 					"compression":  "zstd",
 					"dial_timeout": "5s",
