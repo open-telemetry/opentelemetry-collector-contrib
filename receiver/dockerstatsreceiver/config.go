@@ -61,7 +61,7 @@ type Config struct {
 	metadata.MetricsBuilderConfig `mapstructure:",squash"`
 }
 
-func (config Config) Validate() error {
+func (config *Config) Validate() error {
 	if config.Endpoint == "" {
 		return errors.New("endpoint must be specified")
 	}
@@ -74,11 +74,11 @@ func (config Config) Validate() error {
 	return nil
 }
 
-func (config Config) Unmarshal(parser *confmap.Conf) error {
+func (config *Config) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
-	err := parser.Unmarshal(config) // , confmap.WithErrorUnused()) // , cmpopts.IgnoreUnexported(metadata.MetricSettings{}))
+	err := parser.Unmarshal(config)
 	if err != nil {
 		return err
 	}

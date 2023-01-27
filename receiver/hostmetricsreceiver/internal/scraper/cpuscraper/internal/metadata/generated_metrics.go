@@ -52,8 +52,6 @@ func DefaultMetricsSettings() MetricsSettings {
 // ResourceAttributeSettings provides common settings for a particular metric.
 type ResourceAttributeSettings struct {
 	Enabled bool `mapstructure:"enabled"`
-
-	enabledProvidedByUser bool
 }
 
 func (ras *ResourceAttributeSettings) Unmarshal(parser *confmap.Conf) error {
@@ -64,7 +62,6 @@ func (ras *ResourceAttributeSettings) Unmarshal(parser *confmap.Conf) error {
 	if err != nil {
 		return err
 	}
-	ras.enabledProvidedByUser = parser.IsSet("enabled")
 	return nil
 }
 
