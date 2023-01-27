@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/confmap"
 )
 
 // Config defines configuration for Collectd receiver.
@@ -27,4 +28,15 @@ type Config struct {
 	Timeout          time.Duration `mapstructure:"timeout"`
 	AttributesPrefix string        `mapstructure:"attributes_prefix"`
 	Encoding         string        `mapstructure:"encoding"`
+}
+
+func (cfg *Config) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(cfg) // , confmap.WithErrorUnused()) // , cmpopts.IgnoreUnexported(metadata.MetricSettings{}))
+	if err != nil {
+		return err
+	}
+	return nil
 }

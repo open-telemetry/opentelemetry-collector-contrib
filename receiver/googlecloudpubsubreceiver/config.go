@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"regexp"
 
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -100,6 +101,17 @@ func (config *Config) validate() error {
 	case "gzip":
 	default:
 		return fmt.Errorf("compression %v is not supported.  supported compression formats include [gzip]", config.Compression)
+	}
+	return nil
+}
+
+func (config *Config) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(config) // , confmap.WithErrorUnused()) // , cmpopts.IgnoreUnexported(metadata.MetricSettings{}))
+	if err != nil {
+		return err
 	}
 	return nil
 }

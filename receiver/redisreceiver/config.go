@@ -17,6 +17,7 @@ package redisreceiver // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver/internal/metadata"
@@ -37,4 +38,15 @@ type Config struct {
 	TLS configtls.TLSClientSetting `mapstructure:"tls,omitempty"`
 
 	MetricsBuilderConfig metadata.MetricsBuilderConfig `mapstructure:",squash"`
+}
+
+func (cfg *Config) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(cfg) // , confmap.WithErrorUnused()) // , cmpopts.IgnoreUnexported(metadata.MetricSettings{}))
+	if err != nil {
+		return err
+	}
+	return nil
 }

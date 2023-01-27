@@ -135,8 +135,8 @@ func (c *GroupConfig) validate() error {
 	return nil
 }
 
-func validateAutodiscover(cfg AutodiscoverConfig) error {
-	if cfg.Limit <= 0 {
+func validateAutodiscover(c AutodiscoverConfig) error {
+	if c.Limit <= 0 {
 		return errInvalidAutodiscoverLimit
 	}
 	return nil

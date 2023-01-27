@@ -16,6 +16,8 @@ package awsecscontainermetricsreceiver // import "github.com/open-telemetry/open
 
 import (
 	"time"
+
+	"go.opentelemetry.io/collector/confmap"
 )
 
 // Config defines configuration for aws ecs container metrics receiver.
@@ -23,4 +25,15 @@ type Config struct {
 
 	// CollectionInterval is the interval at which metrics should be collected
 	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+}
+
+func (cfg *Config) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(cfg) // , confmap.WithErrorUnused()) // , cmpopts.IgnoreUnexported(metadata.MetricSettings{}))
+	if err != nil {
+		return err
+	}
+	return nil
 }

@@ -16,9 +16,21 @@ package influxdbreceiver // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/confmap"
 )
 
 // Config defines configuration for the InfluxDB receiver.
 type Config struct {
 	confighttp.HTTPServerSettings `mapstructure:",squash"`
+}
+
+func (cfg *Config) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(cfg) // , confmap.WithErrorUnused()) // , cmpopts.IgnoreUnexported(metadata.MetricSettings{}))
+	if err != nil {
+		return err
+	}
+	return nil
 }

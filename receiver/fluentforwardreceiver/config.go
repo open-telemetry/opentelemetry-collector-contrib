@@ -13,6 +13,9 @@
 // limitations under the License.
 
 package fluentforwardreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver"
+import (
+	"go.opentelemetry.io/collector/confmap"
+)
 
 // Config defines configuration for the fluentforward receiver.
 type Config struct {
@@ -21,4 +24,15 @@ type Config struct {
 	// of the form `<ip addr>:<port>` (TCP) or `unix://<socket_path>` (Unix
 	// domain socket).
 	ListenAddress string `mapstructure:"endpoint"`
+}
+
+func (cfg *Config) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(cfg) // , confmap.WithErrorUnused()) // , cmpopts.IgnoreUnexported(metadata.MetricSettings{}))
+	if err != nil {
+		return err
+	}
+	return nil
 }

@@ -25,6 +25,7 @@ import (
 	"strings"
 	"time"
 
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -283,4 +284,15 @@ func listKeys(presenceMap map[string]struct{}) string {
 	}
 	sort.Strings(list)
 	return strings.Join(list, ", ")
+}
+
+func (c *Config) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(c) // , confmap.WithErrorUnused()) // , cmpopts.IgnoreUnexported(metadata.MetricSettings{}))
+	if err != nil {
+		return err
+	}
+	return nil
 }

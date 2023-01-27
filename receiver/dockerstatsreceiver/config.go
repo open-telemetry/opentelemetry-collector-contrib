@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver/internal/metadata"
@@ -69,6 +70,17 @@ func (config Config) Validate() error {
 	}
 	if config.DockerAPIVersion < minimalRequiredDockerAPIVersion {
 		return fmt.Errorf("api_version must be at least %v", minimalRequiredDockerAPIVersion)
+	}
+	return nil
+}
+
+func (config Config) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(config) // , confmap.WithErrorUnused()) // , cmpopts.IgnoreUnexported(metadata.MetricSettings{}))
+	if err != nil {
+		return err
 	}
 	return nil
 }

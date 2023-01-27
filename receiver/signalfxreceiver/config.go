@@ -18,6 +18,7 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/confmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
@@ -40,6 +41,17 @@ func (rCfg *Config) Validate() error {
 	}
 
 	_, err := extractPortFromEndpoint(rCfg.HTTPServerSettings.Endpoint)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (rCfg *Config) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rCfg) // , confmap.WithErrorUnused()) // , cmpopts.IgnoreUnexported(metadata.MetricSettings{}))
 	if err != nil {
 		return err
 	}

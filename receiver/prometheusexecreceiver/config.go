@@ -18,6 +18,8 @@ import (
 	"errors"
 	"time"
 
+	"go.opentelemetry.io/collector/confmap"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver/subprocessmanager"
 )
 
@@ -37,6 +39,17 @@ type Config struct {
 func (cfg *Config) Validate() error {
 	if cfg.SubprocessConfig.Command == "" {
 		return errors.New("command to execute must be non-empty")
+	}
+	return nil
+}
+
+func (cfg *Config) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(cfg) // , confmap.WithErrorUnused()) // , cmpopts.IgnoreUnexported(metadata.MetricSettings{}))
+	if err != nil {
+		return err
 	}
 	return nil
 }

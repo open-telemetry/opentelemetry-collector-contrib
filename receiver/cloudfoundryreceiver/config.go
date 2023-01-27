@@ -20,6 +20,7 @@ import (
 	"net/url"
 
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/confmap"
 )
 
 type RLPGatewayConfig struct {
@@ -83,5 +84,16 @@ func validateURLOption(name string, value string) error {
 		return fmt.Errorf("failed to parse %s as url: %w", name, err)
 	}
 
+	return nil
+}
+
+func (c *Config) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(c) // , confmap.WithErrorUnused()) // , cmpopts.IgnoreUnexported(metadata.MetricSettings{}))
+	if err != nil {
+		return err
+	}
 	return nil
 }

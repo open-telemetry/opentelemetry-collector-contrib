@@ -15,6 +15,7 @@
 package dotnetdiagnosticsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver"
 
 import (
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
@@ -48,4 +49,15 @@ type Config struct {
 	// file is written, the oldest one will be deleted if necessary to keep the
 	// number of files in LocalDebugDir at the specified maximum.
 	MaxLocalDebugFiles int `mapstructure:"max_local_debug_files"`
+}
+
+func (cfg *Config) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(cfg) // , confmap.WithErrorUnused()) // , cmpopts.IgnoreUnexported(metadata.MetricSettings{}))
+	if err != nil {
+		return err
+	}
+	return nil
 }

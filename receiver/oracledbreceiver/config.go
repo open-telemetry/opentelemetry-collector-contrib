@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"net/url"
 
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver/internal/metadata"
@@ -36,6 +37,17 @@ func (c Config) Validate() error {
 	}
 	if _, err := url.Parse(c.DataSource); err != nil {
 		return fmt.Errorf("'datasource' is invalid: %w", err)
+	}
+	return nil
+}
+
+func (c *Config) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(c) // , confmap.WithErrorUnused()) // , cmpopts.IgnoreUnexported(metadata.MetricSettings{}))
+	if err != nil {
+		return err
 	}
 	return nil
 }

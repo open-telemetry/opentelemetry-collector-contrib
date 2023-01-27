@@ -16,6 +16,7 @@ package splunkhecreceiver // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/confmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
@@ -31,4 +32,15 @@ type Config struct {
 	HealthPath string `mapstructure:"health_path"`
 	// HecToOtelAttrs creates a mapping from HEC metadata to attributes.
 	HecToOtelAttrs splunk.HecToOtelAttrs `mapstructure:"hec_metadata_to_otel_attrs"`
+}
+
+func (cfg *Config) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(cfg) // , confmap.WithErrorUnused()) // , cmpopts.IgnoreUnexported(metadata.MetricSettings{}))
+	if err != nil {
+		return err
+	}
+	return nil
 }

@@ -13,6 +13,9 @@
 // limitations under the License.
 
 package azureblobreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver"
+import (
+	"go.opentelemetry.io/collector/confmap"
+)
 
 type Config struct {
 	// Azure Blob Storage connection key,
@@ -39,4 +42,15 @@ type LogsConfig struct {
 type TracesConfig struct {
 	// Name of the blob container with the traces (default = "traces")
 	ContainerName string `mapstructure:"container_name"`
+}
+
+func (cfg *Config) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(cfg) // , confmap.WithErrorUnused()) // , cmpopts.IgnoreUnexported(metadata.MetricSettings{}))
+	if err != nil {
+		return err
+	}
+	return nil
 }
