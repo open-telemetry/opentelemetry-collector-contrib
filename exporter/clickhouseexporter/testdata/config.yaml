@@ -5,7 +5,7 @@ clickhouse/full:
   username: foo
   password: bar
   database: otel
-  params:
+  connection_params:
     compression: zstd
     dial_timeout: 5s
   ttl_days: 3

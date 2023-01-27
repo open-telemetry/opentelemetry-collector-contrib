@@ -40,8 +40,8 @@ type Config struct {
 	Password string `mapstructure:"password"`
 	// Database is the database name to export.
 	Database string `mapstructure:"database"`
-	// Params is the extra connection parameters with map format. for example compression/dial_timeout
-	Params map[string]string `mapstructure:"params"`
+	// ConnectionParams is the extra connection parameters with map format. for example compression/dial_timeout
+	ConnectionParams map[string]string `mapstructure:"connection_params"`
 	// LogsTableName is the table name for logs. default is `otel_logs`.
 	LogsTableName string `mapstructure:"logs_table_name"`
 	// TracesTableName is the table name for logs. default is `otel_traces`.
@@ -95,7 +95,7 @@ func (cfg *Config) buildDSN(database string) (string, error) {
 	}
 	dsn.Path = "/" + database
 	params := url.Values{}
-	for k, v := range cfg.Params {
+	for k, v := range cfg.ConnectionParams {
 		params.Set(k, v)
 	}
 	dsn.RawQuery = params.Encode()

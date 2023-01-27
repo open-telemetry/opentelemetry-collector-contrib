@@ -53,7 +53,7 @@ func TestLoadConfig(t *testing.T) {
 				Database: "otel",
 				Username: "foo",
 				Password: "bar",
-				Params: map[string]string{
+				ConnectionParams: map[string]string{
 					"compression":  "zstd",
 					"dial_timeout": "5s",
 				},
@@ -145,11 +145,11 @@ func TestConfig_buildDSN(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &Config{
-				Endpoint: tt.fields.Endpoint,
-				Username: tt.fields.Username,
-				Password: tt.fields.Password,
-				Database: tt.fields.Database,
-				Params:   tt.fields.Params,
+				Endpoint:         tt.fields.Endpoint,
+				Username:         tt.fields.Username,
+				Password:         tt.fields.Password,
+				Database:         tt.fields.Database,
+				ConnectionParams: tt.fields.Params,
 			}
 			got, err := cfg.buildDSN(tt.args.database)
 			assert.Equalf(t, tt.wantErr, err, "buildDSN(%v)", tt.args.database)

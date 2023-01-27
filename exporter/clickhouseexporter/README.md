@@ -271,7 +271,7 @@ The following settings can be optionally configured:
 - `password` (default = ): The authentication password.
 - `ttl_days` (default = 0): The data time-to-live in days, 0 means no ttl.
 - `database` (default = otel): The database name.
-- `params` (default = {}). Params is the extra connection parameters with map format. for example compression/dial_timeout.
+- `connection_params` (default = {}). Params is the extra connection parameters with map format. for example compression/dial_timeout.
 - `logs_table_name` (default = otel_logs): The table name for logs.
 - `traces_table_name` (default = otel_traces): The table name for traces.
 - `metrics_table_name` (default = otel_metrics): The table name for metrics.
