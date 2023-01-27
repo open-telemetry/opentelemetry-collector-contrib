@@ -82,3 +82,27 @@ func TestLoadConfig(t *testing.T) {
 		})
 	}
 }
+
+func TestConfigInvalidEndpoint(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.IngestURL = "urn:something:12345"
+	assert.Error(t, cfg.Validate())
+}
+
+func TestConfig_Validate_Path(t *testing.T) {
+	factory := NewFactory()
+
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.IngestURL = "https://example.com:8088/ingest/rest"
+	cfg.IngestKey = "1234-1234"
+	assert.NoError(t, cfg.Validate())
+
+	cfg.IngestURL = "https://example.com:8088/v1/ABC123"
+	cfg.IngestKey = "1234-1234"
+	assert.NoError(t, cfg.Validate())
+
+	// Set values that don't have a valid default.
+	cfg.IngestURL = "/nohost/path"
+	cfg.IngestKey = "testToken"
+	assert.Error(t, cfg.Validate())
+}

@@ -99,7 +99,11 @@ func generateFile(tmplFile string, outputFile string, md metadata) error {
 				},
 				"stringsJoin": strings.Join,
 				"inc":         func(i int) int { return i + 1 },
-			}).ParseFS(templateFS, tmplFile))
+				// ParseFS delegates the parsing of the files to `Glob`
+				// which uses the `\` as a special character.
+				// Meaning on windows based machines, the `\` needs to be replaced
+				// with a `/` for it to find the file.
+			}).ParseFS(templateFS, strings.ReplaceAll(tmplFile, "\\", "/")))
 
 	buf := bytes.Buffer{}
 

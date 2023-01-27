@@ -230,7 +230,7 @@ func (si *signingRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
         return nil, err
     }
 
-    content, err := ioutil.ReadAll(reqBody)
+    content, err := io.ReadAll(reqBody)
     reqBody.Close()
     if err != nil {
         return nil, err
@@ -283,7 +283,7 @@ We take a closer look at the performance of `RoundTrip()`, since it will be heav
     .
     .
     .
-    content, err := ioutil.ReadAll(reqBody)
+    content, err := io.ReadAll(reqBody)
     reqBody.Close()
     .
     .

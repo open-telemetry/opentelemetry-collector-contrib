@@ -77,6 +77,9 @@ func TestScraper_Scrape(t *testing.T) {
 	m, err := scrpr.scrape(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, 16, m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
+	name, ok := m.ResourceMetrics().At(0).Resource().Attributes().Get("oracledb.instance.name")
+	assert.True(t, ok)
+	assert.Equal(t, "", name.Str())
 }
 
 func TestPartial_InvalidScrape(t *testing.T) {

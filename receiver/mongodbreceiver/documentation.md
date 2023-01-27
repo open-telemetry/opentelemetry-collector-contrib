@@ -400,6 +400,6 @@ The amount of time that the server has been running.
 
 ## Resource Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| database | The name of a database. | Any Str |
+| Name | Description | Values | Enabled |
+| ---- | ----------- | ------ | ------- |
+| database | The name of a database. | Any Str | true |

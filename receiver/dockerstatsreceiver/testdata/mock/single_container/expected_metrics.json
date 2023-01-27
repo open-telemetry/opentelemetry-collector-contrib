@@ -374,64 +374,17 @@
               "unit": "{operations}"
             },
             {
-              "description": "System CPU usage, as reported by docker.",
-              "name": "container.cpu.usage.system",
-              "sum": {
-                "aggregationTemporality": 2,
+              "description": "Percent of CPU used by the container.",
+              "gauge": {
                 "dataPoints": [
                   {
-                    "asInt": "120830550000000",
+                    "asDouble": 0.0002888012543185477,
                     "timeUnixNano": "1657771705535206000"
                   }
-                ],
-                "isMonotonic": true
+                ]
               },
-              "unit": "ns"
-            },
-            {
-              "description": "Total CPU time consumed.",
-              "name": "container.cpu.usage.total",
-              "sum": {
-                "aggregationTemporality": 2,
-                "dataPoints": [
-                  {
-                    "asInt": "43620018",
-                    "timeUnixNano": "1657771705535206000"
-                  }
-                ],
-                "isMonotonic": true
-              },
-              "unit": "ns"
-            },
-            {
-              "description": "Time spent by tasks of the cgroup in kernel mode (Linux).  Time spent by all container processes in kernel mode (Windows).",
-              "name": "container.cpu.usage.kernelmode",
-              "sum": {
-                "aggregationTemporality": 2,
-                "dataPoints": [
-                  {
-                    "asInt": "10000000",
-                    "timeUnixNano": "1657771705535206000"
-                  }
-                ],
-                "isMonotonic": true
-              },
-              "unit": "ns"
-            },
-            {
-              "description": "Time spent by tasks of the cgroup in user mode (Linux).  Time spent by all container processes in user mode (Windows).",
-              "name": "container.cpu.usage.usermode",
-              "sum": {
-                "aggregationTemporality": 2,
-                "dataPoints": [
-                  {
-                    "asInt": "10000000",
-                    "timeUnixNano": "1657771705535206000"
-                  }
-                ],
-                "isMonotonic": true
-              },
-              "unit": "ns"
+              "name": "container.cpu.percent",
+              "unit": "1"
             },
             {
               "description": "Number of periods with throttling active.",
@@ -479,17 +432,19 @@
               "unit": "ns"
             },
             {
-              "description": "Percent of CPU used by the container.",
-              "gauge": {
+              "description": "Time spent by tasks of the cgroup in kernel mode (Linux).  Time spent by all container processes in kernel mode (Windows).",
+              "name": "container.cpu.usage.kernelmode",
+              "sum": {
+                "aggregationTemporality": 2,
                 "dataPoints": [
                   {
-                    "asDouble": 0.0002888012543185477,
+                    "asInt": "10000000",
                     "timeUnixNano": "1657771705535206000"
                   }
-                ]
+                ],
+                "isMonotonic": true
               },
-              "name": "container.cpu.percent",
-              "unit": "1"
+              "unit": "ns"
             },
             {
               "description": "Per-core CPU usage by the container.",
@@ -599,59 +554,49 @@
               "unit": "ns"
             },
             {
-              "description": "Memory limit of the container.",
-              "name": "container.memory.usage.limit",
+              "description": "System CPU usage, as reported by docker.",
+              "name": "container.cpu.usage.system",
               "sum": {
                 "aggregationTemporality": 2,
                 "dataPoints": [
                   {
-                    "asInt": "10449559552",
+                    "asInt": "120830550000000",
                     "timeUnixNano": "1657771705535206000"
                   }
-                ]
+                ],
+                "isMonotonic": true
               },
-              "unit": "By"
+              "unit": "ns"
             },
             {
-              "description": "Memory usage of the container. This excludes the total cache.",
-              "name": "container.memory.usage.total",
+              "description": "Total CPU time consumed.",
+              "name": "container.cpu.usage.total",
               "sum": {
                 "aggregationTemporality": 2,
                 "dataPoints": [
                   {
-                    "asInt": "454656",
+                    "asInt": "43620018",
                     "timeUnixNano": "1657771705535206000"
                   }
-                ]
+                ],
+                "isMonotonic": true
               },
-              "unit": "By"
+              "unit": "ns"
             },
             {
-              "description": "Percentage of memory used.",
-              "gauge": {
-                "dataPoints": [
-                  {
-                    "asDouble": 0.004350958504399172,
-                    "timeUnixNano": "1657771705535206000"
-                  }
-                ]
-              },
-              "name": "container.memory.percent",
-              "unit": "1"
-            },
-            {
-              "description": "Maximum memory usage.",
-              "name": "container.memory.usage.max",
+              "description": "Time spent by tasks of the cgroup in user mode (Linux).  Time spent by all container processes in user mode (Windows).",
+              "name": "container.cpu.usage.usermode",
               "sum": {
                 "aggregationTemporality": 2,
                 "dataPoints": [
                   {
-                    "asInt": "3932160",
+                    "asInt": "10000000",
                     "timeUnixNano": "1657771705535206000"
                   }
-                ]
+                ],
+                "isMonotonic": true
               },
-              "unit": "By"
+              "unit": "ns"
             },
             {
               "description": "The amount of anonymous memory that has been identified as active by the kernel.",
@@ -778,6 +723,19 @@
                 ]
               },
               "unit": "By"
+            },
+            {
+              "description": "Percentage of memory used.",
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "asDouble": 0.004350958504399172,
+                    "timeUnixNano": "1657771705535206000"
+                  }
+                ]
+              },
+              "name": "container.memory.percent",
+              "unit": "1"
             },
             {
               "description": "Indicate the number of times that a process of the cgroup triggered a page fault.",
@@ -1096,6 +1054,48 @@
               "unit": "By"
             },
             {
+              "description": "Memory limit of the container.",
+              "name": "container.memory.usage.limit",
+              "sum": {
+                "aggregationTemporality": 2,
+                "dataPoints": [
+                  {
+                    "asInt": "10449559552",
+                    "timeUnixNano": "1657771705535206000"
+                  }
+                ]
+              },
+              "unit": "By"
+            },
+            {
+              "description": "Maximum memory usage.",
+              "name": "container.memory.usage.max",
+              "sum": {
+                "aggregationTemporality": 2,
+                "dataPoints": [
+                  {
+                    "asInt": "3932160",
+                    "timeUnixNano": "1657771705535206000"
+                  }
+                ]
+              },
+              "unit": "By"
+            },
+            {
+              "description": "Memory usage of the container. This excludes the total cache.",
+              "name": "container.memory.usage.total",
+              "sum": {
+                "aggregationTemporality": 2,
+                "dataPoints": [
+                  {
+                    "asInt": "454656",
+                    "timeUnixNano": "1657771705535206000"
+                  }
+                ]
+              },
+              "unit": "By"
+            },
+            {
               "description": "Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup.",
               "name": "container.memory.writeback",
               "sum": {
@@ -1117,29 +1117,6 @@
                 "dataPoints": [
                   {
                     "asInt": "1532",
-                    "attributes": [
-                      {
-                        "key": "interface",
-                        "value": {
-                          "stringValue": "eth0"
-                        }
-                      }
-                    ],
-                    "timeUnixNano": "1657771705535206000"
-                  }
-                ],
-                "isMonotonic": true
-              },
-              "unit": "By"
-            },
-            {
-              "description": "Bytes sent.",
-              "name": "container.network.io.usage.tx_bytes",
-              "sum": {
-                "aggregationTemporality": 2,
-                "dataPoints": [
-                  {
-                    "asInt": "0",
                     "attributes": [
                       {
                         "key": "interface",
@@ -1223,6 +1200,29 @@
                 "isMonotonic": true
               },
               "unit": "{packets}"
+            },
+            {
+              "description": "Bytes sent.",
+              "name": "container.network.io.usage.tx_bytes",
+              "sum": {
+                "aggregationTemporality": 2,
+                "dataPoints": [
+                  {
+                    "asInt": "0",
+                    "attributes": [
+                      {
+                        "key": "interface",
+                        "value": {
+                          "stringValue": "eth0"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1657771705535206000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "By"
             },
             {
               "description": "Outgoing packets dropped.",

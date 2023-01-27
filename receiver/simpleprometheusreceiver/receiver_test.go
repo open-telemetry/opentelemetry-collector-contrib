@@ -17,7 +17,6 @@ package simpleprometheusreceiver
 import (
 	"context"
 	"net/url"
-	"reflect"
 	"testing"
 	"time"
 
@@ -25,6 +24,7 @@ import (
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/discovery"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -79,10 +79,9 @@ func TestReceiver(t *testing.T) {
 
 func TestGetPrometheusConfig(t *testing.T) {
 	tests := []struct {
-		name    string
-		config  *Config
-		want    *prometheusreceiver.Config
-		wantErr bool
+		name   string
+		config *Config
+		want   *prometheusreceiver.Config
 	}{
 		{
 			name: "Test without TLS",
@@ -209,23 +208,17 @@ func TestGetPrometheusConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := getPrometheusConfig(tt.config)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("getPrometheusConfig() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("getPrometheusConfig() got = %v, want %v", got, tt.want)
-			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
 
 func TestGetPrometheusConfigWrapper(t *testing.T) {
 	tests := []struct {
-		name    string
-		config  *Config
-		want    *prometheusreceiver.Config
-		wantErr bool
+		name   string
+		config *Config
+		want   *prometheusreceiver.Config
 	}{
 		{
 			name: "Test TLSEnable true",
@@ -413,13 +406,8 @@ func TestGetPrometheusConfigWrapper(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := getPrometheusConfigWrapper(tt.config, receivertest.NewNopCreateSettings())
-			if (err != nil) != tt.wantErr {
-				t.Errorf("getPrometheusConfigWrapper() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("getPrometheusConfigWrapper() got = %v, want %v", got, tt.want)
-			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }

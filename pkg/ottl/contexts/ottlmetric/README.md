@@ -7,16 +7,18 @@ In general, the Metric Context supports accessing pdata using the field names fr
 
 The following fields are the exception.
 
-| path                                   | field accessed                                                                 | type                                                                    |
-|----------------------------------------|--------------------------------------------------------------------------------|-------------------------------------------------------------------------|
-| resource                               | resource of the metric being processed                                         | pcommon.Resource                                                        |
-| resource.attributes                    | resource attributes of the metric being processed                              | pcommon.Map                                                             |
-| resource.attributes\[""\]              | the value of the resource attribute of the metric being processed              | string, bool, int64, float64, pcommon.Map, pcommon.Slice, []byte or nil |
-| instrumentation_scope                  | instrumentation scope of the metric being processed                            | pcommon.InstrumentationScope                                            |
-| instrumentation_scope.name             | name of the instrumentation scope of the metric being processed                | string                                                                  |
-| instrumentation_scope.version          | version of the instrumentation scope of the metric being processed             | string                                                                  |
-| instrumentation_scope.attributes       | instrumentation scope attributes of the metric being processed                 | pcommon.Map                                                             |
-| instrumentation_scope.attributes\[""\] | the value of the instrumentation scope attribute of the metric being processed | string, bool, int64, float64, pcommon.Map, pcommon.Slice, []byte or nil |
+| path                                   | field accessed                                                                                                                                     | type                                                                    |
+|----------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------|
+| cache                                  | the value of the current transform context's temporary cache. cache can be used as a temporary placeholder for data during complex transformations | pcommon.Map                                                             |
+| cache\[""\]                            | the value of an item in cache                                                                                                                      | string, bool, int64, float64, pcommon.Map, pcommon.Slice, []byte or nil |
+| resource                               | resource of the metric being processed                                                                                                             | pcommon.Resource                                                        |
+| resource.attributes                    | resource attributes of the metric being processed                                                                                                  | pcommon.Map                                                             |
+| resource.attributes\[""\]              | the value of the resource attribute of the metric being processed                                                                                  | string, bool, int64, float64, pcommon.Map, pcommon.Slice, []byte or nil |
+| instrumentation_scope                  | instrumentation scope of the metric being processed                                                                                                | pcommon.InstrumentationScope                                            |
+| instrumentation_scope.name             | name of the instrumentation scope of the metric being processed                                                                                    | string                                                                  |
+| instrumentation_scope.version          | version of the instrumentation scope of the metric being processed                                                                                 | string                                                                  |
+| instrumentation_scope.attributes       | instrumentation scope attributes of the metric being processed                                                                                     | pcommon.Map                                                             |
+| instrumentation_scope.attributes\[""\] | the value of the instrumentation scope attribute of the metric being processed                                                                     | string, bool, int64, float64, pcommon.Map, pcommon.Slice, []byte or nil |
 
 ## Enums
 

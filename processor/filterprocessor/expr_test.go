@@ -116,9 +116,8 @@ func testFilter(t *testing.T, mdType pmetric.MetricType, mvType pmetric.NumberDa
 
 func assertFiltered(t *testing.T, lm pcommon.Map) {
 	lm.Range(func(k string, v pcommon.Value) bool {
-		if k == filteredAttrKey && v.Equal(filteredAttrVal) {
-			assert.Fail(t, "found metric that should have been filtered out")
-			return false
+		if k == filteredAttrKey {
+			require.NotEqual(t, v.AsRaw(), filteredAttrVal.AsRaw())
 		}
 		return true
 	})

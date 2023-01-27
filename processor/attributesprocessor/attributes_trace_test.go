@@ -30,6 +30,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/ptracetest"
 )
 
 // Common structure for all the Tests
@@ -45,9 +46,7 @@ func runIndividualTestCase(t *testing.T, tt testCase, tp processor.Traces) {
 	t.Run(tt.name, func(t *testing.T) {
 		td := generateTraceData(tt.serviceName, tt.name, tt.inputAttributes)
 		assert.NoError(t, tp.ConsumeTraces(context.Background(), td))
-		// Ensure that the modified `td` has the attributes sorted:
-		sortAttributes(td)
-		require.Equal(t, generateTraceData(tt.serviceName, tt.name, tt.expectedAttributes), td)
+		require.NoError(t, ptracetest.CompareTraces(generateTraceData(tt.serviceName, tt.name, tt.expectedAttributes), td))
 	})
 }
 
@@ -61,23 +60,7 @@ func generateTraceData(serviceName, spanName string, attrs map[string]interface{
 	span.SetName(spanName)
 	//nolint:errcheck
 	span.Attributes().FromRaw(attrs)
-	span.Attributes().Sort()
 	return td
-}
-
-func sortAttributes(td ptrace.Traces) {
-	rss := td.ResourceSpans()
-	for i := 0; i < rss.Len(); i++ {
-		rs := rss.At(i)
-		rs.Resource().Attributes().Sort()
-		ilss := rs.ScopeSpans()
-		for j := 0; j < ilss.Len(); j++ {
-			spans := ilss.At(j).Spans()
-			for k := 0; k < spans.Len(); k++ {
-				spans.At(k).Attributes().Sort()
-			}
-		}
-	}
 }
 
 // TestSpanProcessor_Values tests all possible value types.
@@ -540,9 +523,7 @@ func BenchmarkAttributes_FilterSpansByName(b *testing.B) {
 			}
 		})
 
-		// Ensure that the modified `td` has the attributes sorted:
-		sortAttributes(td)
-		require.Equal(b, generateTraceData(tt.serviceName, tt.name, tt.expectedAttributes), td)
+		require.NoError(b, ptracetest.CompareTraces(generateTraceData(tt.serviceName, tt.name, tt.expectedAttributes), td))
 	}
 }
 

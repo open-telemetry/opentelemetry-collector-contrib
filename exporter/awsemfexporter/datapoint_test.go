@@ -858,9 +858,8 @@ func TestIntDataPointSlice_At(t *testing.T) {
 				deltaMetricMetadata:        tt.fields.deltaMetricMetadata,
 				NumberDataPointSlice:       tt.fields.NumberDataPointSlice,
 			}
-			if got, _ := dps.At(tt.args.i); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("At() = %v, want %v", got, tt.want)
-			}
+			got, _ := dps.At(tt.args.i)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }

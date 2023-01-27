@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 )
@@ -30,9 +31,7 @@ func TestServiceFromResource(t *testing.T) {
 
 	assert.NotNil(t, service)
 	w := testWriters.borrow()
-	if err := w.Encode(service); err != nil {
-		assert.Fail(t, "invalid json")
-	}
+	require.NoError(t, w.Encode(service))
 	jsonStr := w.String()
 	testWriters.release(w)
 	assert.True(t, strings.Contains(jsonStr, "semver:1.1.4"))
@@ -45,9 +44,7 @@ func TestServiceFromResourceWithNoServiceVersion(t *testing.T) {
 
 	assert.NotNil(t, service)
 	w := testWriters.borrow()
-	if err := w.Encode(service); err != nil {
-		assert.Fail(t, "invalid json")
-	}
+	require.NoError(t, w.Encode(service))
 	jsonStr := w.String()
 	testWriters.release(w)
 	assert.True(t, strings.Contains(jsonStr, "v1"))

@@ -46,7 +46,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
 func Test_signalfxeceiver_New(t *testing.T) {
@@ -618,7 +618,7 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 	require.Len(t, mds, 1)
 	got := mds[0]
 	require.Equal(t, 1, got.ResourceMetrics().Len())
-	require.NoError(t, comparetest.CompareMetrics(want, got))
+	require.NoError(t, pmetrictest.CompareMetrics(want, got))
 }
 
 func Test_sfxReceiver_DatapointAccessTokenPassthrough(t *testing.T) {

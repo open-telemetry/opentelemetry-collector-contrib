@@ -133,7 +133,8 @@ func createMetricsExporter(
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithRetry(cfg.RetrySettings),
 		exporterhelper.WithQueue(cfg.QueueSettings),
-		exporterhelper.WithStart(exp.start))
+		exporterhelper.WithStart(exp.start),
+		exporterhelper.WithShutdown(exp.shutdown))
 
 	if err != nil {
 		return nil, err
@@ -149,8 +150,8 @@ func createMetricsExporter(
 	}
 
 	return &signalfMetadataExporter{
-		Metrics:      me,
-		pushMetadata: exp.pushMetadata,
+		Metrics:  me,
+		exporter: exp,
 	}, nil
 }
 

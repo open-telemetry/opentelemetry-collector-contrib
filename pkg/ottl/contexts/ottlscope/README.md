@@ -7,12 +7,14 @@ In general, the Instrumentation Scope Context supports accessing pdata using the
 
 The following fields are the exception.
 
-| path                              | field accessed                                                                            | type                                                                    |
-|-----------------------------------|-------------------------------------------------------------------------------------------|-------------------------------------------------------------------------|
-| resource                          | resource of the instrumentation scope being processed                                     | pcommon.Resource                                                        |
-| resource.attributes               | resource attributes of the instrumentation scope being processed                          | pcommon.Map                                                             |
-| resource.attributes\[""\]         | the value of the resource attribute of the instrumentation scope being processed          | string, bool, int64, float64, pcommon.Map, pcommon.Slice, []byte or nil |
-| resource.dropped_attributes_count | number of dropped attributes of the resource of the instrumentation scope being processed | int64                                                                   |
+| path                              | field accessed                                                                                                                                     | type                                                                    |
+|-----------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------|
+| cache                             | the value of the current transform context's temporary cache. cache can be used as a temporary placeholder for data during complex transformations | pcommon.Map                                                             |
+| cache\[""\]                       | the value of an item in cache                                                                                                                      | string, bool, int64, float64, pcommon.Map, pcommon.Slice, []byte or nil |
+| resource                          | resource of the instrumentation scope being processed                                                                                              | pcommon.Resource                                                        |
+| resource.attributes               | resource attributes of the instrumentation scope being processed                                                                                   | pcommon.Map                                                             |
+| resource.attributes\[""\]         | the value of the resource attribute of the instrumentation scope being processed                                                                   | string, bool, int64, float64, pcommon.Map, pcommon.Slice, []byte or nil |
+| resource.dropped_attributes_count | number of dropped attributes of the resource of the instrumentation scope being processed                                                          | int64                                                                   |
 
 
 ## Enums
