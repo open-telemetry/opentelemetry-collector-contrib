@@ -153,6 +153,7 @@ body:
       - receiver/dockerstats
       - receiver/elasticsearch
       - receiver/expvar
+      - receiver/file
       - receiver/filelog
       - receiver/flinkmetrics
       - receiver/fluentforward
