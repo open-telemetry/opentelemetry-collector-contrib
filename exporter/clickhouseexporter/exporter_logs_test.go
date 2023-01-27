@@ -93,37 +93,11 @@ func TestExporter_pushLogsData(t *testing.T) {
 			return nil
 		})
 
-		exporter := newTestLogsExporter(t, defaultDSN)
+		exporter := newTestLogsExporter(t, defaultEndpoint)
 		mustPushLogsData(t, exporter, simpleLogs(1))
 		mustPushLogsData(t, exporter, simpleLogs(2))
 
 		require.Equal(t, 3, items)
-	})
-}
-
-func TestLogsExporter_getDefaultDns(t *testing.T) {
-	t.Run("database name is a substring of the DSN", func(t *testing.T) {
-		dsn := "tcp://mydatabase-clickhouse-headless:9000/mydatabase"
-		defaultDSN, err := getDefaultDSN(dsn, "mydatabase")
-		require.NoError(t, err)
-		require.Equal(t, defaultDSN, "tcp://mydatabase-clickhouse-headless:9000/default")
-	})
-	t.Run("database name isn't a substring of the DSN", func(t *testing.T) {
-		dsn := "tcp://newdatabase-clickhouse-headless:9000/otel"
-		defaultDSN, err := getDefaultDSN(dsn, "otel")
-		require.NoError(t, err)
-		require.Equal(t, defaultDSN, "tcp://newdatabase-clickhouse-headless:9000/default")
-	})
-	t.Run("error param for database", func(t *testing.T) {
-		dsn := "tcp://mydatabase-clickhouse-headless:9000/mydatabase"
-		_, err := getDefaultDSN(dsn, "otel")
-		require.Error(t, err)
-	})
-	t.Run("database name is same as default database", func(t *testing.T) {
-		dsn := "tcp://mydatabase-clickhouse-headless:9000/default"
-		defaultDSN, err := getDefaultDSN(dsn, "default")
-		require.NoError(t, err)
-		require.Equal(t, defaultDSN, "tcp://mydatabase-clickhouse-headless:9000/default")
 	})
 }
 
@@ -136,10 +110,10 @@ func newTestLogsExporter(t *testing.T, dsn string, fns ...func(*Config)) *logsEx
 }
 
 func withTestExporterConfig(fns ...func(*Config)) func(string) *Config {
-	return func(dsn string) *Config {
+	return func(endpoint string) *Config {
 		var configMods []func(*Config)
 		configMods = append(configMods, func(cfg *Config) {
-			cfg.DSN = dsn
+			cfg.Endpoint = endpoint
 		})
 		configMods = append(configMods, fns...)
 		return withDefaultConfig(configMods...)
