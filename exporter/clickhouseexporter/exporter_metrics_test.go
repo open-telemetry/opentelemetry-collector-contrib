@@ -42,7 +42,7 @@ func TestExporter_pushMetricsData(t *testing.T) {
 			}
 			return nil
 		})
-		exporter := newTestMetricsExporter(t, defaultDSN)
+		exporter := newTestMetricsExporter(t)
 		mustPushMetricsData(t, exporter, simpleMetrics(1))
 	})
 	t.Run("push failure", func(t *testing.T) {
@@ -52,9 +52,7 @@ func TestExporter_pushMetricsData(t *testing.T) {
 			}
 			return nil
 		})
-		exporter := newTestMetricsExporter(t, "tcp://127.0.0.1:9000/db", func(config *Config) {
-			config.DSN = "tcp://127.0.0.1:9000/db"
-		})
+		exporter := newTestMetricsExporter(t)
 		err := exporter.pushMetricsData(context.TODO(), simpleMetrics(2))
 		require.Error(t, err)
 	})
@@ -76,7 +74,7 @@ func TestExporter_pushMetricsData(t *testing.T) {
 			}
 			return nil
 		})
-		exporter := newTestMetricsExporter(t, defaultDSN)
+		exporter := newTestMetricsExporter(t)
 		mustPushMetricsData(t, exporter, simpleMetrics(1))
 
 		require.Equal(t, 5, items)
@@ -85,7 +83,7 @@ func TestExporter_pushMetricsData(t *testing.T) {
 
 func Benchmark_pushMetricsData(b *testing.B) {
 	pm := simpleMetrics(1)
-	exporter := newTestMetricsExporter(&testing.T{}, defaultDSN)
+	exporter := newTestMetricsExporter(&testing.T{})
 	b.ReportAllocs()
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
@@ -326,8 +324,8 @@ func mustPushMetricsData(t *testing.T, exporter *metricsExporter, md pmetric.Met
 	require.NoError(t, err)
 }
 
-func newTestMetricsExporter(t *testing.T, dsn string, fns ...func(*Config)) *metricsExporter {
-	exporter, err := newMetricsExporter(zaptest.NewLogger(t), withTestExporterConfig(fns...)(dsn))
+func newTestMetricsExporter(t *testing.T) *metricsExporter {
+	exporter, err := newMetricsExporter(zaptest.NewLogger(t), withTestExporterConfig()(defaultEndpoint))
 	require.NoError(t, err)
 
 	t.Cleanup(func() { _ = exporter.shutdown(context.TODO()) })
