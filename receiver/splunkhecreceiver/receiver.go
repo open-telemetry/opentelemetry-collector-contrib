@@ -343,7 +343,7 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 		}
 
 		for _, v := range msg.Fields {
-			if !isFlatJsonField(v) {
+			if !isFlatJSONField(v) {
 				r.failRequest(ctx, resp, http.StatusBadRequest, []byte(fmt.Sprintf(responseErrHandlingIndexedFields, len(events))), len(events), nil)
 				return
 			}
@@ -466,12 +466,12 @@ func initJSONResponse(s string) []byte {
 	return respBody
 }
 
-func isFlatJsonField(value interface{}) bool {
-	switch value.(type) {
+func isFlatJSONField(field interface{}) bool {
+	switch value := field.(type) {
 	case map[string]interface{}:
 		return false
 	case []interface{}:
-		for _, v := range value.([]interface{}) {
+		for _, v := range value {
 			switch v.(type) {
 			case map[string]interface{}, []interface{}:
 				return false
