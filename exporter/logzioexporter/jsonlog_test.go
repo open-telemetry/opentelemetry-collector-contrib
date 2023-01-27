@@ -23,7 +23,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/go-hclog"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configcompression"
@@ -46,7 +45,6 @@ func GenerateLogRecordWithMultiTypeValues() plog.LogRecord {
 }
 
 func TestConvertLogRecordToJSON(t *testing.T) {
-	logger := hclog.NewNullLogger()
 	type convertLogRecordToJSONTest struct {
 		log      plog.LogRecord
 		resource pcommon.Resource
@@ -83,7 +81,7 @@ func TestConvertLogRecordToJSON(t *testing.T) {
 		},
 	}
 	for _, test := range convertLogRecordToJSONTests {
-		output := convertLogRecordToJSON(test.log, test.resource, logger)
+		output := convertLogRecordToJSON(test.log, test.resource)
 		require.Equal(t, output, test.expected)
 	}
 

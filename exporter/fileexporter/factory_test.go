@@ -17,7 +17,6 @@ package fileexporter
 import (
 	"context"
 	"io"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -123,7 +122,7 @@ func TestBuildFileWriter(t *testing.T) {
 				},
 			},
 			validate: func(t *testing.T, closer io.WriteCloser) {
-				_, ok := closer.(*os.File)
+				_, ok := closer.(*bufferedWriteCloser)
 				assert.Equal(t, true, ok)
 			},
 		},

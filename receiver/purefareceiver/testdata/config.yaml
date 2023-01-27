@@ -8,9 +8,22 @@ receivers:
       - address: gse-array01
         auth:
           authenticator: bearertokenauth/array01
-      - address: gse-array02
+    host:
+      - address: gse-array01
         auth:
-          authenticator: bearertokenauth/array02
+          authenticator: bearertokenauth/array01
+    directories:
+      - address: gse-array01
+        auth:
+          authenticator: bearertokenauth/array01
+    pods:
+      - address: gse-array01
+        auth:
+          authenticator: bearertokenauth/array01
+    volumes:
+      - address: gse-array01
+        auth:
+          authenticator: bearertokenauth/array01
     env: dev
     settings:
       reload_intervals:

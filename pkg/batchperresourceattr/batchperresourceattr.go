@@ -49,27 +49,29 @@ func (bt *batchTraces) ConsumeTraces(ctx context.Context, td ptrace.Traces) erro
 		return bt.next.ConsumeTraces(ctx, td)
 	}
 
-	tracesByAttr := make(map[string]ptrace.Traces)
+	indicesByAttr := make(map[string][]int)
 	for i := 0; i < lenRss; i++ {
 		rs := rss.At(i)
 		var attrVal string
 		if attributeValue, ok := rs.Resource().Attributes().Get(bt.attrKey); ok {
 			attrVal = attributeValue.Str()
 		}
-
-		tracesForAttr, ok := tracesByAttr[attrVal]
-		if !ok {
-			tracesForAttr = ptrace.NewTraces()
-			tracesByAttr[attrVal] = tracesForAttr
-		}
-
-		// Append ResourceSpan to ptrace.Traces for this attribute value.
-		rs.MoveTo(tracesForAttr.ResourceSpans().AppendEmpty())
+		indicesByAttr[attrVal] = append(indicesByAttr[attrVal], i)
+	}
+	// If there is a single attribute value, then call next.
+	if len(indicesByAttr) <= 1 {
+		return bt.next.ConsumeTraces(ctx, td)
 	}
 
+	// Build the resource spans for each attribute value using CopyTo and call next for each one.
 	var errs error
-	for _, td := range tracesByAttr {
-		errs = multierr.Append(errs, bt.next.ConsumeTraces(ctx, td))
+	for _, indices := range indicesByAttr {
+		tracesForAttr := ptrace.NewTraces()
+		for _, i := range indices {
+			rs := rss.At(i)
+			rs.CopyTo(tracesForAttr.ResourceSpans().AppendEmpty())
+		}
+		errs = multierr.Append(errs, bt.next.ConsumeTraces(ctx, tracesForAttr))
 	}
 	return errs
 }
@@ -94,32 +96,34 @@ func (bt *batchMetrics) Capabilities() consumer.Capabilities {
 func (bt *batchMetrics) ConsumeMetrics(ctx context.Context, td pmetric.Metrics) error {
 	rms := td.ResourceMetrics()
 	lenRms := rms.Len()
-	// If zero or one resource spans just call next.
+	// If zero or one resource metrics just call next.
 	if lenRms <= 1 {
 		return bt.next.ConsumeMetrics(ctx, td)
 	}
 
-	metricsByAttr := make(map[string]pmetric.Metrics)
+	indicesByAttr := make(map[string][]int)
 	for i := 0; i < lenRms; i++ {
 		rm := rms.At(i)
 		var attrVal string
 		if attributeValue, ok := rm.Resource().Attributes().Get(bt.attrKey); ok {
 			attrVal = attributeValue.Str()
 		}
-
-		metricsForAttr, ok := metricsByAttr[attrVal]
-		if !ok {
-			metricsForAttr = pmetric.NewMetrics()
-			metricsByAttr[attrVal] = metricsForAttr
-		}
-
-		// Append ResourceSpan to pmetric.Metrics for this attribute value.
-		rm.MoveTo(metricsForAttr.ResourceMetrics().AppendEmpty())
+		indicesByAttr[attrVal] = append(indicesByAttr[attrVal], i)
+	}
+	// If there is a single attribute value, then call next.
+	if len(indicesByAttr) <= 1 {
+		return bt.next.ConsumeMetrics(ctx, td)
 	}
 
+	// Build the resource metrics for each attribute value using CopyTo and call next for each one.
 	var errs error
-	for _, td := range metricsByAttr {
-		errs = multierr.Append(errs, bt.next.ConsumeMetrics(ctx, td))
+	for _, indices := range indicesByAttr {
+		metricsForAttr := pmetric.NewMetrics()
+		for _, i := range indices {
+			rm := rms.At(i)
+			rm.CopyTo(metricsForAttr.ResourceMetrics().AppendEmpty())
+		}
+		errs = multierr.Append(errs, bt.next.ConsumeMetrics(ctx, metricsForAttr))
 	}
 	return errs
 }
@@ -144,32 +148,34 @@ func (bt *batchLogs) Capabilities() consumer.Capabilities {
 func (bt *batchLogs) ConsumeLogs(ctx context.Context, td plog.Logs) error {
 	rls := td.ResourceLogs()
 	lenRls := rls.Len()
-	// If zero or one resource spans just call next.
+	// If zero or one resource logs just call next.
 	if lenRls <= 1 {
 		return bt.next.ConsumeLogs(ctx, td)
 	}
 
-	logsByAttr := make(map[string]plog.Logs)
+	indicesByAttr := make(map[string][]int)
 	for i := 0; i < lenRls; i++ {
 		rl := rls.At(i)
 		var attrVal string
 		if attributeValue, ok := rl.Resource().Attributes().Get(bt.attrKey); ok {
 			attrVal = attributeValue.Str()
 		}
-
-		logsForAttr, ok := logsByAttr[attrVal]
-		if !ok {
-			logsForAttr = plog.NewLogs()
-			logsByAttr[attrVal] = logsForAttr
-		}
-
-		// Append ResourceSpan to plog.Logs for this attribute value.
-		rl.MoveTo(logsForAttr.ResourceLogs().AppendEmpty())
+		indicesByAttr[attrVal] = append(indicesByAttr[attrVal], i)
+	}
+	// If there is a single attribute value, then call next.
+	if len(indicesByAttr) <= 1 {
+		return bt.next.ConsumeLogs(ctx, td)
 	}
 
+	// Build the resource logs for each attribute value using CopyTo and call next for each one.
 	var errs error
-	for _, td := range logsByAttr {
-		errs = multierr.Append(errs, bt.next.ConsumeLogs(ctx, td))
+	for _, indices := range indicesByAttr {
+		logsForAttr := plog.NewLogs()
+		for _, i := range indices {
+			rl := rls.At(i)
+			rl.CopyTo(logsForAttr.ResourceLogs().AppendEmpty())
+		}
+		errs = multierr.Append(errs, bt.next.ConsumeLogs(ctx, logsForAttr))
 	}
 	return errs
 }

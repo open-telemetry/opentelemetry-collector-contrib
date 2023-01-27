@@ -21,11 +21,15 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
 func TestMetricIdentity_Write(t *testing.T) {
 	resource := pcommon.NewResource()
 	resource.Attributes().PutBool("resource", true)
+	resHash := pdatautil.MapHash(resource.Attributes())
+	resHashStr := string(resHash[:])
 
 	il := pcommon.NewInstrumentationScope()
 	il.SetName("ilm_name")
@@ -33,6 +37,8 @@ func TestMetricIdentity_Write(t *testing.T) {
 
 	attributes := pcommon.NewMap()
 	attributes.PutStr("label", "value")
+	attrsHash := pdatautil.MapHash(attributes)
+	attrsHashStr := string(attrsHash[:])
 	type fields struct {
 		Resource               pcommon.Resource
 		InstrumentationLibrary pcommon.InstrumentationScope
@@ -58,7 +64,7 @@ func TestMetricIdentity_Write(t *testing.T) {
 				MetricName:             "m_name",
 				MetricUnit:             "m_unit",
 			},
-			want: []string{"A" + SEPSTR + "A", "resource:true", "ilm_name", "ilm_version", "label:value", "N", "0", "m_name", "m_unit"},
+			want: []string{"A" + SEPSTR + "A", resHashStr, "ilm_name", "ilm_version", attrsHashStr, "N", "0", "m_name", "m_unit"},
 		},
 		{
 			name: "value and data type",

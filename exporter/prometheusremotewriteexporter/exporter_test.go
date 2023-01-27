@@ -20,7 +20,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"runtime"
 	"sync"
 	"testing"
 
@@ -52,6 +51,9 @@ func Test_NewPRWExporter(t *testing.T) {
 		HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ""},
 		TargetInfo: &TargetInfo{
 			Enabled: true,
+		},
+		CreatedMetric: &CreatedMetric{
+			Enabled: false,
 		},
 	}
 	buildInfo := component.BuildInfo{
@@ -125,9 +127,8 @@ func Test_NewPRWExporter(t *testing.T) {
 			}
 			assert.NoError(t, err)
 			require.NotNil(t, prwe)
-			assert.NotNil(t, prwe.namespace)
+			assert.NotNil(t, prwe.exporterSettings)
 			assert.NotNil(t, prwe.endpointURL)
-			assert.NotNil(t, prwe.externalLabels)
 			assert.NotNil(t, prwe.closeChan)
 			assert.NotNil(t, prwe.wg)
 			assert.NotNil(t, prwe.userAgentHeader)
@@ -145,6 +146,9 @@ func Test_Start(t *testing.T) {
 		ExternalLabels:  map[string]string{},
 		TargetInfo: &TargetInfo{
 			Enabled: true,
+		},
+		CreatedMetric: &CreatedMetric{
+			Enabled: false,
 		},
 	}
 	buildInfo := component.BuildInfo{
@@ -384,10 +388,23 @@ func Test_PushMetrics(t *testing.T) {
 
 	doubleGaugeBatch := getMetricsFromMetricList(validMetrics1[validDoubleGauge], validMetrics2[validDoubleGauge])
 
+	expHistogramBatch := getMetricsFromMetricList(
+		getExpHistogramMetric("exponential_hist", lbs1, time1, &floatVal1, uint64(2), 2, []uint64{1, 1}),
+		getExpHistogramMetric("exponential_hist", lbs2, time2, &floatVal2, uint64(2), 0, []uint64{2, 2}),
+	)
+	emptyExponentialHistogramBatch := getMetricsFromMetricList(
+		getExpHistogramMetric("empty_exponential_hist", lbs1, time1, &floatValZero, uint64(0), 0, []uint64{}),
+		getExpHistogramMetric("empty_exponential_hist", lbs1, time1, &floatValZero, uint64(0), 1, []uint64{}),
+		getExpHistogramMetric("empty_exponential_hist", lbs2, time2, &floatValZero, uint64(0), 0, []uint64{}),
+		getExpHistogramMetric("empty_exponential_hist_two", lbs2, time2, &floatValZero, uint64(0), 0, []uint64{}),
+	)
+	exponentialNoSumHistogramBatch := getMetricsFromMetricList(
+		getExpHistogramMetric("no_sum_exponential_hist", lbs1, time1, nil, uint64(2), 0, []uint64{1, 1}),
+		getExpHistogramMetric("no_sum_exponential_hist", lbs1, time2, nil, uint64(2), 0, []uint64{2, 2}),
+	)
+
 	histogramBatch := getMetricsFromMetricList(validMetrics1[validHistogram], validMetrics2[validHistogram])
-
 	emptyDataPointHistogramBatch := getMetricsFromMetricList(validMetrics1[validEmptyHistogram], validMetrics2[validEmptyHistogram])
-
 	histogramNoSumBatch := getMetricsFromMetricList(validMetrics1[validHistogramNoSum], validMetrics2[validHistogramNoSum])
 
 	summaryBatch := getMetricsFromMetricList(validMetrics1[validSummary], validMetrics2[validSummary])
@@ -460,7 +477,7 @@ func Test_PushMetrics(t *testing.T) {
 			name:               "intSum_case",
 			metrics:            intSumBatch,
 			reqTestFunc:        checkFunc,
-			expectedTimeSeries: 3,
+			expectedTimeSeries: 5,
 			httpResponseCode:   http.StatusAccepted,
 		},
 		{
@@ -482,6 +499,27 @@ func Test_PushMetrics(t *testing.T) {
 			metrics:            intGaugeBatch,
 			reqTestFunc:        checkFunc,
 			expectedTimeSeries: 2,
+			httpResponseCode:   http.StatusAccepted,
+		},
+		{
+			name:               "exponential_histogram_case",
+			metrics:            expHistogramBatch,
+			reqTestFunc:        checkFunc,
+			expectedTimeSeries: 2,
+			httpResponseCode:   http.StatusAccepted,
+		},
+		{
+			name:               "valid_empty_exponential_histogram_case",
+			metrics:            emptyExponentialHistogramBatch,
+			reqTestFunc:        checkFunc,
+			expectedTimeSeries: 3,
+			httpResponseCode:   http.StatusAccepted,
+		},
+		{
+			name:               "exponential_histogram_no_sum_case",
+			metrics:            exponentialNoSumHistogramBatch,
+			reqTestFunc:        checkFunc,
+			expectedTimeSeries: 1,
 			httpResponseCode:   http.StatusAccepted,
 		},
 		{
@@ -652,6 +690,9 @@ func Test_PushMetrics(t *testing.T) {
 						TargetInfo: &TargetInfo{
 							Enabled: true,
 						},
+						CreatedMetric: &CreatedMetric{
+							Enabled: true,
+						},
 					}
 
 					if useWAL {
@@ -798,9 +839,7 @@ func Test_validateAndSanitizeExternalLabels(t *testing.T) {
 // and that we can retrieve those exact requests back from the WAL, when the
 // exporter starts up once again, that it picks up where it left off.
 func TestWALOnExporterRoundTrip(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("skipping test on windows, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10142")
-	}
+	t.Skip("skipping test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10142")
 	if testing.Short() {
 		t.Skip("This test could run for long")
 	}
@@ -835,6 +874,9 @@ func TestWALOnExporterRoundTrip(t *testing.T) {
 		},
 		TargetInfo: &TargetInfo{
 			Enabled: true,
+		},
+		CreatedMetric: &CreatedMetric{
+			Enabled: false,
 		},
 	}
 

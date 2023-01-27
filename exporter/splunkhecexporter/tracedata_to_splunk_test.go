@@ -22,13 +22,11 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
 func Test_traceDataToSplunk(t *testing.T) {
-	logger := zap.NewNop()
 	ts := pcommon.Timestamp(123)
 
 	tests := []struct {
@@ -92,7 +90,7 @@ func Test_traceDataToSplunk(t *testing.T) {
 			traces := tt.traceDataFn()
 
 			cfg := tt.configFn()
-			event := mapSpanToSplunkEvent(traces.ResourceSpans().At(0).Resource(), traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0), cfg, logger)
+			event := mapSpanToSplunkEvent(traces.ResourceSpans().At(0).Resource(), traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0), cfg)
 			require.NotNil(t, event)
 			assert.Equal(t, tt.wantSplunkEvent, event)
 		})

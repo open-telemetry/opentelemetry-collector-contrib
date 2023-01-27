@@ -19,6 +19,7 @@ body:
       - cmd/telemetrygen
       - cmd/tracegen
       - confmap/provider/s3provider
+      - connector/count
       - examples/demo
       - exporter/alibabacloudlogservice
       - exporter/awscloudwatchlogs
@@ -38,7 +39,6 @@ body:
       - exporter/googlecloud
       - exporter/googlecloudpubsub
       - exporter/googlemanagedprometheus
-      - exporter/humio
       - exporter/influxdb
       - exporter/instana
       - exporter/jaeger
@@ -84,7 +84,6 @@ body:
       - extension/storage/dbstorage
       - extension/storage/filestorage
       - internal/aws
-      - internal/comparetest
       - internal/core
       - internal/docker
       - internal/filter
@@ -98,6 +97,8 @@ body:
       - pkg/batchpersignal
       - pkg/experimentalmetricmetadata
       - pkg/ottl
+      - pkg/pdatatest
+      - pkg/pdatautil
       - pkg/resourcetotelemetry
       - pkg/stanza
       - pkg/translator/jaeger
@@ -125,6 +126,7 @@ body:
       - processor/resourcedetection
       - processor/resourcedetection/internal/azure
       - processor/resourcedetection/internal/heroku
+      - processor/resourcedetection/internal/openshift
       - processor/routing
       - processor/schema
       - processor/servicegraph
@@ -151,6 +153,7 @@ body:
       - receiver/dockerstats
       - receiver/elasticsearch
       - receiver/expvar
+      - receiver/file
       - receiver/filelog
       - receiver/flinkmetrics
       - receiver/fluentforward
@@ -186,6 +189,7 @@ body:
       - receiver/promtail
       - receiver/pulsar
       - receiver/purefa
+      - receiver/purefb
       - receiver/rabbitmq
       - receiver/receivercreator
       - receiver/redis
@@ -201,6 +205,7 @@ body:
       - receiver/splunkhec
       - receiver/sqlquery
       - receiver/sqlserver
+      - receiver/sshcheck
       - receiver/statsd
       - receiver/syslog
       - receiver/tcplog

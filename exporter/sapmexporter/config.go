@@ -16,7 +16,6 @@ package sapmexporter // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"errors"
-	"fmt"
 	"net/url"
 
 	sapmclient "github.com/signalfx/sapm-proto/client"
@@ -28,7 +27,6 @@ import (
 
 const (
 	defaultEndpointScheme = "https"
-	defaultNumWorkers     = 8
 )
 
 // Config defines configuration for SAPM exporter.
@@ -61,33 +59,26 @@ type Config struct {
 	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
 }
 
-func (c *Config) validate() error {
+func (c *Config) Validate() error {
 	if c.Endpoint == "" {
 		return errors.New("`endpoint` not specified")
 	}
-
-	e, err := url.Parse(c.Endpoint)
+	_, err := url.Parse(c.Endpoint)
 	if err != nil {
 		return err
-	}
-
-	if e.Scheme == "" {
-		e.Scheme = defaultEndpointScheme
-	}
-	c.Endpoint = e.String()
-	return nil
-}
-
-func (c *Config) Validate() error {
-	if err := c.QueueSettings.Validate(); err != nil {
-		return fmt.Errorf("sending_queue settings has invalid configuration: %w", err)
 	}
 	return nil
 }
 
 func (c *Config) clientOptions() []sapmclient.Option {
+	e, _ := url.Parse(c.Endpoint)
+	endpoint := c.Endpoint
+	if e.Scheme == "" {
+		e.Scheme = defaultEndpointScheme
+		endpoint = e.String()
+	}
 	opts := []sapmclient.Option{
-		sapmclient.WithEndpoint(c.Endpoint),
+		sapmclient.WithEndpoint(endpoint),
 	}
 	if c.NumWorkers > 0 {
 		opts = append(opts, sapmclient.WithWorkers(c.NumWorkers))

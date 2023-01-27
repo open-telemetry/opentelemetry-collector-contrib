@@ -2,7 +2,7 @@
 
 | Status                   |           |
 | ------------------------ |-----------|
-| Stability                | [stable]  |
+| Stability                | [beta]    |
 | Supported pipeline types | logs      |
 | Distributions            | [contrib] |
 
@@ -57,5 +57,5 @@ service:
       exporters: [ mezmo ]
 ```
 
-[stable]: https://github.com/open-telemetry/opentelemetry-collector#stable
+[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

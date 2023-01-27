@@ -39,13 +39,17 @@ func TestLoadConfig(t *testing.T) {
 		expected component.Config
 	}{
 		{
-			id:       component.NewIDWithName(typeStr, ""),
-			expected: createDefaultConfig(),
+			id: component.NewIDWithName(typeStr, ""),
+			expected: func() *Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.Endpoint = "http://example.com"
+				return cfg
+			}(),
 		},
 		{
 			id: component.NewIDWithName(typeStr, "customname"),
 			expected: &Config{
-				Endpoint:            "test-endpoint",
+				Endpoint:            "https://example.com",
 				AccessToken:         "abcd1234",
 				NumWorkers:          3,
 				MaxConnections:      45,
@@ -92,7 +96,7 @@ func TestInvalidConfig(t *testing.T) {
 		NumWorkers:     3,
 		MaxConnections: 45,
 	}
-	noEndpointErr := invalid.validate()
+	noEndpointErr := invalid.Validate()
 	require.Error(t, noEndpointErr)
 
 	invalid = Config{
@@ -101,7 +105,7 @@ func TestInvalidConfig(t *testing.T) {
 		NumWorkers:     3,
 		MaxConnections: 45,
 	}
-	invalidURLErr := invalid.validate()
+	invalidURLErr := invalid.Validate()
 	require.Error(t, invalidURLErr)
 
 	invalid = Config{
@@ -111,5 +115,6 @@ func TestInvalidConfig(t *testing.T) {
 			QueueSize: -1,
 		},
 	}
-	require.Error(t, invalid.Validate())
+
+	require.Error(t, component.ValidateConfig(invalid))
 }

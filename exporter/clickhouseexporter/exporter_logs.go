@@ -18,7 +18,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"strings"
 	"time"
 
 	_ "github.com/ClickHouse/clickhouse-go/v2" // For register database driver.
@@ -121,7 +120,7 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 func attributesToMap(attributes pcommon.Map) map[string]string {
 	m := make(map[string]string, attributes.Len())
 	attributes.Range(func(k string, v pcommon.Value) bool {
-		m[k] = v.Str()
+		m[k] = v.AsString()
 		return true
 	})
 	return m
@@ -183,16 +182,26 @@ var driverName = "clickhouse" // for testing
 
 // newClickhouseClient create a clickhouse client.
 func newClickhouseClient(cfg *Config) (*sql.DB, error) {
-	return sql.Open(driverName, cfg.DSN)
+	dsn, err := cfg.buildDSN(cfg.Database)
+	if err != nil {
+		return nil, err
+	}
+	db, err := sql.Open(driverName, dsn)
+	if err != nil {
+		return nil, err
+	}
+	return db, nil
 }
 
 func createDatabase(cfg *Config) error {
-	database, _ := parseDSNDatabase(cfg.DSN)
-	if database == defaultDatabase {
+	if cfg.Database == defaultDatabase {
 		return nil
 	}
 	// use default database to create new database
-	dsnUseDefaultDatabase := strings.Replace(cfg.DSN, database, defaultDatabase, 1)
+	dsnUseDefaultDatabase, err := cfg.buildDSN(defaultDatabase)
+	if err != nil {
+		return err
+	}
 	db, err := sql.Open(driverName, dsnUseDefaultDatabase)
 	if err != nil {
 		return fmt.Errorf("sql.Open:%w", err)
@@ -200,7 +209,7 @@ func createDatabase(cfg *Config) error {
 	defer func() {
 		_ = db.Close()
 	}()
-	query := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s", database)
+	query := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s", cfg.Database)
 	_, err = db.Exec(query)
 	if err != nil {
 		return fmt.Errorf("create database:%w", err)

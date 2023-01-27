@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
@@ -41,9 +42,7 @@ func TestDataPointRecorders(t *testing.T) {
 		switch recorder.(type) {
 		case func(pcommon.Timestamp, int64), func(pcommon.Timestamp, float64):
 			recorderName := runtime.FuncForPC(reflect.ValueOf(recorder).Pointer()).Name()
-			if m, ok := metricByRecorder[recorderName]; ok {
-				assert.Failf(t, "shared-recorder", "Metrics %q and %q share the same recorder", metric, m)
-			}
+			require.NotContains(t, metricByRecorder, recorderName, "share the same recorder")
 			metricByRecorder[recorderName] = metric
 		default:
 			assert.Failf(t, "invalid-recorder", "Metric %q has invalid recorder type", metric)

@@ -676,10 +676,10 @@ Packets sent.
 
 ## Resource Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| container.hostname | The hostname of the container. | Any Str |
-| container.id | The ID of the container. | Any Str |
-| container.image.name | The name of the docker image in use by the container. | Any Str |
-| container.name | The name of the container. | Any Str |
-| container.runtime | The runtime of the container. For this receiver, it will always be 'docker'. | Any Str |
+| Name | Description | Values | Enabled |
+| ---- | ----------- | ------ | ------- |
+| container.hostname | The hostname of the container. | Any Str | true |
+| container.id | The ID of the container. | Any Str | true |
+| container.image.name | The name of the docker image in use by the container. | Any Str | true |
+| container.name | The name of the container. | Any Str | true |
+| container.runtime | The runtime of the container. For this receiver, it will always be 'docker'. | Any Str | true |
