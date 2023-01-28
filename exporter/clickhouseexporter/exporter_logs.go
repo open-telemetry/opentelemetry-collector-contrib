@@ -18,7 +18,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"strings"
 	"time"
 
 	_ "github.com/ClickHouse/clickhouse-go/v2" // For register database driver.
@@ -183,16 +182,23 @@ var driverName = "clickhouse" // for testing
 
 // newClickhouseClient create a clickhouse client.
 func newClickhouseClient(cfg *Config) (*sql.DB, error) {
-	return sql.Open(driverName, cfg.DSN)
+	dsn, err := cfg.buildDSN(cfg.Database)
+	if err != nil {
+		return nil, err
+	}
+	db, err := sql.Open(driverName, dsn)
+	if err != nil {
+		return nil, err
+	}
+	return db, nil
 }
 
 func createDatabase(cfg *Config) error {
-	database, _ := parseDSNDatabase(cfg.DSN)
-	if database == defaultDatabase {
+	if cfg.Database == defaultDatabase {
 		return nil
 	}
 	// use default database to create new database
-	dsnUseDefaultDatabase, err := getDefaultDSN(cfg.DSN, database)
+	dsnUseDefaultDatabase, err := cfg.buildDSN(defaultDatabase)
 	if err != nil {
 		return err
 	}
@@ -203,22 +209,12 @@ func createDatabase(cfg *Config) error {
 	defer func() {
 		_ = db.Close()
 	}()
-	query := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s", database)
+	query := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s", cfg.Database)
 	_, err = db.Exec(query)
 	if err != nil {
 		return fmt.Errorf("create database:%w", err)
 	}
 	return nil
-}
-
-func getDefaultDSN(dsn string, database string) (string, error) {
-	if strings.LastIndex(dsn, database) == -1 {
-		return "", fmt.Errorf("database not present in dsn")
-	}
-	if dsn[strings.LastIndex(dsn, database):] == defaultDatabase {
-		return dsn, nil
-	}
-	return fmt.Sprintf("%s%s", dsn[0:strings.LastIndex(dsn, database)], defaultDatabase), nil
 }
 
 func createLogsTable(cfg *Config, db *sql.DB) error {

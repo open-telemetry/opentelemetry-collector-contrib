@@ -25,9 +25,10 @@ cmd/mdatagen/                                            @open-telemetry/collect
 cmd/otelcontribcol/                                      @open-telemetry/collector-contrib-approvers
 cmd/oteltestbedcol/                                      @open-telemetry/collector-contrib-approvers
 cmd/telemetrygen/                                        @open-telemetry/collector-contrib-approvers @mx-psi @amenasria @codeboten
-cmd/tracegen/                                            @open-telemetry/collector-contrib-approvers @jpkrohling
 
 confmap/provider/s3provider/                             @open-telemetry/collector-contrib-approvers @Aneurysm9
+
+connector/countconnector/                                @open-telemetry/collector-contrib-approvers @djaglowski @jpkrohling
 
 examples/demo/                                           @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 
@@ -172,6 +173,7 @@ receiver/datadogreceiver/                                @open-telemetry/collect
 receiver/elasticsearchreceiver/                          @open-telemetry/collector-contrib-approvers @djaglowski @binaryfissiongames
 receiver/expvarreceiver/                                 @open-telemetry/collector-contrib-approvers @jamesmoessis @MovieStoreGuy
 receiver/filelogreceiver/                                @open-telemetry/collector-contrib-approvers @djaglowski
+receiver/filereceiver/                               @open-telemetry/collector-contrib-approvers @pmcollins @djaglowski
 receiver/flinkmetricsreceiver/                           @open-telemetry/collector-contrib-approvers @jonathanwamsley @djaglowski
 receiver/fluentforwardreceiver/                          @open-telemetry/collector-contrib-approvers @dmitryax
 receiver/googlecloudpubsubreceiver/                      @open-telemetry/collector-contrib-approvers @alexvanboxel

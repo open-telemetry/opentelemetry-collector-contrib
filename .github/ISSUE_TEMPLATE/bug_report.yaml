@@ -23,8 +23,8 @@ body:
       - cmd/otelcontribcol
       - cmd/oteltestbedcol
       - cmd/telemetrygen
-      - cmd/tracegen
       - confmap/provider/s3provider
+      - connector/count
       - examples/demo
       - exporter/alibabacloudlogservice
       - exporter/awscloudwatchlogs
@@ -158,6 +158,7 @@ body:
       - receiver/dockerstats
       - receiver/elasticsearch
       - receiver/expvar
+      - receiver/file
       - receiver/filelog
       - receiver/flinkmetrics
       - receiver/fluentforward
@@ -229,7 +230,7 @@ body:
       description: Please provide as much detail as you reasonably can.
       value: |
         ## Description
-      
+
         ## Steps to Reproduce
 
         ## Expected Result
