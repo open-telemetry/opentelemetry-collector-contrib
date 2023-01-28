@@ -58,9 +58,6 @@ func NewHTTP(telemetry component.TelemetrySettings, settings confighttp.HTTPServ
 	}
 
 	srv.mux = http.NewServeMux()
-	// the legacy endpoint
-	srv.mux.Handle("/", http.HandlerFunc(srv.samplingStrategyHandler))
-
 	// the new endpoint -- not strictly necessary, as the previous one would match it
 	// already, but good to have it explicit here
 	srv.mux.Handle("/sampling", http.HandlerFunc(srv.samplingStrategyHandler))
