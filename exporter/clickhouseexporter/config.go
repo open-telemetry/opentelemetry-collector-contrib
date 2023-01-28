@@ -15,11 +15,12 @@
 package clickhouseexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter"
 
 import (
+	"database/sql"
 	"errors"
-	"net/url"
-
+	"github.com/ClickHouse/clickhouse-go/v2"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/multierr"
+	"time"
 )
 
 // Config defines configuration for Elastic exporter.
@@ -30,18 +31,14 @@ type Config struct {
 	// because only QueueSize is user-settable.
 	QueueSettings QueueSettings `mapstructure:"sending_queue"`
 
-	// Endpoint is the clickhouse server endpoint.
-	// TCP endpoint: tcp://ip1:port,ip2:port
-	// HTTP endpoint: http://ip:port,ip2:port
+	// Endpoint is the clickhouse endpoint.
 	Endpoint string `mapstructure:"endpoint"`
+	// Database is the database name to export.
+	Database string `mapstructure:"database"`
 	// Username is the authentication username.
 	Username string `mapstructure:"username"`
 	// Username is the authentication password.
 	Password string `mapstructure:"password"`
-	// Database is the database name to export.
-	Database string `mapstructure:"database"`
-	// ConnectionParams is the extra connection parameters with map format. for example compression/dial_timeout
-	ConnectionParams map[string]string `mapstructure:"connection_params"`
 	// LogsTableName is the table name for logs. default is `otel_logs`.
 	LogsTableName string `mapstructure:"logs_table_name"`
 	// TracesTableName is the table name for logs. default is `otel_traces`.
@@ -59,16 +56,16 @@ type QueueSettings struct {
 }
 
 var (
-	errConfigNoEndpoint      = errors.New("endpoint must be specified")
-	errConfigInvalidEndpoint = errors.New("endpoint must be url format")
+	errConfigNoHost     = errors.New("host must be specified")
+	errConfigInvalidDSN = errors.New("DSN is invalid")
 )
 
 // Validate validates the clickhouse server configuration.
 func (cfg *Config) Validate() (err error) {
 	if cfg.Endpoint == "" {
-		err = multierr.Append(err, errConfigNoEndpoint)
+		err = multierr.Append(err, errConfigNoHost)
 	}
-	_, e := cfg.buildDSN(cfg.Database)
+	_, e := cfg.buildDB(cfg.Database)
 	if e != nil {
 		err = multierr.Append(err, e)
 	}
@@ -85,19 +82,35 @@ func (cfg *Config) enforcedQueueSettings() exporterhelper.QueueSettings {
 	}
 }
 
-func (cfg *Config) buildDSN(database string) (string, error) {
-	dsn, err := url.Parse(cfg.Endpoint)
+func (cfg *Config) buildDBOptions(database string) (*clickhouse.Options, error) {
+	opts, err := clickhouse.ParseDSN(cfg.Endpoint)
 	if err != nil {
-		return "", errConfigInvalidEndpoint
+		return nil, errConfigInvalidDSN
 	}
+
+	if database != "" {
+		opts.Auth.Database = database
+	}
+
 	if cfg.Username != "" {
-		dsn.User = url.UserPassword(cfg.Username, cfg.Password)
+		opts.Auth.Username = cfg.Username
+		opts.Auth.Password = cfg.Password
 	}
-	dsn.Path = "/" + database
-	params := url.Values{}
-	for k, v := range cfg.ConnectionParams {
-		params.Set(k, v)
+
+	return opts, nil
+}
+
+func (cfg *Config) buildDB(database string) (*sql.DB, error) {
+	opts, err := cfg.buildDBOptions(database)
+	if err != nil {
+		return nil, err
 	}
-	dsn.RawQuery = params.Encode()
-	return dsn.String(), nil
+
+	conn := clickhouse.OpenDB(opts)
+	conn.SetMaxIdleConns(5)
+	conn.SetMaxOpenConns(10)
+	conn.SetConnMaxLifetime(time.Hour)
+
+	return conn, nil
+
 }

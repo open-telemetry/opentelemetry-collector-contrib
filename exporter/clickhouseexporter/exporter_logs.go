@@ -178,15 +178,12 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
                                   )`
 )
 
-var driverName = "clickhouse" // for testing
-
 // newClickhouseClient create a clickhouse client.
 func newClickhouseClient(cfg *Config) (*sql.DB, error) {
-	dsn, err := cfg.buildDSN(cfg.Database)
+	db, err := cfg.buildDB(cfg.Database)
 	if err != nil {
 		return nil, err
 	}
-	db, err := sql.Open(driverName, dsn)
 	if err != nil {
 		return nil, err
 	}
@@ -194,15 +191,15 @@ func newClickhouseClient(cfg *Config) (*sql.DB, error) {
 }
 
 func createDatabase(cfg *Config) error {
+	// use default database to create new database
 	if cfg.Database == defaultDatabase {
 		return nil
 	}
-	// use default database to create new database
-	dsnUseDefaultDatabase, err := cfg.buildDSN(defaultDatabase)
+
+	db, err := cfg.buildDB(defaultDatabase)
 	if err != nil {
 		return err
 	}
-	db, err := sql.Open(driverName, dsnUseDefaultDatabase)
 	if err != nil {
 		return fmt.Errorf("sql.Open:%w", err)
 	}

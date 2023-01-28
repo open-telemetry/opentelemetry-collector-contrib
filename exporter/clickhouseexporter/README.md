@@ -261,20 +261,31 @@ around 40k/s logs entry per CPU cores, add more collector node can increase line
 
 The following settings are required:
 
-- `endpoint` (no default): The ClickHouse server endpoint, support multi host, for example:
-  tcp protocol `tcp://ip1:port,ip2:port`
-  http protocol `http://ip:port,ip2:port`
+- `addr` (no default): The ClickHouse server address, support multi host with port, for example:
+  - tcp protocol `tcp://addr1:port,tcp://addr2:port`
+  - http protocol `http://addr1:port,http://addr2:port` or https `https://addr1:port,https://addr2:port`
+
+_If no host is specified the default is `localhost:9000` used._
+
+Many other clickhouse specific options can be configured through query parameters e.g. `addr?dial_timeout=5s&compress=lz4`.
 
 The following settings can be optionally configured:
+
+Connection options:
 
 - `username` (default = ): The authentication username.
 - `password` (default = ): The authentication password.
 - `ttl_days` (default = 0): The data time-to-live in days, 0 means no ttl.
 - `database` (default = otel): The database name.
-- `connection_params` (default = {}). Params is the extra connection parameters with map format. for example compression/dial_timeout.
+
+Clickhouse tables:
+
 - `logs_table_name` (default = otel_logs): The table name for logs.
 - `traces_table_name` (default = otel_traces): The table name for traces.
 - `metrics_table_name` (default = otel_metrics): The table name for metrics.
+
+Processing:
+
 - `timeout` (default = 5s): The timeout for every attempt to send data to the backend.
 - `sending_queue`
     - `queue_size` (default = 5000): Maximum number of batches kept in memory before dropping data.
@@ -288,6 +299,10 @@ The following settings can be optionally configured:
 
 ## Example
 
+This example shows how to configure the exporter to send data to a ClickHouse server.
+It uses the native protocol with TLS. The exporter will create the database and tables if they don't exist.
+The data is stored for 3 days.
+
 ```yaml
 receivers:
   examplereceiver:
@@ -297,8 +312,9 @@ processors:
     send_batch_size: 100000
 exporters:
   clickhouse:
-    endpoint: tcp://127.0.0.1:9000
+    endpoint: 127.0.0.1
     database: otel
+    useTLS: true
     ttl_days: 3
     logs_table: otel_logs
     traces_table: otel_traces

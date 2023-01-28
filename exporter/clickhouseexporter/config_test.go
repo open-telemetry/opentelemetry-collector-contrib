@@ -26,7 +26,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
-const defaultEndpoint = "tcp://127.0.0.1:9000"
+const defaultHost = "tcp://127.0.0.1:9000"
 
 func TestLoadConfig(t *testing.T) {
 	t.Parallel()
@@ -35,7 +35,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	defaultCfg := createDefaultConfig()
-	defaultCfg.(*Config).Endpoint = defaultEndpoint
+	defaultCfg.(*Config).Endpoint = defaultHost
 
 	tests := []struct {
 		id       component.ID
@@ -49,14 +49,10 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "full"),
 			expected: &Config{
-				Endpoint: defaultEndpoint,
-				Database: "otel",
-				Username: "foo",
-				Password: "bar",
-				ConnectionParams: map[string]string{
-					"compression":  "zstd",
-					"dial_timeout": "5s",
-				},
+				Endpoint:         "tcp://127.0.0.1:9000",
+				Database:         "otel",
+				Username:         "foo",
+				Password:         "bar",
 				TTLDays:          3,
 				LogsTableName:    "otel_logs",
 				TracesTableName:  "otel_traces",
@@ -100,13 +96,12 @@ func withDefaultConfig(fns ...func(*Config)) *Config {
 	return cfg
 }
 
-func TestConfig_buildDSN(t *testing.T) {
+func TestConfig_buildDBOptions(t *testing.T) {
 	type fields struct {
 		Endpoint string
 		Username string
 		Password string
 		Database string
-		Params   map[string]string
 	}
 	type args struct {
 		database string
@@ -115,45 +110,54 @@ func TestConfig_buildDSN(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    string
+		want    struct{ address, username, password, database string }
 		wantErr error
 	}{
 		{
 			name: "valid config",
 			fields: fields{
-				Endpoint: defaultEndpoint,
+				Endpoint: defaultHost,
 				Username: "foo",
 				Password: "bar",
 				Database: "otel",
-				Params: map[string]string{
-					"compression": "zstd",
-				},
 			},
 			args: args{
 				database: defaultDatabase,
 			},
-			want: "tcp://foo:bar@127.0.0.1:9000/default?compression=zstd",
+			want: struct{ address, username, password, database string }{
+				address:  "127.0.0.1:9000",
+				username: "foo",
+				password: "bar",
+				database: "default",
+			},
 		},
 		{
 			name: "invalid config",
 			fields: fields{
 				Endpoint: "127.0.0.1:9000",
 			},
-			wantErr: errConfigInvalidEndpoint,
+			wantErr: errConfigInvalidDSN,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &Config{
-				Endpoint:         tt.fields.Endpoint,
-				Username:         tt.fields.Username,
-				Password:         tt.fields.Password,
-				Database:         tt.fields.Database,
-				ConnectionParams: tt.fields.Params,
+				Endpoint: tt.fields.Endpoint,
+				Username: tt.fields.Username,
+				Password: tt.fields.Password,
+				Database: tt.fields.Database,
 			}
-			got, err := cfg.buildDSN(tt.args.database)
-			assert.Equalf(t, tt.wantErr, err, "buildDSN(%v)", tt.args.database)
-			assert.Equalf(t, tt.want, got, "buildDSN(%v)", tt.args.database)
+			got, err := cfg.buildDBOptions(tt.args.database)
+
+			if tt.wantErr != nil {
+				assert.Equalf(t, tt.wantErr, err, "buildDSN(%v)", tt.args.database)
+			} else {
+				assert.Equalf(t, tt.want.address, got.Addr[0], "buildDSN(%v)", tt.args.database)
+				assert.Equalf(t, tt.want.username, got.Auth.Username, "buildDSN(%v)", tt.args.database)
+				assert.Equalf(t, tt.want.password, got.Auth.Password, "buildDSN(%v)", tt.args.database)
+				assert.Equalf(t, tt.want.database, got.Auth.Database, "buildDSN(%v)", tt.args.database)
+			}
+
 		})
 	}
 }

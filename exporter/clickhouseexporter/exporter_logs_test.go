@@ -93,7 +93,7 @@ func TestExporter_pushLogsData(t *testing.T) {
 			return nil
 		})
 
-		exporter := newTestLogsExporter(t, defaultEndpoint)
+		exporter := newTestLogsExporter(t, defaultHost)
 		mustPushLogsData(t, exporter, simpleLogs(1))
 		mustPushLogsData(t, exporter, simpleLogs(2))
 
@@ -138,7 +138,6 @@ func mustPushLogsData(t *testing.T, exporter *logsExporter, ld plog.Logs) {
 }
 
 func initClickhouseTestServer(t *testing.T, recorder recorder) {
-	driverName = t.Name()
 	sql.Register(t.Name(), &testClickhouseDriver{
 		recorder: recorder,
 	})
