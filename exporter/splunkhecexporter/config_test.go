@@ -62,6 +62,7 @@ func TestLoadConfig(t *testing.T) {
 				SplunkAppVersion:        "v0.0.1",
 				LogDataEnabled:          true,
 				ProfilingDataEnabled:    true,
+				ExportRaw:               true,
 				MaxContentLengthLogs:    2 * 1024 * 1024,
 				MaxContentLengthMetrics: 2 * 1024 * 1024,
 				MaxContentLengthTraces:  2 * 1024 * 1024,

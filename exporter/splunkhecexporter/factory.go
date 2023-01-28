@@ -90,6 +90,7 @@ func createDefaultConfig() component.Config {
 		},
 		HealthPath:            splunk.DefaultHealthPath,
 		HecHealthCheckEnabled: false,
+		ExportRaw:             false,
 	}
 }
 

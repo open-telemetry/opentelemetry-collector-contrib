@@ -45,6 +45,7 @@ The following configuration options can also be configured:
   you want the profiling data to be dropped instead. Applicable in the `logs` pipeline only.
 - `health_path` (default = '/services/collector/health'): The path reporting [health checks](https://docs.splunk.com/Documentation/Splunk/9.0.1/RESTREF/RESTinput#services.2Fcollector.2Fhealth).
 - `health_check_enabled` (default = false): Whether to perform Splunk HEC Health Check during the exporter's startup.
+- `export_raw` (default = false): send only the log's body, targeting a Splunk HEC raw endpoint.
 - `hec_metadata_to_otel_attrs/source` (default = 'com.splunk.source'): Specifies the mapping of a specific unified model attribute value to the standard source field of a HEC event.
 - `hec_metadata_to_otel_attrs/sourcetype` (default = 'com.splunk.sourcetype'): Specifies the mapping of a specific unified model attribute value to the standard sourcetype field of a HEC event.
 - `hec_metadata_to_otel_attrs/index` (default = 'com.splunk.index'):  Specifies the mapping of a specific unified model attribute value to the standard index field of a HEC event.
