@@ -125,7 +125,6 @@ pkg/winperfcounters/                                     @open-telemetry/collect
 pkg/batchperresourceattr/                                @open-telemetry/collector-contrib-approvers @atoulme @dmitryax
 pkg/experimentalmetricmetadata/                          @open-telemetry/collector-contrib-approvers @rmfitzpatrick
 
-
 processor/attributesprocessor/                           @open-telemetry/collector-contrib-approvers @boostchicken
 processor/cumulativetodeltaprocessor/                    @open-telemetry/collector-contrib-approvers @TylerHelmuth
 processor/datadogprocessor/                              @open-telemetry/collector-contrib-approvers @mx-psi @gbbr @dineshg13
@@ -169,7 +168,7 @@ receiver/cloudfoundryreceiver/                           @open-telemetry/collect
 receiver/collectdreceiver/                               @open-telemetry/collector-contrib-approvers @atoulme
 receiver/couchdbreceiver/                                @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/dockerstatsreceiver/                            @open-telemetry/collector-contrib-approvers @rmfitzpatrick @jamesmoessis
-receiver/datadogreceiver/                                @open-telemetry/collector-contrib-approvers @boostchicken
+receiver/datadogreceiver/                                @open-telemetry/collector-contrib-approvers @boostchicken @jpkrohling @gouthamve @MovieStoreGuy
 receiver/elasticsearchreceiver/                          @open-telemetry/collector-contrib-approvers @djaglowski @binaryfissiongames
 receiver/expvarreceiver/                                 @open-telemetry/collector-contrib-approvers @jamesmoessis @MovieStoreGuy
 receiver/filelogreceiver/                                @open-telemetry/collector-contrib-approvers @djaglowski
@@ -238,3 +237,4 @@ receiver/zookeeperreceiver/                              @open-telemetry/collect
 
 testbed/                                                 @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 testbed/mockdatareceivers/mockawsxrayreceiver/           @open-telemetry/collector-contrib-approvers @willarmiros
+testbed/mockdatasenders/mockdatadogagentexporter/        @open-telemetry/collector-contrib-approvers @boostchicken @jpkrohling @gouthamve @MovieStoreGuy

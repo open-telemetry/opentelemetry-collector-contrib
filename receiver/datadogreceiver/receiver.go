@@ -45,7 +45,12 @@ func newDataDogReceiver(config *Config, nextConsumer consumer.Traces, params rec
 		return nil, component.ErrNilNextConsumer
 	}
 
-	instance, err := obsreport.NewReceiver(obsreport.ReceiverSettings{LongLivedCtx: false, ReceiverID: config.ReceiverID, Transport: "http", ReceiverCreateSettings: params})
+	instance, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+		LongLivedCtx:           false,
+		ReceiverID:             config.ReceiverID,
+		Transport:              "http",
+		ReceiverCreateSettings: params,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -62,18 +67,23 @@ func newDataDogReceiver(config *Config, nextConsumer consumer.Traces, params rec
 }
 
 func (ddr *datadogReceiver) Start(_ context.Context, host component.Host) error {
-	go ddr.startOnce.Do(func() {
-		defer ddr.shutdownWG.Done()
-		ddmux := mux.NewRouter()
-		ddmux.HandleFunc("/v0.3/traces", ddr.handleTraces)
-		ddmux.HandleFunc("/v0.4/traces", ddr.handleTraces)
-		ddmux.HandleFunc("/v0.5/traces", ddr.handleTraces)
-		ddr.server.Handler = ddmux
-		if err := ddr.server.ListenAndServe(); err != http.ErrServerClosed {
-			host.ReportFatalError(fmt.Errorf("error starting datadog receiver: %w", err))
-		}
+	ddr.startOnce.Do(func() {
+		ddr.shutdownWG.Add(1)
+
+		go func() {
+			defer ddr.shutdownWG.Done()
+
+			ddmux := mux.NewRouter()
+			ddmux.HandleFunc("/v0.3/traces", ddr.handleTraces)
+			ddmux.HandleFunc("/v0.4/traces", ddr.handleTraces)
+			ddmux.HandleFunc("/v0.5/traces", ddr.handleTraces)
+			ddr.server.Handler = ddmux
+			if err := ddr.server.ListenAndServe(); err != http.ErrServerClosed {
+				host.ReportFatalError(fmt.Errorf("error starting datadog receiver: %w", err))
+			}
+		}()
 	})
-	ddr.shutdownWG.Add(1)
+
 	return nil
 }
 
