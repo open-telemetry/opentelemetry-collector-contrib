@@ -87,10 +87,14 @@ func (cfg *Config) buildDBOptions(database string) (*clickhouse.Options, error) 
 		return nil, errConfigInvalidDSN
 	}
 
+	// Override database if specified.
+	// If not specified, use the database from the DSN.
 	if database != "" {
 		opts.Auth.Database = database
 	}
 
+	// Override auth if specified.
+	// If not specified, use the auth from the DSN.
 	if cfg.Username != "" {
 		opts.Auth.Username = cfg.Username
 		opts.Auth.Password = cfg.Password
@@ -105,6 +109,7 @@ func (cfg *Config) buildDB(database string) (*sql.DB, error) {
 		return nil, err
 	}
 
+	// Before opening the db, OpenDB ensure connection defaults if not overridden.
 	conn := clickhouse.OpenDB(opts)
 
 	return conn, nil
