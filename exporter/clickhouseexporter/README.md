@@ -262,7 +262,7 @@ around 40k/s logs entry per CPU cores, add more collector node can increase line
 The following settings are required:
 
 - `addr` (no default): The ClickHouse server address, support multi host with port, for example:
-  - tcp protocol `tcp://addr1:port,tcp://addr2:port`
+  - tcp protocol `tcp://addr1:port,tcp://addr2:port` or TLS `tcp://addr1:port,addr2:port?secure=true`
   - http protocol `http://addr1:port,http://addr2:port` or https `https://addr1:port,https://addr2:port`
 
 _If no host is specified the default is `localhost:9000` used._
@@ -300,7 +300,7 @@ Processing:
 ## Example
 
 This example shows how to configure the exporter to send data to a ClickHouse server.
-It uses the native protocol with TLS. The exporter will create the database and tables if they don't exist.
+It uses the native protocol without TLS. The exporter will create the database and tables if they don't exist.
 The data is stored for 3 days.
 
 ```yaml
@@ -312,7 +312,7 @@ processors:
     send_batch_size: 100000
 exporters:
   clickhouse:
-    endpoint: tcp://127.0.0.1:9000?secure=true
+    endpoint: tcp://127.0.0.1:9000
     database: otel
     ttl_days: 3
     logs_table: otel_logs
