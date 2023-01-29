@@ -282,6 +282,7 @@ func (r *Transformer) addToBatch(_ context.Context, e *entry.Entry, source strin
 			r.Errorf("there was error flushing combined logs %s", err)
 		}
 	}
+
 }
 
 // flushUncombined flushes all the logs in the batch individually to the
