@@ -271,18 +271,14 @@ func CompareSpan(expected, actual ptrace.Span) error {
 			expected.EndTimestamp(), actual.EndTimestamp()))
 	}
 
-	if !reflect.DeepEqual(expected.Events(), actual.Events()) {
-		errs = multierr.Append(errs, fmt.Errorf("events doesn't match"))
-	}
+	errs = multierr.Append(errs, CompareEvents(expected.Events(), actual.Events()))
 
 	if expected.DroppedEventsCount() != actual.DroppedEventsCount() {
 		errs = multierr.Append(errs, fmt.Errorf("dropped events count doesn't match expected: %d, actual: %d",
 			expected.DroppedEventsCount(), actual.DroppedEventsCount()))
 	}
 
-	if !reflect.DeepEqual(expected.Links(), actual.Links()) {
-		errs = multierr.Append(errs, fmt.Errorf("links doesn't match"))
-	}
+	errs = multierr.Append(errs, CompareLinks(expected.Links(), actual.Links()))
 
 	if expected.DroppedLinksCount() != actual.DroppedLinksCount() {
 		errs = multierr.Append(errs, fmt.Errorf("dropped links count doesn't match expected: %d, actual: %d",
@@ -297,6 +293,87 @@ func CompareSpan(expected, actual ptrace.Span) error {
 	if expected.Status().Message() != actual.Status().Message() {
 		errs = multierr.Append(errs, fmt.Errorf("status message doesn't match expected: %v, actual: %v",
 			expected.Status().Message(), actual.Status().Message()))
+	}
+
+	return errs
+}
+
+// CompareEvents compares each part of two given SpanEventSlice and returns
+// an error if they don't match. The error describes what didn't match.
+func CompareEvents(expected, actual ptrace.SpanEventSlice) (errs error) {
+	if expected.Len() != actual.Len() {
+		errs = multierr.Append(errs, fmt.Errorf("number of events doesn't match expected: %d, actual: %d",
+			expected.Len(), actual.Len()))
+		return errs
+	}
+
+	for i := 0; i < expected.Len(); i++ {
+		ee := expected.At(i)
+		ae := actual.At(i)
+		errs = multierr.Append(errs, internal.AddErrPrefix(fmt.Sprintf(`event "%s"`, ee.Name()), CompareEvent(ae, ee)))
+	}
+	return errs
+}
+
+// CompareEvent compares each part of two given SpanEvent and returns
+// an error if they don't match. The error describes what didn't match.
+func CompareEvent(expected, actual ptrace.SpanEvent) error {
+	errs := multierr.Combine(
+		internal.CompareAttributes(expected.Attributes(), actual.Attributes()),
+		internal.CompareDroppedAttributesCount(expected.DroppedAttributesCount(), actual.DroppedAttributesCount()),
+	)
+
+	if expected.Name() != actual.Name() {
+		errs = multierr.Append(errs, fmt.Errorf("name doesn't match expected: %s, actual: %s",
+			expected.Name(), actual.Name()))
+	}
+
+	if expected.Timestamp() != actual.Timestamp() {
+		errs = multierr.Append(errs, fmt.Errorf("timestamp doesn't match expected: %d, actual: %d",
+			expected.Timestamp(), actual.Timestamp()))
+	}
+
+	return errs
+}
+
+// CompareLinks compares each part of two given SpanLinkSlice and returns
+// an error if they don't match. The error describes what didn't match.
+func CompareLinks(expected, actual ptrace.SpanLinkSlice) (errs error) {
+	if expected.Len() != actual.Len() {
+		errs = multierr.Append(errs, fmt.Errorf("number of links doesn't match expected: %d, actual: %d",
+			expected.Len(), actual.Len()))
+		return errs
+	}
+
+	for i := 0; i < expected.Len(); i++ {
+		el := expected.At(i)
+		al := actual.At(i)
+		errs = multierr.Append(errs, internal.AddErrPrefix(fmt.Sprintf(`link "%s"`, el.SpanID()), CompareLink(al, el)))
+	}
+	return errs
+}
+
+// CompareLink compares each part of two given SpanLink and returns
+// an error if they don't match. The error describes what didn't match.
+func CompareLink(expected, actual ptrace.SpanLink) error {
+	errs := multierr.Combine(
+		internal.CompareAttributes(expected.Attributes(), actual.Attributes()),
+		internal.CompareDroppedAttributesCount(expected.DroppedAttributesCount(), actual.DroppedAttributesCount()),
+	)
+
+	if expected.TraceID() != actual.TraceID() {
+		errs = multierr.Append(errs, fmt.Errorf("trace ID doesn't match expected: %s, actual: %s",
+			expected.TraceID(), actual.TraceID()))
+	}
+
+	if expected.SpanID() != actual.SpanID() {
+		errs = multierr.Append(errs, fmt.Errorf("span ID doesn't match expected: %s, actual: %s",
+			expected.SpanID(), actual.SpanID()))
+	}
+
+	if expected.TraceState().AsRaw() != actual.TraceState().AsRaw() {
+		errs = multierr.Append(errs, fmt.Errorf("trace state doesn't match expected: %s, actual: %s",
+			expected.TraceState().AsRaw(), actual.TraceState().AsRaw()))
 	}
 
 	return errs

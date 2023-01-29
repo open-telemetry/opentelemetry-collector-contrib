@@ -25,9 +25,10 @@
                             ],
                             "events": [
                                 {
-                                    "name": "Sub span event",
+                                    "name": "event1",
                                     "attributes": null,
-                                    "droppedAttributesCount": 0
+                                    "droppedAttributesCount": 0,
+                                    "timeUnixNano": "11651379494838206464"
                                 }
                             ],
                             "traceId": "8c8b1765a7b0acf0b66aa4623fcb7bd5"
