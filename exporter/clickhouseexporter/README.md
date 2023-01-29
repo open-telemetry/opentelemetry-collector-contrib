@@ -308,7 +308,7 @@ processors:
     send_batch_size: 100000
 exporters:
   clickhouse:
-    endpoint: tcp://127.0.0.1:9000
+    endpoint: tcp://127.0.0.1:9000?dial_timeout=10s&compress=lz4
     database: otel
     ttl_days: 3
     logs_table: otel_logs
