@@ -261,7 +261,7 @@ around 40k/s logs entry per CPU cores, add more collector node can increase line
 
 The following settings are required:
 
-- `addr` (no default): The ClickHouse server address, support multi host with port, for example:
+- `endpoint` (no default): The ClickHouse server address, support multi host with port, for example:
   - tcp protocol `tcp://addr1:port,tcp://addr2:port` or TLS `tcp://addr1:port,addr2:port?secure=true`
   - http protocol `http://addr1:port,http://addr2:port` or https `https://addr1:port,https://addr2:port`
 
