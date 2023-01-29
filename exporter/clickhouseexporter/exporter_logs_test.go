@@ -93,7 +93,7 @@ func TestExporter_pushLogsData(t *testing.T) {
 			return nil
 		})
 
-		exporter := newTestLogsExporter(t, defaultHost)
+		exporter := newTestLogsExporter(t, defaultEndpoint)
 		mustPushLogsData(t, exporter, simpleLogs(1))
 		mustPushLogsData(t, exporter, simpleLogs(2))
 

@@ -20,7 +20,6 @@ import (
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/multierr"
-	"time"
 )
 
 // Config defines configuration for Elastic exporter.
@@ -107,9 +106,6 @@ func (cfg *Config) buildDB(database string) (*sql.DB, error) {
 	}
 
 	conn := clickhouse.OpenDB(opts)
-	conn.SetMaxIdleConns(5)
-	conn.SetMaxOpenConns(10)
-	conn.SetConnMaxLifetime(time.Hour)
 
 	return conn, nil
 

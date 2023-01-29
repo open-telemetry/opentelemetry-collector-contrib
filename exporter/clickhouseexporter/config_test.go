@@ -26,7 +26,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
-const defaultHost = "tcp://127.0.0.1:9000"
+const defaultEndpoint = "tcp://127.0.0.1:9000"
 
 func TestLoadConfig(t *testing.T) {
 	t.Parallel()
@@ -35,7 +35,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	defaultCfg := createDefaultConfig()
-	defaultCfg.(*Config).Endpoint = defaultHost
+	defaultCfg.(*Config).Endpoint = defaultEndpoint
 
 	tests := []struct {
 		id       component.ID
@@ -116,7 +116,7 @@ func TestConfig_buildDBOptions(t *testing.T) {
 		{
 			name: "valid config",
 			fields: fields{
-				Endpoint: defaultHost,
+				Endpoint: defaultEndpoint,
 				Username: "foo",
 				Password: "bar",
 				Database: "otel",

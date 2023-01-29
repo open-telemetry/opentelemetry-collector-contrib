@@ -39,7 +39,7 @@ func TestExporter_pushTracesData(t *testing.T) {
 			return nil
 		})
 
-		exporter := newTestTracesExporter(t, defaultHost)
+		exporter := newTestTracesExporter(t, defaultEndpoint)
 		mustPushTracesData(t, exporter, simpleTraces(1))
 		mustPushTracesData(t, exporter, simpleTraces(2))
 

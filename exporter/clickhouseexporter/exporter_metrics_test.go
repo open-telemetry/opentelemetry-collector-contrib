@@ -325,7 +325,7 @@ func mustPushMetricsData(t *testing.T, exporter *metricsExporter, md pmetric.Met
 }
 
 func newTestMetricsExporter(t *testing.T) *metricsExporter {
-	exporter, err := newMetricsExporter(zaptest.NewLogger(t), withTestExporterConfig()(defaultHost))
+	exporter, err := newMetricsExporter(zaptest.NewLogger(t), withTestExporterConfig()(defaultEndpoint))
 	require.NoError(t, err)
 
 	t.Cleanup(func() { _ = exporter.shutdown(context.TODO()) })
