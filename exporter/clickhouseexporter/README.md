@@ -250,7 +250,7 @@ clickhouse only use one value of float64 to store them.
 
 ## Performance Guide
 
-A single clickhouse instance with 32 CPU cores and 128 GB RAM can handle around 20 TB (20 Billion) logs per day,
+A single ClickHouse instance with 32 CPU cores and 128 GB RAM can handle around 20 TB (20 Billion) logs per day,
 the data compression ratio is 7 ~ 11, the compressed data store in disk is 1.8 TB ~ 2.85 TB,
 add more clickhouse node to cluster can increase linearly.
 
@@ -267,7 +267,7 @@ The following settings are required:
 
 _If no host is specified the default is `localhost:9000` used._
 
-Many other clickhouse specific options can be configured through query parameters e.g. `addr?dial_timeout=5s&compress=lz4`.
+Many other ClickHouse specific options can be configured through query parameters e.g. `addr?dial_timeout=5s&compress=lz4`.
 
 The following settings can be optionally configured:
 
@@ -278,7 +278,7 @@ Connection options:
 - `ttl_days` (default = 0): The data time-to-live in days, 0 means no ttl.
 - `database` (default = otel): The database name.
 
-Clickhouse tables:
+ClickHouse tables:
 
 - `logs_table_name` (default = otel_logs): The table name for logs.
 - `traces_table_name` (default = otel_traces): The table name for traces.
@@ -312,9 +312,8 @@ processors:
     send_batch_size: 100000
 exporters:
   clickhouse:
-    endpoint: 127.0.0.1
+    endpoint: tcp://127.0.0.1:9000?secure=true
     database: otel
-    useTLS: true
     ttl_days: 3
     logs_table: otel_logs
     traces_table: otel_traces
