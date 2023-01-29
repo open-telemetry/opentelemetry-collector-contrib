@@ -197,20 +197,12 @@ func (c *client) pushLogRecords(ctx context.Context, lds plog.ResourceLogsSlice,
 		var b []byte
 
 		if c.config.ExportRaw {
-			body := logs.At(k).Body().AsRaw()
-			if bodyAsBytes, ok := body.([]byte); ok {
-				b = bodyAsBytes
-			} else if bodyAsString, ok := body.(string); ok {
-				b = []byte(bodyAsString)
+			body := logs.At(k).Body()
+			if bodyAsBytes, ok := body.AsRaw().([]byte); ok {
+				b = append(bodyAsBytes, '\n')
 			} else {
-				var err error
-				b, err = jsoniter.Marshal(body)
-				if err != nil {
-					permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf("dropped raw: %v, error: %w", body, err)))
-					continue
-				}
+				b = []byte(logs.At(k).Body().AsString() + "\n")
 			}
-			b = append(b, '\n')
 		} else {
 			// Parsing log record to Splunk event.
 			event := mapLogRecordToSplunkEvent(res.Resource(), logs.At(k), c.config)
