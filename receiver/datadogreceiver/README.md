@@ -24,9 +24,6 @@ receivers:
     endpoint: localhost:8126
     read_timeout: 60s
 ```
-
-
-
 ### read_timeout (Optional)
 The read timeout of the HTTP Server
 
