@@ -157,8 +157,8 @@ github.com/hashicorp/yamux v0.0.0-20180604194846-3520598351bb/go.mod h1:+NfK9FKe
 github.com/hashicorp/yamux v0.0.0-20181012175058-2f1d1f20f75d/go.mod h1:+NfK9FKeTrX5uv1uIXGdwYDTeHna2qgaIlx54MXqjAM=
 github.com/hjson/hjson-go/v4 v4.0.0 h1:wlm6IYYqHjOdXH1gHev4VoXCaW20HdQAGCxdOEEg2cs=
 github.com/hjson/hjson-go/v4 v4.0.0/go.mod h1:KaYt3bTw3zhBjYqnXkYywcYctk0A2nxeEFTse3rH13E=
-github.com/influxdata/influxdb-observability/common v0.2.35 h1:DU/RIrpT5rcPEzVKgUcA1qnF5UzqJ/mUROTmF2+ZF6k=
-github.com/influxdata/influxdb-observability/common v0.2.35/go.mod h1:N+xF1qMOiZtZUYY3bc9Jy526otneqoWpG+vngnPl0N8=
+github.com/influxdata/influxdb-observability/common v0.3.0 h1:Ljauaga4kaDdPNPQWy3/IxjM2VoSj/O1AmMN/82TAfM=
+github.com/influxdata/influxdb-observability/common v0.3.0/go.mod h1:YQWL/mn2SmAvGJfL5uKjDxcwS5M7GgCvDmP+Yk1n3+Q=
 github.com/influxdata/influxdb-observability/otel2influx v0.2.35 h1:uVx7LFHkDykRyUPjmAz2Amd5H/4xOVlP84LzDzncSuI=
 github.com/influxdata/influxdb-observability/otel2influx v0.2.35/go.mod h1:z/2cm4IFQrCQN07hrZ+QHhRtar8s6ohfefxQYjSVEoA=
 github.com/influxdata/line-protocol-corpus v0.0.0-20210519164801-ca6fa5da0184/go.mod h1:03nmhxzZ7Xk2pdG+lmMd7mHDfeVOYFyhOgwO61qWU98=
@@ -320,6 +320,8 @@ go.opentelemetry.io/collector/featuregate v0.70.0 h1:Xr6hrMT/++SjTm06nreex8WlpgF
 go.opentelemetry.io/collector/featuregate v0.70.0/go.mod h1:ih+oCwrHW3bLac/qnPUzes28yDCDmh8WzsAKKauwCYI=
 go.opentelemetry.io/collector/pdata v1.0.0-rc4 h1:vIQHHiaDqvTM3I30j3PDo44ttkv9n8prroe4G+RsUe0=
 go.opentelemetry.io/collector/pdata v1.0.0-rc4/go.mod h1:ft/11i2R6Ld/DC543bAS4R30/W8heexIvNqtzmQpnLQ=
+go.opentelemetry.io/collector/semconv v0.70.0 h1:zuito4A9yoB5v+4M7GnwMBNcQdfhutHeysDAkTaGJjw=
+go.opentelemetry.io/collector/semconv v0.70.0/go.mod h1:UAp+qAMqEXOD0eEBmWJ3IJ5+LkF7zVTgmfufwpHmL8w=
 go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.37.0 h1:yt2NKzK7Vyo6h0+X8BA4FpreZQTlVEIarnsBP/H5mzs=
 go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.37.0/go.mod h1:+ARmXlUlc51J7sZeCBkBJNdHGySrdOzgzxp6VWRWM1U=
 go.opentelemetry.io/otel v1.11.2 h1:YBZcQlsVekzFsFbjygXMOXSs6pialIZxcjfO/mBDmR0=
