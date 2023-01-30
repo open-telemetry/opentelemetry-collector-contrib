@@ -98,6 +98,7 @@ body:
       - internal/tools
       - pkg/batchperresourceattr
       - pkg/batchpersignal
+      - pkg/configschema
       - pkg/experimentalmetricmetadata
       - pkg/ottl
       - pkg/pdatatest

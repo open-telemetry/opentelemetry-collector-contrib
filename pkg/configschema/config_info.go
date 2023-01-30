@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package configschema // import "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema"
+package configschema // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/configschema"
 
 import (
 	"fmt"
@@ -22,15 +22,15 @@ import (
 )
 
 const (
-	receiver  = "receiver"
-	extension = "extension"
-	processor = "processor"
-	exporter  = "exporter"
+	receiverGroup  = "receiver"
+	extensionGroup = "extension"
+	processorGroup = "processor"
+	exporterGroup  = "exporter"
 )
 
-// CfgInfo contains a component config instance, as well as its group name and
+// cfgInfo contains a component config instance, as well as its group name and
 // type.
-type CfgInfo struct {
+type cfgInfo struct {
 	// the name of the component group, e.g. "receiver"
 	Group string
 	// the component type, e.g. "otlpreceiver.Config"
@@ -39,87 +39,87 @@ type CfgInfo struct {
 	CfgInstance interface{}
 }
 
-// GetAllCfgInfos accepts a Factories struct, then creates and returns a CfgInfo
+// getAllCfgInfos accepts a Factories struct, then creates and returns a cfgInfo
 // for each of its components.
-func GetAllCfgInfos(components otelcol.Factories) []CfgInfo {
-	var out []CfgInfo
+func getAllCfgInfos(components otelcol.Factories) []cfgInfo {
+	var out []cfgInfo
 	for _, f := range components.Receivers {
-		out = append(out, CfgInfo{
+		out = append(out, cfgInfo{
 			Type:        f.Type(),
-			Group:       receiver,
+			Group:       receiverGroup,
 			CfgInstance: f.CreateDefaultConfig(),
 		})
 	}
 	for _, f := range components.Extensions {
-		out = append(out, CfgInfo{
+		out = append(out, cfgInfo{
 			Type:        f.Type(),
-			Group:       extension,
+			Group:       extensionGroup,
 			CfgInstance: f.CreateDefaultConfig(),
 		})
 	}
 	for _, f := range components.Processors {
-		out = append(out, CfgInfo{
+		out = append(out, cfgInfo{
 			Type:        f.Type(),
-			Group:       processor,
+			Group:       processorGroup,
 			CfgInstance: f.CreateDefaultConfig(),
 		})
 	}
 	for _, f := range components.Exporters {
-		out = append(out, CfgInfo{
+		out = append(out, cfgInfo{
 			Type:        f.Type(),
-			Group:       exporter,
+			Group:       exporterGroup,
 			CfgInstance: f.CreateDefaultConfig(),
 		})
 	}
 	return out
 }
 
-// GetCfgInfo accepts a Factories struct, then creates and returns the default
+// getCfgInfo accepts a Factories struct, then creates and returns the default
 // config for the component specified by the passed-in componentType and
 // componentName.
-func GetCfgInfo(components otelcol.Factories, componentType, componentName string) (CfgInfo, error) {
+func getCfgInfo(components otelcol.Factories, componentType, componentName string) (cfgInfo, error) {
 	t := component.Type(componentName)
 	switch componentType {
-	case receiver:
+	case receiverGroup:
 		f := components.Receivers[t]
 		if f == nil {
-			return CfgInfo{}, fmt.Errorf("unknown %s name %q", componentType, componentName)
+			return cfgInfo{}, fmt.Errorf("unknown %s name %q", componentType, componentName)
 		}
-		return CfgInfo{
+		return cfgInfo{
 			Type:        f.Type(),
 			Group:       componentType,
 			CfgInstance: f.CreateDefaultConfig(),
 		}, nil
-	case processor:
+	case processorGroup:
 		f := components.Processors[t]
 		if f == nil {
-			return CfgInfo{}, fmt.Errorf("unknown %s name %q", componentType, componentName)
+			return cfgInfo{}, fmt.Errorf("unknown %s name %q", componentType, componentName)
 		}
-		return CfgInfo{
+		return cfgInfo{
 			Type:        f.Type(),
 			Group:       componentType,
 			CfgInstance: f.CreateDefaultConfig(),
 		}, nil
-	case exporter:
+	case exporterGroup:
 		f := components.Exporters[t]
 		if f == nil {
-			return CfgInfo{}, fmt.Errorf("unknown %s name %q", componentType, componentName)
+			return cfgInfo{}, fmt.Errorf("unknown %s name %q", componentType, componentName)
 		}
-		return CfgInfo{
+		return cfgInfo{
 			Type:        f.Type(),
 			Group:       componentType,
 			CfgInstance: f.CreateDefaultConfig(),
 		}, nil
-	case extension:
+	case extensionGroup:
 		f := components.Extensions[t]
 		if f == nil {
-			return CfgInfo{}, fmt.Errorf("unknown %s name %q", componentType, componentName)
+			return cfgInfo{}, fmt.Errorf("unknown %s name %q", componentType, componentName)
 		}
-		return CfgInfo{
+		return cfgInfo{
 			Type:        f.Type(),
 			Group:       componentType,
 			CfgInstance: f.CreateDefaultConfig(),
 		}, nil
 	}
-	return CfgInfo{}, fmt.Errorf("unknown component type %q", componentType)
+	return cfgInfo{}, fmt.Errorf("unknown component type %q", componentType)
 }

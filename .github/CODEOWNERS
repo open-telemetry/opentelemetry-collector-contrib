@@ -20,7 +20,7 @@
 
 * @open-telemetry/collector-contrib-approvers
 
-cmd/configschema/                                        @open-telemetry/collector-contrib-approvers @mx-psi @dmitryax @pmcollins
+cmd/configschema/                                      @open-telemetry/collector-contrib-approvers @mx-psi @dmitryax @pmcollins
 cmd/mdatagen/                                            @open-telemetry/collector-contrib-approvers @dmitryax
 cmd/otelcontribcol/                                      @open-telemetry/collector-contrib-approvers
 cmd/oteltestbedcol/                                      @open-telemetry/collector-contrib-approvers
@@ -127,6 +127,7 @@ pkg/translator/zipkin/                                   @open-telemetry/collect
 pkg/winperfcounters/                                     @open-telemetry/collector-contrib-approvers @dashpole @mrod1598 @binaryfissiongames
 pkg/batchperresourceattr/                                @open-telemetry/collector-contrib-approvers @atoulme @dmitryax
 pkg/experimentalmetricmetadata/                          @open-telemetry/collector-contrib-approvers @rmfitzpatrick
+pkg/configschema/                                        @open-telemetry/collector-contrib-approvers @pmcollins
 
 processor/attributesprocessor/                           @open-telemetry/collector-contrib-approvers @boostchicken
 processor/cumulativetodeltaprocessor/                    @open-telemetry/collector-contrib-approvers @TylerHelmuth

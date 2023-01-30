@@ -15,18 +15,35 @@
 package main
 
 import (
+	"errors"
+	"fmt"
+	"os"
 	"path/filepath"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema/docsgen/docsgen"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/components"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/configschema"
 )
 
 func main() {
+	err := run(os.Args)
+	if err != nil {
+		fmt.Printf("error: %v\n", err)
+	}
+}
+
+func run(args []string) error {
 	c, err := components.Components()
 	if err != nil {
-		panic(err)
+		return err
 	}
-	dr := configschema.NewDirResolver(filepath.Join("..", ".."), configschema.DefaultModule)
-	docsgen.CLI(c, dr)
+	switch len(args) {
+	case 2:
+		return configschema.GenerateMDFiles(c, filepath.Join("..", ".."), "github.com/open-telemetry/opentelemetry-collector-contrib")
+	case 3:
+		componentType := args[1]
+		componentName := args[2]
+		return configschema.GenerateMDFile(c, filepath.Join("..", ".."), "github.com/open-telemetry/opentelemetry-collector-contrib", componentType, componentName)
+	default:
+		return errors.New("wrong number of arguments")
+	}
 }

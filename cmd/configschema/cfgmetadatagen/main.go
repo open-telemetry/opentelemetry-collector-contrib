@@ -17,24 +17,26 @@ package main
 import (
 	"flag"
 	"fmt"
-	"os"
 	"path/filepath"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema/cfgmetadatagen/cfgmetadatagen"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/components"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/configschema"
 )
 
 func main() {
+	err := run()
+	if err != nil {
+		fmt.Printf("error: %s\n", err)
+	}
+}
+
+func run() error {
 	sourceDir, outputDir := getFlags()
 	c, err := components.Components()
 	if err != nil {
-		fmt.Printf("error getting components %v", err)
-		os.Exit(1)
+		return err
 	}
-	err = cfgmetadatagen.GenerateFiles(c, sourceDir, outputDir)
-	if err != nil {
-		fmt.Printf("cfg metadata generator failed: %v\n", err)
-	}
+	return configschema.GenerateYAMLFiles(c, sourceDir, outputDir, "github.com/open-telemetry/opentelemetry-collector-contrib")
 }
 
 func getFlags() (string, string) {

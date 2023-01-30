@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package configschema // import "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema"
+package configschema // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/configschema"
 
 import (
 	"fmt"
@@ -26,48 +26,18 @@ import (
 	"golang.org/x/mod/module"
 )
 
-// DefaultSrcRoot is the default root of the collector repo, relative to the
-// current working directory. Can be used to create a DirResolver.
-const DefaultSrcRoot = "."
-
-// DefaultModule is the module prefix of contrib. Can be used to create a
-// DirResolver.
-const DefaultModule = "github.com/open-telemetry/opentelemetry-collector-contrib"
-
-type DirResolverIntf interface {
-	TypeToPackagePath(t reflect.Type) (string, error)
-	ReflectValueToProjectPath(v reflect.Value) string
+// dirResolver is used to resolve the base directory of a given reflect.Type.
+type dirResolver struct {
+	srcRoot    string
+	moduleName string
 }
 
-// DirResolver is used to resolve the base directory of a given reflect.Type.
-type DirResolver struct {
-	SrcRoot    string
-	ModuleName string
-}
-
-// NewDefaultDirResolver creates a DirResolver with a default SrcRoot and
-// ModuleName, suitable for using this package's API using otelcol with an
-// executable running from the otelcol's source root (not tests).
-func NewDefaultDirResolver() DirResolver {
-	return NewDirResolver(DefaultSrcRoot, DefaultModule)
-}
-
-// NewDirResolver creates a DirResolver with a custom SrcRoot and ModuleName.
-// Useful for testing and for using this package's API from a repository other
-// than otelcol (e.g. contrib).
-func NewDirResolver(srcRoot string, moduleName string) DirResolver {
-	return DirResolver{
-		SrcRoot:    srcRoot,
-		ModuleName: moduleName,
-	}
-}
-
-// TypeToPackagePath accepts a Type and returns the filesystem path. If the
+// typeToPackagePath accepts a Type and returns the filesystem path. If the
 // path does not exist in the current project, returns location in GOPATH.
-func (dr DirResolver) TypeToPackagePath(t reflect.Type) (string, error) {
+func (dr dirResolver) typeToPackagePath(t reflect.Type) (string, error) {
 	pkgPath := t.PkgPath()
-	if strings.HasPrefix(pkgPath, dr.ModuleName) {
-		return dr.packagePathToVerifiedProjectPath(strings.TrimPrefix(pkgPath, dr.ModuleName+"/"))
+	if strings.HasPrefix(pkgPath, dr.moduleName) {
+		return dr.packagePathToVerifiedProjectPath(strings.TrimPrefix(pkgPath, dr.moduleName))
 	}
 	verifiedGoPath, err := dr.packagePathToVerifiedGoPath(pkgPath)
 	if err != nil {
@@ -76,14 +46,14 @@ func (dr DirResolver) TypeToPackagePath(t reflect.Type) (string, error) {
 	return verifiedGoPath, nil
 }
 
-// ReflectValueToProjectPath accepts a reflect.Value and returns its directory in the current project. If
+// reflectValueToProjectPath accepts a reflect.Value and returns its directory in the current project. If
 // the type doesn't live in the current project, returns "".
-func (dr DirResolver) ReflectValueToProjectPath(v reflect.Value) string {
+func (dr dirResolver) reflectValueToProjectPath(v reflect.Value) string {
 	t := v.Type().Elem()
-	if !strings.HasPrefix(t.PkgPath(), dr.ModuleName) {
+	if !strings.HasPrefix(t.PkgPath(), dr.moduleName) {
 		return ""
 	}
-	trimmed := strings.TrimPrefix(t.PkgPath(), dr.ModuleName+"/")
+	trimmed := strings.TrimPrefix(t.PkgPath(), dr.moduleName+"/")
 	dir, err := dr.packagePathToVerifiedProjectPath(trimmed)
 	if err != nil {
 		return ""
@@ -91,18 +61,18 @@ func (dr DirResolver) ReflectValueToProjectPath(v reflect.Value) string {
 	return dir
 }
 
-func (dr DirResolver) packagePathToVerifiedProjectPath(packagePath string) (string, error) {
+func (dr dirResolver) packagePathToVerifiedProjectPath(packagePath string) (string, error) {
 	dir := dr.packagePathToProjectPath(packagePath)
 	_, err := os.ReadDir(dir)
 	return dir, err
 }
 
 // packagePathToProjectPath returns the path to a package in the local project.
-func (dr DirResolver) packagePathToProjectPath(packagePath string) string {
-	return filepath.Join(dr.SrcRoot, packagePath)
+func (dr dirResolver) packagePathToProjectPath(packagePath string) string {
+	return filepath.Join(dr.srcRoot, packagePath)
 }
 
-func (dr DirResolver) packagePathToVerifiedGoPath(packagePath string) (string, error) {
+func (dr dirResolver) packagePathToVerifiedGoPath(packagePath string) (string, error) {
 	dir, err := dr.packagePathToGoPath(packagePath)
 	if err != nil {
 		return "", err
@@ -115,8 +85,8 @@ func (dr DirResolver) packagePathToVerifiedGoPath(packagePath string) (string, e
 // "go.opentelemetry.io/collector/receiver/otlpreceiver") and returns the
 // filesystem path starting at GOPATH by reading the current module's go.mod
 // file to get the version and appending it to the filesystem path.
-func (dr DirResolver) packagePathToGoPath(packagePath string) (string, error) {
-	gomodPath := filepath.Join(dr.SrcRoot, "go.mod")
+func (dr dirResolver) packagePathToGoPath(packagePath string) (string, error) {
+	gomodPath := filepath.Join(dr.srcRoot, "go.mod")
 	gomodBytes, err := os.ReadFile(gomodPath)
 	if err != nil {
 		return "", err

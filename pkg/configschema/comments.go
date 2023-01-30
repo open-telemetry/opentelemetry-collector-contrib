@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package configschema // import "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema"
+package configschema // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/configschema"
 
 import (
 	"go/ast"
@@ -24,13 +24,18 @@ import (
 	"strings"
 )
 
-// commentsForStruct returns a map of fieldname -> comment for a struct
-func commentsForStruct(v reflect.Value, dr DirResolver) (map[string]string, error) {
+type readCommentsFunc func(v reflect.Value) (map[string]string, error)
+
+type commentReader struct {
+	dr dirResolver
+}
+
+func (r commentReader) commentsForStruct(v reflect.Value) (map[string]string, error) {
 	elem := v
 	if v.Kind() == reflect.Ptr {
 		elem = v.Elem()
 	}
-	packagePath, err := dr.TypeToPackagePath(elem.Type())
+	packagePath, err := r.dr.typeToPackagePath(elem.Type())
 	if err != nil {
 		return nil, err
 	}
