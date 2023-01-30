@@ -32,4 +32,5 @@ func TestWrapError(t *testing.T) {
 	assert.False(t, consumererror.IsPermanent(WrapError(err, &respRetriable)))
 	assert.True(t, consumererror.IsPermanent(WrapError(err, &respNonRetriable)))
 	assert.False(t, consumererror.IsPermanent(WrapError(nil, &respNonRetriable)))
+	assert.False(t, consumererror.IsPermanent(WrapError(err, nil)))
 }
