@@ -149,7 +149,7 @@ body:
       - receiver/cloudfoundry
       - receiver/collectd
       - receiver/couchdb
-      - receiver/datadogreceiver
+      - receiver/datadog
       - receiver/dockerstats
       - receiver/elasticsearch
       - receiver/expvar
