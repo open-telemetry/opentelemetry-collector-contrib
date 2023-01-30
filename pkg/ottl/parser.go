@@ -17,11 +17,11 @@ package ottl // import "github.com/open-telemetry/opentelemetry-collector-contri
 import (
 	"context"
 	"fmt"
-	"go.uber.org/zap"
 
 	"github.com/alecthomas/participle/v2"
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
 )
 
 type ErrorMode int
@@ -37,6 +37,44 @@ type Parser[K any] struct {
 	enumParser        EnumParser
 	telemetrySettings component.TelemetrySettings
 	errorMode         ErrorMode
+}
+
+// Statement holds a top level Statement for processing telemetry data. A Statement is a combination of a function
+// invocation and the boolean expression to match telemetry for invoking the function.
+type Statement[K any] struct {
+	function          Expr[K]
+	condition         BoolExpr[K]
+	errorMode         ErrorMode
+	telemetrySettings component.TelemetrySettings
+}
+
+// Execute is a function that will execute the statement's function if the statement's condition is met.
+// Returns true if the function was run, returns false otherwise.
+// If the statement contains no condition, the function will run and true will be returned.
+// In addition, the functions return value is always returned.
+func (s *Statement[K]) Execute(ctx context.Context, tCtx K) (any, bool, error) {
+	condition, err := s.condition.Eval(ctx, tCtx)
+	if err != nil {
+		if s.errorMode == Send {
+			return nil, false, err
+		} else {
+			s.telemetrySettings.Logger.Error("error executing condition", zap.Error(err))
+			return nil, false, nil
+		}
+	}
+	var result any
+	if condition {
+		result, err = s.function.Eval(ctx, tCtx)
+		if err != nil {
+			if s.errorMode == Send {
+				return nil, true, err
+			} else {
+				s.telemetrySettings.Logger.Error("error executing function", zap.Error(err))
+				return nil, true, nil
+			}
+		}
+	}
+	return result, condition, nil
 }
 
 func NewParser[K any](
@@ -137,42 +175,4 @@ func newParser[G any]() *participle.Parser[G] {
 		panic("Unable to initialize parser; this is a programming error in the transformprocessor:" + err.Error())
 	}
 	return parser
-}
-
-// Statement holds a top level Statement for processing telemetry data. A Statement is a combination of a function
-// invocation and the boolean expression to match telemetry for invoking the function.
-type Statement[K any] struct {
-	function          Expr[K]
-	condition         BoolExpr[K]
-	errorMode         ErrorMode
-	telemetrySettings component.TelemetrySettings
-}
-
-// Execute is a function that will execute the statement's function if the statement's condition is met.
-// Returns true if the function was run, returns false otherwise.
-// If the statement contains no condition, the function will run and true will be returned.
-// In addition, the functions return value is always returned.
-func (s *Statement[K]) Execute(ctx context.Context, tCtx K) (any, bool, error) {
-	condition, err := s.condition.Eval(ctx, tCtx)
-	if err != nil {
-		if s.errorMode == Send {
-			return nil, false, err
-		} else {
-			s.telemetrySettings.Logger.Error("error executing condition", zap.Error(err))
-			return nil, false, nil
-		}
-	}
-	var result any
-	if condition {
-		result, err = s.function.Eval(ctx, tCtx)
-		if err != nil {
-			if s.errorMode == Send {
-				return nil, true, err
-			} else {
-				s.telemetrySettings.Logger.Error("error executing function", zap.Error(err))
-				return nil, true, nil
-			}
-		}
-	}
-	return result, condition, nil
 }

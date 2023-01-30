@@ -17,10 +17,11 @@ package ottl
 import (
 	"context"
 	"fmt"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"reflect"
 	"regexp"
 	"testing"
+
+	"go.opentelemetry.io/collector/component/componenttest"
 
 	"github.com/stretchr/testify/assert"
 
