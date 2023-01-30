@@ -1,5 +1,11 @@
 # Datadog APM Receiver
 
+| Status                   |           |
+| ------------------------ | --------- |
+| Stability                | [beta]   |
+| Supported pipeline types | traces      |
+| Distributions            | [contrib] |
+
 ## Overview
 The Datadog APM Receiver accepts traces in the Datadog Trace Agent Format
 
