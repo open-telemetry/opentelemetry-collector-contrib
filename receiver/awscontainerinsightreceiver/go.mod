@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscon
 go 1.18
 
 require (
-	github.com/aws/aws-sdk-go v1.44.186
+	github.com/aws/aws-sdk-go v1.44.189
 	github.com/google/cadvisor v0.47.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.70.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.70.0
@@ -105,9 +105,9 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	go.opentelemetry.io/collector/featuregate v0.70.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.37.0 // indirect
-	go.opentelemetry.io/otel v1.11.2 // indirect
+	go.opentelemetry.io/otel v1.12.0 // indirect
 	go.opentelemetry.io/otel/metric v0.34.0 // indirect
-	go.opentelemetry.io/otel/trace v1.11.2 // indirect
+	go.opentelemetry.io/otel/trace v1.12.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
 	golang.org/x/net v0.5.0 // indirect
@@ -118,7 +118,7 @@ require (
 	golang.org/x/time v0.3.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20221118155620-16455021b5e6 // indirect
-	google.golang.org/grpc v1.52.1 // indirect
+	google.golang.org/grpc v1.52.3 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
