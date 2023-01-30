@@ -1,0 +1,38 @@
+{
+   "resourceMetrics": [
+      {
+         "resource": {
+            "attributes": [
+               {
+                  "key": "resource-attr",
+                  "value": {
+                     "stringValue": "resource-attr-val-1"
+                  }
+               }
+            ]
+         },
+         "scopeMetrics": [
+            {
+               "metrics": [
+                  {
+                     "description": "The number of data points observed.",
+                     "name": "metric.data_point.count",
+                     "sum": {
+                        "aggregationTemporality": 1,
+                        "dataPoints": [
+                           {
+                              "asInt": "12",
+                              "timeUnixNano": "1675098960149825000"
+                           }
+                        ]
+                     }
+                  }
+               ],
+               "scope": {
+                  "name": "otelcol/countconnector"
+               }
+            }
+         ]
+      }
+   ]
+}

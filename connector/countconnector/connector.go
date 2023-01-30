@@ -19,7 +19,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -27,95 +26,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-const (
-	typeStr   = "count"
-	stability = component.StabilityLevelDevelopment
-	scopeName = "otelcol/countconnector"
-
-	defaultMetricNameSpans = "trace.span.count"
-	defaultMetricDescSpans = "The number of spans observed."
-
-	defaultMetricNameDataPoints = "metric.data_point.count"
-	defaultMetricDescDataPoints = "The number of data points observed."
-
-	defaultMetricNameLogRecords = "log.record.count"
-	defaultMetricDescLogRecords = "The number of log records observed."
-)
-
-// TypeConfig for a data type
-type TypeConfig struct {
-	Name        string `mapstructure:"name"`
-	Description string `mapstructure:"description"`
-}
-
-// Config for the connector
-type Config struct {
-	Traces  TypeConfig `mapstructure:"traces"`
-	Metrics TypeConfig `mapstructure:"metrics"`
-	Logs    TypeConfig `mapstructure:"logs"`
-}
-
-// NewFactory returns a ConnectorFactory.
-func NewFactory() connector.Factory {
-	return connector.NewFactory(
-		typeStr,
-		createDefaultConfig,
-		connector.WithTracesToMetrics(createTracesToMetrics, component.StabilityLevelDevelopment),
-		connector.WithMetricsToMetrics(createMetricsToMetrics, component.StabilityLevelDevelopment),
-		connector.WithLogsToMetrics(createLogsToMetrics, component.StabilityLevelDevelopment),
-	)
-}
-
-// createDefaultConfig creates the default configuration.
-func createDefaultConfig() component.Config {
-	return &Config{
-		Traces: TypeConfig{
-			Name:        defaultMetricNameSpans,
-			Description: defaultMetricDescSpans,
-		},
-		Metrics: TypeConfig{
-			Name:        defaultMetricNameDataPoints,
-			Description: defaultMetricDescDataPoints,
-		},
-		Logs: TypeConfig{
-			Name:        defaultMetricNameLogRecords,
-			Description: defaultMetricDescLogRecords,
-		},
-	}
-}
-
-// createTracesToMetrics creates a traces to metrics connector based on provided config.
-func createTracesToMetrics(
-	_ context.Context,
-	set connector.CreateSettings,
-	cfg component.Config,
-	nextConsumer consumer.Metrics,
-) (connector.Traces, error) {
-	c := cfg.(*Config)
-	return &count{Config: *c, Metrics: nextConsumer}, nil
-}
-
-// createMetricsToMetrics creates a metrics connector based on provided config.
-func createMetricsToMetrics(
-	_ context.Context,
-	set connector.CreateSettings,
-	cfg component.Config,
-	nextConsumer consumer.Metrics,
-) (connector.Metrics, error) {
-	c := cfg.(*Config)
-	return &count{Config: *c, Metrics: nextConsumer}, nil
-}
-
-// createLogsToMetrics creates a logs to metrics connector based on provided config.
-func createLogsToMetrics(
-	_ context.Context,
-	set connector.CreateSettings,
-	cfg component.Config,
-	nextConsumer consumer.Metrics,
-) (connector.Logs, error) {
-	c := cfg.(*Config)
-	return &count{Config: *c, Metrics: nextConsumer}, nil
-}
+const scopeName = "otelcol/countconnector"
 
 // count can count spans, data points, or log records and emit
 // the count onto a metrics pipeline.
@@ -161,7 +72,22 @@ func (c *count) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 
 		count := 0
 		for j := 0; j < resourceMetric.ScopeMetrics().Len(); j++ {
-			count += resourceMetric.ScopeMetrics().At(j).Metrics().Len()
+			countMetrics := resourceMetric.ScopeMetrics().At(j).Metrics()
+			for k := 0; k < countMetrics.Len(); k++ {
+				countMetric := countMetrics.At(k)
+				switch countMetric.Type() {
+				case pmetric.MetricTypeGauge:
+					count += countMetric.Gauge().DataPoints().Len()
+				case pmetric.MetricTypeSum:
+					count += countMetric.Sum().DataPoints().Len()
+				case pmetric.MetricTypeSummary:
+					count += countMetric.Summary().DataPoints().Len()
+				case pmetric.MetricTypeHistogram:
+					count += countMetric.Histogram().DataPoints().Len()
+				case pmetric.MetricTypeExponentialHistogram:
+					count += countMetric.ExponentialHistogram().DataPoints().Len()
+				}
+			}
 		}
 		setCountMetric(countScope.Metrics().AppendEmpty(), c.Config.Metrics, count)
 	}
