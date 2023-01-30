@@ -17,6 +17,7 @@ package ottl
 import (
 	"context"
 	"fmt"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"reflect"
 	"regexp"
 	"testing"
@@ -1307,6 +1308,86 @@ func Test_Execute(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expectedCondition, condition)
 			assert.Equal(t, tt.expectedResult, result)
+		})
+	}
+}
+
+func Test_Execute_Error(t *testing.T) {
+	tests := []struct {
+		name              string
+		condition         boolExpressionEvaluator[interface{}]
+		function          ExprFunc[interface{}]
+		errorMode         ErrorMode
+		expectedResult    interface{}
+		expectedCondition bool
+		expectedError     error
+	}{
+		{
+			name: "Drop error from condition",
+			condition: func(context.Context, interface{}) (bool, error) {
+				return true, fmt.Errorf("test")
+			},
+			function: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+				return 1, nil
+			},
+			errorMode:         Drop,
+			expectedResult:    nil,
+			expectedCondition: false,
+			expectedError:     nil,
+		},
+		{
+			name: "Send error from condition",
+			condition: func(context.Context, interface{}) (bool, error) {
+				return true, fmt.Errorf("test")
+			},
+			function: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+				return 1, nil
+			},
+			errorMode:         Send,
+			expectedResult:    nil,
+			expectedCondition: false,
+			expectedError:     fmt.Errorf("test"),
+		},
+		{
+			name: "Drop error from function",
+			condition: func(context.Context, interface{}) (bool, error) {
+				return true, nil
+			},
+			function: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+				return 1, fmt.Errorf("test")
+			},
+			errorMode:         Drop,
+			expectedResult:    nil,
+			expectedCondition: true,
+			expectedError:     nil,
+		},
+		{
+			name: "Send error from function",
+			condition: func(context.Context, interface{}) (bool, error) {
+				return true, nil
+			},
+			function: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+				return 1, fmt.Errorf("test")
+			},
+			errorMode:         Send,
+			expectedResult:    nil,
+			expectedCondition: true,
+			expectedError:     fmt.Errorf("test"),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			statement := Statement[interface{}]{
+				condition:         BoolExpr[any]{tt.condition},
+				function:          Expr[any]{exprFunc: tt.function},
+				errorMode:         tt.errorMode,
+				telemetrySettings: componenttest.NewNopTelemetrySettings(),
+			}
+
+			result, condition, err := statement.Execute(context.Background(), nil)
+			assert.Equal(t, tt.expectedResult, result)
+			assert.Equal(t, tt.expectedCondition, condition)
+			assert.Equal(t, tt.expectedError, err)
 		})
 	}
 }

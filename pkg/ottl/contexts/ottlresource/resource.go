@@ -34,6 +34,12 @@ type TransformContext struct {
 
 type Option func(*ottl.Parser[TransformContext])
 
+func WithErrorMode(errorMode ottl.ErrorMode) Option {
+	return func(p *ottl.Parser[TransformContext]) {
+		ottl.WithErrorMode[TransformContext](errorMode)(p)
+	}
+}
+
 func NewTransformContext(resource pcommon.Resource) TransformContext {
 	return TransformContext{
 		resource: resource,
