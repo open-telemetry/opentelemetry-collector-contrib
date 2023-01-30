@@ -1027,6 +1027,15 @@ func Test_splunkhecreceiver_handle_nested_fields(t *testing.T) {
 			success: false,
 		},
 		{
+			name: "array_of_map",
+			field: []interface{}{
+				map[string]interface{}{
+					"key": "value",
+				},
+			},
+			success: false,
+		},
+		{
 			name:    "int",
 			field:   int(0),
 			success: true,
