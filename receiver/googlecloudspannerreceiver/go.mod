@@ -14,7 +14,7 @@ require (
 	go.opentelemetry.io/collector/pdata v1.0.0-rc4
 	go.uber.org/zap v1.24.0
 	google.golang.org/api v0.108.0
-	google.golang.org/grpc v1.52.1
+	google.golang.org/grpc v1.52.3
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -52,9 +52,9 @@ require (
 	github.com/stretchr/objx v0.5.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/collector/featuregate v0.70.0 // indirect
-	go.opentelemetry.io/otel v1.11.2 // indirect
+	go.opentelemetry.io/otel v1.12.0 // indirect
 	go.opentelemetry.io/otel/metric v0.34.0 // indirect
-	go.opentelemetry.io/otel/trace v1.11.2 // indirect
+	go.opentelemetry.io/otel/trace v1.12.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
 	golang.org/x/net v0.5.0 // indirect

@@ -261,17 +261,17 @@ around 40k/s logs entry per CPU cores, add more collector node can increase line
 
 The following settings are required:
 
-- `dsn` (no default): The ClickHouse server DSN (Data Source Name), for
-  example `tcp://user:password@127.0.0.1:9000/default`
-  For tcp protocol reference: [ClickHouse/clickhouse-go#dsn](https://github.com/ClickHouse/clickhouse-go#dsn).
-  For http protocol
-  reference: [ClickHouse/clickhouse-go#http-support-experimental](https://github.com/ClickHouse/clickhouse-go/tree/main#http-support-experimental)
-  .
+- `endpoint` (no default): The ClickHouse server endpoint, support multi host, for example:
+  tcp protocol `tcp://ip1:port,ip2:port`
+  http protocol `http://ip:port,ip2:port`
 
 The following settings can be optionally configured:
 
-- `ttl_days` (default= 0): The data time-to-live in days, 0 means no ttl.
+- `username` (default = ): The authentication username.
+- `password` (default = ): The authentication password.
+- `ttl_days` (default = 0): The data time-to-live in days, 0 means no ttl.
 - `database` (default = otel): The database name.
+- `connection_params` (default = {}). Params is the extra connection parameters with map format. for example compression/dial_timeout.
 - `logs_table_name` (default = otel_logs): The table name for logs.
 - `traces_table_name` (default = otel_traces): The table name for traces.
 - `metrics_table_name` (default = otel_metrics): The table name for metrics.
@@ -297,7 +297,8 @@ processors:
     send_batch_size: 100000
 exporters:
   clickhouse:
-    dsn: tcp://127.0.0.1:9000/otel
+    endpoint: tcp://127.0.0.1:9000
+    database: otel
     ttl_days: 3
     logs_table: otel_logs
     traces_table: otel_traces
