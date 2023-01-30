@@ -17,29 +17,40 @@ package main
 import (
 	"flag"
 	"fmt"
-	"os"
 	"path/filepath"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema/cfgmetadatagen/cfgmetadatagen"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/components"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/cfgschema"
 )
 
 func main() {
-	sourceDir, outputDir := getFlags()
-	c, err := components.Components()
+	err := run()
 	if err != nil {
-		fmt.Printf("error getting components %v", err)
-		os.Exit(1)
-	}
-	err = cfgmetadatagen.GenerateFiles(c, sourceDir, outputDir)
-	if err != nil {
-		fmt.Printf("cfg metadata generator failed: %v\n", err)
+		fmt.Printf("error running command: %s\n", err)
 	}
 }
 
-func getFlags() (string, string) {
+func run() error {
+	outputType, sourceDir, outputDir := getFlags()
+	c, err := components.Components()
+	if err != nil {
+		return err
+	}
+	const module = "github.com/open-telemetry/opentelemetry-collector-contrib"
+	switch outputType {
+	case "yaml":
+		return cfgschema.GenerateYAMLFiles(c, sourceDir, outputDir, module)
+	case "md":
+		return cfgschema.GenerateMDFiles(c, sourceDir, outputDir, module)
+	default:
+		return fmt.Errorf("unrecognized output type: %s", outputType)
+	}
+}
+
+func getFlags() (string, string, string) {
+	output := flag.String("o", "yaml", `output type: "yaml" or "md"`)
 	sourceDir := flag.String("s", filepath.Join("..", ".."), "")
-	outputDir := flag.String("o", "cfg-metadata", "output dir")
+	outputDir := flag.String("d", "cfg-metadata", "output dir")
 	flag.Parse()
-	return *sourceDir, *outputDir
+	return *output, *sourceDir, *outputDir
 }

@@ -12,33 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cfgmetadatagen
+package cfgschema // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/cfgschema"
 
 import (
 	"fmt"
 	"os"
 	"path/filepath"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema"
 )
 
-type metadataWriter interface {
-	write(cfg configschema.CfgInfo, bytes []byte) error
-}
+type writeYamlFunc func(cfg cfgInfo, bytes []byte) error
 
-type metadataFileWriter struct {
+type yamlFileWriter struct {
 	baseDir     string
 	dirsCreated map[string]struct{}
 }
 
-func newMetadataFileWriter(dir string) metadataWriter {
-	return &metadataFileWriter{
+func newYamlFileWriter(dir string) *yamlFileWriter {
+	return &yamlFileWriter{
 		dirsCreated: map[string]struct{}{},
 		baseDir:     dir,
 	}
 }
 
-func (w *metadataFileWriter) write(cfg configschema.CfgInfo, yamlBytes []byte) error {
+func (w *yamlFileWriter) writeFile(cfg cfgInfo, yamlBytes []byte) error {
 	groupDir := filepath.Join(w.baseDir, cfg.Group)
 	if err := w.prepDir(groupDir); err != nil {
 		return err
@@ -48,7 +44,7 @@ func (w *metadataFileWriter) write(cfg configschema.CfgInfo, yamlBytes []byte) e
 	return os.WriteFile(filename, yamlBytes, 0600)
 }
 
-func (w *metadataFileWriter) prepDir(dir string) error {
+func (w *yamlFileWriter) prepDir(dir string) error {
 	if _, ok := w.dirsCreated[dir]; !ok {
 		if err := os.MkdirAll(dir, 0700); err != nil {
 			return fmt.Errorf("failed to make dir %q: %w", dir, err)

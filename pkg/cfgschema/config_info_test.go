@@ -12,21 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package cfgschema
 
 import (
-	"path/filepath"
+	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema/docsgen/docsgen"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/components"
+	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/otelcol"
+	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
-func main() {
-	c, err := components.Components()
-	if err != nil {
-		panic(err)
-	}
-	dr := configschema.NewDirResolver(filepath.Join("..", ".."), configschema.DefaultModule)
-	docsgen.CLI(c, dr)
+func TestGetAllCfgInfos(t *testing.T) {
+	infos := getAllCfgInfos(otelcol.Factories{Receivers: map[component.Type]receiver.Factory{"": receivertest.NewNopFactory()}})
+	assert.Len(t, infos, 1)
+	ci := infos[0]
+	assert.Equal(t, "receiver", ci.Group)
+	assert.EqualValues(t, "nop", ci.Type)
 }

@@ -12,12 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package docsgen // import "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema/docsgen/docsgen"
+package cfgschema // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/cfgschema"
 
 import (
+	"bytes"
 	"fmt"
 	"strings"
 	"text/template"
+
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 func tableTemplate() (*template.Template, error) {
@@ -60,9 +64,9 @@ func isDuration(s string) bool {
 
 const tableTemplateStr = `### {{ mkAnchor .Name .Type }}
 
-| Name | Field Info | Default | Docs |
+| Name | cfgField Info | Default | Docs |
 | ---- | --------- | ------- | ---- |
-{{ range .Fields -}}
+{{ range .CfgFields -}}
 | {{ .Name }} |
 {{- if .Type -}}
 	{{- $anchor := mkAnchor .Name .Type -}}
@@ -81,3 +85,56 @@ const tableTemplateStr = `### {{ mkAnchor .Name .Type }}
 | {{ .Default }} | {{ join .Doc }} |
 {{ end }}
 `
+
+func renderHeader(typ, group, doc string) []byte {
+	caser := cases.Title(language.English)
+	return []byte(fmt.Sprintf(
+		"# %s %s Reference\n\n%s\n\n",
+		caser.String(typ),
+		caser.String(group),
+		doc,
+	))
+}
+
+func renderTable(tmpl *template.Template, field *cfgField) ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := executeTableTemplate(tmpl, field, buf)
+	if err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+func executeTableTemplate(tmpl *template.Template, field *cfgField, buf *bytes.Buffer) error {
+	err := tmpl.Execute(buf, field)
+	if err != nil {
+		return err
+	}
+	for _, subField := range field.CfgFields {
+		if subField.CfgFields == nil {
+			continue
+		}
+		err = executeTableTemplate(tmpl, subField, buf)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+const durationBlock = "### time-Duration \n" +
+	"An optionally signed sequence of decimal numbers, " +
+	"each with a unit suffix, such as `300ms`, `-1.5h`, " +
+	"or `2h45m`. Valid time units are `ns`, `us`, `ms`, `s`, `m`, `h`."
+
+func hasTimeDuration(f *cfgField) bool {
+	if f.Type == "time.Duration" {
+		return true
+	}
+	for _, sub := range f.CfgFields {
+		if hasTimeDuration(sub) {
+			return true
+		}
+	}
+	return false
+}

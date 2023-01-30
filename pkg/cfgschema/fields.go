@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package configschema // import "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema"
+package cfgschema // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/cfgschema"
 
 import (
 	"log"
@@ -23,31 +23,31 @@ import (
 	"github.com/fatih/structtag"
 )
 
-// Field holds attributes and subfields of a config struct.
-type Field struct {
-	Name    string      `yaml:",omitempty"`
-	Type    string      `yaml:",omitempty"`
-	Kind    string      `yaml:",omitempty"`
-	Default interface{} `yaml:",omitempty"`
-	Doc     string      `yaml:",omitempty"`
-	Fields  []*Field    `yaml:",omitempty"`
+// cfgField holds attributes and subfields of a config struct.
+type cfgField struct {
+	Name      string      `yaml:",omitempty"`
+	Type      string      `yaml:",omitempty"`
+	Kind      string      `yaml:",omitempty"`
+	Default   interface{} `yaml:",omitempty"`
+	Doc       string      `yaml:",omitempty"`
+	CfgFields []*cfgField `yaml:"fields,omitempty"`
 }
 
-// ReadFields accepts both a config struct's Value, as well as a DirResolver,
-// and returns a Field pointer for the top level struct as well as all of its
+// readFields accepts both a config struct's Value, as well as a readCommentsFunc,
+// and returns a cfgField pointer for the top level struct as well as all of its
 // recursive subfields.
-func ReadFields(v reflect.Value, dr DirResolver) (*Field, error) {
+func readFields(v reflect.Value, readComments readCommentsFunc) (*cfgField, error) {
 	cfgType := v.Type()
-	field := &Field{
+	field := &cfgField{
 		Type: cfgType.String(),
 	}
-	err := refl(field, v, dr)
+	err := refl(field, v, readComments)
 	return field, err
 }
 
-func refl(field *Field, v reflect.Value, dr DirResolver) error {
+func refl(field *cfgField, v reflect.Value, readComments readCommentsFunc) error {
 	if v.Kind() == reflect.Ptr {
-		err := refl(field, v.Elem(), dr)
+		err := refl(field, v.Elem(), readComments)
 		if err != nil {
 			return err
 		}
@@ -55,7 +55,7 @@ func refl(field *Field, v reflect.Value, dr DirResolver) error {
 	if v.Kind() != reflect.Struct {
 		return nil
 	}
-	comments, err := commentsForStruct(v, dr)
+	comments, err := readComments(v)
 	if err != nil {
 		return err
 	}
@@ -92,15 +92,15 @@ func refl(field *Field, v reflect.Value, dr DirResolver) error {
 			if typeStr == kindStr {
 				typeStr = "" // omit if redundant
 			}
-			next = &Field{
+			next = &cfgField{
 				Name: name,
 				Type: typeStr,
 				Kind: kindStr,
 				Doc:  comments[structField.Name],
 			}
-			field.Fields = append(field.Fields, next)
+			field.CfgFields = append(field.CfgFields, next)
 		}
-		err = handleKind(fv, next, dr)
+		err = handleKind(fv, next, readComments)
 		if err != nil {
 			return err
 		}
@@ -108,22 +108,22 @@ func refl(field *Field, v reflect.Value, dr DirResolver) error {
 	return nil
 }
 
-func handleKind(v reflect.Value, f *Field, dr DirResolver) (err error) {
+func handleKind(v reflect.Value, f *cfgField, readComments readCommentsFunc) (err error) {
 	switch v.Kind() {
 	case reflect.Struct:
-		err = refl(f, v, dr)
+		err = refl(f, v, readComments)
 	case reflect.Ptr:
 		if v.IsNil() {
-			err = refl(f, reflect.New(v.Type().Elem()), dr)
+			err = refl(f, reflect.New(v.Type().Elem()), readComments)
 		} else {
-			err = refl(f, v.Elem(), dr)
+			err = refl(f, v.Elem(), readComments)
 		}
 	case reflect.Slice:
 		e := v.Type().Elem()
 		if e.Kind() == reflect.Struct {
-			err = refl(f, reflect.New(e), dr)
+			err = refl(f, reflect.New(e), readComments)
 		} else if e.Kind() == reflect.Ptr {
-			err = refl(f, reflect.New(e.Elem()), dr)
+			err = refl(f, reflect.New(e.Elem()), readComments)
 		}
 	case reflect.String:
 		f.Default = v.String()
