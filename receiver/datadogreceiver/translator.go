@@ -81,10 +81,6 @@ func toTraces(traces datadogpb.Traces, req *http.Request) ptrace.Traces {
 }
 
 func translateDataDogKeyToOtel(k string) string {
-	// Tags prefixed with _dd. are for Datadog's use only, adding them to another backend will just increase cardinality needlessly
-	if strings.HasPrefix(k, "_dd.") {
-		return ""
-	}
 	switch strings.ToLower(k) {
 	case "env":
 		return semconv.AttributeDeploymentEnvironment

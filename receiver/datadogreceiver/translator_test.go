@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package datadogreceiver
+package datadogreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver"
 
 import (
 	"bytes"
@@ -22,6 +22,7 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
 	"github.com/stretchr/testify/assert"
 	vmsgp "github.com/vmihailenco/msgpack/v4"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 var data = [2]interface{}{
@@ -63,6 +64,7 @@ var data = [2]interface{}{
 		},
 	},
 }
+var output ptrace.Traces
 
 func TestTracePayloadV05Unmarshalling(t *testing.T) {
 	payload, err := vmsgp.Marshal(&data)
@@ -80,7 +82,7 @@ func TestTracePayloadV05Unmarshalling(t *testing.T) {
 	assert.Equal(t, 1, translated.SpanCount(), "Span Count wrong")
 	span := translated.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
 	assert.NotNil(t, span)
-	assert.Equal(t, 3, span.Attributes().Len(), "missing tags")
+	assert.Equal(t, 4, span.Attributes().Len(), "missing tags")
 	value, exists := span.Attributes().Get("service.name")
 	assert.True(t, exists, "service.name missing")
 	assert.Equal(t, "my-service", value.AsString(), "service.name tag value incorrect")
@@ -105,7 +107,7 @@ func BenchmarkTranslator(b *testing.B) {
 	b.SetBytes(int64(len(payload)))
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		toTraces(traces, req)
+		output = toTraces(traces, req)
 	}
 	b.StopTimer()
 }

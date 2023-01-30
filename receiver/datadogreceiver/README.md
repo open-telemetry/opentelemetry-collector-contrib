@@ -19,10 +19,7 @@ receivers:
     read_timeout: 60s
 ```
 
-### endpoint (Optional)
-The address and port on which this receiver listens for traces on
 
-Default: `localhost:8126`
 
 ### read_timeout (Optional)
 The read timeout of the HTTP Server
@@ -31,5 +28,6 @@ Default: 60s
 
 ### HTTP Service Config
 
+All config params here are valid as well
 
 https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp#server-configuration

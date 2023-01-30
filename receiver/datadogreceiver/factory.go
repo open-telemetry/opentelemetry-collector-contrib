@@ -21,7 +21,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/receiver"
 )
 
@@ -40,7 +39,6 @@ func NewFactory() receiver.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		ReceiverSettings: obsreport.ReceiverSettings{ReceiverID: component.NewID(typeStr)},
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: "localhost:8126",
 		},

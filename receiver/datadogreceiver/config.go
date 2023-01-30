@@ -19,11 +19,9 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/obsreport"
 )
 
 type Config struct {
-	obsreport.ReceiverSettings    `mapstructure:",squash"`
 	confighttp.HTTPServerSettings `mapstructure:",squash"`
 	// ReadTimeout of the http server
 	ReadTimeout time.Duration `mapstructure:"read_timeout"`
