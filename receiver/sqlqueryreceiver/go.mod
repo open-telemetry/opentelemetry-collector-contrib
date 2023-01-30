@@ -9,7 +9,7 @@ require (
 	github.com/go-sql-driver/mysql v1.7.0
 	github.com/lib/pq v1.10.7
 	github.com/sijms/go-ora/v2 v2.5.24
-	github.com/snowflakedb/gosnowflake v1.6.16
+	github.com/snowflakedb/gosnowflake v1.6.17
 	github.com/stretchr/testify v1.8.1
 	github.com/testcontainers/testcontainers-go v0.17.0
 	go.opentelemetry.io/collector v0.70.0
