@@ -20,13 +20,10 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"net/url"
 	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configopaque"
-	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -77,18 +74,6 @@ type signalfxExporter struct {
 	cancelFn           func()
 }
 
-type exporterOptions struct {
-	ingestURL         *url.URL
-	ingestTLSSettings configtls.TLSClientSetting
-	apiURL            *url.URL
-	apiTLSSettings    configtls.TLSClientSetting
-	httpTimeout       time.Duration
-	token             configopaque.String
-	logDataPoints     bool
-	logDimUpdate      bool
-	metricTranslator  *translation.MetricTranslator
-}
-
 // newSignalFxExporter returns a new SignalFx exporter.
 func newSignalFxExporter(
 	config *Config,
@@ -98,7 +83,7 @@ func newSignalFxExporter(
 		return nil, errors.New("nil config")
 	}
 
-	options, err := config.getOptionsFromConfig()
+	metricTranslator, err := config.getMetricTranslator()
 	if err != nil {
 		return nil, err
 	}
@@ -106,7 +91,7 @@ func newSignalFxExporter(
 	sampledLogger := translation.CreateSampledLogger(createSettings.Logger)
 	converter, err := translation.NewMetricsConverter(
 		sampledLogger,
-		options.metricTranslator,
+		metricTranslator,
 		config.ExcludeMetrics,
 		config.IncludeMetrics,
 		config.NonAlphanumericDimensionChars,
@@ -124,7 +109,7 @@ func newSignalFxExporter(
 }
 
 func (se *signalfxExporter) start(ctx context.Context, host component.Host) (err error) {
-	options, err := se.config.getOptionsFromConfig()
+	ingestURL, err := se.config.getIngestURL()
 	if err != nil {
 		return err
 	}
@@ -137,12 +122,12 @@ func (se *signalfxExporter) start(ctx context.Context, host component.Host) (err
 
 	dpClient := &sfxDPClient{
 		sfxClientBase: sfxClientBase{
-			ingestURL: options.ingestURL,
+			ingestURL: ingestURL,
 			headers:   headers,
 			client:    client,
 			zippers:   newGzipPool(),
 		},
-		logDataPoints:          options.logDataPoints,
+		logDataPoints:          se.config.LogDataPoints,
 		logger:                 se.logger,
 		accessTokenPassthrough: se.config.AccessTokenPassthrough,
 		converter:              se.converter,
@@ -155,13 +140,18 @@ func (se *signalfxExporter) start(ctx context.Context, host component.Host) (err
 	cancellable, cancelFn := context.WithCancel(ctx)
 	se.cancelFn = cancelFn
 
+	apiURL, err := se.config.getAPIURL()
+	if err != nil {
+		return err
+	}
+
 	dimClient := dimensions.NewDimensionClient(
 		cancellable,
 		dimensions.DimensionClientOptions{
-			Token:        options.token,
-			APIURL:       options.apiURL,
+			Token:        se.config.AccessToken,
+			APIURL:       apiURL,
 			APITLSConfig: apiTLSCfg,
-			LogUpdates:   options.logDimUpdate,
+			LogUpdates:   se.config.LogDimensionUpdates,
 			Logger:       se.logger,
 			// Duration to wait between property updates. This might be worth
 			// being made configurable.
@@ -195,10 +185,6 @@ func newEventExporter(config *Config, createSettings exporter.CreateSettings) (*
 		return nil, errors.New("nil config")
 	}
 
-	_, err := config.getOptionsFromConfig()
-	if err != nil {
-		return nil, fmt.Errorf("failed to process config: %w", err)
-	}
 	return &signalfxExporter{
 		config:            config,
 		logger:            createSettings.Logger,
@@ -208,9 +194,9 @@ func newEventExporter(config *Config, createSettings exporter.CreateSettings) (*
 }
 
 func (se *signalfxExporter) startLogs(_ context.Context, host component.Host) error {
-	options, err := se.config.getOptionsFromConfig()
+	ingestURL, err := se.config.getIngestURL()
 	if err != nil {
-		return fmt.Errorf("failed to process config: %w", err)
+		return err
 	}
 
 	headers := buildHeaders(se.config)
@@ -221,7 +207,7 @@ func (se *signalfxExporter) startLogs(_ context.Context, host component.Host) er
 
 	eventClient := &sfxEventClient{
 		sfxClientBase: sfxClientBase{
-			ingestURL: options.ingestURL,
+			ingestURL: ingestURL,
 			headers:   headers,
 			client:    client,
 			zippers:   newGzipPool(),

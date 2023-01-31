@@ -116,80 +116,39 @@ type Config struct {
 	MaxConnections int `mapstructure:"max_connections"`
 }
 
-func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {
-	if err := cfg.validateConfig(); err != nil {
-		return nil, err
-	}
-
-	ingestURL, err := cfg.getIngestURL()
-	if err != nil {
-		return nil, fmt.Errorf("invalid \"ingest_url\": %w", err)
-	}
-
-	apiURL, err := cfg.getAPIURL()
-	if err != nil {
-		return nil, fmt.Errorf("invalid \"api_url\": %w", err)
-	}
-
-	if cfg.HTTPClientSettings.Timeout == 0 {
-		cfg.HTTPClientSettings.Timeout = 5 * time.Second
-	}
-
+func (cfg *Config) getMetricTranslator() (*translation.MetricTranslator, error) {
 	metricTranslator, err := translation.NewMetricTranslator(cfg.TranslationRules, cfg.DeltaTranslationTTL)
 	if err != nil {
 		return nil, fmt.Errorf("invalid \"%s\": %w", translationRulesConfigKey, err)
 	}
 
-	return &exporterOptions{
-		ingestURL:         ingestURL,
-		ingestTLSSettings: cfg.IngestTLSSettings,
-		apiURL:            apiURL,
-		apiTLSSettings:    cfg.APITLSSettings,
-		httpTimeout:       cfg.HTTPClientSettings.Timeout,
-		token:             cfg.AccessToken,
-		logDataPoints:     cfg.LogDataPoints,
-		logDimUpdate:      cfg.LogDimensionUpdates,
-		metricTranslator:  metricTranslator,
-	}, nil
-}
-
-func (cfg *Config) validateConfig() error {
-	if cfg.AccessToken == "" {
-		return errors.New(`requires a non-empty "access_token"`)
-	}
-
-	if cfg.Realm == "" && (cfg.IngestURL == "" || cfg.APIURL == "") {
-		return errors.New(`requires a non-empty "realm", or` +
-			` "ingest_url" and "api_url" should be explicitly set`)
-	}
-
-	if cfg.HTTPClientSettings.Timeout < 0 {
-		return errors.New(`cannot have a negative "timeout"`)
-	}
-
-	if cfg.MaxConnections < 0 {
-		return errors.New(`cannot have a negative "max_connections"`)
-	}
-
-	return nil
+	return metricTranslator, nil
 }
 
 func (cfg *Config) getIngestURL() (*url.URL, error) {
-	if cfg.IngestURL != "" {
-		// Ignore realm and use the IngestURL. Typically used for debugging.
-		return url.Parse(cfg.IngestURL)
+	strURL := cfg.IngestURL
+	if cfg.IngestURL == "" {
+		strURL = fmt.Sprintf("https://ingest.%s.signalfx.com", cfg.Realm)
 	}
 
-	return url.Parse(fmt.Sprintf("https://ingest.%s.signalfx.com", cfg.Realm))
+	ingestURL, err := url.Parse(strURL)
+	if err != nil {
+		return nil, fmt.Errorf("invalid \"ingest_url\": %w", err)
+	}
+	return ingestURL, nil
 }
 
 func (cfg *Config) getAPIURL() (*url.URL, error) {
-	if cfg.APIURL != "" {
-		// Ignore realm and use the APIURL. Typically used for debugging.
-		return url.Parse(cfg.APIURL)
+	strURL := cfg.APIURL
+	if cfg.APIURL == "" {
+		strURL = fmt.Sprintf("https://api.%s.signalfx.com", cfg.Realm)
 	}
 
-	return url.Parse(fmt.Sprintf("https://api.%s.signalfx.com", cfg.Realm))
+	apiURL, err := url.Parse(strURL)
+	if err != nil {
+		return nil, fmt.Errorf("invalid \"api_url\": %w", err)
+	}
+	return apiURL, nil
 }
 
 func (cfg *Config) Unmarshal(componentParser *confmap.Conf) (err error) {
@@ -208,14 +167,31 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) (err error) {
 		return err
 	}
 
+	if cfg.HTTPClientSettings.Timeout == 0 {
+		cfg.HTTPClientSettings.Timeout = 5 * time.Second
+	}
+
 	return nil
 }
 
 // Validate checks if the exporter configuration is valid.
-// TODO: Move other validations here.
 func (cfg *Config) Validate() error {
-	if err := cfg.QueueSettings.Validate(); err != nil {
-		return fmt.Errorf("sending_queue settings has invalid configuration: %w", err)
+	if cfg.AccessToken == "" {
+		return errors.New(`requires a non-empty "access_token"`)
 	}
+
+	if cfg.Realm == "" && (cfg.IngestURL == "" || cfg.APIURL == "") {
+		return errors.New(`requires a non-empty "realm", or` +
+			` "ingest_url" and "api_url" should be explicitly set`)
+	}
+
+	if cfg.HTTPClientSettings.Timeout < 0 {
+		return errors.New(`cannot have a negative "timeout"`)
+	}
+
+	if cfg.MaxConnections < 0 {
+		return errors.New(`cannot have a negative "max_connections"`)
+	}
+
 	return nil
 }
