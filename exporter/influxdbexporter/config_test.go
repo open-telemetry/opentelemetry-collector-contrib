@@ -19,6 +19,8 @@ import (
 	"testing"
 	"time"
 
+	// TODO: uncomment this after update core dependencies
+	// "github.com/cenkalti/backoff/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -60,6 +62,9 @@ func TestLoadConfig(t *testing.T) {
 					InitialInterval: 1 * time.Second,
 					MaxInterval:     3 * time.Second,
 					MaxElapsedTime:  10 * time.Second,
+					// TODO: uncomment these after update core dependencies
+					// RandomizationFactor: backoff.DefaultRandomizationFactor,
+					// Multiplier:          backoff.DefaultMultiplier,
 				},
 				Org:           "my-org",
 				Bucket:        "my-bucket",

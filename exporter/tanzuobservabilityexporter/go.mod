@@ -3,6 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tanzuo
 go 1.18
 
 require (
+	github.com/cenkalti/backoff/v4 v4.2.0
 	github.com/google/uuid v1.3.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.70.0
 	github.com/stretchr/testify v1.8.1
@@ -20,7 +21,6 @@ require (
 	contrib.go.opencensus.io/exporter/prometheus v0.4.2 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/caio/go-tdigest v3.1.0+incompatible // indirect
-	github.com/cenkalti/backoff/v4 v4.2.0 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/felixge/httpsnoop v1.0.3 // indirect

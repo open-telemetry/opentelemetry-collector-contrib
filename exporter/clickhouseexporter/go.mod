@@ -4,6 +4,7 @@ go 1.18
 
 require (
 	github.com/ClickHouse/clickhouse-go/v2 v2.4.3
+	github.com/cenkalti/backoff/v4 v4.2.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.70.0
 	github.com/stretchr/testify v1.8.1
 	go.opentelemetry.io/collector v0.70.1-0.20230130215412-26bd7b2bf678
@@ -19,7 +20,6 @@ require (
 	github.com/ClickHouse/ch-go v0.50.0 // indirect
 	github.com/andybalholm/brotli v1.0.4 // indirect
 	github.com/benbjohnson/clock v1.3.0 // indirect
-	github.com/cenkalti/backoff/v4 v4.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/go-faster/city v1.0.1 // indirect
 	github.com/go-faster/errors v0.6.1 // indirect

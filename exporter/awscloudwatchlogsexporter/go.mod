@@ -4,6 +4,7 @@ go 1.18
 
 require (
 	github.com/aws/aws-sdk-go v1.44.189
+	github.com/cenkalti/backoff/v4 v4.2.0
 	github.com/google/uuid v1.3.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.70.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs v0.70.0
@@ -18,7 +19,6 @@ require (
 )
 
 require (
-	github.com/cenkalti/backoff/v4 v4.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect

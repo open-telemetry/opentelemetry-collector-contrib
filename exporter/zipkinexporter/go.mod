@@ -3,6 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkin
 go 1.18
 
 require (
+	github.com/cenkalti/backoff/v4 v4.2.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.70.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.70.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.70.0
@@ -17,7 +18,6 @@ require (
 
 require (
 	github.com/apache/thrift v0.17.0 // indirect
-	github.com/cenkalti/backoff/v4 v4.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/felixge/httpsnoop v1.0.3 // indirect
 	github.com/go-logr/logr v1.2.3 // indirect

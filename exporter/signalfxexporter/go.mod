@@ -3,6 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signal
 go 1.18
 
 require (
+	github.com/cenkalti/backoff/v4 v4.2.0
 	github.com/gobwas/glob v0.2.3
 	github.com/gogo/protobuf v1.3.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.70.0
@@ -29,7 +30,6 @@ require (
 )
 
 require (
-	github.com/cenkalti/backoff/v4 v4.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/felixge/httpsnoop v1.0.3 // indirect
 	github.com/go-logfmt/logfmt v0.5.1 // indirect

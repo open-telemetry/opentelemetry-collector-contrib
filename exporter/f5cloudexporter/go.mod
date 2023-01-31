@@ -3,6 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5clou
 go 1.18
 
 require (
+	github.com/cenkalti/backoff/v4 v4.2.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.70.0
 	github.com/stretchr/testify v1.8.1
 	go.opentelemetry.io/collector v0.70.1-0.20230130215412-26bd7b2bf678
@@ -16,7 +17,6 @@ require (
 require (
 	cloud.google.com/go/compute v1.14.0 // indirect
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
-	github.com/cenkalti/backoff/v4 v4.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/felixge/httpsnoop v1.0.3 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect

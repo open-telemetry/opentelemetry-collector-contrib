@@ -3,6 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiex
 go 1.18
 
 require (
+	github.com/cenkalti/backoff/v4 v4.2.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/snappy v0.0.4
 	github.com/grafana/loki/pkg/push v0.0.0-20230127072203-4e8cc8d71928
@@ -22,7 +23,6 @@ require (
 )
 
 require (
-	github.com/cenkalti/backoff/v4 v4.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/felixge/httpsnoop v1.0.3 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect

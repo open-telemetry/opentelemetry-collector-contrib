@@ -4,6 +4,7 @@ go 1.18
 
 require (
 	github.com/apache/pulsar-client-go v0.8.1
+	github.com/cenkalti/backoff/v4 v4.2.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/jaegertracing/jaeger v1.41.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.70.0
@@ -27,7 +28,6 @@ require (
 	github.com/apache/thrift v0.17.0 // indirect
 	github.com/ardielle/ardielle-go v1.5.2 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
-	github.com/cenkalti/backoff/v4 v4.2.0 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/danieljoos/wincred v1.0.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect

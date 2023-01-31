@@ -5,6 +5,7 @@ go 1.18
 require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector v0.35.0
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector/googlemanagedprometheus v0.35.0
+	github.com/cenkalti/backoff/v4 v4.2.0
 	github.com/stretchr/testify v1.8.1
 	go.opentelemetry.io/collector v0.70.1-0.20230130215412-26bd7b2bf678
 	go.opentelemetry.io/collector/component v0.70.1-0.20230130215412-26bd7b2bf678
@@ -22,7 +23,6 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.11.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.35.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
-	github.com/cenkalti/backoff/v4 v4.2.0 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/go-kit/log v0.2.1 // indirect

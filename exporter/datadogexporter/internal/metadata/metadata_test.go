@@ -244,9 +244,9 @@ func TestMetadataFromAttributes(t *testing.T) {
 	for _, testInstance := range tests {
 		t.Run(testInstance.name, func(t *testing.T) {
 			registry := featuregate.NewRegistry()
-			registry.MustRegister(HostnamePreviewFeatureGate.ID(), featuregate.StageBeta)
+			gate := registry.MustRegister(HostnamePreviewFeatureGate.ID(), featuregate.StageBeta)
 			require.NoError(t, registry.Set(HostnamePreviewFeatureGate.ID(), testInstance.usePreviewHostnameLogic))
-			metadata := metadataFromAttributesWithRegistry(testInstance.attrs)
+			metadata := metadataFromAttributesWithRegistry(gate, testInstance.attrs)
 			assert.Equal(t, testInstance.expected.InternalHostname, metadata.InternalHostname)
 			assert.Equal(t, testInstance.expected.Meta, metadata.Meta)
 			assert.ElementsMatch(t, testInstance.expected.Tags.GCP, metadata.Tags.GCP)

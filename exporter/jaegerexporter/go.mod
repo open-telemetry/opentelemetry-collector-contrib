@@ -3,6 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaeger
 go 1.18
 
 require (
+	github.com/cenkalti/backoff/v4 v4.2.0
 	github.com/jaegertracing/jaeger v1.41.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.70.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.70.0
@@ -20,7 +21,6 @@ require (
 require (
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
 	github.com/apache/thrift v0.17.0 // indirect
-	github.com/cenkalti/backoff/v4 v4.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/go-logr/logr v1.2.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
