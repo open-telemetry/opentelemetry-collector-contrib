@@ -111,7 +111,7 @@ func (g StandardTypeGetter[K, T]) Get(ctx context.Context, tCtx K) (*T, error) {
 	}
 	v, ok := val.(T)
 	if !ok {
-		return nil, fmt.Errorf("expected %T but got %T", v, v)
+		return nil, fmt.Errorf("expected %T but got %T", v, val)
 	}
 	return &v, nil
 }
