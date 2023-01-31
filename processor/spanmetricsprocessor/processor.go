@@ -46,6 +46,9 @@ const (
 	metricKeySeparator = string(byte(0))
 
 	defaultDimensionsCacheSize = 1000
+
+	metricLatency    = "latency"
+	metricCallsTotal = "calls_total"
 )
 
 var defaultLatencyHistogramBucketsMs = []float64{
@@ -317,11 +320,21 @@ func (p *processorImp) buildMetrics() pmetric.Metrics {
 	return m
 }
 
+// buildMetricName builds a metric name by concatenating the namespace and the metric name with an underscore.
+// If the namespace is not empty, the namespace and metric name will be separated by an underscore.
+// Otherwise, only the metric name will be returned.
+func buildMetricName(namespace, metricName string) string {
+	if namespace != "" {
+		return namespace + "_" + metricName
+	}
+	return metricName
+}
+
 // collectLatencyMetrics collects the raw latency metrics, writing the data
 // into the given instrumentation library metrics.
 func (p *processorImp) collectLatencyMetrics(ilm pmetric.ScopeMetrics) {
 	mLatency := ilm.Metrics().AppendEmpty()
-	mLatency.SetName("latency")
+	mLatency.SetName(buildMetricName(p.config.Namespace, metricLatency))
 	mLatency.SetUnit("ms")
 	mLatency.SetEmptyHistogram().SetAggregationTemporality(p.config.GetAggregationTemporality())
 	dps := mLatency.Histogram().DataPoints()
@@ -349,7 +362,7 @@ func (p *processorImp) collectLatencyMetrics(ilm pmetric.ScopeMetrics) {
 // into the given instrumentation library metrics.
 func (p *processorImp) collectCallMetrics(ilm pmetric.ScopeMetrics) {
 	mCalls := ilm.Metrics().AppendEmpty()
-	mCalls.SetName("calls_total")
+	mCalls.SetName(buildMetricName(p.config.Namespace, metricCallsTotal))
 	mCalls.SetEmptySum().SetIsMonotonic(true)
 	mCalls.Sum().SetAggregationTemporality(p.config.GetAggregationTemporality())
 	dps := mCalls.Sum().DataPoints()

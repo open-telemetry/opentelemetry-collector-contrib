@@ -1101,3 +1101,22 @@ func TestConsumeTracesEvictedCacheKey(t *testing.T) {
 	wg.Wait()
 	assert.Empty(t, wantDataPointCounts)
 }
+
+func TestBuildMetricName(t *testing.T) {
+	tests := []struct {
+		namespace  string
+		metricName string
+		expected   string
+	}{
+		{"", "metric", "metric"},
+		{"ns", "metric", "ns_metric"},
+		{"longer_namespace", "metric", "longer_namespace_metric"},
+	}
+
+	for _, test := range tests {
+		actual := buildMetricName(test.namespace, test.metricName)
+		if actual != test.expected {
+			t.Errorf("buildMetricName(%q, %q) = %q, expected %q", test.namespace, test.metricName, actual, test.expected)
+		}
+	}
+}
