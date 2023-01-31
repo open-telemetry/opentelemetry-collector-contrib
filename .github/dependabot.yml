@@ -598,6 +598,10 @@ updates:
     directory: "/receiver/couchdbreceiver"
     schedule:
       interval: "weekly"
+ - package-ecosystem: "gomod"
+    directory: "/receiver/datadogreceiver"
+    schedule:
+      interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/receiver/dockerstatsreceiver"
     schedule:
@@ -868,5 +872,9 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/testbed/mockdatareceivers/mockawsxrayreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/testbed/mockdatasenders/mockdatadogagentexporter"
     schedule:
       interval: "weekly"

@@ -149,6 +149,7 @@ body:
       - receiver/cloudfoundry
       - receiver/collectd
       - receiver/couchdb
+      - receiver/datadog
       - receiver/dockerstats
       - receiver/elasticsearch
       - receiver/expvar
@@ -217,6 +218,7 @@ body:
       - receiver/zookeeper
       - testbed
       - testbed/mockdatareceivers/mockawsxrayreceiver
+      - testbed/mockdatasenders/mockdatadogagentexporter
       # End Collector components list
   - type: textarea
     attributes:
