@@ -156,7 +156,13 @@ func (p *Parser[K]) buildArg(argVal value, argType reflect.Type) (any, error) {
 		if err != nil {
 			return nil, err
 		}
-		return StandardStringGetter[K]{Getter: arg.Get}, nil
+		return StandardTypeGetter[K, string]{Getter: arg.Get}, nil
+	case strings.HasPrefix(name, "IntGetter"):
+		arg, err := p.newGetter(argVal)
+		if err != nil {
+			return nil, err
+		}
+		return StandardTypeGetter[K, int64]{Getter: arg.Get}, nil
 	case name == "Enum":
 		arg, err := p.enumParser(argVal.Enum)
 		if err != nil {

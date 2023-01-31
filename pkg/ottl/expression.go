@@ -42,10 +42,6 @@ type GetSetter[K any] interface {
 	Setter[K]
 }
 
-type StringGetter[K any] interface {
-	Get(ctx context.Context, tCtx K) (*string, error)
-}
-
 type StandardGetSetter[K any] struct {
 	Getter func(ctx context.Context, tCx K) (interface{}, error)
 	Setter func(ctx context.Context, tCx K, val interface{}) error
@@ -93,11 +89,19 @@ func (l *listGetter[K]) Get(ctx context.Context, tCtx K) (interface{}, error) {
 	return evaluated, nil
 }
 
-type StandardStringGetter[K any] struct {
+type StringGetter[K any] interface {
+	Get(ctx context.Context, tCtx K) (*string, error)
+}
+
+type IntGetter[K any] interface {
+	Get(ctx context.Context, tCtx K) (*int64, error)
+}
+
+type StandardTypeGetter[K any, T any] struct {
 	Getter func(ctx context.Context, tCx K) (interface{}, error)
 }
 
-func (g StandardStringGetter[K]) Get(ctx context.Context, tCtx K) (*string, error) {
+func (g StandardTypeGetter[K, T]) Get(ctx context.Context, tCtx K) (*T, error) {
 	val, err := g.Getter(ctx, tCtx)
 	if err != nil {
 		return nil, err
@@ -105,11 +109,11 @@ func (g StandardStringGetter[K]) Get(ctx context.Context, tCtx K) (*string, erro
 	if val == nil {
 		return nil, nil
 	}
-	strVal, ok := val.(string)
+	v, ok := val.(T)
 	if !ok {
-		return nil, fmt.Errorf("value was not a string")
+		return nil, fmt.Errorf("expected %T but got %T", v, v)
 	}
-	return &strVal, nil
+	return &v, nil
 }
 
 func (p *Parser[K]) newGetter(val value) (Getter[K], error) {

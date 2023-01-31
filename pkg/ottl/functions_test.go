@@ -636,6 +636,20 @@ func Test_NewFunctionCall(t *testing.T) {
 			want: nil,
 		},
 		{
+			name: "intgetter arg",
+			inv: invocation{
+				Function: "testing_intgetter",
+				Arguments: []value{
+					{
+						Literal: &mathExprLiteral{
+							Int: ottltest.Intp(1),
+						},
+					},
+				},
+			},
+			want: nil,
+		},
+		{
 			name: "string arg",
 			inv: invocation{
 				Function: "testing_string",
@@ -890,6 +904,12 @@ func functionWithStringGetter(StringGetter[interface{}]) (ExprFunc[interface{}],
 	}, nil
 }
 
+func functionWithIntGetter(IntGetter[interface{}]) (ExprFunc[interface{}], error) {
+	return func(context.Context, interface{}) (interface{}, error) {
+		return "anything", nil
+	}, nil
+}
+
 func functionWithString(string) (ExprFunc[interface{}], error) {
 	return func(context.Context, interface{}) (interface{}, error) {
 		return "anything", nil
@@ -962,6 +982,7 @@ func defaultFunctionsForTests() map[string]interface{} {
 	functions["testing_getsetter"] = functionWithGetSetter
 	functions["testing_getter"] = functionWithGetter
 	functions["testing_stringgetter"] = functionWithStringGetter
+	functions["testing_intgetter"] = functionWithIntGetter
 	functions["testing_string"] = functionWithString
 	functions["testing_float"] = functionWithFloat
 	functions["testing_int"] = functionWithInt
