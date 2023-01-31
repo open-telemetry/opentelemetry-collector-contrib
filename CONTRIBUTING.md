@@ -61,7 +61,7 @@ Alternately, copy `./.chloggen/TEMPLATE.yaml`, or just create your file from scr
 
 ## Platform Agnostic Code
 
-In order to ensure compatibility with different operating systems, it is advised to write a code that is platform-agnostic. Below are some guidelines to follow when writing platform-agnostic code:
+In order to ensure compatibility with different operating systems, code should be platform-agnostic. Below are some guidelines to follow when writing platform-agnostic code:
 
 * Avoid using platform-specific libraries, features etc. Please opt for cross-platform solutions. 
 
