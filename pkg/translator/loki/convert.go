@@ -19,11 +19,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/grafana/loki/pkg/push"
 	"github.com/prometheus/common/model"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki/logproto"
 )
 
 const (
@@ -142,29 +141,29 @@ func removeAttributes(attrs pcommon.Map, labels model.LabelSet) {
 	})
 }
 
-func convertLogToJSONEntry(lr plog.LogRecord, res pcommon.Resource, scope pcommon.InstrumentationScope) (*logproto.Entry, error) {
+func convertLogToJSONEntry(lr plog.LogRecord, res pcommon.Resource, scope pcommon.InstrumentationScope) (*push.Entry, error) {
 	line, err := Encode(lr, res, scope)
 	if err != nil {
 		return nil, err
 	}
-	return &logproto.Entry{
+	return &push.Entry{
 		Timestamp: timestampFromLogRecord(lr),
 		Line:      line,
 	}, nil
 }
 
-func convertLogToLogfmtEntry(lr plog.LogRecord, res pcommon.Resource, scope pcommon.InstrumentationScope) (*logproto.Entry, error) {
+func convertLogToLogfmtEntry(lr plog.LogRecord, res pcommon.Resource, scope pcommon.InstrumentationScope) (*push.Entry, error) {
 	line, err := EncodeLogfmt(lr, res, scope)
 	if err != nil {
 		return nil, err
 	}
-	return &logproto.Entry{
+	return &push.Entry{
 		Timestamp: timestampFromLogRecord(lr),
 		Line:      line,
 	}, nil
 }
 
-func convertLogToLokiEntry(lr plog.LogRecord, res pcommon.Resource, format string, scope pcommon.InstrumentationScope) (*logproto.Entry, error) {
+func convertLogToLokiEntry(lr plog.LogRecord, res pcommon.Resource, format string, scope pcommon.InstrumentationScope) (*push.Entry, error) {
 	switch format {
 	case formatJSON:
 		return convertLogToJSONEntry(lr, res, scope)
