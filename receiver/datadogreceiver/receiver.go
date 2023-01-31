@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/receiver"
+	"go.uber.org/zap"
 )
 
 type datadogReceiver struct {
@@ -35,6 +36,7 @@ type datadogReceiver struct {
 	server       *http.Server
 	shutdownWG   sync.WaitGroup
 	tReceiver    *obsreport.Receiver
+	logger       *zap.Logger
 
 	startOnce sync.Once
 	stopOnce  sync.Once
@@ -100,6 +102,7 @@ func (ddr *datadogReceiver) handleTraces(w http.ResponseWriter, req *http.Reques
 	err = decodeRequest(req, &ddTraces)
 	if err != nil {
 		http.Error(w, "Unable to unmarshal reqs", http.StatusInternalServerError)
+		ddr.params.Logger.Error("Unable to unmarshal reqs")
 	}
 
 	otelTraces := toTraces(ddTraces, req)
@@ -107,6 +110,7 @@ func (ddr *datadogReceiver) handleTraces(w http.ResponseWriter, req *http.Reques
 	err = ddr.nextConsumer.ConsumeTraces(obsCtx, otelTraces)
 	if err != nil {
 		http.Error(w, "Trace consumer errored out", http.StatusInternalServerError)
+		ddr.params.Logger.Error("Trace consumer errored out")
 	} else {
 		_, _ = w.Write([]byte("OK"))
 	}
