@@ -51,7 +51,7 @@ func (c *count) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 		countScope := countResource.ScopeMetrics().AppendEmpty()
 		countScope.Scope().SetName(scopeName)
 
-		var count int
+		count := 0
 		for j := 0; j < resourceSpan.ScopeSpans().Len(); j++ {
 			count += resourceSpan.ScopeSpans().At(j).Spans().Len()
 		}

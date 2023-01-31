@@ -17,20 +17,20 @@ package countconnector
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 )
 
 func TestFactory_Type(t *testing.T) {
 	factory := NewFactory()
-	require.Equal(t, factory.Type(), component.Type(typeStr))
+	assert.Equal(t, factory.Type(), component.Type(typeStr))
 }
 
 func TestFactory_CreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	require.Equal(t, cfg, &Config{
+	assert.Equal(t, cfg, &Config{
 		Traces: TypeConfig{
 			Name:        defaultMetricNameSpans,
 			Description: defaultMetricDescSpans,
@@ -44,5 +44,5 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 			Description: defaultMetricDescLogRecords,
 		},
 	})
-	require.NoError(t, componenttest.CheckConfigStruct(cfg))
+	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }

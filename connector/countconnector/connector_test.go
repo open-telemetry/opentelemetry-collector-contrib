@@ -19,6 +19,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/connector/connectortest"
@@ -36,31 +37,31 @@ func TestTracesToMetrics(t *testing.T) {
 		connectortest.NewNopCreateSettings(), cfg, sink)
 	require.NoError(t, err)
 	require.NotNil(t, conn)
-	require.False(t, conn.Capabilities().MutatesData)
+	assert.False(t, conn.Capabilities().MutatesData)
 
 	require.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
-		require.NoError(t, conn.Shutdown(context.Background()))
+		assert.NoError(t, conn.Shutdown(context.Background()))
 	}()
 
 	testTraces0, err := golden.ReadTraces(filepath.Join("testdata", "traces_to_metrics", "traces_0.json"))
-	require.NoError(t, err)
-	require.NoError(t, conn.ConsumeTraces(context.Background(), testTraces0))
+	assert.NoError(t, err)
+	assert.NoError(t, conn.ConsumeTraces(context.Background(), testTraces0))
 
 	testTraces1, err := golden.ReadTraces(filepath.Join("testdata", "traces_to_metrics", "traces_1.json"))
-	require.NoError(t, err)
-	require.NoError(t, conn.ConsumeTraces(context.Background(), testTraces1))
+	assert.NoError(t, err)
+	assert.NoError(t, conn.ConsumeTraces(context.Background(), testTraces1))
 
 	allMetrics := sink.AllMetrics()
-	require.Equal(t, 2, len(allMetrics))
+	assert.Equal(t, 2, len(allMetrics))
 
 	expectedMetrics0, err := golden.ReadMetrics(filepath.Join("testdata", "traces_to_metrics", "expected_0.json"))
-	require.NoError(t, err)
-	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics0, allMetrics[0], pmetrictest.IgnoreTimestamp()))
+	assert.NoError(t, err)
+	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics0, allMetrics[0], pmetrictest.IgnoreTimestamp()))
 
 	expectedMetrics1, err := golden.ReadMetrics(filepath.Join("testdata", "traces_to_metrics", "expected_1.json"))
-	require.NoError(t, err)
-	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics1, allMetrics[1], pmetrictest.IgnoreTimestamp()))
+	assert.NoError(t, err)
+	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics1, allMetrics[1], pmetrictest.IgnoreTimestamp()))
 }
 
 func TestMetricsToMetrics(t *testing.T) {
@@ -71,31 +72,31 @@ func TestMetricsToMetrics(t *testing.T) {
 		connectortest.NewNopCreateSettings(), cfg, sink)
 	require.NoError(t, err)
 	require.NotNil(t, conn)
-	require.False(t, conn.Capabilities().MutatesData)
+	assert.False(t, conn.Capabilities().MutatesData)
 
 	require.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
-		require.NoError(t, conn.Shutdown(context.Background()))
+		assert.NoError(t, conn.Shutdown(context.Background()))
 	}()
 
 	testMetrics0, err := golden.ReadMetrics(filepath.Join("testdata", "metrics_to_metrics", "metrics_0.json"))
-	require.NoError(t, err)
-	require.NoError(t, conn.ConsumeMetrics(context.Background(), testMetrics0))
+	assert.NoError(t, err)
+	assert.NoError(t, conn.ConsumeMetrics(context.Background(), testMetrics0))
 
 	testMetrics1, err := golden.ReadMetrics(filepath.Join("testdata", "metrics_to_metrics", "metrics_1.json"))
-	require.NoError(t, err)
-	require.NoError(t, conn.ConsumeMetrics(context.Background(), testMetrics1))
+	assert.NoError(t, err)
+	assert.NoError(t, conn.ConsumeMetrics(context.Background(), testMetrics1))
 
 	allMetrics := sink.AllMetrics()
-	require.Equal(t, 2, len(allMetrics))
+	assert.Equal(t, 2, len(allMetrics))
 
 	expectedMetrics0, err := golden.ReadMetrics(filepath.Join("testdata", "metrics_to_metrics", "expected_0.json"))
-	require.NoError(t, err)
-	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics0, allMetrics[0], pmetrictest.IgnoreTimestamp()))
+	assert.NoError(t, err)
+	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics0, allMetrics[0], pmetrictest.IgnoreTimestamp()))
 
 	expectedMetrics1, err := golden.ReadMetrics(filepath.Join("testdata", "metrics_to_metrics", "expected_1.json"))
-	require.NoError(t, err)
-	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics1, allMetrics[1], pmetrictest.IgnoreTimestamp()))
+	assert.NoError(t, err)
+	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics1, allMetrics[1], pmetrictest.IgnoreTimestamp()))
 }
 
 func TestLogsToMetrics(t *testing.T) {
@@ -106,29 +107,29 @@ func TestLogsToMetrics(t *testing.T) {
 		connectortest.NewNopCreateSettings(), cfg, sink)
 	require.NoError(t, err)
 	require.NotNil(t, conn)
-	require.False(t, conn.Capabilities().MutatesData)
+	assert.False(t, conn.Capabilities().MutatesData)
 
 	require.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
-		require.NoError(t, conn.Shutdown(context.Background()))
+		assert.NoError(t, conn.Shutdown(context.Background()))
 	}()
 
 	testLogs0, err := golden.ReadLogs(filepath.Join("testdata", "logs_to_metrics", "logs_0.json"))
-	require.NoError(t, err)
-	require.NoError(t, conn.ConsumeLogs(context.Background(), testLogs0))
+	assert.NoError(t, err)
+	assert.NoError(t, conn.ConsumeLogs(context.Background(), testLogs0))
 
 	testLogs1, err := golden.ReadLogs(filepath.Join("testdata", "logs_to_metrics", "logs_1.json"))
-	require.NoError(t, err)
-	require.NoError(t, conn.ConsumeLogs(context.Background(), testLogs1))
+	assert.NoError(t, err)
+	assert.NoError(t, conn.ConsumeLogs(context.Background(), testLogs1))
 
 	allMetrics := sink.AllMetrics()
-	require.Equal(t, 2, len(allMetrics))
+	assert.Equal(t, 2, len(allMetrics))
 
 	expectedMetrics0, err := golden.ReadMetrics(filepath.Join("testdata", "logs_to_metrics", "expected_0.json"))
-	require.NoError(t, err)
-	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics0, allMetrics[0], pmetrictest.IgnoreTimestamp()))
+	assert.NoError(t, err)
+	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics0, allMetrics[0], pmetrictest.IgnoreTimestamp()))
 
 	expectedMetrics1, err := golden.ReadMetrics(filepath.Join("testdata", "logs_to_metrics", "expected_1.json"))
-	require.NoError(t, err)
-	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics1, allMetrics[1], pmetrictest.IgnoreTimestamp()))
+	assert.NoError(t, err)
+	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics1, allMetrics[1], pmetrictest.IgnoreTimestamp()))
 }
