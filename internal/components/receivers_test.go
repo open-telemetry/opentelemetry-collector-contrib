@@ -146,6 +146,9 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "couchdb",
 		},
 		{
+			receiver: "datadog",
+		},
+		{
 			receiver:     "docker_stats",
 			skipLifecyle: true,
 		},
