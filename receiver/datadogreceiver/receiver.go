@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"net/http"
 	"sync"
+	"sync/atomic"
 
 	datadogpb "github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
 	"go.opentelemetry.io/collector/component"
@@ -35,8 +36,9 @@ type datadogReceiver struct {
 	shutdownWG   sync.WaitGroup
 	tReceiver    *obsreport.Receiver
 
-	startOnce sync.Once
-	stopOnce  sync.Once
+	startOnce    sync.Once
+	stopOnce     sync.Once
+	errorCounter atomic.Uint64
 }
 
 func newDataDogReceiver(config *Config, nextConsumer consumer.Traces, params receiver.CreateSettings) (receiver.Traces, error) {
@@ -98,16 +100,18 @@ func (ddr *datadogReceiver) handleTraces(w http.ResponseWriter, req *http.Reques
 
 	err = decodeRequest(req, &ddTraces)
 	if err != nil {
+		ddr.errorCounter.Add(1)
 		http.Error(w, "Unable to unmarshal reqs", http.StatusInternalServerError)
-		ddr.params.Logger.Error("Unable to unmarshal reqs")
+		ddr.params.Logger.Error(fmt.Sprintf("Error %d: Unable to unmarshal request. %s", ddr.errorCounter.Load(), err))
 	}
 
 	otelTraces := toTraces(ddTraces, req)
 	spanCount = otelTraces.SpanCount()
 	err = ddr.nextConsumer.ConsumeTraces(obsCtx, otelTraces)
 	if err != nil {
+		ddr.errorCounter.Add(1)
 		http.Error(w, "Trace consumer errored out", http.StatusInternalServerError)
-		ddr.params.Logger.Error("Trace consumer errored out")
+		ddr.params.Logger.Error(fmt.Sprintf("Error %d: Trace consumer errored out. %s", ddr.errorCounter.Load(), err))
 	} else {
 		_, _ = w.Write([]byte("OK"))
 	}
