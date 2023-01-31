@@ -1276,7 +1276,7 @@ func TestCoreMetricsEndToEnd(t *testing.T) {
 			validateScrapes: true,
 		},
 	}
-	testComponent(t, targets, false, "", featuregate.GetRegistry())
+	testComponent(t, targets, false, "", featuregate.GlobalRegistry())
 }
 
 var startTimeMetricPage = `
@@ -1362,7 +1362,7 @@ func TestStartTimeMetric(t *testing.T) {
 			validateFunc: verifyStartTimeMetricPage,
 		},
 	}
-	testComponent(t, targets, true, "", featuregate.GetRegistry())
+	testComponent(t, targets, true, "", featuregate.GlobalRegistry())
 }
 
 var startTimeMetricRegexPage = `
@@ -1411,7 +1411,7 @@ func TestStartTimeMetricRegex(t *testing.T) {
 			validateFunc: verifyStartTimeMetricPage,
 		},
 	}
-	testComponent(t, targets, true, "^(.+_)*process_start_time_seconds$", featuregate.GetRegistry())
+	testComponent(t, targets, true, "^(.+_)*process_start_time_seconds$", featuregate.GlobalRegistry())
 }
 
 // metric type is defined as 'untyped' in the first metric
@@ -1440,7 +1440,7 @@ func TestUntypedMetrics(t *testing.T) {
 		},
 	}
 
-	testComponent(t, targets, false, "", featuregate.GetRegistry())
+	testComponent(t, targets, false, "", featuregate.GlobalRegistry())
 
 }
 

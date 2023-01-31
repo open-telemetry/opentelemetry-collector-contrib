@@ -3,6 +3,7 @@ name: oracledbreceiver
 resource_attributes:
   oracledb.instance.name:
     description: The name of the instance that data is coming from.
+    enabled: true
     type: string
 
 attributes:

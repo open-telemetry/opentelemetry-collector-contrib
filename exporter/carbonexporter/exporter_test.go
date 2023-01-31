@@ -30,6 +30,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
@@ -40,7 +41,7 @@ import (
 
 func TestNew(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	got, err := newCarbonExporter(cfg, componenttest.NewNopExporterCreateSettings())
+	got, err := newCarbonExporter(cfg, exportertest.NewNopCreateSettings())
 	assert.NotNil(t, got)
 	assert.NoError(t, err)
 }
@@ -109,7 +110,7 @@ func TestConsumeMetricsData(t *testing.T) {
 			}
 
 			config := &Config{Endpoint: addr, Timeout: 1000 * time.Millisecond}
-			exp, err := newCarbonExporter(config, componenttest.NewNopExporterCreateSettings())
+			exp, err := newCarbonExporter(config, exportertest.NewNopCreateSettings())
 			require.NoError(t, err)
 
 			require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))

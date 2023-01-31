@@ -4,12 +4,19 @@ resource_attributes:
   elasticsearch.cluster.name:
     description: The name of the elasticsearch cluster.
     type: string
+    enabled: true
   elasticsearch.node.name:
     description: The name of the elasticsearch node.
     type: string
+    enabled: true
+  elasticsearch.node.version:
+    description: The version of the elasticsearch node.
+    type: string
+    enabled: true
   elasticsearch.index.name:
     description: The name of the elasticsearch index.
     type: string
+    enabled: true
 
 attributes:
   cache_name:
@@ -228,6 +235,15 @@ metrics:
       value_type: int
     attributes: [ query_cache_count_type ]
     enabled: true
+  elasticsearch.node.cache.size:
+    description: Total amount of memory used for the query cache across all shards assigned to the node.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [ ]
+    enabled: false
   elasticsearch.node.fs.disk.available:
     description: The amount of disk space available to the JVM across all file stores for this node. Depending on OS or process level restrictions, this might appear less than free. This is the actual amount of free disk space the Elasticsearch node can utilise.
     unit: By
@@ -310,6 +326,13 @@ metrics:
       value_type: int
     attributes: []
     enabled: true
+  elasticsearch.node.operations.current:
+    description: Number of query operations currently running.
+    unit: "{operations}"
+    gauge:
+      value_type: int
+    attributes: [ operation ]
+    enabled: false
   elasticsearch.node.operations.completed:
     description: The number of operations completed by a node.
     unit: "{operations}"
@@ -935,4 +958,29 @@ metrics:
       aggregation: cumulative
       value_type: int
     attributes: [document_state, index_aggregation_type]
+    enabled: false
+  elasticsearch.process.cpu.usage:
+    description: CPU usage in percent.
+    unit: 1.0
+    gauge:
+      value_type: double
+    attributes: [ ]
+    enabled: false
+  elasticsearch.process.cpu.time:
+    description: CPU time used by the process on which the Java virtual machine is running.
+    unit: ms
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    attributes: [ ]
+    enabled: false
+  elasticsearch.process.memory.virtual:
+    description: Size of virtual memory that is guaranteed to be available to the running process.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [ ]
     enabled: false

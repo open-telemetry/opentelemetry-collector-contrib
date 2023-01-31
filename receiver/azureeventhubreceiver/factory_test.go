@@ -20,20 +20,18 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
 func TestNewFactory(t *testing.T) {
 	f := NewFactory()
 	assert.Equal(t, component.Type("azureeventhub"), f.Type())
-	assert.Equal(t, &Config{ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr))}, f.CreateDefaultConfig())
 }
 
 func TestNewLogsReceiver(t *testing.T) {
 	f := NewFactory()
-	receiver, err := f.CreateLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), f.CreateDefaultConfig(), consumertest.NewNop())
+	receiver, err := f.CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), f.CreateDefaultConfig(), consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, receiver)
 }

@@ -34,6 +34,7 @@ import (
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -73,9 +74,9 @@ var (
 	errUnsupportedLogEvent    = initJSONResponse(responseErrUnsupportedLogEvent)
 )
 
-// splunkReceiver implements the component.MetricsReceiver for Splunk HEC metric protocol.
+// splunkReceiver implements the receiver.Metrics for Splunk HEC metric protocol.
 type splunkReceiver struct {
-	settings        component.ReceiverCreateSettings
+	settings        receiver.CreateSettings
 	config          *Config
 	logsConsumer    consumer.Logs
 	metricsConsumer consumer.Metrics
@@ -85,14 +86,14 @@ type splunkReceiver struct {
 	gzipReaderPool  *sync.Pool
 }
 
-var _ component.MetricsReceiver = (*splunkReceiver)(nil)
+var _ receiver.Metrics = (*splunkReceiver)(nil)
 
 // newMetricsReceiver creates the Splunk HEC receiver with the given configuration.
 func newMetricsReceiver(
-	settings component.ReceiverCreateSettings,
+	settings receiver.CreateSettings,
 	config Config,
 	nextConsumer consumer.Metrics,
-) (component.MetricsReceiver, error) {
+) (receiver.Metrics, error) {
 	if nextConsumer == nil {
 		return nil, errNilNextMetricsConsumer
 	}
@@ -134,10 +135,10 @@ func newMetricsReceiver(
 
 // newLogsReceiver creates the Splunk HEC receiver with the given configuration.
 func newLogsReceiver(
-	settings component.ReceiverCreateSettings,
+	settings receiver.CreateSettings,
 	config Config,
 	nextConsumer consumer.Logs,
-) (component.LogsReceiver, error) {
+) (receiver.Logs, error) {
 	if nextConsumer == nil {
 		return nil, errNilNextLogsConsumer
 	}

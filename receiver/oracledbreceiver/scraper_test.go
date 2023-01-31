@@ -24,6 +24,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 
@@ -50,7 +51,7 @@ var queryResponses = map[string][]metricRow{
 }
 
 func TestScraper_Scrape(t *testing.T) {
-	metricsBuilder := metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), componenttest.NewNopReceiverCreateSettings())
+	metricsBuilder := metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), receivertest.NewNopCreateSettings())
 
 	scrpr := scraper{
 		logger:         zap.NewNop(),
@@ -76,10 +77,13 @@ func TestScraper_Scrape(t *testing.T) {
 	m, err := scrpr.scrape(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, 16, m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
+	name, ok := m.ResourceMetrics().At(0).Resource().Attributes().Get("oracledb.instance.name")
+	assert.True(t, ok)
+	assert.Equal(t, "", name.Str())
 }
 
 func TestPartial_InvalidScrape(t *testing.T) {
-	metricsBuilder := metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), componenttest.NewNopReceiverCreateSettings())
+	metricsBuilder := metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), receivertest.NewNopCreateSettings())
 
 	scrpr := scraper{
 		logger:         zap.NewNop(),

@@ -1,0 +1,14 @@
+{
+   "resourceLogs": [
+      {
+         "scopeLogs": [
+            {
+               "scope": {
+                  "name": "one",
+                  "version": "1.0"
+               }
+            }
+         ]
+      }
+   ]
+}

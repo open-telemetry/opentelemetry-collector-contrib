@@ -24,8 +24,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 
@@ -41,7 +41,6 @@ func TestFactory(t *testing.T) {
 	require.True(t, ok)
 
 	require.Equal(t, &Config{
-		ReceiverSettings:           config.NewReceiverSettings(component.NewID(typeStr)),
 		Distribution:               distributionKubernetes,
 		CollectionInterval:         10 * time.Second,
 		NodeConditionTypesToReport: defaultNodeConditionsToReport,
@@ -51,8 +50,8 @@ func TestFactory(t *testing.T) {
 	}, rCfg)
 
 	r, err := f.CreateTracesReceiver(
-		context.Background(), componenttest.NewNopReceiverCreateSettings(),
-		&config.ReceiverSettings{}, consumertest.NewNop(),
+		context.Background(), receivertest.NewNopCreateSettings(),
+		cfg, consumertest.NewNop(),
 	)
 	require.Error(t, err)
 	require.Nil(t, r)
@@ -92,7 +91,7 @@ func TestFactoryDistributions(t *testing.T) {
 }
 
 func newTestReceiver(t *testing.T, cfg *Config) *kubernetesReceiver {
-	r, err := newReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, consumertest.NewNop())
+	r, err := newReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, r)
 	rcvr, ok := r.(*kubernetesReceiver)

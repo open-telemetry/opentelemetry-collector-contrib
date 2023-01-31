@@ -17,7 +17,7 @@ package basicauthextension // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"errors"
 
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configopaque"
 )
 
 var (
@@ -36,10 +36,9 @@ type ClientAuthSettings struct {
 	// Username holds the username to use for client authentication.
 	Username string `mapstructure:"username"`
 	// Password holds the password to use for client authentication.
-	Password string `mapstructure:"password"`
+	Password configopaque.String `mapstructure:"password"`
 }
 type Config struct {
-	config.ExtensionSettings `mapstructure:",squash"`
 
 	// Htpasswd settings.
 	Htpasswd *HtpasswdSettings `mapstructure:"htpasswd,omitempty"`

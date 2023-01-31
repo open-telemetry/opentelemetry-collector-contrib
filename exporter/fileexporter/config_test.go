@@ -21,7 +21,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -39,8 +38,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "2"),
 			expected: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				Path:             "./filename.json",
+				Path: "./filename.json",
 				Rotation: &Rotation{
 					MaxMegabytes: 10,
 					MaxDays:      3,
@@ -53,8 +51,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "3"),
 			expected: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				Path:             "./filename",
+				Path: "./filename",
 				Rotation: &Rotation{
 					MaxMegabytes: 10,
 					MaxDays:      3,
@@ -68,9 +65,8 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "rotation_with_default_settings"),
 			expected: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				Path:             "./foo",
-				FormatType:       formatTypeJSON,
+				Path:       "./foo",
+				FormatType: formatTypeJSON,
 				Rotation: &Rotation{
 					MaxBackups: defaultMaxBackups,
 				},
@@ -79,8 +75,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "rotation_with_custom_settings"),
 			expected: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				Path:             "./foo",
+				Path: "./foo",
 				Rotation: &Rotation{
 					MaxMegabytes: 1234,
 					MaxBackups:   defaultMaxBackups,

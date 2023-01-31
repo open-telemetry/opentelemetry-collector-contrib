@@ -60,6 +60,9 @@ func (ds *databaseStorage) Start(context.Context, component.Host) error {
 
 // Shutdown closes the connection to the database
 func (ds *databaseStorage) Shutdown(context.Context) error {
+	if ds.db == nil {
+		return nil
+	}
 	return ds.db.Close()
 }
 

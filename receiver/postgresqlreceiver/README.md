@@ -45,7 +45,7 @@ receivers:
     endpoint: localhost:5432
     transport: tcp
     username: otel
-    password: $POSTGRESQL_PASSWORD
+    password: ${env:POSTGRESQL_PASSWORD}
     databases:
       - otel
     collection_interval: 10s

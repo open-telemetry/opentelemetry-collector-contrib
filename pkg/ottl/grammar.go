@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package ottl // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+
 import (
 	"encoding/hex"
 	"fmt"
@@ -22,8 +23,24 @@ import (
 
 // parsedStatement represents a parsed statement. It is the entry point into the statement DSL.
 type parsedStatement struct {
-	Invocation  invocation         `parser:"@@"`
+	Invocation invocation `parser:"(@@"`
+	// If converter is matched then return error
+	Converter   *converter         `parser:"|@@)"`
 	WhereClause *booleanExpression `parser:"( 'where' @@ )?"`
+}
+
+func (p *parsedStatement) checkForCustomError() error {
+	if p.Converter != nil {
+		return fmt.Errorf("invocation names must start with a lowercase letter but got '%v'", p.Converter.Function)
+	}
+	err := p.Invocation.checkForCustomError()
+	if err != nil {
+		return err
+	}
+	if p.WhereClause != nil {
+		return p.WhereClause.checkForCustomError()
+	}
+	return nil
 }
 
 // booleanValue represents something that evaluates to a boolean --
@@ -36,10 +53,24 @@ type booleanValue struct {
 	SubExpr    *booleanExpression `parser:"| '(' @@ ')' )"`
 }
 
+func (b *booleanValue) checkForCustomError() error {
+	if b.Comparison != nil {
+		return b.Comparison.checkForCustomError()
+	}
+	if b.SubExpr != nil {
+		return b.SubExpr.checkForCustomError()
+	}
+	return nil
+}
+
 // opAndBooleanValue represents the right side of an AND boolean expression.
 type opAndBooleanValue struct {
 	Operator string        `parser:"@OpAnd"`
 	Value    *booleanValue `parser:"@@"`
+}
+
+func (b *opAndBooleanValue) checkForCustomError() error {
+	return b.Value.checkForCustomError()
 }
 
 // term represents an arbitrary number of boolean values joined by AND.
@@ -48,10 +79,28 @@ type term struct {
 	Right []*opAndBooleanValue `parser:"@@*"`
 }
 
+func (b *term) checkForCustomError() error {
+	err := b.Left.checkForCustomError()
+	if err != nil {
+		return err
+	}
+	for _, r := range b.Right {
+		err = r.checkForCustomError()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // opOrTerm represents the right side of an OR boolean expression.
 type opOrTerm struct {
 	Operator string `parser:"@OpOr"`
 	Term     *term  `parser:"@@"`
+}
+
+func (b *opOrTerm) checkForCustomError() error {
+	return b.Term.checkForCustomError()
 }
 
 // booleanExpression represents a true/false decision expressed
@@ -59,6 +108,20 @@ type opOrTerm struct {
 type booleanExpression struct {
 	Left  *term       `parser:"@@"`
 	Right []*opOrTerm `parser:"@@*"`
+}
+
+func (b *booleanExpression) checkForCustomError() error {
+	err := b.Left.checkForCustomError()
+	if err != nil {
+		return err
+	}
+	for _, r := range b.Right {
+		err = r.checkForCustomError()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // compareOp is the type of a comparison operator.
@@ -121,9 +184,35 @@ type comparison struct {
 	Right value     `parser:"@@"`
 }
 
-// invocation represents a function call.
+func (c *comparison) checkForCustomError() error {
+	err := c.Left.checkForCustomError()
+	if err != nil {
+		return err
+	}
+	err = c.Right.checkForCustomError()
+	return err
+}
+
+// invocation represents the function call of a statement.
 type invocation struct {
-	Function  string  `parser:"@(Uppercase | Lowercase)+"`
+	Function  string  `parser:"@(Lowercase(Uppercase | Lowercase)*)"`
+	Arguments []value `parser:"'(' ( @@ ( ',' @@ )* )? ')'"`
+}
+
+func (i *invocation) checkForCustomError() error {
+	var err error
+	for _, arg := range i.Arguments {
+		err = arg.checkForCustomError()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// converter represents a converter function call.
+type converter struct {
+	Function  string  `parser:"@(Uppercase(Uppercase | Lowercase)*)"`
 	Arguments []value `parser:"'(' ( @@ ( ',' @@ )* )? ')'"`
 }
 
@@ -138,6 +227,16 @@ type value struct {
 	Bool           *boolean         `parser:"| @Boolean"`
 	Enum           *EnumSymbol      `parser:"| @Uppercase"`
 	List           *list            `parser:"| @@)"`
+}
+
+func (v *value) checkForCustomError() error {
+	if v.Literal != nil {
+		return v.Literal.checkForCustomError()
+	}
+	if v.MathExpression != nil {
+		return v.MathExpression.checkForCustomError()
+	}
+	return nil
 }
 
 // Path represents a telemetry path mathExpression.
@@ -185,10 +284,19 @@ func (n *isNil) Capture(_ []string) error {
 }
 
 type mathExprLiteral struct {
+	// If invocation is matched then error
 	Invocation *invocation `parser:"( @@"`
+	Converter  *converter  `parser:"| @@"`
 	Float      *float64    `parser:"| @Float"`
 	Int        *int64      `parser:"| @Int"`
 	Path       *Path       `parser:"| @@ )"`
+}
+
+func (m *mathExprLiteral) checkForCustomError() error {
+	if m.Invocation != nil {
+		return fmt.Errorf("converter names must start with an uppercase letter but got '%v'", m.Invocation.Function)
+	}
+	return nil
 }
 
 type mathValue struct {
@@ -196,9 +304,20 @@ type mathValue struct {
 	SubExpression *mathExpression  `parser:"| '(' @@ ')' )"`
 }
 
+func (m *mathValue) checkForCustomError() error {
+	if m.Literal != nil {
+		return m.Literal.checkForCustomError()
+	}
+	return m.SubExpression.checkForCustomError()
+}
+
 type opMultDivValue struct {
 	Operator mathOp     `parser:"@OpMultDiv"`
 	Value    *mathValue `parser:"@@"`
+}
+
+func (m *opMultDivValue) checkForCustomError() error {
+	return m.Value.checkForCustomError()
 }
 
 type addSubTerm struct {
@@ -206,14 +325,46 @@ type addSubTerm struct {
 	Right []*opMultDivValue `parser:"@@*"`
 }
 
+func (m *addSubTerm) checkForCustomError() error {
+	err := m.Left.checkForCustomError()
+	if err != nil {
+		return err
+	}
+	for _, r := range m.Right {
+		err = r.checkForCustomError()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 type opAddSubTerm struct {
 	Operator mathOp      `parser:"@OpAddSub"`
 	Term     *addSubTerm `parser:"@@"`
 }
 
+func (m *opAddSubTerm) checkForCustomError() error {
+	return m.Term.checkForCustomError()
+}
+
 type mathExpression struct {
 	Left  *addSubTerm     `parser:"@@"`
 	Right []*opAddSubTerm `parser:"@@*"`
+}
+
+func (m *mathExpression) checkForCustomError() error {
+	err := m.Left.checkForCustomError()
+	if err != nil {
+		return err
+	}
+	for _, r := range m.Right {
+		err = r.checkForCustomError()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 type mathOp int
@@ -277,8 +428,8 @@ func buildLexer() *lexer.StatefulDefinition {
 		{Name: `LParen`, Pattern: `\(`},
 		{Name: `RParen`, Pattern: `\)`},
 		{Name: `Punct`, Pattern: `[,.\[\]]`},
-		{Name: `Uppercase`, Pattern: `[A-Z_][A-Z0-9_]*`},
-		{Name: `Lowercase`, Pattern: `[a-z_][a-z0-9_]*`},
+		{Name: `Uppercase`, Pattern: `[A-Z][A-Z0-9_]*`},
+		{Name: `Lowercase`, Pattern: `[a-z][a-z0-9_]*`},
 		{Name: "whitespace", Pattern: `\s+`},
 	})
 }

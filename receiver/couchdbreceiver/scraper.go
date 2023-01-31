@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 
@@ -36,7 +37,7 @@ type couchdbScraper struct {
 	mb       *metadata.MetricsBuilder
 }
 
-func newCouchdbScraper(settings component.ReceiverCreateSettings, config *Config) *couchdbScraper {
+func newCouchdbScraper(settings receiver.CreateSettings, config *Config) *couchdbScraper {
 	return &couchdbScraper{
 		settings: settings.TelemetrySettings,
 		config:   config,

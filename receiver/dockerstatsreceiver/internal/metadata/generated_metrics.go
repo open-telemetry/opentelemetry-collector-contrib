@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 )
 
@@ -16,12 +17,7 @@ import (
 type MetricSettings struct {
 	Enabled bool `mapstructure:"enabled"`
 
-	enabledProvidedByUser bool
-}
-
-// IsEnabledProvidedByUser returns true if `enabled` option is explicitly set in user settings to any value.
-func (ms *MetricSettings) IsEnabledProvidedByUser() bool {
-	return ms.enabledProvidedByUser
+	enabledSetByUser bool
 }
 
 func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
@@ -32,7 +28,7 @@ func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
 	if err != nil {
 		return err
 	}
-	ms.enabledProvidedByUser = parser.IsSet("enabled")
+	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
 }
 
@@ -293,6 +289,54 @@ func DefaultMetricsSettings() MetricsSettings {
 		},
 		ContainerNetworkIoUsageTxPackets: MetricSettings{
 			Enabled: false,
+		},
+	}
+}
+
+// ResourceAttributeSettings provides common settings for a particular metric.
+type ResourceAttributeSettings struct {
+	Enabled bool `mapstructure:"enabled"`
+
+	enabledProvidedByUser bool
+}
+
+func (ras *ResourceAttributeSettings) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(ras, confmap.WithErrorUnused())
+	if err != nil {
+		return err
+	}
+	ras.enabledProvidedByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ResourceAttributesSettings provides settings for dockerstatsreceiver metrics.
+type ResourceAttributesSettings struct {
+	ContainerHostname  ResourceAttributeSettings `mapstructure:"container.hostname"`
+	ContainerID        ResourceAttributeSettings `mapstructure:"container.id"`
+	ContainerImageName ResourceAttributeSettings `mapstructure:"container.image.name"`
+	ContainerName      ResourceAttributeSettings `mapstructure:"container.name"`
+	ContainerRuntime   ResourceAttributeSettings `mapstructure:"container.runtime"`
+}
+
+func DefaultResourceAttributesSettings() ResourceAttributesSettings {
+	return ResourceAttributesSettings{
+		ContainerHostname: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		ContainerID: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		ContainerImageName: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		ContainerName: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		ContainerRuntime: ResourceAttributeSettings{
+			Enabled: true,
 		},
 	}
 }
@@ -3564,6 +3608,7 @@ type MetricsBuilder struct {
 	resourceCapacity                                 int                 // maximum observed number of resource attributes.
 	metricsBuffer                                    pmetric.Metrics     // accumulates metrics data before emitting.
 	buildInfo                                        component.BuildInfo // contains version information
+	resourceAttributesSettings                       ResourceAttributesSettings
 	metricContainerBlockioIoMergedRecursive          metricContainerBlockioIoMergedRecursive
 	metricContainerBlockioIoQueuedRecursive          metricContainerBlockioIoQueuedRecursive
 	metricContainerBlockioIoServiceBytesRecursive    metricContainerBlockioIoServiceBytesRecursive
@@ -3639,13 +3684,21 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func NewMetricsBuilder(ms MetricsSettings, settings component.ReceiverCreateSettings, options ...metricBuilderOption) *MetricsBuilder {
+// WithResourceAttributesSettings sets ResourceAttributeSettings on the metrics builder.
+func WithResourceAttributesSettings(ras ResourceAttributesSettings) metricBuilderOption {
+	return func(mb *MetricsBuilder) {
+		mb.resourceAttributesSettings = ras
+	}
+}
+
+func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		startTime:                               pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                           pmetric.NewMetrics(),
-		buildInfo:                               settings.BuildInfo,
-		metricContainerBlockioIoMergedRecursive: newMetricContainerBlockioIoMergedRecursive(ms.ContainerBlockioIoMergedRecursive),
-		metricContainerBlockioIoQueuedRecursive: newMetricContainerBlockioIoQueuedRecursive(ms.ContainerBlockioIoQueuedRecursive),
+		startTime:                                        pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                                    pmetric.NewMetrics(),
+		buildInfo:                                        settings.BuildInfo,
+		resourceAttributesSettings:                       DefaultResourceAttributesSettings(),
+		metricContainerBlockioIoMergedRecursive:          newMetricContainerBlockioIoMergedRecursive(ms.ContainerBlockioIoMergedRecursive),
+		metricContainerBlockioIoQueuedRecursive:          newMetricContainerBlockioIoQueuedRecursive(ms.ContainerBlockioIoQueuedRecursive),
 		metricContainerBlockioIoServiceBytesRecursive:    newMetricContainerBlockioIoServiceBytesRecursive(ms.ContainerBlockioIoServiceBytesRecursive),
 		metricContainerBlockioIoServiceTimeRecursive:     newMetricContainerBlockioIoServiceTimeRecursive(ms.ContainerBlockioIoServiceTimeRecursive),
 		metricContainerBlockioIoServicedRecursive:        newMetricContainerBlockioIoServicedRecursive(ms.ContainerBlockioIoServicedRecursive),
@@ -3725,47 +3778,57 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(pmetric.ResourceMetrics)
+type ResourceMetricsOption func(ResourceAttributesSettings, pmetric.ResourceMetrics)
 
 // WithContainerHostname sets provided value as "container.hostname" attribute for current resource.
 func WithContainerHostname(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("container.hostname", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.ContainerHostname.Enabled {
+			rm.Resource().Attributes().PutStr("container.hostname", val)
+		}
 	}
 }
 
 // WithContainerID sets provided value as "container.id" attribute for current resource.
 func WithContainerID(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("container.id", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.ContainerID.Enabled {
+			rm.Resource().Attributes().PutStr("container.id", val)
+		}
 	}
 }
 
 // WithContainerImageName sets provided value as "container.image.name" attribute for current resource.
 func WithContainerImageName(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("container.image.name", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.ContainerImageName.Enabled {
+			rm.Resource().Attributes().PutStr("container.image.name", val)
+		}
 	}
 }
 
 // WithContainerName sets provided value as "container.name" attribute for current resource.
 func WithContainerName(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("container.name", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.ContainerName.Enabled {
+			rm.Resource().Attributes().PutStr("container.name", val)
+		}
 	}
 }
 
 // WithContainerRuntime sets provided value as "container.runtime" attribute for current resource.
 func WithContainerRuntime(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("container.runtime", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.ContainerRuntime.Enabled {
+			rm.Resource().Attributes().PutStr("container.runtime", val)
+		}
 	}
 }
 
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
@@ -3858,8 +3921,9 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricContainerNetworkIoUsageTxDropped.emit(ils.Metrics())
 	mb.metricContainerNetworkIoUsageTxErrors.emit(ils.Metrics())
 	mb.metricContainerNetworkIoUsageTxPackets.emit(ils.Metrics())
+
 	for _, op := range rmo {
-		op(rm)
+		op(mb.resourceAttributesSettings, rm)
 	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)

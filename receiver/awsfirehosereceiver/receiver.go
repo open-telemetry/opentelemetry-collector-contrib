@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 )
 
@@ -55,7 +56,7 @@ type firehoseConsumer interface {
 // firehoseReceiver
 type firehoseReceiver struct {
 	// settings is the base receiver settings.
-	settings component.ReceiverCreateSettings
+	settings receiver.CreateSettings
 	// config is the configuration for the receiver.
 	config *Config
 	// server is the HTTP/HTTPS server set up to listen
@@ -110,7 +111,7 @@ type firehoseCommonAttributes struct {
 	CommonAttributes map[string]string `json:"commonAttributes"`
 }
 
-var _ component.MetricsReceiver = (*firehoseReceiver)(nil)
+var _ receiver.Metrics = (*firehoseReceiver)(nil)
 var _ http.Handler = (*firehoseReceiver)(nil)
 
 // Start spins up the receiver's HTTP server and makes the receiver start
@@ -147,6 +148,9 @@ func (fmr *firehoseReceiver) Start(_ context.Context, host component.Host) error
 // giving it a chance to perform any necessary clean-up and
 // shutting down its HTTP server.
 func (fmr *firehoseReceiver) Shutdown(context.Context) error {
+	if fmr.server == nil {
+		return nil
+	}
 	err := fmr.server.Close()
 	fmr.shutdownWG.Wait()
 	return err

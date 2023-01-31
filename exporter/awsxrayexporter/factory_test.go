@@ -23,8 +23,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 )
@@ -33,7 +33,6 @@ func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.Equal(t, cfg, &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 		AWSSessionSettings: awsutil.AWSSessionSettings{
 			NumberOfWorkers:       8,
 			Endpoint:              "",
@@ -61,7 +60,7 @@ func TestCreateTracesExporter(t *testing.T) {
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	ctx := context.Background()
-	exporter, err := factory.CreateTracesExporter(ctx, componenttest.NewNopExporterCreateSettings(), cfg)
+	exporter, err := factory.CreateTracesExporter(ctx, exportertest.NewNopCreateSettings(), cfg)
 	assert.Nil(t, err)
 	assert.NotNil(t, exporter)
 }
@@ -77,7 +76,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	ctx := context.Background()
-	exporter, err := factory.CreateMetricsExporter(ctx, componenttest.NewNopExporterCreateSettings(), cfg)
+	exporter, err := factory.CreateMetricsExporter(ctx, exportertest.NewNopCreateSettings(), cfg)
 	assert.NotNil(t, err)
 	assert.Nil(t, exporter)
 }

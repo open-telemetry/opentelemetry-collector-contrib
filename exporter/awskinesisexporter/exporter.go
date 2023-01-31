@@ -25,6 +25,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -48,9 +49,9 @@ type options struct {
 }
 
 var (
-	_ component.TracesExporter  = (*Exporter)(nil)
-	_ component.MetricsExporter = (*Exporter)(nil)
-	_ component.LogsExporter    = (*Exporter)(nil)
+	_ exporter.Traces  = (*Exporter)(nil)
+	_ exporter.Metrics = (*Exporter)(nil)
+	_ exporter.Logs    = (*Exporter)(nil)
 )
 
 func createExporter(ctx context.Context, c component.Config, log *zap.Logger, opts ...func(opt *options)) (*Exporter, error) {

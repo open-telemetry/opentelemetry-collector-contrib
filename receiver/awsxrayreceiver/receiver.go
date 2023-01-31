@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -36,19 +37,19 @@ const (
 	maxPollerCount = 2
 )
 
-// xrayReceiver implements the component.TracesReceiver interface for converting
+// xrayReceiver implements the receiver.Traces interface for converting
 // AWS X-Ray segment document into the OT internal trace format.
 type xrayReceiver struct {
 	poller   udppoller.Poller
 	server   proxy.Server
-	settings component.ReceiverCreateSettings
+	settings receiver.CreateSettings
 	consumer consumer.Traces
 	obsrecv  *obsreport.Receiver
 }
 
 func newReceiver(config *Config,
 	consumer consumer.Traces,
-	set component.ReceiverCreateSettings) (component.TracesReceiver, error) {
+	set receiver.CreateSettings) (receiver.Traces, error) {
 
 	if consumer == nil {
 		return nil, component.ErrNilNextConsumer

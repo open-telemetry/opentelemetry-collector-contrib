@@ -29,6 +29,7 @@ import (
 	"github.com/influxdata/influxdb-observability/common"
 	"github.com/influxdata/line-protocol/v2/lineprotocol"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 )
 
@@ -66,8 +67,8 @@ func newInfluxHTTPWriter(logger common.Logger, config *Config, host component.Ho
 
 		if config.V1Compatibility.Username != "" && config.V1Compatibility.Password != "" {
 			var basicAuth []byte
-			base64.StdEncoding.Encode(basicAuth, []byte(config.V1Compatibility.Username+":"+config.V1Compatibility.Password))
-			config.HTTPClientSettings.Headers["Authorization"] = "Basic " + string(basicAuth)
+			base64.StdEncoding.Encode(basicAuth, []byte(config.V1Compatibility.Username+":"+string(config.V1Compatibility.Password)))
+			config.HTTPClientSettings.Headers["Authorization"] = configopaque.String("Basic " + string(basicAuth))
 		}
 	} else {
 		queryValues.Set("org", config.Org)

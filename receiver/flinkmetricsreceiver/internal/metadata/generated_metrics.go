@@ -11,18 +11,14 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 )
 
 // MetricSettings provides common settings for a particular metric.
 type MetricSettings struct {
 	Enabled bool `mapstructure:"enabled"`
 
-	enabledProvidedByUser bool
-}
-
-// IsEnabledProvidedByUser returns true if `enabled` option is explicitly set in user settings to any value.
-func (ms *MetricSettings) IsEnabledProvidedByUser() bool {
-	return ms.enabledProvidedByUser
+	enabledSetByUser bool
 }
 
 func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
@@ -33,7 +29,7 @@ func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
 	if err != nil {
 		return err
 	}
-	ms.enabledProvidedByUser = parser.IsSet("enabled")
+	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
 }
 
@@ -157,6 +153,58 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		FlinkTaskRecordCount: MetricSettings{
+			Enabled: true,
+		},
+	}
+}
+
+// ResourceAttributeSettings provides common settings for a particular metric.
+type ResourceAttributeSettings struct {
+	Enabled bool `mapstructure:"enabled"`
+
+	enabledProvidedByUser bool
+}
+
+func (ras *ResourceAttributeSettings) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(ras, confmap.WithErrorUnused())
+	if err != nil {
+		return err
+	}
+	ras.enabledProvidedByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ResourceAttributesSettings provides settings for flinkmetricsreceiver metrics.
+type ResourceAttributesSettings struct {
+	FlinkJobName       ResourceAttributeSettings `mapstructure:"flink.job.name"`
+	FlinkResourceType  ResourceAttributeSettings `mapstructure:"flink.resource.type"`
+	FlinkSubtaskIndex  ResourceAttributeSettings `mapstructure:"flink.subtask.index"`
+	FlinkTaskName      ResourceAttributeSettings `mapstructure:"flink.task.name"`
+	FlinkTaskmanagerID ResourceAttributeSettings `mapstructure:"flink.taskmanager.id"`
+	HostName           ResourceAttributeSettings `mapstructure:"host.name"`
+}
+
+func DefaultResourceAttributesSettings() ResourceAttributesSettings {
+	return ResourceAttributesSettings{
+		FlinkJobName: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		FlinkResourceType: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		FlinkSubtaskIndex: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		FlinkTaskName: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		FlinkTaskmanagerID: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		HostName: ResourceAttributeSettings{
 			Enabled: true,
 		},
 	}
@@ -1748,6 +1796,7 @@ type MetricsBuilder struct {
 	resourceCapacity                        int                 // maximum observed number of resource attributes.
 	metricsBuffer                           pmetric.Metrics     // accumulates metrics data before emitting.
 	buildInfo                               component.BuildInfo // contains version information
+	resourceAttributesSettings              ResourceAttributesSettings
 	metricFlinkJobCheckpointCount           metricFlinkJobCheckpointCount
 	metricFlinkJobCheckpointInProgress      metricFlinkJobCheckpointInProgress
 	metricFlinkJobLastCheckpointSize        metricFlinkJobLastCheckpointSize
@@ -1789,11 +1838,19 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func NewMetricsBuilder(ms MetricsSettings, settings component.ReceiverCreateSettings, options ...metricBuilderOption) *MetricsBuilder {
+// WithResourceAttributesSettings sets ResourceAttributeSettings on the metrics builder.
+func WithResourceAttributesSettings(ras ResourceAttributesSettings) metricBuilderOption {
+	return func(mb *MetricsBuilder) {
+		mb.resourceAttributesSettings = ras
+	}
+}
+
+func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                               pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                           pmetric.NewMetrics(),
 		buildInfo:                               settings.BuildInfo,
+		resourceAttributesSettings:              DefaultResourceAttributesSettings(),
 		metricFlinkJobCheckpointCount:           newMetricFlinkJobCheckpointCount(ms.FlinkJobCheckpointCount),
 		metricFlinkJobCheckpointInProgress:      newMetricFlinkJobCheckpointInProgress(ms.FlinkJobCheckpointInProgress),
 		metricFlinkJobLastCheckpointSize:        newMetricFlinkJobLastCheckpointSize(ms.FlinkJobLastCheckpointSize),
@@ -1841,57 +1898,71 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(pmetric.ResourceMetrics)
+type ResourceMetricsOption func(ResourceAttributesSettings, pmetric.ResourceMetrics)
 
 // WithFlinkJobName sets provided value as "flink.job.name" attribute for current resource.
 func WithFlinkJobName(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("flink.job.name", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.FlinkJobName.Enabled {
+			rm.Resource().Attributes().PutStr("flink.job.name", val)
+		}
 	}
 }
 
 // WithFlinkResourceTypeJobmanager sets "flink.resource.type=jobmanager" attribute for current resource.
-func WithFlinkResourceTypeJobmanager(rm pmetric.ResourceMetrics) {
-	rm.Resource().Attributes().PutStr("flink.resource.type", "jobmanager")
+func WithFlinkResourceTypeJobmanager(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+	if ras.FlinkResourceType.Enabled {
+		rm.Resource().Attributes().PutStr("flink.resource.type", "jobmanager")
+	}
 }
 
 // WithFlinkResourceTypeTaskmanager sets "flink.resource.type=taskmanager" attribute for current resource.
-func WithFlinkResourceTypeTaskmanager(rm pmetric.ResourceMetrics) {
-	rm.Resource().Attributes().PutStr("flink.resource.type", "taskmanager")
+func WithFlinkResourceTypeTaskmanager(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+	if ras.FlinkResourceType.Enabled {
+		rm.Resource().Attributes().PutStr("flink.resource.type", "taskmanager")
+	}
 }
 
 // WithFlinkSubtaskIndex sets provided value as "flink.subtask.index" attribute for current resource.
 func WithFlinkSubtaskIndex(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("flink.subtask.index", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.FlinkSubtaskIndex.Enabled {
+			rm.Resource().Attributes().PutStr("flink.subtask.index", val)
+		}
 	}
 }
 
 // WithFlinkTaskName sets provided value as "flink.task.name" attribute for current resource.
 func WithFlinkTaskName(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("flink.task.name", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.FlinkTaskName.Enabled {
+			rm.Resource().Attributes().PutStr("flink.task.name", val)
+		}
 	}
 }
 
 // WithFlinkTaskmanagerID sets provided value as "flink.taskmanager.id" attribute for current resource.
 func WithFlinkTaskmanagerID(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("flink.taskmanager.id", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.FlinkTaskmanagerID.Enabled {
+			rm.Resource().Attributes().PutStr("flink.taskmanager.id", val)
+		}
 	}
 }
 
 // WithHostName sets provided value as "host.name" attribute for current resource.
 func WithHostName(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("host.name", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.HostName.Enabled {
+			rm.Resource().Attributes().PutStr("host.name", val)
+		}
 	}
 }
 
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
@@ -1949,8 +2020,9 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricFlinkOperatorRecordCount.emit(ils.Metrics())
 	mb.metricFlinkOperatorWatermarkOutput.emit(ils.Metrics())
 	mb.metricFlinkTaskRecordCount.emit(ils.Metrics())
+
 	for _, op := range rmo {
-		op(rm)
+		op(mb.resourceAttributesSettings, rm)
 	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)

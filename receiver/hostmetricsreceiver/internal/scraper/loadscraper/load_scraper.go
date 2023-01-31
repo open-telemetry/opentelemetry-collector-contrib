@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 
@@ -36,7 +37,7 @@ const metricsLen = 3
 
 // scraper for Load Metrics
 type scraper struct {
-	settings   component.ReceiverCreateSettings
+	settings   receiver.CreateSettings
 	config     *Config
 	mb         *metadata.MetricsBuilder
 	skipScrape bool
@@ -47,7 +48,7 @@ type scraper struct {
 }
 
 // newLoadScraper creates a set of Load related metrics
-func newLoadScraper(_ context.Context, settings component.ReceiverCreateSettings, cfg *Config) *scraper {
+func newLoadScraper(_ context.Context, settings receiver.CreateSettings, cfg *Config) *scraper {
 	return &scraper{settings: settings, config: cfg, bootTime: host.BootTime, load: getSampledLoadAverages}
 }
 

@@ -29,6 +29,7 @@ import (
 	"sync"
 	"time"
 
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
@@ -42,7 +43,7 @@ import (
 type DimensionClient struct {
 	sync.RWMutex
 	ctx           context.Context
-	Token         string
+	Token         configopaque.String
 	APIURL        *url.URL
 	client        *http.Client
 	requestSender *ReqSender
@@ -72,7 +73,7 @@ type queuedDimension struct {
 }
 
 type DimensionClientOptions struct {
-	Token                 string
+	Token                 configopaque.String
 	APIURL                *url.URL
 	APITLSConfig          *tls.Config
 	LogUpdates            bool
@@ -320,7 +321,7 @@ func (dc *DimensionClient) makePatchRequest(dim *DimensionUpdate) (*http.Request
 	}
 
 	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("X-SF-TOKEN", dc.Token)
+	req.Header.Add("X-SF-TOKEN", string(dc.Token))
 
 	return req, nil
 }

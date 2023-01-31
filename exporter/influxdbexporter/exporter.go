@@ -22,6 +22,7 @@ import (
 	"github.com/influxdata/influxdb-observability/otel2influx"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -35,7 +36,7 @@ type tracesExporter struct {
 	settings  component.TelemetrySettings
 }
 
-func newTracesExporter(config *Config, params component.ExporterCreateSettings) *tracesExporter {
+func newTracesExporter(config *Config, params exporter.CreateSettings) *tracesExporter {
 	logger := newZapInfluxLogger(params.Logger)
 	converter := otel2influx.NewOtelTracesToLineProtocol(logger)
 
@@ -82,7 +83,7 @@ var metricsSchemata = map[string]common.MetricsSchema{
 	"telegraf-prometheus-v2": common.MetricsSchemaTelegrafPrometheusV2,
 }
 
-func newMetricsExporter(config *Config, params component.ExporterCreateSettings) (*metricsExporter, error) {
+func newMetricsExporter(config *Config, params exporter.CreateSettings) (*metricsExporter, error) {
 	logger := newZapInfluxLogger(params.Logger)
 	schema, found := metricsSchemata[config.MetricsSchema]
 	if !found {
@@ -132,7 +133,7 @@ type logsExporter struct {
 	settings  component.TelemetrySettings
 }
 
-func newLogsExporter(config *Config, params component.ExporterCreateSettings) *logsExporter {
+func newLogsExporter(config *Config, params exporter.CreateSettings) *logsExporter {
 	logger := newZapInfluxLogger(params.Logger)
 	converter := otel2influx.NewOtelLogsToLineProtocol(logger)
 

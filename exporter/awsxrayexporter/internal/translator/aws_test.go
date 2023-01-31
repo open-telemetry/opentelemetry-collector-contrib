@@ -42,7 +42,7 @@ func TestAwsFromEc2Resource(t *testing.T) {
 
 	attributes := make(map[string]pcommon.Value)
 
-	filtered, awsData := makeAws(attributes, resource)
+	filtered, awsData := makeAws(attributes, resource, nil)
 
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, awsData)
@@ -91,7 +91,7 @@ func TestAwsFromEcsResource(t *testing.T) {
 
 	attributes := make(map[string]pcommon.Value)
 
-	filtered, awsData := makeAws(attributes, resource)
+	filtered, awsData := makeAws(attributes, resource, nil)
 
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, awsData)
@@ -127,7 +127,7 @@ func TestAwsFromBeanstalkResource(t *testing.T) {
 
 	attributes := make(map[string]pcommon.Value)
 
-	filtered, awsData := makeAws(attributes, resource)
+	filtered, awsData := makeAws(attributes, resource, nil)
 
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, awsData)
@@ -166,7 +166,7 @@ func TestAwsFromEksResource(t *testing.T) {
 
 	attributes := make(map[string]pcommon.Value)
 
-	filtered, awsData := makeAws(attributes, resource)
+	filtered, awsData := makeAws(attributes, resource, nil)
 
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, awsData)
@@ -210,7 +210,7 @@ func TestAwsWithAwsSqsResources(t *testing.T) {
 	attributes[awsxray.AWSQueueURLAttribute] = pcommon.NewValueStr(queueURL)
 	attributes["employee.id"] = pcommon.NewValueStr("XB477")
 
-	filtered, awsData := makeAws(attributes, resource)
+	filtered, awsData := makeAws(attributes, resource, nil)
 
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, awsData)
@@ -223,7 +223,7 @@ func TestAwsWithRpcAttributes(t *testing.T) {
 	attributes := make(map[string]pcommon.Value)
 	attributes[conventions.AttributeRPCMethod] = pcommon.NewValueStr("ListBuckets")
 
-	_, awsData := makeAws(attributes, resource)
+	_, awsData := makeAws(attributes, resource, nil)
 
 	assert.NotNil(t, awsData)
 	assert.Equal(t, "ListBuckets", *awsData.Operation)
@@ -234,7 +234,7 @@ func TestAwsWithSqsAlternateAttribute(t *testing.T) {
 	attributes := make(map[string]pcommon.Value)
 	attributes[awsxray.AWSQueueURLAttribute2] = pcommon.NewValueStr(queueURL)
 
-	filtered, awsData := makeAws(attributes, pcommon.NewResource())
+	filtered, awsData := makeAws(attributes, pcommon.NewResource(), nil)
 
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, awsData)
@@ -246,7 +246,7 @@ func TestAwsWithAwsSqsSemConvAttributes(t *testing.T) {
 	attributes := make(map[string]pcommon.Value)
 	attributes[conventions.AttributeMessagingURL] = pcommon.NewValueStr(queueURL)
 
-	filtered, awsData := makeAws(attributes, pcommon.NewResource())
+	filtered, awsData := makeAws(attributes, pcommon.NewResource(), nil)
 
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, awsData)
@@ -281,7 +281,7 @@ func TestAwsWithAwsDynamoDbResources(t *testing.T) {
 	attributes[awsxray.AWSRequestIDAttribute] = pcommon.NewValueStr("75107C82-EC8A-4F75-883F-4440B491B0AB")
 	attributes[awsxray.AWSTableNameAttribute] = pcommon.NewValueStr(tableName)
 
-	filtered, awsData := makeAws(attributes, resource)
+	filtered, awsData := makeAws(attributes, resource, nil)
 
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, awsData)
@@ -295,7 +295,7 @@ func TestAwsWithDynamoDbAlternateAttribute(t *testing.T) {
 	attributes := make(map[string]pcommon.Value)
 	attributes[awsxray.AWSTableNameAttribute2] = pcommon.NewValueStr(tableName)
 
-	filtered, awsData := makeAws(attributes, pcommon.NewResource())
+	filtered, awsData := makeAws(attributes, pcommon.NewResource(), nil)
 
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, awsData)
@@ -307,7 +307,7 @@ func TestAwsWithDynamoDbSemConvAttributes(t *testing.T) {
 	attributes := make(map[string]pcommon.Value)
 	attributes[conventions.AttributeAWSDynamoDBTableNames] = pcommon.NewValueStr(tableName)
 
-	filtered, awsData := makeAws(attributes, pcommon.NewResource())
+	filtered, awsData := makeAws(attributes, pcommon.NewResource(), nil)
 
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, awsData)
@@ -319,7 +319,7 @@ func TestAwsWithRequestIdAlternateAttribute(t *testing.T) {
 	attributes := make(map[string]pcommon.Value)
 	attributes[awsxray.AWSRequestIDAttribute2] = pcommon.NewValueStr(requestid)
 
-	filtered, awsData := makeAws(attributes, pcommon.NewResource())
+	filtered, awsData := makeAws(attributes, pcommon.NewResource(), nil)
 
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, awsData)
@@ -333,7 +333,7 @@ func TestJavaSDK(t *testing.T) {
 	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKLanguage, "java")
 	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKVersion, "1.2.3")
 
-	filtered, awsData := makeAws(attributes, resource)
+	filtered, awsData := makeAws(attributes, resource, nil)
 
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, awsData)
@@ -349,7 +349,7 @@ func TestJavaAutoInstrumentation(t *testing.T) {
 	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKVersion, "1.2.3")
 	resource.Attributes().PutStr(conventions.AttributeTelemetryAutoVersion, "3.4.5")
 
-	filtered, awsData := makeAws(attributes, resource)
+	filtered, awsData := makeAws(attributes, resource, nil)
 
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, awsData)
@@ -365,7 +365,7 @@ func TestGoSDK(t *testing.T) {
 	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKLanguage, "go")
 	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKVersion, "2.0.3")
 
-	filtered, awsData := makeAws(attributes, resource)
+	filtered, awsData := makeAws(attributes, resource, nil)
 
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, awsData)
@@ -380,7 +380,7 @@ func TestCustomSDK(t *testing.T) {
 	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKLanguage, "java")
 	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKVersion, "2.0.3")
 
-	filtered, awsData := makeAws(attributes, resource)
+	filtered, awsData := makeAws(attributes, resource, nil)
 
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, awsData)
@@ -403,7 +403,7 @@ func TestLogGroups(t *testing.T) {
 	ava.AppendEmpty().SetStr("group1")
 	ava.AppendEmpty().SetStr("group2")
 
-	filtered, awsData := makeAws(attributes, resource)
+	filtered, awsData := makeAws(attributes, resource, nil)
 
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, awsData)
@@ -431,7 +431,78 @@ func TestLogGroupsFromArns(t *testing.T) {
 	ava.AppendEmpty().SetStr(group1)
 	ava.AppendEmpty().SetStr(group2)
 
-	filtered, awsData := makeAws(attributes, resource)
+	filtered, awsData := makeAws(attributes, resource, nil)
+
+	assert.NotNil(t, filtered)
+	assert.NotNil(t, awsData)
+	assert.Equal(t, 2, len(awsData.CWLogs))
+	assert.Contains(t, awsData.CWLogs, cwl1)
+	assert.Contains(t, awsData.CWLogs, cwl2)
+}
+
+// Simulate Log groups being set using OTEL_RESOURCE_ATTRIBUTES
+func TestLogGroupsFromStringResourceAttribute(t *testing.T) {
+	cwl1 := awsxray.LogGroupMetadata{
+		LogGroup: awsxray.String("group1"),
+	}
+
+	attributes := make(map[string]pcommon.Value)
+	resource := pcommon.NewResource()
+	resource.Attributes().PutStr(conventions.AttributeAWSLogGroupNames, "group1")
+
+	filtered, awsData := makeAws(attributes, resource, nil)
+
+	assert.NotNil(t, filtered)
+	assert.NotNil(t, awsData)
+	assert.Equal(t, 1, len(awsData.CWLogs))
+	assert.Contains(t, awsData.CWLogs, cwl1)
+}
+
+func TestLogGroupsInvalidType(t *testing.T) {
+	attributes := make(map[string]pcommon.Value)
+	resource := pcommon.NewResource()
+	resource.Attributes().PutInt(conventions.AttributeAWSLogGroupNames, 1)
+
+	filtered, awsData := makeAws(attributes, resource, nil)
+
+	assert.NotNil(t, filtered)
+	assert.NotNil(t, awsData)
+	assert.Equal(t, 0, len(awsData.CWLogs))
+}
+
+// Simulate Log groups arns being set using OTEL_RESOURCE_ATTRIBUTES
+func TestLogGroupsArnsFromStringResourceAttributes(t *testing.T) {
+	group1 := "arn:aws:logs:us-east-1:123456789123:log-group:group1"
+
+	cwl1 := awsxray.LogGroupMetadata{
+		LogGroup: awsxray.String("group1"),
+		Arn:      awsxray.String(group1),
+	}
+
+	attributes := make(map[string]pcommon.Value)
+	resource := pcommon.NewResource()
+	resource.Attributes().PutStr(conventions.AttributeAWSLogGroupARNs, group1)
+
+	filtered, awsData := makeAws(attributes, resource, nil)
+
+	assert.NotNil(t, filtered)
+	assert.NotNil(t, awsData)
+	assert.Equal(t, 1, len(awsData.CWLogs))
+	assert.Contains(t, awsData.CWLogs, cwl1)
+}
+
+func TestLogGroupsFromConfig(t *testing.T) {
+	cwl1 := awsxray.LogGroupMetadata{
+		LogGroup: awsxray.String("logGroup1"),
+	}
+	cwl2 := awsxray.LogGroupMetadata{
+		LogGroup: awsxray.String("logGroup2"),
+	}
+
+	attributes := make(map[string]pcommon.Value)
+	resource := pcommon.NewResource()
+
+	filtered, awsData := makeAws(attributes, resource, []string{"logGroup1", "logGroup2"})
 
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, awsData)

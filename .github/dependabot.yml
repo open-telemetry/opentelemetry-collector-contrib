@@ -43,6 +43,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/connector/count"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/examples/demo/client"
     schedule:
       interval: "weekly"
@@ -120,10 +124,6 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/exporter/googlemanagedprometheusexporter"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/exporter/humioexporter"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -347,10 +347,6 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
-    directory: "/internal/comparetest"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
     directory: "/internal/coreinternal"
     schedule:
       interval: "weekly"
@@ -403,6 +399,14 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/pkg/pdatatest"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/pkg/pdatautil"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/pkg/resourcetotelemetry"
     schedule:
       interval: "weekly"
@@ -448,6 +452,10 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/processor/cumulativetodeltaprocessor"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/processor/datadogprocessor"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -627,6 +635,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/receiver/haproxyreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/receiver/hostmetricsreceiver"
     schedule:
       interval: "weekly"
@@ -740,6 +752,10 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/receiver/purefareceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/purefbreceiver"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"

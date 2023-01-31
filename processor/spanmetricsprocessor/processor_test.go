@@ -18,24 +18,29 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"github.com/tilinna/clock"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/processor/processortest"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest"
+	"go.uber.org/zap/zaptest/observer"
 	"google.golang.org/grpc/metadata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor/internal/cache"
@@ -112,13 +117,15 @@ func TestProcessorStart(t *testing.T) {
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.MetricsExporter = tc.metricsExporter
 
-			procCreationParams := componenttest.NewNopProcessorCreateSettings()
+			procCreationParams := processortest.NewNopCreateSettings()
 			traceProcessor, err := factory.CreateTracesProcessor(context.Background(), procCreationParams, cfg, consumertest.NewNop())
 			require.NoError(t, err)
 
 			// Test
 			smp := traceProcessor.(*processorImp)
-			err = smp.Start(context.Background(), mhost)
+			ctx := context.Background()
+			err = smp.Start(ctx, mhost)
+			defer func() { sdErr := smp.Shutdown(ctx); require.NoError(t, sdErr) }()
 
 			// Verify
 			if tc.wantErrorMsg != "" {
@@ -130,19 +137,58 @@ func TestProcessorStart(t *testing.T) {
 	}
 }
 
-func TestProcessorShutdown(t *testing.T) {
+func TestProcessorConcurrentShutdown(t *testing.T) {
 	// Prepare
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig().(*Config)
+	exporters := map[component.DataType]map[component.ID]component.Component{}
+	mhost := &mocks.Host{}
+	mhost.On("GetExporters").Return(exporters)
+
+	ctx := context.Background()
+
+	core, observedLogs := observer.New(zapcore.InfoLevel)
+	logger := zap.New(core)
+
+	mexp := &mocks.MetricsExporter{}
+	tcon := &mocks.TracesConsumer{}
+
+	mockClock := clock.NewMock(time.Now())
+	ticker := mockClock.NewTicker(time.Nanosecond)
 
 	// Test
-	next := new(consumertest.TracesSink)
-	p, err := newProcessor(zaptest.NewLogger(t), cfg, next)
-	assert.NoError(t, err)
-	err = p.Shutdown(context.Background())
+	p := newProcessorImp(mexp, tcon, nil, cumulative, logger, ticker)
+	err := p.Start(ctx, mhost)
+	require.NoError(t, err)
 
-	// Verify
-	assert.NoError(t, err)
+	// Allow goroutines time to start.
+	time.Sleep(time.Millisecond)
+
+	// Simulate many goroutines trying to concurrently shutdown.
+	var wg sync.WaitGroup
+	const concurrency = 1000
+	wg.Add(concurrency)
+	for i := 0; i < concurrency; i++ {
+		go func() {
+			err := p.Shutdown(ctx)
+			require.NoError(t, err)
+			wg.Done()
+		}()
+	}
+	wg.Wait()
+
+	// Allow time for log observer to sync all logs emitted.
+	// Even though the WaitGroup has been given the "done" signal, there's still a potential race condition
+	// between the WaitGroup being unblocked and when the logs will be flushed.
+	var allLogs []observer.LoggedEntry
+	assert.Eventually(t, func() bool {
+		allLogs = observedLogs.All()
+		return len(allLogs) > 0
+	}, time.Second, time.Millisecond*10)
+
+	// Starting spanmetricsprocessor...
+	// Started spanmetricsprocessor...
+	// Shutting down spanmetricsprocessor...
+	// Stopping ticker.
+	assert.Len(t, allLogs, 4)
 }
 
 func TestConfigureLatencyBounds(t *testing.T) {
@@ -158,7 +204,7 @@ func TestConfigureLatencyBounds(t *testing.T) {
 
 	// Test
 	next := new(consumertest.TracesSink)
-	p, err := newProcessor(zaptest.NewLogger(t), cfg, next)
+	p, err := newProcessor(zaptest.NewLogger(t), cfg, next, nil)
 
 	// Verify
 	assert.NoError(t, err)
@@ -173,7 +219,7 @@ func TestProcessorCapabilities(t *testing.T) {
 
 	// Test
 	next := new(consumertest.TracesSink)
-	p, err := newProcessor(zaptest.NewLogger(t), cfg, next)
+	p, err := newProcessor(zaptest.NewLogger(t), cfg, next, nil)
 	assert.NoError(t, err)
 	caps := p.Capabilities()
 
@@ -183,57 +229,81 @@ func TestProcessorCapabilities(t *testing.T) {
 }
 
 func TestProcessorConsumeTracesErrors(t *testing.T) {
-	for _, tc := range []struct {
-		name              string
-		consumeMetricsErr error
-		consumeTracesErr  error
-	}{
-		{
-			name:              "ConsumeMetrics error",
-			consumeMetricsErr: fmt.Errorf("consume metrics error"),
-		},
-		{
-			name:             "ConsumeTraces error",
-			consumeTracesErr: fmt.Errorf("consume traces error"),
-		},
-		{
-			name:              "ConsumeMetrics and ConsumeTraces error",
-			consumeMetricsErr: fmt.Errorf("consume metrics error"),
-			consumeTracesErr:  fmt.Errorf("consume traces error"),
-		},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			// Prepare
-			logger := zap.NewNop()
+	// Prepare
+	fakeErr := fmt.Errorf("consume traces error")
 
-			mexp := &mocks.MetricsExporter{}
-			mexp.On("ConsumeMetrics", mock.Anything, mock.Anything).Return(tc.consumeMetricsErr)
+	logger := zap.NewNop()
 
-			tcon := &mocks.TracesConsumer{}
-			tcon.On("ConsumeTraces", mock.Anything, mock.Anything).Return(tc.consumeTracesErr)
+	mexp := &mocks.MetricsExporter{}
+	mexp.On("ConsumeMetrics", mock.Anything, mock.Anything).Return(nil)
 
-			p := newProcessorImp(mexp, tcon, nil, cumulative, logger)
+	tcon := &mocks.TracesConsumer{}
+	tcon.On("ConsumeTraces", mock.Anything, mock.Anything).Return(fakeErr)
 
-			traces := buildSampleTrace()
+	p := newProcessorImp(mexp, tcon, nil, cumulative, logger, nil)
 
-			// Test
-			ctx := metadata.NewIncomingContext(context.Background(), nil)
-			err := p.ConsumeTraces(ctx, traces)
+	traces := buildSampleTrace()
 
-			// Verify
-			require.Error(t, err)
-			switch {
-			case tc.consumeMetricsErr != nil && tc.consumeTracesErr != nil:
-				assert.EqualError(t, err, tc.consumeMetricsErr.Error()+"; "+tc.consumeTracesErr.Error())
-			case tc.consumeMetricsErr != nil:
-				assert.EqualError(t, err, tc.consumeMetricsErr.Error())
-			case tc.consumeTracesErr != nil:
-				assert.EqualError(t, err, tc.consumeTracesErr.Error())
-			default:
-				assert.Fail(t, "expected at least one error")
-			}
-		})
-	}
+	// Test
+	ctx := metadata.NewIncomingContext(context.Background(), nil)
+	err := p.ConsumeTraces(ctx, traces)
+
+	// Verify
+	require.Error(t, err)
+	assert.ErrorIs(t, err, fakeErr)
+}
+
+func TestProcessorConsumeMetricsErrors(t *testing.T) {
+	// Prepare
+	fakeErr := fmt.Errorf("consume metrics error")
+
+	core, observedLogs := observer.New(zapcore.ErrorLevel)
+	logger := zap.New(core)
+
+	var wg sync.WaitGroup
+	mexp := &mocks.MetricsExporter{}
+	mexp.On("ConsumeMetrics", mock.Anything, mock.MatchedBy(func(input pmetric.Metrics) bool {
+		wg.Done()
+		return true
+	})).Return(fakeErr)
+
+	tcon := &mocks.TracesConsumer{}
+	tcon.On("ConsumeTraces", mock.Anything, mock.Anything).Return(nil)
+
+	mockClock := clock.NewMock(time.Now())
+	ticker := mockClock.NewTicker(time.Nanosecond)
+	p := newProcessorImp(mexp, tcon, nil, cumulative, logger, ticker)
+
+	exporters := map[component.DataType]map[component.ID]component.Component{}
+	mhost := &mocks.Host{}
+	mhost.On("GetExporters").Return(exporters)
+
+	ctx := metadata.NewIncomingContext(context.Background(), nil)
+	err := p.Start(ctx, mhost)
+	defer func() { sdErr := p.Shutdown(ctx); require.NoError(t, sdErr) }()
+	require.NoError(t, err)
+
+	traces := buildSampleTrace()
+
+	// Test
+	err = p.ConsumeTraces(ctx, traces)
+	require.NoError(t, err)
+
+	// Trigger flush.
+	wg.Add(1)
+	mockClock.Add(time.Nanosecond)
+	wg.Wait()
+
+	// Allow time for log observer to sync all logs emitted.
+	// Even though the WaitGroup has been given the "done" signal, there's still a potential race condition
+	// between the WaitGroup being unblocked and when the logs will be flushed.
+	var allLogs []observer.LoggedEntry
+	assert.Eventually(t, func() bool {
+		allLogs = observedLogs.All()
+		return len(allLogs) > 0
+	}, time.Second, time.Millisecond*10)
+
+	assert.Equal(t, "Failed ConsumeMetrics", allLogs[0].Message)
 }
 
 func TestProcessorConsumeTraces(t *testing.T) {
@@ -289,24 +359,39 @@ func TestProcessorConsumeTraces(t *testing.T) {
 			mexp := &mocks.MetricsExporter{}
 			tcon := &mocks.TracesConsumer{}
 
+			var wg sync.WaitGroup
 			// Mocked metric exporter will perform validation on metrics, during p.ConsumeTraces()
 			mexp.On("ConsumeMetrics", mock.Anything, mock.MatchedBy(func(input pmetric.Metrics) bool {
-				return assert.Eventually(t, func() bool {
-					return tc.verifier(t, input)
-				}, 10*time.Second, time.Millisecond*100)
+				wg.Done()
+				return tc.verifier(t, input)
 			})).Return(nil)
 			tcon.On("ConsumeTraces", mock.Anything, mock.Anything).Return(nil)
 
 			defaultNullValue := pcommon.NewValueStr("defaultNullValue")
-			p := newProcessorImp(mexp, tcon, &defaultNullValue, tc.aggregationTemporality, zaptest.NewLogger(t))
+
+			mockClock := clock.NewMock(time.Now())
+			ticker := mockClock.NewTicker(time.Nanosecond)
+
+			p := newProcessorImp(mexp, tcon, &defaultNullValue, tc.aggregationTemporality, zaptest.NewLogger(t), ticker)
+
+			exporters := map[component.DataType]map[component.ID]component.Component{}
+			mhost := &mocks.Host{}
+			mhost.On("GetExporters").Return(exporters)
+
+			ctx := metadata.NewIncomingContext(context.Background(), nil)
+			err := p.Start(ctx, mhost)
+			defer func() { sdErr := p.Shutdown(ctx); require.NoError(t, sdErr) }()
+			require.NoError(t, err)
 
 			for _, traces := range tc.traces {
 				// Test
-				ctx := metadata.NewIncomingContext(context.Background(), nil)
-				err := p.ConsumeTraces(ctx, traces)
-
-				// Verify
+				err = p.ConsumeTraces(ctx, traces)
 				assert.NoError(t, err)
+
+				// Trigger flush.
+				wg.Add(1)
+				mockClock.Add(time.Nanosecond)
+				wg.Wait()
 			}
 		})
 	}
@@ -320,7 +405,7 @@ func TestMetricKeyCache(t *testing.T) {
 	tcon.On("ConsumeTraces", mock.Anything, mock.Anything).Return(nil)
 
 	defaultNullValue := pcommon.NewValueStr("defaultNullValue")
-	p := newProcessorImp(mexp, tcon, &defaultNullValue, cumulative, zaptest.NewLogger(t))
+	p := newProcessorImp(mexp, tcon, &defaultNullValue, cumulative, zaptest.NewLogger(t), nil)
 	traces := buildSampleTrace()
 
 	// Test
@@ -334,7 +419,7 @@ func TestMetricKeyCache(t *testing.T) {
 	require.NoError(t, err)
 	// 2 key was cached, 1 key was evicted and cleaned after the processing
 	assert.Eventually(t, func() bool {
-		return assert.Equal(t, DimensionsCacheSize, p.metricKeyToDimensions.Len())
+		return p.metricKeyToDimensions.Len() == DimensionsCacheSize
 	}, 10*time.Second, time.Millisecond*100)
 
 	// consume another batch of traces
@@ -343,7 +428,7 @@ func TestMetricKeyCache(t *testing.T) {
 
 	// 2 key was cached, other keys were evicted and cleaned after the processing
 	assert.Eventually(t, func() bool {
-		return assert.Equal(t, DimensionsCacheSize, p.metricKeyToDimensions.Len())
+		return p.metricKeyToDimensions.Len() == DimensionsCacheSize
 	}, 10*time.Second, time.Millisecond*100)
 }
 
@@ -356,7 +441,7 @@ func BenchmarkProcessorConsumeTraces(b *testing.B) {
 	tcon.On("ConsumeTraces", mock.Anything, mock.Anything).Return(nil)
 
 	defaultNullValue := pcommon.NewValueStr("defaultNullValue")
-	p := newProcessorImp(mexp, tcon, &defaultNullValue, cumulative, zaptest.NewLogger(b))
+	p := newProcessorImp(mexp, tcon, &defaultNullValue, cumulative, zaptest.NewLogger(b), nil)
 
 	traces := buildSampleTrace()
 
@@ -367,7 +452,7 @@ func BenchmarkProcessorConsumeTraces(b *testing.B) {
 	}
 }
 
-func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, defaultNullValue *pcommon.Value, temporality string, logger *zap.Logger) *processorImp {
+func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, defaultNullValue *pcommon.Value, temporality string, logger *zap.Logger, ticker *clock.Ticker) *processorImp {
 	defaultNotInSpanAttrVal := pcommon.NewValueStr("defaultNotInSpanAttrVal")
 	// use size 2 for LRU cache for testing purpose
 	metricKeyToDimensions, err := cache.NewCache[metricKey, pcommon.Map](DimensionsCacheSize)
@@ -401,6 +486,8 @@ func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, de
 		},
 		keyBuf:                new(bytes.Buffer),
 		metricKeyToDimensions: metricKeyToDimensions,
+		ticker:                ticker,
+		done:                  make(chan struct{}),
 	}
 }
 
@@ -620,16 +707,15 @@ func initSpan(span span, s ptrace.Span) {
 	s.SetSpanID(pcommon.SpanID([8]byte{byte(42)}))
 }
 
-func newOTLPExporters(t *testing.T) (component.ID, component.MetricsExporter, component.TracesExporter) {
+func newOTLPExporters(t *testing.T) (component.ID, exporter.Metrics, exporter.Traces) {
 	otlpExpFactory := otlpexporter.NewFactory()
 	otlpID := component.NewID("otlp")
 	otlpConfig := &otlpexporter.Config{
-		ExporterSettings: config.NewExporterSettings(otlpID),
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: "example.com:1234",
 		},
 	}
-	expCreationParams := componenttest.NewNopExporterCreateSettings()
+	expCreationParams := exportertest.NewNopCreateSettings()
 	mexp, err := otlpExpFactory.CreateMetricsExporter(context.Background(), expCreationParams, otlpConfig)
 	require.NoError(t, err)
 	texp, err := otlpExpFactory.CreateTracesExporter(context.Background(), expCreationParams, otlpConfig)
@@ -738,7 +824,7 @@ func TestProcessorDuplicateDimensions(t *testing.T) {
 
 	// Test
 	next := new(consumertest.TracesSink)
-	p, err := newProcessor(zaptest.NewLogger(t), cfg, next)
+	p, err := newProcessor(zaptest.NewLogger(t), cfg, next, nil)
 	assert.Error(t, err)
 	assert.Nil(t, p)
 }
@@ -862,7 +948,7 @@ func TestProcessorUpdateExemplars(t *testing.T) {
 	spanID := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).SpanID()
 	key := metricKey("metricKey")
 	next := new(consumertest.TracesSink)
-	p, err := newProcessor(zaptest.NewLogger(t), cfg, next)
+	p, err := newProcessor(zaptest.NewLogger(t), cfg, next, nil)
 	value := float64(42)
 
 	// ----- call -------------------------------------------------------------
@@ -879,4 +965,139 @@ func TestProcessorUpdateExemplars(t *testing.T) {
 	// ----- verify -----------------------------------------------------------
 	assert.NoError(t, err)
 	assert.Empty(t, p.histograms[key].exemplarsData)
+}
+
+func TestConsumeTracesEvictedCacheKey(t *testing.T) {
+	// Prepare
+	traces0 := ptrace.NewTraces()
+
+	initServiceSpans(
+		serviceSpans{
+			// This should be moved to the evicted list of the LRU cache once service-c is added
+			// since the cache size is configured to 2.
+			serviceName: "service-a",
+			spans: []span{
+				{
+					operation:  "/ping",
+					kind:       ptrace.SpanKindServer,
+					statusCode: ptrace.StatusCodeOk,
+				},
+			},
+		}, traces0.ResourceSpans().AppendEmpty())
+	initServiceSpans(
+		serviceSpans{
+			serviceName: "service-b",
+			spans: []span{
+				{
+					operation:  "/ping",
+					kind:       ptrace.SpanKindServer,
+					statusCode: ptrace.StatusCodeError,
+				},
+			},
+		}, traces0.ResourceSpans().AppendEmpty())
+	initServiceSpans(
+		serviceSpans{
+			serviceName: "service-c",
+			spans: []span{
+				{
+					operation:  "/ping",
+					kind:       ptrace.SpanKindServer,
+					statusCode: ptrace.StatusCodeError,
+				},
+			},
+		}, traces0.ResourceSpans().AppendEmpty())
+
+	// This trace does not have service-a, and may not result in an attempt to publish metrics for
+	// service-a because service-a may be removed from the metricsKeyCache's evicted list.
+	traces1 := ptrace.NewTraces()
+
+	initServiceSpans(
+		serviceSpans{
+			serviceName: "service-b",
+			spans: []span{
+				{
+					operation:  "/ping",
+					kind:       ptrace.SpanKindServer,
+					statusCode: ptrace.StatusCodeError,
+				},
+			},
+		}, traces1.ResourceSpans().AppendEmpty())
+	initServiceSpans(
+		serviceSpans{
+			serviceName: "service-c",
+			spans: []span{
+				{
+					operation:  "/ping",
+					kind:       ptrace.SpanKindServer,
+					statusCode: ptrace.StatusCodeError,
+				},
+			},
+		}, traces1.ResourceSpans().AppendEmpty())
+
+	mexp := &mocks.MetricsExporter{}
+	tcon := &mocks.TracesConsumer{}
+
+	wantDataPointCounts := []int{
+		6, // (calls_total + latency) * (service-a + service-b + service-c)
+		4, // (calls_total + latency) * (service-b + service-c)
+	}
+
+	// Ensure the assertion that wantDataPointCounts is performed only after all ConsumeMetrics
+	// invocations are complete.
+	var wg sync.WaitGroup
+	wg.Add(len(wantDataPointCounts))
+
+	// Mocked metric exporter will perform validation on metrics, during p.ConsumeTraces()
+	mexp.On("ConsumeMetrics", mock.Anything, mock.MatchedBy(func(input pmetric.Metrics) bool {
+		defer wg.Done()
+
+		// Verify
+		require.NotEmpty(t, wantDataPointCounts)
+
+		// GreaterOrEqual is particularly necessary for the second assertion where we
+		// expect 4 data points; but could also be 6 due to the non-deterministic nature
+		// of the p.histograms map which, through the act of "Get"ting a cached key, will
+		// lead to updating its recent-ness.
+		require.GreaterOrEqual(t, input.DataPointCount(), wantDataPointCounts[0])
+		wantDataPointCounts = wantDataPointCounts[1:] // Dequeue
+
+		return true
+	})).Return(nil)
+
+	tcon.On("ConsumeTraces", mock.Anything, mock.Anything).Return(nil)
+
+	defaultNullValue := pcommon.NewValueStr("defaultNullValue")
+	mockClock := clock.NewMock(time.Now())
+	ticker := mockClock.NewTicker(time.Nanosecond)
+
+	// Note: default dimension key cache size is 2.
+	p := newProcessorImp(mexp, tcon, &defaultNullValue, cumulative, zaptest.NewLogger(t), ticker)
+
+	exporters := map[component.DataType]map[component.ID]component.Component{}
+
+	mhost := &mocks.Host{}
+	mhost.On("GetExporters").Return(exporters)
+
+	ctx := metadata.NewIncomingContext(context.Background(), nil)
+	err := p.Start(ctx, mhost)
+	defer func() { sdErr := p.Shutdown(ctx); require.NoError(t, sdErr) }()
+	require.NoError(t, err)
+
+	for _, traces := range []ptrace.Traces{traces0, traces1} {
+		// Test
+		err = p.ConsumeTraces(ctx, traces)
+		require.NoError(t, err)
+
+		// Allow time for metrics aggregation to complete.
+		time.Sleep(time.Millisecond)
+
+		// Trigger flush.
+		mockClock.Add(time.Nanosecond)
+
+		// Allow time for metrics flush to complete.
+		time.Sleep(time.Millisecond)
+	}
+
+	wg.Wait()
+	assert.Empty(t, wantDataPointCounts)
 }
