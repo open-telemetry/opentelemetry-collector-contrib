@@ -73,10 +73,6 @@ type azureLogRecord struct {
 	Properties        *interface{} `json:"properties"`
 }
 
-func newRawLogsUnmarshaler() LogsUnmarshaler {
-	return rawLogsUnmarshaler{}
-}
-
 func newAzureResourceLogsUnmarshaler() LogsUnmarshaler {
 	return azureResourceLogsUnmarshaler{}
 }
