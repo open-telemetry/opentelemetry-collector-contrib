@@ -57,10 +57,9 @@ func (s *Statement[K]) Execute(ctx context.Context, tCtx K) (any, bool, error) {
 	if err != nil {
 		if s.errorMode == Send {
 			return nil, false, err
-		} else {
-			s.telemetrySettings.Logger.Error("error executing condition", zap.Error(err))
-			return nil, false, nil
 		}
+		s.telemetrySettings.Logger.Error("error executing condition", zap.Error(err))
+		return nil, false, nil
 	}
 	var result any
 	if condition {
@@ -68,10 +67,9 @@ func (s *Statement[K]) Execute(ctx context.Context, tCtx K) (any, bool, error) {
 		if err != nil {
 			if s.errorMode == Send {
 				return nil, true, err
-			} else {
-				s.telemetrySettings.Logger.Error("error executing function", zap.Error(err))
-				return nil, true, nil
 			}
+			s.telemetrySettings.Logger.Error("error executing function", zap.Error(err))
+			return nil, true, nil
 		}
 	}
 	return result, condition, nil

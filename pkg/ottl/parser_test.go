@@ -21,9 +21,8 @@ import (
 	"regexp"
 	"testing"
 
-	"go.opentelemetry.io/collector/component/componenttest"
-
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component/componenttest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
