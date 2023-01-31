@@ -73,7 +73,7 @@ type Config struct {
 	// MetricsEmitInterval is the time period between when metrics are flushed or emitted to the configured MetricsExporter.
 	MetricsFlushInterval time.Duration `mapstructure:"metrics_flush_interval"`
 
-	// Namespace
+	// Namespace defines the namespace for the metrics exported by the spanmetricsprocessor.
 	Namespace string
 }
 
