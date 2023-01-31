@@ -25,7 +25,7 @@
                             ],
                             "events": [
                                 {
-                                    "name": "event2",
+                                    "name": "event1",
                                     "attributes": null,
                                     "droppedAttributesCount": 0,
                                     "timeUnixNano": "11651379494838206400"
