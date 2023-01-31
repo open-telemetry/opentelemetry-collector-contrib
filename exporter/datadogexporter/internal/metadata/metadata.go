@@ -30,7 +30,6 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/otlp/model/attributes/gcp"
 	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
@@ -107,14 +106,13 @@ type Meta struct {
 // metadataFromAttributes gets metadata info from attributes following
 // OpenTelemetry semantic conventions
 func metadataFromAttributes(attrs pcommon.Map) *HostMetadata {
-	return metadataFromAttributesWithRegistry(featuregate.GlobalRegistry(), attrs)
+	return metadataFromAttributesWithRegistry(attrs)
 }
 
-// metadataFromAttributesWithRegistry passes a registry explicitly to allow easier unit testing.
-func metadataFromAttributesWithRegistry(registry *featuregate.Registry, attrs pcommon.Map) *HostMetadata {
+func metadataFromAttributesWithRegistry(attrs pcommon.Map) *HostMetadata {
 	hm := &HostMetadata{Meta: &Meta{}, Tags: &HostTags{}}
 
-	var usePreviewHostnameLogic = registry.IsEnabled(HostnamePreviewFeatureGate)
+	var usePreviewHostnameLogic = HostnamePreviewFeatureGate.IsEnabled()
 	if src, ok := attributes.SourceFromAttributes(attrs, usePreviewHostnameLogic); ok && src.Kind == source.HostnameKind {
 		hm.InternalHostname = src.Identifier
 		hm.Meta.Hostname = src.Identifier

@@ -22,18 +22,15 @@ import (
 )
 
 const (
-	delta                  = "AGGREGATION_TEMPORALITY_DELTA"
-	cumulative             = "AGGREGATION_TEMPORALITY_CUMULATIVE"
-	dropSanitizationGateID = "processor.spanmetrics.PermissiveLabelSanitization"
+	delta      = "AGGREGATION_TEMPORALITY_DELTA"
+	cumulative = "AGGREGATION_TEMPORALITY_CUMULATIVE"
 )
 
-func init() {
-	featuregate.GlobalRegistry().MustRegisterID(
-		dropSanitizationGateID,
-		featuregate.StageAlpha,
-		featuregate.WithRegisterDescription("Controls whether to change labels starting with '_' to 'key_'"),
-	)
-}
+var dropSanitizationGate = featuregate.GlobalRegistry().MustRegister(
+	"processor.spanmetrics.PermissiveLabelSanitization",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("Controls whether to change labels starting with '_' to 'key_'"),
+)
 
 // Dimension defines the dimension name and optional default value if the Dimension is missing from a span attribute.
 type Dimension struct {

@@ -42,9 +42,7 @@ const noNodesExpectedMetricsPath = "./testdata/expected_metrics/noNodes.json"
 
 func TestMain(m *testing.M) {
 	// Enable the feature gates before all tests to avoid flaky tests.
-	_ = featuregate.GlobalRegistry().Apply(map[string]bool{
-		emitNodeVersionAttrID: true,
-	})
+	_ = featuregate.GlobalRegistry().Set(emitNodeVersionAttr.ID(), true)
 	code := m.Run()
 	os.Exit(code)
 }
