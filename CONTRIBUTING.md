@@ -59,6 +59,22 @@ During the collector release process, all `./.chloggen/*.yaml` files are transcr
 
 Alternately, copy `./.chloggen/TEMPLATE.yaml`, or just create your file from scratch.
 
+## Platform Agnostic Code
+
+In order to ensure compatibility with different operating systems, it is advised to write a code that is platform-agnostic. Below are some guidelines to follow when writing platform-agnostic code:
+
+* Avoid using platform-specific libraries, features etc. Please opt for cross-platform solutions. 
+
+* Avoid hard-coding platform specific values. Use environment variables or configuration files for storing platform specific values.
+
+* Be mindful of 
+  - Standard file systems and file paths such as forward slashes (/) instead of backward slashes (\) in Windows. 
+  - Consistent line ending formats such as Unix (LF) or Windows (CRLF).
+
+* Test your implementation thoroughly on different platforms and fix any issues. 
+
+With above guidelines, you can write code that is more portable and easier to maintain across different platforms. 
+
 ## Adding New Components
 
 **Before** any code is written, [open an
