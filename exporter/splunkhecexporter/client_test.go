@@ -693,7 +693,7 @@ func TestReceiveRaw(t *testing.T) {
 				conf.ExportRaw = true
 				return conf
 			}(),
-			text: "mybytes\n",
+			text: "bXlieXRlcw==\n",
 		},
 		{
 			name: "single raw event as number",

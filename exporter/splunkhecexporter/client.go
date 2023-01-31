@@ -197,12 +197,7 @@ func (c *client) pushLogRecords(ctx context.Context, lds plog.ResourceLogsSlice,
 		var b []byte
 
 		if c.config.ExportRaw {
-			body := logs.At(k).Body()
-			if bodyAsBytes, ok := body.AsRaw().([]byte); ok {
-				b = append(bodyAsBytes, '\n')
-			} else {
-				b = []byte(logs.At(k).Body().AsString() + "\n")
-			}
+			b = []byte(logs.At(k).Body().AsString() + "\n")
 		} else {
 			// Parsing log record to Splunk event.
 			event := mapLogRecordToSplunkEvent(res.Resource(), logs.At(k), c.config)
