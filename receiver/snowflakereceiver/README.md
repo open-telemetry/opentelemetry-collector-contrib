@@ -22,7 +22,7 @@ The following settings are optional:
 * `metrics` (default: see `DefaultMetricSettings` [here](./internal/metadata/generated_metrics.go)): Controls the enabling/disabling of specific metrics. For in depth documentation on the allowable metrics see [here](./documentation.md).
 * `schema` (default: 'ACCOUNT_USAGE'): Snowflake DB schema containing usage statistics and metadata to be monitored.
 * `database` (default: 'SNOWFLAKE'): Snowflake DB containing schema with usage statistics and metadata to be monitored.
-* `role` (default: 'ACCOUNTADMIN'): Role associated with the username designated above. By default admin privilages are required to access most/all of the usage data.
+* `role` (default: 'ACCOUNTADMIN'): Role associated with the username designated above. By default admin privileges are required to access most/all of the usage data.
 * `collection_interval` (default: 30m): Collection interval for metrics receiver. The value for this setting must be readable by golang's [time.ParseDuration](https://pkg.go.dev/time#ParseDuration).
 
 Example:
