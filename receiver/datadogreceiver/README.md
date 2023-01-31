@@ -36,5 +36,5 @@ All config params here are valid as well
 https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp#server-configuration
 
 
-[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[alpha]:https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
