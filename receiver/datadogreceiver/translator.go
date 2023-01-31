@@ -67,11 +67,19 @@ func toTraces(traces datadogpb.Traces, req *http.Request) ptrace.Traces {
 
 			switch span.Type {
 			case "web":
+			case "server":
 				newSpan.SetKind(ptrace.SpanKindServer)
-			case "custom":
-				newSpan.SetKind(ptrace.SpanKindUnspecified)
-			default:
+			case "client":
 				newSpan.SetKind(ptrace.SpanKindClient)
+			case "producer":
+				newSpan.SetKind(ptrace.SpanKindProducer)
+			case "consumer":
+				newSpan.SetKind(ptrace.SpanKindConsumer)
+			case "internal":
+				newSpan.SetKind(ptrace.SpanKindInternal)
+			case "custom":
+			default:
+				newSpan.SetKind(ptrace.SpanKindUnspecified)
 			}
 		}
 		spans.MoveAndAppendTo(ils.Spans())
