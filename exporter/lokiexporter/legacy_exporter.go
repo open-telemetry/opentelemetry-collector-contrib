@@ -30,6 +30,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
+	"github.com/grafana/loki/pkg/push"
 	"github.com/prometheus/common/model"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -41,7 +42,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter/internal/tenant"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki/logproto"
 )
 
 const (
@@ -53,7 +53,7 @@ type lokiExporter struct {
 	settings     component.TelemetrySettings
 	client       *http.Client
 	wg           sync.WaitGroup
-	convert      func(plog.LogRecord, pcommon.Resource, pcommon.InstrumentationScope) (*logproto.Entry, error)
+	convert      func(plog.LogRecord, pcommon.Resource, pcommon.InstrumentationScope) (*push.Entry, error)
 	tenantSource tenant.Source
 }
 
@@ -199,10 +199,10 @@ func (l *lokiExporter) stop(context.Context) (err error) {
 	return nil
 }
 
-func (l *lokiExporter) logDataToLoki(ld plog.Logs) (pr *logproto.PushRequest, numDroppedLogs int) {
+func (l *lokiExporter) logDataToLoki(ld plog.Logs) (pr *push.PushRequest, numDroppedLogs int) {
 	var errs error
 
-	streams := make(map[string]*logproto.Stream)
+	streams := make(map[string]*push.Stream)
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
 		ills := rls.At(i).ScopeLogs()
@@ -224,7 +224,7 @@ func (l *lokiExporter) logDataToLoki(ld plog.Logs) (pr *logproto.PushRequest, nu
 				mergedLabels = mergedLabels.Merge(recordLabels)
 
 				labels := mergedLabels.String()
-				var entry *logproto.Entry
+				var entry *push.Entry
 				var err error
 				entry, err = l.convert(log, resource, scope)
 				if err != nil {
@@ -248,9 +248,9 @@ func (l *lokiExporter) logDataToLoki(ld plog.Logs) (pr *logproto.PushRequest, nu
 					continue
 				}
 
-				streams[labels] = &logproto.Stream{
+				streams[labels] = &push.Stream{
 					Labels:  labels,
-					Entries: []logproto.Entry{*entry},
+					Entries: []push.Entry{*entry},
 				}
 			}
 		}
@@ -260,8 +260,8 @@ func (l *lokiExporter) logDataToLoki(ld plog.Logs) (pr *logproto.PushRequest, nu
 		l.settings.Logger.Debug("some logs has been dropped", zap.Error(errs))
 	}
 
-	pr = &logproto.PushRequest{
-		Streams: make([]logproto.Stream, len(streams)),
+	pr = &push.PushRequest{
+		Streams: make([]push.Stream, len(streams)),
 	}
 
 	i := 0
@@ -327,7 +327,7 @@ func (l *lokiExporter) convertRecordAttributesToLabels(log plog.LogRecord) model
 	return ls
 }
 
-func (l *lokiExporter) convertLogBodyToEntry(lr plog.LogRecord, res pcommon.Resource, scope pcommon.InstrumentationScope) (*logproto.Entry, error) {
+func (l *lokiExporter) convertLogBodyToEntry(lr plog.LogRecord, res pcommon.Resource, scope pcommon.InstrumentationScope) (*push.Entry, error) {
 	var b strings.Builder
 
 	if _, ok := l.config.Labels.RecordAttributes["severity"]; !ok && len(lr.SeverityText()) > 0 {
@@ -395,18 +395,18 @@ func (l *lokiExporter) convertLogBodyToEntry(lr plog.LogRecord, res pcommon.Reso
 
 	b.WriteString(lr.Body().Str())
 
-	return &logproto.Entry{
+	return &push.Entry{
 		Timestamp: timestampFromLogRecord(lr),
 		Line:      b.String(),
 	}, nil
 }
 
-func (l *lokiExporter) convertLogToJSONEntry(lr plog.LogRecord, res pcommon.Resource, scope pcommon.InstrumentationScope) (*logproto.Entry, error) {
+func (l *lokiExporter) convertLogToJSONEntry(lr plog.LogRecord, res pcommon.Resource, scope pcommon.InstrumentationScope) (*push.Entry, error) {
 	line, err := loki.Encode(lr, res, scope)
 	if err != nil {
 		return nil, err
 	}
-	return &logproto.Entry{
+	return &push.Entry{
 		Timestamp: timestampFromLogRecord(lr),
 		Line:      line,
 	}, nil
