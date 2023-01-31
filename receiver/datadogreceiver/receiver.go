@@ -21,7 +21,6 @@ import (
 	"sync"
 
 	datadogpb "github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
-	"github.com/gorilla/mux"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
@@ -69,7 +68,7 @@ func (ddr *datadogReceiver) Start(_ context.Context, host component.Host) error 
 		go func() {
 			defer ddr.shutdownWG.Done()
 
-			ddmux := mux.NewRouter()
+			ddmux := http.NewServeMux()
 			ddmux.HandleFunc("/v0.3/traces", ddr.handleTraces)
 			ddmux.HandleFunc("/v0.4/traces", ddr.handleTraces)
 			ddmux.HandleFunc("/v0.5/traces", ddr.handleTraces)

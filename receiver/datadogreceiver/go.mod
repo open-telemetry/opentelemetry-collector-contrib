@@ -4,7 +4,6 @@ go 1.18
 
 require (
 	github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02
-	github.com/gorilla/mux v1.8.0
 	github.com/stretchr/testify v1.8.1
 	github.com/tinylib/msgp v1.1.2
 	github.com/vmihailenco/msgpack/v4 v4.3.12
@@ -13,6 +12,7 @@ require (
 	go.opentelemetry.io/collector/consumer v0.70.0
 	go.opentelemetry.io/collector/pdata v1.0.0-rc4
 	go.opentelemetry.io/collector/semconv v0.70.0
+	go.uber.org/zap v1.24.0
 )
 
 require (
@@ -47,7 +47,6 @@ require (
 	go.opentelemetry.io/otel/trace v1.11.2 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
-	go.uber.org/zap v1.24.0 // indirect
 	golang.org/x/net v0.5.0 // indirect
 	golang.org/x/sys v0.4.0 // indirect
 	golang.org/x/text v0.6.0 // indirect
