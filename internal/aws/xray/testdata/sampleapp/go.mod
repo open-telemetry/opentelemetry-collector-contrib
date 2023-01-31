@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xr
 go 1.18
 
 require (
-	github.com/aws/aws-sdk-go v1.44.186
+	github.com/aws/aws-sdk-go v1.44.189
 	github.com/aws/aws-xray-sdk-go v1.8.0
 )
 
@@ -20,7 +20,7 @@ require (
 	golang.org/x/sys v0.4.0 // indirect
 	golang.org/x/text v0.6.0 // indirect
 	google.golang.org/genproto v0.0.0-20221118155620-16455021b5e6 // indirect
-	google.golang.org/grpc v1.52.1 // indirect
+	google.golang.org/grpc v1.52.3 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )

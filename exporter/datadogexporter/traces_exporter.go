@@ -115,11 +115,11 @@ func (exp *traceExporter) consumeTraces(
 		}
 	}
 
-	exp.exportTraceMetrics(ctx, hosts, tags)
+	exp.exportHostMetrics(ctx, hosts, tags)
 	return nil
 }
 
-func (exp *traceExporter) exportTraceMetrics(ctx context.Context, hosts map[string]struct{}, tags map[string]struct{}) {
+func (exp *traceExporter) exportHostMetrics(ctx context.Context, hosts map[string]struct{}, tags map[string]struct{}) {
 	now := pcommon.NewTimestampFromTime(time.Now())
 	var err error
 	if isMetricExportV2Enabled() {
