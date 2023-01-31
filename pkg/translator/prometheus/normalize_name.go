@@ -189,12 +189,23 @@ func normalizeName(metric pmetric.Metric, namespace string) string {
 }
 
 type Normalizer struct {
-	registry *featuregate.Registry
+	gate *featuregate.Gate
 }
 
 func NewNormalizer(registry *featuregate.Registry) *Normalizer {
+	var normalizeGate *featuregate.Gate
+	registry.Visit(func(gate *featuregate.Gate) {
+		if gate.ID() == normalizeNameGate.ID() {
+			normalizeGate = gate
+		}
+	})
+	// the registry didn't contain the flag, fallback to the global
+	// flag. Overriding the registry is really only done in tests
+	if normalizeGate == nil {
+		normalizeGate = normalizeNameGate
+	}
 	return &Normalizer{
-		registry: registry,
+		gate: normalizeGate,
 	}
 }
 
@@ -203,7 +214,7 @@ func NewNormalizer(registry *featuregate.Registry) *Normalizer {
 //
 // [OpenTelemetry specs]: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md#metric-metadata
 func (n *Normalizer) TrimPromSuffixes(promName string, metricType pmetric.MetricType, unit string) string {
-	if !normalizeNameGate.IsEnabled() {
+	if !n.gate.IsEnabled() {
 		return promName
 	}
 
