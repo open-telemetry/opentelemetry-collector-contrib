@@ -49,8 +49,8 @@ func (w worker) simulateMetrics() {
 	}
 
 	for w.running.Load() {
-		counter, _ := meter.SyncInt64().Counter(fmt.Sprintf("iteration%d", index))
-		counter.Add(context.Background(), int64(i), attribute.String("host.name", "myhost"))
+		gauge, _ := meter.Int64UpDownCounter(fmt.Sprintf("iteration%d", index))
+		gauge.Add(context.Background(), int64(i), attribute.String("host.name", "myhost"))
 		if err := limiter.Wait(context.Background()); err != nil {
 			w.logger.Fatal("limiter waited failed, retry", zap.Error(err))
 		}
