@@ -105,6 +105,9 @@ type Config struct {
 
 	// HecHealthCheckEnabled can be used to verify Splunk HEC health on exporter's startup
 	HecHealthCheckEnabled bool `mapstructure:"health_check_enabled"`
+
+	// ExportRaw to send only the log's body, targeting a Splunk HEC raw endpoint.
+	ExportRaw bool `mapstructure:"export_raw"`
 }
 
 func (cfg *Config) getURL() (out *url.URL, err error) {

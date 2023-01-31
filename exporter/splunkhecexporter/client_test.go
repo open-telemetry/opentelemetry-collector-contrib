@@ -664,6 +664,100 @@ func TestReceiveLogs(t *testing.T) {
 	}
 }
 
+func TestReceiveRaw(t *testing.T) {
+	tests := []struct {
+		name string
+		conf *Config
+		logs plog.Logs
+		text string
+	}{
+		{
+			name: "single raw event",
+			logs: createLogData(1, 1, 1),
+			conf: func() *Config {
+				conf := createDefaultConfig().(*Config)
+				conf.ExportRaw = true
+				return conf
+			}(),
+			text: "mylog\n",
+		},
+		{
+			name: "single raw event as bytes",
+			logs: func() plog.Logs {
+				logs := plog.NewLogs()
+				logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetEmptyBytes().FromRaw([]byte("mybytes"))
+				return logs
+			}(),
+			conf: func() *Config {
+				conf := createDefaultConfig().(*Config)
+				conf.ExportRaw = true
+				return conf
+			}(),
+			text: "bXlieXRlcw==\n",
+		},
+		{
+			name: "single raw event as number",
+			logs: func() plog.Logs {
+				logs := plog.NewLogs()
+				logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetDouble(64.345)
+				return logs
+			}(),
+			conf: func() *Config {
+				conf := createDefaultConfig().(*Config)
+				conf.ExportRaw = true
+				return conf
+			}(),
+			text: "64.345\n",
+		},
+		{
+			name: "five raw events",
+			logs: createLogData(1, 1, 5),
+			conf: func() *Config {
+				conf := createDefaultConfig().(*Config)
+				conf.ExportRaw = true
+				return conf
+			}(),
+			text: "mylog\nmylog\nmylog\nmylog\nmylog\n",
+		},
+		{
+			name: "log with array body",
+			logs: func() plog.Logs {
+				logs := plog.NewLogs()
+				_ = logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetEmptySlice().FromRaw([]any{1, "foo", true})
+				return logs
+			}(),
+			conf: func() *Config {
+				conf := createDefaultConfig().(*Config)
+				conf.ExportRaw = true
+				return conf
+			}(),
+			text: "[1,\"foo\",true]\n",
+		},
+		{
+			name: "log with map body",
+			logs: func() plog.Logs {
+				logs := plog.NewLogs()
+				logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetEmptyMap().PutStr("foo", "bar")
+				return logs
+			}(),
+			conf: func() *Config {
+				conf := createDefaultConfig().(*Config)
+				conf.ExportRaw = true
+				return conf
+			}(),
+			text: "{\"foo\":\"bar\"}\n",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := runLogExport(test.conf, test.logs, 1, t)
+			require.NoError(t, err)
+			req := got[0]
+			assert.Equal(t, test.text, string(req.body))
+		})
+	}
+}
+
 func TestReceiveMetrics(t *testing.T) {
 	md := createMetricsData(3)
 	cfg := NewFactory().CreateDefaultConfig().(*Config)
