@@ -27,8 +27,8 @@ import (
 type ErrorMode int
 
 const (
-	Drop ErrorMode = iota
-	Send
+	IgnoreError ErrorMode = iota
+	PropagateError
 )
 
 type Parser[K any] struct {
@@ -55,7 +55,7 @@ type Statement[K any] struct {
 func (s *Statement[K]) Execute(ctx context.Context, tCtx K) (any, bool, error) {
 	condition, err := s.condition.Eval(ctx, tCtx)
 	if err != nil {
-		if s.errorMode == Send {
+		if s.errorMode == PropagateError {
 			return nil, false, err
 		}
 		s.telemetrySettings.Logger.Error("error executing condition", zap.Error(err))
@@ -65,7 +65,7 @@ func (s *Statement[K]) Execute(ctx context.Context, tCtx K) (any, bool, error) {
 	if condition {
 		result, err = s.function.Eval(ctx, tCtx)
 		if err != nil {
-			if s.errorMode == Send {
+			if s.errorMode == PropagateError {
 				return nil, true, err
 			}
 			s.telemetrySettings.Logger.Error("error executing function", zap.Error(err))
@@ -132,7 +132,7 @@ func (p *Parser[K]) ParseStatements(statements []string) ([]*Statement[K], error
 		parsedStatements = append(parsedStatements, &Statement[K]{
 			function:          function,
 			condition:         expression,
-			errorMode:         Send,
+			errorMode:         PropagateError,
 			telemetrySettings: p.telemetrySettings,
 		})
 	}

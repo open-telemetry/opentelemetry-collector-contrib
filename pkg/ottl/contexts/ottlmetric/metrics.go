@@ -76,7 +76,7 @@ func NewParser(functions map[string]interface{}, telemetrySettings component.Tel
 		parsePath,
 		telemetrySettings,
 		ottl.WithEnumParser[TransformContext](parseEnum),
-		ottl.WithErrorMode[TransformContext](ottl.Send),
+		ottl.WithErrorMode[TransformContext](ottl.PropagateError),
 	)
 	for _, opt := range options {
 		opt(&p)

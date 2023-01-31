@@ -1323,53 +1323,53 @@ func Test_Execute_Error(t *testing.T) {
 		expectedError     error
 	}{
 		{
-			name: "Drop error from condition",
+			name: "IgnoreError error from condition",
 			condition: func(context.Context, interface{}) (bool, error) {
 				return true, fmt.Errorf("test")
 			},
 			function: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
 				return 1, nil
 			},
-			errorMode:         Drop,
+			errorMode:         IgnoreError,
 			expectedResult:    nil,
 			expectedCondition: false,
 			expectedError:     nil,
 		},
 		{
-			name: "Send error from condition",
+			name: "PropagateError error from condition",
 			condition: func(context.Context, interface{}) (bool, error) {
 				return true, fmt.Errorf("test")
 			},
 			function: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
 				return 1, nil
 			},
-			errorMode:         Send,
+			errorMode:         PropagateError,
 			expectedResult:    nil,
 			expectedCondition: false,
 			expectedError:     fmt.Errorf("test"),
 		},
 		{
-			name: "Drop error from function",
+			name: "IgnoreError error from function",
 			condition: func(context.Context, interface{}) (bool, error) {
 				return true, nil
 			},
 			function: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
 				return 1, fmt.Errorf("test")
 			},
-			errorMode:         Drop,
+			errorMode:         IgnoreError,
 			expectedResult:    nil,
 			expectedCondition: true,
 			expectedError:     nil,
 		},
 		{
-			name: "Send error from function",
+			name: "PropagateError error from function",
 			condition: func(context.Context, interface{}) (bool, error) {
 				return true, nil
 			},
 			function: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
 				return 1, fmt.Errorf("test")
 			},
-			errorMode:         Send,
+			errorMode:         PropagateError,
 			expectedResult:    nil,
 			expectedCondition: true,
 			expectedError:     fmt.Errorf("test"),
