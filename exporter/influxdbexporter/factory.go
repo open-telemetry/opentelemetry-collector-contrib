@@ -73,7 +73,6 @@ func createMetricsExporter(ctx context.Context, set exporter.CreateSettings, con
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithRetry(cfg.RetrySettings),
 		exporterhelper.WithStart(exporter.Start),
-		exporterhelper.WithShutdown(exporter.Shutdown),
 	)
 }
 
@@ -93,7 +92,6 @@ func createLogsExporter(ctx context.Context, set exporter.CreateSettings, config
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithRetry(cfg.RetrySettings),
 		exporterhelper.WithStart(exporter.Start),
-		exporterhelper.WithShutdown(exporter.Shutdown),
 	)
 }
 

@@ -2,10 +2,10 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
-component: influxdb
+component: influxdbexporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: update InfluxDB receiver and exporter
+note: update influxdb-observability and influxdbexporter, to better utilize InfluxDB/IOx
 
 # One or more tracking issues related to the change
 issues: [18080]

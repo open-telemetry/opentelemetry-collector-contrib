@@ -116,10 +116,6 @@ func (e *metricsExporter) Start(ctx context.Context, host component.Host) error 
 	return e.writer.Start(ctx, host)
 }
 
-func (e *metricsExporter) Shutdown(ctx context.Context) error {
-	return e.writer.Shutdown(ctx)
-}
-
 type logsExporter struct {
 	logger    common.Logger
 	writer    *influxHTTPWriter
@@ -152,8 +148,4 @@ func (e *logsExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 
 func (e *logsExporter) Start(ctx context.Context, host component.Host) error {
 	return e.writer.Start(ctx, host)
-}
-
-func (e *logsExporter) Shutdown(ctx context.Context) error {
-	return e.writer.Shutdown(ctx)
 }

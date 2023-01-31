@@ -120,10 +120,6 @@ func (w *influxHTTPWriter) Start(_ context.Context, host component.Host) error {
 	return nil
 }
 
-func (w *influxHTTPWriter) Shutdown(_ context.Context) error {
-	return nil
-}
-
 func (w *influxHTTPWriter) NewBatch() otel2influx.InfluxWriterBatch {
 	return newInfluxHTTPWriterBatch(w)
 }
