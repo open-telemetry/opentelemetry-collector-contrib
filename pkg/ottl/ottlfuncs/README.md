@@ -34,6 +34,7 @@ Available Functions:
 - [delete_matching_keys](#delete_matching_keys)
 - [keep_keys](#keep_keys)
 - [limit](#limit)
+- [log](#log)
 - [merge_maps](#merge_maps)
 - [replace_all_matches](#replace_all_matches)
 - [replace_all_patterns](#replace_all_patterns)
@@ -115,6 +116,29 @@ Examples:
 
 
 - `limit(resource.attributes, 50, ["http.host", "http.method"])`
+
+### Log
+
+`Log(value)`
+
+The `Log` factory function takes a logarithm of the value if it's numeric.
+
+The returned type is float64.
+
+The input `value` types:
+* float64, string, and Int64. Converts to a Float64 and returns `math.Log()` of the converted value
+* bool. Returns `nil` because log(1) is zero and log(0) is undefined so neither are useful.
+
+If `value` is another type or parsing failed nil is always returned.
+
+The `value` is either a path expression to a telemetry field to retrieve or a literal.
+
+Examples:
+
+- `Log(attributes["duration_ms"])`
+
+
+- `Int(Log(attributes["duration_ms"])`
 
 ### merge_maps
 
