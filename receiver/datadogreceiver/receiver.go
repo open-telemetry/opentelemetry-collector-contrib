@@ -25,7 +25,6 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/receiver"
-	"go.uber.org/zap"
 )
 
 type datadogReceiver struct {
@@ -35,7 +34,6 @@ type datadogReceiver struct {
 	server       *http.Server
 	shutdownWG   sync.WaitGroup
 	tReceiver    *obsreport.Receiver
-	logger       *zap.Logger
 
 	startOnce sync.Once
 	stopOnce  sync.Once
