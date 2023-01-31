@@ -43,6 +43,7 @@ func TestLoadConfig(t *testing.T) {
 
 	// Realm doesn't have a default value so set it directly.
 	defaultCfg := createDefaultConfig().(*Config)
+	defaultCfg.AccessToken = "testToken"
 	defaultCfg.Realm = "ap0"
 	defaultTranslationRules, err := loadDefaultTranslationRules()
 	require.NoError(t, err)
@@ -198,115 +199,28 @@ func TestLoadConfig(t *testing.T) {
 	}
 }
 
-func TestConfig_getOptionsFromConfig(t *testing.T) {
+func TestConfigGetMetricTranslator(t *testing.T) {
 	emptyTranslator := func() *translation.MetricTranslator {
 		translator, err := translation.NewMetricTranslator(nil, 3600)
 		require.NoError(t, err)
 		return translator
 	}
-	type fields struct {
-		AccessToken      configopaque.String
-		Realm            string
-		IngestURL        string
-		APIURL           string
-		Timeout          time.Duration
-		Headers          map[string]configopaque.String
-		TranslationRules []translation.Rule
-		SyncHostMetadata bool
-	}
 	tests := []struct {
 		name    string
-		fields  fields
-		want    *exporterOptions
+		cfg     *Config
+		want    *translation.MetricTranslator
 		wantErr bool
 	}{
 		{
-			name: "Test URL overrides",
-			fields: fields{
-				Realm:       "us0",
-				AccessToken: "access_token",
-				IngestURL:   "https://ingest.us1.signalfx.com/",
-				APIURL:      "https://api.us1.signalfx.com/",
+			name: "Test empty translator",
+			cfg: &Config{
+				DeltaTranslationTTL: 3600,
 			},
-			want: &exporterOptions{
-				ingestURL: &url.URL{
-					Scheme: "https",
-					Host:   "ingest.us1.signalfx.com",
-					Path:   "/",
-				},
-				apiURL: &url.URL{
-					Scheme: "https",
-					Host:   "api.us1.signalfx.com",
-					Path:   "/",
-				},
-				httpTimeout:      5 * time.Second,
-				token:            "access_token",
-				metricTranslator: emptyTranslator(),
-			},
-			wantErr: false,
-		},
-		{
-			name: "Test URL from Realm",
-			fields: fields{
-				Realm:       "us0",
-				AccessToken: "access_token",
-				Timeout:     10 * time.Second,
-			},
-			want: &exporterOptions{
-				ingestURL: &url.URL{
-					Scheme: "https",
-					Host:   "ingest.us0.signalfx.com",
-					Path:   "",
-				},
-				apiURL: &url.URL{
-					Scheme: "https",
-					Host:   "api.us0.signalfx.com",
-				},
-				httpTimeout:      10 * time.Second,
-				token:            "access_token",
-				metricTranslator: emptyTranslator(),
-			},
-			wantErr: false,
-		},
-		{
-			name: "Test empty realm and API URL",
-			fields: fields{
-				AccessToken: "access_token",
-				Timeout:     10 * time.Second,
-				IngestURL:   "https://ingest.us1.signalfx.com/",
-			},
-			want:    nil,
-			wantErr: true,
-		},
-		{
-			name: "Test empty realm and Ingest URL",
-			fields: fields{
-				AccessToken: "access_token",
-				Timeout:     10 * time.Second,
-				APIURL:      "https://api.us1.signalfx.com/",
-			},
-			want:    nil,
-			wantErr: true,
-		},
-		{
-			name: "Test invalid URLs",
-			fields: fields{
-				AccessToken: "access_token",
-				Timeout:     10 * time.Second,
-				APIURL:      "https://api us1 signalfx com/",
-				IngestURL:   "https://api us1 signalfx com/",
-			},
-			want:    nil,
-			wantErr: true,
-		},
-		{
-			name:    "Test empty config",
-			want:    nil,
-			wantErr: true,
+			want: emptyTranslator(),
 		},
 		{
 			name: "Test invalid translation rules",
-			fields: fields{
+			cfg: &Config{
 				Realm:       "us0",
 				AccessToken: "access_token",
 				TranslationRules: []translation.Rule{
@@ -314,33 +228,179 @@ func TestConfig_getOptionsFromConfig(t *testing.T) {
 						Action: translation.ActionRenameDimensionKeys,
 					},
 				},
+				DeltaTranslationTTL: 3600,
 			},
-			want:    nil,
 			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg := &Config{
-				AccessToken: tt.fields.AccessToken,
-				Realm:       tt.fields.Realm,
-				IngestURL:   tt.fields.IngestURL,
-				APIURL:      tt.fields.APIURL,
-				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Timeout: tt.fields.Timeout,
-					Headers: tt.fields.Headers,
-				},
-				TranslationRules:    tt.fields.TranslationRules,
-				SyncHostMetadata:    tt.fields.SyncHostMetadata,
-				DeltaTranslationTTL: 3600,
-			}
-
-			got, err := cfg.getOptionsFromConfig()
-			if (err != nil) != tt.wantErr {
-				t.Errorf("getOptionsFromConfig() error = %v, wantErr %v", err, tt.wantErr)
+			got, err := tt.cfg.getMetricTranslator()
+			if tt.wantErr {
+				assert.Error(t, err)
 				return
 			}
-			require.Equal(t, tt.want, got)
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestConfigGetIngestURL(t *testing.T) {
+	tests := []struct {
+		name    string
+		cfg     *Config
+		want    *url.URL
+		wantErr bool
+	}{
+		{
+			name: "Test URL from Realm",
+			cfg: &Config{
+				Realm: "us0",
+			},
+			want: &url.URL{
+				Scheme: "https",
+				Host:   "ingest.us0.signalfx.com",
+				Path:   "",
+			},
+		},
+		{
+			name: "Test URL overrides",
+			cfg: &Config{
+				Realm:     "us0",
+				IngestURL: "https://ingest.us1.signalfx.com/",
+			},
+			want: &url.URL{
+				Scheme: "https",
+				Host:   "ingest.us1.signalfx.com",
+				Path:   "/",
+			},
+		},
+		{
+			name: "Test invalid URL",
+			cfg: &Config{
+				IngestURL: "https://api us1 signalfx com/",
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.cfg.getIngestURL()
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestConfigGetAPIURL(t *testing.T) {
+	tests := []struct {
+		name    string
+		cfg     *Config
+		want    *url.URL
+		wantErr bool
+	}{
+		{
+			name: "Test URL from Realm",
+			cfg: &Config{
+				Realm: "us0",
+			},
+			want: &url.URL{
+				Scheme: "https",
+				Host:   "api.us0.signalfx.com",
+			},
+		},
+		{
+			name: "Test URL overrides",
+			cfg: &Config{
+				Realm:  "us0",
+				APIURL: "https://api.us1.signalfx.com/",
+			},
+			want: &url.URL{
+				Scheme: "https",
+				Host:   "api.us1.signalfx.com",
+				Path:   "/",
+			},
+		},
+		{
+			name: "Test invalid URL",
+			cfg: &Config{
+				APIURL: "https://api us1 signalfx com/",
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.cfg.getAPIURL()
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestConfigValidateErrors(t *testing.T) {
+	tests := []struct {
+		name string
+		cfg  *Config
+	}{
+		{
+			name: "Test empty config",
+			cfg:  &Config{},
+		},
+		{
+			name: "Test empty realm and API URL",
+			cfg: &Config{
+				AccessToken: "access_token",
+				IngestURL:   "https://ingest.us1.signalfx.com/",
+			},
+		},
+		{
+			name: "Test empty realm and Ingest URL",
+			cfg: &Config{
+				AccessToken: "access_token",
+				APIURL:      "https://api.us1.signalfx.com/",
+			},
+		},
+		{
+			name: "Negative MaxConnections",
+			cfg: &Config{
+				Realm:          "us0",
+				AccessToken:    "access_token",
+				MaxConnections: -1,
+			},
+		},
+		{
+			name: "Negative Timeout",
+			cfg: &Config{
+				Realm:              "us0",
+				AccessToken:        "access_token",
+				HTTPClientSettings: confighttp.HTTPClientSettings{Timeout: -1 * time.Second},
+			},
+		},
+		{
+			name: "Negative QueueSize",
+			cfg: &Config{
+				Realm:       "us0",
+				AccessToken: "access_token",
+				QueueSettings: exporterhelper.QueueSettings{
+					Enabled:   true,
+					QueueSize: -1,
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Error(t, component.ValidateConfig(tt.cfg))
 		})
 	}
 }
