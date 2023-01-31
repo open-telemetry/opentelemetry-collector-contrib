@@ -194,14 +194,21 @@ func (c *client) pushLogRecords(ctx context.Context, lds plog.ResourceLogsSlice,
 		if state.bufFront == nil {
 			state.bufFront = &index{resource: state.resource, library: state.library, record: k}
 		}
+		var b []byte
 
-		// Parsing log record to Splunk event.
-		event := mapLogRecordToSplunkEvent(res.Resource(), logs.At(k), c.config)
-		// JSON encoding event and writing to buffer.
-		b, err := jsoniter.Marshal(event)
-		if err != nil {
-			permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf("dropped log event: %v, error: %w", event, err)))
-			continue
+		if c.config.ExportRaw {
+			b = []byte(logs.At(k).Body().AsString() + "\n")
+		} else {
+			// Parsing log record to Splunk event.
+			event := mapLogRecordToSplunkEvent(res.Resource(), logs.At(k), c.config)
+			// JSON encoding event and writing to buffer.
+			var err error
+			b, err = jsoniter.Marshal(event)
+			if err != nil {
+				permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf("dropped log event: %v, error: %w", event, err)))
+				continue
+			}
+
 		}
 
 		// Continue adding events to buffer up to capacity.
@@ -216,7 +223,7 @@ func (c *client) pushLogRecords(ctx context.Context, lds plog.ResourceLogsSlice,
 		}
 
 		if state.buf.Len() > 0 {
-			if err = c.postEvents(ctx, state, headers); err != nil {
+			if err := c.postEvents(ctx, state, headers); err != nil {
 				return permanentErrors, err
 			}
 		}
