@@ -25,8 +25,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
-func hello[K any]() (ExprFunc[K], error) {
-	return func(ctx context.Context, tCtx K) (interface{}, error) {
+func hello() (ExprFunc[any], error) {
+	return func(ctx context.Context, tCtx any) (any, error) {
 		return "world", nil
 	}, nil
 }
@@ -289,7 +289,7 @@ func Test_newGetter(t *testing.T) {
 		},
 	}
 
-	functions := map[string]interface{}{"Hello": hello[interface{}]}
+	functions := CreateFactoryMap(createFactory("Hello", &struct{}{}, hello))
 
 	p, _ := NewParser[any](
 		functions,

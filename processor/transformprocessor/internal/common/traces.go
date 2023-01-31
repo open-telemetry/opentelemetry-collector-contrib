@@ -100,7 +100,7 @@ type TraceParserCollection struct {
 
 type TraceParserCollectionOption func(*TraceParserCollection) error
 
-func WithSpanParser(functions map[string]interface{}) TraceParserCollectionOption {
+func WithSpanParser(functions map[string]ottl.Factory[ottlspan.TransformContext]) TraceParserCollectionOption {
 	return func(tp *TraceParserCollection) error {
 		spanParser, err := ottlspan.NewParser(functions, tp.settings)
 		if err != nil {
@@ -111,7 +111,7 @@ func WithSpanParser(functions map[string]interface{}) TraceParserCollectionOptio
 	}
 }
 
-func WithSpanEventParser(functions map[string]interface{}) TraceParserCollectionOption {
+func WithSpanEventParser(functions map[string]ottl.Factory[ottlspanevent.TransformContext]) TraceParserCollectionOption {
 	return func(tp *TraceParserCollection) error {
 		spanEventParser, err := ottlspanevent.NewParser(functions, tp.settings)
 		if err != nil {
