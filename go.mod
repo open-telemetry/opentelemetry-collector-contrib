@@ -98,6 +98,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudfoundryreceiver v0.70.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver v0.70.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver v0.70.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver v0.70.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.70.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver v0.70.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver v0.70.0
@@ -143,7 +144,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/riakreceiver v0.70.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver v0.70.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver v0.70.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver v0.70.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver v0.70.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver v0.70.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver v0.70.0
@@ -226,6 +227,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/quantile v0.43.0-rc.1.0.20230127122216-3a2af8455772 // indirect
 	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.43.0-rc.1.0.20230127122216-3a2af8455772 // indirect
 	github.com/DataDog/datadog-agent/pkg/trace v0.43.0-rc.1.0.20230127122216-3a2af8455772 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.43.0-rc.1.0.20230127122216-3a2af8455772 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/log v0.43.0-rc.1.0.20230127122216-3a2af8455772 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/pointer v0.43.0-rc.1 // indirect
@@ -892,6 +894,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloud
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver => ./receiver/collectdreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver => ./receiver/couchdbreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver => ./receiver/datadogreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver => ./receiver/flinkmetricsreceiver
 
