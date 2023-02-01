@@ -16,11 +16,11 @@ package ottl
 
 import (
 	"context"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
