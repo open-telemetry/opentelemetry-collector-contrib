@@ -19,6 +19,7 @@ import (
 	"strings"
 	"testing"
 
+	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/stretchr/testify/require"
@@ -40,17 +41,11 @@ func TestPodAndContainerMetricsReportCPUMetrics(t *testing.T) {
 		podSpecWithContainer("container-name"),
 		podStatusWithContainer("container-name", containerIDWithPreifx("container-id")),
 	)
-	dc := NewDataCollector(zap.NewNop(), []string{}, []string{})
 
-	dc.SyncMetrics(pod)
-	actualResourceMetrics := dc.metricsStore.metricsCache
+	actualResourceMetrics := getMetricsForPod(pod, zap.NewNop())
 
-	rms := actualResourceMetrics["test-pod-1-uid"]
-	require.NotNil(t, rms)
-
-	rm := rms[0]
-	require.Equal(t, 1, len(rm.Metrics))
-	testutils.AssertResource(t, rm.Resource, k8sType,
+	require.Len(t, actualResourceMetrics, 2)
+	testutils.AssertResource(t, actualResourceMetrics[0].Resource, k8sType,
 		map[string]string{
 			"k8s.pod.uid":        "test-pod-1-uid",
 			"k8s.pod.name":       "test-pod-1",
@@ -59,13 +54,12 @@ func TestPodAndContainerMetricsReportCPUMetrics(t *testing.T) {
 		},
 	)
 
-	testutils.AssertMetricsInt(t, rm.Metrics[0], "k8s.pod.phase",
+	require.Len(t, actualResourceMetrics[0].Metrics, 1)
+	testutils.AssertMetricsInt(t, actualResourceMetrics[0].Metrics[0], "k8s.pod.phase",
 		metricspb.MetricDescriptor_GAUGE_INT64, 3)
 
-	rm = rms[1]
-
-	require.Equal(t, 4, len(rm.Metrics))
-	testutils.AssertResource(t, rm.Resource, "container",
+	require.Len(t, actualResourceMetrics[1].Metrics, 4)
+	testutils.AssertResource(t, actualResourceMetrics[1].Resource, "container",
 		map[string]string{
 			"container.id":         "container-id",
 			"k8s.container.name":   "container-name",
@@ -78,16 +72,16 @@ func TestPodAndContainerMetricsReportCPUMetrics(t *testing.T) {
 		},
 	)
 
-	testutils.AssertMetricsInt(t, rm.Metrics[0], "k8s.container.restarts",
+	testutils.AssertMetricsInt(t, actualResourceMetrics[1].Metrics[0], "k8s.container.restarts",
 		metricspb.MetricDescriptor_GAUGE_INT64, 3)
 
-	testutils.AssertMetricsInt(t, rm.Metrics[1], "k8s.container.ready",
+	testutils.AssertMetricsInt(t, actualResourceMetrics[1].Metrics[1], "k8s.container.ready",
 		metricspb.MetricDescriptor_GAUGE_INT64, 1)
 
-	testutils.AssertMetricsDouble(t, rm.Metrics[2], "k8s.container.cpu_request",
+	testutils.AssertMetricsDouble(t, actualResourceMetrics[1].Metrics[2], "k8s.container.cpu_request",
 		metricspb.MetricDescriptor_GAUGE_DOUBLE, 10.0)
 
-	testutils.AssertMetricsDouble(t, rm.Metrics[3], "k8s.container.cpu_limit",
+	testutils.AssertMetricsDouble(t, actualResourceMetrics[1].Metrics[3], "k8s.container.cpu_limit",
 		metricspb.MetricDescriptor_GAUGE_DOUBLE, 20.0)
 }
 
@@ -150,17 +144,17 @@ var containerIDWithPreifx = func(containerID string) string {
 }
 
 func TestListResourceMetrics(t *testing.T) {
-	rms := map[string]*resourceMetrics{
-		"resource-1": {resource: &resourcepb.Resource{Type: "type-1"}},
-		"resource-2": {resource: &resourcepb.Resource{Type: "type-2"}},
-		"resource-3": {resource: &resourcepb.Resource{Type: "type-1"}},
+	rms := map[string]*agentmetricspb.ExportMetricsServiceRequest{
+		"resource-1": {Resource: &resourcepb.Resource{Type: "type-1"}},
+		"resource-2": {Resource: &resourcepb.Resource{Type: "type-2"}},
+		"resource-3": {Resource: &resourcepb.Resource{Type: "type-1"}},
 	}
 
 	actual := listResourceMetrics(rms)
-	expected := []*resourceMetrics{
-		{resource: &resourcepb.Resource{Type: "type-1"}},
-		{resource: &resourcepb.Resource{Type: "type-2"}},
-		{resource: &resourcepb.Resource{Type: "type-1"}},
+	expected := []*agentmetricspb.ExportMetricsServiceRequest{
+		{Resource: &resourcepb.Resource{Type: "type-1"}},
+		{Resource: &resourcepb.Resource{Type: "type-2"}},
+		{Resource: &resourcepb.Resource{Type: "type-1"}},
 	}
 
 	require.ElementsMatch(t, expected, actual)

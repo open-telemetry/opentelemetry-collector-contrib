@@ -43,7 +43,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-	assert.Equal(t, sanitize(cfg.(*Config)),
+	assert.Equal(t,
 		&Config{
 			TimeoutSettings: exporterhelper.TimeoutSettings{
 				Timeout: 20 * time.Second,
@@ -51,6 +51,9 @@ func TestLoadConfig(t *testing.T) {
 			Config: collector.Config{
 				ProjectID: "my-project",
 				UserAgent: "opentelemetry-collector-contrib {{version}}",
+				LogConfig: collector.LogConfig{
+					ServiceResourceLabels: true,
+				},
 				MetricConfig: collector.MetricConfig{
 					Prefix:                           "prefix",
 					SkipCreateMetricDescriptor:       true,
@@ -81,7 +84,8 @@ func TestLoadConfig(t *testing.T) {
 				NumConsumers: 2,
 				QueueSize:    10,
 			},
-		})
+		},
+		sanitize(cfg.(*Config)))
 }
 
 func sanitize(cfg *Config) *Config {
