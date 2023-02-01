@@ -27,7 +27,7 @@ require (
 	cloud.google.com/go/monitoring v1.9.1 // indirect
 	cloud.google.com/go/pubsub v1.28.0 // indirect
 	cloud.google.com/go/spanner v1.43.0 // indirect
-	cloud.google.com/go/trace v1.4.0 // indirect
+	cloud.google.com/go/trace v1.8.0 // indirect
 	code.cloudfoundry.org/clock v1.0.0 // indirect
 	code.cloudfoundry.org/go-diodes v0.0.0-20211115184647-b584dd5df32c // indirect
 	code.cloudfoundry.org/go-loggregator v7.4.0+incompatible // indirect
@@ -77,11 +77,11 @@ require (
 	github.com/DataDog/sketches-go v1.4.1 // indirect
 	github.com/DataDog/zstd v1.5.2 // indirect
 	github.com/GehirnInc/crypt v0.0.0-20200316065508-bb7000b8a962 // indirect
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v0.34.3-0.20221202192616-0186b89ba914 // indirect
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector v0.34.3-0.20221202192616-0186b89ba914 // indirect
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector/googlemanagedprometheus v0.34.3-0.20221202192616-0186b89ba914 // indirect
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.10.2 // indirect
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.34.3-0.20221202192616-0186b89ba914 // indirect
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.11.0 // indirect
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector v0.35.0 // indirect
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector/googlemanagedprometheus v0.35.0 // indirect
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.11.0 // indirect
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.35.0 // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/semver/v3 v3.2.0 // indirect
 	github.com/Masterminds/sprig/v3 v3.2.3 // indirect
@@ -669,7 +669,7 @@ require (
 	gonum.org/v1/gonum v0.12.0 // indirect
 	google.golang.org/api v0.108.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto v0.0.0-20230110181048-76db0878b65f // indirect
+	google.golang.org/genproto v0.0.0-20230125152338-dcaf20b6aeaa // indirect
 	google.golang.org/grpc v1.52.3 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/fsnotify/fsnotify.v1 v1.4.7 // indirect
