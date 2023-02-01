@@ -1314,13 +1314,10 @@ func Test_Execute(t *testing.T) {
 
 func Test_Execute_Error(t *testing.T) {
 	tests := []struct {
-		name              string
-		condition         boolExpressionEvaluator[interface{}]
-		function          ExprFunc[interface{}]
-		errorMode         ErrorMode
-		expectedResult    interface{}
-		expectedCondition bool
-		expectedError     error
+		name      string
+		condition boolExpressionEvaluator[interface{}]
+		function  ExprFunc[interface{}]
+		errorMode ErrorMode
 	}{
 		{
 			name: "IgnoreError error from condition",
@@ -1330,10 +1327,7 @@ func Test_Execute_Error(t *testing.T) {
 			function: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
 				return 1, nil
 			},
-			errorMode:         IgnoreError,
-			expectedResult:    nil,
-			expectedCondition: false,
-			expectedError:     nil,
+			errorMode: IgnoreError,
 		},
 		{
 			name: "PropagateError error from condition",
@@ -1343,10 +1337,7 @@ func Test_Execute_Error(t *testing.T) {
 			function: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
 				return 1, nil
 			},
-			errorMode:         PropagateError,
-			expectedResult:    nil,
-			expectedCondition: false,
-			expectedError:     fmt.Errorf("test"),
+			errorMode: PropagateError,
 		},
 		{
 			name: "IgnoreError error from function",
@@ -1356,10 +1347,7 @@ func Test_Execute_Error(t *testing.T) {
 			function: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
 				return 1, fmt.Errorf("test")
 			},
-			errorMode:         IgnoreError,
-			expectedResult:    nil,
-			expectedCondition: true,
-			expectedError:     nil,
+			errorMode: IgnoreError,
 		},
 		{
 			name: "PropagateError error from function",
@@ -1369,25 +1357,28 @@ func Test_Execute_Error(t *testing.T) {
 			function: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
 				return 1, fmt.Errorf("test")
 			},
-			errorMode:         PropagateError,
-			expectedResult:    nil,
-			expectedCondition: true,
-			expectedError:     fmt.Errorf("test"),
+			errorMode: PropagateError,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			statement := Statement[interface{}]{
-				condition:         BoolExpr[any]{tt.condition},
-				function:          Expr[any]{exprFunc: tt.function},
+			statements := Statements[interface{}]{
+				statements: []Statement[interface{}]{
+					{
+						condition: BoolExpr[any]{tt.condition},
+						function:  Expr[any]{exprFunc: tt.function},
+					},
+				},
 				errorMode:         tt.errorMode,
 				telemetrySettings: componenttest.NewNopTelemetrySettings(),
 			}
 
-			result, condition, err := statement.Execute(context.Background(), nil)
-			assert.Equal(t, tt.expectedResult, result)
-			assert.Equal(t, tt.expectedCondition, condition)
-			assert.Equal(t, tt.expectedError, err)
+			err := statements.Execute(context.Background(), nil)
+			if tt.errorMode == PropagateError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
 		})
 	}
 }

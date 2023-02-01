@@ -42,10 +42,8 @@ type Parser[K any] struct {
 // Statement holds a top level Statement for processing telemetry data. A Statement is a combination of a function
 // invocation and the boolean expression to match telemetry for invoking the function.
 type Statement[K any] struct {
-	function          Expr[K]
-	condition         BoolExpr[K]
-	errorMode         ErrorMode
-	telemetrySettings component.TelemetrySettings
+	function  Expr[K]
+	condition BoolExpr[K]
 }
 
 // Execute is a function that will execute the statement's function if the statement's condition is met.
@@ -55,21 +53,13 @@ type Statement[K any] struct {
 func (s *Statement[K]) Execute(ctx context.Context, tCtx K) (any, bool, error) {
 	condition, err := s.condition.Eval(ctx, tCtx)
 	if err != nil {
-		if s.errorMode == PropagateError {
-			return nil, false, err
-		}
-		s.telemetrySettings.Logger.Error("error executing condition", zap.Error(err))
-		return nil, false, nil
+		return nil, false, err
 	}
 	var result any
 	if condition {
 		result, err = s.function.Eval(ctx, tCtx)
 		if err != nil {
-			if s.errorMode == PropagateError {
-				return nil, true, err
-			}
-			s.telemetrySettings.Logger.Error("error executing function", zap.Error(err))
-			return nil, true, nil
+			return nil, true, err
 		}
 	}
 	return result, condition, nil
@@ -130,10 +120,8 @@ func (p *Parser[K]) ParseStatements(statements []string) ([]*Statement[K], error
 			continue
 		}
 		parsedStatements = append(parsedStatements, &Statement[K]{
-			function:          function,
-			condition:         expression,
-			errorMode:         PropagateError,
-			telemetrySettings: p.telemetrySettings,
+			function:  function,
+			condition: expression,
 		})
 	}
 
@@ -173,4 +161,26 @@ func newParser[G any]() *participle.Parser[G] {
 		panic("Unable to initialize parser; this is a programming error in the transformprocessor:" + err.Error())
 	}
 	return parser
+}
+
+// Statements represents a list of statements that will be executed sequentially for a TransformContext.
+type Statements[K any] struct {
+	statements        []Statement[K]
+	errorMode         ErrorMode
+	telemetrySettings component.TelemetrySettings
+}
+
+// Execute is a function that will execute all the statements in the Statements list.
+func (s *Statements[K]) Execute(ctx context.Context, tCtx K) error {
+	for _, statement := range s.statements {
+		_, _, err := statement.Execute(ctx, tCtx)
+		if err != nil {
+			if s.errorMode == PropagateError {
+				err = fmt.Errorf("failed to execute statement: %w", err)
+				return err
+			}
+			s.telemetrySettings.Logger.Error("failed to execute statement", zap.Error(err))
+		}
+	}
+	return nil
 }
