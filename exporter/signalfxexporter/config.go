@@ -18,13 +18,13 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"time"
 
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"gopkg.in/yaml.v3"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/correlation"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
@@ -34,6 +34,7 @@ import (
 
 const (
 	translationRulesConfigKey = "translation_rules"
+	excludeMetricsConfigKey   = "exclude_metrics"
 )
 
 var _ confmap.Unmarshaler = (*Config)(nil)
@@ -151,27 +152,26 @@ func (cfg *Config) getAPIURL() (*url.URL, error) {
 	return apiURL, nil
 }
 
-func (cfg *Config) Unmarshal(componentParser *confmap.Conf) (err error) {
+func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 	if componentParser == nil {
 		// Nothing to do if there is no config given.
 		return nil
 	}
 
-	if err = componentParser.Unmarshal(cfg); err != nil {
+	if err := componentParser.Unmarshal(cfg); err != nil {
 		return err
 	}
 
-	// If translations_config is not set in the config, set it to the defaults and return.
+	// If translations_config is not set in the config, set it to the default.
 	if !componentParser.IsSet(translationRulesConfigKey) {
+		var err error
 		cfg.TranslationRules, err = loadDefaultTranslationRules()
-		return err
+		if err != nil {
+			return err
+		}
 	}
 
-	if cfg.HTTPClientSettings.Timeout == 0 {
-		cfg.HTTPClientSettings.Timeout = 5 * time.Second
-	}
-
-	return nil
+	return setDefaultExcludes(cfg)
 }
 
 // Validate checks if the exporter configuration is valid.
@@ -194,4 +194,36 @@ func (cfg *Config) Validate() error {
 	}
 
 	return nil
+}
+
+func setDefaultExcludes(cfg *Config) error {
+	exCfg, err := loadConfig([]byte(translation.DefaultExcludeMetricsYaml))
+	if err != nil {
+		return err
+	}
+
+	// If ExcludeMetrics is not set to empty, append defaults.
+	if cfg.ExcludeMetrics == nil || len(cfg.ExcludeMetrics) > 0 {
+		cfg.ExcludeMetrics = append(cfg.ExcludeMetrics, exCfg.ExcludeMetrics...)
+	}
+	return nil
+}
+
+func loadDefaultTranslationRules() ([]translation.Rule, error) {
+	cfg, err := loadConfig([]byte(translation.DefaultTranslationRulesYaml))
+	return cfg.TranslationRules, err
+}
+
+func loadConfig(bytes []byte) (Config, error) {
+	var cfg Config
+	var data map[string]interface{}
+	if err := yaml.Unmarshal(bytes, &data); err != nil {
+		return cfg, err
+	}
+
+	if err := confmap.NewFromStringMap(data).Unmarshal(&cfg, confmap.WithErrorUnused()); err != nil {
+		return cfg, fmt.Errorf("failed to load default exclude metrics: %w", err)
+	}
+
+	return cfg, nil
 }

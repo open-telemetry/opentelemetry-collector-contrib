@@ -35,7 +35,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation/dpfilters"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -220,55 +219,6 @@ func requireDimension(t *testing.T, dims []*sfxpb.Dimension, key, val string) {
 		require.Equal(t, val, dim.Value)
 	}
 	require.True(t, found, `missing dimension: %s`, key)
-}
-
-func TestCreateMetricsExporterWithDefaultExcludeMetrics(t *testing.T) {
-	config := &Config{
-		AccessToken: "testToken",
-		Realm:       "us1",
-	}
-
-	te, err := createMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), config)
-	require.NoError(t, err)
-	require.NotNil(t, te)
-
-	// Validate that default excludes are always loaded.
-	assert.Equal(t, 12, len(config.ExcludeMetrics))
-}
-
-func TestCreateMetricsExporterWithExcludeMetrics(t *testing.T) {
-	config := &Config{
-		AccessToken: "testToken",
-		Realm:       "us1",
-		ExcludeMetrics: []dpfilters.MetricFilter{
-			{
-				MetricNames: []string{"metric1"},
-			},
-		},
-	}
-
-	te, err := createMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), config)
-	require.NoError(t, err)
-	require.NotNil(t, te)
-
-	// Validate that default excludes are always loaded.
-	assert.Equal(t, 13, len(config.ExcludeMetrics))
-}
-
-func TestCreateMetricsExporterWithEmptyExcludeMetrics(t *testing.T) {
-	config := &Config{
-		AccessToken:    "testToken",
-		Realm:          "us1",
-		ExcludeMetrics: []dpfilters.MetricFilter{},
-	}
-
-	te, err := createMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), config)
-	require.NoError(t, err)
-	require.NotNil(t, te)
-
-	// Validate that default excludes are overridden when exclude metrics
-	// is explicitly set to an empty slice.
-	assert.Equal(t, 0, len(config.ExcludeMetrics))
 }
 
 func testMetricsData() pmetric.Metrics {
@@ -596,7 +546,7 @@ func TestHostmetricsCPUTranslations(t *testing.T) {
 	require.Equal(t, 590, int(*cpuIdle[0].Value.IntValue))
 }
 
-func TestDefaultExcludes_translated(t *testing.T) {
+func TestDefaultExcludesTranslated(t *testing.T) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
 	require.NoError(t, setDefaultExcludes(cfg))
