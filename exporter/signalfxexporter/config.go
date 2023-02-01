@@ -18,13 +18,13 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"time"
 
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"gopkg.in/yaml.v3"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/correlation"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
@@ -34,6 +34,7 @@ import (
 
 const (
 	translationRulesConfigKey = "translation_rules"
+	excludeMetricsConfigKey   = "exclude_metrics"
 )
 
 var _ confmap.Unmarshaler = (*Config)(nil)
@@ -116,44 +117,65 @@ type Config struct {
 	MaxConnections int `mapstructure:"max_connections"`
 }
 
-func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {
-	if err := cfg.validateConfig(); err != nil {
-		return nil, err
-	}
-
-	ingestURL, err := cfg.getIngestURL()
-	if err != nil {
-		return nil, fmt.Errorf("invalid \"ingest_url\": %w", err)
-	}
-
-	apiURL, err := cfg.getAPIURL()
-	if err != nil {
-		return nil, fmt.Errorf("invalid \"api_url\": %w", err)
-	}
-
-	if cfg.HTTPClientSettings.Timeout == 0 {
-		cfg.HTTPClientSettings.Timeout = 5 * time.Second
-	}
-
+func (cfg *Config) getMetricTranslator() (*translation.MetricTranslator, error) {
 	metricTranslator, err := translation.NewMetricTranslator(cfg.TranslationRules, cfg.DeltaTranslationTTL)
 	if err != nil {
 		return nil, fmt.Errorf("invalid \"%s\": %w", translationRulesConfigKey, err)
 	}
 
-	return &exporterOptions{
-		ingestURL:         ingestURL,
-		ingestTLSSettings: cfg.IngestTLSSettings,
-		apiURL:            apiURL,
-		apiTLSSettings:    cfg.APITLSSettings,
-		httpTimeout:       cfg.HTTPClientSettings.Timeout,
-		token:             cfg.AccessToken,
-		logDataPoints:     cfg.LogDataPoints,
-		logDimUpdate:      cfg.LogDimensionUpdates,
-		metricTranslator:  metricTranslator,
-	}, nil
+	return metricTranslator, nil
 }
 
-func (cfg *Config) validateConfig() error {
+func (cfg *Config) getIngestURL() (*url.URL, error) {
+	strURL := cfg.IngestURL
+	if cfg.IngestURL == "" {
+		strURL = fmt.Sprintf("https://ingest.%s.signalfx.com", cfg.Realm)
+	}
+
+	ingestURL, err := url.Parse(strURL)
+	if err != nil {
+		return nil, fmt.Errorf("invalid \"ingest_url\": %w", err)
+	}
+	return ingestURL, nil
+}
+
+func (cfg *Config) getAPIURL() (*url.URL, error) {
+	strURL := cfg.APIURL
+	if cfg.APIURL == "" {
+		strURL = fmt.Sprintf("https://api.%s.signalfx.com", cfg.Realm)
+	}
+
+	apiURL, err := url.Parse(strURL)
+	if err != nil {
+		return nil, fmt.Errorf("invalid \"api_url\": %w", err)
+	}
+	return apiURL, nil
+}
+
+func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
+	if componentParser == nil {
+		// Nothing to do if there is no config given.
+		return nil
+	}
+
+	if err := componentParser.Unmarshal(cfg); err != nil {
+		return err
+	}
+
+	// If translations_config is not set in the config, set it to the default.
+	if !componentParser.IsSet(translationRulesConfigKey) {
+		var err error
+		cfg.TranslationRules, err = loadDefaultTranslationRules()
+		if err != nil {
+			return err
+		}
+	}
+
+	return setDefaultExcludes(cfg)
+}
+
+// Validate checks if the exporter configuration is valid.
+func (cfg *Config) Validate() error {
 	if cfg.AccessToken == "" {
 		return errors.New(`requires a non-empty "access_token"`)
 	}
@@ -174,48 +196,34 @@ func (cfg *Config) validateConfig() error {
 	return nil
 }
 
-func (cfg *Config) getIngestURL() (*url.URL, error) {
-	if cfg.IngestURL != "" {
-		// Ignore realm and use the IngestURL. Typically used for debugging.
-		return url.Parse(cfg.IngestURL)
-	}
-
-	return url.Parse(fmt.Sprintf("https://ingest.%s.signalfx.com", cfg.Realm))
-}
-
-func (cfg *Config) getAPIURL() (*url.URL, error) {
-	if cfg.APIURL != "" {
-		// Ignore realm and use the APIURL. Typically used for debugging.
-		return url.Parse(cfg.APIURL)
-	}
-
-	return url.Parse(fmt.Sprintf("https://api.%s.signalfx.com", cfg.Realm))
-}
-
-func (cfg *Config) Unmarshal(componentParser *confmap.Conf) (err error) {
-	if componentParser == nil {
-		// Nothing to do if there is no config given.
-		return nil
-	}
-
-	if err = componentParser.Unmarshal(cfg); err != nil {
+func setDefaultExcludes(cfg *Config) error {
+	exCfg, err := loadConfig([]byte(translation.DefaultExcludeMetricsYaml))
+	if err != nil {
 		return err
 	}
 
-	// If translations_config is not set in the config, set it to the defaults and return.
-	if !componentParser.IsSet(translationRulesConfigKey) {
-		cfg.TranslationRules, err = loadDefaultTranslationRules()
-		return err
+	// If ExcludeMetrics is not set to empty, append defaults.
+	if cfg.ExcludeMetrics == nil || len(cfg.ExcludeMetrics) > 0 {
+		cfg.ExcludeMetrics = append(cfg.ExcludeMetrics, exCfg.ExcludeMetrics...)
 	}
-
 	return nil
 }
 
-// Validate checks if the exporter configuration is valid.
-// TODO: Move other validations here.
-func (cfg *Config) Validate() error {
-	if err := cfg.QueueSettings.Validate(); err != nil {
-		return fmt.Errorf("sending_queue settings has invalid configuration: %w", err)
+func loadDefaultTranslationRules() ([]translation.Rule, error) {
+	cfg, err := loadConfig([]byte(translation.DefaultTranslationRulesYaml))
+	return cfg.TranslationRules, err
+}
+
+func loadConfig(bytes []byte) (Config, error) {
+	var cfg Config
+	var data map[string]interface{}
+	if err := yaml.Unmarshal(bytes, &data); err != nil {
+		return cfg, err
 	}
-	return nil
+
+	if err := confmap.NewFromStringMap(data).Unmarshal(&cfg, confmap.WithErrorUnused()); err != nil {
+		return cfg, fmt.Errorf("failed to load default exclude metrics: %w", err)
+	}
+
+	return cfg, nil
 }

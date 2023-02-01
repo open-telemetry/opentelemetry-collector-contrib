@@ -208,15 +208,15 @@ require (
 	github.com/ClickHouse/ch-go v0.50.0 // indirect
 	github.com/ClickHouse/clickhouse-go/v2 v2.4.3 // indirect
 	github.com/DataDog/agent-payload/v5 v5.0.67 // indirect
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.43.0-rc.1.0.20230127122216-3a2af8455772 // indirect
-	github.com/DataDog/datadog-agent/pkg/otlp/model v0.43.0-rc.1.0.20230127122216-3a2af8455772 // indirect
-	github.com/DataDog/datadog-agent/pkg/quantile v0.43.0-rc.1.0.20230127122216-3a2af8455772 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.43.0-rc.1.0.20230127122216-3a2af8455772 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace v0.43.0-rc.1.0.20230127122216-3a2af8455772 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.43.0-rc.1.0.20230127122216-3a2af8455772 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.43.0-rc.1.0.20230127122216-3a2af8455772 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/pointer v0.43.0-rc.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.43.0-rc.1.0.20230127122216-3a2af8455772 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.43.0-rc.3.0.20230131195109-a19e987f5062 // indirect
+	github.com/DataDog/datadog-agent/pkg/otlp/model v0.43.0-rc.3.0.20230131195109-a19e987f5062 // indirect
+	github.com/DataDog/datadog-agent/pkg/quantile v0.43.0-rc.3.0.20230131195109-a19e987f5062 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.43.0-rc.3.0.20230131195109-a19e987f5062 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace v0.43.0-rc.3.0.20230131195109-a19e987f5062 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.43.0-rc.3.0.20230131195109-a19e987f5062 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.43.0-rc.3.0.20230131195109-a19e987f5062 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/pointer v0.43.0-rc.3 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.43.0-rc.3.0.20230131195109-a19e987f5062 // indirect
 	github.com/DataDog/datadog-api-client-go/v2 v2.7.0 // indirect
 	github.com/DataDog/datadog-go/v5 v5.1.1 // indirect
 	github.com/DataDog/go-tuf v0.3.0--fix-localmeta-fork // indirect
@@ -361,6 +361,7 @@ require (
 	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/gosnmp/gosnmp v1.35.0 // indirect
+	github.com/grafana/loki/pkg/push v0.0.0-20230127072203-4e8cc8d71928 // indirect
 	github.com/grafana/regexp v0.0.0-20221122212121-6b5c0a4cb7fd // indirect
 	github.com/grobie/gomemcache v0.0.0-20180201122607-1f779c573665 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.15.0 // indirect
@@ -385,9 +386,9 @@ require (
 	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/inconshreveable/mousetrap v1.0.1 // indirect
 	github.com/influxdata/go-syslog/v3 v3.0.1-0.20210608084020-ac565dc76ba6 // indirect
-	github.com/influxdata/influxdb-observability/common v0.2.35 // indirect
-	github.com/influxdata/influxdb-observability/influx2otel v0.2.35 // indirect
-	github.com/influxdata/influxdb-observability/otel2influx v0.2.35 // indirect
+	github.com/influxdata/influxdb-observability/common v0.3.0 // indirect
+	github.com/influxdata/influxdb-observability/influx2otel v0.3.0 // indirect
+	github.com/influxdata/influxdb-observability/otel2influx v0.3.0 // indirect
 	github.com/influxdata/line-protocol/v2 v2.2.1 // indirect
 	github.com/ionos-cloud/sdk-go/v6 v6.1.3 // indirect
 	github.com/jaegertracing/jaeger v1.41.0 // indirect

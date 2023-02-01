@@ -67,13 +67,6 @@ func TestNew(t *testing.T) {
 			wantErrMessage: "nil config",
 		},
 		{
-			name: "bad config fails",
-			config: &Config{
-				APIURL: "abc",
-			},
-			wantErr: true,
-		},
-		{
 			name: "fails to create metrics converter",
 			config: &Config{
 				AccessToken:    "test",
@@ -454,17 +447,11 @@ func TestNewEventExporter(t *testing.T) {
 	assert.EqualError(t, err, "nil config")
 	assert.Nil(t, got)
 
-	cfg := &Config{
-		AccessToken:        "someToken",
-		IngestURL:          "asdf://:%",
-		HTTPClientSettings: confighttp.HTTPClientSettings{Timeout: 1 * time.Second},
-	}
-
-	got, err = newEventExporter(cfg, exportertest.NewNopCreateSettings())
-	assert.NotNil(t, err)
+	got, err = newEventExporter(nil, exportertest.NewNopCreateSettings())
+	assert.Error(t, err)
 	assert.Nil(t, got)
 
-	cfg = &Config{
+	cfg := &Config{
 		AccessToken:        "someToken",
 		Realm:              "xyz",
 		HTTPClientSettings: confighttp.HTTPClientSettings{Timeout: 1 * time.Second},
