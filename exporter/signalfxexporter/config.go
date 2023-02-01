@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/correlation"
@@ -34,8 +35,25 @@ import (
 
 const (
 	translationRulesConfigKey = "translation_rules"
-	excludeMetricsConfigKey   = "exclude_metrics"
 )
+
+var defaultTranslationRules = func() []translation.Rule {
+	cfg, err := loadConfig([]byte(translation.DefaultTranslationRulesYaml))
+	// It is safe to panic since this is deterministic, and will not fail anywhere else if it doesn't fail all the time.
+	if err != nil {
+		panic(err)
+	}
+	return cfg.TranslationRules
+}()
+
+var defaultExcludeMetrics = func() []dpfilters.MetricFilter {
+	cfg, err := loadConfig([]byte(translation.DefaultExcludeMetricsYaml))
+	// It is safe to panic since this is deterministic, and will not fail anywhere else if it doesn't fail all the time.
+	if err != nil {
+		panic(err)
+	}
+	return cfg.ExcludeMetrics
+}()
 
 var _ confmap.Unmarshaler = (*Config)(nil)
 
@@ -79,7 +97,10 @@ type Config struct {
 
 	// TranslationRules defines a set of rules how to translate metrics to a SignalFx compatible format
 	// Rules defined in translation/constants.go are used by default.
+	// Deprecated: Use metricstransform processor to do metrics transformations.
 	TranslationRules []translation.Rule `mapstructure:"translation_rules"`
+
+	DisableDefaultTranslationRules bool `mapstructure:"disable_default_translation_rules"`
 
 	// DeltaTranslationTTL specifies in seconds the max duration to keep the most recent datapoint for any
 	// `delta_metric` specified in TranslationRules. Default is 3600s.
@@ -117,8 +138,23 @@ type Config struct {
 	MaxConnections int `mapstructure:"max_connections"`
 }
 
-func (cfg *Config) getMetricTranslator() (*translation.MetricTranslator, error) {
-	metricTranslator, err := translation.NewMetricTranslator(cfg.TranslationRules, cfg.DeltaTranslationTTL)
+func (cfg *Config) getMetricTranslator(logger *zap.Logger) (*translation.MetricTranslator, error) {
+	rules := defaultTranslationRules
+	if cfg.TranslationRules != nil {
+		// Previous way to disable default translation rules.
+		if len(cfg.TranslationRules) == 0 {
+			logger.Warn("You are using the deprecated `translation_rules` option that will be removed soon; Use `disable_default_translation_rules` to disable the default rules in a gateway mode.")
+			rules = []translation.Rule{}
+		} else {
+			logger.Warn("You are using the deprecated `translation_rules` option that will be removed soon; Use metricstransform processor instead.")
+			rules = cfg.TranslationRules
+		}
+	}
+	// The new way to disable default translation rules. This override any setting of the default TranslationRules.
+	if cfg.DisableDefaultTranslationRules {
+		rules = []translation.Rule{}
+	}
+	metricTranslator, err := translation.NewMetricTranslator(rules, cfg.DeltaTranslationTTL)
 	if err != nil {
 		return nil, fmt.Errorf("invalid \"%s\": %w", translationRulesConfigKey, err)
 	}
@@ -162,15 +198,6 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 		return err
 	}
 
-	// If translations_config is not set in the config, set it to the default.
-	if !componentParser.IsSet(translationRulesConfigKey) {
-		var err error
-		cfg.TranslationRules, err = loadDefaultTranslationRules()
-		if err != nil {
-			return err
-		}
-	}
-
 	return setDefaultExcludes(cfg)
 }
 
@@ -197,21 +224,11 @@ func (cfg *Config) Validate() error {
 }
 
 func setDefaultExcludes(cfg *Config) error {
-	exCfg, err := loadConfig([]byte(translation.DefaultExcludeMetricsYaml))
-	if err != nil {
-		return err
-	}
-
 	// If ExcludeMetrics is not set to empty, append defaults.
 	if cfg.ExcludeMetrics == nil || len(cfg.ExcludeMetrics) > 0 {
-		cfg.ExcludeMetrics = append(cfg.ExcludeMetrics, exCfg.ExcludeMetrics...)
+		cfg.ExcludeMetrics = append(cfg.ExcludeMetrics, defaultExcludeMetrics...)
 	}
 	return nil
-}
-
-func loadDefaultTranslationRules() ([]translation.Rule, error) {
-	cfg, err := loadConfig([]byte(translation.DefaultTranslationRulesYaml))
-	return cfg.TranslationRules, err
 }
 
 func loadConfig(bytes []byte) (Config, error) {
