@@ -15,6 +15,7 @@
 package collection // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/collection"
 
 import (
+	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -23,7 +24,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/utils"
 )
 
-func getMetricsForNamespace(ns *corev1.Namespace) []*resourceMetrics {
+func getMetricsForNamespace(ns *corev1.Namespace) []*agentmetricspb.ExportMetricsServiceRequest {
 	metrics := []*metricspb.Metric{
 		{
 			MetricDescriptor: &metricspb.MetricDescriptor{
@@ -37,10 +38,10 @@ func getMetricsForNamespace(ns *corev1.Namespace) []*resourceMetrics {
 		},
 	}
 
-	return []*resourceMetrics{
+	return []*agentmetricspb.ExportMetricsServiceRequest{
 		{
-			resource: getResourceForNamespace(ns),
-			metrics:  metrics,
+			Resource: getResourceForNamespace(ns),
+			Metrics:  metrics,
 		},
 	}
 }

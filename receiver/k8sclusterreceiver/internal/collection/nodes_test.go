@@ -35,27 +35,27 @@ func TestNodeMetricsReportCPUMetrics(t *testing.T) {
 
 	require.Equal(t, 1, len(actualResourceMetrics))
 
-	require.Equal(t, 5, len(actualResourceMetrics[0].metrics))
-	testutils.AssertResource(t, actualResourceMetrics[0].resource, k8sType,
+	require.Equal(t, 5, len(actualResourceMetrics[0].Metrics))
+	testutils.AssertResource(t, actualResourceMetrics[0].Resource, k8sType,
 		map[string]string{
 			"k8s.node.uid":  "test-node-1-uid",
 			"k8s.node.name": "test-node-1",
 		},
 	)
 
-	testutils.AssertMetricsInt(t, actualResourceMetrics[0].metrics[0], "k8s.node.condition_ready",
+	testutils.AssertMetricsInt(t, actualResourceMetrics[0].Metrics[0], "k8s.node.condition_ready",
 		metricspb.MetricDescriptor_GAUGE_INT64, 1)
 
-	testutils.AssertMetricsInt(t, actualResourceMetrics[0].metrics[1], "k8s.node.condition_memory_pressure",
+	testutils.AssertMetricsInt(t, actualResourceMetrics[0].Metrics[1], "k8s.node.condition_memory_pressure",
 		metricspb.MetricDescriptor_GAUGE_INT64, 0)
 
-	testutils.AssertMetricsDouble(t, actualResourceMetrics[0].metrics[2], "k8s.node.allocatable_cpu",
+	testutils.AssertMetricsDouble(t, actualResourceMetrics[0].Metrics[2], "k8s.node.allocatable_cpu",
 		metricspb.MetricDescriptor_GAUGE_DOUBLE, 0.123)
 
-	testutils.AssertMetricsInt(t, actualResourceMetrics[0].metrics[3], "k8s.node.allocatable_memory",
+	testutils.AssertMetricsInt(t, actualResourceMetrics[0].Metrics[3], "k8s.node.allocatable_memory",
 		metricspb.MetricDescriptor_GAUGE_INT64, 456)
 
-	testutils.AssertMetricsInt(t, actualResourceMetrics[0].metrics[4], "k8s.node.allocatable_ephemeral_storage",
+	testutils.AssertMetricsInt(t, actualResourceMetrics[0].Metrics[4], "k8s.node.allocatable_ephemeral_storage",
 		metricspb.MetricDescriptor_GAUGE_INT64, 1234)
 }
 
