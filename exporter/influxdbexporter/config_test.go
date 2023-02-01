@@ -19,9 +19,7 @@ import (
 	"testing"
 	"time"
 
-	// TODO: uncomment this after update core dependencies
-	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18234
-	// "github.com/cenkalti/backoff/v4"
+	"github.com/cenkalti/backoff/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -59,14 +57,12 @@ func TestLoadConfig(t *testing.T) {
 					QueueSize:    10,
 				},
 				RetrySettings: exporterhelper.RetrySettings{
-					Enabled:         true,
-					InitialInterval: 1 * time.Second,
-					MaxInterval:     3 * time.Second,
-					MaxElapsedTime:  10 * time.Second,
-					// TODO: uncomment these after update core dependencies
-					// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18234
-					// RandomizationFactor: backoff.DefaultRandomizationFactor,
-					// Multiplier:          backoff.DefaultMultiplier,
+					Enabled:             true,
+					InitialInterval:     1 * time.Second,
+					MaxInterval:         3 * time.Second,
+					MaxElapsedTime:      10 * time.Second,
+					RandomizationFactor: backoff.DefaultRandomizationFactor,
+					Multiplier:          backoff.DefaultMultiplier,
 				},
 				Org:           "my-org",
 				Bucket:        "my-bucket",
