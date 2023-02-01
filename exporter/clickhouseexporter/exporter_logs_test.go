@@ -63,7 +63,7 @@ func TestLogsExporter_New(t *testing.T) {
 	}{
 		"no dsn": {
 			config: withDefaultConfig(),
-			want:   failWithMsg("dial tcp: missing address"),
+			want:   failWithMsg("DSN is invalid"),
 		},
 	}
 
