@@ -330,7 +330,7 @@ func Test_StandardTypeGetter(t *testing.T) {
 		{
 			name: "Correct type",
 			getter: StandardTypeGetter[interface{}, string]{
-				Getter: func(ctx context.Context, tCx interface{}) (interface{}, error) {
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
 					return "str", nil
 				},
 			},
@@ -340,7 +340,7 @@ func Test_StandardTypeGetter(t *testing.T) {
 		{
 			name: "Incorrect type",
 			getter: StandardTypeGetter[interface{}, string]{
-				Getter: func(ctx context.Context, tCx interface{}) (interface{}, error) {
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
 					return true, nil
 				},
 			},

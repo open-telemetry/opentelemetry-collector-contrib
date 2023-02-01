@@ -43,16 +43,16 @@ type GetSetter[K any] interface {
 }
 
 type StandardGetSetter[K any] struct {
-	Getter func(ctx context.Context, tCx K) (interface{}, error)
-	Setter func(ctx context.Context, tCx K, val interface{}) error
+	Getter func(ctx context.Context, tCtx K) (interface{}, error)
+	Setter func(ctx context.Context, tCtx K, val interface{}) error
 }
 
-func (path StandardGetSetter[K]) Get(ctx context.Context, tCx K) (interface{}, error) {
-	return path.Getter(ctx, tCx)
+func (path StandardGetSetter[K]) Get(ctx context.Context, tCtx K) (interface{}, error) {
+	return path.Getter(ctx, tCtx)
 }
 
-func (path StandardGetSetter[K]) Set(ctx context.Context, tCx K, val interface{}) error {
-	return path.Setter(ctx, tCx, val)
+func (path StandardGetSetter[K]) Set(ctx context.Context, tCtx K, val interface{}) error {
+	return path.Setter(ctx, tCtx, val)
 }
 
 type literal[K any] struct {
@@ -98,7 +98,7 @@ type IntGetter[K any] interface {
 }
 
 type StandardTypeGetter[K any, T any] struct {
-	Getter func(ctx context.Context, tCx K) (interface{}, error)
+	Getter func(ctx context.Context, tCtx K) (interface{}, error)
 }
 
 func (g StandardTypeGetter[K, T]) Get(ctx context.Context, tCtx K) (*T, error) {
