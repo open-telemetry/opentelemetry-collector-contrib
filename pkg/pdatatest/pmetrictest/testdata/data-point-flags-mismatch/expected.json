@@ -1,0 +1,23 @@
+{
+   "resourceMetrics": [
+      {
+         "scopeMetrics": [
+            {
+               "metrics": [
+                  {
+                     "name": "sum.one",
+                     "sum": {
+                        "dataPoints": [
+                           {
+                              "asInt": 654,
+                              "flags": 1
+                           }
+                        ]
+                     }
+                  }
+               ]
+            }
+         ]
+      }
+   ]
+}

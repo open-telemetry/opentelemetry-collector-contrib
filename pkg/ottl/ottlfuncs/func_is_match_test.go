@@ -104,6 +104,16 @@ func Test_isMatch(t *testing.T) {
 			pattern:  `test`,
 			expected: true,
 		},
+		{
+			name: "nil target",
+			target: &ottl.StandardGetSetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return nil, nil
+				},
+			},
+			pattern:  "impossible to match",
+			expected: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -22,7 +22,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -45,9 +44,8 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "allsettings"),
 			expected: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				Endpoint:         "localhost:8080",
-				Timeout:          10 * time.Second,
+				Endpoint: "localhost:8080",
+				Timeout:  10 * time.Second,
 			},
 		},
 	}
@@ -63,6 +61,42 @@ func TestLoadConfig(t *testing.T) {
 
 			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
+		})
+	}
+}
+
+func TestValidateConfig(t *testing.T) {
+	tests := []struct {
+		name    string
+		config  *Config
+		wantErr bool
+	}{
+		{
+			name:   "default_config",
+			config: createDefaultConfig().(*Config),
+		},
+		{
+			name: "invalid_tcp_addr",
+			config: &Config{
+				Endpoint: "http://localhost:2003",
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid_timeout",
+			config: &Config{
+				Timeout: -5 * time.Second,
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.wantErr {
+				assert.Error(t, tt.config.Validate())
+			} else {
+				assert.NoError(t, tt.config.Validate())
+			}
 		})
 	}
 }

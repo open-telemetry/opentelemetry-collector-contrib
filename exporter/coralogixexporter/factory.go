@@ -18,75 +18,49 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/consumer"
+	exp "go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 // NewFactory by Coralogix
-func NewFactory() component.ExporterFactory {
-	return component.NewExporterFactory(
+func NewFactory() exp.Factory {
+	return exp.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporter(createTraceExporter, stability),
-		component.WithMetricsExporter(createMetricsExporter, stability),
-		// Marked as unmantained on 2022-11-30, will be removed from official builds on 2023-05-30.
-		component.WithLogsExporter(createLogsExporter, component.StabilityLevelUnmaintained),
+		exp.WithTraces(createTraceExporter, stability),
+		exp.WithMetrics(createMetricsExporter, stability),
+		exp.WithLogs(createLogsExporter, component.StabilityLevelAlpha),
 	)
 }
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
-		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
-		TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),
+		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
+		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
+		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
 		// Traces GRPC client
 		Traces: configgrpc.GRPCClientSettings{
 			Endpoint: "https://",
-			Headers:  map[string]string{},
 		},
 		Metrics: configgrpc.GRPCClientSettings{
 			Endpoint: "https://",
-			Headers:  map[string]string{},
 			// Default to gzip compression
 			Compression:     configcompression.Gzip,
 			WriteBufferSize: 512 * 1024,
 		},
 		Logs: configgrpc.GRPCClientSettings{
 			Endpoint: "https://",
-			Headers:  map[string]string{},
 		},
 		PrivateKey: "",
 		AppName:    "",
 	}
 }
 
-func createTraceExporter(ctx context.Context, set component.ExporterCreateSettings, config component.Config) (component.TracesExporter, error) {
+func createTraceExporter(ctx context.Context, set exp.CreateSettings, config component.Config) (exp.Traces, error) {
 	cfg := config.(*Config)
-
-	// Use deprecated jaeger endpoint if it's not empty
-	if !isEmpty(cfg.Endpoint) {
-		set.Logger.Warn("endpoint field is deprecated.Please use the new `traces.endpoint` field with OpenTelemtry endpoint.")
-
-		exporter, err := newCoralogixExporter(cfg, set)
-		if err != nil {
-			return nil, err
-		}
-
-		return exporterhelper.NewTracesExporter(
-			ctx,
-			set,
-			config,
-			exporter.tracesPusher,
-			exporterhelper.WithQueue(cfg.QueueSettings),
-			exporterhelper.WithRetry(cfg.RetrySettings),
-			exporterhelper.WithTimeout(cfg.TimeoutSettings),
-			exporterhelper.WithStart(exporter.client.startConnection),
-		)
-	}
 
 	exporter, err := newTracesExporter(cfg, set)
 	if err != nil {
@@ -109,9 +83,9 @@ func createTraceExporter(ctx context.Context, set component.ExporterCreateSettin
 
 func createMetricsExporter(
 	ctx context.Context,
-	set component.ExporterCreateSettings,
+	set exp.CreateSettings,
 	cfg component.Config,
-) (component.MetricsExporter, error) {
+) (exp.Metrics, error) {
 	oce, err := newMetricsExporter(cfg, set)
 	if err != nil {
 		return nil, err
@@ -133,9 +107,9 @@ func createMetricsExporter(
 
 func createLogsExporter(
 	ctx context.Context,
-	set component.ExporterCreateSettings,
+	set exp.CreateSettings,
 	cfg component.Config,
-) (component.LogsExporter, error) {
+) (exp.Logs, error) {
 	oce, err := newLogsExporter(cfg, set)
 	if err != nil {
 		return nil, err

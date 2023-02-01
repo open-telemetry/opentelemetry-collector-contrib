@@ -15,9 +15,11 @@ body:
       - cmd/configschema
       - cmd/mdatagen
       - cmd/otelcontribcol
+      - cmd/oteltestbedcol
       - cmd/telemetrygen
       - cmd/tracegen
       - confmap/provider/s3provider
+      - connector/count
       - examples/demo
       - exporter/alibabacloudlogservice
       - exporter/awscloudwatchlogs
@@ -37,7 +39,6 @@ body:
       - exporter/googlecloud
       - exporter/googlecloudpubsub
       - exporter/googlemanagedprometheus
-      - exporter/humio
       - exporter/influxdb
       - exporter/instana
       - exporter/jaeger
@@ -68,6 +69,7 @@ body:
       - extension/bearertokenauth
       - extension/headerssetter
       - extension/healthcheck
+      - extension/httpforwarder
       - extension/jaegerremotesampling
       - extension/oauth2clientauth
       - extension/observer
@@ -88,7 +90,6 @@ body:
       - internal/k8sconfig
       - internal/kubelet
       - internal/metadataproviders
-      - internal/scrapertest
       - internal/sharedcomponent
       - internal/splunk
       - internal/tools
@@ -96,6 +97,8 @@ body:
       - pkg/batchpersignal
       - pkg/experimentalmetricmetadata
       - pkg/ottl
+      - pkg/pdatatest
+      - pkg/pdatautil
       - pkg/resourcetotelemetry
       - pkg/stanza
       - pkg/translator/jaeger
@@ -108,6 +111,7 @@ body:
       - pkg/winperfcounters
       - processor/attributes
       - processor/cumulativetodelta
+      - processor/datadog
       - processor/deltatorate
       - processor/filter
       - processor/groupbyattrs
@@ -121,6 +125,8 @@ body:
       - processor/resource
       - processor/resourcedetection
       - processor/resourcedetection/internal/azure
+      - processor/resourcedetection/internal/heroku
+      - processor/resourcedetection/internal/openshift
       - processor/routing
       - processor/schema
       - processor/servicegraph
@@ -147,11 +153,13 @@ body:
       - receiver/dockerstats
       - receiver/elasticsearch
       - receiver/expvar
+      - receiver/file
       - receiver/filelog
       - receiver/flinkmetrics
       - receiver/fluentforward
       - receiver/googlecloudpubsub
       - receiver/googlecloudspanner
+      - receiver/haproxy
       - receiver/hostmetrics
       - receiver/httpcheck
       - receiver/iis
@@ -181,6 +189,7 @@ body:
       - receiver/promtail
       - receiver/pulsar
       - receiver/purefa
+      - receiver/purefb
       - receiver/rabbitmq
       - receiver/receivercreator
       - receiver/redis
@@ -196,6 +205,7 @@ body:
       - receiver/splunkhec
       - receiver/sqlquery
       - receiver/sqlserver
+      - receiver/sshcheck
       - receiver/statsd
       - receiver/syslog
       - receiver/tcplog

@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 )
 
@@ -48,17 +49,17 @@ type MockAwsXrayReceiver struct {
 // New creates a new awsxrayreceiver.MockAwsXrayReceiver reference.
 func New(
 	nextConsumer consumer.Traces,
-	params component.ReceiverCreateSettings,
+	params receiver.CreateSettings,
 	config *Config) (*MockAwsXrayReceiver, error) {
 	if nextConsumer == nil {
 		return nil, component.ErrNilNextConsumer
 	}
 
-	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: config.ID(), Transport: "http"})
+	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: params.ID, Transport: "http", ReceiverCreateSettings: params})
 	if err != nil {
 		return nil, err
 	}
-	httpsObsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: config.ID(), Transport: "https"})
+	httpsObsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: params.ID, Transport: "https", ReceiverCreateSettings: params})
 	if err != nil {
 		return nil, err
 	}

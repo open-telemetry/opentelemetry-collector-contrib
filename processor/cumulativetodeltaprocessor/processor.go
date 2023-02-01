@@ -29,12 +29,12 @@ import (
 const enableHistogramSupportGateID = "processor.cumulativetodeltaprocessor.EnableHistogramSupport"
 
 func init() {
-	featuregate.GetRegistry().MustRegisterID(
+	featuregate.GlobalRegistry().MustRegisterID(
 		enableHistogramSupportGateID,
-		featuregate.StageBeta,
+		featuregate.StageStable,
 		featuregate.WithRegisterDescription("Enables histogram conversion support"),
 		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/15658"),
-		featuregate.WithRegisterRemovalVersion("v0.66.0"),
+		featuregate.WithRegisterRemovalVersion("v0.68.0"),
 	)
 }
 
@@ -53,7 +53,7 @@ func newCumulativeToDeltaProcessor(config *Config, logger *zap.Logger) *cumulati
 		logger:                  logger,
 		deltaCalculator:         tracking.NewMetricTracker(ctx, logger, config.MaxStaleness),
 		cancelFunc:              cancel,
-		histogramSupportEnabled: featuregate.GetRegistry().IsEnabled(enableHistogramSupportGateID),
+		histogramSupportEnabled: featuregate.GlobalRegistry().IsEnabled(enableHistogramSupportGateID),
 	}
 	if len(config.Include.Metrics) > 0 {
 		p.includeFS, _ = filterset.CreateFilterSet(config.Include.Metrics, &config.Include.Config)

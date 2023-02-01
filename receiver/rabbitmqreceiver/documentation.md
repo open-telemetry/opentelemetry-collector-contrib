@@ -2,38 +2,74 @@
 
 # rabbitmqreceiver
 
-## Metrics
+## Default Metrics
 
-These are the metrics available for this scraper.
-
-| Name | Description | Unit | Type | Attributes |
-| ---- | ----------- | ---- | ---- | ---------- |
-| **rabbitmq.consumer.count** | The number of consumers currently reading from the queue. | {consumers} | Sum(Int) | <ul> </ul> |
-| **rabbitmq.message.acknowledged** | The number of messages acknowledged by consumers. | {messages} | Sum(Int) | <ul> </ul> |
-| **rabbitmq.message.current** | The total number of messages currently in the queue. | {messages} | Sum(Int) | <ul> <li>message.state</li> </ul> |
-| **rabbitmq.message.delivered** | The number of messages delivered to consumers. | {messages} | Sum(Int) | <ul> </ul> |
-| **rabbitmq.message.dropped** | The number of messages dropped as unroutable. | {messages} | Sum(Int) | <ul> </ul> |
-| **rabbitmq.message.published** | The number of messages published to a queue. | {messages} | Sum(Int) | <ul> </ul> |
-
-**Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
-Any metric can be enabled or disabled with the following scraper configuration:
+The following metrics are emitted by default. Each of them can be disabled by applying the following configuration:
 
 ```yaml
 metrics:
   <metric_name>:
-    enabled: <true|false>
+    enabled: false
 ```
 
-## Resource attributes
+### rabbitmq.consumer.count
 
-| Name | Description | Type |
-| ---- | ----------- | ---- |
-| rabbitmq.node.name | The name of the RabbitMQ node. | Str |
-| rabbitmq.queue.name | The name of the RabbitMQ queue. | Str |
-| rabbitmq.vhost.name | The name of the RabbitMQ vHost. | Str |
+The number of consumers currently reading from the queue.
 
-## Metric attributes
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {consumers} | Sum | Int | Cumulative | false |
+
+### rabbitmq.message.acknowledged
+
+The number of messages acknowledged by consumers.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {messages} | Sum | Int | Cumulative | true |
+
+### rabbitmq.message.current
+
+The total number of messages currently in the queue.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {messages} | Sum | Int | Cumulative | false |
+
+#### Attributes
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| message.state (state) | The state of messages in a queue. | ready, unacknowledged |
+| state | The state of messages in a queue. | Str: ``ready``, ``unacknowledged`` |
+
+### rabbitmq.message.delivered
+
+The number of messages delivered to consumers.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {messages} | Sum | Int | Cumulative | true |
+
+### rabbitmq.message.dropped
+
+The number of messages dropped as unroutable.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {messages} | Sum | Int | Cumulative | true |
+
+### rabbitmq.message.published
+
+The number of messages published to a queue.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {messages} | Sum | Int | Cumulative | true |
+
+## Resource Attributes
+
+| Name | Description | Values | Enabled |
+| ---- | ----------- | ------ | ------- |
+| rabbitmq.node.name | The name of the RabbitMQ node. | Any Str | true |
+| rabbitmq.queue.name | The name of the RabbitMQ queue. | Any Str | true |
+| rabbitmq.vhost.name | The name of the RabbitMQ vHost. | Any Str | true |

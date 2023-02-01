@@ -17,11 +17,11 @@ package solacereceiver // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -40,8 +40,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(componentType, "primary"),
 			expected: &Config{
-				ReceiverSettings: config.NewReceiverSettings(component.NewID(componentType)),
-				Broker:           []string{"myHost:5671"},
+				Broker: []string{"myHost:5671"},
 				Auth: Authentication{
 					PlainText: &SaslPlainTextConfig{
 						Username: "otel",
@@ -53,6 +52,11 @@ func TestLoadConfig(t *testing.T) {
 				TLS: configtls.TLSClientSetting{
 					Insecure:           false,
 					InsecureSkipVerify: false,
+				},
+				Flow: FlowControl{
+					DelayedRetry: &FlowControlDelayedRetry{
+						Delay: 1 * time.Second,
+					},
 				},
 			},
 		},
@@ -97,6 +101,27 @@ func TestConfigValidateMissingQueue(t *testing.T) {
 	cfg.Auth.PlainText = &SaslPlainTextConfig{"Username", "Password"}
 	err := component.ValidateConfig(cfg)
 	assert.Equal(t, errMissingQueueName, err)
+}
+
+func TestConfigValidateMissingFlowControl(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Queue = "someQueue"
+	cfg.Auth.PlainText = &SaslPlainTextConfig{"Username", "Password"}
+	// this should never happen in reality, test validation anyway
+	cfg.Flow.DelayedRetry = nil
+	err := cfg.Validate()
+	assert.Equal(t, errMissingFlowControl, err)
+}
+
+func TestConfigValidateInvalidFlowControlDelayedRetryDelay(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Queue = "someQueue"
+	cfg.Auth.PlainText = &SaslPlainTextConfig{"Username", "Password"}
+	cfg.Flow.DelayedRetry = &FlowControlDelayedRetry{
+		Delay: -30 * time.Second,
+	}
+	err := cfg.Validate()
+	assert.Equal(t, errInvalidDelayedRetryDelay, err)
 }
 
 func TestConfigValidateSuccess(t *testing.T) {

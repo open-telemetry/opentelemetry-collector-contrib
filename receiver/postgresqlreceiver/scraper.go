@@ -21,10 +21,10 @@ import (
 	"sync"
 	"time"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 
@@ -45,13 +45,13 @@ const (
 )
 
 func init() {
-	featuregate.GetRegistry().MustRegisterID(
+	featuregate.GlobalRegistry().MustRegisterID(
 		emitMetricsWithoutResourceAttributesFeatureGateID,
 		featuregate.StageAlpha,
 		featuregate.WithRegisterDescription(emitMetricsWithoutResourceAttributesDescription),
 		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/12960"),
 	)
-	featuregate.GetRegistry().MustRegisterID(
+	featuregate.GlobalRegistry().MustRegisterID(
 		emitMetricsWithResourceAttributesFeatureGateID,
 		featuregate.StageBeta,
 		featuregate.WithRegisterDescription(emitMetricsWithResourceAttributesDescription),
@@ -85,7 +85,7 @@ func (d *defaultClientFactory) getClient(c *Config, database string) (client, er
 }
 
 func newPostgreSQLScraper(
-	settings component.ReceiverCreateSettings,
+	settings receiver.CreateSettings,
 	config *Config,
 	clientFactory postgreSQLClientFactory,
 ) *postgreSQLScraper {
@@ -93,9 +93,9 @@ func newPostgreSQLScraper(
 		logger:                               settings.Logger,
 		config:                               config,
 		clientFactory:                        clientFactory,
-		mb:                                   metadata.NewMetricsBuilder(config.Metrics, settings.BuildInfo),
-		emitMetricsWithResourceAttributes:    featuregate.GetRegistry().IsEnabled(emitMetricsWithResourceAttributesFeatureGateID),
-		emitMetricsWithoutResourceAttributes: featuregate.GetRegistry().IsEnabled(emitMetricsWithoutResourceAttributesFeatureGateID),
+		mb:                                   metadata.NewMetricsBuilder(config.Metrics, settings),
+		emitMetricsWithResourceAttributes:    featuregate.GlobalRegistry().IsEnabled(emitMetricsWithResourceAttributesFeatureGateID),
+		emitMetricsWithoutResourceAttributes: featuregate.GlobalRegistry().IsEnabled(emitMetricsWithoutResourceAttributesFeatureGateID),
 	}
 }
 

@@ -183,15 +183,16 @@ func TestConvert(t *testing.T) {
 	pLogs := Convert(ent)
 	require.Equal(t, 1, pLogs.ResourceLogs().Len())
 	rls := pLogs.ResourceLogs().At(0)
+	resAttrs := rls.Resource().Attributes()
 
-	if resAtts := rls.Resource().Attributes(); assert.Equal(t, 5, resAtts.Len()) {
+	if assert.Equal(t, 5, resAttrs.Len()) {
 		m := pcommon.NewMap()
 		m.PutBool("bool", true)
-		m.PutInt("int", 123)
 		m.PutDouble("double", 12.34)
-		m.PutStr("string", "hello")
+		m.PutInt("int", 123)
 		m.PutEmptyMap("object")
-		assert.EqualValues(t, m.Sort(), resAtts.Sort())
+		m.PutStr("string", "hello")
+		assert.Equal(t, m.AsRaw(), resAttrs.AsRaw())
 	}
 
 	ills := rls.ScopeLogs()
@@ -201,30 +202,29 @@ func TestConvert(t *testing.T) {
 	require.Equal(t, 1, logs.Len())
 
 	lr := logs.At(0)
+	lrAttrs := lr.Attributes()
 
 	assert.Equal(t, plog.SeverityNumberError, lr.SeverityNumber())
 	assert.Equal(t, "E", lr.SeverityText())
 
-	if atts := lr.Attributes(); assert.Equal(t, 5, atts.Len()) {
+	if assert.Equal(t, 5, lrAttrs.Len()) {
 		m := pcommon.NewMap()
 		m.PutBool("bool", true)
-		m.PutInt("int", 123)
 		m.PutDouble("double", 12.34)
-		m.PutStr("string", "hello")
+		m.PutInt("int", 123)
 		m.PutEmptyMap("object")
-		assert.EqualValues(t, m.Sort(), atts.Sort())
+		m.PutStr("string", "hello")
+		assert.EqualValues(t, m.AsRaw(), lrAttrs.AsRaw())
 	}
 
 	if assert.Equal(t, pcommon.ValueTypeMap, lr.Body().Type()) {
 		m := pcommon.NewMap()
-		// Don't include a nested object because AttributeValueMap sorting
-		// doesn't sort recursively.
 		m.PutBool("bool", true)
-		m.PutInt("int", 123)
-		m.PutDouble("double", 12.34)
-		m.PutStr("string", "hello")
 		m.PutEmptyBytes("bytes").FromRaw([]byte("asdf"))
-		assert.EqualValues(t, m.Sort(), lr.Body().Map().Sort())
+		m.PutDouble("double", 12.34)
+		m.PutInt("int", 123)
+		m.PutStr("string", "hello")
+		assert.EqualValues(t, m.AsRaw(), lr.Body().Map().AsRaw())
 	}
 }
 

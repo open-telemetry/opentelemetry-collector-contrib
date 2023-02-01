@@ -20,6 +20,7 @@ package components
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -29,7 +30,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/ballastextension"
+	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/extension/zpagesextension"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension"
@@ -226,14 +229,13 @@ func TestDefaultExtensions(t *testing.T) {
 			factory, ok := extFactories[tt.extension]
 			require.True(t, ok)
 			assert.Equal(t, tt.extension, factory.Type())
-			assert.Equal(t, component.NewID(tt.extension), factory.CreateDefaultConfig().ID())
 
-			if tt.skipLifecycle {
-				t.Skip("Skipping lifecycle test for ", tt.extension)
-				return
+			verifyExtensionShutdown(t, factory, tt.getConfigFn)
+
+			if !tt.skipLifecycle {
+				verifyExtensionLifecycle(t, factory, tt.getConfigFn)
 			}
 
-			verifyExtensionLifecycle(t, factory, tt.getConfigFn)
 		})
 	}
 }
@@ -246,10 +248,10 @@ type getExtensionConfigFn func() component.Config
 // verifyExtensionLifecycle is used to test if an extension type can handle the typical
 // lifecycle of a component. The getConfigFn parameter only need to be specified if
 // the test can't be done with the default configuration for the component.
-func verifyExtensionLifecycle(t *testing.T, factory component.ExtensionFactory, getConfigFn getExtensionConfigFn) {
+func verifyExtensionLifecycle(t *testing.T, factory extension.Factory, getConfigFn getExtensionConfigFn) {
 	ctx := context.Background()
 	host := newAssertNoErrorHost(t)
-	extCreateSet := componenttest.NewNopExtensionCreateSettings()
+	extCreateSet := extensiontest.NewNopCreateSettings()
 
 	if getConfigFn == nil {
 		getConfigFn = factory.CreateDefaultConfig
@@ -264,6 +266,28 @@ func verifyExtensionLifecycle(t *testing.T, factory component.ExtensionFactory, 
 	require.NoError(t, err)
 	require.NoError(t, secondExt.Start(ctx, host))
 	require.NoError(t, secondExt.Shutdown(ctx))
+}
+
+// verifyExtensionShutdown is used to test if an extension type can be shutdown without being started first.
+func verifyExtensionShutdown(tb testing.TB, factory extension.Factory, getConfigFn getExtensionConfigFn) {
+	ctx := context.Background()
+	extCreateSet := extensiontest.NewNopCreateSettings()
+
+	if getConfigFn == nil {
+		getConfigFn = factory.CreateDefaultConfig
+	}
+
+	e, err := factory.CreateExtension(ctx, extCreateSet, getConfigFn())
+	if errors.Is(err, component.ErrDataTypeIsNotSupported) {
+		return
+	}
+	if e == nil {
+		return
+	}
+
+	assert.NotPanics(tb, func() {
+		assert.NoError(tb, e.Shutdown(ctx))
+	})
 }
 
 // assertNoErrorHost implements a component.Host that asserts that there were no errors.

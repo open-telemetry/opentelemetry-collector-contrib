@@ -18,8 +18,8 @@ import (
 	"fmt"
 	"net/url"
 
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
@@ -27,8 +27,6 @@ import (
 
 // Config defines configuration for LogicMonitor exporter.
 type Config struct {
-	config.ExporterSettings `mapstructure:",squash"`
-
 	confighttp.HTTPClientSettings `mapstructure:",squash"`
 
 	exporterhelper.QueueSettings `mapstructure:"sending_queue"`
@@ -40,8 +38,8 @@ type Config struct {
 }
 
 type APIToken struct {
-	AccessID  string `mapstructure:"access_id"`
-	AccessKey string `mapstructure:"access_key"`
+	AccessID  string              `mapstructure:"access_id"`
+	AccessKey configopaque.String `mapstructure:"access_key"`
 }
 
 func (c *Config) Validate() error {

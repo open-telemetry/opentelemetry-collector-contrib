@@ -17,7 +17,6 @@ package spanmetricsprocessor // import "github.com/open-telemetry/opentelemetry-
 import (
 	"time"
 
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
@@ -29,7 +28,7 @@ const (
 )
 
 func init() {
-	featuregate.GetRegistry().MustRegisterID(
+	featuregate.GlobalRegistry().MustRegisterID(
 		dropSanitizationGateID,
 		featuregate.StageAlpha,
 		featuregate.WithRegisterDescription("Controls whether to change labels starting with '_' to 'key_'"),
@@ -44,7 +43,6 @@ type Dimension struct {
 
 // Config defines the configuration options for spanmetricsprocessor.
 type Config struct {
-	config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	// MetricsExporter is the name of the metrics exporter to use to ship metrics.
 	MetricsExporter string `mapstructure:"metrics_exporter"`
@@ -71,6 +69,9 @@ type Config struct {
 
 	// skipSanitizeLabel if enabled, labels that start with _ are not sanitized
 	skipSanitizeLabel bool
+
+	// MetricsEmitInterval is the time period between when metrics are flushed or emitted to the configured MetricsExporter.
+	MetricsFlushInterval time.Duration `mapstructure:"metrics_flush_interval"`
 }
 
 // GetAggregationTemporality converts the string value given in the config into a AggregationTemporality.

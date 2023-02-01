@@ -2,43 +2,102 @@
 
 # nsxtreceiver
 
-## Metrics
+## Default Metrics
 
-These are the metrics available for this scraper.
-
-| Name | Description | Unit | Type | Attributes |
-| ---- | ----------- | ---- | ---- | ---------- |
-| **nsxt.node.cpu.utilization** | The average amount of CPU being used by the node. | % | Gauge(Double) | <ul> <li>class</li> </ul> |
-| **nsxt.node.filesystem.usage** | The amount of storage space used by the node. | By | Sum(Int) | <ul> <li>disk_state</li> </ul> |
-| **nsxt.node.filesystem.utilization** | The percentage of storage space utilized. | % | Gauge(Double) | <ul> </ul> |
-| **nsxt.node.memory.cache.usage** | The size of the node's memory cache. | KBy | Sum(Int) | <ul> </ul> |
-| **nsxt.node.memory.usage** | The memory usage of the node. | KBy | Sum(Int) | <ul> </ul> |
-| **nsxt.node.network.io** | The number of bytes which have flowed through the network interface. | By | Sum(Int) | <ul> <li>direction</li> </ul> |
-| **nsxt.node.network.packet.count** | The number of packets which have flowed through the network interface on the node. | {packets} | Sum(Int) | <ul> <li>direction</li> <li>packet.type</li> </ul> |
-
-**Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
-Any metric can be enabled or disabled with the following scraper configuration:
+The following metrics are emitted by default. Each of them can be disabled by applying the following configuration:
 
 ```yaml
 metrics:
   <metric_name>:
-    enabled: <true|false>
+    enabled: false
 ```
 
-## Resource attributes
+### nsxt.node.cpu.utilization
 
-| Name | Description | Type |
-| ---- | ----------- | ---- |
-| device.id | The name of the network interface. | Str |
-| nsxt.node.id | The ID of the NSX Node. | Str |
-| nsxt.node.name | The name of the NSX Node. | Str |
-| nsxt.node.type | The type of NSX Node. | Str |
+The average amount of CPU being used by the node.
 
-## Metric attributes
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| % | Gauge | Double |
+
+#### Attributes
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| class | The CPU usage of the architecture allocated for either DPDK (datapath) or non-DPDK (services) processes. | datapath, services |
-| direction (direction) | The direction of network flow. | received, transmitted |
-| disk_state (state) | The state of storage space. | used, available |
-| packet.type (type) | The type of packet counter. | dropped, errored, success |
+| class | The CPU usage of the architecture allocated for either DPDK (datapath) or non-DPDK (services) processes. | Str: ``datapath``, ``services`` |
+
+### nsxt.node.filesystem.usage
+
+The amount of storage space used by the node.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| state | The state of storage space. | Str: ``used``, ``available`` |
+
+### nsxt.node.filesystem.utilization
+
+The percentage of storage space utilized.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| % | Gauge | Double |
+
+### nsxt.node.memory.cache.usage
+
+The size of the node's memory cache.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| KBy | Sum | Int | Cumulative | false |
+
+### nsxt.node.memory.usage
+
+The memory usage of the node.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| KBy | Sum | Int | Cumulative | false |
+
+### nsxt.node.network.io
+
+The number of bytes which have flowed through the network interface.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| direction | The direction of network flow. | Str: ``received``, ``transmitted`` |
+
+### nsxt.node.network.packet.count
+
+The number of packets which have flowed through the network interface on the node.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {packets} | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| direction | The direction of network flow. | Str: ``received``, ``transmitted`` |
+| type | The type of packet counter. | Str: ``dropped``, ``errored``, ``success`` |
+
+## Resource Attributes
+
+| Name | Description | Values | Enabled |
+| ---- | ----------- | ------ | ------- |
+| device.id | The name of the network interface. | Any Str | true |
+| nsxt.node.id | The ID of the NSX Node. | Any Str | true |
+| nsxt.node.name | The name of the NSX Node. | Any Str | true |
+| nsxt.node.type | The type of NSX Node. | Any Str | true |

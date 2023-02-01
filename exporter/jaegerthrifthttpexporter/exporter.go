@@ -27,13 +27,14 @@ import (
 	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	jaegertranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 )
 
-func newTracesExporter(config *Config, params component.ExporterCreateSettings) (component.TracesExporter, error) {
+func newTracesExporter(config *Config, params exporter.CreateSettings) (exporter.Traces, error) {
 	s := &jaegerThriftHTTPSender{
 		config:   config,
 		settings: params.TelemetrySettings,

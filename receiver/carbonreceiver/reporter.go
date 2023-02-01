@@ -18,8 +18,8 @@ import (
 	"context"
 
 	"go.opencensus.io/trace"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/transport"
@@ -28,8 +28,6 @@ import (
 // reporter struct implements the transport.Reporter interface to give consistent
 // observability per Collector metric observability package.
 type reporter struct {
-	id            component.ID
-	spanName      string
 	logger        *zap.Logger
 	sugaredLogger *zap.SugaredLogger // Used for generic debug logging
 	obsrecv       *obsreport.Receiver
@@ -37,9 +35,9 @@ type reporter struct {
 
 var _ transport.Reporter = (*reporter)(nil)
 
-func newReporter(id component.ID, set component.ReceiverCreateSettings) (transport.Reporter, error) {
+func newReporter(set receiver.CreateSettings) (transport.Reporter, error) {
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
-		ReceiverID:             id,
+		ReceiverID:             set.ID,
 		Transport:              "tcp",
 		ReceiverCreateSettings: set,
 	})
@@ -48,8 +46,6 @@ func newReporter(id component.ID, set component.ReceiverCreateSettings) (transpo
 	}
 
 	return &reporter{
-		id:            id,
-		spanName:      id.String() + ".receiver",
 		logger:        set.Logger,
 		sugaredLogger: set.Logger.Sugar(),
 		obsrecv:       obsrecv,

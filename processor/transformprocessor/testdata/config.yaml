@@ -24,31 +24,6 @@ transform:
       statements:
         - set(attributes["name"], "bear")
 
-transform/deprecated_format:
-  traces:
-    statements:
-      - set(name, "bear") where attributes["http.path"] == "/animal"
-      - keep_keys(attributes, ["http.method", "http.path"])
-  metrics:
-    statements:
-      - set(metric.name, "bear") where attributes["http.path"] == "/animal"
-      - keep_keys(attributes, ["http.method", "http.path"])
-  logs:
-    statements:
-      - set(body, "bear") where attributes["http.path"] == "/animal"
-      - keep_keys(attributes, ["http.method", "http.path"])
-
-transform/using_both_formats:
-  trace_statements:
-    - context: span
-      statements:
-        - set(name, "bear") where attributes["http.path"] == "/animal"
-        - keep_keys(attributes, ["http.method", "http.path"])
-  traces:
-    statements:
-      - set(name, "bear") where attributes["http.path"] == "/animal"
-      - keep_keys(attributes, ["http.method", "http.path"])
-
 transform/bad_syntax_log:
   log_statements:
     - context: log

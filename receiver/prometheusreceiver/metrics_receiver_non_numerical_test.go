@@ -82,7 +82,7 @@ func TestStaleNaNs(t *testing.T) {
 			validateScrapes: true,
 		},
 	}
-	testComponent(t, targets, false, "", featuregate.GetRegistry())
+	testComponent(t, targets, false, "", featuregate.GlobalRegistry())
 }
 
 func verifyStaleNaNs(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {
@@ -256,7 +256,7 @@ func TestNormalNaNs(t *testing.T) {
 			validateFunc: verifyNormalNaNs,
 		},
 	}
-	testComponent(t, targets, false, "", featuregate.GetRegistry())
+	testComponent(t, targets, false, "", featuregate.GlobalRegistry())
 }
 
 func verifyNormalNaNs(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {
@@ -340,7 +340,7 @@ func TestInfValues(t *testing.T) {
 			validateFunc: verifyInfValues,
 		},
 	}
-	testComponent(t, targets, false, "", featuregate.GetRegistry())
+	testComponent(t, targets, false, "", featuregate.GlobalRegistry())
 }
 
 func verifyInfValues(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {

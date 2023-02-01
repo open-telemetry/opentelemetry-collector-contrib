@@ -2,50 +2,184 @@
 
 # sqlserverreceiver
 
-## Metrics
+## Default Metrics
 
-These are the metrics available for this scraper.
-
-| Name | Description | Unit | Type | Attributes |
-| ---- | ----------- | ---- | ---- | ---------- |
-| **sqlserver.batch.request.rate** | Number of batch requests received by SQL Server. | {requests}/s | Gauge(Double) | <ul> </ul> |
-| **sqlserver.batch.sql_compilation.rate** | Number of SQL compilations needed. | {compilations}/s | Gauge(Double) | <ul> </ul> |
-| **sqlserver.batch.sql_recompilation.rate** | Number of SQL recompilations needed. | {compilations}/s | Gauge(Double) | <ul> </ul> |
-| **sqlserver.lock.wait.rate** | Number of lock requests resulting in a wait. | {requests}/s | Gauge(Double) | <ul> </ul> |
-| **sqlserver.lock.wait_time.avg** | Average wait time for all lock requests that had to wait. | ms | Gauge(Double) | <ul> </ul> |
-| **sqlserver.page.buffer_cache.hit_ratio** | Pages found in the buffer pool without having to read from disk. | % | Gauge(Double) | <ul> </ul> |
-| **sqlserver.page.checkpoint.flush.rate** | Number of pages flushed by operations requiring dirty pages to be flushed. | {pages}/s | Gauge(Double) | <ul> </ul> |
-| **sqlserver.page.lazy_write.rate** | Number of lazy writes moving dirty pages to disk. | {writes}/s | Gauge(Double) | <ul> </ul> |
-| **sqlserver.page.life_expectancy** | Time a page will stay in the buffer pool. | s | Gauge(Int) | <ul> </ul> |
-| **sqlserver.page.operation.rate** | Number of physical database page operations issued. | {operations}/s | Gauge(Double) | <ul> <li>page.operations</li> </ul> |
-| **sqlserver.page.split.rate** | Number of pages split as a result of overflowing index pages. | {pages}/s | Gauge(Double) | <ul> </ul> |
-| **sqlserver.transaction.rate** | Number of transactions started for the database (not including XTP-only transactions). | {transactions}/s | Gauge(Double) | <ul> </ul> |
-| **sqlserver.transaction.write.rate** | Number of transactions that wrote to the database and committed. | {transactions}/s | Gauge(Double) | <ul> </ul> |
-| **sqlserver.transaction_log.flush.data.rate** | Total number of log bytes flushed. | By/s | Gauge(Double) | <ul> </ul> |
-| **sqlserver.transaction_log.flush.rate** | Number of log flushes. | {flushes}/s | Gauge(Double) | <ul> </ul> |
-| **sqlserver.transaction_log.flush.wait.rate** | Number of commits waiting for a transaction log flush. | {commits}/s | Gauge(Double) | <ul> </ul> |
-| **sqlserver.transaction_log.growth.count** | Total number of transaction log expansions for a database. | {growths} | Sum(Int) | <ul> </ul> |
-| **sqlserver.transaction_log.shrink.count** | Total number of transaction log shrinks for a database. | {shrinks} | Sum(Int) | <ul> </ul> |
-| **sqlserver.transaction_log.usage** | Percent of transaction log space used. | % | Gauge(Int) | <ul> </ul> |
-| **sqlserver.user.connection.count** | Number of users connected to the SQL Server. | {connections} | Gauge(Int) | <ul> </ul> |
-
-**Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
-Any metric can be enabled or disabled with the following scraper configuration:
+The following metrics are emitted by default. Each of them can be disabled by applying the following configuration:
 
 ```yaml
 metrics:
   <metric_name>:
-    enabled: <true|false>
+    enabled: false
 ```
 
-## Resource attributes
+### sqlserver.batch.request.rate
 
-| Name | Description | Type |
-| ---- | ----------- | ---- |
-| sqlserver.database.name | The name of the SQL Server database. | Str |
+Number of batch requests received by SQL Server.
 
-## Metric attributes
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {requests}/s | Gauge | Double |
+
+### sqlserver.batch.sql_compilation.rate
+
+Number of SQL compilations needed.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {compilations}/s | Gauge | Double |
+
+### sqlserver.batch.sql_recompilation.rate
+
+Number of SQL recompilations needed.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {compilations}/s | Gauge | Double |
+
+### sqlserver.lock.wait.rate
+
+Number of lock requests resulting in a wait.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {requests}/s | Gauge | Double |
+
+### sqlserver.lock.wait_time.avg
+
+Average wait time for all lock requests that had to wait.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| ms | Gauge | Double |
+
+### sqlserver.page.buffer_cache.hit_ratio
+
+Pages found in the buffer pool without having to read from disk.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| % | Gauge | Double |
+
+### sqlserver.page.checkpoint.flush.rate
+
+Number of pages flushed by operations requiring dirty pages to be flushed.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {pages}/s | Gauge | Double |
+
+### sqlserver.page.lazy_write.rate
+
+Number of lazy writes moving dirty pages to disk.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {writes}/s | Gauge | Double |
+
+### sqlserver.page.life_expectancy
+
+Time a page will stay in the buffer pool.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| s | Gauge | Int |
+
+### sqlserver.page.operation.rate
+
+Number of physical database page operations issued.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {operations}/s | Gauge | Double |
+
+#### Attributes
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| page.operations (type) | The page operation types. | read, write |
+| type | The page operation types. | Str: ``read``, ``write`` |
+
+### sqlserver.page.split.rate
+
+Number of pages split as a result of overflowing index pages.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {pages}/s | Gauge | Double |
+
+### sqlserver.transaction.rate
+
+Number of transactions started for the database (not including XTP-only transactions).
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {transactions}/s | Gauge | Double |
+
+### sqlserver.transaction.write.rate
+
+Number of transactions that wrote to the database and committed.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {transactions}/s | Gauge | Double |
+
+### sqlserver.transaction_log.flush.data.rate
+
+Total number of log bytes flushed.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By/s | Gauge | Double |
+
+### sqlserver.transaction_log.flush.rate
+
+Number of log flushes.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {flushes}/s | Gauge | Double |
+
+### sqlserver.transaction_log.flush.wait.rate
+
+Number of commits waiting for a transaction log flush.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {commits}/s | Gauge | Double |
+
+### sqlserver.transaction_log.growth.count
+
+Total number of transaction log expansions for a database.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {growths} | Sum | Int | Cumulative | true |
+
+### sqlserver.transaction_log.shrink.count
+
+Total number of transaction log shrinks for a database.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {shrinks} | Sum | Int | Cumulative | true |
+
+### sqlserver.transaction_log.usage
+
+Percent of transaction log space used.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| % | Gauge | Int |
+
+### sqlserver.user.connection.count
+
+Number of users connected to the SQL Server.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {connections} | Gauge | Int |
+
+## Resource Attributes
+
+| Name | Description | Values | Enabled |
+| ---- | ----------- | ------ | ------- |
+| sqlserver.database.name | The name of the SQL Server database. | Any Str | true |

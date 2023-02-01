@@ -18,24 +18,37 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver/internal/array"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver/internal"
 )
 
 var _ component.Config = (*Config)(nil)
 
 // Config relating to Array Metric Scraper.
 type Config struct {
-	config.ReceiverSettings       `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 	confighttp.HTTPClientSettings `mapstructure:",squash"`
 
 	// Settings contains settings for the individual scrapers
 	Settings *Settings `mapstructure:"settings"`
 
 	// Arrays represents the list of arrays to query
-	Arrays []array.Config `mapstructure:"arrays"`
+	Arrays []internal.ScraperConfig `mapstructure:"arrays"`
+
+	// Hosts represents the list of hosts to query
+	Hosts []internal.ScraperConfig `mapstructure:"hosts"`
+
+	// Directories represents the list of directories to query
+	Directories []internal.ScraperConfig `mapstructure:"directories"`
+
+	// Pods represents the list of pods to query
+	Pods []internal.ScraperConfig `mapstructure:"pods"`
+
+	// Volumes represents the list of volumes to query
+	Volumes []internal.ScraperConfig `mapstructure:"volumes"`
+
+	// Env represents the respective environment value valid to scrape
+	Env string `mapstructure:"env"`
 }
 
 type Settings struct {
@@ -43,7 +56,11 @@ type Settings struct {
 }
 
 type ReloadIntervals struct {
-	Array time.Duration `mapstructure:"array"`
+	Array       time.Duration `mapstructure:"array"`
+	Host        time.Duration `mapstructure:"host"`
+	Directories time.Duration `mapstructure:"directories"`
+	Pods        time.Duration `mapstructure:"pods"`
+	Volumes     time.Duration `mapstructure:"volumes"`
 }
 
 func (c *Config) Validate() error {

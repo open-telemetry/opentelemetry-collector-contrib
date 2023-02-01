@@ -17,8 +17,6 @@ package metricsgenerationprocessor // import "github.com/open-telemetry/opentele
 import (
 	"fmt"
 	"sort"
-
-	"go.opentelemetry.io/collector/config"
 )
 
 const (
@@ -43,7 +41,6 @@ const (
 
 // Config defines the configuration for the processor.
 type Config struct {
-	config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	// Set of rules for generating new metrics
 	Rules []Rule `mapstructure:"rules"`

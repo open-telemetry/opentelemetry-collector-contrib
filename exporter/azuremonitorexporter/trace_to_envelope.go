@@ -15,6 +15,7 @@
 package azuremonitorexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter"
 
 // Contains code common to both trace and metrics exporters
+
 import (
 	"errors"
 	"net/url"
@@ -39,9 +40,7 @@ const (
 	messagingSpanType spanType = 4
 	faasSpanType      spanType = 5
 
-	exceptionSpanEventName        string = "exception"
-	instrumentationLibraryName    string = "instrumentationlibrary.name"
-	instrumentationLibraryVersion string = "instrumentationlibrary.version"
+	exceptionSpanEventName string = "exception"
 )
 
 var (
@@ -186,46 +185,6 @@ func newEnvelope(span ptrace.Span, time string) *contracts.Envelope {
 	envelope.Tags[contracts.OperationId] = traceutil.TraceIDToHexOrEmptyString(span.TraceID())
 	envelope.Tags[contracts.OperationParentId] = traceutil.SpanIDToHexOrEmptyString(span.ParentSpanID())
 	return envelope
-}
-
-// Applies resource attributes values to data properties
-func applyResourcesToDataProperties(dataProperties map[string]string, resourceAttributes pcommon.Map) {
-	// Copy all the resource labels into the base data properties. Resource values are always strings
-	resourceAttributes.Range(func(k string, v pcommon.Value) bool {
-		dataProperties[k] = v.Str()
-		return true
-	})
-}
-
-// Sets important ai.cloud.* tags on the envelope
-func applyCloudTagsToEnvelope(envelope *contracts.Envelope, resourceAttributes pcommon.Map) {
-	// Extract key service.* labels from the Resource labels and construct CloudRole and CloudRoleInstance envelope tags
-	// https://github.com/open-telemetry/opentelemetry-specification/tree/main/specification/resource/semantic_conventions
-	if serviceName, serviceNameExists := resourceAttributes.Get(conventions.AttributeServiceName); serviceNameExists {
-		cloudRole := serviceName.Str()
-
-		if serviceNamespace, serviceNamespaceExists := resourceAttributes.Get(conventions.AttributeServiceNamespace); serviceNamespaceExists {
-			cloudRole = serviceNamespace.Str() + "." + cloudRole
-		}
-
-		envelope.Tags[contracts.CloudRole] = cloudRole
-	}
-
-	if serviceInstance, exists := resourceAttributes.Get(conventions.AttributeServiceInstanceID); exists {
-		envelope.Tags[contracts.CloudRoleInstance] = serviceInstance.Str()
-	}
-}
-
-// Applies instrumentation values to data properties
-func applyInstrumentationScopeValueToDataProperties(dataProperties map[string]string, instrumentationScope pcommon.InstrumentationScope) {
-	// Copy the instrumentation properties
-	if instrumentationScope.Name() != "" {
-		dataProperties[instrumentationLibraryName] = instrumentationScope.Name()
-	}
-
-	if instrumentationScope.Version() != "" {
-		dataProperties[instrumentationLibraryVersion] = instrumentationScope.Version()
-	}
 }
 
 // Maps Server/Consumer Span to AppInsights RequestData

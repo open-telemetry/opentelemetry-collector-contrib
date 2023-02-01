@@ -7,5 +7,5 @@ To build and run the demo, switch to this directory and run
 `docker-compose up`
 
 There will be an app continuously sending traces, open
-up `http://localhost:9411` or `http://localhost:16686` to search for the traces in the
-Zipkin or Jaeger UIs.
+up `http://localhost:16686` to search for the traces in the
+Jaeger UI.

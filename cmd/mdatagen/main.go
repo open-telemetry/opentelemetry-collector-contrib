@@ -23,7 +23,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"text/template"
 )
@@ -48,29 +47,31 @@ func run(ymlPath string) error {
 		return fmt.Errorf("failed loading %v: %w", ymlPath, err)
 	}
 
-	_, filename, _, ok := runtime.Caller(0)
-	if !ok {
-		return errors.New("unable to determine filename")
-	}
-	tmplDir := filepath.Join(filepath.Dir(filename), "templates")
+	tmplDir := "templates"
 
 	codeDir := filepath.Join(ymlDir, "internal", "metadata")
-	if err = os.MkdirAll(codeDir, 0700); err != nil {
+	if err = os.MkdirAll(filepath.Join(codeDir, "testdata"), 0700); err != nil {
 		return fmt.Errorf("unable to create output directory %q: %w", codeDir, err)
 	}
-	if err = generateCode(tmplDir, codeDir, "metrics.go", md); err != nil {
+	if err = generateFile(filepath.Join(tmplDir, "metrics.go.tmpl"),
+		filepath.Join(codeDir, "generated_metrics.go"), md); err != nil {
 		return err
 	}
-	if err = generateCode(tmplDir, codeDir, "metrics_test.go", md); err != nil {
+	if err = generateFile(filepath.Join(tmplDir, "testdata", "config.yaml.tmpl"),
+		filepath.Join(codeDir, "testdata", "config.yaml"), md); err != nil {
 		return err
 	}
-	return generateDocumentation(tmplDir, ymlDir, md)
+	if err = generateFile(filepath.Join(tmplDir, "metrics_test.go.tmpl"),
+		filepath.Join(codeDir, "generated_metrics_test.go"), md); err != nil {
+		return err
+	}
+	return generateFile(filepath.Join(tmplDir, "documentation.md.tmpl"), filepath.Join(ymlDir, "documentation.md"), md)
 }
 
-func generateCode(tmplDir string, outputDir string, tmplFile string, md metadata) error {
+func generateFile(tmplFile string, outputFile string, md metadata) error {
 	tmpl := template.Must(
 		template.
-			New(tmplFile + ".tmpl").
+			New(filepath.Base(tmplFile)).
 			Option("missingkey=error").
 			Funcs(map[string]interface{}{
 				"publicVar": func(s string) (string, error) {
@@ -79,11 +80,14 @@ func generateCode(tmplDir string, outputDir string, tmplFile string, md metadata
 				"attributeInfo": func(an attributeName) attribute {
 					return md.Attributes[an]
 				},
-				"attributeKey": func(an attributeName) string {
-					if md.Attributes[an].Value != "" {
-						return md.Attributes[an].Value
+				"attributeName": func(an attributeName) string {
+					if md.Attributes[an].NameOverride != "" {
+						return md.Attributes[an].NameOverride
 					}
 					return string(an)
+				},
+				"metricInfo": func(mn metricName) metric {
+					return md.Metrics[mn]
 				},
 				"parseImportsRequired": func(metrics map[metricName]metric) bool {
 					for _, m := range metrics {
@@ -93,58 +97,37 @@ func generateCode(tmplDir string, outputDir string, tmplFile string, md metadata
 					}
 					return false
 				},
-			}).ParseFiles(filepath.Join(tmplDir, tmplFile+".tmpl")))
+				"stringsJoin": strings.Join,
+				"inc":         func(i int) int { return i + 1 },
+				// ParseFS delegates the parsing of the files to `Glob`
+				// which uses the `\` as a special character.
+				// Meaning on windows based machines, the `\` needs to be replaced
+				// with a `/` for it to find the file.
+			}).ParseFS(templateFS, strings.ReplaceAll(tmplFile, "\\", "/")))
+
 	buf := bytes.Buffer{}
 
 	if err := tmpl.Execute(&buf, templateContext{metadata: md, Package: "metadata"}); err != nil {
 		return fmt.Errorf("failed executing template: %w", err)
 	}
 
-	formatted, err := format.Source(buf.Bytes())
-
-	if err != nil {
-		errstr := strings.Builder{}
-		_, _ = fmt.Fprintf(&errstr, "failed formatting source: %v", err)
-		errstr.WriteString("--- BEGIN SOURCE ---")
-		errstr.Write(buf.Bytes())
-		errstr.WriteString("--- END SOURCE ---")
-		return errors.New(errstr.String())
+	if err := os.Remove(outputFile); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("unable to remove genererated file %q: %w", outputFile, err)
 	}
 
-	outputFilepath := filepath.Join(outputDir, "generated_"+tmplFile)
-	if err := os.Remove(outputFilepath); err != nil && !errors.Is(err, os.ErrNotExist) {
-		return fmt.Errorf("unable to remove genererated file %q: %w", outputFilepath, err)
-	}
-	if err := os.WriteFile(outputFilepath, formatted, 0600); err != nil {
-		return fmt.Errorf("failed writing %q: %w", outputFilepath, err)
-	}
-
-	return nil
-}
-
-func generateDocumentation(tmplDir string, outputDir string, md metadata) error {
-	tmpl := template.Must(
-		template.
-			New("documentation.md.tmpl").
-			Option("missingkey=error").
-			Funcs(map[string]interface{}{
-				"publicVar": func(s string) (string, error) {
-					return formatIdentifier(s, true)
-				},
-				"stringsJoin": strings.Join,
-			}).ParseFiles(filepath.Join(tmplDir, "documentation.md.tmpl")))
-
-	buf := bytes.Buffer{}
-
-	tmplCtx := templateContext{metadata: md, Package: "metadata"}
-	if err := tmpl.Execute(&buf, tmplCtx); err != nil {
-		return fmt.Errorf("failed executing template: %w", err)
+	result := buf.Bytes()
+	var formatErr error
+	if strings.HasSuffix(outputFile, ".go") {
+		if formatted, err := format.Source(buf.Bytes()); err == nil {
+			result = formatted
+		} else {
+			formatErr = fmt.Errorf("failed formatting %s:%w", outputFile, err)
+		}
 	}
 
-	outputFile := filepath.Join(outputDir, "documentation.md")
-	if err := os.WriteFile(outputFile, buf.Bytes(), 0600); err != nil {
+	if err := os.WriteFile(outputFile, result, 0600); err != nil {
 		return fmt.Errorf("failed writing %q: %w", outputFile, err)
 	}
 
-	return nil
+	return formatErr
 }

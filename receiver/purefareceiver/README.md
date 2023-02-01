@@ -26,12 +26,33 @@ receivers:
   purefa:
     endpoint: http://172.0.0.1:9490/metrics
     arrays:
-    - address: gse-array01
-      auth:
-        authenticator: bearertokenauth/array01
+      - address: gse-array01
+        auth:
+          authenticator: bearertokenauth/array01
+    host:
+      - address: gse-array01
+        auth:
+          authenticator: bearertokenauth/array01
+    directories:
+      - address: gse-array01
+        auth:
+          authenticator: bearertokenauth/array01
+    pods:
+      - address: gse-array01
+        auth:
+          authenticator: bearertokenauth/array01
+    volumes:
+      - address: gse-array01
+        auth:
+          authenticator: bearertokenauth/array01
+    env: dev
     settings:
       reload_intervals:
         array: 10s
+        host: 13s
+        directories: 15s
+        pods: 30s
+        volumes: 25s
 ```
 
 The full list of settings exposed for this receiver are documented [here](./config.go)

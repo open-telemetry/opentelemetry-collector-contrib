@@ -19,8 +19,8 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/extension"
 )
 
 const (
@@ -32,8 +32,8 @@ const (
 )
 
 // NewFactory creates a factory for HostObserver extension.
-func NewFactory() component.ExtensionFactory {
-	return component.NewExtensionFactory(
+func NewFactory() extension.Factory {
+	return extension.NewFactory(
 		typeStr,
 		createDefaultConfig,
 		createExtension,
@@ -42,7 +42,6 @@ func NewFactory() component.ExtensionFactory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
 		Ingress: confighttp.HTTPServerSettings{
 			Endpoint: defaultEndpoint,
 		},
@@ -54,8 +53,8 @@ func createDefaultConfig() component.Config {
 
 func createExtension(
 	_ context.Context,
-	params component.ExtensionCreateSettings,
+	params extension.CreateSettings,
 	cfg component.Config,
-) (component.Extension, error) {
+) (extension.Extension, error) {
 	return newHTTPForwarder(cfg.(*Config), params.TelemetrySettings)
 }

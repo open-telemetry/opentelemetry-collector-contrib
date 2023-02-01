@@ -18,15 +18,15 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/extension"
 )
 
 // The value of extension "type" in configuration.
 const typeStr component.Type = "db_storage"
 
 // NewFactory creates a factory for DBStorage extension.
-func NewFactory() component.ExtensionFactory {
-	return component.NewExtensionFactory(
+func NewFactory() extension.Factory {
+	return extension.NewFactory(
 		typeStr,
 		createDefaultConfig,
 		createExtension,
@@ -35,15 +35,13 @@ func NewFactory() component.ExtensionFactory {
 }
 
 func createDefaultConfig() component.Config {
-	return &Config{
-		ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
-	}
+	return &Config{}
 }
 
 func createExtension(
 	_ context.Context,
-	params component.ExtensionCreateSettings,
+	params extension.CreateSettings,
 	cfg component.Config,
-) (component.Extension, error) {
+) (extension.Extension, error) {
 	return newDBStorage(params.Logger, cfg.(*Config))
 }

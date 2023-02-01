@@ -22,10 +22,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/processor/processortest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filtermetric"
@@ -115,9 +116,8 @@ func testFilter(t *testing.T, mdType pmetric.MetricType, mvType pmetric.NumberDa
 
 func assertFiltered(t *testing.T, lm pcommon.Map) {
 	lm.Range(func(k string, v pcommon.Value) bool {
-		if k == filteredAttrKey && v.Equal(filteredAttrVal) {
-			assert.Fail(t, "found metric that should have been filtered out")
-			return false
+		if k == filteredAttrKey {
+			require.NotEqual(t, v.AsRaw(), filteredAttrVal.AsRaw())
 		}
 		return true
 	})
@@ -132,14 +132,14 @@ func filterMetrics(t *testing.T, include []string, exclude []string, mds []pmetr
 	return next.AllMetrics()
 }
 
-func testProcessor(t *testing.T, include []string, exclude []string) (component.MetricsProcessor, *consumertest.MetricsSink) {
+func testProcessor(t *testing.T, include []string, exclude []string) (processor.Metrics, *consumertest.MetricsSink) {
 	factory := NewFactory()
 	cfg := exprConfig(factory, include, exclude)
 	ctx := context.Background()
 	next := &consumertest.MetricsSink{}
 	proc, err := factory.CreateMetricsProcessor(
 		ctx,
-		componenttest.NewNopProcessorCreateSettings(),
+		processortest.NewNopCreateSettings(),
 		cfg,
 		next,
 	)
@@ -148,7 +148,7 @@ func testProcessor(t *testing.T, include []string, exclude []string) (component.
 	return proc, next
 }
 
-func exprConfig(factory component.ProcessorFactory, include []string, exclude []string) component.Config {
+func exprConfig(factory processor.Factory, include []string, exclude []string) component.Config {
 	cfg := factory.CreateDefaultConfig()
 	pCfg := cfg.(*Config)
 	pCfg.Metrics = MetricFilters{}

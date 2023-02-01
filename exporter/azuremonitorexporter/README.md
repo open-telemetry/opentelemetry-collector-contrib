@@ -1,12 +1,12 @@
 # Azure Monitor Exporter
 
-| Status                   |              |
-|--------------------------|--------------|
-| Stability                | [beta]       |
-| Supported pipeline types | logs, traces |
-| Distributions            | [contrib]    |
+| Status                   |                       |
+|--------------------------|-----------------------|
+| Stability                | [beta]                |
+| Supported pipeline types | logs, traces, metrics |
+| Distributions            | [contrib]             |
 
-This exporter sends logs and trace data to [Azure Monitor](https://docs.microsoft.com/azure/azure-monitor/).
+This exporter sends logs, traces and metrics to [Azure Monitor](https://docs.microsoft.com/azure/azure-monitor/).
 
 ## Configuration
 
@@ -62,15 +62,19 @@ The exact mapping can be found [here](trace_to_envelope.go).
 
 All attributes are also mapped to custom properties if they are booleans or strings and to custom measurements if they are ints or doubles.
 
+#### Span Events
+
+Span events are optionally saved to the Application Insights `traces` table.
+Exception events are saved to the Application Insights `exception` table.
+
 ### Logs
 
 This exporter saves log records to Application Insights `traces` table.
 [TraceId](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#field-traceid) is mapped to `operation_id` column and [SpanId](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#field-spanid) is mapped to `operation_parentId` column.
 
+### Metrics
+
+This exporter saves metrics to Application Insights `customMetrics` table.
+
 [beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
-
-### Span Events
-
-Span events are optionally saved to the Application Insights `traces` table.
-Exception events are saved to the Application Insights `exception` table.

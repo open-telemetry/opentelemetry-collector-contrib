@@ -40,8 +40,9 @@ type Manager struct {
 	roller        roller
 	persister     operator.Persister
 
-	pollInterval  time.Duration
-	maxBatchFiles int
+	pollInterval    time.Duration
+	maxBatchFiles   int
+	deleteAfterRead bool
 
 	knownFiles []*Reader
 	seenPaths  map[string]struct{}
@@ -135,9 +136,20 @@ func (m *Manager) consume(ctx context.Context, paths []string) {
 		go func(r *Reader) {
 			defer wg.Done()
 			r.ReadToEnd(ctx)
+			if m.deleteAfterRead {
+				r.Close()
+				if err := os.Remove(r.file.Name()); err != nil {
+					m.Errorf("could not delete %s", r.file.Name())
+				}
+			}
 		}(reader)
 	}
 	wg.Wait()
+
+	if m.deleteAfterRead {
+		// no need to track files since they were deleted
+		return
+	}
 
 	// Any new files that appear should be consumed entirely
 	m.readerFactory.fromBeginning = true

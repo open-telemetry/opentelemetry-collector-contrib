@@ -61,6 +61,29 @@ func (_m *MockElasticsearchClient) ClusterMetadata(ctx context.Context) (*model.
 	return r0, r1
 }
 
+// ClusterStats provides a mock function with given fields: ctx, nodes
+func (_m *MockElasticsearchClient) ClusterStats(ctx context.Context, nodes []string) (*model.ClusterStats, error) {
+	ret := _m.Called(ctx, nodes)
+
+	var r0 *model.ClusterStats
+	if rf, ok := ret.Get(0).(func(context.Context, []string) *model.ClusterStats); ok {
+		r0 = rf(ctx, nodes)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*model.ClusterStats)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, []string) error); ok {
+		r1 = rf(ctx, nodes)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // IndexStats provides a mock function with given fields: ctx, indices
 func (_m *MockElasticsearchClient) IndexStats(ctx context.Context, indices []string) (*model.IndexStats, error) {
 	ret := _m.Called(ctx, indices)
@@ -77,6 +100,29 @@ func (_m *MockElasticsearchClient) IndexStats(ctx context.Context, indices []str
 	var r1 error
 	if rf, ok := ret.Get(1).(func(context.Context, []string) error); ok {
 		r1 = rf(ctx, indices)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// Nodes provides a mock function with given fields: ctx, nodes
+func (_m *MockElasticsearchClient) Nodes(ctx context.Context, nodes []string) (*model.Nodes, error) {
+	ret := _m.Called(ctx, nodes)
+
+	var r0 *model.Nodes
+	if rf, ok := ret.Get(0).(func(context.Context, []string) *model.Nodes); ok {
+		r0 = rf(ctx, nodes)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*model.Nodes)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, []string) error); ok {
+		r1 = rf(ctx, nodes)
 	} else {
 		r1 = ret.Error(1)
 	}

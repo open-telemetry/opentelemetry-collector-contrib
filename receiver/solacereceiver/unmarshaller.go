@@ -23,6 +23,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/otel/baggage"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
@@ -42,7 +43,7 @@ func newTracesUnmarshaller(logger *zap.Logger, metrics *opencensusMetrics) trace
 		logger:  logger,
 		metrics: metrics,
 		// v1 unmarshaller is implemented by solaceMessageUnmarshallerV1
-		v1: &solaceMessageUnmarshallerV1{
+		receiveUnmarshallerV1: &brokerTraceReceiveUnmarshallerV1{
 			logger:  logger,
 			metrics: metrics,
 		},
@@ -51,50 +52,60 @@ func newTracesUnmarshaller(logger *zap.Logger, metrics *opencensusMetrics) trace
 
 // solaceTracesUnmarshaller implements tracesUnmarshaller.
 type solaceTracesUnmarshaller struct {
-	logger  *zap.Logger
-	metrics *opencensusMetrics
-	v1      tracesUnmarshaller
+	logger                *zap.Logger
+	metrics               *opencensusMetrics
+	receiveUnmarshallerV1 tracesUnmarshaller
 }
 
 var (
-	errUnknownTraceMessgeVersion = errors.New("unsupported trace message version")
-	errUnknownTraceMessgeType    = errors.New("bad trace message")
-	errEmptyPayload              = errors.New("no binary attachment")
+	errUpgradeRequired = errors.New("unsupported trace message, upgrade required")
+	errUnknownTopic    = errors.New("unknown topic")
+	errEmptyPayload    = errors.New("no binary attachment")
 )
 
 // unmarshal will unmarshal an *solaceMessage into ptrace.Traces.
 // It will make a decision based on the version of the message which unmarshalling strategy to use.
-// For now, only v1 messages are used.
+// For now, only receive v1 messages are used.
 func (u *solaceTracesUnmarshaller) unmarshal(message *inboundMessage) (ptrace.Traces, error) {
 	const (
-		topicPrefix   = "_telemetry/broker/trace/receive/v"
-		topicPrefixV1 = topicPrefix + "1"
+		topicPrefix       = "_telemetry/"
+		receiveSpanPrefix = "broker/trace/receive/"
+		v1Suffix          = "v1"
 	)
-	if message.Properties != nil && message.Properties.To != nil {
-		if strings.HasPrefix(*message.Properties.To, topicPrefixV1) {
-			return u.v1.unmarshal(message)
-		}
-		if strings.HasPrefix(*message.Properties.To, topicPrefix) {
-			// unknown version
-			u.logger.Error("Received message with unsupported version topic", zap.String("topic", *message.Properties.To))
-			return ptrace.Traces{}, errUnknownTraceMessgeVersion
-		}
-		// unknown topic
-		u.logger.Error("Received message with unknown topic", zap.String("topic", *message.Properties.To))
-		return ptrace.Traces{}, errUnknownTraceMessgeType
+	if message.Properties == nil || message.Properties.To == nil {
+		// no topic
+		u.logger.Error("Received message with no topic")
+		return ptrace.Traces{}, errUnknownTopic
 	}
-	// no topic
-	u.logger.Error("Received message with no topic")
-	return ptrace.Traces{}, errUnknownTraceMessgeType
+	var topic string = *message.Properties.To
+	// Multiplex the topic string. For now we only have a single type handled
+	if strings.HasPrefix(topic, topicPrefix) {
+		// we are a telemetry strng
+		if strings.HasPrefix(topic[len(topicPrefix):], receiveSpanPrefix) {
+			// we are handling a receive span, validate the version is v1
+			if strings.HasSuffix(topic, v1Suffix) {
+				return u.receiveUnmarshallerV1.unmarshal(message)
+			}
+			// otherwise we are an unknown version
+			u.logger.Error("Received message with unsupported receive span version, an upgrade is required", zap.String("topic", *message.Properties.To))
+		} else {
+			u.logger.Error("Received message with unsupported topic, an upgrade is required", zap.String("topic", *message.Properties.To))
+		}
+		// if we don't know the type, we must upgrade
+		return ptrace.Traces{}, errUpgradeRequired
+	}
+	// unknown topic, do not require an upgrade
+	u.logger.Error("Received message with unknown topic", zap.String("topic", *message.Properties.To))
+	return ptrace.Traces{}, errUnknownTopic
 }
 
-type solaceMessageUnmarshallerV1 struct {
+type brokerTraceReceiveUnmarshallerV1 struct {
 	logger  *zap.Logger
 	metrics *opencensusMetrics
 }
 
 // unmarshal implements tracesUnmarshaller.unmarshal
-func (u *solaceMessageUnmarshallerV1) unmarshal(message *inboundMessage) (ptrace.Traces, error) {
+func (u *brokerTraceReceiveUnmarshallerV1) unmarshal(message *inboundMessage) (ptrace.Traces, error) {
 	spanData, err := u.unmarshalToSpanData(message)
 	if err != nil {
 		return ptrace.Traces{}, err
@@ -106,7 +117,7 @@ func (u *solaceMessageUnmarshallerV1) unmarshal(message *inboundMessage) (ptrace
 
 // unmarshalToSpanData will consume an solaceMessage and unmarshal it into a SpanData.
 // Returns an error if one occurred.
-func (u *solaceMessageUnmarshallerV1) unmarshalToSpanData(message *inboundMessage) (*model_v1.SpanData, error) {
+func (u *brokerTraceReceiveUnmarshallerV1) unmarshalToSpanData(message *inboundMessage) (*model_v1.SpanData, error) {
 	var data = message.GetData()
 	if len(data) == 0 {
 		return nil, errEmptyPayload
@@ -121,7 +132,7 @@ func (u *solaceMessageUnmarshallerV1) unmarshalToSpanData(message *inboundMessag
 // createSpan will create a new Span from the given traces and map the given SpanData to the span.
 // This will set all required fields such as name version, trace and span ID, parent span ID (if applicable),
 // timestamps, errors and states.
-func (u *solaceMessageUnmarshallerV1) populateTraces(spanData *model_v1.SpanData, traces ptrace.Traces) {
+func (u *brokerTraceReceiveUnmarshallerV1) populateTraces(spanData *model_v1.SpanData, traces ptrace.Traces) {
 	// Append new resource span and map any attributes
 	resourceSpan := traces.ResourceSpans().AppendEmpty()
 	u.mapResourceSpanAttributes(spanData, resourceSpan.Resource().Attributes())
@@ -136,7 +147,7 @@ func (u *solaceMessageUnmarshallerV1) populateTraces(spanData *model_v1.SpanData
 	u.mapEvents(spanData, clientSpan)
 }
 
-func (u *solaceMessageUnmarshallerV1) mapResourceSpanAttributes(spanData *model_v1.SpanData, attrMap pcommon.Map) {
+func (u *brokerTraceReceiveUnmarshallerV1) mapResourceSpanAttributes(spanData *model_v1.SpanData, attrMap pcommon.Map) {
 	const (
 		routerNameAttrKey     = "service.name"
 		messageVpnNameAttrKey = "service.instance.id"
@@ -149,7 +160,7 @@ func (u *solaceMessageUnmarshallerV1) mapResourceSpanAttributes(spanData *model_
 	attrMap.PutStr(solosVersionAttrKey, spanData.SolosVersion)
 }
 
-func (u *solaceMessageUnmarshallerV1) mapClientSpanData(spanData *model_v1.SpanData, clientSpan ptrace.Span) {
+func (u *brokerTraceReceiveUnmarshallerV1) mapClientSpanData(spanData *model_v1.SpanData, clientSpan ptrace.Span) {
 	const clientSpanName = "(topic) receive"
 
 	// client span constants
@@ -188,7 +199,7 @@ func (u *solaceMessageUnmarshallerV1) mapClientSpanData(spanData *model_v1.SpanD
 
 // mapAttributes takes a set of attributes from SpanData and maps them to ClientSpan.Attributes().
 // Will also copy any user properties stored in the SpanData with a best effort approach.
-func (u *solaceMessageUnmarshallerV1) mapClientSpanAttributes(spanData *model_v1.SpanData, attrMap pcommon.Map) {
+func (u *brokerTraceReceiveUnmarshallerV1) mapClientSpanAttributes(spanData *model_v1.SpanData, attrMap pcommon.Map) {
 	// constant attributes
 	const (
 		systemAttrKey      = "messaging.system"
@@ -290,6 +301,14 @@ func (u *solaceMessageUnmarshallerV1) mapClientSpanAttributes(spanData *model_v1
 	}
 	attrMap.PutInt(peerPortAttrKey, int64(spanData.PeerPort))
 
+	if spanData.Baggage != nil {
+		err := u.unmarshalBaggage(attrMap, *spanData.Baggage)
+		if err != nil {
+			u.logger.Warn("Received malformed baggage string in span data")
+			u.metrics.recordRecoverableUnmarshallingError()
+		}
+	}
+
 	attrMap.PutBool(droppedUserPropertiesAttrKey, spanData.DroppedApplicationMessageProperties)
 	for key, value := range spanData.UserProperties {
 		if value != nil {
@@ -299,7 +318,7 @@ func (u *solaceMessageUnmarshallerV1) mapClientSpanAttributes(spanData *model_v1
 }
 
 // mapEvents maps all events contained in SpanData to relevant events within clientSpan.Events()
-func (u *solaceMessageUnmarshallerV1) mapEvents(spanData *model_v1.SpanData, clientSpan ptrace.Span) {
+func (u *brokerTraceReceiveUnmarshallerV1) mapEvents(spanData *model_v1.SpanData, clientSpan ptrace.Span) {
 	// handle enqueue events
 	for _, enqueueEvent := range spanData.EnqueueEvents {
 		u.mapEnqueueEvent(enqueueEvent, clientSpan.Events())
@@ -312,7 +331,7 @@ func (u *solaceMessageUnmarshallerV1) mapEvents(spanData *model_v1.SpanData, cli
 }
 
 // mapEnqueueEvent maps a SpanData_EnqueueEvent to a ClientSpan.Event
-func (u *solaceMessageUnmarshallerV1) mapEnqueueEvent(enqueueEvent *model_v1.SpanData_EnqueueEvent, clientSpanEvents ptrace.SpanEventSlice) {
+func (u *brokerTraceReceiveUnmarshallerV1) mapEnqueueEvent(enqueueEvent *model_v1.SpanData_EnqueueEvent, clientSpanEvents ptrace.SpanEventSlice) {
 	const (
 		enqueueEventSuffix               = " enqueue" // Final should be `<dest> enqueue`
 		messagingDestinationTypeEventKey = "messaging.solace.destination_type"
@@ -347,7 +366,7 @@ func (u *solaceMessageUnmarshallerV1) mapEnqueueEvent(enqueueEvent *model_v1.Spa
 }
 
 // mapTransactionEvent maps a SpanData_TransactionEvent to a ClientSpan.Event
-func (u *solaceMessageUnmarshallerV1) mapTransactionEvent(transactionEvent *model_v1.SpanData_TransactionEvent, clientSpanEvents ptrace.SpanEventSlice) {
+func (u *brokerTraceReceiveUnmarshallerV1) mapTransactionEvent(transactionEvent *model_v1.SpanData_TransactionEvent, clientSpanEvents ptrace.SpanEventSlice) {
 	const (
 		transactionInitiatorEventKey    = "messaging.solace.transaction_initiator"
 		transactionIDEventKey           = "messaging.solace.transaction_id"
@@ -417,7 +436,7 @@ func (u *solaceMessageUnmarshallerV1) mapTransactionEvent(transactionEvent *mode
 	}
 }
 
-func (u *solaceMessageUnmarshallerV1) rgmidToString(rgmid []byte) string {
+func (u *brokerTraceReceiveUnmarshallerV1) rgmidToString(rgmid []byte) string {
 	// rgmid[0] is the version of the rgmid
 	if len(rgmid) != 17 || rgmid[0] != 1 {
 		// may be cases where the rgmid is empty or nil, len(rgmid) will return 0 if nil
@@ -434,9 +453,39 @@ func (u *solaceMessageUnmarshallerV1) rgmidToString(rgmid []byte) string {
 	return rgmidString
 }
 
+// unmarshalBaggage will unmarshal a baggage string
+// See spec https://github.com/open-telemetry/opentelemetry-go/blob/v1.11.1/baggage/baggage.go
+func (u *brokerTraceReceiveUnmarshallerV1) unmarshalBaggage(toMap pcommon.Map, baggageString string) error {
+	const (
+		baggageValuePrefix    = "messaging.solace.message.baggage."
+		baggageMetadataPrefix = "messaging.solace.message.baggage_metadata."
+		propertyDelimiter     = ";"
+	)
+	bg, err := baggage.Parse(baggageString)
+	if err != nil {
+		return err
+	}
+	// we got a valid baggage string, assume everything else is valid
+	for _, member := range bg.Members() {
+		toMap.PutStr(baggageValuePrefix+member.Key(), member.Value())
+		// member.Properties copies, we should cache
+		properties := member.Properties()
+		if len(properties) > 0 {
+			// Re-encode the properties and save them as a parameter
+			var propertyString strings.Builder
+			propertyString.WriteString(properties[0].String())
+			for i := 1; i < len(properties); i++ {
+				propertyString.WriteString(propertyDelimiter + properties[i].String())
+			}
+			toMap.PutStr(baggageMetadataPrefix+member.Key(), propertyString.String())
+		}
+	}
+	return nil
+}
+
 // insertUserProperty will instert a user property value with the given key to an attribute if possible.
 // Since AttributeMap only supports int64 integer types, uint64 data may be misrepresented.
-func (u *solaceMessageUnmarshallerV1) insertUserProperty(toMap pcommon.Map, key string, value interface{}) {
+func (u *brokerTraceReceiveUnmarshallerV1) insertUserProperty(toMap pcommon.Map, key string, value interface{}) {
 	const (
 		// userPropertiesPrefixAttrKey is the key used to prefix all user properties
 		userPropertiesAttrKeyPrefix = "messaging.solace.user_properties."

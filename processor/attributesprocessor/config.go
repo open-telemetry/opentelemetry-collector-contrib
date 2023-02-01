@@ -15,8 +15,9 @@
 package attributesprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor"
 
 import (
+	"errors"
+
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
@@ -30,8 +31,6 @@ import (
 // This determines if a span is to be processed or not.
 // The list of actions is applied in order specified in the configuration.
 type Config struct {
-	config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-
 	filterconfig.MatchConfig `mapstructure:",squash"`
 
 	// Specifies the list of attributes to act on.
@@ -44,5 +43,8 @@ var _ component.Config = (*Config)(nil)
 
 // Validate checks if the processor configuration is valid
 func (cfg *Config) Validate() error {
+	if len(cfg.Actions) == 0 {
+		return errors.New("missing required field \"actions\"")
+	}
 	return nil
 }

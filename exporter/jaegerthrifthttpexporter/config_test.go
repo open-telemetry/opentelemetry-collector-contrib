@@ -22,8 +22,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -48,10 +48,9 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "2"),
 			expected: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "http://jaeger.example.com/api/traces",
-					Headers: map[string]string{
+					Headers: map[string]configopaque.String{
 						"added-entry": "added value",
 						"dot.test":    "test",
 					},
@@ -72,6 +71,44 @@ func TestLoadConfig(t *testing.T) {
 
 			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
+		})
+	}
+}
+
+func TestValidateConfig(t *testing.T) {
+	tests := []struct {
+		name         string
+		config       *Config
+		errorMessage string
+	}{
+		{
+			name:         "empty_url",
+			config:       &Config{},
+			errorMessage: "invalid \"endpoint\": parse \"\": empty url",
+		},
+		{
+			name: "invalid_url",
+			config: &Config{
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: ".example:123",
+				},
+			},
+			errorMessage: "invalid \"endpoint\": parse \".example:123\": invalid URI for request",
+		},
+		{
+			name: "negative_duration",
+			config: &Config{
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: "example.com:123",
+					Timeout:  -2 * time.Second,
+				},
+			},
+			errorMessage: "invalid negative value for \"timeout\"",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.EqualError(t, tt.config.Validate(), tt.errorMessage)
 		})
 	}
 }

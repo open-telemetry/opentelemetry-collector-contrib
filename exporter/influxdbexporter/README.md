@@ -21,6 +21,11 @@ The following configuration options are supported:
 * `org` (required) Name of InfluxDB organization that owns the destination bucket
 * `bucket` (required) name of InfluxDB bucket to which signals will be written
 * `token` (optional) The authentication token for InfluxDB
+* `v1_compatibility` (optional) Options for exporting to InfluxDB v1.x
+  * `enabled` (optional) Use InfluxDB v1.x API if enabled
+  * `db` (required if enabled) Name of the InfluxDB database to which signals will be written
+  * `username` (optional) Basic auth username for authenticating with InfluxDB v1.x
+  * `password` (optional) Basic auth password for authenticating with InfluxDB v1.x
 * `metrics_schema` (default = telegraf-prometheus-v1) The chosen metrics schema to write; must be one of:
   * `telegraf-prometheus-v1`
   * `telegraf-prometheus-v2`
