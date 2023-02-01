@@ -41,12 +41,6 @@ type TransformContext struct {
 
 type Option func(*ottl.Parser[TransformContext])
 
-func WithErrorMode(errorMode ottl.ErrorMode) Option {
-	return func(p *ottl.Parser[TransformContext]) {
-		ottl.WithErrorMode[TransformContext](errorMode)(p)
-	}
-}
-
 func NewTransformContext(dataPoint interface{}, metric pmetric.Metric, metrics pmetric.MetricSlice, instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource) TransformContext {
 	return TransformContext{
 		dataPoint:            dataPoint,
@@ -88,7 +82,6 @@ func NewParser(functions map[string]interface{}, telemetrySettings component.Tel
 		parsePath,
 		telemetrySettings,
 		ottl.WithEnumParser[TransformContext](parseEnum),
-		ottl.WithErrorMode[TransformContext](ottl.PropagateError),
 	)
 	for _, opt := range options {
 		opt(&p)

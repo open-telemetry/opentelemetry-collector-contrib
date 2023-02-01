@@ -36,7 +36,6 @@ type Parser[K any] struct {
 	pathParser        PathExpressionParser[K]
 	enumParser        EnumParser
 	telemetrySettings component.TelemetrySettings
-	errorMode         ErrorMode
 }
 
 // Statement holds a top level Statement for processing telemetry data. A Statement is a combination of a function
@@ -90,12 +89,6 @@ type Option[K any] func(*Parser[K])
 func WithEnumParser[K any](parser EnumParser) Option[K] {
 	return func(p *Parser[K]) {
 		p.enumParser = parser
-	}
-}
-
-func WithErrorMode[K any](errorMode ErrorMode) Option[K] {
-	return func(p *Parser[K]) {
-		p.errorMode = errorMode
 	}
 }
 
