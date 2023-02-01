@@ -54,10 +54,6 @@ type eventRecord struct {
 }
 
 func newEventsReceiver(settings rcvr.CreateSettings, c *Config, consumer consumer.Logs) *eventsReceiver {
-	for _, p := range c.Events.Projects {
-		p.populateIncludesAndExcludes()
-	}
-
 	r := &eventsReceiver{
 		client:       internal.NewMongoDBAtlasClient(c.PublicKey, c.PrivateKey, c.RetrySettings, settings.Logger),
 		cfg:          c,
@@ -157,10 +153,7 @@ func (er *eventsReceiver) poll(ctx context.Context, project *mongodbatlas.Projec
 		}
 
 		now := pcommon.NewTimestampFromTime(pollTime)
-		logs, err := er.transformEvents(now, projectEvents, project)
-		if err != nil {
-			er.logger.Error("error parsing events", zap.Error(err))
-		}
+		logs := er.transformEvents(now, projectEvents, project)
 
 		if logs.LogRecordCount() > 0 {
 			if err = er.consumer.ConsumeLogs(ctx, logs); err != nil {
@@ -176,9 +169,8 @@ func (er *eventsReceiver) poll(ctx context.Context, project *mongodbatlas.Projec
 
 }
 
-func (er *eventsReceiver) transformEvents(now pcommon.Timestamp, events []*mongodbatlas.Event, p *mongodbatlas.Project) (plog.Logs, error) {
+func (er *eventsReceiver) transformEvents(now pcommon.Timestamp, events []*mongodbatlas.Event, p *mongodbatlas.Project) plog.Logs {
 	logs := plog.NewLogs()
-	var errs error
 	for _, event := range events {
 		resourceLogs := logs.ResourceLogs().AppendEmpty()
 		ra := resourceLogs.Resource().Attributes()
@@ -216,7 +208,7 @@ func (er *eventsReceiver) transformEvents(now pcommon.Timestamp, events []*mongo
 		parseOptionalAttributes(&attrs, event)
 	}
 
-	return logs, errs
+	return logs
 }
 
 func (er *eventsReceiver) checkpoint(ctx context.Context) error {

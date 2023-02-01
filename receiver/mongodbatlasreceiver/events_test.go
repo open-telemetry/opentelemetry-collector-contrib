@@ -3,7 +3,7 @@ package mongodbatlasreceiver
 import (
 	"context"
 	"encoding/json"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -63,6 +63,32 @@ func TestStartAndShutdown(t *testing.T) {
 	}
 }
 
+func TestContextDone(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Events = &EventsConfig{
+		Projects: []*ProjectConfig{
+			{
+				Name: testProjectName,
+			},
+		},
+		PollInterval: 500 * time.Millisecond,
+	}
+	sink := &consumertest.LogsSink{}
+	r := newEventsReceiver(receivertest.NewNopCreateSettings(), cfg, sink)
+	mClient := &mockEventsClient{}
+	mClient.setupMock(t)
+	r.client = mClient
+
+	ctx, cancel := context.WithCancel(context.Background())
+	err := r.Start(ctx, componenttest.NewNopHost())
+	require.NoError(t, err)
+	cancel()
+
+	require.Never(t, func() bool {
+		return sink.LogRecordCount() > 0
+	}, 500*time.Millisecond, 2*time.Second)
+}
+
 func TestPoll(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Events = &EventsConfig{
@@ -99,19 +125,22 @@ type mockEventsClient struct {
 }
 
 func (mec *mockEventsClient) setupMock(t *testing.T) {
+	mec.setupGetProject()
+	mec.On("GetEvents", mock.Anything, mock.Anything, mock.Anything).Return(mec.loadTestEvents(t), false, nil)
+}
+
+func (mec *mockEventsClient) setupGetProject() {
 	mec.On("GetProject", mock.Anything, mock.Anything).Return(&mongodbatlas.Project{
 		ID:    testProjectID,
 		OrgID: testOrgID,
 		Name:  testProjectName,
 		Links: []*mongodbatlas.Link{},
 	}, nil)
-
-	mec.On("GetEvents", mock.Anything, mock.Anything, mock.Anything).Return(mec.loadTestEvents(t), false, nil)
 }
 
 func (mec *mockEventsClient) loadTestEvents(t *testing.T) []*mongodbatlas.Event {
 	testEvents := filepath.Join("testdata", "events", "sample-payloads", "events.json")
-	eventBytes, err := ioutil.ReadFile(testEvents)
+	eventBytes, err := os.ReadFile(testEvents)
 	require.NoError(t, err)
 
 	var events []*mongodbatlas.Event
