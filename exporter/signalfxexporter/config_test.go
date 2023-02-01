@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/correlation"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
@@ -46,9 +47,7 @@ func TestLoadConfig(t *testing.T) {
 	defaultCfg := createDefaultConfig().(*Config)
 	defaultCfg.AccessToken = "testToken"
 	defaultCfg.Realm = "ap0"
-	defaultTranslationRules, err := loadDefaultTranslationRules()
 	require.NoError(t, err)
-	defaultCfg.TranslationRules = defaultTranslationRules
 
 	seventy := 70
 
@@ -203,11 +202,6 @@ func TestLoadConfig(t *testing.T) {
 }
 
 func TestConfigGetMetricTranslator(t *testing.T) {
-	emptyTranslator := func() *translation.MetricTranslator {
-		translator, err := translation.NewMetricTranslator(nil, 3600)
-		require.NoError(t, err)
-		return translator
-	}
 	tests := []struct {
 		name    string
 		cfg     *Config
@@ -215,11 +209,52 @@ func TestConfigGetMetricTranslator(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Test empty translator",
+			name: "Test empty config",
 			cfg: &Config{
 				DeltaTranslationTTL: 3600,
 			},
-			want: emptyTranslator(),
+			want: func() *translation.MetricTranslator {
+				translator, err := translation.NewMetricTranslator(defaultTranslationRules, 3600)
+				require.NoError(t, err)
+				return translator
+			}(),
+		},
+		{
+			name: "Test empty rules",
+			cfg: &Config{
+				TranslationRules:    []translation.Rule{},
+				DeltaTranslationTTL: 3600,
+			},
+			want: func() *translation.MetricTranslator {
+				translator, err := translation.NewMetricTranslator([]translation.Rule{}, 3600)
+				require.NoError(t, err)
+				return translator
+			}(),
+		},
+		{
+			name: "Test disable rules",
+			cfg: &Config{
+				DisableDefaultTranslationRules: true,
+				DeltaTranslationTTL:            3600,
+			},
+			want: func() *translation.MetricTranslator {
+				translator, err := translation.NewMetricTranslator([]translation.Rule{}, 3600)
+				require.NoError(t, err)
+				return translator
+			}(),
+		},
+		{
+			name: "Test disable rules overrides rules",
+			cfg: &Config{
+				TranslationRules:               []translation.Rule{{Action: translation.ActionDropDimensions}},
+				DisableDefaultTranslationRules: true,
+				DeltaTranslationTTL:            3600,
+			},
+			want: func() *translation.MetricTranslator {
+				translator, err := translation.NewMetricTranslator([]translation.Rule{}, 3600)
+				require.NoError(t, err)
+				return translator
+			}(),
 		},
 		{
 			name: "Test invalid translation rules",
@@ -238,7 +273,7 @@ func TestConfigGetMetricTranslator(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := tt.cfg.getMetricTranslator()
+			got, err := tt.cfg.getMetricTranslator(zap.NewNop())
 			if tt.wantErr {
 				assert.Error(t, err)
 				return
