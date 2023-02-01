@@ -32,42 +32,26 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 
-	metadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/clusterresourcequota"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/cronjob"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/demonset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/deployment"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/hpa"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/jobs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/namespace"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/node"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/pod"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/replicaset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/replicationcontroller"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/resourcequota"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/statefulset"
 )
 
 // TODO: Consider moving some of these constants to
 // https://go.opentelemetry.io/collector/blob/main/model/semconv/opentelemetry.go.
-
-// Resource label keys.
-const (
-	// TODO: Remove after switch to new Metrics definition
-	// Resource Type
-	k8sType       = "k8s"
-	containerType = "container"
-
-	// Resource labels keys for UID.
-	k8sKeyNamespaceUID             = "k8s.namespace.uid"
-	k8sKeyReplicationControllerUID = "k8s.replicationcontroller.uid"
-	k8sKeyHPAUID                   = "k8s.hpa.uid"
-	k8sKeyResourceQuotaUID         = "k8s.resourcequota.uid"
-	k8sKeyClusterResourceQuotaUID  = "openshift.clusterquota.uid"
-
-	// Resource labels keys for Name.
-	k8sKeyReplicationControllerName = "k8s.replicationcontroller.name"
-	k8sKeyHPAName                   = "k8s.hpa.name"
-	k8sKeyResourceQuotaName         = "k8s.resourcequota.name"
-	k8sKeyClusterResourceQuotaName  = "openshift.clusterquota.name"
-
-	// Kubernetes resource kinds
-	k8sKindCronJob               = "CronJob"
-	k8sKindDaemonSet             = "DaemonSet"
-	k8sKindDeployment            = "Deployment"
-	k8sKindJob                   = "Job"
-	k8sKindReplicationController = "ReplicationController"
-	k8sKindReplicaSet            = "ReplicaSet"
-	k8sStatefulSet               = "StatefulSet"
-)
 
 // DataCollector wraps around a metricsStore and a metadaStore exposing
 // methods to perform on the underlying stores. DataCollector also provides
@@ -76,7 +60,7 @@ const (
 type DataCollector struct {
 	logger                   *zap.Logger
 	metricsStore             *metricsStore
-	metadataStore            *metadataStore
+	metadataStore            *metadata.Store
 	nodeConditionsToReport   []string
 	allocatableTypesToReport []string
 }
@@ -88,7 +72,7 @@ func NewDataCollector(logger *zap.Logger, nodeConditionsToReport, allocatableTyp
 		metricsStore: &metricsStore{
 			metricsCache: make(map[types.UID]pmetric.Metrics),
 		},
-		metadataStore:            &metadataStore{},
+		metadataStore:            &metadata.Store{},
 		nodeConditionsToReport:   nodeConditionsToReport,
 		allocatableTypesToReport: allocatableTypesToReport,
 	}
@@ -96,7 +80,7 @@ func NewDataCollector(logger *zap.Logger, nodeConditionsToReport, allocatableTyp
 
 // SetupMetadataStore initializes a metadata store for the kubernetes kind.
 func (dc *DataCollector) SetupMetadataStore(gvk schema.GroupVersionKind, store cache.Store) {
-	dc.metadataStore.setupStore(gvk, store)
+	dc.metadataStore.Setup(gvk, store)
 }
 
 func (dc *DataCollector) RemoveFromMetricsStore(obj interface{}) {
@@ -129,33 +113,33 @@ func (dc *DataCollector) SyncMetrics(obj interface{}) {
 
 	switch o := obj.(type) {
 	case *corev1.Pod:
-		md = ocsToMetrics(getMetricsForPod(o, dc.logger))
+		md = ocsToMetrics(pod.GetMetrics(o, dc.logger))
 	case *corev1.Node:
-		md = ocsToMetrics(getMetricsForNode(o, dc.nodeConditionsToReport, dc.allocatableTypesToReport, dc.logger))
+		md = ocsToMetrics(node.GetMetrics(o, dc.nodeConditionsToReport, dc.allocatableTypesToReport, dc.logger))
 	case *corev1.Namespace:
-		md = ocsToMetrics(getMetricsForNamespace(o))
+		md = ocsToMetrics(namespace.GetMetrics(o))
 	case *corev1.ReplicationController:
-		md = ocsToMetrics(getMetricsForReplicationController(o))
+		md = ocsToMetrics(replicationcontroller.GetMetrics(o))
 	case *corev1.ResourceQuota:
-		md = ocsToMetrics(getMetricsForResourceQuota(o))
+		md = ocsToMetrics(resourcequota.GetMetrics(o))
 	case *appsv1.Deployment:
-		md = ocsToMetrics(getMetricsForDeployment(o))
+		md = ocsToMetrics(deployment.GetMetrics(o))
 	case *appsv1.ReplicaSet:
-		md = ocsToMetrics(getMetricsForReplicaSet(o))
+		md = ocsToMetrics(replicaset.GetMetrics(o))
 	case *appsv1.DaemonSet:
-		md = ocsToMetrics(getMetricsForDaemonSet(o))
+		md = ocsToMetrics(demonset.GetMetrics(o))
 	case *appsv1.StatefulSet:
-		md = ocsToMetrics(getMetricsForStatefulSet(o))
+		md = ocsToMetrics(statefulset.GetMetrics(o))
 	case *batchv1.Job:
-		md = ocsToMetrics(getMetricsForJob(o))
+		md = ocsToMetrics(jobs.GetMetrics(o))
 	case *batchv1.CronJob:
-		md = ocsToMetrics(getMetricsForCronJob(o))
+		md = ocsToMetrics(cronjob.GetMetrics(o))
 	case *batchv1beta1.CronJob:
-		md = ocsToMetrics(getMetricsForCronJobBeta(o))
+		md = ocsToMetrics(cronjob.GetMetricsBeta(o))
 	case *autoscalingv2beta2.HorizontalPodAutoscaler:
-		md = ocsToMetrics(getMetricsForHPA(o))
+		md = ocsToMetrics(hpa.GetMetrics(o))
 	case *quotav1.ClusterResourceQuota:
-		md = ocsToMetrics(getMetricsForClusterResourceQuota(o))
+		md = ocsToMetrics(clusterresourcequota.GetMetrics(o))
 	default:
 		return
 	}
@@ -168,31 +152,31 @@ func (dc *DataCollector) SyncMetrics(obj interface{}) {
 }
 
 // SyncMetadata updates the metric store with latest metrics from the kubernetes object
-func (dc *DataCollector) SyncMetadata(obj interface{}) map[metadata.ResourceID]*KubernetesMetadata {
-	km := map[metadata.ResourceID]*KubernetesMetadata{}
+func (dc *DataCollector) SyncMetadata(obj interface{}) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {
+	km := map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{}
 	switch o := obj.(type) {
 	case *corev1.Pod:
-		km = getMetadataForPod(o, dc.metadataStore, dc.logger)
+		km = pod.GetMetadata(o, dc.metadataStore, dc.logger)
 	case *corev1.Node:
-		km = getMetadataForNode(o)
+		km = node.GetMetadata(o)
 	case *corev1.ReplicationController:
-		km = getMetadataForReplicationController(o)
+		km = replicationcontroller.GetMetadata(o)
 	case *appsv1.Deployment:
-		km = getMetadataForDeployment(o)
+		km = deployment.GetMetadata(o)
 	case *appsv1.ReplicaSet:
-		km = getMetadataForReplicaSet(o)
+		km = replicaset.GetMetadata(o)
 	case *appsv1.DaemonSet:
-		km = getMetadataForDaemonSet(o)
+		km = demonset.GetMetadata(o)
 	case *appsv1.StatefulSet:
-		km = getMetadataForStatefulSet(o)
+		km = statefulset.GetMetadata(o)
 	case *batchv1.Job:
-		km = getMetadataForJob(o)
+		km = jobs.GetMetadata(o)
 	case *batchv1.CronJob:
-		km = getMetadataForCronJob(o)
+		km = cronjob.GetMetadata(o)
 	case *batchv1beta1.CronJob:
-		km = getMetadataForCronJobBeta(o)
+		km = cronjob.GetMetadataBeta(o)
 	case *autoscalingv2beta2.HorizontalPodAutoscaler:
-		km = getMetadataForHPA(o)
+		km = hpa.GetMetadata(o)
 	}
 
 	return km
