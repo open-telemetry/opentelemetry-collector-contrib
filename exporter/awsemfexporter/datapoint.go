@@ -111,9 +111,11 @@ func (dps numberDataPointSlice) At(i int) (dataPoint, bool) {
 
 	retained := true
 	if dps.adjustToDelta {
-		var deltaVal interface{}
-		var metricKey aws.Key = aws.NewKey(dps.deltaMetricMetadata, labels)
-		deltaVal, retained = deltaMetricCalculator.Calculate(metricKey, metricVal, metric.Timestamp().AsTime())
+		var (
+			deltaVal interface{}
+			key      = aws.NewKey(dps.deltaMetricMetadata, labels)
+		)
+		deltaVal, retained := deltaMetricCalculator.Calculate(key, metricVal, metric.Timestamp().AsTime())
 		if !retained {
 			return dataPoint{}, retained
 		}
@@ -159,9 +161,12 @@ func (dps summaryDataPointSlice) At(i int) (dataPoint, bool) {
 	count := metric.Count()
 	retained := true
 	if dps.adjustToDelta {
-		var delta interface{}
-		var metricKey aws.Key = aws.NewKey(dps.deltaMetricMetadata, labels)
-		delta, retained = summaryMetricCalculator.Calculate(metricKey, summaryMetricEntry{sum, count}, metric.Timestamp().AsTime())
+		var (
+			delta interface{}
+			key   = aws.NewKey(dps.deltaMetricMetadata, labels)
+		)
+
+		delta, retained = summaryMetricCalculator.Calculate(key, summaryMetricEntry{sum, count}, metric.Timestamp().AsTime())
 		if !retained {
 			return dataPoint{}, retained
 		}
