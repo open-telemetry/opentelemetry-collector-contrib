@@ -75,7 +75,17 @@ func (lsp *logSamplerProcessor) processLogs(ctx context.Context, ld plog.Logs) (
 				if lidBytes == nil && lsp.samplingSource != "" {
 					if value, ok := l.Attributes().Get(lsp.samplingSource); ok {
 						tagPolicyValue = lsp.samplingSource
-						lidBytes = value.Bytes().AsRaw()
+
+						switch value.Type() {
+						case pcommon.ValueTypeStr:
+							lidBytes = []byte(value.Str())
+						case pcommon.ValueTypeBytes:
+							lidBytes = value.Bytes().AsRaw()
+						default:
+							lsp.logger.Warn("incompatible log record attribute, only String or Bytes supported; skipping log record",
+								zap.String("log_record_attribute", lsp.samplingSource), zap.Stringer("attribute_type", value.Type()))
+						}
+
 					}
 				}
 				priority := lsp.scaledSamplingRate

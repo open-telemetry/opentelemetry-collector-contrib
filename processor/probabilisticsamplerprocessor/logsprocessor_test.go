@@ -145,6 +145,15 @@ func TestLogsSampling(t *testing.T) {
 			},
 			received: 25,
 		},
+		{
+			name: "sampling a string attribute",
+			cfg: &Config{
+				SamplingPercentage: 50,
+				AttributeSource:    recordAttributeSource,
+				FromAttribute:      "bar",
+			},
+			received: 22,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -160,10 +169,13 @@ func TestLogsSampling(t *testing.T) {
 				ib := byte(i)
 				traceID := [16]byte{0, 0, 0, 0, 0, 0, 0, 0, ib, ib, ib, ib, ib, ib, ib, ib}
 				record.SetTraceID(traceID)
-				// set half of records with a foo attribute
+				// set half of records with a foo bytes attribute
 				if i%2 == 0 {
 					b := record.Attributes().PutEmptyBytes("foo")
 					b.FromRaw(traceID[:])
+				} else {
+					// set the other half of records with a bar string attribute
+					record.Attributes().PutStr("bar", string(traceID[:]))
 				}
 				// set a fourth of records with a priority attribute
 				if i%4 == 0 {
@@ -180,4 +192,25 @@ func TestLogsSampling(t *testing.T) {
 			assert.Equal(t, tt.received, numReceived)
 		})
 	}
+}
+
+func TestLogsSamplingInvalidType(t *testing.T) {
+	sink := new(consumertest.LogsSink)
+	cfg := &Config{
+		SamplingPercentage: 100,
+		AttributeSource:    recordAttributeSource,
+		FromAttribute:      "bool_attr",
+	}
+	processor, err := newLogsProcessor(context.Background(), processortest.NewNopCreateSettings(), sink, cfg)
+	require.NoError(t, err)
+	logs := plog.NewLogs()
+	lr := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
+	record := lr.AppendEmpty()
+	record.Attributes().PutBool("bool_attr", true)
+
+	// When processing a log event with an unsupported type, the event is not processed.
+	err = processor.ConsumeLogs(context.Background(), logs)
+	require.NoError(t, err)
+	sunk := sink.AllLogs()
+	assert.Equal(t, 0, len(sunk))
 }
