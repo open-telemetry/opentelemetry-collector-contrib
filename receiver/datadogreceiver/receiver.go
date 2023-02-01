@@ -20,13 +20,12 @@ import (
 	"net/http"
 	"sync"
 
-	"go.uber.org/atomic"
-
 	datadogpb "github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/receiver"
+	"go.uber.org/atomic"
 )
 
 type datadogReceiver struct {
