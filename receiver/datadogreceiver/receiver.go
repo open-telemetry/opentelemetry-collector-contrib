@@ -19,7 +19,8 @@ import (
 	"fmt"
 	"net/http"
 	"sync"
-	"sync/atomic"
+
+	"go.uber.org/atomic"
 
 	datadogpb "github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
 	"go.opentelemetry.io/collector/component"
