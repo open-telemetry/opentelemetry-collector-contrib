@@ -1,0 +1,15 @@
+default:
+all_metrics:
+  otel.receiver.datadog.errors:
+    enabled: true
+  otel.receiver.datadog.spans.processed:
+    enabled: true
+  otel.receiver.datadog.spans.rate:
+    enabled: true
+no_metrics:
+  otel.receiver.datadog.errors:
+    enabled: false
+  otel.receiver.datadog.spans.processed:
+    enabled: false
+  otel.receiver.datadog.spans.rate:
+    enabled: false

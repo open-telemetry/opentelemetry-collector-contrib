@@ -18,12 +18,16 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 	"sync"
+	"time"
 
 	datadogpb "github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/atomic"
 )
@@ -38,7 +42,10 @@ type datadogReceiver struct {
 
 	startOnce    sync.Once
 	stopOnce     sync.Once
-	errorCounter atomic.Uint64
+	errorCounter atomic.Int64
+
+	mb             *metadata.MetricsBuilder
+	startTimestamp pcommon.Timestamp
 }
 
 func newDataDogReceiver(config *Config, nextConsumer consumer.Traces, params receiver.CreateSettings) (receiver.Traces, error) {
@@ -54,11 +61,13 @@ func newDataDogReceiver(config *Config, nextConsumer consumer.Traces, params rec
 		params:       params,
 		config:       config,
 		nextConsumer: nextConsumer,
+		mb:           metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), params),
 		server: &http.Server{
 			ReadTimeout: config.ReadTimeout,
 			Addr:        config.HTTPServerSettings.Endpoint,
 		},
-		tReceiver: instance,
+		tReceiver:      instance,
+		startTimestamp: pcommon.NewTimestampFromTime(time.Now()),
 	}, nil
 }
 
@@ -90,29 +99,40 @@ func (ddr *datadogReceiver) Shutdown(ctx context.Context) (err error) {
 }
 
 func (ddr *datadogReceiver) handleTraces(w http.ResponseWriter, req *http.Request) {
-	obsCtx := ddr.tReceiver.StartTracesOp(req.Context())
+	now := pcommon.NewTimestampFromTime(time.Now())
+	obsCtx := ddr.tReceiver.StartTracesOp(context.Background())
 	var err error
 	var spanCount int
 	defer func(spanCount *int) {
 		ddr.tReceiver.EndTracesOp(obsCtx, "datadog", *spanCount, err)
 	}(&spanCount)
 	var ddTraces datadogpb.Traces
+	hostname, _ := os.Hostname()
 
+	defer ddr.mb.Emit()
 	err = decodeRequest(req, &ddTraces)
 	if err != nil {
-		ddr.errorCounter.Add(1)
+		defer ddr.mb.Emit()
+		ddr.errorCounter.Inc()
 		http.Error(w, "Unable to unmarshal reqs", http.StatusInternalServerError)
+		hostname, _ := os.Hostname()
+		ddr.mb.RecordOtelReceiverDatadogErrorsDataPoint(now, ddr.errorCounter.Load(), hostname)
 		ddr.params.Logger.Error(fmt.Sprintf("Error %d: Unable to unmarshal request. %s", ddr.errorCounter.Load(), err))
 	}
 
 	otelTraces := toTraces(ddTraces, req)
 	spanCount = otelTraces.SpanCount()
+
 	err = ddr.nextConsumer.ConsumeTraces(obsCtx, otelTraces)
 	if err != nil {
-		ddr.errorCounter.Add(1)
+		ddr.errorCounter.Inc()
 		http.Error(w, "Trace consumer errored out", http.StatusInternalServerError)
+		ddr.mb.RecordOtelReceiverDatadogErrorsDataPoint(now, ddr.errorCounter.Load(), hostname)
 		ddr.params.Logger.Error(fmt.Sprintf("Error %d: Trace consumer errored out. %s", ddr.errorCounter.Load(), err))
 	} else {
-		_, _ = w.Write([]byte("OK"))
+		w.Write([]byte("OK"))
+		ddr.mb.RecordOtelReceiverDatadogSpansProcessedDataPoint(now, int64(spanCount), hostname)
+		ddr.mb.RecordOtelReceiverDatadogSpansRateDataPoint(now, float64(time.Since(now.AsTime()).Milliseconds())/float64(spanCount), hostname)
 	}
+
 }

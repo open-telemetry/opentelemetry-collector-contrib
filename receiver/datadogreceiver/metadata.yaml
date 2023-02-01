@@ -1,0 +1,37 @@
+
+name: datadogreceiver
+
+sem_conv_version: 1.16.0
+
+
+attributes:
+  hostname:
+    description: Hostname
+    type: string
+
+metrics:
+  otel.receiver.datadog.errors:
+    enabled: true
+    description: Total Requests Failed
+    unit: "{errors}"
+    gauge:
+      value_type: int
+    attributes: [hostname]
+  otel.receiver.datadog.spans.processed:
+    enabled: true
+    description: Total number of spans successfully processed
+    unit: "{spans}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation: cumulative
+    attributes: [hostname]
+  otel.receiver.datadog.spans.rate:
+    enabled: true
+    description: Number of spans per ms
+    unit: "{spans}"
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: double
+    attributes: [hostname]
