@@ -137,7 +137,8 @@ func putBuffer(buffer *bytes.Buffer) {
 }
 
 func handlePayload(req *http.Request) (tp *pb.TracerPayload, ranHook bool, err error) {
-	if strings.HasPrefix(req.URL.Path, "/v0.7") {
+	switch {
+	case strings.HasPrefix(req.URL.Path, "/v0.7"):
 		buf := getBuffer()
 		defer putBuffer(buf)
 		if _, err = io.Copy(buf, req.Body); err != nil {
@@ -146,7 +147,7 @@ func handlePayload(req *http.Request) (tp *pb.TracerPayload, ranHook bool, err e
 		var tracerPayload pb.TracerPayload
 		_, err = tracerPayload.UnmarshalMsg(buf.Bytes())
 		return &tracerPayload, false, err
-	} else if strings.HasPrefix(req.URL.Path, "/v0.5") {
+	case strings.HasPrefix(req.URL.Path, "/v0.5"):
 		buf := getBuffer()
 		defer putBuffer(buf)
 		if _, err = io.Copy(buf, req.Body); err != nil {
@@ -160,7 +161,7 @@ func handlePayload(req *http.Request) (tp *pb.TracerPayload, ranHook bool, err e
 			Chunks:          traceChunksFromTraces(traces),
 			TracerVersion:   req.Header.Get("Datadog-Meta-Tracer-Version"),
 		}, false, err
-	} else if strings.HasPrefix(req.URL.Path, "/v0.1") {
+	case strings.HasPrefix(req.URL.Path, "/v0.1"):
 		var spans []pb.Span
 		if err = json.NewDecoder(req.Body).Decode(&spans); err != nil {
 			return nil, false, err
@@ -172,7 +173,7 @@ func handlePayload(req *http.Request) (tp *pb.TracerPayload, ranHook bool, err e
 			TracerVersion:   req.Header.Get("Datadog-Meta-Tracer-Version"),
 		}, false, nil
 
-	} else {
+	default:
 		var traces pb.Traces
 		if ranHook, err = decodeRequest(req, &traces); err != nil {
 			return nil, ranHook, err
@@ -223,8 +224,8 @@ func decodeRequest(req *http.Request, dest *pb.Traces) (ranHook bool, err error)
 func traceChunksFromSpans(spans []pb.Span) []*pb.TraceChunk {
 	traceChunks := []*pb.TraceChunk{}
 	byID := make(map[uint64][]*pb.Span)
-	for _, s := range spans {
-		byID[s.TraceID] = append(byID[s.TraceID], &s)
+	for i, s := range spans {
+		byID[s.TraceID] = append(byID[s.TraceID], &spans[i])
 	}
 	for _, t := range byID {
 		traceChunks = append(traceChunks, &pb.TraceChunk{
