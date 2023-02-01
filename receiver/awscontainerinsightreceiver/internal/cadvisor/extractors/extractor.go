@@ -139,8 +139,8 @@ func newFloat64RateCalculator() awsmetrics.MetricCalculator {
 
 func assignRateValueToField(rateCalculator *awsmetrics.MetricCalculator, fields map[string]interface{}, metricName string,
 	cinfoName string, curVal interface{}, curTime time.Time, multiplier float64) {
-	metricKey := awsmetrics.NewKey(cinfoName+metricName, nil)
-	if val, ok := rateCalculator.Calculate(metricKey, curVal, curTime); ok {
+	mKey := awsmetrics.NewKey(cinfoName+metricName, nil)
+	if val, ok := rateCalculator.Calculate(mKey, curVal, curTime); ok {
 		fields[metricName] = val.(float64) * multiplier
 	}
 }

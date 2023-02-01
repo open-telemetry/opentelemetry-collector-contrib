@@ -5,7 +5,7 @@ change_type: enhancement
 component: awsemfexporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Change to use metric key instead of metric and labels
+note: Instead of supply metric metadata and label for aws calculator, supply with aws metric key which consists of metric metadata and label
 
 # One or more tracking issues related to the change
 issues: [17207]
