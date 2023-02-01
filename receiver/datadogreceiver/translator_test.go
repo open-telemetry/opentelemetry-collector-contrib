@@ -74,7 +74,7 @@ func TestTracePayloadV05Unmarshalling(t *testing.T) {
 	if err := traces.UnmarshalMsgDictionary(payload); err != nil {
 		t.Fatal(err)
 	}
-	req := &http.Request{RequestURI: "/v0.5/traces",Body: io.NopCloser(bytes.NewReader(payload))}
+	req := &http.Request{RequestURI: "/v0.5/traces", Body: io.NopCloser(bytes.NewReader(payload))}
 
 	translated := toTraces(&pb.TracerPayload{
 		LanguageName:    req.Header.Get("Datadog-Meta-Lang"),
@@ -102,7 +102,7 @@ func BenchmarkTranslator(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	req := &http.Request{RequestURI: "/v0.5/traces",Body: io.NopCloser(bytes.NewReader(payload))}
+	req := &http.Request{RequestURI: "/v0.5/traces", Body: io.NopCloser(bytes.NewReader(payload))}
 	b.ResetTimer()
 	b.ReportAllocs()
 	b.SetBytes(int64(len(payload)))

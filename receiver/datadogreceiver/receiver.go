@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"net/http"
 	"sync"
+
 	"github.com/DataDog/datadog-agent/pkg/trace/pb"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"

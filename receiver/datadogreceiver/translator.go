@@ -145,7 +145,7 @@ func handlePayload(req *http.Request) (tp *pb.TracerPayload, ranHook bool, err e
 		}
 		var tracerPayload pb.TracerPayload
 		_, err = tracerPayload.UnmarshalMsg(buf.Bytes())
-		return &tracerPayload,false, err
+		return &tracerPayload, false, err
 	} else if strings.HasPrefix(req.URL.Path, "/v0.5") {
 		buf := getBuffer()
 		defer putBuffer(buf)
@@ -171,7 +171,7 @@ func handlePayload(req *http.Request) (tp *pb.TracerPayload, ranHook bool, err e
 			Chunks:          traceChunksFromSpans(spans),
 			TracerVersion:   req.Header.Get("Datadog-Meta-Tracer-Version"),
 		}, false, nil
-	
+
 	} else {
 		var traces pb.Traces
 		if ranHook, err = decodeRequest(req, &traces); err != nil {
@@ -186,69 +186,66 @@ func handlePayload(req *http.Request) (tp *pb.TracerPayload, ranHook bool, err e
 	}
 }
 
-
-
-	func decodeRequest(req *http.Request, dest *pb.Traces) (ranHook bool, err error) {
-		switch mediaType := getMediaType(req); mediaType {
-		case "application/msgpack":
+func decodeRequest(req *http.Request, dest *pb.Traces) (ranHook bool, err error) {
+	switch mediaType := getMediaType(req); mediaType {
+	case "application/msgpack":
+		buf := getBuffer()
+		defer putBuffer(buf)
+		_, err = io.Copy(buf, req.Body)
+		if err != nil {
+			return false, err
+		}
+		_, err = dest.UnmarshalMsg(buf.Bytes())
+		return true, err
+	case "application/json":
+		fallthrough
+	case "text/json":
+		fallthrough
+	case "":
+		err = json.NewDecoder(req.Body).Decode(&dest)
+		return false, err
+	default:
+		// do our best
+		if err1 := json.NewDecoder(req.Body).Decode(&dest); err1 != nil {
 			buf := getBuffer()
 			defer putBuffer(buf)
-			_, err = io.Copy(buf, req.Body)
-			if err != nil {
-				return false, err
+			_, err2 := io.Copy(buf, req.Body)
+			if err2 != nil {
+				return false, err2
 			}
-			_, err = dest.UnmarshalMsg(buf.Bytes())
-			return true, err
-		case "application/json":
-			fallthrough
-		case "text/json":
-			fallthrough
-		case "":
-			err = json.NewDecoder(req.Body).Decode(&dest)
-			return false, err
-		default:
-			// do our best
-			if err1 := json.NewDecoder(req.Body).Decode(&dest); err1 != nil {
-				buf := getBuffer()
-				defer putBuffer(buf)
-				_, err2 := io.Copy(buf, req.Body)
-				if err2 != nil {
-					return false, err2
-				}
-				_, err2 = dest.UnmarshalMsg(buf.Bytes())
-				return true, err2
-			}
-			return false, nil
+			_, err2 = dest.UnmarshalMsg(buf.Bytes())
+			return true, err2
 		}
+		return false, nil
 	}
-	
-	func traceChunksFromSpans(spans []pb.Span) []*pb.TraceChunk {
-		traceChunks := []*pb.TraceChunk{}
-		byID := make(map[uint64][]*pb.Span)
-		for _, s := range spans {
-			byID[s.TraceID] = append(byID[s.TraceID], &s)
-		}
-		for _, t := range byID {
-			traceChunks = append(traceChunks, &pb.TraceChunk{
-				Priority: int32(0),
-				Spans:    t,
-			})
-		}
-		return traceChunks
+}
+
+func traceChunksFromSpans(spans []pb.Span) []*pb.TraceChunk {
+	traceChunks := []*pb.TraceChunk{}
+	byID := make(map[uint64][]*pb.Span)
+	for _, s := range spans {
+		byID[s.TraceID] = append(byID[s.TraceID], &s)
 	}
-	
-	func traceChunksFromTraces(traces pb.Traces) []*pb.TraceChunk {
-		traceChunks := make([]*pb.TraceChunk, 0, len(traces))
-		for _, trace := range traces {
-			traceChunks = append(traceChunks, &pb.TraceChunk{
-				Priority: int32(0),
-				Spans:    trace,
-			})
-		}
-	
-		return traceChunks
+	for _, t := range byID {
+		traceChunks = append(traceChunks, &pb.TraceChunk{
+			Priority: int32(0),
+			Spans:    t,
+		})
+	}
+	return traceChunks
+}
+
+func traceChunksFromTraces(traces pb.Traces) []*pb.TraceChunk {
+	traceChunks := make([]*pb.TraceChunk, 0, len(traces))
+	for _, trace := range traces {
+		traceChunks = append(traceChunks, &pb.TraceChunk{
+			Priority: int32(0),
+			Spans:    trace,
+		})
 	}
 
+	return traceChunks
+}
 
 func getMediaType(req *http.Request) string {
 	mt, _, err := mime.ParseMediaType(req.Header.Get("Content-Type"))
