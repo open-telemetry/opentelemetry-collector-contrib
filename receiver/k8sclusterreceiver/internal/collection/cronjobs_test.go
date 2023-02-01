@@ -34,8 +34,8 @@ func TestCronJobMetrics(t *testing.T) {
 
 	require.Equal(t, 1, len(actualResourceMetrics))
 
-	require.Equal(t, 1, len(actualResourceMetrics[0].metrics))
-	testutils.AssertResource(t, actualResourceMetrics[0].resource, k8sType,
+	require.Equal(t, 1, len(actualResourceMetrics[0].Metrics))
+	testutils.AssertResource(t, actualResourceMetrics[0].Resource, k8sType,
 		map[string]string{
 			"k8s.cronjob.uid":    "test-cronjob-1-uid",
 			"k8s.cronjob.name":   "test-cronjob-1",
@@ -43,7 +43,7 @@ func TestCronJobMetrics(t *testing.T) {
 		},
 	)
 
-	testutils.AssertMetricsInt(t, actualResourceMetrics[0].metrics[0], "k8s.cronjob.active_jobs",
+	testutils.AssertMetricsInt(t, actualResourceMetrics[0].Metrics[0], "k8s.cronjob.active_jobs",
 		metricspb.MetricDescriptor_GAUGE_INT64, 2)
 }
 

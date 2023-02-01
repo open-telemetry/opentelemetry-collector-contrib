@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"time"
 
+	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/iancoleman/strcase"
@@ -42,7 +43,7 @@ var allocatableDesciption = map[string]string{
 	"storage":           "How many bytes of storage remaining that the node can allocate to pods",
 }
 
-func getMetricsForNode(node *corev1.Node, nodeConditionTypesToReport, allocatableTypesToReport []string, logger *zap.Logger) []*resourceMetrics {
+func getMetricsForNode(node *corev1.Node, nodeConditionTypesToReport, allocatableTypesToReport []string, logger *zap.Logger) []*agentmetricspb.ExportMetricsServiceRequest {
 	metrics := make([]*metricspb.Metric, 0, len(nodeConditionTypesToReport)+len(allocatableTypesToReport))
 	// Adding 'node condition type' metrics
 	for _, nodeConditionTypeValue := range nodeConditionTypesToReport {
@@ -91,10 +92,10 @@ func getMetricsForNode(node *corev1.Node, nodeConditionTypesToReport, allocatabl
 		})
 	}
 
-	return []*resourceMetrics{
+	return []*agentmetricspb.ExportMetricsServiceRequest{
 		{
-			resource: getResourceForNode(node),
-			metrics:  metrics,
+			Resource: getResourceForNode(node),
+			Metrics:  metrics,
 		},
 	}
 }

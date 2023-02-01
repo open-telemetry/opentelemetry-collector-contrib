@@ -15,6 +15,7 @@
 package collection // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/collection"
 
 import (
+	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -58,9 +59,9 @@ var statefulSetReplicasUpdatedMetric = &metricspb.MetricDescriptor{
 	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
 }
 
-func getMetricsForStatefulSet(ss *appsv1.StatefulSet) []*resourceMetrics {
+func getMetricsForStatefulSet(ss *appsv1.StatefulSet) []*agentmetricspb.ExportMetricsServiceRequest {
 	if ss.Spec.Replicas == nil {
-		return []*resourceMetrics{}
+		return []*agentmetricspb.ExportMetricsServiceRequest{}
 	}
 
 	metrics := []*metricspb.Metric{
@@ -90,10 +91,10 @@ func getMetricsForStatefulSet(ss *appsv1.StatefulSet) []*resourceMetrics {
 		},
 	}
 
-	return []*resourceMetrics{
+	return []*agentmetricspb.ExportMetricsServiceRequest{
 		{
-			resource: getResourceForStatefulSet(ss),
-			metrics:  metrics,
+			Resource: getResourceForStatefulSet(ss),
+			Metrics:  metrics,
 		},
 	}
 }
