@@ -129,17 +129,17 @@ func (g *gaugeMetrics) insert(ctx context.Context, db *sql.DB) error {
 			valueArgs[index+8] = model.metricDescription
 			valueArgs[index+9] = model.metricUnit
 			valueArgs[index+10] = attributesToMap(dp.Attributes())
-			valueArgs[index+12] = dp.StartTimestamp().AsTime().UnixNano()
-			valueArgs[index+13] = dp.Timestamp().AsTime().UnixNano()
-			valueArgs[index+14] = getValue(dp.IntValue(), dp.DoubleValue(), dp.ValueType())
-			valueArgs[index+15] = uint32(dp.Flags())
+			valueArgs[index+11] = dp.StartTimestamp().AsTime().UnixNano()
+			valueArgs[index+12] = dp.Timestamp().AsTime().UnixNano()
+			valueArgs[index+13] = getValue(dp.IntValue(), dp.DoubleValue(), dp.ValueType())
+			valueArgs[index+14] = uint32(dp.Flags())
 
 			attrs, times, values, traceIDs, spanIDs := convertExemplars(dp.Exemplars())
-			valueArgs[index+16] = attrs
-			valueArgs[index+17] = times
-			valueArgs[index+18] = values
-			valueArgs[index+19] = traceIDs
-			valueArgs[index+20] = spanIDs
+			valueArgs[index+15] = attrs
+			valueArgs[index+16] = times
+			valueArgs[index+17] = values
+			valueArgs[index+18] = traceIDs
+			valueArgs[index+19] = spanIDs
 
 			index += gaugeValueCounts
 		}
