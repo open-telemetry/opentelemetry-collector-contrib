@@ -92,7 +92,7 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
 	histogramValueCounts = 25
 )
 
-var histogramPlaceholders = newPlaceholder(25)
+var histogramPlaceholders = newPlaceholder(histogramValueCounts)
 
 type histogramModel struct {
 	metricName        string
@@ -113,7 +113,7 @@ func (h *histogramMetrics) insert(ctx context.Context, db *sql.DB) error {
 		return nil
 	}
 
-	valueArgs := make([]any, h.count*histogramValueCounts)
+	valueArgs := make([]any, len(h.histogramModel)*h.count*histogramValueCounts)
 	var b strings.Builder
 
 	index := 0
@@ -149,6 +149,8 @@ func (h *histogramMetrics) insert(ctx context.Context, db *sql.DB) error {
 			valueArgs[index+22] = uint32(dp.Flags())
 			valueArgs[index+23] = dp.Min()
 			valueArgs[index+24] = dp.Max()
+
+			index += histogramValueCounts
 		}
 	}
 

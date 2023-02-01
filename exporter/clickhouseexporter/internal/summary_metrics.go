@@ -78,7 +78,7 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
 	summaryValueCounts = 18
 )
 
-var summaryPlaceholders = newPlaceholder(18)
+var summaryPlaceholders = newPlaceholder(summaryValueCounts)
 
 type summaryModel struct {
 	metricName        string
@@ -99,7 +99,7 @@ func (s *summaryMetrics) insert(ctx context.Context, db *sql.DB) error {
 		return nil
 	}
 
-	valueArgs := make([]any, s.count*summaryValueCounts)
+	valueArgs := make([]any, len(s.summaryModel)*s.count*summaryValueCounts)
 	var b strings.Builder
 
 	index := 0
@@ -128,6 +128,8 @@ func (s *summaryMetrics) insert(ctx context.Context, db *sql.DB) error {
 			valueArgs[index+15] = quantiles
 			valueArgs[index+16] = values
 			valueArgs[index+17] = uint32(dp.Flags())
+
+			index += summaryValueCounts
 		}
 	}
 

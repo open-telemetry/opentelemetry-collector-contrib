@@ -70,6 +70,7 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
     MetricDescription,
     MetricUnit,
     Attributes,
+	StartTimeUnix,
     TimeUnix,
     Value,
     Flags,
@@ -78,10 +79,10 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
     Exemplars.Value,
     Exemplars.SpanId,
     Exemplars.TraceId) VALUES `
-	gaugeValueCounts = 19
+	gaugeValueCounts = 20
 )
 
-var gaugePlaceholders = newPlaceholder(19)
+var gaugePlaceholders = newPlaceholder(gaugeValueCounts)
 
 type gaugeModel struct {
 	metricName        string
@@ -102,7 +103,7 @@ func (g *gaugeMetrics) insert(ctx context.Context, db *sql.DB) error {
 		return nil
 	}
 
-	valueArgs := make([]any, g.count*gaugeValueCounts)
+	valueArgs := make([]any, len(g.gaugeModels)*g.count*gaugeValueCounts)
 	var b strings.Builder
 
 	index := 0
@@ -122,16 +123,19 @@ func (g *gaugeMetrics) insert(ctx context.Context, db *sql.DB) error {
 			valueArgs[index+8] = model.metricDescription
 			valueArgs[index+9] = model.metricUnit
 			valueArgs[index+10] = attributesToMap(dp.Attributes())
-			valueArgs[index+11] = dp.Timestamp().AsTime().UnixNano()
-			valueArgs[index+12] = getValue(dp.IntValue(), dp.DoubleValue(), dp.ValueType())
-			valueArgs[index+13] = uint32(dp.Flags())
+			valueArgs[index+12] = dp.StartTimestamp().AsTime().UnixNano()
+			valueArgs[index+13] = dp.Timestamp().AsTime().UnixNano()
+			valueArgs[index+14] = getValue(dp.IntValue(), dp.DoubleValue(), dp.ValueType())
+			valueArgs[index+15] = uint32(dp.Flags())
 
 			attrs, times, values, traceIDs, spanIDs := convertExemplars(dp.Exemplars())
-			valueArgs[index+14] = attrs
-			valueArgs[index+15] = times
-			valueArgs[index+16] = values
-			valueArgs[index+17] = traceIDs
-			valueArgs[index+18] = spanIDs
+			valueArgs[index+16] = attrs
+			valueArgs[index+17] = times
+			valueArgs[index+18] = values
+			valueArgs[index+19] = traceIDs
+			valueArgs[index+20] = spanIDs
+
+			index += gaugeValueCounts
 		}
 	}
 
