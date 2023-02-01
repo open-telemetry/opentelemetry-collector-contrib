@@ -223,6 +223,15 @@ func TestValidate(t *testing.T) {
 			},
 			expectedErr: errPageSizeIncorrect.Error(),
 		},
+		{
+			name: "Invalid events config - no projects",
+			input: Config{
+				Events: &EventsConfig{
+					Projects: []*ProjectConfig{},
+				},
+			},
+			expectedErr: errNoProjects.Error(),
+		},
 	}
 
 	for _, tc := range testCases {
