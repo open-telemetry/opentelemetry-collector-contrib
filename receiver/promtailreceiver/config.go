@@ -52,9 +52,9 @@ func NewConfigWithID(operatorID string) *Config {
 }
 
 type PromtailInputConfig struct {
-	PositionsConfig positions.Config      `mapstructure:"positions,omitempty" yaml:"positions,omitempty"`
-	ScrapeConfig    []scrapeconfig.Config `mapstructure:"scrape_configs,omitempty" yaml:"scrape_configs,omitempty"`
-	TargetConfig    file.Config           `mapstructure:"target_config,omitempty" yaml:"target_config,omitempty"`
+	PositionsConfig positions.Config      `mapstructure:"-" yaml:"positions,omitempty"`
+	ScrapeConfig    []scrapeconfig.Config `mapstructure:"-" yaml:"scrape_configs,omitempty"`
+	TargetConfig    file.Config           `mapstructure:"-" yaml:"target_config,omitempty"`
 }
 
 type Config struct {
