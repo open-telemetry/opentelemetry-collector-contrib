@@ -59,16 +59,30 @@ During the collector release process, all `./.chloggen/*.yaml` files are transcr
 
 Alternately, copy `./.chloggen/TEMPLATE.yaml`, or just create your file from scratch.
 
-## Platform Agnostic Code
+## Portable Code
 
-In order to ensure compatibility with different operating systems, code should be platform-agnostic. Below are some guidelines to follow when writing platform-agnostic code:
+In order to ensure compatibility with different operating systems, code should be portable. Below are some guidelines to follow when writing portable code:
 
-* Avoid using platform-specific libraries, features etc. Please opt for cross-platform solutions. 
+* Avoid using platform-specific libraries, features etc. Please opt for portable multi-platform solutions. 
 
-* Avoid hard-coding platform specific values. Use environment variables or configuration files for storing platform specific values.
+* Avoid hard-coding platform-specific values. Use environment variables or configuration files for storing platform-specific values.
+
+    For example, avoid using hard-coded file path
+    ```
+    filePath := "C:/Users/Bob/Documents/sampleData.csv"
+    ```
+
+    Instead environment variable or configuration file can be used.
+    ```
+    filePath := os.Getenv("DATA_FILE_PATH")
+    ```
+    or
+    ```
+    filePath := Configuration.Get("data_file_path")
+    ```
 
 * Be mindful of 
-  - Standard file systems and file paths such as forward slashes (/) instead of backward slashes (\) in Windows. 
+  - Standard file systems and file paths such as forward slashes (/) instead of backward slashes (\) in Windows. Refer to [path/filepath package](https://pkg.go.dev/path/filepath) when working with filepaths. 
   - Consistent line ending formats such as Unix (LF) or Windows (CRLF).
 
 * Test your implementation thoroughly on different platforms and fix any issues. 
