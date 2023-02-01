@@ -47,19 +47,16 @@ func TestMetricTracker_Convert(t *testing.T) {
 		name    string
 		value   ValuePoint
 		wantOut DeltaValue
+		noOut   bool
 	}{
 		{
-			name: "Initial Value recorded",
+			name: "Initial Value not recorded",
 			value: ValuePoint{
 				ObservedTimestamp: 10,
 				FloatValue:        100.0,
 				IntValue:          100,
 			},
-			wantOut: DeltaValue{
-				StartTimestamp: 10,
-				FloatValue:     100.0,
-				IntValue:       100,
-			},
+			noOut: true,
 		},
 		{
 			name: "Higher Value Recorded",
@@ -126,14 +123,18 @@ func TestMetricTracker_Convert(t *testing.T) {
 			}
 
 			gotOut, valid := m.Convert(floatPoint)
-			require.True(t, valid)
-			assert.Equal(t, tt.wantOut.StartTimestamp, gotOut.StartTimestamp)
-			assert.Equal(t, tt.wantOut.FloatValue, gotOut.FloatValue)
+			if !tt.noOut {
+				require.True(t, valid)
+				assert.Equal(t, tt.wantOut.StartTimestamp, gotOut.StartTimestamp)
+				assert.Equal(t, tt.wantOut.FloatValue, gotOut.FloatValue)
+			}
 
 			gotOut, valid = m.Convert(intPoint)
-			require.True(t, valid)
-			assert.Equal(t, tt.wantOut.StartTimestamp, gotOut.StartTimestamp)
-			assert.Equal(t, tt.wantOut.IntValue, gotOut.IntValue)
+			if !tt.noOut {
+				require.True(t, valid)
+				assert.Equal(t, tt.wantOut.StartTimestamp, gotOut.StartTimestamp)
+				assert.Equal(t, tt.wantOut.IntValue, gotOut.IntValue)
+			}
 		})
 	}
 
