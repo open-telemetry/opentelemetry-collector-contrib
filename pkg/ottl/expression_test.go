@@ -18,11 +18,9 @@ import (
 	"context"
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
 func hello[K any]() (ExprFunc[K], error) {
@@ -320,100 +318,39 @@ func Test_newGetter(t *testing.T) {
 	})
 }
 
-func Test_StringGetter(t *testing.T) {
+func Test_StandardTypeGetter(t *testing.T) {
 	tests := []struct {
 		name             string
-		val              value
+		getter           StandardTypeGetter[interface{}, string]
 		want             interface{}
 		valid            bool
 		expectedErrorMsg string
 	}{
 		{
 			name: "Correct type",
-			val: value{
-				String: ottltest.Strp("str"),
+			getter: StandardTypeGetter[interface{}, string]{
+				Getter: func(ctx context.Context, tCx interface{}) (interface{}, error) {
+					return "str", nil
+				},
 			},
 			want:  "str",
 			valid: true,
 		},
 		{
 			name: "Incorrect type",
-			val: value{
-				Bool: (*boolean)(ottltest.Boolp(true)),
+			getter: StandardTypeGetter[interface{}, string]{
+				Getter: func(ctx context.Context, tCx interface{}) (interface{}, error) {
+					return true, nil
+				},
 			},
 			valid:            false,
 			expectedErrorMsg: "expected string but got bool",
 		},
 	}
 
-	p := NewParser[any](
-		defaultFunctionsForTests(),
-		testParsePath,
-		componenttest.NewNopTelemetrySettings(),
-		WithEnumParser[any](testParseEnum),
-	)
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			g, err := p.newGetter(tt.val)
-			assert.NoError(t, err)
-
-			stg := StandardTypeGetter[interface{}, string]{Getter: g.Get}
-			val, err := stg.Get(context.Background(), nil)
-
-			if tt.valid {
-				assert.NoError(t, err)
-				assert.Equal(t, tt.want, *val)
-			} else {
-				assert.EqualError(t, err, tt.expectedErrorMsg)
-			}
-		})
-	}
-}
-
-func Test_IntGetter(t *testing.T) {
-	tests := []struct {
-		name             string
-		val              value
-		want             interface{}
-		valid            bool
-		expectedErrorMsg string
-	}{
-		{
-			name: "Correct type",
-			val: value{
-				Literal: &mathExprLiteral{
-					Int: ottltest.Intp(1),
-				},
-			},
-			want:  int64(1),
-			valid: true,
-		},
-		{
-			name: "Incorrect type",
-			val: value{
-				String: ottltest.Strp("1"),
-			},
-			valid:            false,
-			expectedErrorMsg: "expected int64 but got string",
-		},
-	}
-
-	p := NewParser[any](
-		defaultFunctionsForTests(),
-		testParsePath,
-		componenttest.NewNopTelemetrySettings(),
-		WithEnumParser[any](testParseEnum),
-	)
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			g, err := p.newGetter(tt.val)
-			assert.NoError(t, err)
-
-			stg := StandardTypeGetter[interface{}, int64]{Getter: g.Get}
-			val, err := stg.Get(context.Background(), nil)
-
+			val, err := tt.getter.Get(context.Background(), nil)
 			if tt.valid {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.want, *val)
