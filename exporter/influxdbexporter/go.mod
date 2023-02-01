@@ -61,6 +61,8 @@ require (
 retract v0.65.0
 
 replace (
+	// Underlying library needs an update to handle changes in the otel-go metrics API.
+	// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18234
 	go.opentelemetry.io/collector => go.opentelemetry.io/collector v0.70.0
 	go.opentelemetry.io/collector/component => go.opentelemetry.io/collector/component v0.70.0
 	go.opentelemetry.io/collector/confmap => go.opentelemetry.io/collector/confmap v0.70.0

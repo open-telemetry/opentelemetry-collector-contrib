@@ -20,6 +20,7 @@ import (
 	"time"
 
 	// TODO: uncomment this after update core dependencies
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18234
 	// "github.com/cenkalti/backoff/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -63,6 +64,7 @@ func TestLoadConfig(t *testing.T) {
 					MaxInterval:     3 * time.Second,
 					MaxElapsedTime:  10 * time.Second,
 					// TODO: uncomment these after update core dependencies
+					// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18234
 					// RandomizationFactor: backoff.DefaultRandomizationFactor,
 					// Multiplier:          backoff.DefaultMultiplier,
 				},
