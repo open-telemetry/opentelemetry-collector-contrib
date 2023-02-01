@@ -20,7 +20,6 @@ import (
 
 	"github.com/alecthomas/participle/v2"
 	"go.opentelemetry.io/collector/component"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
 
@@ -92,36 +91,39 @@ func WithEnumParser[K any](parser EnumParser) Option[K] {
 	}
 }
 
-func (p *Parser[K]) ParseStatements(statements []string) ([]*Statement[K], error) {
+func (p *Parser[K]) ParseStatements(statements []string, errorMode ErrorMode) (Statements[K], error) {
 	var parsedStatements []*Statement[K]
-	var errors error
-
 	for _, statement := range statements {
-		parsed, err := parseStatement(statement)
+		parsedStatement, err := p.ParseStatement(statement)
 		if err != nil {
-			errors = multierr.Append(errors, err)
-			continue
+			return Statements[K]{}, err
 		}
-		function, err := p.newFunctionCall(parsed.Invocation)
-		if err != nil {
-			errors = multierr.Append(errors, err)
-			continue
-		}
-		expression, err := p.newBoolExpr(parsed.WhereClause)
-		if err != nil {
-			errors = multierr.Append(errors, err)
-			continue
-		}
-		parsedStatements = append(parsedStatements, &Statement[K]{
-			function:  function,
-			condition: expression,
-		})
+		parsedStatements = append(parsedStatements, parsedStatement)
 	}
+	return Statements[K]{
+		statements:        parsedStatements,
+		errorMode:         errorMode,
+		telemetrySettings: p.telemetrySettings,
+	}, nil
+}
 
-	if errors != nil {
-		return nil, errors
+func (p *Parser[K]) ParseStatement(statement string) (*Statement[K], error) {
+	parsed, err := parseStatement(statement)
+	if err != nil {
+		return nil, err
 	}
-	return parsedStatements, nil
+	function, err := p.newFunctionCall(parsed.Invocation)
+	if err != nil {
+		return nil, err
+	}
+	expression, err := p.newBoolExpr(parsed.WhereClause)
+	if err != nil {
+		return nil, err
+	}
+	return &Statement[K]{
+		function:  function,
+		condition: expression,
+	}, nil
 }
 
 var parser = newParser[parsedStatement]()
@@ -158,13 +160,13 @@ func newParser[G any]() *participle.Parser[G] {
 
 // Statements represents a list of statements that will be executed sequentially for a TransformContext.
 type Statements[K any] struct {
-	statements        []Statement[K]
+	statements        []*Statement[K]
 	errorMode         ErrorMode
 	telemetrySettings component.TelemetrySettings
 }
 
 // Execute is a function that will execute all the statements in the Statements list.
-func (s *Statements[K]) Execute(ctx context.Context, tCtx K) error {
+func (s Statements[K]) Execute(ctx context.Context, tCtx K) error {
 	for _, statement := range s.statements {
 		_, _, err := statement.Execute(ctx, tCtx)
 		if err != nil {
@@ -176,4 +178,23 @@ func (s *Statements[K]) Execute(ctx context.Context, tCtx K) error {
 		}
 	}
 	return nil
+}
+
+// Eval returns true if any of the statements' conditions pass and false otherwise
+func (s Statements[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
+	for _, statement := range s.statements {
+		ret, err := statement.condition.Eval(ctx, tCtx)
+		if err != nil {
+			if s.errorMode == PropagateError {
+				err = fmt.Errorf("failed to evaluate condition: %w", err)
+				return false, err
+			}
+			s.telemetrySettings.Logger.Error("failed to evaluate condition", zap.Error(err))
+		} else {
+			if ret {
+				return true, nil
+			}
+		}
+	}
+	return false, nil
 }

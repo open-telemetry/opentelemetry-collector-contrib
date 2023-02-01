@@ -16,11 +16,16 @@ package expr // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"context"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 // BoolExpr is an interface that allows matching a context K against a configuration of a match.
 type BoolExpr[K any] interface {
 	Eval(ctx context.Context, tCtx K) (bool, error)
+}
+
+type matcher[K any] struct {
+	ottl.BoolExpr[K]
 }
 
 type notMatcher[K any] struct {
