@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
@@ -53,7 +54,7 @@ func TestLoadConfig(t *testing.T) {
 
 	tests := []struct {
 		id       component.ID
-		expected component.Config
+		expected *Config
 	}{
 		{
 			id:       component.NewIDWithName(typeStr, ""),
@@ -194,6 +195,8 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 			assert.NoError(t, component.ValidateConfig(cfg))
+			// We need to add the default exclude rules.
+			assert.NoError(t, setDefaultExcludes(tt.expected))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -401,6 +404,44 @@ func TestConfigValidateErrors(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			assert.Error(t, component.ValidateConfig(tt.cfg))
+		})
+	}
+}
+
+func TestUnmarshalExcludeMetrics(t *testing.T) {
+	tests := []struct {
+		name              string
+		cfg               *Config
+		excludeMetricsLen int
+	}{
+		{
+			name:              "empty config",
+			cfg:               &Config{},
+			excludeMetricsLen: 12,
+		},
+		{
+			name: "existing exclude config",
+			cfg: &Config{
+				ExcludeMetrics: []dpfilters.MetricFilter{
+					{
+						MetricNames: []string{"metric1"},
+					},
+				},
+			},
+			excludeMetricsLen: 13,
+		},
+		{
+			name: "existing empty exclude config",
+			cfg: &Config{
+				ExcludeMetrics: []dpfilters.MetricFilter{},
+			},
+			excludeMetricsLen: 0,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.NoError(t, tt.cfg.Unmarshal(confmap.NewFromStringMap(map[string]interface{}{})))
+			assert.Len(t, tt.cfg.ExcludeMetrics, tt.excludeMetricsLen)
 		})
 	}
 }
