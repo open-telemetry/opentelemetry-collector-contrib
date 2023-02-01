@@ -35,9 +35,9 @@ func TestClusterRequestQuotaMetrics(t *testing.T) {
 
 	require.Equal(t, 1, len(actualResourceMetrics))
 
-	metrics := actualResourceMetrics[0].metrics
+	metrics := actualResourceMetrics[0].Metrics
 	require.Equal(t, 6, len(metrics))
-	testutils.AssertResource(t, actualResourceMetrics[0].resource, k8sType,
+	testutils.AssertResource(t, actualResourceMetrics[0].Resource, k8sType,
 		map[string]string{
 			"openshift.clusterquota.uid":  "test-clusterquota-1-uid",
 			"openshift.clusterquota.name": "test-clusterquota-1",

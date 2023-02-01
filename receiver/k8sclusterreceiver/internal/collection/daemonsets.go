@@ -15,6 +15,7 @@
 package collection // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/collection"
 
 import (
+	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -52,7 +53,7 @@ var daemonSetReadyMetric = &metricspb.MetricDescriptor{
 	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
 }
 
-func getMetricsForDaemonSet(ds *appsv1.DaemonSet) []*resourceMetrics {
+func getMetricsForDaemonSet(ds *appsv1.DaemonSet) []*agentmetricspb.ExportMetricsServiceRequest {
 	metrics := []*metricspb.Metric{
 		{
 			MetricDescriptor: daemonSetCurrentScheduledMetric,
@@ -80,10 +81,10 @@ func getMetricsForDaemonSet(ds *appsv1.DaemonSet) []*resourceMetrics {
 		},
 	}
 
-	return []*resourceMetrics{
+	return []*agentmetricspb.ExportMetricsServiceRequest{
 		{
-			resource: getResourceForDaemonSet(ds),
-			metrics:  metrics,
+			Resource: getResourceForDaemonSet(ds),
+			Metrics:  metrics,
 		},
 	}
 }

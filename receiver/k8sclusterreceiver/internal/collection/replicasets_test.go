@@ -32,10 +32,10 @@ func TestReplicasetMetrics(t *testing.T) {
 	actualResourceMetrics := getMetricsForReplicaSet(rs)
 
 	require.Equal(t, 1, len(actualResourceMetrics))
-	require.Equal(t, 2, len(actualResourceMetrics[0].metrics))
+	require.Equal(t, 2, len(actualResourceMetrics[0].Metrics))
 
 	rm := actualResourceMetrics[0]
-	testutils.AssertResource(t, rm.resource, k8sType,
+	testutils.AssertResource(t, rm.Resource, k8sType,
 		map[string]string{
 			"k8s.replicaset.uid":  "test-replicaset-1-uid",
 			"k8s.replicaset.name": "test-replicaset-1",
@@ -43,10 +43,10 @@ func TestReplicasetMetrics(t *testing.T) {
 		},
 	)
 
-	testutils.AssertMetricsInt(t, rm.metrics[0], "k8s.replicaset.desired",
+	testutils.AssertMetricsInt(t, rm.Metrics[0], "k8s.replicaset.desired",
 		metricspb.MetricDescriptor_GAUGE_INT64, 3)
 
-	testutils.AssertMetricsInt(t, rm.metrics[1], "k8s.replicaset.available",
+	testutils.AssertMetricsInt(t, rm.Metrics[1], "k8s.replicaset.available",
 		metricspb.MetricDescriptor_GAUGE_INT64, 2)
 }
 

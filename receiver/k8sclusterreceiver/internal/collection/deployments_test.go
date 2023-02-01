@@ -32,10 +32,10 @@ func TestDeploymentMetrics(t *testing.T) {
 	actualResourceMetrics := getMetricsForDeployment(dep)
 
 	require.Equal(t, 1, len(actualResourceMetrics))
-	require.Equal(t, 2, len(actualResourceMetrics[0].metrics))
+	require.Equal(t, 2, len(actualResourceMetrics[0].Metrics))
 
 	rm := actualResourceMetrics[0]
-	testutils.AssertResource(t, rm.resource, k8sType,
+	testutils.AssertResource(t, rm.Resource, k8sType,
 		map[string]string{
 			"k8s.deployment.uid":  "test-deployment-1-uid",
 			"k8s.deployment.name": "test-deployment-1",
@@ -43,10 +43,10 @@ func TestDeploymentMetrics(t *testing.T) {
 		},
 	)
 
-	testutils.AssertMetricsInt(t, rm.metrics[0], "k8s.deployment.desired",
+	testutils.AssertMetricsInt(t, rm.Metrics[0], "k8s.deployment.desired",
 		metricspb.MetricDescriptor_GAUGE_INT64, 10)
 
-	testutils.AssertMetricsInt(t, rm.metrics[1], "k8s.deployment.available",
+	testutils.AssertMetricsInt(t, rm.Metrics[1], "k8s.deployment.available",
 		metricspb.MetricDescriptor_GAUGE_INT64, 3)
 }
 
