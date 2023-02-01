@@ -94,7 +94,7 @@ func translatorFromConfig(logger *zap.Logger, cfg *Config, sourceProvider source
 
 	options = append(options, translator.WithNumberMode(numberMode))
 
-	if featuregate.GetRegistry().IsEnabled(metadata.HostnamePreviewFeatureGate) {
+	if featuregate.GlobalRegistry().IsEnabled(metadata.HostnamePreviewFeatureGate) {
 		options = append(options, translator.WithPreviewHostnameFromAttributes())
 	}
 

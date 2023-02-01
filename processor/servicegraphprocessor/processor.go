@@ -505,6 +505,16 @@ func (p *serviceGraphProcessor) cleanCache() {
 		delete(p.keyToMetric, key)
 	}
 	p.metricMutex.Unlock()
+
+	p.seriesMutex.Lock()
+	for _, key := range staleSeries {
+		delete(p.reqTotal, key)
+		delete(p.reqFailedTotal, key)
+		delete(p.reqDurationSecondsCount, key)
+		delete(p.reqDurationSecondsSum, key)
+		delete(p.reqDurationSecondsBucketCounts, key)
+	}
+	p.seriesMutex.Unlock()
 }
 
 // durationToMillis converts the given duration to the number of milliseconds it represents.

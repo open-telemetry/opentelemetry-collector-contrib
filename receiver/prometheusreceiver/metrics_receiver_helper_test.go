@@ -447,11 +447,8 @@ func compareAttributes(attributes map[string]string) numberPointComparator {
 		if req {
 			for k, v := range attributes {
 				val, ok := numberDataPoint.Attributes().Get(k)
-				if ok {
-					assert.Equal(t, v, val.AsString(), "Attributes do not match")
-				} else {
-					assert.Failf(t, "Attributes key does not match: %v", k)
-				}
+				require.True(t, ok)
+				assert.Equal(t, v, val.AsString(), "Attributes do not match")
 			}
 		}
 	}
@@ -463,11 +460,8 @@ func compareSummaryAttributes(attributes map[string]string) summaryPointComparat
 		if req {
 			for k, v := range attributes {
 				val, ok := summaryDataPoint.Attributes().Get(k)
-				if ok {
-					assert.Equal(t, v, val.AsString(), "Summary attributes value do not match")
-				} else {
-					assert.Failf(t, "Summary attributes key does not match: %v", k)
-				}
+				require.True(t, ok)
+				assert.Equal(t, v, val.AsString(), "Summary attributes value do not match")
 			}
 		}
 	}
@@ -485,11 +479,8 @@ func compareHistogramAttributes(attributes map[string]string) histogramPointComp
 		if req {
 			for k, v := range attributes {
 				val, ok := histogramDataPoint.Attributes().Get(k)
-				if ok {
-					assert.Equal(t, v, val.AsString(), "Histogram attributes value do not match")
-				} else {
-					assert.Fail(t, "Histogram attributes key do not match")
-				}
+				require.True(t, ok)
+				assert.Equal(t, v, val.AsString(), "Histogram attributes value do not match")
 			}
 		}
 	}

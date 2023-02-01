@@ -21,6 +21,7 @@ import (
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -28,39 +29,37 @@ import (
 
 func TestMetricsStoreOperations(t *testing.T) {
 	ms := metricsStore{
-		metricsCache: map[types.UID][]*agentmetricspb.ExportMetricsServiceRequest{},
+		metricsCache: make(map[types.UID]pmetric.Metrics),
 	}
 
 	updates := []struct {
 		id types.UID
-		rm []*resourceMetrics
+		rm []*agentmetricspb.ExportMetricsServiceRequest
 	}{
 		{
 			id: types.UID("test-uid-1"),
-			rm: []*resourceMetrics{
-				{resource: &resourcepb.Resource{Labels: map[string]string{"k1": "v1"}}},
-				{resource: &resourcepb.Resource{Labels: map[string]string{"k2": "v2"}}}},
+			rm: []*agentmetricspb.ExportMetricsServiceRequest{
+				{Resource: &resourcepb.Resource{Labels: map[string]string{"k1": "v1"}}},
+				{Resource: &resourcepb.Resource{Labels: map[string]string{"k2": "v2"}}}},
 		},
 		{
 			id: types.UID("test-uid-2"),
-			rm: []*resourceMetrics{{resource: &resourcepb.Resource{Labels: map[string]string{"k3": "v3"}}}},
+			rm: []*agentmetricspb.ExportMetricsServiceRequest{{Resource: &resourcepb.Resource{Labels: map[string]string{"k3": "v3"}}}},
 		},
 	}
 
 	// Update metric store with metrics
 	for _, u := range updates {
-		require.NoError(t, ms.update(&corev1.Pod{
-			ObjectMeta: v1.ObjectMeta{
-				UID: u.id,
-			},
-		}, u.rm))
+		require.NoError(t, ms.update(
+			&corev1.Pod{ObjectMeta: v1.ObjectMeta{UID: u.id}},
+			ocsToMetrics(u.rm)))
 	}
 
 	// Asset values form updates
 	expectedMetricData := 0
 	for _, u := range updates {
-		require.NotNil(t, ms.metricsCache[u.id])
-		require.True(t, len(ms.metricsCache[u.id]) == len(u.rm))
+		require.Contains(t, ms.metricsCache, u.id)
+		require.Equal(t, len(u.rm), ms.metricsCache[u.id].ResourceMetrics().Len())
 		expectedMetricData += len(u.rm)
 	}
 	require.Equal(t, expectedMetricData, ms.getMetricData(time.Now()).ResourceMetrics().Len())

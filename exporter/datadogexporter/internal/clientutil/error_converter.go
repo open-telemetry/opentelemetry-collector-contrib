@@ -22,7 +22,7 @@ import (
 
 // WrapError wraps an error to a permanent consumer error that won't be retried if the http response code is non-retriable.
 func WrapError(err error, resp *http.Response) error {
-	if err == nil || !isNonRetriable(resp) {
+	if err == nil || resp == nil || !isNonRetriable(resp) {
 		return err
 	}
 	return consumererror.NewPermanent(err)

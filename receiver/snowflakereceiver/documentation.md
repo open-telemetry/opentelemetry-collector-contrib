@@ -612,6 +612,6 @@ Number of bytes of data in Fail-safe.
 
 ## Resource Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| snowflake.account.name | Snowflake account being used by receiver. | Any Str |
+| Name | Description | Values | Enabled |
+| ---- | ----------- | ------ | ------- |
+| snowflake.account.name | Snowflake account being used by receiver. | Any Str | true |

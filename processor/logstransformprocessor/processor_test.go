@@ -26,8 +26,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/processor/processortest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -167,7 +167,7 @@ func TestLogsTransformProcessor(t *testing.T) {
 			time.Sleep(200 * time.Millisecond)
 			logs := tln.AllLogs()
 			require.Len(t, logs, 1)
-			assert.NoError(t, comparetest.CompareLogs(wantLogData, logs[0]))
+			assert.NoError(t, plogtest.CompareLogs(wantLogData, logs[0]))
 		})
 	}
 }

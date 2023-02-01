@@ -16,9 +16,7 @@ package clickhouseexporter // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"errors"
-	"fmt"
 	"net/url"
-	"strings"
 
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/multierr"
@@ -32,10 +30,18 @@ type Config struct {
 	// because only QueueSize is user-settable.
 	QueueSettings QueueSettings `mapstructure:"sending_queue"`
 
-	// DSN is the ClickHouse server Data Source Name.
-	// For tcp protocol reference: [ClickHouse/clickhouse-go#dsn](https://github.com/ClickHouse/clickhouse-go#dsn).
-	// For http protocol reference: [mailru/go-clickhouse/#dsn](https://github.com/mailru/go-clickhouse/#dsn).
-	DSN string `mapstructure:"dsn"`
+	// Endpoint is the clickhouse server endpoint.
+	// TCP endpoint: tcp://ip1:port,ip2:port
+	// HTTP endpoint: http://ip:port,ip2:port
+	Endpoint string `mapstructure:"endpoint"`
+	// Username is the authentication username.
+	Username string `mapstructure:"username"`
+	// Username is the authentication password.
+	Password string `mapstructure:"password"`
+	// Database is the database name to export.
+	Database string `mapstructure:"database"`
+	// ConnectionParams is the extra connection parameters with map format. for example compression/dial_timeout
+	ConnectionParams map[string]string `mapstructure:"connection_params"`
 	// LogsTableName is the table name for logs. default is `otel_logs`.
 	LogsTableName string `mapstructure:"logs_table_name"`
 	// TracesTableName is the table name for logs. default is `otel_traces`.
@@ -53,30 +59,23 @@ type QueueSettings struct {
 }
 
 var (
-	errConfigNoDSN = errors.New("dsn must be specified")
+	errConfigNoEndpoint      = errors.New("endpoint must be specified")
+	errConfigInvalidEndpoint = errors.New("endpoint must be url format")
 )
 
 // Validate validates the clickhouse server configuration.
 func (cfg *Config) Validate() (err error) {
-	if cfg.DSN == "" {
-		err = multierr.Append(err, errConfigNoDSN)
+	if cfg.Endpoint == "" {
+		err = multierr.Append(err, errConfigNoEndpoint)
 	}
-	_, e := parseDSNDatabase(cfg.DSN)
+	_, e := cfg.buildDSN(cfg.Database)
 	if e != nil {
-		err = multierr.Append(err, fmt.Errorf("invalid dsn format:%w", err))
+		err = multierr.Append(err, e)
 	}
 	return err
 }
 
 const defaultDatabase = "default"
-
-func parseDSNDatabase(dsn string) (string, error) {
-	u, err := url.Parse(dsn)
-	if err != nil {
-		return defaultDatabase, err
-	}
-	return strings.TrimPrefix(u.Path, "/"), nil
-}
 
 func (cfg *Config) enforcedQueueSettings() exporterhelper.QueueSettings {
 	return exporterhelper.QueueSettings{
@@ -84,4 +83,21 @@ func (cfg *Config) enforcedQueueSettings() exporterhelper.QueueSettings {
 		NumConsumers: 1,
 		QueueSize:    cfg.QueueSettings.QueueSize,
 	}
+}
+
+func (cfg *Config) buildDSN(database string) (string, error) {
+	dsn, err := url.Parse(cfg.Endpoint)
+	if err != nil {
+		return "", errConfigInvalidEndpoint
+	}
+	if cfg.Username != "" {
+		dsn.User = url.UserPassword(cfg.Username, cfg.Password)
+	}
+	dsn.Path = "/" + database
+	params := url.Values{}
+	for k, v := range cfg.ConnectionParams {
+		params.Set(k, v)
+	}
+	dsn.RawQuery = params.Encode()
+	return dsn.String(), nil
 }

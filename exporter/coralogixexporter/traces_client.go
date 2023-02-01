@@ -21,6 +21,7 @@ import (
 	"runtime"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configopaque"
 	exp "go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
@@ -64,9 +65,9 @@ func (e *tracesExporter) start(ctx context.Context, host component.Host) (err er
 
 	e.traceExporter = ptraceotlp.NewGRPCClient(e.clientConn)
 	if e.config.Traces.Headers == nil {
-		e.config.Traces.Headers = make(map[string]string)
+		e.config.Traces.Headers = make(map[string]configopaque.String)
 	}
-	e.config.Traces.Headers["Authorization"] = "Bearer " + string(e.config.PrivateKey)
+	e.config.Traces.Headers["Authorization"] = configopaque.String("Bearer " + string(e.config.PrivateKey))
 
 	e.callOptions = []grpc.CallOption{
 		grpc.WaitForReady(e.config.Traces.WaitForReady),
@@ -98,10 +99,9 @@ func (e *tracesExporter) shutdown(context.Context) error {
 }
 
 func (e *tracesExporter) enhanceContext(ctx context.Context) context.Context {
-	headers := make(map[string]string)
-	for k, v := range e.config.Traces.Headers {
-		headers[k] = v
+	md := metadata.New(nil)
+	for k, v := range e.config.Logs.Headers {
+		md.Set(k, string(v))
 	}
-
-	return metadata.NewOutgoingContext(ctx, metadata.New(headers))
+	return metadata.NewOutgoingContext(ctx, md)
 }

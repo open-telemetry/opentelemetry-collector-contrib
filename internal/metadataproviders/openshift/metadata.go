@@ -16,8 +16,10 @@ package openshift // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 )
@@ -30,11 +32,19 @@ type Provider interface {
 }
 
 // NewProvider creates a new metadata provider.
-func NewProvider(address, token string) Provider {
+func NewProvider(address, token string, tlsCfg *tls.Config) Provider {
+	cl := &http.Client{}
+
+	if tlsCfg != nil {
+		transport := http.DefaultTransport.(*http.Transport).Clone()
+		transport.TLSClientConfig = tlsCfg
+		cl.Transport = transport
+	}
+
 	return &openshiftProvider{
 		address: address,
 		token:   token,
-		client:  &http.Client{},
+		client:  cl,
 	}
 }
 
@@ -81,9 +91,16 @@ func (o *openshiftProvider) Infrastructure(ctx context.Context) (*Infrastructure
 	if err != nil {
 		return nil, err
 	}
-	res := &InfrastructureAPIResponse{}
-	if err := json.NewDecoder(resp.Body).Decode(res); err != nil {
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
 		return nil, err
+	}
+
+	res := &InfrastructureAPIResponse{}
+	if err := json.Unmarshal(data, res); err != nil {
+		return nil, fmt.Errorf("unable to unmarshal response, err: %w, response: %s",
+			err, string(data),
+		)
 	}
 
 	return res, nil
