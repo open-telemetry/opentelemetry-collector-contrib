@@ -19,6 +19,7 @@ import (
 	"strings"
 	"time"
 
+	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -47,7 +48,7 @@ var podPhaseMetric = &metricspb.MetricDescriptor{
 	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
 }
 
-func getMetricsForPod(pod *corev1.Pod, logger *zap.Logger) []*resourceMetrics {
+func getMetricsForPod(pod *corev1.Pod, logger *zap.Logger) []*agentmetricspb.ExportMetricsServiceRequest {
 	metrics := []*metricspb.Metric{
 		{
 			MetricDescriptor: podPhaseMetric,
@@ -59,7 +60,7 @@ func getMetricsForPod(pod *corev1.Pod, logger *zap.Logger) []*resourceMetrics {
 
 	podRes := getResourceForPod(pod)
 
-	containerResByName := map[string]*resourceMetrics{}
+	containerResByName := map[string]*agentmetricspb.ExportMetricsServiceRequest{}
 
 	for _, cs := range pod.Status.ContainerStatuses {
 		if cs.ContainerID == "" {
@@ -67,9 +68,9 @@ func getMetricsForPod(pod *corev1.Pod, logger *zap.Logger) []*resourceMetrics {
 		}
 
 		contLabels := getAllContainerLabels(cs, podRes.Labels, logger)
-		containerResByName[cs.Name] = &resourceMetrics{resource: getResourceForContainer(contLabels)}
+		containerResByName[cs.Name] = &agentmetricspb.ExportMetricsServiceRequest{Resource: getResourceForContainer(contLabels)}
 
-		containerResByName[cs.Name].metrics = getStatusMetricsForContainer(cs)
+		containerResByName[cs.Name].Metrics = getStatusMetricsForContainer(cs)
 	}
 
 	for _, c := range pod.Spec.Containers {
@@ -82,13 +83,13 @@ func getMetricsForPod(pod *corev1.Pod, logger *zap.Logger) []*resourceMetrics {
 			continue
 		}
 
-		cr.metrics = append(cr.metrics, getSpecMetricsForContainer(c)...)
+		cr.Metrics = append(cr.Metrics, getSpecMetricsForContainer(c)...)
 	}
 
-	out := []*resourceMetrics{
+	out := []*agentmetricspb.ExportMetricsServiceRequest{
 		{
-			resource: podRes,
-			metrics:  metrics,
+			Resource: podRes,
+			Metrics:  metrics,
 		},
 	}
 
@@ -97,8 +98,8 @@ func getMetricsForPod(pod *corev1.Pod, logger *zap.Logger) []*resourceMetrics {
 	return out
 }
 
-func listResourceMetrics(rms map[string]*resourceMetrics) []*resourceMetrics {
-	out := make([]*resourceMetrics, len(rms))
+func listResourceMetrics(rms map[string]*agentmetricspb.ExportMetricsServiceRequest) []*agentmetricspb.ExportMetricsServiceRequest {
+	out := make([]*agentmetricspb.ExportMetricsServiceRequest, len(rms))
 
 	i := 0
 	for _, rm := range rms {

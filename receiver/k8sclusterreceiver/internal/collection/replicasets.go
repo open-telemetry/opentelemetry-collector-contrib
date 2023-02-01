@@ -15,6 +15,7 @@
 package collection // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/collection"
 
 import (
+	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	appsv1 "k8s.io/api/apps/v1"
@@ -22,15 +23,15 @@ import (
 	metadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 )
 
-func getMetricsForReplicaSet(rs *appsv1.ReplicaSet) []*resourceMetrics {
+func getMetricsForReplicaSet(rs *appsv1.ReplicaSet) []*agentmetricspb.ExportMetricsServiceRequest {
 	if rs.Spec.Replicas == nil {
 		return nil
 	}
 
-	return []*resourceMetrics{
+	return []*agentmetricspb.ExportMetricsServiceRequest{
 		{
-			resource: getResourceForReplicaSet(rs),
-			metrics: getReplicaMetrics(
+			Resource: getResourceForReplicaSet(rs),
+			Metrics: getReplicaMetrics(
 				"replicaset",
 				*rs.Spec.Replicas,
 				rs.Status.AvailableReplicas,

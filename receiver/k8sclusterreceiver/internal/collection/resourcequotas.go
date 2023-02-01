@@ -17,6 +17,7 @@ package collection // import "github.com/open-telemetry/opentelemetry-collector-
 import (
 	"strings"
 
+	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -45,7 +46,7 @@ var resourceQuotaUsedMetric = &metricspb.MetricDescriptor{
 	}},
 }
 
-func getMetricsForResourceQuota(rq *corev1.ResourceQuota) []*resourceMetrics {
+func getMetricsForResourceQuota(rq *corev1.ResourceQuota) []*agentmetricspb.ExportMetricsServiceRequest {
 	var metrics []*metricspb.Metric
 
 	for _, t := range []struct {
@@ -79,10 +80,10 @@ func getMetricsForResourceQuota(rq *corev1.ResourceQuota) []*resourceMetrics {
 		}
 	}
 
-	return []*resourceMetrics{
+	return []*agentmetricspb.ExportMetricsServiceRequest{
 		{
-			resource: getResourceForResourceQuota(rq),
-			metrics:  metrics,
+			Resource: getResourceForResourceQuota(rq),
+			Metrics:  metrics,
 		},
 	}
 }

@@ -15,6 +15,7 @@
 package collection // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/collection"
 
 import (
+	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -52,7 +53,7 @@ var hpaDesiredReplicasMetric = &metricspb.MetricDescriptor{
 	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
 }
 
-func getMetricsForHPA(hpa *autoscalingv2beta2.HorizontalPodAutoscaler) []*resourceMetrics {
+func getMetricsForHPA(hpa *autoscalingv2beta2.HorizontalPodAutoscaler) []*agentmetricspb.ExportMetricsServiceRequest {
 	metrics := []*metricspb.Metric{
 		{
 			MetricDescriptor: hpaMaxReplicasMetric,
@@ -80,10 +81,10 @@ func getMetricsForHPA(hpa *autoscalingv2beta2.HorizontalPodAutoscaler) []*resour
 		},
 	}
 
-	return []*resourceMetrics{
+	return []*agentmetricspb.ExportMetricsServiceRequest{
 		{
-			resource: getResourceForHPA(hpa),
-			metrics:  metrics,
+			Resource: getResourceForHPA(hpa),
+			Metrics:  metrics,
 		},
 	}
 }

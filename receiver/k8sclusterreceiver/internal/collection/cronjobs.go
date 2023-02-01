@@ -15,6 +15,7 @@
 package collection // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/collection"
 
 import (
+	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -40,7 +41,7 @@ var activeJobs = &metricspb.MetricDescriptor{
 
 // TODO: All the CronJob related functions below can be de-duplicated using generics from go 1.18
 
-func getMetricsForCronJob(cj *batchv1.CronJob) []*resourceMetrics {
+func getMetricsForCronJob(cj *batchv1.CronJob) []*agentmetricspb.ExportMetricsServiceRequest {
 	metrics := []*metricspb.Metric{
 		{
 			MetricDescriptor: activeJobs,
@@ -50,15 +51,15 @@ func getMetricsForCronJob(cj *batchv1.CronJob) []*resourceMetrics {
 		},
 	}
 
-	return []*resourceMetrics{
+	return []*agentmetricspb.ExportMetricsServiceRequest{
 		{
-			resource: getResourceForCronJob(cj),
-			metrics:  metrics,
+			Resource: getResourceForCronJob(cj),
+			Metrics:  metrics,
 		},
 	}
 }
 
-func getMetricsForCronJobBeta(cj *batchv1beta1.CronJob) []*resourceMetrics {
+func getMetricsForCronJobBeta(cj *batchv1beta1.CronJob) []*agentmetricspb.ExportMetricsServiceRequest {
 	metrics := []*metricspb.Metric{
 		{
 			MetricDescriptor: activeJobs,
@@ -68,10 +69,10 @@ func getMetricsForCronJobBeta(cj *batchv1beta1.CronJob) []*resourceMetrics {
 		},
 	}
 
-	return []*resourceMetrics{
+	return []*agentmetricspb.ExportMetricsServiceRequest{
 		{
-			resource: getResourceForCronJobBeta(cj),
-			metrics:  metrics,
+			Resource: getResourceForCronJobBeta(cj),
+			Metrics:  metrics,
 		},
 	}
 }
