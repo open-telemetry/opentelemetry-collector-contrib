@@ -39,6 +39,7 @@ type Config struct {
 	Granularity                             string                       `mapstructure:"granularity"`
 	Metrics                                 metadata.MetricsSettings     `mapstructure:"metrics"`
 	Alerts                                  AlertConfig                  `mapstructure:"alerts"`
+	Events                                  *EventsConfig                `mapstructure:"events,omitempty"`
 	Logs                                    LogConfig                    `mapstructure:"logs"`
 	RetrySettings                           exporterhelper.RetrySettings `mapstructure:"retry_on_failure"`
 	StorageID                               *component.ID                `mapstructure:"storage"`
@@ -61,6 +62,12 @@ type AlertConfig struct {
 type LogConfig struct {
 	Enabled  bool             `mapstructure:"enabled"`
 	Projects []*ProjectConfig `mapstructure:"projects"`
+}
+
+type EventsConfig struct {
+	Projects     []*ProjectConfig `mapstructure:"projects"`
+	PollInterval time.Duration    `mapstructure:"poll_interval"`
+	Types        []string         `mapstructure:"types"`
 }
 
 type ProjectConfig struct {
@@ -109,6 +116,9 @@ func (c *Config) Validate() error {
 
 	errs = multierr.Append(errs, c.Alerts.validate())
 	errs = multierr.Append(errs, c.Logs.validate())
+	if c.Events != nil {
+		errs = multierr.Append(errs, c.Events.validate())
+	}
 
 	return errs
 }
@@ -193,4 +203,8 @@ func (a AlertConfig) validateListenConfig() error {
 		}
 	}
 	return errs
+}
+
+func (e EventsConfig) validate() error {
+	return nil
 }
