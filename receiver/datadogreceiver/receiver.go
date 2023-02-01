@@ -23,13 +23,14 @@ import (
 	"time"
 
 	datadogpb "github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/atomic"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/metadata"
 )
 
 type datadogReceiver struct {
@@ -107,17 +108,17 @@ func (ddr *datadogReceiver) handleTraces(w http.ResponseWriter, req *http.Reques
 		ddr.tReceiver.EndTracesOp(obsCtx, "datadog", *spanCount, err)
 	}(&spanCount)
 	var ddTraces datadogpb.Traces
+
 	hostname, _ := os.Hostname()
 
 	defer ddr.mb.Emit()
 	err = decodeRequest(req, &ddTraces)
 	if err != nil {
-		defer ddr.mb.Emit()
 		ddr.errorCounter.Inc()
 		http.Error(w, "Unable to unmarshal reqs", http.StatusInternalServerError)
-		hostname, _ := os.Hostname()
 		ddr.mb.RecordOtelReceiverDatadogErrorsDataPoint(now, ddr.errorCounter.Load(), hostname)
 		ddr.params.Logger.Error(fmt.Sprintf("Error %d: Unable to unmarshal request. %s", ddr.errorCounter.Load(), err))
+		return
 	}
 
 	otelTraces := toTraces(ddTraces, req)
@@ -130,7 +131,7 @@ func (ddr *datadogReceiver) handleTraces(w http.ResponseWriter, req *http.Reques
 		ddr.mb.RecordOtelReceiverDatadogErrorsDataPoint(now, ddr.errorCounter.Load(), hostname)
 		ddr.params.Logger.Error(fmt.Sprintf("Error %d: Trace consumer errored out. %s", ddr.errorCounter.Load(), err))
 	} else {
-		w.Write([]byte("OK"))
+		_, _ = w.Write([]byte("OK"))
 		ddr.mb.RecordOtelReceiverDatadogSpansProcessedDataPoint(now, int64(spanCount), hostname)
 		ddr.mb.RecordOtelReceiverDatadogSpansRateDataPoint(now, float64(time.Since(now.AsTime()).Milliseconds())/float64(spanCount), hostname)
 	}
