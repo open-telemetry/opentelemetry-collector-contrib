@@ -25,7 +25,7 @@
                             ],
                             "events": [
                                 {
-                                    "name": "Sub span event",
+                                    "name": "event1",
                                     "attributes": null,
                                     "droppedAttributesCount": 0
                                 }

@@ -25,8 +25,15 @@
                             ],
                             "events": [
                                 {
-                                    "name": "Sub span event",
-                                    "attributes": null,
+                                    "name": "event1",
+                                    "attributes": [
+                                        {
+                                            "key": "eventkey1",
+                                            "value": {
+                                                "stringValue": "value1"
+                                            }
+                                        }
+                                    ],
                                     "droppedAttributesCount": 0
                                 }
                             ],

@@ -23,10 +23,19 @@
                                     }
                                 }
                             ],
-                            "events": [
+                            "links": [
                                 {
-                                    "name": "Sub span event",
-                                    "attributes": null,
+                                    "traceId": "8c8b1765a7b0acf0b66aa4623fcb7bd5",
+                                    "spanId": "fd0da883bb27cd6b",
+                                    "traceState": "",
+                                    "attributes": [
+                                        {
+                                            "key": "testKey1",
+                                            "value": {
+                                                "stringValue": "teststringvalue2"
+                                            }
+                                        }
+                                    ],
                                     "droppedAttributesCount": 0
                                 }
                             ],
