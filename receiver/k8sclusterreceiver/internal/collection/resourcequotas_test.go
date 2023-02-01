@@ -34,8 +34,8 @@ func TestRequestQuotaMetrics(t *testing.T) {
 
 	require.Equal(t, 1, len(actualResourceMetrics))
 
-	require.Equal(t, 2, len(actualResourceMetrics[0].metrics))
-	testutils.AssertResource(t, actualResourceMetrics[0].resource, k8sType,
+	require.Equal(t, 2, len(actualResourceMetrics[0].Metrics))
+	testutils.AssertResource(t, actualResourceMetrics[0].Resource, k8sType,
 		map[string]string{
 			"k8s.resourcequota.uid":  "test-resourcequota-1-uid",
 			"k8s.resourcequota.name": "test-resourcequota-1",
@@ -43,10 +43,10 @@ func TestRequestQuotaMetrics(t *testing.T) {
 		},
 	)
 
-	testutils.AssertMetricsWithLabels(t, actualResourceMetrics[0].metrics[0], "k8s.resource_quota.hard_limit",
+	testutils.AssertMetricsWithLabels(t, actualResourceMetrics[0].Metrics[0], "k8s.resource_quota.hard_limit",
 		metricspb.MetricDescriptor_GAUGE_INT64, map[string]string{"resource": "requests.cpu"}, 2000)
 
-	testutils.AssertMetricsWithLabels(t, actualResourceMetrics[0].metrics[1], "k8s.resource_quota.used",
+	testutils.AssertMetricsWithLabels(t, actualResourceMetrics[0].Metrics[1], "k8s.resource_quota.used",
 		metricspb.MetricDescriptor_GAUGE_INT64, map[string]string{"resource": "requests.cpu"}, 1000)
 }
 

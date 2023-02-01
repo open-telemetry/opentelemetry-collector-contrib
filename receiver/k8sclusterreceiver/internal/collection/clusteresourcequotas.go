@@ -17,6 +17,7 @@ package collection // import "github.com/open-telemetry/opentelemetry-collector-
 import (
 	"strings"
 
+	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	quotav1 "github.com/openshift/api/quota/v1"
@@ -72,7 +73,7 @@ var appliedClusterResourceQuotaUsedMetric = &metricspb.MetricDescriptor{
 	},
 }
 
-func getMetricsForClusterResourceQuota(rq *quotav1.ClusterResourceQuota) []*resourceMetrics {
+func getMetricsForClusterResourceQuota(rq *quotav1.ClusterResourceQuota) []*agentmetricspb.ExportMetricsServiceRequest {
 	var metrics []*metricspb.Metric
 
 	metrics = appendClusterQuotaMetrics(metrics, clusterResourceQuotaLimitMetric, rq.Status.Total.Hard, "")
@@ -81,10 +82,10 @@ func getMetricsForClusterResourceQuota(rq *quotav1.ClusterResourceQuota) []*reso
 		metrics = appendClusterQuotaMetrics(metrics, appliedClusterResourceQuotaLimitMetric, ns.Status.Hard, ns.Namespace)
 		metrics = appendClusterQuotaMetrics(metrics, appliedClusterResourceQuotaUsedMetric, ns.Status.Used, ns.Namespace)
 	}
-	return []*resourceMetrics{
+	return []*agentmetricspb.ExportMetricsServiceRequest{
 		{
-			resource: getResourceForClusterResourceQuota(rq),
-			metrics:  metrics,
+			Resource: getResourceForClusterResourceQuota(rq),
+			Metrics:  metrics,
 		},
 	}
 }

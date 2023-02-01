@@ -33,6 +33,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	metadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
+	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
 
 // TODO: Consider moving some of these constants to
@@ -85,7 +86,7 @@ func NewDataCollector(logger *zap.Logger, nodeConditionsToReport, allocatableTyp
 	return &DataCollector{
 		logger: logger,
 		metricsStore: &metricsStore{
-			metricsCache: map[types.UID][]*agentmetricspb.ExportMetricsServiceRequest{},
+			metricsCache: make(map[types.UID]pmetric.Metrics),
 		},
 		metadataStore:            &metadataStore{},
 		nodeConditionsToReport:   nodeConditionsToReport,
@@ -108,8 +109,8 @@ func (dc *DataCollector) RemoveFromMetricsStore(obj interface{}) {
 	}
 }
 
-func (dc *DataCollector) UpdateMetricsStore(obj interface{}, rm []*resourceMetrics) {
-	if err := dc.metricsStore.update(obj.(runtime.Object), rm); err != nil {
+func (dc *DataCollector) UpdateMetricsStore(obj interface{}, md pmetric.Metrics) {
+	if err := dc.metricsStore.update(obj.(runtime.Object), md); err != nil {
 		dc.logger.Error(
 			"failed to update metric cache",
 			zap.String("obj", reflect.TypeOf(obj).String()),
@@ -124,46 +125,46 @@ func (dc *DataCollector) CollectMetricData(currentTime time.Time) pmetric.Metric
 
 // SyncMetrics updates the metric store with latest metrics from the kubernetes object.
 func (dc *DataCollector) SyncMetrics(obj interface{}) {
-	var rm []*resourceMetrics
+	var md pmetric.Metrics
 
 	switch o := obj.(type) {
 	case *corev1.Pod:
-		rm = getMetricsForPod(o, dc.logger)
+		md = ocsToMetrics(getMetricsForPod(o, dc.logger))
 	case *corev1.Node:
-		rm = getMetricsForNode(o, dc.nodeConditionsToReport, dc.allocatableTypesToReport, dc.logger)
+		md = ocsToMetrics(getMetricsForNode(o, dc.nodeConditionsToReport, dc.allocatableTypesToReport, dc.logger))
 	case *corev1.Namespace:
-		rm = getMetricsForNamespace(o)
+		md = ocsToMetrics(getMetricsForNamespace(o))
 	case *corev1.ReplicationController:
-		rm = getMetricsForReplicationController(o)
+		md = ocsToMetrics(getMetricsForReplicationController(o))
 	case *corev1.ResourceQuota:
-		rm = getMetricsForResourceQuota(o)
+		md = ocsToMetrics(getMetricsForResourceQuota(o))
 	case *appsv1.Deployment:
-		rm = getMetricsForDeployment(o)
+		md = ocsToMetrics(getMetricsForDeployment(o))
 	case *appsv1.ReplicaSet:
-		rm = getMetricsForReplicaSet(o)
+		md = ocsToMetrics(getMetricsForReplicaSet(o))
 	case *appsv1.DaemonSet:
-		rm = getMetricsForDaemonSet(o)
+		md = ocsToMetrics(getMetricsForDaemonSet(o))
 	case *appsv1.StatefulSet:
-		rm = getMetricsForStatefulSet(o)
+		md = ocsToMetrics(getMetricsForStatefulSet(o))
 	case *batchv1.Job:
-		rm = getMetricsForJob(o)
+		md = ocsToMetrics(getMetricsForJob(o))
 	case *batchv1.CronJob:
-		rm = getMetricsForCronJob(o)
+		md = ocsToMetrics(getMetricsForCronJob(o))
 	case *batchv1beta1.CronJob:
-		rm = getMetricsForCronJobBeta(o)
+		md = ocsToMetrics(getMetricsForCronJobBeta(o))
 	case *autoscalingv2beta2.HorizontalPodAutoscaler:
-		rm = getMetricsForHPA(o)
+		md = ocsToMetrics(getMetricsForHPA(o))
 	case *quotav1.ClusterResourceQuota:
-		rm = getMetricsForClusterResourceQuota(o)
+		md = ocsToMetrics(getMetricsForClusterResourceQuota(o))
 	default:
 		return
 	}
 
-	if len(rm) == 0 {
+	if md.DataPointCount() == 0 {
 		return
 	}
 
-	dc.UpdateMetricsStore(obj, rm)
+	dc.UpdateMetricsStore(obj, md)
 }
 
 // SyncMetadata updates the metric store with latest metrics from the kubernetes object
@@ -195,4 +196,12 @@ func (dc *DataCollector) SyncMetadata(obj interface{}) map[metadata.ResourceID]*
 	}
 
 	return km
+}
+
+func ocsToMetrics(ocs []*agentmetricspb.ExportMetricsServiceRequest) pmetric.Metrics {
+	md := pmetric.NewMetrics()
+	for _, ocm := range ocs {
+		internaldata.OCToMetrics(ocm.Node, ocm.Resource, ocm.Metrics).ResourceMetrics().MoveAndAppendTo(md.ResourceMetrics())
+	}
+	return md
 }
