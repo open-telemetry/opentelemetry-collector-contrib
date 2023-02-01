@@ -136,22 +136,22 @@ func putBuffer(buffer *bytes.Buffer) {
 	bufferPool.Put(buffer)
 }
 
-func handlePayload(req *http.Request) (tp *pb.TracerPayload, ranHook bool, err error) {
+func handlePayload(req *http.Request) (tp *pb.TracerPayload, err error) {
 	switch {
 	case strings.HasPrefix(req.URL.Path, "/v0.7"):
 		buf := getBuffer()
 		defer putBuffer(buf)
 		if _, err = io.Copy(buf, req.Body); err != nil {
-			return nil, false, err
+			return nil, err
 		}
 		var tracerPayload pb.TracerPayload
 		_, err = tracerPayload.UnmarshalMsg(buf.Bytes())
-		return &tracerPayload, false, err
+		return &tracerPayload, err
 	case strings.HasPrefix(req.URL.Path, "/v0.5"):
 		buf := getBuffer()
 		defer putBuffer(buf)
 		if _, err = io.Copy(buf, req.Body); err != nil {
-			return nil, false, err
+			return nil, err
 		}
 		var traces pb.Traces
 		err = traces.UnmarshalMsgDictionary(buf.Bytes())
@@ -160,51 +160,51 @@ func handlePayload(req *http.Request) (tp *pb.TracerPayload, ranHook bool, err e
 			LanguageVersion: req.Header.Get("Datadog-Meta-Lang-Version"),
 			Chunks:          traceChunksFromTraces(traces),
 			TracerVersion:   req.Header.Get("Datadog-Meta-Tracer-Version"),
-		}, false, err
+		}, err
 	case strings.HasPrefix(req.URL.Path, "/v0.1"):
 		var spans []pb.Span
 		if err = json.NewDecoder(req.Body).Decode(&spans); err != nil {
-			return nil, false, err
+			return nil, err
 		}
 		return &pb.TracerPayload{
 			LanguageName:    req.Header.Get("Datadog-Meta-Lang"),
 			LanguageVersion: req.Header.Get("Datadog-Meta-Lang-Version"),
 			Chunks:          traceChunksFromSpans(spans),
 			TracerVersion:   req.Header.Get("Datadog-Meta-Tracer-Version"),
-		}, false, nil
+		}, nil
 
 	default:
 		var traces pb.Traces
-		if ranHook, err = decodeRequest(req, &traces); err != nil {
-			return nil, ranHook, err
+		if err = decodeRequest(req, &traces); err != nil {
+			return nil, err
 		}
 		return &pb.TracerPayload{
 			LanguageName:    req.Header.Get("Datadog-Meta-Lang"),
 			LanguageVersion: req.Header.Get("Datadog-Meta-Lang-Version"),
 			Chunks:          traceChunksFromTraces(traces),
 			TracerVersion:   req.Header.Get("Datadog-Meta-Tracer-Version"),
-		}, ranHook, err
+		}, err
 	}
 }
 
-func decodeRequest(req *http.Request, dest *pb.Traces) (ranHook bool, err error) {
+func decodeRequest(req *http.Request, dest *pb.Traces) (err error) {
 	switch mediaType := getMediaType(req); mediaType {
 	case "application/msgpack":
 		buf := getBuffer()
 		defer putBuffer(buf)
 		_, err = io.Copy(buf, req.Body)
 		if err != nil {
-			return false, err
+			return err
 		}
 		_, err = dest.UnmarshalMsg(buf.Bytes())
-		return true, err
+		return err
 	case "application/json":
 		fallthrough
 	case "text/json":
 		fallthrough
 	case "":
 		err = json.NewDecoder(req.Body).Decode(&dest)
-		return false, err
+		return err
 	default:
 		// do our best
 		if err1 := json.NewDecoder(req.Body).Decode(&dest); err1 != nil {
@@ -212,12 +212,12 @@ func decodeRequest(req *http.Request, dest *pb.Traces) (ranHook bool, err error)
 			defer putBuffer(buf)
 			_, err2 := io.Copy(buf, req.Body)
 			if err2 != nil {
-				return false, err2
+				return err2
 			}
 			_, err2 = dest.UnmarshalMsg(buf.Bytes())
-			return true, err2
+			return err2
 		}
-		return false, nil
+		return nil
 	}
 }
 

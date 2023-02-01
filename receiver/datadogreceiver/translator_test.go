@@ -23,7 +23,6 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/trace/pb"
 	"github.com/stretchr/testify/assert"
 	vmsgp "github.com/vmihailenco/msgpack/v4"
-	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 var data = [2]interface{}{
@@ -39,6 +38,7 @@ var data = [2]interface{}{
 		8:  "_dd.sampling_rate_whatever",
 		9:  "value whatever",
 		10: "sql",
+		11: "service.name",
 	},
 	1: [][][12]interface{}{
 		{
@@ -53,9 +53,10 @@ var data = [2]interface{}{
 				int64(456),
 				1,
 				map[interface{}]interface{}{
-					8: 9,
-					0: 1,
-					2: 3,
+					8:  9,
+					0:  1,
+					2:  3,
+					11: 6,
 				},
 				map[interface{}]float64{
 					5: 1.2,
@@ -65,7 +66,6 @@ var data = [2]interface{}{
 		},
 	},
 }
-var output ptrace.Traces
 
 func TestTracePayloadV05Unmarshalling(t *testing.T) {
 	var traces pb.Traces
@@ -74,8 +74,7 @@ func TestTracePayloadV05Unmarshalling(t *testing.T) {
 	if err := traces.UnmarshalMsgDictionary(payload); err != nil {
 		t.Fatal(err)
 	}
-	req := &http.Request{RequestURI: "/v0.5/traces", Body: io.NopCloser(bytes.NewReader(payload))}
-
+	req, _ := http.NewRequest("POST", "/v0.5/traces", io.NopCloser(bytes.NewReader(payload)))
 	translated := toTraces(&pb.TracerPayload{
 		LanguageName:    req.Header.Get("Datadog-Meta-Lang"),
 		LanguageVersion: req.Header.Get("Datadog-Meta-Lang-Version"),
@@ -92,28 +91,45 @@ func TestTracePayloadV05Unmarshalling(t *testing.T) {
 	assert.Equal(t, span.Name(), "my-resource")
 }
 
-func BenchmarkTranslator(b *testing.B) {
-
-	payload, err := vmsgp.Marshal(&data)
-	assert.NoError(b, err)
-
+func TestTracePayloadV07Unmarshalling(t *testing.T) {
 	var traces pb.Traces
-	if err := traces.UnmarshalMsgDictionary(payload); err != nil {
-		b.Fatal(err)
+	payload, err := vmsgp.Marshal(&data)
+	assert.NoError(t, err)
+	if err2 := traces.UnmarshalMsgDictionary(payload); err2 != nil {
+		t.Fatal(err2)
 	}
+	apiPayload := pb.TracerPayload{
+		LanguageName:    "1",
+		LanguageVersion: "1",
+		Chunks:          traceChunksFromTraces(traces),
+		TracerVersion:   "1",
+	}
+	var reqBytes []byte
+	bytez, _ := apiPayload.MarshalMsg(reqBytes)
+	req, _ := http.NewRequest("POST", "/v0.7/traces", io.NopCloser(bytes.NewReader(bytez)))
 
-	req := &http.Request{RequestURI: "/v0.5/traces", Body: io.NopCloser(bytes.NewReader(payload))}
-	b.ResetTimer()
-	b.ReportAllocs()
-	b.SetBytes(int64(len(payload)))
+	translated, _ := handlePayload(req)
+	span := translated.GetChunks()[0].GetSpans()[0]
+	assert.NotNil(t, span)
+	assert.Equal(t, 4, len(span.GetMeta()), "missing tags")
+	value, exists := span.GetMeta()["service.name"]
+	assert.True(t, exists, "service.name missing")
+	assert.Equal(t, "my-service", value, "service.name tag value incorrect")
+	assert.Equal(t, "my-name", span.GetName())
+}
+
+func BenchmarkTranslatorv05(b *testing.B) {
 	b.StartTimer()
-	for i := 0; i < b.N; i++ {
-		output = toTraces(&pb.TracerPayload{
-			LanguageName:    req.Header.Get("Datadog-Meta-Lang"),
-			LanguageVersion: req.Header.Get("Datadog-Meta-Lang-Version"),
-			Chunks:          traceChunksFromTraces(traces),
-			TracerVersion:   req.Header.Get("Datadog-Meta-Tracer-Version"),
-		}, req)
+	for n := 0; n < b.N; n++ {
+		TestTracePayloadV05Unmarshalling(&testing.T{})
+	}
+	b.StopTimer()
+}
+
+func BenchmarkTranslatorv07(b *testing.B) {
+	b.StartTimer()
+	for n := 0; n < b.N; n++ {
+		TestTracePayloadV07Unmarshalling(&testing.T{})
 	}
 	b.StopTimer()
 }

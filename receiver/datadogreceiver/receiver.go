@@ -97,7 +97,7 @@ func (ddr *datadogReceiver) handleTraces(w http.ResponseWriter, req *http.Reques
 	}(&spanCount)
 	var ddTraces *pb.TracerPayload
 
-	ddTraces, _, err = handlePayload(req)
+	ddTraces, err = handlePayload(req)
 	if err != nil {
 		http.Error(w, "Unable to unmarshal reqs", http.StatusInternalServerError)
 		ddr.params.Logger.Error("Unable to unmarshal reqs")
