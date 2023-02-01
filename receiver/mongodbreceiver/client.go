@@ -34,10 +34,11 @@ type client interface {
 	Disconnect(context.Context) error
 	GetVersion(context.Context) (*version.Version, error)
 	ServerStatus(ctx context.Context, DBName string) (bson.M, error)
-	DiagnosticData(ctx context.Context, DBName string) (bson.M, error)
 	DBStats(ctx context.Context, DBName string) (bson.M, error)
 	TopStats(ctx context.Context) (bson.M, error)
 	IndexStats(ctx context.Context, DBName, collectionName string) ([]bson.M, error)
+	DiagnosticData(ctx context.Context, DBName string) (bson.M, error)
+	ReplSetGetStatus(ctx context.Context, DBName string) (bson.D, error)
 }
 
 // mongodbClient is a mongodb metric scraper client
@@ -75,6 +76,21 @@ func (c *mongodbClient) RunCommand(ctx context.Context, database string, command
 // DiagnosticData returns the result of db.runCommand({ getDiagnosticData: 1 })
 func (c *mongodbClient) DiagnosticData(ctx context.Context, database string) (bson.M, error) {
 	return c.RunCommand(ctx, database, bson.M{"getDiagnosticData": 1})
+}
+
+// ReplSetGetStatus returns the result of db.runCommand({ replSetGetStatus: 1 })
+func (c *mongodbClient) ReplSetGetStatus(ctx context.Context, database string) (bson.D, error) {
+	db := c.Database(database)
+	result := db.RunCommand(ctx, bson.D{
+		{
+			Key:   "replSetGetStatus",
+			Value: 1,
+		},
+	})
+
+	var document bson.D
+	err := result.Decode(&document)
+	return document, err
 }
 
 // ServerStatus returns the result of db.runCommand({ serverStatus: 1 })

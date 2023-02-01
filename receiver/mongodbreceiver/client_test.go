@@ -69,6 +69,11 @@ func (fc *fakeClient) DiagnosticData(ctx context.Context, dbName string) (bson.M
 	return args.Get(0).(bson.M), args.Error(1)
 }
 
+func (fc *fakeClient) ReplSetGetStatus(ctx context.Context, DBName string) (bson.D, error) {
+	args := fc.Called(ctx, DBName)
+	return args.Get(0).(bson.D), args.Error(1)
+}
+
 func (fc *fakeClient) DBStats(ctx context.Context, dbName string) (bson.M, error) {
 	args := fc.Called(ctx, dbName)
 	return args.Get(0).(bson.M), args.Error(1)
@@ -314,6 +319,10 @@ func loadDiagnosticDataAsMap() (bson.M, error) {
 
 func loadOnlyStorageEngineAsMap() (bson.M, error) {
 	return loadTestFileAsMap("./testdata/only_storage_engine.json")
+}
+
+func loadReplSetGetStatus() (bson.D, error) {
+	return loadTestFile("./testdata/repl_set_get_status.json")
 }
 
 func loadTestFile(filePath string) (bson.D, error) {

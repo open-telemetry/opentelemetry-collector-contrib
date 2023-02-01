@@ -341,7 +341,7 @@ func (s *mongodbScraper) recordNetworkCount(now pcommon.Timestamp, doc bson.M, e
 
 // DiagnosticData
 func (s *mongodbScraper) recordOplog(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
-	metricPath := []string{"data", "local.oplog.rs.stats", "storageSize"}
+	metricPath := []string{"data", "local.oplog.rs.stats", "maxSize"}
 	metricName := "mongodb.oplog.size"
 	val, err := collectMetric(doc, metricPath)
 	if err != nil {

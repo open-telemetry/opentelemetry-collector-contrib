@@ -17,6 +17,7 @@ package mongodbreceiver
 import (
 	"context"
 	"errors"
+	"os"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -29,6 +30,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/integration/mtest"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
@@ -37,6 +39,15 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
+
+func TestMain(m *testing.M) {
+	// Enable the feature gates before all tests to avoid flaky tests.
+	_ = featuregate.GlobalRegistry().Apply(map[string]bool{
+		emitReplicationMetricsID: true,
+	})
+	code := m.Run()
+	os.Exit(code)
+}
 
 func TestNewMongodbScraper(t *testing.T) {
 	f := NewFactory()
@@ -259,6 +270,8 @@ func TestScraperScrape(t *testing.T) {
 				require.NoError(t, err)
 				diagnosticData, err := loadDiagnosticDataAsMap()
 				require.NoError(t, err)
+				replSetGetStatus, err := loadReplSetGetStatus()
+				require.NoError(t, err)
 				ss, err := loadServerStatusAsMap()
 				require.NoError(t, err)
 				dbStats, err := loadDBStatsAsMap()
@@ -282,6 +295,7 @@ func TestScraperScrape(t *testing.T) {
 				fc.On("IndexStats", mock.Anything, fakeDatabaseName, "products").Return(productsIndexStats, nil)
 				fc.On("IndexStats", mock.Anything, fakeDatabaseName, "orders").Return(ordersIndexStats, nil)
 				fc.On("DiagnosticData", mock.Anything, "admin").Return(diagnosticData, nil)
+				fc.On("ReplSetGetStatus", mock.Anything, "admin").Return(replSetGetStatus, nil)
 				return fc
 			},
 			expectedMetricGen: func(t *testing.T) pmetric.Metrics {

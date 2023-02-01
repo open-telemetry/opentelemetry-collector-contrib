@@ -23,6 +23,7 @@ import (
 	"github.com/hashicorp/go-version"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
@@ -32,19 +33,36 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver/internal/metadata"
 )
 
+const (
+	emitReplicationMetricsID = "receiver.mongodb.emitReplicationMetrics"
+)
+
 type mongodbScraper struct {
 	logger       *zap.Logger
 	config       *Config
 	client       client
 	mongoVersion *version.Version
 	mb           *metadata.MetricsBuilder
+
+	// Feature gates
+	emitReplicationMetrics bool
+}
+
+func init() {
+	featuregate.GlobalRegistry().MustRegisterID(
+		emitReplicationMetricsID,
+		featuregate.StageAlpha,
+		featuregate.WithRegisterDescription("When enabled, the mongodb receiver will check if mongodb host is replicated and emit any enabled replication metrics"),
+		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/17368"),
+	)
 }
 
 func newMongodbScraper(settings receiver.CreateSettings, config *Config) *mongodbScraper {
 	return &mongodbScraper{
-		logger: settings.Logger,
-		config: config,
-		mb:     metadata.NewMetricsBuilder(config.Metrics, settings),
+		logger:                 settings.Logger,
+		config:                 config,
+		mb:                     metadata.NewMetricsBuilder(config.Metrics, settings),
+		emitReplicationMetrics: featuregate.GlobalRegistry().IsEnabled(emitReplicationMetricsID),
 	}
 }
 
@@ -136,12 +154,18 @@ func (s *mongodbScraper) collectAdminDatabase(ctx context.Context, now pcommon.T
 	}
 	s.recordAdminStats(now, serverStatus, errs)
 
-	diagnosticData, err := s.client.DiagnosticData(ctx, "admin")
-	if err != nil {
-		errs.AddPartial(1, fmt.Errorf("failed to fetch admin diagnostic data metrics: %w", err))
-		return
+	if s.emitReplicationMetrics {
+		replSetStatus, err := s.client.ReplSetGetStatus(ctx, "admin")
+
+		if err == nil && len(replSetStatus) > 0 {
+			diagnosticData, err := s.client.DiagnosticData(ctx, "admin")
+			if err != nil {
+				errs.AddPartial(1, fmt.Errorf("failed to fetch admin diagnostic data metrics: %w", err))
+				return
+			}
+			s.recordDiagnosticDataStats(now, diagnosticData, errs)
+		}
 	}
-	s.recordDiagnosticDataStats(now, diagnosticData, errs)
 
 	s.mb.EmitForResource()
 }
