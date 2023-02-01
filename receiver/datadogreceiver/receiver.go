@@ -19,8 +19,6 @@ import (
 	"fmt"
 	"net/http"
 	"sync"
-
-	datadogpb "github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
 	"github.com/DataDog/datadog-agent/pkg/trace/pb"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -96,7 +94,7 @@ func (ddr *datadogReceiver) handleTraces(w http.ResponseWriter, req *http.Reques
 	defer func(spanCount *int) {
 		ddr.tReceiver.EndTracesOp(obsCtx, "datadog", *spanCount, err)
 	}(&spanCount)
-	var ddTraces pb.TracerPayload
+	var ddTraces *pb.TracerPayload
 
 	ddTraces, _, err = handlePayload(req)
 	if err != nil {

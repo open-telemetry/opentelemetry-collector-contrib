@@ -30,7 +30,7 @@ import (
 	semconv "go.opentelemetry.io/collector/semconv/v1.6.1"
 )
 
-func toTraces(payload pb.TracerPayload, req *http.Request) ptrace.Traces {
+func toTraces(payload *pb.TracerPayload, req *http.Request) ptrace.Traces {
 	var traces pb.Traces
 	for _, p := range payload.GetChunks() {
 		traces = append(traces, p.GetSpans())

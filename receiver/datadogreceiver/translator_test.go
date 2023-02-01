@@ -16,10 +16,11 @@ package datadogreceiver // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"bytes"
+	"io"
 	"net/http"
 	"testing"
 
-	"github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
+	"github.com/DataDog/datadog-agent/pkg/trace/pb"
 	"github.com/stretchr/testify/assert"
 	vmsgp "github.com/vmihailenco/msgpack/v4"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -67,18 +68,20 @@ var data = [2]interface{}{
 var output ptrace.Traces
 
 func TestTracePayloadV05Unmarshalling(t *testing.T) {
+	var traces pb.Traces
 	payload, err := vmsgp.Marshal(&data)
 	assert.NoError(t, err)
-	dc := pb.NewMsgpReader(bytes.NewReader(payload))
-	defer pb.FreeMsgpReader(dc)
-
-	var traces pb.Traces
-	if err := traces.DecodeMsgDictionary(dc); err != nil {
+	if err := traces.UnmarshalMsgDictionary(payload); err != nil {
 		t.Fatal(err)
 	}
-	req := &http.Request{RequestURI: "/v0.5/traces"}
+	req := &http.Request{RequestURI: "/v0.5/traces",Body: io.NopCloser(bytes.NewReader(payload))}
 
-	translated := toTraces(traces, req)
+	translated := toTraces(&pb.TracerPayload{
+		LanguageName:    req.Header.Get("Datadog-Meta-Lang"),
+		LanguageVersion: req.Header.Get("Datadog-Meta-Lang-Version"),
+		Chunks:          traceChunksFromTraces(traces),
+		TracerVersion:   req.Header.Get("Datadog-Meta-Tracer-Version"),
+	}, req)
 	assert.Equal(t, 1, translated.SpanCount(), "Span Count wrong")
 	span := translated.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
 	assert.NotNil(t, span)
@@ -93,21 +96,24 @@ func BenchmarkTranslator(b *testing.B) {
 
 	payload, err := vmsgp.Marshal(&data)
 	assert.NoError(b, err)
-	dc := pb.NewMsgpReader(bytes.NewReader(payload))
-	defer pb.FreeMsgpReader(dc)
 
 	var traces pb.Traces
-	if err := traces.DecodeMsgDictionary(dc); err != nil {
+	if err := traces.UnmarshalMsgDictionary(payload); err != nil {
 		b.Fatal(err)
 	}
 
-	req := &http.Request{RequestURI: "/v0.5/traces"}
+	req := &http.Request{RequestURI: "/v0.5/traces",Body: io.NopCloser(bytes.NewReader(payload))}
 	b.ResetTimer()
 	b.ReportAllocs()
 	b.SetBytes(int64(len(payload)))
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		output = toTraces(traces, req)
+		output = toTraces(&pb.TracerPayload{
+			LanguageName:    req.Header.Get("Datadog-Meta-Lang"),
+			LanguageVersion: req.Header.Get("Datadog-Meta-Lang-Version"),
+			Chunks:          traceChunksFromTraces(traces),
+			TracerVersion:   req.Header.Get("Datadog-Meta-Tracer-Version"),
+		}, req)
 	}
 	b.StopTimer()
 }

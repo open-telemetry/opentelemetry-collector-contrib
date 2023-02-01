@@ -65,7 +65,6 @@ require (
 	github.com/DataDog/datadog-agent/pkg/quantile v0.43.0-rc.1.0.20230127122216-3a2af8455772 // indirect
 	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.43.0-rc.1.0.20230127122216-3a2af8455772 // indirect
 	github.com/DataDog/datadog-agent/pkg/trace v0.43.0-rc.1.0.20230127122216-3a2af8455772 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.43.0-rc.1.0.20230127122216-3a2af8455772 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/log v0.43.0-rc.1.0.20230127122216-3a2af8455772 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/pointer v0.43.0-rc.1 // indirect
