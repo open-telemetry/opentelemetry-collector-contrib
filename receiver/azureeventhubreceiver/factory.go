@@ -60,7 +60,7 @@ func createLogsReceiver(_ context.Context, settings receiver.CreateSettings, cfg
 	case rawLogFormat:
 		converter = newRawConverter(settings)
 	default:
-		converter = newRawConverter(settings)
+		converter = newAzureLogFormatConverter(settings)
 	}
 
 	return &client{
