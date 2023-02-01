@@ -4,9 +4,9 @@ go 1.18
 
 require (
 	github.com/DataDog/agent-payload/v5 v5.0.67
-	github.com/DataDog/datadog-agent/pkg/otlp/model v0.43.0-rc.3.0.20230131195109-a19e987f5062
-	github.com/DataDog/datadog-agent/pkg/quantile v0.43.0-rc.3.0.20230131195109-a19e987f5062
-	github.com/DataDog/datadog-agent/pkg/trace v0.43.0-rc.3.0.20230131195109-a19e987f5062
+	github.com/DataDog/datadog-agent/pkg/otlp/model v0.43.0-rc.3.0.20230201114415-fae4332beb98
+	github.com/DataDog/datadog-agent/pkg/quantile v0.43.0-rc.3.0.20230201114415-fae4332beb98
+	github.com/DataDog/datadog-agent/pkg/trace v0.43.0-rc.3.0.20230201114415-fae4332beb98
 	github.com/DataDog/datadog-api-client-go/v2 v2.7.0
 	github.com/DataDog/gohai v0.0.0-20220718130825-1776f9beb9cc
 	github.com/DataDog/sketches-go v1.4.1
@@ -46,12 +46,12 @@ require (
 	cloud.google.com/go/compute v1.14.0 // indirect
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
 	contrib.go.opencensus.io/exporter/prometheus v0.4.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.43.0-rc.3.0.20230131195109-a19e987f5062 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.43.0-rc.3.0.20230131195109-a19e987f5062 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.43.0-rc.3.0.20230131195109-a19e987f5062 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.43.0-rc.3.0.20230131195109-a19e987f5062 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.43.0-rc.3.0.20230201114415-fae4332beb98 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.43.0-rc.3.0.20230201114415-fae4332beb98 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.43.0-rc.3.0.20230201114415-fae4332beb98 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.43.0-rc.3.0.20230201114415-fae4332beb98 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/pointer v0.43.0-rc.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.43.0-rc.3.0.20230131195109-a19e987f5062 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.43.0-rc.3.0.20230201114415-fae4332beb98 // indirect
 	github.com/DataDog/datadog-go/v5 v5.1.1 // indirect
 	github.com/DataDog/go-tuf v0.3.0--fix-localmeta-fork // indirect
 	github.com/DataDog/zstd v1.5.0 // indirect
