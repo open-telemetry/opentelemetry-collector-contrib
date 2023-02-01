@@ -22,15 +22,11 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
-	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/correlation"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation/dpfilters"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr"
 )
@@ -111,13 +107,7 @@ func createMetricsExporter(
 	set exporter.CreateSettings,
 	config component.Config,
 ) (exporter.Metrics, error) {
-
 	cfg := config.(*Config)
-
-	err := setDefaultExcludes(cfg)
-	if err != nil {
-		return nil, err
-	}
 
 	exp, err := newSignalFxExporter(cfg, set)
 	if err != nil {
@@ -153,42 +143,6 @@ func createMetricsExporter(
 		Metrics:  me,
 		exporter: exp,
 	}, nil
-}
-
-func loadDefaultTranslationRules() ([]translation.Rule, error) {
-	cfg, err := loadConfig([]byte(translation.DefaultTranslationRulesYaml))
-	return cfg.TranslationRules, err
-}
-
-// setDefaultExcludes appends default metrics to be excluded to the exclude_metrics option.
-func setDefaultExcludes(cfg *Config) error {
-	defaultExcludeMetrics, err := loadDefaultExcludes()
-	if err != nil {
-		return err
-	}
-	if cfg.ExcludeMetrics == nil || len(cfg.ExcludeMetrics) > 0 {
-		cfg.ExcludeMetrics = append(cfg.ExcludeMetrics, defaultExcludeMetrics...)
-	}
-	return nil
-}
-
-func loadDefaultExcludes() ([]dpfilters.MetricFilter, error) {
-	cfg, err := loadConfig([]byte(translation.DefaultExcludeMetricsYaml))
-	return cfg.ExcludeMetrics, err
-}
-
-func loadConfig(bytes []byte) (Config, error) {
-	var cfg Config
-	var data map[string]interface{}
-	if err := yaml.Unmarshal(bytes, &data); err != nil {
-		return cfg, err
-	}
-
-	if err := confmap.NewFromStringMap(data).Unmarshal(&cfg, confmap.WithErrorUnused()); err != nil {
-		return cfg, fmt.Errorf("failed to load default exclude metrics: %w", err)
-	}
-
-	return cfg, nil
 }
 
 func createLogsExporter(
