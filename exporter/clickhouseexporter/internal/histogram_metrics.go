@@ -119,7 +119,7 @@ func (h *histogramMetrics) insert(ctx context.Context, db *sql.DB) error {
 		return nil
 	}
 
-	valueArgs := make([]any, len(h.histogramModel)*h.count*histogramValueCounts)
+	valueArgs := make([]any, h.count*histogramValueCounts)
 	var b strings.Builder
 
 	index := 0

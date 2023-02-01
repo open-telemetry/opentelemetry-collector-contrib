@@ -105,7 +105,7 @@ func (s *summaryMetrics) insert(ctx context.Context, db *sql.DB) error {
 		return nil
 	}
 
-	valueArgs := make([]any, len(s.summaryModel)*s.count*summaryValueCounts)
+	valueArgs := make([]any, s.count*summaryValueCounts)
 	var b strings.Builder
 
 	index := 0

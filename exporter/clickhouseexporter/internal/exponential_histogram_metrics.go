@@ -127,7 +127,7 @@ func (e *expHistogramMetrics) insert(ctx context.Context, db *sql.DB) error {
 		return nil
 	}
 
-	valueArgs := make([]any, len(e.expHistogramModels)*e.count*expHistogramValueCounts)
+	valueArgs := make([]any, e.count*expHistogramValueCounts)
 	var b strings.Builder
 
 	index := 0

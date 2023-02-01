@@ -109,7 +109,7 @@ func (g *gaugeMetrics) insert(ctx context.Context, db *sql.DB) error {
 		return nil
 	}
 
-	valueArgs := make([]any, len(g.gaugeModels)*g.count*gaugeValueCounts)
+	valueArgs := make([]any, g.count*gaugeValueCounts)
 	var b strings.Builder
 
 	index := 0

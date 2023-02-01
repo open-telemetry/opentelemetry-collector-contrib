@@ -113,7 +113,7 @@ func (s *sumMetrics) insert(ctx context.Context, db *sql.DB) error {
 		return nil
 	}
 
-	valueArgs := make([]any, len(s.sumModel)*s.count*sumValueCounts)
+	valueArgs := make([]any, s.count*sumValueCounts)
 	var b strings.Builder
 
 	index := 0
