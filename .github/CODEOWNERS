@@ -110,7 +110,7 @@ internal/sharedcomponent/                                @open-telemetry/collect
 
 pkg/batchpersignal/                                      @open-telemetry/collector-contrib-approvers @jpkrohling
 pkg/ottl/                                                @open-telemetry/collector-contrib-approvers @TylerHelmuth @kentquirk @bogdandrutu @evan-bradley
-pkg/pdatatest/                                           @open-telemetry/collector-contrib-approvers @djaglowski
+pkg/pdatatest/                                           @open-telemetry/collector-contrib-approvers @djaglowski @fatsheep9146
 pkg/pdatautil/                                           @open-telemetry/collector-contrib-approvers @dmitryax
 pkg/resourcetotelemetry/                                 @open-telemetry/collector-contrib-approvers @mx-psi
 pkg/stanza/                                              @open-telemetry/collector-contrib-approvers @djaglowski
