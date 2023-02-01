@@ -3,8 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/processor/datad
 go 1.18
 
 require (
-	github.com/DataDog/datadog-agent/pkg/otlp/model v0.43.0-rc.1.0.20230127122216-3a2af8455772
-	github.com/DataDog/datadog-agent/pkg/trace v0.43.0-rc.1.0.20230127122216-3a2af8455772
+	github.com/DataDog/datadog-agent/pkg/otlp/model v0.43.0-rc.3.0.20230201114415-fae4332beb98
+	github.com/DataDog/datadog-agent/pkg/trace v0.43.0-rc.3.0.20230201114415-fae4332beb98
 	github.com/DataDog/sketches-go v1.4.1
 	github.com/stretchr/testify v1.8.1
 	go.opentelemetry.io/collector v0.70.0
@@ -16,13 +16,13 @@ require (
 )
 
 require (
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.43.0-rc.1.0.20230127122216-3a2af8455772 // indirect
-	github.com/DataDog/datadog-agent/pkg/quantile v0.43.0-rc.1.0.20230127122216-3a2af8455772 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.43.0-rc.1.0.20230127122216-3a2af8455772 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.43.0-rc.1.0.20230127122216-3a2af8455772 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.43.0-rc.1.0.20230127122216-3a2af8455772 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/pointer v0.43.0-rc.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.43.0-rc.1.0.20230127122216-3a2af8455772 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.43.0-rc.3.0.20230201114415-fae4332beb98 // indirect
+	github.com/DataDog/datadog-agent/pkg/quantile v0.43.0-rc.3.0.20230201114415-fae4332beb98 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.43.0-rc.3.0.20230201114415-fae4332beb98 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.43.0-rc.3.0.20230201114415-fae4332beb98 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.43.0-rc.3.0.20230201114415-fae4332beb98 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/pointer v0.43.0-rc.3 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.43.0-rc.3.0.20230201114415-fae4332beb98 // indirect
 	github.com/DataDog/datadog-go/v5 v5.1.1 // indirect
 	github.com/DataDog/go-tuf v0.3.0--fix-localmeta-fork // indirect
 	github.com/Microsoft/go-winio v0.5.2 // indirect
