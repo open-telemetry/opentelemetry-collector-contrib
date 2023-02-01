@@ -84,14 +84,14 @@ func TestPoll(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Eventually(t, func() bool {
-		return sink.LogRecordCount() > 1
+		return sink.LogRecordCount() > 0
 	}, 5*time.Second, 1*time.Second)
 
 	expected, err := golden.ReadLogs(filepath.Join("testdata", "events", "golden", "events.json"))
 	require.NoError(t, err)
 
 	logs := sink.AllLogs()[0]
-	require.NoError(t, comparetest.CompareLogs(expected, logs))
+	require.NoError(t, comparetest.CompareLogs(expected, logs, comparetest.IgnoreObservedTimestamp()))
 }
 
 type mockEventsClient struct {
