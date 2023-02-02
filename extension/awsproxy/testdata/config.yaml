@@ -7,4 +7,5 @@ awsproxy/1:
     server_name_override: "something"
   region: "us-west-1"
   role_arn: "arn:aws:iam::123456789012:role/awesome_role"
+  service: "xray"
   aws_endpoint: "https://another.aws.endpoint.com"

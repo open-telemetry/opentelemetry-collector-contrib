@@ -37,6 +37,10 @@ type Config struct {
 	// Region is the AWS region the local TCP server forwards requests to.
 	Region string `mapstructure:"region"`
 
+	// Service is the AWS service for which the local TCP server scopes the
+	// credentials.
+	Service string `mapstructure:"service"`
+
 	// RoleARN is the IAM role used by the local TCP server when
 	// communicating with the AWS X-Ray service.
 	RoleARN string `mapstructure:"role_arn"`
@@ -63,6 +67,7 @@ func DefaultConfig() *Config {
 		},
 		Region:      "",
 		RoleARN:     "",
+		Service:     "xray",
 		AWSEndpoint: "",
 	}
 }
