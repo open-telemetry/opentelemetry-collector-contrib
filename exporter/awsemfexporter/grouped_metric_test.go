@@ -402,7 +402,7 @@ func TestTranslateUnit(t *testing.T) {
 	assert.Equal(t, "Count", v)
 }
 
-func generateTestMetricMetadata(namespace string, timestamp int64, logGroup, logStreamName, instrumentationLibraryName string, metricType pmetric.MetricType) cWMetricMetadata {
+func generateTestMetricMetadata(namespace string, timestamp int64, logGroup, logStreamName, instrumentationScopeName string, metricType pmetric.MetricType) cWMetricMetadata {
 	return cWMetricMetadata{
 		receiver: prometheusReceiver,
 		groupedMetricMetadata: groupedMetricMetadata{
@@ -412,6 +412,6 @@ func generateTestMetricMetadata(namespace string, timestamp int64, logGroup, log
 			logStream:      logStreamName,
 			metricDataType: metricType,
 		},
-		instrumentationLibraryName: instrumentationLibraryName,
+		instrumentationScopeName: instrumentationScopeName,
 	}
 }

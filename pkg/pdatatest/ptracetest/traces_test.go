@@ -43,8 +43,8 @@ func TestCompareTraces(t *testing.T) {
 				IgnoreResourceAttributeValue("host.name"),
 			},
 			withoutOptions: multierr.Combine(
-				errors.New("missing expected resource with attributes: map[host.name:different-node1]"),
-				errors.New("extra resource with attributes: map[host.name:host1]"),
+				errors.New("missing expected resource: map[host.name:different-node1]"),
+				errors.New("unexpected resource: map[host.name:host1]"),
 			),
 			withOptions: nil,
 		},
@@ -54,10 +54,192 @@ func TestCompareTraces(t *testing.T) {
 				IgnoreResourceSpansOrder(),
 			},
 			withoutOptions: multierr.Combine(
-				errors.New("ResourceTraces with attributes map[host.name:host1] expected at index 0, found at index 1"),
-				errors.New("ResourceTraces with attributes map[host.name:host2] expected at index 1, found at index 0"),
+				errors.New(`resources are out of order: resource "map[host.name:host1]" expected at index 0, found at index 1`),
+				errors.New(`resources are out of order: resource "map[host.name:host2]" expected at index 1, found at index 0`),
 			),
 			withOptions: nil,
+		},
+		{
+			name: "resourcespans-amount-unequal",
+			withoutOptions: multierr.Combine(
+				errors.New("number of resources doesn't match expected: 1, actual: 2"),
+			),
+		},
+		{
+			name: "resourcespans-attributes-mismatch",
+			withoutOptions: multierr.Combine(
+				errors.New("missing expected resource: map[pod.name:pod1]"),
+				errors.New("unexpected resource: map[pod.name:pod2]"),
+			),
+		},
+		{
+			name: "scopespans-amount-unequal",
+			withoutOptions: multierr.Combine(
+				errors.New("resource \"map[host.name:host1]\": number of scopes doesn't match expected: 1, actual: 2"),
+			),
+		},
+		{
+			name: "scopespans-scope-name-mismatch",
+			withoutOptions: multierr.Combine(
+				errors.New("resource \"map[host.name:host1]\": missing expected scope: scope3; resource \"map[host.name:host1]\": unexpected scope: scope2"),
+			),
+		},
+		{
+			name: "scopespans-scope-version-mismatch",
+			withoutOptions: multierr.Combine(
+				errors.New("resource \"map[host.name:host1]\": scope \"scope2\": version doesn't match expected: v0.2.0, actual: v0.1.0"),
+			),
+		},
+		{
+			name: "scopespans-spans-amount-unequal",
+			withoutOptions: multierr.Combine(
+				errors.New("resource \"map[host.name:node1]\": scope \"collector\": number of spans doesn't match expected: 1, actual: 2"),
+			),
+		},
+		{
+			name: "scopespans-spans-attributes-mismatch",
+			withoutOptions: multierr.Combine(
+				errors.New("resource \"map[host.name:node1]\": scope \"collector\": span \"\": attributes don't match expected: map[key2:value2], actual: map[key2:value3]"),
+			),
+		},
+		{
+			name: "scopespans-spans-traceid-mismatch",
+			withoutOptions: multierr.Combine(
+				errors.New("resource \"map[host.name:node1]\": scope \"collector\": span \"\": trace ID doesn't match expected: 8c8b1765a7b0acf0b66aa4623fcb7bd5, actual: b8cb1765a7b0acf0b66aa4623fcb7bd5"),
+			),
+		},
+		{
+			name: "scopespans-spans-spanid-mismatch",
+			withoutOptions: multierr.Combine(
+				errors.New("resource \"map[host.name:node1]\": scope \"collector\": span \"\": span ID doesn't match expected: fd0da883bb27cd6b, actual: d0dfa883bb27cd6b"),
+			),
+		},
+		{
+			name: "scopespans-spans-tracestate-mismatch",
+			withoutOptions: multierr.Combine(
+				errors.New("resource \"map[host.name:node1]\": scope \"collector\": span \"\": trace state doesn't match expected: xx, actual: yy"),
+			),
+		},
+		{
+			name: "scopespans-spans-parentspanid-mismatch",
+			withoutOptions: multierr.Combine(
+				errors.New("resource \"map[host.name:node1]\": scope \"collector\": span \"\": parent span ID doesn't match expected: bcff497b5a47310f, actual: 310fbcff497b5a47"),
+			),
+		},
+		{
+			name: "scopespans-spans-name-mismatch",
+			withoutOptions: multierr.Combine(
+				errors.New("resource \"map[host.name:node1]\": scope \"collector\": missing expected span: span2"),
+				errors.New("resource \"map[host.name:node1]\": scope \"collector\": unexpected span: span1"),
+			),
+		},
+		{
+			name: "scopespans-spans-kind-mismatch",
+			withoutOptions: multierr.Combine(
+				errors.New("resource \"map[host.name:node1]\": scope \"collector\": span \"span1\": kind doesn't match expected: 2, actual: 1"),
+			),
+		},
+		{
+			name: "scopespans-spans-starttimestamp-mismatch",
+			withoutOptions: multierr.Combine(
+				errors.New("resource \"map[host.name:node1]\": scope \"collector\": span \"span1\": start timestamp doesn't match expected: 11651379494838206464, actual: 11651379494838206400"),
+			),
+		},
+		{
+			name: "scopespans-spans-endtimestamp-mismatch",
+			withoutOptions: multierr.Combine(
+				errors.New("resource \"map[host.name:node1]\": scope \"collector\": span \"span1\": end timestamp doesn't match expected: 11651379494838206464, actual: 11651379494838206400"),
+			),
+		},
+		{
+			name: "scopespans-spans-droppedattributescount-mismatch",
+			withoutOptions: multierr.Combine(
+				errors.New("resource \"map[host.name:node1]\": scope \"collector\": span \"span1\": dropped attributes count doesn't match expected: 0, actual: 1"),
+			),
+		},
+		{
+			name: "scopespans-spans-events-mismatch",
+			withoutOptions: multierr.Combine(
+				errors.New("resource \"map[host.name:node1]\": scope \"collector\": span \"\": number of events doesn't match expected: 1, actual: 0"),
+			),
+		},
+		{
+			name: "scopespans-spans-events-attributes-mismatch",
+			withoutOptions: multierr.Combine(
+				errors.New("resource \"map[host.name:node1]\": scope \"collector\": span \"\": span event \"event1\": attributes don't match expected: map[eventkey1:value1], actual: map[eventkey1:value2]"),
+			),
+		},
+		{
+			name: "scopespans-spans-events-dropattributescount-mismatch",
+			withoutOptions: multierr.Combine(
+				errors.New("resource \"map[host.name:node1]\": scope \"collector\": span \"\": span event \"event1\": dropped attributes count doesn't match expected: 1, actual: 0"),
+			),
+		},
+		{
+			name: "scopespans-spans-events-name-mismatch",
+			withoutOptions: multierr.Combine(
+				errors.New("resource \"map[host.name:node1]\": scope \"collector\": span \"\": missing expected span event: event1; resource \"map[host.name:node1]\": scope \"collector\": span \"\": unexpected span event: event2"),
+			),
+		},
+		{
+			name: "scopespans-spans-events-timestamp-mismatch",
+			withoutOptions: multierr.Combine(
+				errors.New("resource \"map[host.name:node1]\": scope \"collector\": span \"\": span event \"event1\": timestamp doesn't match expected: 11651379494838206400, actual: 11651379494838206464"),
+			),
+		},
+		{
+			name: "scopespans-spans-droppedeventscount-mismatch",
+			withoutOptions: multierr.Combine(
+				errors.New("resource \"map[host.name:node1]\": scope \"collector\": span \"span1\": dropped events count doesn't match expected: 0, actual: 1"),
+			),
+		},
+		{
+			name: "scopespans-spans-links-mismatch",
+			withoutOptions: multierr.Combine(
+				errors.New("resource \"map[host.name:node1]\": scope \"collector\": span \"\": number of span links doesn't match expected: 1, actual: 0"),
+			),
+		},
+		{
+			name: "scopespans-spans-links-traceid-mismatch",
+			withoutOptions: multierr.Combine(
+				errors.New("resource \"map[host.name:node1]\": scope \"collector\": span \"\": span link \"\": trace ID doesn't match expected: 8c8b1765a7b0acf0b66aa4623fcb7bd5, actual: "),
+			),
+		},
+		{
+			name: "scopespans-spans-links-spanid-mismatch",
+			withoutOptions: multierr.Combine(
+				errors.New("resource \"map[host.name:node1]\": scope \"collector\": span \"\": missing expected span link: ; resource \"map[host.name:node1]\": scope \"collector\": span \"\": unexpected span link: fd0da883bb27cd6b"),
+			),
+		},
+		{
+			name: "scopespans-spans-links-tracestate-mismatch",
+			withoutOptions: multierr.Combine(
+				errors.New("resource \"map[host.name:node1]\": scope \"collector\": span \"\": span link \"fd0da883bb27cd6b\": trace state doesn't match expected: placeholder, actual: "),
+			),
+		},
+		{
+			name: "scopespans-spans-links-attributes-mismatch",
+			withoutOptions: multierr.Combine(
+				errors.New("resource \"map[host.name:node1]\": scope \"collector\": span \"\": span link \"fd0da883bb27cd6b\": attributes don't match expected: map[testKey1:teststringvalue1], actual: map[testKey1:teststringvalue2]"),
+			),
+		},
+		{
+			name: "scopespans-spans-links-dropattributescount-mismatch",
+			withoutOptions: multierr.Combine(
+				errors.New("resource \"map[host.name:node1]\": scope \"collector\": span \"\": span link \"fd0da883bb27cd6b\": dropped attributes count doesn't match expected: 1, actual: 0"),
+			),
+		},
+		{
+			name: "scopespans-spans-droppedlinkscount-mismatch",
+			withoutOptions: multierr.Combine(
+				errors.New("resource \"map[host.name:node1]\": scope \"collector\": span \"span1\": dropped links count doesn't match expected: 0, actual: 1"),
+			),
+		},
+		{
+			name: "scopespans-spans-status-mismatch",
+			withoutOptions: multierr.Combine(
+				errors.New(`resource "map[host.name:node1]": scope "collector": span "": status code doesn't match expected: Ok, actual: Unset`),
+			),
 		},
 	}
 
@@ -71,13 +253,23 @@ func TestCompareTraces(t *testing.T) {
 			actual, err := golden.ReadTraces(filepath.Join(dir, "actual.json"))
 			require.NoError(t, err)
 
-			assert.Equal(t, tc.withoutOptions, CompareTraces(expected, actual))
+			err = CompareTraces(expected, actual)
+			if tc.withoutOptions == nil {
+				assert.NoError(t, err)
+			} else {
+				assert.EqualError(t, err, tc.withoutOptions.Error())
+			}
 
 			if tc.compareOptions == nil {
 				return
 			}
 
-			assert.Equal(t, tc.withOptions, CompareTraces(expected, actual, tc.compareOptions...))
+			err = CompareTraces(expected, actual, tc.compareOptions...)
+			if tc.withOptions == nil {
+				assert.NoError(t, err)
+			} else {
+				assert.EqualError(t, tc.withOptions, err.Error())
+			}
 		})
 	}
 }
@@ -126,7 +318,7 @@ func TestCompareResourceSpans(t *testing.T) {
 				rs.Resource().Attributes().PutStr("host.name", "host2")
 				return rs
 			}(),
-			err: errors.New("resource attributes do not match expected: map[host.name:host1], actual: map[host.name:host2]"),
+			err: errors.New("attributes don't match expected: map[host.name:host1], actual: map[host.name:host2]"),
 		},
 		{
 			name: "scopes-number-mismatch",
@@ -141,7 +333,7 @@ func TestCompareResourceSpans(t *testing.T) {
 				rs.ScopeSpans().AppendEmpty()
 				return rs
 			}(),
-			err: errors.New("number of scope spans does not match expected: 2, actual: 1"),
+			err: errors.New("number of scopes doesn't match expected: 2, actual: 1"),
 		},
 		{
 			name: "scope-name-mismatch",
@@ -158,8 +350,8 @@ func TestCompareResourceSpans(t *testing.T) {
 				return rs
 			}(),
 			err: multierr.Combine(
-				errors.New("ScopeSpans missing with scope name: scope1"),
-				errors.New("unexpected ScopeSpans with scope name: scope2"),
+				errors.New("missing expected scope: scope1"),
+				errors.New("unexpected scope: scope2"),
 			),
 		},
 		{
@@ -177,8 +369,8 @@ func TestCompareResourceSpans(t *testing.T) {
 				return rs
 			}(),
 			err: multierr.Combine(
-				errors.New("ScopeSpans with scope name scope1 expected at index 0, found at index 1"),
-				errors.New("ScopeSpans with scope name scope2 expected at index 1, found at index 0"),
+				errors.New("scopes are out of order: scope scope1 expected at index 0, found at index 1"),
+				errors.New("scopes are out of order: scope scope2 expected at index 1, found at index 0"),
 			),
 		},
 	}
@@ -229,7 +421,7 @@ func TestCompareScopeSpans(t *testing.T) {
 				ss.Scope().SetName("scope2")
 				return ss
 			}(),
-			err: errors.New("scope Name does not match expected: scope1, actual: scope2"),
+			err: errors.New("name doesn't match expected: scope1, actual: scope2"),
 		},
 		{
 			name: "spans-number-mismatch",
@@ -244,7 +436,7 @@ func TestCompareScopeSpans(t *testing.T) {
 				ss.Spans().AppendEmpty()
 				return ss
 			}(),
-			err: errors.New("number of spans does not match expected: 2, actual: 1"),
+			err: errors.New("number of spans doesn't match expected: 2, actual: 1"),
 		},
 		{
 			name: "spans-order-mismatch",
@@ -261,8 +453,8 @@ func TestCompareScopeSpans(t *testing.T) {
 				return ss
 			}(),
 			err: multierr.Combine(
-				errors.New("span span1 expected at index 0, found at index 1"),
-				errors.New("span span2 expected at index 1, found at index 0"),
+				errors.New(`spans are out of order: span "span1" expected at index 0, found at index 1`),
+				errors.New(`spans are out of order: span "span2" expected at index 1, found at index 0`),
 			),
 		},
 	}
@@ -309,7 +501,7 @@ func TestCompareSpan(t *testing.T) {
 				s.SetName("span2")
 				return s
 			}(),
-			err: errors.New("span Name doesn't match expected: span1, actual: span2"),
+			err: errors.New("name doesn't match expected: span1, actual: span2"),
 		},
 		{
 			name: "start-timestamp-mismatch",
@@ -323,7 +515,7 @@ func TestCompareSpan(t *testing.T) {
 				s.SetStartTimestamp(456)
 				return s
 			}(),
-			err: errors.New("span StartTimestamp doesn't match expected: 123, actual: 456"),
+			err: errors.New("start timestamp doesn't match expected: 123, actual: 456"),
 		},
 		{
 			name: "end-timestamp-mismatch",
@@ -337,10 +529,10 @@ func TestCompareSpan(t *testing.T) {
 				s.SetEndTimestamp(456)
 				return s
 			}(),
-			err: errors.New("span EndTimestamp doesn't match expected: 123, actual: 456"),
+			err: errors.New("end timestamp doesn't match expected: 123, actual: 456"),
 		},
 		{
-			name: "attributes-number-mismatch",
+			name: "attributes-mismatch",
 			expected: func() ptrace.Span {
 				s := ptrace.NewSpan()
 				s.Attributes().PutStr("attr1", "value1")
@@ -353,7 +545,7 @@ func TestCompareSpan(t *testing.T) {
 				s.Attributes().PutStr("attr2", "value1")
 				return s
 			}(),
-			err: errors.New("span attributes do not match expected: map[attr1:value1 attr2:value2], actual: map[attr1:value1 attr2:value1]"),
+			err: errors.New("attributes don't match expected: map[attr1:value1 attr2:value2], actual: map[attr1:value1 attr2:value1]"),
 		},
 	}
 	for _, test := range tests {

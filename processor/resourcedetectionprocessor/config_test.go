@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
@@ -51,6 +52,9 @@ func TestLoadConfig(t *testing.T) {
 					OpenShiftConfig: openshift.Config{
 						Address: "127.0.0.1:4444",
 						Token:   "some_token",
+						TLSSettings: configtls.TLSClientSetting{
+							Insecure: true,
+						},
 					},
 				},
 				HTTPClientSettings: cfg,

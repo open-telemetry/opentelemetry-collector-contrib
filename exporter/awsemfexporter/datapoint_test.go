@@ -141,13 +141,13 @@ func generateOtelTestMetrics(generatedOtelMetrics ...pmetric.Metrics) pmetric.Me
 	}
 	return finalOtelMetrics
 }
-func generateDeltaMetricMetadata(adjustToDelta bool, metricName, namespace, logGroup, logStreamName string) deltaMetricMetadata {
+func generateDeltaMetricMetadata(adjustToDelta bool, metricName string) deltaMetricMetadata {
 	return deltaMetricMetadata{
 		adjustToDelta: adjustToDelta,
 		metricName:    metricName,
-		namespace:     namespace,
-		logGroup:      logGroup,
-		logStream:     logStreamName,
+		logGroup:      "log-group",
+		logStream:     "log-stream",
+		namespace:     "namespace",
 	}
 }
 
@@ -250,7 +250,7 @@ func TestCalculateDeltaDatapoints_NumberDataPointSlice(t *testing.T) {
 				numberDP.SetDoubleValue(v)
 			}
 
-			deltaMetricMetadata := generateDeltaMetricMetadata(tc.adjustToDelta, tc.metricName, "namespace", "log-group", "log-stream")
+			deltaMetricMetadata := generateDeltaMetricMetadata(tc.adjustToDelta, tc.metricName)
 			numberDatapointSlice := numberDataPointSlice{deltaMetricMetadata, numberDPS}
 
 			// When calculate the delta datapoints for number datapoint
@@ -268,7 +268,7 @@ func TestCalculateDeltaDatapoints_NumberDataPointSlice(t *testing.T) {
 }
 
 func TestCalculateDeltaDatapoints_HistogramDataPointSlice(t *testing.T) {
-	deltaMetricMetadata := generateDeltaMetricMetadata(false, "foo", "namespace", "log-group", "log-stream")
+	deltaMetricMetadata := generateDeltaMetricMetadata(false, "foo")
 
 	testCases := []struct {
 		name              string
@@ -348,7 +348,7 @@ func TestCalculateDeltaDatapoints_HistogramDataPointSlice(t *testing.T) {
 }
 
 func TestCalculateDeltaDatapoints_SummaryDataPointSlice(t *testing.T) {
-	deltaMetricMetadata := generateDeltaMetricMetadata(true, "foo", "namespace", "log-group", "log-stream")
+	deltaMetricMetadata := generateDeltaMetricMetadata(true, "foo")
 
 	testCases := []struct {
 		name               string
@@ -449,8 +449,8 @@ func TestCreateLabels(t *testing.T) {
 func TestGetDataPoints(t *testing.T) {
 	logger := zap.NewNop()
 
-	normalDeltraMetricMetadata := generateDeltaMetricMetadata(false, "foo", "namespace", "log-group", "log-stream")
-	cumulativeDeltaMetricMetadata := generateDeltaMetricMetadata(true, "foo", "namespace", "log-group", "log-stream")
+	normalDeltraMetricMetadata := generateDeltaMetricMetadata(false, "foo")
+	cumulativeDeltaMetricMetadata := generateDeltaMetricMetadata(true, "foo")
 
 	testCases := []struct {
 		name                   string

@@ -34,7 +34,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestFactory_CreateLogsExporter(t *testing.T) {
 	factory := NewFactory()
 	cfg := withDefaultConfig(func(cfg *Config) {
-		cfg.DSN = defaultDSN
+		cfg.Endpoint = defaultEndpoint
 	})
 	params := exportertest.NewNopCreateSettings()
 	exporter, err := factory.CreateLogsExporter(context.Background(), params, cfg)
@@ -47,7 +47,7 @@ func TestFactory_CreateLogsExporter(t *testing.T) {
 func TestFactory_CreateTracesExporter(t *testing.T) {
 	factory := NewFactory()
 	cfg := withDefaultConfig(func(cfg *Config) {
-		cfg.DSN = defaultDSN
+		cfg.Endpoint = defaultEndpoint
 	})
 	params := exportertest.NewNopCreateSettings()
 	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)

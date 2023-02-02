@@ -40,9 +40,14 @@ func NewDetector(set processor.CreateSettings, dcfg internal.DetectorConfig) (in
 		return nil, err
 	}
 
+	tlsCfg, err := userCfg.TLSSettings.LoadTLSConfig()
+	if err != nil {
+		return nil, err
+	}
+
 	return &detector{
 		logger:   set.Logger,
-		provider: ocp.NewProvider(userCfg.Address, userCfg.Token),
+		provider: ocp.NewProvider(userCfg.Address, userCfg.Token, tlsCfg),
 	}, nil
 }
 
@@ -57,7 +62,7 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 
 	infra, err := d.provider.Infrastructure(ctx)
 	if err != nil {
-		d.logger.Debug("OpenShift detector metadata retrieval failed", zap.Error(err))
+		d.logger.Error("OpenShift detector metadata retrieval failed", zap.Error(err))
 		// return an empty Resource and no error
 		return res, "", nil
 	}

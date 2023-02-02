@@ -46,7 +46,7 @@ func addToGroupedMetric(pmd pmetric.Metric, groupedMetrics map[interface{}]*grou
 	}
 
 	for i := 0; i < dps.Len(); i++ {
-		dps, retained := dps.CalculateDeltaDatapoints(i, metadata.instrumentationLibraryName, config.DetailedMetrics)
+		dps, retained := dps.CalculateDeltaDatapoints(i, metadata.instrumentationScopeName, config.DetailedMetrics)
 		if !retained {
 			continue
 		}
@@ -178,10 +178,6 @@ func mapGetHelper(labels map[string]string, key string) string {
 	}
 
 	return ""
-}
-
-func groupedMetricKey(metadata groupedMetricMetadata, labels map[string]string) aws.Key {
-	return aws.NewKey(metadata, labels)
 }
 
 func translateUnit(metric pmetric.Metric, descriptor map[string]MetricDescriptor) string {

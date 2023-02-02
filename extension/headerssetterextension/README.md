@@ -17,16 +17,22 @@ header to the value extracted from the context.
 
 The following settings are required:
 
-- `headers`: a list of header configuration objects that specify headers and 
-   their value sources. Each configuration object has the following properties:
-    - `key`: the header name
-    - `value`: the header value is looked up from the `value` property of the
-       extension configuration
-    - `from_context`: the header value is looked up from the request metadata,
-       such as HTTP headers, using the property value as the key (likely a header name)
+- `headers`: a list of header configuration objects that specify headers and
+  their value sources. Each configuration object has the following properties:
+    - `key`: The header name.
+    - `action` (default: `upsert`): An action to perform on the header. Supported actions are:
+        - `insert`: Inserts the new header if it does not exist.
+        - `update`: Updates the header value if it exists.
+        - `upsert`: Inserts a header if it does not exist and updates the header
+          if it exists.
+        - `delete`: Deletes the header.
+    - `value`: The header value is looked up from the `value` property of the
+      extension configuration.
+    - `from_context`: The header value is looked up from the request metadata,
+      such as HTTP headers, using the property value as the key (likely a header
+      name).
 
 The `value` and `from_context` properties are mutually exclusive.
-
 
 #### Configuration Example
 
@@ -34,10 +40,17 @@ The `value` and `from_context` properties are mutually exclusive.
 extensions:
   headers_setter:
     headers:
-      - key: X-Scope-OrgID
+      - action: insert
+        key: X-Scope-OrgID
         from_context: tenant_id
-      - key: User-ID
+      - action: upsert
+        key: User-ID
         value: user_id
+      - action: update
+        key: User-ID
+        value: user_id
+      - action: delete
+        key: Some-Header
 
 receivers:
   otlp:
