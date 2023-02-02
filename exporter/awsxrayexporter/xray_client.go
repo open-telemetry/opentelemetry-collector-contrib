@@ -17,6 +17,7 @@ package awsxrayexporter // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"os"
+	"runtime"
 	"strconv"
 	"time"
 
@@ -27,6 +28,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 )
+
+// Constant prefixes used to identify information in user-agent
+const agentPrefix = "xray-agent/xray-otel-exporter/"
+const execEnvPrefix = " exec-env/"
+const osPrefix = " OS/"
 
 // xrayClient represents X-Ray client.
 type xrayClient struct {
@@ -48,9 +54,16 @@ func newXRay(logger *zap.Logger, awsConfig *aws.Config, buildInfo component.Buil
 	x := xray.New(s, awsConfig)
 	logger.Debug("Using Endpoint: %s", zap.String("endpoint", x.Endpoint))
 
+	execEnv := os.Getenv("AWS_EXECUTION_ENV")
+	if execEnv == "" {
+		execEnv = "UNKNOWN"
+	}
+
+	osInformation := runtime.GOOS + "-" + runtime.GOARCH
+
 	x.Handlers.Build.PushBackNamed(request.NamedHandler{
 		Name: "tracing.XRayVersionUserAgentHandler",
-		Fn:   request.MakeAddToUserAgentHandler("xray", "1.0", os.Getenv("AWS_EXECUTION_ENV")),
+		Fn:   request.MakeAddToUserAgentFreeFormHandler(agentPrefix + "1.0" + execEnvPrefix + execEnv + osPrefix + osInformation),
 	})
 
 	x.Handlers.Build.PushFrontNamed(newCollectorUserAgentHandler(buildInfo))
