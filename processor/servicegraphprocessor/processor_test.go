@@ -34,7 +34,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processortest"
-	semconv "go.opentelemetry.io/collector/semconv/v1.6.1"
+	semconv "go.opentelemetry.io/collector/semconv/v1.13.0"
 	"go.uber.org/zap/zaptest"
 )
 
@@ -229,6 +229,50 @@ func buildSampleTrace(attrValue string) ptrace.Traces {
 	serverSpan.SetStartTimestamp(pcommon.NewTimestampFromTime(tStart))
 	serverSpan.SetEndTimestamp(pcommon.NewTimestampFromTime(tEnd))
 
+	return traces
+}
+
+func incompleteClientTraces() ptrace.Traces {
+	tStart := time.Date(2022, 1, 2, 3, 4, 5, 6, time.UTC)
+	tEnd := time.Date(2022, 1, 2, 3, 4, 6, 6, time.UTC)
+
+	traces := ptrace.NewTraces()
+
+	resourceSpans := traces.ResourceSpans().AppendEmpty()
+	resourceSpans.Resource().Attributes().PutStr(semconv.AttributeServiceName, "some-client-service")
+
+	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
+	anotherTraceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	anotherClientSpanID := pcommon.SpanID([8]byte{1, 2, 3, 4, 4, 3, 2, 1})
+	clientSpanNoServerSpan := scopeSpans.Spans().AppendEmpty()
+	clientSpanNoServerSpan.SetName("client span 2")
+	clientSpanNoServerSpan.SetSpanID(anotherClientSpanID)
+	clientSpanNoServerSpan.SetTraceID(anotherTraceID)
+	clientSpanNoServerSpan.SetKind(ptrace.SpanKindClient)
+	clientSpanNoServerSpan.SetStartTimestamp(pcommon.NewTimestampFromTime(tStart))
+	clientSpanNoServerSpan.SetEndTimestamp(pcommon.NewTimestampFromTime(tEnd))
+	clientSpanNoServerSpan.Attributes().PutStr(semconv.AttributeNetSockPeerAddr, "127.10.10.1") // Attribute selected as dimension for metrics
+
+	return traces
+}
+
+func incompleteServerTraces() ptrace.Traces {
+	tStart := time.Date(2022, 1, 2, 3, 4, 5, 6, time.UTC)
+	tEnd := time.Date(2022, 1, 2, 3, 4, 6, 6, time.UTC)
+
+	traces := ptrace.NewTraces()
+
+	resourceSpans := traces.ResourceSpans().AppendEmpty()
+	resourceSpans.Resource().Attributes().PutStr(semconv.AttributeServiceName, "some-server-service")
+	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
+	anotherTraceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
+	serverSpanNoClientSpan := scopeSpans.Spans().AppendEmpty()
+	serverSpanNoClientSpan.SetName("server span 2")
+	serverSpanNoClientSpan.SetSpanID([8]byte{0x19, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26})
+	serverSpanNoClientSpan.SetTraceID(anotherTraceID)
+	serverSpanNoClientSpan.SetKind(ptrace.SpanKindServer)
+	serverSpanNoClientSpan.SetStartTimestamp(pcommon.NewTimestampFromTime(tStart))
+	serverSpanNoClientSpan.SetEndTimestamp(pcommon.NewTimestampFromTime(tEnd))
 	return traces
 }
 

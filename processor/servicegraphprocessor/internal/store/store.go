@@ -17,7 +17,6 @@ package store // import "github.com/open-telemetry/opentelemetry-collector-contr
 import (
 	"container/list"
 	"errors"
-	semconv "go.opentelemetry.io/collector/semconv/v1.13.0"
 	"sync"
 	"time"
 
@@ -26,8 +25,6 @@ import (
 
 var (
 	ErrTooManyItems = errors.New("too many items")
-	// NeedToFindAttributes the list of attributes need to matches, the higher the front, the higher the priority.
-	NeedToFindAttributes = []string{semconv.AttributeDBName, semconv.AttributeNetSockPeerAddr, semconv.AttributeNetPeerName, semconv.AttributeRPCService, semconv.AttributeHTTPURL, semconv.AttributeHTTPTarget}
 )
 
 type Callback func(e *Edge)
@@ -46,8 +43,8 @@ type Store struct {
 	mtx sync.Mutex
 	m   map[Key]*list.Element
 
-	onComplete Callback
-	onExpire   Callback
+	OnComplete Callback
+	OnExpire   Callback
 
 	ttl      time.Duration
 	maxItems int
@@ -61,8 +58,8 @@ func NewStore(ttl time.Duration, maxItems int, onComplete, onExpire Callback) *S
 		l: list.New(),
 		m: make(map[Key]*list.Element),
 
-		onComplete: onComplete,
-		onExpire:   onExpire,
+		OnComplete: onComplete,
+		OnExpire:   onExpire,
 
 		ttl:      ttl,
 		maxItems: maxItems,
@@ -87,8 +84,8 @@ func (s *Store) UpsertEdge(key Key, update Callback) (isNew bool, err error) {
 		edge := storedEdge.Value.(*Edge)
 		update(edge)
 
-		if edge.isComplete() {
-			s.onComplete(edge)
+		if edge.IsComplete() {
+			s.OnComplete(edge)
 			delete(s.m, key)
 			s.l.Remove(storedEdge)
 		}
@@ -99,8 +96,8 @@ func (s *Store) UpsertEdge(key Key, update Callback) (isNew bool, err error) {
 	edge := newEdge(key, s.ttl)
 	update(edge)
 
-	if edge.isComplete() {
-		s.onComplete(edge)
+	if edge.IsComplete() {
+		s.OnComplete(edge)
 		return true, nil
 	}
 
@@ -122,8 +119,7 @@ func (s *Store) Expire() {
 	defer s.mtx.Unlock()
 
 	// Iterates until no more items can be evicted
-	for s.trySpeculateEvictHead() {
-		s.tryEvictHead()
+	for s.tryEvictHead() {
 	}
 }
 
@@ -138,49 +134,13 @@ func (s *Store) tryEvictHead() bool {
 	}
 
 	headEdge := head.Value.(*Edge)
-	if !headEdge.isExpired() {
+	if !headEdge.IsExpired() {
 		return false
 	}
 
-	s.onExpire(headEdge)
+	s.OnExpire(headEdge)
 	delete(s.m, headEdge.key)
 	s.l.Remove(head)
 
 	return true
-}
-
-// speculate virtual node before edge get expired.
-func (s *Store) trySpeculateEvictHead() bool {
-	head := s.l.Front()
-	if head == nil {
-		return false // list is empty
-	}
-	headEdge := head.Value.(*Edge)
-	if !headEdge.isExpired() {
-		return false
-	}
-
-	if len(headEdge.ClientService) == 0 {
-		headEdge.ClientService = "user"
-	}
-
-	if len(headEdge.ServerService) == 0 {
-		headEdge.ServerService = s.getPeerHost(NeedToFindAttributes, headEdge.Peer)
-	}
-
-	if headEdge.isComplete() {
-		s.onComplete(headEdge)
-	}
-	return true
-}
-
-func (s *Store) getPeerHost(m []string, peers map[string]string) string {
-	peerStr := "unknown"
-	for _, s := range m {
-		if len(peers[s]) != 0 {
-			peerStr = peers[s]
-			break
-		}
-	}
-	return peerStr
 }

@@ -38,7 +38,8 @@ type Config struct {
 	Dimensions []string `mapstructure:"dimensions"`
 
 	// Store contains the config for the in-memory store used to find requests between services by pairing spans.
-	Store StoreConfig `mapstructure:"store"`
+	Store                     StoreConfig `mapstructure:"store"`
+	VirtualNodeFeatureEnabled bool        `mapstructure:"virtual_node_feature_enabled"`
 }
 
 type StoreConfig struct {

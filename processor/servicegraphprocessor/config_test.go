@@ -40,9 +40,10 @@ func TestLoadConfig(t *testing.T) {
 	require.NotNil(t, cfg)
 	assert.Equal(t,
 		&Config{
-			MetricsExporter:         "metrics",
-			LatencyHistogramBuckets: []time.Duration{1, 2, 3, 4, 5},
-			Dimensions:              []string{"dimension-1", "dimension-2"},
+			MetricsExporter:           "metrics",
+			LatencyHistogramBuckets:   []time.Duration{1, 2, 3, 4, 5},
+			VirtualNodeFeatureEnabled: false,
+			Dimensions:                []string{"dimension-1", "dimension-2"},
 			Store: StoreConfig{
 				TTL:      time.Second,
 				MaxItems: 10,

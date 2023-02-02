@@ -59,12 +59,12 @@ func newEdge(key Key, ttl time.Duration) *Edge {
 	}
 }
 
-// isComplete returns true if the corresponding client and server
+// IsComplete returns true if the corresponding client and server
 // pair spans have been processed for the given Edge
-func (e *Edge) isComplete() bool {
+func (e *Edge) IsComplete() bool {
 	return len(e.ClientService) != 0 && len(e.ServerService) != 0
 }
 
-func (e *Edge) isExpired() bool {
+func (e *Edge) IsExpired() bool {
 	return time.Now().After(e.expiration)
 }

@@ -31,7 +31,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
-	semconv "go.opentelemetry.io/collector/semconv/v1.6.1"
+	semconv "go.opentelemetry.io/collector/semconv/v1.13.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor/internal/store"
@@ -47,6 +47,8 @@ var (
 	defaultLatencyHistogramBucketsMs = []float64{
 		2, 4, 6, 8, 10, 50, 100, 200, 400, 800, 1000, 1400, 2000, 5000, 10_000, 15_000,
 	}
+	// NeedToFindAttributes the list of attributes need to matches, the higher the front, the higher the priority.
+	NeedToFindAttributes = []string{semconv.AttributeDBName, semconv.AttributeNetSockPeerAddr, semconv.AttributeNetPeerName, semconv.AttributeRPCService, semconv.AttributeHTTPURL, semconv.AttributeHTTPTarget}
 )
 
 type metricSeries struct {
@@ -209,7 +211,7 @@ func (p *serviceGraphProcessor) aggregateMetrics(ctx context.Context, td ptrace.
 						e.ClientLatencySec = float64(span.EndTimestamp()-span.StartTimestamp()) / float64(time.Millisecond.Nanoseconds())
 						e.Failed = e.Failed || span.Status().Code() == ptrace.StatusCodeError
 						p.upsertDimensions(clientKind, e.Dimensions, rAttributes, span.Attributes())
-						p.upsertPeerAttributes(store.NeedToFindAttributes, e.Peer, span.Attributes())
+						p.upsertPeerAttributes(NeedToFindAttributes, e.Peer, span.Attributes())
 
 						// A database request will only have one span, we don't wait for the server
 						// span but just copy details from the client span
@@ -297,7 +299,11 @@ func (p *serviceGraphProcessor) onExpire(e *store.Edge) {
 		zap.String("connection_type", string(e.ConnectionType)),
 		zap.Stringer("trace_id", e.TraceID),
 	)
-	stats.Record(context.Background(), statExpiredEdges.M(1))
+	if p.config.VirtualNodeFeatureEnabled {
+		p.trySpeculateEvictHead(e)
+	} else {
+		stats.Record(context.Background(), statExpiredEdges.M(1))
+	}
 }
 
 func (p *serviceGraphProcessor) aggregateMetricsForEdge(e *store.Edge) {
@@ -482,6 +488,45 @@ func (p *serviceGraphProcessor) storeExpirationLoop(d time.Duration) {
 			return
 		}
 	}
+}
+
+// speculate virtual node before edge get expired.
+func (p *serviceGraphProcessor) trySpeculateEvictHead(e *store.Edge) bool {
+	if !e.IsExpired() {
+		return false
+	}
+
+	if len(e.ClientService) == 0 {
+		e.ClientService = "user"
+	}
+
+	if len(e.ServerService) == 0 {
+		e.ServerService = p.getPeerHost(NeedToFindAttributes, e.Peer)
+	}
+
+	p.logger.Debug(
+		"edge expired, building virtual node",
+		zap.String("client_service", e.ClientService),
+		zap.String("server_service", e.ServerService),
+		zap.String("connection_type", string(e.ConnectionType)),
+		zap.Stringer("trace_id", e.TraceID),
+	)
+
+	if e.IsComplete() {
+		p.store.OnComplete(e)
+	}
+	return true
+}
+
+func (p *serviceGraphProcessor) getPeerHost(m []string, peers map[string]string) string {
+	peerStr := "unknown"
+	for _, s := range m {
+		if len(peers[s]) != 0 {
+			peerStr = peers[s]
+			break
+		}
+	}
+	return peerStr
 }
 
 // cacheLoop periodically cleans the cache
