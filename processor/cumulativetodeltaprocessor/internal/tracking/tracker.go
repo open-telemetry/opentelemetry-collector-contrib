@@ -81,24 +81,10 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 	hashableID := b.String()
 	identityBufferPool.Put(b)
 
-	var s interface{}
-	var ok bool
-	if s, ok = t.states.Load(hashableID); !ok {
-		s, ok = t.states.LoadOrStore(hashableID, &State{
-			PrevPoint: metricPoint,
-		})
-	}
-
+	s, ok := t.states.LoadOrStore(hashableID, &State{
+		PrevPoint: metricPoint,
+	})
 	if !ok {
-		if metricID.MetricIsMonotonic {
-			out = DeltaValue{
-				StartTimestamp: metricPoint.ObservedTimestamp,
-				FloatValue:     metricPoint.FloatValue,
-				IntValue:       metricPoint.IntValue,
-				HistogramValue: metricPoint.HistogramValue,
-			}
-			valid = true
-		}
 		return
 	}
 	valid = true
