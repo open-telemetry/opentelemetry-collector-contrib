@@ -113,13 +113,13 @@ func NewConverter(logger *zap.Logger) *Converter {
 func (c *Converter) Start() {
 	c.logger.Debug("Starting log converter", zap.Int("worker_count", c.workerCount))
 
+	c.wg.Add(c.workerCount)
 	for i := 0; i < c.workerCount; i++ {
-		c.wg.Add(1)
 		go c.workerLoop()
 	}
 
-	c.wg.Add(1)
-	go c.aggregationLoop()
+	// c.wg.Add(1)
+	// go c.aggregationLoop()
 
 	c.wg.Add(1)
 	go c.flushLoop()
@@ -161,20 +161,47 @@ func (c *Converter) workerLoop() {
 				return
 			}
 
-			workerItems := make([]workerItem, 0, len(entries))
+			// workerItems := make([]workerItem, 0, len(entries))
 
+			resourceEntriesLookup := make(map[uint64][]*entry.Entry)
+			resourceAttrsLookup := make(map[uint64]map[string]interface{})
 			for _, e := range entries {
-				lr := convert(e)
 				resourceID := HashResource(e.Resource)
-				workerItems = append(workerItems, workerItem{
-					Resource:   e.Resource,
-					ResourceID: resourceID,
-					LogRecord:  lr,
-				})
+				resourceEntries, ok := resourceEntriesLookup[resourceID]
+				if !ok {
+					resourceEntries = make([]*entry.Entry, 0)
+					resourceAttrsLookup[resourceID] = e.Resource
+				}
+
+				resourceEntriesLookup[resourceID] = append(resourceEntries, e)
+				// lr := convert(e)
+				// workerItems = append(workerItems, workerItem{
+				// 	Resource:   e.Resource,
+				// 	ResourceID: resourceID,
+				// 	LogRecord:  lr,
+				// })
+			}
+
+			pLogs := plog.NewLogs()
+			for resourceID, resourceEntries := range resourceEntriesLookup {
+				logs := pLogs.ResourceLogs()
+				rls := logs.AppendEmpty()
+				resource := rls.Resource()
+
+				resourceAttrs := resourceAttrsLookup[resourceID]
+				upsertToMap(resourceAttrs, resource.Attributes())
+
+				ills := rls.ScopeLogs()
+
+				for _, e := range resourceEntries {
+					lr := ills.AppendEmpty().LogRecords().AppendEmpty()
+					convertInto(e, lr)
+				}
 			}
 
 			select {
-			case c.aggregationChan <- workerItems:
+			// case c.aggregationChan <- workerItems:
+			case c.flushChan <- pLogs:
 			case <-c.stopChan:
 			}
 		}
