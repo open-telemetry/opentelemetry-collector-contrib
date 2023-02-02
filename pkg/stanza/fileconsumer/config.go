@@ -29,17 +29,14 @@ import (
 const (
 	defaultMaxLogSize         = 1024 * 1024
 	defaultMaxConcurrentFiles = 1024
-	allowFileDeletion         = "filelog.allowFileDeletion"
 )
 
-func init() {
-	featuregate.GlobalRegistry().MustRegisterID(
-		allowFileDeletion,
-		featuregate.StageAlpha,
-		featuregate.WithRegisterDescription("When enabled, allows usage of the `delete_after_read` setting."),
-		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16314"),
-	)
-}
+var allowFileDeletion = featuregate.GlobalRegistry().MustRegister(
+	"filelog.allowFileDeletion",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, allows usage of the `delete_after_read` setting."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16314"),
+)
 
 // NewConfig creates a new input config with default values
 func NewConfig() *Config {
@@ -75,8 +72,8 @@ type Config struct {
 
 // Build will build a file input operator from the supplied configuration
 func (c Config) Build(logger *zap.SugaredLogger, emit EmitFunc) (*Manager, error) {
-	if c.DeleteAfterRead && !featuregate.GlobalRegistry().IsEnabled(allowFileDeletion) {
-		return nil, fmt.Errorf("`delete_after_read` requires feature gate `%s`", allowFileDeletion)
+	if c.DeleteAfterRead && !allowFileDeletion.IsEnabled() {
+		return nil, fmt.Errorf("`delete_after_read` requires feature gate `%s`", allowFileDeletion.ID())
 	}
 	if err := c.validate(); err != nil {
 		return nil, err
