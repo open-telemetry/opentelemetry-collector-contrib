@@ -16,6 +16,7 @@ package splunkhecexporter // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"encoding/hex"
+	"fmt"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -70,7 +71,7 @@ func mapLogRecordToSplunkEvent(res pcommon.Resource, lr plog.LogRecord, config *
 		case splunk.HecTokenLabel:
 			// ignore
 		default:
-			fields[k] = v.AsRaw()
+			_ = mergeValue(fields, k, v.AsRaw())
 		}
 		return true
 	})
@@ -87,7 +88,7 @@ func mapLogRecordToSplunkEvent(res pcommon.Resource, lr plog.LogRecord, config *
 		case splunk.HecTokenLabel:
 			// ignore
 		default:
-			fields[k] = v.AsRaw()
+			_ = mergeValue(fields, k, v.AsRaw())
 		}
 		return true
 	})
@@ -116,4 +117,52 @@ func nanoTimestampToEpochMilliseconds(ts pcommon.Timestamp) *float64 {
 
 	val := duration.Round(time.Millisecond).Seconds()
 	return &val
+}
+
+func mergeValue(dst map[string]any, k string, v any) int {
+	switch element := v.(type) {
+	case []any:
+		if !isArrayFlat(element) {
+			return 1
+		}
+		dst[k] = v
+	case map[string]any:
+		return flattenAndMergeMap(element, dst, k)
+	default:
+		dst[k] = v
+	}
+
+	return 0
+
+}
+
+func isArrayFlat(array []any) bool {
+	for _, v := range array {
+		switch v.(type) {
+		case []any, map[string]any:
+			return false
+		}
+	}
+	return true
+}
+
+func flattenAndMergeMap(src, dst map[string]any, key string) int {
+	dropped := 0
+	for k, v := range src {
+		current := fmt.Sprintf("%s.%s", key, k)
+		switch element := v.(type) {
+		case map[string]any:
+			dropped += flattenAndMergeMap(element, dst, current)
+		case []any:
+			if !isArrayFlat(element) {
+				dropped++
+				continue
+			}
+			dst[current] = element
+		default:
+			dst[current] = element
+		}
+	}
+
+	return dropped
 }
