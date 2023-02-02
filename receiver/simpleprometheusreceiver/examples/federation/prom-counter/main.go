@@ -23,35 +23,22 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/prometheus"
-	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/sdk/metric/aggregator/histogram"
-	controller "go.opentelemetry.io/otel/sdk/metric/controller/basic"
-	"go.opentelemetry.io/otel/sdk/metric/export/aggregation"
-	processor "go.opentelemetry.io/otel/sdk/metric/processor/basic"
-	selector "go.opentelemetry.io/otel/sdk/metric/selector/simple"
+	api "go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/sdk/metric"
 	"go.uber.org/zap"
 )
 
-func initMeter() metric.Meter {
-	config := prometheus.Config{}
-	c := controller.New(
-		processor.NewFactory(
-			selector.NewWithHistogramDistribution(
-				histogram.WithExplicitBoundaries(config.DefaultHistogramBoundaries),
-			),
-			aggregation.CumulativeTemporalitySelector(),
-			processor.WithMemory(true),
-		),
-	)
-	exporter, err := prometheus.New(config, c)
+func initMeter() api.Meter {
+	exporter, err := prometheus.New()
 	if err != nil {
 		log.Panicf("failed to initialize prometheus exporter %v", err)
 	}
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", exporter.ServeHTTP)
+	mux.Handle("/", promhttp.Handler())
 	server := &http.Server{
 		Addr:    ":8080",
 		Handler: mux,
@@ -61,7 +48,8 @@ func initMeter() metric.Meter {
 			log.Panicf("failed to start prometheus server %v", err)
 		}
 	}()
-	return exporter.MeterProvider().Meter("federation/prom-counter")
+	provider := metric.NewMeterProvider(metric.WithReader(exporter))
+	return provider.Meter("federation/prom-counter")
 }
 
 func main() {
@@ -73,7 +61,7 @@ func main() {
 		_ = logger.Sync()
 	}()
 	logger.Info("Start Prometheus metrics app")
-	valueRecorder, err := meter.SyncInt64().Histogram("prom_counter")
+	valueRecorder, err := meter.Int64Histogram("prom_counter")
 	if err != nil {
 		log.Panicf("failed to initialize histogram %v", err)
 	}
