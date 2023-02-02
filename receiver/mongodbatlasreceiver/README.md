@@ -108,6 +108,7 @@ receivers:
 ```
 
 Receive logs:
+
 ```yaml
 receivers:
   mongodbatlas:
