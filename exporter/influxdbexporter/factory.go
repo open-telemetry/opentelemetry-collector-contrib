@@ -18,6 +18,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/influxdata/influxdb-observability/common"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
@@ -39,7 +40,10 @@ func NewFactory() exporter.Factory {
 func createTraceExporter(ctx context.Context, set exporter.CreateSettings, config component.Config) (exporter.Traces, error) {
 	cfg := config.(*Config)
 
-	exporter := newTracesExporter(cfg, set)
+	exporter, err := newTracesExporter(cfg, set)
+	if err != nil {
+		return nil, err
+	}
 
 	return exporterhelper.NewTracesExporter(
 		ctx,
@@ -48,7 +52,8 @@ func createTraceExporter(ctx context.Context, set exporter.CreateSettings, confi
 		exporter.pushTraces,
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithRetry(cfg.RetrySettings),
-		exporterhelper.WithStart(exporter.start),
+		exporterhelper.WithStart(exporter.Start),
+		exporterhelper.WithShutdown(exporter.Shutdown),
 	)
 }
 
@@ -67,14 +72,17 @@ func createMetricsExporter(ctx context.Context, set exporter.CreateSettings, con
 		exporter.pushMetrics,
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithRetry(cfg.RetrySettings),
-		exporterhelper.WithStart(exporter.start),
+		exporterhelper.WithStart(exporter.Start),
 	)
 }
 
 func createLogsExporter(ctx context.Context, set exporter.CreateSettings, config component.Config) (exporter.Logs, error) {
 	cfg := config.(*Config)
 
-	exporter := newLogsExporter(cfg, set)
+	exporter, err := newLogsExporter(cfg, set)
+	if err != nil {
+		return nil, err
+	}
 
 	return exporterhelper.NewLogsExporter(
 		ctx,
@@ -83,7 +91,7 @@ func createLogsExporter(ctx context.Context, set exporter.CreateSettings, config
 		exporter.pushLogs,
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithRetry(cfg.RetrySettings),
-		exporterhelper.WithStart(exporter.start),
+		exporterhelper.WithStart(exporter.Start),
 	)
 }
 
@@ -97,6 +105,6 @@ func createDefaultConfig() component.Config {
 		},
 		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
 		RetrySettings: exporterhelper.NewDefaultRetrySettings(),
-		MetricsSchema: "telegraf-prometheus-v1",
+		MetricsSchema: common.MetricsSchemaTelegrafPrometheusV1.String(),
 	}
 }

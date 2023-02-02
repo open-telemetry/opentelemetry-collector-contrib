@@ -39,7 +39,7 @@ const (
 )
 
 func init() {
-	featuregate.GetRegistry().MustRegisterID(
+	featuregate.GlobalRegistry().MustRegisterID(
 		HostnamePreviewFeatureGate,
 		featuregate.StageBeta,
 		featuregate.WithRegisterDescription("Use the 'preview' hostname resolution rules, which are consistent with Datadog cloud integration hostname resolution rules, and set 'host_metadata::hostname_source' to 'config_or_system' by default."),
@@ -113,7 +113,7 @@ func buildCurrentProvider(set component.TelemetrySettings, configHostname string
 }
 
 func GetSourceProvider(set component.TelemetrySettings, configHostname string) (source.Provider, error) {
-	if featuregate.GetRegistry().IsEnabled(HostnamePreviewFeatureGate) {
+	if featuregate.GlobalRegistry().IsEnabled(HostnamePreviewFeatureGate) {
 		return buildPreviewProvider(set, configHostname)
 	}
 

@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 
+	promconfig "github.com/prometheus/prometheus/config"
 	_ "github.com/prometheus/prometheus/discovery/install" // init() of this package registers service discovery impl.
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -34,7 +35,7 @@ const (
 )
 
 func init() {
-	featuregate.GetRegistry().MustRegisterID(
+	featuregate.GlobalRegistry().MustRegisterID(
 		useCreatedMetricGateID,
 		featuregate.StageAlpha,
 		featuregate.WithRegisterDescription("When enabled, the Prometheus receiver will"+
@@ -53,7 +54,11 @@ func NewFactory() receiver.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	return &Config{}
+	return &Config{
+		PrometheusConfig: &promconfig.Config{
+			GlobalConfig: promconfig.DefaultGlobalConfig,
+		},
+	}
 }
 
 func createMetricsReceiver(
@@ -62,5 +67,5 @@ func createMetricsReceiver(
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
-	return newPrometheusReceiver(set, cfg.(*Config), nextConsumer, featuregate.GetRegistry()), nil
+	return newPrometheusReceiver(set, cfg.(*Config), nextConsumer, featuregate.GlobalRegistry()), nil
 }

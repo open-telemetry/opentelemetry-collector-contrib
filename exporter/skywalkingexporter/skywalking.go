@@ -58,8 +58,11 @@ type swExporter struct {
 func newSwExporter(_ context.Context, cfg *Config, settings component.TelemetrySettings) *swExporter {
 	oce := &swExporter{
 		cfg:      cfg,
-		metadata: metadata.New(cfg.GRPCClientSettings.Headers),
+		metadata: metadata.New(nil),
 		settings: settings,
+	}
+	for k, v := range cfg.GRPCClientSettings.Headers {
+		oce.metadata.Set(k, string(v))
 	}
 	return oce
 }
@@ -184,7 +187,7 @@ func (oce *swExporter) createLogServiceRPC() (*logsClientWithCancel, error) {
 	// Initiate the log service by sending over node identifier info.
 	ctx, cancel := context.WithCancel(context.Background())
 	if len(oce.cfg.Headers) > 0 {
-		ctx = metadata.NewOutgoingContext(ctx, metadata.New(oce.cfg.Headers))
+		ctx = metadata.NewOutgoingContext(ctx, oce.metadata.Copy())
 	}
 	// Cannot use grpc.WaitForReady(cfg.WaitForReady) because will block forever.
 	logClient, err := oce.logSvcClient.Collect(ctx)
@@ -199,7 +202,7 @@ func (oce *swExporter) createMetricServiceRPC() (*metricsClientWithCancel, error
 	// Initiate the metric service by sending over node identifier info.
 	ctx, cancel := context.WithCancel(context.Background())
 	if len(oce.cfg.Headers) > 0 {
-		ctx = metadata.NewOutgoingContext(ctx, metadata.New(oce.cfg.Headers))
+		ctx = metadata.NewOutgoingContext(ctx, oce.metadata.Copy())
 	}
 	// Cannot use grpc.WaitForReady(cfg.WaitForReady) because will block forever.
 	metricClient, err := oce.metricSvcClient.CollectBatch(ctx)

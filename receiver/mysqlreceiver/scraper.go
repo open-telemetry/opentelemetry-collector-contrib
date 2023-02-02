@@ -201,7 +201,7 @@ func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererr
 		case "Connections":
 			addPartialIfError(errs, m.mb.RecordMysqlConnectionCountDataPoint(now, v))
 
-		// commands
+		// prepared_statements_commands
 		case "Com_stmt_execute":
 			addPartialIfError(errs, m.mb.RecordMysqlPreparedStatementsDataPoint(now, v,
 				metadata.AttributePreparedStatementsCommandExecute))
@@ -220,6 +220,16 @@ func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererr
 		case "Com_stmt_send_long_data":
 			addPartialIfError(errs, m.mb.RecordMysqlPreparedStatementsDataPoint(now, v,
 				metadata.AttributePreparedStatementsCommandSendLongData))
+
+		// commands
+		case "Com_delete":
+			addPartialIfError(errs, m.mb.RecordMysqlCommandsDataPoint(now, v, metadata.AttributeCommandDelete))
+		case "Com_insert":
+			addPartialIfError(errs, m.mb.RecordMysqlCommandsDataPoint(now, v, metadata.AttributeCommandInsert))
+		case "Com_select":
+			addPartialIfError(errs, m.mb.RecordMysqlCommandsDataPoint(now, v, metadata.AttributeCommandSelect))
+		case "Com_update":
+			addPartialIfError(errs, m.mb.RecordMysqlCommandsDataPoint(now, v, metadata.AttributeCommandUpdate))
 
 		// created tmps
 		case "Created_tmp_disk_tables":

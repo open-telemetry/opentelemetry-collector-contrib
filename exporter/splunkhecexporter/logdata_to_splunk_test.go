@@ -21,13 +21,11 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
 func Test_mapLogRecordToSplunkEvent(t *testing.T) {
-	logger := zap.NewNop()
 	ts := pcommon.Timestamp(123)
 
 	tests := []struct {
@@ -435,7 +433,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			for _, want := range tt.wantSplunkEvents {
 				config := tt.configDataFn()
-				got := mapLogRecordToSplunkEvent(tt.logResourceFn(), tt.logRecordFn(), config, logger)
+				got := mapLogRecordToSplunkEvent(tt.logResourceFn(), tt.logRecordFn(), config)
 				assert.EqualValues(t, want, got)
 			}
 		})
@@ -461,7 +459,7 @@ func commonLogSplunkEvent(
 }
 
 func Test_emptyLogRecord(t *testing.T) {
-	event := mapLogRecordToSplunkEvent(pcommon.NewResource(), plog.NewLogRecord(), &Config{}, zap.NewNop())
+	event := mapLogRecordToSplunkEvent(pcommon.NewResource(), plog.NewLogRecord(), &Config{})
 	assert.Nil(t, event.Time)
 	assert.Equal(t, event.Host, "unknown")
 	assert.Zero(t, event.Source)

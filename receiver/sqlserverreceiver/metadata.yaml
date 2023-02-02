@@ -3,6 +3,7 @@ name: sqlserverreceiver
 resource_attributes:
   sqlserver.database.name:
     description: The name of the SQL Server database.
+    enabled: true
     type: string
 
 attributes:

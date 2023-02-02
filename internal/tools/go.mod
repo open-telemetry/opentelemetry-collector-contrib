@@ -4,17 +4,18 @@ go 1.18
 
 require (
 	github.com/client9/misspell v0.3.4
+	github.com/daixiang0/gci v0.9.0
 	github.com/golangci/golangci-lint v1.50.1
-	github.com/google/addlicense v1.1.0
+	github.com/google/addlicense v1.1.1
 	github.com/jcchavezs/porto v0.4.0
 	github.com/jstemmer/go-junit-report v1.0.0
-	github.com/pavius/impi v0.0.3
 	github.com/tcnksm/ghr v0.16.0
-	go.opentelemetry.io/build-tools/checkdoc v0.4.0
-	go.opentelemetry.io/build-tools/chloggen v0.3.0
-	go.opentelemetry.io/build-tools/crosslink v0.4.0
-	go.opentelemetry.io/build-tools/issuegenerator v0.4.0
-	go.opentelemetry.io/build-tools/multimod v0.4.0
+	go.opentelemetry.io/build-tools/checkdoc v0.5.0
+	go.opentelemetry.io/build-tools/chloggen v0.5.0
+	go.opentelemetry.io/build-tools/crosslink v0.5.0
+	go.opentelemetry.io/build-tools/issuegenerator v0.5.0
+	go.opentelemetry.io/build-tools/multimod v0.5.0
+	go.opentelemetry.io/collector/cmd/builder v0.70.1-0.20230125171446-f45a3e42e7d6
 	golang.org/x/tools v0.2.0
 )
 
@@ -49,7 +50,6 @@ require (
 	github.com/chavacava/garif v0.0.0-20220630083739-93517212f375 // indirect
 	github.com/cloudflare/circl v1.1.0 // indirect
 	github.com/curioswitch/go-reassign v0.2.0 // indirect
-	github.com/daixiang0/gci v0.8.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/denis-tingaikin/go-header v0.4.3 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
@@ -110,6 +110,7 @@ require (
 	github.com/kisielk/errcheck v1.6.2 // indirect
 	github.com/kisielk/gotool v1.0.0 // indirect
 	github.com/kkHAIKE/contextcheck v1.1.3 // indirect
+	github.com/knadh/koanf v1.5.0 // indirect
 	github.com/kulti/thelper v0.6.3 // indirect
 	github.com/kunwardeep/paralleltest v1.0.6 // indirect
 	github.com/kyoh86/exportloopref v0.1.8 // indirect
@@ -128,8 +129,10 @@ require (
 	github.com/mbilski/exhaustivestruct v1.2.0 // indirect
 	github.com/mgechev/revive v1.2.4 // indirect
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db // indirect
+	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
+	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/moricho/tparallel v0.2.1 // indirect
 	github.com/nakabonne/nestif v0.3.1 // indirect
 	github.com/nbutton23/zxcvbn-go v0.0.0-20210217022336-fa2cb2858354 // indirect
@@ -192,7 +195,7 @@ require (
 	github.com/yagipy/maintidx v1.0.0 // indirect
 	github.com/yeya24/promlinter v0.2.0 // indirect
 	gitlab.com/bosi/decorder v0.2.3 // indirect
-	go.opentelemetry.io/build-tools v0.4.0 // indirect
+	go.opentelemetry.io/build-tools v0.5.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
 	go.uber.org/zap v1.24.0 // indirect

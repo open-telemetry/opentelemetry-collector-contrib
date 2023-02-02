@@ -15,9 +15,9 @@
 package dimensions
 
 import (
-	"reflect"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
@@ -217,10 +217,7 @@ func TestGetDimensionUpdateFromMetadata(t *testing.T) {
 				"-_.",
 			)
 			require.NoError(t, err)
-			got := getDimensionUpdateFromMetadata(tt.args.metadata, *converter)
-			if !reflect.DeepEqual(*got, *tt.want) {
-				t.Errorf("getDimensionUpdateFromMetadata() = %v, want %v", *got, *tt.want)
-			}
+			assert.Equal(t, tt.want, getDimensionUpdateFromMetadata(tt.args.metadata, *converter))
 		})
 	}
 }

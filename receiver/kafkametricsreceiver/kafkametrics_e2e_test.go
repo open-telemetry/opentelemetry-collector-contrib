@@ -36,7 +36,7 @@ const (
 	zkPort       = 2181
 	kafkaPort    = 9092
 	kafkaZkImage = "johnnypark/kafka-zookeeper"
-	//only one metric, number of brokers, will be reported.
+	// only one metric, number of brokers, will be reported.
 	expectedMetrics = 1
 )
 
@@ -64,7 +64,7 @@ func TestIntegrationSingleNode(t *testing.T) {
 		WaitingFor: wait.ForAll(
 			wait.ForListeningPort("2181/tcp").WithStartupTimeout(time.Minute*2),
 			wait.ForListeningPort("9092/tcp").WithStartupTimeout(time.Minute*2),
-		).WithStartupTimeout(time.Minute * 2),
+		).WithDeadline(time.Minute * 2),
 	}
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: req,

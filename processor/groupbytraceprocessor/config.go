@@ -25,7 +25,7 @@ type Config struct {
 	// Default: 1_000_000.
 	NumTraces int `mapstructure:"num_traces"`
 
-	// NumWorkers is a number of workers processing event queue. Should be equal to physical processors number.
+	// NumWorkers is a number of workers processing event queue.
 	// Default: 1.
 	NumWorkers int `mapstructure:"num_workers"`
 
