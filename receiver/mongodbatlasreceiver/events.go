@@ -248,7 +248,7 @@ func (er *eventsReceiver) loadCheckpoint(ctx context.Context) error {
 		return nil
 	}
 
-	if err != nil || cBytes == nil {
+	if err != nil {
 		er.logger.Info("unable to load checkpoint from storage client, continuing without a previous checkpoint", zap.Error(err))
 		er.record = &eventRecord{}
 		return nil
