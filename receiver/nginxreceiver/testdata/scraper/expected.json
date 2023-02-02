@@ -9,21 +9,6 @@
                },
                "metrics": [
                   {
-                     "description": "Total number of requests made to the server since it started",
-                     "name": "nginx.requests",
-                     "sum": {
-                        "aggregationTemporality": 2,
-                        "dataPoints": [
-                           {
-                              "asInt": "31070465",
-                              "timeUnixNano": "1638471548185885000"
-                           }
-                        ],
-                        "isMonotonic": true
-                     },
-                     "unit": "requests"
-                  },
-                  {
                      "description": "The total number of accepted client connections",
                      "name": "nginx.connections_accepted",
                      "sum": {
@@ -31,21 +16,6 @@
                         "dataPoints": [
                            {
                               "asInt": "16630948",
-                              "timeUnixNano": "1638471548185885000"
-                           }
-                        ],
-                        "isMonotonic": true
-                     },
-                     "unit": "connections"
-                  },
-                  {
-                     "description": "The total number of handled connections. Generally, the parameter value is the same as nginx.connections_accepted unless some resource limits have been reached (for example, the worker_connections limit).",
-                     "name": "nginx.connections_handled",
-                     "sum": {
-                        "aggregationTemporality": 2,
-                        "dataPoints": [
-                           {
-                              "asInt": "16630946",
                               "timeUnixNano": "1638471548185885000"
                            }
                         ],
@@ -109,6 +79,36 @@
                      },
                      "name": "nginx.connections_current",
                      "unit": "connections"
+                  },
+                  {
+                     "description": "The total number of handled connections. Generally, the parameter value is the same as nginx.connections_accepted unless some resource limits have been reached (for example, the worker_connections limit).",
+                     "name": "nginx.connections_handled",
+                     "sum": {
+                        "aggregationTemporality": 2,
+                        "dataPoints": [
+                           {
+                              "asInt": "16630946",
+                              "timeUnixNano": "1638471548185885000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "connections"
+                  },
+                  {
+                     "description": "Total number of requests made to the server since it started",
+                     "name": "nginx.requests",
+                     "sum": {
+                        "aggregationTemporality": 2,
+                        "dataPoints": [
+                           {
+                              "asInt": "31070465",
+                              "timeUnixNano": "1638471548185885000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "requests"
                   }
                ]
             }

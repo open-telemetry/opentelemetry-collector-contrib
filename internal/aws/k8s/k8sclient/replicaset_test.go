@@ -14,7 +14,6 @@
 package k8sclient
 
 import (
-	"reflect"
 	"testing"
 	"time"
 
@@ -78,7 +77,7 @@ func TestReplicaSetClient_ReplicaSetToDeployment(t *testing.T) {
 		"cloudwatch-agent-statsd-d6487f8459": time.Now().Add(-24 * time.Hour),
 	}
 	resultMap := client.ReplicaSetToDeployment()
-	assert.True(t, reflect.DeepEqual(resultMap, expectedMap))
+	assert.Equal(t, expectedMap, resultMap)
 	client.shutdown()
 	assert.True(t, client.stopped)
 }

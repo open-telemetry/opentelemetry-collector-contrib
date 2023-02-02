@@ -17,10 +17,10 @@ package mezmoexporter // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"fmt"
 	"net/url"
-	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -51,7 +51,7 @@ type Config struct {
 	IngestURL string `mapstructure:"ingest_url"`
 
 	// Token is the authentication token provided by Mezmo.
-	IngestKey string `mapstructure:"ingest_key"`
+	IngestKey configopaque.String `mapstructure:"ingest_key"`
 }
 
 // returns default http client settings
@@ -68,10 +68,6 @@ func (c *Config) Validate() error {
 	parsed, err = url.Parse(c.IngestURL)
 	if c.IngestURL == "" || err != nil {
 		return fmt.Errorf(`"ingest_url" must be a valid URL`)
-	}
-
-	if !strings.HasSuffix(c.IngestURL, "/otel/ingest/rest") {
-		return fmt.Errorf(`"ingest_url" must end with "/otel/ingest/rest"`)
 	}
 
 	if parsed.Host == "" {

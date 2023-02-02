@@ -54,20 +54,6 @@ func TestInitExporter(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestInitExporterInvalidConfig(t *testing.T) {
-	_, err := initExporter(&Config{
-		LogFormat:    "json",
-		MetricFormat: "test_format",
-		HTTPClientSettings: confighttp.HTTPClientSettings{
-			Timeout:  defaultTimeout,
-			Endpoint: "test_endpoint",
-		},
-		CompressEncoding: "gzip",
-	}, componenttest.NewNopTelemetrySettings())
-
-	assert.EqualError(t, err, "unexpected metric format: test_format")
-}
-
 func TestAllSuccess(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){
 		func(w http.ResponseWriter, req *http.Request) {

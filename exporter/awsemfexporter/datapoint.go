@@ -65,22 +65,9 @@ type dataPoints interface {
 type deltaMetricMetadata struct {
 	adjustToDelta bool
 	metricName    string
-	timestampMs   int64
 	namespace     string
 	logGroup      string
 	logStream     string
-}
-
-func mergeLabels(m deltaMetricMetadata, labels map[string]string) map[string]string {
-	result := map[string]string{
-		"namespace": m.namespace,
-		"logGroup":  m.logGroup,
-		"logStream": m.logStream,
-	}
-	for k, v := range labels {
-		result[k] = v
-	}
-	return result
 }
 
 // numberDataPointSlice is a wrapper for pmetric.NumberDataPointSlice
@@ -125,8 +112,8 @@ func (dps numberDataPointSlice) At(i int) (dataPoint, bool) {
 	retained := true
 	if dps.adjustToDelta {
 		var deltaVal interface{}
-		deltaVal, retained = deltaMetricCalculator.Calculate(dps.metricName, mergeLabels(dps.deltaMetricMetadata, labels),
-			metricVal, metric.Timestamp().AsTime())
+		mKey := aws.NewKey(dps.deltaMetricMetadata, labels)
+		deltaVal, retained = deltaMetricCalculator.Calculate(mKey, metricVal, metric.Timestamp().AsTime())
 		if !retained {
 			return dataPoint{}, retained
 		}
@@ -173,8 +160,9 @@ func (dps summaryDataPointSlice) At(i int) (dataPoint, bool) {
 	retained := true
 	if dps.adjustToDelta {
 		var delta interface{}
-		delta, retained = summaryMetricCalculator.Calculate(dps.metricName, mergeLabels(dps.deltaMetricMetadata, labels),
-			summaryMetricEntry{metric.Sum(), metric.Count()}, metric.Timestamp().AsTime())
+		mKey := aws.NewKey(dps.deltaMetricMetadata, labels)
+
+		delta, retained = summaryMetricCalculator.Calculate(mKey, summaryMetricEntry{sum, count}, metric.Timestamp().AsTime())
 		if !retained {
 			return dataPoint{}, retained
 		}
@@ -221,7 +209,6 @@ func getDataPoints(pmd pmetric.Metric, metadata cWMetricMetadata, logger *zap.Lo
 	adjusterMetadata := deltaMetricMetadata{
 		false,
 		pmd.Name(),
-		metadata.timestampMs,
 		metadata.namespace,
 		metadata.logGroup,
 		metadata.logStream,

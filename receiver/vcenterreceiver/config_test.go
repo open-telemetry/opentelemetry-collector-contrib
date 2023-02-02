@@ -107,7 +107,7 @@ func TestLoadConfig(t *testing.T) {
 	expected := factory.CreateDefaultConfig().(*Config)
 	expected.Endpoint = "http://vcsa.host.localnet"
 	expected.Username = "otelu"
-	expected.Password = "$VCENTER_PASSWORD"
+	expected.Password = "${env:VCENTER_PASSWORD}"
 	expected.Metrics = metadata.DefaultMetricsSettings()
 	expected.Metrics.VcenterHostCPUUtilization.Enabled = false
 	expected.CollectionInterval = 5 * time.Minute

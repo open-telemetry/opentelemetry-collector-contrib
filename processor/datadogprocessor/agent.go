@@ -146,7 +146,7 @@ func (p *traceagent) Ingest(ctx context.Context, traces ptrace.Traces) {
 	rspanss := traces.ResourceSpans()
 	for i := 0; i < rspanss.Len(); i++ {
 		rspans := rspanss.At(i)
-		p.OTLPReceiver.ReceiveResourceSpans(ctx, rspans, http.Header{}, "datadogprocessor")
+		p.OTLPReceiver.ReceiveResourceSpans(ctx, rspans, http.Header{})
 		// ...the call transforms the OTLP Spans into a Datadog payload and sends the result
 		// down the p.pchan channel
 

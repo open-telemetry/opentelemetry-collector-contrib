@@ -50,6 +50,14 @@ type Config struct {
 
 	// TargetInfo allows customizing the target_info metric
 	TargetInfo *TargetInfo `mapstructure:"target_info,omitempty"`
+
+	// CreatedMetric allows customizing creation of _created metrics
+	CreatedMetric *CreatedMetric `mapstructure:"export_created_metric,omitempty"`
+}
+
+type CreatedMetric struct {
+	// Enabled if true the _created metrics could be exported
+	Enabled bool `mapstructure:"enabled"`
 }
 
 type TargetInfo struct {
@@ -93,6 +101,11 @@ func (cfg *Config) Validate() error {
 	if cfg.TargetInfo == nil {
 		cfg.TargetInfo = &TargetInfo{
 			Enabled: true,
+		}
+	}
+	if cfg.CreatedMetric == nil {
+		cfg.CreatedMetric = &CreatedMetric{
+			Enabled: false,
 		}
 	}
 	return nil

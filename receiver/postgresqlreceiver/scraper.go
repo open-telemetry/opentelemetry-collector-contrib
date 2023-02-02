@@ -45,13 +45,13 @@ const (
 )
 
 func init() {
-	featuregate.GetRegistry().MustRegisterID(
+	featuregate.GlobalRegistry().MustRegisterID(
 		emitMetricsWithoutResourceAttributesFeatureGateID,
 		featuregate.StageAlpha,
 		featuregate.WithRegisterDescription(emitMetricsWithoutResourceAttributesDescription),
 		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/12960"),
 	)
-	featuregate.GetRegistry().MustRegisterID(
+	featuregate.GlobalRegistry().MustRegisterID(
 		emitMetricsWithResourceAttributesFeatureGateID,
 		featuregate.StageBeta,
 		featuregate.WithRegisterDescription(emitMetricsWithResourceAttributesDescription),
@@ -94,8 +94,8 @@ func newPostgreSQLScraper(
 		config:                               config,
 		clientFactory:                        clientFactory,
 		mb:                                   metadata.NewMetricsBuilder(config.Metrics, settings),
-		emitMetricsWithResourceAttributes:    featuregate.GetRegistry().IsEnabled(emitMetricsWithResourceAttributesFeatureGateID),
-		emitMetricsWithoutResourceAttributes: featuregate.GetRegistry().IsEnabled(emitMetricsWithoutResourceAttributesFeatureGateID),
+		emitMetricsWithResourceAttributes:    featuregate.GlobalRegistry().IsEnabled(emitMetricsWithResourceAttributesFeatureGateID),
+		emitMetricsWithoutResourceAttributes: featuregate.GlobalRegistry().IsEnabled(emitMetricsWithoutResourceAttributesFeatureGateID),
 	}
 }
 

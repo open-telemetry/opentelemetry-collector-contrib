@@ -63,8 +63,8 @@ Receive metrics:
 ```yaml
 receivers:
   mongodbatlas:
-    public_key: ${MONGODB_ATLAS_PUBLIC_KEY}
-    private_key: ${MONGODB_ATLAS_PRIVATE_KEY}
+    public_key: ${env:MONGODB_ATLAS_PUBLIC_KEY}
+    private_key: ${env:MONGODB_ATLAS_PRIVATE_KEY}
 ```
 
 Listen for alerts (default mode):

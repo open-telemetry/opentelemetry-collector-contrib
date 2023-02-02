@@ -53,12 +53,12 @@ func TestMetricsBuilder(t *testing.T) {
 			mb := NewMetricsBuilder(loadConfig(t, test.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
-			if test.metricsSet == testMetricsSetDefault || test.metricsSet == testMetricsSetAll {
-				assert.Equal(t, "[WARNING] `process.memory.physical_usage` should not be enabled: The metric is deprecated and will be removed in v0.70.0. Please use `process.memory.usage` instead. See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/hostmetricsreceiver#transition-to-process-memory-metric-names-aligned-with-opentelemetry-specification for more details.", observedLogs.All()[expectedWarnings].Message)
+			if test.metricsSet == testMetricsSetAll || test.metricsSet == testMetricsSetNo {
+				assert.Equal(t, "[WARNING] `process.memory.physical_usage` should not be configured: The metric is deprecated and will be removed in v0.72.0. Please use `process.memory.usage` instead. See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/hostmetricsreceiver#transition-to-process-memory-metric-names-aligned-with-opentelemetry-specification for more details.", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
-			if test.metricsSet == testMetricsSetDefault || test.metricsSet == testMetricsSetAll {
-				assert.Equal(t, "[WARNING] `process.memory.virtual_usage` should not be enabled: The metric is deprecated and will be removed in v0.70.0. Please use `process.memory.virtual` metric instead. See  https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/hostmetricsreceiver#transition-to-process-memory-metric-names-aligned-with-opentelemetry-specification for more details.", observedLogs.All()[expectedWarnings].Message)
+			if test.metricsSet == testMetricsSetAll || test.metricsSet == testMetricsSetNo {
+				assert.Equal(t, "[WARNING] `process.memory.virtual_usage` should not be configured: The metric is deprecated and will be removed in v0.72.0. Please use `process.memory.virtual` metric instead. See  https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/hostmetricsreceiver#transition-to-process-memory-metric-names-aligned-with-opentelemetry-specification for more details.", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
@@ -83,20 +83,20 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordProcessDiskOperationsDataPoint(ts, 1, AttributeDirection(1))
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessMemoryPhysicalUsageDataPoint(ts, 1)
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessMemoryUsageDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordProcessMemoryUtilizationDataPoint(ts, 1)
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessMemoryVirtualDataPoint(ts, 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessMemoryVirtualUsageDataPoint(ts, 1)
 
@@ -122,35 +122,58 @@ func TestMetricsBuilder(t *testing.T) {
 			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
 			rm := metrics.ResourceMetrics().At(0)
 			attrCount := 0
-			attrCount++
+			enabledAttrCount := 0
 			attrVal, ok := rm.Resource().Attributes().Get("process.command")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
 			attrCount++
+			assert.Equal(t, mb.resourceAttributesSettings.ProcessCommand.Enabled, ok)
+			if mb.resourceAttributesSettings.ProcessCommand.Enabled {
+				enabledAttrCount++
+				assert.EqualValues(t, "attr-val", attrVal.Str())
+			}
 			attrVal, ok = rm.Resource().Attributes().Get("process.command_line")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
 			attrCount++
+			assert.Equal(t, mb.resourceAttributesSettings.ProcessCommandLine.Enabled, ok)
+			if mb.resourceAttributesSettings.ProcessCommandLine.Enabled {
+				enabledAttrCount++
+				assert.EqualValues(t, "attr-val", attrVal.Str())
+			}
 			attrVal, ok = rm.Resource().Attributes().Get("process.executable.name")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
 			attrCount++
+			assert.Equal(t, mb.resourceAttributesSettings.ProcessExecutableName.Enabled, ok)
+			if mb.resourceAttributesSettings.ProcessExecutableName.Enabled {
+				enabledAttrCount++
+				assert.EqualValues(t, "attr-val", attrVal.Str())
+			}
 			attrVal, ok = rm.Resource().Attributes().Get("process.executable.path")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
 			attrCount++
+			assert.Equal(t, mb.resourceAttributesSettings.ProcessExecutablePath.Enabled, ok)
+			if mb.resourceAttributesSettings.ProcessExecutablePath.Enabled {
+				enabledAttrCount++
+				assert.EqualValues(t, "attr-val", attrVal.Str())
+			}
 			attrVal, ok = rm.Resource().Attributes().Get("process.owner")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
 			attrCount++
+			assert.Equal(t, mb.resourceAttributesSettings.ProcessOwner.Enabled, ok)
+			if mb.resourceAttributesSettings.ProcessOwner.Enabled {
+				enabledAttrCount++
+				assert.EqualValues(t, "attr-val", attrVal.Str())
+			}
 			attrVal, ok = rm.Resource().Attributes().Get("process.parent_pid")
-			assert.True(t, ok)
-			assert.EqualValues(t, 1, attrVal.Int())
 			attrCount++
+			assert.Equal(t, mb.resourceAttributesSettings.ProcessParentPid.Enabled, ok)
+			if mb.resourceAttributesSettings.ProcessParentPid.Enabled {
+				enabledAttrCount++
+				assert.EqualValues(t, 1, attrVal.Int())
+			}
 			attrVal, ok = rm.Resource().Attributes().Get("process.pid")
-			assert.True(t, ok)
-			assert.EqualValues(t, 1, attrVal.Int())
-			assert.Equal(t, attrCount, rm.Resource().Attributes().Len())
+			attrCount++
+			assert.Equal(t, mb.resourceAttributesSettings.ProcessPid.Enabled, ok)
+			if mb.resourceAttributesSettings.ProcessPid.Enabled {
+				enabledAttrCount++
+				assert.EqualValues(t, 1, attrVal.Int())
+			}
+			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
+			assert.Equal(t, attrCount, 7)
 
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
@@ -251,7 +274,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["process.memory.physical_usage"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Deprecated: use `process.memory.usage` metric instead. The amount of physical memory in use.", ms.At(i).Description())
+					assert.Equal(t, "[DEPRECATED] Use `process.memory.usage` metric instead. The amount of physical memory in use.", ms.At(i).Description())
 					assert.Equal(t, "By", ms.At(i).Unit())
 					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
@@ -305,7 +328,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["process.memory.virtual_usage"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Deprecated: Use `process.memory.virtual` metric instead. Virtual memory size.", ms.At(i).Description())
+					assert.Equal(t, "[DEPRECATED] Use `process.memory.virtual` metric instead. Virtual memory size.", ms.At(i).Description())
 					assert.Equal(t, "By", ms.At(i).Unit())
 					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())

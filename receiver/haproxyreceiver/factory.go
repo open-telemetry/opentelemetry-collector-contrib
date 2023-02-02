@@ -28,7 +28,7 @@ import (
 
 const (
 	typeStr   = "haproxy"
-	stability = component.StabilityLevelDevelopment
+	stability = component.StabilityLevelAlpha
 )
 
 // NewFactory creates a new HAProxy receiver factory.
@@ -57,11 +57,8 @@ func newReceiver(
 	haProxyCfg := cfg.(*Config)
 	metricsBuilder := metadata.NewMetricsBuilder(haProxyCfg.MetricsSettings, settings)
 
-	mp, err := newScraper(settings.ID, metricsBuilder, haProxyCfg, settings.TelemetrySettings.Logger)
-	if err != nil {
-		return nil, err
-	}
-	s, err := scraperhelper.NewScraper(settings.ID.Name(), mp.Scrape)
+	mp := newScraper(metricsBuilder, haProxyCfg, settings.TelemetrySettings.Logger)
+	s, err := scraperhelper.NewScraper(settings.ID.Name(), mp.scrape)
 	if err != nil {
 		return nil, err
 	}

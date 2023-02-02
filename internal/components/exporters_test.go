@@ -49,7 +49,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5cloudexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/humioexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter"
@@ -292,7 +291,7 @@ func TestDefaultExporters(t *testing.T) {
 			exporter: "clickhouse",
 			getConfigFn: func() component.Config {
 				cfg := expFactories["clickhouse"].CreateDefaultConfig().(*clickhouseexporter.Config)
-				cfg.DSN = "clickhouse://" + endpoint
+				cfg.Endpoint = "tcp://" + endpoint
 				return cfg
 			},
 		},
@@ -350,14 +349,6 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "googlecloudpubsub",
-		},
-		{
-			exporter: "humio",
-			getConfigFn: func() component.Config {
-				cfg := expFactories["humio"].CreateDefaultConfig().(*humioexporter.Config)
-				cfg.Endpoint = "http://" + endpoint
-				return cfg
-			},
 		},
 		{
 			exporter: "influxdb",
@@ -457,13 +448,11 @@ func TestDefaultExporters(t *testing.T) {
 			require.True(t, ok)
 			assert.Equal(t, tt.exporter, factory.Type())
 
-			if tt.skipLifecycle {
-				t.Skip("Skipping lifecycle test", tt.exporter)
-				return
-			}
-
-			verifyExporterLifecycle(t, factory, tt.getConfigFn)
 			verifyExporterShutdown(t, factory, tt.getConfigFn)
+
+			if !tt.skipLifecycle {
+				verifyExporterLifecycle(t, factory, tt.getConfigFn)
+			}
 		})
 	}
 }
@@ -527,6 +516,9 @@ func verifyExporterShutdown(tb testing.TB, factory exporter.Factory, getConfigFn
 	for _, createFn := range createFns {
 		r, err := createFn(ctx, expCreateSettings, getConfigFn())
 		if errors.Is(err, component.ErrDataTypeIsNotSupported) {
+			continue
+		}
+		if r == nil {
 			continue
 		}
 		assert.NotPanics(tb, func() {

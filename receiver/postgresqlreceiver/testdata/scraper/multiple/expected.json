@@ -9,6 +9,52 @@
                },
                "metrics": [
                   {
+                     "description": "The number of backends.",
+                     "name": "postgresql.backends",
+                     "unit": "1",
+                     "sum": {
+                        "aggregationTemporality": 2,
+                        "dataPoints": [
+                           {
+                              "asInt": "3",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1637261076970522000"
+                           },
+                           {
+                              "asInt": "4",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "open"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1637261076970522000"
+                           },
+                           {
+                              "asInt": "5",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "telemetry"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1637261076970522000"
+                           }
+                        ]
+                     }
+                  },
+                  {
                      "description": "The number of blocks read.",
                      "name": "postgresql.blocks_read",
                      "unit": "1",
@@ -1265,350 +1311,6 @@
                      }
                   },
                   {
-                     "description": "The number of backends.",
-                     "name": "postgresql.backends",
-                     "unit": "1",
-                     "sum": {
-                        "aggregationTemporality": 2,
-                        "dataPoints": [
-                           {
-                              "asInt": "3",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "otel"
-                                    }
-                                 }
-                              ],
-                              "timeUnixNano": "1637261076970522000"
-                           },
-                           {
-                              "asInt": "4",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "open"
-                                    }
-                                 }
-                              ],
-                              "timeUnixNano": "1637261076970522000"
-                           },
-                           {
-                              "asInt": "5",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "telemetry"
-                                    }
-                                 }
-                              ],
-                              "timeUnixNano": "1637261076970522000"
-                           }
-                        ]
-                     }
-                  },
-                  {
-                     "description": "The number of rows in the database.",
-                     "name": "postgresql.rows",
-                     "unit": "1",
-                     "sum": {
-                        "aggregationTemporality": 2,
-                        "dataPoints": [
-                           {
-                              "asInt": "7",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "otel"
-                                    }
-                                 },
-                                 {
-                                    "key": "table",
-                                    "value": {
-                                       "stringValue": "public.table1"
-                                    }
-                                 },
-                                 {
-                                    "key": "state",
-                                    "value": {
-                                       "stringValue": "live"
-                                    }
-                                 }
-                              ],
-                              "timeUnixNano": "1637261076970522000"
-                           },
-                           {
-                              "asInt": "8",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "otel"
-                                    }
-                                 },
-                                 {
-                                    "key": "table",
-                                    "value": {
-                                       "stringValue": "public.table1"
-                                    }
-                                 },
-                                 {
-                                    "key": "state",
-                                    "value": {
-                                       "stringValue": "dead"
-                                    }
-                                 }
-                              ],
-                              "timeUnixNano": "1637261076970522000"
-                           },
-                           {
-                              "asInt": "9",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "otel"
-                                    }
-                                 },
-                                 {
-                                    "key": "table",
-                                    "value": {
-                                       "stringValue": "public.table2"
-                                    }
-                                 },
-                                 {
-                                    "key": "state",
-                                    "value": {
-                                       "stringValue": "live"
-                                    }
-                                 }
-                              ],
-                              "timeUnixNano": "1637261076970522000"
-                           },
-                           {
-                              "asInt": "10",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "otel"
-                                    }
-                                 },
-                                 {
-                                    "key": "table",
-                                    "value": {
-                                       "stringValue": "public.table2"
-                                    }
-                                 },
-                                 {
-                                    "key": "state",
-                                    "value": {
-                                       "stringValue": "dead"
-                                    }
-                                 }
-                              ],
-                              "timeUnixNano": "1637261076970522000"
-                           },
-                           {
-                              "asInt": "8",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "open"
-                                    }
-                                 },
-                                 {
-                                    "key": "table",
-                                    "value": {
-                                       "stringValue": "public.table1"
-                                    }
-                                 },
-                                 {
-                                    "key": "state",
-                                    "value": {
-                                       "stringValue": "live"
-                                    }
-                                 }
-                              ],
-                              "timeUnixNano": "1637261076970522000"
-                           },
-                           {
-                              "asInt": "9",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "open"
-                                    }
-                                 },
-                                 {
-                                    "key": "table",
-                                    "value": {
-                                       "stringValue": "public.table1"
-                                    }
-                                 },
-                                 {
-                                    "key": "state",
-                                    "value": {
-                                       "stringValue": "dead"
-                                    }
-                                 }
-                              ],
-                              "timeUnixNano": "1637261076970522000"
-                           },
-                           {
-                              "asInt": "10",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "open"
-                                    }
-                                 },
-                                 {
-                                    "key": "table",
-                                    "value": {
-                                       "stringValue": "public.table2"
-                                    }
-                                 },
-                                 {
-                                    "key": "state",
-                                    "value": {
-                                       "stringValue": "live"
-                                    }
-                                 }
-                              ],
-                              "timeUnixNano": "1637261076970522000"
-                           },
-                           {
-                              "asInt": "11",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "open"
-                                    }
-                                 },
-                                 {
-                                    "key": "table",
-                                    "value": {
-                                       "stringValue": "public.table2"
-                                    }
-                                 },
-                                 {
-                                    "key": "state",
-                                    "value": {
-                                       "stringValue": "dead"
-                                    }
-                                 }
-                              ],
-                              "timeUnixNano": "1637261076970522000"
-                           },
-                           {
-                              "asInt": "9",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "telemetry"
-                                    }
-                                 },
-                                 {
-                                    "key": "table",
-                                    "value": {
-                                       "stringValue": "public.table1"
-                                    }
-                                 },
-                                 {
-                                    "key": "state",
-                                    "value": {
-                                       "stringValue": "live"
-                                    }
-                                 }
-                              ],
-                              "timeUnixNano": "1637261076970522000"
-                           },
-                           {
-                              "asInt": "10",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "telemetry"
-                                    }
-                                 },
-                                 {
-                                    "key": "table",
-                                    "value": {
-                                       "stringValue": "public.table1"
-                                    }
-                                 },
-                                 {
-                                    "key": "state",
-                                    "value": {
-                                       "stringValue": "dead"
-                                    }
-                                 }
-                              ],
-                              "timeUnixNano": "1637261076970522000"
-                           },
-                           {
-                              "asInt": "11",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "telemetry"
-                                    }
-                                 },
-                                 {
-                                    "key": "table",
-                                    "value": {
-                                       "stringValue": "public.table2"
-                                    }
-                                 },
-                                 {
-                                    "key": "state",
-                                    "value": {
-                                       "stringValue": "live"
-                                    }
-                                 }
-                              ],
-                              "timeUnixNano": "1637261076970522000"
-                           },
-                           {
-                              "asInt": "12",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "telemetry"
-                                    }
-                                 },
-                                 {
-                                    "key": "table",
-                                    "value": {
-                                       "stringValue": "public.table2"
-                                    }
-                                 },
-                                 {
-                                    "key": "state",
-                                    "value": {
-                                       "stringValue": "dead"
-                                    }
-                                 }
-                              ],
-                              "timeUnixNano": "1637261076970522000"
-                           }
-                        ]
-                     }
-                  },
-                  {
                      "description": "The number of db row operations.",
                      "name": "postgresql.operations",
                      "unit": "1",
@@ -2240,6 +1942,304 @@
                            }
                         ],
                         "isMonotonic": true
+                     }
+                  },
+                  {
+                     "description": "The number of rows in the database.",
+                     "name": "postgresql.rows",
+                     "unit": "1",
+                     "sum": {
+                        "aggregationTemporality": 2,
+                        "dataPoints": [
+                           {
+                              "asInt": "7",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "table",
+                                    "value": {
+                                       "stringValue": "public.table1"
+                                    }
+                                 },
+                                 {
+                                    "key": "state",
+                                    "value": {
+                                       "stringValue": "live"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1637261076970522000"
+                           },
+                           {
+                              "asInt": "8",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "table",
+                                    "value": {
+                                       "stringValue": "public.table1"
+                                    }
+                                 },
+                                 {
+                                    "key": "state",
+                                    "value": {
+                                       "stringValue": "dead"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1637261076970522000"
+                           },
+                           {
+                              "asInt": "9",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "table",
+                                    "value": {
+                                       "stringValue": "public.table2"
+                                    }
+                                 },
+                                 {
+                                    "key": "state",
+                                    "value": {
+                                       "stringValue": "live"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1637261076970522000"
+                           },
+                           {
+                              "asInt": "10",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "otel"
+                                    }
+                                 },
+                                 {
+                                    "key": "table",
+                                    "value": {
+                                       "stringValue": "public.table2"
+                                    }
+                                 },
+                                 {
+                                    "key": "state",
+                                    "value": {
+                                       "stringValue": "dead"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1637261076970522000"
+                           },
+                           {
+                              "asInt": "8",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "open"
+                                    }
+                                 },
+                                 {
+                                    "key": "table",
+                                    "value": {
+                                       "stringValue": "public.table1"
+                                    }
+                                 },
+                                 {
+                                    "key": "state",
+                                    "value": {
+                                       "stringValue": "live"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1637261076970522000"
+                           },
+                           {
+                              "asInt": "9",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "open"
+                                    }
+                                 },
+                                 {
+                                    "key": "table",
+                                    "value": {
+                                       "stringValue": "public.table1"
+                                    }
+                                 },
+                                 {
+                                    "key": "state",
+                                    "value": {
+                                       "stringValue": "dead"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1637261076970522000"
+                           },
+                           {
+                              "asInt": "10",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "open"
+                                    }
+                                 },
+                                 {
+                                    "key": "table",
+                                    "value": {
+                                       "stringValue": "public.table2"
+                                    }
+                                 },
+                                 {
+                                    "key": "state",
+                                    "value": {
+                                       "stringValue": "live"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1637261076970522000"
+                           },
+                           {
+                              "asInt": "11",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "open"
+                                    }
+                                 },
+                                 {
+                                    "key": "table",
+                                    "value": {
+                                       "stringValue": "public.table2"
+                                    }
+                                 },
+                                 {
+                                    "key": "state",
+                                    "value": {
+                                       "stringValue": "dead"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1637261076970522000"
+                           },
+                           {
+                              "asInt": "9",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "telemetry"
+                                    }
+                                 },
+                                 {
+                                    "key": "table",
+                                    "value": {
+                                       "stringValue": "public.table1"
+                                    }
+                                 },
+                                 {
+                                    "key": "state",
+                                    "value": {
+                                       "stringValue": "live"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1637261076970522000"
+                           },
+                           {
+                              "asInt": "10",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "telemetry"
+                                    }
+                                 },
+                                 {
+                                    "key": "table",
+                                    "value": {
+                                       "stringValue": "public.table1"
+                                    }
+                                 },
+                                 {
+                                    "key": "state",
+                                    "value": {
+                                       "stringValue": "dead"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1637261076970522000"
+                           },
+                           {
+                              "asInt": "11",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "telemetry"
+                                    }
+                                 },
+                                 {
+                                    "key": "table",
+                                    "value": {
+                                       "stringValue": "public.table2"
+                                    }
+                                 },
+                                 {
+                                    "key": "state",
+                                    "value": {
+                                       "stringValue": "live"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1637261076970522000"
+                           },
+                           {
+                              "asInt": "12",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "telemetry"
+                                    }
+                                 },
+                                 {
+                                    "key": "table",
+                                    "value": {
+                                       "stringValue": "public.table2"
+                                    }
+                                 },
+                                 {
+                                    "key": "state",
+                                    "value": {
+                                       "stringValue": "dead"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1637261076970522000"
+                           }
+                        ]
                      }
                   }
                ]

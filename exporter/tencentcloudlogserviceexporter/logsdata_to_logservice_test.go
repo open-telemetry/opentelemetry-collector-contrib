@@ -17,12 +17,12 @@ package tencentcloudlogserviceexporter
 import (
 	"encoding/json"
 	"os"
-	"reflect"
 	"sort"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -118,17 +118,11 @@ func TestConvertLogs(t *testing.T) {
 
 	wantLogs := make([][]logKeyValuePair, 0, validLogCount)
 	resultLogFile := "./testdata/logservice_log_data.json"
-	if err := loadFromJSON(resultLogFile, &wantLogs); err != nil {
-		t.Errorf("Failed load log key value pairs from %q: %v", resultLogFile, err)
-		return
-	}
+	require.NoError(t, loadFromJSON(resultLogFile, &wantLogs))
 	for j := 0; j < validLogCount; j++ {
-
 		sort.Sort(logKeyValuePairs(gotLogPairs[j]))
 		sort.Sort(logKeyValuePairs(wantLogs[j]))
-		if !reflect.DeepEqual(gotLogPairs[j], wantLogs[j]) {
-			t.Errorf("Unsuccessful conversion \nGot:\n\t%v\nWant:\n\t%v", gotLogPairs, wantLogs)
-		}
+		assert.Equal(t, wantLogs[j], gotLogPairs[j])
 	}
 }
 

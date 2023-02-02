@@ -53,14 +53,6 @@ func TestCreateTracesExporter(t *testing.T) {
 	assert.NoError(t, te.Shutdown(context.Background()), "trace exporter shutdown failed")
 }
 
-func TestCreateTracesExporterWithInvalidConfig(t *testing.T) {
-	cfg := &Config{}
-	params := exportertest.NewNopCreateSettings()
-	te, err := newSAPMTracesExporter(cfg, params)
-	require.Error(t, err)
-	assert.Nil(t, te)
-}
-
 func buildTestTraces(setTokenLabel bool) (traces ptrace.Traces) {
 	traces = ptrace.NewTraces()
 	rss := traces.ResourceSpans()

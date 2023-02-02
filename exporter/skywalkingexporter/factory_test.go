@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 
@@ -85,7 +86,7 @@ func TestCreateTracesExporter(t *testing.T) {
 			config: Config{
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Endpoint: endpoint,
-					Headers: map[string]string{
+					Headers: map[string]configopaque.String{
 						"hdr1": "val1",
 						"hdr2": "val2",
 					},

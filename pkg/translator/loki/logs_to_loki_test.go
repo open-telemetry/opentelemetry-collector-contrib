@@ -18,11 +18,10 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/grafana/loki/pkg/push"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki/logproto"
 )
 
 func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
@@ -53,11 +52,11 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 			}(),
 			expected: map[string]PushRequest{
 				"1": {
-					PushRequest: &logproto.PushRequest{
-						Streams: []logproto.Stream{
+					PushRequest: &push.PushRequest{
+						Streams: []push.Stream{
 							{
 								Labels: `{exporter="OTLP", tenant.id="1"}`,
-								Entries: []logproto.Entry{
+								Entries: []push.Entry{
 									{
 										Line: `{"attributes":{"http.status":200}}`,
 									},
@@ -66,11 +65,11 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 					},
 				},
 				"2": {
-					PushRequest: &logproto.PushRequest{
-						Streams: []logproto.Stream{
+					PushRequest: &push.PushRequest{
+						Streams: []push.Stream{
 							{
 								Labels: `{exporter="OTLP", tenant.id="2"}`,
-								Entries: []logproto.Entry{
+								Entries: []push.Entry{
 									{
 										Line: `{"attributes":{"http.status":200}}`,
 									},
@@ -105,11 +104,11 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 			}(),
 			expected: map[string]PushRequest{
 				"11": {
-					PushRequest: &logproto.PushRequest{
-						Streams: []logproto.Stream{
+					PushRequest: &push.PushRequest{
+						Streams: []push.Stream{
 							{
 								Labels: `{exporter="OTLP", tenant.id="11"}`,
-								Entries: []logproto.Entry{
+								Entries: []push.Entry{
 									{
 										Line: `{"attributes":{"http.status":200}}`,
 									},
@@ -118,11 +117,11 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 					},
 				},
 				"12": {
-					PushRequest: &logproto.PushRequest{
-						Streams: []logproto.Stream{
+					PushRequest: &push.PushRequest{
+						Streams: []push.Stream{
 							{
 								Labels: `{exporter="OTLP", tenant.id="12"}`,
-								Entries: []logproto.Entry{
+								Entries: []push.Entry{
 									{
 										Line: `{"attributes":{"http.status":200}}`,
 									},
@@ -148,11 +147,11 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 			}(),
 			expected: map[string]PushRequest{
 				"": {
-					PushRequest: &logproto.PushRequest{
-						Streams: []logproto.Stream{
+					PushRequest: &push.PushRequest{
+						Streams: []push.Stream{
 							{
 								Labels: `{exporter="OTLP"}`,
-								Entries: []logproto.Entry{
+								Entries: []push.Entry{
 									{
 										Line: `{"attributes":{"http.status":200}}`,
 									},
@@ -191,11 +190,11 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 			}(),
 			expected: map[string]PushRequest{
 				"21": {
-					PushRequest: &logproto.PushRequest{
-						Streams: []logproto.Stream{
+					PushRequest: &push.PushRequest{
+						Streams: []push.Stream{
 							{
 								Labels: `{exporter="OTLP", tenant.id="21"}`,
-								Entries: []logproto.Entry{
+								Entries: []push.Entry{
 									{
 										Line: `{"attributes":{"http.status":200}}`,
 									},
@@ -204,11 +203,11 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 					},
 				},
 				"22": {
-					PushRequest: &logproto.PushRequest{
-						Streams: []logproto.Stream{
+					PushRequest: &push.PushRequest{
+						Streams: []push.Stream{
 							{
 								Labels: `{exporter="OTLP", tenant.id="22"}`,
-								Entries: []logproto.Entry{
+								Entries: []push.Entry{
 									{
 										Line: `{"attributes":{"http.status":200}}`,
 									},

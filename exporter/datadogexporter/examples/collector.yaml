@@ -120,7 +120,7 @@ exporters:
       ## The Datadog API key to associate your Agent's data with your organization.
       ## Create a new API key here: https://app.datadoghq.com/account/settings
       #
-      key: ${DD_API_KEY}
+      key: ${env:DD_API_KEY}
 
       ## @param site - string - optional - default: datadoghq.com
       ## The site of the Datadog intake to send Agent data to.

@@ -21,7 +21,6 @@ import (
 
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/processor/processortest"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
@@ -402,47 +401,4 @@ func (f *fakeGCPDetector) GCEHostName() (string, error) {
 		return "", f.err
 	}
 	return f.gceHostName, f.gceHostNameErr
-}
-
-func TestDeduplicateDetectors(t *testing.T) {
-	for _, tc := range []struct {
-		desc     string
-		in       []string
-		expected []string
-	}{
-		{
-			desc:     "empty",
-			expected: nil,
-		},
-		{
-			desc:     "single gcp",
-			in:       []string{"gcp"},
-			expected: []string{"gcp"},
-		},
-		{
-			desc:     "single gce",
-			in:       []string{"gce"},
-			expected: []string{"gce"},
-		},
-		{
-			desc:     "single gke",
-			in:       []string{"gke"},
-			expected: []string{"gke"},
-		},
-		{
-			desc:     "multi",
-			in:       []string{"gcp", "gce", "gke"},
-			expected: []string{"gcp"},
-		},
-		{
-			desc:     "multi with others",
-			in:       []string{"foo", "gcp", "gce", "bar", "gke"},
-			expected: []string{"foo", "gcp", "bar"},
-		},
-	} {
-		t.Run(tc.desc, func(t *testing.T) {
-			out := DeduplicateDetectors(processortest.NewNopCreateSettings(), tc.in)
-			assert.Equal(t, tc.expected, out)
-		})
-	}
 }

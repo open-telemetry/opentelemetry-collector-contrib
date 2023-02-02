@@ -37,11 +37,11 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 	functions["testing_enum"] = functionWithEnum
 	functions["testing_telemetry_settings_first"] = functionWithTelemetrySettingsFirst
 
-	p := NewParser(
+	p := NewParser[any](
 		functions,
 		testParsePath,
-		testParseEnum,
 		component.TelemetrySettings{},
+		WithEnumParser[any](testParseEnum),
 	)
 
 	tests := []struct {
@@ -269,11 +269,11 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 }
 
 func Test_NewFunctionCall(t *testing.T) {
-	p := NewParser(
+	p := NewParser[any](
 		defaultFunctionsForTests(),
 		testParsePath,
-		testParseEnum,
 		component.TelemetrySettings{},
+		WithEnumParser[any](testParseEnum),
 	)
 
 	tests := []struct {
