@@ -24,6 +24,9 @@ file/3:
 
 file/no_rotation:
   path: ./foo
+file/no_rotation_unbuffered:
+  path: ./foo
+  unbuffered: true
 file/rotation_with_default_settings:
   path: ./foo
   rotation:

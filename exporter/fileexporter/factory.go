@@ -150,6 +150,9 @@ func buildFileWriter(cfg *Config) (io.WriteCloser, error) {
 		if err != nil {
 			return nil, err
 		}
+		if cfg.Unbuffered {
+			return f, nil
+		}
 		return newBufferedWriteCloser(f), nil
 	}
 	return &lumberjack.Logger{

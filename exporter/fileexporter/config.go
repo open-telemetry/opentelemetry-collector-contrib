@@ -44,6 +44,11 @@ type Config struct {
 	// Compression Codec used to export telemetry data
 	// Supported compression algorithms:`zstd`
 	Compression string `mapstructure:"compression"`
+
+	// Unbuffered indicates whether to use buffering
+	// or not when writing to files. Default is false.
+	// Ignored when file rotation is used.
+	Unbuffered bool `mapstructure:"unbuffered"`
 }
 
 // Rotation an option to rolling log files

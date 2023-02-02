@@ -57,7 +57,7 @@ Telemetry data is compressed according to the `compression` setting.
 
 Currently, `fileexporter` support the `zstd` compression algorithm, and we will support more compression algorithms in the future.
 
-##  File Format 
+##  File Format
 
 Telemetry data is encoded according to the `format` setting and then written to the file.
 
@@ -66,12 +66,20 @@ When `format` is json and `compression` is none , telemetry data is written to f
 Otherwise, when using `proto` format or any kind of encoding, each encoded object is preceded by 4 bytes (an unsigned 32 bit integer) which represent the number of bytes contained in the encoded object.When we need read the messages back in, we read the size, then read the bytes into a separate buffer, then parse from that buffer.
 
 
+##  Buffering
+
+By default, writes to the output file (when rotation is not used) are buffered. This can be turned off by setting the `unbuffered` parameter to `true`. The default value is `false`. This will be ignored when file rotation is used.
+
 ## Example:
 
 ```yaml
 exporters:
   file/no_rotation:
     path: ./foo
+
+  file/no_rotation_unbuffered:
+    path: ./foo
+    unbuffered: true
 
   file/rotation_with_default_settings:
     path: ./foo

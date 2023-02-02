@@ -36,6 +36,26 @@ func TestLoadConfig(t *testing.T) {
 		errorMessage string
 	}{
 		{
+			id: component.NewIDWithName(typeStr, "no_rotation"),
+			expected: &Config{
+				Path:        "./foo",
+				Rotation:    nil,
+				FormatType:  formatTypeJSON,
+				Compression: "",
+				Unbuffered:  false,
+			},
+		},
+		{
+			id: component.NewIDWithName(typeStr, "no_rotation_unbuffered"),
+			expected: &Config{
+				Path:        "./foo",
+				Rotation:    nil,
+				FormatType:  formatTypeJSON,
+				Compression: "",
+				Unbuffered:  true,
+			},
+		},
+		{
 			id: component.NewIDWithName(typeStr, "2"),
 			expected: &Config{
 				Path: "./filename.json",
@@ -46,6 +66,7 @@ func TestLoadConfig(t *testing.T) {
 					LocalTime:    true,
 				},
 				FormatType: formatTypeJSON,
+				Unbuffered: false,
 			},
 		},
 		{
