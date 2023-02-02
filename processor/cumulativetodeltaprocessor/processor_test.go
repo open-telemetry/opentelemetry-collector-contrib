@@ -353,7 +353,7 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 			},
 			inMetrics: generateTestSumMetrics(testSumMetric{
 				metricNames:  []string{"metric_1", "metric_2"},
-				metricValues: [][]float64{{100, 200, 500}, {4, 5}},
+				metricValues: [][]float64{{0, 100, 200, 500}, {4, 5}},
 				isCumulative: []bool{true, true},
 				isMonotonic:  []bool{true, false},
 			}),
