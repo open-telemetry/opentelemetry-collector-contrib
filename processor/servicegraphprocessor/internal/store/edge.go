@@ -26,6 +26,7 @@ const (
 	Unknown         ConnectionType = ""
 	MessagingSystem ConnectionType = "messaging_system"
 	Database        ConnectionType = "database"
+	VirtualNode     ConnectionType = "virtual_node"
 )
 
 // Edge is an Edge between two nodes in the graph

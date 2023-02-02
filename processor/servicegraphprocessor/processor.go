@@ -504,6 +504,8 @@ func (p *serviceGraphProcessor) trySpeculateEvictHead(e *store.Edge) bool {
 		e.ServerService = p.getPeerHost(NeedToFindAttributes, e.Peer)
 	}
 
+	e.ConnectionType = store.VirtualNode
+
 	p.logger.Debug(
 		"edge expired, building virtual node",
 		zap.String("client_service", e.ClientService),
