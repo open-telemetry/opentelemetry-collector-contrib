@@ -3,10 +3,11 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simple
 go 1.18
 
 require (
+	github.com/prometheus/client_golang v1.14.0
 	go.opentelemetry.io/otel v1.12.0
-	go.opentelemetry.io/otel/exporters/prometheus v0.31.0
-	go.opentelemetry.io/otel/metric v0.34.0
-	go.opentelemetry.io/otel/sdk/metric v0.31.0
+	go.opentelemetry.io/otel/exporters/prometheus v0.35.0
+	go.opentelemetry.io/otel/metric v0.35.0
+	go.opentelemetry.io/otel/sdk/metric v0.35.0
 	go.uber.org/zap v1.24.0
 )
 
@@ -17,7 +18,6 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
-	github.com/prometheus/client_golang v1.14.0 // indirect
 	github.com/prometheus/client_model v0.3.0 // indirect
 	github.com/prometheus/common v0.39.0 // indirect
 	github.com/prometheus/procfs v0.8.0 // indirect
