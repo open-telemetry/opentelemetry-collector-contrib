@@ -65,7 +65,7 @@ type eventsReceiver struct {
 
 type eventRecord struct {
 	sync.Mutex
-	LastRecordedEvent *time.Time `mapstructure:"last_recorded_event"`
+	NextStartTime *time.Time `mapstructure:"next_start_time"`
 }
 
 func newEventsReceiver(settings rcvr.CreateSettings, c *Config, consumer consumer.Logs) *eventsReceiver {
@@ -143,31 +143,32 @@ func (er *eventsReceiver) startPolling(ctx context.Context, host component.Host)
 }
 
 func (er *eventsReceiver) pollEvents(ctx context.Context) error {
-	for _, p := range er.cfg.Events.Projects {
-		project, err := er.client.GetProject(ctx, p.Name)
+	st := pcommon.NewTimestampFromTime(time.Now().Add(-er.pollInterval)).AsTime()
+	if er.record.NextStartTime != nil {
+		st = *er.record.NextStartTime
+	}
+	et := time.Now()
+
+	for _, pc := range er.cfg.Events.Projects {
+		project, err := er.client.GetProject(ctx, pc.Name)
 		if err != nil {
-			er.logger.Error("error retrieving project information for "+p.Name+":", zap.Error(err))
+			er.logger.Error("error retrieving project information for "+pc.Name+":", zap.Error(err))
 			return err
 		}
-		er.poll(ctx, project, p)
+		er.poll(ctx, project, pc, st, et)
 	}
 
+	er.record.NextStartTime = &et
 	return er.checkpoint(ctx)
 }
 
-func (er *eventsReceiver) poll(ctx context.Context, project *mongodbatlas.Project, p *ProjectConfig) {
-	pollTime := time.Now()
+func (er *eventsReceiver) poll(ctx context.Context, project *mongodbatlas.Project, p *ProjectConfig, startTime, now time.Time) {
 	for pageN := 1; pageN <= er.maxPages; pageN++ {
 		opts := &internal.GetEventsOptions{
 			PageNum:    pageN,
 			EventTypes: er.cfg.Events.Types,
-			MaxDate:    pollTime,
-		}
-
-		if er.record.LastRecordedEvent != nil {
-			opts.MinDate = *er.record.LastRecordedEvent
-		} else {
-			opts.MinDate = time.Now().Add(-er.pollInterval)
+			MaxDate:    now,
+			MinDate:    startTime,
 		}
 
 		projectEvents, hasNext, err := er.client.GetEvents(ctx, project.ID, opts)
@@ -176,7 +177,7 @@ func (er *eventsReceiver) poll(ctx context.Context, project *mongodbatlas.Projec
 			break
 		}
 
-		now := pcommon.NewTimestampFromTime(pollTime)
+		now := pcommon.NewTimestampFromTime(now)
 		logs := er.transformEvents(now, projectEvents, project)
 
 		if logs.LogRecordCount() > 0 {
@@ -190,17 +191,9 @@ func (er *eventsReceiver) poll(ctx context.Context, project *mongodbatlas.Projec
 			break
 		}
 	}
-
 }
 
 func (er *eventsReceiver) transformEvents(now pcommon.Timestamp, events []*mongodbatlas.Event, p *mongodbatlas.Project) plog.Logs {
-	var lastRecordedEventTime = pcommon.Timestamp(0).AsTime()
-	if er.record.LastRecordedEvent != nil {
-		lastRecordedEventTime = *er.record.LastRecordedEvent
-	}
-
-	var latestInPayloadEventTime = pcommon.Timestamp(0).AsTime()
-
 	logs := plog.NewLogs()
 	resourceLogs := logs.ResourceLogs().AppendEmpty()
 	ra := resourceLogs.Resource().Attributes()
@@ -235,16 +228,7 @@ func (er *eventsReceiver) transformEvents(now pcommon.Timestamp, events []*mongo
 		attrs.PutStr("group.id", event.GroupID)
 
 		parseOptionalAttributes(&attrs, event)
-
-		if ts.After(latestInPayloadEventTime) {
-			latestInPayloadEventTime = ts
-		}
 	}
-
-	if latestInPayloadEventTime.After(lastRecordedEventTime) {
-		er.record.LastRecordedEvent = &latestInPayloadEventTime
-	}
-
 	return logs
 }
 
@@ -351,5 +335,4 @@ func parseOptionalAttributes(m *pcommon.Map, event *mongodbatlas.Event) {
 	if event.ShardName != "" {
 		m.PutStr("shard.name", event.ShardName)
 	}
-
 }
