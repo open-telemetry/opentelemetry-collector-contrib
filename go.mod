@@ -22,7 +22,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter v0.70.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudpubsubexporter v0.70.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlemanagedprometheusexporter v0.70.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter v0.70.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter v0.70.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter v0.70.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter v0.70.0

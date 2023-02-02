@@ -1096,3 +1096,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/filte
 retract v0.65.0
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshcheckreceiver => ../../receiver/sshcheckreceiver
+
+replace github.com/influxdata/influxdb-observability/otel2influx => github.com/influxdata/influxdb-observability/otel2influx v0.2.36-0.20230201232119-da70caacbb56
