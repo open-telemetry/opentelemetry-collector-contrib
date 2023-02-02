@@ -1,0 +1,19 @@
+default:
+all_metrics:
+  k8s.hpa.current_replicas:
+    enabled: true
+  k8s.hpa.desired_replicas:
+    enabled: true
+  k8s.hpa.max_replicas:
+    enabled: true
+  k8s.hpa.min_replicas:
+    enabled: true
+no_metrics:
+  k8s.hpa.current_replicas:
+    enabled: false
+  k8s.hpa.desired_replicas:
+    enabled: false
+  k8s.hpa.max_replicas:
+    enabled: false
+  k8s.hpa.min_replicas:
+    enabled: false

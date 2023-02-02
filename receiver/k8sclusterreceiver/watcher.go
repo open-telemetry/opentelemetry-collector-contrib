@@ -13,6 +13,7 @@ import (
 	quotaclientset "github.com/openshift/client-go/quota/clientset/versioned"
 	quotainformersv1 "github.com/openshift/client-go/quota/informers/externalversions"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -53,10 +54,10 @@ type resourceWatcher struct {
 type metadataConsumer func(metadata []*experimentalmetricmetadata.MetadataUpdate) error
 
 // newResourceWatcher creates a Kubernetes resource watcher.
-func newResourceWatcher(logger *zap.Logger, cfg *Config) *resourceWatcher {
+func newResourceWatcher(set receiver.CreateSettings, cfg *Config) *resourceWatcher {
 	return &resourceWatcher{
-		logger:                   logger,
-		dataCollector:            collection.NewDataCollector(logger, cfg.NodeConditionTypesToReport, cfg.AllocatableTypesToReport),
+		logger:                   set.Logger,
+		dataCollector:            collection.NewDataCollector(set, cfg.NodeConditionTypesToReport, cfg.AllocatableTypesToReport),
 		initialSyncDone:          &atomic.Bool{},
 		initialSyncTimedOut:      &atomic.Bool{},
 		initialTimeout:           defaultInitialSyncTimeout,
