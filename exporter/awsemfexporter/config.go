@@ -17,20 +17,14 @@ package awsemfexporter // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"errors"
 
+	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
+	"golang.org/x/exp/slices"
 
-	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
-	"go.opentelemetry.io/collector/component"
-
-	"golang.org/x/exp/slices"
 )
-
-// emfSupportedUnits contains the unit collection supported by CloudWatch backend service.
-// https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_MetricDatum.html
-var emfSupportedUnits = cloudwatchlogs.StandardUnit_Values()
 
 // Config defines configuration for AWS EMF exporter.
 type Config struct {
