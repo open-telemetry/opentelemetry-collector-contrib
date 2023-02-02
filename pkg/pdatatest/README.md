@@ -3,7 +3,7 @@
 This module provides a test helpers for comparing metric, log and traces. The main functions are: 
 - `pmetrictest.CompareMetrics` 
 - `plogtest.CompareLogs` 
-- `ptrace.CompareTraces` 
+- `ptracetest.CompareTraces` 
 
 These functions compare the actual result with the expected result and return an error if they are not equal. 
 The error contains a detailed description of the differences. The module also provides several options to customize 
