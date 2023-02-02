@@ -69,7 +69,7 @@ In order to ensure compatibility with different operating systems, code should b
 
     For example, avoid using hard-coded file path
     ```
-    filePath := "C:/Users/Bob/Documents/sampleData.csv"
+    filePath := "C:\Users\Bob\Documents\sampleData.csv"
     ```
 
     Instead environment variable or configuration file can be used.
@@ -82,7 +82,7 @@ In order to ensure compatibility with different operating systems, code should b
     ```
 
 * Be mindful of 
-  - Standard file systems and file paths such as forward slashes (/) instead of backward slashes (\\) in Windows. Refer to [path/filepath package](https://pkg.go.dev/path/filepath) when working with filepaths. 
+  - Standard file systems and file paths such as forward slashes (/) instead of backward slashes (\\) in Windows. Use the [`path/filepath` package](https://pkg.go.dev/path/filepath) when working with filepaths. 
   - Consistent line ending formats such as Unix (LF) or Windows (CRLF).
 
 * Test your implementation thoroughly on different platforms and fix any issues. 
