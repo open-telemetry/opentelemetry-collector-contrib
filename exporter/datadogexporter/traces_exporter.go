@@ -78,8 +78,7 @@ func newTracesExporter(ctx context.Context, params exporter.CreateSettings, cfg 
 		exp.client = client
 	}
 	if cfg.API.FailOnInvalidKey {
-		err := <-errchan
-		if err != nil {
+		if err := <-errchan; err != nil {
 			return nil, err
 		}
 	}
