@@ -59,7 +59,7 @@ type eventsReceiver struct {
 	pageSize     int
 	pollInterval time.Duration
 	wg           *sync.WaitGroup
-	record       *eventRecord
+	record       *eventRecord // this record is used for checkpointing last processed events
 	doneChan     chan bool
 }
 
