@@ -24,7 +24,7 @@ MongoDB Atlas [Documentation](https://www.mongodb.com/docs/atlas/reference/api/l
 - `public_key` (required for metrics, logs, or alerts in `poll` mode)
 - `private_key` (required for metrics, logs, or alerts in `poll` mode)
 - `granularity` (default `PT1M` - See [MongoDB Atlas Documentation](https://docs.atlas.mongodb.com/reference/api/process-measurements/))
-- `storage` configure the component ID of a storage extension. If specified, both alerts `poll` mode and `events` collection will utilize the extension to ensure alerts are not duplicated after a collector restart.
+- `storage` (optional) The component ID of a storage extension which can be used when polling for `alerts` or `events` . The storage extension prevents duplication of data after a collector restart by remembering which data were previously collected.
 - `retry_on_failure`
   - `enabled` (default true)
   - `initial_interval` (default 5s)
@@ -64,8 +64,8 @@ MongoDB Atlas [Documentation](https://www.mongodb.com/docs/atlas/reference/api/l
     - This is the number of events that will be processed per request to the MongoDB Atlas API.
   - `max_pages` (default `25`)
     - This will limit how many pages of events the receiver will request from the MongoDB Atlas API for each project.
-  - `types` (default [])
-    - This is a list of [event types](https://www.mongodb.com/docs/atlas/reference/api/events-orgs-get-all/#event-type-values) that the receiver will request from the API. If not specified then the receiver will collect all types of events.
+  - `types` (defaults to all types of events)
+    - This is a list of [event types](https://www.mongodb.com/docs/atlas/reference/api/events-orgs-get-all/#event-type-values) that the receiver will request from the API. If specified, the receiver will collect only the indicated types of events.
 
 Examples:
 

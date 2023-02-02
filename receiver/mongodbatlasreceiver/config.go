@@ -209,10 +209,8 @@ func (a AlertConfig) validateListenConfig() error {
 }
 
 func (e EventsConfig) validate() error {
-	var errs error
 	if len(e.Projects) == 0 {
-		errs = multierr.Append(errs, errNoProjects)
+		return errNoProjects
 	}
-
-	return errs
+	return nil
 }
