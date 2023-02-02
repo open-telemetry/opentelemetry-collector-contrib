@@ -59,8 +59,7 @@ func newLogsExporter(ctx context.Context, params exporter.CreateSettings, cfg *C
 	}
 	// validate the apiKey
 	if cfg.API.FailOnInvalidKey {
-		err := <-errchan
-		if err != nil {
+		if err := <-errchan; err != nil {
 			return nil, err
 		}
 	}
