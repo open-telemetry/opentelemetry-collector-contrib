@@ -118,5 +118,20 @@ receivers:
           collect_audit_logs: true
 ```
 
+Receive events:
+
+```yaml
+receivers:
+  mongodbatlas:
+    events:
+      projects:
+        - name: "project 1"
+      poll_interval: 1m
+      page_size: 100
+      max_pages: 25
+    # use of a storage extension is recommended to reduce chance of duplicated events
+    storage: file_storage
+```
+
 [beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
