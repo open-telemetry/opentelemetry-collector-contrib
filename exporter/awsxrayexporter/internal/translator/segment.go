@@ -346,6 +346,20 @@ func makeXRayAttributes(attributes map[string]pcommon.Value, resource pcommon.Re
 		}
 	}
 
+	annotationKeys, ok := attributes[awsxray.AWSXraySegmentAnnotationsAttribute]
+	if ok && annotationKeys.Type() == pcommon.ValueTypeSlice {
+		slice := annotationKeys.Slice()
+		for i := 0; i < slice.Len(); i++ {
+			value := slice.At(i)
+			if value.Type() != pcommon.ValueTypeStr {
+				continue
+			}
+			key := value.AsString()
+			indexedKeys[key] = true
+		}
+		delete(attributes, awsxray.AWSXraySegmentAnnotationsAttribute)
+	}
+
 	if storeResource {
 		resource.Attributes().Range(func(key string, value pcommon.Value) bool {
 			key = "otel.resource." + key

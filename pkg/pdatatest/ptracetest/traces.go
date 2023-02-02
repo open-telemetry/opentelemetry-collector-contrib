@@ -20,6 +20,8 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/multierr"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/internal"
 )
 
 // CompareTraces compares each part of two given Traces and returns
@@ -35,7 +37,7 @@ func CompareTraces(expected, actual ptrace.Traces, options ...CompareTracesOptio
 
 	expectedSpans, actualSpans := exp.ResourceSpans(), act.ResourceSpans()
 	if expectedSpans.Len() != actualSpans.Len() {
-		return fmt.Errorf("amount of ResourceSpans between Traces are not equal expected: %d, actual: %d",
+		return fmt.Errorf("number of resources doesn't match expected: %d, actual: %d",
 			expectedSpans.Len(),
 			actualSpans.Len())
 	}
@@ -60,20 +62,20 @@ func CompareTraces(expected, actual ptrace.Traces, options ...CompareTracesOptio
 				matchingResources[ar] = er
 				if e != a {
 					outOfOrderErrs = multierr.Append(outOfOrderErrs,
-						fmt.Errorf("ResourceTraces with attributes %v expected at index %d, "+
-							"found at index %d", er.Resource().Attributes().AsRaw(), e, a))
+						fmt.Errorf(`resources are out of order: resource "%v" expected at index %d, found at index %d`,
+							er.Resource().Attributes().AsRaw(), e, a))
 				}
 				break
 			}
 		}
 		if !foundMatch {
-			errs = multierr.Append(errs, fmt.Errorf("missing expected resource with attributes: %v", er.Resource().Attributes().AsRaw()))
+			errs = multierr.Append(errs, fmt.Errorf("missing expected resource: %v", er.Resource().Attributes().AsRaw()))
 		}
 	}
 
 	for i := 0; i < numResources; i++ {
 		if _, ok := matchingResources[actualSpans.At(i)]; !ok {
-			errs = multierr.Append(errs, fmt.Errorf("extra resource with attributes: %v", actualSpans.At(i).Resource().Attributes().AsRaw()))
+			errs = multierr.Append(errs, fmt.Errorf("unexpected resource: %v", actualSpans.At(i).Resource().Attributes().AsRaw()))
 		}
 	}
 
@@ -85,27 +87,25 @@ func CompareTraces(expected, actual ptrace.Traces, options ...CompareTracesOptio
 	}
 
 	for ar, er := range matchingResources {
-		if err := CompareResourceSpans(er, ar); err != nil {
-			return multierr.Combine(fmt.Errorf("ResourceSpans with attributes %v does not match expected",
-				er.Resource().Attributes().AsRaw()), err)
-		}
+		errPrefix := fmt.Sprintf(`resource "%v"`, er.Resource().Attributes().AsRaw())
+		errs = multierr.Append(errs, internal.AddErrPrefix(errPrefix, CompareResourceSpans(er, ar)))
 	}
 
-	return nil
+	return errs
 }
 
 // CompareResourceSpans compares each part of two given ResourceSpans and returns
 // an error if they don't match. The error describes what didn't match.
 func CompareResourceSpans(expected, actual ptrace.ResourceSpans) error {
-	if !reflect.DeepEqual(expected.Resource().Attributes().AsRaw(), actual.Resource().Attributes().AsRaw()) {
-		return fmt.Errorf("resource attributes do not match expected: %v, actual: %v",
-			expected.Resource().Attributes().AsRaw(), actual.Resource().Attributes().AsRaw())
-	}
+	errs := multierr.Combine(
+		internal.CompareResource(expected.Resource(), actual.Resource()),
+		internal.CompareSchemaURL(expected.SchemaUrl(), actual.SchemaUrl()),
+	)
 
 	if expected.ScopeSpans().Len() != actual.ScopeSpans().Len() {
-		return fmt.Errorf("number of scope spans does not match expected: %d, actual: %d",
-			expected.ScopeSpans().Len(),
-			actual.ScopeSpans().Len())
+		errs = multierr.Append(errs, fmt.Errorf("number of scopes doesn't match expected: %d, actual: %d",
+			expected.ScopeSpans().Len(), actual.ScopeSpans().Len()))
+		return errs
 	}
 
 	numScopeSpans := expected.ScopeSpans().Len()
@@ -113,7 +113,6 @@ func CompareResourceSpans(expected, actual ptrace.ResourceSpans) error {
 	// Keep track of matching scope logs so that each record can only be matched once
 	matchingScopeSpans := make(map[ptrace.ScopeSpans]ptrace.ScopeSpans, numScopeSpans)
 
-	var errs error
 	var outOfOrderErrs error
 	for e := 0; e < numScopeSpans; e++ {
 		es := expected.ScopeSpans().At(e)
@@ -128,21 +127,20 @@ func CompareResourceSpans(expected, actual ptrace.ResourceSpans) error {
 				matchingScopeSpans[as] = es
 				if e != a {
 					outOfOrderErrs = multierr.Append(outOfOrderErrs,
-						fmt.Errorf("ScopeSpans with scope name %s expected at index %d, found at index %d",
+						fmt.Errorf("scopes are out of order: scope %s expected at index %d, found at index %d",
 							es.Scope().Name(), e, a))
 				}
 				break
 			}
 		}
 		if !foundMatch {
-			errs = multierr.Append(errs, fmt.Errorf("ScopeSpans missing with scope name: %s", es.Scope().Name()))
+			errs = multierr.Append(errs, fmt.Errorf("missing expected scope: %s", es.Scope().Name()))
 		}
 	}
 
 	for i := 0; i < numScopeSpans; i++ {
 		if _, ok := matchingScopeSpans[actual.ScopeSpans().At(i)]; !ok {
-			errs = multierr.Append(errs, fmt.Errorf("unexpected ScopeSpans with scope name: %s",
-				actual.ScopeSpans().At(i).Scope().Name()))
+			errs = multierr.Append(errs, fmt.Errorf("unexpected scope: %s", actual.ScopeSpans().At(i).Scope().Name()))
 		}
 	}
 
@@ -154,29 +152,25 @@ func CompareResourceSpans(expected, actual ptrace.ResourceSpans) error {
 	}
 
 	for i := 0; i < expected.ScopeSpans().Len(); i++ {
-		if err := CompareScopeSpans(expected.ScopeSpans().At(i), actual.ScopeSpans().At(i)); err != nil {
-			return multierr.Combine(fmt.Errorf(`ScopeSpans with name "%s" does not match expected`,
-				expected.ScopeSpans().At(i).Scope().Name()), err)
-		}
+		errPrefix := fmt.Sprintf(`scope "%s"`, expected.ScopeSpans().At(i).Scope().Name())
+		errs = multierr.Append(errs, internal.AddErrPrefix(errPrefix,
+			CompareScopeSpans(expected.ScopeSpans().At(i), actual.ScopeSpans().At(i))))
 	}
-	return nil
+	return errs
 }
 
 // CompareScopeSpans compares each part of two given SpanSlices and returns
 // an error if they don't match. The error describes what didn't match.
 func CompareScopeSpans(expected, actual ptrace.ScopeSpans) error {
-	if expected.Scope().Name() != actual.Scope().Name() {
-		return fmt.Errorf("scope Name does not match expected: %s, actual: %s",
-			expected.Scope().Name(), actual.Scope().Name())
-	}
-	if expected.Scope().Version() != actual.Scope().Version() {
-		return fmt.Errorf("scope Version does not match expected: %s, actual: %s",
-			expected.Scope().Version(), actual.Scope().Version())
-	}
+	errs := multierr.Combine(
+		internal.CompareInstrumentationScope(expected.Scope(), actual.Scope()),
+		internal.CompareSchemaURL(expected.SchemaUrl(), actual.SchemaUrl()),
+	)
 
 	if expected.Spans().Len() != actual.Spans().Len() {
-		return fmt.Errorf("number of spans does not match expected: %d, actual: %d",
-			expected.Spans().Len(), actual.Spans().Len())
+		errs = multierr.Append(errs, fmt.Errorf("number of spans doesn't match expected: %d, actual: %d",
+			expected.Spans().Len(), actual.Spans().Len()))
+		return errs
 	}
 
 	numSpans := expected.Spans().Len()
@@ -184,7 +178,6 @@ func CompareScopeSpans(expected, actual ptrace.ScopeSpans) error {
 	// Keep track of matching spans so that each span can only be matched once
 	matchingSpans := make(map[ptrace.Span]ptrace.Span, numSpans)
 
-	var errs error
 	var outOfOrderErrs error
 	for e := 0; e < numSpans; e++ {
 		es := expected.Spans().At(e)
@@ -199,13 +192,14 @@ func CompareScopeSpans(expected, actual ptrace.ScopeSpans) error {
 				matchingSpans[as] = es
 				if e != a {
 					outOfOrderErrs = multierr.Append(outOfOrderErrs,
-						fmt.Errorf("span %s expected at index %d, found at index %d", es.Name(), e, a))
+						fmt.Errorf(`spans are out of order: span "%s" expected at index %d, found at index %d`,
+							es.Name(), e, a))
 				}
 				break
 			}
 		}
 		if !foundMatch {
-			errs = multierr.Append(errs, fmt.Errorf("missing expected span %s", es.Name()))
+			errs = multierr.Append(errs, fmt.Errorf("missing expected span: %s", es.Name()))
 		}
 	}
 
@@ -223,109 +217,248 @@ func CompareScopeSpans(expected, actual ptrace.ScopeSpans) error {
 	}
 
 	for as, es := range matchingSpans {
-		if err := CompareSpan(as, es); err != nil {
-			return multierr.Combine(fmt.Errorf("span %s does not match expected", as.Name()), err)
-		}
+		errs = multierr.Append(errs, internal.AddErrPrefix(fmt.Sprintf(`span "%s"`, es.Name()), CompareSpan(as, es)))
 	}
-	return nil
+
+	return errs
 }
 
 // CompareSpan compares each part of two given Span and returns
 // an error if they don't match. The error describes what didn't match.
 func CompareSpan(expected, actual ptrace.Span) error {
-	if !reflect.DeepEqual(expected.Attributes().AsRaw(), actual.Attributes().AsRaw()) {
-		return fmt.Errorf("span attributes do not match expected: %v, actual: %v",
-			expected.Attributes().AsRaw(), actual.Attributes().AsRaw())
-	}
+	errs := multierr.Combine(
+		internal.CompareAttributes(expected.Attributes(), actual.Attributes()),
+		internal.CompareDroppedAttributesCount(expected.DroppedAttributesCount(), actual.DroppedAttributesCount()),
+	)
+
 	if expected.TraceID() != actual.TraceID() {
-		return fmt.Errorf("span TraceID doesn't match expected: %d, actual: %d",
-			expected.TraceID(),
-			actual.TraceID())
+		errs = multierr.Append(errs, fmt.Errorf("trace ID doesn't match expected: %s, actual: %s",
+			expected.TraceID(), actual.TraceID()))
 	}
 
 	if expected.SpanID() != actual.SpanID() {
-		return fmt.Errorf("span SpanID doesn't match expected: %d, actual: %d",
-			expected.SpanID(),
-			actual.SpanID())
+		errs = multierr.Append(errs, fmt.Errorf("span ID doesn't match expected: %s, actual: %s",
+			expected.SpanID(), actual.SpanID()))
 	}
 
 	if expected.TraceState().AsRaw() != actual.TraceState().AsRaw() {
-		return fmt.Errorf("span TraceState doesn't match expected: %s, actual: %s",
-			expected.TraceState().AsRaw(),
-			actual.TraceState().AsRaw())
+		errs = multierr.Append(errs, fmt.Errorf("trace state doesn't match expected: %s, actual: %s",
+			expected.TraceState().AsRaw(), actual.TraceState().AsRaw()))
 	}
 
 	if expected.ParentSpanID() != actual.ParentSpanID() {
-		return fmt.Errorf("span ParentSpanID doesn't match expected: %d, actual: %d",
-			expected.ParentSpanID(),
-			actual.ParentSpanID())
+		errs = multierr.Append(errs, fmt.Errorf("parent span ID doesn't match expected: %s, actual: %s",
+			expected.ParentSpanID(), actual.ParentSpanID()))
 	}
 
 	if expected.Name() != actual.Name() {
-		return fmt.Errorf("span Name doesn't match expected: %s, actual: %s",
-			expected.Name(),
-			actual.Name())
+		errs = multierr.Append(errs, fmt.Errorf("name doesn't match expected: %s, actual: %s", expected.Name(),
+			actual.Name()))
 	}
 
 	if expected.Kind() != actual.Kind() {
-		return fmt.Errorf("span Kind doesn't match expected: %d, actual: %d",
-			expected.Kind(),
-			actual.Kind())
+		errs = multierr.Append(errs, fmt.Errorf("kind doesn't match expected: %d, actual: %d", expected.Kind(),
+			actual.Kind()))
 	}
 
 	if expected.StartTimestamp() != actual.StartTimestamp() {
-		return fmt.Errorf("span StartTimestamp doesn't match expected: %d, actual: %d",
-			expected.StartTimestamp(),
-			actual.StartTimestamp())
+		errs = multierr.Append(errs, fmt.Errorf("start timestamp doesn't match expected: %d, actual: %d",
+			expected.StartTimestamp(), actual.StartTimestamp()))
 	}
 
 	if expected.EndTimestamp() != actual.EndTimestamp() {
-		return fmt.Errorf("span EndTimestamp doesn't match expected: %d, actual: %d",
-			expected.EndTimestamp(),
-			actual.EndTimestamp())
+		errs = multierr.Append(errs, fmt.Errorf("end timestamp doesn't match expected: %d, actual: %d",
+			expected.EndTimestamp(), actual.EndTimestamp()))
 	}
 
-	if !reflect.DeepEqual(expected.Attributes().AsRaw(), actual.Attributes().AsRaw()) {
-		return fmt.Errorf("span Attributes doesn't match expected: %s, actual: %s",
-			expected.Attributes().AsRaw(),
-			actual.Attributes().AsRaw())
-	}
-
-	if expected.DroppedAttributesCount() != actual.DroppedAttributesCount() {
-		return fmt.Errorf("span DroppedAttributesCount doesn't match expected: %d, actual: %d",
-			expected.DroppedAttributesCount(),
-			actual.DroppedAttributesCount())
-	}
-
-	if !reflect.DeepEqual(expected.Events(), actual.Events()) {
-		return fmt.Errorf("span Events doesn't match expected: %v, actual: %v",
-			expected.Events(),
-			actual.Events())
-	}
+	errs = multierr.Append(errs, compareSpanEventSlice(expected.Events(), actual.Events()))
 
 	if expected.DroppedEventsCount() != actual.DroppedEventsCount() {
-		return fmt.Errorf("span DroppedEventsCount doesn't match expected: %d, actual: %d",
-			expected.DroppedEventsCount(),
-			actual.DroppedEventsCount())
+		errs = multierr.Append(errs, fmt.Errorf("dropped events count doesn't match expected: %d, actual: %d",
+			expected.DroppedEventsCount(), actual.DroppedEventsCount()))
 	}
 
-	if !reflect.DeepEqual(expected.Links(), actual.Links()) {
-		return fmt.Errorf("span Links doesn't match expected: %v, actual: %v",
-			expected.Links(),
-			actual.Links())
-	}
+	errs = multierr.Append(errs, compareSpanLinkSlice(expected.Links(), actual.Links()))
 
 	if expected.DroppedLinksCount() != actual.DroppedLinksCount() {
-		return fmt.Errorf("span DroppedLinksCount doesn't match expected: %d, actual: %d",
-			expected.DroppedLinksCount(),
-			actual.DroppedLinksCount())
+		errs = multierr.Append(errs, fmt.Errorf("dropped links count doesn't match expected: %d, actual: %d",
+			expected.DroppedLinksCount(), actual.DroppedLinksCount()))
 	}
 
-	if !reflect.DeepEqual(expected.Status(), actual.Status()) {
-		return fmt.Errorf("span Status doesn't match expected: %v, actual: %v",
-			expected.Status(),
-			actual.Status())
+	if expected.Status().Code() != actual.Status().Code() {
+		errs = multierr.Append(errs, fmt.Errorf("status code doesn't match expected: %v, actual: %v",
+			expected.Status().Code(), actual.Status().Code()))
 	}
 
-	return nil
+	if expected.Status().Message() != actual.Status().Message() {
+		errs = multierr.Append(errs, fmt.Errorf("status message doesn't match expected: %v, actual: %v",
+			expected.Status().Message(), actual.Status().Message()))
+	}
+
+	return errs
+}
+
+// compareSpanEventSlice compares each part of two given SpanEventSlice and returns
+// an error if they don't match. The error describes what didn't match.
+func compareSpanEventSlice(expected, actual ptrace.SpanEventSlice) (errs error) {
+	if expected.Len() != actual.Len() {
+		errs = multierr.Append(errs, fmt.Errorf("number of events doesn't match expected: %d, actual: %d",
+			expected.Len(), actual.Len()))
+		return errs
+	}
+
+	numSpanEvents := expected.Len()
+
+	// Keep track of matching span events so that each span event can only be matched once
+	matchingSpanEvents := make(map[ptrace.SpanEvent]ptrace.SpanEvent, numSpanEvents)
+
+	var outOfOrderErrs error
+	for e := 0; e < numSpanEvents; e++ {
+		ee := expected.At(e)
+		var foundMatch bool
+		for a := 0; a < numSpanEvents; a++ {
+			ae := actual.At(a)
+			if _, ok := matchingSpanEvents[ae]; ok {
+				continue
+			}
+			if ee.Name() == ae.Name() {
+				foundMatch = true
+				matchingSpanEvents[ae] = ee
+				if e != a {
+					outOfOrderErrs = multierr.Append(outOfOrderErrs,
+						fmt.Errorf(`span events are out of order: span event "%s" expected at index %d, found at index %d`,
+							ee.Name(), e, a))
+				}
+				break
+			}
+		}
+		if !foundMatch {
+			errs = multierr.Append(errs, fmt.Errorf("missing expected span event: %s", ee.Name()))
+		}
+	}
+
+	for i := 0; i < numSpanEvents; i++ {
+		if _, ok := matchingSpanEvents[actual.At(i)]; !ok {
+			errs = multierr.Append(errs, fmt.Errorf("unexpected span event: %s", actual.At(i).Name()))
+		}
+	}
+
+	if errs != nil {
+		return errs
+	}
+	if outOfOrderErrs != nil {
+		return outOfOrderErrs
+	}
+
+	for ae, ee := range matchingSpanEvents {
+		errs = multierr.Append(errs, internal.AddErrPrefix(fmt.Sprintf(`span event "%s"`, ee.Name()), CompareSpanEvent(ae, ee)))
+	}
+
+	return errs
+}
+
+// CompareSpanEvent compares each part of two given SpanEvent and returns
+// an error if they don't match. The error describes what didn't match.
+func CompareSpanEvent(expected, actual ptrace.SpanEvent) error {
+	errs := multierr.Combine(
+		internal.CompareAttributes(expected.Attributes(), actual.Attributes()),
+		internal.CompareDroppedAttributesCount(expected.DroppedAttributesCount(), actual.DroppedAttributesCount()),
+	)
+
+	if expected.Name() != actual.Name() {
+		errs = multierr.Append(errs, fmt.Errorf("name doesn't match expected: %s, actual: %s",
+			expected.Name(), actual.Name()))
+	}
+
+	if expected.Timestamp() != actual.Timestamp() {
+		errs = multierr.Append(errs, fmt.Errorf("timestamp doesn't match expected: %d, actual: %d",
+			expected.Timestamp(), actual.Timestamp()))
+	}
+
+	return errs
+}
+
+// compareSpanLinkSlice compares each part of two given SpanLinkSlice and returns
+// an error if they don't match. The error describes what didn't match.
+func compareSpanLinkSlice(expected, actual ptrace.SpanLinkSlice) (errs error) {
+	if expected.Len() != actual.Len() {
+		errs = multierr.Append(errs, fmt.Errorf("number of span links doesn't match expected: %d, actual: %d",
+			expected.Len(), actual.Len()))
+		return errs
+	}
+
+	numSpanLinks := expected.Len()
+
+	// Keep track of matching span links so that each span link can only be matched once
+	matchingSpanLinks := make(map[ptrace.SpanLink]ptrace.SpanLink, numSpanLinks)
+
+	var outOfOrderErrs error
+	for e := 0; e < numSpanLinks; e++ {
+		el := expected.At(e)
+		var foundMatch bool
+		for a := 0; a < numSpanLinks; a++ {
+			al := actual.At(a)
+			if _, ok := matchingSpanLinks[al]; ok {
+				continue
+			}
+			if el.SpanID() == al.SpanID() {
+				foundMatch = true
+				matchingSpanLinks[al] = el
+				if e != a {
+					outOfOrderErrs = multierr.Append(outOfOrderErrs,
+						fmt.Errorf(`span links are out of order: span link "%s" expected at index %d, found at index %d`,
+							el.SpanID(), e, a))
+				}
+				break
+			}
+		}
+		if !foundMatch {
+			errs = multierr.Append(errs, fmt.Errorf("missing expected span link: %s", el.SpanID()))
+		}
+	}
+
+	for i := 0; i < numSpanLinks; i++ {
+		if _, ok := matchingSpanLinks[actual.At(i)]; !ok {
+			errs = multierr.Append(errs, fmt.Errorf("unexpected span link: %s", actual.At(i).SpanID()))
+		}
+	}
+
+	if errs != nil {
+		return errs
+	}
+	if outOfOrderErrs != nil {
+		return outOfOrderErrs
+	}
+
+	for al, el := range matchingSpanLinks {
+		errs = multierr.Append(errs, internal.AddErrPrefix(fmt.Sprintf(`span link "%s"`, el.SpanID()), CompareSpanLink(al, el)))
+	}
+
+	return errs
+}
+
+// CompareSpanLink compares each part of two given SpanLink and returns
+// an error if they don't match. The error describes what didn't match.
+func CompareSpanLink(expected, actual ptrace.SpanLink) error {
+	errs := multierr.Combine(
+		internal.CompareAttributes(expected.Attributes(), actual.Attributes()),
+		internal.CompareDroppedAttributesCount(expected.DroppedAttributesCount(), actual.DroppedAttributesCount()),
+	)
+
+	if expected.TraceID() != actual.TraceID() {
+		errs = multierr.Append(errs, fmt.Errorf("trace ID doesn't match expected: %s, actual: %s",
+			expected.TraceID(), actual.TraceID()))
+	}
+
+	if expected.SpanID() != actual.SpanID() {
+		errs = multierr.Append(errs, fmt.Errorf("span ID doesn't match expected: %s, actual: %s",
+			expected.SpanID(), actual.SpanID()))
+	}
+
+	if expected.TraceState().AsRaw() != actual.TraceState().AsRaw() {
+		errs = multierr.Append(errs, fmt.Errorf("trace state doesn't match expected: %s, actual: %s",
+			expected.TraceState().AsRaw(), actual.TraceState().AsRaw()))
+	}
+
+	return errs
 }

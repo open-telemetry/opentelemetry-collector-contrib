@@ -20,13 +20,10 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"net/url"
 	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configopaque"
-	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -38,6 +35,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 	metadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
+)
+
+var (
+	errNotStarted = errors.New("exporter has not started")
 )
 
 // TODO: Find a place for this to be shared.
@@ -66,22 +67,11 @@ type signalfxExporter struct {
 	logger             *zap.Logger
 	telemetrySettings  component.TelemetrySettings
 	pushMetricsData    func(ctx context.Context, md pmetric.Metrics) (droppedTimeSeries int, err error)
-	pushMetadata       func(metadata []*metadata.MetadataUpdate) error
 	pushLogsData       func(ctx context.Context, ld plog.Logs) (droppedLogRecords int, err error)
 	hostMetadataSyncer *hostmetadata.Syncer
 	converter          *translation.MetricsConverter
-}
-
-type exporterOptions struct {
-	ingestURL         *url.URL
-	ingestTLSSettings configtls.TLSClientSetting
-	apiURL            *url.URL
-	apiTLSSettings    configtls.TLSClientSetting
-	httpTimeout       time.Duration
-	token             configopaque.String
-	logDataPoints     bool
-	logDimUpdate      bool
-	metricTranslator  *translation.MetricTranslator
+	dimClient          *dimensions.DimensionClient
+	cancelFn           func()
 }
 
 // newSignalFxExporter returns a new SignalFx exporter.
@@ -93,7 +83,7 @@ func newSignalFxExporter(
 		return nil, errors.New("nil config")
 	}
 
-	options, err := config.getOptionsFromConfig()
+	metricTranslator, err := config.getMetricTranslator(createSettings.TelemetrySettings.Logger)
 	if err != nil {
 		return nil, err
 	}
@@ -101,7 +91,7 @@ func newSignalFxExporter(
 	sampledLogger := translation.CreateSampledLogger(createSettings.Logger)
 	converter, err := translation.NewMetricsConverter(
 		sampledLogger,
-		options.metricTranslator,
+		metricTranslator,
 		config.ExcludeMetrics,
 		config.IncludeMetrics,
 		config.NonAlphanumericDimensionChars,
@@ -118,8 +108,8 @@ func newSignalFxExporter(
 	}, nil
 }
 
-func (se *signalfxExporter) start(_ context.Context, host component.Host) (err error) {
-	options, err := se.config.getOptionsFromConfig()
+func (se *signalfxExporter) start(ctx context.Context, host component.Host) (err error) {
+	ingestURL, err := se.config.getIngestURL()
 	if err != nil {
 		return err
 	}
@@ -132,12 +122,12 @@ func (se *signalfxExporter) start(_ context.Context, host component.Host) (err e
 
 	dpClient := &sfxDPClient{
 		sfxClientBase: sfxClientBase{
-			ingestURL: options.ingestURL,
+			ingestURL: ingestURL,
 			headers:   headers,
 			client:    client,
 			zippers:   newGzipPool(),
 		},
-		logDataPoints:          options.logDataPoints,
+		logDataPoints:          se.config.LogDataPoints,
 		logger:                 se.logger,
 		accessTokenPassthrough: se.config.AccessTokenPassthrough,
 		converter:              se.converter,
@@ -147,14 +137,21 @@ func (se *signalfxExporter) start(_ context.Context, host component.Host) (err e
 	if err != nil {
 		return fmt.Errorf("could not load API TLS config: %w", err)
 	}
+	cancellable, cancelFn := context.WithCancel(ctx)
+	se.cancelFn = cancelFn
+
+	apiURL, err := se.config.getAPIURL()
+	if err != nil {
+		return err
+	}
 
 	dimClient := dimensions.NewDimensionClient(
-		context.Background(),
+		cancellable,
 		dimensions.DimensionClientOptions{
-			Token:        options.token,
-			APIURL:       options.apiURL,
+			Token:        se.config.AccessToken,
+			APIURL:       apiURL,
 			APITLSConfig: apiTLSCfg,
-			LogUpdates:   options.logDimUpdate,
+			LogUpdates:   se.config.LogDimensionUpdates,
 			Logger:       se.logger,
 			// Duration to wait between property updates. This might be worth
 			// being made configurable.
@@ -171,8 +168,8 @@ func (se *signalfxExporter) start(_ context.Context, host component.Host) (err e
 	if se.config.SyncHostMetadata {
 		hms = hostmetadata.NewSyncer(se.logger, dimClient)
 	}
+	se.dimClient = dimClient
 	se.pushMetricsData = dpClient.pushMetricsData
-	se.pushMetadata = dimClient.PushMetadata
 	se.hostMetadataSyncer = hms
 	return nil
 }
@@ -188,10 +185,6 @@ func newEventExporter(config *Config, createSettings exporter.CreateSettings) (*
 		return nil, errors.New("nil config")
 	}
 
-	_, err := config.getOptionsFromConfig()
-	if err != nil {
-		return nil, fmt.Errorf("failed to process config: %w", err)
-	}
 	return &signalfxExporter{
 		config:            config,
 		logger:            createSettings.Logger,
@@ -201,9 +194,9 @@ func newEventExporter(config *Config, createSettings exporter.CreateSettings) (*
 }
 
 func (se *signalfxExporter) startLogs(_ context.Context, host component.Host) error {
-	options, err := se.config.getOptionsFromConfig()
+	ingestURL, err := se.config.getIngestURL()
 	if err != nil {
-		return fmt.Errorf("failed to process config: %w", err)
+		return err
 	}
 
 	headers := buildHeaders(se.config)
@@ -214,7 +207,7 @@ func (se *signalfxExporter) startLogs(_ context.Context, host component.Host) er
 
 	eventClient := &sfxEventClient{
 		sfxClientBase: sfxClientBase{
-			ingestURL: options.ingestURL,
+			ingestURL: ingestURL,
 			headers:   headers,
 			client:    client,
 			zippers:   newGzipPool(),
@@ -258,6 +251,20 @@ func (se *signalfxExporter) pushMetrics(ctx context.Context, md pmetric.Metrics)
 func (se *signalfxExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 	_, err := se.pushLogsData(ctx, ld)
 	return err
+}
+
+func (se *signalfxExporter) shutdown(ctx context.Context) error {
+	if se.cancelFn != nil {
+		se.cancelFn()
+	}
+	return nil
+}
+
+func (se *signalfxExporter) pushMetadata(metadata []*metadata.MetadataUpdate) error {
+	if se.dimClient == nil {
+		return errNotStarted
+	}
+	return se.dimClient.PushMetadata(metadata)
 }
 
 func buildHeaders(config *Config) map[string]string {

@@ -28,10 +28,10 @@ GOARCH=$(shell $(GOCMD) env GOARCH)
 # as part of $(TOOLS_MOD_DIR)/tools.go, following the existing practice.
 # Modifying the tools' `go.mod` file will trigger a rebuild of the tools to help
 # ensure that all contributors are using the most recent version to make builds repeatable everywhere.
-TOOLS_MOD_DIR    := $(PWD)/internal/tools
+TOOLS_MOD_DIR    := $(SRC_ROOT)/internal/tools
 TOOLS_MOD_REGEX  := "\s+_\s+\".*\""
 TOOLS_PKG_NAMES  := $(shell grep -E $(TOOLS_MOD_REGEX) < $(TOOLS_MOD_DIR)/tools.go | tr -d " _\"")
-TOOLS_BIN_DIR    := $(PWD)/.tools
+TOOLS_BIN_DIR    := $(SRC_ROOT)/.tools
 TOOLS_BIN_NAMES  := $(addprefix $(TOOLS_BIN_DIR)/, $(notdir $(TOOLS_PKG_NAMES)))
 
 .PHONY: install-tools
@@ -55,6 +55,7 @@ PORTO               := $(TOOLS_BIN_DIR)/porto
 CHECKDOC            := $(TOOLS_BIN_DIR)/checkdoc
 CROSSLINK           := $(TOOLS_BIN_DIR)/crosslink
 GOJUNIT             := $(TOOLS_BIN_DIR)/go-junit-report 
+BUILDER             := $(TOOLS_BIN_DIR)/builder
 
 # BUILD_TYPE should be one of (dev, release).
 BUILD_TYPE?=release
@@ -162,7 +163,7 @@ fmt: $(GOIMPORTS)
 
 .PHONY: lint
 lint: $(LINT) checklicense misspell
-	$(LINT) run --allow-parallel-runners
+	$(LINT) run --allow-parallel-runners --build-tags integration
 
 .PHONY: tidy
 tidy:

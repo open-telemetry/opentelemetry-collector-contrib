@@ -106,7 +106,7 @@ func (exp *traceExporter) consumeTraces(
 	tags := make(map[string]struct{})
 	for i := 0; i < rspans.Len(); i++ {
 		rspan := rspans.At(i)
-		src := exp.agent.OTLPReceiver.ReceiveResourceSpans(ctx, rspan, http.Header{}, "otlp-exporter")
+		src := exp.agent.OTLPReceiver.ReceiveResourceSpans(ctx, rspan, http.Header{})
 		switch src.Kind {
 		case source.HostnameKind:
 			hosts[src.Identifier] = struct{}{}
@@ -115,11 +115,11 @@ func (exp *traceExporter) consumeTraces(
 		}
 	}
 
-	exp.exportTraceMetrics(ctx, hosts, tags)
+	exp.exportHostMetrics(ctx, hosts, tags)
 	return nil
 }
 
-func (exp *traceExporter) exportTraceMetrics(ctx context.Context, hosts map[string]struct{}, tags map[string]struct{}) {
+func (exp *traceExporter) exportHostMetrics(ctx context.Context, hosts map[string]struct{}, tags map[string]struct{}) {
 	now := pcommon.NewTimestampFromTime(time.Now())
 	var err error
 	if isMetricExportV2Enabled() {

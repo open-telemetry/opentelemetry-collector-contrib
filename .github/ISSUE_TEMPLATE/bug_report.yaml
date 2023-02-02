@@ -23,8 +23,8 @@ body:
       - cmd/otelcontribcol
       - cmd/oteltestbedcol
       - cmd/telemetrygen
-      - cmd/tracegen
       - confmap/provider/s3provider
+      - connector/count
       - examples/demo
       - exporter/alibabacloudlogservice
       - exporter/awscloudwatchlogs
@@ -44,7 +44,6 @@ body:
       - exporter/googlecloud
       - exporter/googlecloudpubsub
       - exporter/googlemanagedprometheus
-      - exporter/humio
       - exporter/influxdb
       - exporter/instana
       - exporter/jaeger
@@ -156,9 +155,11 @@ body:
       - receiver/cloudfoundry
       - receiver/collectd
       - receiver/couchdb
+      - receiver/datadog
       - receiver/dockerstats
       - receiver/elasticsearch
       - receiver/expvar
+      - receiver/file
       - receiver/filelog
       - receiver/flinkmetrics
       - receiver/fluentforward
@@ -194,6 +195,7 @@ body:
       - receiver/promtail
       - receiver/pulsar
       - receiver/purefa
+      - receiver/purefb
       - receiver/rabbitmq
       - receiver/receivercreator
       - receiver/redis
@@ -209,6 +211,7 @@ body:
       - receiver/splunkhec
       - receiver/sqlquery
       - receiver/sqlserver
+      - receiver/sshcheck
       - receiver/statsd
       - receiver/syslog
       - receiver/tcplog
@@ -221,6 +224,7 @@ body:
       - receiver/zookeeper
       - testbed
       - testbed/mockdatareceivers/mockawsxrayreceiver
+      - testbed/mockdatasenders/mockdatadogagentexporter
       # End Collector components list
   - type: textarea
     attributes:
@@ -228,7 +232,7 @@ body:
       description: Please provide as much detail as you reasonably can.
       value: |
         ## Description
-      
+
         ## Steps to Reproduce
 
         ## Expected Result

@@ -238,8 +238,8 @@ func Test_metricTracker_sweeper(t *testing.T) {
 		staleBefore := <-sweepEvent
 		tickTime := time.Since(start) + tr.maxStaleness*time.Duration(i)
 		require.False(t, closed.Load())
-		assert.Less(t, tr.maxStaleness, tickTime)
-		assert.Less(t, tr.maxStaleness, time.Since(staleBefore.AsTime()))
+		assert.LessOrEqual(t, tr.maxStaleness, tickTime)
+		assert.LessOrEqual(t, tr.maxStaleness, time.Since(staleBefore.AsTime()))
 	}
 	cancel()
 	for range sweepEvent {

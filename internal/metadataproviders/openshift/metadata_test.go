@@ -26,9 +26,9 @@ import (
 )
 
 func TestNewProvider(t *testing.T) {
-	provider1 := NewProvider("127.0.0.1:4444", "abc")
+	provider1 := NewProvider("127.0.0.1:4444", "abc", nil)
 	assert.NotNil(t, provider1)
-	provider2 := NewProvider("", "")
+	provider2 := NewProvider("", "", nil)
 	assert.NotNil(t, provider2)
 }
 
