@@ -39,31 +39,28 @@ import (
 
 const (
 	// typeStr is the type of the exporter
-	typeStr                              = "datadog"
-	mertricExportNativeClientFeatureGate = "exporter.datadogexporter.metricexportnativeclient"
+	typeStr = "datadog"
 )
 
-func init() {
-	featuregate.GlobalRegistry().MustRegisterID(
-		mertricExportNativeClientFeatureGate,
-		featuregate.StageBeta,
-		featuregate.WithRegisterDescription("When enabled, metric export in datadogexporter uses native Datadog client APIs instead of Zorkian APIs."),
-	)
-}
+var mertricExportNativeClientFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"exporter.datadogexporter.metricexportnativeclient",
+	featuregate.StageBeta,
+	featuregate.WithRegisterDescription("When enabled, metric export in datadogexporter uses native Datadog client APIs instead of Zorkian APIs."),
+)
 
 // isMetricExportV2Enabled returns true if metric export in datadogexporter uses native Datadog client APIs, false if it uses Zorkian APIs
 func isMetricExportV2Enabled() bool {
-	return featuregate.GlobalRegistry().IsEnabled(mertricExportNativeClientFeatureGate)
+	return mertricExportNativeClientFeatureGate.IsEnabled()
 }
 
 // enableNativeMetricExport switches metric export to call native Datadog APIs instead of Zorkian APIs.
 func enableNativeMetricExport() error {
-	return featuregate.GlobalRegistry().Apply(map[string]bool{mertricExportNativeClientFeatureGate: true})
+	return featuregate.GlobalRegistry().Set(mertricExportNativeClientFeatureGate.ID(), true)
 }
 
 // enableZorkianMetricExport switches metric export to call Zorkian APIs instead of native Datadog APIs.
 func enableZorkianMetricExport() error {
-	return featuregate.GlobalRegistry().Apply(map[string]bool{mertricExportNativeClientFeatureGate: false})
+	return featuregate.GlobalRegistry().Set(mertricExportNativeClientFeatureGate.ID(), false)
 }
 
 type factory struct {
@@ -130,7 +127,7 @@ func defaulttimeoutSettings() exporterhelper.TimeoutSettings {
 // createDefaultConfig creates the default exporter configuration
 func (f *factory) createDefaultConfig() component.Config {
 	hostnameSource := HostnameSourceFirstResource
-	if f.registry.IsEnabled(metadata.HostnamePreviewFeatureGate) {
+	if metadata.HostnamePreviewFeatureGate.IsEnabled() {
 		hostnameSource = HostnameSourceConfigOrSystem
 	}
 

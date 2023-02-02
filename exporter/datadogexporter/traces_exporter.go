@@ -28,7 +28,6 @@ import (
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
@@ -168,7 +167,7 @@ func newTraceAgent(ctx context.Context, params exporter.CreateSettings, cfg *Con
 	}
 	acfg.OTLPReceiver.SpanNameRemappings = cfg.Traces.SpanNameRemappings
 	acfg.OTLPReceiver.SpanNameAsResourceName = cfg.Traces.SpanNameAsResourceName
-	acfg.OTLPReceiver.UsePreviewHostnameLogic = featuregate.GlobalRegistry().IsEnabled(metadata.HostnamePreviewFeatureGate)
+	acfg.OTLPReceiver.UsePreviewHostnameLogic = metadata.HostnamePreviewFeatureGate.IsEnabled()
 	acfg.Endpoints[0].APIKey = string(cfg.API.Key)
 	acfg.Ignore["resource"] = cfg.Traces.IgnoreResources
 	acfg.ReceiverPort = 0 // disable HTTP receiver
