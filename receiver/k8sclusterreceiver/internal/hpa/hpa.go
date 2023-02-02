@@ -15,91 +15,27 @@
 package hpa // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/hpa"
 
 import (
-	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	"time"
+
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 	autoscalingv2beta2 "k8s.io/api/autoscaling/v2beta2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/constants"
+	imetadata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/hpa/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/utils"
 )
 
-var hpaMaxReplicasMetric = &metricspb.MetricDescriptor{
-	Name:        "k8s.hpa.max_replicas",
-	Description: "Maximum number of replicas to which the autoscaler can scale up",
-	Unit:        "1",
-	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
-}
+func GetMetrics(set receiver.CreateSettings, hpa *autoscalingv2beta2.HorizontalPodAutoscaler) pmetric.Metrics {
+	mb := imetadata.NewMetricsBuilder(imetadata.DefaultMetricsSettings(), set)
 
-var hpaMinReplicasMetric = &metricspb.MetricDescriptor{
-	Name:        "k8s.hpa.min_replicas",
-	Description: "Minimum number of replicas to which the autoscaler can scale down",
-	Unit:        "1",
-	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
-}
-
-var hpaCurrentReplicasMetric = &metricspb.MetricDescriptor{
-	Name:        "k8s.hpa.current_replicas",
-	Description: "Current number of pod replicas managed by this autoscaler",
-	Unit:        "1",
-	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
-}
-
-var hpaDesiredReplicasMetric = &metricspb.MetricDescriptor{
-	Name:        "k8s.hpa.desired_replicas",
-	Description: "Desired number of pod replicas managed by this autoscaler",
-	Unit:        "1",
-	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
-}
-
-func GetMetrics(hpa *autoscalingv2beta2.HorizontalPodAutoscaler) []*agentmetricspb.ExportMetricsServiceRequest {
-	metrics := []*metricspb.Metric{
-		{
-			MetricDescriptor: hpaMaxReplicasMetric,
-			Timeseries: []*metricspb.TimeSeries{
-				utils.GetInt64TimeSeries(int64(hpa.Spec.MaxReplicas)),
-			},
-		},
-		{
-			MetricDescriptor: hpaMinReplicasMetric,
-			Timeseries: []*metricspb.TimeSeries{
-				utils.GetInt64TimeSeries(int64(*hpa.Spec.MinReplicas)),
-			},
-		},
-		{
-			MetricDescriptor: hpaCurrentReplicasMetric,
-			Timeseries: []*metricspb.TimeSeries{
-				utils.GetInt64TimeSeries(int64(hpa.Status.CurrentReplicas)),
-			},
-		},
-		{
-			MetricDescriptor: hpaDesiredReplicasMetric,
-			Timeseries: []*metricspb.TimeSeries{
-				utils.GetInt64TimeSeries(int64(hpa.Status.DesiredReplicas)),
-			},
-		},
-	}
-
-	return []*agentmetricspb.ExportMetricsServiceRequest{
-		{
-			Resource: getResourceForHPA(hpa),
-			Metrics:  metrics,
-		},
-	}
-}
-
-func getResourceForHPA(hpa *autoscalingv2beta2.HorizontalPodAutoscaler) *resourcepb.Resource {
-	return &resourcepb.Resource{
-		Type: constants.K8sType,
-		Labels: map[string]string{
-			constants.K8sKeyHPAUID:                string(hpa.UID),
-			constants.K8sKeyHPAName:               hpa.Name,
-			conventions.AttributeK8SNamespaceName: hpa.Namespace,
-		},
-	}
+	ts := pcommon.NewTimestampFromTime(time.Now())
+	mb.RecordK8sHpaMaxReplicasDataPoint(ts, int64(hpa.Spec.MaxReplicas))
+	mb.RecordK8sHpaMinReplicasDataPoint(ts, int64(*hpa.Spec.MinReplicas))
+	mb.RecordK8sHpaCurrentReplicasDataPoint(ts, int64(hpa.Status.CurrentReplicas))
+	mb.RecordK8sHpaDesiredReplicasDataPoint(ts, int64(hpa.Status.DesiredReplicas))
+	return mb.Emit(imetadata.WithK8sHpaUID(string(hpa.UID)), imetadata.WithK8sHpaName(hpa.Name), imetadata.WithK8sNamespaceName(hpa.Namespace))
 }
 
 func GetMetadata(hpa *autoscalingv2beta2.HorizontalPodAutoscaler) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {
