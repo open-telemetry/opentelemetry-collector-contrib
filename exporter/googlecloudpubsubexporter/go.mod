@@ -12,7 +12,7 @@ require (
 	go.opentelemetry.io/collector/consumer v0.70.1-0.20230130215412-26bd7b2bf678
 	go.opentelemetry.io/collector/pdata v1.0.0-rc4.0.20230130215412-26bd7b2bf678
 	go.uber.org/zap v1.24.0
-	google.golang.org/api v0.108.0
+	google.golang.org/api v0.109.0
 	google.golang.org/grpc v1.52.3
 )
 
