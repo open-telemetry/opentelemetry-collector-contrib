@@ -110,7 +110,7 @@ func (er *eventsReceiver) Start(ctx context.Context, host component.Host) error 
 		return err
 	}
 
-	return er.startPolling(ctx, host)
+	return er.startPolling(ctx)
 }
 
 func (er *eventsReceiver) Shutdown(ctx context.Context) error {
@@ -120,7 +120,7 @@ func (er *eventsReceiver) Shutdown(ctx context.Context) error {
 	return er.checkpoint(ctx)
 }
 
-func (er *eventsReceiver) startPolling(ctx context.Context, host component.Host) error {
+func (er *eventsReceiver) startPolling(ctx context.Context) error {
 	t := time.NewTicker(er.pollInterval)
 	er.wg.Add(1)
 	go func() {
