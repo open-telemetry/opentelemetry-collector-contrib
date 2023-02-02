@@ -17,7 +17,6 @@ package mongodbatlasreceiver // import "github.com/open-telemetry/opentelemetry-
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -101,6 +100,16 @@ func newEventsReceiver(settings rcvr.CreateSettings, c *Config, consumer consume
 
 func (er *eventsReceiver) Start(ctx context.Context, host component.Host) error {
 	er.logger.Debug("Starting up events receiver")
+	storageClient, err := adapter.GetStorageClient(ctx, host, er.storageID, er.id)
+	if err != nil {
+		return fmt.Errorf("failed to set up storage: %w", err)
+	}
+	er.storageClient = storageClient
+	err = er.loadCheckpoint(ctx)
+	if err != nil {
+		return err
+	}
+
 	return er.startPolling(ctx, host)
 }
 
@@ -112,13 +121,6 @@ func (er *eventsReceiver) Shutdown(ctx context.Context) error {
 }
 
 func (er *eventsReceiver) startPolling(ctx context.Context, host component.Host) error {
-	storageClient, err := adapter.GetStorageClient(ctx, host, er.storageID, er.id)
-	if err != nil {
-		return fmt.Errorf("failed to set up storage: %w", err)
-	}
-	er.storageClient = storageClient
-	err = er.loadCheckpoint(ctx)
-
 	t := time.NewTicker(er.pollInterval)
 	er.wg.Add(1)
 	go func() {
@@ -126,7 +128,7 @@ func (er *eventsReceiver) startPolling(ctx context.Context, host component.Host)
 		for {
 			select {
 			case <-t.C:
-				if err = er.pollEvents(ctx); err != nil {
+				if err := er.pollEvents(ctx); err != nil {
 					er.logger.Error("error while polling for events", zap.Error(err))
 				}
 			case <-er.doneChan:
@@ -192,17 +194,20 @@ func (er *eventsReceiver) poll(ctx context.Context, project *mongodbatlas.Projec
 }
 
 func (er *eventsReceiver) transformEvents(now pcommon.Timestamp, events []*mongodbatlas.Event, p *mongodbatlas.Project) plog.Logs {
-	logs := plog.NewLogs()
-	for _, event := range events {
-		resourceLogs := logs.ResourceLogs().AppendEmpty()
-		ra := resourceLogs.Resource().Attributes()
-		ra.PutStr("mongodbatlas.project.name", p.Name)
-		ra.PutStr("mongodbatlas.org.id", p.OrgID)
-		ra.PutStr("mongodbatlas.group.id", event.GroupID)
+	var lastRecordedEventTime = pcommon.Timestamp(0).AsTime()
+	if er.record.LastRecordedEvent != nil {
+		lastRecordedEventTime = *er.record.LastRecordedEvent
+	}
 
-		if event.ReplicaSetName != "" {
-			ra.PutStr("mongodbatlas.replica_set.name", event.ReplicaSetName)
-		}
+	var latestInPayloadEventTime = pcommon.Timestamp(0).AsTime()
+
+	logs := plog.NewLogs()
+	resourceLogs := logs.ResourceLogs().AppendEmpty()
+	ra := resourceLogs.Resource().Attributes()
+	ra.PutStr("mongodbatlas.project.name", p.Name)
+	ra.PutStr("mongodbatlas.org.id", p.OrgID)
+
+	for _, event := range events {
 
 		logRecord := resourceLogs.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 		bodyBytes, err := json.Marshal(event)
@@ -216,9 +221,10 @@ func (er *eventsReceiver) transformEvents(now pcommon.Timestamp, events []*mongo
 		ts, err := time.Parse(time.RFC3339, event.Created)
 		if err != nil {
 			er.logger.Warn("unable to interpret when an event was created, expecting a RFC3339 timestamp", zap.String("timestamp", event.Created), zap.String("event", event.ID))
-			continue
+			logRecord.SetTimestamp(now)
+		} else {
+			logRecord.SetTimestamp(pcommon.NewTimestampFromTime(ts))
 		}
-		logRecord.SetTimestamp(pcommon.NewTimestampFromTime(ts))
 		logRecord.SetObservedTimestamp(now)
 
 		attrs := logRecord.Attributes()
@@ -226,17 +232,23 @@ func (er *eventsReceiver) transformEvents(now pcommon.Timestamp, events []*mongo
 		attrs.PutStr("event.domain", "mongodbatlas")
 		attrs.PutStr("type", event.EventTypeName)
 		attrs.PutStr("id", event.ID)
+		attrs.PutStr("group.id", event.GroupID)
 
 		parseOptionalAttributes(&attrs, event)
+
+		if ts.After(latestInPayloadEventTime) {
+			latestInPayloadEventTime = ts
+		}
+	}
+
+	if latestInPayloadEventTime.After(lastRecordedEventTime) {
+		er.record.LastRecordedEvent = &latestInPayloadEventTime
 	}
 
 	return logs
 }
 
 func (er *eventsReceiver) checkpoint(ctx context.Context) error {
-	if er.storageClient == nil {
-		return errors.New("missing non-nil storage client")
-	}
 	marshalBytes, err := json.Marshal(er.record)
 	if err != nil {
 		return fmt.Errorf("unable to write checkpoint: %w", err)
@@ -245,11 +257,15 @@ func (er *eventsReceiver) checkpoint(ctx context.Context) error {
 }
 
 func (er *eventsReceiver) loadCheckpoint(ctx context.Context) error {
-	if er.storageClient == nil {
+	cBytes, err := er.storageClient.Get(ctx, eventStorageKey)
+
+	if cBytes == nil {
+		er.record = &eventRecord{}
 		return nil
 	}
-	cBytes, err := er.storageClient.Get(ctx, eventStorageKey)
+
 	if err != nil || cBytes == nil {
+		er.logger.Info("unable to load checkpoint from storage client, continuing without a previous checkpoint", zap.Error(err))
 		er.record = &eventRecord{}
 		return nil
 	}
@@ -268,7 +284,7 @@ func parseOptionalAttributes(m *pcommon.Map, event *mongodbatlas.Event) {
 	}
 
 	if event.AlertConfigID != "" {
-		m.PutStr("mongodbatlas.alert.config.id", event.AlertConfigID)
+		m.PutStr("alert.config.id", event.AlertConfigID)
 	}
 
 	if event.Collection != "" {
@@ -321,6 +337,10 @@ func parseOptionalAttributes(m *pcommon.Map, event *mongodbatlas.Event) {
 
 	if event.PaymentID != "" {
 		m.PutStr("payment.id", event.PaymentID)
+	}
+
+	if event.ReplicaSetName != "" {
+		m.PutStr("replica_set.name", event.ReplicaSetName)
 	}
 
 	if event.CurrentValue != nil {
