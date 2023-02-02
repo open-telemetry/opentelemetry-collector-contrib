@@ -17,6 +17,8 @@ package mongodbatlasreceiver
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"testing"
@@ -85,10 +87,10 @@ func TestContextDone(t *testing.T) {
 				Name: testProjectName,
 			},
 		},
-		PollInterval: 500 * time.Millisecond,
 	}
 	sink := &consumertest.LogsSink{}
 	r := newEventsReceiver(receivertest.NewNopCreateSettings(), cfg, sink)
+	r.pollInterval = 500 * time.Millisecond
 	mClient := &mockEventsClient{}
 	mClient.setupMock(t)
 	r.client = mClient
@@ -100,7 +102,10 @@ func TestContextDone(t *testing.T) {
 
 	require.Never(t, func() bool {
 		return sink.LogRecordCount() > 0
-	}, 500*time.Millisecond, 2*time.Second)
+	}, 2*time.Second, 500*time.Millisecond)
+
+	err = r.Shutdown(context.Background())
+	require.NoError(t, err)
 }
 
 func TestPoll(t *testing.T) {
@@ -127,11 +132,41 @@ func TestPoll(t *testing.T) {
 		return sink.LogRecordCount() > 0
 	}, 5*time.Second, 1*time.Second)
 
+	err = r.Shutdown(context.Background())
+	require.NoError(t, err)
+
 	expected, err := golden.ReadLogs(filepath.Join("testdata", "events", "golden", "events.json"))
 	require.NoError(t, err)
 
 	logs := sink.AllLogs()[0]
 	require.NoError(t, plogtest.CompareLogs(expected, logs, plogtest.IgnoreObservedTimestamp()))
+}
+
+func TestProjectGetFailure(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Events = &EventsConfig{
+		Projects: []*ProjectConfig{
+			{
+				Name: "fake-project",
+			},
+		},
+		PollInterval: time.Second,
+	}
+
+	sink := &consumertest.LogsSink{}
+	r := newEventsReceiver(receivertest.NewNopCreateSettings(), cfg, sink)
+	mClient := &mockEventsClient{}
+	mClient.On("GetProject", mock.Anything, "fake-project").Return(nil, fmt.Errorf("unable to get project: %d", http.StatusUnauthorized))
+
+	err := r.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	require.Never(t, func() bool {
+		return sink.LogRecordCount() > 0
+	}, 2*time.Second, 500*time.Millisecond)
+
+	err = r.Shutdown(context.Background())
+	require.NoError(t, err)
 }
 
 type mockEventsClient struct {

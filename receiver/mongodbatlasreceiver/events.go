@@ -37,7 +37,8 @@ import (
 
 const (
 	eventStorageKey       = "last_recorded_event"
-	defaultEventsMaxPages = 50
+	defaultEventsMaxPages = 25
+	defaultEventsPageSize = 100
 	defaultPollInterval   = time.Minute
 )
 
@@ -56,6 +57,7 @@ type eventsReceiver struct {
 	consumer      consumer.Logs
 
 	maxPages     int
+	pageSize     int
 	pollInterval time.Duration
 	wg           *sync.WaitGroup
 	record       *eventRecord
@@ -77,11 +79,17 @@ func newEventsReceiver(settings rcvr.CreateSettings, c *Config, consumer consume
 		consumer:     consumer,
 		pollInterval: c.Events.PollInterval,
 		wg:           &sync.WaitGroup{},
+		maxPages:     int(c.Events.MaxPages),
+		pageSize:     int(c.Events.PageSize),
 		doneChan:     make(chan bool, 1),
 	}
 
 	if r.maxPages == 0 {
 		r.maxPages = defaultEventsMaxPages
+	}
+
+	if r.pageSize == 0 {
+		r.pageSize = defaultEventsPageSize
 	}
 
 	if r.pollInterval == 0 {

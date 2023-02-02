@@ -64,10 +64,13 @@ type LogConfig struct {
 	Projects []*ProjectConfig `mapstructure:"projects"`
 }
 
+// EventsConfig is the configuration options for events collection
 type EventsConfig struct {
 	Projects     []*ProjectConfig `mapstructure:"projects"`
 	PollInterval time.Duration    `mapstructure:"poll_interval"`
 	Types        []string         `mapstructure:"types"`
+	PageSize     int64            `mapstructure:"page_size"`
+	MaxPages     int64            `mapstructure:"max_pages"`
 }
 
 type ProjectConfig struct {
