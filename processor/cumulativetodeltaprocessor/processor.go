@@ -165,10 +165,6 @@ func (ctdp *cumulativeToDeltaProcessor) convertDataPoints(in interface{}, baseId
 				Value:    point,
 			}
 			delta, valid := ctdp.deltaCalculator.Convert(trackingPoint)
-
-			// When converting non-monotonic cumulative counters,
-			// the first data point is omitted since the initial
-			// reference is not assumed to be zero
 			if !valid {
 				return true
 			}
