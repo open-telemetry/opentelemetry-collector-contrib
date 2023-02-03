@@ -35,8 +35,14 @@ func addResourceData(req *http.Request, rs *pcommon.Resource) {
 	attrs.Clear()
 	attrs.EnsureCapacity(3)
 	attrs.PutStr("telemetry.sdk.name", "Datadog")
-	attrs.PutStr("telemetry.sdk.version", "Datadog-"+req.Header.Get("Datadog-Meta-Tracer-Version"))
-	attrs.PutStr("telemetry.sdk.language", req.Header.Get("Datadog-Meta-Lang"))
+	ddTracerVersion := req.Header.Get("Datadog-Meta-Tracer-Version")
+	if ddTracerVersion != "" {
+		attrs.PutStr("telemetry.sdk.version", "Datadog-"+req.Header.Get("Datadog-Meta-Tracer-Version"))
+	}
+	ddTracerLang := req.Header.Get("Datadog-Meta-Lang")
+	if ddTracerLang != "" {
+		attrs.PutStr("telemetry.sdk.language", req.Header.Get("Datadog-Meta-Lang"))
+	}
 }
 
 func toTraces(payload *pb.TracerPayload, req *http.Request) ptrace.Traces {
