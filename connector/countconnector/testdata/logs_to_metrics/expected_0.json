@@ -22,9 +22,10 @@
                         "dataPoints": [
                            {
                               "asInt": "2",
-                              "timeUnixNano": "1675098548494088000"
+                              "timeUnixNano": "1675456932176893000"
                            }
-                        ]
+                        ],
+                        "isMonotonic": true
                      }
                   }
                ],

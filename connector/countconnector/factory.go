@@ -41,15 +41,15 @@ func NewFactory() connector.Factory {
 // createDefaultConfig creates the default configuration.
 func createDefaultConfig() component.Config {
 	return &Config{
-		Traces: TypeConfig{
+		Traces: DataTypeConfig{
 			Name:        defaultMetricNameSpans,
 			Description: defaultMetricDescSpans,
 		},
-		Metrics: TypeConfig{
+		Metrics: DataTypeConfig{
 			Name:        defaultMetricNameDataPoints,
 			Description: defaultMetricDescDataPoints,
 		},
-		Logs: TypeConfig{
+		Logs: DataTypeConfig{
 			Name:        defaultMetricNameLogRecords,
 			Description: defaultMetricDescLogRecords,
 		},
@@ -64,7 +64,7 @@ func createTracesToMetrics(
 	nextConsumer consumer.Metrics,
 ) (connector.Traces, error) {
 	c := cfg.(*Config)
-	return &count{Config: *c, Metrics: nextConsumer}, nil
+	return &count{cfg: *c, metricsConsumer: nextConsumer}, nil
 }
 
 // createMetricsToMetrics creates a metrics connector based on provided config.
@@ -75,7 +75,7 @@ func createMetricsToMetrics(
 	nextConsumer consumer.Metrics,
 ) (connector.Metrics, error) {
 	c := cfg.(*Config)
-	return &count{Config: *c, Metrics: nextConsumer}, nil
+	return &count{cfg: *c, metricsConsumer: nextConsumer}, nil
 }
 
 // createLogsToMetrics creates a logs to metrics connector based on provided config.
@@ -86,5 +86,5 @@ func createLogsToMetrics(
 	nextConsumer consumer.Metrics,
 ) (connector.Logs, error) {
 	c := cfg.(*Config)
-	return &count{Config: *c, Metrics: nextConsumer}, nil
+	return &count{cfg: *c, metricsConsumer: nextConsumer}, nil
 }

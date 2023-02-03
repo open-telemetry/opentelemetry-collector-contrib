@@ -31,8 +31,8 @@ const scopeName = "otelcol/countconnector"
 // count can count spans, data points, or log records and emit
 // the count onto a metrics pipeline.
 type count struct {
-	Config
-	consumer.Metrics
+	cfg             Config
+	metricsConsumer consumer.Metrics
 	component.StartFunc
 	component.ShutdownFunc
 }
@@ -42,84 +42,94 @@ func (c *count) Capabilities() consumer.Capabilities {
 }
 
 func (c *count) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
+	now := time.Now()
 	countMetrics := pmetric.NewMetrics()
+	countMetrics.ResourceMetrics().EnsureCapacity(td.ResourceSpans().Len())
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		resourceSpan := td.ResourceSpans().At(i)
 		countResource := countMetrics.ResourceMetrics().AppendEmpty()
 		resourceSpan.Resource().Attributes().CopyTo(countResource.Resource().Attributes())
 
+		countResource.ScopeMetrics().EnsureCapacity(resourceSpan.ScopeSpans().Len())
 		countScope := countResource.ScopeMetrics().AppendEmpty()
 		countScope.Scope().SetName(scopeName)
 
-		count := 0
+		var count uint64
 		for j := 0; j < resourceSpan.ScopeSpans().Len(); j++ {
-			count += resourceSpan.ScopeSpans().At(j).Spans().Len()
+			count += uint64(resourceSpan.ScopeSpans().At(j).Spans().Len())
 		}
-		setCountMetric(countScope.Metrics().AppendEmpty(), c.Config.Traces, count)
+		setCountMetric(countScope.Metrics().AppendEmpty(), c.cfg.Traces, count, now)
 	}
-	return c.Metrics.ConsumeMetrics(ctx, countMetrics)
+	return c.metricsConsumer.ConsumeMetrics(ctx, countMetrics)
 }
 
 func (c *count) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
+	now := time.Now()
 	countMetrics := pmetric.NewMetrics()
+	countMetrics.ResourceMetrics().EnsureCapacity(md.ResourceMetrics().Len())
 	for i := 0; i < md.ResourceMetrics().Len(); i++ {
 		resourceMetric := md.ResourceMetrics().At(i)
 		countResource := countMetrics.ResourceMetrics().AppendEmpty()
 		resourceMetric.Resource().Attributes().CopyTo(countResource.Resource().Attributes())
 
+		countResource.ScopeMetrics().EnsureCapacity(resourceMetric.ScopeMetrics().Len())
 		countScope := countResource.ScopeMetrics().AppendEmpty()
 		countScope.Scope().SetName(scopeName)
 
-		count := 0
+		var count uint64
 		for j := 0; j < resourceMetric.ScopeMetrics().Len(); j++ {
 			countMetrics := resourceMetric.ScopeMetrics().At(j).Metrics()
 			for k := 0; k < countMetrics.Len(); k++ {
 				countMetric := countMetrics.At(k)
 				switch countMetric.Type() {
 				case pmetric.MetricTypeGauge:
-					count += countMetric.Gauge().DataPoints().Len()
+					count += uint64(countMetric.Gauge().DataPoints().Len())
 				case pmetric.MetricTypeSum:
-					count += countMetric.Sum().DataPoints().Len()
+					count += uint64(countMetric.Sum().DataPoints().Len())
 				case pmetric.MetricTypeSummary:
-					count += countMetric.Summary().DataPoints().Len()
+					count += uint64(countMetric.Summary().DataPoints().Len())
 				case pmetric.MetricTypeHistogram:
-					count += countMetric.Histogram().DataPoints().Len()
+					count += uint64(countMetric.Histogram().DataPoints().Len())
 				case pmetric.MetricTypeExponentialHistogram:
-					count += countMetric.ExponentialHistogram().DataPoints().Len()
+					count += uint64(countMetric.ExponentialHistogram().DataPoints().Len())
 				}
 			}
 		}
-		setCountMetric(countScope.Metrics().AppendEmpty(), c.Config.Metrics, count)
+		setCountMetric(countScope.Metrics().AppendEmpty(), c.cfg.Metrics, count, now)
 	}
-	return c.Metrics.ConsumeMetrics(ctx, countMetrics)
+	return c.metricsConsumer.ConsumeMetrics(ctx, countMetrics)
 }
 
 func (c *count) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
+	now := time.Now()
 	countMetrics := pmetric.NewMetrics()
+	countMetrics.ResourceMetrics().EnsureCapacity(ld.ResourceLogs().Len())
 	for i := 0; i < ld.ResourceLogs().Len(); i++ {
 		resourceLog := ld.ResourceLogs().At(i)
 		countResource := countMetrics.ResourceMetrics().AppendEmpty()
 		resourceLog.Resource().Attributes().CopyTo(countResource.Resource().Attributes())
 
+		countResource.ScopeMetrics().EnsureCapacity(resourceLog.ScopeLogs().Len())
 		countScope := countResource.ScopeMetrics().AppendEmpty()
 		countScope.Scope().SetName(scopeName)
 
-		count := 0
+		var count uint64
 		for j := 0; j < resourceLog.ScopeLogs().Len(); j++ {
-			count += resourceLog.ScopeLogs().At(j).LogRecords().Len()
+			count += uint64(resourceLog.ScopeLogs().At(j).LogRecords().Len())
 		}
-		setCountMetric(countScope.Metrics().AppendEmpty(), c.Config.Logs, count)
+		setCountMetric(countScope.Metrics().AppendEmpty(), c.cfg.Logs, count, now)
 	}
-	return c.Metrics.ConsumeMetrics(ctx, countMetrics)
+	return c.metricsConsumer.ConsumeMetrics(ctx, countMetrics)
 }
 
-func setCountMetric(countMetric pmetric.Metric, metricType TypeConfig, count int) {
+func setCountMetric(countMetric pmetric.Metric, metricType DataTypeConfig, count uint64, now time.Time) {
 	countMetric.SetName(metricType.Name)
 	countMetric.SetDescription(metricType.Description)
 	sum := countMetric.SetEmptySum()
-	sum.SetIsMonotonic(false)
+	sum.SetIsMonotonic(true)
 	sum.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 	dp := sum.DataPoints().AppendEmpty()
 	dp.SetIntValue(int64(count))
-	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+	// TODO determine appropriate start time
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(now))
 }
