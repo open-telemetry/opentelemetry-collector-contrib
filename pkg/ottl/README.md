@@ -77,7 +77,7 @@ Example Paths
 #### Lists
 
 A List Value comprises a sequence of Values.
-Currently, list can only be created by the grammar to be using in functions or conditions;
+Currently, list can only be created by the grammar to be used in functions or conditions;
 the grammar does not provide an accessor to individual list entries.
 
 Example List Values:
