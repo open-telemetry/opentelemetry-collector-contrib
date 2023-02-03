@@ -64,7 +64,6 @@ type eventsReceiver struct {
 }
 
 type eventRecord struct {
-	sync.Mutex
 	NextStartTime *time.Time `mapstructure:"next_start_time"`
 }
 
@@ -141,9 +140,7 @@ func (er *eventsReceiver) startPolling(ctx context.Context) error {
 func (er *eventsReceiver) pollEvents(ctx context.Context) error {
 	st := pcommon.NewTimestampFromTime(time.Now().Add(-er.pollInterval)).AsTime()
 	if er.record.NextStartTime != nil {
-		er.record.Lock()
 		st = *er.record.NextStartTime
-		er.record.Unlock()
 	}
 	et := time.Now()
 
@@ -156,10 +153,7 @@ func (er *eventsReceiver) pollEvents(ctx context.Context) error {
 		er.poll(ctx, project, pc, st, et)
 	}
 
-	er.record.Lock()
 	er.record.NextStartTime = &et
-	er.record.Unlock()
-
 	return er.checkpoint(ctx)
 }
 
