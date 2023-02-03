@@ -1115,8 +1115,6 @@ func TestBuildMetricName(t *testing.T) {
 
 	for _, test := range tests {
 		actual := buildMetricName(test.namespace, test.metricName)
-		if actual != test.expected {
-			t.Errorf("buildMetricName(%q, %q) = %q, expected %q", test.namespace, test.metricName, actual, test.expected)
-		}
+		assert.Equal(t, test.expected, actual)
 	}
 }
