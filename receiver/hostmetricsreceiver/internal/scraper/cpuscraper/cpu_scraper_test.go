@@ -179,14 +179,10 @@ func TestScrape_CpuUtilization(t *testing.T) {
 			t.Parallel()
 			settings := test.metricsConfig
 			if test.metricsConfig.Metrics == (metadata.MetricsSettings{}) {
-				settings = settings.WithMetrics(metadata.MetricsSettings{
-					SystemCPUTime: metadata.MetricSettings{
-						Enabled: test.times,
-					},
-					SystemCPUUtilization: metadata.MetricSettings{
-						Enabled: test.utilization,
-					},
-				})
+				// TODO hughesjj see if this is safe or not, maybe just add else?  dude i don't even know how the original worked
+				settings = metadata.DefaultMetricsBuilderConfig()
+				settings.Metrics.SystemCPUTime.Enabled = test.times
+				settings.Metrics.SystemCPUUtilization.Enabled = test.utilization
 			}
 
 			scraper := newCPUScraper(context.Background(), receivertest.NewNopCreateSettings(), &Config{MetricsBuilderConfig: settings})
@@ -248,11 +244,10 @@ func TestScrape_CpuUtilizationError(t *testing.T) {
 }
 
 func TestScrape_CpuUtilizationStandard(t *testing.T) {
-	overriddenMetricsSettings := metadata.DefaultMetricsBuilderConfig().WithMetrics(metadata.MetricsSettings{
-		SystemCPUUtilization: metadata.MetricSettings{
-			Enabled: true,
-		},
-	})
+	overriddenMetricsSettings := metadata.DefaultMetricsBuilderConfig()
+	// TODO hughesjj checking here too
+	overriddenMetricsSettings.Metrics.SystemCPUUtilization.Enabled = true
+	overriddenMetricsSettings.Metrics.SystemCPUTime.Enabled = false
 
 	// datapoint data
 	type dpData struct {
