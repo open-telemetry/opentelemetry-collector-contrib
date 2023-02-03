@@ -225,10 +225,9 @@ func NewNewlineSplitFunc(enc encoding.Encoding, flushAtEOF bool, preserveWhitesp
 			token = bytes.TrimSuffix(data[:i], carriageReturn)
 
 			if !preserveWhitespace {
-				return i + len(newline), token, nil
-			} else {
-				return i + len(newline), trimWhitespaces(token), nil
+				token = trimWhitespaces(token)
 			}
+			return i + len(newline), token, nil
 		}
 
 		// Flush if no more data is expected
