@@ -18,7 +18,6 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/confmap"
 )
 
 type Config struct {
@@ -45,17 +44,6 @@ func (c *Config) Validate() error {
 		return errors.New("must specify record type")
 	}
 	if err := validateRecordType(c.RecordType); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (c *Config) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(c) // , confmap.WithErrorUnused()) // , cmpopts.IgnoreUnexported(metadata.MetricSettings{}))
-	if err != nil {
 		return err
 	}
 	return nil

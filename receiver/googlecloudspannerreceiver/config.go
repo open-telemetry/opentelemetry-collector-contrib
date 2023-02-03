@@ -18,7 +18,6 @@ import (
 	"errors"
 	"fmt"
 
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
@@ -111,16 +110,5 @@ func (instance Instance) Validate() error {
 		}
 	}
 
-	return nil
-}
-
-func (config *Config) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(config) // , confmap.WithErrorUnused()) // , cmpopts.IgnoreUnexported(metadata.MetricSettings{}))
-	if err != nil {
-		return err
-	}
 	return nil
 }

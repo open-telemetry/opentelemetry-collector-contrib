@@ -19,7 +19,6 @@ import (
 	"strings"
 	"time"
 
-	"go.opentelemetry.io/collector/confmap"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
@@ -161,15 +160,4 @@ func (c *Config) getValidObjects() (map[string][]*schema.GroupVersionResource, e
 
 	}
 	return validObjects, nil
-}
-
-func (c *Config) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(c) // , confmap.WithErrorUnused()) // , cmpopts.IgnoreUnexported(metadata.MetricSettings{}))
-	if err != nil {
-		return err
-	}
-	return nil
 }

@@ -19,7 +19,6 @@ import (
 	"net/url"
 
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver/internal/metadata"
@@ -53,16 +52,5 @@ func (cfg *Config) Validate() error {
 		return fmt.Errorf("query must be 'auto': '%s'", cfg.Endpoint)
 	}
 
-	return nil
-}
-
-func (cfg *Config) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(cfg) // , confmap.WithErrorUnused()) // , cmpopts.IgnoreUnexported(metadata.MetricSettings{}))
-	if err != nil {
-		return err
-	}
 	return nil
 }

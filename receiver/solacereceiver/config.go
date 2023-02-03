@@ -20,7 +20,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/confmap"
 )
 
 const (
@@ -102,15 +101,4 @@ type FlowControl struct {
 // FlowControlDelayedRetry represents the strategy of waiting for a defined amount of time (in time.Duration) and attempt redelivery
 type FlowControlDelayedRetry struct {
 	Delay time.Duration `mapstructure:"delay"`
-}
-
-func (cfg *Config) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(cfg) // , confmap.WithErrorUnused()) // , cmpopts.IgnoreUnexported(metadata.MetricSettings{}))
-	if err != nil {
-		return err
-	}
-	return nil
 }

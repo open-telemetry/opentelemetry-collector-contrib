@@ -18,8 +18,6 @@ import (
 	"fmt"
 	"time"
 
-	"go.opentelemetry.io/collector/confmap"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
 
@@ -49,17 +47,6 @@ func (cfg *Config) Validate() error {
 	case distributionKubernetes:
 	default:
 		return fmt.Errorf("\"%s\" is not a supported distribution. Must be one of: \"openshift\", \"kubernetes\"", cfg.Distribution)
-	}
-	return nil
-}
-
-func (cfg *Config) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(cfg) // , confmap.WithErrorUnused()) // , cmpopts.IgnoreUnexported(metadata.MetricSettings{}))
-	if err != nil {
-		return err
 	}
 	return nil
 }

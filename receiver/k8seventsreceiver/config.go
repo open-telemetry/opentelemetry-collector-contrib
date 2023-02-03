@@ -15,7 +15,6 @@
 package k8seventsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver"
 
 import (
-	"go.opentelemetry.io/collector/confmap"
 	k8s "k8s.io/client-go/kubernetes"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -41,15 +40,4 @@ func (cfg *Config) getK8sClient() (k8s.Interface, error) {
 		cfg.makeClient = k8sconfig.MakeClient
 	}
 	return cfg.makeClient(cfg.APIConfig)
-}
-
-func (cfg *Config) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(cfg) // , confmap.WithErrorUnused()) // , cmpopts.IgnoreUnexported(metadata.MetricSettings{}))
-	if err != nil {
-		return err
-	}
-	return nil
 }

@@ -16,8 +16,6 @@ package awscontainerinsightreceiver // import "github.com/open-telemetry/opentel
 
 import (
 	"time"
-
-	"go.opentelemetry.io/collector/confmap"
 )
 
 // Config defines configuration for aws ecs container metrics receiver.
@@ -41,15 +39,4 @@ type Config struct {
 	// If false FullPodName label is not added
 	// The default value is false
 	AddFullPodNameMetricLabel bool `mapstructure:"add_full_pod_name_metric_label"`
-}
-
-func (cfg *Config) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(cfg) // , confmap.WithErrorUnused()) // , cmpopts.IgnoreUnexported(metadata.MetricSettings{}))
-	if err != nil {
-		return err
-	}
-	return nil
 }

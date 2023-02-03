@@ -18,7 +18,6 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/haproxyreceiver/internal/metadata"
@@ -33,17 +32,6 @@ type Config struct {
 func (c Config) Validate() error {
 	if c.HTTPClientSettings.Endpoint == "" {
 		return errors.New("'endpoint' cannot be empty")
-	}
-	return nil
-}
-
-func (c *Config) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(c) // , confmap.WithErrorUnused()) // , cmpopts.IgnoreUnexported(metadata.MetricSettings{}))
-	if err != nil {
-		return err
 	}
 	return nil
 }

@@ -20,7 +20,6 @@ import (
 
 	"github.com/Azure/azure-amqp-common-go/v4/conn"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
 )
 
 type logFormat string
@@ -63,17 +62,6 @@ func (config *Config) Validate() error {
 	}
 	if !isValidFormat(config.Format) {
 		return fmt.Errorf("invalid format; must be one of %#v", validFormats)
-	}
-	return nil
-}
-
-func (config *Config) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(config) // , confmap.WithErrorUnused()) // , cmpopts.IgnoreUnexported(metadata.MetricSettings{}))
-	if err != nil {
-		return err
 	}
 	return nil
 }

@@ -23,7 +23,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
 
@@ -101,15 +100,4 @@ func (c *Config) hostlist() []string {
 		hosts = append(hosts, ep.Endpoint)
 	}
 	return hosts
-}
-
-func (c *Config) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(c) // , confmap.WithErrorUnused()) // , cmpopts.IgnoreUnexported(metadata.MetricSettings{}))
-	if err != nil {
-		return err
-	}
-	return nil
 }

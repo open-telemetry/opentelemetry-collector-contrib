@@ -18,7 +18,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/confmap"
 )
 
 // Config defines configuration for the Wavefront receiver.
@@ -31,15 +30,4 @@ type Config struct {
 	// ExtractCollectdTags instructs the Wavefront receiver to attempt to extract
 	// tags in the CollectD format from the metric name. The default is false.
 	ExtractCollectdTags bool `mapstructure:"extract_collectd_tags"`
-}
-
-func (cfg *Config) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(cfg) // , confmap.WithErrorUnused()) // , cmpopts.IgnoreUnexported(metadata.MetricSettings{}))
-	if err != nil {
-		return err
-	}
-	return nil
 }

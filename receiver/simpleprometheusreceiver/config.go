@@ -19,7 +19,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/confmap"
 )
 
 // Config defines configuration for simple prometheus receiver.
@@ -58,15 +57,4 @@ type tlsConfig struct {
 	KeyFile string `mapstructure:"key_file"`
 	// Whether or not to verify the exporter's TLS cert.
 	InsecureSkipVerify bool `mapstructure:"insecure_skip_verify"`
-}
-
-func (cfg *Config) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(cfg) // , confmap.WithErrorUnused()) // , cmpopts.IgnoreUnexported(metadata.MetricSettings{}))
-	if err != nil {
-		return err
-	}
-	return nil
 }

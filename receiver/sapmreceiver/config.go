@@ -16,7 +16,6 @@ package sapmreceiver // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/confmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
@@ -26,15 +25,4 @@ type Config struct {
 	confighttp.HTTPServerSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	splunk.AccessTokenPassthroughConfig `mapstructure:",squash"`
-}
-
-func (cfg *Config) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(cfg) // , confmap.WithErrorUnused()) // , cmpopts.IgnoreUnexported(metadata.MetricSettings{}))
-	if err != nil {
-		return err
-	}
-	return nil
 }

@@ -16,7 +16,6 @@ package awsxrayreceiver // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/confmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy"
 )
@@ -30,15 +29,4 @@ type Config struct {
 
 	// ProxyServer defines configurations related to the local TCP proxy server.
 	ProxyServer *proxy.Config `mapstructure:"proxy_server"`
-}
-
-func (cfg *Config) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(cfg) // , confmap.WithErrorUnused()) // , cmpopts.IgnoreUnexported(metadata.MetricSettings{}))
-	if err != nil {
-		return err
-	}
-	return nil
 }

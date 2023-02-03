@@ -19,7 +19,6 @@ import (
 	"net"
 	"strings"
 
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
 
@@ -69,15 +68,4 @@ func (c Config) Validate() (err error) {
 	}
 
 	return
-}
-
-func (c *Config) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(c) // , confmap.WithErrorUnused()) // , cmpopts.IgnoreUnexported(metadata.MetricSettings{}))
-	if err != nil {
-		return err
-	}
-	return nil
 }
