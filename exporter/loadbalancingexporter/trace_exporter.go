@@ -90,36 +90,44 @@ func (e *traceExporterImp) Shutdown(context.Context) error {
 func (e *traceExporterImp) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	var errs error
 	batches := batchpersignal.SplitTraces(td)
-	for _, batch := range batches {
-		errs = multierr.Append(errs, e.consumeTrace(ctx, batch))
-	}
+    endpointToTraceData := make(map[string]ptrace.Traces)
 
-	return errs
-}
+    // Map the trace data to their respective endpoints.
+    for batch := range batches {
+        routingIDs, err := routingIdentifiersFromTraces(batches[batch], e.routingKey)
+        errs = multierr.Append(errs, err)
+        for rid := range routingIDs {
+		    endpoint := e.loadBalancer.Endpoint([]byte(rid))
+            if _, ok := endpointToTraceData[endpoint]; ok {
+                // append
+                for i := 0; i < batches[batch].ResourceSpans().Len(); i++ {
+                    batches[batch].ResourceSpans().At(i).CopyTo(endpointToTraceData[endpoint].ResourceSpans().AppendEmpty())
+                }
+            } else {
+                newTrace := ptrace.NewTraces()
+                for i := 0; i < batches[batch].ResourceSpans().Len(); i++ {
+                    batches[batch].ResourceSpans().At(i).CopyTo(newTrace.ResourceSpans().AppendEmpty())
+                }
+                endpointToTraceData[endpoint] = newTrace
+            }
+        }
+    }
 
-func (e *traceExporterImp) consumeTrace(ctx context.Context, td ptrace.Traces) error {
-	var exp component.Component
-	routingIds, err := routingIdentifiersFromTraces(td, e.routingKey)
-	if err != nil {
-		return err
-	}
-	for rid := range routingIds {
-		endpoint := e.loadBalancer.Endpoint([]byte(rid))
-		exp, err = e.loadBalancer.Exporter(endpoint)
+    // Send the trace data off by endpoint.
+    for endpoint, traces := range(endpointToTraceData) {
+        exp, err := e.loadBalancer.Exporter(endpoint)
 		if err != nil {
 			return err
 		}
 
 		te, ok := exp.(exporter.Traces)
 		if !ok {
-			return fmt.Errorf("unable to export traces, unexpected exporter type: expected exporter.Traces but got %T", exp)
+            return fmt.Errorf("unable to export traces, unexpected exporter type: expected exporter.Traces but got %T", exp)
 		}
-
-		start := time.Now()
-		err = te.ConsumeTraces(ctx, td)
-		duration := time.Since(start)
-
-		if err == nil {
+        start := time.Now()
+        err = te.ConsumeTraces(ctx, traces)
+        duration := time.Since(start)
+        if err == nil {
 			_ = stats.RecordWithTags(
 				ctx,
 				[]tag.Mutator{tag.Upsert(endpointTagKey, endpoint), successTrueMutator},
@@ -130,8 +138,8 @@ func (e *traceExporterImp) consumeTrace(ctx context.Context, td ptrace.Traces) e
 				[]tag.Mutator{tag.Upsert(endpointTagKey, endpoint), successFalseMutator},
 				mBackendLatency.M(duration.Milliseconds()))
 		}
-	}
-	return err
+    }
+	return errs
 }
 
 func routingIdentifiersFromTraces(td ptrace.Traces, key routingKey) (map[string]bool, error) {
