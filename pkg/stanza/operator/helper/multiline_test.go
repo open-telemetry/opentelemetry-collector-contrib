@@ -573,7 +573,7 @@ func TestNewlineSplitFunc(t *testing.T) {
 			Raw:  []byte("\nLOGEND 333 \nAnother one "),
 			ExpectedTokenized: []string{
 				"",
-				"LOGEND 333",
+				"LOGEND 333 ",
 			},
 			PreserveWhitespace: true,
 		},
