@@ -85,7 +85,7 @@ In order to ensure compatibility with different operating systems, code should b
   - Standard file systems and file paths such as forward slashes (/) instead of backward slashes (\\) in Windows. Use the [`path/filepath` package](https://pkg.go.dev/path/filepath) when working with filepaths. 
   - Consistent line ending formats such as Unix (LF) or Windows (CRLF).
 
-* Test your implementation thoroughly on different platforms and fix any issues. 
+* Test your implementation thoroughly on different platforms if possible and fix any issues. 
 
 With above guidelines, you can write code that is more portable and easier to maintain across different platforms. 
 
