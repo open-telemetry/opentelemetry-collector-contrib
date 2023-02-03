@@ -30,6 +30,15 @@ import (
 	semconv "go.opentelemetry.io/collector/semconv/v1.6.1"
 )
 
+func addResourceData(req *http.Request, rs *pcommon.Resource) {
+	attrs := rs.Attributes()
+	attrs.Clear()
+	attrs.EnsureCapacity(3)
+	attrs.PutStr("telemetry.sdk.name", "Datadog")
+	attrs.PutStr("telemetry.sdk.version", "Datadog-"+req.Header.Get("Datadog-Meta-Tracer-Version"))
+	attrs.PutStr("telemetry.sdk.language", req.Header.Get("Datadog-Meta-Lang"))
+}
+
 func toTraces(payload *pb.TracerPayload, req *http.Request) ptrace.Traces {
 	var traces pb.Traces
 	for _, p := range payload.GetChunks() {
@@ -37,6 +46,8 @@ func toTraces(payload *pb.TracerPayload, req *http.Request) ptrace.Traces {
 	}
 	dest := ptrace.NewTraces()
 	resSpans := dest.ResourceSpans().AppendEmpty()
+	resource := resSpans.Resource()
+	addResourceData(req, &resource)
 	resSpans.SetSchemaUrl(semconv.SchemaURL)
 
 	for _, trace := range traces {
