@@ -70,10 +70,7 @@ type factory struct {
 	sourceProvider source.Provider
 	providerErr    error
 
-	onceAgent sync.Once      // ensures agent only gets instantiated once
-	wg        sync.WaitGroup // waits for agent to exit
-	agent     *agent.Agent   // agent processes incoming traces and stats
-	agentErr  error          // specifies any error occurred while instantiating agent
+	wg sync.WaitGroup // waits for agent to exit
 
 	registry *featuregate.Registry
 }
@@ -86,20 +83,16 @@ func (f *factory) SourceProvider(set component.TelemetrySettings, configHostname
 }
 
 func (f *factory) TraceAgent(ctx context.Context, params exporter.CreateSettings, cfg *Config, sourceProvider source.Provider) (*agent.Agent, error) {
-	f.onceAgent.Do(func() {
-		agnt, err := newTraceAgent(ctx, params, cfg, sourceProvider)
-		if err != nil {
-			f.agentErr = err
-			return
-		}
-		f.wg.Add(1)
-		go func() {
-			defer f.wg.Done()
-			agnt.Run()
-		}()
-		f.agent = agnt
-	})
-	return f.agent, f.agentErr
+	agnt, err := newTraceAgent(ctx, params, cfg, sourceProvider)
+	if err != nil {
+		return nil, err
+	}
+	f.wg.Add(1)
+	go func() {
+		defer f.wg.Done()
+		agnt.Run()
+	}()
+	return agnt, nil
 }
 
 func newFactoryWithRegistry(registry *featuregate.Registry) exporter.Factory {
