@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 
+	jsoniter "github.com/json-iterator/go"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
@@ -71,7 +72,7 @@ func mapLogRecordToSplunkEvent(res pcommon.Resource, lr plog.LogRecord, config *
 		case splunk.HecTokenLabel:
 			// ignore
 		default:
-			_ = mergeValue(fields, k, v.AsRaw())
+			mergeValue(fields, k, v.AsRaw())
 		}
 		return true
 	})
@@ -88,7 +89,7 @@ func mapLogRecordToSplunkEvent(res pcommon.Resource, lr plog.LogRecord, config *
 		case splunk.HecTokenLabel:
 			// ignore
 		default:
-			_ = mergeValue(fields, k, v.AsRaw())
+			mergeValue(fields, k, v.AsRaw())
 		}
 		return true
 	})
@@ -119,20 +120,20 @@ func nanoTimestampToEpochMilliseconds(ts pcommon.Timestamp) *float64 {
 	return &val
 }
 
-func mergeValue(dst map[string]any, k string, v any) int {
+func mergeValue(dst map[string]any, k string, v any) {
 	switch element := v.(type) {
 	case []any:
-		if !isArrayFlat(element) {
-			return 1
+		if isArrayFlat(element) {
+			dst[k] = v
+		} else {
+			jsonStr, _ := jsoniter.MarshalToString(element)
+			dst[k] = jsonStr
 		}
-		dst[k] = v
 	case map[string]any:
-		return flattenAndMergeMap(element, dst, k)
+		flattenAndMergeMap(element, dst, k)
 	default:
 		dst[k] = v
 	}
-
-	return 0
 
 }
 
@@ -146,23 +147,22 @@ func isArrayFlat(array []any) bool {
 	return true
 }
 
-func flattenAndMergeMap(src, dst map[string]any, key string) int {
-	dropped := 0
+func flattenAndMergeMap(src, dst map[string]any, key string) {
 	for k, v := range src {
 		current := fmt.Sprintf("%s.%s", key, k)
 		switch element := v.(type) {
 		case map[string]any:
-			dropped += flattenAndMergeMap(element, dst, current)
+			flattenAndMergeMap(element, dst, current)
 		case []any:
-			if !isArrayFlat(element) {
-				dropped++
-				continue
+			if isArrayFlat(element) {
+				dst[current] = element
+			} else {
+				jsonStr, _ := jsoniter.MarshalToString(element)
+				dst[current] = jsonStr
 			}
-			dst[current] = element
+
 		default:
 			dst[current] = element
 		}
 	}
-
-	return dropped
 }

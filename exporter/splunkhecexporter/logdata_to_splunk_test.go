@@ -484,72 +484,62 @@ func Test_mergeValue(t *testing.T) {
 		key      string
 		val      any
 		expected map[string]any
-		dropped  int
 	}{
 		{
 			name:     "int",
 			key:      "intKey",
 			val:      0,
 			expected: map[string]any{"intKey": 0},
-			dropped:  0,
 		},
 		{
 			name:     "flat_array",
 			key:      "arrayKey",
 			val:      []any{0, 1, 2, 3},
 			expected: map[string]any{"arrayKey": []any{0, 1, 2, 3}},
-			dropped:  0,
 		},
 		{
 			name:     "nested_array",
 			key:      "arrayKey",
 			val:      []any{0, 1, []any{2, 3}},
-			expected: map[string]any{},
-			dropped:  1,
+			expected: map[string]any{"arrayKey": "[0,1,[2,3]]"},
 		},
 		{
 			name:     "array_of_map",
 			key:      "arrayKey",
 			val:      []any{0, 1, map[string]any{"3": 3}},
-			expected: map[string]any{},
-			dropped:  1,
+			expected: map[string]any{"arrayKey": "[0,1,{\"3\":3}]"},
 		},
 		{
 			name:     "flat_map",
 			key:      "mapKey",
 			val:      map[string]any{"1": 1, "2": 2},
 			expected: map[string]any{"mapKey.1": 1, "mapKey.2": 2},
-			dropped:  0,
 		},
 		{
 			name:     "nested_map",
 			key:      "mapKey",
 			val:      map[string]any{"1": 1, "2": 2, "nested": map[string]any{"3": 3, "4": 4}},
 			expected: map[string]any{"mapKey.1": 1, "mapKey.2": 2, "mapKey.nested.3": 3, "mapKey.nested.4": 4},
-			dropped:  0,
 		},
 		{
 			name:     "flat_array_in_nested_map",
 			key:      "mapKey",
 			val:      map[string]any{"1": 1, "2": 2, "nested": map[string]any{"3": 3, "flat_array": []any{4}}},
 			expected: map[string]any{"mapKey.1": 1, "mapKey.2": 2, "mapKey.nested.3": 3, "mapKey.nested.flat_array": []any{4}},
-			dropped:  0,
 		},
 		{
 			name:     "nested_array_in_nested_map",
 			key:      "mapKey",
 			val:      map[string]any{"1": 1, "2": 2, "nested": map[string]any{"3": 3, "nested_array": []any{4, []any{5}}}},
-			expected: map[string]any{"mapKey.1": 1, "mapKey.2": 2, "mapKey.nested.3": 3},
-			dropped:  1,
+			expected: map[string]any{"mapKey.1": 1, "mapKey.2": 2, "mapKey.nested.3": 3, "mapKey.nested.nested_array": "[4,[5]]"},
 		},
 	}
 
-	for _, tt := range tests[6:] {
+	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			fields := make(map[string]any)
-			dropped := mergeValue(fields, tt.key, tt.val)
+			mergeValue(fields, tt.key, tt.val)
 			assert.Equal(t, tt.expected, fields)
-			assert.Equal(t, tt.dropped, dropped)
 		})
 	}
 
