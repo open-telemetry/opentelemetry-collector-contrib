@@ -67,10 +67,11 @@ type Config struct {
 
 // BaseConfig is the details configuration of a udp input operator.
 type BaseConfig struct {
-	ListenAddress string                 `mapstructure:"listen_address,omitempty"`
-	AddAttributes bool                   `mapstructure:"add_attributes,omitempty"`
-	Encoding      helper.EncodingConfig  `mapstructure:",squash,omitempty"`
-	Multiline     helper.MultilineConfig `mapstructure:"multiline,omitempty"`
+	ListenAddress      string                 `mapstructure:"listen_address,omitempty"`
+	AddAttributes      bool                   `mapstructure:"add_attributes,omitempty"`
+	Encoding           helper.EncodingConfig  `mapstructure:",squash,omitempty"`
+	Multiline          helper.MultilineConfig `mapstructure:"multiline,omitempty"`
+	PreserveWhitespace bool                   `mapstructure:"preserve_whitespace,omitempty"`
 }
 
 // Build will build a udp input operator.
@@ -95,7 +96,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	}
 
 	// Build multiline
-	splitFunc, err := c.Multiline.Build(encoding.Encoding, true, nil, MaxUDPSize)
+	splitFunc, err := c.Multiline.Build(encoding.Encoding, true, nil, MaxUDPSize, c.PreserveWhitespace)
 	if err != nil {
 		return nil, err
 	}

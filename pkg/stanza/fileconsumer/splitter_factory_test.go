@@ -100,7 +100,7 @@ func Test_multilineSplitterFactory_Build(t *testing.T) {
 }
 
 func Test_newMultilineSplitterFactory(t *testing.T) {
-	splitter := newMultilineSplitterFactory(helper.NewEncodingConfig(), helper.NewFlusherConfig(), helper.NewMultilineConfig())
+	splitter := newMultilineSplitterFactory(helper.NewSplitterConfig())
 	assert.NotNil(t, splitter)
 }
 
