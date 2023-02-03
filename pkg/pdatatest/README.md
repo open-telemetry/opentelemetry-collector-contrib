@@ -47,3 +47,18 @@ func TestLogsReceiver(t *testing.T) {
 	require.NoError(t, pmetrictest.CompareLogs(expectedLogs, actualLogs))
 }
 ```
+
+```go
+func TestTraceProcessor(t *testing.T) {
+	nextTrace := new(consumertest.TracesSink)
+	tp, err := newTracesProcessor(NewFactory().CreateDefaultConfig(), nextTrace)
+	traces := generateTraces()
+	tp.ConsumeTraces(ctx, traces)
+	actualTraces := nextTrace.AllTraces()[0]
+
+	expectedTraces, err := readTraces(filepath.Join("testdata", "traces", "expected.json"))
+	require.NoError(t, err)
+	
+	require.NoError(t, ptracetest.CompareTraces(expectedTraces, actualTraces))
+}
+```
