@@ -94,7 +94,7 @@ Literals are literal interpretations of the Value into a Go value.  Accepted lit
 - Ints.  Ints are represented by any digit, optionally prepended by plus (`+`) or minus (`-`). Internally the OTTL represents all ints as `int64`
 - Floats.  Floats are represented by digits separated by a dot (`.`), optionally prepended by plus (`+`) or minus (`-`). The leading digit is optional. Internally the OTTL represents all Floats as `float64`.
 - Bools.  Bools are represented by the exact strings `true` and `false`.
-- Nil.  Nil is represented by the exact strings `nil`.
+- Nil.  Nil is represented by the exact string `nil`.
 - Byte slices.  Byte slices are represented via a hex string prefaced with `0x`
 
 Example Literals
