@@ -102,13 +102,10 @@ func (er *eventsReceiver) Start(ctx context.Context, host component.Host) error 
 	er.logger.Debug("Starting up events receiver")
 	storageClient, err := adapter.GetStorageClient(ctx, host, er.storageID, er.id)
 	if err != nil {
-		return fmt.Errorf("failed to set up storage: %w", err)
+		return fmt.Errorf("failed to get storage client: %w", err)
 	}
 	er.storageClient = storageClient
-	err = er.loadCheckpoint(ctx)
-	if err != nil {
-		return err
-	}
+	er.loadCheckpoint(ctx)
 
 	return er.startPolling(ctx)
 }
@@ -240,26 +237,27 @@ func (er *eventsReceiver) checkpoint(ctx context.Context) error {
 	return er.storageClient.Set(ctx, eventStorageKey, marshalBytes)
 }
 
-func (er *eventsReceiver) loadCheckpoint(ctx context.Context) error {
+func (er *eventsReceiver) loadCheckpoint(ctx context.Context) {
 	cBytes, err := er.storageClient.Get(ctx, eventStorageKey)
 
 	if cBytes == nil {
 		er.record = &eventRecord{}
-		return nil
+		return
 	}
 
 	if err != nil {
 		er.logger.Info("unable to load checkpoint from storage client, continuing without a previous checkpoint", zap.Error(err))
 		er.record = &eventRecord{}
-		return nil
+		return
 	}
 
 	var record eventRecord
 	if err = json.Unmarshal(cBytes, &record); err != nil {
-		return fmt.Errorf("unable to decode stored record for events: %w", err)
+		er.logger.Error("unable to decode stored record for events, continuing without a checkpoint", zap.Error(err))
+		er.record = &eventRecord{}
+		return
 	}
 	er.record = &record
-	return nil
 }
 
 func parseOptionalAttributes(m *pcommon.Map, event *mongodbatlas.Event) {
