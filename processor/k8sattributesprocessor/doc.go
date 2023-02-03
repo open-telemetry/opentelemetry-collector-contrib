@@ -27,9 +27,9 @@
 // Each sources rule is specified as a pair of `from` (representing the rule type) and `name` (representing the attribute name if `From` is set to `resource_attribute`).
 // Following rule types are available:
 //
-//	     from: "connection" - takes the IP attribute from connection context (if available)
-//	     from: "resource_attribute" - allows to specify the attribute name to lookup up in the list of attributes of the received Resource.
-//		                             Semantic convention should be used for naming.
+//	from: "connection" - takes the IP attribute from connection context (if available)
+//	from: "resource_attribute" - allows to specify the attribute name to lookup up in the list of attributes of the received Resource.
+//	                             Semantic convention should be used for naming.
 //
 // Pod association configuration.
 //
