@@ -25,13 +25,12 @@ import (
 )
 
 func ConvertCase[K any](target ottl.Getter[K], toCase string) (ottl.ExprFunc[K], error) {
-	if toCase != "lower" && toCase != "upper" && toCase != "snake" && toCase != "camel" {
-		return nil, fmt.Errorf("invalid case: %s, allowed cases are: lower, upper, snake, camel", toCase)
+	if toCase != "lower" && toCase != "upper" && toCase != "snake" && toCase != "camel" && toCase != "dot" {
+		return nil, fmt.Errorf("invalid case: %s, allowed cases are: lower, upper, snake, camel, dot", toCase)
 	}
 
 	return func(ctx context.Context, tCtx K) (interface{}, error) {
 		val, err := target.Get(ctx, tCtx)
-
 		if err != nil {
 			return nil, err
 		}
@@ -58,6 +57,10 @@ func ConvertCase[K any](target ottl.Getter[K], toCase string) (ottl.ExprFunc[K],
 			// Convert string to camel case (some_name -> SomeName)
 			case "camel":
 				return strcase.ToCamel(valStr), nil
+
+			// Convert string to dot case (some_name -> some.name)
+			case "dot":
+				return strcase.ToDelimited(valStr, '.'), nil
 
 			default:
 				return nil, fmt.Errorf("error handling unexpected case: %s", toCase)

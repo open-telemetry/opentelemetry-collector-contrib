@@ -104,7 +104,7 @@ func Test_convertCase(t *testing.T) {
 			expected: "SimpleString",
 		},
 		{
-			name: "snake noop already snake case",
+			name: "camel noop already camel case",
 			target: &ottl.StandardGetSetter[interface{}]{
 				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
 					return "SimpleString", nil
@@ -114,7 +114,7 @@ func Test_convertCase(t *testing.T) {
 			expected: "SimpleString",
 		},
 		{
-			name: "snake hyphens",
+			name: "camel hyphens",
 			target: &ottl.StandardGetSetter[interface{}]{
 				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
 					return "simple-string", nil
@@ -124,7 +124,17 @@ func Test_convertCase(t *testing.T) {
 			expected: "SimpleString",
 		},
 		{
-			name: "snake nil",
+			name: "camel dot",
+			target: &ottl.StandardGetSetter[interface{}]{
+				Getter: func(ctx context.Context, tCx interface{}) (interface{}, error) {
+					return "simple.string", nil
+				},
+			},
+			toCase:   "camel",
+			expected: "SimpleString",
+		},
+		{
+			name: "camel nil",
 			target: &ottl.StandardGetSetter[interface{}]{
 				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
 					return nil, nil
@@ -134,7 +144,68 @@ func Test_convertCase(t *testing.T) {
 			expected: nil,
 		},
 		{
-			name: "snake empty string",
+			name: "camel empty string",
+			target: &ottl.StandardGetSetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return "", nil
+				},
+			},
+			toCase:   "camel",
+			expected: "",
+		},
+		// dot case
+		{
+			name: "dot simple convert",
+			target: &ottl.StandardGetSetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return "simple_string", nil
+				},
+			},
+			toCase:   "dot",
+			expected: "simple.string",
+		},
+		{
+			name: "dot noop already dot case",
+			target: &ottl.StandardGetSetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return "simple.string", nil
+				},
+			},
+			toCase:   "dot",
+			expected: "simple.string",
+		},
+		{
+			name: "dot hyphens",
+			target: &ottl.StandardGetSetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return "simple-string", nil
+				},
+			},
+			toCase:   "dot",
+			expected: "simple.string",
+		},
+		{
+			name: "dot mixed",
+			target: &ottl.StandardGetSetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return "complex-string_ofMixedTXTCasing", nil
+				},
+			},
+			toCase:   "dot",
+			expected: "complex.string.of.mixed.txt.casing",
+		},
+		{
+			name: "dot nil",
+			target: &ottl.StandardGetSetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return nil, nil
+				},
+			},
+			toCase:   "dot",
+			expected: nil,
+		},
+		{
+			name: "dot empty string",
 			target: &ottl.StandardGetSetter[interface{}]{
 				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
 					return "", nil
