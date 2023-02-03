@@ -50,7 +50,7 @@ func (u *udpServer) ListenAndServe(
 	parser protocol.Parser,
 	nextConsumer consumer.Metrics,
 	reporter Reporter,
-	transferChan chan<- string,
+	transferChan chan<- Metric,
 ) error {
 	if parser == nil || nextConsumer == nil || reporter == nil {
 		return errNilListenAndServeParameters
@@ -60,11 +60,11 @@ func (u *udpServer) ListenAndServe(
 
 	buf := make([]byte, 65527) // max size for udp packet body (assuming ipv6)
 	for {
-		n, _, err := u.packetConn.ReadFrom(buf)
+		n, addr, err := u.packetConn.ReadFrom(buf)
 		if n > 0 {
 			bufCopy := make([]byte, n)
 			copy(bufCopy, buf)
-			u.handlePacket(bufCopy, transferChan)
+			u.handlePacket(bufCopy, addr, transferChan)
 		}
 		if err != nil {
 			u.reporter.OnDebugf("UDP Transport (%s) - ReadFrom error: %v",
@@ -87,7 +87,8 @@ func (u *udpServer) Close() error {
 
 func (u *udpServer) handlePacket(
 	data []byte,
-	transferChan chan<- string,
+	addr net.Addr,
+	transferChan chan<- Metric,
 ) {
 	buf := bytes.NewBuffer(data)
 	for {
@@ -100,7 +101,7 @@ func (u *udpServer) handlePacket(
 		}
 		line := strings.TrimSpace(string(bytes))
 		if line != "" {
-			transferChan <- line
+			transferChan <- Metric{line, addr}
 		}
 	}
 }
