@@ -115,31 +115,36 @@ func (e *traceExporterImp) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 
     // Send the trace data off by endpoint.
     for endpoint, traces := range(endpointToTraceData) {
-        exp, err := e.loadBalancer.Exporter(endpoint)
-		if err != nil {
-			return err
-		}
-
-		te, ok := exp.(exporter.Traces)
-		if !ok {
-            return fmt.Errorf("unable to export traces, unexpected exporter type: expected exporter.Traces but got %T", exp)
-		}
-        start := time.Now()
-        err = te.ConsumeTraces(ctx, traces)
-        duration := time.Since(start)
-        if err == nil {
-			_ = stats.RecordWithTags(
-				ctx,
-				[]tag.Mutator{tag.Upsert(endpointTagKey, endpoint), successTrueMutator},
-				mBackendLatency.M(duration.Milliseconds()))
-		} else {
-			_ = stats.RecordWithTags(
-				ctx,
-				[]tag.Mutator{tag.Upsert(endpointTagKey, endpoint), successFalseMutator},
-				mBackendLatency.M(duration.Milliseconds()))
-		}
+        errs = multierr.Append(errs, e.consumeTrace(ctx, traces, endpoint))
     }
 	return errs
+}
+
+func (e *traceExporterImp) consumeTrace(ctx context.Context, td ptrace.Traces, endpoint string) error {
+    exp, err := e.loadBalancer.Exporter(endpoint)
+    if err != nil {
+        return err
+    }
+
+    te, ok := exp.(exporter.Traces)
+    if !ok {
+        return fmt.Errorf("unable to export traces, unexpected exporter type: expected exporter.Traces but got %T", exp)
+    }
+    start := time.Now()
+    err = te.ConsumeTraces(ctx, td)
+    duration := time.Since(start)
+    if err == nil {
+        _ = stats.RecordWithTags(
+            ctx,
+            []tag.Mutator{tag.Upsert(endpointTagKey, endpoint), successTrueMutator},
+            mBackendLatency.M(duration.Milliseconds()))
+    } else {
+        _ = stats.RecordWithTags(
+            ctx,
+            []tag.Mutator{tag.Upsert(endpointTagKey, endpoint), successFalseMutator},
+            mBackendLatency.M(duration.Milliseconds()))
+    }
+    return err
 }
 
 func routingIdentifiersFromTraces(td ptrace.Traces, key routingKey) (map[string]bool, error) {
