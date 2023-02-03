@@ -37,11 +37,11 @@ func addResourceData(req *http.Request, rs *pcommon.Resource) {
 	attrs.PutStr("telemetry.sdk.name", "Datadog")
 	ddTracerVersion := req.Header.Get("Datadog-Meta-Tracer-Version")
 	if ddTracerVersion != "" {
-		attrs.PutStr("telemetry.sdk.version", "Datadog-"+req.Header.Get("Datadog-Meta-Tracer-Version"))
+		attrs.PutStr("telemetry.sdk.version", "Datadog-"+ddTracerVersion)
 	}
 	ddTracerLang := req.Header.Get("Datadog-Meta-Lang")
 	if ddTracerLang != "" {
-		attrs.PutStr("telemetry.sdk.language", req.Header.Get("Datadog-Meta-Lang"))
+		attrs.PutStr("telemetry.sdk.language", ddTracerLang)
 	}
 }
 
