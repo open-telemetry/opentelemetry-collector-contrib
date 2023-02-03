@@ -17,6 +17,7 @@
 // +build !windows
 
 package dbstorage // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/dbstorage"
+
 import (
 	"errors"
 	"testing"

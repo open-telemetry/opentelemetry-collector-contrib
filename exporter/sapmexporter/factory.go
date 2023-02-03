@@ -28,7 +28,8 @@ const (
 	// The value of "type" key in configuration.
 	typeStr = "sapm"
 	// The stability level of the exporter.
-	stability = component.StabilityLevelBeta
+	stability         = component.StabilityLevelBeta
+	defaultNumWorkers = 8
 )
 
 // NewFactory creates a factory for SAPM exporter.

@@ -16,7 +16,6 @@ package kubeletstatsreceiver
 
 import (
 	"path/filepath"
-	"reflect"
 	"testing"
 	"time"
 
@@ -270,13 +269,12 @@ func TestGetReceiverOptions(t *testing.T) {
 				K8sAPIConfig:          tt.fields.k8sAPIConfig,
 			}
 			got, err := cfg.getReceiverOptions()
-			if (err != nil) != tt.wantErr {
-				t.Errorf("getReceiverOptions() error = %v, wantErr %v", err, tt.wantErr)
+			if tt.wantErr {
+				assert.Error(t, err)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("getReceiverOptions() got = %v, want %v", got, tt.want)
-			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }

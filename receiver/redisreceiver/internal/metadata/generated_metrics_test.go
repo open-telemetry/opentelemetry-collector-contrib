@@ -196,11 +196,16 @@ func TestMetricsBuilder(t *testing.T) {
 			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
 			rm := metrics.ResourceMetrics().At(0)
 			attrCount := 0
-			attrCount++
+			enabledAttrCount := 0
 			attrVal, ok := rm.Resource().Attributes().Get("redis.version")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			assert.Equal(t, attrCount, rm.Resource().Attributes().Len())
+			attrCount++
+			assert.Equal(t, mb.resourceAttributesSettings.RedisVersion.Enabled, ok)
+			if mb.resourceAttributesSettings.RedisVersion.Enabled {
+				enabledAttrCount++
+				assert.EqualValues(t, "attr-val", attrVal.Str())
+			}
+			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
+			assert.Equal(t, attrCount, 1)
 
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()

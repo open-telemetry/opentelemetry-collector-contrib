@@ -23,7 +23,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -70,7 +69,7 @@ func (suite *JMXIntegrationSuite) TearDownSuite() {
 }
 
 func downloadJMXMetricGathererJAR(url string) (string, error) {
-	resp, err := http.Get(url)
+	resp, err := http.Get(url) //nolint:gosec
 	if err != nil {
 		return "", err
 	}
@@ -90,7 +89,7 @@ func cassandraContainer(t *testing.T) testcontainers.Container {
 	ctx := context.Background()
 	req := testcontainers.ContainerRequest{
 		FromDockerfile: testcontainers.FromDockerfile{
-			Context:    filepath.Join("testdata"),
+			Context:    "testdata",
 			Dockerfile: "Dockerfile.cassandra",
 		},
 		ExposedPorts: []string{"7199:7199"},
@@ -133,16 +132,23 @@ func getLogsOnFailure(t *testing.T, logObserver *observer.ObservedLogs) {
 	}
 }
 
+// Workaround to avoid unused errors
+var skip = func(t *testing.T, why string) {
+	t.Skip(why)
+}
+
 func (suite *JMXIntegrationSuite) TestJMXReceiverHappyPath() {
 
 	for version, jar := range suite.VersionToJar {
 		t := suite.T()
 		// Run one test per JMX receiver version we're integrating with.
 		t.Run(version, func(t *testing.T) {
-			t.Skip("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/5874")
+			skip(t, "https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/5874")
 
 			cassandra := cassandraContainer(t)
-			defer cassandra.Terminate(context.Background())
+			defer func() {
+				require.NoError(t, cassandra.Terminate(context.Background()))
+			}()
 			hostname, err := cassandra.Host(context.Background())
 			require.NoError(t, err)
 
@@ -242,7 +248,7 @@ func TestJMXReceiverInvalidOTLPEndpointIntegration(t *testing.T) {
 	params := receivertest.NewNopCreateSettings()
 	cfg := &Config{
 		CollectionInterval: 100 * time.Millisecond,
-		Endpoint:           fmt.Sprintf("service:jmx:rmi:///jndi/rmi://localhost:7199/jmxrmi"),
+		Endpoint:           "service:jmx:rmi:///jndi/rmi://localhost:7199/jmxrmi",
 		JARPath:            "/notavalidpath",
 		TargetSystem:       "jvm",
 		OTLPExporterConfig: otlpExporterConfig{

@@ -320,43 +320,72 @@ func TestMetricsBuilder(t *testing.T) {
 			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
 			rm := metrics.ResourceMetrics().At(0)
 			attrCount := 0
-			attrCount++
+			enabledAttrCount := 0
 			attrVal, ok := rm.Resource().Attributes().Get("mongodb_atlas.db.name")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
 			attrCount++
+			assert.Equal(t, mb.resourceAttributesSettings.MongodbAtlasDbName.Enabled, ok)
+			if mb.resourceAttributesSettings.MongodbAtlasDbName.Enabled {
+				enabledAttrCount++
+				assert.EqualValues(t, "attr-val", attrVal.Str())
+			}
 			attrVal, ok = rm.Resource().Attributes().Get("mongodb_atlas.disk.partition")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
 			attrCount++
+			assert.Equal(t, mb.resourceAttributesSettings.MongodbAtlasDiskPartition.Enabled, ok)
+			if mb.resourceAttributesSettings.MongodbAtlasDiskPartition.Enabled {
+				enabledAttrCount++
+				assert.EqualValues(t, "attr-val", attrVal.Str())
+			}
 			attrVal, ok = rm.Resource().Attributes().Get("mongodb_atlas.host.name")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
 			attrCount++
+			assert.Equal(t, mb.resourceAttributesSettings.MongodbAtlasHostName.Enabled, ok)
+			if mb.resourceAttributesSettings.MongodbAtlasHostName.Enabled {
+				enabledAttrCount++
+				assert.EqualValues(t, "attr-val", attrVal.Str())
+			}
 			attrVal, ok = rm.Resource().Attributes().Get("mongodb_atlas.org_name")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
 			attrCount++
+			assert.Equal(t, mb.resourceAttributesSettings.MongodbAtlasOrgName.Enabled, ok)
+			if mb.resourceAttributesSettings.MongodbAtlasOrgName.Enabled {
+				enabledAttrCount++
+				assert.EqualValues(t, "attr-val", attrVal.Str())
+			}
 			attrVal, ok = rm.Resource().Attributes().Get("mongodb_atlas.process.id")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
 			attrCount++
+			assert.Equal(t, mb.resourceAttributesSettings.MongodbAtlasProcessID.Enabled, ok)
+			if mb.resourceAttributesSettings.MongodbAtlasProcessID.Enabled {
+				enabledAttrCount++
+				assert.EqualValues(t, "attr-val", attrVal.Str())
+			}
 			attrVal, ok = rm.Resource().Attributes().Get("mongodb_atlas.process.port")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
 			attrCount++
+			assert.Equal(t, mb.resourceAttributesSettings.MongodbAtlasProcessPort.Enabled, ok)
+			if mb.resourceAttributesSettings.MongodbAtlasProcessPort.Enabled {
+				enabledAttrCount++
+				assert.EqualValues(t, "attr-val", attrVal.Str())
+			}
 			attrVal, ok = rm.Resource().Attributes().Get("mongodb_atlas.process.type_name")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
 			attrCount++
+			assert.Equal(t, mb.resourceAttributesSettings.MongodbAtlasProcessTypeName.Enabled, ok)
+			if mb.resourceAttributesSettings.MongodbAtlasProcessTypeName.Enabled {
+				enabledAttrCount++
+				assert.EqualValues(t, "attr-val", attrVal.Str())
+			}
 			attrVal, ok = rm.Resource().Attributes().Get("mongodb_atlas.project.id")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
 			attrCount++
+			assert.Equal(t, mb.resourceAttributesSettings.MongodbAtlasProjectID.Enabled, ok)
+			if mb.resourceAttributesSettings.MongodbAtlasProjectID.Enabled {
+				enabledAttrCount++
+				assert.EqualValues(t, "attr-val", attrVal.Str())
+			}
 			attrVal, ok = rm.Resource().Attributes().Get("mongodb_atlas.project.name")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			assert.Equal(t, attrCount, rm.Resource().Attributes().Len())
+			attrCount++
+			assert.Equal(t, mb.resourceAttributesSettings.MongodbAtlasProjectName.Enabled, ok)
+			if mb.resourceAttributesSettings.MongodbAtlasProjectName.Enabled {
+				enabledAttrCount++
+				assert.EqualValues(t, "attr-val", attrVal.Str())
+			}
+			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
+			assert.Equal(t, attrCount, 9)
 
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()

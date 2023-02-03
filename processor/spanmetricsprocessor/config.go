@@ -22,18 +22,15 @@ import (
 )
 
 const (
-	delta                  = "AGGREGATION_TEMPORALITY_DELTA"
-	cumulative             = "AGGREGATION_TEMPORALITY_CUMULATIVE"
-	dropSanitizationGateID = "processor.spanmetrics.PermissiveLabelSanitization"
+	delta      = "AGGREGATION_TEMPORALITY_DELTA"
+	cumulative = "AGGREGATION_TEMPORALITY_CUMULATIVE"
 )
 
-func init() {
-	featuregate.GetRegistry().MustRegisterID(
-		dropSanitizationGateID,
-		featuregate.StageAlpha,
-		featuregate.WithRegisterDescription("Controls whether to change labels starting with '_' to 'key_'"),
-	)
-}
+var dropSanitizationGate = featuregate.GlobalRegistry().MustRegister(
+	"processor.spanmetrics.PermissiveLabelSanitization",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("Controls whether to change labels starting with '_' to 'key_'"),
+)
 
 // Dimension defines the dimension name and optional default value if the Dimension is missing from a span attribute.
 type Dimension struct {
@@ -69,6 +66,9 @@ type Config struct {
 
 	// skipSanitizeLabel if enabled, labels that start with _ are not sanitized
 	skipSanitizeLabel bool
+
+	// MetricsEmitInterval is the time period between when metrics are flushed or emitted to the configured MetricsExporter.
+	MetricsFlushInterval time.Duration `mapstructure:"metrics_flush_interval"`
 }
 
 // GetAggregationTemporality converts the string value given in the config into a AggregationTemporality.

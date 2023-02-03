@@ -274,6 +274,7 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, host component
 		gcInterval(r.cfg.PrometheusConfig),
 		r.cfg.UseStartTimeMetric,
 		startTimeMetricRegex,
+		useCreatedMetricGate.IsEnabled(),
 		r.cfg.PrometheusConfig.GlobalConfig.ExternalLabels,
 		r.registry,
 	)

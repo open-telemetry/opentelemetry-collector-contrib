@@ -28,7 +28,6 @@ import (
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
@@ -63,22 +62,24 @@ func newTracesExporter(ctx context.Context, params exporter.CreateSettings, cfg 
 		sourceProvider: sourceProvider,
 	}
 	// client to send running metric to the backend & perform API key validation
+	errchan := make(chan error)
 	if isMetricExportV2Enabled() {
 		apiClient := clientutil.CreateAPIClient(
 			params.BuildInfo,
 			cfg.Metrics.TCPAddr.Endpoint,
 			cfg.TimeoutSettings,
 			cfg.LimitedHTTPClientSettings.TLSSetting.InsecureSkipVerify)
-		if err := clientutil.ValidateAPIKey(ctx, string(cfg.API.Key), params.Logger, apiClient); err != nil && cfg.API.FailOnInvalidKey {
-			return nil, err
-		}
+		go func() { errchan <- clientutil.ValidateAPIKey(ctx, string(cfg.API.Key), params.Logger, apiClient) }()
 		exp.metricsAPI = datadogV2.NewMetricsApi(apiClient)
 	} else {
 		client := clientutil.CreateZorkianClient(string(cfg.API.Key), cfg.Metrics.TCPAddr.Endpoint)
-		if err := clientutil.ValidateAPIKeyZorkian(params.Logger, client); err != nil && cfg.API.FailOnInvalidKey {
+		go func() { errchan <- clientutil.ValidateAPIKeyZorkian(params.Logger, client) }()
+		exp.client = client
+	}
+	if cfg.API.FailOnInvalidKey {
+		if err := <-errchan; err != nil {
 			return nil, err
 		}
-		exp.client = client
 	}
 	return exp, nil
 }
@@ -106,7 +107,7 @@ func (exp *traceExporter) consumeTraces(
 	tags := make(map[string]struct{})
 	for i := 0; i < rspans.Len(); i++ {
 		rspan := rspans.At(i)
-		src := exp.agent.OTLPReceiver.ReceiveResourceSpans(ctx, rspan, http.Header{}, "otlp-exporter")
+		src := exp.agent.OTLPReceiver.ReceiveResourceSpans(ctx, rspan, http.Header{})
 		switch src.Kind {
 		case source.HostnameKind:
 			hosts[src.Identifier] = struct{}{}
@@ -115,11 +116,11 @@ func (exp *traceExporter) consumeTraces(
 		}
 	}
 
-	exp.exportTraceMetrics(ctx, hosts, tags)
+	exp.exportHostMetrics(ctx, hosts, tags)
 	return nil
 }
 
-func (exp *traceExporter) exportTraceMetrics(ctx context.Context, hosts map[string]struct{}, tags map[string]struct{}) {
+func (exp *traceExporter) exportHostMetrics(ctx context.Context, hosts map[string]struct{}, tags map[string]struct{}) {
 	now := pcommon.NewTimestampFromTime(time.Now())
 	var err error
 	if isMetricExportV2Enabled() {
@@ -166,7 +167,7 @@ func newTraceAgent(ctx context.Context, params exporter.CreateSettings, cfg *Con
 	}
 	acfg.OTLPReceiver.SpanNameRemappings = cfg.Traces.SpanNameRemappings
 	acfg.OTLPReceiver.SpanNameAsResourceName = cfg.Traces.SpanNameAsResourceName
-	acfg.OTLPReceiver.UsePreviewHostnameLogic = featuregate.GetRegistry().IsEnabled(metadata.HostnamePreviewFeatureGate)
+	acfg.OTLPReceiver.UsePreviewHostnameLogic = metadata.HostnamePreviewFeatureGate.IsEnabled()
 	acfg.Endpoints[0].APIKey = string(cfg.API.Key)
 	acfg.Ignore["resource"] = cfg.Traces.IgnoreResources
 	acfg.ReceiverPort = 0 // disable HTTP receiver

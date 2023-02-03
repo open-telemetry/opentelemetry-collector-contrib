@@ -141,24 +141,24 @@ func main() {
 	}
 
 	// Recorder metric example
-	requestLatency, _ := meter.SyncFloat64().Histogram(
+	requestLatency, _ := meter.Float64Histogram(
 		"demo_client/request_latency",
 		instrument.WithDescription("The latency of requests processed"),
 	)
 
 	// TODO: Use a view to just count number of measurements for requestLatency when available.
-	requestCount, _ := meter.SyncInt64().Counter(
+	requestCount, _ := meter.Int64Counter(
 		"demo_client/request_counts",
 		instrument.WithDescription("The number of requests processed"),
 	)
 
-	lineLengths, _ := meter.SyncInt64().Histogram(
+	lineLengths, _ := meter.Int64Histogram(
 		"demo_client/line_lengths",
 		instrument.WithDescription("The lengths of the various lines in"),
 	)
 
 	// TODO: Use a view to just count number of measurements for lineLengths when available.
-	lineCounts, _ := meter.SyncInt64().Counter(
+	lineCounts, _ := meter.Int64Counter(
 		"demo_client/line_counts",
 		instrument.WithDescription("The counts of the lines in"),
 	)

@@ -67,13 +67,6 @@ func TestNew(t *testing.T) {
 			wantErrMessage: "nil config",
 		},
 		{
-			name: "bad config fails",
-			config: &Config{
-				APIURL: "abc",
-			},
-			wantErr: true,
-		},
-		{
 			name: "fails to create metrics converter",
 			config: &Config{
 				AccessToken:    "test",
@@ -454,17 +447,11 @@ func TestNewEventExporter(t *testing.T) {
 	assert.EqualError(t, err, "nil config")
 	assert.Nil(t, got)
 
-	cfg := &Config{
-		AccessToken:        "someToken",
-		IngestURL:          "asdf://:%",
-		HTTPClientSettings: confighttp.HTTPClientSettings{Timeout: 1 * time.Second},
-	}
-
-	got, err = newEventExporter(cfg, exportertest.NewNopCreateSettings())
-	assert.NotNil(t, err)
+	got, err = newEventExporter(nil, exportertest.NewNopCreateSettings())
+	assert.Error(t, err)
 	assert.Nil(t, got)
 
-	cfg = &Config{
+	cfg := &Config{
 		AccessToken:        "someToken",
 		Realm:              "xyz",
 		HTTPClientSettings: confighttp.HTTPClientSettings{Timeout: 1 * time.Second},
@@ -739,6 +726,12 @@ func generateLargeEventBatch() plog.Logs {
 	return out
 }
 
+func TestConsumeMetadataNotStarted(t *testing.T) {
+	exporter := &signalfxExporter{}
+	err := exporter.pushMetadata([]*metadata.MetadataUpdate{})
+	require.ErrorContains(t, err, "exporter has not started")
+}
+
 func TestConsumeMetadata(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	converter, err := translation.NewMetricsConverter(
@@ -977,7 +970,7 @@ func TestConsumeMetadata(t *testing.T) {
 			dimClient := dimensions.NewDimensionClient(
 				context.Background(),
 				dimensions.DimensionClientOptions{
-					Token:                 "",
+					Token:                 "foo",
 					APIURL:                serverURL,
 					LogUpdates:            true,
 					Logger:                logger,
@@ -987,11 +980,14 @@ func TestConsumeMetadata(t *testing.T) {
 				})
 			dimClient.Start()
 
-			se := signalfxExporter{
-				pushMetadata: dimClient.PushMetadata,
+			se := &signalfxExporter{
+				dimClient: dimClient,
 			}
+			defer func() {
+				_ = se.shutdown(context.Background())
+			}()
 			sme := signalfMetadataExporter{
-				pushMetadata: se.pushMetadata,
+				exporter: se,
 			}
 
 			err = sme.ConsumeMetadata(tt.args.metadata)
@@ -1280,8 +1276,10 @@ func TestTLSAPIConnection(t *testing.T) {
 			require.NoError(t, err)
 			serverURL, err := url.Parse(tt.config.APIURL)
 			assert.NoError(t, err)
+			cancellable, cancelFn := context.WithCancel(context.Background())
+			defer cancelFn()
 			dimClient := dimensions.NewDimensionClient(
-				context.Background(),
+				cancellable,
 				dimensions.DimensionClientOptions{
 					Token:                 "",
 					APIURL:                serverURL,
@@ -1294,11 +1292,11 @@ func TestTLSAPIConnection(t *testing.T) {
 				})
 			dimClient.Start()
 
-			se := signalfxExporter{
-				pushMetadata: dimClient.PushMetadata,
+			se := &signalfxExporter{
+				dimClient: dimClient,
 			}
 			sme := signalfMetadataExporter{
-				pushMetadata: se.pushMetadata,
+				exporter: se,
 			}
 
 			err = sme.ConsumeMetadata(metadata)

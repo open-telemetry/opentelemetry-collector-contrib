@@ -29,6 +29,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 )
 
 // Common structure for all the Tests
@@ -43,9 +44,7 @@ func runIndividualLogTestCase(t *testing.T, tt logTestCase, tp processor.Logs) {
 	t.Run(tt.name, func(t *testing.T) {
 		ld := generateLogData(tt.name, tt.inputAttributes)
 		assert.NoError(t, tp.ConsumeLogs(context.Background(), ld))
-		// Ensure that the modified `ld` has the attributes sorted:
-		sortLogAttributes(ld)
-		require.Equal(t, generateLogData(tt.name, tt.expectedAttributes), ld)
+		assert.NoError(t, plogtest.CompareLogs(generateLogData(tt.name, tt.expectedAttributes), ld))
 	})
 }
 
@@ -57,24 +56,7 @@ func generateLogData(resourceName string, attrs map[string]interface{}) plog.Log
 	lr := sl.LogRecords().AppendEmpty()
 	//nolint:errcheck
 	lr.Attributes().FromRaw(attrs)
-	lr.Attributes().Sort()
 	return td
-}
-
-func sortLogAttributes(ld plog.Logs) {
-	rss := ld.ResourceLogs()
-	for i := 0; i < rss.Len(); i++ {
-		rs := rss.At(i)
-		rs.Resource().Attributes().Sort()
-		ilss := rs.ScopeLogs()
-		for j := 0; j < ilss.Len(); j++ {
-			logs := ilss.At(j).LogRecords()
-			for k := 0; k < logs.Len(); k++ {
-				s := logs.At(k)
-				s.Attributes().Sort()
-			}
-		}
-	}
 }
 
 // TestLogProcessor_Values tests all possible value types.
@@ -493,8 +475,6 @@ func BenchmarkAttributes_FilterLogsByName(b *testing.B) {
 			}
 		})
 
-		// Ensure that the modified `td` has the attributes sorted:
-		sortLogAttributes(td)
-		require.Equal(b, generateLogData(tt.name, tt.expectedAttributes), td)
+		require.NoError(b, plogtest.CompareLogs(generateLogData(tt.name, tt.expectedAttributes), td))
 	}
 }

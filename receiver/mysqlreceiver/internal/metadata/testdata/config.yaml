@@ -14,6 +14,8 @@ all_metrics:
     enabled: true
   mysql.client.network.io:
     enabled: true
+  mysql.commands:
+    enabled: true
   mysql.connection.count:
     enabled: true
   mysql.connection.errors:
@@ -98,6 +100,8 @@ no_metrics:
   mysql.buffer_pool.usage:
     enabled: false
   mysql.client.network.io:
+    enabled: false
+  mysql.commands:
     enabled: false
   mysql.connection.count:
     enabled: false

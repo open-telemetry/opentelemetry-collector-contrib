@@ -221,25 +221,19 @@ func TestDetectResource_Parallel(t *testing.T) {
 	md3 := NewMockParallelDetector()
 	md3.On("Detect").Return(pcommon.NewResource(), errors.New("an error"))
 
-	expectedResource := pcommon.NewResource()
-	require.NoError(t, expectedResource.Attributes().FromRaw(map[string]interface{}{"a": "1", "b": "2", "c": "3"}))
-	expectedResource.Attributes().Sort()
+	expectedResourceAttrs := map[string]interface{}{"a": "1", "b": "2", "c": "3"}
 
 	p := NewResourceProvider(zap.NewNop(), time.Second, nil, md1, md2, md3)
 
 	// call p.Get multiple times
 	wg := &sync.WaitGroup{}
-	var m sync.Mutex
 	wg.Add(iterations)
 	for i := 0; i < iterations; i++ {
 		go func() {
 			defer wg.Done()
 			detected, _, err := p.Get(context.Background(), http.DefaultClient)
 			require.NoError(t, err)
-			m.Lock()
-			detected.Attributes().Sort()
-			m.Unlock()
-			assert.Equal(t, expectedResource, detected)
+			assert.Equal(t, expectedResourceAttrs, detected.Attributes().AsRaw())
 		}()
 	}
 

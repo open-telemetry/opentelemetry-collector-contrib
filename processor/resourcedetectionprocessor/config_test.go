@@ -23,11 +23,13 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/heroku"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openshift"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system"
 )
 
@@ -42,6 +44,23 @@ func TestLoadConfig(t *testing.T) {
 		expected     component.Config
 		errorMessage string
 	}{
+		{
+			id: component.NewIDWithName(typeStr, "openshift"),
+			expected: &Config{
+				Detectors: []string{"openshift"},
+				DetectorConfig: DetectorConfig{
+					OpenShiftConfig: openshift.Config{
+						Address: "127.0.0.1:4444",
+						Token:   "some_token",
+						TLSSettings: configtls.TLSClientSetting{
+							Insecure: true,
+						},
+					},
+				},
+				HTTPClientSettings: cfg,
+				Override:           false,
+			},
+		},
 		{
 			id: component.NewIDWithName(typeStr, "gcp"),
 			expected: &Config{

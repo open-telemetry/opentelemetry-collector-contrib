@@ -17,15 +17,15 @@ package azureeventhubreceiver // import "github.com/open-telemetry/opentelemetry
 import (
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
-	"github.com/go-test/deep"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions "go.opentelemetry.io/collector/semconv/v1.13.0"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 )
 
 var testBuildInfo = component.BuildInfo{
@@ -40,7 +40,6 @@ var minimumLogRecord = func() plog.LogRecord {
 	lr.Attributes().PutStr(azureOperationName, "SecretGet")
 	lr.Attributes().PutStr(azureCategory, "AuditEvent")
 	lr.Attributes().PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAzure)
-	lr.Attributes().Sort()
 	return lr
 }()
 
@@ -72,9 +71,6 @@ var maximumLogRecord = func() plog.LogRecord {
 	m.PutDouble("int", 429)
 	m.PutDouble("float", 3.14)
 	m.PutBool("bool", false)
-	m.Sort()
-
-	lr.Attributes().Sort()
 
 	return lr
 }()
@@ -233,45 +229,6 @@ func TestExtractRawAttributes(t *testing.T) {
 
 }
 
-// sortLogAttributes is a utility function that will sort
-// all the resource and logRecord attributes to allow
-// reliable comparison in the tests
-func sortLogAttributes(logs plog.Logs) plog.Logs {
-	for r := 0; r < logs.ResourceLogs().Len(); r++ {
-		rl := logs.ResourceLogs().At(r)
-		sortAttributes(rl.Resource().Attributes())
-		for s := 0; s < rl.ScopeLogs().Len(); s++ {
-			sl := rl.ScopeLogs().At(s)
-			sortAttributes(sl.Scope().Attributes())
-			for l := 0; l < sl.LogRecords().Len(); l++ {
-				sortAttributes(sl.LogRecords().At(l).Attributes())
-			}
-		}
-	}
-	return logs
-}
-
-// sortAttributes will sort the keys in the given map and
-// then recursively sort any child maps. The function will
-// traverse both maps and slices.
-func sortAttributes(attrs pcommon.Map) {
-	attrs.Range(func(k string, v pcommon.Value) bool {
-		if v.Type() == pcommon.ValueTypeMap {
-			sortAttributes(v.Map())
-		} else if v.Type() == pcommon.ValueTypeSlice {
-			s := v.Slice()
-			for i := 0; i < s.Len(); i++ {
-				value := s.At(i)
-				if value.Type() == pcommon.ValueTypeMap {
-					sortAttributes(value.Map())
-				}
-			}
-		}
-		return true
-	})
-	attrs.Sort()
-}
-
 func TestDecodeAzureLogRecord(t *testing.T) {
 
 	expectedMinimum := plog.NewLogs()
@@ -331,11 +288,7 @@ func TestDecodeAzureLogRecord(t *testing.T) {
 			logs, err := transform(testBuildInfo, data)
 			assert.NoError(t, err)
 
-			deep.CompareUnexportedFields = true
-			if diff := deep.Equal(tt.expected, sortLogAttributes(logs)); diff != nil {
-				t.Errorf("FAIL\n%s\n", strings.Join(diff, "\n"))
-			}
-			deep.CompareUnexportedFields = false
+			assert.NoError(t, plogtest.CompareLogs(tt.expected, logs))
 		})
 	}
 }

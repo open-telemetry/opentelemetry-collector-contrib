@@ -90,7 +90,7 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 			},
 			inMetrics: generateTestSumMetrics(testSumMetric{
 				metricNames:  []string{"metric_1", "metric_2"},
-				metricValues: [][]float64{{100, 200, 500}, {4}},
+				metricValues: [][]float64{{0, 100, 200, 500}, {4}},
 				isCumulative: []bool{true, true},
 			}),
 			outMetrics: generateTestSumMetrics(testSumMetric{
@@ -110,7 +110,7 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 			},
 			inMetrics: generateTestSumMetrics(testSumMetric{
 				metricNames:  []string{"metric_1", "metric_2"},
-				metricValues: [][]float64{{100, 200, math.NaN()}, {4}},
+				metricValues: [][]float64{{0, 100, 200, math.NaN()}, {4}},
 				isCumulative: []bool{true, true},
 			}),
 			outMetrics: generateTestSumMetrics(testSumMetric{
@@ -157,18 +157,18 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 			},
 			inMetrics: generateTestHistogramMetrics(testHistogramMetric{
 				metricNames:  []string{"metric_1", "metric_2"},
-				metricCounts: [][]uint64{{100, 200, 500}, {4}},
-				metricSums:   [][]float64{{100, 200, 500}, {4}},
+				metricCounts: [][]uint64{{0, 100, 200, 500}, {4}},
+				metricSums:   [][]float64{{0, 100, 200, 500}, {4}},
 				metricBuckets: [][][]uint64{
-					{{50, 25, 25}, {100, 50, 50}, {250, 125, 125}},
+					{{0, 0, 0}, {50, 25, 25}, {100, 50, 50}, {250, 125, 125}},
 					{{4, 4, 4}},
 				},
 				metricMins: [][]float64{
-					{5.0, 2.0, 3.0},
+					{0, 5.0, 2.0, 3.0},
 					{2.0, 2.0, 2.0},
 				},
 				metricMaxes: [][]float64{
-					{800.0, 825.0, 800.0},
+					{0, 800.0, 825.0, 800.0},
 					{3.0, 3.0, 3.0},
 				},
 				isCumulative: []bool{true, true},
@@ -203,10 +203,10 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 			},
 			inMetrics: generateTestHistogramMetrics(testHistogramMetric{
 				metricNames:  []string{"metric_1", "metric_2"},
-				metricCounts: [][]uint64{{100, 200, 500}, {4}},
-				metricSums:   [][]float64{{100, 200, 500}, {4}},
+				metricCounts: [][]uint64{{0, 100, 200, 500}, {4}},
+				metricSums:   [][]float64{{0, 100, 200, 500}, {4}},
 				metricBuckets: [][][]uint64{
-					{{50, 25, 25}, {100, 50, 50}, {250, 125, 125}},
+					{{0, 0, 0}, {50, 25, 25}, {100, 50, 50}, {250, 125, 125}},
 					{{4, 4, 4}},
 				},
 				isCumulative: []bool{true, true},
@@ -233,10 +233,10 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 			},
 			inMetrics: generateTestHistogramMetrics(testHistogramMetric{
 				metricNames:  []string{"metric_1", "metric_2"},
-				metricCounts: [][]uint64{{100, 200, 500}, {4}},
-				metricSums:   [][]float64{{100, math.NaN(), 500}, {4}},
+				metricCounts: [][]uint64{{0, 100, 200, 500}, {4}},
+				metricSums:   [][]float64{{0, 100, math.NaN(), 500}, {4}},
 				metricBuckets: [][][]uint64{
-					{{50, 25, 25}, {100, 50, 50}, {250, 125, 125}},
+					{{0, 0, 0}, {50, 25, 25}, {100, 50, 50}, {250, 125, 125}},
 					{{4, 4, 4}},
 				},
 				isCumulative: []bool{true, true},
@@ -263,10 +263,10 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 			},
 			inMetrics: generateTestHistogramMetrics(testHistogramMetric{
 				metricNames:  []string{"metric_1", "metric_2"},
-				metricCounts: [][]uint64{{100, 200, 500}, {4}},
+				metricCounts: [][]uint64{{0, 100, 200, 500}, {4}},
 				metricSums:   [][]float64{{}, {4}},
 				metricBuckets: [][][]uint64{
-					{{50, 25, 25}, {100, 50, 50}, {250, 125, 125}},
+					{{0, 0, 0}, {50, 25, 25}, {100, 50, 50}, {250, 125, 125}},
 					{{4, 4, 4}},
 				},
 				isCumulative: []bool{true, true},
@@ -293,7 +293,7 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 			},
 			inMetrics: generateTestSumMetrics(testSumMetric{
 				metricNames:  []string{"metric_1", "metric_2"},
-				metricValues: [][]float64{{100, 200, 500}, {4, 5}},
+				metricValues: [][]float64{{0, 100, 200, 500}, {0, 4, 5}},
 				isCumulative: []bool{true, true},
 			}),
 			outMetrics: generateTestSumMetrics(testSumMetric{
@@ -320,7 +320,7 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 			},
 			inMetrics: generateTestSumMetrics(testSumMetric{
 				metricNames:  []string{"metric_1", "metric_2"},
-				metricValues: [][]float64{{100, 200, 500}, {4, 5}},
+				metricValues: [][]float64{{100, 200, 500}, {0, 4, 5}},
 				isCumulative: []bool{true, true},
 			}),
 			outMetrics: generateTestSumMetrics(testSumMetric{

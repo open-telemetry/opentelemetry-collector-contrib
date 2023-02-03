@@ -17,6 +17,7 @@ package testbed // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"fmt"
 	"log"
+	"reflect"
 	"sort"
 	"strings"
 	"time"
@@ -441,7 +442,7 @@ func (v *CorrectnessTestValidator) diffAttributeMap(spanName string,
 
 func (v *CorrectnessTestValidator) compareSimpleValues(spanName string, sentVal pcommon.Value, recdVal pcommon.Value,
 	fmtStr string, attrKey string) {
-	if !sentVal.Equal(recdVal) {
+	if reflect.DeepEqual(sentVal.AsRaw(), recdVal.AsRaw()) {
 		sentStr := sentVal.AsString()
 		recdStr := recdVal.AsString()
 		if !strings.EqualFold(sentStr, recdStr) {

@@ -4,8 +4,8 @@ go 1.18
 
 require (
 	github.com/Showmax/go-fqdn v1.0.0
-	github.com/aws/aws-sdk-go v1.44.176
-	github.com/docker/docker v20.10.22+incompatible
+	github.com/aws/aws-sdk-go v1.44.192
+	github.com/docker/docker v20.10.23+incompatible
 	github.com/hashicorp/consul/api v1.18.0
 	github.com/stretchr/testify v1.8.1
 )
@@ -40,7 +40,7 @@ require (
 	github.com/stretchr/objx v0.5.0 // indirect
 	golang.org/x/net v0.5.0 // indirect
 	golang.org/x/sys v0.4.0 // indirect
-	golang.org/x/time v0.0.0-20220411224347-583f2d630306 // indirect
+	golang.org/x/time v0.3.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gotest.tools/v3 v3.2.0 // indirect
 )

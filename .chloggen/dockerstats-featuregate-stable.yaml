@@ -1,4 +1,0 @@
-change_type: breaking
-component: dockerstatsreceiver
-note: "Transition the receiver.dockerstats.useScraperV2 featuregate to stable"
-issues: [17509, 9794]
