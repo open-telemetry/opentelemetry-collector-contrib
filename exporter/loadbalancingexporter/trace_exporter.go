@@ -90,61 +90,61 @@ func (e *traceExporterImp) Shutdown(context.Context) error {
 func (e *traceExporterImp) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	var errs error
 	batches := batchpersignal.SplitTraces(td)
-    endpointToTraceData := make(map[string]ptrace.Traces)
+	endpointToTraceData := make(map[string]ptrace.Traces)
 
-    // Map the trace data to their respective endpoints.
-    for batch := range batches {
-        routingIDs, err := routingIdentifiersFromTraces(batches[batch], e.routingKey)
-        errs = multierr.Append(errs, err)
-        for rid := range routingIDs {
-		    endpoint := e.loadBalancer.Endpoint([]byte(rid))
-            if _, ok := endpointToTraceData[endpoint]; ok {
-                // append
-                for i := 0; i < batches[batch].ResourceSpans().Len(); i++ {
-                    batches[batch].ResourceSpans().At(i).CopyTo(endpointToTraceData[endpoint].ResourceSpans().AppendEmpty())
-                }
-            } else {
-                newTrace := ptrace.NewTraces()
-                for i := 0; i < batches[batch].ResourceSpans().Len(); i++ {
-                    batches[batch].ResourceSpans().At(i).CopyTo(newTrace.ResourceSpans().AppendEmpty())
-                }
-                endpointToTraceData[endpoint] = newTrace
-            }
-        }
-    }
+	// Map the trace data to their respective endpoints.
+	for batch := range batches {
+		routingIDs, err := routingIdentifiersFromTraces(batches[batch], e.routingKey)
+		errs = multierr.Append(errs, err)
+		for rid := range routingIDs {
+			endpoint := e.loadBalancer.Endpoint([]byte(rid))
+			if _, ok := endpointToTraceData[endpoint]; ok {
+				// append
+				for i := 0; i < batches[batch].ResourceSpans().Len(); i++ {
+					batches[batch].ResourceSpans().At(i).CopyTo(endpointToTraceData[endpoint].ResourceSpans().AppendEmpty())
+				}
+			} else {
+				newTrace := ptrace.NewTraces()
+				for i := 0; i < batches[batch].ResourceSpans().Len(); i++ {
+					batches[batch].ResourceSpans().At(i).CopyTo(newTrace.ResourceSpans().AppendEmpty())
+				}
+				endpointToTraceData[endpoint] = newTrace
+			}
+		}
+	}
 
-    // Send the trace data off by endpoint.
-    for endpoint, traces := range(endpointToTraceData) {
-        errs = multierr.Append(errs, e.consumeTrace(ctx, traces, endpoint))
-    }
+	// Send the trace data off by endpoint.
+	for endpoint, traces := range endpointToTraceData {
+		errs = multierr.Append(errs, e.consumeTrace(ctx, traces, endpoint))
+	}
 	return errs
 }
 
 func (e *traceExporterImp) consumeTrace(ctx context.Context, td ptrace.Traces, endpoint string) error {
-    exp, err := e.loadBalancer.Exporter(endpoint)
-    if err != nil {
-        return err
-    }
+	exp, err := e.loadBalancer.Exporter(endpoint)
+	if err != nil {
+		return err
+	}
 
-    te, ok := exp.(exporter.Traces)
-    if !ok {
-        return fmt.Errorf("unable to export traces, unexpected exporter type: expected exporter.Traces but got %T", exp)
-    }
-    start := time.Now()
-    err = te.ConsumeTraces(ctx, td)
-    duration := time.Since(start)
-    if err == nil {
-        _ = stats.RecordWithTags(
-            ctx,
-            []tag.Mutator{tag.Upsert(endpointTagKey, endpoint), successTrueMutator},
-            mBackendLatency.M(duration.Milliseconds()))
-    } else {
-        _ = stats.RecordWithTags(
-            ctx,
-            []tag.Mutator{tag.Upsert(endpointTagKey, endpoint), successFalseMutator},
-            mBackendLatency.M(duration.Milliseconds()))
-    }
-    return err
+	te, ok := exp.(exporter.Traces)
+	if !ok {
+		return fmt.Errorf("unable to export traces, unexpected exporter type: expected exporter.Traces but got %T", exp)
+	}
+	start := time.Now()
+	err = te.ConsumeTraces(ctx, td)
+	duration := time.Since(start)
+	if err == nil {
+		_ = stats.RecordWithTags(
+			ctx,
+			[]tag.Mutator{tag.Upsert(endpointTagKey, endpoint), successTrueMutator},
+			mBackendLatency.M(duration.Milliseconds()))
+	} else {
+		_ = stats.RecordWithTags(
+			ctx,
+			[]tag.Mutator{tag.Upsert(endpointTagKey, endpoint), successFalseMutator},
+			mBackendLatency.M(duration.Milliseconds()))
+	}
+	return err
 }
 
 func routingIdentifiersFromTraces(td ptrace.Traces, key routingKey) (map[string]bool, error) {

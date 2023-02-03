@@ -76,40 +76,40 @@ func (e *logExporterImp) Shutdown(context.Context) error {
 
 func (e *logExporterImp) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	var errs error
-    endpointToLogData := make(map[string]plog.Logs)
+	endpointToLogData := make(map[string]plog.Logs)
 	batches := batchpersignal.SplitLogs(ld)
 
-    // Map the logs to their respective endpoints.
+	// Map the logs to their respective endpoints.
 	for batch := range batches {
-        // Each batch contains at most one trace ID.
-        traceID := traceIDFromLogs(ld)
-        balancingKey := traceID
-        if traceID == pcommon.NewTraceIDEmpty() {
-            // every log may not contain a traceID
-            // generate a random traceID as balancingKey
-            // so the log can be routed to a random backend
-            balancingKey = random()
-        }
+		// Each batch contains at most one trace ID.
+		traceID := traceIDFromLogs(ld)
+		balancingKey := traceID
+		if traceID == pcommon.NewTraceIDEmpty() {
+			// every log may not contain a traceID
+			// generate a random traceID as balancingKey
+			// so the log can be routed to a random backend
+			balancingKey = random()
+		}
 
-	    endpoint := e.loadBalancer.Endpoint(balancingKey[:])
-        if _, ok := endpointToLogData[endpoint]; ok {
-            // append
-            for i := 0; i < batches[batch].ResourceLogs().Len(); i++ {
-                batches[batch].ResourceLogs().At(i).CopyTo(endpointToLogData[endpoint].ResourceLogs().AppendEmpty())
-            }
-        } else {
-            newLog := plog.NewLogs()
-            for i := 0; i < batches[batch].ResourceLogs().Len(); i++ {
-                batches[batch].ResourceLogs().At(i).CopyTo(newLog.ResourceLogs().AppendEmpty())
-            }
-            endpointToLogData[endpoint] = newLog
-        }
+		endpoint := e.loadBalancer.Endpoint(balancingKey[:])
+		if _, ok := endpointToLogData[endpoint]; ok {
+			// append
+			for i := 0; i < batches[batch].ResourceLogs().Len(); i++ {
+				batches[batch].ResourceLogs().At(i).CopyTo(endpointToLogData[endpoint].ResourceLogs().AppendEmpty())
+			}
+		} else {
+			newLog := plog.NewLogs()
+			for i := 0; i < batches[batch].ResourceLogs().Len(); i++ {
+				batches[batch].ResourceLogs().At(i).CopyTo(newLog.ResourceLogs().AppendEmpty())
+			}
+			endpointToLogData[endpoint] = newLog
+		}
 	}
 
-    // Send the logs off by endpoint.
-    for endpoint, logs := range(endpointToLogData) {
-        errs = multierr.Append(errs, e.consumeLog(ctx, logs, endpoint))
-    }
+	// Send the logs off by endpoint.
+	for endpoint, logs := range endpointToLogData {
+		errs = multierr.Append(errs, e.consumeLog(ctx, logs, endpoint))
+	}
 
 	return errs
 }

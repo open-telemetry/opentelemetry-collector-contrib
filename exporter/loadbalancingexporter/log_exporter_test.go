@@ -232,7 +232,7 @@ func TestLogBatchWithTwoTraces(t *testing.T) {
 	// verify
 	assert.NoError(t, err)
 	assert.Len(t, sink.AllLogs(), 1)
-    assert.Equal(t, sink.LogRecordCount(), 2)
+	assert.Equal(t, sink.LogRecordCount(), 2)
 }
 
 func TestNoLogsInBatch(t *testing.T) {
