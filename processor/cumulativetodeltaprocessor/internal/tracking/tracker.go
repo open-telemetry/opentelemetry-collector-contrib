@@ -125,8 +125,8 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 			prevValue := state.PrevPoint.FloatValue
 			delta := value - prevValue
 
-			// Detect reset on a monotonic counter
-			if metricID.MetricIsMonotonic && value < prevValue {
+			// Detect reset (non-monotonic sums are not converted)
+			if value < prevValue {
 				delta = value
 			}
 
@@ -136,8 +136,8 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 			prevValue := state.PrevPoint.IntValue
 			delta := value - prevValue
 
-			// Detect reset on a monotonic counter
-			if metricID.MetricIsMonotonic && value < prevValue {
+			// Detect reset (non-monotonic sums are not converted)
+			if value < prevValue {
 				delta = value
 			}
 
