@@ -254,7 +254,7 @@ func TestValidate(t *testing.T) {
 }
 
 func TestLoadConfig(t *testing.T) {
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "configs", "input.yaml"))
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 
 	factory := NewFactory()

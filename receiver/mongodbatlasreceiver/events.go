@@ -60,7 +60,7 @@ type eventsReceiver struct {
 	pollInterval time.Duration
 	wg           *sync.WaitGroup
 	record       *eventRecord // this record is used for checkpointing last processed events
-	doneChan     chan bool
+	cancel       context.CancelFunc
 }
 
 type eventRecord struct {
@@ -80,7 +80,6 @@ func newEventsReceiver(settings rcvr.CreateSettings, c *Config, consumer consume
 		wg:           &sync.WaitGroup{},
 		maxPages:     int(c.Events.MaxPages),
 		pageSize:     int(c.Events.PageSize),
-		doneChan:     make(chan bool, 1),
 	}
 
 	if r.maxPages == 0 {
@@ -100,19 +99,21 @@ func newEventsReceiver(settings rcvr.CreateSettings, c *Config, consumer consume
 
 func (er *eventsReceiver) Start(ctx context.Context, host component.Host) error {
 	er.logger.Debug("Starting up events receiver")
-	storageClient, err := adapter.GetStorageClient(ctx, host, er.storageID, er.id)
+	cancelCtx, cancel := context.WithCancel(ctx)
+	er.cancel = cancel
+	storageClient, err := adapter.GetStorageClient(cancelCtx, host, er.storageID, er.id)
 	if err != nil {
 		return fmt.Errorf("failed to get storage client: %w", err)
 	}
 	er.storageClient = storageClient
-	er.loadCheckpoint(ctx)
+	er.loadCheckpoint(cancelCtx)
 
-	return er.startPolling(ctx)
+	return er.startPolling(cancelCtx)
 }
 
 func (er *eventsReceiver) Shutdown(ctx context.Context) error {
 	er.logger.Debug("Shutting down events receiver")
-	close(er.doneChan)
+	er.cancel()
 	er.wg.Wait()
 	return er.checkpoint(ctx)
 }
@@ -128,8 +129,6 @@ func (er *eventsReceiver) startPolling(ctx context.Context) error {
 				if err := er.pollEvents(ctx); err != nil {
 					er.logger.Error("error while polling for events", zap.Error(err))
 				}
-			case <-er.doneChan:
-				return
 			case <-ctx.Done():
 				return
 			}
@@ -142,7 +141,9 @@ func (er *eventsReceiver) startPolling(ctx context.Context) error {
 func (er *eventsReceiver) pollEvents(ctx context.Context) error {
 	st := pcommon.NewTimestampFromTime(time.Now().Add(-er.pollInterval)).AsTime()
 	if er.record.NextStartTime != nil {
+		er.record.Lock()
 		st = *er.record.NextStartTime
+		er.record.Unlock()
 	}
 	et := time.Now()
 
@@ -155,7 +156,10 @@ func (er *eventsReceiver) pollEvents(ctx context.Context) error {
 		er.poll(ctx, project, pc, st, et)
 	}
 
+	er.record.Lock()
 	er.record.NextStartTime = &et
+	er.record.Unlock()
+
 	return er.checkpoint(ctx)
 }
 
@@ -239,14 +243,13 @@ func (er *eventsReceiver) checkpoint(ctx context.Context) error {
 
 func (er *eventsReceiver) loadCheckpoint(ctx context.Context) {
 	cBytes, err := er.storageClient.Get(ctx, eventStorageKey)
-
-	if cBytes == nil {
+	if err != nil {
+		er.logger.Info("unable to load checkpoint from storage client, continuing without a previous checkpoint", zap.Error(err))
 		er.record = &eventRecord{}
 		return
 	}
 
-	if err != nil {
-		er.logger.Info("unable to load checkpoint from storage client, continuing without a previous checkpoint", zap.Error(err))
+	if cBytes == nil {
 		er.record = &eventRecord{}
 		return
 	}
