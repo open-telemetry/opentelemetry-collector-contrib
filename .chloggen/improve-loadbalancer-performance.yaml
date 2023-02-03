@@ -5,8 +5,7 @@ change_type: enhancement
 component: loadbalancingexporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note:
-Add batching for each endpoint in the loadbalancingexporter.
+note: Add batching for each endpoint in the loadbalancingexporter.
 
 # One or more tracking issues related to the change
 issues: [17173]
