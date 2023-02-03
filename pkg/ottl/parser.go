@@ -91,20 +91,16 @@ func WithEnumParser[K any](parser EnumParser) Option[K] {
 	}
 }
 
-func (p *Parser[K]) ParseStatements(statements []string, errorMode ErrorMode) (Statements[K], error) {
+func (p *Parser[K]) ParseStatements(statements []string) ([]*Statement[K], error) {
 	var parsedStatements []*Statement[K]
 	for _, statement := range statements {
 		parsedStatement, err := p.ParseStatement(statement)
 		if err != nil {
-			return Statements[K]{}, err
+			return nil, err
 		}
 		parsedStatements = append(parsedStatements, parsedStatement)
 	}
-	return Statements[K]{
-		statements:        parsedStatements,
-		errorMode:         errorMode,
-		telemetrySettings: p.telemetrySettings,
-	}, nil
+	return parsedStatements, nil
 }
 
 func (p *Parser[K]) ParseStatement(statement string) (*Statement[K], error) {
@@ -163,6 +159,25 @@ type Statements[K any] struct {
 	statements        []*Statement[K]
 	errorMode         ErrorMode
 	telemetrySettings component.TelemetrySettings
+}
+
+type StatementsOption[K any] func(*Statements[K])
+
+func WithErrorMode[K any](errorMode ErrorMode) StatementsOption[K] {
+	return func(s *Statements[K]) {
+		s.errorMode = errorMode
+	}
+}
+
+func NewStatements[K any](statements []*Statement[K], telemetrySettings component.TelemetrySettings, options ...StatementsOption[K]) Statements[K] {
+	s := Statements[K]{
+		statements:        statements,
+		telemetrySettings: telemetrySettings,
+	}
+	for _, op := range options {
+		op(&s)
+	}
+	return s
 }
 
 // Execute is a function that will execute all the statements in the Statements list.
