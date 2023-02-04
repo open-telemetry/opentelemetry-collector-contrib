@@ -1,0 +1,89 @@
+mode: "statefulset"
+
+presets:
+  kubernetesAttributes:
+    enabled: true
+
+config:
+  exporters:
+    logging: {}
+    file/trace:
+      path: /tmp/trace.json
+    file/metric:
+      path: /tmp/metric.json
+  extensions:
+    health_check: {}
+    memory_ballast: {}
+  processors:
+    batch: {}
+    memory_limiter: null
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: ${MY_POD_IP}:4317
+    prometheus:
+      config:
+        scrape_configs:
+          - job_name: opentelemetry-collector
+            scrape_interval: 10s
+            static_configs:
+              - targets:
+                  - ${MY_POD_IP}:8888
+  service:
+    telemetry:
+      metrics:
+        address: ${MY_POD_IP}:8888
+    extensions:
+      - health_check
+      - memory_ballast
+    pipelines:
+      logs:
+        exporters:
+          - logging
+        processors:
+          - memory_limiter
+          - batch
+        receivers:
+          - otlp
+      metrics:
+        exporters:
+          - logging
+          - file/metric
+        processors:
+          - memory_limiter
+          - batch
+        receivers:
+          - otlp
+          - prometheus
+      traces:
+        exporters:
+          - logging
+          - file/trace
+        processors:
+          - memory_limiter
+          - batch
+        receivers:
+          - otlp
+
+image:
+  repository: otel/opentelemetry-collector-contrib-dev
+  tag: "latest"
+
+command:
+  name: otelcontribcol
+
+extraVolumes:
+- name: filevolume
+  emptyDir: {}
+extraVolumeMounts: 
+- mountPath: /tmp
+  name: filevolume
+
+extraContainers: 
+- name: filecp
+  image: busybox
+  command: ["sh", "-c", "sleep 36000"]   
+  volumeMounts:
+  - name: filevolume
+    mountPath: /tmp

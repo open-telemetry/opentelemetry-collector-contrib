@@ -12,12 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build e2e
+// +build e2e
+
 package k8sattributesprocessor
 
 import (
 	"bufio"
-	"errors"
-	"io"
 	"os"
 	"testing"
 
@@ -26,19 +27,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-func readJSONMessage(br *bufio.Reader) ([]byte, bool, error) {
-	buf, _, c := br.ReadLine()
-	if c == io.EOF {
-		return nil, true, nil
-	}
-	return buf, false, nil
-}
-
 func TestJobE2E(t *testing.T) {
-	if _, err := os.Stat("./testdata/trace.json"); errors.Is(err, os.ErrNotExist) {
-		return
-	}
-
 	f, err := os.Open("./testdata/trace.json")
 	assert.NoError(t, err)
 	defer f.Close()
@@ -60,8 +49,6 @@ func TestJobE2E(t *testing.T) {
 		for i := 0; i < len; i++ {
 			resourceSpans := traces.ResourceSpans().At(i)
 
-			t.Logf("resource attributes: %s", resourceSpans.Resource().Attributes().AsRaw())
-
 			resourceSpans.Resource().Attributes().Range(
 				func(k string, v pcommon.Value) bool {
 					if k == "k8s.job.name" && v.Str() == "test-telemetrygen" {
@@ -76,7 +63,7 @@ func TestJobE2E(t *testing.T) {
 		}
 	}
 
-	assert.Equal(t, true, jobKeyFound && nsKeyFound, "job and namespace key are not found")
+	assert.True(t, jobKeyFound && nsKeyFound, "job and namespace attributes are not found")
 
 	if err := scanner.Err(); err != nil {
 		assert.NoError(t, err)
