@@ -64,7 +64,6 @@ func TestLogsExporter_New(t *testing.T) {
 		"no dsn": {
 			config: withDefaultConfig(),
 			want:   failWithMsg("exec create logs table sql: parse dsn address failed"),
-			// exec create logs table sql: parse dsn address failed
 		},
 	}
 
