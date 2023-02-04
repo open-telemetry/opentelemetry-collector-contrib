@@ -122,10 +122,11 @@ func (c *count) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	return c.metricsConsumer.ConsumeMetrics(ctx, countMetrics)
 }
 
-func setCountMetric(countMetric pmetric.Metric, metricType DataTypeConfig, count uint64, now time.Time) {
+func setCountMetric(countMetric pmetric.Metric, metricType MetricInfo, count uint64, now time.Time) {
 	countMetric.SetName(metricType.Name)
 	countMetric.SetDescription(metricType.Description)
 	sum := countMetric.SetEmptySum()
+	// The delta value is always positive, so a value accumulated downstream is monotonic
 	sum.SetIsMonotonic(true)
 	sum.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 	dp := sum.DataPoints().AppendEmpty()

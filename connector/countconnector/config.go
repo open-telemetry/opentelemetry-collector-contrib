@@ -25,15 +25,15 @@ const (
 	defaultMetricDescLogRecords = "The number of log records observed."
 )
 
-// DataTypeConfig for a data type
-type DataTypeConfig struct {
+// MetricInfo for a data type
+type MetricInfo struct {
 	Name        string `mapstructure:"name"`
 	Description string `mapstructure:"description"`
 }
 
 // Config for the connector
 type Config struct {
-	Traces  DataTypeConfig `mapstructure:"traces"`
-	Metrics DataTypeConfig `mapstructure:"metrics"`
-	Logs    DataTypeConfig `mapstructure:"logs"`
+	Traces  MetricInfo `mapstructure:"traces"`
+	Metrics MetricInfo `mapstructure:"metrics"`
+	Logs    MetricInfo `mapstructure:"logs"`
 }

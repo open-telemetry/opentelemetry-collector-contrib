@@ -31,15 +31,15 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.Equal(t, cfg, &Config{
-		Traces: DataTypeConfig{
+		Traces: MetricInfo{
 			Name:        defaultMetricNameSpans,
 			Description: defaultMetricDescSpans,
 		},
-		Metrics: DataTypeConfig{
+		Metrics: MetricInfo{
 			Name:        defaultMetricNameDataPoints,
 			Description: defaultMetricDescDataPoints,
 		},
-		Logs: DataTypeConfig{
+		Logs: MetricInfo{
 			Name:        defaultMetricNameLogRecords,
 			Description: defaultMetricDescLogRecords,
 		},

@@ -41,15 +41,15 @@ func NewFactory() connector.Factory {
 // createDefaultConfig creates the default configuration.
 func createDefaultConfig() component.Config {
 	return &Config{
-		Traces: DataTypeConfig{
+		Traces: MetricInfo{
 			Name:        defaultMetricNameSpans,
 			Description: defaultMetricDescSpans,
 		},
-		Metrics: DataTypeConfig{
+		Metrics: MetricInfo{
 			Name:        defaultMetricNameDataPoints,
 			Description: defaultMetricDescDataPoints,
 		},
-		Logs: DataTypeConfig{
+		Logs: MetricInfo{
 			Name:        defaultMetricNameLogRecords,
 			Description: defaultMetricDescLogRecords,
 		},
