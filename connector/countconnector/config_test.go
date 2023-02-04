@@ -15,34 +15,26 @@
 package countconnector
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
-func TestFactory_Type(t *testing.T) {
-	factory := NewFactory()
-	assert.Equal(t, factory.Type(), component.Type(typeStr))
-}
+func TestLoadConfig(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
 
-func TestFactory_CreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.Equal(t, cfg, &Config{
-		Traces: MetricInfo{
-			Name:        defaultMetricNameSpans,
-			Description: defaultMetricDescSpans,
-		},
-		Metrics: MetricInfo{
-			Name:        defaultMetricNameDataPoints,
-			Description: defaultMetricDescDataPoints,
-		},
-		Logs: MetricInfo{
-			Name:        defaultMetricNameLogRecords,
-			Description: defaultMetricDescLogRecords,
-		},
-	})
-	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
+
+	sub, err := cm.Sub(component.NewID(typeStr).String())
+	require.NoError(t, err)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+	expected := factory.CreateDefaultConfig().(*Config)
+	assert.Equal(t, expected, cfg)
 }
