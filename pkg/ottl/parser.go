@@ -181,7 +181,7 @@ func NewStatements[K any](statements []*Statement[K], telemetrySettings componen
 }
 
 // Execute is a function that will execute all the statements in the Statements list.
-func (s Statements[K]) Execute(ctx context.Context, tCtx K) error {
+func (s *Statements[K]) Execute(ctx context.Context, tCtx K) error {
 	for _, statement := range s.statements {
 		_, _, err := statement.Execute(ctx, tCtx)
 		if err != nil {
