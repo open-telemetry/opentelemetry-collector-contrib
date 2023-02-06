@@ -7,10 +7,10 @@ require (
 	github.com/DataDog/datadog-agent/pkg/trace v0.43.0-rc.3.0.20230201114415-fae4332beb98
 	github.com/DataDog/sketches-go v1.4.1
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.70.1-0.20230130215412-26bd7b2bf678
-	go.opentelemetry.io/collector/component v0.70.1-0.20230130215412-26bd7b2bf678
-	go.opentelemetry.io/collector/consumer v0.70.1-0.20230130215412-26bd7b2bf678
-	go.opentelemetry.io/collector/pdata v1.0.0-rc4.0.20230130215412-26bd7b2bf678
+	go.opentelemetry.io/collector v0.70.1-0.20230206205610-1ca481b86e18
+	go.opentelemetry.io/collector/component v0.70.1-0.20230206205610-1ca481b86e18
+	go.opentelemetry.io/collector/consumer v0.70.1-0.20230206205610-1ca481b86e18
+	go.opentelemetry.io/collector/pdata v1.0.0-rc4.0.20230206205610-1ca481b86e18
 	go.uber.org/zap v1.24.0
 	google.golang.org/protobuf v1.28.1
 )
@@ -59,14 +59,14 @@ require (
 	github.com/power-devops/perfstat v0.0.0-20220216144756-c35f1ee13d7c // indirect
 	github.com/rogpeppe/go-internal v1.9.0 // indirect
 	github.com/secure-systems-lab/go-securesystemslib v0.4.0 // indirect
-	github.com/shirou/gopsutil/v3 v3.22.12 // indirect
+	github.com/shirou/gopsutil/v3 v3.23.1 // indirect
 	github.com/tinylib/msgp v1.1.8 // indirect
 	github.com/tklauser/go-sysconf v0.3.11 // indirect
 	github.com/tklauser/numcpus v0.6.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
-	go.opentelemetry.io/collector/confmap v0.70.1-0.20230130215412-26bd7b2bf678 // indirect
-	go.opentelemetry.io/collector/featuregate v0.70.1-0.20230130215412-26bd7b2bf678 // indirect
-	go.opentelemetry.io/collector/semconv v0.70.1-0.20230130215412-26bd7b2bf678 // indirect
+	go.opentelemetry.io/collector/confmap v0.70.1-0.20230206205610-1ca481b86e18 // indirect
+	go.opentelemetry.io/collector/featuregate v0.70.1-0.20230206205610-1ca481b86e18 // indirect
+	go.opentelemetry.io/collector/semconv v0.70.1-0.20230206205610-1ca481b86e18 // indirect
 	go.opentelemetry.io/otel v1.12.0 // indirect
 	go.opentelemetry.io/otel/metric v0.35.0 // indirect
 	go.opentelemetry.io/otel/trace v1.12.0 // indirect

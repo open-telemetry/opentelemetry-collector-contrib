@@ -7,8 +7,8 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector/googlemanagedprometheus v0.35.0
 	github.com/cenkalti/backoff/v4 v4.2.0
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.70.1-0.20230130215412-26bd7b2bf678
-	go.opentelemetry.io/collector/component v0.70.1-0.20230130215412-26bd7b2bf678
+	go.opentelemetry.io/collector v0.70.1-0.20230206205610-1ca481b86e18
+	go.opentelemetry.io/collector/component v0.70.1-0.20230206205610-1ca481b86e18
 )
 
 require (
@@ -55,19 +55,19 @@ require (
 	github.com/prometheus/common v0.39.0 // indirect
 	github.com/prometheus/procfs v0.8.0 // indirect
 	github.com/prometheus/statsd_exporter v0.22.7 // indirect
-	github.com/shirou/gopsutil/v3 v3.22.12 // indirect
+	github.com/shirou/gopsutil/v3 v3.23.1 // indirect
 	github.com/spf13/cobra v1.6.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/tklauser/go-sysconf v0.3.11 // indirect
 	github.com/tklauser/numcpus v0.6.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/confmap v0.70.1-0.20230130215412-26bd7b2bf678 // indirect
-	go.opentelemetry.io/collector/consumer v0.70.1-0.20230130215412-26bd7b2bf678 // indirect
-	go.opentelemetry.io/collector/featuregate v0.70.1-0.20230130215412-26bd7b2bf678 // indirect
-	go.opentelemetry.io/collector/pdata v1.0.0-rc4.0.20230130215412-26bd7b2bf678 // indirect
-	go.opentelemetry.io/collector/semconv v0.70.1-0.20230130215412-26bd7b2bf678 // indirect
-	go.opentelemetry.io/contrib/propagators/b3 v1.12.0 // indirect
+	go.opentelemetry.io/collector/confmap v0.70.1-0.20230206205610-1ca481b86e18 // indirect
+	go.opentelemetry.io/collector/consumer v0.70.1-0.20230206205610-1ca481b86e18 // indirect
+	go.opentelemetry.io/collector/featuregate v0.70.1-0.20230206205610-1ca481b86e18 // indirect
+	go.opentelemetry.io/collector/pdata v1.0.0-rc4.0.20230206205610-1ca481b86e18 // indirect
+	go.opentelemetry.io/collector/semconv v0.70.1-0.20230206205610-1ca481b86e18 // indirect
+	go.opentelemetry.io/contrib/propagators/b3 v1.13.0 // indirect
 	go.opentelemetry.io/otel v1.12.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.35.0 // indirect
 	go.opentelemetry.io/otel/metric v0.35.0 // indirect
