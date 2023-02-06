@@ -57,8 +57,8 @@ require (
 	github.com/Azure/go-autorest/autorest/validation v0.3.1 // indirect
 	github.com/Azure/go-autorest/logger v0.2.1 // indirect
 	github.com/Azure/go-autorest/tracing v0.6.0 // indirect
-	github.com/ClickHouse/ch-go v0.50.0 // indirect
-	github.com/ClickHouse/clickhouse-go/v2 v2.4.3 // indirect
+	github.com/ClickHouse/ch-go v0.51.0 // indirect
+	github.com/ClickHouse/clickhouse-go/v2 v2.5.1 // indirect
 	github.com/DataDog/agent-payload/v5 v5.0.67 // indirect
 	github.com/DataDog/datadog-agent/pkg/obfuscate v0.43.0-rc.3.0.20230201114415-fae4332beb98 // indirect
 	github.com/DataDog/datadog-agent/pkg/otlp/model v0.43.0-rc.3.0.20230201114415-fae4332beb98 // indirect
@@ -545,7 +545,7 @@ require (
 	github.com/outcaste-io/ristretto v0.2.0 // indirect
 	github.com/ovh/go-ovh v1.3.0 // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
-	github.com/paulmach/orb v0.7.1 // indirect
+	github.com/paulmach/orb v0.8.0 // indirect
 	github.com/philhofer/fwd v1.1.2 // indirect
 	github.com/pierrec/lz4 v2.6.1+incompatible // indirect
 	github.com/pierrec/lz4/v4 v4.1.17 // indirect
