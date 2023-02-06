@@ -44,7 +44,7 @@ type MultilineConfig struct {
 }
 
 // Build will build a Multiline operator.
-func (c MultilineConfig) Build(enc encoding.Encoding, flushAtEOF bool, force *Flusher, maxLogSize int, preserveWhitespace bool) (bufio.SplitFunc, error) {
+func (c MultilineConfig) Build(enc encoding.Encoding, flushAtEOF, preserveWhitespace bool, force *Flusher, maxLogSize int) (bufio.SplitFunc, error) {
 	return c.getSplitFunc(enc, flushAtEOF, force, maxLogSize, preserveWhitespace)
 }
 
