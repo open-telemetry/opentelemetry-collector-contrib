@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/processor/processortest"
 )
@@ -27,7 +28,6 @@ import (
 func TestNewProcessor(t *testing.T) {
 	for _, tc := range []struct {
 		name                            string
-		metricsExporter                 string
 		latencyHistogramBuckets         []time.Duration
 		expectedLatencyHistogramBuckets []float64
 	}{
@@ -49,20 +49,29 @@ func TestNewProcessor(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// Prepare
 			factory := NewFactory()
+			connectorFactory := NewConnectorFactory()
 
 			creationParams := processortest.NewNopCreateSettings()
+			connectorCreationParams := connectortest.NewNopCreateSettings()
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.LatencyHistogramBuckets = tc.latencyHistogramBuckets
 
 			// Test
-			traceProcessor, err := factory.CreateTracesProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
+			traceProcessor, pErr := factory.CreateTracesProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
+			traceConnector, cErr := connectorFactory.CreateTracesToMetrics(context.Background(), connectorCreationParams, cfg, consumertest.NewNop())
+
 			smp := traceProcessor.(*serviceGraphProcessor)
+			smc := traceConnector.(*serviceGraphProcessor)
 
 			// Verify
-			assert.NoError(t, err)
+			assert.NoError(t, pErr)
+			assert.NoError(t, cErr)
+
 			assert.NotNil(t, smp)
+			assert.NotNil(t, smc)
 
 			assert.Equal(t, tc.expectedLatencyHistogramBuckets, smp.reqDurationBounds)
+			assert.Equal(t, tc.expectedLatencyHistogramBuckets, smc.reqDurationBounds)
 		})
 	}
 }
