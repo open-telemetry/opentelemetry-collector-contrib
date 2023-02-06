@@ -49,7 +49,7 @@ func (factory *multilineSplitterFactory) Build(maxLogSize int) (bufio.SplitFunc,
 		return nil, err
 	}
 	flusher := factory.Flusher.Build()
-	splitter, err := factory.Multiline.Build(enc.Encoding, false, flusher, maxLogSize, factory.PreserveWhitespace)
+	splitter, err := factory.Multiline.Build(enc.Encoding, false, factory.PreserveWhitespace, flusher, maxLogSize)
 	if err != nil {
 		return nil, err
 	}

@@ -113,7 +113,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	}
 
 	// Build multiline
-	splitFunc, err := c.Multiline.Build(encoding.Encoding, true, nil, int(c.MaxLogSize), c.PreserveWhitespace)
+	splitFunc, err := c.Multiline.Build(encoding.Encoding, true, c.PreserveWhitespace, nil, int(c.MaxLogSize))
 	if err != nil {
 		return nil, err
 	}

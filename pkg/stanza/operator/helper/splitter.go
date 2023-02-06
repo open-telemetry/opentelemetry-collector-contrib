@@ -42,7 +42,7 @@ func (c *SplitterConfig) Build(flushAtEOF bool, maxLogSize int) (*Splitter, erro
 	}
 
 	flusher := c.Flusher.Build()
-	splitFunc, err := c.Multiline.Build(enc.Encoding, flushAtEOF, flusher, maxLogSize, c.PreserveWhitespace)
+	splitFunc, err := c.Multiline.Build(enc.Encoding, flushAtEOF, c.PreserveWhitespace, flusher, maxLogSize)
 	if err != nil {
 		return nil, err
 	}

@@ -293,7 +293,7 @@ func TestLineStartSplitFunc(t *testing.T) {
 	}
 
 	t.Run("FirstMatchHitsEndOfBuffer", func(t *testing.T) {
-		splitFunc := NewLineStartSplitFunc(regexp.MustCompile("LOGSTART"), false, false)
+		splitFunc := NewLineStartSplitFunc(regexp.MustCompile("LOGSTART"), false, noTrim)
 		data := []byte(`LOGSTART`)
 
 		t.Run("NotAtEOF", func(t *testing.T) {
@@ -580,7 +580,7 @@ func TestNewlineSplitFunc(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		splitFunc, err := NewNewlineSplitFunc(unicode.UTF8, false, tc.PreserveWhitespace)
+		splitFunc, err := NewNewlineSplitFunc(unicode.UTF8, false, getTrimFunc(tc.PreserveWhitespace))
 		require.NoError(t, err)
 		if tc.Flusher != nil {
 			splitFunc = tc.Flusher.SplitFunc(splitFunc)
@@ -754,7 +754,7 @@ func TestNewlineSplitFunc_Encodings(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			splitFunc, err := NewNewlineSplitFunc(tc.encoding, false, false)
+			splitFunc, err := NewNewlineSplitFunc(tc.encoding, false, noTrim)
 			require.NoError(t, err)
 			scanner := bufio.NewScanner(bytes.NewReader(tc.input))
 			scanner.Split(splitFunc)
