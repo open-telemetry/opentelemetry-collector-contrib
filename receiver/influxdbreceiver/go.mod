@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/influxdata/influxdb-observability/common v0.3.0
-	github.com/influxdata/influxdb-observability/influx2otel v0.3.0
+	github.com/influxdata/influxdb-observability/influx2otel v0.2.36-0.20230201232119-da70caacbb56
 	github.com/influxdata/line-protocol/v2 v2.2.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.70.0
 	go.opentelemetry.io/collector v0.70.1-0.20230130215412-26bd7b2bf678
@@ -57,3 +57,10 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/commo
 retract v0.65.0
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
+
+// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18390
+replace github.com/influxdata/influxdb-observability/common => github.com/influxdata/influxdb-observability/common v0.2.36-0.20230201232119-da70caacbb56
+
+replace github.com/influxdata/influxdb-observability/influx2otel => github.com/influxdata/influxdb-observability/influx2otel v0.2.36-0.20230201232119-da70caacbb56
+
+replace github.com/influxdata/influxdb-observability/otel2influx => github.com/influxdata/influxdb-observability/otel2influx v0.2.36-0.20230201232119-da70caacbb56
