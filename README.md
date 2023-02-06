@@ -93,7 +93,6 @@ Approvers ([@open-telemetry/collector-contrib-approvers](https://github.com/orgs
 - [David Ashpole](https://github.com/dashpole), Google
 - [Evan Bradley](https://github.com/evan-bradley), Dynatrace
 - [Sean Marciniak](https://github.com/MovieStoreGuy), Atlassian
-- [Tyler Helmuth](https://github.com/TylerHelmuth), Honeycomb
 
 Emeritus Approvers:
 - [Przemek Maciolek](https://github.com/pmm-sumo)
@@ -106,6 +105,7 @@ Maintainers ([@open-telemetry/collector-contrib-maintainer](https://github.com/o
 - [Dmitrii Anoshin](https://github.com/dmitryax), Splunk
 - [Juraci Paixão Kröhling](https://github.com/jpkrohling), Grafana Labs
 - [Pablo Baeyens](https://github.com/mx-psi), DataDog
+- [Tyler Helmuth](https://github.com/TylerHelmuth), Honeycomb
 
 Emeritus Maintainers
 - [Tigran Najaryan](https://github.com/tigrannajaryan), Splunk
