@@ -62,14 +62,14 @@ func SetLogger(l *zap.Logger) {
 }
 
 // NewMetricsTable create metric tables with an expiry time to storage metric telemetry data
-func NewMetricsTable(tableName string, ttlDays uint, db *sql.DB) error {
+func NewMetricsTable(ctx context.Context, tableName string, ttlDays uint, db *sql.DB) error {
 	var ttlExpr string
 	if ttlDays > 0 {
 		ttlExpr = fmt.Sprintf(`TTL toDateTime(TimeUnix) + toIntervalDay(%d)`, ttlDays)
 	}
 	for table := range supportedMetricTypes {
 		query := fmt.Sprintf(table, tableName, ttlExpr)
-		if _, err := db.Exec(query); err != nil {
+		if _, err := db.ExecContext(ctx, query); err != nil {
 			return fmt.Errorf("exec create metrics table sql: %w", err)
 		}
 	}
