@@ -1,0 +1,40 @@
+# This example demonstrates a 2-pipeline configuration for the use case
+# where a user wishes to export aggregated span metrics directly to an external
+# system without further processing; that is:
+#   traces -> metrics
+receivers:
+  jaeger:
+    protocols:
+      thrift_http:
+        endpoint: "0.0.0.0:14278"
+
+exporters:
+  prometheus:
+    endpoint: "0.0.0.0:8889"
+
+  jaeger:
+    endpoint: "localhost:14250"
+    tls:
+      insecure: true
+
+processors:
+  batch:
+
+connectors:
+  spanmetrics:
+    dimensions_cache_size: 500
+
+service:
+  pipelines:
+    traces:
+      receivers: [jaeger]
+      # spanmetrics will pass on span data untouched to next processor
+      # while also emitting metrics to the metrics pipeline.
+      processors: [batch]
+      exporters: [spanmetrics, jaeger]
+
+    metrics:
+      # This receiver is just a dummy and never used.
+      # Added to pass validation requiring at least one receiver in a pipeline.
+      receivers: [spanmetrics]
+      exporters: [prometheus]
