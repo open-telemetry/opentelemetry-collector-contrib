@@ -92,6 +92,7 @@ Approvers ([@open-telemetry/collector-contrib-approvers](https://github.com/orgs
 - [Antoine Toulme](https://github.com/atoulme), Splunk
 - [David Ashpole](https://github.com/dashpole), Google
 - [Evan Bradley](https://github.com/evan-bradley), Dynatrace
+- [Ruslan Kovalov](https://github.com/kovrus), Grafana Labs
 - [Sean Marciniak](https://github.com/MovieStoreGuy), Atlassian
 
 Emeritus Approvers:
