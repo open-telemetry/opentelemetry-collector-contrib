@@ -1014,10 +1014,3 @@ replace github.com/mattn/go-ieproxy => github.com/mattn/go-ieproxy v0.0.1
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
-
-// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18390
-replace github.com/influxdata/influxdb-observability/common => github.com/influxdata/influxdb-observability/common v0.2.36-0.20230201232119-da70caacbb56
-
-replace github.com/influxdata/influxdb-observability/influx2otel => github.com/influxdata/influxdb-observability/influx2otel v0.2.36-0.20230201232119-da70caacbb56
-
-replace github.com/influxdata/influxdb-observability/otel2influx => github.com/influxdata/influxdb-observability/otel2influx v0.2.36-0.20230201232119-da70caacbb56
