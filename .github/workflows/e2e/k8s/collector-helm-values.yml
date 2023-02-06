@@ -58,13 +58,7 @@ config:
           - prometheus
       traces:
         exporters:
-          - logging
           - file/trace
-        processors:
-          - memory_limiter
-          - batch
-        receivers:
-          - otlp
 
 image:
   repository: otel/opentelemetry-collector-contrib-dev
