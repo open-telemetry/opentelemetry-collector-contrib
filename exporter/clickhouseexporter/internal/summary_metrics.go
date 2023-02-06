@@ -128,6 +128,8 @@ func (s *summaryMetrics) insert(ctx context.Context, db *sql.DB) error {
 			valueArgs[index+15] = quantiles
 			valueArgs[index+16] = values
 			valueArgs[index+17] = uint32(dp.Flags())
+
+			index += summaryValueCounts
 		}
 	}
 

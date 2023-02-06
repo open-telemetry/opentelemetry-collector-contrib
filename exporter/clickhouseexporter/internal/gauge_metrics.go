@@ -134,6 +134,8 @@ func (g *gaugeMetrics) insert(ctx context.Context, db *sql.DB) error {
 			valueArgs[index+17] = values
 			valueArgs[index+18] = traceIDs
 			valueArgs[index+19] = spanIDs
+
+			index += gaugeValueCounts
 		}
 	}
 

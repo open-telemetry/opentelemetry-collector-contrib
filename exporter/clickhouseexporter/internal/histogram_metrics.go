@@ -149,6 +149,8 @@ func (h *histogramMetrics) insert(ctx context.Context, db *sql.DB) error {
 			valueArgs[index+22] = uint32(dp.Flags())
 			valueArgs[index+23] = dp.Min()
 			valueArgs[index+24] = dp.Max()
+
+			index += histogramValueCounts
 		}
 	}
 

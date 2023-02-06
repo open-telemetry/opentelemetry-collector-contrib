@@ -140,6 +140,8 @@ func (s *sumMetrics) insert(ctx context.Context, db *sql.DB) error {
 			valueArgs[index+19] = spanIDs
 			valueArgs[index+20] = int32(model.sum.AggregationTemporality())
 			valueArgs[index+21] = model.sum.IsMonotonic()
+
+			index += sumValueCounts
 		}
 	}
 
