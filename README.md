@@ -77,7 +77,6 @@ Triagers ([@open-telemetry/collector-contrib-triagers](https://github.com/orgs/o
 - [Antoine Toulme](https://github.com/atoulme), Splunk
 - [Benedikt Bongartz](https://github.com/frzifus), Red Hat
 - [Goutham Veeramachaneni](https://github.com/gouthamve), Grafana
-- [Ziqi Zhao](https://github.com/fatsheep9146), Alibaba
 - Actively seeking contributors to triage issues
 
 Emeritus Triagers:
@@ -93,6 +92,7 @@ Approvers ([@open-telemetry/collector-contrib-approvers](https://github.com/orgs
 - [Evan Bradley](https://github.com/evan-bradley), Dynatrace
 - [Sean Marciniak](https://github.com/MovieStoreGuy), Atlassian
 - [Tyler Helmuth](https://github.com/TylerHelmuth), Honeycomb
+- [Ziqi Zhao](https://github.com/fatsheep9146), Alibaba
 
 Emeritus Approvers:
 - [Przemek Maciolek](https://github.com/pmm-sumo)
