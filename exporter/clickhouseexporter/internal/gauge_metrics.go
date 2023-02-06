@@ -55,8 +55,8 @@ CREATE TABLE IF NOT EXISTS %s_gauge (
 	 INDEX idx_res_attr_value mapValues(ResourceAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
 	 INDEX idx_scope_attr_key mapKeys(ScopeAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
 	 INDEX idx_scope_attr_value mapValues(ScopeAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
-	 INDEX idx_attr_attr_key mapKeys(Attributes) TYPE bloom_filter(0.01) GRANULARITY 1,
-	 INDEX idx_attr_attr_value mapValues(Attributes) TYPE bloom_filter(0.01) GRANULARITY 1
+	 INDEX idx_attr_key mapKeys(Attributes) TYPE bloom_filter(0.01) GRANULARITY 1,
+	 INDEX idx_attr_value mapValues(Attributes) TYPE bloom_filter(0.01) GRANULARITY 1
 ) ENGINE MergeTree()
 %s
 PARTITION BY toDate(TimeUnix)
