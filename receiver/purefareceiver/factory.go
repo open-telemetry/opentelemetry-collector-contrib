@@ -30,14 +30,27 @@ import (
 const (
 	typeStr   = "purefa"
 	stability = component.StabilityLevelDevelopment
+
+	defaultEncoding = "otlp_proto"
 )
 
-func NewFactory() receiver.Factory {
+// FactoryOption applies changes to purefaReceiverFactory.
+type FactoryOption func(factory *purefaReceiverFactory)
+
+func NewFactory(options ...FactoryOption) receiver.Factory {
+
+	f := &purefaReceiverFactory{
+		logsUnmarshalers: defaultLogsUnmarshalers(),
+	}
+
+	for _, o := range options {
+		o(f)
+	}
 	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
 		receiver.WithMetrics(createMetricsReceiver, stability),
-		receiver.WithLogs(createLogsReceiver, stability))
+		receiver.WithLogs(f.createLogsReceiver, stability))
 }
 
 func createDefaultConfig() component.Config {
@@ -55,6 +68,19 @@ func createDefaultConfig() component.Config {
 	}
 }
 
+type purefaReceiverFactory struct {
+	logsUnmarshalers map[string]LogsUnmarshaler
+}
+
+// WithLogsUnmarshalers adds LogsUnmarshalers.
+func WithLogsUnmarshalers(logsUnmarshalers ...LogsUnmarshaler) FactoryOption {
+	return func(factory *purefaReceiverFactory) {
+		for _, unmarshaler := range logsUnmarshalers {
+			factory.logsUnmarshalers[unmarshaler.Encoding()] = unmarshaler
+		}
+	}
+}
+
 func createMetricsReceiver(
 	_ context.Context,
 	set receiver.CreateSettings,
@@ -68,7 +94,7 @@ func createMetricsReceiver(
 	return newMetricsReceiver(cfg, set, next), nil
 }
 
-func createLogsReceiver(
+func (f *purefaReceiverFactory) createLogsReceiver(
 	_ context.Context,
 	set receiver.CreateSettings,
 	rCfg component.Config,

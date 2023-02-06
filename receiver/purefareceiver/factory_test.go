@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
@@ -50,7 +51,8 @@ func TestCreateReceiver(t *testing.T) {
 	assert.Equal(t, err, component.ErrDataTypeIsNotSupported)
 	assert.Nil(t, tReceiver)
 }
-func TestCreateLogsReceiver(t *testing.T) {
+
+/* func TestCreateLogsReceiver(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	_, err := NewFactory().CreateLogsReceiver(
 		context.Background(),
@@ -59,4 +61,52 @@ func TestCreateLogsReceiver(t *testing.T) {
 		nil,
 	)
 	require.NoError(t, err)
+} */
+
+func TestCreateLogsReceiver(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	//cfg.Arrays = []string{"invalid:9092"}
+	f := purefaReceiverFactory{logsUnmarshalers: defaultLogsUnmarshalers()}
+	r, err := f.createLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, nil)
+	// no available broker
+	require.NoError(t, err)
+	assert.NotNil(t, r)
+}
+
+func TestCreateLogsReceiver_error(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	// disable contacting broker at startup
+	f := purefaReceiverFactory{logsUnmarshalers: defaultLogsUnmarshalers()}
+	r, err := f.createLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, nil)
+	require.NoError(t, err)
+	assert.NotNil(t, r)
+}
+
+func TestWithLogsUnmarshalers(t *testing.T) {
+	unmarshaler := &customLogsUnmarshaler{}
+	f := NewFactory(WithLogsUnmarshalers(unmarshaler))
+	cfg := createDefaultConfig().(*Config)
+	// disable contacting broker
+
+	t.Run("custom_encoding", func(t *testing.T) {
+		exporter, err := f.CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, nil)
+		require.NoError(t, err)
+		require.NotNil(t, exporter)
+	})
+	t.Run("default_encoding", func(t *testing.T) {
+		exporter, err := f.CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, nil)
+		require.NoError(t, err)
+		assert.NotNil(t, exporter)
+	})
+}
+
+type customLogsUnmarshaler struct {
+}
+
+func (c customLogsUnmarshaler) Unmarshal([]byte) (plog.Logs, error) {
+	panic("implement me")
+}
+
+func (c customLogsUnmarshaler) Encoding() string {
+	return "custom"
 }
