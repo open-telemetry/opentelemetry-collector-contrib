@@ -324,28 +324,30 @@ The filter processor has access to all the [factory functions of the OTTL](https
 In addition, the processor defines a few of its own functions:
 
 **Metrics only functions**
+- [HasAttrKeyOnDatapoint](#HasAttrKeyOnDatapoint)
 - [HasAttrOnDatapoint](#HasAttrOnDatapoint)
-- [HasAttributeOnDatapointWithValue](#HasAttributeOnDatapointWithValue)
+
+#### HasAttrKeyOnDatapoint
+
+`HasAttrKeyOnDatapoint(key)`
+
+Returns `true` if the given key appears in the attribute map of any datapoint on a metric.
+`key` must be a string.
+
+Examples:
+
+- `HasAttrKeyOnDatapoint("http.method")`
 
 #### HasAttrOnDatapoint
 
-`HasAttrOnDatapoint(key)`
+`HasAttrOnDatapoint(key, value)`
 
-Returns `true` if the given key appears in the attribute map of any datapoint on a metric.
-
-Examples:
-
-- `HasAttrOnDatapoint("http.target")`
-
-#### HasAttributeOnDatapointWithValue
-
-`HasAttributeOnDatapointWithValue(key, value)`
-
-Returns `true` if the given key and corresponding value appears in the attribute map of any datapoint on a metric.
+Returns `true` if the given key and value appears in the attribute map of any datapoint on a metric.
+`key` and `value` must both be strings.
 
 Examples:
 
-- `HasAttrOnDatapoint("http.target")`
+- `HasAttrOnDatapoint("http.method", "GET")`
 
 ### OTTL Examples
 

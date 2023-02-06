@@ -125,19 +125,19 @@ func functions[K any]() map[string]interface{} {
 
 func metricFunctions() map[string]interface{} {
 	funcs := functions[ottlmetric.TransformContext]()
+	funcs["HasAttrKeyOnDatapoint"] = hasAttributeKeyOnDatapoint
 	funcs["HasAttrOnDatapoint"] = hasAttributeOnDatapoint
-	funcs["HasAttrOnDatapointWithValue"] = hasAttributeOnDatapointWithValue
 
 	return funcs
 }
 
-func hasAttributeOnDatapointWithValue(key string, expectedVal string) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
+func hasAttributeOnDatapoint(key string, expectedVal string) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
 	return func(ctx context.Context, tCtx ottlmetric.TransformContext) (interface{}, error) {
 		return checkDataPoints(tCtx, key, &expectedVal)
 	}, nil
 }
 
-func hasAttributeOnDatapoint(key string) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
+func hasAttributeKeyOnDatapoint(key string) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
 	return func(ctx context.Context, tCtx ottlmetric.TransformContext) (interface{}, error) {
 		return checkDataPoints(tCtx, key, nil)
 	}, nil

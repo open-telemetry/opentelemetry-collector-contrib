@@ -25,7 +25,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 )
 
-func Test_HasAttrOnDatapoint(t *testing.T) {
+func Test_HasAttrKeyOnDatapoint(t *testing.T) {
 	tests := []struct {
 		name     string
 		key      string
@@ -135,7 +135,7 @@ func Test_HasAttrOnDatapoint(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := hasAttributeOnDatapoint(tt.key)
+			exprFunc, err := hasAttributeKeyOnDatapoint(tt.key)
 			assert.NoError(t, err)
 			result, err := exprFunc(context.Background(), ottlmetric.NewTransformContext(tt.input(), pcommon.NewInstrumentationScope(), pcommon.NewResource()))
 			assert.NoError(t, err)
@@ -144,7 +144,7 @@ func Test_HasAttrOnDatapoint(t *testing.T) {
 	}
 }
 
-func Test_HasAttrOnDatapointWithValue(t *testing.T) {
+func Test_HasAttrOnDatapoint(t *testing.T) {
 	tests := []struct {
 		name        string
 		key         string
@@ -360,7 +360,7 @@ func Test_HasAttrOnDatapointWithValue(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := hasAttributeOnDatapoint(tt.key)
+			exprFunc, err := hasAttributeOnDatapoint(tt.key, tt.expectedVal)
 			assert.NoError(t, err)
 			result, err := exprFunc(context.Background(), ottlmetric.NewTransformContext(tt.input(), pcommon.NewInstrumentationScope(), pcommon.NewResource()))
 			assert.NoError(t, err)
