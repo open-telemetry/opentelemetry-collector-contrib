@@ -94,11 +94,11 @@ func WithEnumParser[K any](parser EnumParser) Option[K] {
 func (p *Parser[K]) ParseStatements(statements []string) ([]*Statement[K], error) {
 	var parsedStatements []*Statement[K]
 	for _, statement := range statements {
-		parsedStatement, err := p.ParseStatement(statement)
+		ps, err := p.ParseStatement(statement)
 		if err != nil {
 			return nil, err
 		}
-		parsedStatements = append(parsedStatements, parsedStatement)
+		parsedStatements = append(parsedStatements, ps)
 	}
 	return parsedStatements, nil
 }
@@ -193,23 +193,4 @@ func (s Statements[K]) Execute(ctx context.Context, tCtx K) error {
 		}
 	}
 	return nil
-}
-
-// Eval returns true if any of the statements' conditions pass and false otherwise
-func (s Statements[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
-	for _, statement := range s.statements {
-		ret, err := statement.condition.Eval(ctx, tCtx)
-		if err != nil {
-			if s.errorMode == PropagateError {
-				err = fmt.Errorf("failed to evaluate condition: %w", err)
-				return false, err
-			}
-			s.telemetrySettings.Logger.Error("failed to evaluate condition", zap.Error(err))
-		} else {
-			if ret {
-				return true, nil
-			}
-		}
-	}
-	return false, nil
 }

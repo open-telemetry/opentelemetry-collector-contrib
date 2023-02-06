@@ -16,7 +16,6 @@ package common // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"context"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -189,16 +188,18 @@ func NewMetricParserCollection(settings component.TelemetrySettings, options ...
 func (pc MetricParserCollection) ParseContextStatements(contextStatements ContextStatements) (consumer.Metrics, error) {
 	switch contextStatements.Context {
 	case Metric:
-		mStatements, err := pc.metricParser.ParseStatements(contextStatements.Statements, ottl.PropagateError)
+		parseStatements, err := pc.metricParser.ParseStatements(contextStatements.Statements)
 		if err != nil {
 			return nil, err
 		}
+		mStatements := ottlmetric.NewStatements(parseStatements, pc.settings, ottlmetric.WithErrorMode(ottl.PropagateError))
 		return metricStatements{mStatements}, nil
 	case DataPoint:
-		dpStatements, err := pc.dataPointParser.ParseStatements(contextStatements.Statements, ottl.PropagateError)
+		parseStatements, err := pc.dataPointParser.ParseStatements(contextStatements.Statements)
 		if err != nil {
 			return nil, err
 		}
+		dpStatements := ottldatapoint.NewStatements(parseStatements, pc.settings, ottldatapoint.WithErrorMode(ottl.PropagateError))
 		return dataPointStatements{dpStatements}, nil
 	default:
 		statements, err := pc.parseCommonContextStatements(contextStatements, ottl.PropagateError)

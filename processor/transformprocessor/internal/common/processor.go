@@ -17,7 +17,6 @@ package common // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"context"
 	"fmt"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -155,17 +154,19 @@ type baseContext interface {
 func (pc parserCollection) parseCommonContextStatements(contextStatement ContextStatements, errorMode ottl.ErrorMode) (baseContext, error) {
 	switch contextStatement.Context {
 	case Resource:
-		statements, err := pc.resourceParser.ParseStatements(contextStatement.Statements, errorMode)
+		parseStatements, err := pc.resourceParser.ParseStatements(contextStatement.Statements)
 		if err != nil {
 			return nil, err
 		}
-		return resourceStatements{statements}, nil
+		rStatements := ottlresource.NewStatements(parseStatements, pc.settings, ottlresource.WithErrorMode(errorMode))
+		return resourceStatements{rStatements}, nil
 	case Scope:
-		statements, err := pc.scopeParser.ParseStatements(contextStatement.Statements, errorMode)
+		parseStatements, err := pc.scopeParser.ParseStatements(contextStatement.Statements)
 		if err != nil {
 			return nil, err
 		}
-		return scopeStatements{statements}, nil
+		sStatements := ottlscope.NewStatements(parseStatements, pc.settings, ottlscope.WithErrorMode(errorMode))
+		return scopeStatements{sStatements}, nil
 	default:
 		return nil, fmt.Errorf("unknown context %v", contextStatement.Context)
 	}

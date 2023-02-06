@@ -62,6 +62,22 @@ func NewParser(functions map[string]interface{}, telemetrySettings component.Tel
 	return p
 }
 
+type StatementsOption func(*ottl.Statements[TransformContext])
+
+func WithErrorMode(errorMode ottl.ErrorMode) StatementsOption {
+	return func(s *ottl.Statements[TransformContext]) {
+		ottl.WithErrorMode[TransformContext](errorMode)(s)
+	}
+}
+
+func NewStatements(statements []*ottl.Statement[TransformContext], telemetrySettings component.TelemetrySettings, options ...StatementsOption) ottl.Statements[TransformContext] {
+	s := ottl.NewStatements(statements, telemetrySettings)
+	for _, op := range options {
+		op(&s)
+	}
+	return s
+}
+
 func parseEnum(_ *ottl.EnumSymbol) (*ottl.Enum, error) {
 	return nil, fmt.Errorf("resource context does not provide Enum support")
 }

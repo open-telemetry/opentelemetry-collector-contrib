@@ -16,7 +16,6 @@ package common // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"context"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -136,16 +135,18 @@ func NewTraceParserCollection(settings component.TelemetrySettings, options ...T
 func (pc TraceParserCollection) ParseContextStatements(contextStatements ContextStatements) (consumer.Traces, error) {
 	switch contextStatements.Context {
 	case Span:
-		tStatements, err := pc.spanParser.ParseStatements(contextStatements.Statements, ottl.PropagateError)
+		parseStatements, err := pc.spanParser.ParseStatements(contextStatements.Statements)
 		if err != nil {
 			return nil, err
 		}
-		return traceStatements{tStatements}, nil
+		sStatements := ottlspan.NewStatements(parseStatements, pc.settings, ottlspan.WithErrorMode(ottl.PropagateError))
+		return traceStatements{sStatements}, nil
 	case SpanEvent:
-		seStatements, err := pc.spanEventParser.ParseStatements(contextStatements.Statements, ottl.PropagateError)
+		parseStatements, err := pc.spanEventParser.ParseStatements(contextStatements.Statements)
 		if err != nil {
 			return nil, err
 		}
+		seStatements := ottlspanevent.NewStatements(parseStatements, pc.settings, ottlspanevent.WithErrorMode(ottl.PropagateError))
 		return spanEventStatements{seStatements}, nil
 	default:
 		return pc.parseCommonContextStatements(contextStatements, ottl.PropagateError)
