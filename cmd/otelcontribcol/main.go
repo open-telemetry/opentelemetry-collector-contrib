@@ -5,6 +5,7 @@ package main
 
 import (
 	"log"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/otelcol"
 )
