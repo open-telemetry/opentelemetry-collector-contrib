@@ -119,11 +119,11 @@ func (exp *traceExporter) consumeTraces(
 		}
 	}
 
-	exp.exportHostMetrics(ctx, hosts, tags)
+	exp.exportUsageMetrics(ctx, hosts, tags)
 	return nil
 }
 
-func (exp *traceExporter) exportHostMetrics(ctx context.Context, hosts map[string]struct{}, tags map[string]struct{}) {
+func (exp *traceExporter) exportUsageMetrics(ctx context.Context, hosts map[string]struct{}, tags map[string]struct{}) {
 	now := pcommon.NewTimestampFromTime(time.Now())
 	var err error
 	if isMetricExportV2Enabled() {
@@ -139,8 +139,8 @@ func (exp *traceExporter) exportHostMetrics(ctx context.Context, hosts map[strin
 			series = append(series, ms...)
 		}
 		_, err = exp.retrier.DoWithRetries(ctx, func(context.Context) error {
-			ctx = clientutil.GetRequestContext(ctx, string(exp.cfg.API.Key))
-			_, httpresp, merr := exp.metricsAPI.SubmitMetrics(ctx, datadogV2.MetricPayload{Series: series})
+			ctx2 := clientutil.GetRequestContext(ctx, string(exp.cfg.API.Key))
+			_, httpresp, merr := exp.metricsAPI.SubmitMetrics(ctx2, datadogV2.MetricPayload{Series: series})
 			return clientutil.WrapError(merr, httpresp)
 		})
 	} else {

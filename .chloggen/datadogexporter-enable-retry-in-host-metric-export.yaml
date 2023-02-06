@@ -5,7 +5,7 @@ change_type: enhancement
 component: datadogexporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Enable retries in exportHostMetrics in Datadog traces_exporter
+note: Datadog trace exporter will now retry sending usage metrics when it fails
 
 # One or more tracking issues related to the change
 issues: [18238]
