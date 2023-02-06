@@ -96,7 +96,7 @@ func (c MultilineConfig) getSplitFunc(enc encoding.Encoding, flushAtEOF bool, fo
 
 // NewLineStartSplitFunc creates a bufio.SplitFunc that splits an incoming stream into
 // tokens that start with a match to the regex pattern provided
-func NewLineStartSplitFunc(re *regexp.Regexp, flushAtEOF bool, preserveWhitespace bool) bufio.SplitFunc {
+func NewLineStartSplitFunc(re *regexp.Regexp, flushAtEOF, preserveWhitespace bool) bufio.SplitFunc {
 	return func(data []byte, atEOF bool) (advance int, token []byte, err error) {
 		firstLoc := re.FindIndex(data)
 		if firstLoc == nil {
