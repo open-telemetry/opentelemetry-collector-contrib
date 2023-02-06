@@ -42,3 +42,6 @@ receivers:
 ```
 
 The full list of settings exposed for this receiver are documented [here](./config.go) with a detailed sample configuration [here](./testdata/config.yaml)
+
+[development]: https://github.com/open-telemetry/opentelemetry-collector#development
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
