@@ -89,6 +89,7 @@ Emeritus Triagers:
 Approvers ([@open-telemetry/collector-contrib-approvers](https://github.com/orgs/open-telemetry/teams/collector-contrib-approvers)):
 
 - [Anthony Mirabella](https://github.com/Aneurysm9), AWS
+- [Antoine Toulme](https://github.com/atoulme), Splunk
 - [David Ashpole](https://github.com/dashpole), Google
 - [Evan Bradley](https://github.com/evan-bradley), Dynatrace
 - [Sean Marciniak](https://github.com/MovieStoreGuy), Atlassian
