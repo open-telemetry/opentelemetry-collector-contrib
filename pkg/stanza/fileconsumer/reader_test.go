@@ -141,10 +141,10 @@ func TestTokenizationTooLongWithLineStartPattern(t *testing.T) {
 	mlc.LineStartPattern = `\d+-\d+-\d+`
 	f.splitterFactory = newMultilineSplitterFactory(helper.SplitterConfig{
 		EncodingConfig: helper.NewEncodingConfig(),
-		Flusher:        helper.NewFlusherConfig(),
 		Multiline:      mlc,
 	})
 	f.readerConfig.maxLogSize = 15
+	f.flusherConfig = helper.NewFlusherConfig()
 
 	temp := openTemp(t, t.TempDir())
 	_, err := temp.Write(fileContent)
@@ -171,7 +171,7 @@ func testReaderFactory(t *testing.T) (*readerFactory, chan *emitParams) {
 		},
 		fromBeginning:   true,
 		splitterFactory: newMultilineSplitterFactory(helper.NewSplitterConfig()),
-		encodingConfig:  helper.NewEncodingConfig(),
+		flusherConfig:   helper.NewFlusherConfig(),
 	}, emitChan
 }
 

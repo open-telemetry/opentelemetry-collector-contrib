@@ -15,12 +15,10 @@
 package fileconsumer // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
 
 import (
-	"bufio"
 	"os"
 
-	"go.uber.org/zap"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
+	"go.uber.org/zap"
 )
 
 type readerFactory struct {
@@ -28,7 +26,7 @@ type readerFactory struct {
 	readerConfig    *readerConfig
 	fromBeginning   bool
 	splitterFactory splitterFactory
-	encodingConfig  helper.EncodingConfig
+	flusherConfig   *helper.FlusherConfig
 }
 
 func (f *readerFactory) newReader(file *os.File, fp *Fingerprint) (*Reader, error) {
@@ -44,7 +42,7 @@ func (f *readerFactory) copy(old *Reader, newFile *os.File) (*Reader, error) {
 		withFile(newFile).
 		withFingerprint(old.Fingerprint.Copy()).
 		withOffset(old.Offset).
-		withSplitterFunc(old.splitFunc).
+		withSplitter(old.splitter).
 		build()
 }
 
@@ -58,18 +56,18 @@ func (f *readerFactory) newFingerprint(file *os.File) (*Fingerprint, error) {
 
 type readerBuilder struct {
 	*readerFactory
-	file      *os.File
-	fp        *Fingerprint
-	offset    int64
-	splitFunc bufio.SplitFunc
+	file     *os.File
+	fp       *Fingerprint
+	offset   int64
+	splitter *helper.Splitter
 }
 
 func (f *readerFactory) newReaderBuilder() *readerBuilder {
 	return &readerBuilder{readerFactory: f}
 }
 
-func (b *readerBuilder) withSplitterFunc(s bufio.SplitFunc) *readerBuilder {
-	b.splitFunc = s
+func (b *readerBuilder) withSplitter(s *helper.Splitter) *readerBuilder {
+	b.splitter = s
 	return b
 }
 
@@ -94,20 +92,16 @@ func (b *readerBuilder) build() (r *Reader, err error) {
 		Offset:       b.offset,
 	}
 
-	if b.splitFunc != nil {
-		r.splitFunc = b.splitFunc
+	if b.splitter != nil {
+		r.splitter = b.splitter
 	} else {
-		r.splitFunc, err = b.splitterFactory.Build(b.readerConfig.maxLogSize)
+		b.splitter, err = b.splitterFactory.Build(b.readerConfig.maxLogSize)
 		if err != nil {
 			return
 		}
+		flusher := b.flusherConfig.Build()
+		b.splitter.SplitFunc = flusher.SplitFunc(b.splitter.SplitFunc)
 	}
-
-	enc, err := b.encodingConfig.Build()
-	if err != nil {
-		return
-	}
-	r.encoding = enc
 
 	if b.file != nil {
 		r.file = b.file

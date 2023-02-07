@@ -286,7 +286,10 @@ func TestLineStartSplitFunc(t *testing.T) {
 			LineStartPattern: tc.Pattern,
 		}
 
-		splitFunc, err := cfg.getSplitFunc(unicode.UTF8, false, tc.Flusher, 0)
+		splitFunc, err := cfg.getSplitFunc(unicode.UTF8, false, 0)
+		if tc.Flusher != nil {
+			splitFunc = tc.Flusher.SplitFunc(splitFunc)
+		}
 		require.NoError(t, err)
 		t.Run(tc.Name, tc.RunFunc(splitFunc))
 	}
@@ -461,7 +464,10 @@ func TestLineEndSplitFunc(t *testing.T) {
 			LineEndPattern: tc.Pattern,
 		}
 
-		splitFunc, err := cfg.getSplitFunc(unicode.UTF8, false, tc.Flusher, 0)
+		splitFunc, err := cfg.getSplitFunc(unicode.UTF8, false, 0)
+		if tc.Flusher != nil {
+			splitFunc = tc.Flusher.SplitFunc(splitFunc)
+		}
 		require.NoError(t, err)
 		t.Run(tc.Name, tc.RunFunc(splitFunc))
 	}
@@ -676,14 +682,14 @@ func TestNoopEncodingError(t *testing.T) {
 		LineEndPattern: "\n",
 	}
 
-	_, err := cfg.getSplitFunc(encoding.Nop, false, nil, 0)
+	_, err := cfg.getSplitFunc(encoding.Nop, false, 0)
 	require.Equal(t, err, fmt.Errorf("line_start_pattern or line_end_pattern should not be set when using nop encoding"))
 
 	cfg = &MultilineConfig{
 		LineStartPattern: "\n",
 	}
 
-	_, err = cfg.getSplitFunc(encoding.Nop, false, nil, 0)
+	_, err = cfg.getSplitFunc(encoding.Nop, false, 0)
 	require.Equal(t, err, fmt.Errorf("line_start_pattern or line_end_pattern should not be set when using nop encoding"))
 }
 

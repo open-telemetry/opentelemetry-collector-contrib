@@ -26,7 +26,6 @@ import (
 // Multiline consists of splitFunc and variables needed to perform force flush
 type Multiline struct {
 	SplitFunc bufio.SplitFunc
-	Force     *Flusher
 }
 
 // NewBasicConfig creates a new Multiline config
@@ -44,12 +43,12 @@ type MultilineConfig struct {
 }
 
 // Build will build a Multiline operator.
-func (c MultilineConfig) Build(enc encoding.Encoding, flushAtEOF bool, force *Flusher, maxLogSize int) (bufio.SplitFunc, error) {
-	return c.getSplitFunc(enc, flushAtEOF, force, maxLogSize)
+func (c MultilineConfig) Build(enc encoding.Encoding, flushAtEOF bool, maxLogSize int) (bufio.SplitFunc, error) {
+	return c.getSplitFunc(enc, flushAtEOF, maxLogSize)
 }
 
 // getSplitFunc returns split function for bufio.Scanner basing on configured pattern
-func (c MultilineConfig) getSplitFunc(enc encoding.Encoding, flushAtEOF bool, force *Flusher, maxLogSize int) (bufio.SplitFunc, error) {
+func (c MultilineConfig) getSplitFunc(enc encoding.Encoding, flushAtEOF bool, maxLogSize int) (bufio.SplitFunc, error) {
 	endPattern := c.LineEndPattern
 	startPattern := c.LineStartPattern
 
@@ -85,10 +84,6 @@ func (c MultilineConfig) getSplitFunc(enc encoding.Encoding, flushAtEOF bool, fo
 		splitFunc = NewLineStartSplitFunc(re, flushAtEOF)
 	default:
 		return nil, fmt.Errorf("unreachable")
-	}
-
-	if force != nil {
-		return force.SplitFunc(splitFunc), nil
 	}
 
 	return splitFunc, nil

@@ -462,7 +462,7 @@ func TestNoNewline(t *testing.T) {
 	t.Parallel()
 	operator, logReceived, tempDir := newTestFileOperator(t, func(cfg *Config) {
 		cfg.Splitter = helper.NewSplitterConfig()
-		cfg.Splitter.Flusher.Period = time.Nanosecond
+		cfg.Flusher.Period = time.Nanosecond
 	})
 
 	temp := openTemp(t, tempDir)

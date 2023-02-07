@@ -15,14 +15,12 @@
 package fileconsumer // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
 
 import (
-	"bufio"
 	"context"
 	"fmt"
 	"os"
 
-	"go.uber.org/zap"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
+	"go.uber.org/zap"
 )
 
 type readerConfig struct {
@@ -35,8 +33,7 @@ type readerConfig struct {
 type Reader struct {
 	*zap.SugaredLogger `json:"-"` // json tag excludes embedded fields from storage
 	*readerConfig
-	splitFunc bufio.SplitFunc
-	encoding  helper.Encoding
+	splitter *helper.Splitter
 
 	Fingerprint    *Fingerprint
 	Offset         int64
@@ -62,7 +59,7 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 		return
 	}
 
-	scanner := NewPositionalScanner(r, r.maxLogSize, r.Offset, r.splitFunc)
+	scanner := NewPositionalScanner(r, r.maxLogSize, r.Offset, r.splitter.SplitFunc)
 
 	// Iterate over the tokenized file, emitting entries as we go
 	for {
@@ -80,7 +77,7 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 			break
 		}
 
-		token, err := r.encoding.Decode(scanner.Bytes())
+		token, err := r.splitter.Encoding.Decode(scanner.Bytes())
 		if err != nil {
 			r.Errorw("decode: %w", zap.Error(err))
 		} else {

@@ -68,6 +68,7 @@ type Config struct {
 	MaxConcurrentFiles      int                   `mapstructure:"max_concurrent_files,omitempty"`
 	DeleteAfterRead         bool                  `mapstructure:"delete_after_read,omitempty"`
 	Splitter                helper.SplitterConfig `mapstructure:",squash,omitempty"`
+	Flusher                 helper.FlusherConfig  `mapstructure:",squash,omitempty"`
 }
 
 // Build will build a file input operator from the supplied configuration
@@ -88,7 +89,7 @@ func (c Config) Build(logger *zap.SugaredLogger, emit EmitFunc) (*Manager, error
 	return c.buildManager(logger, emit, factory)
 }
 
-// BuildWithSplitFunc will build a file input operator with customized splitFunc function
+// BuildWithSplitFunc will build a file input operator with customized SplitFunc function
 func (c Config) BuildWithSplitFunc(
 	logger *zap.SugaredLogger, emit EmitFunc, splitFunc bufio.SplitFunc) (*Manager, error) {
 	if err := c.validate(); err != nil {
@@ -100,7 +101,7 @@ func (c Config) BuildWithSplitFunc(
 	}
 
 	// Ensure that splitter is buildable
-	factory := newCustomizeSplitterFactory(c.Splitter.Flusher, splitFunc)
+	factory := newCustomizeSplitterFactory(c.Splitter, splitFunc)
 	if _, err := factory.Build(int(c.MaxLogSize)); err != nil {
 		return nil, err
 	}
@@ -133,7 +134,7 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit EmitFunc, factory s
 			},
 			fromBeginning:   startAtBeginning,
 			splitterFactory: factory,
-			encodingConfig:  c.Splitter.EncodingConfig,
+			flusherConfig:   &c.Flusher,
 		},
 		finder:          c.Finder,
 		roller:          newRoller(),

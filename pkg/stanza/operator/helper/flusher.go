@@ -25,8 +25,8 @@ type FlusherConfig struct {
 }
 
 // NewFlusherConfig creates a default Flusher config
-func NewFlusherConfig() FlusherConfig {
-	return FlusherConfig{
+func NewFlusherConfig() *FlusherConfig {
+	return &FlusherConfig{
 		// Empty or `0s` means that we will never force flush
 		Period: time.Millisecond * 500,
 	}
