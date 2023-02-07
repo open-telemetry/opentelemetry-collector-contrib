@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor
 
-go 1.18
+go 1.19
 
 require (
 	cloud.google.com/go/compute/metadata v0.2.3

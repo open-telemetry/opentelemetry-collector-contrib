@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
 
-go 1.18
+go 1.19
 
 require (
 	github.com/lib/pq v1.10.7

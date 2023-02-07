@@ -1,7 +1,7 @@
 // Deprecated: jaeger exporter is deprecated and will be removed in July 2023. See https://github.com/open-telemetry/opentelemetry-specification/pull/2858 for more details.
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter
 
-go 1.18
+go 1.19
 
 require (
 	github.com/apache/thrift v0.17.0

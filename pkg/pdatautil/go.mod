@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil
 
-go 1.18
+go 1.19
 
 require (
 	github.com/cespare/xxhash/v2 v2.2.0
