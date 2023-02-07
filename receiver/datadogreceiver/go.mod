@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/DataDog/datadog-agent/pkg/trace v0.43.0-rc.3.0.20230201114415-fae4332beb98
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.70.1-0.20230130215412-26bd7b2bf678
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.70.0
 	github.com/stretchr/testify v1.8.1
 	github.com/vmihailenco/msgpack/v4 v4.3.12
 	go.opentelemetry.io/collector v0.70.1-0.20230130215412-26bd7b2bf678
