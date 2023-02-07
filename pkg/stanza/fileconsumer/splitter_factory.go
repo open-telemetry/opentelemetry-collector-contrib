@@ -21,47 +21,57 @@ import (
 )
 
 type splitterFactory interface {
-	Build(maxLogSize int) (*helper.Splitter, error)
+	Build(maxLogSize int) (bufio.SplitFunc, error)
 }
 
 type multilineSplitterFactory struct {
-	*helper.SplitterConfig
+	helper.SplitterConfig
 }
 
 var _ splitterFactory = (*multilineSplitterFactory)(nil)
 
 func newMultilineSplitterFactory(splitter helper.SplitterConfig) *multilineSplitterFactory {
 	return &multilineSplitterFactory{
-		SplitterConfig: &splitter,
+		SplitterConfig: splitter,
 	}
 
 }
 
 // Build builds Multiline Splitter struct
-func (factory *multilineSplitterFactory) Build(maxLogSize int) (*helper.Splitter, error) {
-	return factory.SplitterConfig.Build(false, maxLogSize)
+func (factory *multilineSplitterFactory) Build(maxLogSize int) (bufio.SplitFunc, error) {
+	enc, err := factory.EncodingConfig.Build()
+	if err != nil {
+		return nil, err
+	}
+	flusher := factory.Flusher.Build()
+	splitter, err := factory.Multiline.Build(enc.Encoding, false, flusher, maxLogSize)
+	if err != nil {
+		return nil, err
+	}
+	return splitter, nil
 }
 
 type customizeSplitterFactory struct {
-	*helper.SplitterConfig
-	SplitFunc bufio.SplitFunc
+	Flusher  helper.FlusherConfig
+	Splitter bufio.SplitFunc
 }
 
 var _ splitterFactory = (*customizeSplitterFactory)(nil)
 
 func newCustomizeSplitterFactory(
-	splitter helper.SplitterConfig,
-	splitFunc bufio.SplitFunc) *customizeSplitterFactory {
+	flusher helper.FlusherConfig,
+	splitter bufio.SplitFunc) *customizeSplitterFactory {
 	return &customizeSplitterFactory{
-		SplitterConfig: &splitter,
-		SplitFunc:      splitFunc,
+		Flusher:  flusher,
+		Splitter: splitter,
 	}
 }
 
 // Build builds Multiline Splitter struct
-func (factory *customizeSplitterFactory) Build(maxLogSize int) (*helper.Splitter, error) {
-	return &helper.Splitter{
-		Encoding:  helper.Encoding{},
-		SplitFunc: factory.SplitFunc,
-	}, nil
+func (factory *customizeSplitterFactory) Build(maxLogSize int) (bufio.SplitFunc, error) {
+	flusher := factory.Flusher.Build()
+	if flusher != nil {
+		return flusher.SplitFunc(factory.Splitter), nil
+	}
+	return factory.Splitter, nil
 }

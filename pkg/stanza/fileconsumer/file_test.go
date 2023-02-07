@@ -497,7 +497,7 @@ func TestNoNewline(t *testing.T) {
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
 	cfg.Splitter = helper.NewSplitterConfig()
-	cfg.Flusher.Period = time.Nanosecond
+	cfg.Splitter.Flusher.Period = time.Nanosecond
 	operator, emitCalls := buildTestManager(t, cfg)
 
 	temp := openTemp(t, tempDir)

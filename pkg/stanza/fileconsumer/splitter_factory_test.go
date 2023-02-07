@@ -47,6 +47,7 @@ func Test_multilineSplitterFactory_Build(t *testing.T) {
 				EncodingConfig: helper.EncodingConfig{
 					Encoding: "error",
 				},
+				Flusher:   helper.NewFlusherConfig(),
 				Multiline: helper.NewMultilineConfig(),
 			},
 			args: args{
@@ -58,6 +59,7 @@ func Test_multilineSplitterFactory_Build(t *testing.T) {
 			name: "Multiline  error",
 			splitterConfig: helper.SplitterConfig{
 				EncodingConfig: helper.NewEncodingConfig(),
+				Flusher:        helper.NewFlusherConfig(),
 				Multiline: helper.MultilineConfig{
 					LineStartPattern: "START",
 					LineEndPattern:   "END",
@@ -91,8 +93,8 @@ func Test_newMultilineSplitterFactory(t *testing.T) {
 
 func Test_customizeSplitterFactory_Build(t *testing.T) {
 	type fields struct {
-		SplitterConfig helper.SplitterConfig
-		SplitFunc      bufio.SplitFunc
+		Flusher  helper.FlusherConfig
+		Splitter bufio.SplitFunc
 	}
 	type args struct {
 		maxLogSize int
@@ -106,8 +108,8 @@ func Test_customizeSplitterFactory_Build(t *testing.T) {
 		{
 			name: "default configuration",
 			fields: fields{
-				SplitterConfig: helper.NewSplitterConfig(),
-				SplitFunc: func(data []byte, atEOF bool) (advance int, token []byte, err error) {
+				Flusher: helper.NewFlusherConfig(),
+				Splitter: func(data []byte, atEOF bool) (advance int, token []byte, err error) {
 					return len(data), data, nil
 				},
 			},
@@ -120,8 +122,8 @@ func Test_customizeSplitterFactory_Build(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			factory := &customizeSplitterFactory{
-				SplitterConfig: &tt.fields.SplitterConfig,
-				SplitFunc:      tt.fields.SplitFunc,
+				Flusher:  tt.fields.Flusher,
+				Splitter: tt.fields.Splitter,
 			}
 			got, err := factory.Build(tt.args.maxLogSize)
 			if (err != nil) != tt.wantErr {
@@ -136,7 +138,7 @@ func Test_customizeSplitterFactory_Build(t *testing.T) {
 }
 
 func Test_newCustomizeSplitterFactory(t *testing.T) {
-	splitter := newCustomizeSplitterFactory(helper.NewSplitterConfig(),
+	splitter := newCustomizeSplitterFactory(helper.NewFlusherConfig(),
 		func(data []byte, atEOF bool) (advance int, token []byte, err error) {
 			return len(data), data, nil
 		})

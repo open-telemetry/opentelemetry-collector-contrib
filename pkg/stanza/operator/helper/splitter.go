@@ -19,6 +19,7 @@ import "bufio"
 // SplitterConfig consolidates MultilineConfig and FlusherConfig
 type SplitterConfig struct {
 	EncodingConfig EncodingConfig  `mapstructure:",squash,omitempty"`
+	Flusher        FlusherConfig   `mapstructure:",squash,omitempty"`
 	Multiline      MultilineConfig `mapstructure:"multiline,omitempty"`
 }
 
@@ -27,6 +28,7 @@ func NewSplitterConfig() SplitterConfig {
 	return SplitterConfig{
 		EncodingConfig: NewEncodingConfig(),
 		Multiline:      NewMultilineConfig(),
+		Flusher:        NewFlusherConfig(),
 	}
 }
 
@@ -37,13 +39,15 @@ func (c *SplitterConfig) Build(flushAtEOF bool, maxLogSize int) (*Splitter, erro
 		return nil, err
 	}
 
-	splitFunc, err := c.Multiline.Build(enc.Encoding, flushAtEOF, maxLogSize)
+	flusher := c.Flusher.Build()
+	splitFunc, err := c.Multiline.Build(enc.Encoding, flushAtEOF, flusher, maxLogSize)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Splitter{
 		Encoding:  enc,
+		Flusher:   flusher,
 		SplitFunc: splitFunc,
 	}, nil
 }
@@ -52,6 +56,7 @@ func (c *SplitterConfig) Build(flushAtEOF bool, maxLogSize int) (*Splitter, erro
 type Splitter struct {
 	Encoding  Encoding
 	SplitFunc bufio.SplitFunc
+	Flusher   *Flusher
 }
 
 // SplitNone doesn't split any of the bytes, it reads in all of the bytes and returns it all at once. This is for when the encoding is nop

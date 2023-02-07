@@ -44,7 +44,7 @@ func NewPositionalScanner(r io.Reader, maxLogSize int, startOffset int64, splitF
 		advance, token, err = splitFunc(data, atEOF)
 		if (advance == 0 && token == nil && err == nil) && len(data) >= 2*maxLogSize {
 			// reference: https://pkg.go.dev/bufio#SplitFunc
-			// SplitFunc returns (0, nil, nil) to signal the Scanner to read more data but the buffer is full.
+			// splitFunc returns (0, nil, nil) to signal the Scanner to read more data but the buffer is full.
 			// Truncate the log entry.
 			advance, token, err = maxLogSize, data[:maxLogSize], nil
 		} else if len(token) > maxLogSize {
