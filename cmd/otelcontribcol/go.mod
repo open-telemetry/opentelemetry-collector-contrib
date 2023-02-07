@@ -95,6 +95,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudfoundryreceiver v0.70.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver v0.70.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver v0.70.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver v0.70.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.70.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver v0.70.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver v0.70.0
@@ -1012,6 +1013,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaeg
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogprocessor => ../../processor/datadogprocessor
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshcheckreceiver => ../../receiver/sshcheckreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver => ../../receiver/datadogreceiver
 
 replace github.com/mattn/go-ieproxy => github.com/mattn/go-ieproxy v0.0.1
 
