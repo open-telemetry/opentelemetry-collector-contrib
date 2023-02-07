@@ -22,6 +22,8 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
 )
 
 const (
@@ -46,11 +48,13 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func createTracesReceiver(
-	ctx context.Context,
-	params receiver.CreateSettings,
-	cfg component.Config,
-	consumer consumer.Traces) (receiver.Traces, error) {
+func createTracesReceiver(ctx context.Context, params receiver.CreateSettings, cfg component.Config, consumer consumer.Traces) (r receiver.Traces, err error) {
 	rcfg := cfg.(*Config)
-	return newDataDogReceiver(rcfg, consumer, params)
+	r = receivers.GetOrAdd(cfg, func() component.Component {
+		dd, _ := newDataDogReceiver(rcfg, consumer, params)
+		return dd
+	})
+	return r, nil
 }
+
+var receivers = sharedcomponent.NewSharedComponents()
