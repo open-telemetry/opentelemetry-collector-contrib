@@ -162,6 +162,7 @@ func TestTokenizationTooLongWithLineStartPattern(t *testing.T) {
 
 func testReaderFactory(t *testing.T) (*readerFactory, chan *emitParams) {
 	emitChan := make(chan *emitParams, 100)
+	splitterConfig := helper.NewSplitterConfig()
 	return &readerFactory{
 		SugaredLogger: testutil.Logger(t),
 		readerConfig: &readerConfig{
@@ -170,8 +171,8 @@ func testReaderFactory(t *testing.T) (*readerFactory, chan *emitParams) {
 			emit:            testEmitFunc(emitChan),
 		},
 		fromBeginning:   true,
-		splitterFactory: newMultilineSplitterFactory(helper.NewSplitterConfig()),
-		encodingConfig:  helper.NewEncodingConfig(),
+		splitterFactory: newMultilineSplitterFactory(splitterConfig),
+		encodingConfig:  splitterConfig.EncodingConfig,
 	}, emitChan
 }
 
