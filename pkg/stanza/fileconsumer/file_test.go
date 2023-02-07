@@ -1214,9 +1214,7 @@ func TestDeleteAfterRead(t *testing.T) {
 		require.NoError(t, temp.Close())
 	}
 
-	require.NoError(t, featuregate.GlobalRegistry().Apply(map[string]bool{
-		allowFileDeletion: true,
-	}))
+	require.NoError(t, featuregate.GlobalRegistry().Set(allowFileDeletion.ID(), true))
 
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"

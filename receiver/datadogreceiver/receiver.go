@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"net/http"
 
-	datadogpb "github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
+	"github.com/DataDog/datadog-agent/pkg/trace/pb"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
@@ -61,6 +61,7 @@ func (ddr *datadogReceiver) Start(_ context.Context, host component.Host) error 
 		ddmux.HandleFunc("/v0.3/traces", ddr.handleTraces)
 		ddmux.HandleFunc("/v0.4/traces", ddr.handleTraces)
 		ddmux.HandleFunc("/v0.5/traces", ddr.handleTraces)
+		ddmux.HandleFunc("/v0.7/traces", ddr.handleTraces)
 		ddr.server.Handler = ddmux
 		if err := ddr.server.ListenAndServe(); err != http.ErrServerClosed {
 			host.ReportFatalError(fmt.Errorf("error starting datadog receiver: %w", err))
@@ -80,9 +81,9 @@ func (ddr *datadogReceiver) handleTraces(w http.ResponseWriter, req *http.Reques
 	defer func(spanCount *int) {
 		ddr.tReceiver.EndTracesOp(obsCtx, "datadog", *spanCount, err)
 	}(&spanCount)
-	var ddTraces datadogpb.Traces
+	var ddTraces *pb.TracerPayload
 
-	err = decodeRequest(req, &ddTraces)
+	ddTraces, err = handlePayload(req)
 	if err != nil {
 		http.Error(w, "Unable to unmarshal reqs", http.StatusInternalServerError)
 		ddr.params.Logger.Error("Unable to unmarshal reqs")

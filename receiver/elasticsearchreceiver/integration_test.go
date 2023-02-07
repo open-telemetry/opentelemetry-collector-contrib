@@ -59,8 +59,7 @@ var (
 
 func TestElasticsearchIntegration(t *testing.T) {
 	// Let this test check if it works with the features disabled and the unit test will test the feature enabled.
-	err := featuregate.GlobalRegistry().Apply(map[string]bool{emitNodeVersionAttrID: false})
-	require.NoError(t, err)
+	require.NoError(t, featuregate.GlobalRegistry().Set(emitNodeVersionAttr.ID(), false))
 
 	// Starts an elasticsearch docker container
 	t.Run("Running elasticsearch 7.9", func(t *testing.T) {

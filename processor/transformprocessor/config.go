@@ -30,16 +30,6 @@ type Config struct {
 	LogStatements    []common.ContextStatements `mapstructure:"log_statements"`
 }
 
-type OTTLConfig struct {
-	Traces  SignalConfig `mapstructure:"traces"`
-	Metrics SignalConfig `mapstructure:"metrics"`
-	Logs    SignalConfig `mapstructure:"logs"`
-}
-
-type SignalConfig struct {
-	Statements []string `mapstructure:"statements"`
-}
-
 var _ component.Config = (*Config)(nil)
 
 func (c *Config) Validate() error {
