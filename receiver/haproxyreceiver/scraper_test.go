@@ -67,10 +67,11 @@ func Test_scraper_readStats(t *testing.T) {
 	m, err := s.scrape(context.Background())
 	require.NoError(t, err)
 	require.NotNil(t, m)
-	require.Equal(t, m.ResourceMetrics().Len(), 1)
-	require.Equal(t, m.ResourceMetrics().At(0).ScopeMetrics().Len(), 1)
+	require.Equal(t, 6, m.ResourceMetrics().Len())
+	require.Equal(t, 1, m.ResourceMetrics().At(0).ScopeMetrics().Len())
+	require.Equal(t, 10, m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
 	metric := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
-	assert.Equal(t, "haproxy.sessions.count", metric.Name())
-	assert.Equal(t, int64(0), metric.Gauge().DataPoints().At(0).IntValue())
+	assert.Equal(t, "haproxy.bytes.input", metric.Name())
+	assert.Equal(t, int64(1444), metric.Sum().DataPoints().At(0).IntValue())
 
 }

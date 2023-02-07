@@ -41,7 +41,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap/zaptest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/model"
 )
@@ -179,7 +179,7 @@ func TestPayloadToLogRecord(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 				require.NotNil(t, logs)
-				require.NoError(t, comparetest.CompareLogs(tc.expectedLogs(tc.payload), logs))
+				require.NoError(t, plogtest.CompareLogs(tc.expectedLogs(tc.payload), logs))
 			}
 		})
 	}

@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
 func TestNumMetricTypes(t *testing.T) {
@@ -282,7 +282,7 @@ func TestToMetrics(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 			}
-			assert.NoError(t, comparetest.CompareMetrics(tt.wantMetrics, md))
+			assert.NoError(t, pmetrictest.CompareMetrics(tt.wantMetrics, md))
 		})
 	}
 }

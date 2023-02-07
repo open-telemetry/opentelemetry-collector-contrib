@@ -79,7 +79,7 @@ func TestOpenMetricsPositive(t *testing.T) {
 		targets = append(targets, testData)
 	}
 
-	testComponent(t, targets, false, "", featuregate.GetRegistry())
+	testComponent(t, targets, false, "", featuregate.GlobalRegistry())
 }
 
 func verifyNegativeTarget(t *testing.T, td *testData, mds []pmetric.ResourceMetrics) {
@@ -112,7 +112,7 @@ func TestOpenMetricsNegative(t *testing.T) {
 		targets = append(targets, testData)
 	}
 
-	testComponent(t, targets, false, "", featuregate.GetRegistry())
+	testComponent(t, targets, false, "", featuregate.GlobalRegistry())
 }
 
 // reads test data from testdata/openmetrics directory
@@ -182,7 +182,7 @@ func TestInfoStatesetMetrics(t *testing.T) {
 		},
 	}
 
-	testComponent(t, targets, false, "", featuregate.GetRegistry())
+	testComponent(t, targets, false, "", featuregate.GlobalRegistry())
 
 }
 

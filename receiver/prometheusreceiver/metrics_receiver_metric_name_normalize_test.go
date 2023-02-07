@@ -58,7 +58,8 @@ func TestMetricNormalize(t *testing.T) {
 	}
 
 	registry := featuregate.NewRegistry()
-	require.NoError(t, registry.RegisterID("pkg.translator.prometheus.NormalizeName", featuregate.StageBeta))
+	_, err := registry.Register("pkg.translator.prometheus.NormalizeName", featuregate.StageBeta)
+	require.NoError(t, err)
 
 	testComponent(t, targets, false, "", registry)
 }

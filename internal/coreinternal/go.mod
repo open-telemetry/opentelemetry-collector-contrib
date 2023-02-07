@@ -3,11 +3,10 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/corein
 go 1.18
 
 require (
-	github.com/cespare/xxhash/v2 v2.2.0
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.69.2-0.20230112233839-f2a0133bf677
-	go.opentelemetry.io/collector/pdata v1.0.0-rc3.0.20230112233839-f2a0133bf677
-	go.opentelemetry.io/collector/semconv v0.69.2-0.20230112233839-f2a0133bf677
+	go.opentelemetry.io/collector v0.70.1-0.20230130215412-26bd7b2bf678
+	go.opentelemetry.io/collector/pdata v1.0.0-rc4.0.20230130215412-26bd7b2bf678
+	go.opentelemetry.io/collector/semconv v0.70.1-0.20230130215412-26bd7b2bf678
 	go.uber.org/zap v1.24.0
 )
 
@@ -26,7 +25,7 @@ require (
 	golang.org/x/sys v0.4.0 // indirect
 	golang.org/x/text v0.6.0 // indirect
 	google.golang.org/genproto v0.0.0-20221118155620-16455021b5e6 // indirect
-	google.golang.org/grpc v1.52.0 // indirect
+	google.golang.org/grpc v1.52.3 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
