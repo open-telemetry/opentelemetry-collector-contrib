@@ -23,6 +23,7 @@ import (
 	"net/http/httptest"
 )
 
+// JsonLogs is the type for the array of processed JSON log data from each request
 type JsonLogs []map[string]interface{}
 
 type DatadogLogsServer struct {
