@@ -6,7 +6,7 @@ require (
 	github.com/apache/pulsar-client-go v0.8.1
 	github.com/apache/thrift v0.17.0
 	github.com/gogo/protobuf v1.3.2
-	github.com/jaegertracing/jaeger v1.41.0
+	github.com/jaegertracing/jaeger v1.42.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.70.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.70.0
 	github.com/openzipkin/zipkin-go v0.4.1
@@ -76,7 +76,7 @@ require (
 	golang.org/x/term v0.4.0 // indirect
 	golang.org/x/text v0.6.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto v0.0.0-20221118155620-16455021b5e6 // indirect
+	google.golang.org/genproto v0.0.0-20221227171554-f9683d7f8bef // indirect
 	google.golang.org/grpc v1.52.3 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect

@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/healt
 go 1.18
 
 require (
-	github.com/jaegertracing/jaeger v1.41.0
+	github.com/jaegertracing/jaeger v1.42.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.70.0
 	github.com/stretchr/testify v1.8.1
 	go.opencensus.io v0.24.0

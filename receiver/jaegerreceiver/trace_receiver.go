@@ -37,7 +37,6 @@ import (
 	"github.com/jaegertracing/jaeger/thrift-gen/agent"
 	"github.com/jaegertracing/jaeger/thrift-gen/baggage"
 	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
-	"github.com/jaegertracing/jaeger/thrift-gen/sampling"
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
@@ -188,7 +187,7 @@ var errNotImplemented = fmt.Errorf("not implemented")
 
 type notImplementedConfigManager struct{}
 
-func (notImplementedConfigManager) GetSamplingStrategy(ctx context.Context, serviceName string) (*sampling.SamplingStrategyResponse, error) {
+func (notImplementedConfigManager) GetSamplingStrategy(ctx context.Context, serviceName string) (*api_v2.SamplingStrategyResponse, error) {
 	return nil, errNotImplemented
 }
 

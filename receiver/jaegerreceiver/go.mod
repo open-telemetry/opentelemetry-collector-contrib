@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/apache/thrift v0.17.0
 	github.com/gorilla/mux v1.8.0
-	github.com/jaegertracing/jaeger v1.41.0
+	github.com/jaegertracing/jaeger v1.42.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.70.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.70.0
 	github.com/stretchr/testify v1.8.1
@@ -56,7 +56,7 @@ require (
 	golang.org/x/net v0.5.0 // indirect
 	golang.org/x/sys v0.4.0 // indirect
 	golang.org/x/text v0.6.0 // indirect
-	google.golang.org/genproto v0.0.0-20221118155620-16455021b5e6 // indirect
+	google.golang.org/genproto v0.0.0-20221227171554-f9683d7f8bef // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
