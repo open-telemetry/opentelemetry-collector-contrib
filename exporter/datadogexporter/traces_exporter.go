@@ -49,17 +49,20 @@ type traceExporter struct {
 	onceMetadata   *sync.Once            // onceMetadata ensures that metadata is sent only once across all exporters
 	agent          *agent.Agent          // agent processes incoming traces
 	sourceProvider source.Provider       // is able to source the origin of a trace (hostname, container, etc)
+	retrier        *clientutil.Retrier   // retrier handles retries on requests
 }
 
 func newTracesExporter(ctx context.Context, params exporter.CreateSettings, cfg *Config, onceMetadata *sync.Once, sourceProvider source.Provider, agent *agent.Agent) (*traceExporter, error) {
+	scrubber := scrub.NewScrubber()
 	exp := &traceExporter{
 		params:         params,
 		cfg:            cfg,
 		ctx:            ctx,
 		agent:          agent,
 		onceMetadata:   onceMetadata,
-		scrubber:       scrub.NewScrubber(),
+		scrubber:       scrubber,
 		sourceProvider: sourceProvider,
+		retrier:        clientutil.NewRetrier(params.Logger, cfg.RetrySettings, scrubber),
 	}
 	// client to send running metric to the backend & perform API key validation
 	errchan := make(chan error)
@@ -116,11 +119,11 @@ func (exp *traceExporter) consumeTraces(
 		}
 	}
 
-	exp.exportHostMetrics(ctx, hosts, tags)
+	exp.exportUsageMetrics(ctx, hosts, tags)
 	return nil
 }
 
-func (exp *traceExporter) exportHostMetrics(ctx context.Context, hosts map[string]struct{}, tags map[string]struct{}) {
+func (exp *traceExporter) exportUsageMetrics(ctx context.Context, hosts map[string]struct{}, tags map[string]struct{}) {
 	now := pcommon.NewTimestampFromTime(time.Now())
 	var err error
 	if isMetricExportV2Enabled() {
@@ -135,8 +138,11 @@ func (exp *traceExporter) exportHostMetrics(ctx context.Context, hosts map[strin
 			}
 			series = append(series, ms...)
 		}
-		ctx = clientutil.GetRequestContext(ctx, string(exp.cfg.API.Key))
-		_, _, err = exp.metricsAPI.SubmitMetrics(ctx, datadogV2.MetricPayload{Series: series})
+		_, err = exp.retrier.DoWithRetries(ctx, func(context.Context) error {
+			ctx2 := clientutil.GetRequestContext(ctx, string(exp.cfg.API.Key))
+			_, httpresp, merr := exp.metricsAPI.SubmitMetrics(ctx2, datadogV2.MetricPayload{Series: series})
+			return clientutil.WrapError(merr, httpresp)
+		})
 	} else {
 		series := make([]zorkian.Metric, 0, len(hosts)+len(tags))
 		for host := range hosts {
@@ -149,7 +155,9 @@ func (exp *traceExporter) exportHostMetrics(ctx context.Context, hosts map[strin
 			}
 			series = append(series, ms...)
 		}
-		err = exp.client.PostMetrics(series)
+		_, err = exp.retrier.DoWithRetries(ctx, func(context.Context) error {
+			return exp.client.PostMetrics(series)
+		})
 	}
 	if err != nil {
 		exp.params.Logger.Error("Error posting hostname/tags series", zap.Error(err))
