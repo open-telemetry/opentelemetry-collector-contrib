@@ -1,0 +1,15 @@
+dist:
+  name: otelcol-dev
+  description: Basic OTel Collector distribution for Developers
+  output_path: ./otelcol-dev
+  otelcol_version: 0.70.0
+
+exporters:
+  - gomod: go.opentelemetry.io/collector/exporter/loggingexporter v0.70.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter main
+
+processors:
+  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.70.0
+
+receivers:
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver main
