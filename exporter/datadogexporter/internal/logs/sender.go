@@ -26,14 +26,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/clientutil"
 )
 
-type handleSubmitLogFn func(ctx context.Context, s *Sender, batch []datadogV2.HTTPLogItem, tags string) error
-
 // Sender submits logs to Datadog intake
 type Sender struct {
-	logger          *zap.Logger
-	api             *datadogV2.LogsApi
-	verbose         bool // reports whether payload contents should be dumped when logging at debug level
-	handleSubmitLog handleSubmitLogFn
+	logger  *zap.Logger
+	api     *datadogV2.LogsApi
+	verbose bool // reports whether payload contents should be dumped when logging at debug level
 }
 
 // logsV2 is the key in datadog ServerConfiguration
@@ -42,7 +39,7 @@ type Sender struct {
 const logsV2 = "v2.LogsApi.SubmitLog"
 
 // NewSender creates a new Sender
-func NewSender(endpoint string, logger *zap.Logger, s exporterhelper.TimeoutSettings, insecureSkipVerify, verbose bool, apiKey string, handleSubmitLog handleSubmitLogFn) *Sender {
+func NewSender(endpoint string, logger *zap.Logger, s exporterhelper.TimeoutSettings, insecureSkipVerify, verbose bool, apiKey string) *Sender {
 	cfg := datadog.NewConfiguration()
 	logger.Info("Logs sender initialized", zap.String("endpoint", endpoint))
 	cfg.OperationServers[logsV2] = datadog.ServerConfigurations{
@@ -50,17 +47,13 @@ func NewSender(endpoint string, logger *zap.Logger, s exporterhelper.TimeoutSett
 			URL: endpoint,
 		},
 	}
-	if handleSubmitLog == nil {
-		handleSubmitLog = defaultHandleSubmitLog
-	}
 	cfg.HTTPClient = clientutil.NewHTTPClient(s, insecureSkipVerify)
 	cfg.AddDefaultHeader("DD-API-KEY", apiKey)
 	apiClient := datadog.NewAPIClient(cfg)
 	return &Sender{
-		api:             datadogV2.NewLogsApi(apiClient),
-		logger:          logger,
-		verbose:         verbose,
-		handleSubmitLog: handleSubmitLog,
+		api:     datadogV2.NewLogsApi(apiClient),
+		logger:  logger,
+		verbose: verbose,
 	}
 }
 
@@ -82,19 +75,19 @@ func (s *Sender) SubmitLogs(ctx context.Context, payload []datadogV2.HTTPLogItem
 			prevtags = tags // for i=0 case
 			continue
 		}
-		if err := s.handleSubmitLog(ctx, s, batch, prevtags); err != nil {
+		if err := s.handleSubmitLog(ctx, batch, prevtags); err != nil {
 			return err
 		}
 		batch = []datadogV2.HTTPLogItem{p}
 		prevtags = tags
 	}
-	if err := s.handleSubmitLog(ctx, s, batch, tags); err != nil {
+	if err := s.handleSubmitLog(ctx, batch, tags); err != nil {
 		return err
 	}
 	return nil
 }
 
-var defaultHandleSubmitLog = func(ctx context.Context, s *Sender, batch []datadogV2.HTTPLogItem, tags string) error {
+func (s *Sender) handleSubmitLog(ctx context.Context, batch []datadogV2.HTTPLogItem, tags string) error {
 	opts := *datadogV2.NewSubmitLogOptionalParameters().
 		WithContentEncoding(datadogV2.CONTENTENCODING_GZIP).
 		WithDdtags(tags)

@@ -16,14 +16,25 @@ package logs
 
 import (
 	"context"
+	"net/http"
 	"testing"
+	"time"
 
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap/zaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
 )
+
+// validateTags verifies that all log items in the same batch have the same ddtags as the given tag
+func validateTags(t *testing.T, jsonLogs testutil.JsonLogs, tag string) {
+	for _, log := range jsonLogs {
+		assert.Equal(t, log["ddtags"], tag)
+	}
+}
 
 func TestSubmitLogs(t *testing.T) {
 	logger := zaptest.NewLogger(t)
@@ -32,7 +43,7 @@ func TestSubmitLogs(t *testing.T) {
 	tests := []struct {
 		name    string
 		payload []datadogV2.HTTPLogItem
-		handler func(ctx context.Context, s *Sender, batch []datadogV2.HTTPLogItem, tags string) error
+		testFn  func(jsonLogs testutil.JsonLogs)
 	}{
 		{
 			name: "batches same tags",
@@ -53,16 +64,15 @@ func TestSubmitLogs(t *testing.T) {
 				UnparsedObject:       nil,
 				AdditionalProperties: nil,
 			}},
-			handler: func(ctx context.Context, s *Sender, batch []datadogV2.HTTPLogItem, tags string) error {
+			testFn: func(jsonLogs testutil.JsonLogs) {
 				switch counter {
 				case 0:
-					assert.Equal(t, tags, "tag1:true")
-					assert.Len(t, batch, 2)
+					validateTags(t, jsonLogs, "tag1:true")
+					assert.Len(t, jsonLogs, 2)
 				default:
 					t.Fail()
 				}
 				counter++
-				return nil
 			},
 		},
 		{
@@ -84,19 +94,18 @@ func TestSubmitLogs(t *testing.T) {
 				UnparsedObject:       nil,
 				AdditionalProperties: nil,
 			}},
-			handler: func(ctx context.Context, s *Sender, batch []datadogV2.HTTPLogItem, tags string) error {
+			testFn: func(jsonLogs testutil.JsonLogs) {
 				switch counter {
 				case 0:
-					assert.Equal(t, tags, "tag1:true")
-					assert.Len(t, batch, 1)
+					validateTags(t, jsonLogs, "tag1:true")
+					assert.Len(t, jsonLogs, 1)
 				case 1:
-					assert.Equal(t, tags, "tag2:true")
-					assert.Len(t, batch, 1)
+					validateTags(t, jsonLogs, "tag2:true")
+					assert.Len(t, jsonLogs, 1)
 				default:
 					t.Fail()
 				}
 				counter++
-				return nil
 			},
 		},
 		{
@@ -134,26 +143,32 @@ func TestSubmitLogs(t *testing.T) {
 				UnparsedObject:       nil,
 				AdditionalProperties: nil,
 			}},
-			handler: func(ctx context.Context, s *Sender, batch []datadogV2.HTTPLogItem, tags string) error {
+			testFn: func(jsonLogs testutil.JsonLogs) {
 				switch counter {
 				case 0:
-					assert.Equal(t, tags, "tag1:true")
-					assert.Len(t, batch, 2)
+					validateTags(t, jsonLogs, "tag1:true")
+					assert.Len(t, jsonLogs, 2)
 				case 1:
-					assert.Equal(t, tags, "tag2:true")
-					assert.Len(t, batch, 2)
+					validateTags(t, jsonLogs, "tag2:true")
+					assert.Len(t, jsonLogs, 2)
 				default:
 					t.Fail()
 				}
 				counter++
-				return nil
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			server := testutil.DatadogLogServerMock(func() (string, http.HandlerFunc) {
+				return "/api/v2/logs", func(writer http.ResponseWriter, request *http.Request) {
+					jsonLogs := testutil.MockLogsEndpoint(writer, request)
+					tt.testFn(jsonLogs)
+				}
+			})
+			defer server.Close()
 			counter = 0
-			s := NewSender("", logger, exporterhelper.TimeoutSettings{Timeout: 60}, false, false, "", tt.handler)
+			s := NewSender(server.URL, logger, exporterhelper.TimeoutSettings{Timeout: time.Second * 10}, true, true, "")
 			_ = s.SubmitLogs(context.Background(), tt.payload)
 		})
 	}

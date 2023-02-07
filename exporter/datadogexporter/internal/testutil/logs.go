@@ -23,10 +23,12 @@ import (
 	"net/http/httptest"
 )
 
+type JsonLogs []map[string]interface{}
+
 type DatadogLogsServer struct {
 	*httptest.Server
 	// LogsData is the array of json requests sent to datadog backend
-	LogsData []map[string]interface{}
+	LogsData JsonLogs
 }
 
 // DatadogLogServerMock mocks a Datadog Logs Intake backend server
@@ -66,7 +68,7 @@ func (s *DatadogLogsServer) logsEndpoint(w http.ResponseWriter, r *http.Request)
 		log.Fatalln(err)
 	}
 
-	var jsonLogs []map[string]interface{}
+	var jsonLogs JsonLogs
 	err = json.Unmarshal(req, &jsonLogs)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -89,4 +91,33 @@ func gUnzipData(rg io.Reader) ([]byte, error) {
 		return nil, err
 	}
 	return io.ReadAll(r)
+}
+
+// MockLogsEndpoint returns the processed JSON log data for each endpoint call
+func MockLogsEndpoint(w http.ResponseWriter, r *http.Request) JsonLogs {
+	// we can reuse same response object for logs as well
+	res := metricsResponse{Status: "ok"}
+	resJSON, err := json.Marshal(res)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		log.Fatalln(err)
+	}
+	req, err := gUnzipData(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		log.Fatalln(err)
+	}
+	var jsonLogs JsonLogs
+	err = json.Unmarshal(req, &jsonLogs)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		log.Fatalln(err)
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusAccepted)
+	_, err = w.Write(resJSON)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	return jsonLogs
 }
