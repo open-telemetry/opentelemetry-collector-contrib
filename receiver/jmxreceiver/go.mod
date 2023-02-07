@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.70.0
-	github.com/shirou/gopsutil/v3 v3.22.12
+	github.com/shirou/gopsutil/v3 v3.23.1
 	github.com/stretchr/testify v1.8.1
 	github.com/testcontainers/testcontainers-go v0.17.0
 	go.opentelemetry.io/collector v0.70.1-0.20230130215412-26bd7b2bf678
@@ -25,7 +25,7 @@ require (
 	github.com/containerd/containerd v1.6.12 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker/distribution v2.8.1+incompatible // indirect
-	github.com/docker/docker v20.10.23+incompatible // indirect
+	github.com/docker/docker v23.0.0+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/felixge/httpsnoop v1.0.3 // indirect

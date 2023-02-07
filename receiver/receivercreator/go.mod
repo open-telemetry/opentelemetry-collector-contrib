@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receiv
 go 1.18
 
 require (
-	github.com/antonmedv/expr v1.10.5
+	github.com/antonmedv/expr v1.12.0
 	github.com/census-instrumentation/opencensus-proto v0.4.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.70.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.70.0
@@ -53,7 +53,7 @@ require (
 	github.com/prometheus/common v0.39.0 // indirect
 	github.com/prometheus/procfs v0.8.0 // indirect
 	github.com/prometheus/statsd_exporter v0.22.7 // indirect
-	github.com/shirou/gopsutil/v3 v3.22.12 // indirect
+	github.com/shirou/gopsutil/v3 v3.23.1 // indirect
 	github.com/spf13/cobra v1.6.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
