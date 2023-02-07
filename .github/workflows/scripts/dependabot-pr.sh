@@ -33,6 +33,8 @@ done
 
 make gotidy
 make otelcontribcol
+make genotelcontribcol
+make genoteltestbedcol
 
 git add go.sum go.mod
 git add "**/go.sum" "**/go.mod"
