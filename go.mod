@@ -438,9 +438,9 @@ require (
 	github.com/imdario/mergo v0.3.13 // indirect
 	github.com/inconshreveable/mousetrap v1.0.1 // indirect
 	github.com/influxdata/go-syslog/v3 v3.0.1-0.20210608084020-ac565dc76ba6 // indirect
-	github.com/influxdata/influxdb-observability/common v0.3.0 // indirect
-	github.com/influxdata/influxdb-observability/influx2otel v0.2.36-0.20230201232119-da70caacbb56 // indirect
-	github.com/influxdata/influxdb-observability/otel2influx v0.2.36-0.20230201232119-da70caacbb56 // indirect
+	github.com/influxdata/influxdb-observability/common v0.3.1 // indirect
+	github.com/influxdata/influxdb-observability/influx2otel v0.3.1 // indirect
+	github.com/influxdata/influxdb-observability/otel2influx v0.3.1 // indirect
 	github.com/influxdata/line-protocol/v2 v2.2.1 // indirect
 	github.com/influxdata/telegraf v1.16.3 // indirect
 	github.com/ionos-cloud/sdk-go/v6 v6.1.3 // indirect
@@ -1102,10 +1102,3 @@ exclude github.com/DataDog/agent-payload/v5 v5.0.59
 
 // see https://github.com/mattn/go-ieproxy/issues/45
 replace github.com/mattn/go-ieproxy => github.com/mattn/go-ieproxy v0.0.1
-
-// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18390
-replace github.com/influxdata/influxdb-observability/common => github.com/influxdata/influxdb-observability/common v0.2.36-0.20230201232119-da70caacbb56
-
-replace github.com/influxdata/influxdb-observability/influx2otel => github.com/influxdata/influxdb-observability/influx2otel v0.2.36-0.20230201232119-da70caacbb56
-
-replace github.com/influxdata/influxdb-observability/otel2influx => github.com/influxdata/influxdb-observability/otel2influx v0.2.36-0.20230201232119-da70caacbb56
