@@ -36,7 +36,7 @@ This receiver uses the [AWS SDK](https://docs.aws.amazon.com/sdk-for-go/v1/devel
 `autodiscover` and `named` are ways to control and filter which log groups and log streams which are collected from. They are mutually exclusive and are incompatible to be configured at the same time.
 
 - `autodiscover`
-  - `limit`: (optional; default = 50) Limits the number of discovered log groups.
+  - `limit`: (optional; default = 50) Limits the number of discovered log groups. This does not limit how large each API call to discover the log groups will be.
   - `prefix`: (optional) A prefix for log groups to limit the number of log groups discovered.
     - if omitted, all log streams up to the limit are collected from
   - `streams`: (optional) If `streams` is omitted, then all streams will be attempted to retrieve events from.
