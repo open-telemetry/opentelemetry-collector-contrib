@@ -59,6 +59,20 @@ func generateTestIntGauge(name string) *metricspb.Metric {
 	}
 }
 
+func generateTestMetricMetadata(namespace string, timestamp int64, logGroup, logStreamName, instrumentationLibraryName string, metricType pmetric.MetricType) cWMetricMetadata {
+	return cWMetricMetadata{
+		receiver: prometheusReceiver,
+		groupedMetricMetadata: groupedMetricMetadata{
+			namespace:      namespace,
+			timestampMs:    timestamp,
+			logGroup:       logGroup,
+			logStream:      logStreamName,
+			metricDataType: metricType,
+		},
+		instrumentationLibraryName: instrumentationLibraryName,
+	}
+}
+
 func generateTestDoubleGauge(name string) *metricspb.Metric {
 	return &metricspb.Metric{
 		MetricDescriptor: &metricspb.MetricDescriptor{
@@ -303,7 +317,6 @@ func TestIntDataPointSliceAt(t *testing.T) {
 				deltaMetricMetadata{
 					tc.adjustToDelta,
 					"foo",
-					0,
 					"namespace",
 					"log-group",
 					"log-stream",
@@ -373,7 +386,6 @@ func TestDoubleDataPointSliceAt(t *testing.T) {
 				deltaMetricMetadata{
 					tc.adjustToDelta,
 					"foo",
-					0,
 					"namespace",
 					"log-group",
 					"log-stream",
@@ -493,7 +505,6 @@ func TestSummaryDataPointSliceAt(t *testing.T) {
 	setupDataPointCache()
 
 	instrLibName := "cloudwatch-otel"
-	metadataTimeStamp := time.Now().UnixNano() / int64(time.Millisecond)
 
 	testCases := []struct {
 		testName           string
@@ -538,7 +549,6 @@ func TestSummaryDataPointSliceAt(t *testing.T) {
 				deltaMetricMetadata{
 					true,
 					"foo",
-					metadataTimeStamp,
 					"namespace",
 					"log-group",
 					"log-stream",
@@ -611,7 +621,6 @@ func TestGetDataPoints(t *testing.T) {
 	dmm := deltaMetricMetadata{
 		false,
 		"foo",
-		metadata.timestampMs,
 		"namespace",
 		"log-group",
 		"log-stream",
@@ -619,7 +628,6 @@ func TestGetDataPoints(t *testing.T) {
 	cumulativeDmm := deltaMetricMetadata{
 		true,
 		"foo",
-		metadata.timestampMs,
 		"namespace",
 		"log-group",
 		"log-stream",
@@ -844,9 +852,8 @@ func TestIntDataPointSlice_At(t *testing.T) {
 				deltaMetricMetadata:        tt.fields.deltaMetricMetadata,
 				NumberDataPointSlice:       tt.fields.NumberDataPointSlice,
 			}
-			if got, _ := dps.At(tt.args.i); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("At() = %v, want %v", got, tt.want)
-			}
+			got, _ := dps.At(tt.args.i)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }

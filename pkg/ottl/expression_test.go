@@ -102,8 +102,8 @@ func Test_newGetter(t *testing.T) {
 			name: "function call",
 			val: value{
 				Literal: &mathExprLiteral{
-					Invocation: &invocation{
-						Function: "hello",
+					Converter: &converter{
+						Function: "Hello",
 					},
 				},
 			},
@@ -242,8 +242,8 @@ func Test_newGetter(t *testing.T) {
 					Values: []value{
 						{
 							Literal: &mathExprLiteral{
-								Invocation: &invocation{
-									Function: "hello",
+								Converter: &converter{
+									Function: "Hello",
 								},
 							},
 						},
@@ -288,13 +288,13 @@ func Test_newGetter(t *testing.T) {
 		},
 	}
 
-	functions := map[string]interface{}{"hello": hello[interface{}]}
+	functions := map[string]interface{}{"Hello": hello[interface{}]}
 
-	p := NewParser(
+	p := NewParser[any](
 		functions,
 		testParsePath,
-		testParseEnum,
 		component.TelemetrySettings{},
+		WithEnumParser[any](testParseEnum),
 	)
 
 	for _, tt := range tests {

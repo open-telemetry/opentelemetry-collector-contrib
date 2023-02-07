@@ -77,7 +77,6 @@ func (cfg *Config) getReceiverOptions() (*scraperOptions, error) {
 	}
 
 	return &scraperOptions{
-		id:                    cfg.ID(),
 		collectionInterval:    cfg.CollectionInterval,
 		extraMetadataLabels:   cfg.ExtraMetadataLabels,
 		metricGroupsToCollect: mgs,

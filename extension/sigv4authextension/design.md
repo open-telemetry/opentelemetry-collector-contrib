@@ -32,7 +32,6 @@ We first introduce the `config.go` module, which defines the configuration optio
 // Config for the Sigv4 Authenticator
 
 type Config struct {
-    config.ExtensionSettings `mapstructure:",squash"`
     Region string `mapstructure:"region,omitempty"`
     Service string `mapstructure:"service,omitempty"`
     AssumeRole AssumeRole `mapstructure:"assume_role"`
@@ -41,7 +40,6 @@ type Config struct {
 ```
 
 
-* [component.ExtensionConfigSettings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/extension.go#L32) is a struct needed to needed to satisfy the [component.ExtensionConfig](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/extension.go#L19) interface
 * `Region` is the AWS region for AWS Sigv4. This is an optional field.
     * Note that an attempt will be made to obtain a valid region from the endpoint of the service you are exporting to
 * `Service` is the AWS service for AWS Sigv4. This is an optional field.
@@ -232,7 +230,7 @@ func (si *signingRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
         return nil, err
     }
 
-    content, err := ioutil.ReadAll(reqBody)
+    content, err := io.ReadAll(reqBody)
     reqBody.Close()
     if err != nil {
         return nil, err
@@ -285,7 +283,7 @@ We take a closer look at the performance of `RoundTrip()`, since it will be heav
     .
     .
     .
-    content, err := ioutil.ReadAll(reqBody)
+    content, err := io.ReadAll(reqBody)
     reqBody.Close()
     .
     .
@@ -355,7 +353,7 @@ Lastly, we introduce `factory.go`, which provides the logic for creating the Sig
 
 
 ```go
-func NewFactory() component.ExtensionFactory {
+func NewFactory() extension.Factory {
     return extensionhelper.NewFactory(
         "sigv4auth",
         createDefaultConfig,
@@ -368,10 +366,8 @@ func NewFactory() component.ExtensionFactory {
 
 
 ```go
-func createDefaultConfig() component.ExtensionConfig {
-    return &Config{
-        ExtensionSettings: config.NewExtensionSettings(component.NewID("sigv4auth")),
-    }
+func createDefaultConfig() component.Config {
+    return &Config{}
 }
 ```
 
@@ -380,7 +376,7 @@ func createDefaultConfig() component.ExtensionConfig {
 
 
 ```go
-func createExtension(_ context.Context, set component.ExtensionCreateSettings, cfg component.ExtensionConfig) (component.Extension, error) {
+func createExtension(_ context.Context, set extension.CreateSettings, cfg component.Config) (extension.Extension, error) {
     awsSDKInfo := fmt.Sprintf("%s/%s", aws.SDKName, aws.SDKVersion)
     return newSigv4Extension(cfg.(*Config), awsSDKInfo, set.Logger)
 }

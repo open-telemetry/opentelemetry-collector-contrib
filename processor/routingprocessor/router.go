@@ -27,8 +27,8 @@ import (
 var errExporterNotFound = errors.New("exporter not found")
 
 // router registers exporters and default exporters for an exporter. router can
-// be instantiated with component.TracesExporter, component.MetricsExporter, and
-// component.LogsExporter type arguments.
+// be instantiated with exporter.Traces, exporter.Metrics, and
+// exporter.Logs type arguments.
 type router[E component.Component, K any] struct {
 	logger *zap.Logger
 	parser ottl.Parser[K]

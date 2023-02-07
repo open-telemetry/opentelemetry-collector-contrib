@@ -15,7 +15,7 @@
 package fileconsumer // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
 
 import (
-	"github.com/bmatcuk/doublestar/v3"
+	"github.com/bmatcuk/doublestar/v4"
 )
 
 type Finder struct {
@@ -27,7 +27,7 @@ type Finder struct {
 func (f Finder) FindFiles() []string {
 	all := make([]string, 0, len(f.Include))
 	for _, include := range f.Include {
-		matches, _ := doublestar.Glob(include) // compile error checked in build
+		matches, _ := doublestar.FilepathGlob(include, doublestar.WithFilesOnly()) // compile error checked in build
 	INCLUDE:
 		for _, match := range matches {
 			for _, exclude := range f.Exclude {

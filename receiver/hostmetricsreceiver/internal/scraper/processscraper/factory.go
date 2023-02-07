@@ -19,7 +19,7 @@ import (
 	"errors"
 	"runtime"
 
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
@@ -47,7 +47,7 @@ func (f *Factory) CreateDefaultConfig() internal.Config {
 // CreateMetricsScraper creates a resource scraper based on provided config.
 func (f *Factory) CreateMetricsScraper(
 	_ context.Context,
-	settings component.ReceiverCreateSettings,
+	settings receiver.CreateSettings,
 	cfg internal.Config,
 ) (scraperhelper.Scraper, error) {
 	if runtime.GOOS != "linux" && runtime.GOOS != "windows" {

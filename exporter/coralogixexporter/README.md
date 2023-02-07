@@ -2,11 +2,10 @@
 
 | Status                   |                        |
 | ------------------------ |----------------------- |
-| Stability                | [unmaintained]         |
+| Stability                | traces, metrics [beta] |
+|                          | logs [alpha]           |
 | Supported pipeline types | traces, metrics, logs  |
 | Distributions            | [contrib]              |
-
-**Note**: This component was marked as unmaintained on 2022-11-30, it will be removed from official builds on 2023-05-30
 
 The Coralogix exporter sends traces, metrics and logs to [Coralogix](https://coralogix.com/).
 
@@ -51,7 +50,7 @@ exporters:
 ```
 ### Tracing deprecation 
 
-The v0.60 version deprecates old Jaeger based tracing endpoint in favour of Opentelemetry based one.
+The v0.67 version removed old Jaeger based tracing endpoint in favour of Opentelemetry based one.
 
 To migrate, please remove the old endpoint field, and change the configuration to `traces.endpoint` using the new Tracing endpoint.
 
@@ -232,5 +231,6 @@ exporters:
 Our world-class customer success team is available 24/7 to walk you through the setup for this exporter and answer any questions that may come up.
 Feel free to reach out to us **via our in-app chat** or by sending us an email to [support@coralogix.com](mailto:support@coralogix.com).
 
-[unmaintained]:https://github.com/open-telemetry/opentelemetry-collector#unmaintained
+[alpha]:https://github.com/open-telemetry/opentelemetry-collector#alpha
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

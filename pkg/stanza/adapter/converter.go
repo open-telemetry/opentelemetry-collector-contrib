@@ -285,24 +285,6 @@ func convert(ent *entry.Entry) plog.LogRecord {
 	return dest
 }
 
-// Convert converts one entry.Entry into plog.Logs.
-// To be used in a stateless setting like tests where ease of use is more
-// important than performance or throughput.
-func Convert(ent *entry.Entry) plog.Logs {
-	pLogs := plog.NewLogs()
-	logs := pLogs.ResourceLogs()
-
-	rls := logs.AppendEmpty()
-
-	resource := rls.Resource()
-	upsertToMap(ent.Resource, resource.Attributes())
-
-	ills := rls.ScopeLogs().AppendEmpty()
-	lr := ills.LogRecords().AppendEmpty()
-	convertInto(ent, lr)
-	return pLogs
-}
-
 // convertInto converts entry.Entry into provided plog.LogRecord.
 func convertInto(ent *entry.Entry, dest plog.LogRecord) {
 	if !ent.Timestamp.IsZero() {

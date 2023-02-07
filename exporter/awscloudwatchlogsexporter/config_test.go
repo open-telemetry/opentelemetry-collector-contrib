@@ -18,10 +18,10 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/multierr"
@@ -45,7 +45,6 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "e1-defaults"),
 			expected: &Config{
-				ExporterSettings:   config.NewExporterSettings(component.NewID(typeStr)),
 				RetrySettings:      defaultRetrySettings,
 				LogGroupName:       "test-1",
 				LogStreamName:      "testing",
@@ -59,12 +58,13 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "e2-no-retries-short-queue"),
 			expected: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				RetrySettings: exporterhelper.RetrySettings{
-					Enabled:         false,
-					InitialInterval: defaultRetrySettings.InitialInterval,
-					MaxInterval:     defaultRetrySettings.MaxInterval,
-					MaxElapsedTime:  defaultRetrySettings.MaxElapsedTime,
+					Enabled:             false,
+					InitialInterval:     defaultRetrySettings.InitialInterval,
+					MaxInterval:         defaultRetrySettings.MaxInterval,
+					MaxElapsedTime:      defaultRetrySettings.MaxElapsedTime,
+					RandomizationFactor: backoff.DefaultRandomizationFactor,
+					Multiplier:          backoff.DefaultMultiplier,
 				},
 				AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
 				LogGroupName:       "test-2",
@@ -115,7 +115,6 @@ func TestLoadConfig(t *testing.T) {
 func TestRetentionValidateCorrect(t *testing.T) {
 	defaultRetrySettings := exporterhelper.NewDefaultRetrySettings()
 	cfg := &Config{
-		ExporterSettings:   config.NewExporterSettings(component.NewIDWithName(typeStr, "1")),
 		RetrySettings:      defaultRetrySettings,
 		LogGroupName:       "test-1",
 		LogStreamName:      "testing",
@@ -133,7 +132,6 @@ func TestRetentionValidateCorrect(t *testing.T) {
 func TestRetentionValidateWrong(t *testing.T) {
 	defaultRetrySettings := exporterhelper.NewDefaultRetrySettings()
 	wrongcfg := &Config{
-		ExporterSettings:   config.NewExporterSettings(component.NewIDWithName(typeStr, "2")),
 		RetrySettings:      defaultRetrySettings,
 		LogGroupName:       "test-1",
 		LogStreamName:      "testing",

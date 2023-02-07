@@ -15,11 +15,11 @@
 package k8sattributesprocessor
 
 import (
-	"reflect"
 	"regexp"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"k8s.io/apimachinery/pkg/selection"
 
@@ -297,10 +297,7 @@ func TestWithExtractLabels(t *testing.T) {
 				assert.Equal(t, tt.wantError, err.Error())
 				return
 			}
-			got := p.rules.Labels
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("WithExtractLabels() = %v, want %v", got, tt.want)
-			}
+			assert.Equal(t, tt.want, p.rules.Labels)
 		})
 	}
 }
@@ -446,17 +443,13 @@ func TestWithFilterLabels(t *testing.T) {
 			p := &kubernetesprocessor{}
 			opt := withFilterLabels(tt.args...)
 			err := opt(p)
-			if tt.error == "" {
-				assert.NoError(t, err)
-			} else {
+			if tt.error != "" {
 				assert.Error(t, err)
-				assert.Equal(t, tt.error, err.Error())
+				assert.EqualError(t, err, tt.error)
 				return
 			}
-			got := p.filters.Labels
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("WithExtractLabels() = %v, want %v", got, tt.want)
-			}
+			assert.NoError(t, err)
+			assert.Equal(t, tt.want, p.filters.Labels)
 		})
 	}
 }
@@ -578,17 +571,13 @@ func TestWithFilterFields(t *testing.T) {
 			p := &kubernetesprocessor{}
 			opt := withFilterFields(tt.args...)
 			err := opt(p)
-			if tt.error == "" {
-				assert.NoError(t, err)
-			} else {
+			if tt.error != "" {
 				assert.Error(t, err)
-				assert.Equal(t, tt.error, err.Error())
+				assert.EqualError(t, err, tt.error)
 				return
 			}
-			got := p.filters.Fields
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("WithExtractLabels() = %v, want %v", got, tt.want)
-			}
+			assert.NoError(t, err)
+			assert.Equal(t, tt.want, p.filters.Fields)
 		})
 	}
 }
@@ -605,43 +594,41 @@ func Test_extractFieldRules(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			"default",
-			args{"labels", []FieldExtractConfig{
+			name: "default",
+			args: args{"labels", []FieldExtractConfig{
 				{
 					Key:  "key",
 					From: kube.MetadataFromPod,
 				},
 			}},
-			[]kube.FieldExtractionRule{
+			want: []kube.FieldExtractionRule{
 				{
 					Name: "k8s.pod.labels.key",
 					Key:  "key",
 					From: kube.MetadataFromPod,
 				},
 			},
-			false,
 		},
 		{
-			"basic",
-			args{"field", []FieldExtractConfig{
+			name: "basic",
+			args: args{"field", []FieldExtractConfig{
 				{
 					TagName: "name",
 					Key:     "key",
 					From:    kube.MetadataFromPod,
 				},
 			}},
-			[]kube.FieldExtractionRule{
+			want: []kube.FieldExtractionRule{
 				{
 					Name: "name",
 					Key:  "key",
 					From: kube.MetadataFromPod,
 				},
 			},
-			false,
 		},
 		{
-			"regex-without-match",
-			args{"field", []FieldExtractConfig{
+			name: "regex-without-match",
+			args: args{"field", []FieldExtractConfig{
 				{
 					TagName: "name",
 					Key:     "key",
@@ -649,12 +636,11 @@ func Test_extractFieldRules(t *testing.T) {
 					From:    kube.MetadataFromPod,
 				},
 			}},
-			nil,
-			true,
+			wantErr: true,
 		},
 		{
-			"badregex",
-			args{"field", []FieldExtractConfig{
+			name: "badregex",
+			args: args{"field", []FieldExtractConfig{
 				{
 					TagName: "name",
 					Key:     "key",
@@ -662,19 +648,18 @@ func Test_extractFieldRules(t *testing.T) {
 					From:    kube.MetadataFromPod,
 				},
 			}},
-			nil,
-			true,
+			wantErr: true,
 		},
 		{
-			"keyregex-capture-group",
-			args{"labels", []FieldExtractConfig{
+			name: "keyregex-capture-group",
+			args: args{"labels", []FieldExtractConfig{
 				{
 					TagName:  "$0-$1-$2",
 					KeyRegex: "(key)(.*)",
 					From:     kube.MetadataFromPod,
 				},
 			}},
-			[]kube.FieldExtractionRule{
+			want: []kube.FieldExtractionRule{
 				{
 					Name:                 "$0-$1-$2",
 					KeyRegex:             regexp.MustCompile("^(?:(key)(.*))$"),
@@ -682,19 +667,17 @@ func Test_extractFieldRules(t *testing.T) {
 					From:                 kube.MetadataFromPod,
 				},
 			},
-			false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := extractFieldRules(tt.args.fieldType, tt.args.fields...)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("extractFieldRules() error = %v, wantErr %v", err, tt.wantErr)
+			if tt.wantErr {
+				assert.Error(t, err)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("extractFieldRules() got = %v, want %v", got, tt.want)
-			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }

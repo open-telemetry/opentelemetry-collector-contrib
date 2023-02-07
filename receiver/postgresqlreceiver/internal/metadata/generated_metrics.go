@@ -9,18 +9,14 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 )
 
 // MetricSettings provides common settings for a particular metric.
 type MetricSettings struct {
 	Enabled bool `mapstructure:"enabled"`
 
-	enabledProvidedByUser bool
-}
-
-// IsEnabledProvidedByUser returns true if `enabled` option is explicitly set in user settings to any value.
-func (ms *MetricSettings) IsEnabledProvidedByUser() bool {
-	return ms.enabledProvidedByUser
+	enabledSetByUser bool
 }
 
 func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
@@ -31,7 +27,7 @@ func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
 	if err != nil {
 		return err
 	}
-	ms.enabledProvidedByUser = parser.IsSet("enabled")
+	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
 }
 
@@ -127,6 +123,46 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		PostgresqlWalLag: MetricSettings{
+			Enabled: true,
+		},
+	}
+}
+
+// ResourceAttributeSettings provides common settings for a particular metric.
+type ResourceAttributeSettings struct {
+	Enabled bool `mapstructure:"enabled"`
+
+	enabledProvidedByUser bool
+}
+
+func (ras *ResourceAttributeSettings) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(ras, confmap.WithErrorUnused())
+	if err != nil {
+		return err
+	}
+	ras.enabledProvidedByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ResourceAttributesSettings provides settings for postgresqlreceiver metrics.
+type ResourceAttributesSettings struct {
+	PostgresqlDatabaseName ResourceAttributeSettings `mapstructure:"postgresql.database.name"`
+	PostgresqlIndexName    ResourceAttributeSettings `mapstructure:"postgresql.index.name"`
+	PostgresqlTableName    ResourceAttributeSettings `mapstructure:"postgresql.table.name"`
+}
+
+func DefaultResourceAttributesSettings() ResourceAttributesSettings {
+	return ResourceAttributesSettings{
+		PostgresqlDatabaseName: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		PostgresqlIndexName: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		PostgresqlTableName: ResourceAttributeSettings{
 			Enabled: true,
 		},
 	}
@@ -1509,6 +1545,7 @@ type MetricsBuilder struct {
 	resourceCapacity                         int                 // maximum observed number of resource attributes.
 	metricsBuffer                            pmetric.Metrics     // accumulates metrics data before emitting.
 	buildInfo                                component.BuildInfo // contains version information
+	resourceAttributesSettings               ResourceAttributesSettings
 	metricPostgresqlBackends                 metricPostgresqlBackends
 	metricPostgresqlBgwriterBuffersAllocated metricPostgresqlBgwriterBuffersAllocated
 	metricPostgresqlBgwriterBuffersWrites    metricPostgresqlBgwriterBuffersWrites
@@ -1543,33 +1580,41 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, options ...metricBuilderOption) *MetricsBuilder {
+// WithResourceAttributesSettings sets ResourceAttributeSettings on the metrics builder.
+func WithResourceAttributesSettings(ras ResourceAttributesSettings) metricBuilderOption {
+	return func(mb *MetricsBuilder) {
+		mb.resourceAttributesSettings = ras
+	}
+}
+
+func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                                pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                            pmetric.NewMetrics(),
-		buildInfo:                                buildInfo,
-		metricPostgresqlBackends:                 newMetricPostgresqlBackends(settings.PostgresqlBackends),
-		metricPostgresqlBgwriterBuffersAllocated: newMetricPostgresqlBgwriterBuffersAllocated(settings.PostgresqlBgwriterBuffersAllocated),
-		metricPostgresqlBgwriterBuffersWrites:    newMetricPostgresqlBgwriterBuffersWrites(settings.PostgresqlBgwriterBuffersWrites),
-		metricPostgresqlBgwriterCheckpointCount:  newMetricPostgresqlBgwriterCheckpointCount(settings.PostgresqlBgwriterCheckpointCount),
-		metricPostgresqlBgwriterDuration:         newMetricPostgresqlBgwriterDuration(settings.PostgresqlBgwriterDuration),
-		metricPostgresqlBgwriterMaxwritten:       newMetricPostgresqlBgwriterMaxwritten(settings.PostgresqlBgwriterMaxwritten),
-		metricPostgresqlBlocksRead:               newMetricPostgresqlBlocksRead(settings.PostgresqlBlocksRead),
-		metricPostgresqlCommits:                  newMetricPostgresqlCommits(settings.PostgresqlCommits),
-		metricPostgresqlConnectionMax:            newMetricPostgresqlConnectionMax(settings.PostgresqlConnectionMax),
-		metricPostgresqlDatabaseCount:            newMetricPostgresqlDatabaseCount(settings.PostgresqlDatabaseCount),
-		metricPostgresqlDbSize:                   newMetricPostgresqlDbSize(settings.PostgresqlDbSize),
-		metricPostgresqlIndexScans:               newMetricPostgresqlIndexScans(settings.PostgresqlIndexScans),
-		metricPostgresqlIndexSize:                newMetricPostgresqlIndexSize(settings.PostgresqlIndexSize),
-		metricPostgresqlOperations:               newMetricPostgresqlOperations(settings.PostgresqlOperations),
-		metricPostgresqlReplicationDataDelay:     newMetricPostgresqlReplicationDataDelay(settings.PostgresqlReplicationDataDelay),
-		metricPostgresqlRollbacks:                newMetricPostgresqlRollbacks(settings.PostgresqlRollbacks),
-		metricPostgresqlRows:                     newMetricPostgresqlRows(settings.PostgresqlRows),
-		metricPostgresqlTableCount:               newMetricPostgresqlTableCount(settings.PostgresqlTableCount),
-		metricPostgresqlTableSize:                newMetricPostgresqlTableSize(settings.PostgresqlTableSize),
-		metricPostgresqlTableVacuumCount:         newMetricPostgresqlTableVacuumCount(settings.PostgresqlTableVacuumCount),
-		metricPostgresqlWalAge:                   newMetricPostgresqlWalAge(settings.PostgresqlWalAge),
-		metricPostgresqlWalLag:                   newMetricPostgresqlWalLag(settings.PostgresqlWalLag),
+		buildInfo:                                settings.BuildInfo,
+		resourceAttributesSettings:               DefaultResourceAttributesSettings(),
+		metricPostgresqlBackends:                 newMetricPostgresqlBackends(ms.PostgresqlBackends),
+		metricPostgresqlBgwriterBuffersAllocated: newMetricPostgresqlBgwriterBuffersAllocated(ms.PostgresqlBgwriterBuffersAllocated),
+		metricPostgresqlBgwriterBuffersWrites:    newMetricPostgresqlBgwriterBuffersWrites(ms.PostgresqlBgwriterBuffersWrites),
+		metricPostgresqlBgwriterCheckpointCount:  newMetricPostgresqlBgwriterCheckpointCount(ms.PostgresqlBgwriterCheckpointCount),
+		metricPostgresqlBgwriterDuration:         newMetricPostgresqlBgwriterDuration(ms.PostgresqlBgwriterDuration),
+		metricPostgresqlBgwriterMaxwritten:       newMetricPostgresqlBgwriterMaxwritten(ms.PostgresqlBgwriterMaxwritten),
+		metricPostgresqlBlocksRead:               newMetricPostgresqlBlocksRead(ms.PostgresqlBlocksRead),
+		metricPostgresqlCommits:                  newMetricPostgresqlCommits(ms.PostgresqlCommits),
+		metricPostgresqlConnectionMax:            newMetricPostgresqlConnectionMax(ms.PostgresqlConnectionMax),
+		metricPostgresqlDatabaseCount:            newMetricPostgresqlDatabaseCount(ms.PostgresqlDatabaseCount),
+		metricPostgresqlDbSize:                   newMetricPostgresqlDbSize(ms.PostgresqlDbSize),
+		metricPostgresqlIndexScans:               newMetricPostgresqlIndexScans(ms.PostgresqlIndexScans),
+		metricPostgresqlIndexSize:                newMetricPostgresqlIndexSize(ms.PostgresqlIndexSize),
+		metricPostgresqlOperations:               newMetricPostgresqlOperations(ms.PostgresqlOperations),
+		metricPostgresqlReplicationDataDelay:     newMetricPostgresqlReplicationDataDelay(ms.PostgresqlReplicationDataDelay),
+		metricPostgresqlRollbacks:                newMetricPostgresqlRollbacks(ms.PostgresqlRollbacks),
+		metricPostgresqlRows:                     newMetricPostgresqlRows(ms.PostgresqlRows),
+		metricPostgresqlTableCount:               newMetricPostgresqlTableCount(ms.PostgresqlTableCount),
+		metricPostgresqlTableSize:                newMetricPostgresqlTableSize(ms.PostgresqlTableSize),
+		metricPostgresqlTableVacuumCount:         newMetricPostgresqlTableVacuumCount(ms.PostgresqlTableVacuumCount),
+		metricPostgresqlWalAge:                   newMetricPostgresqlWalAge(ms.PostgresqlWalAge),
+		metricPostgresqlWalLag:                   newMetricPostgresqlWalLag(ms.PostgresqlWalLag),
 	}
 	for _, op := range options {
 		op(mb)
@@ -1588,33 +1633,39 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(pmetric.ResourceMetrics)
+type ResourceMetricsOption func(ResourceAttributesSettings, pmetric.ResourceMetrics)
 
 // WithPostgresqlDatabaseName sets provided value as "postgresql.database.name" attribute for current resource.
 func WithPostgresqlDatabaseName(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("postgresql.database.name", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.PostgresqlDatabaseName.Enabled {
+			rm.Resource().Attributes().PutStr("postgresql.database.name", val)
+		}
 	}
 }
 
 // WithPostgresqlIndexName sets provided value as "postgresql.index.name" attribute for current resource.
 func WithPostgresqlIndexName(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("postgresql.index.name", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.PostgresqlIndexName.Enabled {
+			rm.Resource().Attributes().PutStr("postgresql.index.name", val)
+		}
 	}
 }
 
 // WithPostgresqlTableName sets provided value as "postgresql.table.name" attribute for current resource.
 func WithPostgresqlTableName(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("postgresql.table.name", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.PostgresqlTableName.Enabled {
+			rm.Resource().Attributes().PutStr("postgresql.table.name", val)
+		}
 	}
 }
 
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
@@ -1665,8 +1716,9 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricPostgresqlTableVacuumCount.emit(ils.Metrics())
 	mb.metricPostgresqlWalAge.emit(ils.Metrics())
 	mb.metricPostgresqlWalLag.emit(ils.Metrics())
+
 	for _, op := range rmo {
-		op(rm)
+		op(mb.resourceAttributesSettings, rm)
 	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
@@ -1679,8 +1731,8 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 // produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
 func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 	mb.EmitForResource(rmo...)
-	metrics := pmetric.NewMetrics()
-	mb.metricsBuffer.MoveTo(metrics)
+	metrics := mb.metricsBuffer
+	mb.metricsBuffer = pmetric.NewMetrics()
 	return metrics
 }
 

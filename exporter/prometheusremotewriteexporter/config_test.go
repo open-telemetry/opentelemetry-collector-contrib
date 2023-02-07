@@ -19,11 +19,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -49,13 +50,14 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "2"),
 			expected: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),
+				TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
 				RetrySettings: exporterhelper.RetrySettings{
-					Enabled:         true,
-					InitialInterval: 10 * time.Second,
-					MaxInterval:     1 * time.Minute,
-					MaxElapsedTime:  10 * time.Minute,
+					Enabled:             true,
+					InitialInterval:     10 * time.Second,
+					MaxInterval:         1 * time.Minute,
+					MaxElapsedTime:      10 * time.Minute,
+					RandomizationFactor: backoff.DefaultRandomizationFactor,
+					Multiplier:          backoff.DefaultMultiplier,
 				},
 				RemoteWriteQueue: RemoteWriteQueue{
 					Enabled:      true,
@@ -75,7 +77,7 @@ func TestLoadConfig(t *testing.T) {
 					ReadBufferSize:  0,
 					WriteBufferSize: 512 * 1024,
 					Timeout:         5 * time.Second,
-					Headers: map[string]string{
+					Headers: map[string]configopaque.String{
 						"Prometheus-Remote-Write-Version": "0.1.0",
 						"X-Scope-OrgID":                   "234"},
 				},
@@ -83,6 +85,7 @@ func TestLoadConfig(t *testing.T) {
 				TargetInfo: &TargetInfo{
 					Enabled: true,
 				},
+				CreatedMetric: &CreatedMetric{Enabled: true},
 			},
 		},
 		{

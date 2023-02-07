@@ -1,7 +1,0 @@
-# NOTE: This is an invalid configuration used to test that such cases are caught
-# Do not use this configuration
-humio:
-  endpoint: https://cloud.humio.com/
-  tag: invalid
-  traces:
-    ingest_token: 00000000-0000-0000-0000-0000000000000

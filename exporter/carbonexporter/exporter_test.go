@@ -29,9 +29,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
@@ -41,45 +40,10 @@ import (
 )
 
 func TestNew(t *testing.T) {
-	tests := []struct {
-		name    string
-		config  *Config
-		wantErr bool
-	}{
-		{
-			name:   "default_config",
-			config: createDefaultConfig().(*Config),
-		},
-		{
-			name: "invalid_tcp_addr",
-			config: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				Endpoint:         "http://localhost:2003",
-			},
-			wantErr: true,
-		},
-		{
-			name: "invalid_timeout",
-			config: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				Timeout:          -5 * time.Second,
-			},
-			wantErr: true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := newCarbonExporter(tt.config, componenttest.NewNopExporterCreateSettings())
-			if tt.wantErr {
-				assert.Nil(t, got)
-				assert.Error(t, err)
-				return
-			}
-
-			assert.NotNil(t, got)
-			assert.NoError(t, err)
-		})
-	}
+	cfg := createDefaultConfig().(*Config)
+	got, err := newCarbonExporter(cfg, exportertest.NewNopCreateSettings())
+	assert.NotNil(t, got)
+	assert.NoError(t, err)
 }
 
 func TestConsumeMetricsData(t *testing.T) {
@@ -146,7 +110,7 @@ func TestConsumeMetricsData(t *testing.T) {
 			}
 
 			config := &Config{Endpoint: addr, Timeout: 1000 * time.Millisecond}
-			exp, err := newCarbonExporter(config, componenttest.NewNopExporterCreateSettings())
+			exp, err := newCarbonExporter(config, exportertest.NewNopCreateSettings())
 			require.NoError(t, err)
 
 			require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))

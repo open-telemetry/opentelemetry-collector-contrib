@@ -68,6 +68,9 @@ func (kp *kubernetesprocessor) Start(_ context.Context, _ component.Host) error 
 }
 
 func (kp *kubernetesprocessor) Shutdown(context.Context) error {
+	if kp.kc == nil {
+		return nil
+	}
 	if !kp.passthroughMode {
 		kp.kc.Stop()
 	}

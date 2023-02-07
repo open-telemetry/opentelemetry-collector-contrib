@@ -21,7 +21,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.uber.org/zap"
 
@@ -46,7 +45,6 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "1"),
 			expected: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				AWSSessionSettings: awsutil.AWSSessionSettings{
 					NumberOfWorkers:       8,
 					Endpoint:              "",
@@ -61,12 +59,12 @@ func TestLoadConfig(t *testing.T) {
 				LogStreamName:         "",
 				DimensionRollupOption: "ZeroAndSingleDimensionRollup",
 				OutputDestination:     "cloudwatch",
+				logger:                zap.NewNop(),
 			},
 		},
 		{
 			id: component.NewIDWithName(typeStr, "resource_attr_to_label"),
 			expected: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				AWSSessionSettings: awsutil.AWSSessionSettings{
 					NumberOfWorkers:       8,
 					Endpoint:              "",
@@ -82,6 +80,32 @@ func TestLoadConfig(t *testing.T) {
 				DimensionRollupOption:       "ZeroAndSingleDimensionRollup",
 				OutputDestination:           "cloudwatch",
 				ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
+				logger:                      zap.NewNop(),
+			},
+		},
+		{
+			id: component.NewIDWithName(typeStr, "metric_descriptors"),
+			expected: &Config{
+				AWSSessionSettings: awsutil.AWSSessionSettings{
+					NumberOfWorkers:       8,
+					Endpoint:              "",
+					RequestTimeoutSeconds: 30,
+					MaxRetries:            2,
+					NoVerifySSL:           false,
+					ProxyAddress:          "",
+					Region:                "",
+					RoleARN:               "",
+				},
+				LogGroupName:          "",
+				LogStreamName:         "",
+				DimensionRollupOption: "ZeroAndSingleDimensionRollup",
+				OutputDestination:     "cloudwatch",
+				MetricDescriptors: []MetricDescriptor{{
+					MetricName: "memcached_current_items",
+					Unit:       "Count",
+					Overwrite:  true,
+				}},
+				logger: zap.NewNop(),
 			},
 		},
 	}
@@ -103,13 +127,12 @@ func TestLoadConfig(t *testing.T) {
 
 func TestConfigValidate(t *testing.T) {
 	incorrectDescriptor := []MetricDescriptor{
-		{metricName: ""},
-		{unit: "Count", metricName: "apiserver_total", overwrite: true},
-		{unit: "INVALID", metricName: "404"},
-		{unit: "Megabytes", metricName: "memory_usage"},
+		{MetricName: ""},
+		{Unit: "Count", MetricName: "apiserver_total", Overwrite: true},
+		{Unit: "INVALID", MetricName: "404"},
+		{Unit: "Megabytes", MetricName: "memory_usage"},
 	}
 	cfg := &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewIDWithName(typeStr, "1")),
 		AWSSessionSettings: awsutil.AWSSessionSettings{
 			RequestTimeoutSeconds: 30,
 			MaxRetries:            1,
@@ -123,14 +146,13 @@ func TestConfigValidate(t *testing.T) {
 
 	assert.Equal(t, 2, len(cfg.MetricDescriptors))
 	assert.Equal(t, []MetricDescriptor{
-		{unit: "Count", metricName: "apiserver_total", overwrite: true},
-		{unit: "Megabytes", metricName: "memory_usage"},
+		{Unit: "Count", MetricName: "apiserver_total", Overwrite: true},
+		{Unit: "Megabytes", MetricName: "memory_usage"},
 	}, cfg.MetricDescriptors)
 }
 
 func TestRetentionValidateCorrect(t *testing.T) {
 	cfg := &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewIDWithName(typeStr, "1")),
 		AWSSessionSettings: awsutil.AWSSessionSettings{
 			RequestTimeoutSeconds: 30,
 			MaxRetries:            1,
@@ -146,7 +168,6 @@ func TestRetentionValidateCorrect(t *testing.T) {
 
 func TestRetentionValidateWrong(t *testing.T) {
 	wrongcfg := &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewIDWithName(typeStr, "2")),
 		AWSSessionSettings: awsutil.AWSSessionSettings{
 			RequestTimeoutSeconds: 30,
 			MaxRetries:            1,

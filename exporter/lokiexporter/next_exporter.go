@@ -85,7 +85,7 @@ func (l *nextLokiExporter) sendPushRequest(ctx context.Context, tenant string, r
 	}
 
 	for k, v := range l.config.HTTPClientSettings.Headers {
-		req.Header.Set(k, v)
+		req.Header.Set(k, string(v))
 	}
 	req.Header.Set("Content-Type", "application/x-protobuf")
 	if len(tenant) > 0 {
@@ -109,6 +109,14 @@ func (l *nextLokiExporter) sendPushRequest(ctx context.Context, tenant string, r
 			line = scanner.Text()
 		}
 		err = fmt.Errorf("HTTP %d %q: %s", resp.StatusCode, http.StatusText(resp.StatusCode), line)
+
+		// Errors with 4xx status code (excluding 429) should not be retried
+		if resp.StatusCode >= http.StatusBadRequest &&
+			resp.StatusCode < http.StatusInternalServerError &&
+			resp.StatusCode != http.StatusTooManyRequests {
+			return consumererror.NewPermanent(err)
+		}
+
 		return consumererror.NewLogs(err, ld)
 	}
 

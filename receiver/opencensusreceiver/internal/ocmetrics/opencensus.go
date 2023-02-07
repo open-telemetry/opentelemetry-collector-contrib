@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/receiver"
 
 	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
@@ -33,18 +34,17 @@ import (
 // Receiver is the type used to handle metrics from OpenCensus exporters.
 type Receiver struct {
 	agentmetricspb.UnimplementedMetricsServiceServer
-	id           component.ID
 	nextConsumer consumer.Metrics
 	obsrecv      *obsreport.Receiver
 }
 
 // New creates a new ocmetrics.Receiver reference.
-func New(id component.ID, nextConsumer consumer.Metrics, set component.ReceiverCreateSettings) (*Receiver, error) {
+func New(nextConsumer consumer.Metrics, set receiver.CreateSettings) (*Receiver, error) {
 	if nextConsumer == nil {
 		return nil, component.ErrNilNextConsumer
 	}
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
-		ReceiverID:             id,
+		ReceiverID:             set.ID,
 		Transport:              receiverTransport,
 		LongLivedCtx:           true,
 		ReceiverCreateSettings: set,
@@ -53,7 +53,6 @@ func New(id component.ID, nextConsumer consumer.Metrics, set component.ReceiverC
 		return nil, err
 	}
 	ocr := &Receiver{
-		id:           id,
 		nextConsumer: nextConsumer,
 		obsrecv:      obsrecv,
 	}

@@ -18,11 +18,12 @@ import (
 	"context"
 	"fmt"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
 // DataReceiver allows to receive traces or metrics. This is an interface that must
@@ -59,9 +60,9 @@ type BaseOTLPDataReceiver struct {
 	DataReceiverBase
 	// One of the "otlp" for OTLP over gRPC or "otlphttp" for OTLP over HTTP.
 	exporterType    string
-	traceReceiver   component.TracesReceiver
-	metricsReceiver component.MetricsReceiver
-	logReceiver     component.LogsReceiver
+	traceReceiver   receiver.Traces
+	metricsReceiver receiver.Metrics
+	logReceiver     receiver.Logs
 	compression     string
 }
 
@@ -76,7 +77,7 @@ func (bor *BaseOTLPDataReceiver) Start(tc consumer.Traces, mc consumer.Metrics, 
 		cfg.GRPC = nil
 	}
 	var err error
-	set := componenttest.NewNopReceiverCreateSettings()
+	set := receivertest.NewNopCreateSettings()
 	if bor.traceReceiver, err = factory.CreateTracesReceiver(context.Background(), set, cfg, tc); err != nil {
 		return err
 	}
@@ -127,10 +128,12 @@ func (bor *BaseOTLPDataReceiver) GenConfigYAMLStr() string {
     tls:
       insecure: true`, bor.exporterType, addr)
 
+	comp := "none"
 	if bor.compression != "" {
-		str += fmt.Sprintf(`
-    compression: "%s"`, bor.compression)
+		comp = bor.compression
 	}
+	str += fmt.Sprintf(`
+    compression: "%s"`, comp)
 
 	return str
 }

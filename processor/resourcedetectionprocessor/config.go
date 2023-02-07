@@ -15,18 +15,17 @@
 package resourcedetectionprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
 
 import (
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/consul"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openshift"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system"
 )
 
 // Config defines configuration for Resource processor.
 type Config struct {
-	config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	// Detectors is an ordered list of named detectors that should be
 	// run to attempt to detect resource information.
@@ -54,6 +53,9 @@ type DetectorConfig struct {
 
 	// SystemConfig contains user-specified configurations for the System detector
 	SystemConfig system.Config `mapstructure:"system"`
+
+	// OpenShift contains user-specified configurations for the Openshift detector
+	OpenShiftConfig openshift.Config `mapstructure:"openshift"`
 }
 
 func (d *DetectorConfig) GetConfigFromType(detectorType internal.DetectorType) internal.DetectorConfig {
@@ -64,6 +66,8 @@ func (d *DetectorConfig) GetConfigFromType(detectorType internal.DetectorType) i
 		return d.ConsulConfig
 	case system.TypeStr:
 		return d.SystemConfig
+	case openshift.TypeStr:
+		return d.OpenShiftConfig
 	default:
 		return nil
 	}

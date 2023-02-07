@@ -28,10 +28,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/otelcol/otelcoltest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
 func TestSnmpReceiverIntegration(t *testing.T) {
@@ -58,7 +59,7 @@ func TestSnmpReceiverIntegration(t *testing.T) {
 	}()
 	_, err := container.Host(context.Background())
 	require.NoError(t, err)
-	factories, err := componenttest.NopFactories()
+	factories, err := otelcoltest.NopFactories()
 	require.NoError(t, err)
 
 	for _, testCase := range testCases {
@@ -67,11 +68,12 @@ func TestSnmpReceiverIntegration(t *testing.T) {
 			factory := NewFactory()
 			factories.Receivers[typeStr] = factory
 			configFile := filepath.Join("testdata", "integration", testCase.configFilename)
-			cfg, err := servicetest.LoadConfigAndValidate(configFile, factories)
+			cfg, err := otelcoltest.LoadConfigAndValidate(configFile, factories)
+			require.NoError(t, err)
 			snmpConfig := cfg.Receivers[component.NewID(typeStr)].(*Config)
 
 			consumer := new(consumertest.MetricsSink)
-			settings := componenttest.NewNopReceiverCreateSettings()
+			settings := receivertest.NewNopCreateSettings()
 			rcvr, err := factory.CreateMetricsReceiver(context.Background(), settings, snmpConfig, consumer)
 			require.NoError(t, err, "failed creating metrics receiver")
 			require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
@@ -84,7 +86,8 @@ func TestSnmpReceiverIntegration(t *testing.T) {
 			expectedFile := filepath.Join("testdata", "integration", testCase.expectedResultsFilename)
 			expectedMetrics, err := golden.ReadMetrics(expectedFile)
 			require.NoError(t, err)
-			err = scrapertest.CompareMetrics(expectedMetrics, actualMetrics)
+			err = pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreMetricsOrder(),
+				pmetrictest.IgnoreTimestamp(), pmetrictest.IgnoreStartTimestamp())
 			require.NoError(t, err)
 		})
 	}

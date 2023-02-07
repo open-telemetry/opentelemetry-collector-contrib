@@ -83,6 +83,12 @@ func Test_lexer(t *testing.T) {
 			{"OpOr", "or"},
 			{"Lowercase", "but"},
 		}},
+		{"not", "true and not false", false, []result{
+			{"Boolean", "true"},
+			{"OpAnd", "and"},
+			{"OpNot", "not"},
+			{"Boolean", "false"},
+		}},
 		{"nothing_recognizable", "{}", true, []result{
 			{"", ""},
 		}},
@@ -97,10 +103,11 @@ func Test_lexer(t *testing.T) {
 			{"Bytes", "0x0102030405060708"},
 			{"RParen", ")"},
 		}},
-		{"Mixing case", `aBCd`, false, []result{
+		{"Mixing case numbers and underscores", `aBCd_123E_4`, false, []result{
 			{"Lowercase", "a"},
 			{"Uppercase", "BC"},
-			{"Lowercase", "d"},
+			{"Lowercase", "d_123"},
+			{"Uppercase", "E_4"},
 		}},
 		{"Math Operations", `+-*/`, false, []result{
 			{"OpAddSub", "+"},

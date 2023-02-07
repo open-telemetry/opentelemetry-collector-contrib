@@ -25,11 +25,12 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
 type MockClient struct {
@@ -102,7 +103,7 @@ func TestStart(t *testing.T) {
 			testFunc: func(t *testing.T) {
 				scraper := &snmpScraper{
 					cfg:      &Config{},
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 				}
 				err := scraper.start(context.Background(), componenttest.NewNopHost())
 				require.Error(t, err)
@@ -114,7 +115,7 @@ func TestStart(t *testing.T) {
 
 				scraper := &snmpScraper{
 					cfg:      createDefaultConfig().(*Config),
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 				}
 				err := scraper.start(context.Background(), componenttest.NewNopHost())
 				require.NoError(t, err)
@@ -141,7 +142,7 @@ func TestScrape(t *testing.T) {
 				mockClient.On("Close").Return(nil)
 				scraper := &snmpScraper{
 					cfg:      &Config{},
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -176,7 +177,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -212,7 +213,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -250,7 +251,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -264,7 +265,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
 			},
 		},
@@ -297,7 +298,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -311,7 +312,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
 			},
 		},
@@ -346,7 +347,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -360,7 +361,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
 			},
 		},
@@ -395,7 +396,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -409,7 +410,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
 			},
 		},
@@ -459,7 +460,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -473,7 +474,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
 			},
 		},
@@ -525,7 +526,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -539,7 +540,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
 			},
 		},
@@ -597,7 +598,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -611,7 +612,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
 			},
 		},
@@ -640,7 +641,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -688,7 +689,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -743,7 +744,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -757,7 +758,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
 			},
 		},
@@ -807,7 +808,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -821,7 +822,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
 			},
 		},
@@ -873,7 +874,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -887,7 +888,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
 			},
 		},
@@ -939,7 +940,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -953,7 +954,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
 			},
 		},
@@ -1021,7 +1022,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -1035,7 +1036,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
 			},
 		},
@@ -1114,7 +1115,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -1128,7 +1129,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
 			},
 		},
@@ -1205,7 +1206,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -1219,7 +1220,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
 			},
 		},
@@ -1284,7 +1285,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -1368,7 +1369,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -1437,7 +1438,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -1451,7 +1452,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
 			},
 		},
@@ -1514,7 +1515,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -1528,7 +1529,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
 			},
 		},
@@ -1591,7 +1592,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -1605,7 +1606,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
 			},
 		},
@@ -1668,7 +1669,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -1682,7 +1683,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
 			},
 		},
@@ -1753,7 +1754,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -1767,7 +1768,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
 			},
 		},
@@ -1828,7 +1829,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -1908,7 +1909,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -1998,7 +1999,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -2012,7 +2013,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
 			},
 		},
@@ -2096,7 +2097,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -2110,7 +2111,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
 			},
 		},
@@ -2172,7 +2173,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: componenttest.NewNopReceiverCreateSettings(),
+					settings: receivertest.NewNopCreateSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -2186,7 +2187,7 @@ func TestScrape(t *testing.T) {
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
 				require.NoError(t, err)
 			},
 		},

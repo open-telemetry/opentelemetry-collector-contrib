@@ -9,18 +9,14 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 )
 
 // MetricSettings provides common settings for a particular metric.
 type MetricSettings struct {
 	Enabled bool `mapstructure:"enabled"`
 
-	enabledProvidedByUser bool
-}
-
-// IsEnabledProvidedByUser returns true if `enabled` option is explicitly set in user settings to any value.
-func (ms *MetricSettings) IsEnabledProvidedByUser() bool {
-	return ms.enabledProvidedByUser
+	enabledSetByUser bool
 }
 
 func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
@@ -31,7 +27,7 @@ func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
 	if err != nil {
 		return err
 	}
-	ms.enabledProvidedByUser = parser.IsSet("enabled")
+	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
 }
 
@@ -291,6 +287,70 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		MongodbatlasSystemPagingUsageMax: MetricSettings{
+			Enabled: true,
+		},
+	}
+}
+
+// ResourceAttributeSettings provides common settings for a particular metric.
+type ResourceAttributeSettings struct {
+	Enabled bool `mapstructure:"enabled"`
+
+	enabledProvidedByUser bool
+}
+
+func (ras *ResourceAttributeSettings) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(ras, confmap.WithErrorUnused())
+	if err != nil {
+		return err
+	}
+	ras.enabledProvidedByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ResourceAttributesSettings provides settings for mongoatlasreceiver metrics.
+type ResourceAttributesSettings struct {
+	MongodbAtlasDbName          ResourceAttributeSettings `mapstructure:"mongodb_atlas.db.name"`
+	MongodbAtlasDiskPartition   ResourceAttributeSettings `mapstructure:"mongodb_atlas.disk.partition"`
+	MongodbAtlasHostName        ResourceAttributeSettings `mapstructure:"mongodb_atlas.host.name"`
+	MongodbAtlasOrgName         ResourceAttributeSettings `mapstructure:"mongodb_atlas.org_name"`
+	MongodbAtlasProcessID       ResourceAttributeSettings `mapstructure:"mongodb_atlas.process.id"`
+	MongodbAtlasProcessPort     ResourceAttributeSettings `mapstructure:"mongodb_atlas.process.port"`
+	MongodbAtlasProcessTypeName ResourceAttributeSettings `mapstructure:"mongodb_atlas.process.type_name"`
+	MongodbAtlasProjectID       ResourceAttributeSettings `mapstructure:"mongodb_atlas.project.id"`
+	MongodbAtlasProjectName     ResourceAttributeSettings `mapstructure:"mongodb_atlas.project.name"`
+}
+
+func DefaultResourceAttributesSettings() ResourceAttributesSettings {
+	return ResourceAttributesSettings{
+		MongodbAtlasDbName: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		MongodbAtlasDiskPartition: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		MongodbAtlasHostName: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		MongodbAtlasOrgName: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		MongodbAtlasProcessID: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		MongodbAtlasProcessPort: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		MongodbAtlasProcessTypeName: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		MongodbAtlasProjectID: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		MongodbAtlasProjectName: ResourceAttributeSettings{
 			Enabled: true,
 		},
 	}
@@ -4228,6 +4288,7 @@ type MetricsBuilder struct {
 	resourceCapacity                                            int                 // maximum observed number of resource attributes.
 	metricsBuffer                                               pmetric.Metrics     // accumulates metrics data before emitting.
 	buildInfo                                                   component.BuildInfo // contains version information
+	resourceAttributesSettings                                  ResourceAttributesSettings
 	metricMongodbatlasDbCounts                                  metricMongodbatlasDbCounts
 	metricMongodbatlasDbSize                                    metricMongodbatlasDbSize
 	metricMongodbatlasDiskPartitionIopsAverage                  metricMongodbatlasDiskPartitionIopsAverage
@@ -4303,74 +4364,82 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, options ...metricBuilderOption) *MetricsBuilder {
+// WithResourceAttributesSettings sets ResourceAttributeSettings on the metrics builder.
+func WithResourceAttributesSettings(ras ResourceAttributesSettings) metricBuilderOption {
+	return func(mb *MetricsBuilder) {
+		mb.resourceAttributesSettings = ras
+	}
+}
+
+func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                  pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:              pmetric.NewMetrics(),
-		buildInfo:                  buildInfo,
-		metricMongodbatlasDbCounts: newMetricMongodbatlasDbCounts(settings.MongodbatlasDbCounts),
-		metricMongodbatlasDbSize:   newMetricMongodbatlasDbSize(settings.MongodbatlasDbSize),
-		metricMongodbatlasDiskPartitionIopsAverage:                  newMetricMongodbatlasDiskPartitionIopsAverage(settings.MongodbatlasDiskPartitionIopsAverage),
-		metricMongodbatlasDiskPartitionIopsMax:                      newMetricMongodbatlasDiskPartitionIopsMax(settings.MongodbatlasDiskPartitionIopsMax),
-		metricMongodbatlasDiskPartitionLatencyAverage:               newMetricMongodbatlasDiskPartitionLatencyAverage(settings.MongodbatlasDiskPartitionLatencyAverage),
-		metricMongodbatlasDiskPartitionLatencyMax:                   newMetricMongodbatlasDiskPartitionLatencyMax(settings.MongodbatlasDiskPartitionLatencyMax),
-		metricMongodbatlasDiskPartitionSpaceAverage:                 newMetricMongodbatlasDiskPartitionSpaceAverage(settings.MongodbatlasDiskPartitionSpaceAverage),
-		metricMongodbatlasDiskPartitionSpaceMax:                     newMetricMongodbatlasDiskPartitionSpaceMax(settings.MongodbatlasDiskPartitionSpaceMax),
-		metricMongodbatlasDiskPartitionUsageAverage:                 newMetricMongodbatlasDiskPartitionUsageAverage(settings.MongodbatlasDiskPartitionUsageAverage),
-		metricMongodbatlasDiskPartitionUsageMax:                     newMetricMongodbatlasDiskPartitionUsageMax(settings.MongodbatlasDiskPartitionUsageMax),
-		metricMongodbatlasDiskPartitionUtilizationAverage:           newMetricMongodbatlasDiskPartitionUtilizationAverage(settings.MongodbatlasDiskPartitionUtilizationAverage),
-		metricMongodbatlasDiskPartitionUtilizationMax:               newMetricMongodbatlasDiskPartitionUtilizationMax(settings.MongodbatlasDiskPartitionUtilizationMax),
-		metricMongodbatlasProcessAsserts:                            newMetricMongodbatlasProcessAsserts(settings.MongodbatlasProcessAsserts),
-		metricMongodbatlasProcessBackgroundFlush:                    newMetricMongodbatlasProcessBackgroundFlush(settings.MongodbatlasProcessBackgroundFlush),
-		metricMongodbatlasProcessCacheIo:                            newMetricMongodbatlasProcessCacheIo(settings.MongodbatlasProcessCacheIo),
-		metricMongodbatlasProcessCacheSize:                          newMetricMongodbatlasProcessCacheSize(settings.MongodbatlasProcessCacheSize),
-		metricMongodbatlasProcessConnections:                        newMetricMongodbatlasProcessConnections(settings.MongodbatlasProcessConnections),
-		metricMongodbatlasProcessCPUChildrenNormalizedUsageAverage:  newMetricMongodbatlasProcessCPUChildrenNormalizedUsageAverage(settings.MongodbatlasProcessCPUChildrenNormalizedUsageAverage),
-		metricMongodbatlasProcessCPUChildrenNormalizedUsageMax:      newMetricMongodbatlasProcessCPUChildrenNormalizedUsageMax(settings.MongodbatlasProcessCPUChildrenNormalizedUsageMax),
-		metricMongodbatlasProcessCPUChildrenUsageAverage:            newMetricMongodbatlasProcessCPUChildrenUsageAverage(settings.MongodbatlasProcessCPUChildrenUsageAverage),
-		metricMongodbatlasProcessCPUChildrenUsageMax:                newMetricMongodbatlasProcessCPUChildrenUsageMax(settings.MongodbatlasProcessCPUChildrenUsageMax),
-		metricMongodbatlasProcessCPUNormalizedUsageAverage:          newMetricMongodbatlasProcessCPUNormalizedUsageAverage(settings.MongodbatlasProcessCPUNormalizedUsageAverage),
-		metricMongodbatlasProcessCPUNormalizedUsageMax:              newMetricMongodbatlasProcessCPUNormalizedUsageMax(settings.MongodbatlasProcessCPUNormalizedUsageMax),
-		metricMongodbatlasProcessCPUUsageAverage:                    newMetricMongodbatlasProcessCPUUsageAverage(settings.MongodbatlasProcessCPUUsageAverage),
-		metricMongodbatlasProcessCPUUsageMax:                        newMetricMongodbatlasProcessCPUUsageMax(settings.MongodbatlasProcessCPUUsageMax),
-		metricMongodbatlasProcessCursors:                            newMetricMongodbatlasProcessCursors(settings.MongodbatlasProcessCursors),
-		metricMongodbatlasProcessDbDocumentRate:                     newMetricMongodbatlasProcessDbDocumentRate(settings.MongodbatlasProcessDbDocumentRate),
-		metricMongodbatlasProcessDbOperationsRate:                   newMetricMongodbatlasProcessDbOperationsRate(settings.MongodbatlasProcessDbOperationsRate),
-		metricMongodbatlasProcessDbOperationsTime:                   newMetricMongodbatlasProcessDbOperationsTime(settings.MongodbatlasProcessDbOperationsTime),
-		metricMongodbatlasProcessDbQueryExecutorScanned:             newMetricMongodbatlasProcessDbQueryExecutorScanned(settings.MongodbatlasProcessDbQueryExecutorScanned),
-		metricMongodbatlasProcessDbQueryTargetingScannedPerReturned: newMetricMongodbatlasProcessDbQueryTargetingScannedPerReturned(settings.MongodbatlasProcessDbQueryTargetingScannedPerReturned),
-		metricMongodbatlasProcessDbStorage:                          newMetricMongodbatlasProcessDbStorage(settings.MongodbatlasProcessDbStorage),
-		metricMongodbatlasProcessFtsCPUUsage:                        newMetricMongodbatlasProcessFtsCPUUsage(settings.MongodbatlasProcessFtsCPUUsage),
-		metricMongodbatlasProcessGlobalLock:                         newMetricMongodbatlasProcessGlobalLock(settings.MongodbatlasProcessGlobalLock),
-		metricMongodbatlasProcessIndexBtreeMissRatio:                newMetricMongodbatlasProcessIndexBtreeMissRatio(settings.MongodbatlasProcessIndexBtreeMissRatio),
-		metricMongodbatlasProcessIndexCounters:                      newMetricMongodbatlasProcessIndexCounters(settings.MongodbatlasProcessIndexCounters),
-		metricMongodbatlasProcessJournalingCommits:                  newMetricMongodbatlasProcessJournalingCommits(settings.MongodbatlasProcessJournalingCommits),
-		metricMongodbatlasProcessJournalingDataFiles:                newMetricMongodbatlasProcessJournalingDataFiles(settings.MongodbatlasProcessJournalingDataFiles),
-		metricMongodbatlasProcessJournalingWritten:                  newMetricMongodbatlasProcessJournalingWritten(settings.MongodbatlasProcessJournalingWritten),
-		metricMongodbatlasProcessMemoryUsage:                        newMetricMongodbatlasProcessMemoryUsage(settings.MongodbatlasProcessMemoryUsage),
-		metricMongodbatlasProcessNetworkIo:                          newMetricMongodbatlasProcessNetworkIo(settings.MongodbatlasProcessNetworkIo),
-		metricMongodbatlasProcessNetworkRequests:                    newMetricMongodbatlasProcessNetworkRequests(settings.MongodbatlasProcessNetworkRequests),
-		metricMongodbatlasProcessOplogRate:                          newMetricMongodbatlasProcessOplogRate(settings.MongodbatlasProcessOplogRate),
-		metricMongodbatlasProcessOplogTime:                          newMetricMongodbatlasProcessOplogTime(settings.MongodbatlasProcessOplogTime),
-		metricMongodbatlasProcessPageFaults:                         newMetricMongodbatlasProcessPageFaults(settings.MongodbatlasProcessPageFaults),
-		metricMongodbatlasProcessRestarts:                           newMetricMongodbatlasProcessRestarts(settings.MongodbatlasProcessRestarts),
-		metricMongodbatlasProcessTickets:                            newMetricMongodbatlasProcessTickets(settings.MongodbatlasProcessTickets),
-		metricMongodbatlasSystemCPUNormalizedUsageAverage:           newMetricMongodbatlasSystemCPUNormalizedUsageAverage(settings.MongodbatlasSystemCPUNormalizedUsageAverage),
-		metricMongodbatlasSystemCPUNormalizedUsageMax:               newMetricMongodbatlasSystemCPUNormalizedUsageMax(settings.MongodbatlasSystemCPUNormalizedUsageMax),
-		metricMongodbatlasSystemCPUUsageAverage:                     newMetricMongodbatlasSystemCPUUsageAverage(settings.MongodbatlasSystemCPUUsageAverage),
-		metricMongodbatlasSystemCPUUsageMax:                         newMetricMongodbatlasSystemCPUUsageMax(settings.MongodbatlasSystemCPUUsageMax),
-		metricMongodbatlasSystemFtsCPUNormalizedUsage:               newMetricMongodbatlasSystemFtsCPUNormalizedUsage(settings.MongodbatlasSystemFtsCPUNormalizedUsage),
-		metricMongodbatlasSystemFtsCPUUsage:                         newMetricMongodbatlasSystemFtsCPUUsage(settings.MongodbatlasSystemFtsCPUUsage),
-		metricMongodbatlasSystemFtsDiskUsed:                         newMetricMongodbatlasSystemFtsDiskUsed(settings.MongodbatlasSystemFtsDiskUsed),
-		metricMongodbatlasSystemFtsMemoryUsage:                      newMetricMongodbatlasSystemFtsMemoryUsage(settings.MongodbatlasSystemFtsMemoryUsage),
-		metricMongodbatlasSystemMemoryUsageAverage:                  newMetricMongodbatlasSystemMemoryUsageAverage(settings.MongodbatlasSystemMemoryUsageAverage),
-		metricMongodbatlasSystemMemoryUsageMax:                      newMetricMongodbatlasSystemMemoryUsageMax(settings.MongodbatlasSystemMemoryUsageMax),
-		metricMongodbatlasSystemNetworkIoAverage:                    newMetricMongodbatlasSystemNetworkIoAverage(settings.MongodbatlasSystemNetworkIoAverage),
-		metricMongodbatlasSystemNetworkIoMax:                        newMetricMongodbatlasSystemNetworkIoMax(settings.MongodbatlasSystemNetworkIoMax),
-		metricMongodbatlasSystemPagingIoAverage:                     newMetricMongodbatlasSystemPagingIoAverage(settings.MongodbatlasSystemPagingIoAverage),
-		metricMongodbatlasSystemPagingIoMax:                         newMetricMongodbatlasSystemPagingIoMax(settings.MongodbatlasSystemPagingIoMax),
-		metricMongodbatlasSystemPagingUsageAverage:                  newMetricMongodbatlasSystemPagingUsageAverage(settings.MongodbatlasSystemPagingUsageAverage),
-		metricMongodbatlasSystemPagingUsageMax:                      newMetricMongodbatlasSystemPagingUsageMax(settings.MongodbatlasSystemPagingUsageMax),
+		buildInfo:                  settings.BuildInfo,
+		resourceAttributesSettings: DefaultResourceAttributesSettings(),
+		metricMongodbatlasDbCounts: newMetricMongodbatlasDbCounts(ms.MongodbatlasDbCounts),
+		metricMongodbatlasDbSize:   newMetricMongodbatlasDbSize(ms.MongodbatlasDbSize),
+		metricMongodbatlasDiskPartitionIopsAverage:                  newMetricMongodbatlasDiskPartitionIopsAverage(ms.MongodbatlasDiskPartitionIopsAverage),
+		metricMongodbatlasDiskPartitionIopsMax:                      newMetricMongodbatlasDiskPartitionIopsMax(ms.MongodbatlasDiskPartitionIopsMax),
+		metricMongodbatlasDiskPartitionLatencyAverage:               newMetricMongodbatlasDiskPartitionLatencyAverage(ms.MongodbatlasDiskPartitionLatencyAverage),
+		metricMongodbatlasDiskPartitionLatencyMax:                   newMetricMongodbatlasDiskPartitionLatencyMax(ms.MongodbatlasDiskPartitionLatencyMax),
+		metricMongodbatlasDiskPartitionSpaceAverage:                 newMetricMongodbatlasDiskPartitionSpaceAverage(ms.MongodbatlasDiskPartitionSpaceAverage),
+		metricMongodbatlasDiskPartitionSpaceMax:                     newMetricMongodbatlasDiskPartitionSpaceMax(ms.MongodbatlasDiskPartitionSpaceMax),
+		metricMongodbatlasDiskPartitionUsageAverage:                 newMetricMongodbatlasDiskPartitionUsageAverage(ms.MongodbatlasDiskPartitionUsageAverage),
+		metricMongodbatlasDiskPartitionUsageMax:                     newMetricMongodbatlasDiskPartitionUsageMax(ms.MongodbatlasDiskPartitionUsageMax),
+		metricMongodbatlasDiskPartitionUtilizationAverage:           newMetricMongodbatlasDiskPartitionUtilizationAverage(ms.MongodbatlasDiskPartitionUtilizationAverage),
+		metricMongodbatlasDiskPartitionUtilizationMax:               newMetricMongodbatlasDiskPartitionUtilizationMax(ms.MongodbatlasDiskPartitionUtilizationMax),
+		metricMongodbatlasProcessAsserts:                            newMetricMongodbatlasProcessAsserts(ms.MongodbatlasProcessAsserts),
+		metricMongodbatlasProcessBackgroundFlush:                    newMetricMongodbatlasProcessBackgroundFlush(ms.MongodbatlasProcessBackgroundFlush),
+		metricMongodbatlasProcessCacheIo:                            newMetricMongodbatlasProcessCacheIo(ms.MongodbatlasProcessCacheIo),
+		metricMongodbatlasProcessCacheSize:                          newMetricMongodbatlasProcessCacheSize(ms.MongodbatlasProcessCacheSize),
+		metricMongodbatlasProcessConnections:                        newMetricMongodbatlasProcessConnections(ms.MongodbatlasProcessConnections),
+		metricMongodbatlasProcessCPUChildrenNormalizedUsageAverage:  newMetricMongodbatlasProcessCPUChildrenNormalizedUsageAverage(ms.MongodbatlasProcessCPUChildrenNormalizedUsageAverage),
+		metricMongodbatlasProcessCPUChildrenNormalizedUsageMax:      newMetricMongodbatlasProcessCPUChildrenNormalizedUsageMax(ms.MongodbatlasProcessCPUChildrenNormalizedUsageMax),
+		metricMongodbatlasProcessCPUChildrenUsageAverage:            newMetricMongodbatlasProcessCPUChildrenUsageAverage(ms.MongodbatlasProcessCPUChildrenUsageAverage),
+		metricMongodbatlasProcessCPUChildrenUsageMax:                newMetricMongodbatlasProcessCPUChildrenUsageMax(ms.MongodbatlasProcessCPUChildrenUsageMax),
+		metricMongodbatlasProcessCPUNormalizedUsageAverage:          newMetricMongodbatlasProcessCPUNormalizedUsageAverage(ms.MongodbatlasProcessCPUNormalizedUsageAverage),
+		metricMongodbatlasProcessCPUNormalizedUsageMax:              newMetricMongodbatlasProcessCPUNormalizedUsageMax(ms.MongodbatlasProcessCPUNormalizedUsageMax),
+		metricMongodbatlasProcessCPUUsageAverage:                    newMetricMongodbatlasProcessCPUUsageAverage(ms.MongodbatlasProcessCPUUsageAverage),
+		metricMongodbatlasProcessCPUUsageMax:                        newMetricMongodbatlasProcessCPUUsageMax(ms.MongodbatlasProcessCPUUsageMax),
+		metricMongodbatlasProcessCursors:                            newMetricMongodbatlasProcessCursors(ms.MongodbatlasProcessCursors),
+		metricMongodbatlasProcessDbDocumentRate:                     newMetricMongodbatlasProcessDbDocumentRate(ms.MongodbatlasProcessDbDocumentRate),
+		metricMongodbatlasProcessDbOperationsRate:                   newMetricMongodbatlasProcessDbOperationsRate(ms.MongodbatlasProcessDbOperationsRate),
+		metricMongodbatlasProcessDbOperationsTime:                   newMetricMongodbatlasProcessDbOperationsTime(ms.MongodbatlasProcessDbOperationsTime),
+		metricMongodbatlasProcessDbQueryExecutorScanned:             newMetricMongodbatlasProcessDbQueryExecutorScanned(ms.MongodbatlasProcessDbQueryExecutorScanned),
+		metricMongodbatlasProcessDbQueryTargetingScannedPerReturned: newMetricMongodbatlasProcessDbQueryTargetingScannedPerReturned(ms.MongodbatlasProcessDbQueryTargetingScannedPerReturned),
+		metricMongodbatlasProcessDbStorage:                          newMetricMongodbatlasProcessDbStorage(ms.MongodbatlasProcessDbStorage),
+		metricMongodbatlasProcessFtsCPUUsage:                        newMetricMongodbatlasProcessFtsCPUUsage(ms.MongodbatlasProcessFtsCPUUsage),
+		metricMongodbatlasProcessGlobalLock:                         newMetricMongodbatlasProcessGlobalLock(ms.MongodbatlasProcessGlobalLock),
+		metricMongodbatlasProcessIndexBtreeMissRatio:                newMetricMongodbatlasProcessIndexBtreeMissRatio(ms.MongodbatlasProcessIndexBtreeMissRatio),
+		metricMongodbatlasProcessIndexCounters:                      newMetricMongodbatlasProcessIndexCounters(ms.MongodbatlasProcessIndexCounters),
+		metricMongodbatlasProcessJournalingCommits:                  newMetricMongodbatlasProcessJournalingCommits(ms.MongodbatlasProcessJournalingCommits),
+		metricMongodbatlasProcessJournalingDataFiles:                newMetricMongodbatlasProcessJournalingDataFiles(ms.MongodbatlasProcessJournalingDataFiles),
+		metricMongodbatlasProcessJournalingWritten:                  newMetricMongodbatlasProcessJournalingWritten(ms.MongodbatlasProcessJournalingWritten),
+		metricMongodbatlasProcessMemoryUsage:                        newMetricMongodbatlasProcessMemoryUsage(ms.MongodbatlasProcessMemoryUsage),
+		metricMongodbatlasProcessNetworkIo:                          newMetricMongodbatlasProcessNetworkIo(ms.MongodbatlasProcessNetworkIo),
+		metricMongodbatlasProcessNetworkRequests:                    newMetricMongodbatlasProcessNetworkRequests(ms.MongodbatlasProcessNetworkRequests),
+		metricMongodbatlasProcessOplogRate:                          newMetricMongodbatlasProcessOplogRate(ms.MongodbatlasProcessOplogRate),
+		metricMongodbatlasProcessOplogTime:                          newMetricMongodbatlasProcessOplogTime(ms.MongodbatlasProcessOplogTime),
+		metricMongodbatlasProcessPageFaults:                         newMetricMongodbatlasProcessPageFaults(ms.MongodbatlasProcessPageFaults),
+		metricMongodbatlasProcessRestarts:                           newMetricMongodbatlasProcessRestarts(ms.MongodbatlasProcessRestarts),
+		metricMongodbatlasProcessTickets:                            newMetricMongodbatlasProcessTickets(ms.MongodbatlasProcessTickets),
+		metricMongodbatlasSystemCPUNormalizedUsageAverage:           newMetricMongodbatlasSystemCPUNormalizedUsageAverage(ms.MongodbatlasSystemCPUNormalizedUsageAverage),
+		metricMongodbatlasSystemCPUNormalizedUsageMax:               newMetricMongodbatlasSystemCPUNormalizedUsageMax(ms.MongodbatlasSystemCPUNormalizedUsageMax),
+		metricMongodbatlasSystemCPUUsageAverage:                     newMetricMongodbatlasSystemCPUUsageAverage(ms.MongodbatlasSystemCPUUsageAverage),
+		metricMongodbatlasSystemCPUUsageMax:                         newMetricMongodbatlasSystemCPUUsageMax(ms.MongodbatlasSystemCPUUsageMax),
+		metricMongodbatlasSystemFtsCPUNormalizedUsage:               newMetricMongodbatlasSystemFtsCPUNormalizedUsage(ms.MongodbatlasSystemFtsCPUNormalizedUsage),
+		metricMongodbatlasSystemFtsCPUUsage:                         newMetricMongodbatlasSystemFtsCPUUsage(ms.MongodbatlasSystemFtsCPUUsage),
+		metricMongodbatlasSystemFtsDiskUsed:                         newMetricMongodbatlasSystemFtsDiskUsed(ms.MongodbatlasSystemFtsDiskUsed),
+		metricMongodbatlasSystemFtsMemoryUsage:                      newMetricMongodbatlasSystemFtsMemoryUsage(ms.MongodbatlasSystemFtsMemoryUsage),
+		metricMongodbatlasSystemMemoryUsageAverage:                  newMetricMongodbatlasSystemMemoryUsageAverage(ms.MongodbatlasSystemMemoryUsageAverage),
+		metricMongodbatlasSystemMemoryUsageMax:                      newMetricMongodbatlasSystemMemoryUsageMax(ms.MongodbatlasSystemMemoryUsageMax),
+		metricMongodbatlasSystemNetworkIoAverage:                    newMetricMongodbatlasSystemNetworkIoAverage(ms.MongodbatlasSystemNetworkIoAverage),
+		metricMongodbatlasSystemNetworkIoMax:                        newMetricMongodbatlasSystemNetworkIoMax(ms.MongodbatlasSystemNetworkIoMax),
+		metricMongodbatlasSystemPagingIoAverage:                     newMetricMongodbatlasSystemPagingIoAverage(ms.MongodbatlasSystemPagingIoAverage),
+		metricMongodbatlasSystemPagingIoMax:                         newMetricMongodbatlasSystemPagingIoMax(ms.MongodbatlasSystemPagingIoMax),
+		metricMongodbatlasSystemPagingUsageAverage:                  newMetricMongodbatlasSystemPagingUsageAverage(ms.MongodbatlasSystemPagingUsageAverage),
+		metricMongodbatlasSystemPagingUsageMax:                      newMetricMongodbatlasSystemPagingUsageMax(ms.MongodbatlasSystemPagingUsageMax),
 	}
 	for _, op := range options {
 		op(mb)
@@ -4389,75 +4458,93 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(pmetric.ResourceMetrics)
+type ResourceMetricsOption func(ResourceAttributesSettings, pmetric.ResourceMetrics)
 
 // WithMongodbAtlasDbName sets provided value as "mongodb_atlas.db.name" attribute for current resource.
 func WithMongodbAtlasDbName(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("mongodb_atlas.db.name", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.MongodbAtlasDbName.Enabled {
+			rm.Resource().Attributes().PutStr("mongodb_atlas.db.name", val)
+		}
 	}
 }
 
 // WithMongodbAtlasDiskPartition sets provided value as "mongodb_atlas.disk.partition" attribute for current resource.
 func WithMongodbAtlasDiskPartition(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("mongodb_atlas.disk.partition", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.MongodbAtlasDiskPartition.Enabled {
+			rm.Resource().Attributes().PutStr("mongodb_atlas.disk.partition", val)
+		}
 	}
 }
 
 // WithMongodbAtlasHostName sets provided value as "mongodb_atlas.host.name" attribute for current resource.
 func WithMongodbAtlasHostName(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("mongodb_atlas.host.name", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.MongodbAtlasHostName.Enabled {
+			rm.Resource().Attributes().PutStr("mongodb_atlas.host.name", val)
+		}
 	}
 }
 
 // WithMongodbAtlasOrgName sets provided value as "mongodb_atlas.org_name" attribute for current resource.
 func WithMongodbAtlasOrgName(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("mongodb_atlas.org_name", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.MongodbAtlasOrgName.Enabled {
+			rm.Resource().Attributes().PutStr("mongodb_atlas.org_name", val)
+		}
 	}
 }
 
 // WithMongodbAtlasProcessID sets provided value as "mongodb_atlas.process.id" attribute for current resource.
 func WithMongodbAtlasProcessID(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("mongodb_atlas.process.id", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.MongodbAtlasProcessID.Enabled {
+			rm.Resource().Attributes().PutStr("mongodb_atlas.process.id", val)
+		}
 	}
 }
 
 // WithMongodbAtlasProcessPort sets provided value as "mongodb_atlas.process.port" attribute for current resource.
 func WithMongodbAtlasProcessPort(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("mongodb_atlas.process.port", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.MongodbAtlasProcessPort.Enabled {
+			rm.Resource().Attributes().PutStr("mongodb_atlas.process.port", val)
+		}
 	}
 }
 
 // WithMongodbAtlasProcessTypeName sets provided value as "mongodb_atlas.process.type_name" attribute for current resource.
 func WithMongodbAtlasProcessTypeName(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("mongodb_atlas.process.type_name", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.MongodbAtlasProcessTypeName.Enabled {
+			rm.Resource().Attributes().PutStr("mongodb_atlas.process.type_name", val)
+		}
 	}
 }
 
 // WithMongodbAtlasProjectID sets provided value as "mongodb_atlas.project.id" attribute for current resource.
 func WithMongodbAtlasProjectID(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("mongodb_atlas.project.id", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.MongodbAtlasProjectID.Enabled {
+			rm.Resource().Attributes().PutStr("mongodb_atlas.project.id", val)
+		}
 	}
 }
 
 // WithMongodbAtlasProjectName sets provided value as "mongodb_atlas.project.name" attribute for current resource.
 func WithMongodbAtlasProjectName(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("mongodb_atlas.project.name", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.MongodbAtlasProjectName.Enabled {
+			rm.Resource().Attributes().PutStr("mongodb_atlas.project.name", val)
+		}
 	}
 }
 
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
@@ -4549,8 +4636,9 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricMongodbatlasSystemPagingIoMax.emit(ils.Metrics())
 	mb.metricMongodbatlasSystemPagingUsageAverage.emit(ils.Metrics())
 	mb.metricMongodbatlasSystemPagingUsageMax.emit(ils.Metrics())
+
 	for _, op := range rmo {
-		op(rm)
+		op(mb.resourceAttributesSettings, rm)
 	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
@@ -4563,8 +4651,8 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 // produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
 func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 	mb.EmitForResource(rmo...)
-	metrics := pmetric.NewMetrics()
-	mb.metricsBuffer.MoveTo(metrics)
+	metrics := mb.metricsBuffer
+	mb.metricsBuffer = pmetric.NewMetrics()
 	return metrics
 }
 

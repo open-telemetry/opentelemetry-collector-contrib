@@ -32,9 +32,10 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
-	metadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/collection"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/gvk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/utils"
 )
 
@@ -60,7 +61,7 @@ type resourceWatcher struct {
 	makeOpenShiftQuotaClient func(apiConf k8sconfig.APIConfig) (quotaclientset.Interface, error)
 }
 
-type metadataConsumer func(metadata []*metadata.MetadataUpdate) error
+type metadataConsumer func(metadata []*experimentalmetricmetadata.MetadataUpdate) error
 
 // newResourceWatcher creates a Kubernetes resource watcher.
 func newResourceWatcher(logger *zap.Logger, cfg *Config) *resourceWatcher {
@@ -224,11 +225,14 @@ func (rw *resourceWatcher) startWatchingResources(ctx context.Context, inf share
 
 // setupInformer adds event handlers to informers and setups a metadataStore.
 func (rw *resourceWatcher) setupInformer(gvk schema.GroupVersionKind, informer cache.SharedIndexInformer) {
-	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	_, err := informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    rw.onAdd,
 		UpdateFunc: rw.onUpdate,
 		DeleteFunc: rw.onDelete,
 	})
+	if err != nil {
+		rw.logger.Error("error adding event handler to informer", zap.Error(err))
+	}
 	rw.dataCollector.SetupMetadataStore(gvk, informer.GetStore())
 }
 
@@ -242,7 +246,7 @@ func (rw *resourceWatcher) onAdd(obj interface{}) {
 	}
 
 	newMetadata := rw.dataCollector.SyncMetadata(obj)
-	rw.syncMetadataUpdate(map[metadata.ResourceID]*collection.KubernetesMetadata{}, newMetadata)
+	rw.syncMetadataUpdate(map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{}, newMetadata)
 }
 
 func (rw *resourceWatcher) onDelete(obj interface{}) {
@@ -295,7 +299,7 @@ func (rw *resourceWatcher) setupMetadataExporters(
 		if !metadataExportersSet[cfg.String()] {
 			continue
 		}
-		kme, ok := exp.(metadata.MetadataExporter)
+		kme, ok := exp.(experimentalmetricmetadata.MetadataExporter)
 		if !ok {
 			return fmt.Errorf("%s exporter does not implement MetadataExporter", cfg.Name())
 		}
@@ -324,8 +328,8 @@ func validateMetadataExporters(metadataExporters map[string]bool, exporters map[
 	return nil
 }
 
-func (rw *resourceWatcher) syncMetadataUpdate(oldMetadata, newMetadata map[metadata.ResourceID]*collection.KubernetesMetadata) {
-	metadataUpdate := collection.GetMetadataUpdate(oldMetadata, newMetadata)
+func (rw *resourceWatcher) syncMetadataUpdate(oldMetadata, newMetadata map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata) {
+	metadataUpdate := metadata.GetMetadataUpdate(oldMetadata, newMetadata)
 	if len(metadataUpdate) == 0 {
 		return
 	}

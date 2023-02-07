@@ -23,15 +23,21 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
 type AttributesMatcher []AttributeMatcher
+
+type valueIdentifier struct {
+	value     pcommon.Value
+	valueHash [16]byte
+}
 
 // AttributeMatcher is a attribute key/value pair to match to.
 type AttributeMatcher struct {
 	Key string
 	// If both AttributeValue and StringFilter are nil only check for key existence.
-	AttributeValue *pcommon.Value
+	AttributeValue *valueIdentifier
 	// StringFilter is needed to match against a regular expression
 	StringFilter filterset.FilterSet
 }
@@ -72,7 +78,10 @@ func NewAttributesMatcher(config filterset.Config, attributes []filterconfig.Att
 				}
 				entry.StringFilter = filter
 			case filterset.Strict:
-				entry.AttributeValue = &val
+				entry.AttributeValue = &valueIdentifier{
+					value:     val,
+					valueHash: pdatautil.ValueHash(val),
+				}
 			default:
 				return nil, filterset.NewUnrecognizedMatchTypeError(config.MatchType)
 
@@ -110,7 +119,7 @@ func (ma AttributesMatcher) Match(attrs pcommon.Map) bool {
 				return false
 			}
 		} else if property.AttributeValue != nil {
-			if !attr.Equal(*property.AttributeValue) {
+			if !attributeValueMatch(property.AttributeValue, attr) {
 				return false
 			}
 		}
@@ -131,4 +140,22 @@ func attributeStringValue(attr pcommon.Value) (string, error) {
 	default:
 		return "", errUnexpectedAttributeType
 	}
+}
+
+func attributeValueMatch(vi *valueIdentifier, val pcommon.Value) bool {
+	if vi.value.Type() != val.Type() {
+		return false
+	}
+	switch val.Type() {
+	case pcommon.ValueTypeStr:
+		return vi.value.Str() == val.Str()
+	case pcommon.ValueTypeBool:
+		return vi.value.Bool() == val.Bool()
+	case pcommon.ValueTypeDouble:
+		return vi.value.Double() == val.Double()
+	case pcommon.ValueTypeInt:
+		return vi.value.Int() == val.Int()
+	}
+	// Use hash for other complex data types.
+	return vi.valueHash == pdatautil.ValueHash(val)
 }

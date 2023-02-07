@@ -1,0 +1,15 @@
+default:
+all_metrics:
+  default.metric:
+    enabled: true
+  default.metric.to_be_removed:
+    enabled: true
+  optional.metric:
+    enabled: true
+no_metrics:
+  default.metric:
+    enabled: false
+  default.metric.to_be_removed:
+    enabled: false
+  optional.metric:
+    enabled: false

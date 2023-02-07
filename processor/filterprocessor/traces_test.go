@@ -21,13 +21,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processorhelper"
+	"go.opentelemetry.io/collector/processor/processortest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
@@ -134,7 +133,6 @@ func TestFilterTraceProcessor(t *testing.T) {
 			ctx := context.Background()
 			next := new(consumertest.TracesSink)
 			cfg := &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 				Spans: filterconfig.MatchConfig{
 					Include: test.inc,
 					Exclude: test.exc,
@@ -143,7 +141,7 @@ func TestFilterTraceProcessor(t *testing.T) {
 			factory := NewFactory()
 			fmp, err := factory.CreateTracesProcessor(
 				ctx,
-				componenttest.NewNopProcessorCreateSettings(),
+				processortest.NewNopCreateSettings(),
 				cfg,
 				next,
 			)

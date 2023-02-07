@@ -24,6 +24,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecsobserver/internal/ecsmock"
@@ -82,13 +84,13 @@ func TestExtensionStartStop(t *testing.T) {
 	refreshInterval := 100 * time.Millisecond
 	waitDuration := 2 * refreshInterval
 
-	createTestExt := func(c *ecsmock.Cluster, output string) component.Extension {
+	createTestExt := func(c *ecsmock.Cluster, output string) extension.Extension {
 		f := newTestTaskFetcher(t, c)
 		cfg := createDefaultConfig()
 		sdCfg := cfg.(*Config)
 		sdCfg.RefreshInterval = refreshInterval
 		sdCfg.ResultFile = output
-		ext, err := createExtensionWithFetcher(componenttest.NewNopExtensionCreateSettings(), sdCfg, f)
+		ext, err := createExtensionWithFetcher(extensiontest.NewNopCreateSettings(), sdCfg, f)
 		require.NoError(t, err)
 		return ext
 	}

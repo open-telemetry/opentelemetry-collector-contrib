@@ -15,7 +15,6 @@
 package awsxrayreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver"
 
 import (
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy"
@@ -23,7 +22,6 @@ import (
 
 // Config defines the configurations for an AWS X-Ray receiver.
 type Config struct {
-	config.ReceiverSettings `mapstructure:",squash"`
 	// The `NetAddr` represents the UDP address
 	// and port on which this receiver listens for X-Ray segment documents
 	// emitted by the X-Ray SDK.

@@ -483,6 +483,15 @@ func TestBuild(t *testing.T) {
 			require.Error,
 			nil,
 		},
+		{
+			"InvalidStartAtDelete",
+			func(f *Config) {
+				f.StartAt = "end"
+				f.DeleteAfterRead = true
+			},
+			require.Error,
+			nil,
+		},
 	}
 
 	for _, tc := range cases {

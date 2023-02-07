@@ -16,7 +16,6 @@ package translation
 
 import (
 	"fmt"
-	"reflect"
 	"sort"
 	"strings"
 	"testing"
@@ -770,7 +769,7 @@ func TestInvalidNumberOfDimensions(t *testing.T) {
 	assert.Equal(t, "dropping datapoint", observedLogs.All()[0].Message)
 	assert.ElementsMatch(t, []zap.Field{
 		{Type: zapcore.StringType, Key: "reason", String: invalidNumberOfDimensions},
-		{Type: zapcore.StringType, Key: "datapoint", String: DatapointToString(dpSFX)},
+		{Type: zapcore.StringerType, Key: "datapoint", Interface: dpSFX},
 		{Type: zapcore.Int64Type, Key: "number_of_dimensions", Integer: 37},
 	}, observedLogs.All()[0].Context)
 }
@@ -842,13 +841,12 @@ func TestNewMetricsConverter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := NewMetricsConverter(zap.NewNop(), nil, tt.excludes, nil, "")
-			if (err != nil) != tt.wantErr {
-				t.Errorf("NewMetricsConverter() error = %v, wantErr %v", err, tt.wantErr)
+			if tt.wantErr {
+				assert.Error(t, err)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("NewMetricsConverter() got = %v, want %v", got, tt.want)
-			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }

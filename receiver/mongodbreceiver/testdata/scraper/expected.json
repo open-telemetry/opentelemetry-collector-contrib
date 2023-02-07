@@ -104,6 +104,20 @@
                      "unit": "ms"
                   },
                   {
+                     "description": "The health status of the server.",
+                     "gauge": {
+                        "dataPoints": [
+                           {
+                              "asInt": "1",
+                              "startTimeUnixNano": "1670996150941624000",
+                              "timeUnixNano": "1670996150945535000"
+                           }
+                        ]
+                     },
+                     "name": "mongodb.health",
+                     "unit": "1"
+                  },
+                  {
                      "description": "The number of bytes received.",
                      "name": "mongodb.network.io.receive",
                      "sum": {
@@ -238,6 +252,144 @@
                      "unit": "{operations}"
                   },
                   {
+                     "description": "The latency of operations.",
+                     "name": "mongodb.operation.latency.time",
+                     "gauge": {
+                        "aggregationTemporality": 2,
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "read"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1670911731284766000",
+                              "timeUnixNano": "1670911731288585000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "write"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1670911731284766000",
+                              "timeUnixNano": "1670911731288585000"
+                           },
+                           {
+                              "asInt": "8631",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "command"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1670911731284766000",
+                              "timeUnixNano": "1670911731288585000"
+                           }
+                        ]
+                     },
+                     "unit": "us"
+                  },
+                  {
+                     "description": "The number of replicated operations executed.",
+                     "name": "mongodb.operation.repl.count",
+                     "sum": {
+                        "aggregationTemporality": 2,
+                        "dataPoints": [
+                           {
+                              "asInt": "3",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "insert"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1670911805821119000",
+                              "timeUnixNano": "1670911805825012000"
+                           },
+                           {
+                              "asInt": "4",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "query"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1670911805821119000",
+                              "timeUnixNano": "1670911805825012000"
+                           },
+                           {
+                              "asInt": "5",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "update"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1670911805821119000",
+                              "timeUnixNano": "1670911805825012000"
+                           },
+                           {
+                              "asInt": "1",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "delete"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1670911805821119000",
+                              "timeUnixNano": "1670911805825012000"
+                           },
+                           {
+                              "asInt": "2",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "getmore"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1670911805821119000",
+                              "timeUnixNano": "1670911805825012000"
+                           },
+                           {
+                              "asInt": "27",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "command"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1670911805821119000",
+                              "timeUnixNano": "1670911805825012000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "{operations}"
+                  },
+                  {
                      "description": "The total number of active sessions.",
                      "name": "mongodb.session.count",
                      "sum": {
@@ -251,6 +403,22 @@
                         ]
                      },
                      "unit": "{sessions}"
+                  },
+                  {
+                     "description": "The amount of time that the server has been running.",
+                     "name": "mongodb.uptime",
+                     "sum": {
+                        "aggregationTemporality": 2,
+                        "dataPoints": [
+                           {
+                              "asInt": "58965",
+                              "startTimeUnixNano": "1670987956177006000",
+                              "timeUnixNano": "1670987956180933000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "ms"
                   }
                ],
                "scope": {

@@ -90,34 +90,39 @@ processors:
         resource_attributes:
           - Key: host.name
             Value: just_this_one_hostname
-    logs/regexp:
+  filter/regexp:
+    logs:
       include:
         match_type: regexp
         resource_attributes:
           - Key: host.name
             Value: prefix.*
-    logs/regexp_record:
+  filter/regexp_record:
+    logs:
       include:
         match_type: regexp
         record_attributes:
           - Key: record_attr
             Value: prefix_.*
-    # Filter on severity text field
-    logs/severity_text:
+  # Filter on severity text field
+  filter/severity_text:
+    logs:
       include:
         match_type: regexp
         severity_texts:
         - INFO[2-4]?
         - WARN[2-4]?
         - ERROR[2-4]?
-    # Filter out logs below INFO (no DEBUG or TRACE level logs),
-    # retaining logs with undefined severity
-    logs/severity_number:
+  # Filter out logs below INFO (no DEBUG or TRACE level logs),
+  # retaining logs with undefined severity
+  filter/severity_number:
+    logs:
       include:
         severity_number:
           min: "INFO"
           match_undefined: true
-    logs/bodies:
+  filter/bodies:
+    logs:
       include:
         match_type: regexp
         bodies:
@@ -290,14 +295,14 @@ processors:
 ## OTTL
 The [OpenTelemetry Transformation Language](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/README.md) is a language for interacting with telemetry within the collector in generic ways.
 The filterprocessor can be configured to use OTTL conditions to determine when to drop telemetry.
-If any condition is met, the telemetry is dropped.
+If any condition is met, the telemetry is dropped (each condition is ORed together).
 Each configuration option corresponds with a different type of telemetry and OTTL Context.
 See the table below for details on each context and the fields it exposes.
 
 | Config              | OTTL Context                                                                                                                       |
 |---------------------|------------------------------------------------------------------------------------------------------------------------------------|
-| `spans.span`        | [Span](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottlspan/README.md)           |
-| `spans.spanevent`   | [SpanEvent](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottlspanevent/README.md) |
+| `traces.span`       | [Span](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottlspan/README.md)           |
+| `traces.spanevent`  | [SpanEvent](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottlspanevent/README.md) |
 | `metrics.metric`    | [Metric](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottlmetric/README.md)       |
 | `metrics.datapoint` | [DataPoint](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottldatapoint/README.md) |
 | `logs.log_record`   | [Log](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottllog/README.md)             |
@@ -319,7 +324,7 @@ If all datapoints for a metric are dropped, the metric will also be dropped.
 ```yaml
 processors:
   filter:
-    spans:
+    traces:
       span:
         - 'attributes["container.name"] == "app_container_1"'
         - 'resource.attributes["host.name"] == "localhost"'

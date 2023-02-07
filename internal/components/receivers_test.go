@@ -23,7 +23,6 @@ import (
 	"errors"
 	"path/filepath"
 	"runtime"
-	"strconv"
 	"testing"
 	"time"
 
@@ -35,15 +34,18 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	tcpop "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/tcp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otlpjsonfilereceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
@@ -101,6 +103,16 @@ func TestDefaultReceivers(t *testing.T) {
 			skipLifecyle: true, // Requires AWS endpoint to check identity to run
 		},
 		{
+			receiver: "azureblob",
+			getConfigFn: func() component.Config {
+				cfg := rcvrFactories["azureblob"].CreateDefaultConfig().(*azureblobreceiver.Config)
+				cfg.ConnectionString = "DefaultEndpointsProtocol=http;AccountName=accountName;AccountKey=accountKey==;BlobEndpoint=test"
+				cfg.EventHub.EndPoint = "DefaultEndpointsProtocol=http;SharedAccessKeyName=secret;SharedAccessKey=secret;Endpoint=test.test"
+				return cfg
+			},
+			skipLifecyle: true, // Requires Azure event hub to run
+		},
+		{
 			receiver: "azureeventhub",
 			getConfigFn: func() component.Config {
 				cfg := rcvrFactories["azureeventhub"].CreateDefaultConfig().(*azureeventhubreceiver.Config)
@@ -140,6 +152,9 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "couchdb",
 		},
 		{
+			receiver: "datadog",
+		},
+		{
 			receiver:     "docker_stats",
 			skipLifecyle: true,
 		},
@@ -175,6 +190,9 @@ func TestDefaultReceivers(t *testing.T) {
 			skipLifecyle: true, // Requires a pubsub subscription
 		},
 		{
+			receiver: "haproxy",
+		},
+		{
 			receiver: "hostmetrics",
 		},
 		{
@@ -193,6 +211,12 @@ func TestDefaultReceivers(t *testing.T) {
 		{
 			receiver:     "jmx",
 			skipLifecyle: true, // Requires a running instance with JMX
+			getConfigFn: func() component.Config {
+				cfg := jmxreceiver.NewFactory().CreateDefaultConfig().(*jmxreceiver.Config)
+				cfg.Endpoint = "localhost:1234"
+				cfg.TargetSystem = "jvm"
+				return cfg
+			},
 		},
 		{
 			receiver:     "journald",
@@ -229,10 +253,8 @@ func TestDefaultReceivers(t *testing.T) {
 		},
 		{
 			receiver: "mongodbatlas",
-			// MongoDB Atlas needs unique config IDs
 			getConfigFn: func() component.Config {
 				cfg := rcvrFactories["mongodbatlas"].CreateDefaultConfig().(*mongodbatlasreceiver.Config)
-				cfg.SetIDName(strconv.Itoa(int(time.Now().UnixNano())))
 				cfg.Logs.Enabled = true
 				return cfg
 			},
@@ -327,6 +349,9 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "purefa",
 		},
 		{
+			receiver: "purefb",
+		},
+		{
 			receiver: "receiver_creator",
 		},
 		{
@@ -376,6 +401,10 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver:     "sqlserver",
 			skipLifecyle: true, // Requires a running windows process
 		},
+		{
+			receiver: "sshcheck",
+		},
+
 		{
 			receiver: "statsd",
 		},
@@ -438,14 +467,12 @@ func TestDefaultReceivers(t *testing.T) {
 			factory, ok := rcvrFactories[tt.receiver]
 			require.True(t, ok)
 			assert.Equal(t, tt.receiver, factory.Type())
-			assert.Equal(t, component.NewID(tt.receiver), factory.CreateDefaultConfig().ID())
 
-			if tt.skipLifecyle {
-				t.Skip("Skipping lifecycle test", tt.receiver)
-				return
+			verifyReceiverShutdown(t, factory, tt.getConfigFn)
+
+			if !tt.skipLifecyle {
+				verifyReceiverLifecycle(t, factory, tt.getConfigFn)
 			}
-
-			verifyReceiverLifecycle(t, factory, tt.getConfigFn)
 		})
 	}
 }
@@ -458,10 +485,10 @@ type getReceiverConfigFn func() component.Config
 // verifyReceiverLifecycle is used to test if a receiver type can handle the typical
 // lifecycle of a component. The getConfigFn parameter only need to be specified if
 // the test can't be done with the default configuration for the component.
-func verifyReceiverLifecycle(t *testing.T, factory component.ReceiverFactory, getConfigFn getReceiverConfigFn) {
+func verifyReceiverLifecycle(t *testing.T, factory receiver.Factory, getConfigFn getReceiverConfigFn) {
 	ctx := context.Background()
 	host := newAssertNoErrorHost(t)
-	receiverCreateSet := componenttest.NewNopReceiverCreateSettings()
+	receiverCreateSet := receivertest.NewNopCreateSettings()
 
 	if getConfigFn == nil {
 		getConfigFn = factory.CreateDefaultConfig
@@ -489,27 +516,56 @@ func verifyReceiverLifecycle(t *testing.T, factory component.ReceiverFactory, ge
 	}
 }
 
+// verifyReceiverShutdown is used to test if a receiver type can be shutdown without being started first.
+func verifyReceiverShutdown(tb testing.TB, factory receiver.Factory, getConfigFn getReceiverConfigFn) {
+	ctx := context.Background()
+	receiverCreateSet := receivertest.NewNopCreateSettings()
+
+	if getConfigFn == nil {
+		getConfigFn = factory.CreateDefaultConfig
+	}
+
+	createFns := []createReceiverFn{
+		wrapCreateLogsRcvr(factory),
+		wrapCreateTracesRcvr(factory),
+		wrapCreateMetricsRcvr(factory),
+	}
+
+	for _, createFn := range createFns {
+		r, err := createFn(ctx, receiverCreateSet, getConfigFn())
+		if errors.Is(err, component.ErrDataTypeIsNotSupported) {
+			continue
+		}
+		if r == nil {
+			continue
+		}
+		assert.NotPanics(tb, func() {
+			assert.NoError(tb, r.Shutdown(ctx))
+		})
+	}
+}
+
 // assertNoErrorHost implements a component.Host that asserts that there were no errors.
 type createReceiverFn func(
 	ctx context.Context,
-	set component.ReceiverCreateSettings,
+	set receiver.CreateSettings,
 	cfg component.Config,
 ) (component.Component, error)
 
-func wrapCreateLogsRcvr(factory component.ReceiverFactory) createReceiverFn {
-	return func(ctx context.Context, set component.ReceiverCreateSettings, cfg component.Config) (component.Component, error) {
+func wrapCreateLogsRcvr(factory receiver.Factory) createReceiverFn {
+	return func(ctx context.Context, set receiver.CreateSettings, cfg component.Config) (component.Component, error) {
 		return factory.CreateLogsReceiver(ctx, set, cfg, consumertest.NewNop())
 	}
 }
 
-func wrapCreateMetricsRcvr(factory component.ReceiverFactory) createReceiverFn {
-	return func(ctx context.Context, set component.ReceiverCreateSettings, cfg component.Config) (component.Component, error) {
+func wrapCreateMetricsRcvr(factory receiver.Factory) createReceiverFn {
+	return func(ctx context.Context, set receiver.CreateSettings, cfg component.Config) (component.Component, error) {
 		return factory.CreateMetricsReceiver(ctx, set, cfg, consumertest.NewNop())
 	}
 }
 
-func wrapCreateTracesRcvr(factory component.ReceiverFactory) createReceiverFn {
-	return func(ctx context.Context, set component.ReceiverCreateSettings, cfg component.Config) (component.Component, error) {
+func wrapCreateTracesRcvr(factory receiver.Factory) createReceiverFn {
+	return func(ctx context.Context, set receiver.CreateSettings, cfg component.Config) (component.Component, error) {
 		return factory.CreateTracesReceiver(ctx, set, cfg, consumertest.NewNop())
 	}
 }

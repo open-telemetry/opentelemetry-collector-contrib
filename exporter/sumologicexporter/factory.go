@@ -19,7 +19,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -31,12 +31,12 @@ const (
 )
 
 // NewFactory returns a new factory for the sumologic exporter.
-func NewFactory() component.ExporterFactory {
-	return component.NewExporterFactory(
+func NewFactory() exporter.Factory {
+	return exporter.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithLogsExporter(createLogsExporter, stability),
-		component.WithMetricsExporter(createMetricsExporter, stability),
+		exporter.WithLogs(createLogsExporter, stability),
+		exporter.WithMetrics(createMetricsExporter, stability),
 	)
 }
 
@@ -45,7 +45,6 @@ func createDefaultConfig() component.Config {
 	qs.Enabled = false
 
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 
 		CompressEncoding:   DefaultCompressEncoding,
 		MaxRequestBodySize: DefaultMaxRequestBodySize,
@@ -65,9 +64,9 @@ func createDefaultConfig() component.Config {
 
 func createLogsExporter(
 	_ context.Context,
-	params component.ExporterCreateSettings,
+	params exporter.CreateSettings,
 	cfg component.Config,
-) (component.LogsExporter, error) {
+) (exporter.Logs, error) {
 	exp, err := newLogsExporter(cfg.(*Config), params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create the logs exporter: %w", err)
@@ -78,9 +77,9 @@ func createLogsExporter(
 
 func createMetricsExporter(
 	_ context.Context,
-	params component.ExporterCreateSettings,
+	params exporter.CreateSettings,
 	cfg component.Config,
-) (component.MetricsExporter, error) {
+) (exporter.Metrics, error) {
 	exp, err := newMetricsExporter(cfg.(*Config), params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create the metrics exporter: %w", err)

@@ -18,8 +18,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-
-	"go.opentelemetry.io/collector/config"
 )
 
 var (
@@ -31,7 +29,6 @@ var (
 
 // Config defines configuration for the Routing processor.
 type Config struct {
-	config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	// DefaultExporters contains the list of exporters to use when a more specific record can't be found in the routing table.
 	// Optional.
@@ -70,6 +67,7 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("invalid routing table: %w", errNoTableItems)
 	}
 
+	ottlRoutingOnly := true
 	// validate that every route has a value for the routing attribute and has
 	// at least one exporter
 	for _, item := range c.Table {
@@ -84,10 +82,17 @@ func (c *Config) Validate() error {
 		if len(item.Exporters) == 0 {
 			return fmt.Errorf("invalid route %s: %w", item.Value, errNoExporters)
 		}
+
+		if item.Value != "" {
+			ottlRoutingOnly = false
+		}
 	}
 
-	// we also need a "FromAttribute" value
-	if len(c.FromAttribute) == 0 {
+	if ottlRoutingOnly {
+		c.AttributeSource = ""
+		c.FromAttribute = ""
+	} else if len(c.FromAttribute) == 0 {
+		// we also need a "FromAttribute" value
 		return fmt.Errorf(
 			"invalid attribute to read the route's value from: %w",
 			errNoMissingFromAttribute,

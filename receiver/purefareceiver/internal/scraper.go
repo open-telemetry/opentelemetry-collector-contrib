@@ -25,37 +25,51 @@ import (
 	"github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/discovery"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/receiver"
 )
 
 type Scraper interface {
-	ToPrometheusReceiverConfig(host component.Host, fact component.ReceiverFactory) ([]*config.ScrapeConfig, error)
+	ToPrometheusReceiverConfig(host component.Host, fact receiver.Factory) ([]*config.ScrapeConfig, error)
 }
 
+type ScraperType string
+
+const (
+	ScraperTypeArray       ScraperType = "array"
+	ScraperTypeHost        ScraperType = "host"
+	ScraperTypeDirectories ScraperType = "directories"
+	ScraperTypePods        ScraperType = "pods"
+	ScraperTypeVolumes     ScraperType = "volumes"
+)
+
 type scraper struct {
-	scraperType    string
+	scraperType    ScraperType
 	endpoint       string
-	hosts          []ScraperConfig
+	configs        []ScraperConfig
 	scrapeInterval time.Duration
+	labels         model.LabelSet
 }
 
 func NewScraper(ctx context.Context,
-	scraperType string,
+	scraperType ScraperType,
 	endpoint string,
-	hosts []ScraperConfig,
+	configs []ScraperConfig,
 	scrapeInterval time.Duration,
+	labels model.LabelSet,
 ) Scraper {
 	return &scraper{
 		scraperType:    scraperType,
 		endpoint:       endpoint,
-		hosts:          hosts,
+		configs:        configs,
 		scrapeInterval: scrapeInterval,
+		labels:         labels,
 	}
 }
 
-func (h *scraper) ToPrometheusReceiverConfig(host component.Host, fact component.ReceiverFactory) ([]*config.ScrapeConfig, error) {
+func (h *scraper) ToPrometheusReceiverConfig(host component.Host, fact receiver.Factory) ([]*config.ScrapeConfig, error) {
 	scrapeCfgs := []*config.ScrapeConfig{}
 
-	for _, arr := range h.hosts {
+	for _, arr := range h.configs {
 		u, err := url.Parse(h.endpoint)
 		if err != nil {
 			return nil, err
@@ -87,6 +101,7 @@ func (h *scraper) ToPrometheusReceiverConfig(host component.Host, fact component
 						Targets: []model.LabelSet{
 							{model.AddressLabel: model.LabelValue(u.Host)},
 						},
+						Labels: h.labels,
 					},
 				},
 			},

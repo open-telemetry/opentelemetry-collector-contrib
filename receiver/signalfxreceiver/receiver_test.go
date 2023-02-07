@@ -35,16 +35,18 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
 func Test_signalfxeceiver_New(t *testing.T) {
@@ -86,7 +88,7 @@ func Test_signalfxeceiver_New(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := newReceiver(componenttest.NewNopReceiverCreateSettings(), tt.args.config)
+			got, err := newReceiver(receivertest.NewNopCreateSettings(), tt.args.config)
 			require.NoError(t, err)
 			if tt.args.nextConsumer != nil {
 				got.RegisterMetricsConsumer(tt.args.nextConsumer)
@@ -102,7 +104,7 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = addr
 	sink := new(consumertest.MetricsSink)
-	r, err := newReceiver(componenttest.NewNopReceiverCreateSettings(), *cfg)
+	r, err := newReceiver(receivertest.NewNopCreateSettings(), *cfg)
 	require.NoError(t, err)
 	r.RegisterMetricsConsumer(sink)
 
@@ -157,14 +159,13 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 	}
 
 	expCfg := &signalfxexporter.Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID("signalfx")),
-		IngestURL:        "http://" + addr,
-		APIURL:           "http://localhost",
-		AccessToken:      "access_token",
+		IngestURL:   "http://" + addr,
+		APIURL:      "http://localhost",
+		AccessToken: "access_token",
 	}
 	exp, err := signalfxexporter.NewFactory().CreateMetricsExporter(
 		context.Background(),
-		componenttest.NewNopExporterCreateSettings(),
+		exportertest.NewNopCreateSettings(),
 		expCfg)
 	require.NoError(t, err)
 	require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))
@@ -343,7 +344,7 @@ func Test_sfxReceiver_handleReq(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.MetricsSink)
-			rcv, err := newReceiver(componenttest.NewNopReceiverCreateSettings(), *config)
+			rcv, err := newReceiver(receivertest.NewNopCreateSettings(), *config)
 			require.NoError(t, err)
 			if !tt.skipRegistration {
 				rcv.RegisterMetricsConsumer(sink)
@@ -519,7 +520,7 @@ func Test_sfxReceiver_handleEventReq(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.LogsSink)
-			rcv, err := newReceiver(componenttest.NewNopReceiverCreateSettings(), *config)
+			rcv, err := newReceiver(receivertest.NewNopCreateSettings(), *config)
 			require.NoError(t, err)
 			if !tt.skipRegistration {
 				rcv.RegisterLogsConsumer(sink)
@@ -551,7 +552,7 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 		},
 	}
 	sink := new(consumertest.MetricsSink)
-	r, err := newReceiver(componenttest.NewNopReceiverCreateSettings(), *cfg)
+	r, err := newReceiver(receivertest.NewNopCreateSettings(), *cfg)
 	require.NoError(t, err)
 	r.RegisterMetricsConsumer(sink)
 	defer func() {
@@ -579,7 +580,6 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 	dp.Attributes().PutStr("k0", "v0")
 	dp.Attributes().PutStr("k1", "v1")
 	dp.Attributes().PutStr("k2", "v2")
-	dp.Attributes().Sort()
 
 	t.Log("Sending SignalFx metric data Request")
 
@@ -618,7 +618,7 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 	require.Len(t, mds, 1)
 	got := mds[0]
 	require.Equal(t, 1, got.ResourceMetrics().Len())
-	assert.Equal(t, want, got)
+	require.NoError(t, pmetrictest.CompareMetrics(want, got))
 }
 
 func Test_sfxReceiver_DatapointAccessTokenPassthrough(t *testing.T) {
@@ -656,7 +656,7 @@ func Test_sfxReceiver_DatapointAccessTokenPassthrough(t *testing.T) {
 			config.AccessTokenPassthrough = tt.passthrough
 
 			sink := new(consumertest.MetricsSink)
-			rcv, err := newReceiver(componenttest.NewNopReceiverCreateSettings(), *config)
+			rcv, err := newReceiver(receivertest.NewNopCreateSettings(), *config)
 			require.NoError(t, err)
 			rcv.RegisterMetricsConsumer(sink)
 
@@ -734,7 +734,7 @@ func Test_sfxReceiver_EventAccessTokenPassthrough(t *testing.T) {
 			config.AccessTokenPassthrough = tt.passthrough
 
 			sink := new(consumertest.LogsSink)
-			rcv, err := newReceiver(componenttest.NewNopReceiverCreateSettings(), *config)
+			rcv, err := newReceiver(receivertest.NewNopCreateSettings(), *config)
 			require.NoError(t, err)
 			rcv.RegisterLogsConsumer(sink)
 
