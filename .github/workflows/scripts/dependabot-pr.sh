@@ -32,9 +32,9 @@ for line in $requests; do
 done
 
 make gotidy
-make otelcontribcol
 make genotelcontribcol
 make genoteltestbedcol
+make otelcontribcol
 
 git add go.sum go.mod
 git add "**/go.sum" "**/go.mod"
