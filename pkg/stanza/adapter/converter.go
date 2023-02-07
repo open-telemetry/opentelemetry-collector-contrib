@@ -161,10 +161,11 @@ func (c *Converter) workerLoop() {
 				return
 			}
 
-			// workerItems := make([]workerItem, 0, len(entries))
-
+			// Maps to keep track of resource information to allow rebuilding in plog structures
 			resourceEntriesLookup := make(map[uint64][]*entry.Entry)
 			resourceAttrsLookup := make(map[uint64]map[string]interface{})
+
+			// Iterate over the entries and populate the resource lookup maps
 			for _, e := range entries {
 				resourceID := HashResource(e.Resource)
 				resourceEntries, ok := resourceEntriesLookup[resourceID]
@@ -174,25 +175,22 @@ func (c *Converter) workerLoop() {
 				}
 
 				resourceEntriesLookup[resourceID] = append(resourceEntries, e)
-				// lr := convert(e)
-				// workerItems = append(workerItems, workerItem{
-				// 	Resource:   e.Resource,
-				// 	ResourceID: resourceID,
-				// 	LogRecord:  lr,
-				// })
 			}
 
+			// Using the resource lookup maps, build the plog.Logs structure and convert entries into plogs
 			pLogs := plog.NewLogs()
 			for resourceID, resourceEntries := range resourceEntriesLookup {
 				logs := pLogs.ResourceLogs()
 				rls := logs.AppendEmpty()
 				resource := rls.Resource()
 
+				// Create the resource from the attributes
 				resourceAttrs := resourceAttrsLookup[resourceID]
 				upsertToMap(resourceAttrs, resource.Attributes())
 
 				ills := rls.ScopeLogs()
 
+				// Convert standard entries into plogs for the resource
 				for _, e := range resourceEntries {
 					lr := ills.AppendEmpty().LogRecords().AppendEmpty()
 					convertInto(e, lr)
@@ -200,7 +198,7 @@ func (c *Converter) workerLoop() {
 			}
 
 			select {
-			// case c.aggregationChan <- workerItems:
+			// Send plogs directly to flushChan
 			case c.flushChan <- pLogs:
 			case <-c.stopChan:
 			}
