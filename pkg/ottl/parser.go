@@ -21,6 +21,14 @@ import (
 	"github.com/alecthomas/participle/v2"
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
+)
+
+type ErrorMode int
+
+const (
+	IgnoreError ErrorMode = iota
+	PropagateError
 )
 
 type Parser[K any] struct {
@@ -56,12 +64,31 @@ func (s *Statement[K]) Execute(ctx context.Context, tCtx K) (any, bool, error) {
 	return result, condition, nil
 }
 
-func NewParser[K any](functions map[string]interface{}, pathParser PathExpressionParser[K], enumParser EnumParser, telemetrySettings component.TelemetrySettings) Parser[K] {
-	return Parser[K]{
-		functions:         functions,
-		pathParser:        pathParser,
-		enumParser:        enumParser,
-		telemetrySettings: telemetrySettings,
+func NewParser[K any](
+	functions map[string]interface{},
+	pathParser PathExpressionParser[K],
+	settings component.TelemetrySettings,
+	options ...Option[K],
+) Parser[K] {
+	p := Parser[K]{
+		functions:  functions,
+		pathParser: pathParser,
+		enumParser: func(*EnumSymbol) (*Enum, error) {
+			return nil, fmt.Errorf("enums aren't supported for the current context: %T", new(K))
+		},
+		telemetrySettings: settings,
+	}
+	for _, opt := range options {
+		opt(&p)
+	}
+	return p
+}
+
+type Option[K any] func(*Parser[K])
+
+func WithEnumParser[K any](parser EnumParser) Option[K] {
+	return func(p *Parser[K]) {
+		p.enumParser = parser
 	}
 }
 
@@ -127,4 +154,26 @@ func newParser[G any]() *participle.Parser[G] {
 		panic("Unable to initialize parser; this is a programming error in the transformprocessor:" + err.Error())
 	}
 	return parser
+}
+
+// Statements represents a list of statements that will be executed sequentially for a TransformContext.
+type Statements[K any] struct {
+	statements        []Statement[K]
+	errorMode         ErrorMode
+	telemetrySettings component.TelemetrySettings
+}
+
+// Execute is a function that will execute all the statements in the Statements list.
+func (s *Statements[K]) Execute(ctx context.Context, tCtx K) error {
+	for _, statement := range s.statements {
+		_, _, err := statement.Execute(ctx, tCtx)
+		if err != nil {
+			if s.errorMode == PropagateError {
+				err = fmt.Errorf("failed to execute statement: %w", err)
+				return err
+			}
+			s.telemetrySettings.Logger.Error("failed to execute statement", zap.Error(err))
+		}
+	}
+	return nil
 }

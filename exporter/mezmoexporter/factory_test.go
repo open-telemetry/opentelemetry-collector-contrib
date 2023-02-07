@@ -52,10 +52,10 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 func TestIngestUrlMustConform(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.IngestURL = "https://example.com:8088/services/collector"
+	cfg.IngestURL = "/collector"
 	cfg.IngestKey = "1234-1234"
 
-	assert.Error(t, cfg.Validate(), `"ingest_url" must end with "/otel/ingest/rest"`)
+	assert.Error(t, cfg.Validate(), `"ingest_url" must contain a valid host`)
 }
 
 func TestCreateLogsExporter(t *testing.T) {

@@ -262,9 +262,6 @@ func (p *serviceGraphProcessor) upsertDimensions(kind string, m map[string]strin
 	for _, dim := range p.config.Dimensions {
 		if v, ok := findAttributeValue(dim, resourceAttr, spanAttr); ok {
 			m[kind+"_"+dim] = v
-
-			// next release will remove those dimensions
-			m[dim] = v
 		}
 	}
 }
@@ -505,6 +502,16 @@ func (p *serviceGraphProcessor) cleanCache() {
 		delete(p.keyToMetric, key)
 	}
 	p.metricMutex.Unlock()
+
+	p.seriesMutex.Lock()
+	for _, key := range staleSeries {
+		delete(p.reqTotal, key)
+		delete(p.reqFailedTotal, key)
+		delete(p.reqDurationSecondsCount, key)
+		delete(p.reqDurationSecondsSum, key)
+		delete(p.reqDurationSecondsBucketCounts, key)
+	}
+	p.seriesMutex.Unlock()
 }
 
 // durationToMillis converts the given duration to the number of milliseconds it represents.

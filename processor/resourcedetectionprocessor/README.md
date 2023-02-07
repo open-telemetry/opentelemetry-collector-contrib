@@ -103,46 +103,75 @@ processors:
     override: false
 ```
 
-### GCE Metadata
+### GCP Metadata
 
 Uses the [Google Cloud Client Libraries for Go](https://github.com/googleapis/google-cloud-go)
-to read resource information from the [GCE metadata server](https://cloud.google.com/compute/docs/storing-retrieving-metadata) to retrieve the following resource attributes:
+to read resource information from the [metadata server](https://cloud.google.com/compute/docs/storing-retrieving-metadata) and environment variables to detect which GCP platform the
+application is running on, and detect the appropriate attributes for that platform. Regardless
+of the GCP platform the application is running on, use the gcp detector:
+
+Example:
+
+```yaml
+processors:
+  resourcedetection/gcp:
+    detectors: [env, gcp]
+    timeout: 2s
+    override: false
+```
+
+#### GCE Metadata
 
     * cloud.provider ("gcp")
     * cloud.platform ("gcp_compute_engine")
-    * cloud.account.id
-    * cloud.region
-    * cloud.availability_zone
-    * host.id
-    * host.image.id
-    * host.type
+    * cloud.account.id (project id)
+    * cloud.region  (e.g. us-central1)
+    * cloud.availability_zone (e.g. us-central1-c)
+    * host.id (instance id)
+    * host.name (instance name)
+    * host.type (machine type)
 
-Example:
-
-```yaml
-processors:
-  resourcedetection/gce:
-    detectors: [env, gce]
-    timeout: 2s
-    override: false
-```
-
-### GKE: Google Kubernetes Engine
+#### GKE Metadata
 
     * cloud.provider ("gcp")
-    * cloud.platform ("gcp_gke")
-    * k8s.cluster.name (name of the GKE cluster)
+    * cloud.platform ("gcp_kubernetes_engine")
+    * cloud.account.id (project id)
+    * cloud.region (only for regional GKE clusters; e.g. "us-central1")
+    * cloud.availability_zone (only for zonal GKE clusters; e.g. "us-central1-c")
+    * k8s.cluster.name
+    * host.id (instance id)
+    * host.name (instance name; only when workload identity is disabled)
 
-Example:
+#### Google Cloud Run Metadata
 
-```yaml
-processors:
-  resourcedetection/gke:
-    detectors: [env, gke]
-    timeout: 2s
-    override: false
-```
+    * cloud.provider ("gcp")
+    * cloud.platform ("gcp_cloud_run")
+    * cloud.account.id (project id)
+    * cloud.region (e.g. "us-central1")
+    * faas.id (instance id)
+    * faas.name (service name)
+    * faas.version (service revision)
 
+#### Google Cloud Functions Metadata
+
+    * cloud.provider ("gcp")
+    * cloud.platform ("gcp_cloud_functions")
+    * cloud.account.id (project id)
+    * cloud.region (e.g. "us-central1")
+    * faas.id (instance id)
+    * faas.name (function name)
+    * faas.version (function version)
+
+#### Google App Engine Metadata
+
+    * cloud.provider ("gcp")
+    * cloud.platform ("gcp_app_engine")
+    * cloud.account.id (project id)
+    * cloud.region (e.g. "us-central1")
+    * cloud.availability_zone (e.g. "us-central1-c")
+    * faas.id (instance id)
+    * faas.name (service name)
+    * faas.version (service version)
 
 ### AWS EC2
 
@@ -314,6 +343,7 @@ processors:
     detectors: [env, heroku]
     timeout: 2s
     override: false
+```
 
 ### Openshift
 
@@ -323,12 +353,10 @@ Queries the OpenShift and Kubernetes API to retrieve the following resource attr
     * cloud.platform
     * cloud.region
     * k8s.cluster.name
-    * k8s.cluster.version
-    * openshift.cluster.version
 
-Your service account needs `read` access to the API endpoints `/apis/config.openshift.io/v1/clusterversions/version/status`, `/apis/config.openshift.io/v1/infrastructures/cluster/status` and `/version`.
 By default, the API address is determined from the environment variables `KUBERNETES_SERVICE_HOST`, `KUBERNETES_SERVICE_PORT` and the service token is read from `/var/run/secrets/kubernetes.io/serviceaccount/token`.
-The determination of the API address and the service token is skipped if they are set in the configuration.
+If TLS is not explicit disabled and no `ca_file` is configured `/var/run/secrets/kubernetes.io/serviceaccount/ca.crt` is used.
+The determination of the API address, ca_file and the service token is skipped if they are set in the configuration.
 
 Example:
 
@@ -341,7 +369,12 @@ processors:
     openshift: # optional
       address: "https://api.example.com"
       token: "token"
+      tls:
+        insecure: false
+        ca_file: "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
 ```
+
+See: [TLS Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md) for the full set of available options.
 
 ## Configuration
 

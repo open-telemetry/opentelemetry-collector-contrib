@@ -63,13 +63,19 @@ func FromMetrics(md pmetric.Metrics, settings Settings) (tsMap map[string]*promp
 				switch metric.Type() {
 				case pmetric.MetricTypeGauge:
 					dataPoints := metric.Gauge().DataPoints()
-					if err := addNumberDataPointSlice(dataPoints, resource, metric, settings, tsMap); err != nil {
-						errs = multierr.Append(errs, err)
+					if dataPoints.Len() == 0 {
+						errs = multierr.Append(errs, fmt.Errorf("empty data points. %s is dropped", metric.Name()))
+					}
+					for x := 0; x < dataPoints.Len(); x++ {
+						addSingleGaugeNumberDataPoint(dataPoints.At(x), resource, metric, settings, tsMap)
 					}
 				case pmetric.MetricTypeSum:
 					dataPoints := metric.Sum().DataPoints()
-					if err := addNumberDataPointSlice(dataPoints, resource, metric, settings, tsMap); err != nil {
-						errs = multierr.Append(errs, err)
+					if dataPoints.Len() == 0 {
+						errs = multierr.Append(errs, fmt.Errorf("empty data points. %s is dropped", metric.Name()))
+					}
+					for x := 0; x < dataPoints.Len(); x++ {
+						addSingleSumNumberDataPoint(dataPoints.At(x), resource, metric, settings, tsMap)
 					}
 				case pmetric.MetricTypeHistogram:
 					dataPoints := metric.Histogram().DataPoints()
@@ -114,16 +120,4 @@ func FromMetrics(md pmetric.Metrics, settings Settings) (tsMap map[string]*promp
 	}
 
 	return
-}
-
-func addNumberDataPointSlice(dataPoints pmetric.NumberDataPointSlice,
-	resource pcommon.Resource, metric pmetric.Metric,
-	settings Settings, tsMap map[string]*prompb.TimeSeries) error {
-	if dataPoints.Len() == 0 {
-		return fmt.Errorf("empty data points. %s is dropped", metric.Name())
-	}
-	for x := 0; x < dataPoints.Len(); x++ {
-		addSingleNumberDataPoint(dataPoints.At(x), resource, metric, settings, tsMap)
-	}
-	return nil
 }

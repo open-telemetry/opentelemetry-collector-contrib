@@ -61,11 +61,11 @@ func NewMetricCalculator(calculateFunc CalculateFunc) MetricCalculator {
 	}
 }
 
-// Calculate accepts a new metric value identified by matricName and labels, and delegates
-// the calculation with value and timestamp back to CalculateFunc for the result. Returns
+// Calculate accepts a new metric value identified by metric key (consists of metric metadata and labels),
+// https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/eacfde3fcbd46ba60a6db0e9a41977390c4883bd/internal/aws/metrics/metric_calculator.go#L88-L91
+// and delegates the calculation with value and timestamp back to CalculateFunc for the result. Returns
 // true if the calculation is executed successfully.
-func (rm *MetricCalculator) Calculate(metricName string, labels map[string]string, value interface{}, timestamp time.Time) (interface{}, bool) {
-	k := NewKey(metricName, labels)
+func (rm *MetricCalculator) Calculate(mKey Key, value interface{}, timestamp time.Time) (interface{}, bool) {
 	cacheStore := rm.cache
 
 	var result interface{}
@@ -74,10 +74,10 @@ func (rm *MetricCalculator) Calculate(metricName string, labels map[string]strin
 	rm.lock.Lock()
 	defer rm.lock.Unlock()
 
-	prev, exists := cacheStore.Get(k)
+	prev, exists := cacheStore.Get(mKey)
 	result, done = rm.calculateFunc(prev, value, timestamp)
 	if !exists || done {
-		cacheStore.Set(k, MetricValue{
+		cacheStore.Set(mKey, MetricValue{
 			RawValue:  value,
 			Timestamp: timestamp,
 		})

@@ -25,7 +25,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions "go.opentelemetry.io/collector/semconv/v1.13.0"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 )
 
 var testBuildInfo = component.BuildInfo{
@@ -288,7 +288,7 @@ func TestDecodeAzureLogRecord(t *testing.T) {
 			logs, err := transform(testBuildInfo, data)
 			assert.NoError(t, err)
 
-			assert.NoError(t, comparetest.CompareLogs(tt.expected, logs))
+			assert.NoError(t, plogtest.CompareLogs(tt.expected, logs))
 		})
 	}
 }

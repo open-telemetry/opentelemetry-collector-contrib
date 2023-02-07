@@ -28,7 +28,7 @@ const (
 	// The value of "type" key in configuration.
 	typeStr = "googlemanagedprometheus"
 	// The stability level of the exporter.
-	stability      = component.StabilityLevelAlpha
+	stability      = component.StabilityLevelBeta
 	defaultTimeout = 12 * time.Second // Consistent with Cloud Monitoring's timeout
 )
 
