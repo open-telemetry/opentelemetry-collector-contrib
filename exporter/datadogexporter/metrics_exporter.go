@@ -28,7 +28,6 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/trace/pb"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"
@@ -94,7 +93,7 @@ func translatorFromConfig(logger *zap.Logger, cfg *Config, sourceProvider source
 
 	options = append(options, translator.WithNumberMode(numberMode))
 
-	if featuregate.GlobalRegistry().IsEnabled(metadata.HostnamePreviewFeatureGate) {
+	if metadata.HostnamePreviewFeatureGate.IsEnabled() {
 		options = append(options, translator.WithPreviewHostnameFromAttributes())
 	}
 

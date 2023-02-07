@@ -8,10 +8,10 @@ require (
 	github.com/prometheus/common v0.39.0
 	github.com/prometheus/prometheus v0.41.0
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.70.0
-	go.opentelemetry.io/collector/component v0.70.0
-	go.opentelemetry.io/collector/confmap v0.70.0
-	go.opentelemetry.io/collector/consumer v0.70.0
+	go.opentelemetry.io/collector v0.70.1-0.20230130215412-26bd7b2bf678
+	go.opentelemetry.io/collector/component v0.70.1-0.20230130215412-26bd7b2bf678
+	go.opentelemetry.io/collector/confmap v0.70.1-0.20230130215412-26bd7b2bf678
+	go.opentelemetry.io/collector/consumer v0.70.1-0.20230130215412-26bd7b2bf678
 	go.uber.org/multierr v1.9.0
 )
 
@@ -123,12 +123,12 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/vultr/govultr/v2 v2.17.2 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/featuregate v0.70.0 // indirect
-	go.opentelemetry.io/collector/pdata v1.0.0-rc4 // indirect
-	go.opentelemetry.io/collector/semconv v0.70.0 // indirect
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.37.0 // indirect
+	go.opentelemetry.io/collector/featuregate v0.70.1-0.20230130215412-26bd7b2bf678 // indirect
+	go.opentelemetry.io/collector/pdata v1.0.0-rc4.0.20230130215412-26bd7b2bf678 // indirect
+	go.opentelemetry.io/collector/semconv v0.70.1-0.20230130215412-26bd7b2bf678 // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.38.0 // indirect
 	go.opentelemetry.io/otel v1.12.0 // indirect
-	go.opentelemetry.io/otel/metric v0.34.0 // indirect
+	go.opentelemetry.io/otel/metric v0.35.0 // indirect
 	go.opentelemetry.io/otel/trace v1.12.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/goleak v1.2.0 // indirect
