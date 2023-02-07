@@ -1634,6 +1634,8 @@ github.com/linkedin/goavro/v2 v2.9.8 h1:jN50elxBsGBDGVDEKqUlDuU1cFwJ11K/yrJCBMe/
 github.com/linkedin/goavro/v2 v2.9.8/go.mod h1:UgQUb2N/pmueQYH9bfqFioWxzYCZXSfF8Jw03O5sjqA=
 github.com/linode/linodego v1.9.3 h1:+lxNZw4avRxhCqGjwfPgQ2PvMT+vOL0OMsTdzixR7hQ=
 github.com/linode/linodego v1.9.3/go.mod h1:h6AuFR/JpqwwM/vkj7s8KV3iGN8/jxn+zc437F8SZ8w=
+github.com/logicmonitor/lm-data-sdk-go v0.7.1 h1:C0T/6Bo4iKSvbAh/kE5g7vTyOZHGYmXdDVUUIo5xsyE=
+github.com/logicmonitor/lm-data-sdk-go v0.7.1/go.mod h1:eY1lZvccWG0Nm9Y68VKdmvqbmEUcTIHg3KG41U4M1Po=
 github.com/logrusorgru/aurora v0.0.0-20181002194514-a7b3b318ed4e/go.mod h1:7rIyQOR62GCctdiQpZ/zOJlFyk6y+94wXzv6RNZgaR4=
 github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0/go.mod h1:zJYVVT2jmtg6P3p1VtQj7WsuWi/y4VnjVBn7F8KPB3I=
 github.com/lufia/plan9stats v0.0.0-20220517141722-cf486979b281 h1:aczX6NMOtt6L4YT0fQvKkDK6LZEtdOso9sUH89V1+P0=

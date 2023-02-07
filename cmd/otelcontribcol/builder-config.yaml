@@ -53,6 +53,7 @@ exporters:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter v0.70.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter v0.70.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter v0.70.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logicmonitorexporter v0.70.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter v0.70.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter v0.70.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter v0.70.0
@@ -241,6 +242,7 @@ replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor => ../../processor/groupbytraceprocessor
   - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter => ../../exporter/tencentcloudlogserviceexporter
   - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter => ../../exporter/loadbalancingexporter
+  - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logicmonitorexporter => ../../exporter/logicmonitorexporter
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver => ../../receiver/azureeventhubreceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver => ../../receiver/saphanareceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/promtailreceiver => ../../receiver/promtailreceiver
