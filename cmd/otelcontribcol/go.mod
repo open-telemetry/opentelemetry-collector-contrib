@@ -176,6 +176,7 @@ require (
 	github.com/go-stack/stack v1.8.1 // indirect
 	github.com/go-zookeeper/zk v1.0.3 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
+	github.com/gocql/gocql v1.3.1 // indirect
 	github.com/godbus/dbus v0.0.0-20190726142602-4481cbc300e2 // indirect
 	github.com/godbus/dbus/v5 v5.0.6 // indirect
 	github.com/gofrs/uuid v4.2.0+incompatible // indirect
@@ -207,6 +208,7 @@ require (
 	github.com/grobie/gomemcache v0.0.0-20180201122607-1f779c573665 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.15.0 // indirect
 	github.com/gsterjov/go-libsecret v0.0.0-20161001094733-a6f4afe4910c // indirect
+	github.com/hailocab/go-hostpool v0.0.0-20160125115350-e80d13ce29ed // indirect
 	github.com/hashicorp/consul/api v1.18.0 // indirect
 	github.com/hashicorp/cronexpr v1.1.1 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
@@ -297,6 +299,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter v0.69.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter v0.69.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.69.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/cassandraexporter v0.69.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter v0.69.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter v0.69.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.69.0 // indirect
@@ -935,6 +938,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/filee
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter => ../../exporter/clickhouseexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter => ../../exporter/carbonexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/cassandraexporter => ../../exporter/cassandraexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite => ../../pkg/translator/prometheusremotewrite
 

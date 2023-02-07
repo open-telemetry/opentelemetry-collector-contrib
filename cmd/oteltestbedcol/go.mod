@@ -482,6 +482,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tence
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter => ../../exporter/carbonexporter
 
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/cassandraexporter => ../../exporter/cassandraexporter
+
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver => ../../receiver/saphanareceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver => ../../receiver/googlecloudspannerreceiver
