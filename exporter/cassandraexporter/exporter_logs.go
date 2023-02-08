@@ -61,7 +61,7 @@ func initializeLogKernel(cfg *Config) error {
 }
 
 func parseCreateLogTableSql(cfg *Config) string {
-	return fmt.Sprintf(createSpanTableSQL, cfg.Keyspace, cfg.LogsTable, cfg.Compression.Algorithm)
+	return fmt.Sprintf(createLogTableSQL, cfg.Keyspace, cfg.LogsTable, cfg.Compression.Algorithm)
 }
 
 func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
@@ -81,7 +81,7 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 				r := rs.At(k)
 				logAttr := attributesToMap(r.Attributes())
 
-				e.client.Query(fmt.Sprintf(insertLogTableSQL, e.cfg.Keyspace, e.cfg.TraceTable),
+				err := e.client.Query(fmt.Sprintf(insertLogTableSQL, e.cfg.Keyspace, e.cfg.LogsTable),
 					r.Timestamp().AsTime(),
 					traceutil.TraceIDToHexOrEmptyString(r.TraceID()),
 					traceutil.SpanIDToHexOrEmptyString(r.SpanID()),
@@ -93,10 +93,6 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 					resAttr,
 					logAttr,
 				).WithContext(ctx).Exec()
-
-				//if err != nil {
-				//	return fmt.Errorf("ExecContext:%w", err)
-				//}
 			}
 		}
 	}
