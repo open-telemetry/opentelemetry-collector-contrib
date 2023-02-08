@@ -102,6 +102,7 @@
 - `spanmetricsprocessor`: Fix a flaky test caused by a race condition between WaitGroup completion and observed logs being written and flushed. (#18014)
 - `splunkhecexporter`: Flatten nested attribute map before sending it to splunk as indexed fields. (#17308)
 - `exporter/datadog`: Fix bug where ddtags are not set correctly when logs are batched. (#17398)
+- `googlemanagedprometheusexporter` Fixed broken export on target_info and scope_info metrics for GMP. (#18468)
 
 ## v0.70.0
 
