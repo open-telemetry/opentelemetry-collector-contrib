@@ -66,23 +66,23 @@ type ReloadIntervals struct {
 }
 
 func (c *Config) Validate() error {
-	var err error
+	var errs error
 
 	if c.Settings.ReloadIntervals.Array.String() == "" {
-		err = multierr.Append(err, errors.New("Arrays not provided and is required"))
+		errs = multierr.Append(errs, errors.New("arrays not provided and is required"))
 	}
 	if c.Settings.ReloadIntervals.Host.String() == "" {
-		err = multierr.Append(err, errors.New("Hosts not provided and is required"))
+		errs = multierr.Append(errs, errors.New("hosts not provided and is required"))
 	}
 	if c.Settings.ReloadIntervals.Directories.String() == "" {
-		err = multierr.Append(err, errors.New("Directories not provided and is required"))
+		errs = multierr.Append(errs, errors.New("directories not provided and is required"))
 	}
 	if c.Settings.ReloadIntervals.Pods.String() == "" {
-		err = multierr.Append(err, errors.New("Pods not provided and is required"))
+		errs = multierr.Append(errs, errors.New("pods not provided and is required"))
 	}
 	if c.Settings.ReloadIntervals.Volumes.String() == "" {
-		err = multierr.Append(err, errors.New("Volumes not provided and is required"))
+		errs = multierr.Append(errs, errors.New("volumes not provided and is required"))
 	}
 
-	return err
+	return errs
 }
