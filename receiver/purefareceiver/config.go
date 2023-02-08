@@ -68,20 +68,21 @@ type ReloadIntervals struct {
 func (c *Config) Validate() error {
 	var errs error
 
-	if c.Settings.ReloadIntervals.Array.String() == "" {
-		errs = multierr.Append(errs, errors.New("arrays not provided and is required"))
+	if c.Settings.ReloadIntervals.Array == 0 {
+		errs = multierr.Append(errs, errors.New("reload interval for 'arrays' must be provided"))
 	}
-	if c.Settings.ReloadIntervals.Host.String() == "" {
-		errs = multierr.Append(errs, errors.New("hosts not provided and is required"))
+
+	if c.Settings.ReloadIntervals.Host == 0 {
+		errs = multierr.Append(errs, errors.New("reload interval for 'hosts' must be provided"))
 	}
-	if c.Settings.ReloadIntervals.Directories.String() == "" {
-		errs = multierr.Append(errs, errors.New("directories not provided and is required"))
+	if c.Settings.ReloadIntervals.Directories == 0 {
+		errs = multierr.Append(errs, errors.New("reload interval for 'directories' must be provided"))
 	}
-	if c.Settings.ReloadIntervals.Pods.String() == "" {
-		errs = multierr.Append(errs, errors.New("pods not provided and is required"))
+	if c.Settings.ReloadIntervals.Pods == 0 {
+		errs = multierr.Append(errs, errors.New("reload interval for 'pods' must be provided"))
 	}
-	if c.Settings.ReloadIntervals.Volumes.String() == "" {
-		errs = multierr.Append(errs, errors.New("volumes not provided and is required"))
+	if c.Settings.ReloadIntervals.Volumes == 0 {
+		errs = multierr.Append(errs, errors.New("reload interval for 'volumes' must be provided"))
 	}
 
 	return errs
