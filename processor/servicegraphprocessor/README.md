@@ -12,6 +12,11 @@ The service graphs processor is a traces processor that builds a map representin
 The processor will analyse trace data and generate metrics describing the relationship between the services.
 These metrics can be used by data visualization apps (e.g. Grafana) to draw a service graph.
 
+The following settings can be optionally configured:
+
+- `virtual_node_feature_enabled`: If `virtual_node_feature_enabled` is `true`, when the edge expires, processor checks if it has peer attributes, and then aggregate the metrics with virtual node.
+    - Default: `false`
+
 Service graphs are useful for a number of use-cases:
 
 * Infer the topology of a distributed system. As distributed systems grow, they become more complex. Service graphs can help you understand the structure of the system.

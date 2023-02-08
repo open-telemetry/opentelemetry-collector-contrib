@@ -299,8 +299,22 @@ func (p *serviceGraphProcessor) onExpire(e *store.Edge) {
 		zap.String("connection_type", string(e.ConnectionType)),
 		zap.Stringer("trace_id", e.TraceID),
 	)
+
 	if p.config.VirtualNodeFeatureEnabled {
-		p.trySpeculateEvictHead(e)
+		// speculate virtual node before edge get expired.
+		if len(e.ClientService) == 0 {
+			e.ClientService = "user"
+		}
+
+		if len(e.ServerService) == 0 {
+			e.ServerService = p.getPeerHost(NeedToFindAttributes, e.Peer)
+		}
+
+		e.ConnectionType = store.VirtualNode
+
+		if e.IsComplete() {
+			p.store.OnComplete(e)
+		}
 	} else {
 		stats.Record(context.Background(), statExpiredEdges.M(1))
 	}
@@ -488,36 +502,6 @@ func (p *serviceGraphProcessor) storeExpirationLoop(d time.Duration) {
 			return
 		}
 	}
-}
-
-// speculate virtual node before edge get expired.
-func (p *serviceGraphProcessor) trySpeculateEvictHead(e *store.Edge) bool {
-	if !e.IsExpired() {
-		return false
-	}
-
-	if len(e.ClientService) == 0 {
-		e.ClientService = "user"
-	}
-
-	if len(e.ServerService) == 0 {
-		e.ServerService = p.getPeerHost(NeedToFindAttributes, e.Peer)
-	}
-
-	e.ConnectionType = store.VirtualNode
-
-	p.logger.Debug(
-		"edge expired, building virtual node",
-		zap.String("client_service", e.ClientService),
-		zap.String("server_service", e.ServerService),
-		zap.String("connection_type", string(e.ConnectionType)),
-		zap.Stringer("trace_id", e.TraceID),
-	)
-
-	if e.IsComplete() {
-		p.store.OnComplete(e)
-	}
-	return true
 }
 
 func (p *serviceGraphProcessor) getPeerHost(m []string, peers map[string]string) string {
