@@ -29,147 +29,192 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
 )
 
-// validateTags verifies that all log items in the same batch have the same ddtags as the given tag
-func validateTags(t *testing.T, jsonLogs testutil.JsonLogs, tag string) {
-	for _, log := range jsonLogs {
-		assert.Equal(t, log["ddtags"], tag)
-	}
-}
-
 func TestSubmitLogs(t *testing.T) {
 	logger := zaptest.NewLogger(t)
-	var counter int
 
 	tests := []struct {
 		name    string
 		payload []datadogV2.HTTPLogItem
-		testFn  func(jsonLogs testutil.JsonLogs)
+		testFn  func(jsonLogs testutil.JSONLogs, counter int)
 	}{
 		{
-			name: "batches same tags",
+			name: "same-tags",
 			payload: []datadogV2.HTTPLogItem{{
-				Ddsource:             nil,
-				Ddtags:               datadog.PtrString("tag1:true"),
-				Hostname:             nil,
-				Message:              "",
-				Service:              nil,
-				UnparsedObject:       nil,
+				Ddsource: datadog.PtrString("golang"),
+				Ddtags:   datadog.PtrString("tag1:true"),
+				Hostname: datadog.PtrString("hostname"),
+				Message:  "log 1",
+				Service:  datadog.PtrString("server"),
+				UnparsedObject: map[string]interface{}{
+					"ddsource": "golang",
+					"ddtags":   "tag1:true",
+					"hostname": "hostname",
+					"message":  "log 1",
+					"service":  "server",
+				},
 				AdditionalProperties: nil,
 			}, {
-				Ddsource:             nil,
-				Ddtags:               datadog.PtrString("tag1:true"),
-				Hostname:             nil,
-				Message:              "",
-				Service:              nil,
-				UnparsedObject:       nil,
+				Ddsource: datadog.PtrString("golang"),
+				Ddtags:   datadog.PtrString("tag1:true"),
+				Hostname: datadog.PtrString("hostname"),
+				Message:  "log 2",
+				Service:  datadog.PtrString("server"),
+				UnparsedObject: map[string]interface{}{
+					"ddsource": "golang",
+					"ddtags":   "tag1:true",
+					"hostname": "hostname",
+					"message":  "log 2",
+					"service":  "server",
+				},
 				AdditionalProperties: nil,
 			}},
-			testFn: func(jsonLogs testutil.JsonLogs) {
+			testFn: func(jsonLogs testutil.JSONLogs, counter int) {
 				switch counter {
 				case 0:
-					validateTags(t, jsonLogs, "tag1:true")
+					assert.True(t, jsonLogs.HasDDTag("tag1:true"))
 					assert.Len(t, jsonLogs, 2)
 				default:
 					t.Fail()
 				}
-				counter++
 			},
 		},
 		{
-			name: "does not batch same tags",
+			name: "different-tags",
 			payload: []datadogV2.HTTPLogItem{{
-				Ddsource:             nil,
-				Ddtags:               datadog.PtrString("tag1:true"),
-				Hostname:             nil,
-				Message:              "",
-				Service:              nil,
-				UnparsedObject:       nil,
+				Ddsource: datadog.PtrString("golang"),
+				Ddtags:   datadog.PtrString("tag1:true"),
+				Hostname: datadog.PtrString("hostname"),
+				Message:  "log 1",
+				Service:  datadog.PtrString("server"),
+				UnparsedObject: map[string]interface{}{
+					"ddsource": "golang",
+					"ddtags":   "tag1:true",
+					"hostname": "hostname",
+					"message":  "log 1",
+					"service":  "server",
+				},
 				AdditionalProperties: nil,
 			}, {
-				Ddsource:             nil,
-				Ddtags:               datadog.PtrString("tag2:true"),
-				Hostname:             nil,
-				Message:              "",
-				Service:              nil,
-				UnparsedObject:       nil,
+				Ddsource: datadog.PtrString("golang"),
+				Ddtags:   datadog.PtrString("tag2:true"),
+				Hostname: datadog.PtrString("hostname"),
+				Message:  "log 2",
+				Service:  datadog.PtrString("server"),
+				UnparsedObject: map[string]interface{}{
+					"ddsource": "golang",
+					"ddtags":   "tag2:true",
+					"hostname": "hostname",
+					"message":  "log 2",
+					"service":  "server",
+				},
 				AdditionalProperties: nil,
 			}},
-			testFn: func(jsonLogs testutil.JsonLogs) {
+			testFn: func(jsonLogs testutil.JSONLogs, counter int) {
 				switch counter {
 				case 0:
-					validateTags(t, jsonLogs, "tag1:true")
+					assert.True(t, jsonLogs.HasDDTag("tag1:true"))
 					assert.Len(t, jsonLogs, 1)
 				case 1:
-					validateTags(t, jsonLogs, "tag2:true")
+					assert.True(t, jsonLogs.HasDDTag("tag2:true"))
 					assert.Len(t, jsonLogs, 1)
 				default:
 					t.Fail()
 				}
-				counter++
 			},
 		},
 		{
-			name: "does two batches",
+			name: "two-batches",
 			payload: []datadogV2.HTTPLogItem{{
-				Ddsource:             nil,
-				Ddtags:               datadog.PtrString("tag1:true"),
-				Hostname:             nil,
-				Message:              "",
-				Service:              nil,
-				UnparsedObject:       nil,
+				Ddsource: datadog.PtrString("golang"),
+				Ddtags:   datadog.PtrString("tag1:true"),
+				Hostname: datadog.PtrString("hostname"),
+				Message:  "log 1",
+				Service:  datadog.PtrString("server"),
+				UnparsedObject: map[string]interface{}{
+					"ddsource": "golang",
+					"ddtags":   "tag1:true",
+					"hostname": "hostname",
+					"message":  "log 1",
+					"service":  "server",
+				},
 				AdditionalProperties: nil,
 			}, {
-				Ddsource:             nil,
-				Ddtags:               datadog.PtrString("tag1:true"),
-				Hostname:             nil,
-				Message:              "",
-				Service:              nil,
-				UnparsedObject:       nil,
+				Ddsource: datadog.PtrString("golang"),
+				Ddtags:   datadog.PtrString("tag1:true"),
+				Hostname: datadog.PtrString("hostname"),
+				Message:  "log 2",
+				Service:  datadog.PtrString("server"),
+				UnparsedObject: map[string]interface{}{
+					"ddsource": "golang",
+					"ddtags":   "tag1:true",
+					"hostname": "hostname",
+					"message":  "log 2",
+					"service":  "server",
+				},
 				AdditionalProperties: nil,
 			}, {
-				Ddsource:             nil,
-				Ddtags:               datadog.PtrString("tag2:true"),
-				Hostname:             nil,
-				Message:              "",
-				Service:              nil,
-				UnparsedObject:       nil,
+				Ddsource: datadog.PtrString("golang"),
+				Ddtags:   datadog.PtrString("tag2:true"),
+				Hostname: datadog.PtrString("hostname"),
+				Message:  "log 3",
+				Service:  datadog.PtrString("server"),
+				UnparsedObject: map[string]interface{}{
+					"ddsource": "golang",
+					"ddtags":   "tag2:true",
+					"hostname": "hostname",
+					"message":  "log 3",
+					"service":  "server",
+				},
 				AdditionalProperties: nil,
 			}, {
-				Ddsource:             nil,
-				Ddtags:               datadog.PtrString("tag2:true"),
-				Hostname:             nil,
-				Message:              "",
-				Service:              nil,
-				UnparsedObject:       nil,
+				Ddsource: datadog.PtrString("golang"),
+				Ddtags:   datadog.PtrString("tag2:true"),
+				Hostname: datadog.PtrString("hostname"),
+				Message:  "log 4",
+				Service:  datadog.PtrString("server"),
+				UnparsedObject: map[string]interface{}{
+					"ddsource": "golang",
+					"ddtags":   "tag2:true",
+					"hostname": "hostname",
+					"message":  "log 4",
+					"service":  "server",
+				},
 				AdditionalProperties: nil,
 			}},
-			testFn: func(jsonLogs testutil.JsonLogs) {
+			testFn: func(jsonLogs testutil.JSONLogs, counter int) {
 				switch counter {
 				case 0:
-					validateTags(t, jsonLogs, "tag1:true")
+					assert.True(t, jsonLogs.HasDDTag("tag1:true"))
 					assert.Len(t, jsonLogs, 2)
 				case 1:
-					validateTags(t, jsonLogs, "tag2:true")
+					assert.True(t, jsonLogs.HasDDTag("tag2:true"))
 					assert.Len(t, jsonLogs, 2)
 				default:
 					t.Fail()
 				}
-				counter++
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			var counter int
+			serverCalled := false
 			server := testutil.DatadogLogServerMock(func() (string, http.HandlerFunc) {
 				return "/api/v2/logs", func(writer http.ResponseWriter, request *http.Request) {
 					jsonLogs := testutil.MockLogsEndpoint(writer, request)
-					tt.testFn(jsonLogs)
+					tt.testFn(jsonLogs, counter)
+					counter++
+					serverCalled = true
 				}
 			})
 			defer server.Close()
 			counter = 0
 			s := NewSender(server.URL, logger, exporterhelper.TimeoutSettings{Timeout: time.Second * 10}, true, true, "")
-			_ = s.SubmitLogs(context.Background(), tt.payload)
+			err := s.SubmitLogs(context.Background(), tt.payload)
+			if err != nil {
+				t.Fatal(err)
+			}
+			assert.True(t, serverCalled)
 		})
 	}
 }
