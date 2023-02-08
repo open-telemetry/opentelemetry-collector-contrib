@@ -8,8 +8,8 @@ github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 h1:UQHMgLO+TxOEl
 github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1/go.mod h1:xomTg63KZ2rFqZQzSB4Vz2SUXa1BpHTVz9L5PTmPC4E=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/DataDog/datadog-go v3.2.0+incompatible/go.mod h1:LButxg5PwREeZtORoXG3tL4fMGNddJ+vMq1mwgfaqoQ=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.11.0 h1:hc3Fb+ufGf+EznhPOSvQODMl9Qn++cATyI/7q7E7geM=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.11.0/go.mod h1:HpmGbYLf1fsWiqVA0Z2oKh7qi7BroCgOl2NqB2N/TG4=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.11.1 h1:NZtPMMPJ/IlRTTjtC3jl34km75WqT9RdwvYPcGRCXZ8=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.11.1/go.mod h1:HpmGbYLf1fsWiqVA0Z2oKh7qi7BroCgOl2NqB2N/TG4=
 github.com/Microsoft/go-winio v0.5.2 h1:a9IhgEQBCUEk6QCdml9CiJGhAws+YwffDHEMp1VMrpA=
 github.com/Microsoft/go-winio v0.5.2/go.mod h1:WpS1mjBmmwHBEWmogvA2mj8546UReBk4v8QkMxJ6pZY=
 github.com/Showmax/go-fqdn v1.0.0 h1:0rG5IbmVliNT5O19Mfuvna9LL7zlHyRfsSvBPZmF9tM=
