@@ -84,7 +84,7 @@ func (s *Store) UpsertEdge(key Key, update Callback) (isNew bool, err error) {
 		edge := storedEdge.Value.(*Edge)
 		update(edge)
 
-		if edge.IsComplete() {
+		if edge.isComplete() {
 			s.OnComplete(edge)
 			delete(s.m, key)
 			s.l.Remove(storedEdge)
@@ -96,7 +96,7 @@ func (s *Store) UpsertEdge(key Key, update Callback) (isNew bool, err error) {
 	edge := newEdge(key, s.ttl)
 	update(edge)
 
-	if edge.IsComplete() {
+	if edge.isComplete() {
 		s.OnComplete(edge)
 		return true, nil
 	}
@@ -134,7 +134,7 @@ func (s *Store) tryEvictHead() bool {
 	}
 
 	headEdge := head.Value.(*Edge)
-	if !headEdge.IsExpired() {
+	if !headEdge.isExpired() {
 		return false
 	}
 

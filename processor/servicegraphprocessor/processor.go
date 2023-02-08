@@ -47,8 +47,9 @@ var (
 	defaultLatencyHistogramBucketsMs = []float64{
 		2, 4, 6, 8, 10, 50, 100, 200, 400, 800, 1000, 1400, 2000, 5000, 10_000, 15_000,
 	}
-	// NeedToFindAttributes the list of attributes need to matches, the higher the front, the higher the priority.
-	NeedToFindAttributes = []string{semconv.AttributeDBName, semconv.AttributeNetSockPeerAddr, semconv.AttributeNetPeerName, semconv.AttributeRPCService, semconv.AttributeHTTPURL, semconv.AttributeHTTPTarget}
+	// PeerAttributes the list of attributes need to match, the higher the front, the higher the priority.
+	// TODO: Consider making this configurable.
+	PeerAttributes = []string{semconv.AttributeDBName, semconv.AttributeNetSockPeerAddr, semconv.AttributeNetPeerName, semconv.AttributeRPCService, semconv.AttributeHTTPURL, semconv.AttributeHTTPTarget}
 )
 
 type metricSeries struct {
@@ -211,7 +212,10 @@ func (p *serviceGraphProcessor) aggregateMetrics(ctx context.Context, td ptrace.
 						e.ClientLatencySec = float64(span.EndTimestamp()-span.StartTimestamp()) / float64(time.Millisecond.Nanoseconds())
 						e.Failed = e.Failed || span.Status().Code() == ptrace.StatusCodeError
 						p.upsertDimensions(clientKind, e.Dimensions, rAttributes, span.Attributes())
-						p.upsertPeerAttributes(NeedToFindAttributes, e.Peer, span.Attributes())
+
+						if p.config.VirtualNodeFeatureEnabled {
+							p.upsertPeerAttributes(PeerAttributes, e.Peer, span.Attributes())
+						}
 
 						// A database request will only have one span, we don't wait for the server
 						// span but just copy details from the client span
@@ -276,6 +280,7 @@ func (p *serviceGraphProcessor) upsertPeerAttributes(m []string, peers map[strin
 	for _, s := range m {
 		if v, ok := findAttributeValue(s, spanAttr); ok {
 			peers[s] = v
+			break
 		}
 	}
 }
@@ -300,6 +305,8 @@ func (p *serviceGraphProcessor) onExpire(e *store.Edge) {
 		zap.Stringer("trace_id", e.TraceID),
 	)
 
+	stats.Record(context.Background(), statExpiredEdges.M(1))
+
 	if p.config.VirtualNodeFeatureEnabled {
 		// speculate virtual node before edge get expired.
 		if len(e.ClientService) == 0 {
@@ -307,16 +314,12 @@ func (p *serviceGraphProcessor) onExpire(e *store.Edge) {
 		}
 
 		if len(e.ServerService) == 0 {
-			e.ServerService = p.getPeerHost(NeedToFindAttributes, e.Peer)
+			e.ServerService = p.getPeerHost(PeerAttributes, e.Peer)
 		}
 
 		e.ConnectionType = store.VirtualNode
 
-		if e.IsComplete() {
-			p.store.OnComplete(e)
-		}
-	} else {
-		stats.Record(context.Background(), statExpiredEdges.M(1))
+		p.store.OnComplete(e)
 	}
 }
 
@@ -507,8 +510,8 @@ func (p *serviceGraphProcessor) storeExpirationLoop(d time.Duration) {
 func (p *serviceGraphProcessor) getPeerHost(m []string, peers map[string]string) string {
 	peerStr := "unknown"
 	for _, s := range m {
-		if len(peers[s]) != 0 {
-			peerStr = peers[s]
+		if peer, ok := peers[s]; ok {
+			peerStr = peer
 			break
 		}
 	}

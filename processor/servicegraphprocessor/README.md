@@ -14,7 +14,7 @@ These metrics can be used by data visualization apps (e.g. Grafana) to draw a se
 
 The following settings can be optionally configured:
 
-- `virtual_node_feature_enabled`: If `virtual_node_feature_enabled` is `true`, when the edge expires, processor checks if it has peer attributes, and then aggregate the metrics with virtual node.
+- `virtual_node_feature_enabled`: If `virtual_node_feature_enabled` is `true`, when the edge expires, processor checks if it has peer attributes(`db.name, net.sock.peer.addr, net.peer.name, rpc.service, http.url, http.target`), and then aggregate the metrics with virtual node.
     - Default: `false`
 
 Service graphs are useful for a number of use-cases:
