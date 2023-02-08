@@ -9,12 +9,12 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.71.0
 	github.com/stretchr/testify v1.8.1
 	github.com/testcontainers/testcontainers-go v0.17.0
-	go.opentelemetry.io/collector v0.70.1-0.20230207214007-faf5a578038f
-	go.opentelemetry.io/collector/component v0.70.1-0.20230207214007-faf5a578038f
-	go.opentelemetry.io/collector/confmap v0.70.1-0.20230207214007-faf5a578038f
-	go.opentelemetry.io/collector/consumer v0.70.1-0.20230207214007-faf5a578038f
-	go.opentelemetry.io/collector/featuregate v0.70.1-0.20230207214007-faf5a578038f
-	go.opentelemetry.io/collector/pdata v1.0.0-rc4.0.20230207214007-faf5a578038f
+	go.opentelemetry.io/collector v0.71.0
+	go.opentelemetry.io/collector/component v0.71.0
+	go.opentelemetry.io/collector/confmap v0.71.0
+	go.opentelemetry.io/collector/consumer v0.71.0
+	go.opentelemetry.io/collector/featuregate v0.71.0
+	go.opentelemetry.io/collector/pdata v1.0.0-rc5
 	go.uber.org/multierr v1.9.0
 	go.uber.org/zap v1.24.0
 )
@@ -61,7 +61,7 @@ require (
 	github.com/sirupsen/logrus v1.9.0 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.38.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.39.0 // indirect
 	go.opentelemetry.io/otel v1.13.0 // indirect
 	go.opentelemetry.io/otel/metric v0.36.0 // indirect
 	go.opentelemetry.io/otel/trace v1.13.0 // indirect
