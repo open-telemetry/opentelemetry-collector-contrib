@@ -8,6 +8,7 @@ exporters:
     dsn: 127.0.0.1
     keyspace: "otel"
     trace_table: "otel_spans"
+    logs_table: "otel_logs"
     replication:
       class: "SimpleStrategy"
       replication_factor: 1
@@ -17,5 +18,8 @@ exporters:
 service:
   pipelines:
     traces:
+      receivers: [ otlp ]
+      exporters: [ cassandra ]
+    logs:
       receivers: [ otlp ]
       exporters: [ cassandra ]

@@ -4,6 +4,7 @@ type Config struct {
 	DSN         string      `mapstructure:"dsn"`
 	Keyspace    string      `mapstructure:"keyspace"`
 	TraceTable  string      `mapstructure:"trace_table"`
+	LogsTable   string      `mapstructure:"logs_table"`
 	Replication Replication `mapstructure:"replication"`
 	Compression Compression `mapstructure:"compression"`
 }
