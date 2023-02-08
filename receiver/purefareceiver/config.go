@@ -69,9 +69,8 @@ func (c *Config) Validate() error {
 	var errs error
 
 	if c.Settings.ReloadIntervals.Array == 0 {
-		errs = multierr.Append(errs, errors.New("reload interval for 'arrays' must be provided"))
+		errs = multierr.Append(errs, errors.New("reload interval for 'array' must be provided"))
 	}
-
 	if c.Settings.ReloadIntervals.Host == 0 {
 		errs = multierr.Append(errs, errors.New("reload interval for 'hosts' must be provided"))
 	}
