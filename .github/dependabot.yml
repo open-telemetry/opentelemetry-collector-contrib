@@ -43,7 +43,7 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
-    directory: "/connector/count"
+    directory: "/connector/countconnector"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"

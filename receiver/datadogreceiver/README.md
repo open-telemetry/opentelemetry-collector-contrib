@@ -7,13 +7,14 @@
 | Distributions            | [contrib] |
 
 ## Overview
-The Datadog APM Receiver accepts traces in the Datadog Trace Agent Format
-
+Accepts traces in the Datadog APM format.
 ### Supported Datadog APIs
 
 - v0.3 (msgpack and json)
 - v0.4 (msgpack and json)
 - v0.5 (msgpack custom format)
+- v0.6
+- v0.7
 ## Configuration
 
 Example:

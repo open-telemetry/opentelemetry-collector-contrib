@@ -44,18 +44,17 @@ var (
 )
 
 const (
-	readmeURL             = "https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/elasticsearchreceiver/README.md"
-	emitNodeVersionAttrID = "receiver.elasticsearch.emitNodeVersionAttr"
+	readmeURL = "https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/elasticsearchreceiver/README.md"
 )
 
-func init() {
-	featuregate.GlobalRegistry().MustRegisterID(
-		emitNodeVersionAttrID,
+var (
+	emitNodeVersionAttr = featuregate.GlobalRegistry().MustRegister(
+		"receiver.elasticsearch.emitNodeVersionAttr",
 		featuregate.StageAlpha,
 		featuregate.WithRegisterDescription("When enabled, all node metrics will be enriched with the node version resource attribute."),
 		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16847"),
 	)
-}
+)
 
 var errUnknownClusterStatus = errors.New("unknown cluster status")
 
@@ -79,12 +78,12 @@ func newElasticSearchScraper(
 		settings:            settings.TelemetrySettings,
 		cfg:                 cfg,
 		mb:                  metadata.NewMetricsBuilder(cfg.Metrics, settings),
-		emitNodeVersionAttr: featuregate.GlobalRegistry().IsEnabled(emitNodeVersionAttrID),
+		emitNodeVersionAttr: emitNodeVersionAttr.IsEnabled(),
 	}
 
 	if !e.emitNodeVersionAttr {
 		settings.Logger.Warn(
-			fmt.Sprintf("Feature gate %s is not enabled. Please see the README for more information: %s", emitNodeVersionAttrID, readmeURL),
+			fmt.Sprintf("Feature gate %s is not enabled. Please see the README for more information: %s", emitNodeVersionAttr.ID(), readmeURL),
 		)
 	}
 
