@@ -4,6 +4,105 @@
 
 <!-- next version -->
 
+## v0.71.0
+
+### 🛑 Breaking changes 🛑
+
+- `clickhouseexporter`: use endpoint instead of raw dsn in configuration. (#8028)
+- `azureeventhubreceiver`: Switch default formatter from "raw" to "azure". (#16549)
+- `elasticsearchreceiver`: Remove feature gates for index operations and cluster shards count (#14635)
+- `humioexporter`: Remove deprecated humio exporter (#17013)
+- `dockerstatsreceiver`: Removed the deprecated scraper implementation which was toggled by the featuregate `receiver.dockerstats.useScraperV2`. (#18449, #9794)
+- `tracegen`: Removes tracegen tool now that trace functionality has been moved to telemetrygen. (#9597)
+- `extension/jaegerremotesampling`: Remove misleading http endpoint from jaegerremotesampling extension. (#18058)
+
+### 🚩 Deprecations 🚩
+
+- `servicegraphprocessor`: Deprecate unprefix label set (#18268)
+- `signalfxexporter`: Deprecate config `translation_rules` in favor of metrics transform processor (#18218)
+
+### 🚀 New components 🚀
+
+- `haproxyreceiver`: Adds haproxy receiver to the components of the OpenTelemetry collector contrib distribution (#16829)
+- `receiver/purefbreceiver`: Add a new receiver that scrapes metrics using Purestorage FlashBlade API (#17528)
+- `datadog-receiver`: Allows you to ingest traces from DDAPM agents (#1852)
+- `logicmonitorexporter`: Enable Logicmonitor Exporter (#13727)
+- `filereceiver`: A receiver for reading the output of a File Exporter (#14638)
+  This component is not yet enabled.
+- `logicmonitorexporter`: Add implementation for Logicmonitor exporter (#13727)
+- `sshcheckreceiver`: Add sshcheck - a receiver to remotely check SSH servers. (#14312)
+  Check the availability of SSH and SFTP servers.
+- `pkg/stanza`: Remove deprecated `adapter.Convert` and `adapter.ConvertFrom` functions. (#17429)
+
+### 💡 Enhancements 💡
+
+- `headerssetter`: Extend the headers setter extension with header modification actions. (#16581, #7596)
+  Please update configurations to use the action that suits your requirements:
+    - `insert`: Inserts the new header if it does not exist.
+    - `update`: Updates the header value if it exists.
+    - `upsert`: Inserts a header if it does not exist and updates the header
+       if it exists.
+    - `delete`: Deletes the header.
+  The default action is `upsert`, however, in future versions, we'll require this
+  to be explicitly set.
+  
+- `azureeventhubreceiver`: Add Azure Event Hub receiver to contrib components (#18208)
+- `pkg/pdatatest`: Adds more test cases for traces (#18030)
+- `azuremonitorexporter`: Adds metrics exporting (#14915)
+- `datadogreceiver`: Adopting OTel apis for the Start and Stop limits (#18227)
+- `datadogexporter`: Datadog trace exporter will now retry sending usage metrics when it fails (#18238)
+- `datadogexporter`: Run API key validation on Datadog exporter in separate goroutine (#18238)
+- `pkg/stanza/operator/transformer/recombine`: add a new "max_log_size" config parameter to limit the max bytes size of the combined field (#17387)
+- `exporter/awsxray`: Adds `aws.xray.annotations` attribute to forward annotation keys from the AWS X-Ray receiver to the AWS X-Ray exporter. (#17550)
+- `googlecloudexporter`: New release of GCP exporter (#18197)
+  "Various features and bug fixes for the GCP exporter including:
+  * Fix GetClientOptions conflicts with default credentials
+  * Support multi-project quota usage
+  * Include service attributes in logs exporter by default
+  * Use a copy of shared log labels to prevent interference between LogRecords
+  * Bump Cloud Trace libraries to support auto-retry on failures"
+  
+- `googlemanagedprometheusexporter`: Promote GMP exporter to beta (#18197)
+- `http_forwarder`: Set factory stability level to beta. (#18100)
+- `pkg/pdatatest`: Bring reported errors to a consistent state. (#18041)
+- `signalfxexporter`: Avoid stringify every data point that does not match the filter. (#18274)
+- `influxdbexporter`: update influxdb-observability and influxdbexporter, to better utilize InfluxDB/IOx (#18080)
+- `influxdbreceiver`: routine update to dependency influxdb-observability for influxdbreceiver (#18080)
+- `k8sattributesprocessor`: Add end to end test framework for Kubernetes related components (#15651)
+- `k8sclusterreceiver`: Change internal metric store to use pdata (#18214)
+- `mongodbatlasreceiver`: Adds Events API Logs Support (#18061)
+- `signalfxexporter`: Move config validation to Validate (#18205)
+- `cmd/otelcontribcol`: Change otelcontribcol and oteltestbedcol to use the builder (#11867)
+- `pkg/pdatatest`: Ensure all pdata fields are checked. (#17865)
+- `pkg/pdatatest`: Do not ignore timestamps implicitly, provide explicit options for that. (#17865)
+- `haproxyreceiver`: Promote haproxy receiver to alpha (#18022)
+- `splunkhecexporter`: Support exporting log body to raw Splunk HEC endpoint (#18056)
+- `resourcedetectionprocessor/openshift`: Respect tls config when connecting to the api server. (#17961)
+- `signalfxexporter`: Move initialization of the config defaults in Unmarshal. (#18207)
+- `splunkhecexporter`: Expose HTTPClientSettings on splunkhecexporter (#16838)
+- `awsemfexporter`: Instead of supply metric metadata and label for aws calculator, supply with aws metric key which consists of metric metadata and label (#17207)
+- `datadogreceiver`: Adopting new Datadog Agent API levels (#18227)
+
+### 🧰 Bug fixes 🧰
+
+- `clickhouseexporter`: Fix StartTime is not inserted for Gauge and Counter (#18220)
+- `awscloudwatchreceiver`: Fixes issue where limit per discovery request could be configured to exceed API limitations. (#18293)
+  The request now always sets a limit of 50
+  
+- `cumulativetodeltaprocessor`: exclude the first point even in monotonic metrics (#17190, #18053)
+- `datadogexporter`: Fix a nil dereferencing bug on http response (#18099)
+- `prometheusreceiver`: Fix bug in prometheus receiver that panics if no configuration is given. (#16538)
+- `datadogexporter`: Fixed a bug where using multiple Datadog exporters with different API keys in separate pipelines could result in traces ending up in the wrong account. (#18233)
+- `receiver/splunkhec`: Return 400 status code when nested indextime fields are present (#17308)
+- `exporter/loki`: Do not retry on 4xx status code (excluding 429), as these are permanent errors (#18059)
+- `mezmoexporter`: No longer require a specific path.  This will allow for compatibility with both log analysis and pipeline. (#18011)
+- `servicegraphprocessor`: Fix cache cleanup in servicegraph proccesor to also purge stale series (#16262)
+- `snmpreceiver`: Set StartTimestamp to scraper start time. (#17984)
+- `snowflakereceiver`: added doc.go containing pragma for mdatagen (#17978)
+- `spanmetricsprocessor`: Fix a flaky test caused by a race condition between WaitGroup completion and observed logs being written and flushed. (#18014)
+- `splunkhecexporter`: Flatten nested attribute map before sending it to splunk as indexed fields. (#17308)
+- `exporter/datadog`: Fix bug where ddtags are not set correctly when logs are batched. (#17398)
+
 ## v0.70.0
 
 ### 🛑 Breaking changes 🛑
