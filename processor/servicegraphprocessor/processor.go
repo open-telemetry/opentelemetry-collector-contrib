@@ -309,6 +309,8 @@ func (p *serviceGraphProcessor) onExpire(e *store.Edge) {
 
 	if p.config.VirtualNodeFeatureEnabled {
 		// speculate virtual node before edge get expired.
+		// TODO: We could add some logic to check if the server span is an orphan.
+		// https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/17350#discussion_r1099949579
 		if len(e.ClientService) == 0 {
 			e.ClientService = "user"
 		}
@@ -319,7 +321,7 @@ func (p *serviceGraphProcessor) onExpire(e *store.Edge) {
 
 		e.ConnectionType = store.VirtualNode
 
-		p.store.OnComplete(e)
+		p.onComplete(e)
 	}
 }
 

@@ -43,8 +43,8 @@ type Store struct {
 	mtx sync.Mutex
 	m   map[Key]*list.Element
 
-	OnComplete Callback
-	OnExpire   Callback
+	onComplete Callback
+	onExpire   Callback
 
 	ttl      time.Duration
 	maxItems int
@@ -58,8 +58,8 @@ func NewStore(ttl time.Duration, maxItems int, onComplete, onExpire Callback) *S
 		l: list.New(),
 		m: make(map[Key]*list.Element),
 
-		OnComplete: onComplete,
-		OnExpire:   onExpire,
+		onComplete: onComplete,
+		onExpire:   onExpire,
 
 		ttl:      ttl,
 		maxItems: maxItems,
@@ -85,7 +85,7 @@ func (s *Store) UpsertEdge(key Key, update Callback) (isNew bool, err error) {
 		update(edge)
 
 		if edge.isComplete() {
-			s.OnComplete(edge)
+			s.onComplete(edge)
 			delete(s.m, key)
 			s.l.Remove(storedEdge)
 		}
@@ -97,7 +97,7 @@ func (s *Store) UpsertEdge(key Key, update Callback) (isNew bool, err error) {
 	update(edge)
 
 	if edge.isComplete() {
-		s.OnComplete(edge)
+		s.onComplete(edge)
 		return true, nil
 	}
 
@@ -138,7 +138,7 @@ func (s *Store) tryEvictHead() bool {
 		return false
 	}
 
-	s.OnExpire(headEdge)
+	s.onExpire(headEdge)
 	delete(s.m, headEdge.key)
 	s.l.Remove(head)
 
