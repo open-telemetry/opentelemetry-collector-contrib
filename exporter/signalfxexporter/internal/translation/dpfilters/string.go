@@ -101,3 +101,12 @@ func (f *StringFilter) Matches(s string) bool {
 	}
 	return matched
 }
+
+func (f *StringFilter) UnmarshalText(in []byte) error {
+	sf, err := NewStringFilter([]string{string(in)})
+	if err != nil {
+		return err
+	}
+	*f = *sf
+	return nil
+}

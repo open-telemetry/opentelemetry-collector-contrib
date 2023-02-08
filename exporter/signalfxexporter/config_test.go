@@ -52,6 +52,8 @@ func TestLoadConfig(t *testing.T) {
 
 	seventy := 70
 
+	allRE := mustStringFilter(t, "/^.*$/")
+
 	tests := []struct {
 		id       component.ID
 		expected *Config
@@ -163,6 +165,30 @@ func TestLoadConfig(t *testing.T) {
 					},
 				},
 				DeltaTranslationTTL: 3600,
+				ExcludeProperties: []dpfilters.PropertyFilter{
+					{
+						PropertyName:  mustStringFilter(t, "globbed*"),
+						PropertyValue: allRE, DimensionName: allRE, DimensionValue: allRE,
+					},
+					{
+						PropertyValue: mustStringFilter(t, "!globbed*value"),
+						PropertyName:  allRE, DimensionName: allRE, DimensionValue: allRE,
+					},
+					{
+						DimensionName: mustStringFilter(t, "globbed*"),
+						PropertyName:  allRE, PropertyValue: allRE, DimensionValue: allRE,
+					},
+					{
+						DimensionValue: mustStringFilter(t, "!globbed*value"),
+						PropertyName:   allRE, PropertyValue: allRE, DimensionName: allRE,
+					},
+					{
+						PropertyName:   mustStringFilter(t, "globbed*"),
+						PropertyValue:  mustStringFilter(t, "!globbed*value"),
+						DimensionName:  mustStringFilter(t, "globbed*"),
+						DimensionValue: mustStringFilter(t, "!globbed*value"),
+					},
+				},
 				Correlation: &correlation.Config{
 					HTTPClientSettings: confighttp.HTTPClientSettings{
 						Endpoint: "",
@@ -482,4 +508,10 @@ func TestUnmarshalExcludeMetrics(t *testing.T) {
 			assert.Len(t, tt.cfg.ExcludeMetrics, tt.excludeMetricsLen)
 		})
 	}
+}
+
+func mustStringFilter(t *testing.T, filter string) *dpfilters.StringFilter {
+	sf, err := dpfilters.NewStringFilter([]string{filter})
+	require.NoError(t, err)
+	return sf
 }
