@@ -12,7 +12,7 @@ const (
 	// language=SQL
 	insertSpanSQL = `INSERT INTO %s.%s (timestamp, traceid, spanid, parentspanid, tracestate, spanname, spankind, servicename, resourceattributes, spanattributes, duration, statuscode, statusmessage) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 	//language=SQL
-	createLogTableSQL = `CREATE TABLE IF NOT EXISTS %s.%s (TimeStamp DATE, TraceId text, SpanId text, TraceFlags int, SeverityText text, SeverityNumber int, ServiceName text, Body text, ResourceAttributes map<text, text>, LogAttributes map<text, text>, PRIMARY KEY (SpanId)) WITH COMPRESSION = {'class': '%s'}`
+	createLogTableSQL = `CREATE TABLE IF NOT EXISTS %s.%s (TimeStamp DATE, TraceId text, SpanId text, TraceFlags int, SeverityText text, SeverityNumber int, ServiceName text, Body text, ResourceAttributes map<text, text>, LogAttributes map<text, text>, PRIMARY KEY (SpanId, SeverityNumber)) WITH COMPRESSION = {'class': '%s'}`
 	//language=SQL
 	insertLogTableSQL = `INSERT INTO %s.%s (timestamp, traceid, spanid, traceflags, severitytext, severitynumber, servicename, body, resourceattributes, logattributes) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 )
