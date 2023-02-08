@@ -51,18 +51,9 @@ import (
 //	│ │ │ ┌─────────────────────────────────────────────────┴─┐
 //	└─┼─┼─► workerLoop()                                      │
 //	  └─┤ │   consumes sent log entries from workerChan,      │
-//	    │ │   translates received entries to plog.LogRecords,│
-//	    └─┤   hashes them to generate an ID, and sends them   │
-//	      │   onto batchChan                                  │
+//	    │ │   translates received entries to plog.LogRecords, │
+//	    └─┤   and sends them on flushChan                     │
 //	      └─────────────────────────┬─────────────────────────┘
-//	                                │
-//	                                ▼
-//	    ┌─────────────────────────────────────────────────────┐
-//	    │ aggregationLoop()                                   │
-//	    │   consumes from batchChan, aggregates log records   │
-//	    │   by marshaled Resource and sends the               │
-//	    │   aggregated buffer to flushChan                    │
-//	    └───────────────────────────┬─────────────────────────┘
 //	                                │
 //	                                ▼
 //	    ┌─────────────────────────────────────────────────────┐
@@ -83,10 +74,6 @@ type Converter struct {
 	workerChan chan []*entry.Entry
 	// workerCount configures the amount of workers started.
 	workerCount int
-	// aggregationChan obtains log entries converted by the pool of workers,
-	// in a form of logRecords grouped by Resource and then sends aggregated logs
-	// on flushChan.
-	aggregationChan chan []workerItem
 
 	// flushChan is an internal channel used for transporting batched plog.Logs.
 	flushChan chan plog.Logs
@@ -100,13 +87,12 @@ type Converter struct {
 
 func NewConverter(logger *zap.Logger) *Converter {
 	return &Converter{
-		workerChan:      make(chan []*entry.Entry),
-		workerCount:     int(math.Max(1, float64(runtime.NumCPU()/4))),
-		aggregationChan: make(chan []workerItem),
-		pLogsChan:       make(chan plog.Logs),
-		stopChan:        make(chan struct{}),
-		flushChan:       make(chan plog.Logs),
-		logger:          logger,
+		workerChan:  make(chan []*entry.Entry),
+		workerCount: int(math.Max(1, float64(runtime.NumCPU()/4))),
+		pLogsChan:   make(chan plog.Logs),
+		stopChan:    make(chan struct{}),
+		flushChan:   make(chan plog.Logs),
+		logger:      logger,
 	}
 }
 
@@ -117,9 +103,6 @@ func (c *Converter) Start() {
 	for i := 0; i < c.workerCount; i++ {
 		go c.workerLoop()
 	}
-
-	// c.wg.Add(1)
-	// go c.aggregationLoop()
 
 	c.wg.Add(1)
 	go c.flushLoop()
@@ -145,8 +128,8 @@ type workerItem struct {
 }
 
 // workerLoop is responsible for obtaining log entries from Batch() calls,
-// converting them to plog.LogRecords and sending them together with the
-// associated Resource through the aggregationChan for aggregation.
+// converting them to plog.LogRecords batched by Resource, and sending them
+// on flushChan.
 func (c *Converter) workerLoop() {
 	defer c.wg.Done()
 
@@ -197,60 +180,11 @@ func (c *Converter) workerLoop() {
 				}
 			}
 
-			select {
 			// Send plogs directly to flushChan
+			select {
 			case c.flushChan <- pLogs:
 			case <-c.stopChan:
 			}
-		}
-	}
-}
-
-// aggregationLoop is responsible for receiving the converted log entries and aggregating
-// them by Resource.
-func (c *Converter) aggregationLoop() {
-	defer c.wg.Done()
-
-	resourceIDToLogs := make(map[uint64]plog.Logs)
-
-	for {
-		select {
-		case workerItems, ok := <-c.aggregationChan:
-			if !ok {
-				return
-			}
-
-			for _, wi := range workerItems {
-				pLogs, ok := resourceIDToLogs[wi.ResourceID]
-				if ok {
-					lr := pLogs.ResourceLogs().
-						At(0).ScopeLogs().
-						At(0).LogRecords().AppendEmpty()
-					wi.LogRecord.CopyTo(lr)
-					continue
-				}
-
-				pLogs = plog.NewLogs()
-				logs := pLogs.ResourceLogs()
-				rls := logs.AppendEmpty()
-
-				resource := rls.Resource()
-				upsertToMap(wi.Resource, resource.Attributes())
-
-				ills := rls.ScopeLogs()
-				lr := ills.AppendEmpty().LogRecords().AppendEmpty()
-				wi.LogRecord.CopyTo(lr)
-
-				resourceIDToLogs[wi.ResourceID] = pLogs
-			}
-
-			for r, pLogs := range resourceIDToLogs {
-				c.flushChan <- pLogs
-				delete(resourceIDToLogs, r)
-			}
-
-		case <-c.stopChan:
-			return
 		}
 	}
 }
