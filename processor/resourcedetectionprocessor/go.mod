@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	cloud.google.com/go/compute/metadata v0.2.3
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.11.0
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.11.1
 	github.com/aws/aws-sdk-go v1.44.196
 	github.com/hashicorp/consul/api v1.18.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.70.0

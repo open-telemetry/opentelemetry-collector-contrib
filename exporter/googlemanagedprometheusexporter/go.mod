@@ -3,8 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/google
 go 1.18
 
 require (
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector v0.35.0
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector/googlemanagedprometheus v0.35.0
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector v0.35.1
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector/googlemanagedprometheus v0.35.1
 	github.com/cenkalti/backoff/v4 v4.2.0
 	github.com/stretchr/testify v1.8.1
 	go.opentelemetry.io/collector v0.70.1-0.20230207214007-faf5a578038f
