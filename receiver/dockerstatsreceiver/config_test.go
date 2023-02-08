@@ -52,7 +52,6 @@ func TestLoadConfig(t *testing.T) {
 				Timeout:          20 * time.Second,
 				DockerAPIVersion: 1.24,
 
-				ProvidePerCoreCPUMetrics: true,
 				ExcludedImages: []string{
 					"undesired-container",
 					"another-*-container",

@@ -1,0 +1,4 @@
+change_type: breaking
+component: dockerstatsreceiver
+note: "Removed `receiver.dockerstats.useScraperV2` and old scraperV1 implementation."
+issues: [18019, 9794]
