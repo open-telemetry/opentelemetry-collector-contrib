@@ -25,24 +25,24 @@ extensions:
 receivers:
   purefa:
     endpoint: http://172.0.0.1:9490/metrics
-    arrays:
-      - address: gse-array01
+    array:
+      - address: array01
         auth:
           authenticator: bearertokenauth/array01
     host:
-      - address: gse-array01
+      - address: array01
         auth:
           authenticator: bearertokenauth/array01
     directories:
-      - address: gse-array01
+      - address: array01
         auth:
           authenticator: bearertokenauth/array01
     pods:
-      - address: gse-array01
+      - address: array01
         auth:
           authenticator: bearertokenauth/array01
     volumes:
-      - address: gse-array01
+      - address: array01
         auth:
           authenticator: bearertokenauth/array01
     env: dev

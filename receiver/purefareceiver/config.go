@@ -32,8 +32,8 @@ type Config struct {
 	// Settings contains settings for the individual scrapers
 	Settings *Settings `mapstructure:"settings"`
 
-	// Arrays represents the list of arrays to query
-	Arrays []internal.ScraperConfig `mapstructure:"arrays"`
+	// Array represents the list of arrays to query
+	Array []internal.ScraperConfig `mapstructure:"array"`
 
 	// Hosts represents the list of hosts to query
 	Hosts []internal.ScraperConfig `mapstructure:"hosts"`
