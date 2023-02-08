@@ -10,7 +10,7 @@ else
 endif
 
 # SRC_ROOT is the top of the source tree.
-SRC_ROOT := $(realpath $(dir $(lastword $(MAKEFILE_LIST))))
+SRC_ROOT := $(shell git rev-parse --show-toplevel)
 
 # build tags required by any component should be defined as an independent variables and later added to GO_BUILD_TAGS below
 GO_BUILD_TAGS=""

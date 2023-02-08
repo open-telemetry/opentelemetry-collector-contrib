@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscon
 go 1.18
 
 require (
-	github.com/aws/aws-sdk-go v1.44.192
+	github.com/aws/aws-sdk-go v1.44.196
 	github.com/google/cadvisor v0.47.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.70.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.70.0
@@ -11,13 +11,13 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics v0.70.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.70.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.70.0
-	github.com/shirou/gopsutil/v3 v3.22.12
+	github.com/shirou/gopsutil/v3 v3.23.1
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.70.1-0.20230130215412-26bd7b2bf678
-	go.opentelemetry.io/collector/component v0.70.1-0.20230130215412-26bd7b2bf678
-	go.opentelemetry.io/collector/confmap v0.70.1-0.20230130215412-26bd7b2bf678
-	go.opentelemetry.io/collector/consumer v0.70.1-0.20230130215412-26bd7b2bf678
-	go.opentelemetry.io/collector/pdata v1.0.0-rc4.0.20230130215412-26bd7b2bf678
+	go.opentelemetry.io/collector v0.70.1-0.20230207214007-faf5a578038f
+	go.opentelemetry.io/collector/component v0.70.1-0.20230207214007-faf5a578038f
+	go.opentelemetry.io/collector/confmap v0.70.1-0.20230207214007-faf5a578038f
+	go.opentelemetry.io/collector/consumer v0.70.1-0.20230207214007-faf5a578038f
+	go.opentelemetry.io/collector/pdata v1.0.0-rc4.0.20230207214007-faf5a578038f
 	go.uber.org/zap v1.24.0
 	k8s.io/api v0.26.1
 	k8s.io/apimachinery v0.26.1
@@ -36,7 +36,7 @@ require (
 	github.com/cyphar/filepath-securejoin v0.2.3 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker/distribution v2.8.1+incompatible // indirect
-	github.com/docker/docker v20.10.23+incompatible // indirect
+	github.com/docker/docker v23.0.0+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/emicklei/go-restful/v3 v3.9.0 // indirect
@@ -103,11 +103,11 @@ require (
 	github.com/vishvananda/netlink v1.1.1-0.20201029203352-d40f9887b852 // indirect
 	github.com/vishvananda/netns v0.0.0-20200728191858-db3c7e526aae // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
-	go.opentelemetry.io/collector/featuregate v0.70.1-0.20230130215412-26bd7b2bf678 // indirect
+	go.opentelemetry.io/collector/featuregate v0.70.1-0.20230207214007-faf5a578038f // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.38.0 // indirect
-	go.opentelemetry.io/otel v1.12.0 // indirect
-	go.opentelemetry.io/otel/metric v0.35.0 // indirect
-	go.opentelemetry.io/otel/trace v1.12.0 // indirect
+	go.opentelemetry.io/otel v1.13.0 // indirect
+	go.opentelemetry.io/otel/metric v0.36.0 // indirect
+	go.opentelemetry.io/otel/trace v1.13.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
 	golang.org/x/net v0.5.0 // indirect

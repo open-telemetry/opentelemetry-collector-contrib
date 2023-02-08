@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datado
 go 1.18
 
 require (
-	github.com/DataDog/agent-payload/v5 v5.0.67
+	github.com/DataDog/agent-payload/v5 v5.0.70
 	github.com/DataDog/datadog-agent/pkg/otlp/model v0.43.0-rc.3.0.20230201114415-fae4332beb98
 	github.com/DataDog/datadog-agent/pkg/quantile v0.43.0-rc.3.0.20230201114415-fae4332beb98
 	github.com/DataDog/datadog-agent/pkg/trace v0.43.0-rc.3.0.20230201114415-fae4332beb98
@@ -11,7 +11,7 @@ require (
 	github.com/DataDog/gohai v0.0.0-20220718130825-1776f9beb9cc
 	github.com/DataDog/sketches-go v1.4.1
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.11.0
-	github.com/aws/aws-sdk-go v1.44.192
+	github.com/aws/aws-sdk-go v1.44.196
 	github.com/cenkalti/backoff/v4 v4.2.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.70.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.70.0
@@ -24,15 +24,15 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.70.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/stretchr/testify v1.8.1
-	go.opentelemetry.io/collector v0.70.1-0.20230130215412-26bd7b2bf678
-	go.opentelemetry.io/collector/component v0.70.1-0.20230130215412-26bd7b2bf678
-	go.opentelemetry.io/collector/confmap v0.70.1-0.20230130215412-26bd7b2bf678
-	go.opentelemetry.io/collector/consumer v0.70.1-0.20230130215412-26bd7b2bf678
-	go.opentelemetry.io/collector/featuregate v0.70.1-0.20230130215412-26bd7b2bf678
-	go.opentelemetry.io/collector/pdata v1.0.0-rc4.0.20230130215412-26bd7b2bf678
-	go.opentelemetry.io/collector/processor/batchprocessor v0.70.1-0.20230130215412-26bd7b2bf678
-	go.opentelemetry.io/collector/receiver/otlpreceiver v0.70.1-0.20230130215412-26bd7b2bf678
-	go.opentelemetry.io/collector/semconv v0.70.1-0.20230130215412-26bd7b2bf678
+	go.opentelemetry.io/collector v0.70.1-0.20230207214007-faf5a578038f
+	go.opentelemetry.io/collector/component v0.70.1-0.20230207214007-faf5a578038f
+	go.opentelemetry.io/collector/confmap v0.70.1-0.20230207214007-faf5a578038f
+	go.opentelemetry.io/collector/consumer v0.70.1-0.20230207214007-faf5a578038f
+	go.opentelemetry.io/collector/featuregate v0.70.1-0.20230207214007-faf5a578038f
+	go.opentelemetry.io/collector/pdata v1.0.0-rc4.0.20230207214007-faf5a578038f
+	go.opentelemetry.io/collector/processor/batchprocessor v0.70.1-0.20230207214007-faf5a578038f
+	go.opentelemetry.io/collector/receiver/otlpreceiver v0.70.1-0.20230207214007-faf5a578038f
+	go.opentelemetry.io/collector/semconv v0.70.1-0.20230207214007-faf5a578038f
 	go.uber.org/multierr v1.9.0
 	go.uber.org/zap v1.24.0
 	google.golang.org/protobuf v1.28.1
@@ -57,7 +57,7 @@ require (
 	github.com/DataDog/zstd v1.5.0 // indirect
 	github.com/Microsoft/go-winio v0.5.2 // indirect
 	github.com/Showmax/go-fqdn v1.0.0 // indirect
-	github.com/antonmedv/expr v1.10.5 // indirect
+	github.com/antonmedv/expr v1.12.0 // indirect
 	github.com/armon/go-metrics v0.3.10 // indirect
 	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
@@ -69,7 +69,7 @@ require (
 	github.com/coreos/go-systemd/v22 v22.3.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker/distribution v2.8.1+incompatible // indirect
-	github.com/docker/docker v20.10.23+incompatible // indirect
+	github.com/docker/docker v23.0.0+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
@@ -147,8 +147,7 @@ require (
 	github.com/prometheus/statsd_exporter v0.22.7 // indirect
 	github.com/rs/cors v1.8.3 // indirect
 	github.com/secure-systems-lab/go-securesystemslib v0.4.0 // indirect
-	github.com/shirou/gopsutil/v3 v3.22.12 // indirect
-	github.com/sirupsen/logrus v1.8.1 // indirect
+	github.com/shirou/gopsutil/v3 v3.23.1 // indirect
 	github.com/spf13/cobra v1.6.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
@@ -160,13 +159,13 @@ require (
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.38.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.38.0 // indirect
-	go.opentelemetry.io/contrib/propagators/b3 v1.12.0 // indirect
-	go.opentelemetry.io/otel v1.12.0 // indirect
-	go.opentelemetry.io/otel/exporters/prometheus v0.35.0 // indirect
-	go.opentelemetry.io/otel/metric v0.35.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.12.0 // indirect
-	go.opentelemetry.io/otel/sdk/metric v0.35.0 // indirect
-	go.opentelemetry.io/otel/trace v1.12.0 // indirect
+	go.opentelemetry.io/contrib/propagators/b3 v1.13.0 // indirect
+	go.opentelemetry.io/otel v1.13.0 // indirect
+	go.opentelemetry.io/otel/exporters/prometheus v0.36.0 // indirect
+	go.opentelemetry.io/otel/metric v0.36.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.13.0 // indirect
+	go.opentelemetry.io/otel/sdk/metric v0.36.0 // indirect
+	go.opentelemetry.io/otel/trace v1.13.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	golang.org/x/net v0.5.0 // indirect
 	golang.org/x/oauth2 v0.3.0 // indirect
