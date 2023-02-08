@@ -121,12 +121,6 @@ func (c *Converter) OutChannel() <-chan plog.Logs {
 	return c.pLogsChan
 }
 
-type workerItem struct {
-	Resource   map[string]interface{}
-	LogRecord  plog.LogRecord
-	ResourceID uint64
-}
-
 // workerLoop is responsible for obtaining log entries from Batch() calls,
 // converting them to plog.LogRecords batched by Resource, and sending them
 // on flushChan.
@@ -172,10 +166,11 @@ func (c *Converter) workerLoop() {
 				upsertToMap(resourceAttrs, resource.Attributes())
 
 				ills := rls.ScopeLogs()
+				sls := ills.AppendEmpty()
 
 				// Convert standard entries into plogs for the resource
 				for _, e := range resourceEntries {
-					lr := ills.AppendEmpty().LogRecords().AppendEmpty()
+					lr := sls.LogRecords().AppendEmpty()
 					convertInto(e, lr)
 				}
 			}
