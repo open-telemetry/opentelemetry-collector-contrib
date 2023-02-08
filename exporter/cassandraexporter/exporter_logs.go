@@ -81,7 +81,7 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 				r := rs.At(k)
 				logAttr := attributesToMap(r.Attributes())
 
-				err := e.client.Query(fmt.Sprintf(insertLogTableSQL, e.cfg.Keyspace, e.cfg.LogsTable),
+				e.client.Query(fmt.Sprintf(insertLogTableSQL, e.cfg.Keyspace, e.cfg.LogsTable),
 					r.Timestamp().AsTime(),
 					traceutil.TraceIDToHexOrEmptyString(r.TraceID()),
 					traceutil.SpanIDToHexOrEmptyString(r.SpanID()),
