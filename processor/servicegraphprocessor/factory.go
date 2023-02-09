@@ -30,7 +30,7 @@ const (
 	typeStr = "servicegraph"
 	// The stability level of the processor.
 	stability                = component.StabilityLevelAlpha
-	virtualNodeFeatureGateId = "processor.servicegraph.irtualNode"
+	virtualNodeFeatureGateId = "processor.servicegraph.virtualNode"
 )
 
 var virtualNodeFeatureGate *featuregate.Gate
