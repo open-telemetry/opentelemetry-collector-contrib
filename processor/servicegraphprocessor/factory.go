@@ -16,8 +16,9 @@ package servicegraphprocessor // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
-	"go.opentelemetry.io/collector/featuregate"
 	"time"
+
+	"go.opentelemetry.io/collector/featuregate"
 
 	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"

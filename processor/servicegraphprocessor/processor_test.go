@@ -16,10 +16,11 @@ package servicegraphprocessor
 
 import (
 	"context"
-	"go.opentelemetry.io/collector/featuregate"
 	"math/rand"
 	"testing"
 	"time"
+
+	"go.opentelemetry.io/collector/featuregate"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
