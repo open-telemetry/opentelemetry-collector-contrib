@@ -77,6 +77,9 @@ func NewStringFilter(items []string) (*StringFilter, error) {
 // if it is positively matched by a non-glob/regex pattern exactly
 // and is negated as well.  See the unit tests for examples.
 func (f *StringFilter) Matches(s string) bool {
+	if f == nil {
+		return true
+	}
 	negated, matched := f.staticSet[s]
 	// If a metric is negated and it matched it won't match anything else by
 	// definition.

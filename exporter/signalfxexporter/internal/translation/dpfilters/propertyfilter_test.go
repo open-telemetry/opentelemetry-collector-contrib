@@ -46,10 +46,10 @@ property_value: some.property.value`,
 			name: "default",
 			yaml: "",
 			expectedPropertyFilter: PropertyFilter{
-				DimensionName:  mustStringFilter(t, "/^.*$/"),
-				DimensionValue: mustStringFilter(t, "/^.*$/"),
-				PropertyName:   mustStringFilter(t, "/^.*$/"),
-				PropertyValue:  mustStringFilter(t, "/^.*$/"),
+				DimensionName:  nil,
+				DimensionValue: nil,
+				PropertyName:   nil,
+				PropertyValue:  nil,
 			},
 		},
 		{
@@ -68,12 +68,12 @@ property_value: '!/property.value/'`,
 		{
 			name:          "invalid regex",
 			yaml:          "dimension_name: '/(?=not.in.re2)/'",
-			expectedError: "failed unmarshalling PropertyFilter: 1 error(s) decoding:\n\n* error decoding 'dimension_name': error parsing regexp: invalid or unsupported Perl syntax: `(?=`",
+			expectedError: "1 error(s) decoding:\n\n* error decoding 'dimension_name': error parsing regexp: invalid or unsupported Perl syntax: `(?=`",
 		},
 		{
 			name:          "invalid glob",
 			yaml:          "dimension_value: '*[c-a]'",
-			expectedError: "failed unmarshalling PropertyFilter: 1 error(s) decoding:\n\n* error decoding 'dimension_value': hi character 'a' should be greater than lo 'c'",
+			expectedError: "1 error(s) decoding:\n\n* error decoding 'dimension_value': hi character 'a' should be greater than lo 'c'",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -83,7 +83,7 @@ property_value: '!/property.value/'`,
 
 			cm := confmap.NewFromStringMap(conf)
 			pf := &PropertyFilter{}
-			err = pf.Unmarshal(cm)
+			err = cm.Unmarshal(pf, confmap.WithErrorUnused())
 			if test.expectedError != "" {
 				require.EqualError(t, err, test.expectedError)
 			} else {

@@ -52,8 +52,6 @@ func TestLoadConfig(t *testing.T) {
 
 	seventy := 70
 
-	allRE := mustStringFilter(t, "/^.*$/")
-
 	tests := []struct {
 		id       component.ID
 		expected *Config
@@ -167,20 +165,16 @@ func TestLoadConfig(t *testing.T) {
 				DeltaTranslationTTL: 3600,
 				ExcludeProperties: []dpfilters.PropertyFilter{
 					{
-						PropertyName:  mustStringFilter(t, "globbed*"),
-						PropertyValue: allRE, DimensionName: allRE, DimensionValue: allRE,
+						PropertyName: mustStringFilter(t, "globbed*"),
 					},
 					{
 						PropertyValue: mustStringFilter(t, "!globbed*value"),
-						PropertyName:  allRE, DimensionName: allRE, DimensionValue: allRE,
 					},
 					{
 						DimensionName: mustStringFilter(t, "globbed*"),
-						PropertyName:  allRE, PropertyValue: allRE, DimensionValue: allRE,
 					},
 					{
 						DimensionValue: mustStringFilter(t, "!globbed*value"),
-						PropertyName:   allRE, PropertyValue: allRE, DimensionName: allRE,
 					},
 					{
 						PropertyName:   mustStringFilter(t, "globbed*"),

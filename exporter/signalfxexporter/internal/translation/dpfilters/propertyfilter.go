@@ -14,23 +14,9 @@
 
 package dpfilters // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation/dpfilters"
 
-import (
-	"fmt"
-
-	"go.opentelemetry.io/collector/confmap"
-)
-
-var anyREFilter = func() *StringFilter {
-	if sf, err := NewStringFilter([]string{"/^.*$/"}); err != nil {
-		panic(err)
-	} else {
-		return sf
-	}
-}()
-
 // PropertyFilter is a collection of *StringFilter items used in determining if a given property (name and value)
-// should be included with a dimension update request. The default values for all fields is the regex
-// StringFilter `/^.*$/ to match with any potential value.
+// should be included with a dimension update request. The default values for all fields is equivalent to the regex
+// StringFilter `/^.*$/` to match with any potential value.
 //
 // Examples:
 // Don't send any dimension updates for `k8s.pod.uid` dimension:
@@ -55,20 +41,4 @@ type PropertyFilter struct {
 	// If there are no sub-property filters for its enclosing entry, it will disable dimension updates
 	// for this dimension value in total.
 	DimensionValue *StringFilter `mapstructure:"dimension_value"`
-}
-
-func (pf *PropertyFilter) Unmarshal(in *confmap.Conf) error {
-	if pf == nil {
-		return fmt.Errorf("cannot unmarshal nil PropertyFilter")
-	}
-	if err := in.Unmarshal(pf, confmap.WithErrorUnused()); err != nil {
-		return fmt.Errorf("failed unmarshalling PropertyFilter: %w", err)
-	}
-	// default values should be /.*/ so that declared fields are what are examined
-	for _, p := range []**StringFilter{&pf.DimensionName, &pf.DimensionValue, &pf.PropertyName, &pf.PropertyValue} {
-		if *p == nil {
-			*p = anyREFilter
-		}
-	}
-	return nil
 }
