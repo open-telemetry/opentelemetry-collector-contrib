@@ -1,5 +1,4 @@
 // Copyright The OpenTelemetry Authors
-// Copyright (c) 2018 The Jaeger Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,11 +16,9 @@ package metrics // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"time"
 
-	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric/global"
 	"go.uber.org/atomic"
 	"go.uber.org/zap"
@@ -42,15 +39,15 @@ func (w worker) simulateMetrics() {
 	var i int
 	meter := global.Meter("telemetrygen")
 
-	index := 0
-	max := 1000
+	index := int64(0)
+	max := int64(1000)
 	if w.limitPerSecond != rate.Inf {
-		max = int(w.limitPerSecond)
+		max = int64(w.limitPerSecond)
 	}
 
+	gauge, _ := meter.Int64ObservableGauge("gen")
 	for w.running.Load() {
-		gauge, _ := meter.Int64UpDownCounter(fmt.Sprintf("iteration%d", index))
-		gauge.Add(context.Background(), int64(i), attribute.String("host.name", "myhost"))
+		gauge(int64(i))
 		if err := limiter.Wait(context.Background()); err != nil {
 			w.logger.Fatal("limiter waited failed, retry", zap.Error(err))
 		}
