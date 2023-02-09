@@ -155,7 +155,22 @@ func (e *opsrampOTLPExporter) shutdown(context.Context) error {
 func (e *opsrampOTLPExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
 	req := ptraceotlp.NewExportRequestFromTraces(td)
 	_, err := e.traceExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
-	return processError(err)
+	// trying to get new access token in case of expiration
+	if err != nil {
+		st := status.Convert(err)
+		if st.Code() == codes.Unauthenticated {
+			if err := e.updateExpiredToken(); err != nil {
+				return fmt.Errorf("couldn't retreive new token instead of expired: %w", err)
+			}
+			_, err = e.traceExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
+
+		}
+		if err != nil {
+			return err
+		}
+		return processError(err)
+	}
+	return nil
 }
 
 func (e *opsrampOTLPExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
