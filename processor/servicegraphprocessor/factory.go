@@ -30,14 +30,14 @@ const (
 	typeStr = "servicegraph"
 	// The stability level of the processor.
 	stability                = component.StabilityLevelAlpha
-	virtualNodeFeatureGateId = "processor.servicegraph.virtualNode"
+	virtualNodeFeatureGateID = "processor.servicegraph.virtualNode"
 )
 
 var virtualNodeFeatureGate *featuregate.Gate
 
 func init() {
 	virtualNodeFeatureGate = featuregate.GlobalRegistry().MustRegister(
-		virtualNodeFeatureGateId,
+		virtualNodeFeatureGateID,
 		featuregate.StageAlpha,
 		featuregate.WithRegisterDescription("When enabled, when the edge expires, processor checks if it has peer attributes(`db.name, net.sock.peer.addr, net.peer.name, rpc.service, http.url, http.target`), and then aggregate the metrics with virtual node."),
 		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/17196"),
