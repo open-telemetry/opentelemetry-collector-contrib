@@ -190,6 +190,7 @@ type RateLimitingCfg struct {
 type SpanCountCfg struct {
 	// Minimum number of spans in a Trace
 	MinSpans int32 `mapstructure:"min_spans"`
+	MaxSpans int32 `mapstructure:"max_spans"`
 }
 
 // Config holds the configuration for tail-based sampling.

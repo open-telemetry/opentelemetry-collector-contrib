@@ -22,15 +22,17 @@ import (
 type spanCount struct {
 	logger   *zap.Logger
 	minSpans int32
+	maxSpans int32
 }
 
 var _ PolicyEvaluator = (*spanCount)(nil)
 
 // NewSpanCount creates a policy evaluator sampling traces with more than one span per trace
-func NewSpanCount(logger *zap.Logger, minSpans int32) PolicyEvaluator {
+func NewSpanCount(logger *zap.Logger, minSpans, maxSpans int32) PolicyEvaluator {
 	return &spanCount{
 		logger:   logger,
 		minSpans: minSpans,
+		maxSpans: maxSpans,
 	}
 }
 
@@ -38,7 +40,18 @@ func NewSpanCount(logger *zap.Logger, minSpans int32) PolicyEvaluator {
 func (c *spanCount) Evaluate(_ pcommon.TraceID, traceData *TraceData) (Decision, error) {
 	c.logger.Debug("Evaluating spans counts in filter")
 
-	if int(traceData.SpanCount.Load()) >= int(c.minSpans) {
+	spanCount := traceData.SpanCount.Load()
+	isSampled := false
+
+	if c.maxSpans == 0 {
+		isSampled = int(spanCount) >= int(c.minSpans)
+	} else if c.minSpans == 0 {
+		isSampled = int(spanCount) <= int(c.maxSpans)
+	} else {
+		isSampled = int(spanCount) >= int(c.minSpans) && int(spanCount) <= int(c.maxSpans)
+	}
+
+	if isSampled {
 		return Sampled, nil
 	}
 	return NotSampled, nil
