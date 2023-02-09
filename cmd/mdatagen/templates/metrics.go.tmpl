@@ -147,6 +147,10 @@ func (m *metric{{ $name.Render }}) recordDataPoint(start pcommon.Timestamp, ts p
 	{{- range $metric.Attributes }}
 	{{- if eq (attributeInfo .).Type.Primitive "[]byte" }}
 	dp.Attributes().PutEmptyBytes("{{ attributeName . }}").FromRaw({{ .RenderUnexported }}AttributeValue)
+	{{- else if eq (attributeInfo .).Type.Primitive "[]any" }}
+	dp.Attributes().PutEmptySlice("{{ attributeName . }}").FromRaw({{ .RenderUnexported }}AttributeValue)
+	{{- else if eq (attributeInfo .).Type.Primitive "map[string]any" }}
+	dp.Attributes().PutEmptyMap("{{ attributeName . }}").FromRaw({{ .RenderUnexported }}AttributeValue)
 	{{- else }}
 	dp.Attributes().Put{{ (attributeInfo .).Type }}("{{ attributeName .}}", {{ .RenderUnexported }}AttributeValue)
 	{{- end }}
@@ -285,6 +289,10 @@ func With{{ $name.Render }}(val {{ $attr.Type.Primitive }}) ResourceMetricsOptio
 		if ras.{{ $name.Render }}.Enabled {
 			{{- if eq $attr.Type.Primitive "[]byte" }}
 			rm.Resource().Attributes().PutEmptyBytes("{{ attributeName $name}}").FromRaw(val)
+			{{- else if eq $attr.Type.Primitive "[]any" }}
+			rm.Resource().Attributes().PutEmptySlice("{{ attributeName $name}}").FromRaw(val)
+			{{- else if eq $attr.Type.Primitive "map[string]any" }}
+			rm.Resource().Attributes().PutEmptyMap("{{ attributeName $name}}").FromRaw(val)
 			{{- else }}
 			rm.Resource().Attributes().Put{{ $attr.Type }}("{{ attributeName $name}}", val)
 			{{- end }}
