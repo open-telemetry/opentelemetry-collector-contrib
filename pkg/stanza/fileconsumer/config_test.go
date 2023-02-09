@@ -492,6 +492,34 @@ func TestBuild(t *testing.T) {
 			require.Error,
 			nil,
 		},
+		{
+			"InvalidNegativePollFileLimit",
+			func(f *Config) {
+				f.PollFileLimit = -1
+			},
+			require.Error,
+			nil,
+		},
+		{
+			"InvalidTooSmallPollFileLimit",
+			func(f *Config) {
+				f.MaxConcurrentFiles = 5
+				f.PollFileLimit = 4
+			},
+			require.Error,
+			nil,
+		},
+		{
+			"ValidPollFileLimit",
+			func(f *Config) {
+				f.MaxConcurrentFiles = 5
+				f.PollFileLimit = 6
+			},
+			require.NoError,
+			func(t *testing.T, m *Manager) {
+				require.Equal(t, 6, m.pollFileLimit)
+			},
+		},
 	}
 
 	for _, tc := range cases {

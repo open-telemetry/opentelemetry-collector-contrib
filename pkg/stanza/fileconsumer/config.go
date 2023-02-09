@@ -61,6 +61,7 @@ type Config struct {
 	IncludeFilePath         bool                  `mapstructure:"include_file_path,omitempty"`
 	IncludeFileNameResolved bool                  `mapstructure:"include_file_name_resolved,omitempty"`
 	IncludeFilePathResolved bool                  `mapstructure:"include_file_path_resolved,omitempty"`
+	PollFileLimit           int                   `mapstructure:"poll_cycle_file_limit,omitempty"`
 	PollInterval            time.Duration         `mapstructure:"poll_interval,omitempty"`
 	StartAt                 string                `mapstructure:"start_at,omitempty"`
 	FingerprintSize         helper.ByteSize       `mapstructure:"fingerprint_size,omitempty"`
@@ -139,6 +140,7 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit EmitFunc, factory s
 		roller:          newRoller(),
 		pollInterval:    c.PollInterval,
 		maxBatchFiles:   c.MaxConcurrentFiles / 2,
+		pollFileLimit:   c.PollFileLimit,
 		deleteAfterRead: c.DeleteAfterRead,
 		knownFiles:      make([]*Reader, 0, 10),
 		seenPaths:       make(map[string]struct{}, 100),
@@ -180,6 +182,12 @@ func (c Config) validate() error {
 
 	if c.DeleteAfterRead && c.StartAt == "end" {
 		return fmt.Errorf("`delete_after_read` cannot be used with `start_at: end`")
+	}
+
+	// Poll file limit can be 0 to signal unlimited or it must be greater than or equal to
+	// max concurrent files to ensure we can read at least the configured max concurrent files in a polling cycle.
+	if c.PollFileLimit < 0 || (c.PollFileLimit < c.MaxConcurrentFiles && c.PollFileLimit != 0) {
+		return fmt.Errorf("`poll_file_limit` must be 0 or greater than or equal to `max_concurrent_files`")
 	}
 
 	_, err := c.Splitter.EncodingConfig.Build()
