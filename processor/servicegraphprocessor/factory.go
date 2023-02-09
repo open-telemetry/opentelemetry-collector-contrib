@@ -16,6 +16,7 @@ package servicegraphprocessor // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
+	"go.opentelemetry.io/collector/featuregate"
 	"time"
 
 	"go.opencensus.io/stats/view"
@@ -28,8 +29,20 @@ const (
 	// The value of "type" key in configuration.
 	typeStr = "servicegraph"
 	// The stability level of the processor.
-	stability = component.StabilityLevelAlpha
+	stability                = component.StabilityLevelAlpha
+	virtualNodeFeatureGateId = "processor.servicegraph.irtualNode"
 )
+
+var virtualNodeFeatureGate *featuregate.Gate
+
+func init() {
+	virtualNodeFeatureGate = featuregate.GlobalRegistry().MustRegister(
+		virtualNodeFeatureGateId,
+		featuregate.StageAlpha,
+		featuregate.WithRegisterDescription("When enabled, when the edge expires, processor checks if it has peer attributes(`db.name, net.sock.peer.addr, net.peer.name, rpc.service, http.url, http.target`), and then aggregate the metrics with virtual node."),
+		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/17196"),
+	)
+}
 
 // NewFactory creates a factory for the servicegraph processor.
 func NewFactory() processor.Factory {

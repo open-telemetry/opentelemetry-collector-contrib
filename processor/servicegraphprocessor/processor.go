@@ -213,7 +213,7 @@ func (p *serviceGraphProcessor) aggregateMetrics(ctx context.Context, td ptrace.
 						e.Failed = e.Failed || span.Status().Code() == ptrace.StatusCodeError
 						p.upsertDimensions(clientKind, e.Dimensions, rAttributes, span.Attributes())
 
-						if p.config.VirtualNodeFeatureEnabled {
+						if virtualNodeFeatureGate.IsEnabled() {
 							p.upsertPeerAttributes(PeerAttributes, e.Peer, span.Attributes())
 						}
 
@@ -307,7 +307,7 @@ func (p *serviceGraphProcessor) onExpire(e *store.Edge) {
 
 	stats.Record(context.Background(), statExpiredEdges.M(1))
 
-	if p.config.VirtualNodeFeatureEnabled {
+	if virtualNodeFeatureGate.IsEnabled() {
 		// speculate virtual node before edge get expired.
 		// TODO: We could add some logic to check if the server span is an orphan.
 		// https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/17350#discussion_r1099949579
