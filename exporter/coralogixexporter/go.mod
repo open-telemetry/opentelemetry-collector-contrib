@@ -10,12 +10,11 @@ require (
 	go.opentelemetry.io/collector/confmap v0.71.0
 	go.opentelemetry.io/collector/consumer v0.71.0
 	go.opentelemetry.io/collector/pdata v1.0.0-rc5
-	google.golang.org/genproto v0.0.0-20221202195650-67e5cbc046fd
-	google.golang.org/grpc v1.52.3
+	google.golang.org/genproto v0.0.0-20230110181048-76db0878b65f
+	google.golang.org/grpc v1.53.0
 )
 
 require (
-	cloud.google.com/go/compute/metadata v0.2.3 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect

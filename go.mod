@@ -145,7 +145,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/riakreceiver v0.71.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver v0.71.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver v0.71.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver v0.71.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver v0.71.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver v0.71.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver v0.71.0
@@ -182,7 +182,7 @@ require (
 require (
 	bitbucket.org/atlassian/go-asap/v2 v2.6.0 // indirect
 	cloud.google.com/go v0.107.0 // indirect
-	cloud.google.com/go/compute v1.14.0 // indirect
+	cloud.google.com/go/compute v1.15.1 // indirect
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
 	cloud.google.com/go/iam v0.8.0 // indirect
 	cloud.google.com/go/logging v1.6.1 // indirect
@@ -296,8 +296,8 @@ require (
 	github.com/cihub/seelog v0.0.0-20170130134532-f561c5e57575 // indirect
 	github.com/cilium/ebpf v0.8.1 // indirect
 	github.com/cloudfoundry-incubator/uaago v0.0.0-20190307164349-8136b7bbe76e // indirect
-	github.com/cncf/udpa/go v0.0.0-20210930031921-04548b0d99d4 // indirect
-	github.com/cncf/xds/go v0.0.0-20220314180256-7f1daf1720fc // indirect
+	github.com/cncf/udpa/go v0.0.0-20220112060539-c52dc94e7fbe // indirect
+	github.com/cncf/xds/go v0.0.0-20230105202645-06c439db220b // indirect
 	github.com/containerd/cgroups v1.0.4 // indirect
 	github.com/containerd/console v1.0.3 // indirect
 	github.com/containerd/ttrpc v1.1.0 // indirect
@@ -618,7 +618,7 @@ require (
 	google.golang.org/api v0.109.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20230125152338-dcaf20b6aeaa // indirect
-	google.golang.org/grpc v1.52.3 // indirect
+	google.golang.org/grpc v1.53.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
