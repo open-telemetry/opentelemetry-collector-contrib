@@ -55,20 +55,27 @@ func CreateLogExport() []byte {
 	resource := resources.AppendEmpty()
 	libs := resource.ScopeLogs()
 	logs := libs.AppendEmpty()
-	logs.LogRecords().AppendEmpty()
+	logs.Scope().SetName("test")
+	logs.Scope().SetVersion("0.0")
+	log := logs.LogRecords().AppendEmpty()
+	log.Body().SetStr("test")
 	marshaler := plog.ProtoMarshaler{}
 	data, _ := marshaler.MarshalLogs(out)
 	return data
 }
 
-func CreateGZippedLogExport() []byte {
-	payload := CreateLogExport()
+func CreateGZipped(payload []byte) []byte {
 	var buf bytes.Buffer
 	writer := gzip.NewWriter(&buf)
 	writer.Write(payload)
+	writer.Close()
 	return buf.Bytes()
 }
 
 func CreateTextExport() []byte {
 	return []byte("this is text")
+}
+
+func CreateGarbageBytes() []byte {
+	return []byte("@#%WEHDGFJERSERARTVAWCSDTRQAEFSGDNDTBD")
 }

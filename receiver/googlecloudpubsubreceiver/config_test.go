@@ -139,3 +139,43 @@ func TestLogConfigValidation(t *testing.T) {
 	c.Encoding = "otlp_proto_log"
 	assert.NoError(t, c.validateForLog())
 }
+
+func TestPushValidation(t *testing.T) {
+	factory := NewFactory()
+	c := factory.CreateDefaultConfig().(*Config)
+	c.Mode = "push"
+	assert.Error(t, c.validate())
+	c.Push.Endpoint = "localhost:1234"
+	assert.NoError(t, c.validate())
+	c.Subscription = "projects/my-project/subscriptions/my-subscription"
+	assert.Error(t, c.validate())
+	assert.Equal(t, "/", c.Push.Path)
+}
+
+func TestMode(t *testing.T) {
+	factory := NewFactory()
+	c := factory.CreateDefaultConfig().(*Config)
+	c.Mode = ""
+	c.Subscription = "projects/my-project/subscriptions/my-subscription"
+	assert.NoError(t, c.validate())
+	assert.Equal(t, "pull", c.Mode)
+	c.Mode = "push"
+	c.Push.Endpoint = "localhost:1234"
+	c.Subscription = ""
+	assert.NoError(t, c.validate())
+	c.Mode = "foo"
+	assert.Error(t, c.validate())
+}
+
+func TestCompression(t *testing.T) {
+	factory := NewFactory()
+	c := factory.CreateDefaultConfig().(*Config)
+	c.Mode = "push"
+	c.Push.Endpoint = "localhost:1234"
+	c.Compression = ""
+	assert.NoError(t, c.validate())
+	c.Compression = "gzip"
+	assert.NoError(t, c.validate())
+	c.Compression = "foo"
+	assert.Error(t, c.validate())
+}

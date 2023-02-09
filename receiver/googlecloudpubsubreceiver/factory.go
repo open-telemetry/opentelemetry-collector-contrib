@@ -33,7 +33,7 @@ const (
 
 func NewFactory() receiver.Factory {
 	f := &pubsubReceiverFactory{
-		receivers: make(map[*Config]*pubsubReceiver),
+		receivers: make(map[*Config]psReceiver),
 	}
 	return receiver.NewFactory(
 		typeStr,
@@ -45,19 +45,30 @@ func NewFactory() receiver.Factory {
 }
 
 type pubsubReceiverFactory struct {
-	receivers map[*Config]*pubsubReceiver
+	receivers map[*Config]psReceiver
+}
+
+type psReceiver interface {
+	receiver.Traces
+	receiver.Metrics
+	receiver.Logs
+
+	setTracesConsumer(consumer.Traces)
+	setMetricsConsumer(consumer.Metrics)
+	setLogsConsumer(consumer.Logs)
 }
 
 func (factory *pubsubReceiverFactory) CreateDefaultConfig() component.Config {
 	return &Config{}
 }
 
-func (factory *pubsubReceiverFactory) ensureReceiver(params receiver.CreateSettings, config component.Config) (*pubsubReceiver, error) {
-	receiver := factory.receivers[config.(*Config)]
+func (factory *pubsubReceiverFactory) ensureReceiver(params receiver.CreateSettings, config *Config) (psReceiver, error) {
+	var receiver psReceiver
+	receiver = factory.receivers[config]
 	if receiver != nil {
 		return receiver, nil
 	}
-	rconfig := config.(*Config)
+
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
 		ReceiverID:             params.ID,
 		Transport:              reportTransport,
@@ -66,13 +77,24 @@ func (factory *pubsubReceiverFactory) ensureReceiver(params receiver.CreateSetti
 	if err != nil {
 		return nil, err
 	}
-	receiver = &pubsubReceiver{
-		logger:    params.Logger,
-		obsrecv:   obsrecv,
-		userAgent: strings.ReplaceAll(rconfig.UserAgent, "{{version}}", params.BuildInfo.Version),
-		config:    rconfig,
+
+	psr := pubsubReceiver{
+		logger:            params.Logger,
+		obsrecv:           obsrecv,
+		config:            config,
+		telemetrySettings: params.TelemetrySettings,
 	}
-	factory.receivers[config.(*Config)] = receiver
+	if config.Mode == "push" {
+		receiver = &pubsubPushReceiver{
+			pubsubReceiver: &psr,
+		}
+	} else {
+		receiver = &pubsubPullReceiver{
+			pubsubReceiver: &psr,
+			userAgent:      strings.ReplaceAll(config.UserAgent, "{{version}}", params.BuildInfo.Version),
+		}
+	}
+	factory.receivers[config] = receiver
 	return receiver, nil
 }
 
@@ -89,11 +111,11 @@ func (factory *pubsubReceiverFactory) CreateTracesReceiver(
 	if err != nil {
 		return nil, err
 	}
-	receiver, err := factory.ensureReceiver(params, cfg)
+	receiver, err := factory.ensureReceiver(params, cfg.(*Config))
 	if err != nil {
 		return nil, err
 	}
-	receiver.tracesConsumer = consumer
+	receiver.setTracesConsumer(consumer)
 	return receiver, nil
 }
 
@@ -106,16 +128,18 @@ func (factory *pubsubReceiverFactory) CreateMetricsReceiver(
 	if consumer == nil {
 		return nil, component.ErrNilNextConsumer
 	}
-	err := cfg.(*Config).validateForMetric()
+	config := cfg.(*Config)
+	err := config.validateForMetric()
 	if err != nil {
 		return nil, err
 	}
-	receiver, err := factory.ensureReceiver(params, cfg)
+	receiver, err := factory.ensureReceiver(params, cfg.(*Config))
 	if err != nil {
 		return nil, err
 	}
-	receiver.metricsConsumer = consumer
+	receiver.setMetricsConsumer(consumer)
 	return receiver, nil
+
 }
 
 func (factory *pubsubReceiverFactory) CreateLogsReceiver(
@@ -131,10 +155,10 @@ func (factory *pubsubReceiverFactory) CreateLogsReceiver(
 	if err != nil {
 		return nil, err
 	}
-	receiver, err := factory.ensureReceiver(params, cfg)
+	receiver, err := factory.ensureReceiver(params, cfg.(*Config))
 	if err != nil {
 		return nil, err
 	}
-	receiver.logsConsumer = consumer
+	receiver.setLogsConsumer(consumer)
 	return receiver, nil
 }

@@ -34,25 +34,26 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver/testdata"
 )
 
-func TestStartReceiverNoSubscription(t *testing.T) {
+func TestStartPullReceiverNoSubscription(t *testing.T) {
 	ctx := context.Background()
 	// Start a fake server running locally.
 	srv := pstest.NewServer()
 	defer srv.Close()
 	core, _ := observer.New(zap.WarnLevel)
-	receiver := &pubsubReceiver{
-		logger:    zap.New(core),
-		userAgent: "test-user-agent",
-
-		config: &Config{
-			Endpoint:  srv.Addr,
-			Insecure:  true,
-			ProjectID: "my-project",
-			TimeoutSettings: exporterhelper.TimeoutSettings{
-				Timeout: 12 * time.Second,
+	receiver := &pubsubPullReceiver{
+		pubsubReceiver: &pubsubReceiver{
+			logger: zap.New(core),
+			config: &Config{
+				Endpoint:  srv.Addr,
+				Insecure:  true,
+				ProjectID: "my-project",
+				TimeoutSettings: exporterhelper.TimeoutSettings{
+					Timeout: 12 * time.Second,
+				},
+				Subscription: "projects/my-project/subscriptions/otlp",
 			},
-			Subscription: "projects/my-project/subscriptions/otlp",
 		},
+		userAgent: "test-user-agent",
 	}
 	defer func() {
 		assert.NoError(t, receiver.Shutdown(ctx))
@@ -65,7 +66,7 @@ func TestStartReceiverNoSubscription(t *testing.T) {
 	assert.NoError(t, receiver.Start(ctx, nil))
 }
 
-func TestReceiver(t *testing.T) {
+func TestPullReceiver(t *testing.T) {
 	ctx := context.Background()
 	// Start a fake server running locally.
 	srv := pstest.NewServer()
@@ -95,23 +96,24 @@ func TestReceiver(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	receiver := &pubsubReceiver{
-		logger:    zap.New(core),
-		obsrecv:   obsrecv,
-		userAgent: "test-user-agent",
-
-		config: &Config{
-			Endpoint:  srv.Addr,
-			Insecure:  true,
-			ProjectID: "my-project",
-			TimeoutSettings: exporterhelper.TimeoutSettings{
-				Timeout: 1 * time.Second,
+	receiver := &pubsubPullReceiver{
+		pubsubReceiver: &pubsubReceiver{
+			logger:  zap.New(core),
+			obsrecv: obsrecv,
+			config: &Config{
+				Endpoint:  srv.Addr,
+				Insecure:  true,
+				ProjectID: "my-project",
+				TimeoutSettings: exporterhelper.TimeoutSettings{
+					Timeout: 1 * time.Second,
+				},
+				Subscription: "projects/my-project/subscriptions/otlp",
 			},
-			Subscription: "projects/my-project/subscriptions/otlp",
+			tracesConsumer:  traceSink,
+			metricsConsumer: metricSink,
+			logsConsumer:    logSink,
 		},
-		tracesConsumer:  traceSink,
-		metricsConsumer: metricSink,
-		logsConsumer:    logSink,
+		userAgent: "test-user-agent",
 	}
 	assert.NoError(t, receiver.Start(ctx, nil))
 

@@ -18,13 +18,15 @@ import (
 	"fmt"
 	"regexp"
 
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 var subscriptionMatcher = regexp.MustCompile(`projects/[a-z][a-z0-9\-]*/subscriptions/`)
 
 type Config struct {
-
+	// The mode the receiver is running in, this is either `pull` or `push` (default is `pull`)
+	Mode string `mapstructure:"mode"`
 	// Google Cloud Project ID where the Pubsub client will connect to
 	ProjectID string `mapstructure:"project"`
 	// User agent that will be used by the Pubsub client to connect to the service
@@ -45,6 +47,26 @@ type Config struct {
 
 	// The client id that will be used by Pubsub to make load balancing decisions
 	ClientID string `mapstructure:"client_id"`
+
+	// The configuration block, when selected mode is `push`
+	Push PushConfig `mapstructure:"push"`
+}
+
+type PushConfig struct {
+	// The path on which to listen for Pub/Sub messages
+	Path string `mapstructure:"path"`
+	// The settings for the HTTP server listening for requests.
+	confighttp.HTTPServerSettings `mapstructure:",squash"`
+}
+
+func (c *PushConfig) validate() error {
+	if c.Path == "" {
+		c.Path = "/"
+	}
+	if c.Endpoint == "" {
+		return fmt.Errorf("push endpoint need to be defined in push mode")
+	}
+	return nil
 }
 
 func (config *Config) validateForLog() error {
@@ -92,9 +114,26 @@ func (config *Config) validateForMetric() error {
 }
 
 func (config *Config) validate() error {
-	if !subscriptionMatcher.MatchString(config.Subscription) {
-		return fmt.Errorf("subscription '%s' is not a valid format, use 'projects/<project_id>/subscriptions/<name>'", config.Subscription)
+	if config.Mode == "" {
+		config.Mode = "pull"
 	}
+	switch config.Mode {
+	case "pull":
+		if !subscriptionMatcher.MatchString(config.Subscription) {
+			return fmt.Errorf("subscription '%s' is not a valid format, use 'projects/<project_id>/subscriptions/<name>'", config.Subscription)
+		}
+	case "push":
+		if config.Subscription != "" {
+			return fmt.Errorf("subscription should not specified in push mode")
+		}
+		err := config.Push.validate()
+		if err != nil {
+			return err
+		}
+	default:
+		return fmt.Errorf("mode %v is not supported. supported modes include [pull,push]", config.Mode)
+	}
+
 	switch config.Compression {
 	case "":
 	case "gzip":

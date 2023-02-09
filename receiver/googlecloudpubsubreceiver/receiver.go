@@ -18,14 +18,11 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
-	"errors"
-	"fmt"
 	"io"
 	"strings"
 	"sync"
+	"time"
 
-	pubsub "cloud.google.com/go/pubsub/apiv1"
-	"cloud.google.com/go/pubsub/apiv1/pubsubpb"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
@@ -34,11 +31,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
-	"google.golang.org/api/option"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver/internal"
 )
 
 // https://cloud.google.com/pubsub/docs/reference/rpc/google.pubsub.v1#streamingpullrequest
@@ -48,14 +40,22 @@ type pubsubReceiver struct {
 	tracesConsumer     consumer.Traces
 	metricsConsumer    consumer.Metrics
 	logsConsumer       consumer.Logs
-	userAgent          string
 	config             *Config
-	client             *pubsub.SubscriberClient
 	tracesUnmarshaler  ptrace.Unmarshaler
 	metricsUnmarshaler pmetric.Unmarshaler
 	logsUnmarshaler    plog.Unmarshaler
-	handler            *internal.StreamHandler
 	startOnce          sync.Once
+	telemetrySettings  component.TelemetrySettings
+}
+
+func (receiver *pubsubReceiver) setTracesConsumer(next consumer.Traces) {
+	receiver.tracesConsumer = next
+}
+func (receiver *pubsubReceiver) setMetricsConsumer(next consumer.Metrics) {
+	receiver.metricsConsumer = next
+}
+func (receiver *pubsubReceiver) setLogsConsumer(next consumer.Logs) {
+	receiver.logsConsumer = next
 }
 
 type encoding int
@@ -75,65 +75,11 @@ const (
 	gZip                     = iota
 )
 
-func (receiver *pubsubReceiver) generateClientOptions() (copts []option.ClientOption) {
-	if receiver.userAgent != "" {
-		copts = append(copts, option.WithUserAgent(receiver.userAgent))
-	}
-	if receiver.config.Endpoint != "" {
-		if receiver.config.Insecure {
-			var dialOpts []grpc.DialOption
-			if receiver.userAgent != "" {
-				dialOpts = append(dialOpts, grpc.WithUserAgent(receiver.userAgent))
-			}
-			conn, _ := grpc.Dial(receiver.config.Endpoint, append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))...)
-			copts = append(copts, option.WithGRPCConn(conn))
-		} else {
-			copts = append(copts, option.WithEndpoint(receiver.config.Endpoint))
-		}
-	}
-	return copts
-}
-
-func (receiver *pubsubReceiver) Start(ctx context.Context, _ component.Host) error {
-	if receiver.tracesConsumer == nil && receiver.metricsConsumer == nil && receiver.logsConsumer == nil {
-		return errors.New("cannot start receiver: no consumers were specified")
-	}
-
-	var startErr error
-	receiver.startOnce.Do(func() {
-		copts := receiver.generateClientOptions()
-		client, err := pubsub.NewSubscriberClient(ctx, copts...)
-		if err != nil {
-			startErr = fmt.Errorf("failed creating the gRPC client to Pubsub: %w", err)
-			return
-		}
-		receiver.client = client
-
-		err = receiver.createReceiverHandler(ctx)
-		if err != nil {
-			startErr = fmt.Errorf("failed to create ReceiverHandler: %w", err)
-			return
-		}
-	})
-	receiver.tracesUnmarshaler = &ptrace.ProtoUnmarshaler{}
-	receiver.metricsUnmarshaler = &pmetric.ProtoUnmarshaler{}
-	receiver.logsUnmarshaler = &plog.ProtoUnmarshaler{}
-	return startErr
-}
-
-func (receiver *pubsubReceiver) Shutdown(_ context.Context) error {
-	receiver.logger.Info("Stopping Google Pubsub receiver")
-	receiver.handler.CancelNow()
-	receiver.logger.Info("Stopped Google Pubsub receiver")
-	return nil
-}
-
-func (receiver *pubsubReceiver) handleLogStrings(ctx context.Context, message *pubsubpb.ReceivedMessage) error {
+func (receiver *pubsubReceiver) handleLogStrings(ctx context.Context, rawData []byte, timestamp time.Time) error {
 	if receiver.logsConsumer == nil {
 		return nil
 	}
-	data := string(message.Message.Data)
-	timestamp := message.GetMessage().PublishTime
+	data := string(rawData)
 
 	out := plog.NewLogs()
 	logs := out.ResourceLogs()
@@ -143,7 +89,7 @@ func (receiver *pubsubReceiver) handleLogStrings(ctx context.Context, message *p
 	lr := ills.LogRecords().AppendEmpty()
 
 	lr.Body().SetStr(data)
-	lr.SetTimestamp(pcommon.NewTimestampFromTime(timestamp.AsTime()))
+	lr.SetTimestamp(pcommon.NewTimestampFromTime(timestamp))
 	return receiver.logsConsumer.ConsumeLogs(ctx, out)
 }
 
@@ -206,7 +152,7 @@ func (receiver *pubsubReceiver) handleLog(ctx context.Context, payload []byte, c
 	return nil
 }
 
-func (receiver *pubsubReceiver) detectEncoding(attributes map[string]string) (encoding, compression) {
+func detectEncoding(config *Config, attributes map[string]string) (encoding, compression) {
 	otlpEncoding := unknown
 	otlpCompression := uncompressed
 
@@ -225,8 +171,8 @@ func (receiver *pubsubReceiver) detectEncoding(attributes map[string]string) (en
 		otlpEncoding = rawTextLog
 	}
 
-	if otlpEncoding == unknown && receiver.config.Encoding != "" {
-		switch receiver.config.Encoding {
+	if otlpEncoding == unknown && config.Encoding != "" {
+		switch config.Encoding {
 		case "otlp_proto_trace":
 			otlpEncoding = otlpProtoTrace
 		case "otlp_proto_metric":
@@ -243,47 +189,10 @@ func (receiver *pubsubReceiver) detectEncoding(attributes map[string]string) (en
 		otlpCompression = gZip
 	}
 
-	if otlpCompression == uncompressed && receiver.config.Compression != "" {
-		if receiver.config.Compression == "gzip" {
+	if otlpCompression == uncompressed && config.Compression != "" {
+		if config.Compression == "gzip" {
 			otlpCompression = gZip
 		}
 	}
 	return otlpEncoding, otlpCompression
-}
-
-func (receiver *pubsubReceiver) createReceiverHandler(ctx context.Context) error {
-	var err error
-	receiver.handler, err = internal.NewHandler(
-		ctx,
-		receiver.logger,
-		receiver.client,
-		receiver.config.ClientID,
-		receiver.config.Subscription,
-		func(ctx context.Context, message *pubsubpb.ReceivedMessage) error {
-			payload := message.Message.Data
-			encoding, compression := receiver.detectEncoding(message.Message.Attributes)
-
-			switch encoding {
-			case otlpProtoTrace:
-				if receiver.tracesConsumer != nil {
-					return receiver.handleTrace(ctx, payload, compression)
-				}
-			case otlpProtoMetric:
-				if receiver.metricsConsumer != nil {
-					return receiver.handleMetric(ctx, payload, compression)
-				}
-			case otlpProtoLog:
-				if receiver.logsConsumer != nil {
-					return receiver.handleLog(ctx, payload, compression)
-				}
-			case rawTextLog:
-				return receiver.handleLogStrings(ctx, message)
-			}
-			return errors.New("unknown encoding")
-		})
-	if err != nil {
-		return err
-	}
-	receiver.handler.RecoverableStream(ctx)
-	return nil
 }
