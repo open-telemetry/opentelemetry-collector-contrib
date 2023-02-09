@@ -352,6 +352,14 @@ func TestUnmarshal(t *testing.T) {
 					return newMockOperatorConfig(cfg)
 				}(),
 			},
+			{
+				Name: "poll_file_limit_1",
+				Expect: func() *mockOperatorConfig {
+					cfg := NewConfig()
+					cfg.PollFileLimit = 1
+					return newMockOperatorConfig(cfg)
+				}(),
+			},
 		},
 	}.Run(t)
 }

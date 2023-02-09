@@ -154,3 +154,6 @@ poll_interval_no_units:
 start_at_string:
   type: mock
   start_at: "beginning"
+poll_file_limit_1:
+  type: mock
+  poll_file_limit: 1
