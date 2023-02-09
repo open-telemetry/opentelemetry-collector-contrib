@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package metrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/metrics"
+package metrics
 
 import (
 	"context"
@@ -45,9 +45,9 @@ func (w worker) simulateMetrics() {
 		max = int64(w.limitPerSecond)
 	}
 
-	gauge, _ := meter.Int64ObservableGauge("gen")
+	counter, _ := meter.Int64Counter("gen")
 	for w.running.Load() {
-		gauge(int64(i))
+		counter.Add(context.Background(), 1)
 		if err := limiter.Wait(context.Background()); err != nil {
 			w.logger.Fatal("limiter waited failed, retry", zap.Error(err))
 		}
@@ -63,6 +63,7 @@ func (w worker) simulateMetrics() {
 			}
 		}
 	}
+
 	w.logger.Info("metrics generated", zap.Int("metrics", i))
 	w.wg.Done()
 }
