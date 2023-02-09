@@ -41,18 +41,14 @@ func (c *spanCount) Evaluate(_ pcommon.TraceID, traceData *TraceData) (Decision,
 	c.logger.Debug("Evaluating spans counts in filter")
 
 	spanCount := traceData.SpanCount.Load()
-	isSampled := false
-
-	if c.maxSpans == 0 {
-		isSampled = int(spanCount) >= int(c.minSpans)
-	} else if c.minSpans == 0 {
-		isSampled = int(spanCount) <= int(c.maxSpans)
-	} else {
-		isSampled = int(spanCount) >= int(c.minSpans) && int(spanCount) <= int(c.maxSpans)
-	}
-
-	if isSampled {
+	switch {
+	case c.maxSpans == 0 && int(spanCount) >= int(c.minSpans):
 		return Sampled, nil
+	case c.minSpans == 0 && int(spanCount) <= int(c.maxSpans):
+		return Sampled, nil
+	case int(spanCount) >= int(c.minSpans) && int(spanCount) <= int(c.maxSpans):
+		return Sampled, nil
+	default:
+		return NotSampled, nil
 	}
-	return NotSampled, nil
 }
