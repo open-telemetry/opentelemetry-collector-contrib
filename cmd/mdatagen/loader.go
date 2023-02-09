@@ -187,7 +187,7 @@ type attribute struct {
 	// NameOverride can be used to override the attribute name.
 	NameOverride string `mapstructure:"name_override"`
 	// Enabled defines whether the attribute is enabled by default.
-	Enabled bool `mapstructure:"enabled" validate:"required"`
+	Enabled bool `mapstructure:"enabled"`
 	// Enum can optionally describe the set of values to which the attribute can belong.
 	Enum []string `mapstructure:"enum"`
 	// Type is an attribute type.
@@ -214,7 +214,7 @@ type metadata struct {
 	// SemConvVersion is a version number of OpenTelemetry semantic conventions applied to the scraped metrics.
 	SemConvVersion string `mapstructure:"sem_conv_version"`
 	// ResourceAttributes that can be emitted by the component.
-	ResourceAttributes map[attributeName]attribute `mapstructure:"resource_attributes" validate:"dive"`
+	ResourceAttributes map[attributeName]attribute `mapstructure:"resource_attributes"`
 	// Attributes emitted by one or more metrics.
 	Attributes map[attributeName]attribute `mapstructure:"attributes"`
 	// Metrics that can be emitted by the component.

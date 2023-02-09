@@ -3,15 +3,15 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencen
 go 1.18
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.70.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.71.0
 	github.com/pierrec/lz4 v2.6.1+incompatible
 	github.com/stretchr/testify v1.8.1
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.583
-	go.opentelemetry.io/collector v0.70.0
-	go.opentelemetry.io/collector/component v0.70.0
-	go.opentelemetry.io/collector/confmap v0.70.0
-	go.opentelemetry.io/collector/pdata v1.0.0-rc4
-	go.opentelemetry.io/collector/semconv v0.70.0
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.589
+	go.opentelemetry.io/collector v0.71.0
+	go.opentelemetry.io/collector/component v0.71.0
+	go.opentelemetry.io/collector/confmap v0.71.0
+	go.opentelemetry.io/collector/pdata v1.0.0-rc5
+	go.opentelemetry.io/collector/semconv v0.71.0
 	go.uber.org/zap v1.24.0
 	google.golang.org/protobuf v1.28.1
 )
@@ -31,11 +31,11 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/consumer v0.70.0 // indirect
-	go.opentelemetry.io/collector/featuregate v0.70.0 // indirect
-	go.opentelemetry.io/otel v1.12.0 // indirect
-	go.opentelemetry.io/otel/metric v0.34.0 // indirect
-	go.opentelemetry.io/otel/trace v1.12.0 // indirect
+	go.opentelemetry.io/collector/consumer v0.71.0 // indirect
+	go.opentelemetry.io/collector/featuregate v0.71.0 // indirect
+	go.opentelemetry.io/otel v1.13.0 // indirect
+	go.opentelemetry.io/otel/metric v0.36.0 // indirect
+	go.opentelemetry.io/otel/trace v1.13.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
 	golang.org/x/net v0.5.0 // indirect

@@ -20,6 +20,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	apmcorrelation "github.com/signalfx/signalfx-agent/pkg/apm/correlations"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -73,10 +74,12 @@ func TestLoadConfig(t *testing.T) {
 					MaxIdleConnsPerHost: &seventy,
 				},
 				RetrySettings: exporterhelper.RetrySettings{
-					Enabled:         true,
-					InitialInterval: 10 * time.Second,
-					MaxInterval:     1 * time.Minute,
-					MaxElapsedTime:  10 * time.Minute,
+					Enabled:             true,
+					InitialInterval:     10 * time.Second,
+					MaxInterval:         1 * time.Minute,
+					MaxElapsedTime:      10 * time.Minute,
+					RandomizationFactor: backoff.DefaultRandomizationFactor,
+					Multiplier:          backoff.DefaultMultiplier,
 				},
 				QueueSettings: exporterhelper.QueueSettings{
 					Enabled:      true,

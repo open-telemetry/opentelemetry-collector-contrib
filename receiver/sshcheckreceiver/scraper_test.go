@@ -37,7 +37,6 @@ type opensshContainer struct {
 }
 
 func setupSSHServer(t *testing.T) *opensshContainer {
-	ctx := context.Background()
 	wd, err := os.Getwd()
 	require.NoError(t, err)
 	req := testcontainers.ContainerRequest{
@@ -56,18 +55,19 @@ func setupSSHServer(t *testing.T) *opensshContainer {
 		ExposedPorts: []string{"2222/tcp"},
 		WaitingFor:   wait.ForExposedPort(),
 	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*60)
+	defer cancel()
+
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
 		Started:          true,
 	})
 	require.NoError(t, err)
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	defer cancel()
-
 	endpoint, err := container.PortEndpoint(ctx, "2222", "")
 	require.NoError(t, err)
-
+	t.Log("endpoint: ", endpoint)
 	return &opensshContainer{Container: container, Endpoint: endpoint}
 }
 
@@ -75,7 +75,6 @@ func TestScraper(t *testing.T) {
 	if !supportedOS() {
 		t.Skip("Skip tests if not running on one of: [linux, darwin, freebsd, openbsd]")
 	}
-	t.Parallel()
 	c := setupSSHServer(t)
 	defer func() {
 		require.NoError(t, c.Terminate(context.Background()), "terminating container")
@@ -151,7 +150,6 @@ func TestScraperDoesNotErrForSSHErr(t *testing.T) {
 	if !supportedOS() {
 		t.Skip("Skip tests if not running on one of: [linux, darwin, freebsd, openbsd]")
 	}
-	t.Parallel()
 	c := setupSSHServer(t)
 	defer func() {
 		require.NoError(t, c.Terminate(context.Background()), "terminating container")
@@ -179,7 +177,6 @@ func TestTimeout(t *testing.T) {
 	if !supportedOS() {
 		t.Skip("Skip tests if not running on one of: [linux, darwin, freebsd, openbsd]")
 	}
-	t.Parallel()
 	testCases := []struct {
 		name     string
 		deadline time.Time
@@ -230,4 +227,26 @@ func TestCancellation(t *testing.T) {
 	require.Error(t, err, "should have returned error on canceled context")
 	require.EqualValues(t, err.Error(), ctx.Err().Error(), "scrape should return context's error")
 
+}
+
+// issue # 18193
+// init failures resulted in scrape panic for SFTP client
+func TestWithoutStartErrsNotPanics(t *testing.T) {
+	f := NewFactory()
+	cfg := f.CreateDefaultConfig().(*Config)
+	cfg.ScraperControllerSettings.CollectionInterval = 100 * time.Millisecond
+	cfg.Username = "otelu"
+	cfg.Password = "otelp"
+	cfg.Endpoint = "localhost:22"
+	cfg.IgnoreHostKey = true
+	cfg.Metrics.SshcheckSftpStatus.Enabled = true
+	cfg.Metrics.SshcheckSftpDuration.Enabled = true
+
+	// create the scraper without starting it, so Client is nil
+	scrpr := newScraper(cfg, receivertest.NewNopCreateSettings())
+
+	// scrape should error not panic
+	var err error
+	require.NotPanics(t, func() { _, err = scrpr.scrape(context.Background()) }, "scrape should not panic")
+	require.Error(t, err, "expected scrape to err when without start")
 }

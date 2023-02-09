@@ -25,21 +25,14 @@ type splitterFactory interface {
 }
 
 type multilineSplitterFactory struct {
-	EncodingConfig helper.EncodingConfig
-	Flusher        helper.FlusherConfig
-	Multiline      helper.MultilineConfig
+	helper.SplitterConfig
 }
 
 var _ splitterFactory = (*multilineSplitterFactory)(nil)
 
-func newMultilineSplitterFactory(
-	encoding helper.EncodingConfig,
-	flusher helper.FlusherConfig,
-	multiline helper.MultilineConfig) *multilineSplitterFactory {
+func newMultilineSplitterFactory(splitter helper.SplitterConfig) *multilineSplitterFactory {
 	return &multilineSplitterFactory{
-		EncodingConfig: encoding,
-		Flusher:        flusher,
-		Multiline:      multiline,
+		SplitterConfig: splitter,
 	}
 
 }
