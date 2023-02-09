@@ -46,6 +46,7 @@ func NewConfig() *Config {
 		IncludeFileNameResolved: false,
 		IncludeFilePathResolved: false,
 		PollInterval:            200 * time.Millisecond,
+		PollFileLimit:           0,
 		Splitter:                helper.NewSplitterConfig(),
 		StartAt:                 "end",
 		FingerprintSize:         DefaultFingerprintSize,
@@ -61,8 +62,8 @@ type Config struct {
 	IncludeFilePath         bool                  `mapstructure:"include_file_path,omitempty"`
 	IncludeFileNameResolved bool                  `mapstructure:"include_file_name_resolved,omitempty"`
 	IncludeFilePathResolved bool                  `mapstructure:"include_file_path_resolved,omitempty"`
-	PollFileLimit           int                   `mapstructure:"poll_cycle_file_limit,omitempty"`
 	PollInterval            time.Duration         `mapstructure:"poll_interval,omitempty"`
+	PollFileLimit           int                   `mapstructure:"poll_file_limit,omitempty"`
 	StartAt                 string                `mapstructure:"start_at,omitempty"`
 	FingerprintSize         helper.ByteSize       `mapstructure:"fingerprint_size,omitempty"`
 	MaxLogSize              helper.ByteSize       `mapstructure:"max_log_size,omitempty"`

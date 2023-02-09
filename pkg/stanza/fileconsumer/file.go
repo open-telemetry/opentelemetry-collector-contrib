@@ -41,8 +41,8 @@ type Manager struct {
 	persister     operator.Persister
 
 	pollInterval    time.Duration
-	maxBatchFiles   int
 	pollFileLimit   int
+	maxBatchFiles   int
 	deleteAfterRead bool
 
 	knownFiles []*Reader

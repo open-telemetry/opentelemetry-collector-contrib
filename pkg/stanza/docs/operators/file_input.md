@@ -11,6 +11,7 @@ The `file_input` operator reads logs from files. It will place the lines read in
 | `include`                       | required         | A list of file glob patterns that match the file paths to be read. |
 | `exclude`                       | []               | A list of file glob patterns to exclude from reading. |
 | `poll_interval`                 | 200ms            | The duration between filesystem polls. |
+| `poll_file_limit`               | 0                | A limit on the number of files that can be consumed for a single polling cycle. A value of 0 implies an unlimited number of files. The value must be greater than or equal to `max_concurrent_files`. Ideally the value should be a multiple of `max_concurrent_file` or else the limit may be exceeded before it is enforced. |
 | `multiline`                     |                  | A `multiline` configuration block. See below for details. |
 | `force_flush_period`            | `500ms`          | Time since last read of data from file, after which currently buffered log should be send to pipeline. Takes `time.Time` as value. Zero means waiting for new data forever. |
 | `encoding`                      | `utf-8`          | The encoding of the file being read. See the list of supported encodings below for available options. |
