@@ -11,7 +11,6 @@ The `file_input` operator reads logs from files. It will place the lines read in
 | `include`                       | required         | A list of file glob patterns that match the file paths to be read. |
 | `exclude`                       | []               | A list of file glob patterns to exclude from reading. |
 | `poll_interval`                 | 200ms            | The duration between filesystem polls. |
-| `poll_file_limit`               | 0                | A limit on the number of files that can be consumed for a single polling cycle. A value of 0 implies an unlimited number of files. The value must be greater than or equal to `max_concurrent_files`. Ideally the value should be a multiple of `max_concurrent_file` or else the limit may be exceeded before it is enforced. |
 | `multiline`                     |                  | A `multiline` configuration block. See below for details. |
 | `force_flush_period`            | `500ms`          | Time since last read of data from file, after which currently buffered log should be send to pipeline. Takes `time.Time` as value. Zero means waiting for new data forever. |
 | `encoding`                      | `utf-8`          | The encoding of the file being read. See the list of supported encodings below for available options. |
@@ -23,6 +22,7 @@ The `file_input` operator reads logs from files. It will place the lines read in
 | `fingerprint_size`              | `1kb`            | The number of bytes with which to identify a file. The first bytes in the file are used as the fingerprint. Decreasing this value at any point will cause existing fingerprints to forgotten, meaning that all files will be read from the beginning (one time). |
 | `max_log_size`                  | `1MiB`           | The maximum size of a log entry to read before failing. Protects against reading large amounts of data into memory |.
 | `max_concurrent_files`          | 1024             | The maximum number of log files from which logs will be read concurrently (minimum = 2). If the number of files matched in the `include` pattern exceeds half of this number, then files will be processed in batches. |
+| `max_batches`                   | 0                | Only applicable when files must be batched in order to respect max_concurrent_files. This value limits the number of batches that will be processed during a single poll interval. A value of 0 indicates no limit. |
 | `delete_after_read`             | `false`          | If `true`, each log file will be read and then immediately deleted. Requires that the `filelog.allowFileDeletion` feature gate is enabled. |
 | `attributes`                    | {}               | A map of `key: value` pairs to add to the entry's attributes. |
 | `resource`                      | {}               | A map of `key: value` pairs to add to the entry's resource. |

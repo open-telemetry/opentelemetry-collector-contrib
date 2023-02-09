@@ -41,7 +41,7 @@ type Manager struct {
 	persister     operator.Persister
 
 	pollInterval    time.Duration
-	pollFileLimit   int
+	maxBatches      int
 	maxBatchFiles   int
 	deleteAfterRead bool
 
@@ -113,19 +113,18 @@ func (m *Manager) poll(ctx context.Context) {
 		m.knownFiles[i].generation++
 	}
 
-	// Used to keep track of the number of files consumed in this poll cycle
-	filesConsumed := 0
+	// Used to keep track of the number of batches processed in this poll cycle
+	batchesProcessed := 0
 
 	// Get the list of paths on disk
 	matches := m.finder.FindFiles()
 	for len(matches) > m.maxBatchFiles {
-		matchesToConsume := matches[:m.maxBatchFiles]
-		m.consume(ctx, matchesToConsume)
+		m.consume(ctx, matches[:m.maxBatchFiles])
 
-		// If a pollFileLimit is set, check if we have consumed enough files
-		if m.pollFileLimit != 0 {
-			filesConsumed += len(matchesToConsume)
-			if filesConsumed >= m.pollFileLimit {
+		// If a maxBatches is set, check if we have hit the limit
+		if m.maxBatches != 0 {
+			batchesProcessed++
+			if batchesProcessed >= m.maxBatches {
 				return
 			}
 		}

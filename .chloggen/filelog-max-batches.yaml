@@ -5,7 +5,7 @@ change_type: 'enhancement'
 component: filelogreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Added `poll_file_limit` configuration parameter to limit the number of files consumed in a polling interval.
+note: Added `max_batches` configuration parameter to limit the number of batches processed in a polling interval.
 
 # One or more tracking issues related to the change
 issues: [18476]

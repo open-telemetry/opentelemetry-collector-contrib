@@ -353,10 +353,10 @@ func TestUnmarshal(t *testing.T) {
 				}(),
 			},
 			{
-				Name: "poll_file_limit_1",
+				Name: "max_batches_1",
 				Expect: func() *mockOperatorConfig {
 					cfg := NewConfig()
-					cfg.PollFileLimit = 1
+					cfg.MaxBatches = 1
 					return newMockOperatorConfig(cfg)
 				}(),
 			},
@@ -501,31 +501,21 @@ func TestBuild(t *testing.T) {
 			nil,
 		},
 		{
-			"InvalidNegativePollFileLimit",
+			"InvalidMaxBatches",
 			func(f *Config) {
-				f.PollFileLimit = -1
+				f.MaxBatches = -1
 			},
 			require.Error,
 			nil,
 		},
 		{
-			"InvalidTooSmallPollFileLimit",
+			"ValidMaxBatches",
 			func(f *Config) {
-				f.MaxConcurrentFiles = 5
-				f.PollFileLimit = 4
-			},
-			require.Error,
-			nil,
-		},
-		{
-			"ValidPollFileLimit",
-			func(f *Config) {
-				f.MaxConcurrentFiles = 5
-				f.PollFileLimit = 6
+				f.MaxBatches = 6
 			},
 			require.NoError,
 			func(t *testing.T, m *Manager) {
-				require.Equal(t, 6, m.pollFileLimit)
+				require.Equal(t, 6, m.maxBatches)
 			},
 		},
 	}
