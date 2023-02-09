@@ -16,6 +16,7 @@ package servicegraphprocessor
 
 import (
 	"context"
+	"go.opentelemetry.io/collector/featuregate"
 	"math/rand"
 	"testing"
 	"time"
@@ -102,6 +103,8 @@ func TestProcessorConsume(t *testing.T) {
 		return verifyMetrics(t, md)
 	})
 
+	_ = featuregate.GlobalRegistry().Set(virtualNodeFeatureGate.ID(), true)
+
 	for _, tc := range []struct {
 		name         string
 		cfg          Config
@@ -110,26 +113,24 @@ func TestProcessorConsume(t *testing.T) {
 		{
 			name: "traces with client and server span",
 			cfg: Config{
-				MetricsExporter:           "mock",
-				VirtualNodeFeatureEnabled: false,
-				Dimensions:                []string{"some-attribute", "non-existing-attribute"},
+				MetricsExporter: "mock",
+
+				Dimensions: []string{"some-attribute", "non-existing-attribute"},
 			}, sampleTraces: buildSampleTrace("val"),
 		},
 		{
 			name: "incomplete traces with server span lost",
 			cfg: Config{
-				MetricsExporter:           "mock",
-				VirtualNodeFeatureEnabled: true,
-				Dimensions:                []string{"some-attribute", "non-existing-attribute"},
+				MetricsExporter: "mock",
+				Dimensions:      []string{"some-attribute", "non-existing-attribute"},
 			},
 			sampleTraces: incompleteClientTraces(),
 		},
 		{
 			name: "incomplete traces with client span lost",
 			cfg: Config{
-				MetricsExporter:           "mock",
-				VirtualNodeFeatureEnabled: true,
-				Dimensions:                []string{"some-attribute", "non-existing-attribute"},
+				MetricsExporter: "mock",
+				Dimensions:      []string{"some-attribute", "non-existing-attribute"},
 			},
 			sampleTraces: incompleteServerTraces(),
 		},
