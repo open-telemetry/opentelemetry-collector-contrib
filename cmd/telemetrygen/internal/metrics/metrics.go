@@ -34,6 +34,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
 )
 
+// Start starts the metric telemetry generator
 func Start(cfg *Config) error {
 	logger, err := common.CreateLogger()
 	if err != nil {

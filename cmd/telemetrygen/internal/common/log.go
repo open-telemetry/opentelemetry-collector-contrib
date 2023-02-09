@@ -21,6 +21,7 @@ import (
 	"go.uber.org/zap"
 )
 
+// CreateLogger creates a logger for use by telemetrygen
 func CreateLogger() (*zap.Logger, error) {
 	logger, err := zap.NewDevelopment()
 	if err != nil {
