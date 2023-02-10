@@ -9,6 +9,7 @@ require (
 	github.com/prometheus/common v0.39.0
 	github.com/stretchr/testify v1.8.1
 	go.opentelemetry.io/collector/pdata v1.0.0-rc5
+	go.opentelemetry.io/collector/semconv v0.71.0
 )
 
 require (
