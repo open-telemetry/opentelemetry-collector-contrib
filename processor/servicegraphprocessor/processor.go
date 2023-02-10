@@ -130,12 +130,20 @@ func (p *serviceGraphProcessor) Start(_ context.Context, host component.Host) er
 	// TODO: Consider making this configurable.
 	go p.storeExpirationLoop(2 * time.Second)
 
-	p.logger.Info("Started servicegraphprocessor")
+	if p.tracesConsumer == nil {
+		p.logger.Info("Started servicegraphconnector")
+	} else {
+		p.logger.Info("Started servicegraphprocessor")
+	}
 	return nil
 }
 
 func (p *serviceGraphProcessor) Shutdown(_ context.Context) error {
-	p.logger.Info("Shutting down servicegraphprocessor")
+	if p.tracesConsumer == nil {
+		p.logger.Info("Shutting down servicegraphconnector")
+	} else {
+		p.logger.Info("Shutting down servicegraphprocessor")
+	}
 	close(p.shutdownCh)
 	return nil
 }

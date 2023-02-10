@@ -6,8 +6,6 @@
 | Supported pipeline types | See [Supported Pipeline Types](#supported-pipeline-types) |
 | Distributions            | []                                                        |
 
-The `count` connector can be used to count spans, data points, or log records.
-
 ## Supported Pipeline Types
 
 | [Exporter Pipeline Type] | [Receiver Pipeline Type] |
