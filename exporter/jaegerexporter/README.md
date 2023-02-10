@@ -6,8 +6,9 @@
 | Supported pipeline types | traces            |
 | Distributions            | [core], [contrib] |
 
-This exporter is being deprecated and will be removed in July 2023 as Jaeger support OTLP directly. Exports
-data via gRPC to [Jaeger](https://www.jaegertracing.io/) destinations.
+This exporter is being deprecated and will be removed in July 2023 as Jaeger support OTLP directly. 
+
+Exports data via gRPC to [Jaeger](https://www.jaegertracing.io/) destinations.
 By default, this exporter requires TLS and offers queued retry capabilities.
 
 ## Getting Started
