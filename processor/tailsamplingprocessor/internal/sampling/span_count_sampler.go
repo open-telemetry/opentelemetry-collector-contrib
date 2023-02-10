@@ -40,13 +40,13 @@ func NewSpanCount(logger *zap.Logger, minSpans, maxSpans int32) PolicyEvaluator 
 func (c *spanCount) Evaluate(_ pcommon.TraceID, traceData *TraceData) (Decision, error) {
 	c.logger.Debug("Evaluating spans counts in filter")
 
-	spanCount := traceData.SpanCount.Load()
+	spanCount := int(traceData.SpanCount.Load())
 	switch {
-	case c.maxSpans == 0 && int(spanCount) >= int(c.minSpans):
+	case c.maxSpans == 0 && spanCount >= int(c.minSpans):
 		return Sampled, nil
-	case c.minSpans == 0 && int(spanCount) <= int(c.maxSpans):
+	case c.minSpans == 0 && spanCount <= int(c.maxSpans):
 		return Sampled, nil
-	case int(spanCount) >= int(c.minSpans) && int(spanCount) <= int(c.maxSpans):
+	case spanCount >= int(c.minSpans) && spanCount <= int(c.maxSpans):
 		return Sampled, nil
 	default:
 		return NotSampled, nil
