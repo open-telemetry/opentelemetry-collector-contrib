@@ -1,24 +1,17 @@
 receivers:
-  otlp:
-    protocols:
-      grpc:
+  tcplog:
+    listen_address: "0.0.0.0:25888"
+  udplog:
+    listen_address: "0.0.0.0:25888"
 
 exporters:
-  prometheus:
-    endpoint: "0.0.0.0:8889"
-    const_labels:
-      label1: value1
+  awscloudwatchlogs:
+    region: us-west-2
+    raw_log: true
+    log_group_name: SethTest
+    log_stream_name: SethTest
 
   logging:
-
-  zipkin:
-    endpoint: "http://zipkin-all-in-one:9411/api/v2/spans"
-    format: proto
-
-  jaeger:
-    endpoint: jaeger-all-in-one:14250
-    tls:
-      insecure: true
 
 processors:
   batch:
@@ -33,11 +26,7 @@ extensions:
 service:
   extensions: [pprof, zpages, health_check]
   pipelines:
-    traces:
-      receivers: [otlp]
+    logs:
+      receivers: [tcplog, udplog]
       processors: [batch]
-      exporters: [logging, zipkin, jaeger]
-    metrics:
-      receivers: [otlp]
-      processors: [batch]
-      exporters: [logging, prometheus]
+      exporters: [awscloudwatchlogs, logging]

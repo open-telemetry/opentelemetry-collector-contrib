@@ -51,6 +51,8 @@ type Event struct {
 	InputLogEvent *cloudwatchlogs.InputLogEvent
 	// The time which log generated.
 	GeneratedTime time.Time
+	LogGroupName  string
+	LogStreamName string
 }
 
 // NewEvent creates a new log event
