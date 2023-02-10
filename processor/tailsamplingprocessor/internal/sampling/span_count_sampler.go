@@ -44,8 +44,6 @@ func (c *spanCount) Evaluate(_ pcommon.TraceID, traceData *TraceData) (Decision,
 	switch {
 	case c.maxSpans == 0 && spanCount >= int(c.minSpans):
 		return Sampled, nil
-	case c.minSpans == 0 && spanCount <= int(c.maxSpans):
-		return Sampled, nil
 	case spanCount >= int(c.minSpans) && spanCount <= int(c.maxSpans):
 		return Sampled, nil
 	default:
