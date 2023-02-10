@@ -239,10 +239,6 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
-    directory: "/extension/fluentbitextension"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
     directory: "/extension/headerssetterextension"
     schedule:
       interval: "weekly"
