@@ -16,6 +16,7 @@ package awscloudwatchreceiver // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -174,6 +175,48 @@ func TestShutdownWhileCollecting(t *testing.T) {
 
 	close(doneChan)
 	require.NoError(t, alertRcvr.Shutdown(context.Background()))
+}
+
+func TestAutodiscoverLimit(t *testing.T) {
+	mc := &mockClient{}
+
+	logGroups := []*cloudwatchlogs.LogGroup{}
+	for i := 0; i <= 100; i++ {
+		logGroups = append(logGroups, &cloudwatchlogs.LogGroup{
+			LogGroupName: aws.String(fmt.Sprintf("test log group: %d", i)),
+		})
+	}
+	token := "token"
+	mc.On("DescribeLogGroupsWithContext", mock.Anything, mock.Anything, mock.Anything).Return(
+		&cloudwatchlogs.DescribeLogGroupsOutput{
+			LogGroups: logGroups[:50],
+			NextToken: &token,
+		}, nil).Once()
+
+	mc.On("DescribeLogGroupsWithContext", mock.Anything, mock.Anything, mock.Anything).Return(
+		&cloudwatchlogs.DescribeLogGroupsOutput{
+			LogGroups: logGroups[50:],
+			NextToken: nil,
+		}, nil)
+
+	numGroups := 100
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Region = "us-west-1"
+	cfg.Logs.Groups = GroupConfig{
+		AutodiscoverConfig: &AutodiscoverConfig{
+			Prefix: "/aws/",
+			Limit:  numGroups,
+		},
+	}
+
+	sink := &consumertest.LogsSink{}
+	alertRcvr := newLogsReceiver(cfg, zap.NewNop(), sink)
+	alertRcvr.client = mc
+
+	grs, err := alertRcvr.discoverGroups(context.Background(), cfg.Logs.Groups.AutodiscoverConfig)
+	require.NoError(t, err)
+	require.Len(t, grs, cfg.Logs.Groups.AutodiscoverConfig.Limit)
 }
 
 func defaultMockClient() client {

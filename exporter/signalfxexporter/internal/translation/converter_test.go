@@ -769,7 +769,7 @@ func TestInvalidNumberOfDimensions(t *testing.T) {
 	assert.Equal(t, "dropping datapoint", observedLogs.All()[0].Message)
 	assert.ElementsMatch(t, []zap.Field{
 		{Type: zapcore.StringType, Key: "reason", String: invalidNumberOfDimensions},
-		{Type: zapcore.StringType, Key: "datapoint", String: DatapointToString(dpSFX)},
+		{Type: zapcore.StringerType, Key: "datapoint", Interface: dpSFX},
 		{Type: zapcore.Int64Type, Key: "number_of_dimensions", Integer: 37},
 	}, observedLogs.All()[0].Context)
 }

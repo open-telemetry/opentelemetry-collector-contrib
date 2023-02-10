@@ -194,7 +194,7 @@ type Normalizer struct {
 
 func NewNormalizer(registry *featuregate.Registry) *Normalizer {
 	var normalizeGate *featuregate.Gate
-	registry.Visit(func(gate *featuregate.Gate) {
+	registry.VisitAll(func(gate *featuregate.Gate) {
 		if gate.ID() == normalizeNameGate.ID() {
 			normalizeGate = gate
 		}

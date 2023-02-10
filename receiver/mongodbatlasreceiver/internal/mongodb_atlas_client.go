@@ -648,6 +648,45 @@ func (s *MongoDBAtlasClient) GetAlerts(ctx context.Context, groupID string, opts
 	return alerts.Results, hasNext(response.Links), nil
 }
 
+// GetEventsOptions are the options to use for making a request to get Project Events
+type GetEventsOptions struct {
+	// Which page of the paginated events
+	PageNum int
+	// How large the Pages will be
+	PageSize int
+	// The list of Event Types https://www.mongodb.com/docs/atlas/reference/api/events-projects-get-all/#event-type-values
+	// to grab from the API
+	EventTypes []string
+	// The oldest date to look back for the events
+	MinDate time.Time
+	// the newest time to accept events
+	MaxDate time.Time
+}
+
+// GetEvents returns the events specified for the set projects
+func (s *MongoDBAtlasClient) GetEvents(ctx context.Context, groupID string, opts *GetEventsOptions) (ret []*mongodbatlas.Event, nextPage bool, err error) {
+	lo := mongodbatlas.ListOptions{
+		PageNum:      opts.PageNum,
+		ItemsPerPage: opts.PageSize,
+	}
+	options := mongodbatlas.EventListOptions{
+		ListOptions: lo,
+		// Earliest Timestamp in ISO 8601 date and time format in UTC from when Atlas should return events.
+		MinDate: opts.MinDate.Format(time.RFC3339),
+	}
+
+	if len(opts.EventTypes) > 0 {
+		options.EventType = opts.EventTypes
+	}
+
+	events, response, err := s.client.Events.ListProjectEvents(ctx, groupID, &options)
+	err = checkMongoDBClientErr(err, response)
+	if err != nil {
+		return nil, false, err
+	}
+	return events.Results, hasNext(response.Links), nil
+}
+
 func toUnixString(t time.Time) string {
 	return strconv.Itoa(int(t.Unix()))
 }
