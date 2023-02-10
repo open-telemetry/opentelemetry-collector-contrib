@@ -103,7 +103,7 @@ func TestProcessorConsume(t *testing.T) {
 		return verifyMetrics(t, md)
 	})
 
-	//set virtual node feature
+	// set virtual node feature
 	_ = featuregate.GlobalRegistry().Set(virtualNodeFeatureGate.ID(), true)
 
 	for _, tc := range []struct {
@@ -156,7 +156,7 @@ func TestProcessorConsume(t *testing.T) {
 		})
 	}
 
-	//unset virtual node feature
+	// unset virtual node feature
 	_ = featuregate.GlobalRegistry().Set(virtualNodeFeatureGate.ID(), false)
 }
 
