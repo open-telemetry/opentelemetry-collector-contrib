@@ -18,11 +18,10 @@ import (
 	"context"
 	"time"
 
-	"go.opentelemetry.io/collector/featuregate"
-
 	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/processor"
 )
 

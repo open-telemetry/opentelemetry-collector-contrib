@@ -20,8 +20,6 @@ import (
 	"testing"
 	"time"
 
-	"go.opentelemetry.io/collector/featuregate"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -32,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -104,6 +103,7 @@ func TestProcessorConsume(t *testing.T) {
 		return verifyMetrics(t, md)
 	})
 
+	//set virtual node feature
 	_ = featuregate.GlobalRegistry().Set(virtualNodeFeatureGate.ID(), true)
 
 	for _, tc := range []struct {
@@ -155,6 +155,9 @@ func TestProcessorConsume(t *testing.T) {
 			assert.NoError(t, processor.Shutdown(context.Background()))
 		})
 	}
+
+	//unset virtual node feature
+	_ = featuregate.GlobalRegistry().Set(virtualNodeFeatureGate.ID(), false)
 }
 
 func verifyMetrics(t *testing.T, md pmetric.Metrics) error {
