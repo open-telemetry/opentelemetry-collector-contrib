@@ -61,3 +61,12 @@ signalfx/allsettings:
   include_metrics:
     - metric_name: metric1
     - metric_names: [metric2, metric3]
+  exclude_properties:
+    - property_name: globbed*
+    - property_value: '!globbed*value'
+    - dimension_name: globbed*
+    - dimension_value: '!globbed*value'
+    - property_name: globbed*
+      property_value: '!globbed*value'
+      dimension_name: globbed*
+      dimension_value: '!globbed*value'

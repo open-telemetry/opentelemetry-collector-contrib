@@ -21,6 +21,14 @@ import (
 	"github.com/alecthomas/participle/v2"
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
+)
+
+type ErrorMode int
+
+const (
+	IgnoreError ErrorMode = iota
+	PropagateError
 )
 
 type Parser[K any] struct {
@@ -146,4 +154,26 @@ func newParser[G any]() *participle.Parser[G] {
 		panic("Unable to initialize parser; this is a programming error in the transformprocessor:" + err.Error())
 	}
 	return parser
+}
+
+// Statements represents a list of statements that will be executed sequentially for a TransformContext.
+type Statements[K any] struct {
+	statements        []Statement[K]
+	errorMode         ErrorMode
+	telemetrySettings component.TelemetrySettings
+}
+
+// Execute is a function that will execute all the statements in the Statements list.
+func (s *Statements[K]) Execute(ctx context.Context, tCtx K) error {
+	for _, statement := range s.statements {
+		_, _, err := statement.Execute(ctx, tCtx)
+		if err != nil {
+			if s.errorMode == PropagateError {
+				err = fmt.Errorf("failed to execute statement: %w", err)
+				return err
+			}
+			s.telemetrySettings.Logger.Error("failed to execute statement", zap.Error(err))
+		}
+	}
+	return nil
 }

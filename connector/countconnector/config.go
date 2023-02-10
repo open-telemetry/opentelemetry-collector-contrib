@@ -14,6 +14,26 @@
 
 package countconnector // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector"
 
+const (
+	defaultMetricNameSpans = "trace.span.count"
+	defaultMetricDescSpans = "The number of spans observed."
+
+	defaultMetricNameDataPoints = "metric.data_point.count"
+	defaultMetricDescDataPoints = "The number of data points observed."
+
+	defaultMetricNameLogRecords = "log.record.count"
+	defaultMetricDescLogRecords = "The number of log records observed."
+)
+
+// MetricInfo for a data type
+type MetricInfo struct {
+	Name        string `mapstructure:"name"`
+	Description string `mapstructure:"description"`
+}
+
+// Config for the connector
 type Config struct {
-	// TODO
+	Traces  MetricInfo `mapstructure:"traces"`
+	Metrics MetricInfo `mapstructure:"metrics"`
+	Logs    MetricInfo `mapstructure:"logs"`
 }

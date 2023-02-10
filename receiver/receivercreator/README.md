@@ -3,7 +3,7 @@
 | Status                   |                       |
 |--------------------------|-----------------------|
 | Stability                | [beta]                |
-| Supported pipeline types | logs, metrics, traces |
+| Supported pipeline types | metrics               |
 | Distributions            | [contrib]             |
 
 This receiver can instantiate other receivers at runtime based on whether

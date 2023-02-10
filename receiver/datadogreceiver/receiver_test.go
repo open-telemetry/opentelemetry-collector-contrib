@@ -20,19 +20,14 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
 func TestDatadogReceiver_Lifecycle(t *testing.T) {
 
-	ddr, err := newDataDogReceiver(&Config{
-		HTTPServerSettings: confighttp.HTTPServerSettings{
-			Endpoint: "localhost:8126",
-		},
-	}, consumertest.NewNop(), receivertest.NewNopCreateSettings())
-
+	factory := NewFactory()
+	ddr, err := factory.CreateTracesReceiver(context.Background(), receivertest.NewNopCreateSettings(), factory.CreateDefaultConfig(), consumertest.NewNop())
 	assert.NoError(t, err, "Receiver should be created")
 
 	err = ddr.Start(context.Background(), componenttest.NewNopHost())

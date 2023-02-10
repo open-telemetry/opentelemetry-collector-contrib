@@ -163,6 +163,26 @@ func TestLoadConfig(t *testing.T) {
 					},
 				},
 				DeltaTranslationTTL: 3600,
+				ExcludeProperties: []dpfilters.PropertyFilter{
+					{
+						PropertyName: mustStringFilter(t, "globbed*"),
+					},
+					{
+						PropertyValue: mustStringFilter(t, "!globbed*value"),
+					},
+					{
+						DimensionName: mustStringFilter(t, "globbed*"),
+					},
+					{
+						DimensionValue: mustStringFilter(t, "!globbed*value"),
+					},
+					{
+						PropertyName:   mustStringFilter(t, "globbed*"),
+						PropertyValue:  mustStringFilter(t, "!globbed*value"),
+						DimensionName:  mustStringFilter(t, "globbed*"),
+						DimensionValue: mustStringFilter(t, "!globbed*value"),
+					},
+				},
 				Correlation: &correlation.Config{
 					HTTPClientSettings: confighttp.HTTPClientSettings{
 						Endpoint: "",
@@ -482,4 +502,10 @@ func TestUnmarshalExcludeMetrics(t *testing.T) {
 			assert.Len(t, tt.cfg.ExcludeMetrics, tt.excludeMetricsLen)
 		})
 	}
+}
+
+func mustStringFilter(t *testing.T, filter string) *dpfilters.StringFilter {
+	sf, err := dpfilters.NewStringFilter([]string{filter})
+	require.NoError(t, err)
+	return sf
 }
