@@ -94,14 +94,10 @@ func (e *logExporterImp) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 		endpoint := e.loadBalancer.Endpoint(balancingKey[:])
 		if _, ok := endpointToLogData[endpoint]; ok {
 			// append
-			for i := 0; i < batches[batch].ResourceLogs().Len(); i++ {
-				batches[batch].ResourceLogs().At(i).CopyTo(endpointToLogData[endpoint].ResourceLogs().AppendEmpty())
-			}
+			batches[batch].ResourceLogs().MoveAndAppendTo(endpointToLogData[endpoint].ResourceLogs())
 		} else {
 			newLog := plog.NewLogs()
-			for i := 0; i < batches[batch].ResourceLogs().Len(); i++ {
-				batches[batch].ResourceLogs().At(i).CopyTo(newLog.ResourceLogs().AppendEmpty())
-			}
+			batches[batch].ResourceLogs().MoveAndAppendTo(newLog.ResourceLogs())
 			endpointToLogData[endpoint] = newLog
 		}
 	}

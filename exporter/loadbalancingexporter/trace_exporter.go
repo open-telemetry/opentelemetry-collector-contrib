@@ -99,15 +99,10 @@ func (e *traceExporterImp) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 		for rid := range routingIDs {
 			endpoint := e.loadBalancer.Endpoint([]byte(rid))
 			if _, ok := endpointToTraceData[endpoint]; ok {
-				// append
-				for i := 0; i < batches[batch].ResourceSpans().Len(); i++ {
-					batches[batch].ResourceSpans().At(i).CopyTo(endpointToTraceData[endpoint].ResourceSpans().AppendEmpty())
-				}
+				batches[batch].ResourceSpans().MoveAndAppendTo(endpointToTraceData[endpoint].ResourceSpans())
 			} else {
 				newTrace := ptrace.NewTraces()
-				for i := 0; i < batches[batch].ResourceSpans().Len(); i++ {
-					batches[batch].ResourceSpans().At(i).CopyTo(newTrace.ResourceSpans().AppendEmpty())
-				}
+				batches[batch].ResourceSpans().MoveAndAppendTo(newTrace.ResourceSpans())
 				endpointToTraceData[endpoint] = newTrace
 			}
 		}
