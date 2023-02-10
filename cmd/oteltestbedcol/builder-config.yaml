@@ -8,7 +8,6 @@ dist:
 extensions:
   - gomod: go.opentelemetry.io/collector/extension/ballastextension v0.71.0
   - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.71.0
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/fluentbitextension v0.71.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension v0.71.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.71.0
     import: github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage
@@ -99,7 +98,6 @@ replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension => ../../extension/healthcheckextension
   - github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension => ../../extension/headerssetterextension
   - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlemanagedprometheusexporter => ../../exporter/googlemanagedprometheusexporter
-  - github.com/open-telemetry/opentelemetry-collector-contrib/extension/fluentbitextension => ../../extension/fluentbitextension
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver => ../../receiver/aerospikereceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor => ../../processor/cumulativetodeltaprocessor
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver => ../../receiver/sapmreceiver

@@ -1,3 +1,0 @@
-fluentbit:
-fluentbit/1:
-  executable_path: /usr/local/bin/fluent-bit
