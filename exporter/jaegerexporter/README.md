@@ -1,13 +1,13 @@
-# Jaeger gRPC Exporter
-
+# Deprecated Jaeger gRPC Exporter
 
 | Status                   |                   |
 | ------------------------ |-------------------|
-| Stability                | [beta]            |
+| Stability                | [deprecated]            |
 | Supported pipeline types | traces            |
 | Distributions            | [core], [contrib] |
 
-Exports data via gRPC to [Jaeger](https://www.jaegertracing.io/) destinations.
+This exporter is being deprecated and will be removed in July 2023 as Jaeger support OTLP directly. Exports
+data via gRPC to [Jaeger](https://www.jaegertracing.io/) destinations.
 By default, this exporter requires TLS and offers queued retry capabilities.
 
 ## Getting Started
@@ -53,7 +53,6 @@ Several helper files are leveraged to provide additional capabilities automatica
 - [TLS and mTLS settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md)
 - [Queuing, retry and timeout settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
 
-[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[deprecated]:https://github.com/open-telemetry/opentelemetry-collector#deprecated
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
 [core]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol
-
