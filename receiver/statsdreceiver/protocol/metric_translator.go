@@ -28,7 +28,7 @@ var (
 	statsDDefaultPercentiles = []float64{0, 10, 50, 90, 95, 100}
 )
 
-func buildCounterMetric(parsedMetric statsDMetric, isMonotonicCounter bool, timeNow, lastIntervalTime time.Time) pmetric.ScopeMetrics {
+func buildCounterMetric(parsedMetric statsDMetric, isMonotonicCounter bool) pmetric.ScopeMetrics {
 	ilm := pmetric.NewScopeMetrics()
 	nm := ilm.Metrics().AppendEmpty()
 	nm.SetName(parsedMetric.description.name)
@@ -41,13 +41,17 @@ func buildCounterMetric(parsedMetric statsDMetric, isMonotonicCounter bool, time
 
 	dp := nm.Sum().DataPoints().AppendEmpty()
 	dp.SetIntValue(parsedMetric.counterValue())
-	dp.SetStartTimestamp(pcommon.NewTimestampFromTime(lastIntervalTime))
-	dp.SetTimestamp(pcommon.NewTimestampFromTime(timeNow))
 	for i := parsedMetric.description.attrs.Iter(); i.Next(); {
 		dp.Attributes().PutStr(string(i.Attribute().Key), i.Attribute().Value.AsString())
 	}
 
 	return ilm
+}
+
+func setTimestampsForCounterMetric(ilm pmetric.ScopeMetrics, startTime, timeNow time.Time) {
+	dp := ilm.Metrics().At(0).Sum().DataPoints().At(0)
+	dp.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(timeNow))
 }
 
 func buildGaugeMetric(parsedMetric statsDMetric, timeNow time.Time) pmetric.ScopeMetrics {
