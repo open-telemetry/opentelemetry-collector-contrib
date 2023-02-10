@@ -33,9 +33,10 @@ func TestSubmitLogs(t *testing.T) {
 	logger := zaptest.NewLogger(t)
 
 	tests := []struct {
-		name    string
-		payload []datadogV2.HTTPLogItem
-		testFn  func(jsonLogs testutil.JSONLogs, counter int)
+		name        string
+		payload     []datadogV2.HTTPLogItem
+		testFn      func(jsonLogs testutil.JSONLogs, counter int)
+		numRequests int
 	}{
 		{
 			name: "same-tags",
@@ -52,7 +53,6 @@ func TestSubmitLogs(t *testing.T) {
 					"message":  "log 1",
 					"service":  "server",
 				},
-				AdditionalProperties: nil,
 			}, {
 				Ddsource: datadog.PtrString("golang"),
 				Ddtags:   datadog.PtrString("tag1:true"),
@@ -66,7 +66,6 @@ func TestSubmitLogs(t *testing.T) {
 					"message":  "log 2",
 					"service":  "server",
 				},
-				AdditionalProperties: nil,
 			}},
 			testFn: func(jsonLogs testutil.JSONLogs, counter int) {
 				switch counter {
@@ -77,6 +76,7 @@ func TestSubmitLogs(t *testing.T) {
 					t.Fail()
 				}
 			},
+			numRequests: 1,
 		},
 		{
 			name: "different-tags",
@@ -93,7 +93,6 @@ func TestSubmitLogs(t *testing.T) {
 					"message":  "log 1",
 					"service":  "server",
 				},
-				AdditionalProperties: nil,
 			}, {
 				Ddsource: datadog.PtrString("golang"),
 				Ddtags:   datadog.PtrString("tag2:true"),
@@ -107,7 +106,6 @@ func TestSubmitLogs(t *testing.T) {
 					"message":  "log 2",
 					"service":  "server",
 				},
-				AdditionalProperties: nil,
 			}},
 			testFn: func(jsonLogs testutil.JSONLogs, counter int) {
 				switch counter {
@@ -121,6 +119,7 @@ func TestSubmitLogs(t *testing.T) {
 					t.Fail()
 				}
 			},
+			numRequests: 2,
 		},
 		{
 			name: "two-batches",
@@ -137,7 +136,6 @@ func TestSubmitLogs(t *testing.T) {
 					"message":  "log 1",
 					"service":  "server",
 				},
-				AdditionalProperties: nil,
 			}, {
 				Ddsource: datadog.PtrString("golang"),
 				Ddtags:   datadog.PtrString("tag1:true"),
@@ -151,7 +149,6 @@ func TestSubmitLogs(t *testing.T) {
 					"message":  "log 2",
 					"service":  "server",
 				},
-				AdditionalProperties: nil,
 			}, {
 				Ddsource: datadog.PtrString("golang"),
 				Ddtags:   datadog.PtrString("tag2:true"),
@@ -165,7 +162,6 @@ func TestSubmitLogs(t *testing.T) {
 					"message":  "log 3",
 					"service":  "server",
 				},
-				AdditionalProperties: nil,
 			}, {
 				Ddsource: datadog.PtrString("golang"),
 				Ddtags:   datadog.PtrString("tag2:true"),
@@ -179,7 +175,6 @@ func TestSubmitLogs(t *testing.T) {
 					"message":  "log 4",
 					"service":  "server",
 				},
-				AdditionalProperties: nil,
 			}},
 			testFn: func(jsonLogs testutil.JSONLogs, counter int) {
 				switch counter {
@@ -193,28 +188,25 @@ func TestSubmitLogs(t *testing.T) {
 					t.Fail()
 				}
 			},
+			numRequests: 2,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var counter int
-			serverCalled := false
+			var numCalls int
 			server := testutil.DatadogLogServerMock(func() (string, http.HandlerFunc) {
 				return "/api/v2/logs", func(writer http.ResponseWriter, request *http.Request) {
 					jsonLogs := testutil.MockLogsEndpoint(writer, request)
-					tt.testFn(jsonLogs, counter)
-					counter++
-					serverCalled = true
+					tt.testFn(jsonLogs, numCalls)
+					numCalls++
 				}
 			})
 			defer server.Close()
-			counter = 0
 			s := NewSender(server.URL, logger, exporterhelper.TimeoutSettings{Timeout: time.Second * 10}, true, true, "")
-			err := s.SubmitLogs(context.Background(), tt.payload)
-			if err != nil {
+			if err := s.SubmitLogs(context.Background(), tt.payload); err != nil {
 				t.Fatal(err)
 			}
-			assert.True(t, serverCalled)
+			assert.True(t, numCalls > 0 && numCalls == tt.numRequests)
 		})
 	}
 }
