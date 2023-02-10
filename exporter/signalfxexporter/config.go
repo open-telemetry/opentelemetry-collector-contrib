@@ -126,6 +126,10 @@ type Config struct {
 	// See ./translation/default_metrics.go for a list of metrics that are dropped by default.
 	IncludeMetrics []dpfilters.MetricFilter `mapstructure:"include_metrics"`
 
+	// ExcludeProperties defines dpfilter.PropertyFilters to prevent inclusion of
+	// properties to include with dimension updates to the SignalFx backend.
+	ExcludeProperties []dpfilters.PropertyFilter `mapstructure:"exclude_properties"`
+
 	// Correlation configuration for syncing traces service and environment to metrics.
 	Correlation *correlation.Config `mapstructure:"correlation"`
 

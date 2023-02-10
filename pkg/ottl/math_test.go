@@ -67,6 +67,7 @@ func threePointOne[K any]() (ExprFunc[K], error) {
 	}, nil
 }
 
+//nolint:unparam
 func sum[K any](ints []int64) (ExprFunc[K], error) {
 	return func(context.Context, K) (interface{}, error) {
 		result := int64(0)

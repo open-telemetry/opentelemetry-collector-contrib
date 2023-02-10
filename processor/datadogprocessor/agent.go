@@ -27,6 +27,7 @@ import (
 	traceconfig "github.com/DataDog/datadog-agent/pkg/trace/config"
 	"github.com/DataDog/datadog-agent/pkg/trace/pb"
 	"github.com/DataDog/datadog-agent/pkg/trace/stats"
+	"github.com/DataDog/datadog-agent/pkg/trace/telemetry"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
@@ -68,7 +69,7 @@ func newAgentWithConfig(ctx context.Context, cfg *traceconfig.AgentConfig, out c
 	// Ingest). This gives a better user experience.
 	cfg.Hostname = translator.UnsetHostnamePlaceholder
 	pchan := make(chan *api.Payload, 1000)
-	a := agent.NewAgent(ctx, cfg)
+	a := agent.NewAgent(ctx, cfg, telemetry.NewNoopCollector())
 	// replace the Concentrator (the component which computes and flushes APM Stats from incoming
 	// traces) with our own, which uses the 'out' channel.
 	a.Concentrator = stats.NewConcentrator(cfg, out, time.Now())

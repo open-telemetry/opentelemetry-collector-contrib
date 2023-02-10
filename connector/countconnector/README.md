@@ -30,11 +30,14 @@ exporters:
 connectors:
   count:
     traces:
-      metric_name: my.span.count
+      name: my.span.count
+      description: My span count.
     metrics:
-      metric_name: my.data_point.count
+      name: my.data_point.count
+      description: My data point count.
     logs:
-      metric_name: my.log_record.count
+      name: my.log_record.count
+      description: My log record count.
 ```
 
 ### Example Usage
@@ -108,5 +111,5 @@ service:
 
 [in development]:https://github.com/open-telemetry/opentelemetry-collector#in-development
 [Connectors README]:https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md
-[Exporter Pipeline Type]:../README.md#exporter-pipeline-type
-[Receiver Pipeline Type]:../README.md#receiver-pipeline-type
+[Exporter Pipeline Type]:https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md#exporter-pipeline-type
+[Receiver Pipeline Type]:https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md#receiver-pipeline-type
