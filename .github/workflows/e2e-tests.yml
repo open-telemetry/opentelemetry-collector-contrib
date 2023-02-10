@@ -1,9 +1,12 @@
-name: Test Kubernetes Related Components
+name: e2e-tests
 
 on:
-  pull_request:
+  push:
     branches:
       - main
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+*'
+  pull_request:
 
 jobs:
   kubernetes-test:
