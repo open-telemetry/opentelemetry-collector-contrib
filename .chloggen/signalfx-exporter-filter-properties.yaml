@@ -2,15 +2,10 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
-component: datadogexporter
+component: signalfxexporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Run API key validation on Datadog exporter in separate goroutine
+note: Add `exclude_properties` config option to filter dimension update property content
 
 # One or more tracking issues related to the change
-issues: [18238]
-
-# (Optional) One or more lines of additional information to render under the primary note.
-# These lines will be padded with 2 spaces and then inserted directly into the document.
-# Use pipe (|) for multiline entries.
-subtext:
+issues: [18464]

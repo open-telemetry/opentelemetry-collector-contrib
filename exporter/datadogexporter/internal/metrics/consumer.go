@@ -18,10 +18,10 @@ import (
 	"context"
 
 	"github.com/DataDog/datadog-agent/pkg/otlp/model/translator"
-	"github.com/DataDog/datadog-agent/pkg/quantile"
 	"github.com/DataDog/datadog-agent/pkg/trace/pb"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/quantile"
 	"go.opentelemetry.io/collector/component"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics/sketches"

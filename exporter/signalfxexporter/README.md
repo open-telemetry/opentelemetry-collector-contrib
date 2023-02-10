@@ -85,6 +85,18 @@ The following configuration options can also be configured:
   processor is enabled in the pipeline with one of the cloud provider detectors
   or environment variable detector setting a unique value to `host.name` attribute
   within your k8s cluster. And keep `override=true` in resourcedetection config.
+- `exclude_properties`: A list of property filters to limit dimension update content.
+  Property filters can contain any number of the following fields, supporting (negated)
+  string literals, re2 `/regex/`, and [glob](https://github.com/gobwas/glob) syntax values:
+  `dimension_name`, `dimension_value`, `property_name`, and `property_value`. For any field
+  not expressly configured for each filter object, a default catch-all value of `/^.*$/` is used
+  to allow each specified field to require a match for the filter to take effect:
+  ```yaml
+  # will filter all 'k8s.workload.name' properties from 'k8s.pod.uid' dimension updates:
+  exclude_properties:
+    - dimension_name: k8s.pod.uid
+      property_name: k8s.workload.name
+  ```
 - `nonalphanumeric_dimension_chars`: (default = `"_-."`) A string of characters 
 that are allowed to be used as a dimension key in addition to alphanumeric 
 characters. Each nonalphanumeric dimension key character that isn't in this string 

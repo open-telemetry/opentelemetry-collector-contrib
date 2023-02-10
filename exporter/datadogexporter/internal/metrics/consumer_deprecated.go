@@ -18,8 +18,8 @@ import (
 	"context"
 
 	"github.com/DataDog/datadog-agent/pkg/otlp/model/translator"
-	"github.com/DataDog/datadog-agent/pkg/quantile"
 	"github.com/DataDog/datadog-agent/pkg/trace/pb"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/quantile"
 	"go.opentelemetry.io/collector/component"
 	zorkian "gopkg.in/zorkian/go-datadog-api.v2"
 
