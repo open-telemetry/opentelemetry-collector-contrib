@@ -39,31 +39,28 @@ import (
 
 const (
 	// typeStr is the type of the exporter
-	typeStr                              = "datadog"
-	mertricExportNativeClientFeatureGate = "exporter.datadogexporter.metricexportnativeclient"
+	typeStr = "datadog"
 )
 
-func init() {
-	featuregate.GlobalRegistry().MustRegisterID(
-		mertricExportNativeClientFeatureGate,
-		featuregate.StageBeta,
-		featuregate.WithRegisterDescription("When enabled, metric export in datadogexporter uses native Datadog client APIs instead of Zorkian APIs."),
-	)
-}
+var mertricExportNativeClientFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"exporter.datadogexporter.metricexportnativeclient",
+	featuregate.StageBeta,
+	featuregate.WithRegisterDescription("When enabled, metric export in datadogexporter uses native Datadog client APIs instead of Zorkian APIs."),
+)
 
 // isMetricExportV2Enabled returns true if metric export in datadogexporter uses native Datadog client APIs, false if it uses Zorkian APIs
 func isMetricExportV2Enabled() bool {
-	return featuregate.GlobalRegistry().IsEnabled(mertricExportNativeClientFeatureGate)
+	return mertricExportNativeClientFeatureGate.IsEnabled()
 }
 
 // enableNativeMetricExport switches metric export to call native Datadog APIs instead of Zorkian APIs.
 func enableNativeMetricExport() error {
-	return featuregate.GlobalRegistry().Apply(map[string]bool{mertricExportNativeClientFeatureGate: true})
+	return featuregate.GlobalRegistry().Set(mertricExportNativeClientFeatureGate.ID(), true)
 }
 
 // enableZorkianMetricExport switches metric export to call Zorkian APIs instead of native Datadog APIs.
 func enableZorkianMetricExport() error {
-	return featuregate.GlobalRegistry().Apply(map[string]bool{mertricExportNativeClientFeatureGate: false})
+	return featuregate.GlobalRegistry().Set(mertricExportNativeClientFeatureGate.ID(), false)
 }
 
 type factory struct {
@@ -73,10 +70,7 @@ type factory struct {
 	sourceProvider source.Provider
 	providerErr    error
 
-	onceAgent sync.Once      // ensures agent only gets instantiated once
-	wg        sync.WaitGroup // waits for agent to exit
-	agent     *agent.Agent   // agent processes incoming traces and stats
-	agentErr  error          // specifies any error occurred while instantiating agent
+	wg sync.WaitGroup // waits for agent to exit
 
 	registry *featuregate.Registry
 }
@@ -89,20 +83,16 @@ func (f *factory) SourceProvider(set component.TelemetrySettings, configHostname
 }
 
 func (f *factory) TraceAgent(ctx context.Context, params exporter.CreateSettings, cfg *Config, sourceProvider source.Provider) (*agent.Agent, error) {
-	f.onceAgent.Do(func() {
-		agnt, err := newTraceAgent(ctx, params, cfg, sourceProvider)
-		if err != nil {
-			f.agentErr = err
-			return
-		}
-		f.wg.Add(1)
-		go func() {
-			defer f.wg.Done()
-			agnt.Run()
-		}()
-		f.agent = agnt
-	})
-	return f.agent, f.agentErr
+	agnt, err := newTraceAgent(ctx, params, cfg, sourceProvider)
+	if err != nil {
+		return nil, err
+	}
+	f.wg.Add(1)
+	go func() {
+		defer f.wg.Done()
+		agnt.Run()
+	}()
+	return agnt, nil
 }
 
 func newFactoryWithRegistry(registry *featuregate.Registry) exporter.Factory {
@@ -130,7 +120,7 @@ func defaulttimeoutSettings() exporterhelper.TimeoutSettings {
 // createDefaultConfig creates the default exporter configuration
 func (f *factory) createDefaultConfig() component.Config {
 	hostnameSource := HostnameSourceFirstResource
-	if f.registry.IsEnabled(metadata.HostnamePreviewFeatureGate) {
+	if metadata.HostnamePreviewFeatureGate.IsEnabled() {
 		hostnameSource = HostnameSourceConfigOrSystem
 	}
 

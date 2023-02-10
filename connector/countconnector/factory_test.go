@@ -30,6 +30,19 @@ func TestFactory_Type(t *testing.T) {
 func TestFactory_CreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.Equal(t, cfg, &Config{})
+	assert.Equal(t, cfg, &Config{
+		Traces: MetricInfo{
+			Name:        defaultMetricNameSpans,
+			Description: defaultMetricDescSpans,
+		},
+		Metrics: MetricInfo{
+			Name:        defaultMetricNameDataPoints,
+			Description: defaultMetricDescDataPoints,
+		},
+		Logs: MetricInfo{
+			Name:        defaultMetricNameLogRecords,
+			Description: defaultMetricDescLogRecords,
+		},
+	})
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }

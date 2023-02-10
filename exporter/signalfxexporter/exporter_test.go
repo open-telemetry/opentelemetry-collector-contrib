@@ -67,13 +67,6 @@ func TestNew(t *testing.T) {
 			wantErrMessage: "nil config",
 		},
 		{
-			name: "bad config fails",
-			config: &Config{
-				APIURL: "abc",
-			},
-			wantErr: true,
-		},
-		{
 			name: "fails to create metrics converter",
 			config: &Config{
 				AccessToken:    "test",
@@ -454,17 +447,11 @@ func TestNewEventExporter(t *testing.T) {
 	assert.EqualError(t, err, "nil config")
 	assert.Nil(t, got)
 
-	cfg := &Config{
-		AccessToken:        "someToken",
-		IngestURL:          "asdf://:%",
-		HTTPClientSettings: confighttp.HTTPClientSettings{Timeout: 1 * time.Second},
-	}
-
-	got, err = newEventExporter(cfg, exportertest.NewNopCreateSettings())
-	assert.NotNil(t, err)
+	got, err = newEventExporter(nil, exportertest.NewNopCreateSettings())
+	assert.Error(t, err)
 	assert.Nil(t, got)
 
-	cfg = &Config{
+	cfg := &Config{
 		AccessToken:        "someToken",
 		Realm:              "xyz",
 		HTTPClientSettings: confighttp.HTTPClientSettings{Timeout: 1 * time.Second},
@@ -765,8 +752,11 @@ func TestConsumeMetadata(t *testing.T) {
 		name                   string
 		fields                 fields
 		args                   args
+		excludeProperties      []dpfilters.PropertyFilter
 		expectedDimensionKey   string
 		expectedDimensionValue string
+		sendDelay              int
+		shouldNotSendUpdate    bool
 	}{
 		{
 			name: "Test property updates",
@@ -782,6 +772,26 @@ func TestConsumeMetadata(t *testing.T) {
 					"tagsToRemove": nil,
 				},
 			},
+			excludeProperties: []dpfilters.PropertyFilter{
+				{
+					DimensionName:  mustStringFilter(t, "/^.*$/"),
+					DimensionValue: mustStringFilter(t, "/^.*$/"),
+					PropertyName:   mustStringFilter(t, "/^property2$/"),
+					PropertyValue:  mustStringFilter(t, "some*value"),
+				},
+				{
+					DimensionName:  mustStringFilter(t, "/^.*$/"),
+					DimensionValue: mustStringFilter(t, "/^.*$/"),
+					PropertyName:   mustStringFilter(t, "property5"),
+					PropertyValue:  mustStringFilter(t, "/^.*$/"),
+				},
+				{
+					DimensionName:  mustStringFilter(t, "*"),
+					DimensionValue: mustStringFilter(t, "*"),
+					PropertyName:   mustStringFilter(t, "/^pro[op]erty6$/"),
+					PropertyValue:  mustStringFilter(t, "property*value"),
+				},
+			},
 			args: args{
 				[]*metadata.MetadataUpdate{
 					{
@@ -790,9 +800,12 @@ func TestConsumeMetadata(t *testing.T) {
 						MetadataDelta: metadata.MetadataDelta{
 							MetadataToAdd: map[string]string{
 								"prop.erty1": "val1",
+								"property5":  "added.value",
+								"property6":  "property6.value",
 							},
 							MetadataToRemove: map[string]string{
 								"property2": "val2",
+								"property5": "removed.value",
 							},
 							MetadataToUpdate: map[string]string{
 								"prop.erty3": "val33",
@@ -816,6 +829,15 @@ func TestConsumeMetadata(t *testing.T) {
 					"tagsToRemove": []interface{}{
 						"tag/2",
 					},
+				},
+			},
+			excludeProperties: []dpfilters.PropertyFilter{
+				{
+					// confirms tags aren't affected by excludeProperties filters
+					DimensionName:  mustStringFilter(t, "/^.*$/"),
+					DimensionValue: mustStringFilter(t, "/^.*$/"),
+					PropertyName:   mustStringFilter(t, "/^.*$/"),
+					PropertyValue:  mustStringFilter(t, "/^.*$/"),
 				},
 			},
 			args: args{
@@ -906,6 +928,7 @@ func TestConsumeMetadata(t *testing.T) {
 			},
 			expectedDimensionKey:   "key",
 			expectedDimensionValue: "id",
+			sendDelay:              1,
 		},
 		{
 			name: "Test updates on dimensions with nonalphanumeric characters (other than the default allow list)",
@@ -944,14 +967,52 @@ func TestConsumeMetadata(t *testing.T) {
 			expectedDimensionKey:   "k_e_y",
 			expectedDimensionValue: "id",
 		},
+		{
+			name:                "no dimension update for empty properties",
+			shouldNotSendUpdate: true,
+			excludeProperties: []dpfilters.PropertyFilter{
+				{
+					DimensionName:  mustStringFilter(t, "key"),
+					DimensionValue: mustStringFilter(t, "/^.*$/"),
+					PropertyName:   mustStringFilter(t, "/^prop\\.erty[13]$/"),
+					PropertyValue:  mustStringFilter(t, "/^.*$/"),
+				},
+				{
+					DimensionName:  mustStringFilter(t, "*"),
+					DimensionValue: mustStringFilter(t, "id"),
+					PropertyName:   mustStringFilter(t, "property*"),
+					PropertyValue:  mustStringFilter(t, "/^.*$/"),
+				},
+			},
+			args: args{
+				[]*metadata.MetadataUpdate{
+					{
+						ResourceIDKey: "key",
+						ResourceID:    "id",
+						MetadataDelta: metadata.MetadataDelta{
+							MetadataToAdd: map[string]string{
+								"prop.erty1": "val1",
+								"property2":  "val2",
+								"property5":  "added.value",
+								"property6":  "property6.value",
+							},
+							MetadataToUpdate: map[string]string{
+								"prop.erty3": "val33",
+								"property4":  "val",
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
-		// Use WaitGroup to ensure the mocked server has encountered
-		// a request from the exporter.
-		wg := sync.WaitGroup{}
-		wg.Add(1)
-
 		t.Run(tt.name, func(t *testing.T) {
+			// Use WaitGroup to ensure the mocked server has encountered
+			// a request from the exporter.
+			wg := sync.WaitGroup{}
+			wg.Add(1)
+
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				b, err := io.ReadAll(r.Body)
 				assert.NoError(t, err)
@@ -987,9 +1048,10 @@ func TestConsumeMetadata(t *testing.T) {
 					APIURL:                serverURL,
 					LogUpdates:            true,
 					Logger:                logger,
-					SendDelay:             1,
+					SendDelay:             tt.sendDelay,
 					PropertiesMaxBuffered: 10,
 					MetricsConverter:      *converter,
+					ExcludeProperties:     tt.excludeProperties,
 				})
 			dimClient.Start()
 
@@ -1004,9 +1066,18 @@ func TestConsumeMetadata(t *testing.T) {
 			}
 
 			err = sme.ConsumeMetadata(tt.args.metadata)
+			c := make(chan struct{})
+			go func() {
+				defer close(c)
+				wg.Wait()
+			}()
 
-			// Wait for requests to be handled by the mocked server before assertion.
-			wg.Wait()
+			select {
+			case <-c:
+			// wait 5ms longer than send delay
+			case <-time.After(time.Duration(tt.sendDelay)*time.Second + 5*time.Millisecond):
+				require.True(t, tt.shouldNotSendUpdate, "timeout waiting for response")
+			}
 
 			require.NoError(t, err)
 		})

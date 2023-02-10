@@ -37,6 +37,7 @@ type testSumMetric struct {
 	metricNames  []string
 	metricValues [][]float64
 	isCumulative []bool
+	isMonotonic  []bool
 }
 
 type testHistogramMetric struct {
@@ -72,11 +73,13 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 				metricNames:  []string{"metric_1", "metric_2"},
 				metricValues: [][]float64{{100}, {4}},
 				isCumulative: []bool{true, true},
+				isMonotonic:  []bool{true, true},
 			}),
 			outMetrics: generateTestSumMetrics(testSumMetric{
 				metricNames:  []string{"metric_1", "metric_2"},
 				metricValues: [][]float64{{100}, {4}},
 				isCumulative: []bool{true, true},
+				isMonotonic:  []bool{true, true},
 			}),
 		},
 		{
@@ -90,13 +93,15 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 			},
 			inMetrics: generateTestSumMetrics(testSumMetric{
 				metricNames:  []string{"metric_1", "metric_2"},
-				metricValues: [][]float64{{100, 200, 500}, {4}},
+				metricValues: [][]float64{{0, 100, 200, 500}, {4}},
 				isCumulative: []bool{true, true},
+				isMonotonic:  []bool{true, true},
 			}),
 			outMetrics: generateTestSumMetrics(testSumMetric{
 				metricNames:  []string{"metric_1", "metric_2"},
 				metricValues: [][]float64{{100, 100, 300}, {4}},
 				isCumulative: []bool{false, true},
+				isMonotonic:  []bool{true, true},
 			}),
 		},
 		{
@@ -110,13 +115,15 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 			},
 			inMetrics: generateTestSumMetrics(testSumMetric{
 				metricNames:  []string{"metric_1", "metric_2"},
-				metricValues: [][]float64{{100, 200, math.NaN()}, {4}},
+				metricValues: [][]float64{{0, 100, 200, math.NaN()}, {4}},
 				isCumulative: []bool{true, true},
+				isMonotonic:  []bool{true, true},
 			}),
 			outMetrics: generateTestSumMetrics(testSumMetric{
 				metricNames:  []string{"metric_1", "metric_2"},
 				metricValues: [][]float64{{100, 100, math.NaN()}, {4}},
 				isCumulative: []bool{false, true},
+				isMonotonic:  []bool{true, true},
 			}),
 		},
 		{
@@ -139,11 +146,13 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 				metricNames:  []string{"metric_1", "metric_2"},
 				metricValues: [][]float64{{100}, {4}},
 				isCumulative: []bool{true, true},
+				isMonotonic:  []bool{true, true},
 			}),
 			outMetrics: generateTestSumMetrics(testSumMetric{
 				metricNames:  []string{"metric_1", "metric_2"},
 				metricValues: [][]float64{{100}, {4}},
 				isCumulative: []bool{true, true},
+				isMonotonic:  []bool{true, true},
 			}),
 		},
 		{
@@ -157,18 +166,18 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 			},
 			inMetrics: generateTestHistogramMetrics(testHistogramMetric{
 				metricNames:  []string{"metric_1", "metric_2"},
-				metricCounts: [][]uint64{{100, 200, 500}, {4}},
-				metricSums:   [][]float64{{100, 200, 500}, {4}},
+				metricCounts: [][]uint64{{0, 100, 200, 500}, {4}},
+				metricSums:   [][]float64{{0, 100, 200, 500}, {4}},
 				metricBuckets: [][][]uint64{
-					{{50, 25, 25}, {100, 50, 50}, {250, 125, 125}},
+					{{0, 0, 0}, {50, 25, 25}, {100, 50, 50}, {250, 125, 125}},
 					{{4, 4, 4}},
 				},
 				metricMins: [][]float64{
-					{5.0, 2.0, 3.0},
+					{0, 5.0, 2.0, 3.0},
 					{2.0, 2.0, 2.0},
 				},
 				metricMaxes: [][]float64{
-					{800.0, 825.0, 800.0},
+					{0, 800.0, 825.0, 800.0},
 					{3.0, 3.0, 3.0},
 				},
 				isCumulative: []bool{true, true},
@@ -203,10 +212,10 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 			},
 			inMetrics: generateTestHistogramMetrics(testHistogramMetric{
 				metricNames:  []string{"metric_1", "metric_2"},
-				metricCounts: [][]uint64{{100, 200, 500}, {4}},
-				metricSums:   [][]float64{{100, 200, 500}, {4}},
+				metricCounts: [][]uint64{{0, 100, 200, 500}, {4}},
+				metricSums:   [][]float64{{0, 100, 200, 500}, {4}},
 				metricBuckets: [][][]uint64{
-					{{50, 25, 25}, {100, 50, 50}, {250, 125, 125}},
+					{{0, 0, 0}, {50, 25, 25}, {100, 50, 50}, {250, 125, 125}},
 					{{4, 4, 4}},
 				},
 				isCumulative: []bool{true, true},
@@ -233,10 +242,10 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 			},
 			inMetrics: generateTestHistogramMetrics(testHistogramMetric{
 				metricNames:  []string{"metric_1", "metric_2"},
-				metricCounts: [][]uint64{{100, 200, 500}, {4}},
-				metricSums:   [][]float64{{100, math.NaN(), 500}, {4}},
+				metricCounts: [][]uint64{{0, 100, 200, 500}, {4}},
+				metricSums:   [][]float64{{0, 100, math.NaN(), 500}, {4}},
 				metricBuckets: [][][]uint64{
-					{{50, 25, 25}, {100, 50, 50}, {250, 125, 125}},
+					{{0, 0, 0}, {50, 25, 25}, {100, 50, 50}, {250, 125, 125}},
 					{{4, 4, 4}},
 				},
 				isCumulative: []bool{true, true},
@@ -263,10 +272,10 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 			},
 			inMetrics: generateTestHistogramMetrics(testHistogramMetric{
 				metricNames:  []string{"metric_1", "metric_2"},
-				metricCounts: [][]uint64{{100, 200, 500}, {4}},
+				metricCounts: [][]uint64{{0, 100, 200, 500}, {4}},
 				metricSums:   [][]float64{{}, {4}},
 				metricBuckets: [][][]uint64{
-					{{50, 25, 25}, {100, 50, 50}, {250, 125, 125}},
+					{{0, 0, 0}, {50, 25, 25}, {100, 50, 50}, {250, 125, 125}},
 					{{4, 4, 4}},
 				},
 				isCumulative: []bool{true, true},
@@ -293,13 +302,15 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 			},
 			inMetrics: generateTestSumMetrics(testSumMetric{
 				metricNames:  []string{"metric_1", "metric_2"},
-				metricValues: [][]float64{{100, 200, 500}, {4, 5}},
+				metricValues: [][]float64{{0, 100, 200, 500}, {0, 4, 5}},
 				isCumulative: []bool{true, true},
+				isMonotonic:  []bool{true, true},
 			}),
 			outMetrics: generateTestSumMetrics(testSumMetric{
 				metricNames:  []string{"metric_1", "metric_2"},
 				metricValues: [][]float64{{100, 100, 300}, {4, 1}},
 				isCumulative: []bool{false, false},
+				isMonotonic:  []bool{true, true},
 			}),
 		},
 		{
@@ -320,13 +331,37 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 			},
 			inMetrics: generateTestSumMetrics(testSumMetric{
 				metricNames:  []string{"metric_1", "metric_2"},
-				metricValues: [][]float64{{100, 200, 500}, {4, 5}},
+				metricValues: [][]float64{{100, 200, 500}, {0, 4, 5}},
 				isCumulative: []bool{true, true},
+				isMonotonic:  []bool{true, true},
 			}),
 			outMetrics: generateTestSumMetrics(testSumMetric{
 				metricNames:  []string{"metric_1", "metric_2"},
 				metricValues: [][]float64{{100, 200, 500}, {4, 1}},
 				isCumulative: []bool{true, false},
+				isMonotonic:  []bool{true, true},
+			}),
+		},
+		{
+			name: "cumulative_to_delta_remove_non_monotonic",
+			include: MatchMetrics{
+				Metrics: []string{".*"},
+				Config: filterset.Config{
+					MatchType:    "regexp",
+					RegexpConfig: nil,
+				},
+			},
+			inMetrics: generateTestSumMetrics(testSumMetric{
+				metricNames:  []string{"metric_1", "metric_2"},
+				metricValues: [][]float64{{0, 100, 200, 500}, {4, 5}},
+				isCumulative: []bool{true, true},
+				isMonotonic:  []bool{true, false},
+			}),
+			outMetrics: generateTestSumMetrics(testSumMetric{
+				metricNames:  []string{"metric_1", "metric_2"},
+				metricValues: [][]float64{{100, 100, 300}, {4, 5}},
+				isCumulative: []bool{false, true},
+				isMonotonic:  []bool{true, true},
 			}),
 		},
 	}
@@ -435,7 +470,7 @@ func generateTestSumMetrics(tm testSumMetric) pmetric.Metrics {
 		m := ms.AppendEmpty()
 		m.SetName(name)
 		sum := m.SetEmptySum()
-		sum.SetIsMonotonic(true)
+		sum.SetIsMonotonic(tm.isMonotonic[i])
 
 		if tm.isCumulative[i] {
 			sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)

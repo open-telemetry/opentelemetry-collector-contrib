@@ -114,7 +114,6 @@ func TestAllMetricsIntegration(t *testing.T) {
 
 	consumer := new(consumertest.MetricsSink)
 	f, config := factory()
-	config.ProvidePerCoreCPUMetrics = true
 
 	params, ctx, cancel := paramsAndContext(t)
 	defer cancel()

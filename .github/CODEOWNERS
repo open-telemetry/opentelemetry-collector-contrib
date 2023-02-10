@@ -25,7 +25,6 @@ cmd/mdatagen/                                            @open-telemetry/collect
 cmd/otelcontribcol/                                      @open-telemetry/collector-contrib-approvers
 cmd/oteltestbedcol/                                      @open-telemetry/collector-contrib-approvers
 cmd/telemetrygen/                                        @open-telemetry/collector-contrib-approvers @mx-psi @amenasria @codeboten
-cmd/tracegen/                                            @open-telemetry/collector-contrib-approvers @jpkrohling
 
 confmap/provider/s3provider/                             @open-telemetry/collector-contrib-approvers @Aneurysm9
 
@@ -43,7 +42,7 @@ exporter/azuredataexplorerexporter/                      @open-telemetry/collect
 exporter/carbonexporter/                                 @open-telemetry/collector-contrib-approvers @pjanotti
 exporter/clickhouseexporter/                             @open-telemetry/collector-contrib-approvers @hanjm @dmitryax @Frapschen
 exporter/coralogixexporter/                              @open-telemetry/collector-contrib-approvers @oded-dd @ofirshmuel
-exporter/datadogexporter/                                @open-telemetry/collector-contrib-approvers @KSerrania @mx-psi @gbbr @knusbaum @amenasria @dineshg13
+exporter/datadogexporter/                                @open-telemetry/collector-contrib-approvers @mx-psi @gbbr @dineshg13 @liustanley @songy23
 exporter/dynatraceexporter/                              @open-telemetry/collector-contrib-approvers @dyladan @arminru @evan-bradley
 exporter/elasticsearchexporter/                          @open-telemetry/collector-contrib-approvers @JaredTan95
 exporter/f5cloudexporter/                                @open-telemetry/collector-contrib-approvers @gramidt
@@ -82,7 +81,7 @@ extension/basicauthextension/                            @open-telemetry/collect
 extension/bearertokenauthextension/                      @open-telemetry/collector-contrib-approvers @jpkrohling @pavankrish123
 extension/headerssetterextension/                        @open-telemetry/collector-contrib-approvers @jpkrohling @kovrus
 extension/healthcheckextension/                          @open-telemetry/collector-contrib-approvers @jpkrohling
-extension/httpforwarder                                  @open-telemetry/collector-contrib-approvers @atoulme
+extension/httpforwarder                                  @open-telemetry/collector-contrib-approvers @atoulme @rmfitzpatrick
 extension/jaegerremotesampling/                          @open-telemetry/collector-contrib-approvers @jpkrohling @frzifus
 extension/oauth2clientauthextension/                     @open-telemetry/collector-contrib-approvers @pavankrish123 @jpkrohling
 extension/observer/                                      @open-telemetry/collector-contrib-approvers @dmitryax @rmfitzpatrick
@@ -111,7 +110,7 @@ internal/sharedcomponent/                                @open-telemetry/collect
 
 pkg/batchpersignal/                                      @open-telemetry/collector-contrib-approvers @jpkrohling
 pkg/ottl/                                                @open-telemetry/collector-contrib-approvers @TylerHelmuth @kentquirk @bogdandrutu @evan-bradley
-pkg/pdatatest/                                           @open-telemetry/collector-contrib-approvers @djaglowski
+pkg/pdatatest/                                           @open-telemetry/collector-contrib-approvers @djaglowski @fatsheep9146
 pkg/pdatautil/                                           @open-telemetry/collector-contrib-approvers @dmitryax
 pkg/resourcetotelemetry/                                 @open-telemetry/collector-contrib-approvers @mx-psi
 pkg/stanza/                                              @open-telemetry/collector-contrib-approvers @djaglowski
@@ -168,6 +167,7 @@ receiver/chronyreceiver/                                 @open-telemetry/collect
 receiver/cloudfoundryreceiver/                           @open-telemetry/collector-contrib-approvers @agoallikmaa @pellared @crobert-1
 receiver/collectdreceiver/                               @open-telemetry/collector-contrib-approvers @atoulme
 receiver/couchdbreceiver/                                @open-telemetry/collector-contrib-approvers @djaglowski
+receiver/datadogreceiver/                                @open-telemetry/collector-contrib-approvers @boostchicken @gouthamve @jpkrohling @MovieStoreGuy
 receiver/dockerstatsreceiver/                            @open-telemetry/collector-contrib-approvers @rmfitzpatrick @jamesmoessis
 receiver/elasticsearchreceiver/                          @open-telemetry/collector-contrib-approvers @djaglowski @binaryfissiongames
 receiver/expvarreceiver/                                 @open-telemetry/collector-contrib-approvers @jamesmoessis @MovieStoreGuy
@@ -237,3 +237,4 @@ receiver/zookeeperreceiver/                              @open-telemetry/collect
 
 testbed/                                                 @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 testbed/mockdatareceivers/mockawsxrayreceiver/           @open-telemetry/collector-contrib-approvers @willarmiros
+testbed/mockdatasenders/mockdatadogagentexporter/        @open-telemetry/collector-contrib-approvers @boostchicken

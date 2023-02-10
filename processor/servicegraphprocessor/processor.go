@@ -262,9 +262,6 @@ func (p *serviceGraphProcessor) upsertDimensions(kind string, m map[string]strin
 	for _, dim := range p.config.Dimensions {
 		if v, ok := findAttributeValue(dim, resourceAttr, spanAttr); ok {
 			m[kind+"_"+dim] = v
-
-			// next release will remove those dimensions
-			m[dim] = v
 		}
 	}
 }

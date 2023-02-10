@@ -16,7 +16,6 @@ package translation // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 	"unicode"
@@ -114,7 +113,7 @@ func (c *MetricsConverter) translateAndFilter(dps []*sfxpb.DataPoint) []*sfxpb.D
 			}
 			resultSliceLen++
 		} else {
-			c.logger.Debug("Datapoint does not match filter, skipping", zap.String("dp", DatapointToString(dp)))
+			c.logger.Debug("Datapoint does not match filter, skipping", zap.Stringer("dp", dp))
 		}
 	}
 	dps = dps[:resultSliceLen]
@@ -251,7 +250,7 @@ func (dpv *datapointValidator) isValidNumberOfDimension(dp *sfxpb.DataPoint) boo
 	if len(dp.Dimensions) > maxNumberOfDimensions {
 		dpv.logger.Debug("dropping datapoint",
 			zap.String("reason", invalidNumberOfDimensions),
-			zap.String("datapoint", DatapointToString(dp)),
+			zap.Stringer("datapoint", dp),
 			zap.Int("number_of_dimensions", len(dp.Dimensions)),
 		)
 		return false
@@ -306,33 +305,4 @@ func CreateSampledLogger(logger *zap.Logger) *zap.Logger {
 		)
 	})
 	return logger.WithOptions(opts)
-}
-
-func DatapointToString(dp *sfxpb.DataPoint) string {
-	var tsStr string
-	if dp.Timestamp != 0 {
-		tsStr = strconv.FormatInt(dp.Timestamp, 10)
-	}
-
-	var dimsStr string
-	for _, dim := range dp.Dimensions {
-		dimsStr += dim.String()
-	}
-
-	return fmt.Sprintf("%s: %s (%s) %s\n%s", dp.Metric, dp.Value.String(), dpTypeToString(*dp.MetricType), tsStr, dimsStr)
-}
-
-func dpTypeToString(t sfxpb.MetricType) string {
-	switch t {
-	case sfxpb.MetricType_GAUGE:
-		return "Gauge"
-	case sfxpb.MetricType_COUNTER:
-		return "Counter"
-	case sfxpb.MetricType_ENUM:
-		return "Enum"
-	case sfxpb.MetricType_CUMULATIVE_COUNTER:
-		return "Cumulative Counter"
-	default:
-		return fmt.Sprintf("unsupported type %d", t)
-	}
 }

@@ -25,7 +25,6 @@ import (
 const (
 	typeStr   = "count"
 	stability = component.StabilityLevelDevelopment
-	scopeName = "otelcol/countconnector"
 )
 
 // NewFactory returns a ConnectorFactory.
@@ -41,7 +40,20 @@ func NewFactory() connector.Factory {
 
 // createDefaultConfig creates the default configuration.
 func createDefaultConfig() component.Config {
-	return &Config{}
+	return &Config{
+		Traces: MetricInfo{
+			Name:        defaultMetricNameSpans,
+			Description: defaultMetricDescSpans,
+		},
+		Metrics: MetricInfo{
+			Name:        defaultMetricNameDataPoints,
+			Description: defaultMetricDescDataPoints,
+		},
+		Logs: MetricInfo{
+			Name:        defaultMetricNameLogRecords,
+			Description: defaultMetricDescLogRecords,
+		},
+	}
 }
 
 // createTracesToMetrics creates a traces to metrics connector based on provided config.
@@ -51,7 +63,8 @@ func createTracesToMetrics(
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (connector.Traces, error) {
-	return nil, nil
+	c := cfg.(*Config)
+	return &count{cfg: *c, metricsConsumer: nextConsumer}, nil
 }
 
 // createMetricsToMetrics creates a metrics connector based on provided config.
@@ -61,7 +74,8 @@ func createMetricsToMetrics(
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (connector.Metrics, error) {
-	return nil, nil
+	c := cfg.(*Config)
+	return &count{cfg: *c, metricsConsumer: nextConsumer}, nil
 }
 
 // createLogsToMetrics creates a logs to metrics connector based on provided config.
@@ -71,5 +85,6 @@ func createLogsToMetrics(
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (connector.Logs, error) {
-	return nil, nil
+	c := cfg.(*Config)
+	return &count{cfg: *c, metricsConsumer: nextConsumer}, nil
 }
