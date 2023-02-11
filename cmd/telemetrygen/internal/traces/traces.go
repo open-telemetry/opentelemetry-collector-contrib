@@ -118,7 +118,7 @@ func Start(cfg *Config) error {
 	otel.SetTracerProvider(tracerProvider)
 
 	if err = Run(cfg, logger); err != nil {
-		logger.Error("failed to executes the test scenario.", zap.Error(err))
+		logger.Error("failed to execute the test scenario.", zap.Error(err))
 		return err
 	}
 
