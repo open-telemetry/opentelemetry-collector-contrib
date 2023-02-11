@@ -47,8 +47,8 @@ const (
 
 	defaultDimensionsCacheSize = 1000
 
-	metricLatency = "latency"
-	metricCalls   = "calls"
+	metricLatency    = "latency"
+	metricCallsTotal = "calls_total"
 )
 
 var defaultLatencyHistogramBucketsMs = []float64{
@@ -362,7 +362,7 @@ func (p *processorImp) collectLatencyMetrics(ilm pmetric.ScopeMetrics) {
 // into the given instrumentation library metrics.
 func (p *processorImp) collectCallMetrics(ilm pmetric.ScopeMetrics) {
 	mCalls := ilm.Metrics().AppendEmpty()
-	mCalls.SetName(buildMetricName(p.config.Namespace, metricCalls))
+	mCalls.SetName(buildMetricName(p.config.Namespace, metricLatency))
 	mCalls.SetEmptySum().SetIsMonotonic(true)
 	mCalls.Sum().SetAggregationTemporality(p.config.GetAggregationTemporality())
 	dps := mCalls.Sum().DataPoints()
