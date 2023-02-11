@@ -1,15 +1,17 @@
-apiVersion: batch/v1
-kind: Job
+apiVersion: apps/v1
+kind: DaemonSet
 metadata:
-  name: test-telemetrygen-job
-  namespace: default
+  name: test-telemetrygen-daemonset
 spec:
+  selector:
+    matchLabels:
+      app: test-telemetrygen-daemonset
   template:
     metadata:
       annotations:
-        workload: job
+        workload: daemonset
       labels:
-        app: test-telemetrygen
+        app: test-telemetrygen-daemonset
     spec:
       containers:
       - command:
@@ -17,8 +19,8 @@ spec:
         - traces
         - --otlp-insecure
         - --otlp-endpoint=test-opentelemetry-collector:4317
-        - --service=test-job
-        - --traces=5
+        - --service=test-daemonset
+        - --duration=36000s
         - --rate=1
         - --otlp-attributes=k8s.container.name="telemetrygen"
         - --otlp-attributes=k8s.container.restart_count="0"
@@ -28,7 +30,7 @@ spec:
         resources: {}
         securityContext: {}
       dnsPolicy: ClusterFirst
-      restartPolicy: Never
+      restartPolicy: Always
       schedulerName: default-scheduler
       securityContext: {}
       terminationGracePeriodSeconds: 30

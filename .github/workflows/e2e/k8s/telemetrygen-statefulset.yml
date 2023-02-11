@@ -1,15 +1,21 @@
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: test-telemetrygen-job
+apiVersion: apps/v1
+kind: StatefulSet
+metadata: 
+  name: test-telemetrygen-statefulset
   namespace: default
 spec:
+  serviceName: test-telemetrygen-statefulset
+  replicas: 1
+  selector:
+    matchLabels:
+      app: test-telemetrygen-statefulset
   template:
     metadata:
+    metadata:
       annotations:
-        workload: job
+        workload: statefulset
       labels:
-        app: test-telemetrygen
+        app: test-telemetrygen-statefulset
     spec:
       containers:
       - command:
@@ -17,8 +23,8 @@ spec:
         - traces
         - --otlp-insecure
         - --otlp-endpoint=test-opentelemetry-collector:4317
-        - --service=test-job
-        - --traces=5
+        - --service=test-statefulset
+        - --duration=36000s
         - --rate=1
         - --otlp-attributes=k8s.container.name="telemetrygen"
         - --otlp-attributes=k8s.container.restart_count="0"
@@ -28,7 +34,7 @@ spec:
         resources: {}
         securityContext: {}
       dnsPolicy: ClusterFirst
-      restartPolicy: Never
+      restartPolicy: Always
       schedulerName: default-scheduler
       securityContext: {}
       terminationGracePeriodSeconds: 30
