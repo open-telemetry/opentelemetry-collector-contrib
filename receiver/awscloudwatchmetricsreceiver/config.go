@@ -19,6 +19,8 @@ import (
 	"fmt"
 	"net/url"
 	"time"
+
+	"go.uber.org/multierr"
 )
 
 var (
@@ -36,7 +38,7 @@ type Config struct {
 
 // MetricsConfig is the configuration for the metrics part of the receiver
 type MetricsConfig struct {
-	Names []*NamesConfig `mapstructure:"named"`
+	Names []NamesConfig `mapstructure:"named"`
 }
 
 // NamesConfig is the configuration for the metric namespace and metric names
@@ -67,12 +69,27 @@ func (cfg *Config) Validate() error {
 	if cfg.PollInterval < time.Second {
 		return errInvalidPollInterval
 	}
-	return nil
+	var errs error
+	errs = multierr.Append(errs, cfg.validateMetricsConfig())
+	return errs
 }
 
-func (cfg *Config) ValidateMetrics() error {
+func (cfg *Config) validateMetricsConfig() error {
 	if cfg.Metrics == nil {
 		return errNoMetricsConfigured
 	}
-	return cfg.Metrics.Names.Validate()
+	return validate(cfg.Metrics.Names)
+}
+
+func validate(g []NamesConfig) error {
+	for _, metric := range g {
+		if metric.Namespace == "" {
+			return errNoMetricsConfigured
+		}
+
+		if len(metric.MetricNames) <= 0 {
+			return errNoMetricsConfigured
+		}
+	}
+	return nil
 }
