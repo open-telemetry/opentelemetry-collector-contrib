@@ -47,6 +47,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/connector/servicegraphconnector"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/examples/demo/client"
     schedule:
       interval: "weekly"
@@ -236,10 +240,6 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/extension/bearertokenauthextension"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/extension/fluentbitextension"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"

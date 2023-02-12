@@ -49,7 +49,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsproxy v0.71.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension v0.71.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension v0.71.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/fluentbitextension v0.71.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension v0.71.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension v0.71.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder v0.71.0
@@ -223,19 +222,19 @@ require (
 	github.com/ClickHouse/ch-go v0.51.2 // indirect
 	github.com/ClickHouse/clickhouse-go/v2 v2.6.0 // indirect
 	github.com/DataDog/agent-payload/v5 v5.0.70 // indirect
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.43.0-rc.3.0.20230201114415-fae4332beb98 // indirect
-	github.com/DataDog/datadog-agent/pkg/otlp/model v0.43.0-rc.3.0.20230201114415-fae4332beb98 // indirect
-	github.com/DataDog/datadog-agent/pkg/quantile v0.43.0-rc.3.0.20230201114415-fae4332beb98 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.43.0-rc.3.0.20230201114415-fae4332beb98 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace v0.43.0-rc.3.0.20230201114415-fae4332beb98 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.43.0-rc.3.0.20230201114415-fae4332beb98 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.43.0-rc.3.0.20230201114415-fae4332beb98 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.43.0-rc.3.0.20230206114529-17c7dfde736c // indirect
+	github.com/DataDog/datadog-agent/pkg/otlp/model v0.43.0-rc.3.0.20230206114529-17c7dfde736c // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.43.0-rc.3.0.20230206114529-17c7dfde736c // indirect
+	github.com/DataDog/datadog-agent/pkg/trace v0.43.0-rc.3.0.20230206114529-17c7dfde736c // indirect
+	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.43.0-rc.3.0.20230206114529-17c7dfde736c // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.43.0-rc.3.0.20230206114529-17c7dfde736c // indirect
 	github.com/DataDog/datadog-agent/pkg/util/pointer v0.43.0-rc.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.43.0-rc.3.0.20230201114415-fae4332beb98 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.43.0-rc.3.0.20230206114529-17c7dfde736c // indirect
 	github.com/DataDog/datadog-api-client-go/v2 v2.7.0 // indirect
 	github.com/DataDog/datadog-go/v5 v5.1.1 // indirect
 	github.com/DataDog/go-tuf v0.3.0--fix-localmeta-fork // indirect
 	github.com/DataDog/gohai v0.0.0-20220718130825-1776f9beb9cc // indirect
+	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.1.0 // indirect
 	github.com/DataDog/sketches-go v1.4.1 // indirect
 	github.com/DataDog/zstd v1.5.2 // indirect
 	github.com/GehirnInc/crypt v0.0.0-20200316065508-bb7000b8a962 // indirect
@@ -769,8 +768,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsp
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension => ./extension/basicauthextension
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension => ./extension/bearertokenauthextension
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/fluentbitextension => ./extension/fluentbitextension
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension => ./extension/headerssetterextension
 

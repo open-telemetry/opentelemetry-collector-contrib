@@ -12,13 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build !linux
-// +build !linux
+package servicegraphconnector // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector"
 
-package fluentbitextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/fluentbitextension"
+import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor"
 
-import (
-	"os/exec"
-)
-
-func applyOSSpecificCmdModifications(_ *exec.Cmd) {}
+var NewFactory = servicegraphprocessor.NewConnectorFactory

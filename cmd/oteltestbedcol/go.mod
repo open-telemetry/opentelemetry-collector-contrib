@@ -13,7 +13,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter v0.71.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter v0.71.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter v0.71.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/fluentbitextension v0.71.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension v0.71.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.71.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.71.0
@@ -356,8 +355,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/heal
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension => ../../extension/headerssetterextension
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlemanagedprometheusexporter => ../../exporter/googlemanagedprometheusexporter
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/fluentbitextension => ../../extension/fluentbitextension
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver => ../../receiver/aerospikereceiver
 
