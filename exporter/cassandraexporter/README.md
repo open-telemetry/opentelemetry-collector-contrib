@@ -1,10 +1,10 @@
 # Cassandra Exporter
 
-| Status                   |           |
-|--------------------------|-----------|
-| Stability                | [alpha]   |
-| Supported pipeline types | traces    |
-| Distributions            | [contrib] |
+| Status                   |              |
+|--------------------------|--------------|
+| Stability                | [alpha]      |
+| Supported pipeline types | logs, traces |
+| Distributions            | [contrib]    |
 
 ## Configuration options
 
@@ -21,12 +21,6 @@ The following settings can be optionally configured:
 ## Example
 
 ```yaml
-receivers:
-  examplereceiver:
-processors:
-  batch:
-    timeout: 5s
-    send_batch_size: 100000
 exporters:
   cassandra:
     dsn: 127.0.0.1
@@ -37,10 +31,4 @@ exporters:
       replication_factor: 1
     compression:
       algorithm: "ZstdCompressor"
-service:
-  pipelines:
-    logs:
-      receivers: [ examplereceiver ]
-      processors: [ batch ]
-      exporters: [ cassandra ]
 ```
