@@ -12,4 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package awscloudwatchmetricsreceiver
+package awscloudwatchmetricsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchmetricsreceiver"
+
+import (
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/receiver"
+)
+
+const (
+	typeStr        = "awscloudwatchmetrics"
+	stabilityLevel = component.StabilityLevelDevelopment
+)
+
+// NewFactory creates a factory for awscloudwatchmetrics receiver.
+func NewFactory() component.Factory {
+	return receiver.NewFactory(
+		typeStr,
+		createDefaultConfig,
+		receiver.WithMetrics(createMetricsRceiver, stabilityLevel),
+	)
+}
