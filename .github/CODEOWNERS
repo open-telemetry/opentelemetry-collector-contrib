@@ -41,7 +41,7 @@ exporter/azuremonitorexporter/                           @open-telemetry/collect
 exporter/azuredataexplorerexporter/                      @open-telemetry/collector-contrib-approvers @asaharan @ag-ramachandran
 exporter/carbonexporter/                                 @open-telemetry/collector-contrib-approvers @pjanotti
 exporter/clickhouseexporter/                             @open-telemetry/collector-contrib-approvers @hanjm @dmitryax @Frapschen
-exporter/cassandraexporter/                              @open-telemetry/collector-contrib-approvers @emreyalvac
+exporter/cassandraexporter/                              @open-telemetry/collector-contrib-approvers @atuolme @emreyalvac
 exporter/coralogixexporter/                              @open-telemetry/collector-contrib-approvers @oded-dd @ofirshmuel
 exporter/datadogexporter/                                @open-telemetry/collector-contrib-approvers @mx-psi @gbbr @dineshg13 @liustanley @songy23
 exporter/dynatraceexporter/                              @open-telemetry/collector-contrib-approvers @dyladan @arminru @evan-bradley
