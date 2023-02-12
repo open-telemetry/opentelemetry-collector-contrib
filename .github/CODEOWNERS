@@ -157,6 +157,7 @@ receiver/activedirectorydsreceiver/                      @open-telemetry/collect
 receiver/aerospikereceiver/                              @open-telemetry/collector-contrib-approvers @djaglowski @antonblock
 receiver/apachereceiver/                                 @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/awscloudwatchreceiver/                          @open-telemetry/collector-contrib-approvers @djaglowski @schmikei
+receiver/awscloudwatchmetricsreceiver                    @open-telemetry/collector-contrib-approvers @lewis262626 @jpkrohling @kovrus
 receiver/awscontainerinsightreceiver/                    @open-telemetry/collector-contrib-approvers @Aneurysm9 @pxaws
 receiver/awsecscontainermetricsreceiver/                 @open-telemetry/collector-contrib-approvers @Aneurysm9
 receiver/awsfirehosereceiver/                            @open-telemetry/collector-contrib-approvers @Aneurysm9
