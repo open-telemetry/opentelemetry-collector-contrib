@@ -16,9 +16,11 @@ package cassandraexporter
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/gocql/gocql"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
@@ -32,11 +34,6 @@ type logsExporter struct {
 }
 
 func newLogsExporter(logger *zap.Logger, cfg *Config) (*logsExporter, error) {
-	initializeErr := initializeLogKernel(cfg)
-	if initializeErr != nil {
-		return nil, initializeErr
-	}
-
 	cluster := gocql.NewCluster(cfg.DSN)
 	session, err := cluster.CreateSession()
 	cluster.Keyspace = cfg.Keyspace
@@ -47,14 +44,6 @@ func newLogsExporter(logger *zap.Logger, cfg *Config) (*logsExporter, error) {
 	}
 
 	return &logsExporter{logger: logger, client: session, cfg: cfg}, nil
-}
-
-func (e *logsExporter) Shutdown(_ context.Context) error {
-	if e.client != nil {
-		e.client.Close()
-	}
-
-	return nil
 }
 
 func initializeLogKernel(cfg *Config) error {
@@ -70,6 +59,19 @@ func initializeLogKernel(cfg *Config) error {
 	session.Query(parseCreateLogTableSql(cfg)).WithContext(ctx).Exec()
 
 	defer session.Close()
+
+	return nil
+}
+
+func (e *logsExporter) Start(ctx context.Context, host component.Host) error {
+	initializeErr := initializeLogKernel(e.cfg)
+	return initializeErr
+}
+
+func (e *logsExporter) Shutdown(_ context.Context) error {
+	if e.client != nil {
+		e.client.Close()
+	}
 
 	return nil
 }
@@ -94,6 +96,7 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 			for k := 0; k < rs.Len(); k++ {
 				r := rs.At(k)
 				logAttr := attributesToMap(r.Attributes())
+				bodyByte, _ := json.Marshal(r.Body().AsRaw())
 
 				e.client.Query(fmt.Sprintf(insertLogTableSQL, e.cfg.Keyspace, e.cfg.LogsTable),
 					r.Timestamp().AsTime(),
@@ -103,7 +106,7 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 					r.SeverityText(),
 					int32(r.SeverityNumber()),
 					serviceName,
-					r.Body().AsString(),
+					string(bodyByte),
 					resAttr,
 					logAttr,
 				).WithContext(ctx).Exec()

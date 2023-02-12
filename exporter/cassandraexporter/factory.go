@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cassandraexporter
+package cassandraexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/cassandraexporter"
 
 import (
 	"context"
@@ -55,7 +55,7 @@ func createTracesExporter(ctx context.Context, set exporter.CreateSettings, cfg 
 		return nil, fmt.Errorf("cannot configure cassandra traces exporter: %w", err)
 	}
 
-	return exporterhelper.NewTracesExporter(ctx, set, cfg, exporter.pushTraceData, exporterhelper.WithShutdown(exporter.Shutdown))
+	return exporterhelper.NewTracesExporter(ctx, set, cfg, exporter.pushTraceData, exporterhelper.WithShutdown(exporter.Shutdown), exporterhelper.WithStart(exporter.Start))
 }
 
 func createLogsExporter(ctx context.Context, set exporter.CreateSettings, cfg component.Config) (exporter.Logs, error) {
@@ -66,5 +66,5 @@ func createLogsExporter(ctx context.Context, set exporter.CreateSettings, cfg co
 		return nil, fmt.Errorf("cannot configure cassandra traces exporter: %w", err)
 	}
 
-	return exporterhelper.NewLogsExporter(ctx, set, cfg, exporter.pushLogsData, exporterhelper.WithShutdown(exporter.Shutdown))
+	return exporterhelper.NewLogsExporter(ctx, set, cfg, exporter.pushLogsData, exporterhelper.WithShutdown(exporter.Shutdown), exporterhelper.WithStart(exporter.Start))
 }

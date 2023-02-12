@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"github.com/gocql/gocql"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
@@ -32,11 +33,6 @@ type tracesExporter struct {
 }
 
 func newTracesExporter(logger *zap.Logger, cfg *Config) (*tracesExporter, error) {
-	initializeErr := initializeTraceKernel(cfg)
-	if initializeErr != nil {
-		return nil, initializeErr
-	}
-
 	cluster := gocql.NewCluster(cfg.DSN)
 	session, err := cluster.CreateSession()
 	cluster.Keyspace = cfg.Keyspace
@@ -82,6 +78,11 @@ func parseCreateLinksTypeSql(cfg *Config) string {
 
 func parseCreateDatabaseSql(cfg *Config) string {
 	return fmt.Sprintf(createDatabaseSQL, cfg.Keyspace, cfg.Replication.Class, cfg.Replication.ReplicationFactor)
+}
+
+func (e *tracesExporter) Start(ctx context.Context, host component.Host) error {
+	initializeErr := initializeTraceKernel(e.cfg)
+	return initializeErr
 }
 
 func (e *tracesExporter) Shutdown(_ context.Context) error {
