@@ -21,6 +21,7 @@ package components
 import (
 	"context"
 	"errors"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/cassandraexporter"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -293,6 +294,14 @@ func TestDefaultExporters(t *testing.T) {
 			getConfigFn: func() component.Config {
 				cfg := expFactories["clickhouse"].CreateDefaultConfig().(*clickhouseexporter.Config)
 				cfg.Endpoint = "tcp://" + endpoint
+				return cfg
+			},
+		},
+		{
+			exporter: "cassandra",
+			getConfigFn: func() component.Config {
+				cfg := expFactories["cassandra"].CreateDefaultConfig().(*cassandraexporter.Config)
+				cfg.DSN = "127.0.0.1"
 				return cfg
 			},
 		},
