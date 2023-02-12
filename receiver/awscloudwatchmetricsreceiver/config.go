@@ -71,5 +71,8 @@ func (cfg *Config) Validate() error {
 }
 
 func (cfg *Config) ValidateMetrics() error {
-	return nil
+	if cfg.Metrics == nil {
+		return errNoMetricsConfigured
+	}
+	return cfg.Metrics.Names.Validate()
 }
