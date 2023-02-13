@@ -164,7 +164,6 @@ func (e *opsrampOTLPExporter) pushTraces(ctx context.Context, td ptrace.Traces) 
 			}
 			_, err = e.traceExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
 			if err != nil {
-				fmt.Println("opsramp tracing Return error: ", err)
 				return err
 			}
 		}
