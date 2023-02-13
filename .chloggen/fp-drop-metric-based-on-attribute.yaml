@@ -5,7 +5,7 @@ change_type: enhancement
 component: filterprocessor
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add new functions `HasAttributeOnDatapoint` and `HasAttributeOnDatapointWithValue` to allow existing expr matching logic with OTTL.
+note: Add new functions `HasAttrKeyOnDatapoint` and `HasAttrOnDatapoint` to allow existing expr matching logic with OTTL.
 
 # One or more tracking issues related to the change
 issues: [16798]
