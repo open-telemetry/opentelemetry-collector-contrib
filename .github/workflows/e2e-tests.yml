@@ -40,7 +40,7 @@ jobs:
         with:
           version: v3.9.0
       - name: Set up chart-testing
-        uses: helm/chart-testing-action@v2.3.0
+        uses: helm/chart-testing-action@v2.3.1
       - name: Create kind cluster
         uses: helm/kind-action@v1.5.0
       - name: Check kind
