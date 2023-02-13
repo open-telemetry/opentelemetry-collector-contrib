@@ -126,7 +126,7 @@ func setTextExemplarWithIntValue(exemplar pmetric.Exemplar, value int64) {
 func exemplarsEqual(t *testing.T, otelExemplar pmetric.Exemplar, promExemplar io_prometheus_client.Exemplar) {
 	var givenValue float64
 	switch otelExemplar.ValueType() {
-	case pmetric.ExemplarValueTypeDouble: 
+	case pmetric.ExemplarValueTypeDouble:
 		givenValue = otelExemplar.DoubleValue()
 	case pmetric.ExemplarValueTypeInt:
 		givenValue = float64(otelExemplar.IntValue())
