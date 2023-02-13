@@ -135,7 +135,7 @@ func (r *router[E, K]) getStatementFrom(item RoutingTableItem) (*ottl.Statement[
 		var err error
 		statement, err = r.parser.ParseStatement(item.Statement)
 		if err != nil {
-			return nil, err
+			return statement, err
 		}
 	}
 	return statement, nil
