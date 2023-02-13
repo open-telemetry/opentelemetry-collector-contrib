@@ -19,6 +19,7 @@ exporters:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.78.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter v0.78.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter v0.78.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter v0.78.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter v0.78.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter v0.78.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter v0.78.0
@@ -83,6 +84,7 @@ replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter => ../../exporter/signalfxexporter
   - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry => ../../pkg/resourcetotelemetry
   - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter => ../../exporter/opencensusexporter
+  - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter => ../../exporter/opensearchexporter
   - github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent => ../../internal/sharedcomponent
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver => ../../receiver/prometheusreceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter => ../../exporter/sapmexporter

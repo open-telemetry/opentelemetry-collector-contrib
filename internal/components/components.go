@@ -49,6 +49,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/parquetexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter"
@@ -338,6 +339,7 @@ func Components() (otelcol.Factories, error) {
 		lokiexporter.NewFactory(),
 		mezmoexporter.NewFactory(),
 		opencensusexporter.NewFactory(),
+		opensearchexporter.NewFactory(),
 		otlpexporter.NewFactory(),
 		otlphttpexporter.NewFactory(),
 		parquetexporter.NewFactory(),
