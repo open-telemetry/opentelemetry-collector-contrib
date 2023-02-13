@@ -193,7 +193,6 @@ body:
       - receiver/postgresql
       - receiver/prometheus
       - receiver/prometheusexec
-      - receiver/promtail
       - receiver/pulsar
       - receiver/purefa
       - receiver/purefb
