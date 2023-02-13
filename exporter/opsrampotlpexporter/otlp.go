@@ -163,10 +163,10 @@ func (e *opsrampOTLPExporter) pushTraces(ctx context.Context, td ptrace.Traces) 
 				return fmt.Errorf("couldn't retreive new token instead of expired: %w", err)
 			}
 			_, err = e.traceExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
-
-		}
-		if err != nil {
-			return err
+			if err != nil {
+				fmt.Println("opsramp tracing Return error: ", err)
+				return err
+			}
 		}
 		return processError(err)
 	}
@@ -249,7 +249,6 @@ func processError(err error) error {
 	// Now, this is this a real error.
 
 	retryInfo := getRetryInfo(st)
-
 	if !shouldRetry(st.Code(), retryInfo) {
 		// It is not a retryable error, we should not retry.
 		return consumererror.NewPermanent(err)
