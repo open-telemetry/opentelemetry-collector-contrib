@@ -6,6 +6,10 @@
 | Supported pipeline types | metrics, logs, traces |
 | Distributions            | [core], [contrib]     |
 
+For OTTL conditions configuration see [OTTL](#ottl).
+**All other configuration options have been deprecated and will be removed in 0.74.0.**
+For all other options, continue reading.
+
 The filter processor can be configured to include or exclude:
 
 - Logs, based on OTTL conditions or resource attributes using the `strict` or `regexp` match types
@@ -15,8 +19,6 @@ The filter processor can be configured to include or exclude:
 - Data points based on OTTL conditions
 - Spans based on OTTL conditions or span names and resource attributes, all with full regex support
 - Span Events based on OTTL conditions.
-
-For OTTL conditions configuration see [OTTL](#ottl).  For all other options, continue reading.
 
 It takes a pipeline type, of which `logs` `metrics`, and `traces` are supported, followed
 by an action:

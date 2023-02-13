@@ -16,11 +16,11 @@ package filterprocessor // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
+	"go.uber.org/zap"
 )
 
 const (
@@ -53,7 +53,15 @@ func createMetricsProcessor(
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (processor.Metrics, error) {
-	fp, err := newFilterMetricProcessor(set.TelemetrySettings, cfg.(*Config))
+	oCfg := cfg.(*Config)
+	if oCfg.Metrics.Include != nil || oCfg.Metrics.Exclude != nil {
+		set.Logger.Warn(
+			"The metric `include` and `exclude` configuration options have been deprecated and will be removed in 0.74.0. Use `metric` instead.",
+			zap.Any("include", oCfg.Metrics.Include),
+			zap.Any("exclude", oCfg.Metrics.Exclude),
+		)
+	}
+	fp, err := newFilterMetricProcessor(set.TelemetrySettings, oCfg)
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +80,15 @@ func createLogsProcessor(
 	cfg component.Config,
 	nextConsumer consumer.Logs,
 ) (processor.Logs, error) {
-	fp, err := newFilterLogsProcessor(set.TelemetrySettings, cfg.(*Config))
+	oCfg := cfg.(*Config)
+	if oCfg.Logs.Include != nil || oCfg.Logs.Exclude != nil {
+		set.Logger.Warn(
+			"The log `include` and `exclude` configuration options have been deprecated and will be removed in 0.74.0. Use `log_record` instead.",
+			zap.Any("include", oCfg.Logs.Include),
+			zap.Any("exclude", oCfg.Logs.Exclude),
+		)
+	}
+	fp, err := newFilterLogsProcessor(set.TelemetrySettings, oCfg)
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +107,15 @@ func createTracesProcessor(
 	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (processor.Traces, error) {
-	fp, err := newFilterSpansProcessor(set.TelemetrySettings, cfg.(*Config))
+	oCfg := cfg.(*Config)
+	if oCfg.Spans.Include != nil || oCfg.Spans.Exclude != nil {
+		set.Logger.Warn(
+			"The span `include` and `exclude` configuration options have been deprecated and will be removed in 0.74.0. Use `traces.span` instead.",
+			zap.Any("include", oCfg.Spans.Include),
+			zap.Any("exclude", oCfg.Spans.Exclude),
+		)
+	}
+	fp, err := newFilterSpansProcessor(set.TelemetrySettings, oCfg)
 	if err != nil {
 		return nil, err
 	}
