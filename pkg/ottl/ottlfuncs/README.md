@@ -338,6 +338,9 @@ The `replace_all_patterns` function replaces any segments in a string value or k
 
 If one or more sections of `target` match `regex` they will get replaced with `replacement`.
 
+The `replacement` string can refer to matched groups using [regexp.Expand syntax](https://pkg.go.dev/regexp#Regexp.Expand).
+Note that `$` may need to be escaped to avoid getting consumed by config file environment variable replacement.
+
 Examples:
 
 - `replace_all_patterns(attributes, "value", "/account/\\d{4}", "/account/{accountId}")`
@@ -352,6 +355,9 @@ The `replace_pattern` function allows replacing all string sections that match a
 `target` is a path expression to a telemetry field. `regex` is a regex string indicating a segment to replace. `replacement` is a string.
 
 If one or more sections of `target` match `regex` they will get replaced with `replacement`.
+
+The `replacement` string can refer to matched groups using [regexp.Expand syntax](https://pkg.go.dev/regexp#Regexp.Expand).
+Note that `$` may need to be escaped to avoid getting consumed by config file environment variable replacement. 
 
 Examples:
 
