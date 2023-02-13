@@ -35,7 +35,7 @@ func TestSubmitLogs(t *testing.T) {
 	tests := []struct {
 		name        string
 		payload     []datadogV2.HTTPLogItem
-		testFn      func(jsonLogs testutil.JSONLogs, counter int)
+		testFn      func(jsonLogs testutil.JSONLogs, call int)
 		numRequests int
 	}{
 		{
@@ -67,8 +67,8 @@ func TestSubmitLogs(t *testing.T) {
 					"service":  "server",
 				},
 			}},
-			testFn: func(jsonLogs testutil.JSONLogs, counter int) {
-				switch counter {
+			testFn: func(jsonLogs testutil.JSONLogs, call int) {
+				switch call {
 				case 0:
 					assert.True(t, jsonLogs.HasDDTag("tag1:true"))
 					assert.Len(t, jsonLogs, 2)
@@ -107,8 +107,8 @@ func TestSubmitLogs(t *testing.T) {
 					"service":  "server",
 				},
 			}},
-			testFn: func(jsonLogs testutil.JSONLogs, counter int) {
-				switch counter {
+			testFn: func(jsonLogs testutil.JSONLogs, call int) {
+				switch call {
 				case 0:
 					assert.True(t, jsonLogs.HasDDTag("tag1:true"))
 					assert.Len(t, jsonLogs, 1)
@@ -176,8 +176,8 @@ func TestSubmitLogs(t *testing.T) {
 					"service":  "server",
 				},
 			}},
-			testFn: func(jsonLogs testutil.JSONLogs, counter int) {
-				switch counter {
+			testFn: func(jsonLogs testutil.JSONLogs, call int) {
+				switch call {
 				case 0:
 					assert.True(t, jsonLogs.HasDDTag("tag1:true"))
 					assert.Len(t, jsonLogs, 2)
@@ -193,12 +193,12 @@ func TestSubmitLogs(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var numCalls int
+			var calls int
 			server := testutil.DatadogLogServerMock(func() (string, http.HandlerFunc) {
 				return "/api/v2/logs", func(writer http.ResponseWriter, request *http.Request) {
 					jsonLogs := testutil.MockLogsEndpoint(writer, request)
-					tt.testFn(jsonLogs, numCalls)
-					numCalls++
+					tt.testFn(jsonLogs, calls)
+					calls++
 				}
 			})
 			defer server.Close()
@@ -206,7 +206,7 @@ func TestSubmitLogs(t *testing.T) {
 			if err := s.SubmitLogs(context.Background(), tt.payload); err != nil {
 				t.Fatal(err)
 			}
-			assert.True(t, numCalls > 0 && numCalls == tt.numRequests)
+			assert.True(t, calls == tt.numRequests)
 		})
 	}
 }
