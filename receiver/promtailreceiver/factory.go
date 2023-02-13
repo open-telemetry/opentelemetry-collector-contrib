@@ -24,7 +24,7 @@ import (
 
 const (
 	typeStr   = "promtail"
-	stability = component.StabilityLevelAlpha
+	stability = component.StabilityLevelDeprecated
 )
 
 // NewFactory creates a factory for promtail receiver

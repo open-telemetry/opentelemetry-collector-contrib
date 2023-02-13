@@ -1,3 +1,4 @@
+// Deprecated: promtail receiver is deprecated and will be removed in future versions.
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/promtailreceiver
 
 go 1.18

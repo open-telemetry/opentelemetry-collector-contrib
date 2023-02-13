@@ -1,8 +1,8 @@
-# Promtail Receiver
+# Deprecated Promtail Receiver
 
 | Status                   |           |
 | ------------------------ |-----------|
-| Stability                | [alpha]   |
+| Stability                | [deprecated]   |
 | Supported pipeline types | logs      |
 | Distributions            | [contrib] |
 
@@ -87,6 +87,6 @@ CGO_ENABLED=1 go build ./cmd/otelcontribcol --tags=promtail_journal_enabled
 
 [sc]: https://grafana.com/docs/loki/latest/clients/promtail/configuration/#scrape_configs
 
-[alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
+[deprecated]: https://github.com/open-telemetry/opentelemetry-collector#deprecated
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
 [core]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol
