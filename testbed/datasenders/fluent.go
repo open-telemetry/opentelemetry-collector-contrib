@@ -37,17 +37,18 @@ const (
 	fluentPortVar     = "FLUENT_DATA_SENDER_RECEIVER_PORT"
 )
 
-// FluentLogsForwarder forwards logs to fluent forwader
-type FluentLogsForwarder struct {
+// fluentLogsForwarder forwards logs to fluent forwader
+type fluentLogsForwarder struct {
+	consumer.Logs
 	testbed.DataSenderBase
 	fluentLogger *fluent.Fluent
 	dataFile     *os.File
 }
 
-// Ensure FluentLogsForwarder implements LogDataSender.
-var _ testbed.LogDataSender = (*FluentLogsForwarder)(nil)
+// Ensure fluentLogsForwarder implements LogDataSender.
+var _ testbed.LogDataSender = (*fluentLogsForwarder)(nil)
 
-func NewFluentLogsForwarder(t *testing.T, port int) *FluentLogsForwarder {
+func NewFluentLogsForwarder(t *testing.T, port int) *fluentLogsForwarder {
 	var err error
 	portOverride := os.Getenv(fluentPortVar)
 	if portOverride != "" {
@@ -55,7 +56,8 @@ func NewFluentLogsForwarder(t *testing.T, port int) *FluentLogsForwarder {
 		require.NoError(t, err)
 	}
 
-	f := &FluentLogsForwarder{DataSenderBase: testbed.DataSenderBase{Port: port}}
+	f := &fluentLogsForwarder{DataSenderBase: testbed.DataSenderBase{Port: port}}
+	f.Logs, _ = consumer.NewLogs(f.consumeLogs)
 
 	// When FLUENT_DATA_SENDER_DATA_FILE is set, the data sender, writes to a
 	// file. This enables users to optionally run the e2e test against a real
@@ -75,19 +77,15 @@ func NewFluentLogsForwarder(t *testing.T, port int) *FluentLogsForwarder {
 	return f
 }
 
-func (f *FluentLogsForwarder) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: false}
-}
-
-func (f *FluentLogsForwarder) Start() error {
+func (f *fluentLogsForwarder) Start() error {
 	return nil
 }
 
-func (f *FluentLogsForwarder) Stop() error {
+func (f *fluentLogsForwarder) Stop() error {
 	return f.fluentLogger.Close()
 }
 
-func (f *FluentLogsForwarder) ConsumeLogs(_ context.Context, logs plog.Logs) error {
+func (f *fluentLogsForwarder) consumeLogs(_ context.Context, logs plog.Logs) error {
 	for i := 0; i < logs.ResourceLogs().Len(); i++ {
 		for j := 0; j < logs.ResourceLogs().At(i).ScopeLogs().Len(); j++ {
 			ills := logs.ResourceLogs().At(i).ScopeLogs().At(j)
@@ -107,7 +105,7 @@ func (f *FluentLogsForwarder) ConsumeLogs(_ context.Context, logs plog.Logs) err
 	return nil
 }
 
-func (f *FluentLogsForwarder) convertLogToMap(lr plog.LogRecord) map[string]string {
+func (f *fluentLogsForwarder) convertLogToMap(lr plog.LogRecord) map[string]string {
 	out := map[string]string{}
 
 	if lr.Body().Type() == pcommon.ValueTypeStr {
@@ -133,7 +131,7 @@ func (f *FluentLogsForwarder) convertLogToMap(lr plog.LogRecord) map[string]stri
 	return out
 }
 
-func (f *FluentLogsForwarder) convertLogToJSON(lr plog.LogRecord) []byte {
+func (f *fluentLogsForwarder) convertLogToJSON(lr plog.LogRecord) []byte {
 	rec := map[string]string{
 		"time": time.Unix(0, int64(lr.Timestamp())).Format("02/01/2006:15:04:05Z"),
 	}
@@ -161,16 +159,16 @@ func (f *FluentLogsForwarder) convertLogToJSON(lr plog.LogRecord) []byte {
 	return b
 }
 
-func (f *FluentLogsForwarder) Flush() {
+func (f *fluentLogsForwarder) Flush() {
 	_ = f.dataFile.Sync()
 }
 
-func (f *FluentLogsForwarder) GenConfigYAMLStr() string {
+func (f *fluentLogsForwarder) GenConfigYAMLStr() string {
 	return fmt.Sprintf(`
   fluentforward:
     endpoint: 127.0.0.1:%d`, f.Port)
 }
 
-func (f *FluentLogsForwarder) ProtocolName() string {
+func (f *fluentLogsForwarder) ProtocolName() string {
 	return "fluentforward"
 }

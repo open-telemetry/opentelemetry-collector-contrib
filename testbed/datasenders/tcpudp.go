@@ -30,7 +30,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
-type TCPUDPWriter struct {
+type tcpUDPWriter struct {
+	consumer.Logs
 	testbed.DataSenderBase
 	conn    net.Conn
 	buf     []string
@@ -38,10 +39,10 @@ type TCPUDPWriter struct {
 	network string
 }
 
-var _ testbed.LogDataSender = (*TCPUDPWriter)(nil)
+var _ testbed.LogDataSender = (*tcpUDPWriter)(nil)
 
-func NewTCPUDPWriter(network string, host string, port int, batchSize int) *TCPUDPWriter {
-	f := &TCPUDPWriter{
+func NewTCPUDPWriter(network string, host string, port int, batchSize int) testbed.LogDataSender {
+	f := &tcpUDPWriter{
 		network: network,
 		bufSize: batchSize,
 		DataSenderBase: testbed.DataSenderBase{
@@ -49,10 +50,11 @@ func NewTCPUDPWriter(network string, host string, port int, batchSize int) *TCPU
 			Host: host,
 		},
 	}
+	f.Logs, _ = consumer.NewLogs(f.consumeLogs)
 	return f
 }
 
-func (f *TCPUDPWriter) GetEndpoint() net.Addr {
+func (f *tcpUDPWriter) GetEndpoint() net.Addr {
 	var addr net.Addr
 	switch f.network {
 	case "udp":
@@ -64,11 +66,7 @@ func (f *TCPUDPWriter) GetEndpoint() net.Addr {
 	return addr
 }
 
-func (f *TCPUDPWriter) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: false}
-}
-
-func (f *TCPUDPWriter) Start() (err error) {
+func (f *tcpUDPWriter) Start() (err error) {
 	f.conn, err = net.Dial(f.GetEndpoint().Network(), f.GetEndpoint().String())
 	// udp not ack, can't use net.Dial to check udp server is ready, use sleep 1 second to wait udp server start
 	if f.network == "udp" {
@@ -77,7 +75,7 @@ func (f *TCPUDPWriter) Start() (err error) {
 	return err
 }
 
-func (f *TCPUDPWriter) ConsumeLogs(_ context.Context, logs plog.Logs) error {
+func (f *tcpUDPWriter) consumeLogs(_ context.Context, logs plog.Logs) error {
 	for i := 0; i < logs.ResourceLogs().Len(); i++ {
 		for j := 0; j < logs.ResourceLogs().At(i).ScopeLogs().Len(); j++ {
 			ills := logs.ResourceLogs().At(i).ScopeLogs().At(j)
@@ -92,13 +90,13 @@ func (f *TCPUDPWriter) ConsumeLogs(_ context.Context, logs plog.Logs) error {
 	return nil
 }
 
-func (f *TCPUDPWriter) GenConfigYAMLStr() string {
+func (f *tcpUDPWriter) GenConfigYAMLStr() string {
 	return fmt.Sprintf(`
   %slog:
     listen_address: "%s"
 `, f.network, f.GetEndpoint())
 }
-func (f *TCPUDPWriter) Send(lr plog.LogRecord) error {
+func (f *tcpUDPWriter) Send(lr plog.LogRecord) error {
 	ts := time.Unix(int64(lr.Timestamp()/1000000000), int64(lr.Timestamp()%100000000)).Format(time.RFC3339Nano)
 	sdid := strings.Builder{}
 	sdid.WriteString(fmt.Sprintf("%s=\"%s\" ", "trace_id", traceutil.TraceIDToHexOrEmptyString(lr.TraceID())))
@@ -114,7 +112,7 @@ func (f *TCPUDPWriter) Send(lr plog.LogRecord) error {
 	return f.SendCheck()
 }
 
-func (f *TCPUDPWriter) SendCheck() error {
+func (f *tcpUDPWriter) SendCheck() error {
 	if len(f.buf) == f.bufSize {
 		b := bytes.NewBufferString("")
 		for _, v := range f.buf {
@@ -131,9 +129,9 @@ func (f *TCPUDPWriter) SendCheck() error {
 	return nil
 }
 
-func (f *TCPUDPWriter) Flush() {
+func (f *tcpUDPWriter) Flush() {
 }
 
-func (f *TCPUDPWriter) ProtocolName() string {
+func (f *tcpUDPWriter) ProtocolName() string {
 	return fmt.Sprintf(`%slog`, f.network)
 }

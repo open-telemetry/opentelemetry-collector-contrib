@@ -25,23 +25,21 @@ import (
 )
 
 type batchTraces struct {
+	consumer.Traces
 	attrKey string
 	next    consumer.Traces
 }
 
 func NewBatchPerResourceTraces(attrKey string, next consumer.Traces) consumer.Traces {
-	return &batchTraces{
+	bt := &batchTraces{
 		attrKey: attrKey,
 		next:    next,
 	}
+	bt.Traces, _ = consumer.NewTraces(bt.consumeTraces, consumer.WithCapabilities(consumer.Capabilities{MutatesData: true}))
+	return bt
 }
 
-// Capabilities implements the consumer interface.
-func (bt *batchTraces) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: true}
-}
-
-func (bt *batchTraces) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
+func (bt *batchTraces) consumeTraces(ctx context.Context, td ptrace.Traces) error {
 	rss := td.ResourceSpans()
 	lenRss := rss.Len()
 	// If zero or one resource spans just call next.
@@ -77,23 +75,21 @@ func (bt *batchTraces) ConsumeTraces(ctx context.Context, td ptrace.Traces) erro
 }
 
 type batchMetrics struct {
+	consumer.Metrics
 	attrKey string
 	next    consumer.Metrics
 }
 
 func NewBatchPerResourceMetrics(attrKey string, next consumer.Metrics) consumer.Metrics {
-	return &batchMetrics{
+	bm := &batchMetrics{
 		attrKey: attrKey,
 		next:    next,
 	}
+	bm.Metrics, _ = consumer.NewMetrics(bm.consumeMetrics, consumer.WithCapabilities(consumer.Capabilities{MutatesData: true}))
+	return bm
 }
 
-// Capabilities implements the consumer interface.
-func (bt *batchMetrics) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: true}
-}
-
-func (bt *batchMetrics) ConsumeMetrics(ctx context.Context, td pmetric.Metrics) error {
+func (bt *batchMetrics) consumeMetrics(ctx context.Context, td pmetric.Metrics) error {
 	rms := td.ResourceMetrics()
 	lenRms := rms.Len()
 	// If zero or one resource metrics just call next.
@@ -129,23 +125,21 @@ func (bt *batchMetrics) ConsumeMetrics(ctx context.Context, td pmetric.Metrics) 
 }
 
 type batchLogs struct {
+	consumer.Logs
 	attrKey string
 	next    consumer.Logs
 }
 
 func NewBatchPerResourceLogs(attrKey string, next consumer.Logs) consumer.Logs {
-	return &batchLogs{
+	bt := &batchLogs{
 		attrKey: attrKey,
 		next:    next,
 	}
+	bt.Logs, _ = consumer.NewLogs(bt.consumeLogs, consumer.WithCapabilities(consumer.Capabilities{MutatesData: true}))
+	return bt
 }
 
-// Capabilities implements the consumer interface.
-func (bt *batchLogs) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: true}
-}
-
-func (bt *batchLogs) ConsumeLogs(ctx context.Context, td plog.Logs) error {
+func (bt *batchLogs) consumeLogs(ctx context.Context, td plog.Logs) error {
 	rls := td.ResourceLogs()
 	lenRls := rls.Len()
 	// If zero or one resource logs just call next.

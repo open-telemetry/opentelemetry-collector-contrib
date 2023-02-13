@@ -29,7 +29,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
-type SyslogWriter struct {
+type syslogWriter struct {
+	consumer.Logs
 	testbed.DataSenderBase
 	conn    net.Conn
 	buf     []string
@@ -37,10 +38,10 @@ type SyslogWriter struct {
 	network string
 }
 
-var _ testbed.LogDataSender = (*SyslogWriter)(nil)
+var _ testbed.LogDataSender = (*syslogWriter)(nil)
 
-func NewSyslogWriter(network string, host string, port int, batchSize int) *SyslogWriter {
-	f := &SyslogWriter{
+func NewSyslogWriter(network string, host string, port int, batchSize int) testbed.LogDataSender {
+	f := &syslogWriter{
 		network: network,
 		bufSize: batchSize,
 		DataSenderBase: testbed.DataSenderBase{
@@ -48,10 +49,11 @@ func NewSyslogWriter(network string, host string, port int, batchSize int) *Sysl
 			Host: host,
 		},
 	}
+	f.Logs, _ = consumer.NewLogs(f.consumeLogs)
 	return f
 }
 
-func (f *SyslogWriter) GetEndpoint() net.Addr {
+func (f *syslogWriter) GetEndpoint() net.Addr {
 	var addr net.Addr
 	switch f.network {
 	case "udp":
@@ -63,11 +65,7 @@ func (f *SyslogWriter) GetEndpoint() net.Addr {
 	return addr
 }
 
-func (f *SyslogWriter) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: false}
-}
-
-func (f *SyslogWriter) Start() (err error) {
+func (f *syslogWriter) Start() (err error) {
 	f.conn, err = net.Dial(f.GetEndpoint().Network(), f.GetEndpoint().String())
 	// udp not ack, can't use net.Dial to check udp server is ready, use sleep 1 second to wait udp server start
 	if f.network == "udp" {
@@ -76,7 +74,7 @@ func (f *SyslogWriter) Start() (err error) {
 	return err
 }
 
-func (f *SyslogWriter) ConsumeLogs(_ context.Context, logs plog.Logs) error {
+func (f *syslogWriter) consumeLogs(_ context.Context, logs plog.Logs) error {
 	for i := 0; i < logs.ResourceLogs().Len(); i++ {
 		for j := 0; j < logs.ResourceLogs().At(i).ScopeLogs().Len(); j++ {
 			ills := logs.ResourceLogs().At(i).ScopeLogs().At(j)
@@ -91,7 +89,7 @@ func (f *SyslogWriter) ConsumeLogs(_ context.Context, logs plog.Logs) error {
 	return nil
 }
 
-func (f *SyslogWriter) GenConfigYAMLStr() string {
+func (f *syslogWriter) GenConfigYAMLStr() string {
 	return fmt.Sprintf(`
   syslog:
     protocol: rfc5424
@@ -99,7 +97,7 @@ func (f *SyslogWriter) GenConfigYAMLStr() string {
       listen_address: "%s"
 `, f.network, f.GetEndpoint())
 }
-func (f *SyslogWriter) Send(lr plog.LogRecord) error {
+func (f *syslogWriter) Send(lr plog.LogRecord) error {
 	ts := time.Unix(int64(lr.Timestamp()/1000000000), int64(lr.Timestamp()%100000000)).Format(time.RFC3339Nano)
 	sdid := strings.Builder{}
 	sdid.WriteString(fmt.Sprintf("%s=\"%s\" ", "trace_id", lr.TraceID()))
@@ -115,7 +113,7 @@ func (f *SyslogWriter) Send(lr plog.LogRecord) error {
 	return f.SendCheck()
 }
 
-func (f *SyslogWriter) SendCheck() error {
+func (f *syslogWriter) SendCheck() error {
 	if len(f.buf) == f.bufSize {
 		b := bytes.NewBufferString("")
 		for _, v := range f.buf {
@@ -132,9 +130,9 @@ func (f *SyslogWriter) SendCheck() error {
 	return nil
 }
 
-func (f *SyslogWriter) Flush() {
+func (f *syslogWriter) Flush() {
 }
 
-func (f *SyslogWriter) ProtocolName() string {
+func (f *syslogWriter) ProtocolName() string {
 	return "syslog"
 }

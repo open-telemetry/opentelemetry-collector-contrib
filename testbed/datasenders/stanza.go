@@ -30,37 +30,34 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
-type FileLogWriter struct {
+type fileLogWriter struct {
+	consumer.Logs
 	file *os.File
 }
 
-// Ensure FileLogWriter implements LogDataSender.
-var _ testbed.LogDataSender = (*FileLogWriter)(nil)
+// Ensure fileLogWriter implements LogDataSender.
+var _ testbed.LogDataSender = (*fileLogWriter)(nil)
 
 // NewFileLogWriter creates a new data sender that will write log entries to a
 // file, to be tailed by FluentBit and sent to the collector.
-func NewFileLogWriter() *FileLogWriter {
+func NewFileLogWriter() testbed.LogDataSender {
 	file, err := os.CreateTemp("", "perf-logs.log")
 	if err != nil {
 		panic("failed to create temp file")
 	}
 
-	f := &FileLogWriter{
+	f := &fileLogWriter{
 		file: file,
 	}
-
+	f.Logs, _ = consumer.NewLogs(f.consumeLogs)
 	return f
 }
 
-func (f *FileLogWriter) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: false}
-}
-
-func (f *FileLogWriter) Start() error {
+func (f *fileLogWriter) Start() error {
 	return nil
 }
 
-func (f *FileLogWriter) ConsumeLogs(_ context.Context, logs plog.Logs) error {
+func (f *fileLogWriter) consumeLogs(_ context.Context, logs plog.Logs) error {
 	for i := 0; i < logs.ResourceLogs().Len(); i++ {
 		for j := 0; j < logs.ResourceLogs().At(i).ScopeLogs().Len(); j++ {
 			ills := logs.ResourceLogs().At(i).ScopeLogs().At(j)
@@ -75,7 +72,7 @@ func (f *FileLogWriter) ConsumeLogs(_ context.Context, logs plog.Logs) error {
 	return nil
 }
 
-func (f *FileLogWriter) convertLogToTextLine(lr plog.LogRecord) []byte {
+func (f *fileLogWriter) convertLogToTextLine(lr plog.LogRecord) []byte {
 	sb := strings.Builder{}
 
 	// Timestamp
@@ -112,11 +109,11 @@ func (f *FileLogWriter) convertLogToTextLine(lr plog.LogRecord) []byte {
 	return []byte(sb.String())
 }
 
-func (f *FileLogWriter) Flush() {
+func (f *fileLogWriter) Flush() {
 	_ = f.file.Sync()
 }
 
-func (f *FileLogWriter) GenConfigYAMLStr() string {
+func (f *fileLogWriter) GenConfigYAMLStr() string {
 	// Note that this generates a receiver config for agent.
 	// We are testing stanza receiver here.
 	return fmt.Sprintf(`
@@ -134,11 +131,11 @@ func (f *FileLogWriter) GenConfigYAMLStr() string {
 `, f.file.Name())
 }
 
-func (f *FileLogWriter) ProtocolName() string {
+func (f *fileLogWriter) ProtocolName() string {
 	return "filelog"
 }
 
-func (f *FileLogWriter) GetEndpoint() net.Addr {
+func (f *fileLogWriter) GetEndpoint() net.Addr {
 	return nil
 }
 

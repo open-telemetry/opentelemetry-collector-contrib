@@ -30,14 +30,15 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
-// FileLogK8sWriter represents abstract container k8s writer
-type FileLogK8sWriter struct {
+// fileLogK8sWriter represents abstract container k8s writer
+type fileLogK8sWriter struct {
+	consumer.Logs
 	file   *os.File
 	config string
 }
 
-// Ensure FileLogK8sWriter implements LogDataSender.
-var _ testbed.LogDataSender = (*FileLogK8sWriter)(nil)
+// Ensure fileLogK8sWriter implements LogDataSender.
+var _ testbed.LogDataSender = (*fileLogK8sWriter)(nil)
 
 // NewFileLogK8sWriter creates a new data sender that will write kubernetes containerd
 // log entries to a file, to be tailed by FileLogReceiver and sent to the collector.
@@ -58,7 +59,7 @@ var _ testbed.LogDataSender = (*FileLogK8sWriter)(nil)
 // |      type: regex_parser
 // |      regex: ^(?P<log>.*)$
 // |  `
-func NewFileLogK8sWriter(config string) *FileLogK8sWriter {
+func NewFileLogK8sWriter(config string) testbed.LogDataSender {
 	dir, err := os.MkdirTemp("", "namespace-*_test-pod_000011112222333344445555666677778888")
 	if err != nil {
 		panic("failed to create temp dir")
@@ -73,23 +74,19 @@ func NewFileLogK8sWriter(config string) *FileLogK8sWriter {
 		panic("failed to create temp file")
 	}
 
-	f := &FileLogK8sWriter{
+	f := &fileLogK8sWriter{
 		file:   file,
 		config: config,
 	}
-
+	f.Logs, _ = consumer.NewLogs(f.consumeLogs)
 	return f
 }
 
-func (f *FileLogK8sWriter) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: false}
-}
-
-func (f *FileLogK8sWriter) Start() error {
+func (f *fileLogK8sWriter) Start() error {
 	return nil
 }
 
-func (f *FileLogK8sWriter) ConsumeLogs(_ context.Context, logs plog.Logs) error {
+func (f *fileLogK8sWriter) consumeLogs(_ context.Context, logs plog.Logs) error {
 	for i := 0; i < logs.ResourceLogs().Len(); i++ {
 		for j := 0; j < logs.ResourceLogs().At(i).ScopeLogs().Len(); j++ {
 			ills := logs.ResourceLogs().At(i).ScopeLogs().At(j)
@@ -104,7 +101,7 @@ func (f *FileLogK8sWriter) ConsumeLogs(_ context.Context, logs plog.Logs) error 
 	return nil
 }
 
-func (f *FileLogK8sWriter) convertLogToTextLine(lr plog.LogRecord) []byte {
+func (f *fileLogK8sWriter) convertLogToTextLine(lr plog.LogRecord) []byte {
 	sb := strings.Builder{}
 
 	// Timestamp
@@ -141,28 +138,28 @@ func (f *FileLogK8sWriter) convertLogToTextLine(lr plog.LogRecord) []byte {
 	return []byte(sb.String())
 }
 
-func (f *FileLogK8sWriter) Flush() {
+func (f *fileLogK8sWriter) Flush() {
 	_ = f.file.Sync()
 }
 
-func (f *FileLogK8sWriter) GenConfigYAMLStr() string {
+func (f *fileLogK8sWriter) GenConfigYAMLStr() string {
 	// Note that this generates a receiver config for agent.
 	// We are testing filelog receiver here.
 
 	return fmt.Sprintf(f.config, f.file.Name())
 }
 
-func (f *FileLogK8sWriter) ProtocolName() string {
+func (f *fileLogK8sWriter) ProtocolName() string {
 	return "filelog"
 }
 
-func (f *FileLogK8sWriter) GetEndpoint() net.Addr {
+func (f *fileLogK8sWriter) GetEndpoint() net.Addr {
 	return nil
 }
 
-// NewKubernetesContainerWriter returns FileLogK8sWriter with configuration
+// NewKubernetesContainerWriter returns fileLogK8sWriter with configuration
 // to recognize and parse kubernetes container logs
-func NewKubernetesContainerWriter() *FileLogK8sWriter {
+func NewKubernetesContainerWriter() testbed.LogDataSender {
 	return NewFileLogK8sWriter(`
   filelog:
     include: [ %s ]
@@ -234,9 +231,9 @@ func NewKubernetesContainerWriter() *FileLogK8sWriter {
   `)
 }
 
-// NewKubernetesCRIContainerdWriter returns FileLogK8sWriter with configuration
+// NewKubernetesCRIContainerdWriter returns fileLogK8sWriter with configuration
 // to parse only CRI-Containerd kubernetes logs
-func NewKubernetesCRIContainerdWriter() *FileLogK8sWriter {
+func NewKubernetesCRIContainerdWriter() testbed.LogDataSender {
 	return NewFileLogK8sWriter(`
   filelog:
     include: [ %s ]
@@ -282,9 +279,9 @@ func NewKubernetesCRIContainerdWriter() *FileLogK8sWriter {
   `)
 }
 
-// NewKubernetesCRIContainerdNoAttributesOpsWriter returns FileLogK8sWriter with configuration
+// NewKubernetesCRIContainerdNoAttributesOpsWriter returns fileLogK8sWriter with configuration
 // to parse only CRI-Containerd kubernetes logs without reformatting attributes
-func NewKubernetesCRIContainerdNoAttributesOpsWriter() *FileLogK8sWriter {
+func NewKubernetesCRIContainerdNoAttributesOpsWriter() testbed.LogDataSender {
 	return NewFileLogK8sWriter(`
   filelog:
     include: [ %s ]
@@ -308,9 +305,9 @@ func NewKubernetesCRIContainerdNoAttributesOpsWriter() *FileLogK8sWriter {
   `)
 }
 
-// NewCRIContainerdWriter returns FileLogK8sWriter with configuration
+// NewCRIContainerdWriter returns fileLogK8sWriter with configuration
 // to parse only CRI-Containerd logs (no extracting metadata from filename)
-func NewCRIContainerdWriter() *FileLogK8sWriter {
+func NewCRIContainerdWriter() testbed.LogDataSender {
 	return NewFileLogK8sWriter(`
   filelog:
     include: [ %s ]

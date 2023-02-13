@@ -59,9 +59,9 @@ func NewMockBackend(logFilePath string, receiver DataReceiver) *MockBackend {
 	mb := &MockBackend{
 		logFilePath: logFilePath,
 		receiver:    receiver,
-		tc:          &MockTraceConsumer{},
-		mc:          &MockMetricConsumer{},
-		lc:          &MockLogConsumer{},
+		tc:          NewMockTraceConsumer(),
+		mc:          NewMockMetricConsumer(),
+		lc:          NewMockLogConsumer(),
 	}
 	mb.tc.backend = mb
 	mb.mc.backend = mb
@@ -162,16 +162,21 @@ func (mb *MockBackend) ConsumeLogs(ld plog.Logs) {
 	}
 }
 
+// MockTraceConsumer can be used to mock a logs consumer. Direct usage of MockMetricConsumer is invalid.
+// Use NewMockMetricConsumer instead.
 type MockTraceConsumer struct {
+	consumer.Traces
 	numSpansReceived atomic.Uint64
 	backend          *MockBackend
 }
 
-func (tc *MockTraceConsumer) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: false}
+func NewMockTraceConsumer() *MockTraceConsumer {
+	mmc := &MockTraceConsumer{}
+	mmc.Traces, _ = consumer.NewTraces(mmc.consumeTraces)
+	return mmc
 }
 
-func (tc *MockTraceConsumer) ConsumeTraces(_ context.Context, td ptrace.Traces) error {
+func (tc *MockTraceConsumer) consumeTraces(_ context.Context, td ptrace.Traces) error {
 	tc.numSpansReceived.Add(uint64(td.SpanCount()))
 
 	rs := td.ResourceSpans()
@@ -209,16 +214,21 @@ func (tc *MockTraceConsumer) ConsumeTraces(_ context.Context, td ptrace.Traces) 
 
 var _ consumer.Metrics = (*MockMetricConsumer)(nil)
 
+// MockMetricConsumer can be used to mock a metrics consumer. Direct usage of MockMetricConsumer is invalid.
+// Use NewMockMetricConsumer instead.
 type MockMetricConsumer struct {
+	consumer.Metrics
 	numMetricsReceived atomic.Uint64
 	backend            *MockBackend
 }
 
-func (mc *MockMetricConsumer) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: false}
+func NewMockMetricConsumer() *MockMetricConsumer {
+	mmc := &MockMetricConsumer{}
+	mmc.Metrics, _ = consumer.NewMetrics(mmc.consumeMetrics)
+	return mmc
 }
 
-func (mc *MockMetricConsumer) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
+func (mc *MockMetricConsumer) consumeMetrics(_ context.Context, md pmetric.Metrics) error {
 	mc.numMetricsReceived.Add(uint64(md.DataPointCount()))
 	mc.backend.ConsumeMetric(md)
 	return nil
@@ -234,16 +244,21 @@ func (mc *MockMetricConsumer) MockConsumeMetricData(metricsCount int) error {
 	return nil
 }
 
+// MockLogConsumer can be used to mock a logs consumer. Direct usage of MockMetricConsumer is invalid.
+// Use NewMockLogConsumer instead.
 type MockLogConsumer struct {
+	consumer.Logs
 	numLogRecordsReceived atomic.Uint64
 	backend               *MockBackend
 }
 
-func (lc *MockLogConsumer) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: false}
+func NewMockLogConsumer() *MockLogConsumer {
+	mmc := &MockLogConsumer{}
+	mmc.Logs, _ = consumer.NewLogs(mmc.consumeLogs)
+	return mmc
 }
 
-func (lc *MockLogConsumer) ConsumeLogs(_ context.Context, ld plog.Logs) error {
+func (lc *MockLogConsumer) consumeLogs(_ context.Context, ld plog.Logs) error {
 	recordCount := ld.LogRecordCount()
 	lc.numLogRecordsReceived.Add(uint64(recordCount))
 	lc.backend.ConsumeLogs(ld)
