@@ -22,96 +22,78 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/exporter/otlpexporter"
-	"go.opentelemetry.io/collector/otelcol/otelcoltest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/processor/batchprocessor"
-	"go.opentelemetry.io/collector/receiver/otlpreceiver"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver"
 )
 
 func TestLoadConfig(t *testing.T) {
+	t.Parallel()
+
 	defaultMethod := "GET"
-	testcases := []struct {
-		configFile                  string
-		wantMetricsExporter         string
-		wantLatencyHistogramBuckets []time.Duration
-		wantDimensions              []Dimension
-		wantDimensionsCacheSize     int
-		wantAggregationTemporality  string
-		wantMetricsFlushInterval    time.Duration
+	tests := []struct {
+		name     string
+		id       component.ID
+		expected component.Config
 	}{
 		{
-			configFile:                 "config-2-pipelines.yaml",
-			wantMetricsExporter:        "prometheus",
-			wantAggregationTemporality: cumulative,
-			wantDimensionsCacheSize:    500,
-			wantMetricsFlushInterval:   15 * time.Second, // Default.
+			name: "configuration with dimensions size cache",
+			id:   component.NewIDWithName(typeStr, "dimensions"),
+			expected: &Config{
+				MetricsExporter:        "prometheus",
+				AggregationTemporality: cumulative,
+				DimensionsCacheSize:    500,
+				MetricsFlushInterval:   15 * time.Second,
+			},
 		},
 		{
-			configFile:                 "config-3-pipelines.yaml",
-			wantMetricsExporter:        "otlp/spanmetrics",
-			wantAggregationTemporality: cumulative,
-			wantDimensionsCacheSize:    defaultDimensionsCacheSize,
-			wantMetricsFlushInterval:   15 * time.Second, // Default.
+			name: "configuration with aggregation temporality",
+			id:   component.NewIDWithName(typeStr, "temp"),
+			expected: &Config{
+				MetricsExporter:        "otlp/spanmetrics",
+				AggregationTemporality: cumulative,
+				DimensionsCacheSize:    defaultDimensionsCacheSize,
+				MetricsFlushInterval:   15 * time.Second,
+			},
 		},
 		{
-			configFile:          "config-full.yaml",
-			wantMetricsExporter: "otlp/spanmetrics",
-			wantLatencyHistogramBuckets: []time.Duration{
-				100 * time.Microsecond,
-				1 * time.Millisecond,
-				2 * time.Millisecond,
-				6 * time.Millisecond,
-				10 * time.Millisecond,
-				100 * time.Millisecond,
-				250 * time.Millisecond,
+			name: "configuration with all available parameters",
+			id:   component.NewIDWithName(typeStr, "full"),
+			expected: &Config{
+				MetricsExporter:        "otlp/spanmetrics",
+				AggregationTemporality: delta,
+				DimensionsCacheSize:    1500,
+				MetricsFlushInterval:   30 * time.Second,
+				LatencyHistogramBuckets: []time.Duration{
+					100 * time.Microsecond,
+					1 * time.Millisecond,
+					2 * time.Millisecond,
+					6 * time.Millisecond,
+					10 * time.Millisecond,
+					100 * time.Millisecond,
+					250 * time.Millisecond,
+				},
+				Dimensions: []Dimension{
+					{"http.method", &defaultMethod},
+					{"http.status_code", nil},
+				},
 			},
-			wantDimensions: []Dimension{
-				{"http.method", &defaultMethod},
-				{"http.status_code", nil},
-			},
-			wantDimensionsCacheSize:    1500,
-			wantAggregationTemporality: delta,
-			wantMetricsFlushInterval:   30 * time.Second,
 		},
 	}
-	for _, tc := range testcases {
-		t.Run(tc.configFile, func(t *testing.T) {
-			// Prepare
-			factories, err := otelcoltest.NopFactories()
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 			require.NoError(t, err)
 
-			factories.Receivers["otlp"] = otlpreceiver.NewFactory()
-			factories.Receivers["jaeger"] = jaegerreceiver.NewFactory()
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
 
-			factories.Processors[typeStr] = NewFactory()
-			factories.Processors["batch"] = batchprocessor.NewFactory()
-
-			factories.Exporters["otlp"] = otlpexporter.NewFactory()
-			factories.Exporters["prometheus"] = prometheusexporter.NewFactory()
-			factories.Exporters["jaeger"] = jaegerexporter.NewFactory()
-
-			// Test
-			cfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", tc.configFile), factories)
-
-			// Verify
+			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NotNil(t, cfg)
-			assert.Equal(t,
-				&Config{
-					MetricsExporter:         tc.wantMetricsExporter,
-					LatencyHistogramBuckets: tc.wantLatencyHistogramBuckets,
-					Dimensions:              tc.wantDimensions,
-					DimensionsCacheSize:     tc.wantDimensionsCacheSize,
-					AggregationTemporality:  tc.wantAggregationTemporality,
-					MetricsFlushInterval:    tc.wantMetricsFlushInterval,
-				},
-				cfg.Processors[component.NewID(typeStr)],
-			)
+
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+			assert.Equal(t, tt.expected, cfg)
 		})
 	}
 }

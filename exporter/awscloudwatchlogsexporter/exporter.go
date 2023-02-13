@@ -45,7 +45,7 @@ type exporter struct {
 	pusher           cwlogs.Pusher
 }
 
-func newCwLogsPusher(expConfig *Config, params exp.CreateSettings) (exp.Logs, error) {
+func newCwLogsPusher(expConfig *Config, params exp.CreateSettings) (*exporter, error) {
 	if expConfig == nil {
 		return nil, errors.New("awscloudwatchlogs exporter config is nil")
 	}
@@ -81,7 +81,7 @@ func newCwLogsPusher(expConfig *Config, params exp.CreateSettings) (exp.Logs, er
 
 func newCwLogsExporter(config component.Config, params exp.CreateSettings) (exp.Logs, error) {
 	expConfig := config.(*Config)
-	logsExporter, err := newCwLogsPusher(expConfig, params)
+	logsPusher, err := newCwLogsPusher(expConfig, params)
 	if err != nil {
 		return nil, err
 	}
@@ -89,14 +89,15 @@ func newCwLogsExporter(config component.Config, params exp.CreateSettings) (exp.
 		context.TODO(),
 		params,
 		config,
-		logsExporter.ConsumeLogs,
+		logsPusher.consumeLogs,
 		exporterhelper.WithQueue(expConfig.enforcedQueueSettings()),
 		exporterhelper.WithRetry(expConfig.RetrySettings),
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
+		exporterhelper.WithShutdown(logsPusher.shutdown),
 	)
-
 }
 
-func (e *exporter) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
+func (e *exporter) consumeLogs(_ context.Context, ld plog.Logs) error {
 	cwLogsPusher := e.pusher
 	logEvents, _ := logsToCWLogs(e.logger, ld)
 	if len(logEvents) == 0 {
@@ -123,18 +124,10 @@ func (e *exporter) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	return nil
 }
 
-func (e *exporter) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: false}
-}
-
-func (e *exporter) Shutdown(ctx context.Context) error {
+func (e *exporter) shutdown(_ context.Context) error {
 	if e.pusher != nil {
 		e.pusher.ForceFlush()
 	}
-	return nil
-}
-
-func (e *exporter) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
