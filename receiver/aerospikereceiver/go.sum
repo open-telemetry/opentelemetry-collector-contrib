@@ -7,8 +7,8 @@ github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03
 github.com/Microsoft/go-winio v0.5.2 h1:a9IhgEQBCUEk6QCdml9CiJGhAws+YwffDHEMp1VMrpA=
 github.com/Microsoft/go-winio v0.5.2/go.mod h1:WpS1mjBmmwHBEWmogvA2mj8546UReBk4v8QkMxJ6pZY=
 github.com/Microsoft/hcsshim v0.9.5 h1:AbV+VPfTrIVffukazHcpxmz/sRiE6YaMDzHWR9BXZHo=
-github.com/aerospike/aerospike-client-go/v6 v6.9.1 h1:P6M5YH94ZHpTMIDriJO4C9bg2A/0QSaPfRoGg3GGGkU=
-github.com/aerospike/aerospike-client-go/v6 v6.9.1/go.mod h1:Do5/flmgSo2X32YLGAYd6o5e/U2gOSpgEhrIGyOS3UI=
+github.com/aerospike/aerospike-client-go/v6 v6.10.0 h1:dqnYUuMJwnUNsylaOOzs7oEnBkoxApwfdUT2KE6UknA=
+github.com/aerospike/aerospike-client-go/v6 v6.10.0/go.mod h1:Do5/flmgSo2X32YLGAYd6o5e/U2gOSpgEhrIGyOS3UI=
 github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
 github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
 github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf/go.mod h1:ybxpYRFXyAe+OPACYpWeL0wqObRcbAqCMya13uyzqw0=
