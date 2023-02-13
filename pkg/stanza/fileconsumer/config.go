@@ -16,6 +16,7 @@ package fileconsumer // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"time"
 
@@ -51,6 +52,7 @@ func NewConfig() *Config {
 		FingerprintSize:         DefaultFingerprintSize,
 		MaxLogSize:              defaultMaxLogSize,
 		MaxConcurrentFiles:      defaultMaxConcurrentFiles,
+		MaxBatches:              0,
 	}
 }
 
@@ -66,6 +68,7 @@ type Config struct {
 	FingerprintSize         helper.ByteSize       `mapstructure:"fingerprint_size,omitempty"`
 	MaxLogSize              helper.ByteSize       `mapstructure:"max_log_size,omitempty"`
 	MaxConcurrentFiles      int                   `mapstructure:"max_concurrent_files,omitempty"`
+	MaxBatches              int                   `mapstructure:"max_batches,omitempty"`
 	DeleteAfterRead         bool                  `mapstructure:"delete_after_read,omitempty"`
 	Splitter                helper.SplitterConfig `mapstructure:",squash,omitempty"`
 }
@@ -139,6 +142,7 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit EmitFunc, factory s
 		roller:          newRoller(),
 		pollInterval:    c.PollInterval,
 		maxBatchFiles:   c.MaxConcurrentFiles / 2,
+		maxBatches:      c.MaxBatches,
 		deleteAfterRead: c.DeleteAfterRead,
 		knownFiles:      make([]*Reader, 0, 10),
 		seenPaths:       make(map[string]struct{}, 100),
@@ -180,6 +184,10 @@ func (c Config) validate() error {
 
 	if c.DeleteAfterRead && c.StartAt == "end" {
 		return fmt.Errorf("`delete_after_read` cannot be used with `start_at: end`")
+	}
+
+	if c.MaxBatches < 0 {
+		return errors.New("`max_batches` must not be negative")
 	}
 
 	_, err := c.Splitter.EncodingConfig.Build()

@@ -32,12 +32,12 @@ const (
 	stability = component.StabilityLevelAlpha
 )
 
-var useScraperV2 = featuregate.GlobalRegistry().MustRegister(
+var _ = featuregate.GlobalRegistry().MustRegister(
 	"receiver.dockerstats.useScraperV2",
 	featuregate.StageStable,
 	featuregate.WithRegisterDescription("When enabled, the receiver will use the function ScrapeV2 to collect metrics. This allows each metric to be turned off/on via config. The new metrics are slightly different to the legacy implementation."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9794"),
-	featuregate.WithRegisterRemovalVersion("0.71.0"),
+	featuregate.WithRegisterRemovalVersion("0.74.0"),
 )
 
 func NewFactory() rcvr.Factory {
@@ -68,17 +68,7 @@ func createMetricsReceiver(
 	dockerConfig := config.(*Config)
 	dsr := newReceiver(params, dockerConfig)
 
-	scrapeFunc := dsr.scrape
-	if useScraperV2.IsEnabled() {
-		scrapeFunc = dsr.scrapeV2
-	} else {
-		params.Logger.Warn(
-			"You are using the deprecated ScraperV1, which will " +
-				"be disabled by default in an upcoming release." +
-				"See the dockerstatsreceiver/README.md for more info.")
-	}
-
-	scrp, err := scraperhelper.NewScraper(typeStr, scrapeFunc, scraperhelper.WithStart(dsr.start))
+	scrp, err := scraperhelper.NewScraper(typeStr, dsr.scrapeV2, scraperhelper.WithStart(dsr.start))
 	if err != nil {
 		return nil, err
 	}

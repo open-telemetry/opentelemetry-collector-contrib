@@ -53,14 +53,6 @@ func TestMetricsBuilder(t *testing.T) {
 			mb := NewMetricsBuilder(loadConfig(t, test.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
-			if test.metricsSet == testMetricsSetAll || test.metricsSet == testMetricsSetNo {
-				assert.Equal(t, "[WARNING] `process.memory.physical_usage` should not be configured: The metric is deprecated and will be removed in v0.72.0. Please use `process.memory.usage` instead. See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/hostmetricsreceiver#transition-to-process-memory-metric-names-aligned-with-opentelemetry-specification for more details.", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
-			if test.metricsSet == testMetricsSetAll || test.metricsSet == testMetricsSetNo {
-				assert.Equal(t, "[WARNING] `process.memory.virtual_usage` should not be configured: The metric is deprecated and will be removed in v0.72.0. Please use `process.memory.virtual` metric instead. See  https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/hostmetricsreceiver#transition-to-process-memory-metric-names-aligned-with-opentelemetry-specification for more details.", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
 			defaultMetricsCount := 0
@@ -83,9 +75,6 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordProcessDiskOperationsDataPoint(ts, 1, AttributeDirection(1))
 
-			allMetricsCount++
-			mb.RecordProcessMemoryPhysicalUsageDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessMemoryUsageDataPoint(ts, 1)
@@ -96,9 +85,6 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordProcessMemoryVirtualDataPoint(ts, 1)
-
-			allMetricsCount++
-			mb.RecordProcessMemoryVirtualUsageDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordProcessOpenFileDescriptorsDataPoint(ts, 1)
@@ -269,20 +255,6 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("direction")
 					assert.True(t, ok)
 					assert.Equal(t, "read", attrVal.Str())
-				case "process.memory.physical_usage":
-					assert.False(t, validatedMetrics["process.memory.physical_usage"], "Found a duplicate in the metrics slice: process.memory.physical_usage")
-					validatedMetrics["process.memory.physical_usage"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "[DEPRECATED] Use `process.memory.usage` metric instead. The amount of physical memory in use.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
 				case "process.memory.usage":
 					assert.False(t, validatedMetrics["process.memory.usage"], "Found a duplicate in the metrics slice: process.memory.usage")
 					validatedMetrics["process.memory.usage"] = true
@@ -315,20 +287,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "Virtual memory size.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-				case "process.memory.virtual_usage":
-					assert.False(t, validatedMetrics["process.memory.virtual_usage"], "Found a duplicate in the metrics slice: process.memory.virtual_usage")
-					validatedMetrics["process.memory.virtual_usage"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "[DEPRECATED] Use `process.memory.virtual` metric instead. Virtual memory size.", ms.At(i).Description())
 					assert.Equal(t, "By", ms.At(i).Unit())
 					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())

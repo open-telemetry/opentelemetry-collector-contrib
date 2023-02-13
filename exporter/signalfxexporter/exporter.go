@@ -161,6 +161,7 @@ func (se *signalfxExporter) start(ctx context.Context, host component.Host) (err
 			// to make configurable.
 			PropertiesMaxBuffered: 10000,
 			MetricsConverter:      *se.converter,
+			ExcludeProperties:     se.config.ExcludeProperties,
 		})
 	dimClient.Start()
 

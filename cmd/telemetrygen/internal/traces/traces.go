@@ -1,5 +1,4 @@
 // Copyright The OpenTelemetry Authors
-// Copyright (c) 2018 The Jaeger Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -119,7 +118,7 @@ func Start(cfg *Config) error {
 	otel.SetTracerProvider(tracerProvider)
 
 	if err = Run(cfg, logger); err != nil {
-		logger.Error("failed to stop the exporter", zap.Error(err))
+		logger.Error("failed to execute the test scenario.", zap.Error(err))
 		return err
 	}
 
