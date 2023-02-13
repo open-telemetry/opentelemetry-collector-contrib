@@ -1,12 +1,15 @@
+# Config with explicit dimensions cache size configuration parameter
 spanmetrics/dimensions:
   metrics_exporter: prometheus
   dimensions_cache_size: 500
 
+# Config with explicit aggregation temporality configuration parameter
 spanmetrics/temp:
   metrics_exporter: otlp/spanmetrics
   aggregation_temporality: "AGGREGATION_TEMPORALITY_CUMULATIVE"
 
 
+# The config with all possible configuration parameters
 spanmetrics/full:
   metrics_exporter: otlp/spanmetrics
   latency_histogram_buckets: [100us, 1ms, 2ms, 6ms, 10ms, 100ms, 250ms]

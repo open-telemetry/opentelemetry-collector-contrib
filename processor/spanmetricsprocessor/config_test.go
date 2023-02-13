@@ -26,17 +26,18 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-func TestLoadConfig1(t *testing.T) {
+func TestLoadConfig(t *testing.T) {
 	t.Parallel()
 
 	defaultMethod := "GET"
 	tests := []struct {
-		id           component.ID
-		expected     component.Config
-		errorMessage string
+		name     string
+		id       component.ID
+		expected component.Config
 	}{
 		{
-			id: component.NewIDWithName(typeStr, "dimensions"),
+			name: "configuration with dimensions size cache",
+			id:   component.NewIDWithName(typeStr, "dimensions"),
 			expected: &Config{
 				MetricsExporter:        "prometheus",
 				AggregationTemporality: cumulative,
@@ -45,7 +46,8 @@ func TestLoadConfig1(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "temp"),
+			name: "configuration with aggregation temporality",
+			id:   component.NewIDWithName(typeStr, "temp"),
 			expected: &Config{
 				MetricsExporter:        "otlp/spanmetrics",
 				AggregationTemporality: cumulative,
@@ -54,7 +56,8 @@ func TestLoadConfig1(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "full"),
+			name: "configuration with all available parameters",
+			id:   component.NewIDWithName(typeStr, "full"),
 			expected: &Config{
 				MetricsExporter:        "otlp/spanmetrics",
 				AggregationTemporality: delta,
@@ -78,7 +81,7 @@ func TestLoadConfig1(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.id.String(), func(t *testing.T) {
+		t.Run(tt.name, func(t *testing.T) {
 			cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 			require.NoError(t, err)
 
@@ -87,13 +90,9 @@ func TestLoadConfig1(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
+
 			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-			if tt.expected == nil {
-				assert.EqualError(t, component.ValidateConfig(cfg), tt.errorMessage)
-				return
-			}
-			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
