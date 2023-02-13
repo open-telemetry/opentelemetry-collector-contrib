@@ -30,9 +30,9 @@ const (
 	// The value of "type" key in configuration.
 	typeStr = "servicegraph"
 	// The stability level of the processor.
-	stability          = component.StabilityLevelAlpha
-	connectorStability = component.StabilityLevelDevelopment
-  virtualNodeFeatureGateID = "processor.servicegraph.virtualNode"
+	stability                = component.StabilityLevelAlpha
+	connectorStability       = component.StabilityLevelDevelopment
+	virtualNodeFeatureGateID = "processor.servicegraph.virtualNode"
 )
 
 var virtualNodeFeatureGate *featuregate.Gate

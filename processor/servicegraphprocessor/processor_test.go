@@ -139,9 +139,6 @@ func TestProcessorConsume(t *testing.T) {
 	// set virtual node feature
 	_ = featuregate.GlobalRegistry().Set(virtualNodeFeatureGate.ID(), true)
 
-	processor := newProcessor(zaptest.NewLogger(t), cfg)
-	processor.tracesConsumer = consumertest.NewNop()
-
 	for _, tc := range []struct {
 		name         string
 		cfg          Config
@@ -151,8 +148,7 @@ func TestProcessorConsume(t *testing.T) {
 			name: "traces with client and server span",
 			cfg: Config{
 				MetricsExporter: "mock",
-
-				Dimensions: []string{"some-attribute", "non-existing-attribute"},
+				Dimensions:      []string{"some-attribute", "non-existing-attribute"},
 			}, sampleTraces: buildSampleTrace("val"),
 		},
 		{
@@ -174,7 +170,8 @@ func TestProcessorConsume(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			// Prepare
-			processor := newProcessor(zaptest.NewLogger(t), &tc.cfg, consumertest.NewNop())
+			processor := newProcessor(zaptest.NewLogger(t), &tc.cfg)
+			processor.tracesConsumer = consumertest.NewNop()
 			mHost := newMockHost(map[component.DataType]map[component.ID]component.Component{
 				component.DataTypeMetrics: {
 					component.NewID("mock"): metricsExporter,
