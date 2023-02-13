@@ -65,8 +65,8 @@ github.com/DataDog/datadog-agent/pkg/util/pointer v0.43.0-rc.3 h1:0qv5C09rZ2czaQ
 github.com/DataDog/datadog-agent/pkg/util/pointer v0.43.0-rc.3/go.mod h1:HMpYpkuxDFYuYLjDTKoG0NjtPoAwIymvBEhlA3pJbJk=
 github.com/DataDog/datadog-agent/pkg/util/scrubber v0.43.0-rc.3.0.20230206114529-17c7dfde736c h1:lvBQNPWo1m/CLipAqhcpVAhr3bUPVIvpmv6OIH8xvSY=
 github.com/DataDog/datadog-agent/pkg/util/scrubber v0.43.0-rc.3.0.20230206114529-17c7dfde736c/go.mod h1:Whfh1SJOwtp2YvDUNzqw/jmSbGOOso+HJHOEJULh1+M=
-github.com/DataDog/datadog-api-client-go/v2 v2.7.0 h1:ntksthF3deJ67aPg6GxO7lDaMUXI9LIKnPj044E54aA=
-github.com/DataDog/datadog-api-client-go/v2 v2.7.0/go.mod h1:sHt3EuVMN8PSYJu065qwp3pZxCwR3RZP4sJnYwj/ZQY=
+github.com/DataDog/datadog-api-client-go/v2 v2.8.0 h1:N9giaenLY/oyvPURwm06rqhOgeJbE45vMhoHrKrrzGA=
+github.com/DataDog/datadog-api-client-go/v2 v2.8.0/go.mod h1:sHt3EuVMN8PSYJu065qwp3pZxCwR3RZP4sJnYwj/ZQY=
 github.com/DataDog/datadog-go v3.2.0+incompatible/go.mod h1:LButxg5PwREeZtORoXG3tL4fMGNddJ+vMq1mwgfaqoQ=
 github.com/DataDog/datadog-go/v5 v5.1.1 h1:JLZ6s2K1pG2h9GkvEvMdEGqMDyVLEAccdX5TltWcLMU=
 github.com/DataDog/datadog-go/v5 v5.1.1/go.mod h1:KhiYb2Badlv9/rofz+OznKoEF5XKTonWyhx5K83AP8E=
