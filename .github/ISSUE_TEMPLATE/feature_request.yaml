@@ -20,6 +20,7 @@ body:
       - confmap/provider/s3provider
       - connector/count
       - connector/servicegraph
+      - connector/spanmetrics
       - examples/demo
       - exporter/alibabacloudlogservice
       - exporter/awscloudwatchlogs
