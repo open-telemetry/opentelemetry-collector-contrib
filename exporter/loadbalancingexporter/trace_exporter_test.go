@@ -206,23 +206,23 @@ func TestServiceBasedRoutingForSameTraceId(t *testing.T) {
 		desc       string
 		batch      ptrace.Traces
 		routingKey routingKey
-		res        map[string]bool
+		res        map[string][]int
 	}{
 		{
 			"same trace id and different services - service based routing",
 			twoServicesWithSameTraceID(),
 			svcRouting,
-			map[string]bool{"ad-service-1": true, "get-recommendations-7": true},
+			map[string][]int{"ad-service-1": {0}, "get-recommendations-7": {1}},
 		},
 		{
 			"same trace id and different services - trace id routing",
 			twoServicesWithSameTraceID(),
 			traceIDRouting,
-			map[string]bool{string(b[:]): true},
+			map[string][]int{string(b[:]): {0, 1}},
 		},
 	} {
 		t.Run(tt.desc, func(t *testing.T) {
-			res, err := routingIdentifiersFromTraces(tt.batch, tt.routingKey)
+			res, err := routingIdentifiersFromTraces(tt.batch, tt.routingKey, "")
 			assert.Equal(t, err, nil)
 			assert.Equal(t, res, tt.res)
 		})
@@ -392,9 +392,9 @@ func TestNoTracesInBatch(t *testing.T) {
 		},
 	} {
 		t.Run(tt.desc, func(t *testing.T) {
-			res, err := routingIdentifiersFromTraces(tt.batch, tt.routingKey)
+			res, err := routingIdentifiersFromTraces(tt.batch, tt.routingKey, "")
 			assert.Equal(t, err, tt.err)
-			assert.Equal(t, res, map[string]bool(nil))
+			assert.Equal(t, res, map[string][]int(nil))
 		})
 	}
 }
