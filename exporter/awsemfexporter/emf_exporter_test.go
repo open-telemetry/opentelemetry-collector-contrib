@@ -125,8 +125,8 @@ func TestConsumeMetrics(t *testing.T) {
 		mdata.Metrics = append(mdata.Metrics, m)
 	}
 	md := internaldata.OCToMetrics(mdata.Node, mdata.Resource, mdata.Metrics)
-	require.Error(t, exp.ConsumeMetrics(ctx, md))
-	require.NoError(t, exp.Shutdown(ctx))
+	require.Error(t, exp.pushMetricsData(ctx, md))
+	require.NoError(t, exp.shutdown(ctx))
 }
 
 func TestConsumeMetricsWithOutputDestination(t *testing.T) {
@@ -185,8 +185,8 @@ func TestConsumeMetricsWithOutputDestination(t *testing.T) {
 		},
 	}
 	md := internaldata.OCToMetrics(mdata.Node, mdata.Resource, mdata.Metrics)
-	require.NoError(t, exp.ConsumeMetrics(ctx, md))
-	require.NoError(t, exp.Shutdown(ctx))
+	require.NoError(t, exp.pushMetricsData(ctx, md))
+	require.NoError(t, exp.shutdown(ctx))
 }
 
 func TestConsumeMetricsWithLogGroupStreamConfig(t *testing.T) {
@@ -249,9 +249,8 @@ func TestConsumeMetricsWithLogGroupStreamConfig(t *testing.T) {
 	}
 
 	md := internaldata.OCToMetrics(mdata.Node, mdata.Resource, mdata.Metrics)
-	require.NoError(t, exp.Start(ctx, nil))
-	require.Error(t, exp.ConsumeMetrics(ctx, md))
-	require.NoError(t, exp.Shutdown(ctx))
+	require.Error(t, exp.pushMetricsData(ctx, md))
+	require.NoError(t, exp.shutdown(ctx))
 	streamToPusherMap, ok := exp.groupStreamToPusherMap["test-logGroupName"]
 	assert.True(t, ok)
 	emfPusher, ok := streamToPusherMap["test-logStreamName"]
@@ -319,9 +318,8 @@ func TestConsumeMetricsWithLogGroupStreamValidPlaceholder(t *testing.T) {
 		mdata.Metrics = append(mdata.Metrics, m)
 	}
 	md := internaldata.OCToMetrics(mdata.Node, mdata.Resource, mdata.Metrics)
-	require.NoError(t, exp.Start(ctx, nil))
-	require.Error(t, exp.ConsumeMetrics(ctx, md))
-	require.NoError(t, exp.Shutdown(ctx))
+	require.Error(t, exp.pushMetricsData(ctx, md))
+	require.NoError(t, exp.shutdown(ctx))
 	streamToPusherMap, ok := exp.groupStreamToPusherMap["/aws/ecs/containerinsights/test-cluster-name/performance"]
 	assert.True(t, ok)
 	emfPusher, ok := streamToPusherMap["test-task-id"]
@@ -389,9 +387,8 @@ func TestConsumeMetricsWithOnlyLogStreamPlaceholder(t *testing.T) {
 		mdata.Metrics = append(mdata.Metrics, m)
 	}
 	md := internaldata.OCToMetrics(mdata.Node, mdata.Resource, mdata.Metrics)
-	require.NoError(t, exp.Start(ctx, nil))
-	require.Error(t, exp.ConsumeMetrics(ctx, md))
-	require.NoError(t, exp.Shutdown(ctx))
+	require.Error(t, exp.pushMetricsData(ctx, md))
+	require.NoError(t, exp.shutdown(ctx))
 	streamToPusherMap, ok := exp.groupStreamToPusherMap["test-logGroupName"]
 	assert.True(t, ok)
 	emfPusher, ok := streamToPusherMap["test-task-id"]
@@ -459,9 +456,8 @@ func TestConsumeMetricsWithWrongPlaceholder(t *testing.T) {
 		mdata.Metrics = append(mdata.Metrics, m)
 	}
 	md := internaldata.OCToMetrics(mdata.Node, mdata.Resource, mdata.Metrics)
-	require.NoError(t, exp.Start(ctx, nil))
-	require.Error(t, exp.ConsumeMetrics(ctx, md))
-	require.NoError(t, exp.Shutdown(ctx))
+	require.Error(t, exp.pushMetricsData(ctx, md))
+	require.NoError(t, exp.shutdown(ctx))
 	streamToPusherMap, ok := exp.groupStreamToPusherMap["test-logGroupName"]
 	assert.True(t, ok)
 	emfPusher, ok := streamToPusherMap["{WrongKey}"]
@@ -539,7 +535,7 @@ func TestPushMetricsDataWithErr(t *testing.T) {
 	assert.NotNil(t, exp.pushMetricsData(ctx, md))
 	assert.NotNil(t, exp.pushMetricsData(ctx, md))
 	assert.Nil(t, exp.pushMetricsData(ctx, md))
-	assert.Nil(t, exp.Shutdown(ctx))
+	assert.Nil(t, exp.shutdown(ctx))
 }
 
 func TestNewExporterWithoutConfig(t *testing.T) {

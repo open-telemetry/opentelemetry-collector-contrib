@@ -24,13 +24,8 @@ import (
 	"path/filepath"
 	"runtime"
 	"testing"
-	"time"
 
-	"github.com/grafana/loki/clients/pkg/promtail/scrapeconfig"
-	"github.com/grafana/loki/clients/pkg/promtail/targets/file"
-	"github.com/prometheus/common/model"
 	promconfig "github.com/prometheus/prometheus/config"
-	"github.com/prometheus/prometheus/discovery"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -49,7 +44,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otlpjsonfilereceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/promtailreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver"
@@ -308,35 +302,6 @@ func TestDefaultReceivers(t *testing.T) {
 		{
 			receiver:     "prometheus_exec",
 			skipLifecyle: true, // Requires running a subproccess that can not be easily set across platforms
-		},
-		{
-			receiver: "promtail",
-			getConfigFn: func() component.Config {
-				cfg := rcvrFactories["promtail"].CreateDefaultConfig().(*promtailreceiver.PromtailConfig)
-				cfg.InputConfig = *promtailreceiver.NewConfigWithID("testconfig")
-				cfg.InputConfig.Input = promtailreceiver.PromtailInputConfig{
-					ScrapeConfig: []scrapeconfig.Config{
-						{
-							JobName:        "test",
-							PipelineStages: []interface{}{},
-							ServiceDiscoveryConfig: scrapeconfig.ServiceDiscoveryConfig{
-								StaticConfigs: discovery.StaticConfig{
-									{
-										Labels: model.LabelSet{
-											"job": "varlogs",
-										},
-										Targets: []model.LabelSet{},
-									},
-								},
-							},
-						},
-					},
-					TargetConfig: file.Config{
-						SyncPeriod: 10 * time.Second,
-					},
-				}
-				return cfg
-			},
 		},
 		{
 			receiver:     "pulsar",

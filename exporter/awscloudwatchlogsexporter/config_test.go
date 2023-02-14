@@ -18,6 +18,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -58,10 +59,12 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(typeStr, "e2-no-retries-short-queue"),
 			expected: &Config{
 				RetrySettings: exporterhelper.RetrySettings{
-					Enabled:         false,
-					InitialInterval: defaultRetrySettings.InitialInterval,
-					MaxInterval:     defaultRetrySettings.MaxInterval,
-					MaxElapsedTime:  defaultRetrySettings.MaxElapsedTime,
+					Enabled:             false,
+					InitialInterval:     defaultRetrySettings.InitialInterval,
+					MaxInterval:         defaultRetrySettings.MaxInterval,
+					MaxElapsedTime:      defaultRetrySettings.MaxElapsedTime,
+					RandomizationFactor: backoff.DefaultRandomizationFactor,
+					Multiplier:          backoff.DefaultMultiplier,
 				},
 				AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
 				LogGroupName:       "test-2",

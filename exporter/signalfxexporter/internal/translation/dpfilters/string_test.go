@@ -150,6 +150,11 @@ func TestStringFilter(t *testing.T) {
 			filter:      []string{"/!memor*(/"},
 			shouldError: true,
 		},
+		{
+			filter:      nil,
+			inputs:      []string{"cpu.utilization", "memory.utilization"},
+			shouldMatch: []bool{false, false},
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

@@ -25,10 +25,10 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/trace/agent"
 	traceconfig "github.com/DataDog/datadog-agent/pkg/trace/config"
 	tracelog "github.com/DataDog/datadog-agent/pkg/trace/log"
+	"github.com/DataDog/datadog-agent/pkg/trace/telemetry"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
@@ -50,35 +50,40 @@ type traceExporter struct {
 	onceMetadata   *sync.Once            // onceMetadata ensures that metadata is sent only once across all exporters
 	agent          *agent.Agent          // agent processes incoming traces
 	sourceProvider source.Provider       // is able to source the origin of a trace (hostname, container, etc)
+	retrier        *clientutil.Retrier   // retrier handles retries on requests
 }
 
 func newTracesExporter(ctx context.Context, params exporter.CreateSettings, cfg *Config, onceMetadata *sync.Once, sourceProvider source.Provider, agent *agent.Agent) (*traceExporter, error) {
+	scrubber := scrub.NewScrubber()
 	exp := &traceExporter{
 		params:         params,
 		cfg:            cfg,
 		ctx:            ctx,
 		agent:          agent,
 		onceMetadata:   onceMetadata,
-		scrubber:       scrub.NewScrubber(),
+		scrubber:       scrubber,
 		sourceProvider: sourceProvider,
+		retrier:        clientutil.NewRetrier(params.Logger, cfg.RetrySettings, scrubber),
 	}
 	// client to send running metric to the backend & perform API key validation
+	errchan := make(chan error)
 	if isMetricExportV2Enabled() {
 		apiClient := clientutil.CreateAPIClient(
 			params.BuildInfo,
 			cfg.Metrics.TCPAddr.Endpoint,
 			cfg.TimeoutSettings,
 			cfg.LimitedHTTPClientSettings.TLSSetting.InsecureSkipVerify)
-		if err := clientutil.ValidateAPIKey(ctx, string(cfg.API.Key), params.Logger, apiClient); err != nil && cfg.API.FailOnInvalidKey {
-			return nil, err
-		}
+		go func() { errchan <- clientutil.ValidateAPIKey(ctx, string(cfg.API.Key), params.Logger, apiClient) }()
 		exp.metricsAPI = datadogV2.NewMetricsApi(apiClient)
 	} else {
 		client := clientutil.CreateZorkianClient(string(cfg.API.Key), cfg.Metrics.TCPAddr.Endpoint)
-		if err := clientutil.ValidateAPIKeyZorkian(params.Logger, client); err != nil && cfg.API.FailOnInvalidKey {
+		go func() { errchan <- clientutil.ValidateAPIKeyZorkian(params.Logger, client) }()
+		exp.client = client
+	}
+	if cfg.API.FailOnInvalidKey {
+		if err := <-errchan; err != nil {
 			return nil, err
 		}
-		exp.client = client
 	}
 	return exp, nil
 }
@@ -115,11 +120,11 @@ func (exp *traceExporter) consumeTraces(
 		}
 	}
 
-	exp.exportHostMetrics(ctx, hosts, tags)
+	exp.exportUsageMetrics(ctx, hosts, tags)
 	return nil
 }
 
-func (exp *traceExporter) exportHostMetrics(ctx context.Context, hosts map[string]struct{}, tags map[string]struct{}) {
+func (exp *traceExporter) exportUsageMetrics(ctx context.Context, hosts map[string]struct{}, tags map[string]struct{}) {
 	now := pcommon.NewTimestampFromTime(time.Now())
 	var err error
 	if isMetricExportV2Enabled() {
@@ -134,8 +139,11 @@ func (exp *traceExporter) exportHostMetrics(ctx context.Context, hosts map[strin
 			}
 			series = append(series, ms...)
 		}
-		ctx = clientutil.GetRequestContext(ctx, string(exp.cfg.API.Key))
-		_, _, err = exp.metricsAPI.SubmitMetrics(ctx, datadogV2.MetricPayload{Series: series})
+		_, err = exp.retrier.DoWithRetries(ctx, func(context.Context) error {
+			ctx2 := clientutil.GetRequestContext(ctx, string(exp.cfg.API.Key))
+			_, httpresp, merr := exp.metricsAPI.SubmitMetrics(ctx2, datadogV2.MetricPayload{Series: series})
+			return clientutil.WrapError(merr, httpresp)
+		})
 	} else {
 		series := make([]zorkian.Metric, 0, len(hosts)+len(tags))
 		for host := range hosts {
@@ -148,7 +156,9 @@ func (exp *traceExporter) exportHostMetrics(ctx context.Context, hosts map[strin
 			}
 			series = append(series, ms...)
 		}
-		err = exp.client.PostMetrics(series)
+		_, err = exp.retrier.DoWithRetries(ctx, func(context.Context) error {
+			return exp.client.PostMetrics(series)
+		})
 	}
 	if err != nil {
 		exp.params.Logger.Error("Error posting hostname/tags series", zap.Error(err))
@@ -166,7 +176,7 @@ func newTraceAgent(ctx context.Context, params exporter.CreateSettings, cfg *Con
 	}
 	acfg.OTLPReceiver.SpanNameRemappings = cfg.Traces.SpanNameRemappings
 	acfg.OTLPReceiver.SpanNameAsResourceName = cfg.Traces.SpanNameAsResourceName
-	acfg.OTLPReceiver.UsePreviewHostnameLogic = featuregate.GlobalRegistry().IsEnabled(metadata.HostnamePreviewFeatureGate)
+	acfg.OTLPReceiver.UsePreviewHostnameLogic = metadata.HostnamePreviewFeatureGate.IsEnabled()
 	acfg.Endpoints[0].APIKey = string(cfg.API.Key)
 	acfg.Ignore["resource"] = cfg.Traces.IgnoreResources
 	acfg.ReceiverPort = 0 // disable HTTP receiver
@@ -178,5 +188,5 @@ func newTraceAgent(ctx context.Context, params exporter.CreateSettings, cfg *Con
 		acfg.Endpoints[0].Host = addr
 	}
 	tracelog.SetLogger(&zaplogger{params.Logger})
-	return agent.NewAgent(ctx, acfg), nil
+	return agent.NewAgent(ctx, acfg, telemetry.NewNoopCollector()), nil
 }

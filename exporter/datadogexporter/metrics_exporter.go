@@ -28,7 +28,6 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/trace/pb"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"
@@ -94,7 +93,7 @@ func translatorFromConfig(logger *zap.Logger, cfg *Config, sourceProvider source
 
 	options = append(options, translator.WithNumberMode(numberMode))
 
-	if featuregate.GlobalRegistry().IsEnabled(metadata.HostnamePreviewFeatureGate) {
+	if metadata.HostnamePreviewFeatureGate.IsEnabled() {
 		options = append(options, translator.WithPreviewHostnameFromAttributes())
 	}
 
@@ -120,25 +119,27 @@ func newMetricsExporter(ctx context.Context, params exporter.CreateSettings, cfg
 		getPushTime:       func() uint64 { return uint64(time.Now().UTC().UnixNano()) },
 		apmStatsProcessor: apmStatsProcessor,
 	}
+	errchan := make(chan error)
 	if isMetricExportV2Enabled() {
 		apiClient := clientutil.CreateAPIClient(
 			params.BuildInfo,
 			cfg.Metrics.TCPAddr.Endpoint,
 			cfg.TimeoutSettings,
 			cfg.LimitedHTTPClientSettings.TLSSetting.InsecureSkipVerify)
-		if err := clientutil.ValidateAPIKey(ctx, string(cfg.API.Key), params.Logger, apiClient); err != nil && cfg.API.FailOnInvalidKey {
-			return nil, err
-		}
+		go func() { errchan <- clientutil.ValidateAPIKey(ctx, string(cfg.API.Key), params.Logger, apiClient) }()
 		exporter.metricsAPI = datadogV2.NewMetricsApi(apiClient)
 	} else {
 		client := clientutil.CreateZorkianClient(string(cfg.API.Key), cfg.Metrics.TCPAddr.Endpoint)
 		client.ExtraHeader["User-Agent"] = clientutil.UserAgent(params.BuildInfo)
 		client.HttpClient = clientutil.NewHTTPClient(cfg.TimeoutSettings, cfg.LimitedHTTPClientSettings.TLSSetting.InsecureSkipVerify)
-
-		if err := clientutil.ValidateAPIKeyZorkian(params.Logger, client); err != nil && cfg.API.FailOnInvalidKey {
+		go func() { errchan <- clientutil.ValidateAPIKeyZorkian(params.Logger, client) }()
+		exporter.client = client
+	}
+	if cfg.API.FailOnInvalidKey {
+		err = <-errchan
+		if err != nil {
 			return nil, err
 		}
-		exporter.client = client
 	}
 	return exporter, nil
 }

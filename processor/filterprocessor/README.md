@@ -310,14 +310,44 @@ See the table below for details on each context and the fields it exposes.
 The OTTL allows the use of `and`, `or`, and `()` in conditions.
 See [OTTL Boolean Expressions](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/README.md#boolean-expressions) for more details.
 
-The filter processor has access to all the [factory functions of the OTTL](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/ottlfuncs#ottl-functions) 
-
 For conditions that apply to the same signal, such as spans and span events, if the "higher" level telemetry matches a condition and is dropped, the "lower" level condition will not be checked.
 This means that if a span is dropped but a span event condition was defined, the span event condition will not be checked.
 The same relationship applies to metrics and datapoints.
 
 If all span events for a span are dropped, the span will be left intact.
 If all datapoints for a metric are dropped, the metric will also be dropped.
+
+### OTTL Functions
+
+The filter processor has access to all the [factory functions of the OTTL](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/ottlfuncs#ottl-functions)
+
+In addition, the processor defines a few of its own functions:
+
+**Metrics only functions**
+- [HasAttrKeyOnDatapoint](#HasAttrKeyOnDatapoint)
+- [HasAttrOnDatapoint](#HasAttrOnDatapoint)
+
+#### HasAttrKeyOnDatapoint
+
+`HasAttrKeyOnDatapoint(key)`
+
+Returns `true` if the given key appears in the attribute map of any datapoint on a metric.
+`key` must be a string.
+
+Examples:
+
+- `HasAttrKeyOnDatapoint("http.method")`
+
+#### HasAttrOnDatapoint
+
+`HasAttrOnDatapoint(key, value)`
+
+Returns `true` if the given key and value appears in the attribute map of any datapoint on a metric.
+`key` and `value` must both be strings.
+
+Examples:
+
+- `HasAttrOnDatapoint("http.method", "GET")`
 
 ### OTTL Examples
 

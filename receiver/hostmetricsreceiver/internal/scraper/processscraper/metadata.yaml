@@ -90,37 +90,9 @@ metrics:
       value_type: double
     attributes: [state]
 
-  process.memory.physical_usage:
-    enabled: false
-    description: "[DEPRECATED] Use `process.memory.usage` metric instead. The amount of physical memory in use."
-    warnings:
-      if_configured: >-
-        The metric is deprecated and will be removed in v0.72.0. Please use `process.memory.usage` instead. See
-        https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/hostmetricsreceiver#transition-to-process-memory-metric-names-aligned-with-opentelemetry-specification
-        for more details.
-    unit: By
-    sum:
-      value_type: int
-      aggregation: cumulative
-      monotonic: false
-
   process.memory.usage:
     enabled: true
     description: The amount of physical memory in use.
-    unit: By
-    sum:
-      value_type: int
-      aggregation: cumulative
-      monotonic: false
-
-  process.memory.virtual_usage:
-    enabled: false
-    description: "[DEPRECATED] Use `process.memory.virtual` metric instead. Virtual memory size."
-    warnings:
-      if_configured: >-
-        The metric is deprecated and will be removed in v0.72.0. Please use `process.memory.virtual` metric instead. See 
-        https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/hostmetricsreceiver#transition-to-process-memory-metric-names-aligned-with-opentelemetry-specification
-        for more details.
     unit: By
     sum:
       value_type: int

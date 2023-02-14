@@ -22,35 +22,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap/zaptest"
 )
-
-func TestCapabilities(t *testing.T) {
-	config := &Config{}
-	next := new(consumertest.TracesSink)
-	processor, err := newRedaction(context.Background(), config, zaptest.NewLogger(t), next)
-	assert.NoError(t, err)
-
-	cap := processor.Capabilities()
-	assert.True(t, cap.MutatesData)
-}
-
-func TestStartShutdown(t *testing.T) {
-	config := &Config{}
-	next := new(consumertest.TracesSink)
-	processor, err := newRedaction(context.Background(), config, zaptest.NewLogger(t), next)
-	assert.NoError(t, err)
-
-	ctx := context.Background()
-	err = processor.Start(ctx, componenttest.NewNopHost())
-	assert.Nil(t, err)
-	err = processor.Shutdown(ctx)
-	assert.Nil(t, err)
-}
 
 // TestRedactUnknownAttributes validates that the processor deletes span
 // attributes that are not the allowed keys list
@@ -67,12 +42,9 @@ func TestRedactUnknownAttributes(t *testing.T) {
 		"credit_card": pcommon.NewValueStr("4111111111111111"),
 	}
 
-	library, span, next := runTest(t, allowed, redacted, nil, config)
+	outTraces := runTest(t, allowed, redacted, nil, config)
 
-	firstOutILS := next.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0)
-	assert.Equal(t, library.Name(), firstOutILS.Scope().Name())
-	assert.Equal(t, span.Name(), firstOutILS.Spans().At(0).Name())
-	attr := firstOutILS.Spans().At(0).Attributes()
+	attr := outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
 	for k, v := range allowed {
 		val, ok := attr.Get(k)
 		assert.True(t, ok)
@@ -98,12 +70,9 @@ func TestAllowAllKeys(t *testing.T) {
 		"name":  pcommon.NewValueStr("placeholder"),
 	}
 
-	library, span, next := runTest(t, allowed, nil, nil, config)
+	outTraces := runTest(t, allowed, nil, nil, config)
 
-	firstOutILS := next.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0)
-	assert.Equal(t, library.Name(), firstOutILS.Scope().Name())
-	assert.Equal(t, span.Name(), firstOutILS.Spans().At(0).Name())
-	attr := firstOutILS.Spans().At(0).Attributes()
+	attr := outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
 	for k, v := range allowed {
 		val, ok := attr.Get(k)
 		assert.True(t, ok)
@@ -130,12 +99,9 @@ func TestAllowAllKeysMaskValues(t *testing.T) {
 		"credit_card": pcommon.NewValueStr("placeholder 4111111111111111"),
 	}
 
-	library, span, next := runTest(t, allowed, nil, masked, config)
+	outTraces := runTest(t, allowed, nil, masked, config)
 
-	firstOutILS := next.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0)
-	assert.Equal(t, library.Name(), firstOutILS.Scope().Name())
-	assert.Equal(t, span.Name(), firstOutILS.Spans().At(0).Name())
-	attr := firstOutILS.Spans().At(0).Attributes()
+	attr := outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
 	for k, v := range allowed {
 		val, ok := attr.Get(k)
 		assert.True(t, ok)
@@ -168,10 +134,9 @@ func TestRedactSummaryDebug(t *testing.T) {
 		"credit_card": pcommon.NewValueStr("4111111111111111"),
 	}
 
-	_, _, next := runTest(t, allowed, redacted, masked, config)
+	outTraces := runTest(t, allowed, redacted, masked, config)
 
-	firstOutILS := next.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0)
-	attr := firstOutILS.Spans().At(0).Attributes()
+	attr := outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
 	var deleted []string
 	for k := range redacted {
 		_, ok := attr.Get(k)
@@ -216,10 +181,9 @@ func TestRedactSummaryInfo(t *testing.T) {
 		"credit_card": pcommon.NewValueStr("4111111111111111"),
 	}
 
-	_, _, next := runTest(t, allowed, redacted, masked, config)
+	outTraces := runTest(t, allowed, redacted, masked, config)
 
-	firstOutILS := next.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0)
-	attr := firstOutILS.Spans().At(0).Attributes()
+	attr := outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
 	var deleted []string
 	for k := range redacted {
 		_, ok := attr.Get(k)
@@ -257,10 +221,9 @@ func TestRedactSummarySilent(t *testing.T) {
 		"credit_card": pcommon.NewValueStr("4111111111111111"),
 	}
 
-	_, _, next := runTest(t, allowed, redacted, masked, config)
+	outTraces := runTest(t, allowed, redacted, masked, config)
 
-	firstOutILS := next.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0)
-	attr := firstOutILS.Spans().At(0).Attributes()
+	attr := outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
 	for k := range redacted {
 		_, ok := attr.Get(k)
 		assert.False(t, ok)
@@ -288,10 +251,9 @@ func TestRedactSummaryDefault(t *testing.T) {
 		"name": pcommon.NewValueStr("placeholder 4111111111111111"),
 	}
 
-	_, _, next := runTest(t, allowed, nil, masked, config)
+	outTraces := runTest(t, allowed, nil, masked, config)
 
-	firstOutILS := next.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0)
-	attr := firstOutILS.Spans().At(0).Attributes()
+	attr := outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
 	_, ok := attr.Get(redactedKeys)
 	assert.False(t, ok)
 	_, ok = attr.Get(redactedKeyCount)
@@ -319,10 +281,9 @@ func TestMultipleBlockValues(t *testing.T) {
 		"credit_card": pcommon.NewValueStr("4111111111111111"),
 	}
 
-	_, _, next := runTest(t, allowed, redacted, masked, config)
+	outTraces := runTest(t, allowed, redacted, masked, config)
 
-	firstOutILS := next.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0)
-	attr := firstOutILS.Spans().At(0).Attributes()
+	attr := outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
 	var deleted []string
 	for k := range redacted {
 		_, ok := attr.Get(k)
@@ -360,7 +321,7 @@ func TestProcessAttrsAppliedTwice(t *testing.T) {
 		BlockedValues: []string{"4[0-9]{12}(?:[0-9]{3})?"},
 		Summary:       "debug",
 	}
-	processor, err := newRedaction(context.TODO(), config, zaptest.NewLogger(t), consumertest.NewNop())
+	processor, err := newRedaction(context.TODO(), config, zaptest.NewLogger(t))
 	require.NoError(t, err)
 
 	attrs := pcommon.NewMap()
@@ -398,7 +359,7 @@ func runTest(
 	redacted map[string]pcommon.Value,
 	masked map[string]pcommon.Value,
 	config *Config,
-) (pcommon.InstrumentationScope, ptrace.Span, *consumertest.TracesSink) {
+) ptrace.Traces {
 	inBatch := ptrace.NewTraces()
 	rs := inBatch.ResourceSpans().AppendEmpty()
 	ils := rs.ScopeSpans().AppendEmpty()
@@ -426,15 +387,13 @@ func runTest(
 
 	// test
 	ctx := context.Background()
-	next := new(consumertest.TracesSink)
-	processor, err := newRedaction(ctx, config, zaptest.NewLogger(t), next)
+	processor, err := newRedaction(ctx, config, zaptest.NewLogger(t))
 	assert.NoError(t, err)
-	err = processor.ConsumeTraces(ctx, inBatch)
+	outBatch, err := processor.processTraces(ctx, inBatch)
 
 	// verify
 	assert.NoError(t, err)
-	assert.Len(t, next.AllTraces(), 1)
-	return library, span, next
+	return outBatch
 }
 
 // BenchmarkRedactSummaryDebug measures the performance impact of running the processor
@@ -458,8 +417,7 @@ func BenchmarkRedactSummaryDebug(b *testing.B) {
 		"credit_card": pcommon.NewValueStr("would be nice"),
 	}
 	ctx := context.Background()
-	next := new(consumertest.TracesSink)
-	processor, _ := newRedaction(ctx, config, zaptest.NewLogger(b), next)
+	processor, _ := newRedaction(ctx, config, zaptest.NewLogger(b))
 
 	for i := 0; i < b.N; i++ {
 		runBenchmark(allowed, redacted, masked, processor)
@@ -485,8 +443,7 @@ func BenchmarkMaskSummaryDebug(b *testing.B) {
 		"url":  pcommon.NewValueStr("https://www.this_is_testing_url.com"),
 	}
 	ctx := context.Background()
-	next := new(consumertest.TracesSink)
-	processor, _ := newRedaction(ctx, config, zaptest.NewLogger(b), next)
+	processor, _ := newRedaction(ctx, config, zaptest.NewLogger(b))
 
 	for i := 0; i < b.N; i++ {
 		runBenchmark(allowed, nil, masked, processor)
@@ -520,5 +477,5 @@ func runBenchmark(
 		v.CopyTo(span.Attributes().PutEmpty(k))
 	}
 
-	_ = processor.ConsumeTraces(context.Background(), inBatch)
+	_, _ = processor.processTraces(context.Background(), inBatch)
 }

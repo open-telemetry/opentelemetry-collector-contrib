@@ -32,7 +32,7 @@ func TestConvertAttributesAndMerge(t *testing.T) {
 	}{
 		{
 			desc:     "empty attributes should have at least the default labels",
-			expected: defaultExporterLabels,
+			expected: model.LabelSet{"exporter": "OTLP"},
 		},
 		{
 			desc: "selected log attribute should be included",
@@ -97,6 +97,46 @@ func TestConvertAttributesAndMerge(t *testing.T) {
 			},
 			expected: model.LabelSet{
 				"exporter": "overridden",
+			},
+		},
+		{
+			desc: "it should add service.namespace/service.name as job label if both of them are present",
+			resAttrs: map[string]interface{}{
+				"service.namespace": "my-service-namespace",
+				"service.name":      "my-service-name",
+			},
+			expected: model.LabelSet{
+				"exporter": "OTLP",
+				"job":      "my-service-namespace/my-service-name",
+			},
+		},
+		{
+			desc: "it should add service.name as job label if service.namespace is missing",
+			resAttrs: map[string]interface{}{
+				"service.name": "my-service-name",
+			},
+			expected: model.LabelSet{
+				"exporter": "OTLP",
+				"job":      "my-service-name",
+			},
+		},
+		{
+			desc: "it shouldn't add service.namespace as job label if service.name is missing",
+			resAttrs: map[string]interface{}{
+				"service.namespace": "my-service-namespace",
+			},
+			expected: model.LabelSet{
+				"exporter": "OTLP",
+			},
+		},
+		{
+			desc: "it should add service.instance.id as instance label if service.instance.id is present",
+			resAttrs: map[string]interface{}{
+				"service.instance.id": "my-service-instance-id",
+			},
+			expected: model.LabelSet{
+				"exporter": "OTLP",
+				"instance": "my-service-instance-id",
 			},
 		},
 	}

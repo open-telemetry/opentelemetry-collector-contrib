@@ -24,8 +24,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/google/uuid"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer"
 	exp "go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -43,7 +41,7 @@ type exporter struct {
 	pusher           cwlogs.Pusher
 }
 
-func newCwLogsExporter(config *Config, params exp.CreateSettings) (exp.Logs, error) {
+func newCwLogsExporter(config *Config, params exp.CreateSettings) (*exporter, error) {
 	if config == nil {
 		return nil, errors.New("awscloudwatchlogs exporter config is nil")
 	}
@@ -76,7 +74,7 @@ func newCwLogsExporter(config *Config, params exp.CreateSettings) (exp.Logs, err
 
 }
 
-func (e *exporter) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
+func (e *exporter) consumeLogs(_ context.Context, ld plog.Logs) error {
 	cwLogsPusher := e.pusher
 	logEvents, _ := logsToCWLogs(e.logger, ld)
 	if len(logEvents) == 0 {
@@ -103,18 +101,13 @@ func (e *exporter) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	return nil
 }
 
-func (e *exporter) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: false}
-}
-
-func (e *exporter) Shutdown(ctx context.Context) error {
+func (e *exporter) shutdown(_ context.Context) error {
 	if e.pusher != nil {
-		e.pusher.ForceFlush()
+		err := e.pusher.ForceFlush()
+		if err != nil {
+			e.logger.Error("Error when gracefully shutting down cloudwatchlogs_exporter. Skipping to next logPusher.", zap.Error(err))
+		}
 	}
-	return nil
-}
-
-func (e *exporter) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 

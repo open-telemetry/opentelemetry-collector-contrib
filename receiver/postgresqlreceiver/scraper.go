@@ -31,33 +31,26 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver/internal/metadata"
 )
 
-const (
-	emitMetricsWithResourceAttributesFeatureGateID  = "receiver.postgresql.emitMetricsWithResourceAttributes"
-	emitMetricsWithoutResourceAttributesDescription = "Postgresql metrics are transitioning from being reported with identifying metric attributes " +
-		"to being identified via resource attributes in order to fit the OpenTelemetry specification. This feature " +
-		"gate controls emitting the old metrics without resource attributes. For more details, see: " +
-		"https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/postgresqlreceiver/README.md#feature-gate-configurations"
-	emitMetricsWithoutResourceAttributesFeatureGateID = "receiver.postgresql.emitMetricsWithoutResourceAttributes"
-	emitMetricsWithResourceAttributesDescription      = "Postgresql metrics are transitioning from being reported with identifying metric attributes " +
-		"to being identified via resource attributes in order to fit the OpenTelemetry specification. This feature " +
-		"gate controls emitting the new metrics with resource attributes. For more details, see: " +
-		"https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/postgresqlreceiver/README.md#feature-gate-configurations"
-)
-
-func init() {
-	featuregate.GlobalRegistry().MustRegisterID(
-		emitMetricsWithoutResourceAttributesFeatureGateID,
+var (
+	emitMetricsWithoutResourceAttributesFeatureGate = featuregate.GlobalRegistry().MustRegister(
+		"receiver.postgresql.emitMetricsWithoutResourceAttributes",
 		featuregate.StageAlpha,
-		featuregate.WithRegisterDescription(emitMetricsWithoutResourceAttributesDescription),
+		featuregate.WithRegisterDescription("Postgresql metrics are transitioning from being reported with identifying metric attributes "+
+			"to being identified via resource attributes in order to fit the OpenTelemetry specification. This feature "+
+			"gate controls emitting the old metrics without resource attributes. For more details, see: "+
+			"https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/postgresqlreceiver/README.md#feature-gate-configurations"),
 		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/12960"),
 	)
-	featuregate.GlobalRegistry().MustRegisterID(
-		emitMetricsWithResourceAttributesFeatureGateID,
+	emitMetricsWithResourceAttributesFeatureGate = featuregate.GlobalRegistry().MustRegister(
+		"receiver.postgresql.emitMetricsWithResourceAttributes",
 		featuregate.StageBeta,
-		featuregate.WithRegisterDescription(emitMetricsWithResourceAttributesDescription),
+		featuregate.WithRegisterDescription("Postgresql metrics are transitioning from being reported with identifying metric attributes "+
+			"to being identified via resource attributes in order to fit the OpenTelemetry specification. This feature "+
+			"gate controls emitting the new metrics with resource attributes. For more details, see: "+
+			"https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/postgresqlreceiver/README.md#feature-gate-configurations"),
 		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/12960"),
 	)
-}
+)
 
 type postgreSQLScraper struct {
 	logger                               *zap.Logger
@@ -94,8 +87,8 @@ func newPostgreSQLScraper(
 		config:                               config,
 		clientFactory:                        clientFactory,
 		mb:                                   metadata.NewMetricsBuilder(config.Metrics, settings),
-		emitMetricsWithResourceAttributes:    featuregate.GlobalRegistry().IsEnabled(emitMetricsWithResourceAttributesFeatureGateID),
-		emitMetricsWithoutResourceAttributes: featuregate.GlobalRegistry().IsEnabled(emitMetricsWithoutResourceAttributesFeatureGateID),
+		emitMetricsWithResourceAttributes:    emitMetricsWithResourceAttributesFeatureGate.IsEnabled(),
+		emitMetricsWithoutResourceAttributes: emitMetricsWithoutResourceAttributesFeatureGate.IsEnabled(),
 	}
 }
 
