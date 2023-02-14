@@ -1,5 +1,5 @@
 # This example demonstrates all possible configuration parameters to
-# the spanprocessor config.
+# the spanconnector config.
 receivers:
   nop:
 
@@ -17,7 +17,7 @@ connectors:
     # - span.kind
     # - status.code
     dimensions:
-      # If the span is missing http.method, the processor will insert
+      # If the span is missing http.method, the connector will insert
       # the http.method dimension with value 'GET'.
       # For example, in the following scenario, http.method is not present in a span and so will be added as a dimension to the metric with value "GET":
       # - calls_total{http_method="GET",operation="/Address",service_name="shippingservice",span_kind="SPAN_KIND_SERVER",status_code="STATUS_CODE_UNSET"} 1

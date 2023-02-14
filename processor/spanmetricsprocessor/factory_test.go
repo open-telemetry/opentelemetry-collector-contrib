@@ -116,15 +116,15 @@ func TestNewConnector(t *testing.T) {
 			cfg.Dimensions = tc.dimensions
 
 			// Test
-			traceProcessor, err := factory.CreateTracesToMetrics(context.Background(), creationParams, cfg, consumertest.NewNop())
-			smp := traceProcessor.(*processorImp)
+			traceConnector, err := factory.CreateTracesToMetrics(context.Background(), creationParams, cfg, consumertest.NewNop())
+			smc := traceConnector.(*processorImp)
 
 			// Verify
 			assert.Nil(t, err)
-			assert.NotNil(t, smp)
+			assert.NotNil(t, smc)
 
-			assert.Equal(t, tc.wantLatencyHistogramBuckets, smp.latencyBounds)
-			assert.Equal(t, tc.wantDimensions, smp.dimensions)
+			assert.Equal(t, tc.wantLatencyHistogramBuckets, smc.latencyBounds)
+			assert.Equal(t, tc.wantDimensions, smc.dimensions)
 		})
 	}
 }

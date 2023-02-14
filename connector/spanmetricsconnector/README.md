@@ -1,4 +1,4 @@
-# Span Metrics Processor
+# Span Metrics Connector
 
 | Status                   |                                                           |
 |------------------------- |---------------------------------------------------------- |

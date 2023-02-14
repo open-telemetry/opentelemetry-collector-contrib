@@ -202,7 +202,7 @@ func validateDimensions(dimensions []Dimension, skipSanitizeLabel bool) error {
 // Start implements the component.Component interface.
 func (p *processorImp) Start(ctx context.Context, host component.Host) error {
 	if p.tracesConsumer == nil {
-		p.logger.Info("Started spanmetricsconnector")
+		p.logger.Info("Starting spanmetricsconnector")
 	} else {
 		p.logger.Info("Starting spanmetricsprocessor")
 		exporters := host.GetExporters()
@@ -232,7 +232,6 @@ func (p *processorImp) Start(ctx context.Context, host component.Host) error {
 			return fmt.Errorf("failed to find metrics exporter: '%s'; please configure metrics_exporter from one of: %+v",
 				p.config.MetricsExporter, availableMetricsExporters)
 		}
-		p.logger.Info("Started spanmetricsprocessor")
 	}
 
 	p.started = true

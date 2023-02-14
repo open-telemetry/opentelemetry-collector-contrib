@@ -185,10 +185,9 @@ func TestProcessorConcurrentShutdown(t *testing.T) {
 	}, time.Second, time.Millisecond*10)
 
 	// Starting spanmetricsprocessor...
-	// Started spanmetricsprocessor...
 	// Shutting down spanmetricsprocessor...
 	// Stopping ticker.
-	assert.Len(t, allLogs, 4)
+	assert.Len(t, allLogs, 3)
 }
 
 func TestConfigureLatencyBounds(t *testing.T) {
