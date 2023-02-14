@@ -93,11 +93,11 @@ func NewLogParserCollection(settings component.TelemetrySettings, options ...Log
 func (pc LogParserCollection) ParseContextStatements(contextStatements ContextStatements) (consumer.Logs, error) {
 	switch contextStatements.Context {
 	case Log:
-		parseStatements, err := pc.logParser.ParseStatements(contextStatements.Statements)
+		parsedStatements, err := pc.logParser.ParseStatements(contextStatements.Statements)
 		if err != nil {
 			return nil, err
 		}
-		lStatements := ottllog.NewStatements(parseStatements, pc.settings, ottllog.WithErrorMode(ottl.PropagateError))
+		lStatements := ottllog.NewStatements(parsedStatements, pc.settings, ottllog.WithErrorMode(ottl.PropagateError))
 		return logStatements{lStatements}, nil
 	default:
 		statements, err := pc.parseCommonContextStatements(contextStatements, ottl.PropagateError)

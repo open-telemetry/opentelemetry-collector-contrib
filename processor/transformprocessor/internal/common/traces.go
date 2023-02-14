@@ -136,18 +136,18 @@ func NewTraceParserCollection(settings component.TelemetrySettings, options ...T
 func (pc TraceParserCollection) ParseContextStatements(contextStatements ContextStatements) (consumer.Traces, error) {
 	switch contextStatements.Context {
 	case Span:
-		parseStatements, err := pc.spanParser.ParseStatements(contextStatements.Statements)
+		parsedStatements, err := pc.spanParser.ParseStatements(contextStatements.Statements)
 		if err != nil {
 			return nil, err
 		}
-		sStatements := ottlspan.NewStatements(parseStatements, pc.settings, ottlspan.WithErrorMode(ottl.PropagateError))
+		sStatements := ottlspan.NewStatements(parsedStatements, pc.settings, ottlspan.WithErrorMode(ottl.PropagateError))
 		return traceStatements{sStatements}, nil
 	case SpanEvent:
-		parseStatements, err := pc.spanEventParser.ParseStatements(contextStatements.Statements)
+		parsedStatements, err := pc.spanEventParser.ParseStatements(contextStatements.Statements)
 		if err != nil {
 			return nil, err
 		}
-		seStatements := ottlspanevent.NewStatements(parseStatements, pc.settings, ottlspanevent.WithErrorMode(ottl.PropagateError))
+		seStatements := ottlspanevent.NewStatements(parsedStatements, pc.settings, ottlspanevent.WithErrorMode(ottl.PropagateError))
 		return spanEventStatements{seStatements}, nil
 	default:
 		return pc.parseCommonContextStatements(contextStatements, ottl.PropagateError)

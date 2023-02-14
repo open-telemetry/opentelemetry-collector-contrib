@@ -196,11 +196,11 @@ func (pc MetricParserCollection) ParseContextStatements(contextStatements Contex
 		mStatements := ottlmetric.NewStatements(parseStatements, pc.settings, ottlmetric.WithErrorMode(ottl.PropagateError))
 		return metricStatements{mStatements}, nil
 	case DataPoint:
-		parseStatements, err := pc.dataPointParser.ParseStatements(contextStatements.Statements)
+		parsedStatements, err := pc.dataPointParser.ParseStatements(contextStatements.Statements)
 		if err != nil {
 			return nil, err
 		}
-		dpStatements := ottldatapoint.NewStatements(parseStatements, pc.settings, ottldatapoint.WithErrorMode(ottl.PropagateError))
+		dpStatements := ottldatapoint.NewStatements(parsedStatements, pc.settings, ottldatapoint.WithErrorMode(ottl.PropagateError))
 		return dataPointStatements{dpStatements}, nil
 	default:
 		statements, err := pc.parseCommonContextStatements(contextStatements, ottl.PropagateError)

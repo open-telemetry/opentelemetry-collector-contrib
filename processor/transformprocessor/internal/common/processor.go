@@ -155,18 +155,18 @@ type baseContext interface {
 func (pc parserCollection) parseCommonContextStatements(contextStatement ContextStatements, errorMode ottl.ErrorMode) (baseContext, error) {
 	switch contextStatement.Context {
 	case Resource:
-		parseStatements, err := pc.resourceParser.ParseStatements(contextStatement.Statements)
+		parsedStatements, err := pc.resourceParser.ParseStatements(contextStatement.Statements)
 		if err != nil {
 			return nil, err
 		}
-		rStatements := ottlresource.NewStatements(parseStatements, pc.settings, ottlresource.WithErrorMode(errorMode))
+		rStatements := ottlresource.NewStatements(parsedStatements, pc.settings, ottlresource.WithErrorMode(errorMode))
 		return resourceStatements{rStatements}, nil
 	case Scope:
-		parseStatements, err := pc.scopeParser.ParseStatements(contextStatement.Statements)
+		parsedStatements, err := pc.scopeParser.ParseStatements(contextStatement.Statements)
 		if err != nil {
 			return nil, err
 		}
-		sStatements := ottlscope.NewStatements(parseStatements, pc.settings, ottlscope.WithErrorMode(errorMode))
+		sStatements := ottlscope.NewStatements(parsedStatements, pc.settings, ottlscope.WithErrorMode(errorMode))
 		return scopeStatements{sStatements}, nil
 	default:
 		return nil, fmt.Errorf("unknown context %v", contextStatement.Context)
