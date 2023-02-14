@@ -41,19 +41,3 @@ func TestCreateLogsReceiver(t *testing.T) {
 	)
 	require.NoError(t, err)
 }
-
-func TestAddRequiredFields(t *testing.T) {
-	cfg := createDefaultConfig().(*Config)
-	cfg.Auth.APIToken = "abc123"
-	cfg.Zone = "023e105f4ecef8ad9ca31a8372d0c353"
-	cfg.Logs.Fields = []string{}
-
-	_, err := NewFactory().CreateLogsReceiver(
-		context.Background(),
-		receivertest.NewNopCreateSettings(),
-		cfg,
-		nil,
-	)
-	require.NoError(t, err)
-	require.ElementsMatch(t, []string{"EdgeResponseStatus", "EdgeEndTimestamp"}, cfg.Logs.Fields)
-}

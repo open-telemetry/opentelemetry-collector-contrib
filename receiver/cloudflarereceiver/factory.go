@@ -43,7 +43,6 @@ func createLogsReceiver(
 	consumer consumer.Logs,
 ) (receiver.Logs, error) {
 	cfg := rConf.(*Config)
-	addRequiredFields(cfg)
 	return newLogsReceiver(params, cfg, consumer)
 }
 
@@ -56,30 +55,5 @@ func createDefaultConfig() component.Config {
 			Sample: float32(defaultSampleRate),
 			Fields: defaultFields,
 		},
-	}
-}
-
-// addRequiredFields adds fields EdgeEndTimestamp and EdgeResponseStatus which
-// are the logs timestamp and severity status value.
-func addRequiredFields(cfg *Config) {
-	var foundTimestampField bool
-	timestampField := "EdgeEndTimestamp"
-	var foundStatusCodeField bool
-	statusCode := "EdgeResponseStatus"
-
-	for _, field := range cfg.Logs.Fields {
-		if field == timestampField {
-			foundTimestampField = true
-		}
-		if field == statusCode {
-			foundStatusCodeField = true
-		}
-	}
-	if !foundTimestampField {
-		cfg.Logs.Fields = append(cfg.Logs.Fields, timestampField)
-	}
-
-	if !foundStatusCodeField {
-		cfg.Logs.Fields = append(cfg.Logs.Fields, statusCode)
 	}
 }

@@ -66,11 +66,13 @@ type LogsConfig struct {
 }
 
 var (
-	errNoZone                          = errors.New("no zone was specified")
-	errInvalidCountConfigured          = errors.New("count is improperly configured, value must be greater than 0")
-	errInvalidSampleConfigured         = errors.New("sample is improperly configured, value must be between 0.001 and 1.0")
-	errInvalidPollInterval             = errors.New("poll interval is incorrect, it must be a duration greater than one second")
-	errInvalidAuthenticationConfigured = errors.New("auth is improperly configured, both email and key must be present or a token")
+	errNoZone                                 = errors.New("no zone was specified")
+	errMissingRequiredFieldEdgeEndTimestamp   = errors.New("missing required field 'EdgeEndTimestamp'")
+	errMissingRequiredFieldEdgeResponseStatus = errors.New("missing required field 'EdgeResponseStatus'")
+	errInvalidCountConfigured                 = errors.New("count is improperly configured, value must be greater than 0")
+	errInvalidSampleConfigured                = errors.New("sample is improperly configured, value must be between 0.001 and 1.0")
+	errInvalidPollInterval                    = errors.New("poll interval is incorrect, it must be a duration greater than one second")
+	errInvalidAuthenticationConfigured        = errors.New("auth is improperly configured, both email and key must be present or a token")
 )
 
 // Validate validates all portions of the relevant config
@@ -100,5 +102,35 @@ func (c *Config) validateLogsConfig() error {
 	if c.Logs.Sample < 0.001 || c.Logs.Sample > 1.0 {
 		return errInvalidSampleConfigured
 	}
+	if len(c.Logs.Fields) != 0 {
+		return c.validateRequiredFields()
+	}
 	return nil
+}
+
+func (c *Config) validateRequiredFields() error {
+	var errs error
+	var foundTimestampField bool
+	timestampField := "EdgeEndTimestamp"
+	var foundStatusCodeField bool
+	statusCode := "EdgeResponseStatus"
+
+	for _, field := range c.Logs.Fields {
+		if field == timestampField {
+			foundTimestampField = true
+		}
+		if field == statusCode {
+			foundStatusCodeField = true
+		}
+	}
+
+	if !foundTimestampField {
+		errs = multierr.Append(errs, errMissingRequiredFieldEdgeEndTimestamp)
+	}
+
+	if !foundStatusCodeField {
+		errs = multierr.Append(errs, errMissingRequiredFieldEdgeResponseStatus)
+	}
+
+	return errs
 }

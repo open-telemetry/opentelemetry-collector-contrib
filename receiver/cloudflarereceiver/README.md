@@ -44,7 +44,7 @@ Cloudflare uses [LogPull API](https://developers.cloudflare.com/logs/logpull/) w
 
 The fields parameter defaults to collecting the default fields, which include ClientIP, ClientRequestHost, ClientRequestMethod, ClientRequestURI, EdgeEndTimestamp, EdgeResponseBytes, EdgeResponseStatus, EdgeStartTimestamp, RayID. A list of all fields can be found [here](https://developers.cloudflare.com/logs/reference/log-fields/zone/http_requests).
 
-*note* The field values `EdgeEndTimestamp` and `EdgeResponseStatus` will always be used to indicate the log timestamp and severity number/text.
+*note* The field values `EdgeEndTimestamp` and `EdgeResponseStatus` will always be used to indicate the log timestamp and severity number/text and are required when supplying custom fields.
 
 #### Sample Configuration
 

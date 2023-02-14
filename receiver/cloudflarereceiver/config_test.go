@@ -175,6 +175,54 @@ func TestValidate(t *testing.T) {
 			},
 			expectedErr: errInvalidCountConfigured,
 		},
+		{
+			name: "valid Config with custom fields",
+			config: Config{
+				PollInterval: defaultPollInterval,
+				Zone:         "023e105f4ecef8ad9ca31a8372d0c353",
+				Auth: &Auth{
+					APIToken: "abc123",
+				},
+				Logs: &LogsConfig{
+					Sample: float32(defaultSampleRate),
+					Count:  defaultCount,
+					Fields: []string{"ClientIP", "EdgeEndTimestamp", "EdgeResponseStatus"},
+				},
+			},
+			expectedErr: nil,
+		},
+		{
+			name: "invalid Config without required field EdgeResponseStatus",
+			config: Config{
+				PollInterval: defaultPollInterval,
+				Zone:         "023e105f4ecef8ad9ca31a8372d0c353",
+				Auth: &Auth{
+					APIToken: "abc123",
+				},
+				Logs: &LogsConfig{
+					Sample: float32(defaultSampleRate),
+					Count:  defaultCount,
+					Fields: []string{"ClientIP", "EdgeEndTimestamp"},
+				},
+			},
+			expectedErr: errMissingRequiredFieldEdgeResponseStatus,
+		},
+		{
+			name: "invalid Config without required field EdgeEndTimestamp",
+			config: Config{
+				PollInterval: defaultPollInterval,
+				Zone:         "023e105f4ecef8ad9ca31a8372d0c353",
+				Auth: &Auth{
+					APIToken: "abc123",
+				},
+				Logs: &LogsConfig{
+					Sample: float32(defaultSampleRate),
+					Count:  defaultCount,
+					Fields: []string{"ClientIP", "EdgeResponseStatus"},
+				},
+			},
+			expectedErr: errMissingRequiredFieldEdgeEndTimestamp,
+		},
 	}
 
 	for _, tc := range cases {
