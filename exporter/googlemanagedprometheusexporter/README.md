@@ -142,15 +142,37 @@ processors:
     metric_statements:
     - context: datapoint
       statements:
-      - set(attributes["custom-location"], attributes["location"])
+      - set(attributes["exported_location"], attributes["location"])
       - delete_key(attributes, "location")
 ```
 
-This example copies the `location` metric attribute to a new `custom-location`
-attribute, then deletes the original `location`.
+This example copies the `location` metric attribute to a new `exported_location`
+attribute, then deletes the original `location`. It is recommended to use the `exported_*`
+prefix, which is consistent with GMP's behavior. For all of the resource labels, the config would
+look like:
+
+```yaml
+processors:
+  transform:
+    metric_statements:
+    - context: datapoint
+      statements:
+      - set(attributes["exported_location"], attributes["location"])
+      - delete_key(attributes, "location")
+      - set(attributes["exported_cluster"], attributes["cluster"])
+      - delete_key(attributes, "cluster")
+      - set(attributes["exported_namespace"], attributes["namespace"])
+      - delete_key(attributes, "namespace")
+      - set(attributes["exported_job"], attributes["job"])
+      - delete_key(attributes, "job")
+      - set(attributes["exported_instance"], attributes["instance"])
+      - delete_key(attributes, "instance")
+      - set(attributes["exported_project_id"], attributes["project_id"])
+      - delete_key(attributes, "project_id")
+```
 
 You can also use the [groupbyattrs processor](../../processor/groupbyattrsprocessor)
-to associate metric labels with resource labels. This is useful in situations
+to move metric labels to resource labels. This is useful in situations
 where, for example, an exporter monitors multiple namespaces (with
 each namespace exported as a metric label). One such example is kube-state-metrics.
 
