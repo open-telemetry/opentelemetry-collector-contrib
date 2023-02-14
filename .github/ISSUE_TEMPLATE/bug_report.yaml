@@ -154,6 +154,7 @@ body:
       - receiver/bigip
       - receiver/carbon
       - receiver/chrony
+      - receiver/cloudflare
       - receiver/cloudfoundry
       - receiver/collectd
       - receiver/couchdb
