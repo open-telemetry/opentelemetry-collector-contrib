@@ -169,10 +169,15 @@ func (l *logsReceiver) processLogs(now pcommon.Timestamp, logs []*models.Log) pl
 		logRecord.SetObservedTimestamp(now)
 		resourceAttributes.PutStr("cloudflare.ZoneID", l.cfg.Zone)
 
-		ts := time.Unix(log.EdgeEndTimestamp, 0)
-		logRecord.SetTimestamp(pcommon.NewTimestampFromTime(ts))
-		logRecord.SetSeverityNumber(severityFromAPI(log.EdgeResponseStatus))
-		logRecord.SetSeverityText(severityFromAPI(log.EdgeResponseStatus).String())
+		if log.EdgeStartTimestamp != nil {
+			ts := time.Unix(*log.EdgeStartTimestamp, 0)
+			logRecord.SetTimestamp(pcommon.NewTimestampFromTime(ts))
+		}
+
+		if log.EdgeResponseStatus != nil {
+			logRecord.SetSeverityNumber(severityFromAPI(*log.EdgeResponseStatus))
+			logRecord.SetSeverityText(severityFromAPI(*log.EdgeResponseStatus).String())
+		}
 
 		bodyBytes, err := json.Marshal(logs)
 		if err != nil {
@@ -182,15 +187,16 @@ func (l *logsReceiver) processLogs(now pcommon.Timestamp, logs []*models.Log) pl
 		logRecord.Body().SetStr(string(bodyBytes))
 
 		// These attributes are optional and may not be present, depending on the selected fields.
-		putStringToMapNotNil(attrs, "ClientIP", &log.ClientIP)
-		putStringToMapNotNil(attrs, "ClientRequestHost", &log.ClientRequestHost)
-		putStringToMapNotNil(attrs, "ClientRequestMethod", &log.ClientRequestMethod)
-		putStringToMapNotNil(attrs, "ClientRequestURI", &log.ClientRequestURI)
-		putIntToMapNotNil(attrs, "EdgeEndTimestamp", &log.EdgeEndTimestamp)
-		putIntToMapNotNil(attrs, "EdgeResponseBytes", &log.EdgeResponseBytes)
-		putIntToMapNotNil(attrs, "EdgeResponseStatus", &log.EdgeResponseStatus)
-		putIntToMapNotNil(attrs, "EdgeStartTimestamp", &log.EdgeStartTimestamp)
-		putStringToMapNotNil(attrs, "RayID", &log.RayID)
+
+		putStringToMapNotNil(attrs, "ClientIP", log.ClientIP)
+		putStringToMapNotNil(attrs, "ClientRequestHost", log.ClientRequestHost)
+		putStringToMapNotNil(attrs, "ClientRequestMethod", log.ClientRequestMethod)
+		putStringToMapNotNil(attrs, "ClientRequestURI", log.ClientRequestURI)
+		putIntToMapNotNil(attrs, "EdgeEndTimestamp", log.EdgeEndTimestamp)
+		putIntToMapNotNil(attrs, "EdgeResponseBytes", log.EdgeResponseBytes)
+		putIntToMapNotNil(attrs, "EdgeResponseStatus", log.EdgeResponseStatus)
+		putIntToMapNotNil(attrs, "EdgeStartTimestamp", log.EdgeStartTimestamp)
+		putStringToMapNotNil(attrs, "RayID", log.RayID)
 	}
 
 	return pLogs

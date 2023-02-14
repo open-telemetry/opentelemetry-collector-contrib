@@ -68,20 +68,6 @@ func TestNewClient(t *testing.T) {
 			},
 			expectError: nil,
 		},
-		{
-			desc: "Invalid Configuration, bad auth",
-			cfg: &Config{
-				PollInterval: defaultPollInterval,
-				Zone:         "1",
-				Auth:         &Auth{},
-				Logs: &LogsConfig{
-					Sample: float32(defaultSampleRate),
-					Count:  defaultCount,
-					Fields: defaultFields,
-				},
-			},
-			expectError: errInvalidAuthenticationConfigured,
-		},
 	}
 
 	for _, tc := range testCase {
@@ -187,26 +173,26 @@ func TestMakeRequest(t *testing.T) {
 				mux.HandleFunc(pattern, handler)
 				want := []*models.Log{
 					{
-						ClientIP:            "89.163.253.200",
-						ClientRequestHost:   "www.theburritobot0.com",
-						ClientRequestMethod: "GET",
-						ClientRequestURI:    "/static/img/testimonial-hipster.png",
-						EdgeEndTimestamp:    1506702504461999900,
-						EdgeResponseBytes:   69045,
-						EdgeResponseStatus:  200,
-						EdgeStartTimestamp:  1506702504433000200,
-						RayID:               "3a6050bcbe121a87",
+						ClientIP:            &[]string{"89.163.253.200"}[0],
+						ClientRequestHost:   &[]string{"www.theburritobot0.com"}[0],
+						ClientRequestMethod: &[]string{"GET"}[0],
+						ClientRequestURI:    &[]string{"/static/img/testimonial-hipster.png"}[0],
+						EdgeEndTimestamp:    &[]int64{1506702504461999900}[0],
+						EdgeResponseBytes:   &[]int64{69045}[0],
+						EdgeResponseStatus:  &[]int64{200}[0],
+						EdgeStartTimestamp:  &[]int64{1506702504433000200}[0],
+						RayID:               &[]string{"3a6050bcbe121a87"}[0],
 					},
 					{
-						ClientIP:            "89.163.253.201",
-						ClientRequestHost:   "www.theburritobot1.com",
-						ClientRequestMethod: "GET",
-						ClientRequestURI:    "/static/img/testimonial-hipster.png",
-						EdgeEndTimestamp:    1506702504461999900,
-						EdgeResponseBytes:   69045,
-						EdgeResponseStatus:  200,
-						EdgeStartTimestamp:  1506702504433000200,
-						RayID:               "3a6050bcbe121a87",
+						ClientIP:            &[]string{"89.163.253.201"}[0],
+						ClientRequestHost:   &[]string{"www.theburritobot1.com"}[0],
+						ClientRequestMethod: &[]string{"GET"}[0],
+						ClientRequestURI:    &[]string{"/static/img/testimonial-hipster.png"}[0],
+						EdgeEndTimestamp:    &[]int64{1506702504461999900}[0],
+						EdgeResponseBytes:   &[]int64{69045}[0],
+						EdgeResponseStatus:  &[]int64{200}[0],
+						EdgeStartTimestamp:  &[]int64{1506702504433000200}[0],
+						RayID:               &[]string{"3a6050bcbe121a87"}[0],
 					},
 				}
 
@@ -329,8 +315,9 @@ func TestBuildEndpoint(t *testing.T) {
 }
 
 var (
-	multiLogs = "./testdata/example-logs/multi-logs.json"
-	singleLog = "./testdata/example-logs/single-log.json"
+	multiLogs   = "./testdata/example-logs/multi-logs.json"
+	singleLog   = "./testdata/example-logs/single-log.json"
+	partialLogs = "./testdata/example-logs/partial-log.json"
 )
 
 func loadTestFile(filePath string) ([]*models.Log, error) {

@@ -50,8 +50,6 @@ func newCloudflareClient(cfg *Config, baseURL string) (client, error) {
 		api, err = cloudflare.New(cfg.Auth.XAuthKey, cfg.Auth.XAuthEmail)
 	case cfg.Auth.APIToken != "":
 		api, err = cloudflare.NewWithAPIToken(cfg.Auth.APIToken)
-	default:
-		return nil, errInvalidAuthenticationConfigured
 	}
 	api.BaseURL = baseURL
 

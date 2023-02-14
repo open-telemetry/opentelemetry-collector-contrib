@@ -77,6 +77,16 @@ func TestPoll(t *testing.T) {
 			},
 			goldenFile: "multi-processed-logs.json",
 		},
+		{
+			desc:   "partial log entry",
+			config: testConfig(),
+			client: func() client {
+				tC, err := testClient(partialLogs)
+				require.Nil(t, err)
+				return tC
+			},
+			goldenFile: "partial-processed-logs.json",
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
@@ -226,4 +236,41 @@ func testConfig() *Config {
 			Fields: defaultFields,
 		},
 	}
+}
+
+func TestAddNilValuesToMap(t *testing.T) {
+	pLogs := plog.NewLogs()
+	resourceLogs := pLogs.ResourceLogs().AppendEmpty()
+	logRecord := resourceLogs.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+	attrs := logRecord.Attributes()
+
+	t.Run("add nil values to map", func(t *testing.T) {
+		nilModel := []*models.Log{
+			{},
+		}
+
+		require.Panics(t, func() {
+			attrs.PutStr("nil", *nilModel[0].ClientIP)
+			attrs.PutInt("nil", *nilModel[0].EdgeEndTimestamp)
+		})
+
+		putStringToMapNotNil(attrs, "nil", nilModel[0].ClientIP)
+		putIntToMapNotNil(attrs, "nil", nilModel[0].EdgeEndTimestamp)
+
+		require.EqualValues(t, 0, attrs.Len())
+	})
+
+	t.Run("add non-nil values to map", func(t *testing.T) {
+		notNilModel := []*models.Log{
+			{
+				ClientIP:         &[]string{"89.163.253.200"}[0],
+				EdgeEndTimestamp: &[]int64{0}[0],
+			},
+		}
+
+		putStringToMapNotNil(attrs, "ClientIP", notNilModel[0].ClientIP)
+		putIntToMapNotNil(attrs, "EdgeEndTimestamp", notNilModel[0].EdgeEndTimestamp)
+
+		require.EqualValues(t, 2, attrs.Len())
+	})
 }

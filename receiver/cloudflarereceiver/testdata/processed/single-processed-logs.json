@@ -16,8 +16,8 @@
                     "scope": {},
                     "logRecords": [
                         {
-                            "timeUnixNano": "7957049846075234304",
-                            "observedTimeUnixNano": "1674153745042331000",
+                            "timeUnixNano": "7928050146075234304",
+                            "observedTimeUnixNano": "1676351710786478000",
                             "severityNumber": 9,
                             "severityText": "Info",
                             "body": {

@@ -18,15 +18,15 @@ package models // import "github.com/open-telemetry/opentelemetry-collector-cont
 // Log holds the supported log fields.
 // A full list of all logs fields can be found at https://developers.cloudflare.com/logs/reference/log-fields/zone/http_requests
 type Log struct {
-	ClientIP            string `json:"ClientIP"`
-	ClientRequestHost   string `json:"ClientRequestHost"`
-	ClientRequestMethod string `json:"ClientRequestMethod"`
-	ClientRequestURI    string `json:"ClientRequestURI"`
-	EdgeEndTimestamp    int64  `json:"EdgeEndTimestamp"`
-	EdgeResponseBytes   int64  `json:"EdgeResponseBytes"`
-	EdgeResponseStatus  int64  `json:"EdgeResponseStatus"`
-	EdgeStartTimestamp  int64  `json:"EdgeStartTimestamp"`
-	RayID               string `json:"RayID"`
+	ClientIP            *string `json:"ClientIP"`
+	ClientRequestHost   *string `json:"ClientRequestHost"`
+	ClientRequestMethod *string `json:"ClientRequestMethod"`
+	ClientRequestURI    *string `json:"ClientRequestURI"`
+	EdgeEndTimestamp    *int64  `json:"EdgeEndTimestamp"`
+	EdgeResponseBytes   *int64  `json:"EdgeResponseBytes"`
+	EdgeResponseStatus  *int64  `json:"EdgeResponseStatus"`
+	EdgeStartTimestamp  *int64  `json:"EdgeStartTimestamp"`
+	RayID               *string `json:"RayID"`
 }
 
 // Response holds the raw return response from using the cloudflare API.
