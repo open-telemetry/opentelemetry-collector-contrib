@@ -30,7 +30,9 @@ import (
 
 var _ consumer.Traces = &traceStatements{}
 
-type traceStatements []*ottl.Statement[ottlspan.TransformContext]
+type traceStatements struct {
+	ottl.Statements[ottlspan.TransformContext]
+}
 
 func (t traceStatements) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{
@@ -46,11 +48,9 @@ func (t traceStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces) er
 			spans := sspans.Spans()
 			for k := 0; k < spans.Len(); k++ {
 				tCtx := ottlspan.NewTransformContext(spans.At(k), sspans.Scope(), rspans.Resource())
-				for _, statement := range t {
-					_, _, err := statement.Execute(ctx, tCtx)
-					if err != nil {
-						return err
-					}
+				err := t.Execute(ctx, tCtx)
+				if err != nil {
+					return err
 				}
 			}
 		}
@@ -60,7 +60,9 @@ func (t traceStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces) er
 
 var _ consumer.Traces = &spanEventStatements{}
 
-type spanEventStatements []*ottl.Statement[ottlspanevent.TransformContext]
+type spanEventStatements struct {
+	ottl.Statements[ottlspanevent.TransformContext]
+}
 
 func (s spanEventStatements) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{
@@ -79,11 +81,9 @@ func (s spanEventStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces
 				spanEvents := span.Events()
 				for n := 0; n < spanEvents.Len(); n++ {
 					tCtx := ottlspanevent.NewTransformContext(spanEvents.At(n), span, sspans.Scope(), rspans.Resource())
-					for _, statement := range s {
-						_, _, err := statement.Execute(ctx, tCtx)
-						if err != nil {
-							return err
-						}
+					err := s.Execute(ctx, tCtx)
+					if err != nil {
+						return err
 					}
 				}
 			}
@@ -136,18 +136,20 @@ func NewTraceParserCollection(settings component.TelemetrySettings, options ...T
 func (pc TraceParserCollection) ParseContextStatements(contextStatements ContextStatements) (consumer.Traces, error) {
 	switch contextStatements.Context {
 	case Span:
-		tStatements, err := pc.spanParser.ParseStatements(contextStatements.Statements)
+		parsedStatements, err := pc.spanParser.ParseStatements(contextStatements.Statements)
 		if err != nil {
 			return nil, err
 		}
-		return traceStatements(tStatements), nil
+		sStatements := ottlspan.NewStatements(parsedStatements, pc.settings, ottlspan.WithErrorMode(ottl.PropagateError))
+		return traceStatements{sStatements}, nil
 	case SpanEvent:
-		seStatements, err := pc.spanEventParser.ParseStatements(contextStatements.Statements)
+		parsedStatements, err := pc.spanEventParser.ParseStatements(contextStatements.Statements)
 		if err != nil {
 			return nil, err
 		}
-		return spanEventStatements(seStatements), nil
+		seStatements := ottlspanevent.NewStatements(parsedStatements, pc.settings, ottlspanevent.WithErrorMode(ottl.PropagateError))
+		return spanEventStatements{seStatements}, nil
 	default:
-		return pc.parseCommonContextStatements(contextStatements)
+		return pc.parseCommonContextStatements(contextStatements, ottl.PropagateError)
 	}
 }
