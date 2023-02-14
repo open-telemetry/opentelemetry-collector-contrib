@@ -209,10 +209,11 @@ func resourceHasAttributes(resource pcommon.Resource, kvs map[string]*expectedVa
 		},
 	)
 
+	var err error
 	for k, v := range exists {
 		if !v {
-			return fmt.Errorf("%v attribute not found", k)
+			err = multierr.Append(err, fmt.Errorf("%v attribute not found", k))
 		}
 	}
-	return nil
+	return err
 }
