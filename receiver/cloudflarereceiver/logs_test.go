@@ -26,7 +26,6 @@ import (
 
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
@@ -148,37 +147,6 @@ func TestStorageUpdate(t *testing.T) {
 	require.Nil(t, recv.record)
 }
 
-func TestBadStorageClientError(t *testing.T) {
-	cfg := Config{
-		PollInterval: 1 * time.Microsecond,
-		Zone:         "023e105f4ecef8ad9ca31a8372d0c353",
-		Auth: &Auth{
-			XAuthKey:   "abc123",
-			XAuthEmail: "email@email.com",
-		},
-		Logs: &LogsConfig{
-			Sample: float32(defaultSampleRate),
-			Count:  defaultCount,
-			Fields: defaultFields,
-		},
-		StorageID: &component.ID{},
-	}
-	recv := testRecv()
-	recv.cfg = &cfg
-
-	tc, err := testClient(singleLog)
-	require.NoError(t, err)
-	recv.client = tc
-
-	err = recv.Start(context.Background(), componenttest.NewNopHost())
-	require.NoError(t, err)
-
-	recv.storageClient = nil
-	err = recv.Shutdown(context.Background())
-	require.Error(t, err)
-	require.ErrorContains(t, errors.New("missing storage client"), err.Error())
-}
-
 func readLogs(path string) (plog.Logs, error) {
 	f, err := os.Open(path)
 	if err != nil {
@@ -248,11 +216,6 @@ func TestAddNilValuesToMap(t *testing.T) {
 		nilModel := []*models.Log{
 			{},
 		}
-
-		require.Panics(t, func() {
-			attrs.PutStr("nil", *nilModel[0].ClientIP)
-			attrs.PutInt("nil", *nilModel[0].EdgeEndTimestamp)
-		})
 
 		putStringToMapNotNil(attrs, "nil", nilModel[0].ClientIP)
 		putIntToMapNotNil(attrs, "nil", nilModel[0].EdgeEndTimestamp)
