@@ -24,6 +24,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.uber.org/multierr"
 )
 
 const (
@@ -145,7 +146,6 @@ func TestTraceE2E(t *testing.T) {
 }
 
 func scanSpanForAttributes(t *testing.T, expectedService string, kvs map[string]*expectedValue) {
-	var err error
 
 	f, _ := os.Open("./testdata/trace.json")
 	defer f.Close()
@@ -173,18 +173,16 @@ func scanSpanForAttributes(t *testing.T, expectedService string, kvs map[string]
 				continue
 			}
 
-			if err = resourceHasAttributes(resourceSpans.Resource(), kvs); err == nil {
-				return
-			}
+			assert.NoError(t, resourceHasAttributes(resourceSpans.Resource(), kvs))
 		}
 	}
-	assert.NoError(t, err)
+
 }
 
 func resourceHasAttributes(resource pcommon.Resource, kvs map[string]*expectedValue) error {
-	exists := make(map[string]bool)
+	foundAttrs := make(map[string]bool)
 	for k := range kvs {
-		exists[k] = false
+		foundAttrs[k] = false
 	}
 
 	resource.Attributes().Range(
@@ -193,15 +191,15 @@ func resourceHasAttributes(resource pcommon.Resource, kvs map[string]*expectedVa
 				switch val.mode {
 				case equal:
 					if val.value == v.AsString() {
-						exists[k] = true
+						foundAttrs[k] = true
 					}
 				case regex:
 					matched, _ := regexp.MatchString(val.value, v.AsString())
 					if matched {
-						exists[k] = true
+						foundAttrs[k] = true
 					}
 				case exist:
-					exists[k] = true
+					foundAttrs[k] = true
 				}
 
 			}
@@ -210,7 +208,7 @@ func resourceHasAttributes(resource pcommon.Resource, kvs map[string]*expectedVa
 	)
 
 	var err error
-	for k, v := range exists {
+	for k, v := range foundAttrs {
 		if !v {
 			err = multierr.Append(err, fmt.Errorf("%v attribute not found", k))
 		}
