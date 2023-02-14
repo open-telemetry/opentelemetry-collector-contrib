@@ -21,46 +21,60 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/otel/metric/global"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/metric/aggregation"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
 )
 
-func TestFixedNumberOfMetrics(t *testing.T) {
-	// prepare
-	manualReader := sdkmetric.NewManualReader()
-	metricProvider := sdkmetric.NewMeterProvider(sdkmetric.WithReader(manualReader))
-	global.SetMeterProvider(metricProvider)
+type mockExporter struct {
+	rms []*metricdata.ResourceMetrics
+}
 
+func (m *mockExporter) Temporality(kind sdkmetric.InstrumentKind) metricdata.Temporality {
+	return metricdata.DeltaTemporality
+}
+
+func (m *mockExporter) Aggregation(kind sdkmetric.InstrumentKind) aggregation.Aggregation {
+	return aggregation.Default{}
+}
+
+func (m *mockExporter) Export(ctx context.Context, metrics metricdata.ResourceMetrics) error {
+	m.rms = append(m.rms, &metrics)
+	return nil
+}
+
+func (m *mockExporter) ForceFlush(ctx context.Context) error {
+	return nil
+}
+
+func (m *mockExporter) Shutdown(ctx context.Context) error {
+	return nil
+}
+
+func TestFixedNumberOfMetrics(t *testing.T) {
 	cfg := &Config{
 		Config: common.Config{
 			WorkerCount: 1,
 		},
-		NumMetrics: 1,
+		NumMetrics: 5,
 	}
+
+	exp := &mockExporter{}
 
 	// test
 	logger, _ := zap.NewDevelopment()
-	require.NoError(t, Run(cfg, logger))
+	require.NoError(t, Run(cfg, exp, logger))
 
 	time.Sleep(1 * time.Second)
 
 	// verify
-	m, err := manualReader.Collect(context.Background())
-	require.Len(t, m.ScopeMetrics, 1)
-	require.NoError(t, err)
-	assert.Len(t, m.ScopeMetrics[0].Metrics, 1)
+	require.Len(t, exp.rms, 5)
 }
 
 func TestRateOfMetrics(t *testing.T) {
-	// prepare
-	manualReader := sdkmetric.NewManualReader()
-	metricProvider := sdkmetric.NewMeterProvider(sdkmetric.WithReader(manualReader))
-	global.SetMeterProvider(metricProvider)
-
 	cfg := &Config{
 		Config: common.Config{
 			Rate:          10,
@@ -68,54 +82,30 @@ func TestRateOfMetrics(t *testing.T) {
 			WorkerCount:   1,
 		},
 	}
-
-	// sanity check
-	m, err := manualReader.Collect(context.Background())
-	require.Len(t, m.ScopeMetrics, 0)
-	require.NoError(t, err)
+	exp := &mockExporter{}
 
 	// test
-	require.NoError(t, Run(cfg, zap.NewNop()))
+	require.NoError(t, Run(cfg, exp, zap.NewNop()))
 
 	// verify
 	// the minimum acceptable number of metrics for the rate of 10/sec for half a second
-	m, err = manualReader.Collect(context.Background())
-	require.Len(t, m.ScopeMetrics, 1)
-	require.NoError(t, err)
-	assert.True(t, len(m.ScopeMetrics[0].Metrics) >= 6, "there should have been more than 6 metrics, had %d", len(m.ScopeMetrics[0].Metrics))
+	assert.True(t, len(exp.rms) >= 6, "there should have been more than 6 metrics, had %d", len(exp.rms))
 	// the maximum acceptable number of metrics for the rate of 10/sec for half a second
-	assert.True(t, len(m.ScopeMetrics[0].Metrics) <= 20, "there should have been less than 20 metrics, had %d", len(m.ScopeMetrics[0].Metrics))
+	assert.True(t, len(exp.rms) <= 20, "there should have been less than 20 metrics, had %d", len(exp.rms))
 }
 
 func TestUnthrottled(t *testing.T) {
-	// prepare
-	manualReader := sdkmetric.NewManualReader()
-	metricProvider := sdkmetric.NewMeterProvider(sdkmetric.WithReader(manualReader))
-	global.SetMeterProvider(metricProvider)
-
 	cfg := &Config{
 		Config: common.Config{
 			TotalDuration: 1 * time.Second,
 			WorkerCount:   1,
 		},
 	}
-
-	// sanity check
-	m, err := manualReader.Collect(context.Background())
-	require.Len(t, m.ScopeMetrics, 0)
-	require.NoError(t, err)
+	exp := &mockExporter{}
 
 	// test
 	logger, _ := zap.NewDevelopment()
-	require.NoError(t, Run(cfg, logger))
+	require.NoError(t, Run(cfg, exp, logger))
 
-	collected, err := manualReader.Collect(context.Background())
-	require.Len(t, collected.ScopeMetrics, 1)
-	count := 0
-	for _, m := range collected.ScopeMetrics[0].Metrics {
-		sum := m.Data.(metricdata.Sum[int64])
-		count += len(sum.DataPoints)
-	}
-	assert.True(t, count > 100, "there should have been more than 100 metrics, had %d", count)
-	require.NoError(t, err)
+	assert.True(t, len(exp.rms) > 100, "there should have been more than 100 metrics, had %d", len(exp.rms))
 }

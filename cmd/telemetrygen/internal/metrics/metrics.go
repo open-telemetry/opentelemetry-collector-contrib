@@ -20,12 +20,11 @@ import (
 	"sync"
 	"time"
 
+	semconv "go.opentelemetry.io/collector/semconv/v1.13.0"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
-	"go.opentelemetry.io/otel/metric/global"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
-	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 	"go.uber.org/atomic"
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
@@ -81,16 +80,7 @@ func Start(cfg *Config) error {
 		}
 	}()
 
-	reader := sdkmetric.NewPeriodicReader(exp, sdkmetric.WithInterval(cfg.ReportingInterval))
-
-	meterProvider := sdkmetric.NewMeterProvider(
-		sdkmetric.WithResource(resource.NewWithAttributes(semconv.SchemaURL, cfg.GetAttributes()...)),
-		sdkmetric.WithReader(reader),
-	)
-
-	global.SetMeterProvider(meterProvider)
-
-	if err = Run(cfg, logger); err != nil {
+	if err = Run(cfg, exp, logger); err != nil {
 		logger.Error("failed to stop the exporter", zap.Error(err))
 		return err
 	}
@@ -99,7 +89,7 @@ func Start(cfg *Config) error {
 }
 
 // Run executes the test scenario.
-func Run(c *Config, logger *zap.Logger) error {
+func Run(c *Config, exp sdkmetric.Exporter, logger *zap.Logger) error {
 	if c.TotalDuration > 0 {
 		c.NumMetrics = 0
 	} else if c.NumMetrics <= 0 {
@@ -116,6 +106,7 @@ func Run(c *Config, logger *zap.Logger) error {
 
 	wg := sync.WaitGroup{}
 	running := atomic.NewBool(true)
+	res := resource.NewWithAttributes(semconv.SchemaURL, c.GetAttributes()...)
 
 	for i := 0; i < c.WorkerCount; i++ {
 		wg.Add(1)
@@ -126,9 +117,10 @@ func Run(c *Config, logger *zap.Logger) error {
 			running:        running,
 			wg:             &wg,
 			logger:         logger.With(zap.Int("worker", i)),
+			index:          i,
 		}
 
-		go w.simulateMetrics()
+		go w.simulateMetrics(res, exp)
 	}
 	if c.TotalDuration > 0 {
 		time.Sleep(c.TotalDuration)
