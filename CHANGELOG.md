@@ -4,11 +4,6 @@
 
 <!-- next version -->
 
-## v0.72.0
-
-### 💡 Enhancements 💡
-- `k8sattributesprocessor`: support pod.spec.hostname (#18494)
-
 ## v0.71.0
 
 ### 🛑 Breaking changes 🛑
