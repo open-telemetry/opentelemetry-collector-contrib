@@ -16,8 +16,10 @@ package common // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"context"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/expr"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -61,7 +63,7 @@ func ParseLog(conditions []string, set component.TelemetrySettings) (expr.BoolEx
 
 func ParseMetric(conditions []string, set component.TelemetrySettings) (expr.BoolExpr[ottlmetric.TransformContext], error) {
 	statmentsStr := conditionsToStatements(conditions)
-	parser := ottlmetric.NewParser(functions[ottlmetric.TransformContext](), set)
+	parser := ottlmetric.NewParser(metricFunctions(), set)
 	statements, err := parser.ParseStatements(statmentsStr)
 	if err != nil {
 		return nil, err
@@ -119,4 +121,97 @@ func functions[K any]() map[string]interface{} {
 			}, nil
 		},
 	}
+}
+
+func metricFunctions() map[string]interface{} {
+	funcs := functions[ottlmetric.TransformContext]()
+	funcs["HasAttrKeyOnDatapoint"] = hasAttributeKeyOnDatapoint
+	funcs["HasAttrOnDatapoint"] = hasAttributeOnDatapoint
+
+	return funcs
+}
+
+func hasAttributeOnDatapoint(key string, expectedVal string) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
+	return func(ctx context.Context, tCtx ottlmetric.TransformContext) (interface{}, error) {
+		return checkDataPoints(tCtx, key, &expectedVal)
+	}, nil
+}
+
+func hasAttributeKeyOnDatapoint(key string) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
+	return func(ctx context.Context, tCtx ottlmetric.TransformContext) (interface{}, error) {
+		return checkDataPoints(tCtx, key, nil)
+	}, nil
+}
+
+func checkDataPoints(tCtx ottlmetric.TransformContext, key string, expectedVal *string) (interface{}, error) {
+	metric := tCtx.GetMetric()
+	switch metric.Type() {
+	case pmetric.MetricTypeSum:
+		return checkNumberDataPointSlice(metric.Sum().DataPoints(), key, expectedVal), nil
+	case pmetric.MetricTypeGauge:
+		return checkNumberDataPointSlice(metric.Gauge().DataPoints(), key, expectedVal), nil
+	case pmetric.MetricTypeHistogram:
+		return checkHistogramDataPointSlice(metric.Histogram().DataPoints(), key, expectedVal), nil
+	case pmetric.MetricTypeExponentialHistogram:
+		return checkExponentialHistogramDataPointSlice(metric.ExponentialHistogram().DataPoints(), key, expectedVal), nil
+	case pmetric.MetricTypeSummary:
+		return checkSummaryDataPointSlice(metric.Summary().DataPoints(), key, expectedVal), nil
+	}
+	return nil, fmt.Errorf("unknown metric type")
+}
+
+func checkNumberDataPointSlice(dps pmetric.NumberDataPointSlice, key string, expectedVal *string) bool {
+	for i := 0; i < dps.Len(); i++ {
+		dp := dps.At(i)
+		value, ok := dp.Attributes().Get(key)
+		if ok {
+			if expectedVal != nil {
+				return value.Str() == *expectedVal
+			}
+			return true
+		}
+	}
+	return false
+}
+
+func checkHistogramDataPointSlice(dps pmetric.HistogramDataPointSlice, key string, expectedVal *string) bool {
+	for i := 0; i < dps.Len(); i++ {
+		dp := dps.At(i)
+		value, ok := dp.Attributes().Get(key)
+		if ok {
+			if expectedVal != nil {
+				return value.Str() == *expectedVal
+			}
+			return true
+		}
+	}
+	return false
+}
+
+func checkExponentialHistogramDataPointSlice(dps pmetric.ExponentialHistogramDataPointSlice, key string, expectedVal *string) bool {
+	for i := 0; i < dps.Len(); i++ {
+		dp := dps.At(i)
+		value, ok := dp.Attributes().Get(key)
+		if ok {
+			if expectedVal != nil {
+				return value.Str() == *expectedVal
+			}
+			return true
+		}
+	}
+	return false
+}
+
+func checkSummaryDataPointSlice(dps pmetric.SummaryDataPointSlice, key string, expectedVal *string) bool {
+	for i := 0; i < dps.Len(); i++ {
+		dp := dps.At(i)
+		value, ok := dp.Attributes().Get(key)
+		if ok {
+			if expectedVal != nil {
+				return value.Str() == *expectedVal
+			}
+			return true
+		}
+	}
+	return false
 }

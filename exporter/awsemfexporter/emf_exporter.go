@@ -62,7 +62,7 @@ type emfExporter struct {
 func newEmfPusher(
 	config component.Config,
 	params exporter.CreateSettings,
-) (exporter.Metrics, error) {
+) (*emfExporter, error) {
 	if config == nil {
 		return nil, errors.New("emf exporter config is nil")
 	}
@@ -99,7 +99,7 @@ func newEmfExporter(
 	config component.Config,
 	set exporter.CreateSettings,
 ) (exporter.Metrics, error) {
-	exp, err := newEmfPusher(config, set)
+	emfPusher, err := newEmfPusher(config, set)
 	if err != nil {
 		return nil, err
 	}
@@ -108,8 +108,9 @@ func newEmfExporter(
 		context.TODO(),
 		set,
 		config,
-		exp.(*emfExporter).pushMetricsData,
-		exporterhelper.WithShutdown(exp.(*emfExporter).Shutdown),
+		emfPusher.pushMetricsData,
+		exporterhelper.WithShutdown(emfPusher.shutdown),
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 	)
 	if err != nil {
 		return nil, err
@@ -218,12 +219,8 @@ func (emf *emfExporter) listPushers() []cwlogs.Pusher {
 	return pushers
 }
 
-func (emf *emfExporter) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
-	return emf.pushMetricsData(ctx, md)
-}
-
-// Shutdown stops the exporter and is invoked during shutdown.
-func (emf *emfExporter) Shutdown(ctx context.Context) error {
+// shutdown stops the exporter and is invoked during shutdown.
+func (emf *emfExporter) shutdown(ctx context.Context) error {
 	for _, emfPusher := range emf.listPushers() {
 		returnError := emfPusher.ForceFlush()
 		if returnError != nil {
@@ -234,15 +231,6 @@ func (emf *emfExporter) Shutdown(ctx context.Context) error {
 		}
 	}
 
-	return nil
-}
-
-func (emf *emfExporter) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: false}
-}
-
-// Start
-func (emf *emfExporter) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 

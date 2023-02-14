@@ -21,17 +21,12 @@ import (
 	"sort"
 	"strings"
 
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.opentelemetry.io/collector/processor"
 	"go.uber.org/zap"
 )
 
 const attrValuesSeparator = ","
-
-var _ processor.Traces = (*redaction)(nil)
 
 type redaction struct {
 	// Attribute keys allowed in a span
@@ -42,12 +37,10 @@ type redaction struct {
 	config *Config
 	// Logger
 	logger *zap.Logger
-	// Next trace consumer in line
-	next consumer.Traces
 }
 
 // newRedaction creates a new instance of the redaction processor
-func newRedaction(ctx context.Context, config *Config, logger *zap.Logger, next consumer.Traces) (*redaction, error) {
+func newRedaction(ctx context.Context, config *Config, logger *zap.Logger) (*redaction, error) {
 	allowList := makeAllowList(config)
 	blockRegexList, err := makeBlockRegexList(ctx, config)
 	if err != nil {
@@ -60,7 +53,6 @@ func newRedaction(ctx context.Context, config *Config, logger *zap.Logger, next 
 		blockRegexList: blockRegexList,
 		config:         config,
 		logger:         logger,
-		next:           next,
 	}, nil
 }
 
@@ -141,17 +133,6 @@ func (s *redaction) processAttrs(_ context.Context, attributes pcommon.Map) {
 	s.addMetaAttrs(toBlock, attributes, maskedValues, maskedValueCount)
 }
 
-// ConsumeTraces implements the SpanProcessor interface
-func (s *redaction) ConsumeTraces(ctx context.Context, batch ptrace.Traces) error {
-	batch, err := s.processTraces(ctx, batch)
-	if err != nil {
-		return err
-	}
-
-	err = s.next.ConsumeTraces(ctx, batch)
-	return err
-}
-
 // addMetaAttrs adds diagnostic information about redacted or masked attribute keys
 func (s *redaction) addMetaAttrs(redactedAttrs []string, attributes pcommon.Map, valuesAttr, countAttr string) {
 	redactedCount := int64(len(redactedAttrs))
@@ -222,19 +203,4 @@ func makeBlockRegexList(_ context.Context, config *Config) (map[string]*regexp.R
 		blockRegexList[pattern] = re
 	}
 	return blockRegexList, nil
-}
-
-// Capabilities specifies what this processor does, such as whether it mutates data
-func (s *redaction) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: true}
-}
-
-// Start the redaction processor
-func (s *redaction) Start(_ context.Context, _ component.Host) error {
-	return nil
-}
-
-// Shutdown the redaction processor
-func (s *redaction) Shutdown(context.Context) error {
-	return nil
 }

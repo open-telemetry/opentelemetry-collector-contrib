@@ -287,6 +287,14 @@ func (p *processorImp) exportMetrics(ctx context.Context) {
 	// regardless of error while building metrics, before the next batch of spans is received.
 	p.resetExemplarData()
 
+	// If delta metrics, reset accumulated data
+	if p.config.GetAggregationTemporality() == pmetric.AggregationTemporalityDelta {
+		p.histograms = make(map[metricKey]*histogramData)
+		p.metricKeyToDimensions.Purge()
+	} else {
+		p.metricKeyToDimensions.RemoveEvictedItems()
+	}
+
 	// This component no longer needs to read the metrics once built, so it is safe to unlock.
 	p.lock.Unlock()
 
@@ -305,14 +313,6 @@ func (p *processorImp) buildMetrics() pmetric.Metrics {
 
 	p.collectCallMetrics(ilm)
 	p.collectLatencyMetrics(ilm)
-
-	p.metricKeyToDimensions.RemoveEvictedItems()
-
-	// If delta metrics, reset accumulated data
-	if p.config.GetAggregationTemporality() == pmetric.AggregationTemporalityDelta {
-		p.resetAccumulatedMetrics()
-	}
-	p.resetExemplarData()
 
 	return m
 }
@@ -405,13 +405,6 @@ func (p *processorImp) aggregateMetrics(traces ptrace.Traces) {
 			}
 		}
 	}
-}
-
-// resetAccumulatedMetrics resets the internal maps used to store created metric data. Also purge the cache for
-// metricKeyToDimensions.
-func (p *processorImp) resetAccumulatedMetrics() {
-	p.histograms = make(map[metricKey]*histogramData)
-	p.metricKeyToDimensions.Purge()
 }
 
 // updateHistogram adds the histogram sample to the histogram defined by the metric key.

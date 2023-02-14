@@ -25,8 +25,6 @@ import (
 )
 
 func TestBuildCounterMetric(t *testing.T) {
-	timeNow := time.Now()
-	lastUpdateInterval := timeNow.Add(-1 * time.Minute)
 	metricDescription := statsDMetricDescription{
 		name:  "testCounter",
 		attrs: attribute.NewSet(attribute.String("mykey", "myvalue")),
@@ -38,7 +36,7 @@ func TestBuildCounterMetric(t *testing.T) {
 		unit:        "meter",
 	}
 	isMonotonicCounter := false
-	metric := buildCounterMetric(parsedMetric, isMonotonicCounter, timeNow, lastUpdateInterval)
+	metric := buildCounterMetric(parsedMetric, isMonotonicCounter)
 	expectedMetrics := pmetric.NewScopeMetrics()
 	expectedMetric := expectedMetrics.Metrics().AppendEmpty()
 	expectedMetric.SetName("testCounter")
@@ -47,10 +45,34 @@ func TestBuildCounterMetric(t *testing.T) {
 	expectedMetric.Sum().SetIsMonotonic(isMonotonicCounter)
 	dp := expectedMetric.Sum().DataPoints().AppendEmpty()
 	dp.SetIntValue(32)
-	dp.SetStartTimestamp(pcommon.NewTimestampFromTime(lastUpdateInterval))
-	dp.SetTimestamp(pcommon.NewTimestampFromTime(timeNow))
 	dp.Attributes().PutStr("mykey", "myvalue")
 	assert.Equal(t, metric, expectedMetrics)
+}
+
+func TestSetTimestampsForCounterMetric(t *testing.T) {
+	timeNow := time.Now()
+	lastUpdateInterval := timeNow.Add(-1 * time.Minute)
+
+	parsedMetric := statsDMetric{}
+	isMonotonicCounter := false
+	metric := buildCounterMetric(parsedMetric, isMonotonicCounter)
+	setTimestampsForCounterMetric(metric, lastUpdateInterval, timeNow)
+
+	expectedMetrics := pmetric.NewScopeMetrics()
+	expectedMetric := expectedMetrics.Metrics().AppendEmpty()
+	expectedMetric.SetEmptySum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+	dp := expectedMetric.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(pcommon.NewTimestampFromTime(lastUpdateInterval))
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(timeNow))
+	assert.Equal(t,
+		metric.Metrics().At(0).Sum().DataPoints().At(0).StartTimestamp(),
+		expectedMetrics.Metrics().At(0).Sum().DataPoints().At(0).StartTimestamp(),
+	)
+	assert.Equal(t,
+		metric.Metrics().At(0).Sum().DataPoints().At(0).Timestamp(),
+		expectedMetrics.Metrics().At(0).Sum().DataPoints().At(0).Timestamp(),
+	)
+
 }
 
 func TestBuildGaugeMetric(t *testing.T) {
