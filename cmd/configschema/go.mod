@@ -11,21 +11,21 @@ require (
 	go.opentelemetry.io/collector v0.71.0
 	go.opentelemetry.io/collector/component v0.71.0
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.71.0
-	golang.org/x/mod v0.7.0
-	golang.org/x/text v0.6.0
+	golang.org/x/mod v0.8.0
+	golang.org/x/text v0.7.0
 	gopkg.in/yaml.v2 v2.4.0
 )
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter v0.71.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver v0.71.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver v0.0.0-00010101000000-000000000000 // indirect
 	github.com/signalfx/signalfx-agent/pkg/apm v0.0.0-20220920175102-539ae8d8ba8e // indirect
 )
 
 require (
 	bitbucket.org/atlassian/go-asap/v2 v2.6.0 // indirect
 	cloud.google.com/go v0.107.0 // indirect
-	cloud.google.com/go/compute v1.14.0 // indirect
+	cloud.google.com/go/compute v1.15.1 // indirect
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
 	cloud.google.com/go/iam v0.8.0 // indirect
 	cloud.google.com/go/logging v1.6.1 // indirect
@@ -93,7 +93,7 @@ require (
 	github.com/SermoDigital/jose v0.9.2-0.20161205224733-f6df55f235c2 // indirect
 	github.com/Shopify/sarama v1.38.1 // indirect
 	github.com/Showmax/go-fqdn v1.0.0 // indirect
-	github.com/aerospike/aerospike-client-go/v6 v6.9.1 // indirect
+	github.com/aerospike/aerospike-client-go/v6 v6.10.0 // indirect
 	github.com/alecthomas/participle/v2 v2.0.0-beta.5 // indirect
 	github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137 // indirect
 	github.com/aliyun/aliyun-log-go-sdk v0.1.43 // indirect
@@ -105,7 +105,7 @@ require (
 	github.com/apache/thrift v0.17.0 // indirect
 	github.com/ardielle/ardielle-go v1.5.2 // indirect
 	github.com/armon/go-metrics v0.4.0 // indirect
-	github.com/aws/aws-sdk-go v1.44.196 // indirect
+	github.com/aws/aws-sdk-go v1.44.200 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.17.4 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.4.10 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.18.12 // indirect
@@ -138,8 +138,8 @@ require (
 	github.com/cihub/seelog v0.0.0-20170130134532-f561c5e57575 // indirect
 	github.com/cilium/ebpf v0.8.1 // indirect
 	github.com/cloudfoundry-incubator/uaago v0.0.0-20190307164349-8136b7bbe76e // indirect
-	github.com/cncf/udpa/go v0.0.0-20210930031921-04548b0d99d4 // indirect
-	github.com/cncf/xds/go v0.0.0-20220314180256-7f1daf1720fc // indirect
+	github.com/cncf/udpa/go v0.0.0-20220112060539-c52dc94e7fbe // indirect
+	github.com/cncf/xds/go v0.0.0-20230105202645-06c439db220b // indirect
 	github.com/containerd/cgroups v1.0.4 // indirect
 	github.com/containerd/console v1.0.3 // indirect
 	github.com/containerd/ttrpc v1.1.0 // indirect
@@ -154,7 +154,7 @@ require (
 	github.com/digitalocean/godo v1.95.0 // indirect
 	github.com/dimchansky/utfbom v1.1.1 // indirect
 	github.com/docker/distribution v2.8.1+incompatible // indirect
-	github.com/docker/docker v23.0.0+incompatible // indirect
+	github.com/docker/docker v23.0.1+incompatible // indirect
 	github.com/docker/go-connections v0.4.1-0.20210727194412-58542c764a11 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
@@ -539,7 +539,7 @@ require (
 	github.com/signalfx/gohistogram v0.0.0-20160107210732-1ccfd2ff5083 // indirect
 	github.com/signalfx/golib/v3 v3.3.46 // indirect
 	github.com/signalfx/sapm-proto v0.12.0 // indirect
-	github.com/sijms/go-ora/v2 v2.5.27 // indirect
+	github.com/sijms/go-ora/v2 v2.5.29 // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
 	github.com/snowflakedb/gosnowflake v1.6.17 // indirect
 	github.com/soheilhy/cmux v0.1.5 // indirect
@@ -549,7 +549,7 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
 	github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635 // indirect
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.589 // indirect
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.593 // indirect
 	github.com/tg123/go-htpasswd v1.2.0 // indirect
 	github.com/tidwall/gjson v1.14.3 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
@@ -607,11 +607,11 @@ require (
 	go.uber.org/zap v1.24.0 // indirect
 	golang.org/x/crypto v0.5.0 // indirect
 	golang.org/x/exp v0.0.0-20230203172020-98cc5a0785f9 // indirect
-	golang.org/x/net v0.5.0 // indirect
+	golang.org/x/net v0.7.0 // indirect
 	golang.org/x/oauth2 v0.4.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
-	golang.org/x/sys v0.4.0 // indirect
-	golang.org/x/term v0.4.0 // indirect
+	golang.org/x/sys v0.5.0 // indirect
+	golang.org/x/term v0.5.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	golang.org/x/tools v0.5.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
@@ -619,7 +619,7 @@ require (
 	google.golang.org/api v0.109.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20230125152338-dcaf20b6aeaa // indirect
-	google.golang.org/grpc v1.52.3 // indirect
+	google.golang.org/grpc v1.53.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
