@@ -36,7 +36,7 @@ type Config struct {
 
 	Logs LogFilters `mapstructure:"logs"`
 
-	// Deprecated: [v0.74.0] use TraceFilters instead
+	// Deprecated: [v0.72.0] use TraceFilters instead
 	Spans filterconfig.MatchConfig `mapstructure:"spans"`
 
 	Traces TraceFilters `mapstructure:"traces"`
@@ -47,17 +47,17 @@ type MetricFilters struct {
 	// Include match properties describe metrics that should be included in the Collector Service pipeline,
 	// all other metrics should be dropped from further processing.
 	// If both Include and Exclude are specified, Include filtering occurs first.
-	// Deprecated: [v0.74.0] use MetricConditions instead
+	// Deprecated: [v0.72.0] use MetricConditions instead
 	Include *filtermetric.MatchProperties `mapstructure:"include"`
 
 	// Exclude match properties describe metrics that should be excluded from the Collector Service pipeline,
 	// all other metrics should be included.
 	// If both Include and Exclude are specified, Include filtering occurs first.
-	// Deprecated: [v0.74.0] use MetricConditions instead
+	// Deprecated: [v0.72.0] use MetricConditions instead
 	Exclude *filtermetric.MatchProperties `mapstructure:"exclude"`
 
 	// RegexpConfig specifies options for the Regexp match type
-	// Deprecated: [v0.74.0] use MetricConditions instead
+	// Deprecated: [v0.72.0] use MetricConditions instead
 	RegexpConfig *regexp.Config `mapstructure:"regexp"`
 
 	// MetricConditions is a list of OTTL conditions for an ottlmetric context.
@@ -89,12 +89,12 @@ type LogFilters struct {
 	// Include match properties describe logs that should be included in the Collector Service pipeline,
 	// all other logs should be dropped from further processing.
 	// If both Include and Exclude are specified, Include filtering occurs first.
-	// Deprecated: [v0.74.0] use LogConditions instead
+	// Deprecated: [v0.72.0] use LogConditions instead
 	Include *LogMatchProperties `mapstructure:"include"`
 	// Exclude match properties describe logs that should be excluded from the Collector Service pipeline,
 	// all other logs should be included.
 	// If both Include and Exclude are specified, Include filtering occurs first.
-	// Deprecated: [v0.74.0] use LogConditions instead
+	// Deprecated: [v0.72.0] use LogConditions instead
 	Exclude *LogMatchProperties `mapstructure:"exclude"`
 
 	// LogConditions is a list of OTTL conditions for an ottllog context.
@@ -104,7 +104,7 @@ type LogFilters struct {
 }
 
 // LogMatchType specifies the strategy for matching against `plog.Log`s.
-// Deprecated: [v0.74.0] use LogConditions instead
+// Deprecated: [v0.72.0] use LogConditions instead
 type LogMatchType string
 
 // These are the MatchTypes that users can specify for filtering
@@ -168,7 +168,7 @@ var severityToNumber = map[string]plog.SeverityNumber{
 var errInvalidSeverity = errors.New("not a valid severity")
 
 // logSeverity is a type that represents a SeverityNumber as a string
-// Deprecated: [v0.74.0] use LogConditions instead
+// Deprecated: [v0.72.0] use LogConditions instead
 type logSeverity string
 
 // validate checks that the logSeverity is valid
@@ -193,7 +193,7 @@ func (l logSeverity) severityNumber() plog.SeverityNumber {
 
 // LogMatchProperties specifies the set of properties in a log to match against and the
 // type of string pattern matching to use.
-// Deprecated: [v0.74.0] use LogConditions instead
+// Deprecated: [v0.72.0] use LogConditions instead
 type LogMatchProperties struct {
 	// LogMatchType specifies the type of matching desired
 	LogMatchType LogMatchType `mapstructure:"match_type"`
@@ -257,7 +257,7 @@ func (lmp LogMatchProperties) matchProperties() *filterconfig.MatchProperties {
 	return mp
 }
 
-// Deprecated: [v0.74.0] use LogConditions instead
+// Deprecated: [v0.72.0] use LogConditions instead
 type LogSeverityNumberMatchProperties struct {
 	// Min is the minimum severity needed for the log record to match.
 	// This corresponds to the short names specified here:

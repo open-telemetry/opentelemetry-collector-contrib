@@ -111,7 +111,7 @@ func createTracesProcessor(
 	oCfg := cfg.(*Config)
 	if oCfg.Spans.Include != nil || oCfg.Spans.Exclude != nil {
 		set.Logger.Warn(
-			"The span `include` and `exclude` configuration options have been deprecated and will be removed in 0.74.0. Use `traces.span` instead.",
+			"The span `include` and `exclude` configuration options have been deprecated and will be removed in 0.74.0. Use `traces::span` instead.",
 			zap.Any("include", oCfg.Spans.Include),
 			zap.Any("exclude", oCfg.Spans.Exclude),
 		)
