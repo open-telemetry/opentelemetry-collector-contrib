@@ -356,13 +356,23 @@ The `replace_pattern` function allows replacing all string sections that match a
 
 If one or more sections of `target` match `regex` they will get replaced with `replacement`.
 
-The `replacement` string can refer to matched groups using [regexp.Expand syntax](https://pkg.go.dev/regexp#Regexp.Expand).
-Note that `$` may need to be escaped to avoid getting consumed by config file environment variable replacement. 
+The `replacement` string can refer to matched groups using [regexp.Expand syntax](https://pkg.go.dev/regexp#Regexp.Expand). 
 
 Examples:
 
 - `replace_pattern(resource.attributes["process.command_line"], "password\\=[^\\s]*(\\s?)", "password=***")`
+- `replace_pattern(name, "^kube_([0-9A-Za-z]+_)", "k8s.$1.")` 
 
+Note that when using OTTL within the collector's configuration file, `$` may need to be escaped to `$$` to bypass
+the environment variable substitution logic.  For example:
+
+```yaml
+transform:
+  metric_statements:
+  - context: metric
+    statements:
+    - replace_pattern(name, "kube_([0-9A-Za-z]+_)", "k8s.$$1.")
+```
 
 ### replace_match
 
