@@ -25,7 +25,7 @@ The following paths are supported.
 | type                                   | the data type of the metric                                                                                                                        | int64                                                                                                                                    |
 | aggregation_temporality                | the aggregation temporality of the metric                                                                                                          | int64                                                                                                                                    |
 | is_monotonic                           | the monotonicity of the metric                                                                                                                     | bool                                                                                                                                     |
-| data_points                            | the data points of the metric                                                                                                                      | pmetric.NumberDataPointSlice, pmetric.HistogramDataPointSlice, pmetric.ExponentialHistogramDataPointSlice, pmetric.SummaryDataPointSlice | 
+| data_points                            | the data points of the metric                                                                                                                      | pmetric.NumberDataPointSlice, pmetric.HistogramDataPointSlice, pmetric.ExponentialHistogramDataPointSlice, or pmetric.SummaryDataPointSlice | 
 
 ## Enums
 
