@@ -103,7 +103,7 @@ func (obs *observerHandler) OnAdd(added []observer.Endpoint) {
 				zap.String("endpoint", e.Target),
 				zap.String("endpoint_id", string(e.ID)))
 
-			resolvedConfig, err := expandMap(template.config, env)
+			resolvedConfig, err := expandConfig(template.config, env)
 			if err != nil {
 				obs.params.TelemetrySettings.Logger.Error("unable to resolve template config", zap.String("receiver", template.id.String()), zap.Error(err))
 				continue
@@ -119,7 +119,7 @@ func (obs *observerHandler) OnAdd(added []observer.Endpoint) {
 
 			// Though not necessary with contrib provided observers, nothing is stopping custom
 			// ones from using expr in their Target values.
-			discoveredConfig, err := expandMap(discoveredCfg, env)
+			discoveredConfig, err := expandConfig(discoveredCfg, env)
 			if err != nil {
 				obs.params.TelemetrySettings.Logger.Error("unable to resolve discovered config", zap.String("receiver", template.id.String()), zap.Error(err))
 				continue
