@@ -17,14 +17,7 @@ package countconnector // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"fmt"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
 )
 
 // Default metrics are emitted if no conditions are specified.
@@ -39,8 +32,8 @@ const (
 	defaultMetricNameDataPoints = "metric.datapoint.count"
 	defaultMetricDescDataPoints = "The number of data points observed."
 
-	defaultMetricNameLogRecords = "log.record.count"
-	defaultMetricDescLogRecords = "The number of log records observed."
+	defaultMetricNameLogs = "log.record.count"
+	defaultMetricDescLogs = "The number of log records observed."
 )
 
 // Config for the connector
@@ -61,49 +54,43 @@ type MetricInfo struct {
 func (c *Config) Validate() error {
 	for name, info := range c.Spans {
 		if name == "" {
-			return fmt.Errorf("span: metric name missing")
+			return fmt.Errorf("spans: metric name missing")
 		}
-		parser := ottlspan.NewParser(ottlFunctions[ottlspan.TransformContext](), component.TelemetrySettings{})
-		if _, err := parseConditions(parser, info.Conditions); err != nil {
-			return fmt.Errorf("span condition: %w", err)
+		if _, err := parseConditions(newSpanParser(nil), info.Conditions); err != nil {
+			return fmt.Errorf("spans condition: metric %q: %w", name, err)
 		}
 	}
 	for name, info := range c.SpanEvents {
 		if name == "" {
-			return fmt.Errorf("span event: metric name missing")
+			return fmt.Errorf("spanevents: metric name missing")
 		}
-		parser := ottlspanevent.NewParser(ottlFunctions[ottlspanevent.TransformContext](), component.TelemetrySettings{})
-		if _, err := parseConditions(parser, info.Conditions); err != nil {
-			return fmt.Errorf("span event condition: %w", err)
+		if _, err := parseConditions(newSpanEventParser(nil), info.Conditions); err != nil {
+			return fmt.Errorf("spanevents condition: metric %q: %w", name, err)
 		}
 	}
 	for name, info := range c.Metrics {
 		if name == "" {
-			return fmt.Errorf("metric: metric name missing")
+			return fmt.Errorf("metrics: metric name missing")
 		}
-		parser := ottlmetric.NewParser(ottlFunctions[ottlmetric.TransformContext](), component.TelemetrySettings{})
-		if _, err := parseConditions(parser, info.Conditions); err != nil {
-			return fmt.Errorf("metric condition: %w", err)
+		if _, err := parseConditions(newMetricParser(nil), info.Conditions); err != nil {
+			return fmt.Errorf("metrics condition: metric %q: %w", name, err)
 		}
 	}
 
 	for name, info := range c.DataPoints {
 		if name == "" {
-			return fmt.Errorf("datapoint: metric name missing")
+			return fmt.Errorf("datapoints: metric name missing")
 		}
-
-		parser := ottldatapoint.NewParser(ottlFunctions[ottldatapoint.TransformContext](), component.TelemetrySettings{})
-		if _, err := parseConditions(parser, info.Conditions); err != nil {
-			return fmt.Errorf("datapoint condition: %w", err)
+		if _, err := parseConditions(newDataPointParser(nil), info.Conditions); err != nil {
+			return fmt.Errorf("datapoints condition: metric %q: %w", name, err)
 		}
 	}
 	for name, info := range c.Logs {
 		if name == "" {
-			return fmt.Errorf("log: metric name missing")
+			return fmt.Errorf("logs: metric name missing")
 		}
-		parser := ottllog.NewParser(ottlFunctions[ottllog.TransformContext](), component.TelemetrySettings{})
-		if _, err := parseConditions(parser, info.Conditions); err != nil {
-			return fmt.Errorf("log condition: %w", err)
+		if _, err := parseConditions(newLogParser(nil), info.Conditions); err != nil {
+			return fmt.Errorf("logs condition: metric %q: %w", name, err)
 		}
 	}
 	return nil
@@ -119,27 +106,63 @@ func (c *Config) Unmarshal(componentParser *confmap.Conf) error {
 		// Nothing to do if there is no config given.
 		return nil
 	}
-
 	if err := componentParser.Unmarshal(c); err != nil {
 		return err
 	}
-
-	// Set default metric only if no custom metrics are specified.
 	if !componentParser.IsSet("spans") {
-		c.Spans = createDefaultSpansConfig()
+		c.Spans = defaultSpansConfig()
 	}
 	if !componentParser.IsSet("spanevents") {
-		c.SpanEvents = createDefaultSpanEventsConfig()
+		c.SpanEvents = defaultSpanEventsConfig()
 	}
 	if !componentParser.IsSet("metrics") {
-		c.Metrics = createDefaultMetricsConfig()
+		c.Metrics = defaultMetricsConfig()
 	}
 	if !componentParser.IsSet("datapoints") {
-		c.DataPoints = createDefaultDataPointsConfig()
+		c.DataPoints = defaultDataPointsConfig()
 	}
 	if !componentParser.IsSet("logs") {
-		c.Logs = createDefaultLogsConfig()
+		c.Logs = defaultLogsConfig()
 	}
-
 	return nil
+}
+
+func defaultSpansConfig() map[string]MetricInfo {
+	return map[string]MetricInfo{
+		defaultMetricNameSpans: {
+			Description: defaultMetricDescSpans,
+		},
+	}
+}
+
+func defaultSpanEventsConfig() map[string]MetricInfo {
+	return map[string]MetricInfo{
+		defaultMetricNameSpanEvents: {
+			Description: defaultMetricDescSpanEvents,
+		},
+	}
+}
+
+func defaultMetricsConfig() map[string]MetricInfo {
+	return map[string]MetricInfo{
+		defaultMetricNameMetrics: {
+			Description: defaultMetricDescMetrics,
+		},
+	}
+}
+
+func defaultDataPointsConfig() map[string]MetricInfo {
+	return map[string]MetricInfo{
+		defaultMetricNameDataPoints: {
+			Description: defaultMetricDescDataPoints,
+		},
+	}
+}
+
+func defaultLogsConfig() map[string]MetricInfo {
+	return map[string]MetricInfo{
+		defaultMetricNameLogs: {
+			Description: defaultMetricDescLogs,
+		},
+	}
 }

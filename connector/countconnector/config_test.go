@@ -15,6 +15,7 @@
 package countconnector
 
 import (
+	"fmt"
 	"path/filepath"
 	"testing"
 
@@ -53,8 +54,8 @@ func TestLoadConfig(t *testing.T) {
 					},
 				},
 				Logs: map[string]MetricInfo{
-					defaultMetricNameLogRecords: {
-						Description: defaultMetricDescLogRecords,
+					defaultMetricNameLogs: {
+						Description: defaultMetricDescLogs,
 					},
 				},
 			},
@@ -83,7 +84,7 @@ func TestLoadConfig(t *testing.T) {
 					},
 				},
 				Logs: map[string]MetricInfo{
-					defaultMetricNameLogRecords: {
+					defaultMetricNameLogs: {
 						Description: "My description for default log count metric.",
 					},
 				},
@@ -266,6 +267,138 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 			assert.Equal(t, tc.expect, cfg)
+		})
+	}
+}
+
+func TestConfigErrors(t *testing.T) {
+	testCases := []struct {
+		name   string
+		input  *Config
+		expect string
+	}{
+		{
+			name: "missing_metric_name_span",
+			input: &Config{
+				Spans: map[string]MetricInfo{
+					"": {
+						Description: defaultMetricDescSpans,
+					},
+				},
+			},
+			expect: "spans: metric name missing",
+		},
+		{
+			name: "missing_metric_name_spanevent",
+			input: &Config{
+				SpanEvents: map[string]MetricInfo{
+					"": {
+						Description: defaultMetricDescSpans,
+					},
+				},
+			},
+			expect: "spanevents: metric name missing",
+		},
+		{
+			name: "missing_metric_name_metric",
+			input: &Config{
+				Metrics: map[string]MetricInfo{
+					"": {
+						Description: defaultMetricDescSpans,
+					},
+				},
+			},
+			expect: "metrics: metric name missing",
+		},
+		{
+			name: "missing_metric_name_datapoint",
+			input: &Config{
+				DataPoints: map[string]MetricInfo{
+					"": {
+						Description: defaultMetricDescSpans,
+					},
+				},
+			},
+			expect: "datapoints: metric name missing",
+		},
+		{
+			name: "missing_metric_name_log",
+			input: &Config{
+				Logs: map[string]MetricInfo{
+					"": {
+						Description: defaultMetricDescSpans,
+					},
+				},
+			},
+			expect: "logs: metric name missing",
+		},
+		{
+			name: "invalid_condition_span",
+			input: &Config{
+				Spans: map[string]MetricInfo{
+					defaultMetricNameSpans: {
+						Description: defaultMetricDescSpans,
+						Conditions:  []string{"invalid condition"},
+					},
+				},
+			},
+			expect: fmt.Sprintf("spans condition: metric %q: unable to parse OTTL statement", defaultMetricNameSpans),
+		},
+		{
+			name: "invalid_condition_spanevent",
+			input: &Config{
+				SpanEvents: map[string]MetricInfo{
+					defaultMetricNameSpanEvents: {
+						Description: defaultMetricDescSpans,
+						Conditions:  []string{"invalid condition"},
+					},
+				},
+			},
+			expect: fmt.Sprintf("spanevents condition: metric %q: unable to parse OTTL statement", defaultMetricNameSpanEvents),
+		},
+		{
+			name: "invalid_condition_metric",
+			input: &Config{
+				Metrics: map[string]MetricInfo{
+					defaultMetricNameMetrics: {
+						Description: defaultMetricDescSpans,
+						Conditions:  []string{"invalid condition"},
+					},
+				},
+			},
+			expect: fmt.Sprintf("metrics condition: metric %q: unable to parse OTTL statement", defaultMetricNameMetrics),
+		},
+		{
+			name: "invalid_condition_datapoint",
+			input: &Config{
+				DataPoints: map[string]MetricInfo{
+					defaultMetricNameDataPoints: {
+						Description: defaultMetricDescSpans,
+						Conditions:  []string{"invalid condition"},
+					},
+				},
+			},
+			expect: fmt.Sprintf("datapoints condition: metric %q: unable to parse OTTL statement", defaultMetricNameDataPoints),
+		},
+		{
+			name: "invalid_condition_log",
+			input: &Config{
+				Logs: map[string]MetricInfo{
+					defaultMetricNameLogs: {
+						Description: defaultMetricDescSpans,
+						Conditions:  []string{"invalid condition"},
+					},
+				},
+			},
+			expect: fmt.Sprintf("logs condition: metric %q: unable to parse OTTL statement", defaultMetricNameLogs),
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := tc.input.Validate()
+			assert.Error(t, err)
+			assert.Contains(t, err.Error(), tc.expect)
 		})
 	}
 }

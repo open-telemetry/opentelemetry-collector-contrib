@@ -37,8 +37,8 @@ func TestTracesToMetrics(t *testing.T) {
 		{
 			name: "zero_conditions",
 			cfg: &Config{
-				Spans:      createDefaultSpansConfig(),
-				SpanEvents: createDefaultSpanEventsConfig(),
+				Spans:      defaultSpansConfig(),
+				SpanEvents: defaultSpanEventsConfig(),
 			},
 		},
 		{
@@ -156,8 +156,8 @@ func TestMetricsToMetrics(t *testing.T) {
 		{
 			name: "zero_conditions",
 			cfg: &Config{
-				Metrics:    createDefaultMetricsConfig(),
-				DataPoints: createDefaultDataPointsConfig(),
+				Metrics:    defaultMetricsConfig(),
+				DataPoints: defaultDataPointsConfig(),
 			},
 		},
 		{
@@ -274,7 +274,7 @@ func TestLogsToMetrics(t *testing.T) {
 	}{
 		{
 			name: "zero_conditions",
-			cfg:  &Config{Logs: createDefaultLogsConfig()},
+			cfg:  &Config{Logs: defaultLogsConfig()},
 		},
 		{
 			name: "one_condition",

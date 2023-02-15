@@ -37,7 +37,6 @@ const scopeName = "otelcol/countconnector"
 // count can count spans, span event, metrics, data points, or log records
 // and emit the counts onto a metrics pipeline.
 type count struct {
-	cfg             Config
 	metricsConsumer consumer.Metrics
 	component.StartFunc
 	component.ShutdownFunc

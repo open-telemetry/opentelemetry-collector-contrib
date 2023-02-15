@@ -17,10 +17,44 @@ package countconnector // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"context"
 
+	"go.opentelemetry.io/collector/component"
+	"go.uber.org/zap"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/expr"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 )
+
+func newSpanParser(logger *zap.Logger) ottl.Parser[ottlspan.TransformContext] {
+	return ottlspan.NewParser(
+		ottlFunctions[ottlspan.TransformContext](),
+		component.TelemetrySettings{Logger: logger})
+}
+func newSpanEventParser(logger *zap.Logger) ottl.Parser[ottlspanevent.TransformContext] {
+	return ottlspanevent.NewParser(
+		ottlFunctions[ottlspanevent.TransformContext](),
+		component.TelemetrySettings{Logger: logger})
+}
+func newMetricParser(logger *zap.Logger) ottl.Parser[ottlmetric.TransformContext] {
+	return ottlmetric.NewParser(
+		ottlFunctions[ottlmetric.TransformContext](),
+		component.TelemetrySettings{Logger: logger})
+}
+func newDataPointParser(logger *zap.Logger) ottl.Parser[ottldatapoint.TransformContext] {
+	return ottldatapoint.NewParser(
+		ottlFunctions[ottldatapoint.TransformContext](),
+		component.TelemetrySettings{Logger: logger})
+}
+func newLogParser(logger *zap.Logger) ottl.Parser[ottllog.TransformContext] {
+	return ottllog.NewParser(
+		ottlFunctions[ottllog.TransformContext](),
+		component.TelemetrySettings{Logger: logger})
+}
 
 func parseConditions[K any](parser ottl.Parser[K], conditions []string) (expr.BoolExpr[K], error) {
 	statmentsStr := conditionsToStatements(conditions)
