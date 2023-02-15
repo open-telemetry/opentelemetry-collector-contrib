@@ -64,7 +64,6 @@ processors:
     # Any keys in this list are allowed so they don't need to be in both lists.
     ignored_keys:
       - safe_attribute
-  
     # blocked_values is a list of regular expressions for blocking values of
     # allowed span attributes. Values that match are masked
     blocked_values:
@@ -85,7 +84,7 @@ Refer to [config.yaml](./testdata/config.yaml) for how to fit the configuration
 into an OpenTelemetry Collector pipeline definition.
 
 Ignored attributes are processed first so they're always allowed and never
-blocked. This fieldl should only be used where you know the data is always
+blocked. This field should only be used where you know the data is always
 safe to send to the telemetry system.
 
 Only span attributes included on the list of allowed keys list are retained.
