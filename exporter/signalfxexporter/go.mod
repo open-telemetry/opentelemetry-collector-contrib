@@ -14,7 +14,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx v0.71.0
 	github.com/shirou/gopsutil/v3 v3.23.1
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3
-	github.com/signalfx/signalfx-agent/pkg/apm v0.0.0-20220920175102-539ae8d8ba8e
+	github.com/signalfx/signalfx-agent/pkg/apm v0.0.0-20230214151822-6a6813cf5bf1
 	github.com/stretchr/testify v1.8.1
 	go.opentelemetry.io/collector v0.71.0
 	go.opentelemetry.io/collector/component v0.71.0
@@ -39,7 +39,7 @@ require (
 	github.com/go-stack/stack v1.8.1 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
-	github.com/jaegertracing/jaeger v1.41.0 // indirect
+	github.com/jaegertracing/jaeger v1.39.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.15.15 // indirect
@@ -56,7 +56,7 @@ require (
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
 	github.com/rs/cors v1.8.3 // indirect
 	github.com/signalfx/gohistogram v0.0.0-20160107210732-1ccfd2ff5083 // indirect
-	github.com/signalfx/golib/v3 v3.3.46 // indirect
+	github.com/signalfx/golib/v3 v3.3.47 // indirect
 	github.com/signalfx/sapm-proto v0.12.0 // indirect
 	github.com/tklauser/go-sysconf v0.3.11 // indirect
 	github.com/tklauser/numcpus v0.6.0 // indirect
@@ -69,7 +69,7 @@ require (
 	go.opentelemetry.io/otel v1.13.0 // indirect
 	go.opentelemetry.io/otel/metric v0.36.0 // indirect
 	go.opentelemetry.io/otel/trace v1.13.0 // indirect
-	golang.org/x/net v0.7.0 // indirect
+	golang.org/x/net v0.6.0 // indirect
 	golang.org/x/text v0.7.0 // indirect
 	google.golang.org/genproto v0.0.0-20230110181048-76db0878b65f // indirect
 	google.golang.org/grpc v1.53.0 // indirect

@@ -8,9 +8,9 @@ require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/snappy v0.0.4
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.71.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.71.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.71.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite v0.71.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite v0.0.0-00010101000000-000000000000
 	github.com/prometheus/prometheus v0.42.1-0.20230210113933-af1d9e01c7e4
 	github.com/stretchr/testify v1.8.1
 	github.com/tidwall/wal v1.1.7
@@ -52,7 +52,7 @@ require (
 	go.opentelemetry.io/otel v1.13.0 // indirect
 	go.opentelemetry.io/otel/metric v0.36.0 // indirect
 	go.opentelemetry.io/otel/trace v1.13.0 // indirect
-	golang.org/x/net v0.7.0 // indirect
+	golang.org/x/net v0.6.0 // indirect
 	golang.org/x/sys v0.5.0 // indirect
 	golang.org/x/text v0.7.0 // indirect
 	google.golang.org/genproto v0.0.0-20230124163310-31e0e69b6fc2 // indirect

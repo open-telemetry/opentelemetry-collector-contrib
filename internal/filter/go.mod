@@ -6,8 +6,8 @@ require (
 	github.com/antonmedv/expr v1.12.0
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.71.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.71.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.71.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.0.0-00010101000000-000000000000
 	github.com/stretchr/testify v1.8.1
 	go.opentelemetry.io/collector/confmap v0.71.0
 	go.opentelemetry.io/collector/pdata v1.0.0-rc5
@@ -40,7 +40,7 @@ require (
 	go.uber.org/multierr v1.9.0 // indirect
 	go.uber.org/zap v1.24.0 // indirect
 	golang.org/x/exp v0.0.0-20221205204356-47842c84f3db // indirect
-	golang.org/x/net v0.7.0 // indirect
+	golang.org/x/net v0.6.0 // indirect
 	golang.org/x/sys v0.5.0 // indirect
 	golang.org/x/text v0.7.0 // indirect
 	google.golang.org/genproto v0.0.0-20230110181048-76db0878b65f // indirect
