@@ -87,7 +87,7 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 	for i := 0; i < ld.ResourceLogs().Len(); i++ {
 		logs := ld.ResourceLogs().At(i)
 		res := logs.Resource()
-		resAttr := res.Attributes().AsRaw()
+		resAttr := attributesToMap(res.Attributes().AsRaw())
 		if v, ok := res.Attributes().Get(conventions.AttributeServiceName); ok {
 			serviceName = v.Str()
 		}
@@ -95,7 +95,7 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 			rs := logs.ScopeLogs().At(j).LogRecords()
 			for k := 0; k < rs.Len(); k++ {
 				r := rs.At(k)
-				logAttr := r.Attributes().AsRaw()
+				logAttr := attributesToMap(r.Attributes().AsRaw())
 				bodyByte, _ := json.Marshal(r.Body().AsRaw())
 
 				e.client.Query(fmt.Sprintf(insertLogTableSQL, e.cfg.Keyspace, e.cfg.LogsTable),

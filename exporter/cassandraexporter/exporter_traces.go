@@ -99,7 +99,7 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		spans := td.ResourceSpans().At(i)
 		res := spans.Resource()
-		resAttr := attributesToMap(res.Attributes())
+		resAttr := attributesToMap(res.Attributes().AsRaw())
 		var serviceName string
 		if v, ok := res.Attributes().Get(conventions.AttributeServiceName); ok {
 			serviceName = v.Str()
@@ -108,7 +108,7 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 			rs := spans.ScopeSpans().At(j).Spans()
 			for k := 0; k < rs.Len(); k++ {
 				r := rs.At(k)
-				spanAttr := attributesToMap(r.Attributes())
+				spanAttr := attributesToMap(r.Attributes().AsRaw())
 				status := r.Status()
 
 				e.client.Query(fmt.Sprintf(insertSpanSQL, e.cfg.Keyspace, e.cfg.TraceTable), r.StartTimestamp().AsTime(),
