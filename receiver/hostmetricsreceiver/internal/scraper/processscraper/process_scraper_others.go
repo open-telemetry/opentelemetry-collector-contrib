@@ -49,7 +49,7 @@ func getProcessExecutable(proc processHandle) (*executableMetadata, error) {
 	if err != nil {
 		return nil, err
 	}
-	regex, _ := regexp.Compile("^\\S+")
+	regex := regexp.MustCompile("^\\S+")
 	exe := regex.FindString(cmdline)
 
 	// managed to get the info
