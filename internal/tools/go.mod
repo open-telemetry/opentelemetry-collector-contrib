@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/internal/tools
 
-go 1.18
+go 1.19
 
 require (
 	github.com/client9/misspell v0.3.4
@@ -14,7 +14,7 @@ require (
 	go.opentelemetry.io/build-tools/crosslink v0.5.0
 	go.opentelemetry.io/build-tools/issuegenerator v0.5.0
 	go.opentelemetry.io/build-tools/multimod v0.5.0
-	go.opentelemetry.io/collector/cmd/builder v0.70.1-0.20230125171446-f45a3e42e7d6
+	go.opentelemetry.io/collector/cmd/builder v0.71.1-0.20230208170110-ead716ac04aa
 	golang.org/x/tools v0.5.0
 )
 

@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki
 
-go 1.18
+go 1.19
 
 require (
 	github.com/go-logfmt/logfmt v0.5.1

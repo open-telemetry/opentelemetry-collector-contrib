@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver
 
-go 1.18
+go 1.19
 
 require (
 	github.com/Azure/azure-amqp-common-go/v4 v4.0.0

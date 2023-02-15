@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver
 
-go 1.18
+go 1.19
 
 require (
 	github.com/hashicorp/go-version v1.6.0

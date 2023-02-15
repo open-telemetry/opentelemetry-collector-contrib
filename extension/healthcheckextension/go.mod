@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension
 
-go 1.18
+go 1.19
 
 require (
 	github.com/jaegertracing/jaeger v1.41.0

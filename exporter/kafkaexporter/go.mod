@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter
 
-go 1.18
+go 1.19
 
 require (
 	github.com/Shopify/sarama v1.38.1

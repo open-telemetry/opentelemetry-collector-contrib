@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsproxy
 
-go 1.18
+go 1.19
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy v0.71.0

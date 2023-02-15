@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatareceivers/mockawsxrayreceiver
 
-go 1.18
+go 1.19
 
 require (
 	github.com/gorilla/mux v1.8.0

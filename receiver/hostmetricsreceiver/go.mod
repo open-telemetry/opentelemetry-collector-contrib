@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver
 
-go 1.18
+go 1.19
 
 require (
 	github.com/leoluk/perflib_exporter v0.2.0
