@@ -131,6 +131,8 @@ configured `job_name`, and `service.instance.id` is set to the scrape target's
 `instance`. The prometheus receiver sets `k8s.namespace.name` when using
 `role: pod`.
 
+### Manually Setting location, cluster, or namespace
+
 In GMP, the above attributes are used to identify the `prometheus_target`
 monitored resource. As such, it is recommended to avoid writing metric or resource labels
 that match these keys. Doing so can cause errors when exporting metrics to
