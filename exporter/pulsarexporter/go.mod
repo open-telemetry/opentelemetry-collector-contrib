@@ -25,7 +25,7 @@ require (
 	github.com/AthenZ/athenz v1.10.39 // indirect
 	github.com/DataDog/zstd v1.5.0 // indirect
 	github.com/apache/pulsar-client-go/oauth2 v0.0.0-20220120090717-25e59572242e // indirect
-	github.com/apache/thrift v0.17.0 // indirect
+	github.com/apache/thrift v0.18.0 // indirect
 	github.com/ardielle/ardielle-go v1.5.2 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
