@@ -81,6 +81,15 @@ func Test_replacePattern(t *testing.T) {
 				expectedValue.SetStr("application passwd:sensitivedtata otherarg:notsensitive key1 key2 ")
 			},
 		},
+		{
+			name:        "replacement with literal $",
+			target:      target,
+			pattern:     `passwd\=[^\s]*(\s?)`,
+			replacement: "passwd=$$$$$$ ",
+			want: func(expectedValue pcommon.Value) {
+				expectedValue.SetStr("application passwd=$$$ otherarg=notsensitive key1 key2")
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
