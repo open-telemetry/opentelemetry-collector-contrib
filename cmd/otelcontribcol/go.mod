@@ -654,15 +654,11 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentr
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter => ../../exporter/dynatraceexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver => ../../receiver/windowseventlogreceiver
-
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver => ../../receiver/nsxtreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver => ../../receiver/kubeletstatsreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver => ../../receiver/dockerstatsreceiver
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver => ../../receiver/chronyreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudpubsubexporter => ../../exporter/googlecloudpubsubexporter
 
@@ -746,8 +742,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/x
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s => ../../internal/aws/k8s
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pulsarreceiver => ../../receiver/pulsarreceiver
-
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver => ../../receiver/mysqlreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension => ../../extension/asapauthextension
@@ -771,12 +765,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadb
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logicmonitorexporter => ../../exporter/logicmonitorexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver => ../../receiver/azureeventhubreceiver
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver => ../../receiver/saphanareceiver
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/promtailreceiver => ../../receiver/promtailreceiver
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver => ../../receiver/oracledbreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver => ../../receiver/jmxreceiver
 
@@ -815,8 +803,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/filt
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/hostobserver => ../../extension/observer/hostobserver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver => ../../receiver/kafkareceiver
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest => ../../internal/comparetest
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension => ../../extension/bearertokenauthextension
 
@@ -882,8 +868,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsa
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter => ../../exporter/zipkinexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver => ../../receiver/prometheusexecreceiver
-
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver => ../../receiver/hostmetricsreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx => ../../pkg/translator/signalfx
@@ -911,8 +895,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/delt
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter => ../../exporter/datadogexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight => ../../internal/aws/containerinsight
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib => ../..
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil => ../../internal/aws/awsutil
 
@@ -968,8 +950,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscl
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver => ../../receiver/googlecloudspannerreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecstaskobserver => ../../extension/observer/ecstaskobserver
-
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver => ../../receiver/prometheusreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter => ../../exporter/sapmexporter
@@ -999,8 +979,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver => ../../receiver/googlecloudpubsubreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter => ../../exporter/sumologicexporter
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/parquetexporter => ../../exporter/parquetexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter => ../../exporter/instanaexporter
 

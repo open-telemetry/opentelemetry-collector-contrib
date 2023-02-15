@@ -109,12 +109,6 @@ require (
 // see https://github.com/mattn/go-ieproxy/issues/45
 replace github.com/mattn/go-ieproxy => github.com/mattn/go-ieproxy v0.0.1
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
-
 retract v0.65.0
 
 // see https://github.com/testcontainers/testcontainers-go/issues/716

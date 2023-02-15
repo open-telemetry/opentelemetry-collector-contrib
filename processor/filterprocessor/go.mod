@@ -58,8 +58,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/filte
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl => ../../pkg/ottl
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
-
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
 
 retract v0.65.0
