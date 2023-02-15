@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter
 
-go 1.18
+go 1.19
 
 require (
 	github.com/cenkalti/backoff/v4 v4.2.0
@@ -48,7 +48,5 @@ require (
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
 
 retract v0.65.0

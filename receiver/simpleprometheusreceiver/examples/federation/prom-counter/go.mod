@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver/examples/federation/prom-counter
 
-go 1.18
+go 1.19
 
 require (
 	github.com/prometheus/client_golang v1.14.0

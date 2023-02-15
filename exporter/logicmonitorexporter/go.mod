@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logicmonitorexporter
 
-go 1.18
+go 1.19
 
 require (
 	github.com/logicmonitor/lm-data-sdk-go v0.7.1
