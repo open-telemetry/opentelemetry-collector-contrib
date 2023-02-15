@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package traces
+package metrics
 
 import (
 	"github.com/spf13/pflag"
@@ -23,15 +23,11 @@ import (
 // Config describes the test scenario.
 type Config struct {
 	common.Config
-	NumTraces        int
-	PropagateContext bool
-	ServiceName      string
+	NumMetrics int
 }
 
 // Flags registers config flags.
 func (c *Config) Flags(fs *pflag.FlagSet) {
 	c.CommonFlags(fs)
-	fs.IntVar(&c.NumTraces, "traces", 1, "Number of traces to generate in each worker (ignored if duration is provided)")
-	fs.BoolVar(&c.PropagateContext, "marshal", false, "Whether to marshal trace context via HTTP headers")
-	fs.StringVar(&c.ServiceName, "service", "telemetrygen", "Service name to use")
+	fs.IntVar(&c.NumMetrics, "metrics", 1, "Number of metrics to generate in each worker (ignored if duration is provided)")
 }
