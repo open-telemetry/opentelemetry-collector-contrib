@@ -69,6 +69,13 @@ func NewParser[K any](
 	settings component.TelemetrySettings,
 	options ...Option[K],
 ) Parser[K] {
+	if settings.Logger == nil {
+		logger, err := zap.NewDevelopment()
+		if err != nil {
+			settings.Logger = zap.NewNop()
+		}
+		settings.Logger = logger
+	}
 	p := Parser[K]{
 		functions:  functions,
 		pathParser: pathParser,
