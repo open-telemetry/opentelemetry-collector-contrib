@@ -78,7 +78,7 @@ func Test_replacePattern(t *testing.T) {
 			pattern:     `(\w+)=(\w+)`,
 			replacement: "$1:$2",
 			want: func(expectedValue pcommon.Value) {
-				expectedValue.SetStr("application passwd:sensitivedtata otherarg:notsensitive key1 key2 ")
+				expectedValue.SetStr("application passwd:sensitivedtata otherarg:notsensitive key1 key2")
 			},
 		},
 		{
