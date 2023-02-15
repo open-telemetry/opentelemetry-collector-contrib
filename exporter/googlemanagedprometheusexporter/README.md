@@ -167,6 +167,8 @@ processors:
       - delete_key(attributes, "location")
 ```
 
+### Setting cluster, location or namespace using metric labels
+
 This example copies the `location` metric attribute to a new `exported_location`
 attribute, then deletes the original `location`. It is recommended to use the `exported_*`
 prefix, which is consistent with GMP's behavior.
