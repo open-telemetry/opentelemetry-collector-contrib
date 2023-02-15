@@ -152,21 +152,6 @@ processors:
       action: upsert
 ```
 
-In cases where your metrics already contain labels that conflict with
-the above names, you should rename those labels to avoid conflicting
-with the monitored resource labels. You can do this with the
-[transform processor](../../processor/transformprocessor) like so:
-
-```yaml
-processors:
-  transform:
-    metric_statements:
-    - context: datapoint
-      statements:
-      - set(attributes["exported_location"], attributes["location"])
-      - delete_key(attributes, "location")
-```
-
 ### Setting cluster, location or namespace using metric labels
 
 This example copies the `location` metric attribute to a new `exported_location`
