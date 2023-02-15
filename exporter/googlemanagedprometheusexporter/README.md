@@ -78,6 +78,8 @@ processors:
         detectors: [gcp]
         timeout: 10s
     transform:
+      # "location", "cluster", "namespace", "job", "instance", and "project_id" are reserved, and 
+      # metrics containing these labels will be rejected.  Prefix them with exported_ to prevent this.
       metric_statements:
       - context: datapoint
         statements:
