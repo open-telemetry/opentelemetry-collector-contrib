@@ -99,12 +99,6 @@ replace cloud.google.com/go => cloud.google.com/go v0.100.2
 // Force cloud.google.com/go/compute to be at least v1.12.1.
 replace cloud.google.com/go/compute => cloud.google.com/go/compute v1.12.1
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
-
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry => ../../pkg/resourcetotelemetry
-
 retract v0.65.0
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
