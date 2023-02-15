@@ -50,11 +50,10 @@ processors:
     # allowed_keys list. The list of blocked_values is applied regardless. If
     # you just want to block values, set this to true.
     allow_all_keys: false
-    # allowed_keys is a list of span attribute keys that are allowed to pass
-    # through. The list is designed to fail closed. If allowed_keys is empty,
+    # allowed_keys is a list of span attribute keys that are kept on the span and
+    # processed. The list is designed to fail closed. If allowed_keys is empty,
     # no span attributes are allowed and all span attributes are removed. To
-    # allow all keys, set allow_all_keys to true. To allow the span attributes
-    # you know are good, add them to the list.
+    # allow all keys, set allow_all_keys to true.
     allowed_keys:
       - description
       - group
