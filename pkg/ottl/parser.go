@@ -20,7 +20,6 @@ import (
 
 	"github.com/alecthomas/participle/v2"
 	"go.opentelemetry.io/collector/component"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
 
@@ -94,34 +93,33 @@ func WithEnumParser[K any](parser EnumParser) Option[K] {
 
 func (p *Parser[K]) ParseStatements(statements []string) ([]*Statement[K], error) {
 	var parsedStatements []*Statement[K]
-	var errors error
-
 	for _, statement := range statements {
-		parsed, err := parseStatement(statement)
+		ps, err := p.ParseStatement(statement)
 		if err != nil {
-			errors = multierr.Append(errors, err)
-			continue
+			return nil, err
 		}
-		function, err := p.newFunctionCall(parsed.Invocation)
-		if err != nil {
-			errors = multierr.Append(errors, err)
-			continue
-		}
-		expression, err := p.newBoolExpr(parsed.WhereClause)
-		if err != nil {
-			errors = multierr.Append(errors, err)
-			continue
-		}
-		parsedStatements = append(parsedStatements, &Statement[K]{
-			function:  function,
-			condition: expression,
-		})
-	}
-
-	if errors != nil {
-		return nil, errors
+		parsedStatements = append(parsedStatements, ps)
 	}
 	return parsedStatements, nil
+}
+
+func (p *Parser[K]) ParseStatement(statement string) (*Statement[K], error) {
+	parsed, err := parseStatement(statement)
+	if err != nil {
+		return nil, err
+	}
+	function, err := p.newFunctionCall(parsed.Invocation)
+	if err != nil {
+		return nil, err
+	}
+	expression, err := p.newBoolExpr(parsed.WhereClause)
+	if err != nil {
+		return nil, err
+	}
+	return &Statement[K]{
+		function:  function,
+		condition: expression,
+	}, nil
 }
 
 var parser = newParser[parsedStatement]()
@@ -158,9 +156,28 @@ func newParser[G any]() *participle.Parser[G] {
 
 // Statements represents a list of statements that will be executed sequentially for a TransformContext.
 type Statements[K any] struct {
-	statements        []Statement[K]
+	statements        []*Statement[K]
 	errorMode         ErrorMode
 	telemetrySettings component.TelemetrySettings
+}
+
+type StatementsOption[K any] func(*Statements[K])
+
+func WithErrorMode[K any](errorMode ErrorMode) StatementsOption[K] {
+	return func(s *Statements[K]) {
+		s.errorMode = errorMode
+	}
+}
+
+func NewStatements[K any](statements []*Statement[K], telemetrySettings component.TelemetrySettings, options ...StatementsOption[K]) Statements[K] {
+	s := Statements[K]{
+		statements:        statements,
+		telemetrySettings: telemetrySettings,
+	}
+	for _, op := range options {
+		op(&s)
+	}
+	return s
 }
 
 // Execute is a function that will execute all the statements in the Statements list.
