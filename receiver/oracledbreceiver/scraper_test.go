@@ -99,6 +99,23 @@ func TestScraper_Scrape(t *testing.T) {
 				}}
 			},
 		},
+		{
+			name: "bad value on tablespace",
+			dbclientFn: func(db *sql.DB, s string, logger *zap.Logger) dbClient {
+				if s == tablespaceMaxSpaceSQL {
+					return &fakeDbClient{Responses: [][]metricRow{
+						{
+							{"TABLESPACE_NAME": "SYS", "VALUE": "1024"},
+							{"TABLESPACE_NAME": "FOO", "VALUE": "ert"},
+						},
+					}}
+				}
+				return &fakeDbClient{Responses: [][]metricRow{
+					queryResponses[s],
+				}}
+			},
+			errWanted: `failed to parse int64 for OracledbTablespaceSizeLimit, value was ert: strconv.ParseInt: parsing "ert": invalid syntax`,
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

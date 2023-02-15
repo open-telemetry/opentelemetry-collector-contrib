@@ -271,15 +271,19 @@ func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 				tablespaceName := row["TABLESPACE_NAME"]
 				var val int64
 				inputVal := row["VALUE"]
+				valueOk := true
 				if inputVal == "" {
 					val = -1
 				} else {
 					val, err = strconv.ParseInt(inputVal, 10, 64)
 					if err != nil {
 						scrapeErrors = append(scrapeErrors, fmt.Errorf("failed to parse int64 for OracledbTablespaceSizeLimit, value was %s: %w", inputVal, err))
+						valueOk = false
 					}
 				}
-				s.metricsBuilder.RecordOracledbTablespaceSizeLimitDataPoint(now, val, tablespaceName)
+				if valueOk {
+					s.metricsBuilder.RecordOracledbTablespaceSizeLimitDataPoint(now, val, tablespaceName)
+				}
 			}
 		}
 	}
