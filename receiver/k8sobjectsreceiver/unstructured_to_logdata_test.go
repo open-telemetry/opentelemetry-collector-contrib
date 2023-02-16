@@ -17,6 +17,7 @@ package k8sobjectsreceiver // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -49,7 +50,7 @@ func TestUnstructuredListToLogData(t *testing.T) {
 				Resource: "pods",
 			},
 		}
-		logs := pullObjectsToLogData(&objects, config)
+		logs := pullObjectsToLogData(&objects, time.Now(), config)
 
 		assert.Equal(t, logs.LogRecordCount(), 4)
 
@@ -86,7 +87,7 @@ func TestUnstructuredListToLogData(t *testing.T) {
 			},
 		}
 
-		logs := pullObjectsToLogData(&objects, config)
+		logs := pullObjectsToLogData(&objects, time.Now(), config)
 
 		assert.Equal(t, logs.LogRecordCount(), 3)
 
@@ -123,7 +124,7 @@ func TestUnstructuredListToLogData(t *testing.T) {
 			},
 		}
 
-		logs := watchObjectsToLogData(event, config)
+		logs := watchObjectsToLogData(event, time.Now(), config)
 
 		assert.Equal(t, logs.LogRecordCount(), 1)
 
@@ -162,7 +163,8 @@ func TestUnstructuredListToLogData(t *testing.T) {
 			},
 		}
 
-		logs := watchObjectsToLogData(event, config)
+		observedAt := time.Now()
+		logs := watchObjectsToLogData(event, observedAt, config)
 
 		assert.Equal(t, logs.LogRecordCount(), 1)
 
@@ -173,6 +175,7 @@ func TestUnstructuredListToLogData(t *testing.T) {
 		assert.Equal(t, rl.ScopeLogs().Len(), 1)
 		assert.Equal(t, logRecords.Len(), 1)
 		assert.Greater(t, logRecords.At(0).ObservedTimestamp().AsTime().Unix(), int64(0))
+		assert.Equal(t, logRecords.At(0).ObservedTimestamp().AsTime().Unix(), observedAt.Unix())
 	})
 
 }
