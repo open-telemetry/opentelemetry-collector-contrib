@@ -78,6 +78,22 @@ func NewParser(functions map[string]interface{}, telemetrySettings component.Tel
 	return p
 }
 
+type StatementsOption func(*ottl.Statements[TransformContext])
+
+func WithErrorMode(errorMode ottl.ErrorMode) StatementsOption {
+	return func(s *ottl.Statements[TransformContext]) {
+		ottl.WithErrorMode[TransformContext](errorMode)(s)
+	}
+}
+
+func NewStatements(statements []*ottl.Statement[TransformContext], telemetrySettings component.TelemetrySettings, options ...StatementsOption) ottl.Statements[TransformContext] {
+	s := ottl.NewStatements(statements, telemetrySettings)
+	for _, op := range options {
+		op(&s)
+	}
+	return s
+}
+
 var symbolTable = map[ottl.EnumSymbol]ottl.Enum{
 	"SEVERITY_NUMBER_UNSPECIFIED": ottl.Enum(plog.SeverityNumberUnspecified),
 	"SEVERITY_NUMBER_TRACE":       ottl.Enum(plog.SeverityNumberTrace),

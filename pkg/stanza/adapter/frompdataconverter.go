@@ -173,24 +173,6 @@ func convertFromLogs(workerItem fromConverterWorkerItem) []*entry.Entry {
 	return result
 }
 
-// ConvertFrom converts plog.Logs into a slice of entry.Entry
-// To be used in a stateless setting like tests where ease of use is more
-// important than performance or throughput.
-// Deprecated: [v0.69.0] Unnecessarily exported API.
-// Please add a comment in https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/17429
-// if you use it.
-func ConvertFrom(pLogs plog.Logs) []*entry.Entry {
-	result := make([]*entry.Entry, 0, pLogs.LogRecordCount())
-	for i := 0; i < pLogs.ResourceLogs().Len(); i++ {
-		rls := pLogs.ResourceLogs().At(i)
-		for j := 0; j < rls.ScopeLogs().Len(); j++ {
-			scope := rls.ScopeLogs().At(j)
-			result = append(result, convertFromLogs(fromConverterWorkerItem{Resource: rls.Resource(), Scope: scope, LogRecordSlice: scope.LogRecords()})...)
-		}
-	}
-	return result
-}
-
 // convertFrom converts plog.LogRecord into provided entry.Entry.
 func convertFrom(src plog.LogRecord, ent *entry.Entry) {
 	// if src.Timestamp == 0, then leave ent.Timestamp as nil

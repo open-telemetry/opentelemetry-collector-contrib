@@ -20,6 +20,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	apmcorrelation "github.com/signalfx/signalfx-agent/pkg/apm/correlations"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -73,10 +74,12 @@ func TestLoadConfig(t *testing.T) {
 					MaxIdleConnsPerHost: &seventy,
 				},
 				RetrySettings: exporterhelper.RetrySettings{
-					Enabled:         true,
-					InitialInterval: 10 * time.Second,
-					MaxInterval:     1 * time.Minute,
-					MaxElapsedTime:  10 * time.Minute,
+					Enabled:             true,
+					InitialInterval:     10 * time.Second,
+					MaxInterval:         1 * time.Minute,
+					MaxElapsedTime:      10 * time.Minute,
+					RandomizationFactor: backoff.DefaultRandomizationFactor,
+					Multiplier:          backoff.DefaultMultiplier,
 				},
 				QueueSettings: exporterhelper.QueueSettings{
 					Enabled:      true,
@@ -160,6 +163,26 @@ func TestLoadConfig(t *testing.T) {
 					},
 				},
 				DeltaTranslationTTL: 3600,
+				ExcludeProperties: []dpfilters.PropertyFilter{
+					{
+						PropertyName: mustStringFilter(t, "globbed*"),
+					},
+					{
+						PropertyValue: mustStringFilter(t, "!globbed*value"),
+					},
+					{
+						DimensionName: mustStringFilter(t, "globbed*"),
+					},
+					{
+						DimensionValue: mustStringFilter(t, "!globbed*value"),
+					},
+					{
+						PropertyName:   mustStringFilter(t, "globbed*"),
+						PropertyValue:  mustStringFilter(t, "!globbed*value"),
+						DimensionName:  mustStringFilter(t, "globbed*"),
+						DimensionValue: mustStringFilter(t, "!globbed*value"),
+					},
+				},
 				Correlation: &correlation.Config{
 					HTTPClientSettings: confighttp.HTTPClientSettings{
 						Endpoint: "",
@@ -479,4 +502,10 @@ func TestUnmarshalExcludeMetrics(t *testing.T) {
 			assert.Len(t, tt.cfg.ExcludeMetrics, tt.excludeMetricsLen)
 		})
 	}
+}
+
+func mustStringFilter(t *testing.T, filter string) *dpfilters.StringFilter {
+	sf, err := dpfilters.NewStringFilter([]string{filter})
+	require.NoError(t, err)
+	return sf
 }

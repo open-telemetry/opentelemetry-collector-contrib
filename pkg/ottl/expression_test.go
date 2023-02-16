@@ -318,3 +318,46 @@ func Test_newGetter(t *testing.T) {
 		assert.Error(t, err)
 	})
 }
+
+func Test_StandardTypeGetter(t *testing.T) {
+	tests := []struct {
+		name             string
+		getter           StandardTypeGetter[interface{}, string]
+		want             interface{}
+		valid            bool
+		expectedErrorMsg string
+	}{
+		{
+			name: "Correct type",
+			getter: StandardTypeGetter[interface{}, string]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return "str", nil
+				},
+			},
+			want:  "str",
+			valid: true,
+		},
+		{
+			name: "Incorrect type",
+			getter: StandardTypeGetter[interface{}, string]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return true, nil
+				},
+			},
+			valid:            false,
+			expectedErrorMsg: "expected string but got bool",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			val, err := tt.getter.Get(context.Background(), nil)
+			if tt.valid {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.want, *val)
+			} else {
+				assert.EqualError(t, err, tt.expectedErrorMsg)
+			}
+		})
+	}
+}
