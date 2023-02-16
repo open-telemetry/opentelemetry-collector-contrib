@@ -12,7 +12,7 @@ Exports data in the [Prometheus format](https://prometheus.io/docs/concepts/data
 
 The following settings are required:
 
-- `endpoint` (no default): the address on which metrics will be exposed by the Prometheus scrape handler. For full list of `HTTPServerSettings` refer [here](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp).
+- `endpoint` (no default): the address on which metrics will be exposed, using path `/metrics`. For full list of `HTTPServerSettings` refer [here](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp).
 
 The following settings can be optionally configured:
 
@@ -44,6 +44,8 @@ exporters:
     resource_to_telemetry_conversion:
       enabled: true
 ```
+
+Given the example, metrics will be available at `https://1.2.3.4:1234/metrics`.
 
 ## Metric names and labels normalization
 
