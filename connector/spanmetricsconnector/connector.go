@@ -1,4 +1,4 @@
-package spanmetricsconnector
+package spanmetricsconnector // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector"
 
 import (
 	"bytes"
