@@ -67,8 +67,6 @@ func Test_convertGaugeToHistogram(t *testing.T) {
 		integerGaugeInput.Gauge().DataPoints().AppendEmpty().SetIntValue(dp)
 	}
 
-
-
 	singleGaugeInput := pmetric.NewMetric()
 	singleGaugeInput.SetEmptyGauge().DataPoints().AppendEmpty().SetDoubleValue(5.2)
 

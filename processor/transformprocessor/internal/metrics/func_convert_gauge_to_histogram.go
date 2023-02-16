@@ -53,7 +53,7 @@ func convertGaugeToHistogram(stringAggTemp string, bucketCount int64, lowerBound
 	if bucketCount <= 0 {
 		return nil, fmt.Errorf("Bucket value must be greater than 0. Current value: %s", strconv.Itoa(int(bucketCount)))
 	}
-	if lowerBound > upperBound{
+	if lowerBound > upperBound {
 		return nil, fmt.Errorf("Lower bound must be less than or equal to upper bound.")
 	}
 	return func(_ context.Context, tCtx ottldatapoint.TransformContext) (interface{}, error) {
