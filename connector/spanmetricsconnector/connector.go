@@ -537,7 +537,7 @@ func setExemplars(exemplarsData []exemplarData, timestamp pcommon.Timestamp, exe
 	es.CopyTo(exemplars)
 }
 
-// buildMetricsName build the metric name with namespace prefix.
+// buildMetricName builds the namespace prefix for the metric name.
 func buildMetricName(namespace string, name string) string {
 	if namespace != "" {
 		return namespace + "." + name
