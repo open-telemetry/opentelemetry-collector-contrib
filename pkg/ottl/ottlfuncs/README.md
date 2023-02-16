@@ -347,7 +347,7 @@ Examples:
 - `replace_all_patterns(attributes, "key", "^kube_([0-9A-Za-z]+_)", "k8s.$$1.")`
 
 Note that when using OTTL within the collector's configuration file, `$` must be escaped to `$$` to bypass
-environment variable substitution logic. If using OTTL outside of collector configuration, `$` should not be escaped.
+environment variable substitution logic. To input a literal `$` from the configuration file, use `$$$`. If using OTTL outside of collector configuration, `$` should not be escaped and a literal `$` can be entered using `$$`.
 
 ### replace_pattern
 
