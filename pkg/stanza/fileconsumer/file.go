@@ -46,6 +46,8 @@ type Manager struct {
 
 	knownFiles []*Reader
 	seenPaths  map[string]struct{}
+	currentFiles []*os.File
+	currentFps []*Fingerprint
 }
 
 func (m *Manager) Start(persister operator.Persister) error {
@@ -100,6 +102,7 @@ func (m *Manager) startPoller(ctx context.Context) {
 			}
 
 			m.poll(ctx)
+			m.clearCurrentFiles()
 		}
 	}()
 }
@@ -233,6 +236,66 @@ OUTER:
 	}
 
 	return readers
+}
+
+// makeReader takes a path and it return reader for that path
+// discarding any that have a duplicate fingerprint to other files that have already
+// been read this polling interval
+func (m *Manager) makeReader(filePath string) *Reader {
+	if _, ok := m.seenPaths[filePath]; !ok {
+		if m.readerFactory.fromBeginning {
+			m.Infow("Started watching file", "path", filePath)
+		} else {
+			m.Infow("Started watching file from end. To read preexisting logs, configure the argument 'start_at' to 'beginning'", "path", path)
+		}
+		m.seenPaths[filePath] = struct{}{}
+	}
+	file, err := os.Open(filePath) // #nosec - operator must read in files defined by user
+	if err != nil {
+		m.Debugf("Failed to open file", zap.Error(err))
+		return nil
+	}
+	m.currentFiles = append(m.currentFiles, file)
+	fp, err := m.readerFactory.newFingerprint(file)
+	if err != nil {
+		m.Errorw("Failed creating fingerprint", zap.Error(err))
+		return nil
+	}
+	if len(fp.FirstBytes) == 0 {
+		if err := file.Close(); err != nil {
+			m.Errorf("problem closing file", "file", file.Name())
+		}
+		// Empty file, don't read it until we can compare its fingerprint
+		m.currentFiles = m.currentFiles[:len(m.currentFiles)-1]
+		return nil
+	}
+	m.currentFps = append(m.currentFps, fp)
+
+	for i := 0; i < len(m.currentFps)-1; i++ {
+		fp2 := m.currentFps[i]
+		if fp.StartsWith(fp2) || fp2.StartsWith(fp) {
+			// Exclude
+			if err := file.Close(); err != nil {
+				m.Errorf("problem closing file", "file", file.Name())
+			}
+			m.currentFiles = m.currentFiles[:len(m.currentFiles)-1]
+			m.currentFps = m.currentFps[:len(m.currentFps)-1]
+			i--
+			return nil
+		}
+	}
+
+	reader, err := m.newReader(file, fp)
+	if err != nil {
+		m.Errorw("Failed to create reader", zap.Error(err))
+		return nil
+	}
+	return reader
+}
+
+func (m *Manager) clearCurrentFiles() {
+	m.currentFiles = make([]*os.File, 0)
+	m.currentFps = make([]*Fingerprint, 0)
 }
 
 // saveCurrent adds the readers from this polling interval to this list of
