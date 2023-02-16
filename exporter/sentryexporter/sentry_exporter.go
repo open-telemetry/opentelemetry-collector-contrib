@@ -480,7 +480,7 @@ func CreateSentryExporter(config *Config, set exporter.CreateSettings) (exporter
 	transport := newSentryTransport()
 
 	clientOptions := sentry.ClientOptions{
-		Dsn: config.DSN,
+		Dsn: 		 config.DSN,
 		Environment: config.ENV,
 	}
 
