@@ -40,13 +40,11 @@ func (s *scraper) recordCPUUtilization(now pcommon.Timestamp, cpuUtilization uca
 }
 
 func getProcessExecutable(proc processHandle) (*executableMetadata, error) {
-	// attempting to get the process name
 	name, err := proc.Name()
 	if err != nil {
 		return nil, err
 	}
 
-	// attampting to get the process path
 	cmdline, err := proc.Cmdline()
 	if err != nil {
 		return nil, err
@@ -54,7 +52,6 @@ func getProcessExecutable(proc processHandle) (*executableMetadata, error) {
 	regex := regexp.MustCompile(`^\S+`)
 	exe := regex.FindString(cmdline)
 
-	// managed to get the info
 	executable := &executableMetadata{name: name, path: exe}
 	return executable, nil
 }
