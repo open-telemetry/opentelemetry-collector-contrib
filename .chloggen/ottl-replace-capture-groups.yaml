@@ -1,5 +1,5 @@
 # One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
-change_type: enhancement
+change_type: breaking
 
 # The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
 component: pkg/ottl
@@ -15,3 +15,5 @@ issues: [18610]
 # Use pipe (|) for multiline entries.
 subtext: |
   This change affects all processors that use OTTL (i.e. `transformprocessor`, `routingprocessor`, and `filterprocessor`).
+  This is a breaking change in the rare scenario that the `$` character is currently used in a replacement string.
+  To output a literal `$` in a replacement string it must now be escaped with an additional `$`.
