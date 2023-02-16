@@ -25,15 +25,15 @@ import (
 
 const (
 	serviceNameKey     = conventions.AttributeServiceName
-	spanNameKey        = "span.name"   // OpenTelemetry non-standard constant.
+	operationKey       = "operation"   // OpenTelemetry non-standard constant.
 	spanKindKey        = "span.kind"   // OpenTelemetry non-standard constant.
 	statusCodeKey      = "status.code" // OpenTelemetry non-standard constant.
 	metricKeySeparator = string(byte(0))
 
 	defaultDimensionsCacheSize = 1000
 
-	metricNameLatency = "latency"
-	metricNameCalls   = "calls"
+	metricNameLatency    = "latency"
+	metricNameCallsTotal = "calls_total"
 )
 
 var defaultLatencyHistogramBucketsMs = []float64{
@@ -166,7 +166,7 @@ func validateDimensions(dimensions []Dimension, skipSanitizeLabel bool) error {
 		labelNames[key] = struct{}{}
 		labelNames[sanitize(key, skipSanitizeLabel)] = struct{}{}
 	}
-	labelNames[spanNameKey] = struct{}{}
+	labelNames[operationKey] = struct{}{}
 
 	for _, key := range dimensions {
 		if _, ok := labelNames[key.Name]; ok {
@@ -317,7 +317,7 @@ func (p *connectorImp) collectLatencyMetrics(ilm pmetric.ScopeMetrics) {
 // into the given instrumentation library metrics.
 func (p *connectorImp) collectCallMetrics(ilm pmetric.ScopeMetrics) {
 	mCalls := ilm.Metrics().AppendEmpty()
-	mCalls.SetName(buildMetricName(p.config.Namespace, metricNameCalls))
+	mCalls.SetName(buildMetricName(p.config.Namespace, metricNameCallsTotal))
 	mCalls.SetEmptySum().SetIsMonotonic(true)
 	mCalls.Sum().SetAggregationTemporality(p.config.GetAggregationTemporality())
 	dps := mCalls.Sum().DataPoints()
@@ -406,7 +406,7 @@ func (p *connectorImp) buildDimensionKVs(serviceName string, span ptrace.Span, r
 	dims := pcommon.NewMap()
 	dims.EnsureCapacity(4 + len(p.dimensions))
 	dims.PutStr(serviceNameKey, serviceName)
-	dims.PutStr(spanNameKey, span.Name())
+	dims.PutStr(operationKey, span.Name())
 	dims.PutStr(spanKindKey, traceutil.SpanKindStr(span.Kind()))
 	dims.PutStr(statusCodeKey, traceutil.StatusCodeStr(span.Status().Code()))
 	for _, d := range p.dimensions {

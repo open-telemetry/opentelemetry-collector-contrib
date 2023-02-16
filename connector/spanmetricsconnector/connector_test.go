@@ -199,7 +199,7 @@ func verifyMetricLabels(dp metricDataPoint, t testing.TB, seenMetricIDs map[metr
 		switch k {
 		case serviceNameKey:
 			mID.service = v.Str()
-		case spanNameKey:
+		case operationKey:
 			mID.operation = v.Str()
 		case spanKindKey:
 			mID.kind = v.Str()
