@@ -16,6 +16,7 @@ package transformprocessor
 
 import (
 	"context"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -39,6 +40,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.Equal(t, cfg, &Config{
+		ErrorMode:        ottl.PropagateError,
 		TraceStatements:  []common.ContextStatements{},
 		MetricStatements: []common.ContextStatements{},
 		LogStatements:    []common.ContextStatements{},

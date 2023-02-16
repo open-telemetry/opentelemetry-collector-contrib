@@ -17,6 +17,7 @@ package transformprocessor // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"context"
 	"fmt"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -48,6 +49,7 @@ func NewFactory() processor.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
+		ErrorMode:        ottl.PropagateError,
 		TraceStatements:  []common.ContextStatements{},
 		MetricStatements: []common.ContextStatements{},
 		LogStatements:    []common.ContextStatements{},
@@ -62,7 +64,7 @@ func createLogsProcessor(
 ) (processor.Logs, error) {
 	oCfg := cfg.(*Config)
 
-	proc, err := logs.NewProcessor(oCfg.LogStatements, set.TelemetrySettings)
+	proc, err := logs.NewProcessor(oCfg.LogStatements, ottl.PropagateError, set.TelemetrySettings)
 	if err != nil {
 		return nil, fmt.Errorf("invalid config for \"transform\" processor %w", err)
 	}
@@ -83,7 +85,7 @@ func createTracesProcessor(
 ) (processor.Traces, error) {
 	oCfg := cfg.(*Config)
 
-	proc, err := traces.NewProcessor(oCfg.TraceStatements, set.TelemetrySettings)
+	proc, err := traces.NewProcessor(oCfg.TraceStatements, ottl.PropagateError, set.TelemetrySettings)
 	if err != nil {
 		return nil, fmt.Errorf("invalid config for \"transform\" processor %w", err)
 	}
@@ -104,7 +106,7 @@ func createMetricsProcessor(
 ) (processor.Metrics, error) {
 	oCfg := cfg.(*Config)
 
-	proc, err := metrics.NewProcessor(oCfg.MetricStatements, set.TelemetrySettings)
+	proc, err := metrics.NewProcessor(oCfg.MetricStatements, ottl.PropagateError, set.TelemetrySettings)
 	if err != nil {
 		return nil, fmt.Errorf("invalid config for \"transform\" processor %w", err)
 	}

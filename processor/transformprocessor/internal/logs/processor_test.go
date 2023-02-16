@@ -16,6 +16,7 @@ package logs
 
 import (
 	"context"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"testing"
 	"time"
 
@@ -59,7 +60,7 @@ func Test_ProcessLogs_ResourceContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructLogs()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "resource", Statements: []string{tt.statement}}}, componenttest.NewNopTelemetrySettings())
+			processor, err := NewProcessor([]common.ContextStatements{{Context: "resource", Statements: []string{tt.statement}}}, ottl.PropagateError, componenttest.NewNopTelemetrySettings())
 			assert.NoError(t, err)
 
 			_, err = processor.ProcessLogs(context.Background(), td)
@@ -94,7 +95,7 @@ func Test_ProcessLogs_ScopeContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructLogs()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "scope", Statements: []string{tt.statement}}}, componenttest.NewNopTelemetrySettings())
+			processor, err := NewProcessor([]common.ContextStatements{{Context: "scope", Statements: []string{tt.statement}}}, ottl.PropagateError, componenttest.NewNopTelemetrySettings())
 			assert.NoError(t, err)
 
 			_, err = processor.ProcessLogs(context.Background(), td)
@@ -332,7 +333,7 @@ func Test_ProcessLogs_LogContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructLogs()
-			processor, err := NewProcessor([]common.ContextStatements{{Context: "log", Statements: []string{tt.statement}}}, componenttest.NewNopTelemetrySettings())
+			processor, err := NewProcessor([]common.ContextStatements{{Context: "log", Statements: []string{tt.statement}}}, ottl.PropagateError, componenttest.NewNopTelemetrySettings())
 			assert.NoError(t, err)
 
 			_, err = processor.ProcessLogs(context.Background(), td)
@@ -449,7 +450,7 @@ func Test_ProcessLogs_MixContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			td := constructLogs()
-			processor, err := NewProcessor(tt.contextStatments, componenttest.NewNopTelemetrySettings())
+			processor, err := NewProcessor(tt.contextStatments, ottl.PropagateError, componenttest.NewNopTelemetrySettings())
 			assert.NoError(t, err)
 
 			_, err = processor.ProcessLogs(context.Background(), td)

@@ -16,6 +16,7 @@ package logs // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"context"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -28,8 +29,8 @@ type Processor struct {
 	contexts []consumer.Logs
 }
 
-func NewProcessor(contextStatements []common.ContextStatements, settings component.TelemetrySettings) (*Processor, error) {
-	pc, err := common.NewLogParserCollection(settings, common.WithLogParser(LogFunctions()))
+func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.ErrorMode, settings component.TelemetrySettings) (*Processor, error) {
+	pc, err := common.NewLogParserCollection(settings, common.WithLogParser(LogFunctions()), common.WithLogErrorMode(errorMode))
 	if err != nil {
 		return nil, err
 	}

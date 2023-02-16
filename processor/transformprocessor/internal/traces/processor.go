@@ -16,6 +16,7 @@ package traces // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"context"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -28,8 +29,8 @@ type Processor struct {
 	contexts []consumer.Traces
 }
 
-func NewProcessor(contextStatements []common.ContextStatements, settings component.TelemetrySettings) (*Processor, error) {
-	pc, err := common.NewTraceParserCollection(settings, common.WithSpanParser(SpanFunctions()), common.WithSpanEventParser(SpanEventFunctions()))
+func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.ErrorMode, settings component.TelemetrySettings) (*Processor, error) {
+	pc, err := common.NewTraceParserCollection(settings, common.WithSpanParser(SpanFunctions()), common.WithSpanEventParser(SpanEventFunctions()), common.WithTraceErrorMode(errorMode))
 	if err != nil {
 		return nil, err
 	}
