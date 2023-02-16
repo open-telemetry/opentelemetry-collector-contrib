@@ -500,7 +500,7 @@ func TestSetExemplars(t *testing.T) {
 	timestamp := pcommon.NewTimestampFromTime(time.Now())
 	value := float64(42)
 
-	ed := []exemplarData{{traceID: traceID, spanID: spanID, value: value}}
+	ed := []exemplar{{traceID: traceID, spanID: spanID, value: value}}
 
 	// ----- call -------------------------------------------------------------
 	setExemplars(ed, timestamp, exemplarSlice)
@@ -530,12 +530,13 @@ func TestConnectorUpdateExemplars(t *testing.T) {
 	value := float64(42)
 
 	// ----- call -------------------------------------------------------------
-	c.updateHistogram(key, value, traceID, spanID)
+	h := c.getOrCreateHistogram(key, pcommon.NewMap())
+	h.observe(value, traceID, spanID)
 
 	// ----- verify -----------------------------------------------------------
 	assert.NoError(t, err)
 	assert.NotEmpty(t, c.histograms[key].exemplarsData)
-	assert.Equal(t, c.histograms[key].exemplarsData[0], exemplarData{traceID: traceID, spanID: spanID, value: value})
+	assert.Equal(t, c.histograms[key].exemplarsData[0], exemplar{traceID: traceID, spanID: spanID, value: value})
 
 	// ----- call -------------------------------------------------------------
 	c.resetExemplarData()
@@ -836,7 +837,7 @@ func newConnectorImp(mcon consumer.Metrics, defaultNullValue *pcommon.Value, tem
 		metricsConsumer: mcon,
 
 		startTimestamp: pcommon.NewTimestampFromTime(time.Now()),
-		histograms:     make(map[metricKey]*histogramData),
+		histograms:     make(map[metricKey]*histogram),
 		latencyBounds:  defaultLatencyHistogramBucketsMs,
 		dimensions: []dimension{
 			// Set nil defaults to force a lookup for the attribute in the span.
@@ -889,12 +890,13 @@ func TestUpdateExemplars(t *testing.T) {
 	value := float64(42)
 
 	// ----- call -------------------------------------------------------------
-	c.updateHistogram(key, value, traceID, spanID)
+	h := c.getOrCreateHistogram(key, pcommon.NewMap())
+	h.observe(value, traceID, spanID)
 
 	// ----- verify -----------------------------------------------------------
 	assert.NoError(t, err)
 	assert.NotEmpty(t, c.histograms[key].exemplarsData)
-	assert.Equal(t, c.histograms[key].exemplarsData[0], exemplarData{traceID: traceID, spanID: spanID, value: value})
+	assert.Equal(t, c.histograms[key].exemplarsData[0], exemplar{traceID: traceID, spanID: spanID, value: value})
 
 	// ----- call -------------------------------------------------------------
 	c.resetExemplarData()
