@@ -45,6 +45,9 @@ const (
 	statusCodeKey      = "status.code" // OpenTelemetry non-standard constant.
 	metricKeySeparator = string(byte(0))
 
+	metricLatency    = "latency"
+	metricCallsTotal = "calls_total"
+
 	defaultDimensionsCacheSize = 1000
 )
 
@@ -332,7 +335,7 @@ func (p *processorImp) buildMetrics() pmetric.Metrics {
 // into the given instrumentation library metrics.
 func (p *processorImp) collectLatencyMetrics(ilm pmetric.ScopeMetrics) {
 	mLatency := ilm.Metrics().AppendEmpty()
-	mLatency.SetName("latency")
+	mLatency.SetName(buildMetricName(p.config.Namespace, metricLatency, p.config.Normalized))
 	mLatency.SetUnit("ms")
 	mLatency.SetEmptyHistogram().SetAggregationTemporality(p.config.GetAggregationTemporality())
 	dps := mLatency.Histogram().DataPoints()
@@ -360,7 +363,7 @@ func (p *processorImp) collectLatencyMetrics(ilm pmetric.ScopeMetrics) {
 // into the given instrumentation library metrics.
 func (p *processorImp) collectCallMetrics(ilm pmetric.ScopeMetrics) {
 	mCalls := ilm.Metrics().AppendEmpty()
-	mCalls.SetName("calls_total")
+	mCalls.SetName(buildMetricName(p.config.Namespace, metricCallsTotal, p.config.Normalized))
 	mCalls.SetEmptySum().SetIsMonotonic(true)
 	mCalls.Sum().SetAggregationTemporality(p.config.GetAggregationTemporality())
 	dps := mCalls.Sum().DataPoints()
@@ -576,4 +579,17 @@ func setExemplars(exemplarsData []exemplarData, timestamp pcommon.Timestamp, exe
 	}
 
 	es.CopyTo(exemplars)
+}
+
+// buildMetricName builds the metric name from the namespace and metric name.
+// if normalized is true, the metric name will be normalized concatenating the namespace and metric name with a dot.
+// if normalized is false, the metric name will be concatenated with an underscore.
+func buildMetricName(namespace string, metricName string, normalized bool) string {
+	if namespace != "" {
+		if normalized {
+			return namespace + "." + metricName
+		}
+		return namespace + "_" + metricName
+	}
+	return metricName
 }
