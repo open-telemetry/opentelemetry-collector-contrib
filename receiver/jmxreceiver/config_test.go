@@ -324,6 +324,17 @@ func TestClassPathParse(t *testing.T) {
 	}
 }
 
+func TestWithInvalidConfig(t *testing.T) {
+	f := NewFactory()
+	assert.Equal(t, component.Type("jmx"), f.Type())
+
+	cfg := f.CreateDefaultConfig().(*Config)
+	require.NotNil(t, cfg)
+
+	err := cfg.Validate()
+	assert.Equal(t, "missing required field(s): `endpoint`, `target_system`", err.Error())
+}
+
 func mockJarVersions() {
 	jmxMetricsGathererVersions["5994471abb01112afcc18159f6cc74b4f511b99806da59b3caf5a9c173cacfc5"] = supportedJar{
 		jar:     "fake jar",

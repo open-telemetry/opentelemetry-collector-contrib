@@ -50,13 +50,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudpubsubexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlemanagedprometheusexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/humioexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logicmonitorexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter"
@@ -126,6 +126,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudfoundryreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver"
@@ -135,6 +136,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/haproxyreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpcheckreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver"
@@ -163,6 +165,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pulsarreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefbreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver"
@@ -177,6 +180,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshcheckreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver"
@@ -235,6 +239,7 @@ func Components() (otelcol.Factories, error) {
 		cloudfoundryreceiver.NewFactory(),
 		collectdreceiver.NewFactory(),
 		couchdbreceiver.NewFactory(),
+		datadogreceiver.NewFactory(),
 		dockerstatsreceiver.NewFactory(),
 		dotnetdiagnosticsreceiver.NewFactory(),
 		elasticsearchreceiver.NewFactory(),
@@ -244,6 +249,7 @@ func Components() (otelcol.Factories, error) {
 		fluentforwardreceiver.NewFactory(),
 		googlecloudspannerreceiver.NewFactory(),
 		googlecloudpubsubreceiver.NewFactory(),
+		haproxyreceiver.NewFactory(),
 		hostmetricsreceiver.NewFactory(),
 		httpcheckreceiver.NewFactory(),
 		influxdbreceiver.NewFactory(),
@@ -271,9 +277,9 @@ func Components() (otelcol.Factories, error) {
 		postgresqlreceiver.NewFactory(),
 		prometheusexecreceiver.NewFactory(),
 		prometheusreceiver.NewFactory(),
-		// promtailreceiver.NewFactory(),
 		pulsarreceiver.NewFactory(),
 		purefareceiver.NewFactory(),
+		purefbreceiver.NewFactory(),
 		rabbitmqreceiver.NewFactory(),
 		receivercreator.NewFactory(),
 		redisreceiver.NewFactory(),
@@ -288,6 +294,7 @@ func Components() (otelcol.Factories, error) {
 		splunkhecreceiver.NewFactory(),
 		sqlqueryreceiver.NewFactory(),
 		sqlserverreceiver.NewFactory(),
+		sshcheckreceiver.NewFactory(),
 		statsdreceiver.NewFactory(),
 		wavefrontreceiver.NewFactory(),
 		windowseventlogreceiver.NewFactory(),
@@ -323,7 +330,6 @@ func Components() (otelcol.Factories, error) {
 		googlecloudexporter.NewFactory(),
 		googlemanagedprometheusexporter.NewFactory(),
 		googlecloudpubsubexporter.NewFactory(),
-		humioexporter.NewFactory(),
 		influxdbexporter.NewFactory(),
 		instanaexporter.NewFactory(),
 		jaegerexporter.NewFactory(),
@@ -331,6 +337,7 @@ func Components() (otelcol.Factories, error) {
 		kafkaexporter.NewFactory(),
 		loadbalancingexporter.NewFactory(),
 		loggingexporter.NewFactory(),
+		logicmonitorexporter.NewFactory(),
 		logzioexporter.NewFactory(),
 		lokiexporter.NewFactory(),
 		mezmoexporter.NewFactory(),

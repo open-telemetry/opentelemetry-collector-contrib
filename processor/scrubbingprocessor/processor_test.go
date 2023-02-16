@@ -220,16 +220,12 @@ func Test_applyMasking(t *testing.T) {
 			sp.applyMasking(tt.args.ld)
 
 			expected := tt.args.ld.ResourceLogs().At(0).Resource().Attributes()
-			expected.Sort()
 			actual := tt.expected.ResourceLogs().At(0).Resource().Attributes()
-			actual.Sort()
-			assert.EqualValues(t, expected, actual)
+			assert.EqualValues(t, expected.AsRaw(), actual.AsRaw())
 
 			expected = tt.args.ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes()
-			expected.Sort()
 			actual = tt.expected.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes()
-			actual.Sort()
-			assert.EqualValues(t, expected, actual)
+			assert.EqualValues(t, expected.AsRaw(), actual.AsRaw())
 
 			assert.EqualValues(t, tt.args.ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().AsString(), tt.expected.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().AsString())
 		})

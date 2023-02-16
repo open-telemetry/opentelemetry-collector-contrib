@@ -51,7 +51,7 @@ const (
 	responseErrInternalServerError    = "Internal Server Error"
 	responseErrUnsupportedMetricEvent = "Unsupported metric event"
 	responseErrUnsupportedLogEvent    = "Unsupported log event"
-
+	responseErrHandlingIndexedFields  = `{"text":"Error in handling indexed fields","code":15,"invalid-event-number":%d}`
 	// Centralizing some HTTP and related string constants.
 	gzipEncoding              = "gzip"
 	httpContentEncodingHeader = "Content-Encoding"
@@ -341,6 +341,13 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 			r.failRequest(ctx, resp, http.StatusBadRequest, errUnmarshalBodyRespBody, len(events), err)
 			return
 		}
+
+		for _, v := range msg.Fields {
+			if !isFlatJSONField(v) {
+				r.failRequest(ctx, resp, http.StatusBadRequest, []byte(fmt.Sprintf(responseErrHandlingIndexedFields, len(events))), len(events), nil)
+				return
+			}
+		}
 		if msg.IsMetric() {
 			if r.metricsConsumer == nil {
 				r.failRequest(ctx, resp, http.StatusBadRequest, errUnsupportedMetricEvent, len(events), err)
@@ -457,4 +464,19 @@ func initJSONResponse(s string) []byte {
 		panic(err)
 	}
 	return respBody
+}
+
+func isFlatJSONField(field interface{}) bool {
+	switch value := field.(type) {
+	case map[string]interface{}:
+		return false
+	case []interface{}:
+		for _, v := range value {
+			switch v.(type) {
+			case map[string]interface{}, []interface{}:
+				return false
+			}
+		}
+	}
+	return true
 }

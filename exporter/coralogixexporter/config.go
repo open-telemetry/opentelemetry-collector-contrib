@@ -19,6 +19,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
@@ -26,7 +27,9 @@ import (
 const (
 	typeStr = "coralogix"
 	// The stability level of the exporter.
-	stability = component.StabilityLevelBeta
+	stability               = component.StabilityLevelBeta
+	cxAppNameAttrName       = "cx.application.name"
+	cxSubsystemNameAttrName = "cx.subsystem.name"
 )
 
 // Config defines by Coralogix.
@@ -49,7 +52,7 @@ type Config struct {
 	Logs configgrpc.GRPCClientSettings `mapstructure:"logs"`
 
 	// Your Coralogix private key (sensitive) for authentication
-	PrivateKey string `mapstructure:"private_key"`
+	PrivateKey configopaque.String `mapstructure:"private_key"`
 
 	// Ordered list of Resource attributes that are used for Coralogix
 	// AppName and SubSystem values. The first non-empty Resource attribute is used.
@@ -85,10 +88,10 @@ func (c *Config) Validate() error {
 
 	// check if headers exists
 	if len(c.GRPCClientSettings.Headers) == 0 {
-		c.GRPCClientSettings.Headers = map[string]string{}
+		c.GRPCClientSettings.Headers = make(map[string]configopaque.String)
 	}
 	c.GRPCClientSettings.Headers["ACCESS_TOKEN"] = c.PrivateKey
-	c.GRPCClientSettings.Headers["appName"] = c.AppName
+	c.GRPCClientSettings.Headers["appName"] = configopaque.String(c.AppName)
 	return nil
 }
 

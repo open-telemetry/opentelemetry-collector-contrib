@@ -63,10 +63,10 @@ func addToGroupedMetric(pmd pmetric.Metric, groupedMetrics map[interface{}]*grou
 		// if patterns are provided for a valid key and that key doesn't exist in the resource attributes, it is replaced with `undefined`.
 		if !patternReplaceSucceeded {
 			if strings.Contains(metadata.logGroup, "undefined") {
-				metadata.logGroup, _ = replacePatterns(config.LogGroupName, labels, config.logger)
+				metadata.logGroup, _ = replacePatterns(config.LogGroupName, labels, logger)
 			}
 			if strings.Contains(metadata.logStream, "undefined") {
-				metadata.logStream, _ = replacePatterns(config.LogStreamName, labels, config.logger)
+				metadata.logStream, _ = replacePatterns(config.LogStreamName, labels, logger)
 			}
 		}
 
@@ -80,7 +80,7 @@ func addToGroupedMetric(pmd pmetric.Metric, groupedMetrics map[interface{}]*grou
 		}
 
 		// Extra params to use when grouping metrics
-		groupKey := groupedMetricKey(metadata.groupedMetricMetadata, labels)
+		groupKey := aws.NewKey(metadata, labels)
 		if _, ok := groupedMetrics[groupKey]; ok {
 			// if MetricName already exists in metrics map, print warning log
 			if _, ok := groupedMetrics[groupKey].metrics[metricName]; ok {
@@ -176,10 +176,6 @@ func mapGetHelper(labels map[string]string, key string) string {
 	}
 
 	return ""
-}
-
-func groupedMetricKey(metadata groupedMetricMetadata, labels map[string]string) aws.Key {
-	return aws.NewKey(metadata, labels)
 }
 
 func translateUnit(metric pmetric.Metric, descriptor map[string]MetricDescriptor) string {

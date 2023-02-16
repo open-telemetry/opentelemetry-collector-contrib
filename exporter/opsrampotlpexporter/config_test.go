@@ -23,16 +23,16 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
+	factories, err := otelcoltest.NopFactories()
 	assert.NoError(t, err)
 
 	factory := NewFactory()
@@ -68,7 +68,7 @@ func TestLoadConfig(t *testing.T) {
 				OAuthServiceURL: "url",
 			},
 			GRPCClientSettings: configgrpc.GRPCClientSettings{
-				Headers: map[string]string{
+				Headers: map[string]configopaque.String{
 					"can you have a . here?": "F0000000-0000-0000-0000-000000000000",
 					"header1":                "234",
 					"another":                "somevalue",

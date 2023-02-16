@@ -35,8 +35,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
 var (
@@ -52,6 +52,7 @@ var (
 )
 
 func TestRabbitmqIntegration(t *testing.T) {
+	t.Skip("See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/17201")
 	t.Run("Running rabbitmq 3.9", func(t *testing.T) {
 		t.Parallel()
 		container := getContainer(t, containerRequest3_9)
@@ -86,7 +87,7 @@ func TestRabbitmqIntegration(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		comparetest.CompareMetrics(expectedMetrics, actualMetrics, comparetest.IgnoreMetricValues())
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreMetricValues()))
 	})
 }
 

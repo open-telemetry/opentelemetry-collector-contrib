@@ -34,11 +34,10 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
 func TestApacheIntegration(t *testing.T) {
@@ -55,10 +54,6 @@ func TestApacheIntegration(t *testing.T) {
 		require.NoError(t, container.Terminate(context.Background()))
 	}()
 	hostname, err := container.Host(context.Background())
-	require.NoError(t, err)
-
-	// Let this test check if it works with the features disabled and the unit test will test the feature enabled.
-	err = featuregate.GetRegistry().Apply(map[string]bool{EmitServerNameAsResourceAttribute: false, EmitPortAsResourceAttribute: false})
 	require.NoError(t, err)
 
 	f := NewFactory()
@@ -82,7 +77,8 @@ func TestApacheIntegration(t *testing.T) {
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 
-	require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics, comparetest.IgnoreMetricValues()))
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreMetricValues(),
+		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 }
 
 func getContainer(t *testing.T, req testcontainers.ContainerRequest) testcontainers.Container {

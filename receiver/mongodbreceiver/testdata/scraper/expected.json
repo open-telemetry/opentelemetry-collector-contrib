@@ -104,6 +104,20 @@
                      "unit": "ms"
                   },
                   {
+                     "description": "The health status of the server.",
+                     "gauge": {
+                        "dataPoints": [
+                           {
+                              "asInt": "1",
+                              "startTimeUnixNano": "1670996150941624000",
+                              "timeUnixNano": "1670996150945535000"
+                           }
+                        ]
+                     },
+                     "name": "mongodb.health",
+                     "unit": "1"
+                  },
+                  {
                      "description": "The number of bytes received.",
                      "name": "mongodb.network.io.receive",
                      "sum": {
@@ -389,6 +403,22 @@
                         ]
                      },
                      "unit": "{sessions}"
+                  },
+                  {
+                     "description": "The amount of time that the server has been running.",
+                     "name": "mongodb.uptime",
+                     "sum": {
+                        "aggregationTemporality": 2,
+                        "dataPoints": [
+                           {
+                              "asInt": "58965",
+                              "startTimeUnixNano": "1670987956177006000",
+                              "timeUnixNano": "1670987956180933000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "ms"
                   }
                ],
                "scope": {

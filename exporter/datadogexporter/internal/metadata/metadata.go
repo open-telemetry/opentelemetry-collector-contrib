@@ -107,14 +107,13 @@ type Meta struct {
 // metadataFromAttributes gets metadata info from attributes following
 // OpenTelemetry semantic conventions
 func metadataFromAttributes(attrs pcommon.Map) *HostMetadata {
-	return metadataFromAttributesWithRegistry(featuregate.GetRegistry(), attrs)
+	return metadataFromAttributesWithRegistry(HostnamePreviewFeatureGate, attrs)
 }
 
-// metadataFromAttributesWithRegistry passes a registry explicitly to allow easier unit testing.
-func metadataFromAttributesWithRegistry(registry *featuregate.Registry, attrs pcommon.Map) *HostMetadata {
+func metadataFromAttributesWithRegistry(gate *featuregate.Gate, attrs pcommon.Map) *HostMetadata {
 	hm := &HostMetadata{Meta: &Meta{}, Tags: &HostTags{}}
 
-	var usePreviewHostnameLogic = registry.IsEnabled(HostnamePreviewFeatureGate)
+	var usePreviewHostnameLogic = gate.IsEnabled()
 	if src, ok := attributes.SourceFromAttributes(attrs, usePreviewHostnameLogic); ok && src.Kind == source.HostnameKind {
 		hm.InternalHostname = src.Identifier
 		hm.Meta.Hostname = src.Identifier
@@ -206,7 +205,7 @@ func pushMetadata(pcfg PusherConfig, params exporter.CreateSettings, metadata *H
 func pushMetadataWithRetry(retrier *clientutil.Retrier, params exporter.CreateSettings, pcfg PusherConfig, hostMetadata *HostMetadata) {
 	params.Logger.Debug("Sending host metadata payload", zap.Any("payload", hostMetadata))
 
-	err := retrier.DoWithRetries(context.Background(), func(context.Context) error {
+	_, err := retrier.DoWithRetries(context.Background(), func(context.Context) error {
 		return pushMetadata(pcfg, params, hostMetadata)
 	})
 

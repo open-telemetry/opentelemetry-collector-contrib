@@ -81,11 +81,11 @@ func comparisonHelper(left any, right any, op string) *comparison {
 }
 
 func Test_newComparisonEvaluator(t *testing.T) {
-	p := NewParser(
+	p := NewParser[any](
 		defaultFunctionsForTests(),
 		testParsePath,
-		testParseEnum,
 		componenttest.NewNopTelemetrySettings(),
+		WithEnumParser[any](testParseEnum),
 	)
 
 	var tests = []struct {
@@ -132,11 +132,11 @@ func Test_newComparisonEvaluator(t *testing.T) {
 }
 
 func Test_newConditionEvaluator_invalid(t *testing.T) {
-	p := NewParser(
+	p := NewParser[any](
 		defaultFunctionsForTests(),
 		testParsePath,
-		testParseEnum,
 		component.TelemetrySettings{},
+		WithEnumParser[any](testParseEnum),
 	)
 
 	tests := []struct {
@@ -165,11 +165,11 @@ func Test_newConditionEvaluator_invalid(t *testing.T) {
 }
 
 func Test_newBooleanExpressionEvaluator(t *testing.T) {
-	p := NewParser(
+	p := NewParser[any](
 		defaultFunctionsForTests(),
 		testParsePath,
-		testParseEnum,
 		component.TelemetrySettings{},
+		WithEnumParser[any](testParseEnum),
 	)
 
 	tests := []struct {

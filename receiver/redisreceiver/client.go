@@ -25,6 +25,8 @@ type client interface {
 	// line delimiter
 	// redis lines are delimited by \r\n, files (for testing) by \n
 	delimiter() string
+	// close release redis client connection pool
+	close() error
 }
 
 // Wraps a real Redis client, implements `client` interface.
@@ -49,4 +51,9 @@ func (c *redisClient) delimiter() string {
 // Retrieve Redis INFO. We retrieve all of the 'sections'.
 func (c *redisClient) retrieveInfo() (string, error) {
 	return c.client.Info("all").Result()
+}
+
+// close client to release connention pool.
+func (c *redisClient) close() error {
+	return c.client.Close()
 }

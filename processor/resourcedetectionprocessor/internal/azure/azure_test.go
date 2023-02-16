@@ -52,7 +52,6 @@ func TestDetectAzureAvailable(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, conventions.SchemaURL, schemaURL)
 	mp.AssertExpectations(t)
-	res.Attributes().Sort()
 
 	expected := map[string]any{
 		conventions.AttributeCloudProvider:  conventions.AttributeCloudProviderAzure,

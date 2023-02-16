@@ -32,8 +32,8 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
 var (
@@ -59,10 +59,9 @@ var (
 
 func TestElasticsearchIntegration(t *testing.T) {
 	// Let this test check if it works with the features disabled and the unit test will test the feature enabled.
-	err := featuregate.GetRegistry().Apply(map[string]bool{emitClusterHealthDetailedShardMetricsID: false, emitAllIndexOperationMetricsID: false})
-	require.NoError(t, err)
+	require.NoError(t, featuregate.GlobalRegistry().Set(emitNodeVersionAttr.ID(), false))
 
-	//Starts an elasticsearch docker container
+	// Starts an elasticsearch docker container
 	t.Run("Running elasticsearch 7.9", func(t *testing.T) {
 		t.Parallel()
 		container := getContainer(t, containerRequest7_9_3)
@@ -87,13 +86,16 @@ func TestElasticsearchIntegration(t *testing.T) {
 		}, 2*time.Minute, 1*time.Second, "failed to receive more than 0 metrics")
 		require.NoError(t, rcvr.Shutdown(context.Background()))
 
-		actualMtrics := consumer.AllMetrics()[0]
+		actualMetrics := consumer.AllMetrics()[0]
 
 		expectedFile := filepath.Join("testdata", "integration", "expected.7_9_3.json")
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		comparetest.CompareMetrics(expectedMetrics, actualMtrics, comparetest.IgnoreMetricValues(), comparetest.IgnoreResourceAttributeValue("elasticsearch.node.name"))
+		pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, //nolint:errcheck
+			pmetrictest.IgnoreResourceMetricsOrder(),
+			pmetrictest.IgnoreMetricValues(),
+			pmetrictest.IgnoreResourceAttributeValue("elasticsearch.node.name"))
 	})
 	t.Run("Running elasticsearch 7.16.3", func(t *testing.T) {
 		t.Parallel()
@@ -119,13 +121,16 @@ func TestElasticsearchIntegration(t *testing.T) {
 		}, 2*time.Minute, 1*time.Second, "failed to receive more than 0 metrics")
 		require.NoError(t, rcvr.Shutdown(context.Background()))
 
-		actualMtrics := consumer.AllMetrics()[0]
+		actualMetrics := consumer.AllMetrics()[0]
 
 		expectedFile := filepath.Join("testdata", "integration", "expected.7_16_3.json")
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		comparetest.CompareMetrics(expectedMetrics, actualMtrics, comparetest.IgnoreMetricValues(), comparetest.IgnoreResourceAttributeValue("elasticsearch.node.name"))
+		pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, //nolint:errcheck
+			pmetrictest.IgnoreResourceMetricsOrder(),
+			pmetrictest.IgnoreMetricValues(),
+			pmetrictest.IgnoreResourceAttributeValue("elasticsearch.node.name"))
 	})
 }
 

@@ -19,6 +19,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -39,13 +40,17 @@ func TestLoadConfig(t *testing.T) {
 		expected component.Config
 	}{
 		{
-			id:       component.NewIDWithName(typeStr, ""),
-			expected: createDefaultConfig(),
+			id: component.NewIDWithName(typeStr, ""),
+			expected: func() *Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.Endpoint = "http://example.com"
+				return cfg
+			}(),
 		},
 		{
 			id: component.NewIDWithName(typeStr, "customname"),
 			expected: &Config{
-				Endpoint:            "test-endpoint",
+				Endpoint:            "https://example.com",
 				AccessToken:         "abcd1234",
 				NumWorkers:          3,
 				MaxConnections:      45,
@@ -57,10 +62,12 @@ func TestLoadConfig(t *testing.T) {
 					Timeout: 10 * time.Second,
 				},
 				RetrySettings: exporterhelper.RetrySettings{
-					Enabled:         true,
-					InitialInterval: 10 * time.Second,
-					MaxInterval:     1 * time.Minute,
-					MaxElapsedTime:  10 * time.Minute,
+					Enabled:             true,
+					InitialInterval:     10 * time.Second,
+					MaxInterval:         1 * time.Minute,
+					MaxElapsedTime:      10 * time.Minute,
+					RandomizationFactor: backoff.DefaultRandomizationFactor,
+					Multiplier:          backoff.DefaultMultiplier,
 				},
 				QueueSettings: exporterhelper.QueueSettings{
 					Enabled:      true,
@@ -92,7 +99,7 @@ func TestInvalidConfig(t *testing.T) {
 		NumWorkers:     3,
 		MaxConnections: 45,
 	}
-	noEndpointErr := invalid.validate()
+	noEndpointErr := invalid.Validate()
 	require.Error(t, noEndpointErr)
 
 	invalid = Config{
@@ -101,7 +108,7 @@ func TestInvalidConfig(t *testing.T) {
 		NumWorkers:     3,
 		MaxConnections: 45,
 	}
-	invalidURLErr := invalid.validate()
+	invalidURLErr := invalid.Validate()
 	require.Error(t, invalidURLErr)
 
 	invalid = Config{
@@ -111,5 +118,6 @@ func TestInvalidConfig(t *testing.T) {
 			QueueSize: -1,
 		},
 	}
-	require.Error(t, invalid.Validate())
+
+	require.Error(t, component.ValidateConfig(invalid))
 }

@@ -26,11 +26,12 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/comparetest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/mocks"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/model"
 )
@@ -38,6 +39,13 @@ import (
 const fullExpectedMetricsPath = "./testdata/expected_metrics/full.json"
 const skipClusterExpectedMetricsPath = "./testdata/expected_metrics/clusterSkip.json"
 const noNodesExpectedMetricsPath = "./testdata/expected_metrics/noNodes.json"
+
+func TestMain(m *testing.M) {
+	// Enable the feature gates before all tests to avoid flaky tests.
+	_ = featuregate.GlobalRegistry().Set(emitNodeVersionAttr.ID(), true)
+	code := m.Run()
+	os.Exit(code)
+}
 
 func TestScraper(t *testing.T) {
 	t.Parallel()
@@ -80,6 +88,7 @@ func TestScraper(t *testing.T) {
 	mockClient.On("ClusterMetadata", mock.Anything).Return(clusterMetadata(t), nil)
 	mockClient.On("ClusterHealth", mock.Anything).Return(clusterHealth(t), nil)
 	mockClient.On("ClusterStats", mock.Anything, []string{"_all"}).Return(clusterStats(t), nil)
+	mockClient.On("Nodes", mock.Anything, []string{"_all"}).Return(nodes(t), nil)
 	mockClient.On("NodeStats", mock.Anything, []string{"_all"}).Return(nodeStats(t), nil)
 	mockClient.On("IndexStats", mock.Anything, []string{"_all"}).Return(indexStats(t), nil)
 
@@ -91,7 +100,8 @@ func TestScraper(t *testing.T) {
 	actualMetrics, err := sc.scrape(context.Background())
 	require.NoError(t, err)
 
-	require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics))
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 }
 
 func TestScraperSkipClusterMetrics(t *testing.T) {
@@ -109,6 +119,7 @@ func TestScraperSkipClusterMetrics(t *testing.T) {
 	mockClient.On("ClusterMetadata", mock.Anything).Return(clusterMetadata(t), nil)
 	mockClient.On("ClusterHealth", mock.Anything).Return(clusterHealth(t), nil)
 	mockClient.On("ClusterStats", mock.Anything, []string{}).Return(clusterStats(t), nil)
+	mockClient.On("Nodes", mock.Anything, []string{"_all"}).Return(nodes(t), nil)
 	mockClient.On("NodeStats", mock.Anything, []string{"_all"}).Return(nodeStats(t), nil)
 	mockClient.On("IndexStats", mock.Anything, []string{"_all"}).Return(indexStats(t), nil)
 
@@ -120,7 +131,8 @@ func TestScraperSkipClusterMetrics(t *testing.T) {
 	actualMetrics, err := sc.scrape(context.Background())
 	require.NoError(t, err)
 
-	require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics))
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 }
 
 func TestScraperNoNodesMetrics(t *testing.T) {
@@ -138,6 +150,7 @@ func TestScraperNoNodesMetrics(t *testing.T) {
 	mockClient.On("ClusterMetadata", mock.Anything).Return(clusterMetadata(t), nil)
 	mockClient.On("ClusterHealth", mock.Anything).Return(clusterHealth(t), nil)
 	mockClient.On("ClusterStats", mock.Anything, []string{}).Return(clusterStats(t), nil)
+	mockClient.On("Nodes", mock.Anything, []string{"_all"}).Return(nodes(t), nil)
 	mockClient.On("NodeStats", mock.Anything, []string{}).Return(nodeStats(t), nil)
 	mockClient.On("IndexStats", mock.Anything, []string{"_all"}).Return(indexStats(t), nil)
 
@@ -149,7 +162,8 @@ func TestScraperNoNodesMetrics(t *testing.T) {
 	actualMetrics, err := sc.scrape(context.Background())
 	require.NoError(t, err)
 
-	require.NoError(t, comparetest.CompareMetrics(expectedMetrics, actualMetrics))
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 }
 
 func TestScraperFailedStart(t *testing.T) {
@@ -189,6 +203,7 @@ func TestScrapingError(t *testing.T) {
 
 				mockClient := mocks.MockElasticsearchClient{}
 				mockClient.On("ClusterMetadata", mock.Anything).Return(clusterMetadata(t), nil)
+				mockClient.On("Nodes", mock.Anything, []string{"_all"}).Return(nodes(t), nil)
 				mockClient.On("NodeStats", mock.Anything, []string{"_all"}).Return(nil, err404)
 				mockClient.On("ClusterHealth", mock.Anything).Return(clusterHealth(t), nil)
 				mockClient.On("ClusterStats", mock.Anything, []string{"_all"}).Return(clusterStats(t), nil)
@@ -215,6 +230,7 @@ func TestScrapingError(t *testing.T) {
 
 				mockClient := mocks.MockElasticsearchClient{}
 				mockClient.On("ClusterMetadata", mock.Anything).Return(clusterMetadata(t), nil)
+				mockClient.On("Nodes", mock.Anything, []string{"_all"}).Return(nodes(t), nil)
 				mockClient.On("NodeStats", mock.Anything, []string{"_all"}).Return(nodeStats(t), nil)
 				mockClient.On("ClusterHealth", mock.Anything).Return(nil, err404)
 				mockClient.On("ClusterStats", mock.Anything, []string{"_all"}).Return(clusterStats(t), nil)
@@ -242,6 +258,7 @@ func TestScrapingError(t *testing.T) {
 
 				mockClient := mocks.MockElasticsearchClient{}
 				mockClient.On("ClusterMetadata", mock.Anything).Return(clusterMetadata(t), nil)
+				mockClient.On("Nodes", mock.Anything, []string{"_all"}).Return(nodes(t), nil)
 				mockClient.On("NodeStats", mock.Anything, []string{"_all"}).Return(nil, err500)
 				mockClient.On("ClusterHealth", mock.Anything).Return(nil, err404)
 				mockClient.On("ClusterStats", mock.Anything, []string{"_all"}).Return(nil, err404)
@@ -269,6 +286,7 @@ func TestScrapingError(t *testing.T) {
 
 				mockClient := mocks.MockElasticsearchClient{}
 				mockClient.On("ClusterMetadata", mock.Anything).Return(nil, err404)
+				mockClient.On("Nodes", mock.Anything, []string{"_all"}).Return(nodes(t), nil)
 				mockClient.On("NodeStats", mock.Anything, []string{"_all"}).Return(nodeStats(t), nil)
 				mockClient.On("ClusterHealth", mock.Anything).Return(clusterHealth(t), nil)
 				mockClient.On("ClusterStats", mock.Anything, []string{"_all"}).Return(clusterStats(t), nil)
@@ -295,6 +313,7 @@ func TestScrapingError(t *testing.T) {
 
 				mockClient := mocks.MockElasticsearchClient{}
 				mockClient.On("ClusterMetadata", mock.Anything).Return(nil, err404)
+				mockClient.On("Nodes", mock.Anything, []string{"_all"}).Return(nodes(t), nil)
 				mockClient.On("NodeStats", mock.Anything, []string{"_all"}).Return(nil, err500)
 				mockClient.On("ClusterHealth", mock.Anything).Return(nil, err404)
 				mockClient.On("IndexStats", mock.Anything, []string{"_all"}).Return(nil, err500)
@@ -323,6 +342,7 @@ func TestScrapingError(t *testing.T) {
 
 				mockClient := mocks.MockElasticsearchClient{}
 				mockClient.On("ClusterMetadata", mock.Anything).Return(clusterMetadata(t), nil)
+				mockClient.On("Nodes", mock.Anything, []string{"_all"}).Return(nodes(t), nil)
 				mockClient.On("NodeStats", mock.Anything, []string{"_all"}).Return(nodeStats(t), nil)
 				mockClient.On("ClusterHealth", mock.Anything).Return(ch, nil)
 				mockClient.On("ClusterStats", mock.Anything, []string{"_all"}).Return(clusterStats(t), nil)
@@ -366,8 +386,17 @@ func clusterStats(t *testing.T) *model.ClusterStats {
 	return &clusterStats
 }
 
-func nodeStats(t *testing.T) *model.NodeStats {
+func nodes(t *testing.T) *model.Nodes {
 	nodeJSON, err := os.ReadFile("./testdata/sample_payloads/nodes_linux.json")
+	require.NoError(t, err)
+
+	nodes := model.Nodes{}
+	require.NoError(t, json.Unmarshal(nodeJSON, &nodes))
+	return &nodes
+}
+
+func nodeStats(t *testing.T) *model.NodeStats {
+	nodeJSON, err := os.ReadFile("./testdata/sample_payloads/nodes_stats_linux.json")
 	require.NoError(t, err)
 
 	nodeStats := model.NodeStats{}

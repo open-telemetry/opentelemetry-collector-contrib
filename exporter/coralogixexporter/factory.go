@@ -44,18 +44,15 @@ func createDefaultConfig() component.Config {
 		// Traces GRPC client
 		Traces: configgrpc.GRPCClientSettings{
 			Endpoint: "https://",
-			Headers:  map[string]string{},
 		},
 		Metrics: configgrpc.GRPCClientSettings{
 			Endpoint: "https://",
-			Headers:  map[string]string{},
 			// Default to gzip compression
 			Compression:     configcompression.Gzip,
 			WriteBufferSize: 512 * 1024,
 		},
 		Logs: configgrpc.GRPCClientSettings{
 			Endpoint: "https://",
-			Headers:  map[string]string{},
 		},
 		PrivateKey: "",
 		AppName:    "",

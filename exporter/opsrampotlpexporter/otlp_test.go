@@ -44,6 +44,7 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
@@ -68,6 +69,7 @@ func (r *mockReceiver) GetMetadata() metadata.MD {
 }
 
 type mockTracesReceiver struct {
+	ptraceotlp.UnimplementedGRPCServer
 	mockReceiver
 	exportError error
 	lastRequest ptrace.Traces
@@ -219,7 +221,7 @@ func TestSendTraces(t *testing.T) {
 		TLSSetting: configtls.TLSClientSetting{
 			Insecure: true,
 		},
-		Headers: map[string]string{
+		Headers: map[string]configopaque.String{
 			"header": "header-value",
 		},
 	}
@@ -375,7 +377,7 @@ func TestSendMetrics(t *testing.T) {
 		TLSSetting: configtls.TLSClientSetting{
 			Insecure: true,
 		},
-		Headers: map[string]string{
+		Headers: map[string]configopaque.String{
 			"header": "header-value",
 		},
 	}

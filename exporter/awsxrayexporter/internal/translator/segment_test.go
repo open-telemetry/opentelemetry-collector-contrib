@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.8.0"
@@ -259,9 +260,7 @@ func TestClientSpanWithDbComponent(t *testing.T) {
 	assert.Equal(t, "remote", *segment.Namespace)
 
 	w := testWriters.borrow()
-	if err := w.Encode(segment); err != nil {
-		assert.Fail(t, "invalid json")
-	}
+	require.NoError(t, w.Encode(segment))
 	jsonStr := w.String()
 	testWriters.release(w)
 	assert.True(t, strings.Contains(jsonStr, spanName))
@@ -464,6 +463,24 @@ func TestSpanWithAttributesPartlyIndexed(t *testing.T) {
 	assert.Equal(t, 1, len(segment.Annotations))
 	assert.Equal(t, "val1", segment.Annotations["attr1_1"])
 	assert.Equal(t, "val2", segment.Metadata["default"]["attr2@2"])
+}
+
+func TestSpanWithAnnotationsAttribute(t *testing.T) {
+	spanName := "/api/locations"
+	parentSpanID := newSegmentID()
+	attributes := make(map[string]interface{})
+	attributes["attr1@1"] = "val1"
+	attributes["attr2@2"] = "val2"
+	attributes[awsxray.AWSXraySegmentAnnotationsAttribute] = []string{"attr2@2", "not_exist"}
+	resource := constructDefaultResource()
+	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
+
+	segment, _ := MakeSegment(span, resource, nil, false, nil)
+
+	assert.NotNil(t, segment)
+	assert.Equal(t, 1, len(segment.Annotations))
+	assert.Equal(t, "val2", segment.Annotations["attr2_2"])
+	assert.Equal(t, "val1", segment.Metadata["default"]["attr1@1"])
 }
 
 func TestSpanWithAttributesAllIndexed(t *testing.T) {
@@ -865,6 +882,11 @@ func constructSpanAttributes(attributes map[string]interface{}) pcommon.Map {
 			attrs.PutInt(key, int64(cast))
 		} else if cast, ok := value.(int64); ok {
 			attrs.PutInt(key, cast)
+		} else if cast, ok := value.([]string); ok {
+			slice := attrs.PutEmptySlice(key)
+			for _, v := range cast {
+				slice.AppendEmpty().SetStr(v)
+			}
 		} else {
 			attrs.PutStr(key, fmt.Sprintf("%v", value))
 		}

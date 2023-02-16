@@ -85,7 +85,7 @@ func (e *instanaExporter) pushConvertedTraces(ctx context.Context, td ptrace.Tra
 	}
 
 	headers := map[string]string{
-		backend.HeaderKey:  e.config.AgentKey,
+		backend.HeaderKey:  string(e.config.AgentKey),
 		backend.HeaderHost: hostID,
 		// Used only by the Instana agent and can be set to "0" for the exporter
 		backend.HeaderTime: "0",

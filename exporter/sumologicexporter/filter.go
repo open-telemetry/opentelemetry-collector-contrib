@@ -57,7 +57,6 @@ func (f *filter) mergeAndFilterIn(attrMaps ...pcommon.Map) fields {
 			return true
 		})
 	}
-	returnValue.Sort()
 	return newFields(returnValue)
 }
 
@@ -74,6 +73,5 @@ func (f *filter) filterOut(attributes pcommon.Map) fields {
 		v.CopyTo(returnValue.PutEmpty(k))
 		return true
 	})
-	returnValue.Sort()
 	return newFields(returnValue)
 }

@@ -184,31 +184,51 @@ func TestMetricsBuilder(t *testing.T) {
 			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
 			rm := metrics.ResourceMetrics().At(0)
 			attrCount := 0
-			attrCount++
+			enabledAttrCount := 0
 			attrVal, ok := rm.Resource().Attributes().Get("flink.job.name")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
 			attrCount++
+			assert.Equal(t, mb.resourceAttributesSettings.FlinkJobName.Enabled, ok)
+			if mb.resourceAttributesSettings.FlinkJobName.Enabled {
+				enabledAttrCount++
+				assert.EqualValues(t, "attr-val", attrVal.Str())
+			}
 			attrVal, ok = rm.Resource().Attributes().Get("flink.resource.type")
-			assert.True(t, ok)
-			assert.Equal(t, "jobmanager", attrVal.Str())
 			attrCount++
+			assert.Equal(t, mb.resourceAttributesSettings.FlinkResourceType.Enabled, ok)
+			if mb.resourceAttributesSettings.FlinkResourceType.Enabled {
+				enabledAttrCount++
+				assert.Equal(t, "jobmanager", attrVal.Str())
+			}
 			attrVal, ok = rm.Resource().Attributes().Get("flink.subtask.index")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
 			attrCount++
+			assert.Equal(t, mb.resourceAttributesSettings.FlinkSubtaskIndex.Enabled, ok)
+			if mb.resourceAttributesSettings.FlinkSubtaskIndex.Enabled {
+				enabledAttrCount++
+				assert.EqualValues(t, "attr-val", attrVal.Str())
+			}
 			attrVal, ok = rm.Resource().Attributes().Get("flink.task.name")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
 			attrCount++
+			assert.Equal(t, mb.resourceAttributesSettings.FlinkTaskName.Enabled, ok)
+			if mb.resourceAttributesSettings.FlinkTaskName.Enabled {
+				enabledAttrCount++
+				assert.EqualValues(t, "attr-val", attrVal.Str())
+			}
 			attrVal, ok = rm.Resource().Attributes().Get("flink.taskmanager.id")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
 			attrCount++
+			assert.Equal(t, mb.resourceAttributesSettings.FlinkTaskmanagerID.Enabled, ok)
+			if mb.resourceAttributesSettings.FlinkTaskmanagerID.Enabled {
+				enabledAttrCount++
+				assert.EqualValues(t, "attr-val", attrVal.Str())
+			}
 			attrVal, ok = rm.Resource().Attributes().Get("host.name")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			assert.Equal(t, attrCount, rm.Resource().Attributes().Len())
+			attrCount++
+			assert.Equal(t, mb.resourceAttributesSettings.HostName.Enabled, ok)
+			if mb.resourceAttributesSettings.HostName.Enabled {
+				enabledAttrCount++
+				assert.EqualValues(t, "attr-val", attrVal.Str())
+			}
+			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
+			assert.Equal(t, attrCount, 6)
 
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()

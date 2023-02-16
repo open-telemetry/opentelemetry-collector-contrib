@@ -146,7 +146,7 @@ Number of z-nodes that a ZooKeeper server has in its data tree.
 
 ## Resource Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| server.state | State of the Zookeeper server (leader, standalone or follower). | Any Str |
-| zk.version | Zookeeper version of the instance. | Any Str |
+| Name | Description | Values | Enabled |
+| ---- | ----------- | ------ | ------- |
+| server.state | State of the Zookeeper server (leader, standalone or follower). | Any Str | true |
+| zk.version | Zookeeper version of the instance. | Any Str | true |

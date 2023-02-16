@@ -98,6 +98,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordMongodbGlobalLockTimeDataPoint(ts, 1)
 
+			allMetricsCount++
+			mb.RecordMongodbHealthDataPoint(ts, 1)
+
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbIndexAccessCountDataPoint(ts, 1, "attr-val", "attr-val")
@@ -164,6 +167,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordMongodbStorageSizeDataPoint(ts, 1, "attr-val")
 
+			allMetricsCount++
+			mb.RecordMongodbUptimeDataPoint(ts, 1)
+
 			metrics := mb.Emit(WithDatabase("attr-val"))
 
 			if test.metricsSet == testMetricsSetNo {
@@ -174,11 +180,16 @@ func TestMetricsBuilder(t *testing.T) {
 			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
 			rm := metrics.ResourceMetrics().At(0)
 			attrCount := 0
-			attrCount++
+			enabledAttrCount := 0
 			attrVal, ok := rm.Resource().Attributes().Get("database")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			assert.Equal(t, attrCount, rm.Resource().Attributes().Len())
+			attrCount++
+			assert.Equal(t, mb.resourceAttributesSettings.Database.Enabled, ok)
+			if mb.resourceAttributesSettings.Database.Enabled {
+				enabledAttrCount++
+				assert.EqualValues(t, "attr-val", attrVal.Str())
+			}
+			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
+			assert.Equal(t, attrCount, 1)
 
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
@@ -351,6 +362,18 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "mongodb.health":
+					assert.False(t, validatedMetrics["mongodb.health"], "Found a duplicate in the metrics slice: mongodb.health")
+					validatedMetrics["mongodb.health"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The health status of the server.", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -677,6 +700,20 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("database")
 					assert.True(t, ok)
 					assert.EqualValues(t, "attr-val", attrVal.Str())
+				case "mongodb.uptime":
+					assert.False(t, validatedMetrics["mongodb.uptime"], "Found a duplicate in the metrics slice: mongodb.uptime")
+					validatedMetrics["mongodb.uptime"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The amount of time that the server has been running.", ms.At(i).Description())
+					assert.Equal(t, "ms", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				}
 			}
 		})

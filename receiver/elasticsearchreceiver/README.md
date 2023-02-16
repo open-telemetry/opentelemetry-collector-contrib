@@ -60,29 +60,14 @@ Details about the metrics produced by this receiver can be found in [metadata.ya
 
 See the [Collector feature gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) for an overview of feature gates in the collector.
 
-**BETA**: `receiver.elasticsearch.emitClusterHealthDetailedShardMetrics`
+**ALPHA**: `receiver.elasticsearch.emitNodeVersionAttr`
 
-The feature gate `receiver.elasticsearch.emitClusterHealthDetailedShardMetrics` once enabled starts emitting the metric `elasticsearch.cluster.shards`
-with two additional data points - one with `state` equal to `active_primary` and one with `state` equal to `unassigned_delayed`.
+The feature gate `receiver.elasticsearch.emitNodeVersionAttr` once enabled will enrich all node metrics with an
+resource attribute representing the node version.
 
-This is considered a breaking change for existing users of this receiver, and it is recommended to migrate to the new implementation when possible. Any new users planning to adopt this receiver should enable this feature gate to avoid having to migrate any visualisations or alerts.
-
-This feature gate is enabled by default, and eventually the old implementation will be removed. It aims
-to give users time to migrate to the new implementation. The target release for the old implementation to be removed
-is 0.71.0.
-
-**BETA**: `receiver.elasticsearch.emitAllIndexOperationMetrics`
-
-The feature gate `receiver.elasticsearch.emitAllIndexOperationMetrics` once enabled starts emitting metrics `elasticsearch.index.operation.count`
-and `elasticsearch.index.operation.time` with all possible data points - for every possible operation type and both shard aggregation types.
-
-Because of the amount of added data points, this change might affect performance for existing users of this receiver.
-It is recommended to migrate to the new implementation when possible.
-Any new users planning to adopt this receiver should enable this feature gate to avoid risking unexpected slowdowns.
-
-This feature gate is enabled by default, and eventually the old implementation will be removed. It aims
-to give users time to migrate to the new implementation. The target release for the old implementation to be removed
-is 0.71.0.
+This feature gate will eventually be enabled by default, and eventually the old implementation will be removed. It aims
+to give users time to migrate to the new implementation. The target release for this featuregate to be enabled by default
+is 0.69.0.
 
 [beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

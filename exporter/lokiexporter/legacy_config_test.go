@@ -19,6 +19,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/prometheus/common/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -62,10 +63,12 @@ func TestLoadConfig(t *testing.T) {
 					Timeout:         time.Second * 10,
 				},
 				RetrySettings: exporterhelper.RetrySettings{
-					Enabled:         true,
-					InitialInterval: 10 * time.Second,
-					MaxInterval:     1 * time.Minute,
-					MaxElapsedTime:  10 * time.Minute,
+					Enabled:             true,
+					InitialInterval:     10 * time.Second,
+					MaxInterval:         1 * time.Minute,
+					MaxElapsedTime:      10 * time.Minute,
+					RandomizationFactor: backoff.DefaultRandomizationFactor,
+					Multiplier:          backoff.DefaultMultiplier,
 				},
 				QueueSettings: exporterhelper.QueueSettings{
 					Enabled:      true,
@@ -108,10 +111,12 @@ func TestLoadConfig(t *testing.T) {
 					Timeout:         time.Second * 30,
 				},
 				RetrySettings: exporterhelper.RetrySettings{
-					Enabled:         true,
-					InitialInterval: 5 * time.Second,
-					MaxInterval:     30 * time.Second,
-					MaxElapsedTime:  5 * time.Minute,
+					Enabled:             true,
+					InitialInterval:     5 * time.Second,
+					MaxInterval:         30 * time.Second,
+					MaxElapsedTime:      5 * time.Minute,
+					RandomizationFactor: backoff.DefaultRandomizationFactor,
+					Multiplier:          backoff.DefaultMultiplier,
 				},
 				QueueSettings: exporterhelper.QueueSettings{
 					Enabled:      true,

@@ -139,7 +139,11 @@ func (e *opsrampOTLPExporter) start(ctx context.Context, host component.Host) (e
 	e.traceExporter = ptraceotlp.NewGRPCClient(e.clientConn)
 	e.metricExporter = pmetricotlp.NewGRPCClient(e.clientConn)
 	e.logExporter = plogotlp.NewGRPCClient(e.clientConn)
-	e.metadata = metadata.New(e.config.GRPCClientSettings.Headers)
+	headers := map[string]string{}
+	for k, v := range e.config.GRPCClientSettings.Headers {
+		headers[k] = string(v)
+	}
+	e.metadata = metadata.New(headers)
 	e.metadata.Set("Authorization", fmt.Sprintf("Bearer %s", e.accessToken))
 	e.callOptions = []grpc.CallOption{
 		grpc.WaitForReady(e.config.GRPCClientSettings.WaitForReady),
@@ -328,12 +332,8 @@ func (e *opsrampOTLPExporter) skipExpired(ld plog.Logs) {
 		for k := 0; k < resLogs.ScopeLogs().Len(); k++ {
 			resLogs.ScopeLogs().At(k).LogRecords().RemoveIf(func(el plog.LogRecord) bool {
 				fmt.Println(el.Timestamp().AsTime().String(), time.Now().Add(-e.config.ExpirationSkip).String())
-				if el.Timestamp().AsTime().Before(time.Now().Add(-e.config.ExpirationSkip)) {
-					return true
-				}
-				return false
+				return el.Timestamp().AsTime().Before(time.Now().Add(-e.config.ExpirationSkip))
 			})
-
 		}
 	}
 }

@@ -59,6 +59,7 @@ func TestLoadConfig(t *testing.T) {
 				LogStreamName:         "",
 				DimensionRollupOption: "ZeroAndSingleDimensionRollup",
 				OutputDestination:     "cloudwatch",
+				logger:                zap.NewNop(),
 			},
 		},
 		{
@@ -79,6 +80,7 @@ func TestLoadConfig(t *testing.T) {
 				DimensionRollupOption:       "ZeroAndSingleDimensionRollup",
 				OutputDestination:           "cloudwatch",
 				ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
+				logger:                      zap.NewNop(),
 			},
 		},
 		{
@@ -103,6 +105,7 @@ func TestLoadConfig(t *testing.T) {
 					Unit:       "Count",
 					Overwrite:  true,
 				}},
+				logger: zap.NewNop(),
 			},
 		},
 	}

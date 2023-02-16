@@ -233,6 +233,6 @@ Number of times users manually issue the ROLLBACK statement or an error occurs d
 
 ## Resource Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| oracledb.instance.name | The name of the instance that data is coming from. | Any Str |
+| Name | Description | Values | Enabled |
+| ---- | ----------- | ------ | ------- |
+| oracledb.instance.name | The name of the instance that data is coming from. | Any Str | true |

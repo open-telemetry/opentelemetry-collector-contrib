@@ -67,6 +67,7 @@ func threePointOne[K any]() (ExprFunc[K], error) {
 	}, nil
 }
 
+//nolint:unparam
 func sum[K any](ints []int64) (ExprFunc[K], error) {
 	return func(context.Context, K) (interface{}, error) {
 		result := int64(0)
@@ -215,8 +216,8 @@ func Test_evaluateMathExpression(t *testing.T) {
 	p := NewParser[any](
 		functions,
 		mathParsePath,
-		testParseEnum,
 		component.TelemetrySettings{},
+		WithEnumParser[any](testParseEnum),
 	)
 
 	mathParser := newParser[value]()
@@ -258,8 +259,8 @@ func Test_evaluateMathExpression_error(t *testing.T) {
 	p := NewParser[any](
 		functions,
 		mathParsePath,
-		testParseEnum,
 		component.TelemetrySettings{},
+		WithEnumParser[any](testParseEnum),
 	)
 
 	mathParser := newParser[value]()

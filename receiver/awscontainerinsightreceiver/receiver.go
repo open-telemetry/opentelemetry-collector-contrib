@@ -68,7 +68,7 @@ func newAWSContainerInsightReceiver(
 
 // Start collecting metrics from cadvisor and k8s api server (if it is an elected leader)
 func (acir *awsContainerInsightReceiver) Start(ctx context.Context, host component.Host) error {
-	ctx, acir.cancel = context.WithCancel(context.Background())
+	ctx, acir.cancel = context.WithCancel(ctx)
 
 	hostinfo, err := hostInfo.NewInfo(acir.config.ContainerOrchestrator, acir.config.CollectionInterval, acir.settings.Logger)
 	if err != nil {
@@ -132,6 +132,9 @@ func (acir *awsContainerInsightReceiver) Start(ctx context.Context, host compone
 
 // Shutdown stops the awsContainerInsightReceiver receiver.
 func (acir *awsContainerInsightReceiver) Shutdown(context.Context) error {
+	if acir.cancel == nil {
+		return nil
+	}
 	acir.cancel()
 	return nil
 }

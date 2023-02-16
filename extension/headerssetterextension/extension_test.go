@@ -36,7 +36,7 @@ func (m *mockRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) 
 func TestRoundTripper(t *testing.T) {
 	for _, tt := range tests {
 		t.Run("round_tripper", func(t *testing.T) {
-			ext, err := newHeadersSetterExtension(tt.cfg)
+			ext, err := newHeadersSetterExtension(tt.cfg, nil)
 			assert.NoError(t, err)
 			assert.NotNil(t, ext)
 
@@ -71,7 +71,7 @@ func TestRoundTripper(t *testing.T) {
 func TestPerRPCCredentials(t *testing.T) {
 	for _, tt := range tests {
 		t.Run("", func(t *testing.T) {
-			ext, err := newHeadersSetterExtension(tt.cfg)
+			ext, err := newHeadersSetterExtension(tt.cfg, nil)
 			assert.NoError(t, err)
 			assert.NotNil(t, ext)
 
@@ -112,6 +112,7 @@ var (
 				HeadersConfig: []HeaderConfig{
 					{
 						Key:         &header,
+						Action:      INSERT,
 						FromContext: stringp("tenant"),
 					},
 				},
@@ -127,8 +128,9 @@ var (
 			cfg: &Config{
 				HeadersConfig: []HeaderConfig{
 					{
-						Key:   &header,
-						Value: stringp("config value"),
+						Key:    &header,
+						Action: INSERT,
+						Value:  stringp("config value"),
 					},
 				},
 			},
@@ -141,10 +143,12 @@ var (
 				HeadersConfig: []HeaderConfig{
 					{
 						Key:         &header,
+						Action:      INSERT,
 						FromContext: stringp("tenant"),
 					},
 					{
 						Key:         &anotherHeader,
+						Action:      INSERT,
 						FromContext: stringp("tenant"),
 					},
 				},
@@ -162,6 +166,7 @@ var (
 				HeadersConfig: []HeaderConfig{
 					{
 						Key:         &header,
+						Action:      INSERT,
 						FromContext: stringp(""),
 					},
 				},
@@ -174,8 +179,9 @@ var (
 			cfg: &Config{
 				HeadersConfig: []HeaderConfig{
 					{
-						Key:   &header,
-						Value: stringp(""),
+						Key:    &header,
+						Action: INSERT,
+						Value:  stringp(""),
 					},
 				},
 			},
@@ -188,10 +194,12 @@ var (
 				HeadersConfig: []HeaderConfig{
 					{
 						Key:         &header,
+						Action:      INSERT,
 						FromContext: stringp("tenant"),
 					},
 					{
 						Key:         &anotherHeader,
+						Action:      INSERT,
 						FromContext: stringp("tenant_"),
 					},
 				},
@@ -209,6 +217,7 @@ var (
 				HeadersConfig: []HeaderConfig{
 					{
 						Key:         &header,
+						Action:      INSERT,
 						FromContext: stringp("tenant_"),
 					},
 				},

@@ -232,15 +232,6 @@ func TestNullExporterConfig(tester *testing.T) {
 	assert.Error(tester, err, "Null exporter config should produce error")
 }
 
-func TestNullTokenConfig(tester *testing.T) {
-	cfg := Config{
-		Region: "eu",
-	}
-	params := exportertest.NewNopCreateSettings()
-	_, err := createTracesExporter(context.Background(), params, &cfg)
-	assert.Error(tester, err, "Empty token should produce error")
-}
-
 func gUnzipData(data []byte) (resData []byte, err error) {
 	b := bytes.NewBuffer(data)
 

@@ -57,10 +57,6 @@ func createLogsExporter(ctx context.Context, settings exporter.CreateSettings, e
 	}
 	expCfg := exporterConfig.(*Config)
 
-	if err := expCfg.Validate(); err != nil {
-		return nil, err
-	}
-
 	exp := newLogsExporter(expCfg, settings.TelemetrySettings, settings.BuildInfo, log)
 
 	return exporterhelper.NewLogsExporter(
