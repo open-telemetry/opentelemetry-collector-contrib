@@ -7,6 +7,7 @@ require (
 	github.com/aws/aws-sdk-go v1.44.201
 	github.com/docker/docker v23.0.1+incompatible
 	github.com/hashicorp/consul/api v1.18.0
+	github.com/panta/machineid v1.0.2
 	github.com/stretchr/testify v1.8.1
 )
 
