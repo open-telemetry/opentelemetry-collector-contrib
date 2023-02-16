@@ -27,7 +27,7 @@ const (
 )
 
 var dropSanitizationGate = featuregate.GlobalRegistry().MustRegister(
-	"processor.spanmetrics.PermissiveLabelSanitization",
+	"connector.spanmetrics.PermissiveLabelSanitization",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("Controls whether to change labels starting with '_' to 'key_'"),
 )
@@ -38,10 +38,10 @@ type Dimension struct {
 	Default *string `mapstructure:"default"`
 }
 
-// Config defines the configuration options for spanmetricsprocessor.
+// Config defines the configuration options for spanmetricsconnector.
 type Config struct {
 	// LatencyHistogramBuckets is the list of durations representing latency histogram buckets.
-	// See defaultLatencyHistogramBucketsMs in processor.go for the default value.
+	// See defaultLatencyHistogramBucketsMs in connector.go for the default value.
 	LatencyHistogramBuckets []time.Duration `mapstructure:"latency_histogram_buckets"`
 
 	// Dimensions defines the list of additional dimensions on top of the provided:
@@ -55,7 +55,7 @@ type Config struct {
 
 	// DimensionsCacheSize defines the size of cache for storing Dimensions, which helps to avoid cache memory growing
 	// indefinitely over the lifetime of the collector.
-	// Optional. See defaultDimensionsCacheSize in processor.go for the default value.
+	// Optional. See defaultDimensionsCacheSize in connector.go for the default value.
 	DimensionsCacheSize int `mapstructure:"dimensions_cache_size"`
 
 	AggregationTemporality string `mapstructure:"aggregation_temporality"`
@@ -66,7 +66,7 @@ type Config struct {
 	// MetricsEmitInterval is the time period between when metrics are flushed or emitted to the configured MetricsExporter.
 	MetricsFlushInterval time.Duration `mapstructure:"metrics_flush_interval"`
 
-	// Namespace is the namespace of the metrics emitted by the processor.
+	// Namespace is the namespace of the metrics emitted by the connector.
 	Namespace string `mapstructure:"namespace"`
 }
 

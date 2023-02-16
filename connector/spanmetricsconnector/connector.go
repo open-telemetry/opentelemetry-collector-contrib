@@ -188,7 +188,7 @@ func validateDimensions(dimensions []Dimension, skipSanitizeLabel bool) error {
 
 // Start implements the component.Component interface.
 func (p *connectorImp) Start(ctx context.Context, host component.Host) error {
-	p.logger.Info("Starting spanmetricsprocessor")
+	p.logger.Info("Starting spanmetricsconnector")
 
 	p.started = true
 	go func() {
@@ -265,7 +265,7 @@ func (p *connectorImp) exportMetrics(ctx context.Context) {
 func (p *connectorImp) buildMetrics() pmetric.Metrics {
 	m := pmetric.NewMetrics()
 	ilm := m.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
-	ilm.Scope().SetName("spanmetricsprocessor")
+	ilm.Scope().SetName("spanmetricsconnector")
 
 	p.collectCallMetrics(ilm)
 	p.collectLatencyMetrics(ilm)

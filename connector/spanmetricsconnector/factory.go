@@ -27,7 +27,7 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "spanmetrics"
-	// The stability level of the processor.
+	// The stability level of the connector.
 	stability = component.StabilityLevelDevelopment
 )
 

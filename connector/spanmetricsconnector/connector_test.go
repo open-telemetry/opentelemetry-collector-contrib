@@ -109,7 +109,7 @@ func verifyMultipleCumulativeConsumptions() func(t testing.TB, input pmetric.Met
 	}
 }
 
-// verifyConsumeMetricsInput verifies the input of the ConsumeMetrics call from this processor.
+// verifyConsumeMetricsInput verifies the input of the ConsumeMetrics call from this connector.
 // This is the best point to verify the computed metrics from spans are as expected.
 func verifyConsumeMetricsInput(t testing.TB, input pmetric.Metrics, expectedTemporality pmetric.AggregationTemporality, numCumulativeConsumptions int) bool {
 	require.Equal(t, 6, input.DataPointCount(),
@@ -122,7 +122,7 @@ func verifyConsumeMetricsInput(t testing.TB, input pmetric.Metrics, expectedTemp
 
 	ilm := rm.At(0).ScopeMetrics()
 	require.Equal(t, 1, ilm.Len())
-	assert.Equal(t, "spanmetricsprocessor", ilm.At(0).Scope().Name())
+	assert.Equal(t, "spanmetricsconnector", ilm.At(0).Scope().Name())
 
 	m := ilm.At(0).Metrics()
 	require.Equal(t, 2, m.Len())
