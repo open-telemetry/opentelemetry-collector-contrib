@@ -18,6 +18,8 @@ package sentryexporter // import "github.com/open-telemetry/opentelemetry-collec
 type Config struct {
 	// DSN to report transaction to Sentry. If the DSN is not set, no trace will be sent to Sentry.
 	DSN string `mapstructure:"dsn"`
+	// ENV is a Sentry-supported tag that you can (and should) add. It's intended to refer deployments' environment such as development, staging, or production.
+	ENV string `mapstructure:"env"`
 	// InsecureSkipVerify controls whether the client verifies the Sentry server certificate chain
 	InsecureSkipVerify bool `mapstructure:"insecure_skip_verify"`
 }

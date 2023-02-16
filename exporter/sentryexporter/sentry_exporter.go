@@ -481,6 +481,7 @@ func CreateSentryExporter(config *Config, set exporter.CreateSettings) (exporter
 
 	clientOptions := sentry.ClientOptions{
 		Dsn: config.DSN,
+		Environment: config.ENV,
 	}
 
 	if config.InsecureSkipVerify {
