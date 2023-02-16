@@ -5,7 +5,7 @@ change_type: bug_fix
 component: oracledbreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: return -1 if max tablespace size is not set
+note: record a value of -1 for `oracledb.tablespace_size.limit` if the max tablespace size is not set
 
 # One or more tracking issues related to the change
 issues: [18670]
