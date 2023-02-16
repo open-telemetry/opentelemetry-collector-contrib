@@ -335,7 +335,7 @@ func (p *processorImp) buildMetrics() pmetric.Metrics {
 // into the given instrumentation library metrics.
 func (p *processorImp) collectLatencyMetrics(ilm pmetric.ScopeMetrics) {
 	mLatency := ilm.Metrics().AppendEmpty()
-	mLatency.SetName(buildMetricName(p.config.Namespace, metricLatency, p.config.Normalized))
+	mLatency.SetName(buildMetricName(p.config.Namespace, metricLatency))
 	mLatency.SetUnit("ms")
 	mLatency.SetEmptyHistogram().SetAggregationTemporality(p.config.GetAggregationTemporality())
 	dps := mLatency.Histogram().DataPoints()
@@ -363,7 +363,7 @@ func (p *processorImp) collectLatencyMetrics(ilm pmetric.ScopeMetrics) {
 // into the given instrumentation library metrics.
 func (p *processorImp) collectCallMetrics(ilm pmetric.ScopeMetrics) {
 	mCalls := ilm.Metrics().AppendEmpty()
-	mCalls.SetName(buildMetricName(p.config.Namespace, metricCallsTotal, p.config.Normalized))
+	mCalls.SetName(buildMetricName(p.config.Namespace, metricCallsTotal))
 	mCalls.SetEmptySum().SetIsMonotonic(true)
 	mCalls.Sum().SetAggregationTemporality(p.config.GetAggregationTemporality())
 	dps := mCalls.Sum().DataPoints()
@@ -581,15 +581,10 @@ func setExemplars(exemplarsData []exemplarData, timestamp pcommon.Timestamp, exe
 	es.CopyTo(exemplars)
 }
 
-// buildMetricName builds the metric name from the namespace and metric name.
-// if normalized is true, the metric name will be normalized concatenating the namespace and metric name with a dot.
-// if normalized is false, the metric name will be concatenated with an underscore.
-func buildMetricName(namespace string, metricName string, normalized bool) string {
+// buildMetricName builds the namespace prefix for the metric name.
+func buildMetricName(namespace string, name string) string {
 	if namespace != "" {
-		if normalized {
-			return namespace + "." + metricName
-		}
-		return namespace + "_" + metricName
+		return namespace + "." + name
 	}
-	return metricName
+	return name
 }

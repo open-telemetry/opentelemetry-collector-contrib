@@ -71,9 +71,6 @@ type Config struct {
 
 	// Namespace is the namespace to use for the metrics.
 	Namespace string `mapstructure:"namespace"`
-
-	// Normalized if enabled, using OpenTelemetry specification.
-	Normalized bool `mapstructure:"normalized"`
 }
 
 // GetAggregationTemporality converts the string value given in the config into a AggregationTemporality.

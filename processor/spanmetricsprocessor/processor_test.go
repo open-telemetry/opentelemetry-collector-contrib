@@ -1107,18 +1107,15 @@ func TestBuildMetricName(t *testing.T) {
 	tests := []struct {
 		namespace  string
 		metricName string
-		normalized bool
 		expected   string
 	}{
-		{"", "metric", false, "metric"},
-		{"ns", "metric", false, "ns_metric"},
-		{"longer_namespace", "metric", false, "longer_namespace_metric"},
-		{"ns", "metric", true, "ns.metric"},
-		{"longer_namespace", "metric", true, "longer_namespace.metric"},
+		{"", "metric", "metric"},
+		{"ns", "metric", "ns.metric"},
+		{"longer_namespace", "metric", "longer_namespace.metric"},
 	}
 
 	for _, test := range tests {
-		actual := buildMetricName(test.namespace, test.metricName, test.normalized)
+		actual := buildMetricName(test.namespace, test.metricName)
 		assert.Equal(t, test.expected, actual)
 	}
 }
