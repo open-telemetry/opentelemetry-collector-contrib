@@ -17,18 +17,30 @@ package ottl // import "github.com/open-telemetry/opentelemetry-collector-contri
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/alecthomas/participle/v2"
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 )
 
-type ErrorMode int
+type ErrorMode string
 
 const (
-	IgnoreError ErrorMode = iota
-	PropagateError
+	IgnoreError    ErrorMode = "ignore"
+	PropagateError ErrorMode = "propagate"
 )
+
+func (e *ErrorMode) UnmarshalText(text []byte) error {
+	str := ErrorMode(strings.ToLower(string(text)))
+	switch str {
+	case IgnoreError, PropagateError:
+		*e = str
+		return nil
+	default:
+		return fmt.Errorf("unknown error mode %v", str)
+	}
+}
 
 type Parser[K any] struct {
 	functions         map[string]interface{}
