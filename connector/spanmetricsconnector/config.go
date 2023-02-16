@@ -46,7 +46,7 @@ type Config struct {
 
 	// Dimensions defines the list of additional dimensions on top of the provided:
 	// - service.name
-	// - span.name
+	// - operation
 	// - span.kind
 	// - status.code
 	// The dimensions will be fetched from the span's attributes. Examples of some conventionally used attributes:

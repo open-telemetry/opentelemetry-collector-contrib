@@ -28,8 +28,7 @@ const (
 	// The value of "type" key in configuration.
 	typeStr = "spanmetrics"
 	// The stability level of the processor.
-	stability          = component.StabilityLevelDevelopment
-	connectorStability = component.StabilityLevelDevelopment
+	stability = component.StabilityLevelDevelopment
 )
 
 // NewFactory creates a factory for the spanmetrics connector.
@@ -37,7 +36,7 @@ func NewFactory() connector.Factory {
 	return connector.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		connector.WithTracesToMetrics(createTracesToMetricsConnector, connectorStability),
+		connector.WithTracesToMetrics(createTracesToMetricsConnector, stability),
 	)
 }
 

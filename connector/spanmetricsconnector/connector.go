@@ -54,7 +54,6 @@ type connectorImp struct {
 	config Config
 
 	metricsConsumer consumer.Metrics
-	tracesConsumer  consumer.Traces
 
 	// Additional dimensions to add to metrics.
 	dimensions []dimension
@@ -209,11 +208,7 @@ func (p *connectorImp) Start(ctx context.Context, host component.Host) error {
 // Shutdown implements the component.Component interface.
 func (p *connectorImp) Shutdown(context.Context) error {
 	p.shutdownOnce.Do(func() {
-		if p.tracesConsumer == nil {
-			p.logger.Info("Shutting down spanmetricsconnector")
-		} else {
-			p.logger.Info("Shutting down spanmetricsprocessor")
-		}
+		p.logger.Info("Shutting down spanmetricsconnector")
 		if p.started {
 			p.logger.Info("Stopping ticker")
 			p.ticker.Stop()
@@ -236,14 +231,7 @@ func (p *connectorImp) ConsumeTraces(ctx context.Context, traces ptrace.Traces) 
 	p.lock.Lock()
 	p.aggregateMetrics(traces)
 	p.lock.Unlock()
-
-	// true when p is a connector
-	if p.tracesConsumer == nil {
-		return nil
-	}
-
-	// Forward trace data unmodified and propagate trace pipeline errors, if any.
-	return p.tracesConsumer.ConsumeTraces(ctx, traces)
+	return nil
 }
 
 func (p *connectorImp) exportMetrics(ctx context.Context) {

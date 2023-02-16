@@ -391,7 +391,7 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 	}
 }
 
-func TestProcessorDuplicateDimensions(t *testing.T) {
+func TestConnectorDuplicateDimensions(t *testing.T) {
 	// Prepare
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
@@ -524,9 +524,9 @@ func TestConnectorUpdateExemplars(t *testing.T) {
 	traceID := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID()
 	spanID := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).SpanID()
 	key := metricKey("metricKey")
-	next := new(consumertest.TracesSink)
+	next := new(consumertest.MetricsSink)
 	c, err := newConnector(zaptest.NewLogger(t), cfg, nil)
-	c.tracesConsumer = next
+	c.metricsConsumer = next
 	value := float64(42)
 
 	// ----- call -------------------------------------------------------------
