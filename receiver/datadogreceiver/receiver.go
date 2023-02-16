@@ -18,9 +18,8 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"sync"
 
-	datadogpb "github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
+	"github.com/DataDog/datadog-agent/pkg/trace/pb"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
@@ -32,11 +31,7 @@ type datadogReceiver struct {
 	params       receiver.CreateSettings
 	nextConsumer consumer.Traces
 	server       *http.Server
-	shutdownWG   sync.WaitGroup
 	tReceiver    *obsreport.Receiver
-
-	startOnce sync.Once
-	stopOnce  sync.Once
 }
 
 func newDataDogReceiver(config *Config, nextConsumer consumer.Traces, params receiver.CreateSettings) (receiver.Traces, error) {
@@ -61,30 +56,22 @@ func newDataDogReceiver(config *Config, nextConsumer consumer.Traces, params rec
 }
 
 func (ddr *datadogReceiver) Start(_ context.Context, host component.Host) error {
-	ddr.startOnce.Do(func() {
-		ddr.shutdownWG.Add(1)
-		go func() {
-			defer ddr.shutdownWG.Done()
-
-			ddmux := http.NewServeMux()
-			ddmux.HandleFunc("/v0.3/traces", ddr.handleTraces)
-			ddmux.HandleFunc("/v0.4/traces", ddr.handleTraces)
-			ddmux.HandleFunc("/v0.5/traces", ddr.handleTraces)
-			ddr.server.Handler = ddmux
-			if err := ddr.server.ListenAndServe(); err != http.ErrServerClosed {
-				host.ReportFatalError(fmt.Errorf("error starting datadog receiver: %w", err))
-			}
-		}()
-	})
+	go func() {
+		ddmux := http.NewServeMux()
+		ddmux.HandleFunc("/v0.3/traces", ddr.handleTraces)
+		ddmux.HandleFunc("/v0.4/traces", ddr.handleTraces)
+		ddmux.HandleFunc("/v0.5/traces", ddr.handleTraces)
+		ddmux.HandleFunc("/v0.7/traces", ddr.handleTraces)
+		ddr.server.Handler = ddmux
+		if err := ddr.server.ListenAndServe(); err != http.ErrServerClosed {
+			host.ReportFatalError(fmt.Errorf("error starting datadog receiver: %w", err))
+		}
+	}()
 	return nil
 }
 
 func (ddr *datadogReceiver) Shutdown(ctx context.Context) (err error) {
-	ddr.stopOnce.Do(func() {
-		err = ddr.server.Shutdown(ctx)
-	})
-	ddr.shutdownWG.Wait()
-	return err
+	return ddr.server.Shutdown(ctx)
 }
 
 func (ddr *datadogReceiver) handleTraces(w http.ResponseWriter, req *http.Request) {
@@ -94,9 +81,9 @@ func (ddr *datadogReceiver) handleTraces(w http.ResponseWriter, req *http.Reques
 	defer func(spanCount *int) {
 		ddr.tReceiver.EndTracesOp(obsCtx, "datadog", *spanCount, err)
 	}(&spanCount)
-	var ddTraces datadogpb.Traces
+	var ddTraces *pb.TracerPayload
 
-	err = decodeRequest(req, &ddTraces)
+	ddTraces, err = handlePayload(req)
 	if err != nil {
 		http.Error(w, "Unable to unmarshal reqs", http.StatusInternalServerError)
 		ddr.params.Logger.Error("Unable to unmarshal reqs")

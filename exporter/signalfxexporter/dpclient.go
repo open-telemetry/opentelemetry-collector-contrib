@@ -95,7 +95,7 @@ func (s *sfxDPClient) pushMetricsData(
 	sfxDataPoints := s.converter.MetricsToSignalFxV2(md)
 	if s.logDataPoints {
 		for _, dp := range sfxDataPoints {
-			s.logger.Debug("Dispatching SFx datapoint", zap.String("dp", translation.DatapointToString(dp)))
+			s.logger.Debug("Dispatching SFx datapoint", zap.Stringer("dp", dp))
 		}
 	}
 	return s.pushMetricsDataForToken(ctx, sfxDataPoints, metricToken)

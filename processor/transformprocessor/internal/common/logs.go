@@ -29,7 +29,9 @@ import (
 
 var _ consumer.Logs = &logStatements{}
 
-type logStatements []*ottl.Statement[ottllog.TransformContext]
+type logStatements struct {
+	ottl.Statements[ottllog.TransformContext]
+}
 
 func (l logStatements) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{
@@ -45,11 +47,9 @@ func (l logStatements) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 			logs := slogs.LogRecords()
 			for k := 0; k < logs.Len(); k++ {
 				tCtx := ottllog.NewTransformContext(logs.At(k), slogs.Scope(), rlogs.Resource())
-				for _, statement := range l {
-					_, _, err := statement.Execute(ctx, tCtx)
-					if err != nil {
-						return err
-					}
+				err := l.Execute(ctx, tCtx)
+				if err != nil {
+					return err
 				}
 			}
 		}
@@ -93,13 +93,14 @@ func NewLogParserCollection(settings component.TelemetrySettings, options ...Log
 func (pc LogParserCollection) ParseContextStatements(contextStatements ContextStatements) (consumer.Logs, error) {
 	switch contextStatements.Context {
 	case Log:
-		lStatements, err := pc.logParser.ParseStatements(contextStatements.Statements)
+		parsedStatements, err := pc.logParser.ParseStatements(contextStatements.Statements)
 		if err != nil {
 			return nil, err
 		}
-		return logStatements(lStatements), nil
+		lStatements := ottllog.NewStatements(parsedStatements, pc.settings, ottllog.WithErrorMode(ottl.PropagateError))
+		return logStatements{lStatements}, nil
 	default:
-		statements, err := pc.parseCommonContextStatements(contextStatements)
+		statements, err := pc.parseCommonContextStatements(contextStatements, ottl.PropagateError)
 		if err != nil {
 			return nil, err
 		}

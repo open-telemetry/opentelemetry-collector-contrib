@@ -52,7 +52,13 @@ CREATE TABLE IF NOT EXISTS %s_sum (
 		TraceId String
     ) CODEC(ZSTD(1)),
     AggTemp Int32 CODEC(ZSTD(1)),
-	IsMonotonic Boolean CODEC(Delta, ZSTD(1))
+	IsMonotonic Boolean CODEC(Delta, ZSTD(1)),
+	INDEX idx_res_attr_key mapKeys(ResourceAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
+	INDEX idx_res_attr_value mapValues(ResourceAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
+	INDEX idx_scope_attr_key mapKeys(ScopeAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
+	INDEX idx_scope_attr_value mapValues(ScopeAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
+	INDEX idx_attr_key mapKeys(Attributes) TYPE bloom_filter(0.01) GRANULARITY 1,
+	INDEX idx_attr_value mapValues(Attributes) TYPE bloom_filter(0.01) GRANULARITY 1
 ) ENGINE MergeTree()
 %s
 PARTITION BY toDate(TimeUnix)
@@ -72,6 +78,7 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
     MetricDescription,
     MetricUnit,
     Attributes,
+    StartTimeUnix,
     TimeUnix,
     Value,
     Flags,
@@ -82,7 +89,7 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
     Exemplars.TraceId,
 	AggTemp,
 	IsMonotonic) VALUES `
-	sumValueCounts = 21
+	sumValueCounts = 22
 )
 
 var sumPlaceholders = newPlaceholder(sumValueCounts)
@@ -126,18 +133,21 @@ func (s *sumMetrics) insert(ctx context.Context, db *sql.DB) error {
 			valueArgs[index+8] = model.metricDescription
 			valueArgs[index+9] = model.metricUnit
 			valueArgs[index+10] = attributesToMap(dp.Attributes())
-			valueArgs[index+11] = dp.Timestamp().AsTime().UnixNano()
-			valueArgs[index+12] = getValue(dp.IntValue(), dp.DoubleValue(), dp.ValueType())
-			valueArgs[index+13] = uint32(dp.Flags())
+			valueArgs[index+11] = dp.StartTimestamp().AsTime().UnixNano()
+			valueArgs[index+12] = dp.Timestamp().AsTime().UnixNano()
+			valueArgs[index+13] = getValue(dp.IntValue(), dp.DoubleValue(), dp.ValueType())
+			valueArgs[index+14] = uint32(dp.Flags())
 
 			attrs, times, values, traceIDs, spanIDs := convertExemplars(dp.Exemplars())
-			valueArgs[index+14] = attrs
-			valueArgs[index+15] = times
-			valueArgs[index+16] = values
-			valueArgs[index+17] = traceIDs
-			valueArgs[index+18] = spanIDs
-			valueArgs[index+19] = int32(model.sum.AggregationTemporality())
-			valueArgs[index+20] = model.sum.IsMonotonic()
+			valueArgs[index+15] = attrs
+			valueArgs[index+16] = times
+			valueArgs[index+17] = values
+			valueArgs[index+18] = traceIDs
+			valueArgs[index+19] = spanIDs
+			valueArgs[index+20] = int32(model.sum.AggregationTemporality())
+			valueArgs[index+21] = model.sum.IsMonotonic()
+
+			index += sumValueCounts
 		}
 	}
 

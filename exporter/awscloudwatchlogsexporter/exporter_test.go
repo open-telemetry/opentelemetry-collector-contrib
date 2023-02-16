@@ -174,9 +174,9 @@ func TestConsumeLogs(t *testing.T) {
 	logPusher := new(mockPusher)
 	logPusher.On("AddLogEntry", nil).Return("").Once()
 	logPusher.On("ForceFlush", nil).Return("").Twice()
-	exp.(*exporter).pusher = logPusher
-	require.NoError(t, exp.(*exporter).ConsumeLogs(ctx, ld))
-	require.NoError(t, exp.Shutdown(ctx))
+	exp.pusher = logPusher
+	require.NoError(t, exp.consumeLogs(ctx, ld))
+	require.NoError(t, exp.shutdown(ctx))
 }
 
 func TestNewExporterWithoutRegionErr(t *testing.T) {

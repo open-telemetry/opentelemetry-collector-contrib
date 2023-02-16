@@ -45,6 +45,9 @@ const (
 	statusCodeKey      = "status.code" // OpenTelemetry non-standard constant.
 	metricKeySeparator = string(byte(0))
 
+	metricLatency    = "latency"
+	metricCallsTotal = "calls_total"
+
 	defaultDimensionsCacheSize = 1000
 )
 
@@ -65,8 +68,8 @@ type processorImp struct {
 	logger *zap.Logger
 	config Config
 
-	metricsExporter exporter.Metrics
-	nextConsumer    consumer.Traces
+	metricsConsumer consumer.Metrics
+	tracesConsumer  consumer.Traces
 
 	// Additional dimensions to add to metrics.
 	dimensions []dimension
@@ -118,8 +121,8 @@ type histogramData struct {
 	exemplarsData []exemplarData
 }
 
-func newProcessor(logger *zap.Logger, config component.Config, nextConsumer consumer.Traces, ticker *clock.Ticker) (*processorImp, error) {
-	logger.Info("Building spanmetricsprocessor")
+func newProcessor(logger *zap.Logger, config component.Config, ticker *clock.Ticker) (*processorImp, error) {
+	logger.Info("Building spanmetrics")
 	pConfig := config.(*Config)
 
 	bounds := defaultLatencyHistogramBucketsMs
@@ -148,7 +151,6 @@ func newProcessor(logger *zap.Logger, config component.Config, nextConsumer cons
 		startTimestamp:        pcommon.NewTimestampFromTime(time.Now()),
 		latencyBounds:         bounds,
 		histograms:            make(map[metricKey]*histogramData),
-		nextConsumer:          nextConsumer,
 		dimensions:            newDimensions(pConfig.Dimensions),
 		keyBuf:                bytes.NewBuffer(make([]byte, 0, 1024)),
 		metricKeyToDimensions: metricKeyToDimensionsCache,
@@ -202,35 +204,38 @@ func validateDimensions(dimensions []Dimension, skipSanitizeLabel bool) error {
 
 // Start implements the component.Component interface.
 func (p *processorImp) Start(ctx context.Context, host component.Host) error {
-	p.logger.Info("Starting spanmetricsprocessor")
-	exporters := host.GetExporters()
+	if p.tracesConsumer == nil {
+		p.logger.Info("Starting spanmetricsconnector")
+	} else {
+		p.logger.Info("Starting spanmetricsprocessor")
+		exporters := host.GetExporters()
 
-	var availableMetricsExporters []string
+		var availableMetricsExporters []string
 
-	// The available list of exporters come from any configured metrics pipelines' exporters.
-	for k, exp := range exporters[component.DataTypeMetrics] {
-		metricsExp, ok := exp.(exporter.Metrics)
-		if !ok {
-			return fmt.Errorf("the exporter %q isn't a metrics exporter", k.String())
+		// The available list of exporters come from any configured metrics pipelines' exporters.
+		for k, exp := range exporters[component.DataTypeMetrics] {
+			metricsExp, ok := exp.(exporter.Metrics)
+			if !ok {
+				return fmt.Errorf("the exporter %q isn't a metrics exporter", k.String())
+			}
+
+			availableMetricsExporters = append(availableMetricsExporters, k.String())
+
+			p.logger.Debug("Looking for spanmetrics exporter from available exporters",
+				zap.String("spanmetrics-exporter", p.config.MetricsExporter),
+				zap.Any("available-exporters", availableMetricsExporters),
+			)
+			if k.String() == p.config.MetricsExporter {
+				p.metricsConsumer = metricsExp
+				p.logger.Info("Found exporter", zap.String("spanmetrics-exporter", p.config.MetricsExporter))
+				break
+			}
 		}
-
-		availableMetricsExporters = append(availableMetricsExporters, k.String())
-
-		p.logger.Debug("Looking for spanmetrics exporter from available exporters",
-			zap.String("spanmetrics-exporter", p.config.MetricsExporter),
-			zap.Any("available-exporters", availableMetricsExporters),
-		)
-		if k.String() == p.config.MetricsExporter {
-			p.metricsExporter = metricsExp
-			p.logger.Info("Found exporter", zap.String("spanmetrics-exporter", p.config.MetricsExporter))
-			break
+		if p.metricsConsumer == nil {
+			return fmt.Errorf("failed to find metrics exporter: '%s'; please configure metrics_exporter from one of: %+v",
+				p.config.MetricsExporter, availableMetricsExporters)
 		}
 	}
-	if p.metricsExporter == nil {
-		return fmt.Errorf("failed to find metrics exporter: '%s'; please configure metrics_exporter from one of: %+v",
-			p.config.MetricsExporter, availableMetricsExporters)
-	}
-	p.logger.Info("Started spanmetricsprocessor")
 
 	p.started = true
 	go func() {
@@ -250,7 +255,11 @@ func (p *processorImp) Start(ctx context.Context, host component.Host) error {
 // Shutdown implements the component.Component interface.
 func (p *processorImp) Shutdown(context.Context) error {
 	p.shutdownOnce.Do(func() {
-		p.logger.Info("Shutting down spanmetricsprocessor")
+		if p.tracesConsumer == nil {
+			p.logger.Info("Shutting down spanmetricsconnector")
+		} else {
+			p.logger.Info("Shutting down spanmetricsprocessor")
+		}
 		if p.started {
 			p.logger.Info("Stopping ticker")
 			p.ticker.Stop()
@@ -274,8 +283,13 @@ func (p *processorImp) ConsumeTraces(ctx context.Context, traces ptrace.Traces) 
 	p.aggregateMetrics(traces)
 	p.lock.Unlock()
 
+	// true when p is a connector
+	if p.tracesConsumer == nil {
+		return nil
+	}
+
 	// Forward trace data unmodified and propagate trace pipeline errors, if any.
-	return p.nextConsumer.ConsumeTraces(ctx, traces)
+	return p.tracesConsumer.ConsumeTraces(ctx, traces)
 }
 
 func (p *processorImp) exportMetrics(ctx context.Context) {
@@ -287,10 +301,18 @@ func (p *processorImp) exportMetrics(ctx context.Context) {
 	// regardless of error while building metrics, before the next batch of spans is received.
 	p.resetExemplarData()
 
+	// If delta metrics, reset accumulated data
+	if p.config.GetAggregationTemporality() == pmetric.AggregationTemporalityDelta {
+		p.histograms = make(map[metricKey]*histogramData)
+		p.metricKeyToDimensions.Purge()
+	} else {
+		p.metricKeyToDimensions.RemoveEvictedItems()
+	}
+
 	// This component no longer needs to read the metrics once built, so it is safe to unlock.
 	p.lock.Unlock()
 
-	if err := p.metricsExporter.ConsumeMetrics(ctx, m); err != nil {
+	if err := p.metricsConsumer.ConsumeMetrics(ctx, m); err != nil {
 		p.logger.Error("Failed ConsumeMetrics", zap.Error(err))
 		return
 	}
@@ -306,14 +328,6 @@ func (p *processorImp) buildMetrics() pmetric.Metrics {
 	p.collectCallMetrics(ilm)
 	p.collectLatencyMetrics(ilm)
 
-	p.metricKeyToDimensions.RemoveEvictedItems()
-
-	// If delta metrics, reset accumulated data
-	if p.config.GetAggregationTemporality() == pmetric.AggregationTemporalityDelta {
-		p.resetAccumulatedMetrics()
-	}
-	p.resetExemplarData()
-
 	return m
 }
 
@@ -321,7 +335,7 @@ func (p *processorImp) buildMetrics() pmetric.Metrics {
 // into the given instrumentation library metrics.
 func (p *processorImp) collectLatencyMetrics(ilm pmetric.ScopeMetrics) {
 	mLatency := ilm.Metrics().AppendEmpty()
-	mLatency.SetName("latency")
+	mLatency.SetName(buildMetricName(p.config.Namespace, metricLatency))
 	mLatency.SetUnit("ms")
 	mLatency.SetEmptyHistogram().SetAggregationTemporality(p.config.GetAggregationTemporality())
 	dps := mLatency.Histogram().DataPoints()
@@ -349,7 +363,7 @@ func (p *processorImp) collectLatencyMetrics(ilm pmetric.ScopeMetrics) {
 // into the given instrumentation library metrics.
 func (p *processorImp) collectCallMetrics(ilm pmetric.ScopeMetrics) {
 	mCalls := ilm.Metrics().AppendEmpty()
-	mCalls.SetName("calls_total")
+	mCalls.SetName(buildMetricName(p.config.Namespace, metricCallsTotal))
 	mCalls.SetEmptySum().SetIsMonotonic(true)
 	mCalls.Sum().SetAggregationTemporality(p.config.GetAggregationTemporality())
 	dps := mCalls.Sum().DataPoints()
@@ -405,13 +419,6 @@ func (p *processorImp) aggregateMetrics(traces ptrace.Traces) {
 			}
 		}
 	}
-}
-
-// resetAccumulatedMetrics resets the internal maps used to store created metric data. Also purge the cache for
-// metricKeyToDimensions.
-func (p *processorImp) resetAccumulatedMetrics() {
-	p.histograms = make(map[metricKey]*histogramData)
-	p.metricKeyToDimensions.Purge()
 }
 
 // updateHistogram adds the histogram sample to the histogram defined by the metric key.
@@ -572,4 +579,12 @@ func setExemplars(exemplarsData []exemplarData, timestamp pcommon.Timestamp, exe
 	}
 
 	es.CopyTo(exemplars)
+}
+
+// buildMetricName builds the namespace prefix for the metric name.
+func buildMetricName(namespace string, name string) string {
+	if namespace != "" {
+		return namespace + "." + name
+	}
+	return name
 }

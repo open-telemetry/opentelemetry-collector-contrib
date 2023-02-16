@@ -59,7 +59,7 @@ type dataPoint struct {
 	timestampMs int64
 }
 
-// dataPointSlice is a wrapper interface for:
+// dataPoints is a wrapper interface for:
 //   - pmetric.NumberDataPointSlice
 //   - pmetric.HistogramDataPointSlice
 //   - pmetric.SummaryDataPointSlice

@@ -16,5 +16,8 @@ combine_with_tab:
 custom_id:
   type: recombine
   id: merge-split-lines
+custom_max_log_size:
+  type: recombine
+  max_log_size: 256kb
 default:
   type: recombine

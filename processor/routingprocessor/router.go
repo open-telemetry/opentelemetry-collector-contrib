@@ -132,14 +132,11 @@ func (r *router[E, K]) registerRouteExporters(available map[component.ID]compone
 func (r *router[E, K]) getStatementFrom(item RoutingTableItem) (*ottl.Statement[K], error) {
 	var statement *ottl.Statement[K]
 	if item.Statement != "" {
-		statements, err := r.parser.ParseStatements([]string{item.Statement})
+		var err error
+		statement, err = r.parser.ParseStatement(item.Statement)
 		if err != nil {
 			return statement, err
 		}
-		if len(statements) != 1 {
-			return statement, errors.New("more than one statement specified")
-		}
-		statement = statements[0]
 	}
 	return statement, nil
 }

@@ -139,7 +139,11 @@ func TestTokenizationTooLongWithLineStartPattern(t *testing.T) {
 
 	mlc := helper.NewMultilineConfig()
 	mlc.LineStartPattern = `\d+-\d+-\d+`
-	f.splitterFactory = newMultilineSplitterFactory(helper.NewEncodingConfig(), helper.NewFlusherConfig(), mlc)
+	f.splitterFactory = newMultilineSplitterFactory(helper.SplitterConfig{
+		EncodingConfig: helper.NewEncodingConfig(),
+		Flusher:        helper.NewFlusherConfig(),
+		Multiline:      mlc,
+	})
 	f.readerConfig.maxLogSize = 15
 
 	temp := openTemp(t, t.TempDir())
@@ -158,6 +162,7 @@ func TestTokenizationTooLongWithLineStartPattern(t *testing.T) {
 
 func testReaderFactory(t *testing.T) (*readerFactory, chan *emitParams) {
 	emitChan := make(chan *emitParams, 100)
+	splitterConfig := helper.NewSplitterConfig()
 	return &readerFactory{
 		SugaredLogger: testutil.Logger(t),
 		readerConfig: &readerConfig{
@@ -165,10 +170,9 @@ func testReaderFactory(t *testing.T) (*readerFactory, chan *emitParams) {
 			maxLogSize:      defaultMaxLogSize,
 			emit:            testEmitFunc(emitChan),
 		},
-		fromBeginning: true,
-		splitterFactory: newMultilineSplitterFactory(
-			helper.NewEncodingConfig(), helper.NewFlusherConfig(), helper.NewMultilineConfig()),
-		encodingConfig: helper.NewEncodingConfig(),
+		fromBeginning:   true,
+		splitterFactory: newMultilineSplitterFactory(splitterConfig),
+		encodingConfig:  splitterConfig.EncodingConfig,
 	}, emitChan
 }
 

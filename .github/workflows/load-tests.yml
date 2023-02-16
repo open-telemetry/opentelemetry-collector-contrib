@@ -73,19 +73,6 @@ jobs:
           api_key: ${{ secrets.FORESIGHT_API_KEY }}
       - name: Checkout Repo
         uses: actions/checkout@v3
-      - run: sudo chmod 0777 -R /opt
-      - name: Fluentbit Cache
-        id: fluentbit-cache
-        uses: actions/cache@v3
-        with:
-          path: /opt/td-agent-bit
-          key: fluentbit-cache-1.5.3
-      - run: sudo ln -s /opt/td-agent-bit/bin/td-agent-bit /usr/local/bin/fluent-bit
-      - name: Install fluentbit
-        if: steps.fluentbit-cache.outputs.cache-hit != 'true'
-        run: |
-          wget https://packages.fluentbit.io/ubuntu/bionic/pool/main/t/td-agent-bit/td-agent-bit_1.5.3_amd64.deb
-          sudo dpkg -i ./td-agent-bit*.deb
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
