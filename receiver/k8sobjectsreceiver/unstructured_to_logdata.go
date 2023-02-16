@@ -15,6 +15,8 @@
 package k8sobjectsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver"
 
 import (
+	"time"
+
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	semconv "go.opentelemetry.io/collector/semconv/v1.9.0"
@@ -67,6 +69,7 @@ func unstructuredListToLogData(event *unstructured.UnstructuredList, config *K8s
 			namespaceResourceMap[e.GetNamespace()] = logSlice
 		}
 		record := logSlice.AppendEmpty()
+		record.SetObservedTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 
 		attrs := record.Attributes()
 		attrs.PutStr("k8s.resource.name", config.gvr.Resource)
