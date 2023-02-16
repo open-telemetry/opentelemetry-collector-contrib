@@ -73,8 +73,9 @@ func NewParser[K any](
 		logger, err := zap.NewDevelopment()
 		if err != nil {
 			settings.Logger = zap.NewNop()
+		} else {
+			settings.Logger = logger
 		}
-		settings.Logger = logger
 	}
 	p := Parser[K]{
 		functions:  functions,
