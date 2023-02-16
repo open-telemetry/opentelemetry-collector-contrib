@@ -162,6 +162,7 @@ In addition to OTTL functions, the processor defines its own functions to help w
 - [convert_gauge_to_sum](#convert_gauge_to_sum)
 - [convert_summary_count_val_to_sum](#convert_summary_count_val_to_sum)
 - [convert_summary_sum_val_to_sum](#convert_summary_sum_val_to_sum)
+- [convert_gauge_to_histogram](#convert_gauge_to_histogram)
 
 ## convert_sum_to_gauge
 
@@ -229,6 +230,23 @@ Examples:
 
 
 - `convert_summary_sum_val_to_sum("cumulative", false)`
+
+## convert_gauge_to_histogram
+
+`convert_gauge_to_histogram(aggregation_temporality, bucket_count, lower_bound, upper_bound )`
+
+The `convert_gauge_to_histogram` function creates a new Histogram metric from the datapoints in a gauge.
+
+`aggregation_temporality` is a string (`"cumulative"` or `"delta"`) representing the desired aggregation temporality of the new metric. `bucket_count` is a integer representing the amount of buckets that will be created for the histogram. `lower_bound` is a float representing an explicit lower bound to create standardized bucket bounds. `upper_bound` is a float representing an explicit upper bound to create standardized bucket bounds. If `lower_bound` and `upper_bound` are equal, they will not be used, and instead the bucket bounds will be inferred based on the min, max, and bucket count.
+
+**NOTE:** This function may cause a metric to break semantics for [Histogram metrics](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md#histogram). Use at your own risk.
+
+Examples:
+
+- `convert_gauge_to_histogram("delta", 4, 0.0, 0.0)`
+
+
+- `convert_gauge_to_histogram("cumulative", 10, 0.0, 10.0)`
 
 ## Contributing
 

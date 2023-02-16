@@ -26,6 +26,7 @@ var datapointRegistry = map[string]interface{}{
 	"convert_gauge_to_sum":             convertGaugeToSum,
 	"convert_summary_sum_val_to_sum":   convertSummarySumValToSum,
 	"convert_summary_count_val_to_sum": convertSummaryCountValToSum,
+	"convert_gauge_to_histogram": 		convertGaugeToHistogram,
 }
 
 func init() {
