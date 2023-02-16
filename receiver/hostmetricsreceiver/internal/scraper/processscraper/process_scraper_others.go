@@ -19,8 +19,10 @@ package processscraper // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"regexp"
+
 	"github.com/shirou/gopsutil/v3/cpu"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/ucal"
 )
@@ -38,7 +40,7 @@ func (s *scraper) recordCPUUtilization(now pcommon.Timestamp, cpuUtilization uca
 }
 
 func getProcessExecutable(proc processHandle) (*executableMetadata, error) {
-	// attempting to get the process name 
+	// attempting to get the process name
 	name, err := proc.Name()
 	if err != nil {
 		return nil, err
@@ -49,7 +51,7 @@ func getProcessExecutable(proc processHandle) (*executableMetadata, error) {
 	if err != nil {
 		return nil, err
 	}
-	regex := regexp.MustCompile("^\\S+")
+	regex := regexp.MustCompile(`^\S+`)
 	exe := regex.FindString(cmdline)
 
 	// managed to get the info

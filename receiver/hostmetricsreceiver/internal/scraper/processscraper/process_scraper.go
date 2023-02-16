@@ -18,8 +18,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 	"runtime"
+	"time"
 
 	"github.com/shirou/gopsutil/v3/process"
 	"go.opentelemetry.io/collector/component"
