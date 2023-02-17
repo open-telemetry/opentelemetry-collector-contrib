@@ -5,7 +5,7 @@ change_type: enhancement
 component: sentry/sentryexporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add `env` configuration option that allows specifying env for transaction.
+note: Add `environment` configuration option that allows specifying env for transaction.
 
 # One or more tracking issues related to the change
 issues: [18694]
