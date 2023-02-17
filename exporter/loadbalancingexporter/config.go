@@ -30,10 +30,10 @@ const (
 
 // Config defines configuration for the exporter.
 type Config struct {
-	Protocol        Protocol         `mapstructure:"protocol"`
-	Resolver        ResolverSettings `mapstructure:"resolver"`
-	RoutingKey      string           `mapstructure:"routing_key"`
-	ResourceAttrKey string           `mapstructure:"resource_attr_key"`
+	Protocol         Protocol         `mapstructure:"protocol"`
+	Resolver         ResolverSettings `mapstructure:"resolver"`
+	RoutingKey       string           `mapstructure:"routing_key"`
+	ResourceAttrKeys []string         `mapstructure:"resource_attr_key"`
 }
 
 // Protocol holds the individual protocol-specific settings. Only OTLP is supported at the moment.
