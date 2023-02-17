@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package spanmetricsprocessor
+package spanmetricsconnector
 
 import (
 	"context"
@@ -20,17 +20,16 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/processor/processortest"
 )
 
-func TestNewProcessor(t *testing.T) {
+func TestNewConnector(t *testing.T) {
 	defaultMethod := "GET"
 	defaultMethodValue := pcommon.NewValueStr(defaultMethod)
 	for _, tc := range []struct {
 		name                        string
-		metricsExporter             string
 		latencyHistogramBuckets     []time.Duration
 		dimensions                  []Dimension
 		wantLatencyHistogramBuckets []float64
@@ -58,21 +57,21 @@ func TestNewProcessor(t *testing.T) {
 			// Prepare
 			factory := NewFactory()
 
-			creationParams := processortest.NewNopCreateSettings()
+			creationParams := connectortest.NewNopCreateSettings()
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.LatencyHistogramBuckets = tc.latencyHistogramBuckets
 			cfg.Dimensions = tc.dimensions
 
 			// Test
-			traceProcessor, err := factory.CreateTracesProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
-			smp := traceProcessor.(*processorImp)
+			traceConnector, err := factory.CreateTracesToMetrics(context.Background(), creationParams, cfg, consumertest.NewNop())
+			smc := traceConnector.(*connectorImp)
 
 			// Verify
 			assert.Nil(t, err)
-			assert.NotNil(t, smp)
+			assert.NotNil(t, smc)
 
-			assert.Equal(t, tc.wantLatencyHistogramBuckets, smp.latencyBounds)
-			assert.Equal(t, tc.wantDimensions, smp.dimensions)
+			assert.Equal(t, tc.wantLatencyHistogramBuckets, smc.latencyBounds)
+			assert.Equal(t, tc.wantDimensions, smc.dimensions)
 		})
 	}
 }

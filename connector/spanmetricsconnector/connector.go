@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//       http://www.apache.org/licenses/LICENSE-2.0
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package spanmetricsprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor"
+package spanmetricsconnector // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector"
 
 import (
 	"bytes"
@@ -27,15 +27,14 @@ import (
 	"github.com/tilinna/clock"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/cache"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor/internal/cache"
 )
 
 const (
@@ -45,10 +44,10 @@ const (
 	statusCodeKey      = "status.code" // OpenTelemetry non-standard constant.
 	metricKeySeparator = string(byte(0))
 
-	metricLatency    = "latency"
-	metricCallsTotal = "calls_total"
-
 	defaultDimensionsCacheSize = 1000
+
+	metricNameLatency    = "latency"
+	metricNameCallsTotal = "calls_total"
 )
 
 var defaultLatencyHistogramBucketsMs = []float64{
@@ -63,13 +62,12 @@ type exemplarData struct {
 
 type metricKey string
 
-type processorImp struct {
+type connectorImp struct {
 	lock   sync.Mutex
 	logger *zap.Logger
 	config Config
 
 	metricsConsumer consumer.Metrics
-	tracesConsumer  consumer.Traces
 
 	// Additional dimensions to add to metrics.
 	dimensions []dimension
@@ -121,7 +119,7 @@ type histogramData struct {
 	exemplarsData []exemplarData
 }
 
-func newProcessor(logger *zap.Logger, config component.Config, ticker *clock.Ticker) (*processorImp, error) {
+func newConnector(logger *zap.Logger, config component.Config, ticker *clock.Ticker) (*connectorImp, error) {
 	logger.Info("Building spanmetrics")
 	pConfig := config.(*Config)
 
@@ -145,7 +143,7 @@ func newProcessor(logger *zap.Logger, config component.Config, ticker *clock.Tic
 		return nil, err
 	}
 
-	return &processorImp{
+	return &connectorImp{
 		logger:                logger,
 		config:                *pConfig,
 		startTimestamp:        pcommon.NewTimestampFromTime(time.Now()),
@@ -203,35 +201,8 @@ func validateDimensions(dimensions []Dimension, skipSanitizeLabel bool) error {
 }
 
 // Start implements the component.Component interface.
-func (p *processorImp) Start(ctx context.Context, host component.Host) error {
-	p.logger.Info("Starting spanmetricsprocessor")
-	exporters := host.GetExporters()
-
-	var availableMetricsExporters []string
-
-	// The available list of exporters come from any configured metrics pipelines' exporters.
-	for k, exp := range exporters[component.DataTypeMetrics] {
-		metricsExp, ok := exp.(exporter.Metrics)
-		if !ok {
-			return fmt.Errorf("the exporter %q isn't a metrics exporter", k.String())
-		}
-
-		availableMetricsExporters = append(availableMetricsExporters, k.String())
-
-		p.logger.Debug("Looking for spanmetrics exporter from available exporters",
-			zap.String("spanmetrics-exporter", p.config.MetricsExporter),
-			zap.Any("available-exporters", availableMetricsExporters),
-		)
-		if k.String() == p.config.MetricsExporter {
-			p.metricsConsumer = metricsExp
-			p.logger.Info("Found exporter", zap.String("spanmetrics-exporter", p.config.MetricsExporter))
-			break
-		}
-	}
-	if p.metricsConsumer == nil {
-		return fmt.Errorf("failed to find metrics exporter: '%s'; please configure metrics_exporter from one of: %+v",
-			p.config.MetricsExporter, availableMetricsExporters)
-	}
+func (p *connectorImp) Start(ctx context.Context, host component.Host) error {
+	p.logger.Info("Starting spanmetricsconnector")
 
 	p.started = true
 	go func() {
@@ -249,9 +220,9 @@ func (p *processorImp) Start(ctx context.Context, host component.Host) error {
 }
 
 // Shutdown implements the component.Component interface.
-func (p *processorImp) Shutdown(context.Context) error {
+func (p *connectorImp) Shutdown(context.Context) error {
 	p.shutdownOnce.Do(func() {
-		p.logger.Info("Shutting down spanmetricsprocessor")
+		p.logger.Info("Shutting down spanmetricsconnector")
 		if p.started {
 			p.logger.Info("Stopping ticker")
 			p.ticker.Stop()
@@ -263,23 +234,21 @@ func (p *processorImp) Shutdown(context.Context) error {
 }
 
 // Capabilities implements the consumer interface.
-func (p *processorImp) Capabilities() consumer.Capabilities {
+func (p *connectorImp) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
 // ConsumeTraces implements the consumer.Traces interface.
 // It aggregates the trace data to generate metrics, forwarding these metrics to the discovered metrics exporter.
 // The original input trace data will be forwarded to the next consumer, unmodified.
-func (p *processorImp) ConsumeTraces(ctx context.Context, traces ptrace.Traces) error {
+func (p *connectorImp) ConsumeTraces(ctx context.Context, traces ptrace.Traces) error {
 	p.lock.Lock()
 	p.aggregateMetrics(traces)
 	p.lock.Unlock()
-
-	// Forward trace data unmodified and propagate trace pipeline errors, if any.
-	return p.tracesConsumer.ConsumeTraces(ctx, traces)
+	return nil
 }
 
-func (p *processorImp) exportMetrics(ctx context.Context) {
+func (p *connectorImp) exportMetrics(ctx context.Context) {
 	p.lock.Lock()
 
 	m := p.buildMetrics()
@@ -307,10 +276,10 @@ func (p *processorImp) exportMetrics(ctx context.Context) {
 
 // buildMetrics collects the computed raw metrics data, builds the metrics object and
 // writes the raw metrics data into the metrics object.
-func (p *processorImp) buildMetrics() pmetric.Metrics {
+func (p *connectorImp) buildMetrics() pmetric.Metrics {
 	m := pmetric.NewMetrics()
 	ilm := m.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
-	ilm.Scope().SetName("spanmetricsprocessor")
+	ilm.Scope().SetName("spanmetricsconnector")
 
 	p.collectCallMetrics(ilm)
 	p.collectLatencyMetrics(ilm)
@@ -320,9 +289,9 @@ func (p *processorImp) buildMetrics() pmetric.Metrics {
 
 // collectLatencyMetrics collects the raw latency metrics, writing the data
 // into the given instrumentation library metrics.
-func (p *processorImp) collectLatencyMetrics(ilm pmetric.ScopeMetrics) {
+func (p *connectorImp) collectLatencyMetrics(ilm pmetric.ScopeMetrics) {
 	mLatency := ilm.Metrics().AppendEmpty()
-	mLatency.SetName(buildMetricName(p.config.Namespace, metricLatency))
+	mLatency.SetName(buildMetricName(p.config.Namespace, metricNameLatency))
 	mLatency.SetUnit("ms")
 	mLatency.SetEmptyHistogram().SetAggregationTemporality(p.config.GetAggregationTemporality())
 	dps := mLatency.Histogram().DataPoints()
@@ -348,9 +317,9 @@ func (p *processorImp) collectLatencyMetrics(ilm pmetric.ScopeMetrics) {
 
 // collectCallMetrics collects the raw call count metrics, writing the data
 // into the given instrumentation library metrics.
-func (p *processorImp) collectCallMetrics(ilm pmetric.ScopeMetrics) {
+func (p *connectorImp) collectCallMetrics(ilm pmetric.ScopeMetrics) {
 	mCalls := ilm.Metrics().AppendEmpty()
-	mCalls.SetName(buildMetricName(p.config.Namespace, metricCallsTotal))
+	mCalls.SetName(buildMetricName(p.config.Namespace, metricNameCallsTotal))
 	mCalls.SetEmptySum().SetIsMonotonic(true)
 	mCalls.Sum().SetAggregationTemporality(p.config.GetAggregationTemporality())
 	dps := mCalls.Sum().DataPoints()
@@ -375,7 +344,7 @@ func (p *processorImp) collectCallMetrics(ilm pmetric.ScopeMetrics) {
 // Each metric is identified by a key that is built from the service name
 // and span metadata such as operation, kind, status_code and any additional
 // dimensions the user has configured.
-func (p *processorImp) aggregateMetrics(traces ptrace.Traces) {
+func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 	for i := 0; i < traces.ResourceSpans().Len(); i++ {
 		rspans := traces.ResourceSpans().At(i)
 		resourceAttr := rspans.Resource().Attributes()
@@ -409,7 +378,7 @@ func (p *processorImp) aggregateMetrics(traces ptrace.Traces) {
 }
 
 // updateHistogram adds the histogram sample to the histogram defined by the metric key.
-func (p *processorImp) updateHistogram(key metricKey, latency float64, traceID pcommon.TraceID, spanID pcommon.SpanID) {
+func (p *connectorImp) updateHistogram(key metricKey, latency float64, traceID pcommon.TraceID, spanID pcommon.SpanID) {
 	histo, ok := p.histograms[key]
 	if !ok {
 		histo = &histogramData{
@@ -429,13 +398,13 @@ func (p *processorImp) updateHistogram(key metricKey, latency float64, traceID p
 // resetExemplarData resets the entire exemplars map so the next trace will recreate all
 // the data structure. An exemplar is a punctual value that exists at specific moment in time
 // and should be not considered like a metrics that persist over time.
-func (p *processorImp) resetExemplarData() {
+func (p *connectorImp) resetExemplarData() {
 	for _, histo := range p.histograms {
 		histo.exemplarsData = nil
 	}
 }
 
-func (p *processorImp) buildDimensionKVs(serviceName string, span ptrace.Span, resourceAttrs pcommon.Map) pcommon.Map {
+func (p *connectorImp) buildDimensionKVs(serviceName string, span ptrace.Span, resourceAttrs pcommon.Map) pcommon.Map {
 	dims := pcommon.NewMap()
 	dims.EnsureCapacity(4 + len(p.dimensions))
 	dims.PutStr(serviceNameKey, serviceName)
@@ -501,7 +470,7 @@ func getDimensionValue(d dimension, spanAttr pcommon.Map, resourceAttr pcommon.M
 // This enables a lookup of the dimension key-value map when constructing the metric like so:
 //
 //	LabelsMap().InitFromMap(p.metricKeyToDimensions[key])
-func (p *processorImp) cache(serviceName string, span ptrace.Span, k metricKey, resourceAttrs pcommon.Map) {
+func (p *connectorImp) cache(serviceName string, span ptrace.Span, k metricKey, resourceAttrs pcommon.Map) {
 	// Use Get to ensure any existing key has its recent-ness updated.
 	if _, has := p.metricKeyToDimensions.Get(k); !has {
 		p.metricKeyToDimensions.Add(k, p.buildDimensionKVs(serviceName, span, resourceAttrs))
