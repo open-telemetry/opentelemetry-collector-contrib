@@ -15,7 +15,10 @@
 package awscloudwatchmetricsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchmetricsreceiver"
 
 import (
+	"context"
+
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 )
 
@@ -31,6 +34,10 @@ func NewFactory() component.Factory {
 		createDefaultConfig,
 		receiver.WithMetrics(createMetricsRceiver, stabilityLevel),
 	)
+}
+
+func createMetricsRceiver(_ context.Context, params receiver.CreateSettings, baseCfg component.Config, consumer consumer.Metrics) (receiver.Metrics, error) {
+	return nil, nil
 }
 
 func createDefaultConfig() component.Config {
