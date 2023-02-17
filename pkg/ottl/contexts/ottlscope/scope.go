@@ -56,17 +56,20 @@ func (tCtx TransformContext) getCache() pcommon.Map {
 	return tCtx.cache
 }
 
-func NewParser(functions map[string]interface{}, telemetrySettings component.TelemetrySettings, options ...Option) ottl.Parser[TransformContext] {
-	p := ottl.NewParser[TransformContext](
+func NewParser(functions map[string]interface{}, telemetrySettings component.TelemetrySettings, options ...Option) (ottl.Parser[TransformContext], error) {
+	p, err := ottl.NewParser[TransformContext](
 		functions,
 		parsePath,
 		telemetrySettings,
 		ottl.WithEnumParser[TransformContext](parseEnum),
 	)
+	if err != nil {
+		return ottl.Parser[TransformContext]{}, err
+	}
 	for _, opt := range options {
 		opt(&p)
 	}
-	return p
+	return p, nil
 }
 
 type StatementsOption func(*ottl.Statements[TransformContext])
