@@ -17,19 +17,12 @@ package spanmetricsconnector // import "github.com/open-telemetry/opentelemetry-
 import (
 	"time"
 
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 const (
 	delta      = "AGGREGATION_TEMPORALITY_DELTA"
 	cumulative = "AGGREGATION_TEMPORALITY_CUMULATIVE"
-)
-
-var dropSanitizationGate = featuregate.GlobalRegistry().MustRegister(
-	"connector.spanmetrics.PermissiveLabelSanitization",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("Controls whether to change labels starting with '_' to 'key_'"),
 )
 
 // Dimension defines the dimension name and optional default value if the Dimension is missing from a span attribute.
@@ -59,9 +52,6 @@ type Config struct {
 	DimensionsCacheSize int `mapstructure:"dimensions_cache_size"`
 
 	AggregationTemporality string `mapstructure:"aggregation_temporality"`
-
-	// skipSanitizeLabel if enabled, labels that start with _ are not sanitized
-	skipSanitizeLabel bool
 
 	// MetricsEmitInterval is the time period between when metrics are flushed or emitted to the configured MetricsExporter.
 	MetricsFlushInterval time.Duration `mapstructure:"metrics_flush_interval"`

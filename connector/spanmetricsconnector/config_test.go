@@ -55,7 +55,6 @@ func TestLoadConfig(t *testing.T) {
 		&Config{
 			AggregationTemporality: cumulative,
 			DimensionsCacheSize:    defaultDimensionsCacheSize,
-			skipSanitizeLabel:      dropSanitizationGate.IsEnabled(),
 			MetricsFlushInterval:   15 * time.Second,
 		},
 		simpleCfg.Connectors[component.NewID(typeStr)],
@@ -73,7 +72,6 @@ func TestLoadConfig(t *testing.T) {
 			},
 			AggregationTemporality: delta,
 			DimensionsCacheSize:    1500,
-			skipSanitizeLabel:      dropSanitizationGate.IsEnabled(),
 			MetricsFlushInterval:   30 * time.Second,
 		},
 		fullCfg.Connectors[component.NewID(typeStr)],

@@ -391,27 +391,11 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 	}
 }
 
-func TestConnectorDuplicateDimensions(t *testing.T) {
-	// Prepare
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig().(*Config)
-	// Duplicate dimension with reserved label after sanitization.
-	cfg.Dimensions = []Dimension{
-		{Name: "status_code"},
-	}
-
-	// Test
-	c, err := newConnector(zaptest.NewLogger(t), cfg, nil)
-	assert.Error(t, err)
-	assert.Nil(t, c)
-}
-
 func TestValidateDimensions(t *testing.T) {
 	for _, tc := range []struct {
-		name              string
-		dimensions        []Dimension
-		expectedErr       string
-		skipSanitizeLabel bool
+		name        string
+		dimensions  []Dimension
+		expectedErr string
 	}{
 		{
 			name:       "no additional dimensions",
@@ -420,8 +404,8 @@ func TestValidateDimensions(t *testing.T) {
 		{
 			name: "no duplicate dimensions",
 			dimensions: []Dimension{
-				{Name: "http.service_name"},
-				{Name: "http.status_code"},
+				{Name: "http.service.name"},
+				{Name: "http.status.code"},
 			},
 		},
 		{
@@ -432,38 +416,16 @@ func TestValidateDimensions(t *testing.T) {
 			expectedErr: "duplicate dimension name service.name",
 		},
 		{
-			name: "duplicate dimension with reserved labels after sanitization",
-			dimensions: []Dimension{
-				{Name: "service_name"},
-			},
-			expectedErr: "duplicate dimension name service_name",
-		},
-		{
 			name: "duplicate additional dimensions",
 			dimensions: []Dimension{
-				{Name: "service_name"},
-				{Name: "service_name"},
+				{Name: "service.name"},
+				{Name: "service.name"},
 			},
-			expectedErr: "duplicate dimension name service_name",
-		},
-		{
-			name: "duplicate additional dimensions after sanitization",
-			dimensions: []Dimension{
-				{Name: "http.status_code"},
-				{Name: "http!status_code"},
-			},
-			expectedErr: "duplicate dimension name http_status_code after sanitization",
-		},
-		{
-			name: "we skip the case if the dimension name is the same after sanitization",
-			dimensions: []Dimension{
-				{Name: "http_status_code"},
-			},
+			expectedErr: "duplicate dimension name service.name",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			tc.skipSanitizeLabel = false
-			err := validateDimensions(tc.dimensions, tc.skipSanitizeLabel)
+			err := validateDimensions(tc.dimensions)
 			if tc.expectedErr != "" {
 				assert.EqualError(t, err, tc.expectedErr)
 			} else {
@@ -471,24 +433,6 @@ func TestValidateDimensions(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestSanitize(t *testing.T) {
-	cfg := createDefaultConfig().(*Config)
-	require.Equal(t, "", sanitize("", cfg.skipSanitizeLabel), "")
-	require.Equal(t, "key_test", sanitize("_test", cfg.skipSanitizeLabel))
-	require.Equal(t, "key__test", sanitize("__test", cfg.skipSanitizeLabel))
-	require.Equal(t, "key_0test", sanitize("0test", cfg.skipSanitizeLabel))
-	require.Equal(t, "test", sanitize("test", cfg.skipSanitizeLabel))
-	require.Equal(t, "test__", sanitize("test_/", cfg.skipSanitizeLabel))
-	// testcases with skipSanitizeLabel flag turned on
-	cfg.skipSanitizeLabel = true
-	require.Equal(t, "", sanitize("", cfg.skipSanitizeLabel), "")
-	require.Equal(t, "_test", sanitize("_test", cfg.skipSanitizeLabel))
-	require.Equal(t, "key__test", sanitize("__test", cfg.skipSanitizeLabel))
-	require.Equal(t, "key_0test", sanitize("0test", cfg.skipSanitizeLabel))
-	require.Equal(t, "test", sanitize("test", cfg.skipSanitizeLabel))
-	require.Equal(t, "test__", sanitize("test_/", cfg.skipSanitizeLabel))
 }
 
 func TestSetExemplars(t *testing.T) {
@@ -865,9 +809,9 @@ func TestDuplicateDimensions(t *testing.T) {
 	// Prepare
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	// Duplicate dimension with reserved label after sanitization.
+	// Duplicate dimension
 	cfg.Dimensions = []Dimension{
-		{Name: "status_code"},
+		{Name: "status.code"},
 	}
 
 	// Test
