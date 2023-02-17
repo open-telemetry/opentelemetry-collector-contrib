@@ -16,6 +16,7 @@ package routingprocessor
 
 import (
 	"context"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -56,7 +57,7 @@ func TestMetrics_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 		},
 	})
 
-	exp := newMetricProcessor(component.TelemetrySettings{}, &Config{
+	exp := newMetricProcessor(componenttest.NewNopTelemetrySettings(), &Config{
 		FromAttribute:    "X-Tenant",
 		AttributeSource:  resourceAttributeSource,
 		DefaultExporters: []string{"otlp"},

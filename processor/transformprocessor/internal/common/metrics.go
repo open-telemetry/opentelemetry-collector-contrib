@@ -155,24 +155,40 @@ type MetricParserCollectionOption func(*MetricParserCollection) error
 
 func WithMetricParser(functions map[string]interface{}) MetricParserCollectionOption {
 	return func(mp *MetricParserCollection) error {
-		mp.metricParser = ottlmetric.NewParser(functions, mp.settings)
+		metricParser, err := ottlmetric.NewParser(functions, mp.settings)
+		if err != nil {
+			return err
+		}
+		mp.metricParser = metricParser
 		return nil
 	}
 }
 
 func WithDataPointParser(functions map[string]interface{}) MetricParserCollectionOption {
 	return func(mp *MetricParserCollection) error {
-		mp.dataPointParser = ottldatapoint.NewParser(functions, mp.settings)
+		dataPointParser, err := ottldatapoint.NewParser(functions, mp.settings)
+		if err != nil {
+			return err
+		}
+		mp.dataPointParser = dataPointParser
 		return nil
 	}
 }
 
 func NewMetricParserCollection(settings component.TelemetrySettings, options ...MetricParserCollectionOption) (*MetricParserCollection, error) {
+	rp, err := ottlresource.NewParser(ResourceFunctions(), settings)
+	if err != nil {
+		return nil, err
+	}
+	sp, err := ottlscope.NewParser(ScopeFunctions(), settings)
+	if err != nil {
+		return nil, err
+	}
 	mpc := &MetricParserCollection{
 		parserCollection: parserCollection{
 			settings:       settings,
-			resourceParser: ottlresource.NewParser(ResourceFunctions(), settings),
-			scopeParser:    ottlscope.NewParser(ScopeFunctions(), settings),
+			resourceParser: rp,
+			scopeParser:    sp,
 		},
 	}
 

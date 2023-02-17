@@ -102,24 +102,40 @@ type TraceParserCollectionOption func(*TraceParserCollection) error
 
 func WithSpanParser(functions map[string]interface{}) TraceParserCollectionOption {
 	return func(tp *TraceParserCollection) error {
-		tp.spanParser = ottlspan.NewParser(functions, tp.settings)
+		spanParser, err := ottlspan.NewParser(functions, tp.settings)
+		if err != nil {
+			return err
+		}
+		tp.spanParser = spanParser
 		return nil
 	}
 }
 
 func WithSpanEventParser(functions map[string]interface{}) TraceParserCollectionOption {
 	return func(tp *TraceParserCollection) error {
-		tp.spanEventParser = ottlspanevent.NewParser(functions, tp.settings)
+		spanEventParser, err := ottlspanevent.NewParser(functions, tp.settings)
+		if err != nil {
+			return err
+		}
+		tp.spanEventParser = spanEventParser
 		return nil
 	}
 }
 
 func NewTraceParserCollection(settings component.TelemetrySettings, options ...TraceParserCollectionOption) (*TraceParserCollection, error) {
+	rp, err := ottlresource.NewParser(ResourceFunctions(), settings)
+	if err != nil {
+		return nil, err
+	}
+	sp, err := ottlscope.NewParser(ScopeFunctions(), settings)
+	if err != nil {
+		return nil, err
+	}
 	tpc := &TraceParserCollection{
 		parserCollection: parserCollection{
 			settings:       settings,
-			resourceParser: ottlresource.NewParser(ResourceFunctions(), settings),
-			scopeParser:    ottlscope.NewParser(ScopeFunctions(), settings),
+			resourceParser: rp,
+			scopeParser:    sp,
 		},
 	}
 

@@ -19,7 +19,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
@@ -290,10 +290,10 @@ func Test_newGetter(t *testing.T) {
 
 	functions := map[string]interface{}{"Hello": hello[interface{}]}
 
-	p := NewParser[any](
+	p, _ := NewParser[any](
 		functions,
 		testParsePath,
-		component.TelemetrySettings{},
+		componenttest.NewNopTelemetrySettings(),
 		WithEnumParser[any](testParseEnum),
 	)
 

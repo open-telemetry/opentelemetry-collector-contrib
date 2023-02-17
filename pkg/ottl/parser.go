@@ -68,14 +68,9 @@ func NewParser[K any](
 	pathParser PathExpressionParser[K],
 	settings component.TelemetrySettings,
 	options ...Option[K],
-) Parser[K] {
+) (Parser[K], error) {
 	if settings.Logger == nil {
-		logger, err := zap.NewDevelopment()
-		if err != nil {
-			settings.Logger = zap.NewNop()
-		} else {
-			settings.Logger = logger
-		}
+		return Parser[K]{}, fmt.Errorf("logger cannot be nil")
 	}
 	p := Parser[K]{
 		functions:  functions,
@@ -88,7 +83,7 @@ func NewParser[K any](
 	for _, opt := range options {
 		opt(&p)
 	}
-	return p
+	return p, nil
 }
 
 type Option[K any] func(*Parser[K])

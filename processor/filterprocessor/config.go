@@ -17,6 +17,7 @@ package filterprocessor // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"errors"
 	"fmt"
+	"go.uber.org/zap"
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
@@ -282,27 +283,27 @@ func (cfg *Config) Validate() error {
 	var errors error
 
 	if cfg.Traces.SpanConditions != nil {
-		_, err := common.ParseSpan(cfg.Traces.SpanConditions, component.TelemetrySettings{})
+		_, err := common.ParseSpan(cfg.Traces.SpanConditions, component.TelemetrySettings{Logger: zap.NewNop()})
 		errors = multierr.Append(errors, err)
 	}
 
 	if cfg.Traces.SpanEventConditions != nil {
-		_, err := common.ParseSpanEvent(cfg.Traces.SpanEventConditions, component.TelemetrySettings{})
+		_, err := common.ParseSpanEvent(cfg.Traces.SpanEventConditions, component.TelemetrySettings{Logger: zap.NewNop()})
 		errors = multierr.Append(errors, err)
 	}
 
 	if cfg.Metrics.MetricConditions != nil {
-		_, err := common.ParseMetric(cfg.Metrics.MetricConditions, component.TelemetrySettings{})
+		_, err := common.ParseMetric(cfg.Metrics.MetricConditions, component.TelemetrySettings{Logger: zap.NewNop()})
 		errors = multierr.Append(errors, err)
 	}
 
 	if cfg.Metrics.DataPointConditions != nil {
-		_, err := common.ParseDataPoint(cfg.Metrics.DataPointConditions, component.TelemetrySettings{})
+		_, err := common.ParseDataPoint(cfg.Metrics.DataPointConditions, component.TelemetrySettings{Logger: zap.NewNop()})
 		errors = multierr.Append(errors, err)
 	}
 
 	if cfg.Logs.LogConditions != nil {
-		_, err := common.ParseLog(cfg.Logs.LogConditions, component.TelemetrySettings{})
+		_, err := common.ParseLog(cfg.Logs.LogConditions, component.TelemetrySettings{Logger: zap.NewNop()})
 		errors = multierr.Append(errors, err)
 	}
 
