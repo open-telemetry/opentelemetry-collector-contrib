@@ -163,7 +163,7 @@ func (e *traceExporterImp) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 		batches["traceId"] = batchpersignal.SplitTraces(td)
 	}
 	rfs := make(map[string]routingFunction)
-	for key, _ := range batches {
+	for key := range batches {
 		if key == "traceId" {
 			rfs[key] = func(x ptrace.Traces) (map[string][]int, error) {
 				return routeByTraceId(x)
@@ -190,7 +190,7 @@ func (e *traceExporterImp) consumeTrace(ctx context.Context, td ptrace.Traces, r
 		return err
 	}
 	var rid string
-	for key, _ := range routingIds {
+	for key := range routingIds {
 		rid = key
 		break
 	}
