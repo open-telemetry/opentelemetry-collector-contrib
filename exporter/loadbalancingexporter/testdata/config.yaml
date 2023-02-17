@@ -8,8 +8,8 @@ loadbalancing:
   resolver:
     static:
       hostnames:
-      - endpoint-1 # assumes 4317 as the default port
-      - endpoint-2:55678
+        - endpoint-1 # assumes 4317 as the default port
+        - endpoint-2:55678
 loadbalancing/2:
   protocol:
     otlp:
@@ -27,3 +27,28 @@ loadbalancing/3:
     dns:
       hostname: service-1
       port: 55690
+loadbalancing/4:
+  protocol:
+    otlp:
+  resolver:
+    dns:
+      hostname: service-1
+      port: 55690
+  routing_key: traceID
+loadbalancing/5:
+  protocol:
+    otlp:
+  resolver:
+    dns:
+      hostname: service-1
+      port: 55690
+  routing_key: service
+loadbalancing/6:
+  protocol:
+    otlp:
+  resolver:
+    dns:
+      hostname: service-1
+      port: 55690
+  routing_key: resourceAttr
+  resource_attr_key: "resource.attribute"

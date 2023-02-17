@@ -203,26 +203,28 @@ func TestConsumeTracesServiceBased(t *testing.T) {
 func TestServiceBasedRoutingForSameTraceId(t *testing.T) {
 	b := pcommon.TraceID([16]byte{1, 2, 3, 4})
 	for _, tt := range []struct {
-		desc       string
-		batch      ptrace.Traces
-		routingKey routingKey
-		res        map[string][]int
+		desc  string
+		batch ptrace.Traces
+		rf    routingFunction
+		res   map[string][]int
 	}{
 		{
 			"same trace id and different services - service based routing",
 			twoServicesWithSameTraceID(),
-			svcRouting,
+			func(t ptrace.Traces) (map[string][]int, error) {
+				return routeByResourceAttr(t, "service.name")
+			},
 			map[string][]int{"ad-service-1": {0}, "get-recommendations-7": {1}},
 		},
 		{
 			"same trace id and different services - trace id routing",
 			twoServicesWithSameTraceID(),
-			traceIDRouting,
+			routeByTraceId,
 			map[string][]int{string(b[:]): {0, 1}},
 		},
 	} {
 		t.Run(tt.desc, func(t *testing.T) {
-			res, err := routingIdentifiersFromTraces(tt.batch, tt.routingKey, "")
+			res, err := tt.rf(tt.batch)
 			assert.Equal(t, err, nil)
 			assert.Equal(t, res, tt.res)
 		})
@@ -359,15 +361,16 @@ func TestBatchWithTwoTraces(t *testing.T) {
 
 func TestNoTracesInBatch(t *testing.T) {
 	for _, tt := range []struct {
-		desc       string
-		batch      ptrace.Traces
-		routingKey routingKey
-		err        error
+		desc  string
+		batch ptrace.Traces
+		rf    routingFunction
+		err   error
 	}{
+		// Trace ID routing
 		{
 			"no resource spans",
 			ptrace.NewTraces(),
-			traceIDRouting,
+			routeByTraceId,
 			errors.New("empty resource spans"),
 		},
 		{
@@ -377,9 +380,10 @@ func TestNoTracesInBatch(t *testing.T) {
 				batch.ResourceSpans().AppendEmpty()
 				return batch
 			}(),
-			traceIDRouting,
+			routeByTraceId,
 			errors.New("empty scope spans"),
 		},
+		// Service / Resource Attribute routing
 		{
 			"no spans",
 			func() ptrace.Traces {
@@ -387,12 +391,14 @@ func TestNoTracesInBatch(t *testing.T) {
 				batch.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty()
 				return batch
 			}(),
-			svcRouting,
+			func(t ptrace.Traces) (map[string][]int, error) {
+				return routeByResourceAttr(t, "service.name")
+			},
 			errors.New("empty spans"),
 		},
 	} {
 		t.Run(tt.desc, func(t *testing.T) {
-			res, err := routingIdentifiersFromTraces(tt.batch, tt.routingKey, "")
+			res, err := tt.rf(tt.batch)
 			assert.Equal(t, err, tt.err)
 			assert.Equal(t, res, map[string][]int(nil))
 		})
