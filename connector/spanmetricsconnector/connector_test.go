@@ -391,24 +391,6 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 	}
 }
 
-func TestSanitize(t *testing.T) {
-	cfg := createDefaultConfig().(*Config)
-	require.Equal(t, "", sanitize("", cfg.skipSanitizeLabel), "")
-	require.Equal(t, "key_test", sanitize("_test", cfg.skipSanitizeLabel))
-	require.Equal(t, "key__test", sanitize("__test", cfg.skipSanitizeLabel))
-	require.Equal(t, "key_0test", sanitize("0test", cfg.skipSanitizeLabel))
-	require.Equal(t, "test", sanitize("test", cfg.skipSanitizeLabel))
-	require.Equal(t, "test__", sanitize("test_/", cfg.skipSanitizeLabel))
-	// testcases with skipSanitizeLabel flag turned on
-	cfg.skipSanitizeLabel = true
-	require.Equal(t, "", sanitize("", cfg.skipSanitizeLabel), "")
-	require.Equal(t, "_test", sanitize("_test", cfg.skipSanitizeLabel))
-	require.Equal(t, "key__test", sanitize("__test", cfg.skipSanitizeLabel))
-	require.Equal(t, "key_0test", sanitize("0test", cfg.skipSanitizeLabel))
-	require.Equal(t, "test", sanitize("test", cfg.skipSanitizeLabel))
-	require.Equal(t, "test__", sanitize("test_/", cfg.skipSanitizeLabel))
-}
-
 func TestConnectorUpdateExemplars(t *testing.T) {
 	// ----- conditions -------------------------------------------------------
 	factory := NewFactory()
