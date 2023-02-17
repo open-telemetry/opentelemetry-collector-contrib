@@ -45,6 +45,9 @@ const (
 	statusCodeKey      = "status.code" // OpenTelemetry non-standard constant.
 	metricKeySeparator = string(byte(0))
 
+	metricLatency    = "latency"
+	metricCallsTotal = "calls_total"
+
 	defaultDimensionsCacheSize = 1000
 )
 
@@ -201,37 +204,33 @@ func validateDimensions(dimensions []Dimension, skipSanitizeLabel bool) error {
 
 // Start implements the component.Component interface.
 func (p *processorImp) Start(ctx context.Context, host component.Host) error {
-	if p.tracesConsumer == nil {
-		p.logger.Info("Starting spanmetricsconnector")
-	} else {
-		p.logger.Info("Starting spanmetricsprocessor")
-		exporters := host.GetExporters()
+	p.logger.Info("Starting spanmetricsprocessor")
+	exporters := host.GetExporters()
 
-		var availableMetricsExporters []string
+	var availableMetricsExporters []string
 
-		// The available list of exporters come from any configured metrics pipelines' exporters.
-		for k, exp := range exporters[component.DataTypeMetrics] {
-			metricsExp, ok := exp.(exporter.Metrics)
-			if !ok {
-				return fmt.Errorf("the exporter %q isn't a metrics exporter", k.String())
-			}
-
-			availableMetricsExporters = append(availableMetricsExporters, k.String())
-
-			p.logger.Debug("Looking for spanmetrics exporter from available exporters",
-				zap.String("spanmetrics-exporter", p.config.MetricsExporter),
-				zap.Any("available-exporters", availableMetricsExporters),
-			)
-			if k.String() == p.config.MetricsExporter {
-				p.metricsConsumer = metricsExp
-				p.logger.Info("Found exporter", zap.String("spanmetrics-exporter", p.config.MetricsExporter))
-				break
-			}
+	// The available list of exporters come from any configured metrics pipelines' exporters.
+	for k, exp := range exporters[component.DataTypeMetrics] {
+		metricsExp, ok := exp.(exporter.Metrics)
+		if !ok {
+			return fmt.Errorf("the exporter %q isn't a metrics exporter", k.String())
 		}
-		if p.metricsConsumer == nil {
-			return fmt.Errorf("failed to find metrics exporter: '%s'; please configure metrics_exporter from one of: %+v",
-				p.config.MetricsExporter, availableMetricsExporters)
+
+		availableMetricsExporters = append(availableMetricsExporters, k.String())
+
+		p.logger.Debug("Looking for spanmetrics exporter from available exporters",
+			zap.String("spanmetrics-exporter", p.config.MetricsExporter),
+			zap.Any("available-exporters", availableMetricsExporters),
+		)
+		if k.String() == p.config.MetricsExporter {
+			p.metricsConsumer = metricsExp
+			p.logger.Info("Found exporter", zap.String("spanmetrics-exporter", p.config.MetricsExporter))
+			break
 		}
+	}
+	if p.metricsConsumer == nil {
+		return fmt.Errorf("failed to find metrics exporter: '%s'; please configure metrics_exporter from one of: %+v",
+			p.config.MetricsExporter, availableMetricsExporters)
 	}
 
 	p.started = true
@@ -252,11 +251,7 @@ func (p *processorImp) Start(ctx context.Context, host component.Host) error {
 // Shutdown implements the component.Component interface.
 func (p *processorImp) Shutdown(context.Context) error {
 	p.shutdownOnce.Do(func() {
-		if p.tracesConsumer == nil {
-			p.logger.Info("Shutting down spanmetricsconnector")
-		} else {
-			p.logger.Info("Shutting down spanmetricsprocessor")
-		}
+		p.logger.Info("Shutting down spanmetricsprocessor")
 		if p.started {
 			p.logger.Info("Stopping ticker")
 			p.ticker.Stop()
@@ -279,11 +274,6 @@ func (p *processorImp) ConsumeTraces(ctx context.Context, traces ptrace.Traces) 
 	p.lock.Lock()
 	p.aggregateMetrics(traces)
 	p.lock.Unlock()
-
-	// true when p is a connector
-	if p.tracesConsumer == nil {
-		return nil
-	}
 
 	// Forward trace data unmodified and propagate trace pipeline errors, if any.
 	return p.tracesConsumer.ConsumeTraces(ctx, traces)
@@ -332,7 +322,7 @@ func (p *processorImp) buildMetrics() pmetric.Metrics {
 // into the given instrumentation library metrics.
 func (p *processorImp) collectLatencyMetrics(ilm pmetric.ScopeMetrics) {
 	mLatency := ilm.Metrics().AppendEmpty()
-	mLatency.SetName("latency")
+	mLatency.SetName(buildMetricName(p.config.Namespace, metricLatency))
 	mLatency.SetUnit("ms")
 	mLatency.SetEmptyHistogram().SetAggregationTemporality(p.config.GetAggregationTemporality())
 	dps := mLatency.Histogram().DataPoints()
@@ -360,7 +350,7 @@ func (p *processorImp) collectLatencyMetrics(ilm pmetric.ScopeMetrics) {
 // into the given instrumentation library metrics.
 func (p *processorImp) collectCallMetrics(ilm pmetric.ScopeMetrics) {
 	mCalls := ilm.Metrics().AppendEmpty()
-	mCalls.SetName("calls_total")
+	mCalls.SetName(buildMetricName(p.config.Namespace, metricCallsTotal))
 	mCalls.SetEmptySum().SetIsMonotonic(true)
 	mCalls.Sum().SetAggregationTemporality(p.config.GetAggregationTemporality())
 	dps := mCalls.Sum().DataPoints()
@@ -576,4 +566,12 @@ func setExemplars(exemplarsData []exemplarData, timestamp pcommon.Timestamp, exe
 	}
 
 	es.CopyTo(exemplars)
+}
+
+// buildMetricName builds the namespace prefix for the metric name.
+func buildMetricName(namespace string, name string) string {
+	if namespace != "" {
+		return namespace + "." + name
+	}
+	return name
 }
