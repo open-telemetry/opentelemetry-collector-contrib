@@ -129,7 +129,7 @@ func verifyConsumeMetricsInput(t testing.TB, input pmetric.Metrics, expectedTemp
 
 	seenMetricIDs := make(map[metricID]bool)
 	// The first 3 data points are for call counts.
-	assert.Equal(t, "calls_total", m.At(0).Name())
+	assert.Equal(t, metricNameCalls, m.At(0).Name())
 	assert.Equal(t, expectedTemporality, m.At(0).Sum().AggregationTemporality())
 	assert.True(t, m.At(0).Sum().IsMonotonic())
 	callsDps := m.At(0).Sum().DataPoints()
