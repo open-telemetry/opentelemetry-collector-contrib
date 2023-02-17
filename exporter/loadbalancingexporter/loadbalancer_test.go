@@ -178,7 +178,7 @@ func TestStartFailureStaticResolver(t *testing.T) {
 func TestLoadBalancerShutdown(t *testing.T) {
 	// prepare
 	cfg := simpleConfig()
-	p, err := newTracesExporter(exportertest.NewNopCreateSettings(), cfg, newLoadBalancer)
+	p, err := newTracesExporter(exportertest.NewNopCreateSettings(), cfg)
 	require.NotNil(t, p)
 	require.NoError(t, err)
 

@@ -54,7 +54,7 @@ func createDefaultConfig() component.Config {
 }
 
 func createTracesExporter(_ context.Context, params exporter.CreateSettings, cfg component.Config) (exporter.Traces, error) {
-	return newTracesExporter(params, cfg, newLoadBalancer)
+	return newTracesExporter(params, cfg)
 }
 
 func createLogsExporter(_ context.Context, params exporter.CreateSettings, cfg component.Config) (exporter.Logs, error) {

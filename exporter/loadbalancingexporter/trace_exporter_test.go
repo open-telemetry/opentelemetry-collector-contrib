@@ -61,7 +61,7 @@ func TestNewTracesExporter(t *testing.T) {
 	} {
 		t.Run(tt.desc, func(t *testing.T) {
 			// test
-			_, err := newTracesExporter(exportertest.NewNopCreateSettings(), tt.config, newLoadBalancer)
+			_, err := newTracesExporter(exportertest.NewNopCreateSettings(), tt.config)
 
 			// verify
 			require.Equal(t, tt.err, err)
@@ -72,28 +72,29 @@ func TestNewTracesExporter(t *testing.T) {
 func TestTracesExporterStart(t *testing.T) {
 	for _, tt := range []struct {
 		desc string
-		te   exporter.Traces
+		te   *traceExporterImp
 		err  error
 	}{
 		{
 			"ok",
-			func() exporter.Traces {
-				p, _ := newTracesExporter(exportertest.NewNopCreateSettings(), simpleConfig(), newLoadBalancer)
+			func() *traceExporterImp {
+				p, _ := newTracesExporter(exportertest.NewNopCreateSettings(), simpleConfig())
 				return p
 			}(),
 			nil,
 		},
 		{
 			"error",
-			func() exporter.Traces {
+			func() *traceExporterImp {
 				lb, _ := newLoadBalancer(exportertest.NewNopCreateSettings(), simpleConfig(), nil)
+				p, _ := newTracesExporter(exportertest.NewNopCreateSettings(), simpleConfig())
+
 				lb.res = &mockResolver{
 					onStart: func(context.Context) error {
 						return errors.New("some expected err")
 					},
 				}
-				var lbf = mockedLBGenerator(lb)
-				p, _ := newTracesExporter(exportertest.NewNopCreateSettings(), simpleConfig(), lbf)
+				p.loadBalancer = lb
 
 				return p
 			}(),
@@ -116,7 +117,7 @@ func TestTracesExporterStart(t *testing.T) {
 }
 
 func TestTracesExporterShutdown(t *testing.T) {
-	p, err := newTracesExporter(exportertest.NewNopCreateSettings(), simpleConfig(), newLoadBalancer)
+	p, err := newTracesExporter(exportertest.NewNopCreateSettings(), simpleConfig())
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -135,6 +136,11 @@ func TestConsumeTraces(t *testing.T) {
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
+	p, err := newTracesExporter(exportertest.NewNopCreateSettings(), simpleConfig())
+	require.NotNil(t, p)
+	require.NoError(t, err)
+	assert.Equal(t, p.routingKey, traceIDRouting)
+
 	// pre-load an exporter here, so that we don't use the actual OTLP exporter
 	lb.addMissingExporters(context.Background(), []string{"endpoint-1"})
 	lb.res = &mockResolver{
@@ -143,14 +149,7 @@ func TestConsumeTraces(t *testing.T) {
 			return []string{"endpoint-1"}, nil
 		},
 	}
-	lbf := mockedLBGenerator(lb)
-
-	p, err := newTracesExporter(exportertest.NewNopCreateSettings(), simpleConfig(), lbf)
-	require.NotNil(t, p)
-	require.NoError(t, err)
-
-	var te *traceExporterImp = p.(*traceExporterImp)
-	assert.Equal(t, te.routingKey, traceIDRouting)
+	p.loadBalancer = lb
 
 	err = p.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -173,43 +172,10 @@ func TestConsumeTracesServiceBased(t *testing.T) {
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
-	// pre-load an exporter here, so that we don't use the actual OTLP exporter
-	lb.addMissingExporters(context.Background(), []string{"endpoint-1"})
-	lb.res = &mockResolver{
-		triggerCallbacks: true,
-		onResolve: func(ctx context.Context) ([]string, error) {
-			return []string{"endpoint-1"}, nil
-		},
-	}
-	lbf := mockedLBGenerator(lb)
-
-	p, err := newTracesExporter(exportertest.NewNopCreateSettings(), serviceBasedRoutingConfig(), lbf)
+	p, err := newTracesExporter(exportertest.NewNopCreateSettings(), serviceBasedRoutingConfig())
 	require.NotNil(t, p)
 	require.NoError(t, err)
-
-	var te *baseTracesExporter = p.(*baseTracesExporter)
-	assert.Equal(t, te.routingKey, svcRouting)
-
-	err = p.Start(context.Background(), componenttest.NewNopHost())
-	require.NoError(t, err)
-	defer func() {
-		require.NoError(t, p.Shutdown(context.Background()))
-	}()
-
-	// test
-	res := p.ConsumeTraces(context.Background(), simpleTracesWithServiceName())
-
-	// verify
-	assert.Nil(t, res)
-}
-
-func TestConsumeTracesAttrBased(t *testing.T) {
-	componentFactory := func(ctx context.Context, endpoint string) (component.Component, error) {
-		return newNopMockTracesExporter(), nil
-	}
-	lb, err := newLoadBalancer(exportertest.NewNopCreateSettings(), attrBasedRoutingConfig("service.name"), componentFactory)
-	require.NotNil(t, lb)
-	require.NoError(t, err)
+	assert.Equal(t, p.routingKey, svcRouting)
 
 	// pre-load an exporter here, so that we don't use the actual OTLP exporter
 	lb.addMissingExporters(context.Background(), []string{"endpoint-1"})
@@ -219,14 +185,7 @@ func TestConsumeTracesAttrBased(t *testing.T) {
 			return []string{"endpoint-1"}, nil
 		},
 	}
-	lbf := mockedLBGenerator(lb)
-
-	p, err := newTracesExporter(exportertest.NewNopCreateSettings(), attrBasedRoutingConfig("service.name"), lbf)
-	require.NotNil(t, p)
-	require.NoError(t, err)
-
-	var te *baseTracesExporter = p.(*baseTracesExporter)
-	assert.Equal(t, te.routingKey, resourceAttrRouting)
+	p.loadBalancer = lb
 
 	err = p.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -248,27 +207,24 @@ func TestServiceBasedRoutingForSameTraceId(t *testing.T) {
 		batch      ptrace.Traces
 		routingKey routingKey
 		res        map[string][]int
-		err        error
 	}{
 		{
 			"same trace id and different services - service based routing",
 			twoServicesWithSameTraceID(),
 			svcRouting,
-			nil,
-			errors.New("batch of traces include multiple values of the routing attribute"),
+			map[string][]int{"ad-service-1": {0}, "get-recommendations-7": {1}},
 		},
 		{
 			"same trace id and different services - trace id routing",
 			twoServicesWithSameTraceID(),
 			traceIDRouting,
-			map[string][]int{string(b.String()): {0, 1}},
-			nil,
+			map[string][]int{string(b[:]): {0, 1}},
 		},
 	} {
 		t.Run(tt.desc, func(t *testing.T) {
-			res, err := routingIdentifiersFromTraces(tt.batch, tt.routingKey, "service.name")
-			assert.Equal(t, tt.err, err)
-			assert.Equal(t, tt.res, res)
+			res, err := routingIdentifiersFromTraces(tt.batch, tt.routingKey, "")
+			assert.Equal(t, err, nil)
+			assert.Equal(t, res, tt.res)
 		})
 	}
 }
@@ -281,17 +237,17 @@ func TestConsumeTracesExporterNoEndpoint(t *testing.T) {
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
+	p, err := newTracesExporter(exportertest.NewNopCreateSettings(), simpleConfig())
+	require.NotNil(t, p)
+	require.NoError(t, err)
+
 	lb.res = &mockResolver{
 		triggerCallbacks: true,
 		onResolve: func(ctx context.Context) ([]string, error) {
 			return nil, nil
 		},
 	}
-	lbf := mockedLBGenerator(lb)
-
-	p, err := newTracesExporter(exportertest.NewNopCreateSettings(), simpleConfig(), lbf)
-	require.NotNil(t, p)
-	require.NoError(t, err)
+	p.loadBalancer = lb
 
 	err = p.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -315,6 +271,10 @@ func TestConsumeTracesUnexpectedExporterType(t *testing.T) {
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
+	p, err := newTracesExporter(exportertest.NewNopCreateSettings(), simpleConfig())
+	require.NotNil(t, p)
+	require.NoError(t, err)
+
 	// pre-load an exporter here, so that we don't use the actual OTLP exporter
 	lb.addMissingExporters(context.Background(), []string{"endpoint-1"})
 	lb.res = &mockResolver{
@@ -323,11 +283,7 @@ func TestConsumeTracesUnexpectedExporterType(t *testing.T) {
 			return []string{"endpoint-1"}, nil
 		},
 	}
-	lbf := mockedLBGenerator(lb)
-
-	p, err := newTracesExporter(exportertest.NewNopCreateSettings(), simpleConfig(), lbf)
-	require.NotNil(t, p)
-	require.NoError(t, err)
+	p.loadBalancer = lb
 
 	err = p.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -379,12 +335,12 @@ func TestBatchWithTwoTraces(t *testing.T) {
 	lb, err := newLoadBalancer(exportertest.NewNopCreateSettings(), simpleConfig(), componentFactory)
 	require.NotNil(t, lb)
 	require.NoError(t, err)
-	lbf := mockedLBGenerator(lb)
 
-	p, err := newTracesExporter(exportertest.NewNopCreateSettings(), simpleConfig(), lbf)
+	p, err := newTracesExporter(exportertest.NewNopCreateSettings(), simpleConfig())
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
+	p.loadBalancer = lb
 	err = p.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
@@ -406,14 +362,12 @@ func TestNoTracesInBatch(t *testing.T) {
 		desc       string
 		batch      ptrace.Traces
 		routingKey routingKey
-		attrKey    string
 		err        error
 	}{
 		{
 			"no resource spans",
 			ptrace.NewTraces(),
 			traceIDRouting,
-			"",
 			errors.New("empty resource spans"),
 		},
 		{
@@ -424,7 +378,6 @@ func TestNoTracesInBatch(t *testing.T) {
 				return batch
 			}(),
 			traceIDRouting,
-			"",
 			errors.New("empty scope spans"),
 		},
 		{
@@ -435,7 +388,6 @@ func TestNoTracesInBatch(t *testing.T) {
 				return batch
 			}(),
 			svcRouting,
-			"",
 			errors.New("empty spans"),
 		},
 	} {
@@ -510,12 +462,13 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 	lb, err := newLoadBalancer(exportertest.NewNopCreateSettings(), cfg, componentFactory)
 	require.NotNil(t, lb)
 	require.NoError(t, err)
-	lb.res = res
-	lbf := mockedLBGenerator(lb)
 
-	p, err := newTracesExporter(exportertest.NewNopCreateSettings(), cfg, lbf)
+	p, err := newTracesExporter(exportertest.NewNopCreateSettings(), cfg)
 	require.NotNil(t, p)
 	require.NoError(t, err)
+
+	lb.res = res
+	p.loadBalancer = lb
 
 	counter1 := atomic.NewInt64(0)
 	counter2 := atomic.NewInt64(0)
@@ -629,12 +582,6 @@ func appendSimpleTraceWithID(dest ptrace.ResourceSpans, id pcommon.TraceID) {
 	dest.ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID(id)
 }
 
-func mockedLBGenerator(lb *loadBalancerImp) LoadBalancerGenerator {
-	return func(params exporter.CreateSettings, cfg component.Config, factory componentFactory) (*loadBalancerImp, error) {
-		return lb, nil
-	}
-}
-
 func simpleConfig() *Config {
 	return &Config{
 		Resolver: ResolverSettings{
@@ -649,16 +596,6 @@ func serviceBasedRoutingConfig() *Config {
 			Static: &StaticResolver{Hostnames: []string{"endpoint-1"}},
 		},
 		RoutingKey: "service",
-	}
-}
-
-func attrBasedRoutingConfig(attrKey string) *Config {
-	return &Config{
-		Resolver: ResolverSettings{
-			Static: &StaticResolver{Hostnames: []string{"endpoint-1"}},
-		},
-		RoutingKey:      "resourceAttr",
-		ResourceAttrKey: attrKey,
 	}
 }
 
