@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
 )
 
 var _ exporter.Traces = (*traceExporterImp)(nil)
@@ -41,12 +42,13 @@ type traceExporterImp struct {
 
 	stopped    bool
 	shutdownWg sync.WaitGroup
+	logger     *zap.Logger
 }
 
 type routingFunction func(ptrace.Traces) (map[string][]int, error)
 
 // Create new traces exporter
-func newTracesExporter(params exporter.CreateSettings, cfg component.Config) (*traceExporterImp, error) {
+func newTracesExporter(params exporter.CreateSettings, cfg component.Config, logger *zap.Logger) (*traceExporterImp, error) {
 	exporterFactory := otlpexporter.NewFactory()
 
 	lb, err := newLoadBalancer(params, cfg, func(ctx context.Context, endpoint string) (component.Component, error) {
@@ -57,7 +59,7 @@ func newTracesExporter(params exporter.CreateSettings, cfg component.Config) (*t
 		return nil, err
 	}
 
-	traceExporter := traceExporterImp{loadBalancer: lb, routingKey: traceIDRouting}
+	traceExporter := traceExporterImp{loadBalancer: lb, routingKey: traceIDRouting, logger: logger}
 
 	switch cfg.(*Config).RoutingKey {
 	case "service":
@@ -78,7 +80,7 @@ func buildExporterConfig(cfg *Config, endpoint string) otlpexporter.Config {
 	return oCfg
 }
 
-func SplitTracesByResourceAttr(batches ptrace.Traces, attrKeys []string) map[string][]ptrace.Traces {
+func SplitTracesByResourceAttr(batches ptrace.Traces, attrKeys []string) (map[string][]ptrace.Traces, error) {
 	// This code is based on the ConsumeTraces function of the batchperresourceattr
 	// modified to support multiple routing keys + fallback on the traceId when routing attr does not exist
 	result := make(map[string][]ptrace.Traces)
@@ -87,7 +89,7 @@ func SplitTracesByResourceAttr(batches ptrace.Traces, attrKeys []string) map[str
 	lenRss := rss.Len()
 
 	if lenRss <= 1 {
-		return map[string][]ptrace.Traces{attrKeys[0]: {batches}}
+		return map[string][]ptrace.Traces{attrKeys[0]: {batches}}, nil
 	}
 
 	indicesByAttr := make(map[string]map[string][]int)
@@ -114,10 +116,6 @@ func SplitTracesByResourceAttr(batches ptrace.Traces, attrKeys []string) map[str
 		}
 	}
 
-	if len(indicesByAttr) <= 1 && len(fallbackIndices) == 0 {
-		return map[string][]ptrace.Traces{"traceId": {batches}}
-	}
-
 	for j := 0; j < len(fallbackIndices); j++ {
 		t := ptrace.NewTraces()
 		rs := rss.At(j)
@@ -137,7 +135,7 @@ func SplitTracesByResourceAttr(batches ptrace.Traces, attrKeys []string) map[str
 		}
 	}
 
-	return result
+	return result, nil
 }
 
 func (e *traceExporterImp) Capabilities() consumer.Capabilities {
@@ -155,10 +153,14 @@ func (e *traceExporterImp) Shutdown(context.Context) error {
 }
 
 func (e *traceExporterImp) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
+	var err error
 	var errs error
 	var batches = make(map[string][]ptrace.Traces)
 	if e.routingKey == resourceAttrRouting {
-		batches = SplitTracesByResourceAttr(td, e.resourceAttrKeys)
+		batches, err = SplitTracesByResourceAttr(td, e.resourceAttrKeys)
+		if err != nil {
+			return err
+		}
 	} else {
 		batches["traceId"] = batchpersignal.SplitTraces(td)
 	}
@@ -276,6 +278,9 @@ func routeByResourceAttr(td ptrace.Traces, routeKey string) (map[string][]int, e
 			return routeByTraceId(td)
 		}
 		ids[attr.Str()] = append(ids[attr.Str()], i)
+	}
+	if len(ids) > 1 {
+		return nil, errors.New("received traces were not split by resource attr")
 	}
 	return ids, nil
 }

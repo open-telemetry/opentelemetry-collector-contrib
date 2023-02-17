@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
+	"go.uber.org/zap"
 )
 
 func TestNewLoadBalancerNoResolver(t *testing.T) {
@@ -178,7 +179,7 @@ func TestStartFailureStaticResolver(t *testing.T) {
 func TestLoadBalancerShutdown(t *testing.T) {
 	// prepare
 	cfg := simpleConfig()
-	p, err := newTracesExporter(exportertest.NewNopCreateSettings(), cfg)
+	p, err := newTracesExporter(exportertest.NewNopCreateSettings(), cfg, zap.NewNop())
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
