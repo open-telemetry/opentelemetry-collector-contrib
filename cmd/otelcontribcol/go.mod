@@ -539,7 +539,6 @@ require (
 	github.com/openzipkin/zipkin-go v0.4.1 // indirect
 	github.com/outcaste-io/ristretto v0.2.1 // indirect
 	github.com/ovh/go-ovh v1.3.0 // indirect
-	github.com/panta/machineid v1.0.2 // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
 	github.com/paulmach/orb v0.9.0 // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect

@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	"github.com/Showmax/go-fqdn"
-	"github.com/panta/machineid"
+	"github.com/shirou/gopsutil/v3/host"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/internal"
 )
@@ -118,5 +118,5 @@ func (p systemMetadataProvider) reverseLookup(ipAddresses []string) (string, err
 }
 
 func (p systemMetadataProvider) HostID() (string, error) {
-	return machineid.ID()
+	return host.HostID()
 }
