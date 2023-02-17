@@ -50,8 +50,8 @@ awscloudwatchmetrics:
   poll_interval: 5m
   metrics:
     named:
-      - namespace: /aws/eks/dev-0/cluster: 
-        metric_names: [kube-apiserver-ea9c831555adca1815ae04b87661klasdj]
+      - namespace: AWS/EC2: 
+        metric_names: [DiskWriteOps,DiskReadBytes]
 ```
 
 ## Sample Configs
