@@ -41,8 +41,8 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(typeStr, "2"),
 			expected: &Config{
-				DSN: "https://key@host/path/42",
-				ENV: "prod",
+				DSN:         "https://key@host/path/42",
+				Environment: "prod",
 			},
 		},
 	}
