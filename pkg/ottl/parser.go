@@ -203,7 +203,7 @@ func (s *Statements[K]) Execute(ctx context.Context, tCtx K) error {
 				err = fmt.Errorf("failed to execute statement: %v, %w", statement.origText, err)
 				return err
 			}
-			s.telemetrySettings.Logger.Error("failed to execute statement", zap.Error(err), zap.String("statement", statement.origText))
+			s.telemetrySettings.Logger.Warn("failed to execute statement", zap.Error(err), zap.String("statement", statement.origText))
 		}
 	}
 	return nil
