@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package lumigoauthextension // import "github.com/lumigo-io/opentelemetry-collector-contrib/extension/lumigoauthextension"
+package lumigoauthextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/lumigoauthextension"
 
 import (
 	"go.opentelemetry.io/collector/config"

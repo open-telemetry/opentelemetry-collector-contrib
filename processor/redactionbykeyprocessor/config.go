@@ -48,6 +48,6 @@ type Config struct {
 }
 
 type BlockedValueByKey struct {
-    Key string `mapstructure:"key"`
-    Regex string `mapstructure:"regex"`
+	Key   string `mapstructure:"key"`
+	Regex string `mapstructure:"regex"`
 }

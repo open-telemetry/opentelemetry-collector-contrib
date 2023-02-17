@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package telemetrygen // import "github.com/open-telemetry/opentelemetry-collector-contrib/telemetrygen/internal/telemetrygen"
+package telemetrygen // import "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/telemetrygen"
 
 import (
 	"errors"

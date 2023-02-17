@@ -326,6 +326,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetter v0.60.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension v0.60.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder v0.60.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/lumigoauthextension v0.60.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension v0.60.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.60.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecstaskobserver v0.60.0 // indirect
@@ -374,6 +375,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricsgenerationprocessor v0.60.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor v0.60.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor v0.60.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionbykeyprocessor v0.60.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.60.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor v0.60.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor v0.60.0 // indirect
@@ -725,9 +727,11 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/heal
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder => ../../extension/httpforwarder
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension => ../../extension/oauth2clientauthextension
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/lumigoauthextension => ../../extension/lumigoauthextension
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer => ../../extension/observer
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension => ../../extension/oauth2clientauthextension
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecstaskobserver => ../../extension/observer/ecstaskobserver
 
@@ -788,6 +792,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/metr
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor => ../../processor/metricstransformprocessor/
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor => ../../processor/probabilisticsamplerprocessor/
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionbykeyprocessor => ../../processor/redactionbykeyprocessor/
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor => ../../processor/resourcedetectionprocessor/
 

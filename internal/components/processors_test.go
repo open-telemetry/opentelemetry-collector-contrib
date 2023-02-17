@@ -34,6 +34,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionbykeyprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor"
 )
@@ -98,6 +99,14 @@ func TestDefaultProcessors(t *testing.T) {
 		},
 		{
 			processor: "resourcedetection",
+		},
+		{
+			processor: "redactionbykey",
+			getConfigFn: func() config.Processor {
+				cfg := procFactories["redactionbykey"].CreateDefaultConfig().(*redactionbykeyprocessor.Config)
+				cfg.BlockedValues = []string{"4[0-9]{12}(?:[0-9]{3})?"}
+				return cfg
+			},
 		},
 		{
 			processor: "resource",

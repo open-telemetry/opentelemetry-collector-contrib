@@ -367,11 +367,9 @@ func TestBlockValuesByKey(t *testing.T) {
 
 	firstOutILS := next.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0)
 	attr := firstOutILS.Spans().At(0).Attributes()
-	var deleted []string
 	for k := range redacted {
 		_, ok := attr.Get(k)
 		assert.False(t, ok)
-		deleted = append(deleted, k)
 	}
 	_, ok := attr.Get(redactedKeys)
 	assert.False(t, ok)

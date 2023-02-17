@@ -34,12 +34,12 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: config.NewComponentIDWithName(typeStr, ""),
 			expected: &Config{
-				ProcessorSettings:      config.NewProcessorSettings(config.NewComponentID(typeStr)),
-				AllowAllKeys:           false,
-				AllowedKeys:            []string{"description", "group", "id", "name"},
-				BlockedValues:          []string{"4[0-9]{12}(?:[0-9]{3})?", "(5[1-5][0-9]{14})"},
-				BlockedValuesByKey:     []BlockedValueByKey{{Key: "http.host", Regex: "localhost"}},
-				Summary:                debug,
+				ProcessorSettings:  config.NewProcessorSettings(config.NewComponentID(typeStr)),
+				AllowAllKeys:       false,
+				AllowedKeys:        []string{"description", "group", "id", "name"},
+				BlockedValues:      []string{"4[0-9]{12}(?:[0-9]{3})?", "(5[1-5][0-9]{14})"},
+				BlockedValuesByKey: []BlockedValueByKey{{Key: "http.host", Regex: "localhost"}},
+				Summary:            debug,
 			},
 		},
 		{
