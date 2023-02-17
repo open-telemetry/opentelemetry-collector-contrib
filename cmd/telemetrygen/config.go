@@ -20,6 +20,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/logs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/traces"
 )
@@ -27,6 +28,7 @@ import (
 var (
 	tracesCfg  *traces.Config
 	metricsCfg *metrics.Config
+	logsCfg    *logs.Config
 )
 
 // rootCmd is the root command on which will be run children commands
@@ -56,14 +58,27 @@ var metricsCmd = &cobra.Command{
 	},
 }
 
+// logsCmd is the command responsible for sending logs
+var logsCmd = &cobra.Command{
+	Use:     "logs",
+	Short:   "Simulates a client generating logs",
+	Example: "telemetrygen logs",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return logs.Start(logsCfg)
+	},
+}
+
 func init() {
-	rootCmd.AddCommand(tracesCmd, metricsCmd)
+	rootCmd.AddCommand(tracesCmd, metricsCmd, logsCmd)
 
 	tracesCfg = new(traces.Config)
 	tracesCfg.Flags(tracesCmd.Flags())
 
 	metricsCfg = new(metrics.Config)
 	metricsCfg.Flags(metricsCmd.Flags())
+
+	logsCfg = new(logs.Config)
+	logsCfg.Flags(logsCmd.Flags())
 
 	// Disabling completion command for end user
 	// https://github.com/spf13/cobra/blob/master/shell_completions.md
