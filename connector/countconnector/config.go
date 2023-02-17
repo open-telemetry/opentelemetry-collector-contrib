@@ -18,6 +18,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/confmap"
+	"go.uber.org/zap"
 )
 
 // Default metrics are emitted if no conditions are specified.
@@ -56,7 +57,11 @@ func (c *Config) Validate() error {
 		if name == "" {
 			return fmt.Errorf("spans: metric name missing")
 		}
-		if _, err := parseConditions(newSpanParser(nil), info.Conditions); err != nil {
+		parser, err := newSpanParser(zap.NewNop())
+		if err != nil {
+			return err
+		}
+		if _, err = parseConditions(parser, info.Conditions); err != nil {
 			return fmt.Errorf("spans condition: metric %q: %w", name, err)
 		}
 	}
@@ -64,7 +69,11 @@ func (c *Config) Validate() error {
 		if name == "" {
 			return fmt.Errorf("spanevents: metric name missing")
 		}
-		if _, err := parseConditions(newSpanEventParser(nil), info.Conditions); err != nil {
+		parser, err := newSpanEventParser(zap.NewNop())
+		if err != nil {
+			return err
+		}
+		if _, err = parseConditions(parser, info.Conditions); err != nil {
 			return fmt.Errorf("spanevents condition: metric %q: %w", name, err)
 		}
 	}
@@ -72,7 +81,11 @@ func (c *Config) Validate() error {
 		if name == "" {
 			return fmt.Errorf("metrics: metric name missing")
 		}
-		if _, err := parseConditions(newMetricParser(nil), info.Conditions); err != nil {
+		parser, err := newMetricParser(zap.NewNop())
+		if err != nil {
+			return err
+		}
+		if _, err = parseConditions(parser, info.Conditions); err != nil {
 			return fmt.Errorf("metrics condition: metric %q: %w", name, err)
 		}
 	}
@@ -81,7 +94,11 @@ func (c *Config) Validate() error {
 		if name == "" {
 			return fmt.Errorf("datapoints: metric name missing")
 		}
-		if _, err := parseConditions(newDataPointParser(nil), info.Conditions); err != nil {
+		parser, err := newDataPointParser(zap.NewNop())
+		if err != nil {
+			return err
+		}
+		if _, err = parseConditions(parser, info.Conditions); err != nil {
 			return fmt.Errorf("datapoints condition: metric %q: %w", name, err)
 		}
 	}
@@ -89,7 +106,11 @@ func (c *Config) Validate() error {
 		if name == "" {
 			return fmt.Errorf("logs: metric name missing")
 		}
-		if _, err := parseConditions(newLogParser(nil), info.Conditions); err != nil {
+		parser, err := newLogParser(zap.NewNop())
+		if err != nil {
+			return err
+		}
+		if _, err = parseConditions(parser, info.Conditions); err != nil {
 			return fmt.Errorf("logs condition: metric %q: %w", name, err)
 		}
 	}

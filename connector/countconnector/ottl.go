@@ -30,27 +30,27 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 )
 
-func newSpanParser(logger *zap.Logger) ottl.Parser[ottlspan.TransformContext] {
+func newSpanParser(logger *zap.Logger) (ottl.Parser[ottlspan.TransformContext], error) {
 	return ottlspan.NewParser(
 		ottlFunctions[ottlspan.TransformContext](),
 		component.TelemetrySettings{Logger: logger})
 }
-func newSpanEventParser(logger *zap.Logger) ottl.Parser[ottlspanevent.TransformContext] {
+func newSpanEventParser(logger *zap.Logger) (ottl.Parser[ottlspanevent.TransformContext], error) {
 	return ottlspanevent.NewParser(
 		ottlFunctions[ottlspanevent.TransformContext](),
 		component.TelemetrySettings{Logger: logger})
 }
-func newMetricParser(logger *zap.Logger) ottl.Parser[ottlmetric.TransformContext] {
+func newMetricParser(logger *zap.Logger) (ottl.Parser[ottlmetric.TransformContext], error) {
 	return ottlmetric.NewParser(
 		ottlFunctions[ottlmetric.TransformContext](),
 		component.TelemetrySettings{Logger: logger})
 }
-func newDataPointParser(logger *zap.Logger) ottl.Parser[ottldatapoint.TransformContext] {
+func newDataPointParser(logger *zap.Logger) (ottl.Parser[ottldatapoint.TransformContext], error) {
 	return ottldatapoint.NewParser(
 		ottlFunctions[ottldatapoint.TransformContext](),
 		component.TelemetrySettings{Logger: logger})
 }
-func newLogParser(logger *zap.Logger) ottl.Parser[ottllog.TransformContext] {
+func newLogParser(logger *zap.Logger) (ottl.Parser[ottllog.TransformContext], error) {
 	return ottllog.NewParser(
 		ottlFunctions[ottllog.TransformContext](),
 		component.TelemetrySettings{Logger: logger})
@@ -98,6 +98,7 @@ func ottlFunctions[K any]() map[string]interface{} {
 		"Concat":      ottlfuncs.Concat[K],
 		"Split":       ottlfuncs.Split[K],
 		"Int":         ottlfuncs.Int[K],
+		"Substring":   ottlfuncs.Substring[K],
 		"ConvertCase": ottlfuncs.ConvertCase[K],
 		"noop": func() (ottl.ExprFunc[K], error) {
 			return func(context.Context, K) (interface{}, error) {

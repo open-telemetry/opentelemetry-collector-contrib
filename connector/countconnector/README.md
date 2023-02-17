@@ -58,12 +58,13 @@ Optionally, emit custom counts by defining metrics under one or more of the foll
 
 - `spans`
 - `spanevents`
--`metrics`
--`datapoints`
--`logs`
+- `metrics`
+- `datapoints`
+- `logs`
 
-Under each custom metric name, specify the conditions under which data should be counted.
-If multiple conditions are specified, data will be counted if it matches any one of the conditions.
+Under each custom metric name, specify one or more conditions using [OTTL Syntax].
+Data that matches any one of the conditions will be counted. i.e. Conditions are ORed together.
+
 Optionally, specify a description for the metric.
 
 ```yaml
@@ -219,3 +220,4 @@ service:
 [Connectors README]:https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md
 [Exporter Pipeline Type]:https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md#exporter-pipeline-type
 [Receiver Pipeline Type]:https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md#receiver-pipeline-type
+[OTTL Syntax]:https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/README.md

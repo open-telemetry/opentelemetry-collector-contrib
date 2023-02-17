@@ -60,7 +60,10 @@ func createTracesToMetrics(
 	c := cfg.(*Config)
 
 	spanMatchExprs := make(map[string]expr.BoolExpr[ottlspan.TransformContext], len(c.Spans))
-	spanParser := newSpanParser(set.TelemetrySettings.Logger)
+	spanParser, err := newSpanParser(set.TelemetrySettings.Logger)
+	if err != nil {
+		return nil, err
+	}
 	for name, info := range c.Spans {
 		if len(info.Conditions) == 0 {
 			continue
@@ -70,7 +73,10 @@ func createTracesToMetrics(
 	}
 
 	spanEventMatchExprs := make(map[string]expr.BoolExpr[ottlspanevent.TransformContext], len(c.SpanEvents))
-	spanEventParser := newSpanEventParser(set.TelemetrySettings.Logger)
+	spanEventParser, err := newSpanEventParser(set.TelemetrySettings.Logger)
+	if err != nil {
+		return nil, err
+	}
 	for name, info := range c.SpanEvents {
 		if len(info.Conditions) == 0 {
 			continue
@@ -102,7 +108,10 @@ func createMetricsToMetrics(
 	c := cfg.(*Config)
 
 	metricMatchExprs := make(map[string]expr.BoolExpr[ottlmetric.TransformContext], len(c.Metrics))
-	metricParser := newMetricParser(set.TelemetrySettings.Logger)
+	metricParser, err := newMetricParser(set.TelemetrySettings.Logger)
+	if err != nil {
+		return nil, err
+	}
 	for name, info := range c.Metrics {
 		if len(info.Conditions) == 0 {
 			continue
@@ -112,7 +121,10 @@ func createMetricsToMetrics(
 	}
 
 	dataPointMatchExprs := make(map[string]expr.BoolExpr[ottldatapoint.TransformContext], len(c.DataPoints))
-	dataPointParser := newDataPointParser(set.TelemetrySettings.Logger)
+	dataPointParser, err := newDataPointParser(set.TelemetrySettings.Logger)
+	if err != nil {
+		return nil, err
+	}
 	for name, info := range c.DataPoints {
 		if len(info.Conditions) == 0 {
 			continue
@@ -144,7 +156,10 @@ func createLogsToMetrics(
 	c := cfg.(*Config)
 
 	matchExprs := make(map[string]expr.BoolExpr[ottllog.TransformContext], len(c.Logs))
-	logParser := newLogParser(set.TelemetrySettings.Logger)
+	logParser, err := newLogParser(set.TelemetrySettings.Logger)
+	if err != nil {
+		return nil, err
+	}
 	for name, info := range c.Logs {
 		if len(info.Conditions) == 0 {
 			continue
