@@ -39,7 +39,7 @@ import (
 
 const (
 	serviceNameKey     = conventions.AttributeServiceName
-	operationKey       = "operation"   // OpenTelemetry non-standard constant.
+	spanNameKey        = "span.name"   // OpenTelemetry non-standard constant.
 	spanKindKey        = "span.kind"   // OpenTelemetry non-standard constant.
 	statusCodeKey      = "status.code" // OpenTelemetry non-standard constant.
 	metricKeySeparator = string(byte(0))
@@ -82,7 +82,7 @@ type connectorImp struct {
 	keyBuf *bytes.Buffer
 
 	// An LRU cache of dimension key-value maps keyed by a unique identifier formed by a concatenation of its values:
-	// e.g. { "foo/barOK": { "serviceName": "foo", "operation": "/bar", "status_code": "OK" }}
+	// e.g. { "foo/barOK": { "serviceName": "foo", "span.name": "/bar", "status_code": "OK" }}
 	metricKeyToDimensions *cache.Cache[metricKey, pcommon.Map]
 
 	ticker  *clock.Ticker
@@ -179,7 +179,7 @@ func validateDimensions(dimensions []Dimension, skipSanitizeLabel bool) error {
 		labelNames[key] = struct{}{}
 		labelNames[sanitize(key, skipSanitizeLabel)] = struct{}{}
 	}
-	labelNames[operationKey] = struct{}{}
+	labelNames[spanNameKey] = struct{}{}
 
 	for _, key := range dimensions {
 		if _, ok := labelNames[key.Name]; ok {
@@ -342,7 +342,7 @@ func (p *connectorImp) collectCallMetrics(ilm pmetric.ScopeMetrics) {
 
 // aggregateMetrics aggregates the raw metrics from the input trace data.
 // Each metric is identified by a key that is built from the service name
-// and span metadata such as operation, kind, status_code and any additional
+// and span metadata such as name, kind, status_code and any additional
 // dimensions the user has configured.
 func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 	for i := 0; i < traces.ResourceSpans().Len(); i++ {
@@ -408,7 +408,7 @@ func (p *connectorImp) buildDimensionKVs(serviceName string, span ptrace.Span, r
 	dims := pcommon.NewMap()
 	dims.EnsureCapacity(4 + len(p.dimensions))
 	dims.PutStr(serviceNameKey, serviceName)
-	dims.PutStr(operationKey, span.Name())
+	dims.PutStr(spanNameKey, span.Name())
 	dims.PutStr(spanKindKey, traceutil.SpanKindStr(span.Kind()))
 	dims.PutStr(statusCodeKey, traceutil.StatusCodeStr(span.Status().Code()))
 	for _, d := range p.dimensions {
@@ -426,7 +426,7 @@ func concatDimensionValue(dest *bytes.Buffer, value string, prefixSep bool) {
 	dest.WriteString(value)
 }
 
-// buildKey builds the metric key from the service name and span metadata such as operation, kind, status_code and
+// buildKey builds the metric key from the service name and span metadata such as name, kind, status_code and
 // will attempt to add any additional dimensions the user has configured that match the span's attributes
 // or resource attributes. If the dimension exists in both, the span's attributes, being the most specific, takes precedence.
 //
