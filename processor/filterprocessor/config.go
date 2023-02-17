@@ -17,12 +17,12 @@ package filterprocessor // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"errors"
 	"fmt"
-	"go.uber.org/zap"
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filtermetric"
