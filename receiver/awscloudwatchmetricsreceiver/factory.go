@@ -32,3 +32,7 @@ func NewFactory() component.Factory {
 		receiver.WithMetrics(createMetricsRceiver, stabilityLevel),
 	)
 }
+
+func createDefaultConfig() component.Config {
+	return &Config{}
+}
