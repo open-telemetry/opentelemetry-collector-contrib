@@ -98,6 +98,9 @@ func SplitTracesByResourceAttr(batches ptrace.Traces, attrKeys []string) map[str
 		attrFound = false
 		for _, attrKey := range attrKeys {
 			var keyValue string
+			if _, ok := indicesByAttr[attrKey]; !ok {
+				indicesByAttr[attrKey] = make(map[string][]int)
+			}
 			if attributeValue, ok := rs.Resource().Attributes().Get(attrKey); ok {
 				keyValue = attributeValue.Str()
 				indicesByAttr[attrKey][keyValue] = append(indicesByAttr[attrKey][keyValue], i)
