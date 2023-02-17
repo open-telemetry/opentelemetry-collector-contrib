@@ -958,15 +958,15 @@ func TestProcessorUpdateExemplars(t *testing.T) {
 
 	// ----- verify -----------------------------------------------------------
 	assert.NoError(t, err)
-	assert.NotEmpty(t, p.histograms[key].exemplarsData)
-	assert.Equal(t, p.histograms[key].exemplarsData[0], exemplar{traceID: traceID, spanID: spanID, value: value})
+	assert.NotEmpty(t, p.histograms[key].exemplars)
+	assert.Equal(t, p.histograms[key].exemplars[0], exemplar{traceID: traceID, spanID: spanID, value: value})
 
 	// ----- call -------------------------------------------------------------
-	p.resetExemplarData()
+	p.resetExemplars()
 
 	// ----- verify -----------------------------------------------------------
 	assert.NoError(t, err)
-	assert.Empty(t, p.histograms[key].exemplarsData)
+	assert.Empty(t, p.histograms[key].exemplars)
 }
 
 func TestConsumeTracesEvictedCacheKey(t *testing.T) {

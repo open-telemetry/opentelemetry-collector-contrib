@@ -535,15 +535,15 @@ func TestConnectorUpdateExemplars(t *testing.T) {
 
 	// ----- verify -----------------------------------------------------------
 	assert.NoError(t, err)
-	assert.NotEmpty(t, c.histograms[key].exemplarsData)
-	assert.Equal(t, c.histograms[key].exemplarsData[0], exemplar{traceID: traceID, spanID: spanID, value: value})
+	assert.NotEmpty(t, c.histograms[key].exemplars)
+	assert.Equal(t, c.histograms[key].exemplars[0], exemplar{traceID: traceID, spanID: spanID, value: value})
 
 	// ----- call -------------------------------------------------------------
-	c.resetExemplarData()
+	c.resetExemplars()
 
 	// ----- verify -----------------------------------------------------------
 	assert.NoError(t, err)
-	assert.Empty(t, c.histograms[key].exemplarsData)
+	assert.Empty(t, c.histograms[key].exemplars)
 }
 
 func TestStart(t *testing.T) {
@@ -895,15 +895,15 @@ func TestUpdateExemplars(t *testing.T) {
 
 	// ----- verify -----------------------------------------------------------
 	assert.NoError(t, err)
-	assert.NotEmpty(t, c.histograms[key].exemplarsData)
-	assert.Equal(t, c.histograms[key].exemplarsData[0], exemplar{traceID: traceID, spanID: spanID, value: value})
+	assert.NotEmpty(t, c.histograms[key].exemplars)
+	assert.Equal(t, c.histograms[key].exemplars[0], exemplar{traceID: traceID, spanID: spanID, value: value})
 
 	// ----- call -------------------------------------------------------------
-	c.resetExemplarData()
+	c.resetExemplars()
 
 	// ----- verify -----------------------------------------------------------
 	assert.NoError(t, err)
-	assert.Empty(t, c.histograms[key].exemplarsData)
+	assert.Empty(t, c.histograms[key].exemplars)
 }
 
 func TestConnectorConsumeTracesEvictedCacheKey(t *testing.T) {

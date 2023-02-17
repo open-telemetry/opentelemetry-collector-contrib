@@ -115,10 +115,10 @@ func newDimensions(cfgDims []Dimension) []dimension {
 type histogram struct {
 	attributes pcommon.Map
 
-	count         uint64
-	sum           float64
-	bucketCounts  []uint64
-	exemplarsData []exemplar
+	count        uint64
+	sum          float64
+	bucketCounts []uint64
+	exemplars    []exemplar
 
 	latencyBounds []float64
 }
@@ -130,7 +130,7 @@ func (h *histogram) observe(latencyMs float64, traceID pcommon.TraceID, spanID p
 	// Binary search to find the latencyMs bucket index.
 	index := sort.SearchFloat64s(h.latencyBounds, latencyMs)
 	h.bucketCounts[index]++
-	h.exemplarsData = append(h.exemplarsData, exemplar{traceID: traceID, spanID: spanID, value: latencyMs})
+	h.exemplars = append(h.exemplars, exemplar{traceID: traceID, spanID: spanID, value: latencyMs})
 }
 
 func newConnector(logger *zap.Logger, config component.Config, ticker *clock.Ticker) (*connectorImp, error) {
@@ -269,7 +269,7 @@ func (p *connectorImp) exportMetrics(ctx context.Context) {
 
 	// Exemplars are only relevant to this batch of traces, so must be cleared within the lock,
 	// regardless of error while building metrics, before the next batch of spans is received.
-	p.resetExemplarData()
+	p.resetExemplars()
 
 	// If delta metrics, reset accumulated data
 	if p.config.GetAggregationTemporality() == pmetric.AggregationTemporalityDelta {
@@ -319,7 +319,7 @@ func (p *connectorImp) collectLatencyMetrics(ilm pmetric.ScopeMetrics) {
 		dpLatency.BucketCounts().FromRaw(hist.bucketCounts)
 		dpLatency.SetCount(hist.count)
 		dpLatency.SetSum(hist.sum)
-		setExemplars(hist.exemplarsData, timestamp, dpLatency.Exemplars())
+		setExemplars(hist.exemplars, timestamp, dpLatency.Exemplars())
 		hist.attributes.CopyTo(dpLatency.Attributes())
 	}
 }
@@ -394,7 +394,7 @@ func (p *connectorImp) getOrCreateHistogram(k metricKey, attr pcommon.Map) *hist
 			attributes:    attr,
 			bucketCounts:  make([]uint64, len(p.latencyBounds)+1),
 			latencyBounds: p.latencyBounds,
-			exemplarsData: []exemplar{},
+			exemplars:     []exemplar{},
 		}
 		p.histograms[k] = h
 	}
@@ -402,12 +402,12 @@ func (p *connectorImp) getOrCreateHistogram(k metricKey, attr pcommon.Map) *hist
 	return h
 }
 
-// resetExemplarData resets the entire exemplars map so the next trace will recreate all
+// resetExemplars resets the entire exemplars map so the next trace will recreate all
 // the data structure. An exemplar is a punctual value that exists at specific moment in time
 // and should be not considered like a metrics that persist over time.
-func (p *connectorImp) resetExemplarData() {
+func (p *connectorImp) resetExemplars() {
 	for _, histo := range p.histograms {
-		histo.exemplarsData = nil
+		histo.exemplars = nil
 	}
 }
 
