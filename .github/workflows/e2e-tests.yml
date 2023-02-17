@@ -69,7 +69,19 @@ jobs:
           kubectl -n default create -f .github/workflows/e2e/k8s/telemetrygen-job.yml
       - name: check telemetrygen job status
         run: |
-          kubectl wait --for=condition=Complete --timeout=60s job/test-telemetrygen
+          kubectl wait --for=condition=Complete --timeout=60s job/test-telemetrygen-job
+      - name: start telemetrygen statefulset
+        run: |
+          kubectl -n default create -f .github/workflows/e2e/k8s/telemetrygen-statefulset.yml
+      - name: start telemetrygen deployment
+        run: |
+          kubectl -n default create -f .github/workflows/e2e/k8s/telemetrygen-deployment.yml
+      - name: start telemetrygen daemonset
+        run: |
+          kubectl -n default create -f .github/workflows/e2e/k8s/telemetrygen-daemonset.yml
+      - name: wait telemetrygen statefulset/deployment/daemonset to generate trace
+        run: |
+          sleep 30
       - name: copy trace output
         run: |
           kubectl cp -c filecp default/test-opentelemetry-collector-0:tmp/trace.json processor/k8sattributesprocessor/testdata/trace.json

@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension
 
-go 1.18
+go 1.19
 
 require (
 	bitbucket.org/atlassian/go-asap/v2 v2.6.0
@@ -10,7 +10,7 @@ require (
 	go.opentelemetry.io/collector/component v0.71.0
 	go.opentelemetry.io/collector/confmap v0.71.0
 	go.uber.org/multierr v1.9.0
-	google.golang.org/grpc v1.52.3
+	google.golang.org/grpc v1.53.0
 )
 
 require (
@@ -37,7 +37,5 @@ require (
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
 
 retract v0.65.0

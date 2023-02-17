@@ -1,24 +1,23 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter
 
-go 1.18
+go 1.19
 
 require (
 	github.com/census-instrumentation/opencensus-proto v0.4.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.71.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.71.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.71.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver v0.71.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver v0.0.0-00010101000000-000000000000
 	github.com/stretchr/testify v1.8.1
 	go.opentelemetry.io/collector v0.71.0
 	go.opentelemetry.io/collector/component v0.71.0
 	go.opentelemetry.io/collector/confmap v0.71.0
 	go.opentelemetry.io/collector/consumer v0.71.0
 	go.opentelemetry.io/collector/pdata v1.0.0-rc5
-	google.golang.org/grpc v1.52.3
+	google.golang.org/grpc v1.53.0
 )
 
 require (
-	cloud.google.com/go/compute v1.14.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/go-logr/logr v1.2.3 // indirect
@@ -51,10 +50,10 @@ require (
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
 	go.uber.org/zap v1.24.0 // indirect
-	golang.org/x/net v0.5.0 // indirect
-	golang.org/x/sys v0.4.0 // indirect
-	golang.org/x/text v0.6.0 // indirect
-	google.golang.org/genproto v0.0.0-20221207170731-23e4bf6bdc37 // indirect
+	golang.org/x/net v0.6.0 // indirect
+	golang.org/x/sys v0.5.0 // indirect
+	golang.org/x/text v0.7.0 // indirect
+	google.golang.org/genproto v0.0.0-20230110181048-76db0878b65f // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
