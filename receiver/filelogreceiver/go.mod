@@ -5,8 +5,8 @@ go 1.18
 require (
 	github.com/observiq/nanojack v0.0.0-20201106172433-343928847ebc
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.71.0
-	github.com/vihas-splunk/opentelemetry-collector-contrib/pkg/stanza e8bc5f066f49b7bfc39970902097d7f4feb8ff4e
 	github.com/stretchr/testify v1.8.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.71.0
 	go.opentelemetry.io/collector v0.71.0
 	go.opentelemetry.io/collector/component v0.71.0
 	go.opentelemetry.io/collector/confmap v0.71.0
@@ -49,7 +49,7 @@ require (
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage => ../../extension/storage
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza => ../../pkg/stanza
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza => github.com/vihas-splunk/opentelemetry-collector-contrib/pkg/stanza v0.0.0-20230218192300-4478ca99fd18
 
 retract v0.65.0
 
@@ -58,4 +58,3 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/corei
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
-replace github.com/vihas-splunk/opentelemetry-collector-contrib/pkg/stanza => github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza

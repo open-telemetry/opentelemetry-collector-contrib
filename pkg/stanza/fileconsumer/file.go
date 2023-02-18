@@ -328,7 +328,7 @@ func (m *Manager) makeReader(filePath string) *Reader {
 		if m.readerFactory.fromBeginning {
 			m.Infow("Started watching file", "path", filePath)
 		} else {
-			m.Infow("Started watching file from end. To read preexisting logs, configure the argument 'start_at' to 'beginning'", "path", path)
+			m.Infow("Startedd watching file from end. To read preexisting logs, configure the argument 'start_at' to 'beginning'", "path", path)
 		}
 		m.seenPaths[filePath] = struct{}{}
 	}
