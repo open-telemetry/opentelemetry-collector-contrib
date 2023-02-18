@@ -29,19 +29,28 @@ This receiver uses the [AWS SDK](https://docs.aws.amazon.com/sdk-for-go/v1/devel
 
 ### Metrics Parameters
 
+
 | Parameter                | Notes        | type                   | Description                                                                                |
-| ------------------------ | ------------ | ---------------------- | ------------------------------------------------------------------------------------------ |                                             |
- `named`                 | *optional*   | `See Group Parameters` | Configuration for Log Groups, by default no metrics will be collected |
+| ------------------------ | ------------ | ---------------------- | ------------------------------------------------------------------------------------------ |
+| `named`                 | *required*   | `See Named Parameters` | Configuration for Named Metrics, by default no metrics are collected |
 
-### Group Parameters
 
-`named` is the way to control and filter which metrics collected . They are mutually exclusive and are incompatible to be configured at the same time.
+### Named Parameters
 
-- `named`
-  - This is a map of log group name to stream filtering options
-    - `namespace`: (optional)
-      - `metric_names`: A list of full log stream names to filter the discovered log groups to collect from.
-      - `metric_name_prefixes`: A list of prefixes to filter the discovered log groups to collect from.
+| Parameter                | Notes        | type                   | Description                                                                                |
+| ------------------------ | ------------ | ---------------------- | ------------------------------------------------------------------------------------------ |
+| `namespace`                 | *required*   | `string` | AWS Metric namespace, all AWS namespaces are prefixed with `AWS`, eg: `AWS/EC2` for EC2 metrics |
+| `metric_name` | *required* | `string` | AWS metric name |
+| `period` | `default=5m` | duration | Aggregation period |
+| `aws_aggregation` | `default=sum` | string | type of AWS aggregation, eg: sum, min, max, average |
+| `dimensions` | *optional* | `see Dimensions Parameters` | Configuration for metric dimensions |
+
+### Dimension Parameters
+
+| Parameter                | Notes        | type                   | Description                                                                                |
+| ------------------------ | ------------ | ---------------------- | ------------------------------------------------------------------------------------------ |
+| `name`                 | *required*   | `string` | Dimensions name, can't start with a colon |
+| `value` | *required* | `string` | Dimension value |
 
 
 #### Named Example
