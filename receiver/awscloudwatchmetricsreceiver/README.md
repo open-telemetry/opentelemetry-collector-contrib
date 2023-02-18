@@ -20,7 +20,7 @@ This receiver uses the [AWS SDK](https://docs.aws.amazon.com/sdk-for-go/v1/devel
 | --------------- | ---------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `region`        | *required* | string | The AWS recognized region string                                                                                                                                                                                                                                                  |
 | `profile`       | *optional* | string | The AWS profile used to authenticate, if none is specified the default is chosen from the list of profiles                                                                                                                                                                        |
-| `imds_endpoint` | *optional* | string | A way of specifying a custom URL to be used by the EC2 IMDS client to validate the session. If unset, and the environment variable `AWS_EC2_METADATA_SERVICE_ENDPOINT` has a value the client will use the value of the environment variable as the endpoint for operation calls. |
+
 | `metrics`          | *optional* | `Metrics` | Configuration for metrics ingestion of this receiver                                                                                                                                                                                                                              |
 
 ### Metrics Parameters
@@ -28,8 +28,7 @@ This receiver uses the [AWS SDK](https://docs.aws.amazon.com/sdk-for-go/v1/devel
 | Parameter                | Notes        | type                   | Description                                                                                |
 | ------------------------ | ------------ | ---------------------- | ------------------------------------------------------------------------------------------ |
 | `poll_interval`          | `default=1m` | duration               | The duration waiting in between requests.                                                  |
-| `max_events_per_request` | `default=50` | int                    | The maximum number of events to process per request to Cloudwatch                          |
-| `groups`                 | *optional*   | `See Group Parameters` | Configuration for Log Groups, by default all Log Groups and Log Streams will be collected. |
+| `named`                 | *optional*   | `See Group Parameters` | Configuration for Log Groups, by default no metrics will be collected |
 
 ### Group Parameters
 
@@ -46,15 +45,33 @@ This receiver uses the [AWS SDK](https://docs.aws.amazon.com/sdk-for-go/v1/devel
 
 ```yaml
 awscloudwatchmetrics:
-  region: us-west-1
-  poll_interval: 5m
+  region: us-east-1
+  poll_interval: 1m
   metrics:
     named:
-      - namespace: AWS/EC2: 
-        metric_names: [DiskWriteOps,DiskReadBytes]
+      - namespace: "AWS/EC2"
+        metric_name: "CPUUtilization"
+        period: "5m"
+        aws_aggregation: "Sum"
+        dimensions:
+          - Name: "InstanceId"
+            Value: "i-1234567890abcdef0"
+      - namespace: "AWS/S3"
+        metric_name: "BucketSizeBytes"
+        period: "5m"
+        aws_aggregation: "p99"
+        dimensions:
+          - Name: "BucketName"
+            Value: "OpenTelemetry"
+          - Name: "StorageType"
+            Value: "StandardStorage"
 ```
 
 ## Sample Configs
+
+## AWS Costs
+
+This receiver uses the [GetMetricData](https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_GetMetricData.html) API call, this call is *not* in the AWS free tier. Please refer to [Amazon's pricing](https://aws.amazon.com/cloudwatch/pricing/) for futher information about expected costs. For `us-east-1`, the current pricing is $0.01 per 1,000 metrics requested as of February 2023.
 
 
 [alpha]:https://github.com/open-telemetry/opentelemetry-collector#alpha

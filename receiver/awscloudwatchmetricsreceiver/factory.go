@@ -43,6 +43,7 @@ func createMetricsRceiver(_ context.Context, params receiver.CreateSettings, bas
 func createDefaultConfig() component.Config {
 	return &Config{
 		PollInterval: defaultPollInterval,
+		nilToZero:    false,
 		Metrics:      &MetricsConfig{},
 	}
 }

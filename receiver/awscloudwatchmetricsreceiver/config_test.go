@@ -12,4 +12,36 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package awscloudwatchmetricsreceiver_test
+package awscloudwatchmetricsreceiver
+
+import (
+	"testing"
+
+	"github.com/stretchr/testify/require"
+)
+
+func TestValidate(t *testing.T) {
+	cases := []struct {
+		name        string
+		config      Config
+		expectedErr error
+	}{
+		{
+			name: "Invalid region",
+			config: Config{
+				Region: "",
+			},
+			expectedErr: errNoRegion,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := tc.config.Validate()
+			if tc.expectedErr != nil {
+				require.ErrorContains(t, err, tc.expectedErr.Error())
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
