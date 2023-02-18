@@ -26,7 +26,12 @@ Example:
 ```yaml
 exporters:
   azuremonitor:
-    instrumentation_key: b1cd0778-85fc-4677-a3fa-79d3c23e0efd
+    instrumentation_key: ########-####-####-####-############
+
+service:
+  pipelines:
+    traces:
+      exporters: [azuremonitor, <other-exporters>]
 ```
 
 ## Attribute mapping
