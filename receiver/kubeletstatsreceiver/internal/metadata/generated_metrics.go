@@ -213,17 +213,6 @@ type ResourceAttributeSettings struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-func (ras *ResourceAttributeSettings) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(ras, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 // ResourceAttributesSettings provides settings for kubeletstatsreceiver metrics.
 type ResourceAttributesSettings struct {
 	AwsVolumeID                  ResourceAttributeSettings `mapstructure:"aws.volume.id"`
@@ -2407,17 +2396,6 @@ func newMetricK8sVolumeInodesUsed(settings MetricSettings) metricK8sVolumeInodes
 type MetricsBuilderConfig struct {
 	Metrics            MetricsSettings            `mapstructure:"metrics"`
 	ResourceAttributes ResourceAttributesSettings `mapstructure:"resource_attributes"`
-}
-
-func (mbc *MetricsBuilderConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(mbc, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations

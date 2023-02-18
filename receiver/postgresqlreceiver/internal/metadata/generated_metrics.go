@@ -133,17 +133,6 @@ type ResourceAttributeSettings struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-func (ras *ResourceAttributeSettings) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(ras, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 // ResourceAttributesSettings provides settings for postgresqlreceiver metrics.
 type ResourceAttributesSettings struct {
 	PostgresqlDatabaseName ResourceAttributeSettings `mapstructure:"postgresql.database.name"`
@@ -1538,17 +1527,6 @@ func newMetricPostgresqlWalLag(settings MetricSettings) metricPostgresqlWalLag {
 type MetricsBuilderConfig struct {
 	Metrics            MetricsSettings            `mapstructure:"metrics"`
 	ResourceAttributes ResourceAttributesSettings `mapstructure:"resource_attributes"`
-}
-
-func (mbc *MetricsBuilderConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(mbc, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
