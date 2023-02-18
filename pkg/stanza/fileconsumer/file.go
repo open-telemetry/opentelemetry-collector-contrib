@@ -44,10 +44,11 @@ type Manager struct {
 	maxBatchFiles   int
 	deleteAfterRead bool
 
-	knownFiles []*Reader
-	seenPaths  map[string]struct{}
-	currentFiles []*os.File
-	currentFps []*Fingerprint
+	knownFiles     []*Reader
+	seenPaths      map[string]struct{}
+	currentFiles   []*os.File
+	currentFps     []*Fingerprint
+	currentReaders []*Reader
 }
 
 func (m *Manager) Start(persister operator.Persister) error {
@@ -117,119 +118,200 @@ func (m *Manager) poll(ctx context.Context) {
 
 	// Get the list of paths on disk
 	matches := m.finder.FindFiles()
-	for len(matches) > m.maxBatchFiles {
-		m.consume(ctx, matches[:m.maxBatchFiles])
-		matches = matches[m.maxBatchFiles:]
-	}
 	m.consume(ctx, matches)
 }
 
 func (m *Manager) consume(ctx context.Context, paths []string) {
-	m.Debug("Consuming files")
-	readers := m.makeReaders(paths)
-
-	// take care of files which disappeared from the pattern since the last poll cycle
-	// this can mean either files which were removed, or rotated into a name not matching the pattern
-	// we do this before reading existing files to ensure we emit older log lines before newer ones
-	m.roller.readLostFiles(ctx, readers)
-
+	pathChan := make(chan string, m.maxBatchFiles)
+	closeChan := make(chan int)
+	pathsConsumedChan := make(chan int)
+	readerChan := make(chan *Reader)
+	readers := make([]*Reader, 0, len(paths))
 	var wg sync.WaitGroup
-	for _, reader := range readers {
+	for i := 0; i < m.maxBatchFiles; i++ {
 		wg.Add(1)
-		go func(r *Reader) {
-			defer wg.Done()
+		go m.consumeAsync(ctx, pathsConsumedChan, pathChan, closeChan, wg)
+	}
+	for i := 0; i < len(paths); i++ {
+		pathChan <- paths[i]
+	}
+
+	totalPathsConsumed := 0
+	for i := range pathsConsumedChan {
+		if totalPathsConsumed == len(paths) {
+			closeChan <- 1
+			break;
+		}
+		totalPathsConsumed += i
+	}
+
+	for r := range readerChan {
+		readers = append(readers, r)
+		if !m.deleteAfterRead && (len(readers) % m.maxBatchFiles == 0) {
+			m.roller.readLostFiles(ctx, readers)
+			m.roller.roll(ctx, readers)
+			m.saveCurrent(readers)
+			m.syncLastPollFiles(ctx)
+			readers = make([]*Readers, 0)
+		}
+	}
+	if  !m.deleteAfterRead && (len(readers) > 0) {
+		m.roller.readLostFiles(ctx, readers)
+		m.roller.roll(ctx, readers)
+		m.saveCurrent(readers)
+		m.syncLastPollFiles(ctx)
+	}
+	wg.Wait()
+	close(readerChan)
+	close(pathsConsumedChan)
+	close(closeChan)
+	close(pathChan)
+}
+
+func (m *Manager) consumeAsync(ctx context.Context, pathsConsumedChan chan int, pathChan chan string, closeChan chan int, readerChan chan *Reader, wg sync.WaitGroup) {
+	defer wg.Done()
+	for {
+		select {
+		case path := <-pathChan:
+			pathsConsumedChan <- 1
+			r := m.makeReader(path)
 			r.ReadToEnd(ctx)
 			if m.deleteAfterRead {
 				r.Close()
 				if err := os.Remove(r.file.Name()); err != nil {
 					m.Errorf("could not delete %s", r.file.Name())
 				}
+			} else {
+				readerChan <- r
 			}
-		}(reader)
+
+		case <-closeChan:
+			break
+		}
 	}
-	wg.Wait()
-
-	if m.deleteAfterRead {
-		// no need to track files since they were deleted
-		return
-	}
-
-	// Any new files that appear should be consumed entirely
-	m.readerFactory.fromBeginning = true
-
-	m.roller.roll(ctx, readers)
-	m.saveCurrent(readers)
-	m.syncLastPollFiles(ctx)
+	return
 }
+
+// func (m *Manager) consume(ctx context.Context, paths []string) {
+// 	m.Debug("Consuming files")
+// 	readers := m.makeReaders(paths)
+
+// 	// take care of files which disappeared from the pattern since the last poll cycle
+// 	// this can mean either files which were removed, or rotated into a name not matching the pattern
+// 	// we do this before reading existing files to ensure we emit older log lines before newer ones
+// 	m.roller.readLostFiles(ctx, readers)
+
+// 	var wg sync.WaitGroup
+// 	for _, reader := range readers {
+// 		wg.Add(1)
+// 		go func(r *Reader) {
+// 			defer wg.Done()
+// 			r.ReadToEnd(ctx)
+// 			if m.deleteAfterRead {
+// 				r.Close()
+// 				if err := os.Remove(r.file.Name()); err != nil {
+// 					m.Errorf("could not delete %s", r.file.Name())
+// 				}
+// 			}
+// 		}(reader)
+// 	}
+// 	wg.Wait()
+
+// 	if m.deleteAfterRead {
+// 		// no need to track files since they were deleted
+// 		return
+// 	}
+
+// 	// Any new files that appear should be consumed entirely
+// 	m.readerFactory.fromBeginning = true
+
+// 	m.roller.roll(ctx, readers)
+// 	m.saveCurrent(readers)
+// 	m.syncLastPollFiles(ctx)
+// }
 
 // makeReaders takes a list of paths, then creates readers from each of those paths,
 // discarding any that have a duplicate fingerprint to other files that have already
 // been read this polling interval
-func (m *Manager) makeReaders(filesPaths []string) []*Reader {
-	// Open the files first to minimize the time between listing and opening
-	files := make([]*os.File, 0, len(filesPaths))
-	for _, path := range filesPaths {
-		if _, ok := m.seenPaths[path]; !ok {
-			if m.readerFactory.fromBeginning {
-				m.Infow("Started watching file", "path", path)
-			} else {
-				m.Infow("Started watching file from end. To read preexisting logs, configure the argument 'start_at' to 'beginning'", "path", path)
-			}
-			m.seenPaths[path] = struct{}{}
-		}
-		file, err := os.Open(path) // #nosec - operator must read in files defined by user
-		if err != nil {
-			m.Debugf("Failed to open file", zap.Error(err))
-			continue
-		}
-		files = append(files, file)
-	}
+// func (m *Manager) makeReaders(filesPaths []string) []*Reader {
+// 	// Open the files first to minimize the time between listing and opening
+// 	files := make([]*os.File, 0, len(filesPaths))
+// 	for _, path := range filesPaths {
+// 		if _, ok := m.seenPaths[path]; !ok {
+// 			if m.readerFactory.fromBeginning {
+// 				m.Infow("Started watching file", "path", path)
+// 			} else {
+// 				m.Infow("Started watching file from end. To read preexisting logs, configure the argument 'start_at' to 'beginning'", "path", path)
+// 			}
+// 			m.seenPaths[path] = struct{}{}
+// 		}
+// 		file, err := os.Open(path) // #nosec - operator must read in files defined by user
+// 		if err != nil {
+// 			m.Debugf("Failed to open file", zap.Error(err))
+// 			continue
+// 		}
+// 		files = append(files, file)
+// 	}
 
-	// Get fingerprints for each file
-	fps := make([]*Fingerprint, 0, len(files))
-	for _, file := range files {
-		fp, err := m.readerFactory.newFingerprint(file)
-		if err != nil {
-			m.Errorw("Failed creating fingerprint", zap.Error(err))
-			continue
-		}
-		fps = append(fps, fp)
-	}
+// 	// Get fingerprints for each file
+// 	fps := make([]*Fingerprint, 0, len(files))
+// 	for _, file := range files {
+// 		fp, err := m.readerFactory.newFingerprint(file)
+// 		if err != nil {
+// 			m.Errorw("Failed creating fingerprint", zap.Error(err))
+// 			continue
+// 		}
+// 		fps = append(fps, fp)
+// 	}
 
-	// Exclude any empty fingerprints or duplicate fingerprints to avoid doubling up on copy-truncate files
-OUTER:
-	for i := 0; i < len(fps); i++ {
-		fp := fps[i]
-		if len(fp.FirstBytes) == 0 {
-			if err := files[i].Close(); err != nil {
-				m.Errorf("problem closing file", "file", files[i].Name())
-			}
-			// Empty file, don't read it until we can compare its fingerprint
-			fps = append(fps[:i], fps[i+1:]...)
-			files = append(files[:i], files[i+1:]...)
-			i--
-			continue
-		}
-		for j := i + 1; j < len(fps); j++ {
-			fp2 := fps[j]
-			if fp.StartsWith(fp2) || fp2.StartsWith(fp) {
-				// Exclude
-				if err := files[i].Close(); err != nil {
-					m.Errorf("problem closing file", "file", files[i].Name())
-				}
-				fps = append(fps[:i], fps[i+1:]...)
-				files = append(files[:i], files[i+1:]...)
-				i--
-				continue OUTER
-			}
-		}
-	}
+// 	// Exclude any empty fingerprints or duplicate fingerprints to avoid doubling up on copy-truncate files
+// OUTER:
+// 	for i := 0; i < len(fps); i++ {
+// 		fp := fps[i]
+// 		if len(fp.FirstBytes) == 0 {
+// 			if err := files[i].Close(); err != nil {
+// 				m.Errorf("problem closing file", "file", files[i].Name())
+// 			}
+// 			// Empty file, don't read it until we can compare its fingerprint
+// 			fps = append(fps[:i], fps[i+1:]...)
+// 			files = append(files[:i], files[i+1:]...)
+// 			i--
+// 			continue
+// 		}
+// 		for j := i + 1; j < len(fps); j++ {
+// 			fp2 := fps[j]
+// 			if fp.StartsWith(fp2) || fp2.StartsWith(fp) {
+// 				// Exclude
+// 				if err := files[i].Close(); err != nil {
+// 					m.Errorf("problem closing file", "file", files[i].Name())
+// 				}
+// 				fps = append(fps[:i], fps[i+1:]...)
+// 				files = append(files[:i], files[i+1:]...)
+// 				i--
+// 				continue OUTER
+// 			}
+// 		}
+// 	}
 
-	readers := make([]*Reader, 0, len(fps))
-	for i := 0; i < len(fps); i++ {
-		reader, err := m.newReader(files[i], fps[i])
-		if err != nil {
-			m.Errorw("Failed to create reader", zap.Error(err))
+// 	readers := make([]*Reader, 0, len(fps))
+// 	for i := 0; i < len(fps); i++ {
+// 		reader, err := m.newReader(files[i], fps[i])
+// 		if err != nil {
+// 			m.Errorw("Failed to create reader", zap.Error(err))
+// 			continue
+// 		}
+// 		readers = append(readers, reader)
+// 	}
+
+// 	return readers
+// }
+
+func (m *Manager) makeReaders(filePaths []string) []*Reader {
+	readers := make([]*Readers, 0)
+	for i := 0; i < len(filePaths); i++ {
+		reader := m.makeReader(path)
+		if reader == nil {
+			m.Errorw("Failed to create reader for path ", path)
 			continue
 		}
 		readers = append(readers, reader)
