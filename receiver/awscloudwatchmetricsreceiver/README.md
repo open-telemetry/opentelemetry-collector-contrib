@@ -20,15 +20,18 @@ This receiver uses the [AWS SDK](https://docs.aws.amazon.com/sdk-for-go/v1/devel
 | --------------- | ---------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `region`        | *required* | string | The AWS recognized region string                                                                                                                                                                                                                                                  |
 | `profile`       | *optional* | string | The AWS profile used to authenticate, if none is specified the default is chosen from the list of profiles                                                                                                                                                                        |
+| `IMDSEndpoint`       | *optional* | string | The IMDS endpoint to authenticate to AWS                                                                                                                                               |
+| `poll_interval`          | `default=1m` | duration               | The duration waiting in between requests
+
+| `nill_to_zero`          | `default=false` | duration               | Whether to send 0 if CloudWatch returns nodata. By default returns NaN
 
 | `metrics`          | *optional* | `Metrics` | Configuration for metrics ingestion of this receiver                                                                                                                                                                                                                              |
 
 ### Metrics Parameters
 
 | Parameter                | Notes        | type                   | Description                                                                                |
-| ------------------------ | ------------ | ---------------------- | ------------------------------------------------------------------------------------------ |
-| `poll_interval`          | `default=1m` | duration               | The duration waiting in between requests.                                                  |
-| `named`                 | *optional*   | `See Group Parameters` | Configuration for Log Groups, by default no metrics will be collected |
+| ------------------------ | ------------ | ---------------------- | ------------------------------------------------------------------------------------------ |                                             |
+ `named`                 | *optional*   | `See Group Parameters` | Configuration for Log Groups, by default no metrics will be collected |
 
 ### Group Parameters
 

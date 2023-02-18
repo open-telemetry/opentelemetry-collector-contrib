@@ -25,7 +25,10 @@ import (
 )
 
 var (
-	defaultPollInterval = time.Minute
+	defaultPollInterval   = time.Minute
+	defaultPeriod         = time.Minute * 5 // AWS default period for AWS metrics
+	defaultNilToZero      = false
+	defaultAwsAggregation = "Sum" // sum is default aggregation as it's the most common
 )
 
 // Config is the overall config structure for the awscloudwatchmetricsreceiver
@@ -54,6 +57,7 @@ type NamedConfig struct {
 	Dimensions     []MetricDimensionsConfig `mapstructure:"dimensions"`
 }
 
+// MetricDimensionConfig is the configuration for the metric dimensions
 type MetricDimensionsConfig struct {
 	Name  string `mapstructure:"Name"`
 	Value string `mapstructure:"Value"`
