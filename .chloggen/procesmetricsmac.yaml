@@ -5,7 +5,7 @@ change_type: enhancement
 component: Process Metrics for Mac
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Enabeling process metrics to be collcted for Mac in the hostmetrics receiver
+note: Enabling process metrics to be collected for Mac in the hostmetrics receiver
 
 # One or more tracking issues related to the change
 issues: [17863]
