@@ -21,7 +21,6 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.uber.org/atomic"
 	"go.uber.org/zap"
@@ -38,7 +37,7 @@ type worker struct {
 	index          int             // worker index
 }
 
-func (w worker) simulateLogs(res *resource.Resource, exporter plogotlp.GRPCClient) {
+func (w worker) simulateLogs(res *resource.Resource, exporter exporter) {
 	limiter := rate.NewLimiter(w.limitPerSecond, 1)
 	var i int64
 
@@ -57,8 +56,7 @@ func (w worker) simulateLogs(res *resource.Resource, exporter plogotlp.GRPCClien
 		lattrs := log.Attributes()
 		lattrs.PutStr("app", "server")
 
-		req := plogotlp.NewExportRequestFromLogs(logs)
-		if _, err := exporter.Export(context.Background(), req); err != nil {
+		if err := exporter.export(logs); err != nil {
 			w.logger.Fatal("exporter failed", zap.Error(err))
 		}
 		if err := limiter.Wait(context.Background()); err != nil {

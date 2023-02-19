@@ -5,7 +5,7 @@ change_type: enhancement
 component: cmd/telemetrygen
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: support telemetrygen tool to export log data.
+note: Initial implementation of `telemetrygen logs` subcommand for exporting log data
 
 # One or more tracking issues related to the change
 issues: [12927]

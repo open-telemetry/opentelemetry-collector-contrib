@@ -20,6 +20,7 @@ import (
 	"sync"
 	"time"
 
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/otel/sdk/resource"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
@@ -32,6 +33,22 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
 )
 
+type exporter interface {
+	export(plog.Logs) error
+}
+
+type gRPCClientExporter struct {
+	client plogotlp.GRPCClient
+}
+
+func (e *gRPCClientExporter) export(logs plog.Logs) error {
+	req := plogotlp.NewExportRequestFromLogs(logs)
+	if _, err := e.client.Export(context.Background(), req); err != nil {
+		return err
+	}
+	return nil
+}
+
 // Start starts the log telemetry generator
 func Start(cfg *Config) error {
 	logger, err := common.CreateLogger()
@@ -39,12 +56,22 @@ func Start(cfg *Config) error {
 		return err
 	}
 
+	if cfg.UseHTTP {
+		return fmt.Errorf("http is now not supported in log mode of telemetrygen")
+	}
+
+	if !cfg.Insecure {
+		return fmt.Errorf("the log mode of telemetrygen only supports insecure grpc")
+	}
+
 	// only support grpc in insecure mode
 	clientConn, err := grpc.DialContext(context.TODO(), cfg.Endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return err
 	}
-	exporter := plogotlp.NewGRPCClient(clientConn)
+	exporter := &gRPCClientExporter{
+		client: plogotlp.NewGRPCClient(clientConn),
+	}
 
 	if err = Run(cfg, exporter, logger); err != nil {
 		logger.Error("failed to stop the exporter", zap.Error(err))
@@ -55,7 +82,7 @@ func Start(cfg *Config) error {
 }
 
 // Run executes the test scenario.
-func Run(c *Config, exp plogotlp.GRPCClient, logger *zap.Logger) error {
+func Run(c *Config, exp exporter, logger *zap.Logger) error {
 	if c.TotalDuration > 0 {
 		c.NumLogs = 0
 	} else if c.NumLogs <= 0 {
