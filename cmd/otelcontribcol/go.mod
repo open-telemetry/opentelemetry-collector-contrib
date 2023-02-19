@@ -495,6 +495,7 @@ require (
 	github.com/openzipkin/zipkin-go v0.4.1 // indirect
 	github.com/outcaste-io/ristretto v0.2.0 // indirect
 	github.com/ovh/go-ovh v1.3.0 // indirect
+	github.com/panta/machineid v1.0.2 // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
 	github.com/paulmach/orb v0.8.0 // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
@@ -595,7 +596,7 @@ require (
 	golang.org/x/crypto v0.6.0 // indirect
 	golang.org/x/exp v0.0.0-20230203172020-98cc5a0785f9 // indirect
 	golang.org/x/mod v0.8.0 // indirect
-	golang.org/x/net v0.6.0 // indirect
+	golang.org/x/net v0.7.0 // indirect
 	golang.org/x/oauth2 v0.5.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
 	golang.org/x/term v0.5.0 // indirect

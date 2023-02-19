@@ -6,7 +6,7 @@ require (
 	github.com/Shopify/sarama v1.38.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter v0.71.0
 	github.com/stretchr/testify v1.8.1
-	github.com/testcontainers/testcontainers-go v0.17.0
+	github.com/testcontainers/testcontainers-go v0.18.0
 	go.opentelemetry.io/collector v0.71.0
 	go.opentelemetry.io/collector/component v0.71.0
 	go.opentelemetry.io/collector/confmap v0.71.0
@@ -22,7 +22,7 @@ require (
 	github.com/apache/thrift v0.18.0 // indirect
 	github.com/aws/aws-sdk-go v1.44.201 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.0 // indirect
-	github.com/containerd/containerd v1.6.12 // indirect
+	github.com/containerd/containerd v1.6.18 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker/distribution v2.8.1+incompatible // indirect
 	github.com/docker/docker v23.0.1+incompatible // indirect
@@ -84,7 +84,7 @@ require (
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/goleak v1.1.12 // indirect
 	golang.org/x/crypto v0.0.0-20220722155217-630584e8d5aa // indirect
-	golang.org/x/net v0.6.0 // indirect
+	golang.org/x/net v0.7.0 // indirect
 	golang.org/x/sys v0.5.0 // indirect
 	golang.org/x/text v0.7.0 // indirect
 	google.golang.org/genproto v0.0.0-20230110181048-76db0878b65f // indirect
@@ -103,7 +103,3 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator
 exclude github.com/docker/distribution v2.8.0+incompatible
 
 retract v0.65.0
-
-// see https://github.com/testcontainers/testcontainers-go/issues/716
-// until 22.06 release of docker
-replace github.com/docker/docker => github.com/docker/docker v20.10.3-0.20221013203545-33ab36d6b304+incompatible

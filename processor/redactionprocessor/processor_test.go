@@ -38,11 +38,14 @@ func TestRedactUnknownAttributes(t *testing.T) {
 		"id":    pcommon.NewValueInt(5),
 		"name":  pcommon.NewValueStr("placeholder"),
 	}
+	ignored := map[string]pcommon.Value{
+		"safe_attribute": pcommon.NewValueStr("4111111111111112"),
+	}
 	redacted := map[string]pcommon.Value{
 		"credit_card": pcommon.NewValueStr("4111111111111111"),
 	}
 
-	outTraces := runTest(t, allowed, redacted, nil, config)
+	outTraces := runTest(t, allowed, redacted, nil, ignored, config)
 
 	attr := outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
 	for k, v := range allowed {
@@ -70,7 +73,7 @@ func TestAllowAllKeys(t *testing.T) {
 		"name":  pcommon.NewValueStr("placeholder"),
 	}
 
-	outTraces := runTest(t, allowed, nil, nil, config)
+	outTraces := runTest(t, allowed, nil, nil, nil, config)
 
 	attr := outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
 	for k, v := range allowed {
@@ -99,7 +102,7 @@ func TestAllowAllKeysMaskValues(t *testing.T) {
 		"credit_card": pcommon.NewValueStr("placeholder 4111111111111111"),
 	}
 
-	outTraces := runTest(t, allowed, nil, masked, config)
+	outTraces := runTest(t, allowed, nil, masked, nil, config)
 
 	attr := outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
 	for k, v := range allowed {
@@ -120,6 +123,7 @@ func TestRedactSummaryDebug(t *testing.T) {
 	config := &Config{
 		AllowedKeys:   []string{"id", "group", "name", "group.id", "member (id)"},
 		BlockedValues: []string{"4[0-9]{12}(?:[0-9]{3})?"},
+		IgnoredKeys:   []string{"safe_attribute"},
 		Summary:       "debug",
 	}
 	allowed := map[string]pcommon.Value{
@@ -130,11 +134,14 @@ func TestRedactSummaryDebug(t *testing.T) {
 	masked := map[string]pcommon.Value{
 		"name": pcommon.NewValueStr("placeholder 4111111111111111"),
 	}
+	ignored := map[string]pcommon.Value{
+		"safe_attribute": pcommon.NewValueStr("harmless 4111111111111112"),
+	}
 	redacted := map[string]pcommon.Value{
 		"credit_card": pcommon.NewValueStr("4111111111111111"),
 	}
 
-	outTraces := runTest(t, allowed, redacted, masked, config)
+	outTraces := runTest(t, allowed, redacted, masked, ignored, config)
 
 	attr := outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
 	var deleted []string
@@ -150,6 +157,10 @@ func TestRedactSummaryDebug(t *testing.T) {
 	maskedKeyCount, ok := attr.Get(redactedKeyCount)
 	assert.True(t, ok)
 	assert.Equal(t, int64(len(deleted)), maskedKeyCount.Int())
+
+	ignoredKeyCount, ok := attr.Get(ignoredKeyCount)
+	assert.True(t, ok)
+	assert.Equal(t, int64(len(ignored)), ignoredKeyCount.Int())
 
 	blockedKeys := []string{"name"}
 	maskedValues, ok := attr.Get(maskedValues)
@@ -170,9 +181,13 @@ func TestRedactSummaryInfo(t *testing.T) {
 	config := &Config{
 		AllowedKeys:   []string{"id", "name", "group"},
 		BlockedValues: []string{"4[0-9]{12}(?:[0-9]{3})?"},
+		IgnoredKeys:   []string{"safe_attribute"},
 		Summary:       "info"}
 	allowed := map[string]pcommon.Value{
 		"id": pcommon.NewValueInt(5),
+	}
+	ignored := map[string]pcommon.Value{
+		"safe_attribute": pcommon.NewValueStr("harmless but suspicious 4111111111111141"),
 	}
 	masked := map[string]pcommon.Value{
 		"name": pcommon.NewValueStr("placeholder 4111111111111111"),
@@ -181,7 +196,7 @@ func TestRedactSummaryInfo(t *testing.T) {
 		"credit_card": pcommon.NewValueStr("4111111111111111"),
 	}
 
-	outTraces := runTest(t, allowed, redacted, masked, config)
+	outTraces := runTest(t, allowed, redacted, masked, ignored, config)
 
 	attr := outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
 	var deleted []string
@@ -203,6 +218,12 @@ func TestRedactSummaryInfo(t *testing.T) {
 	assert.Equal(t, int64(1), maskedValueCount.Int())
 	value, _ := attr.Get("name")
 	assert.Equal(t, "placeholder ****", value.Str())
+
+	ignoredKeyCount, ok := attr.Get(ignoredKeyCount)
+	assert.True(t, ok)
+	assert.Equal(t, int64(1), ignoredKeyCount.Int())
+	value, _ = attr.Get("safe_attribute")
+	assert.Equal(t, "harmless but suspicious 4111111111111141", value.Str())
 }
 
 // TestRedactSummarySilent validates that the processor does not create the
@@ -221,7 +242,7 @@ func TestRedactSummarySilent(t *testing.T) {
 		"credit_card": pcommon.NewValueStr("4111111111111111"),
 	}
 
-	outTraces := runTest(t, allowed, redacted, masked, config)
+	outTraces := runTest(t, allowed, redacted, masked, nil, config)
 
 	attr := outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
 	for k := range redacted {
@@ -247,11 +268,14 @@ func TestRedactSummaryDefault(t *testing.T) {
 	allowed := map[string]pcommon.Value{
 		"id": pcommon.NewValueInt(5),
 	}
+	ignored := map[string]pcommon.Value{
+		"internal": pcommon.NewValueStr("a harmless 12 digits 4111111111111113"),
+	}
 	masked := map[string]pcommon.Value{
 		"name": pcommon.NewValueStr("placeholder 4111111111111111"),
 	}
 
-	outTraces := runTest(t, allowed, nil, masked, config)
+	outTraces := runTest(t, allowed, nil, masked, ignored, config)
 
 	attr := outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
 	_, ok := attr.Get(redactedKeys)
@@ -261,6 +285,8 @@ func TestRedactSummaryDefault(t *testing.T) {
 	_, ok = attr.Get(maskedValues)
 	assert.False(t, ok)
 	_, ok = attr.Get(maskedValueCount)
+	assert.False(t, ok)
+	_, ok = attr.Get(ignoredKeyCount)
 	assert.False(t, ok)
 }
 
@@ -281,7 +307,7 @@ func TestMultipleBlockValues(t *testing.T) {
 		"credit_card": pcommon.NewValueStr("4111111111111111"),
 	}
 
-	outTraces := runTest(t, allowed, redacted, masked, config)
+	outTraces := runTest(t, allowed, redacted, masked, nil, config)
 
 	attr := outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
 	var deleted []string
@@ -358,6 +384,7 @@ func runTest(
 	allowed map[string]pcommon.Value,
 	redacted map[string]pcommon.Value,
 	masked map[string]pcommon.Value,
+	ignored map[string]pcommon.Value,
 	config *Config,
 ) ptrace.Traces {
 	inBatch := ptrace.NewTraces()
@@ -370,7 +397,7 @@ func runTest(
 	span.SetName("first-batch-first-span")
 	span.SetTraceID([16]byte{1, 2, 3, 4})
 
-	length := len(allowed) + len(masked) + len(redacted)
+	length := len(allowed) + len(masked) + len(redacted) + len(ignored)
 	for k, v := range allowed {
 		v.CopyTo(span.Attributes().PutEmpty(k))
 	}
@@ -378,6 +405,9 @@ func runTest(
 		v.CopyTo(span.Attributes().PutEmpty(k))
 	}
 	for k, v := range redacted {
+		v.CopyTo(span.Attributes().PutEmpty(k))
+	}
+	for k, v := range ignored {
 		v.CopyTo(span.Attributes().PutEmpty(k))
 	}
 
@@ -403,6 +433,7 @@ func BenchmarkRedactSummaryDebug(b *testing.B) {
 	config := &Config{
 		AllowedKeys:   []string{"id", "group", "name", "group.id", "member (id)"},
 		BlockedValues: []string{"4[0-9]{12}(?:[0-9]{3})?"},
+		IgnoredKeys:   []string{"safe_attribute"},
 		Summary:       "debug",
 	}
 	allowed := map[string]pcommon.Value{
@@ -413,6 +444,9 @@ func BenchmarkRedactSummaryDebug(b *testing.B) {
 	masked := map[string]pcommon.Value{
 		"name": pcommon.NewValueStr("placeholder 4111111111111111"),
 	}
+	ignored := map[string]pcommon.Value{
+		"safe_attribute": pcommon.NewValueStr("harmless 4111111111111112"),
+	}
 	redacted := map[string]pcommon.Value{
 		"credit_card": pcommon.NewValueStr("would be nice"),
 	}
@@ -420,7 +454,7 @@ func BenchmarkRedactSummaryDebug(b *testing.B) {
 	processor, _ := newRedaction(ctx, config, zaptest.NewLogger(b))
 
 	for i := 0; i < b.N; i++ {
-		runBenchmark(allowed, redacted, masked, processor)
+		runBenchmark(allowed, redacted, masked, ignored, processor)
 	}
 }
 
@@ -431,6 +465,7 @@ func BenchmarkMaskSummaryDebug(b *testing.B) {
 	config := &Config{
 		AllowedKeys:   []string{"id", "group", "name", "url"},
 		BlockedValues: []string{"4[0-9]{12}(?:[0-9]{3})?", "(http|https|ftp):[\\/]{2}([a-zA-Z0-9\\-\\.]+\\.[a-zA-Z]{2,4})(:[0-9]+)?\\/?([a-zA-Z0-9\\-\\._\\?\\,\\'\\/\\\\\\+&amp;%\\$#\\=~]*)"},
+		IgnoredKeys:   []string{"safe_attribute", "also_safe"},
 		Summary:       "debug",
 	}
 	allowed := map[string]pcommon.Value{
@@ -442,11 +477,15 @@ func BenchmarkMaskSummaryDebug(b *testing.B) {
 		"name": pcommon.NewValueStr("placeholder 4111111111111111"),
 		"url":  pcommon.NewValueStr("https://www.this_is_testing_url.com"),
 	}
+	ignored := map[string]pcommon.Value{
+		"safe_attribute": pcommon.NewValueStr("suspicious 4111111111111112"),
+		"also_safe":      pcommon.NewValueStr("suspicious 4111111111111113"),
+	}
 	ctx := context.Background()
 	processor, _ := newRedaction(ctx, config, zaptest.NewLogger(b))
 
 	for i := 0; i < b.N; i++ {
-		runBenchmark(allowed, nil, masked, processor)
+		runBenchmark(allowed, nil, masked, ignored, processor)
 	}
 }
 
@@ -455,6 +494,7 @@ func runBenchmark(
 	allowed map[string]pcommon.Value,
 	redacted map[string]pcommon.Value,
 	masked map[string]pcommon.Value,
+	ignored map[string]pcommon.Value,
 	processor *redaction,
 ) {
 	inBatch := ptrace.NewTraces()
@@ -474,6 +514,9 @@ func runBenchmark(
 		v.CopyTo(span.Attributes().PutEmpty(k))
 	}
 	for k, v := range redacted {
+		v.CopyTo(span.Attributes().PutEmpty(k))
+	}
+	for k, v := range ignored {
 		v.CopyTo(span.Attributes().PutEmpty(k))
 	}
 

@@ -66,17 +66,29 @@ type LogParserCollectionOption func(*LogParserCollection) error
 
 func WithLogParser(functions map[string]interface{}) LogParserCollectionOption {
 	return func(lp *LogParserCollection) error {
-		lp.logParser = ottllog.NewParser(functions, lp.settings)
+		logParser, err := ottllog.NewParser(functions, lp.settings)
+		if err != nil {
+			return err
+		}
+		lp.logParser = logParser
 		return nil
 	}
 }
 
 func NewLogParserCollection(settings component.TelemetrySettings, options ...LogParserCollectionOption) (*LogParserCollection, error) {
+	rp, err := ottlresource.NewParser(ResourceFunctions(), settings)
+	if err != nil {
+		return nil, err
+	}
+	sp, err := ottlscope.NewParser(ScopeFunctions(), settings)
+	if err != nil {
+		return nil, err
+	}
 	lpc := &LogParserCollection{
 		parserCollection: parserCollection{
 			settings:       settings,
-			resourceParser: ottlresource.NewParser(ResourceFunctions(), settings),
-			scopeParser:    ottlscope.NewParser(ScopeFunctions(), settings),
+			resourceParser: rp,
+			scopeParser:    sp,
 		},
 	}
 

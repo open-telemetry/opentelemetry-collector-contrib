@@ -136,6 +136,7 @@ require (
 	github.com/openshift/api v0.0.0-20210521075222-e273a339932a // indirect
 	github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142 // indirect
 	github.com/outcaste-io/ristretto v0.2.0 // indirect
+	github.com/panta/machineid v1.0.2 // indirect
 	github.com/philhofer/fwd v1.1.2 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
@@ -167,7 +168,7 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v0.36.0 // indirect
 	go.opentelemetry.io/otel/trace v1.13.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
-	golang.org/x/net v0.6.0 // indirect
+	golang.org/x/net v0.7.0 // indirect
 	golang.org/x/oauth2 v0.4.0 // indirect
 	golang.org/x/sys v0.5.0 // indirect
 	golang.org/x/term v0.5.0 // indirect
