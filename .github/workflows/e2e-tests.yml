@@ -47,6 +47,7 @@ jobs:
       - name: Create kind cluster
         uses: helm/kind-action@v1.5.0
         with:
+          node_image: kindest/node:${{ matrix.k8s-version }}
           kubectl_version: ${{ matrix.k8s-version }}
       - name: Check kind
         run: |
