@@ -9,7 +9,7 @@
     "relocating_shards": 10,
     "initializing_shards": 2,
     "unassigned_shards": 3,
-    "delayed_unassigned_shards": 0,
+    "delayed_unassigned_shards": 1,
     "number_of_pending_tasks": 0,
     "number_of_in_flight_fetch": 0,
     "task_max_waiting_in_queue_millis": 0,

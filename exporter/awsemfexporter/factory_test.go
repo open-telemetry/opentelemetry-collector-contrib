@@ -21,43 +21,48 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
-	assert.NoError(t, configtest.CheckConfigStruct(cfg))
+	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
+	assert.NotNil(t, cfg.(*Config).logger)
 }
 
 func TestCreateTracesExporter(t *testing.T) {
-	factories, err := componenttest.NopFactories()
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 	factory := NewFactory()
-	factories.Exporters[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(component.NewIDWithName(typeStr, "1").String())
 	require.NoError(t, err)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	ctx := context.Background()
-	exporter, err := factory.CreateTracesExporter(ctx, componenttest.NewNopExporterCreateSettings(), cfg.Exporters[config.NewComponentIDWithName(typeStr, "1")])
+	exporter, err := factory.CreateTracesExporter(ctx, exportertest.NewNopCreateSettings(), cfg)
 	assert.NotNil(t, err)
 	assert.Nil(t, exporter)
 }
 
 func TestCreateMetricsExporter(t *testing.T) {
-	factories, err := componenttest.NopFactories()
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 	factory := NewFactory()
-	factories.Exporters[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(component.NewIDWithName(typeStr, "1").String())
 	require.NoError(t, err)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	ctx := context.Background()
-	exporter, err := factory.CreateMetricsExporter(ctx, componenttest.NewNopExporterCreateSettings(), cfg.Exporters[config.NewComponentIDWithName(typeStr, "1")])
+	exporter, err := factory.CreateMetricsExporter(ctx, exportertest.NewNopCreateSettings(), cfg)
 	assert.Nil(t, err)
 	assert.NotNil(t, exporter)
 }

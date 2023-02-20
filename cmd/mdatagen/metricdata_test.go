@@ -35,14 +35,3 @@ func TestMetricData(t *testing.T) {
 		assert.Equal(t, arg.hasMonotonic, arg.metricData.HasMonotonic())
 	}
 }
-
-func TestAggregation(t *testing.T) {
-	delta := Aggregated{Aggregation: "delta"}
-	assert.Equal(t, "pmetric.MetricAggregationTemporalityDelta", delta.Type())
-
-	cumulative := Aggregated{Aggregation: "cumulative"}
-	assert.Equal(t, "pmetric.MetricAggregationTemporalityCumulative", cumulative.Type())
-
-	unknown := Aggregated{Aggregation: ""}
-	assert.Equal(t, "pmetric.MetricAggregationTemporalityUnknown", unknown.Type())
-}

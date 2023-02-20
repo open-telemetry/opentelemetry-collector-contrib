@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -30,10 +30,11 @@ import (
 	"github.com/vmware/govmomi/vim25"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver/internal/metadata"
 )
 
@@ -47,7 +48,7 @@ func TestEndtoEnd_ESX(t *testing.T) {
 		}
 		s := session.NewManager(c)
 
-		scraper := newVmwareVcenterScraper(zap.NewNop(), cfg, componenttest.NewNopReceiverCreateSettings())
+		scraper := newVmwareVcenterScraper(zap.NewNop(), cfg, receivertest.NewNopCreateSettings())
 		scraper.client.moClient = &govmomi.Client{
 			Client:         c,
 			SessionManager: s,
@@ -69,14 +70,14 @@ func TestEndtoEnd_ESX(t *testing.T) {
 		// please see #10129
 		for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
 			if val, ok := metrics.ResourceMetrics().At(i).Resource().Attributes().Get("vcenter.host.name"); ok {
-				val.SetStringVal("DC0_C0_H0")
+				val.SetStr("DC0_C0_H0")
 			}
 		}
 
 		goldenPath := filepath.Join("testdata", "metrics", "integration-metrics.json")
 		expectedMetrics, err := golden.ReadMetrics(goldenPath)
 		require.NoError(t, err)
-		require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, metrics, scrapertest.IgnoreMetricValues()))
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreMetricValues()))
 
 		err = scraper.Shutdown(ctx)
 		require.NoError(t, err)

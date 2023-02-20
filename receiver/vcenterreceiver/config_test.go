@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,10 +16,18 @@ package vcenterreceiver // import github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"errors"
+	"path/filepath"
 	"testing"
+	"time"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver/internal/metadata"
 )
 
 func TestConfigValidation(t *testing.T) {
@@ -83,4 +91,29 @@ func TestConfigValidation(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestLoadConfig(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
+	require.NoError(t, err)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+	expected := factory.CreateDefaultConfig().(*Config)
+	expected.Endpoint = "http://vcsa.host.localnet"
+	expected.Username = "otelu"
+	expected.Password = "${env:VCENTER_PASSWORD}"
+	expected.Metrics = metadata.DefaultMetricsSettings()
+	expected.Metrics.VcenterHostCPUUtilization.Enabled = false
+	expected.CollectionInterval = 5 * time.Minute
+
+	if diff := cmp.Diff(expected, cfg, cmpopts.IgnoreUnexported(metadata.MetricSettings{})); diff != "" {
+		t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
+	}
+
 }

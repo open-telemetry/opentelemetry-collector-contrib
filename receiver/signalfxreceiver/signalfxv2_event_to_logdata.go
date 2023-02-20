@@ -32,11 +32,10 @@ func signalFxV2EventsToLogRecords(events []*sfxpb.Event, lrs plog.LogRecordSlice
 		lr := lrs.AppendEmpty()
 
 		attrs := lr.Attributes()
-		attrs.Clear()
 		attrs.EnsureCapacity(2 + len(event.Dimensions) + len(event.Properties))
 
 		for _, dim := range event.Dimensions {
-			attrs.PutString(dim.Key, dim.Value)
+			attrs.PutStr(dim.Key, dim.Value)
 		}
 
 		// The EventType field is stored as an attribute.
@@ -44,7 +43,7 @@ func signalFxV2EventsToLogRecords(events []*sfxpb.Event, lrs plog.LogRecordSlice
 		if eventType == "" {
 			eventType = "unknown"
 		}
-		attrs.PutString(splunk.SFxEventType, eventType)
+		attrs.PutStr(splunk.SFxEventType, eventType)
 
 		// SignalFx timestamps are in millis so convert to nanos by multiplying
 		// by 1 million.
@@ -67,7 +66,7 @@ func signalFxV2EventsToLogRecords(events []*sfxpb.Event, lrs plog.LogRecordSlice
 				// individually.
 				switch {
 				case prop.Value.StrValue != nil:
-					propMap.PutString(prop.Key, prop.Value.GetStrValue())
+					propMap.PutStr(prop.Key, prop.Value.GetStrValue())
 				case prop.Value.IntValue != nil:
 					propMap.PutInt(prop.Key, prop.Value.GetIntValue())
 				case prop.Value.DoubleValue != nil:

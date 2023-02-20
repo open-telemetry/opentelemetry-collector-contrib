@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -97,6 +97,15 @@ func TestBuild(t *testing.T) {
 			func() *Config {
 				cfg := basicConfig()
 				cfg.PairDelimiter = "|"
+				return cfg
+			}(),
+			false,
+		},
+		{
+			"pair-delimiter-multiline",
+			func() *Config {
+				cfg := basicConfig()
+				cfg.PairDelimiter = "^\n"
 				return cfg
 			}(),
 			false,
@@ -204,7 +213,7 @@ func TestParser(t *testing.T) {
 		{
 			"parse-to",
 			func(kv *Config) {
-				kv.ParseTo = entry.NewBodyField("test")
+				kv.ParseTo = entry.RootableField{Field: entry.NewBodyField("test")}
 			},
 			&entry.Entry{
 				Body: "name=stanza age=10",
@@ -224,7 +233,7 @@ func TestParser(t *testing.T) {
 			"from-to",
 			func(kv *Config) {
 				kv.ParseFrom = entry.NewAttributeField("from")
-				kv.ParseTo = entry.NewBodyField("to")
+				kv.ParseTo = entry.RootableField{Field: entry.NewBodyField("to")}
 			},
 			&entry.Entry{
 				Attributes: map[string]interface{}{
@@ -329,7 +338,7 @@ func TestParser(t *testing.T) {
 			func(kv *Config) {
 				kv.Delimiter = "|"
 				kv.ParseFrom = entry.NewBodyField("testfield")
-				kv.ParseTo = entry.NewBodyField("testparsed")
+				kv.ParseTo = entry.RootableField{Field: entry.NewBodyField("testparsed")}
 			},
 			&entry.Entry{
 				Body: map[string]interface{}{
@@ -383,6 +392,29 @@ func TestParser(t *testing.T) {
 					"key":  "value",
 				},
 				Body: `name=stanza|age=2     | key=value`,
+			},
+			false,
+			false,
+		},
+		{
+			"pair-delimiter-multiline",
+			func(kv *Config) {
+				kv.PairDelimiter = "^\n"
+			},
+			&entry.Entry{
+				Body: `name=stanza^
+age=2^
+key=value`,
+			},
+			&entry.Entry{
+				Attributes: map[string]interface{}{
+					"name": "stanza",
+					"age":  "2",
+					"key":  "value",
+				},
+				Body: `name=stanza^
+age=2^
+key=value`,
 			},
 			false,
 			false,

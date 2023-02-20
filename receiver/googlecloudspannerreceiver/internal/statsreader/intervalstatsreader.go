@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -30,12 +30,14 @@ const (
 	// Since, the initial intent was to work mainly with Prometheus backend,
 	// this constant was set to 1 hour - max allowed interval by Prometheus.
 	backfillIntervalDuration = time.Hour
+	topLockStatsMetricName   = "top minute lock stats"
 )
 
 type intervalStatsReader struct {
 	currentStatsReader
-	timestampsGenerator *timestampsGenerator
-	lastPullTimestamp   time.Time
+	timestampsGenerator               *timestampsGenerator
+	lastPullTimestamp                 time.Time
+	hideTopnLockstatsRowrangestartkey bool
 }
 
 func newIntervalStatsReader(
@@ -57,8 +59,9 @@ func newIntervalStatsReader(
 	}
 
 	return &intervalStatsReader{
-		currentStatsReader:  reader,
-		timestampsGenerator: tsGenerator,
+		currentStatsReader:                reader,
+		timestampsGenerator:               tsGenerator,
+		hideTopnLockstatsRowrangestartkey: config.HideTopnLockstatsRowrangestartkey,
 	}
 }
 
@@ -81,6 +84,12 @@ func (reader *intervalStatsReader) Read(ctx context.Context) ([]*metadata.Metric
 		dataPoints, err := reader.pull(ctx, stmt)
 		if err != nil {
 			return nil, err
+		}
+		metricMetadata := reader.currentStatsReader.metricsMetadata
+		if reader.hideTopnLockstatsRowrangestartkey && metricMetadata != nil && metricMetadata.Name == topLockStatsMetricName {
+			for _, dataPoint := range dataPoints {
+				dataPoint.HideLockStatsRowrangestartkeyPII()
+			}
 		}
 
 		collectedDataPoints = append(collectedDataPoints, dataPoints...)

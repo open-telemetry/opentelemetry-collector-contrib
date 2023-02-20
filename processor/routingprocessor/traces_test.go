@@ -21,10 +21,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
@@ -33,7 +32,7 @@ import (
 
 func TestTraces_RegisterExportersForValidRoute(t *testing.T) {
 	// prepare
-	exp := newTracesProcessor(zap.NewNop(), &Config{
+	exp := newTracesProcessor(component.TelemetrySettings{}, &Config{
 		DefaultExporters: []string{"otlp"},
 		FromAttribute:    "X-Tenant",
 		Table: []RoutingTableItem{
@@ -45,36 +44,31 @@ func TestTraces_RegisterExportersForValidRoute(t *testing.T) {
 	})
 
 	otlpExpFactory := otlpexporter.NewFactory()
+	otlpID := component.NewID("otlp")
 	otlpConfig := &otlpexporter.Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID("otlp")),
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: "example.com:1234",
 		},
 	}
-	otlpExp, err := otlpExpFactory.CreateTracesExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), otlpConfig)
+	otlpExp, err := otlpExpFactory.CreateTracesExporter(context.Background(), exportertest.NewNopCreateSettings(), otlpConfig)
 	require.NoError(t, err)
 
-	host := &mockHost{
-		Host: componenttest.NewNopHost(),
-		GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
-			return map[config.DataType]map[config.ComponentID]component.Exporter{
-				config.TracesDataType: {
-					otlpConfig.ID(): otlpExp,
-				},
-			}
+	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
+		component.DataTypeTraces: {
+			otlpID: otlpExp,
 		},
-	}
+	})
 
 	// test
 	require.NoError(t, exp.Start(context.Background(), host))
 
 	// verify
-	assert.Contains(t, exp.router.exporters["acme"], otlpExp)
+	assert.Contains(t, exp.router.getExporters("acme"), otlpExp)
 }
 
 func TestTraces_InvalidExporter(t *testing.T) {
 	//  prepare
-	exp := newTracesProcessor(zap.NewNop(), &Config{
+	exp := newTracesProcessor(component.TelemetrySettings{}, &Config{
 		DefaultExporters: []string{"otlp"},
 		FromAttribute:    "X-Tenant",
 		Table: []RoutingTableItem{
@@ -85,16 +79,11 @@ func TestTraces_InvalidExporter(t *testing.T) {
 		},
 	})
 
-	host := &mockHost{
-		Host: componenttest.NewNopHost(),
-		GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
-			return map[config.DataType]map[config.ComponentID]component.Exporter{
-				config.TracesDataType: {
-					config.NewComponentID("otlp"): &mockComponent{},
-				},
-			}
+	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
+		component.DataTypeTraces: {
+			component.NewID("otlp"): &mockComponent{},
 		},
-	}
+	})
 
 	// test
 	err := exp.Start(context.Background(), host)
@@ -107,19 +96,14 @@ func TestTraces_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 	defaultExp := &mockTracesExporter{}
 	tExp := &mockTracesExporter{}
 
-	host := &mockHost{
-		Host: componenttest.NewNopHost(),
-		GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
-			return map[config.DataType]map[config.ComponentID]component.Exporter{
-				config.TracesDataType: {
-					config.NewComponentID("otlp"):              defaultExp,
-					config.NewComponentIDWithName("otlp", "2"): tExp,
-				},
-			}
+	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
+		component.DataTypeTraces: {
+			component.NewID("otlp"):              defaultExp,
+			component.NewIDWithName("otlp", "2"): tExp,
 		},
-	}
+	})
 
-	exp := newTracesProcessor(zap.NewNop(), &Config{
+	exp := newTracesProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
 		FromAttribute:    "X-Tenant",
 		AttributeSource:  resourceAttributeSource,
 		DefaultExporters: []string{"otlp"},
@@ -134,17 +118,17 @@ func TestTraces_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 	tr := ptrace.NewTraces()
 
 	rl := tr.ResourceSpans().AppendEmpty()
-	rl.Resource().Attributes().PutString("X-Tenant", "acme")
+	rl.Resource().Attributes().PutStr("X-Tenant", "acme")
 	span := rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetName("span")
 
 	rl = tr.ResourceSpans().AppendEmpty()
-	rl.Resource().Attributes().PutString("X-Tenant", "acme")
+	rl.Resource().Attributes().PutStr("X-Tenant", "acme")
 	span = rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetName("span1")
 
 	rl = tr.ResourceSpans().AppendEmpty()
-	rl.Resource().Attributes().PutString("X-Tenant", "something-else")
+	rl.Resource().Attributes().PutStr("X-Tenant", "something-else")
 	span = rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetName("span2")
 
@@ -167,19 +151,14 @@ func TestTraces_RoutingWorks_Context(t *testing.T) {
 	defaultExp := &mockTracesExporter{}
 	tExp := &mockTracesExporter{}
 
-	host := &mockHost{
-		Host: componenttest.NewNopHost(),
-		GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
-			return map[config.DataType]map[config.ComponentID]component.Exporter{
-				config.TracesDataType: {
-					config.NewComponentID("otlp"):              defaultExp,
-					config.NewComponentIDWithName("otlp", "2"): tExp,
-				},
-			}
+	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
+		component.DataTypeTraces: {
+			component.NewID("otlp"):              defaultExp,
+			component.NewIDWithName("otlp", "2"): tExp,
 		},
-	}
+	})
 
-	exp := newTracesProcessor(zap.NewNop(), &Config{
+	exp := newTracesProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
 		FromAttribute:    "X-Tenant",
 		AttributeSource:  contextAttributeSource,
 		DefaultExporters: []string{"otlp"},
@@ -194,7 +173,7 @@ func TestTraces_RoutingWorks_Context(t *testing.T) {
 
 	tr := ptrace.NewTraces()
 	rs := tr.ResourceSpans().AppendEmpty()
-	rs.Resource().Attributes().PutString("X-Tenant", "acme")
+	rs.Resource().Attributes().PutStr("X-Tenant", "acme")
 
 	t.Run("non default route is properly used", func(t *testing.T) {
 		assert.NoError(t, exp.ConsumeTraces(
@@ -231,19 +210,14 @@ func TestTraces_RoutingWorks_ResourceAttribute(t *testing.T) {
 	defaultExp := &mockTracesExporter{}
 	tExp := &mockTracesExporter{}
 
-	host := &mockHost{
-		Host: componenttest.NewNopHost(),
-		GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
-			return map[config.DataType]map[config.ComponentID]component.Exporter{
-				config.TracesDataType: {
-					config.NewComponentID("otlp"):              defaultExp,
-					config.NewComponentIDWithName("otlp", "2"): tExp,
-				},
-			}
+	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
+		component.DataTypeTraces: {
+			component.NewID("otlp"):              defaultExp,
+			component.NewIDWithName("otlp", "2"): tExp,
 		},
-	}
+	})
 
-	exp := newTracesProcessor(zap.NewNop(), &Config{
+	exp := newTracesProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
 		FromAttribute:    "X-Tenant",
 		AttributeSource:  resourceAttributeSource,
 		DefaultExporters: []string{"otlp"},
@@ -259,7 +233,7 @@ func TestTraces_RoutingWorks_ResourceAttribute(t *testing.T) {
 	t.Run("non default route is properly used", func(t *testing.T) {
 		tr := ptrace.NewTraces()
 		rs := tr.ResourceSpans().AppendEmpty()
-		rs.Resource().Attributes().PutString("X-Tenant", "acme")
+		rs.Resource().Attributes().PutStr("X-Tenant", "acme")
 
 		assert.NoError(t, exp.ConsumeTraces(context.Background(), tr))
 		assert.Len(t, defaultExp.AllTraces(), 0,
@@ -273,7 +247,7 @@ func TestTraces_RoutingWorks_ResourceAttribute(t *testing.T) {
 	t.Run("default route is taken when no matching route can be found", func(t *testing.T) {
 		tr := ptrace.NewTraces()
 		rs := tr.ResourceSpans().AppendEmpty()
-		rs.Resource().Attributes().PutString("X-Tenant", "some-custom-value")
+		rs.Resource().Attributes().PutStr("X-Tenant", "some-custom-value")
 
 		assert.NoError(t, exp.ConsumeTraces(context.Background(), tr))
 		assert.Len(t, defaultExp.AllTraces(), 1,
@@ -289,19 +263,14 @@ func TestTraces_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing.
 	defaultExp := &mockTracesExporter{}
 	tExp := &mockTracesExporter{}
 
-	host := &mockHost{
-		Host: componenttest.NewNopHost(),
-		GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
-			return map[config.DataType]map[config.ComponentID]component.Exporter{
-				config.TracesDataType: {
-					config.NewComponentID("otlp"):              defaultExp,
-					config.NewComponentIDWithName("otlp", "2"): tExp,
-				},
-			}
+	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
+		component.DataTypeTraces: {
+			component.NewID("otlp"):              defaultExp,
+			component.NewIDWithName("otlp", "2"): tExp,
 		},
-	}
+	})
 
-	exp := newTracesProcessor(zap.NewNop(), &Config{
+	exp := newTracesProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
 		AttributeSource:              resourceAttributeSource,
 		FromAttribute:                "X-Tenant",
 		DropRoutingResourceAttribute: true,
@@ -317,8 +286,8 @@ func TestTraces_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing.
 
 	tr := ptrace.NewTraces()
 	rm := tr.ResourceSpans().AppendEmpty()
-	rm.Resource().Attributes().PutString("X-Tenant", "acme")
-	rm.Resource().Attributes().PutString("attr", "acme")
+	rm.Resource().Attributes().PutStr("X-Tenant", "acme")
+	rm.Resource().Attributes().PutStr("attr", "acme")
 
 	assert.NoError(t, exp.ConsumeTraces(context.Background(), tr))
 	traces := tExp.AllTraces()
@@ -331,7 +300,129 @@ func TestTraces_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing.
 	assert.False(t, ok, "routing attribute should have been dropped")
 	v, ok := attrs.Get("attr")
 	assert.True(t, ok, "non-routing attributes shouldn't have been dropped")
-	assert.Equal(t, "acme", v.StringVal())
+	assert.Equal(t, "acme", v.Str())
+}
+
+func TestTracesAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
+	defaultExp := &mockTracesExporter{}
+	firstExp := &mockTracesExporter{}
+	secondExp := &mockTracesExporter{}
+
+	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
+		component.DataTypeTraces: {
+			component.NewID("otlp"):              defaultExp,
+			component.NewIDWithName("otlp", "1"): firstExp,
+			component.NewIDWithName("otlp", "2"): secondExp,
+		},
+	})
+
+	exp := newTracesProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
+		DefaultExporters: []string{"otlp"},
+		Table: []RoutingTableItem{
+			{
+				Statement: `route() where resource.attributes["value"] > 0 and resource.attributes["value"] < 4`,
+				Exporters: []string{"otlp/1"},
+			},
+			{
+				Statement: `route() where resource.attributes["value"] > 1 and resource.attributes["value"] < 4`,
+				Exporters: []string{"otlp/2"},
+			},
+		},
+	})
+	require.NoError(t, exp.Start(context.Background(), host))
+
+	t.Run("span by matched no expressions", func(t *testing.T) {
+		defaultExp.Reset()
+		firstExp.Reset()
+		secondExp.Reset()
+
+		tr := ptrace.NewTraces()
+		rl := tr.ResourceSpans().AppendEmpty()
+		rl.Resource().Attributes().PutInt("value", 10)
+		span := rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		span.SetName("span")
+
+		require.NoError(t, exp.ConsumeTraces(context.Background(), tr))
+
+		assert.Len(t, defaultExp.AllTraces(), 1)
+		assert.Len(t, firstExp.AllTraces(), 0)
+		assert.Len(t, secondExp.AllTraces(), 0)
+	})
+
+	t.Run("span matched by one of two expressions", func(t *testing.T) {
+		defaultExp.Reset()
+		firstExp.Reset()
+		secondExp.Reset()
+
+		tr := ptrace.NewTraces()
+		rl := tr.ResourceSpans().AppendEmpty()
+		rl.Resource().Attributes().PutInt("value", 1)
+		span := rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		span.SetName("span")
+
+		require.NoError(t, exp.ConsumeTraces(context.Background(), tr))
+
+		assert.Len(t, defaultExp.AllTraces(), 0)
+		assert.Len(t, firstExp.AllTraces(), 1)
+		assert.Len(t, secondExp.AllTraces(), 0)
+	})
+
+	t.Run("spans matched by all expressions", func(t *testing.T) {
+		defaultExp.Reset()
+		firstExp.Reset()
+		secondExp.Reset()
+
+		tr := ptrace.NewTraces()
+		rl := tr.ResourceSpans().AppendEmpty()
+		rl.Resource().Attributes().PutInt("value", 2)
+		span := rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		span.SetName("span")
+
+		rl = tr.ResourceSpans().AppendEmpty()
+		rl.Resource().Attributes().PutInt("value", 3)
+		span = rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		span.SetName("span1")
+
+		require.NoError(t, exp.ConsumeTraces(context.Background(), tr))
+
+		assert.Len(t, defaultExp.AllTraces(), 0)
+		assert.Len(t, firstExp.AllTraces(), 1)
+		assert.Len(t, secondExp.AllTraces(), 1)
+
+		assert.Equal(t, firstExp.AllTraces()[0].SpanCount(), 2)
+		assert.Equal(t, secondExp.AllTraces()[0].SpanCount(), 2)
+		assert.Equal(t, firstExp.AllTraces(), secondExp.AllTraces())
+	})
+
+	t.Run("one span matched by all expressions, other matched by none", func(t *testing.T) {
+		defaultExp.Reset()
+		firstExp.Reset()
+		secondExp.Reset()
+
+		tr := ptrace.NewTraces()
+		rl := tr.ResourceSpans().AppendEmpty()
+		rl.Resource().Attributes().PutInt("value", 2)
+		span := rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		span.SetName("span")
+
+		rl = tr.ResourceSpans().AppendEmpty()
+		rl.Resource().Attributes().PutInt("value", -1)
+		span = rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		span.SetName("span1")
+
+		require.NoError(t, exp.ConsumeTraces(context.Background(), tr))
+
+		assert.Len(t, defaultExp.AllTraces(), 1)
+		assert.Len(t, firstExp.AllTraces(), 1)
+		assert.Len(t, secondExp.AllTraces(), 1)
+
+		assert.Equal(t, firstExp.AllTraces(), secondExp.AllTraces())
+
+		rspan := defaultExp.AllTraces()[0].ResourceSpans().At(0)
+		attr, ok := rspan.Resource().Attributes().Get("value")
+		assert.True(t, ok, "routing attribute must exists")
+		assert.Equal(t, attr.Int(), int64(-1))
+	})
 }
 
 func TestTraceProcessorCapabilities(t *testing.T) {
@@ -345,7 +436,7 @@ func TestTraceProcessorCapabilities(t *testing.T) {
 	}
 
 	// test
-	p := newTracesProcessor(zap.NewNop(), config)
+	p := newTracesProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, config)
 	require.NotNil(t, p)
 
 	// verify

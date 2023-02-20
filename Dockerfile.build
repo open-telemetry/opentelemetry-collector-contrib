@@ -4,7 +4,7 @@ ENV GOOS="linux"
 ENV GOARCH="amd64"
 ENV CGO_ENABLED=0
 
-ARG builder_version=v0.60.0
+ARG builder_version=v0.71.0
 RUN GO111MODULE=on go install go.opentelemetry.io/collector/cmd/builder@${builder_version}
 
 ADD . /repo

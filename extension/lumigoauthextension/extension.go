@@ -22,7 +22,7 @@ import (
 
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configauth"
+	"go.opentelemetry.io/collector/extension/auth"
 	"go.uber.org/zap"
 )
 
@@ -36,7 +36,7 @@ type lumigoAuth struct {
 	cfg    *Config
 }
 
-func newServerAuthExtension(cfg *Config, logger *zap.Logger) (configauth.ServerAuthenticator, error) {
+func newServerAuthExtension(cfg *Config, logger *zap.Logger) (auth.Server, error) {
 	if logger == nil {
 		return nil, fmt.Errorf("the provided logger is nil")
 	}
@@ -46,9 +46,9 @@ func newServerAuthExtension(cfg *Config, logger *zap.Logger) (configauth.ServerA
 		cfg:    cfg,
 	}
 
-	return configauth.NewServerAuthenticator(
-		configauth.WithStart(la.serverStart),
-		configauth.WithAuthenticate(la.authenticate),
+	return auth.NewServer(
+		auth.WithServerStart(la.serverStart),
+		auth.WithServerAuthenticate(la.authenticate),
 	), nil
 }
 

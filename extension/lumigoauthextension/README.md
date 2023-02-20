@@ -2,7 +2,7 @@
 
 | Status                   |                      |
 | ------------------------ |----------------------|
-| Stability                | [alpha]              |
+| Stability                | [stable]              |
 | Supported pipeline types | trace                |
 | Distributions            | [lumigo]             |
 
@@ -53,5 +53,5 @@ service:
       exporters: [otlp]
 ```
 
-[alpha]:https://github.com/open-telemetry/opentelemetry-collector#alpha
+[stable]:https://github.com/open-telemetry/opentelemetry-collector#stableq
 [lumigo]:https://github.com/lumigo-io/opentelemetry-collector-contrib

@@ -40,10 +40,10 @@
 // Ingest Node is used. But either way, we try to present only well formed
 // document to Elasticsearch.
 
-// nolint:errcheck
 package objmodel // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/objmodel"
 
 import (
+	"encoding/hex"
 	"io"
 	"math"
 	"sort"
@@ -98,11 +98,6 @@ const tsLayout = "2006-01-02T15:04:05.000000000Z"
 var nilValue = Value{kind: KindNil}
 var ignoreValue = Value{kind: KindIgnore}
 
-type idValue interface {
-	IsEmpty() bool
-	HexString() string
-}
-
 // DocumentFromAttributes creates a document from a OpenTelemetry attribute
 // map. All nested maps will be flattened, with keys being joined using a `.` symbol.
 func DocumentFromAttributes(am pcommon.Map) Document {
@@ -140,11 +135,19 @@ func (doc *Document) AddString(key string, v string) {
 	}
 }
 
-// AddID adds the hex presentation of an id value to the document. If the ID
+// AddSpanID adds the hex presentation of a SpanID to the document. If the SpanID
 // is empty, no value will be added.
-func (doc *Document) AddID(key string, id idValue) {
+func (doc *Document) AddSpanID(key string, id pcommon.SpanID) {
 	if !id.IsEmpty() {
-		doc.AddString(key, id.HexString())
+		doc.AddString(key, hex.EncodeToString(id[:]))
+	}
+}
+
+// AddTraceID adds the hex presentation of a TraceID value to the document. If the TraceID
+// is empty, no value will be added.
+func (doc *Document) AddTraceID(key string, id pcommon.TraceID) {
+	if !id.IsEmpty() {
+		doc.AddString(key, hex.EncodeToString(id[:]))
 	}
 }
 
@@ -166,7 +169,7 @@ func (doc *Document) AddAttribute(key string, attribute pcommon.Value) {
 	case pcommon.ValueTypeEmpty:
 		// do not add 'null'
 	case pcommon.ValueTypeMap:
-		doc.AddAttributes(key, attribute.MapVal())
+		doc.AddAttributes(key, attribute.Map())
 	default:
 		doc.Add(key, ValueFromAttribute(attribute))
 	}
@@ -250,8 +253,13 @@ func (doc *Document) iterJSON(v *json.Visitor, dedot bool) error {
 }
 
 func (doc *Document) iterJSONFlat(w *json.Visitor) error {
-	w.OnObjectStart(-1, structform.AnyType)
-	defer w.OnObjectFinished()
+	err := w.OnObjectStart(-1, structform.AnyType)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = w.OnObjectFinished()
+	}()
 
 	for i := range doc.fields {
 		fld := &doc.fields[i]
@@ -259,7 +267,10 @@ func (doc *Document) iterJSONFlat(w *json.Visitor) error {
 			continue
 		}
 
-		w.OnKey(fld.key)
+		if err := w.OnKey(fld.key); err != nil {
+			return err
+		}
+
 		if err := fld.value.iterJSON(w, true); err != nil {
 			return err
 		}
@@ -272,8 +283,12 @@ func (doc *Document) iterJSONDedot(w *json.Visitor) error {
 	objPrefix := ""
 	level := 0
 
-	w.OnObjectStart(-1, structform.AnyType)
-	defer w.OnObjectFinished()
+	if err := w.OnObjectStart(-1, structform.AnyType); err != nil {
+		return err
+	}
+	defer func() {
+		_ = w.OnObjectFinished()
+	}()
 
 	for i := range doc.fields {
 		fld := &doc.fields[i]
@@ -298,13 +313,17 @@ func (doc *Document) iterJSONDedot(w *json.Visitor) error {
 
 					delta = delta[idx+1:]
 					level--
-					w.OnObjectFinished()
+					if err := w.OnObjectFinished(); err != nil {
+						return err
+					}
 				}
 
 				objPrefix = key[:L]
 			} else { // no common prefix, close all objects we reported so far.
 				for ; level > 0; level-- {
-					w.OnObjectFinished()
+					if err := w.OnObjectFinished(); err != nil {
+						return err
+					}
 				}
 				objPrefix = ""
 			}
@@ -321,19 +340,29 @@ func (doc *Document) iterJSONDedot(w *json.Visitor) error {
 			level++
 			objPrefix = key[:len(objPrefix)+idx+1]
 			fieldName := key[start : start+idx]
-			w.OnKey(fieldName)
-			w.OnObjectStart(-1, structform.AnyType)
+			if err := w.OnKey(fieldName); err != nil {
+				return err
+			}
+			if err := w.OnObjectStart(-1, structform.AnyType); err != nil {
+				return err
+			}
 		}
 
 		// report value
 		fieldName := key[len(objPrefix):]
-		w.OnKey(fieldName)
-		fld.value.iterJSON(w, true)
+		if err := w.OnKey(fieldName); err != nil {
+			return err
+		}
+		if err := fld.value.iterJSON(w, true); err != nil {
+			return err
+		}
 	}
 
 	// close all pending object levels
 	for ; level > 0; level-- {
-		w.OnObjectFinished()
+		if err := w.OnObjectFinished(); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -371,18 +400,18 @@ func TimestampValue(ts time.Time) Value {
 func ValueFromAttribute(attr pcommon.Value) Value {
 	switch attr.Type() {
 	case pcommon.ValueTypeInt:
-		return IntValue(attr.IntVal())
+		return IntValue(attr.Int())
 	case pcommon.ValueTypeDouble:
-		return DoubleValue(attr.DoubleVal())
-	case pcommon.ValueTypeString:
-		return StringValue(attr.StringVal())
+		return DoubleValue(attr.Double())
+	case pcommon.ValueTypeStr:
+		return StringValue(attr.Str())
 	case pcommon.ValueTypeBool:
-		return BoolValue(attr.BoolVal())
+		return BoolValue(attr.Bool())
 	case pcommon.ValueTypeSlice:
-		sub := arrFromAttributes(attr.SliceVal())
+		sub := arrFromAttributes(attr.Slice())
 		return ArrValue(sub...)
 	case pcommon.ValueTypeMap:
-		sub := DocumentFromAttributes(attr.MapVal())
+		sub := DocumentFromAttributes(attr.Map())
 		return Value{kind: KindObject, doc: sub}
 	default:
 		return nilValue
@@ -453,13 +482,17 @@ func (v *Value) iterJSON(w *json.Visitor, dedot bool) error {
 		}
 		return v.doc.iterJSON(w, dedot)
 	case KindArr:
-		w.OnArrayStart(-1, structform.AnyType)
+		if err := w.OnArrayStart(-1, structform.AnyType); err != nil {
+			return err
+		}
 		for i := range v.arr {
 			if err := v.arr[i].iterJSON(w, dedot); err != nil {
 				return err
 			}
 		}
-		w.OnArrayFinished()
+		if err := w.OnArrayFinished(); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -491,7 +524,7 @@ func appendAttributeValue(fields []field, path string, key string, attr pcommon.
 	}
 
 	if attr.Type() == pcommon.ValueTypeMap {
-		return appendAttributeFields(fields, flattenKey(path, key), attr.MapVal())
+		return appendAttributeFields(fields, flattenKey(path, key), attr.Map())
 	}
 
 	return append(fields, field{

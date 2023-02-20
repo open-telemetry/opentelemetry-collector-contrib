@@ -3,34 +3,45 @@ name: mongoatlasreceiver
 resource_attributes:
   mongodb_atlas.org_name:
     description: Organization Name
+    enabled: true
     type: string
   mongodb_atlas.project.name:
     description: Project Name
+    enabled: true
     type: string
   mongodb_atlas.project.id:
     description: Project ID
+    enabled: true
     type: string
   mongodb_atlas.host.name:
     description: Hostname of the process
+    enabled: true
     type: string
   mongodb_atlas.process.port:
     description: Port process is bound to
+    enabled: true
     type: string
   mongodb_atlas.process.type_name:
     description: Process type
+    enabled: true
     type: string
   mongodb_atlas.process.id:
     description: ID of the process
+    enabled: true
     type: string
   mongodb_atlas.db.name:
     description: Name of the Database
+    enabled: true
     type: string
   mongodb_atlas.disk.partition:
     description: Name of a disk partition
+    enabled: true
     type: string
+
 attributes:
   cpu_state:
     description: CPU state
+    type: string
     enum:
       - kernel
       - user
@@ -42,6 +53,7 @@ attributes:
       - steal
   assert_type:
     description: MongoDB assertion type
+    type: string
     enum:
       - regular
       - warning
@@ -49,44 +61,52 @@ attributes:
       - user
   cache_direction:
     description: Whether read into or written from
+    type: string
     enum:
       - read_into
       - written_from
   cache_status:
     description: Cache status
+    type: string
     enum:
       - dirty
       - used
   ticket_type:
     description: Type of ticket available
+    type: string
     enum:
       - available_reads
       - available_writes
   cursor_state:
     description: Whether cursor is open or timed out
+    type: string
     enum:
       - timed_out
       - open
   memory_issue_type:
     description: Type of memory issue encountered
+    type: string
     enum:
       - extra_info
       - global_accesses_not_in_memory
       - exceptions_thrown
   global_lock_state:
     description: Which queue is locked
+    type: string
     enum:
       - current_queue_total
       - current_queue_readers
       - current_queue_writers
   btree_counter_type:
     description: Database index effectiveness
+    type: string
     enum:
       - accesses
       - hits
       - misses
   memory_state:
     description: Memory usage type
+    type: string
     enum:
       - resident
       - virtual
@@ -97,11 +117,13 @@ attributes:
       - used
   direction:
     description: Network traffic direction
+    type: string
     enum:
       - receive
       - transmit
   storage_status:
     description: Views on database size
+    type: string
     enum:
       - total
       - data_size
@@ -109,6 +131,7 @@ attributes:
       - data_size_wo_system
   operation:
     description: Type of database operation
+    type: string
     enum:
       - cmd
       - query
@@ -119,11 +142,13 @@ attributes:
       - scan_and_order
   cluster_role:
     description: Whether process is acting as replica or primary
+    type: string
     enum:
       - primary
       - replica
   document_status:
     description: Status of documents in the database
+    type: string
     enum:
       - returned
       - inserted
@@ -131,28 +156,33 @@ attributes:
       - deleted
   execution_type:
     description: Type of command
+    type: string
     enum:
       - reads
       - writes
       - commands
   scanned_type:
     description: Objects or indexes scanned during query
+    type: string
     enum:
       - index_items
       - objects
   disk_direction:
     description: Measurement type for disk operation
+    type: string
     enum:
       - read
       - write
       - total
   disk_status:
     description: Disk measurement type
+    type: string
     enum:
       - free
       - used
   memory_status:
     description: Memory measurement type
+    type: string
     enum:
       - available
       - buffers
@@ -162,6 +192,7 @@ attributes:
       - used
   object_type:
     description: MongoDB object type
+    type: string
     enum:
       - collection
       - index
@@ -172,6 +203,7 @@ attributes:
       - data
   oplog_type:
     description: Oplog type
+    type: string
     enum:
       - slave_lag_master_time
       - master_time

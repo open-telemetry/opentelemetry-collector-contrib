@@ -15,7 +15,6 @@
 //go:build linux
 // +build linux
 
-// nolint:gocritic
 package cadvisor // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor"
 
 import (
@@ -71,7 +70,7 @@ func processContainers(cInfos []*cInfo.ContainerInfo, mInfo extractors.CPUMemInf
 			if key, ok := podKeys[outPodKey.cgroupPath]; !ok {
 				podKeys[outPodKey.cgroupPath] = *outPodKey
 			} else {
-				//collect the container ids associated with a pod
+				// collect the container ids associated with a pod
 				key.containerIds = append(key.containerIds, outPodKey.containerIds...)
 			}
 		}

@@ -104,7 +104,7 @@ func fillSpan(traceID pcommon.TraceID, parentID pcommon.SpanID, spanName string,
 	endTime := time.Now().Add(-50 * time.Microsecond)
 	span.SetTraceID(traceID)
 	span.SetSpanID(generateSpanID(random))
-	span.TraceStateStruct().FromRaw(generateTraceState(spanInputs.Tracestate))
+	span.TraceState().FromRaw(generateTraceState(spanInputs.Tracestate))
 	span.SetParentSpanID(parentID)
 	span.SetName(spanName)
 	span.SetKind(lookupSpanKind(spanInputs.Kind))
@@ -191,7 +191,7 @@ func appendSpanAttributes(spanTypeID PICTInputAttributes, statusStr PICTInputSta
 	}
 }
 
-func fillStatus(statusStr PICTInputStatus, spanStatus ptrace.SpanStatus) {
+func fillStatus(statusStr PICTInputStatus, spanStatus ptrace.Status) {
 	if statusStr == SpanStatusUnset {
 		return
 	}
@@ -200,187 +200,187 @@ func fillStatus(statusStr PICTInputStatus, spanStatus ptrace.SpanStatus) {
 }
 
 func appendDatabaseSQLAttributes(attrMap pcommon.Map) {
-	attrMap.PutString(conventions.AttributeDBSystem, "mysql")
-	attrMap.PutString(conventions.AttributeDBConnectionString, "Server=shopdb.example.com;Database=ShopDb;Uid=billing_user;TableCache=true;UseCompression=True;MinimumPoolSize=10;MaximumPoolSize=50;")
-	attrMap.PutString(conventions.AttributeDBUser, "billing_user")
-	attrMap.PutString(conventions.AttributeNetHostIP, "192.0.3.122")
+	attrMap.PutStr(conventions.AttributeDBSystem, "mysql")
+	attrMap.PutStr(conventions.AttributeDBConnectionString, "Server=shopdb.example.com;Database=ShopDb;Uid=billing_user;TableCache=true;UseCompression=True;MinimumPoolSize=10;MaximumPoolSize=50;")
+	attrMap.PutStr(conventions.AttributeDBUser, "billing_user")
+	attrMap.PutStr(conventions.AttributeNetHostIP, "192.0.3.122")
 	attrMap.PutInt(conventions.AttributeNetHostPort, 51306)
-	attrMap.PutString(conventions.AttributeNetPeerName, "shopdb.example.com")
-	attrMap.PutString(conventions.AttributeNetPeerIP, "192.0.2.12")
+	attrMap.PutStr(conventions.AttributeNetPeerName, "shopdb.example.com")
+	attrMap.PutStr(conventions.AttributeNetPeerIP, "192.0.2.12")
 	attrMap.PutInt(conventions.AttributeNetPeerPort, 3306)
-	attrMap.PutString(conventions.AttributeNetTransport, "IP.TCP")
-	attrMap.PutString(conventions.AttributeDBName, "shopdb")
-	attrMap.PutString(conventions.AttributeDBStatement, "SELECT * FROM orders WHERE order_id = 'o4711'")
-	attrMap.PutString(conventions.AttributeEnduserID, "unittest")
+	attrMap.PutStr(conventions.AttributeNetTransport, "IP.TCP")
+	attrMap.PutStr(conventions.AttributeDBName, "shopdb")
+	attrMap.PutStr(conventions.AttributeDBStatement, "SELECT * FROM orders WHERE order_id = 'o4711'")
+	attrMap.PutStr(conventions.AttributeEnduserID, "unittest")
 }
 
 func appendDatabaseNoSQLAttributes(attrMap pcommon.Map) {
-	attrMap.PutString(conventions.AttributeDBSystem, "mongodb")
-	attrMap.PutString(conventions.AttributeDBUser, "the_user")
-	attrMap.PutString(conventions.AttributeNetPeerName, "mongodb0.example.com")
-	attrMap.PutString(conventions.AttributeNetPeerIP, "192.0.2.14")
+	attrMap.PutStr(conventions.AttributeDBSystem, "mongodb")
+	attrMap.PutStr(conventions.AttributeDBUser, "the_user")
+	attrMap.PutStr(conventions.AttributeNetPeerName, "mongodb0.example.com")
+	attrMap.PutStr(conventions.AttributeNetPeerIP, "192.0.2.14")
 	attrMap.PutInt(conventions.AttributeNetPeerPort, 27017)
-	attrMap.PutString(conventions.AttributeNetTransport, "IP.TCP")
-	attrMap.PutString(conventions.AttributeDBName, "shopDb")
-	attrMap.PutString(conventions.AttributeDBOperation, "findAndModify")
-	attrMap.PutString(conventions.AttributeDBMongoDBCollection, "products")
-	attrMap.PutString(conventions.AttributeEnduserID, "unittest")
+	attrMap.PutStr(conventions.AttributeNetTransport, "IP.TCP")
+	attrMap.PutStr(conventions.AttributeDBName, "shopDb")
+	attrMap.PutStr(conventions.AttributeDBOperation, "findAndModify")
+	attrMap.PutStr(conventions.AttributeDBMongoDBCollection, "products")
+	attrMap.PutStr(conventions.AttributeEnduserID, "unittest")
 }
 
 func appendFaaSDatasourceAttributes(attrMap pcommon.Map) {
-	attrMap.PutString(conventions.AttributeFaaSTrigger, conventions.AttributeFaaSTriggerDatasource)
-	attrMap.PutString(conventions.AttributeFaaSExecution, "DB85AF51-5E13-473D-8454-1E2D59415EAB")
-	attrMap.PutString(conventions.AttributeFaaSDocumentCollection, "faa-flight-delay-information-incoming")
-	attrMap.PutString(conventions.AttributeFaaSDocumentOperation, "insert")
-	attrMap.PutString(conventions.AttributeFaaSDocumentTime, "2020-05-09T19:50:06Z")
-	attrMap.PutString(conventions.AttributeFaaSDocumentName, "delays-20200509-13.csv")
-	attrMap.PutString(conventions.AttributeEnduserID, "unittest")
+	attrMap.PutStr(conventions.AttributeFaaSTrigger, conventions.AttributeFaaSTriggerDatasource)
+	attrMap.PutStr(conventions.AttributeFaaSExecution, "DB85AF51-5E13-473D-8454-1E2D59415EAB")
+	attrMap.PutStr(conventions.AttributeFaaSDocumentCollection, "faa-flight-delay-information-incoming")
+	attrMap.PutStr(conventions.AttributeFaaSDocumentOperation, "insert")
+	attrMap.PutStr(conventions.AttributeFaaSDocumentTime, "2020-05-09T19:50:06Z")
+	attrMap.PutStr(conventions.AttributeFaaSDocumentName, "delays-20200509-13.csv")
+	attrMap.PutStr(conventions.AttributeEnduserID, "unittest")
 }
 
 func appendFaaSHTTPAttributes(includeStatus bool, attrMap pcommon.Map) {
-	attrMap.PutString(conventions.AttributeFaaSTrigger, conventions.AttributeFaaSTriggerHTTP)
-	attrMap.PutString(conventions.AttributeHTTPMethod, "POST")
-	attrMap.PutString(conventions.AttributeHTTPScheme, "https")
-	attrMap.PutString(conventions.AttributeHTTPHost, "api.opentelemetry.io")
-	attrMap.PutString(conventions.AttributeHTTPTarget, "/blog/posts")
-	attrMap.PutString(conventions.AttributeHTTPFlavor, "2")
+	attrMap.PutStr(conventions.AttributeFaaSTrigger, conventions.AttributeFaaSTriggerHTTP)
+	attrMap.PutStr(conventions.AttributeHTTPMethod, "POST")
+	attrMap.PutStr(conventions.AttributeHTTPScheme, "https")
+	attrMap.PutStr(conventions.AttributeHTTPHost, "api.opentelemetry.io")
+	attrMap.PutStr(conventions.AttributeHTTPTarget, "/blog/posts")
+	attrMap.PutStr(conventions.AttributeHTTPFlavor, "2")
 	if includeStatus {
 		attrMap.PutInt(conventions.AttributeHTTPStatusCode, 201)
 	}
-	attrMap.PutString(conventions.AttributeHTTPUserAgent,
+	attrMap.PutStr(conventions.AttributeHTTPUserAgent,
 		"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.1 Safari/605.1.15")
-	attrMap.PutString(conventions.AttributeEnduserID, "unittest")
+	attrMap.PutStr(conventions.AttributeEnduserID, "unittest")
 }
 
 func appendFaaSPubSubAttributes(attrMap pcommon.Map) {
-	attrMap.PutString(conventions.AttributeFaaSTrigger, conventions.AttributeFaaSTriggerPubsub)
-	attrMap.PutString(conventions.AttributeMessagingSystem, "sqs")
-	attrMap.PutString(conventions.AttributeMessagingDestination, "video-views-au")
-	attrMap.PutString(conventions.AttributeMessagingOperation, "process")
-	attrMap.PutString(conventions.AttributeEnduserID, "unittest")
+	attrMap.PutStr(conventions.AttributeFaaSTrigger, conventions.AttributeFaaSTriggerPubsub)
+	attrMap.PutStr(conventions.AttributeMessagingSystem, "sqs")
+	attrMap.PutStr(conventions.AttributeMessagingDestination, "video-views-au")
+	attrMap.PutStr(conventions.AttributeMessagingOperation, "process")
+	attrMap.PutStr(conventions.AttributeEnduserID, "unittest")
 }
 
 func appendFaaSTimerAttributes(attrMap pcommon.Map) {
-	attrMap.PutString(conventions.AttributeFaaSTrigger, conventions.AttributeFaaSTriggerTimer)
-	attrMap.PutString(conventions.AttributeFaaSExecution, "73103A4C-E22F-4493-BDE8-EAE5CAB37B50")
-	attrMap.PutString(conventions.AttributeFaaSTime, "2020-05-09T20:00:08Z")
-	attrMap.PutString(conventions.AttributeFaaSCron, "0/15 * * * *")
-	attrMap.PutString(conventions.AttributeEnduserID, "unittest")
+	attrMap.PutStr(conventions.AttributeFaaSTrigger, conventions.AttributeFaaSTriggerTimer)
+	attrMap.PutStr(conventions.AttributeFaaSExecution, "73103A4C-E22F-4493-BDE8-EAE5CAB37B50")
+	attrMap.PutStr(conventions.AttributeFaaSTime, "2020-05-09T20:00:08Z")
+	attrMap.PutStr(conventions.AttributeFaaSCron, "0/15 * * * *")
+	attrMap.PutStr(conventions.AttributeEnduserID, "unittest")
 }
 
 func appendFaaSOtherAttributes(attrMap pcommon.Map) {
-	attrMap.PutString(conventions.AttributeFaaSTrigger, conventions.AttributeFaaSTriggerOther)
+	attrMap.PutStr(conventions.AttributeFaaSTrigger, conventions.AttributeFaaSTriggerOther)
 	attrMap.PutInt("processed.count", 256)
 	attrMap.PutDouble("processed.data", 14.46)
 	attrMap.PutBool("processed.errors", false)
-	attrMap.PutString(conventions.AttributeEnduserID, "unittest")
+	attrMap.PutStr(conventions.AttributeEnduserID, "unittest")
 }
 
 func appendHTTPClientAttributes(includeStatus bool, attrMap pcommon.Map) {
-	attrMap.PutString(conventions.AttributeHTTPMethod, "GET")
-	attrMap.PutString(conventions.AttributeHTTPURL, "https://opentelemetry.io/registry/")
+	attrMap.PutStr(conventions.AttributeHTTPMethod, "GET")
+	attrMap.PutStr(conventions.AttributeHTTPURL, "https://opentelemetry.io/registry/")
 	if includeStatus {
 		attrMap.PutInt(conventions.AttributeHTTPStatusCode, 200)
-		attrMap.PutString("http.status_text", "More Than OK")
+		attrMap.PutStr("http.status_text", "More Than OK")
 	}
-	attrMap.PutString(conventions.AttributeEnduserID, "unittest")
+	attrMap.PutStr(conventions.AttributeEnduserID, "unittest")
 }
 
 func appendHTTPServerAttributes(includeStatus bool, attrMap pcommon.Map) {
-	attrMap.PutString(conventions.AttributeHTTPMethod, "POST")
-	attrMap.PutString(conventions.AttributeHTTPScheme, "https")
-	attrMap.PutString(conventions.AttributeHTTPServerName, "api22.opentelemetry.io")
+	attrMap.PutStr(conventions.AttributeHTTPMethod, "POST")
+	attrMap.PutStr(conventions.AttributeHTTPScheme, "https")
+	attrMap.PutStr(conventions.AttributeHTTPServerName, "api22.opentelemetry.io")
 	attrMap.PutInt(conventions.AttributeNetHostPort, 443)
-	attrMap.PutString(conventions.AttributeHTTPTarget, "/blog/posts")
-	attrMap.PutString(conventions.AttributeHTTPFlavor, "2")
+	attrMap.PutStr(conventions.AttributeHTTPTarget, "/blog/posts")
+	attrMap.PutStr(conventions.AttributeHTTPFlavor, "2")
 	if includeStatus {
 		attrMap.PutInt(conventions.AttributeHTTPStatusCode, 201)
 	}
-	attrMap.PutString(conventions.AttributeHTTPUserAgent,
+	attrMap.PutStr(conventions.AttributeHTTPUserAgent,
 		"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36")
-	attrMap.PutString(conventions.AttributeHTTPRoute, "/blog/posts")
-	attrMap.PutString(conventions.AttributeHTTPClientIP, "2001:506:71f0:16e::1")
-	attrMap.PutString(conventions.AttributeEnduserID, "unittest")
+	attrMap.PutStr(conventions.AttributeHTTPRoute, "/blog/posts")
+	attrMap.PutStr(conventions.AttributeHTTPClientIP, "2001:506:71f0:16e::1")
+	attrMap.PutStr(conventions.AttributeEnduserID, "unittest")
 }
 
 func appendMessagingProducerAttributes(attrMap pcommon.Map) {
-	attrMap.PutString(conventions.AttributeMessagingSystem, "nats")
-	attrMap.PutString(conventions.AttributeMessagingDestination, "time.us.east.atlanta")
-	attrMap.PutString(conventions.AttributeMessagingDestinationKind, "topic")
-	attrMap.PutString(conventions.AttributeMessagingMessageID, "AA7C5438-D93A-43C8-9961-55613204648F")
+	attrMap.PutStr(conventions.AttributeMessagingSystem, "nats")
+	attrMap.PutStr(conventions.AttributeMessagingDestination, "time.us.east.atlanta")
+	attrMap.PutStr(conventions.AttributeMessagingDestinationKind, "topic")
+	attrMap.PutStr(conventions.AttributeMessagingMessageID, "AA7C5438-D93A-43C8-9961-55613204648F")
 	attrMap.PutInt("messaging.sequence", 1)
-	attrMap.PutString(conventions.AttributeNetPeerIP, "10.10.212.33")
-	attrMap.PutString(conventions.AttributeEnduserID, "unittest")
+	attrMap.PutStr(conventions.AttributeNetPeerIP, "10.10.212.33")
+	attrMap.PutStr(conventions.AttributeEnduserID, "unittest")
 }
 
 func appendMessagingConsumerAttributes(attrMap pcommon.Map) {
-	attrMap.PutString(conventions.AttributeMessagingSystem, "kafka")
-	attrMap.PutString(conventions.AttributeMessagingDestination, "infrastructure-events-zone1")
-	attrMap.PutString(conventions.AttributeMessagingOperation, "receive")
-	attrMap.PutString(conventions.AttributeNetPeerIP, "2600:1700:1f00:11c0:4de0:c223:a800:4e87")
-	attrMap.PutString(conventions.AttributeEnduserID, "unittest")
+	attrMap.PutStr(conventions.AttributeMessagingSystem, "kafka")
+	attrMap.PutStr(conventions.AttributeMessagingDestination, "infrastructure-events-zone1")
+	attrMap.PutStr(conventions.AttributeMessagingOperation, "receive")
+	attrMap.PutStr(conventions.AttributeNetPeerIP, "2600:1700:1f00:11c0:4de0:c223:a800:4e87")
+	attrMap.PutStr(conventions.AttributeEnduserID, "unittest")
 }
 
 func appendGRPCClientAttributes(attrMap pcommon.Map) {
-	attrMap.PutString(conventions.AttributeRPCService, "PullRequestsService")
-	attrMap.PutString(conventions.AttributeNetPeerIP, "2600:1700:1f00:11c0:4de0:c223:a800:4e87")
+	attrMap.PutStr(conventions.AttributeRPCService, "PullRequestsService")
+	attrMap.PutStr(conventions.AttributeNetPeerIP, "2600:1700:1f00:11c0:4de0:c223:a800:4e87")
 	attrMap.PutInt(conventions.AttributeNetHostPort, 8443)
-	attrMap.PutString(conventions.AttributeEnduserID, "unittest")
+	attrMap.PutStr(conventions.AttributeEnduserID, "unittest")
 }
 
 func appendGRPCServerAttributes(attrMap pcommon.Map) {
-	attrMap.PutString(conventions.AttributeRPCService, "PullRequestsService")
-	attrMap.PutString(conventions.AttributeNetPeerIP, "192.168.1.70")
-	attrMap.PutString(conventions.AttributeEnduserID, "unittest")
+	attrMap.PutStr(conventions.AttributeRPCService, "PullRequestsService")
+	attrMap.PutStr(conventions.AttributeNetPeerIP, "192.168.1.70")
+	attrMap.PutStr(conventions.AttributeEnduserID, "unittest")
 }
 
 func appendInternalAttributes(attrMap pcommon.Map) {
-	attrMap.PutString("parameters", "account=7310,amount=1817.10")
-	attrMap.PutString(conventions.AttributeEnduserID, "unittest")
+	attrMap.PutStr("parameters", "account=7310,amount=1817.10")
+	attrMap.PutStr(conventions.AttributeEnduserID, "unittest")
 }
 
 func appendMaxCountAttributes(includeStatus bool, attrMap pcommon.Map) {
-	attrMap.PutString(conventions.AttributeHTTPMethod, "POST")
-	attrMap.PutString(conventions.AttributeHTTPScheme, "https")
-	attrMap.PutString(conventions.AttributeHTTPHost, "api.opentelemetry.io")
-	attrMap.PutString(conventions.AttributeNetHostName, "api22.opentelemetry.io")
-	attrMap.PutString(conventions.AttributeNetHostIP, "2600:1700:1f00:11c0:1ced:afa5:fd88:9d48")
+	attrMap.PutStr(conventions.AttributeHTTPMethod, "POST")
+	attrMap.PutStr(conventions.AttributeHTTPScheme, "https")
+	attrMap.PutStr(conventions.AttributeHTTPHost, "api.opentelemetry.io")
+	attrMap.PutStr(conventions.AttributeNetHostName, "api22.opentelemetry.io")
+	attrMap.PutStr(conventions.AttributeNetHostIP, "2600:1700:1f00:11c0:1ced:afa5:fd88:9d48")
 	attrMap.PutInt(conventions.AttributeNetHostPort, 443)
-	attrMap.PutString(conventions.AttributeHTTPTarget, "/blog/posts")
-	attrMap.PutString(conventions.AttributeHTTPFlavor, "2")
+	attrMap.PutStr(conventions.AttributeHTTPTarget, "/blog/posts")
+	attrMap.PutStr(conventions.AttributeHTTPFlavor, "2")
 	if includeStatus {
 		attrMap.PutInt(conventions.AttributeHTTPStatusCode, 201)
-		attrMap.PutString("http.status_text", "Created")
+		attrMap.PutStr("http.status_text", "Created")
 	}
-	attrMap.PutString(conventions.AttributeHTTPUserAgent,
+	attrMap.PutStr(conventions.AttributeHTTPUserAgent,
 		"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36")
-	attrMap.PutString(conventions.AttributeHTTPRoute, "/blog/posts")
-	attrMap.PutString(conventions.AttributeHTTPClientIP, "2600:1700:1f00:11c0:1ced:afa5:fd77:9d01")
-	attrMap.PutString(conventions.AttributePeerService, "IdentifyImageService")
-	attrMap.PutString(conventions.AttributeNetPeerIP, "2600:1700:1f00:11c0:1ced:afa5:fd77:9ddc")
+	attrMap.PutStr(conventions.AttributeHTTPRoute, "/blog/posts")
+	attrMap.PutStr(conventions.AttributeHTTPClientIP, "2600:1700:1f00:11c0:1ced:afa5:fd77:9d01")
+	attrMap.PutStr(conventions.AttributePeerService, "IdentifyImageService")
+	attrMap.PutStr(conventions.AttributeNetPeerIP, "2600:1700:1f00:11c0:1ced:afa5:fd77:9ddc")
 	attrMap.PutInt(conventions.AttributeNetPeerPort, 39111)
 	attrMap.PutDouble("ai-sampler.weight", 0.07)
 	attrMap.PutBool("ai-sampler.absolute", false)
 	attrMap.PutInt("ai-sampler.maxhops", 6)
-	attrMap.PutString("application.create.location", "https://api.opentelemetry.io/blog/posts/806673B9-4F4D-4284-9635-3A3E3E3805BE")
+	attrMap.PutStr("application.create.location", "https://api.opentelemetry.io/blog/posts/806673B9-4F4D-4284-9635-3A3E3E3805BE")
 	stages := attrMap.PutEmptySlice("application.stages")
-	stages.AppendEmpty().SetStringVal("Launch")
-	stages.AppendEmpty().SetStringVal("Injestion")
-	stages.AppendEmpty().SetStringVal("Validation")
+	stages.AppendEmpty().SetStr("Launch")
+	stages.AppendEmpty().SetStr("Injestion")
+	stages.AppendEmpty().SetStr("Validation")
 	subMap := attrMap.PutEmptyMap("application.abflags")
 	subMap.PutBool("UIx", false)
 	subMap.PutBool("UI4", true)
 	subMap.PutBool("flow-alt3", false)
-	attrMap.PutString("application.thread", "proc-pool-14")
-	attrMap.PutString("application.session", "")
+	attrMap.PutStr("application.thread", "proc-pool-14")
+	attrMap.PutStr("application.session", "")
 	attrMap.PutInt("application.persist.size", 1172184)
 	attrMap.PutInt("application.queue.size", 0)
-	attrMap.PutString("application.job.id", "0E38800B-9C4C-484E-8F2B-C7864D854321")
+	attrMap.PutStr("application.job.id", "0E38800B-9C4C-484E-8F2B-C7864D854321")
 	attrMap.PutDouble("application.service.sla", 0.34)
 	attrMap.PutDouble("application.service.slo", 0.55)
-	attrMap.PutString(conventions.AttributeEnduserID, "unittest")
-	attrMap.PutString(conventions.AttributeEnduserRole, "poweruser")
-	attrMap.PutString(conventions.AttributeEnduserScope, "email profile administrator")
+	attrMap.PutStr(conventions.AttributeEnduserID, "unittest")
+	attrMap.PutStr(conventions.AttributeEnduserRole, "poweruser")
+	attrMap.PutStr(conventions.AttributeEnduserScope, "email profile administrator")
 }
 
 func appendSpanEvents(eventCnt PICTInputSpanChild, spanEvents ptrace.SpanEventSlice) {
@@ -421,9 +421,9 @@ func appendSpanEvent(index int, spanEvents ptrace.SpanEventSlice) {
 		spanEvent.SetName("message")
 		attrMap := spanEvent.Attributes()
 		if index%2 == 0 {
-			attrMap.PutString("message.type", "SENT")
+			attrMap.PutStr("message.type", "SENT")
 		} else {
-			attrMap.PutString("message.type", "RECEIVED")
+			attrMap.PutStr("message.type", "RECEIVED")
 		}
 		attrMap.PutInt(conventions.AttributeMessagingMessageID, int64(index/4))
 		attrMap.PutInt(conventions.AttributeMessagingMessagePayloadCompressedSizeBytes, int64(17*index))
@@ -433,7 +433,7 @@ func appendSpanEvent(index int, spanEvents ptrace.SpanEventSlice) {
 		attrMap := spanEvent.Attributes()
 		attrMap.PutBool("app.inretry", true)
 		attrMap.PutDouble("app.progress", 0.6)
-		attrMap.PutString("app.statemap", "14|5|202")
+		attrMap.PutStr("app.statemap", "14|5|202")
 	default:
 		spanEvent.SetName("annotation")
 	}
@@ -445,14 +445,14 @@ func appendSpanLink(random io.Reader, index int, spanLinks ptrace.SpanLinkSlice)
 	spanLink := spanLinks.AppendEmpty()
 	spanLink.SetTraceID(generateTraceID(random))
 	spanLink.SetSpanID(generateSpanID(random))
-	spanLink.TraceStateStruct().FromRaw("")
+	spanLink.TraceState().FromRaw("")
 	if index%4 != 2 {
 		attrMap := spanLink.Attributes()
 		appendMessagingConsumerAttributes(attrMap)
 		if index%4 == 1 {
 			attrMap.PutBool("app.inretry", true)
 			attrMap.PutDouble("app.progress", 0.6)
-			attrMap.PutString("app.statemap", "14|5|202")
+			attrMap.PutStr("app.statemap", "14|5|202")
 		}
 	}
 	spanLink.SetDroppedAttributesCount(0)

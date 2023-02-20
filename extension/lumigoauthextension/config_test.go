@@ -19,16 +19,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	require.NoError(t, err)
-
-	factory := NewFactory()
-	factories.Extensions[typeStr] = factory
-	_, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "valid_config.yml"), factories)
+	_, err := confmaptest.LoadConf(filepath.Join("testdata", "valid_config.yml"))
 	require.NoError(t, err)
 }

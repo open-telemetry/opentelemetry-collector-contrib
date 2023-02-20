@@ -98,44 +98,16 @@ type Converter struct {
 	logger *zap.Logger
 }
 
-type ConverterOption interface {
-	apply(*Converter)
-}
-
-type optionFunc func(*Converter)
-
-func (f optionFunc) apply(c *Converter) {
-	f(c)
-}
-
-func WithLogger(logger *zap.Logger) ConverterOption {
-	return optionFunc(func(c *Converter) {
-		c.logger = logger
-	})
-}
-
-func WithWorkerCount(workerCount int) ConverterOption {
-	return optionFunc(func(c *Converter) {
-		c.workerCount = workerCount
-	})
-}
-
-func NewConverter(opts ...ConverterOption) *Converter {
-	c := &Converter{
+func NewConverter(logger *zap.Logger) *Converter {
+	return &Converter{
 		workerChan:      make(chan []*entry.Entry),
 		workerCount:     int(math.Max(1, float64(runtime.NumCPU()/4))),
 		aggregationChan: make(chan []workerItem),
 		pLogsChan:       make(chan plog.Logs),
 		stopChan:        make(chan struct{}),
-		logger:          zap.NewNop(),
 		flushChan:       make(chan plog.Logs),
+		logger:          logger,
 	}
-
-	for _, opt := range opts {
-		opt.apply(c)
-	}
-
-	return c
 }
 
 func (c *Converter) Start() {
@@ -313,24 +285,6 @@ func convert(ent *entry.Entry) plog.LogRecord {
 	return dest
 }
 
-// Convert converts one entry.Entry into plog.Logs.
-// To be used in a stateless setting like tests where ease of use is more
-// important than performance or throughput.
-func Convert(ent *entry.Entry) plog.Logs {
-	pLogs := plog.NewLogs()
-	logs := pLogs.ResourceLogs()
-
-	rls := logs.AppendEmpty()
-
-	resource := rls.Resource()
-	upsertToMap(ent.Resource, resource.Attributes())
-
-	ills := rls.ScopeLogs().AppendEmpty()
-	lr := ills.LogRecords().AppendEmpty()
-	convertInto(ent, lr)
-	return pLogs
-}
-
 // convertInto converts entry.Entry into provided plog.LogRecord.
 func convertInto(ent *entry.Entry, dest plog.LogRecord) {
 	if !ent.Timestamp.IsZero() {
@@ -368,43 +322,43 @@ func convertInto(ent *entry.Entry, dest plog.LogRecord) {
 func upsertToAttributeVal(value interface{}, dest pcommon.Value) {
 	switch t := value.(type) {
 	case bool:
-		dest.SetBoolVal(t)
+		dest.SetBool(t)
 	case string:
-		dest.SetStringVal(t)
+		dest.SetStr(t)
 	case []string:
-		upsertStringsToSlice(t, dest.SetEmptySliceVal())
+		upsertStringsToSlice(t, dest.SetEmptySlice())
 	case []byte:
-		dest.SetEmptyBytesVal().FromRaw(t)
+		dest.SetEmptyBytes().FromRaw(t)
 	case int64:
-		dest.SetIntVal(t)
+		dest.SetInt(t)
 	case int32:
-		dest.SetIntVal(int64(t))
+		dest.SetInt(int64(t))
 	case int16:
-		dest.SetIntVal(int64(t))
+		dest.SetInt(int64(t))
 	case int8:
-		dest.SetIntVal(int64(t))
+		dest.SetInt(int64(t))
 	case int:
-		dest.SetIntVal(int64(t))
+		dest.SetInt(int64(t))
 	case uint64:
-		dest.SetIntVal(int64(t))
+		dest.SetInt(int64(t))
 	case uint32:
-		dest.SetIntVal(int64(t))
+		dest.SetInt(int64(t))
 	case uint16:
-		dest.SetIntVal(int64(t))
+		dest.SetInt(int64(t))
 	case uint8:
-		dest.SetIntVal(int64(t))
+		dest.SetInt(int64(t))
 	case uint:
-		dest.SetIntVal(int64(t))
+		dest.SetInt(int64(t))
 	case float64:
-		dest.SetDoubleVal(t)
+		dest.SetDouble(t)
 	case float32:
-		dest.SetDoubleVal(float64(t))
+		dest.SetDouble(float64(t))
 	case map[string]interface{}:
-		upsertToMap(t, dest.SetEmptyMapVal())
+		upsertToMap(t, dest.SetEmptyMap())
 	case []interface{}:
-		upsertToSlice(t, dest.SetEmptySliceVal())
+		upsertToSlice(t, dest.SetEmptySlice())
 	default:
-		dest.SetStringVal(fmt.Sprintf("%v", t))
+		dest.SetStr(fmt.Sprintf("%v", t))
 	}
 }
 
@@ -425,12 +379,12 @@ func upsertToSlice(obsArr []interface{}, dest pcommon.Slice) {
 func upsertStringsToSlice(obsArr []string, dest pcommon.Slice) {
 	dest.EnsureCapacity(len(obsArr))
 	for _, v := range obsArr {
-		dest.AppendEmpty().SetStringVal(v)
+		dest.AppendEmpty().SetStr(v)
 	}
 }
 
 var sevMap = map[entry.Severity]plog.SeverityNumber{
-	entry.Default: plog.SeverityNumberUndefined,
+	entry.Default: plog.SeverityNumberUnspecified,
 	entry.Trace:   plog.SeverityNumberTrace,
 	entry.Trace2:  plog.SeverityNumberTrace2,
 	entry.Trace3:  plog.SeverityNumberTrace3,

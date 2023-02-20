@@ -6,13 +6,29 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 )
 
 // MetricSettings provides common settings for a particular metric.
 type MetricSettings struct {
 	Enabled bool `mapstructure:"enabled"`
+
+	enabledSetByUser bool
+}
+
+func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
+	if err != nil {
+		return err
+	}
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
 }
 
 // MetricsSettings provides settings for bigipreceiver metrics.
@@ -127,6 +143,62 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		BigipVirtualServerRequestCount: MetricSettings{
+			Enabled: true,
+		},
+	}
+}
+
+// ResourceAttributeSettings provides common settings for a particular metric.
+type ResourceAttributeSettings struct {
+	Enabled bool `mapstructure:"enabled"`
+
+	enabledProvidedByUser bool
+}
+
+func (ras *ResourceAttributeSettings) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(ras, confmap.WithErrorUnused())
+	if err != nil {
+		return err
+	}
+	ras.enabledProvidedByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ResourceAttributesSettings provides settings for bigipreceiver metrics.
+type ResourceAttributesSettings struct {
+	BigipNodeIPAddress            ResourceAttributeSettings `mapstructure:"bigip.node.ip_address"`
+	BigipNodeName                 ResourceAttributeSettings `mapstructure:"bigip.node.name"`
+	BigipPoolName                 ResourceAttributeSettings `mapstructure:"bigip.pool.name"`
+	BigipPoolMemberIPAddress      ResourceAttributeSettings `mapstructure:"bigip.pool_member.ip_address"`
+	BigipPoolMemberName           ResourceAttributeSettings `mapstructure:"bigip.pool_member.name"`
+	BigipVirtualServerDestination ResourceAttributeSettings `mapstructure:"bigip.virtual_server.destination"`
+	BigipVirtualServerName        ResourceAttributeSettings `mapstructure:"bigip.virtual_server.name"`
+}
+
+func DefaultResourceAttributesSettings() ResourceAttributesSettings {
+	return ResourceAttributesSettings{
+		BigipNodeIPAddress: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		BigipNodeName: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		BigipPoolName: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		BigipPoolMemberIPAddress: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		BigipPoolMemberName: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		BigipVirtualServerDestination: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		BigipVirtualServerName: ResourceAttributeSettings{
 			Enabled: true,
 		},
 	}
@@ -262,8 +334,8 @@ func (m *metricBigipNodeAvailability) recordDataPoint(start pcommon.Timestamp, t
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().PutString("status", availabilityStatusAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("status", availabilityStatusAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -304,7 +376,7 @@ func (m *metricBigipNodeConnectionCount) init() {
 	m.data.SetUnit("{connections}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricBigipNodeConnectionCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -314,7 +386,7 @@ func (m *metricBigipNodeConnectionCount) recordDataPoint(start pcommon.Timestamp
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -355,7 +427,7 @@ func (m *metricBigipNodeDataTransmitted) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -366,8 +438,8 @@ func (m *metricBigipNodeDataTransmitted) recordDataPoint(start pcommon.Timestamp
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().PutString("direction", directionAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("direction", directionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -417,8 +489,8 @@ func (m *metricBigipNodeEnabled) recordDataPoint(start pcommon.Timestamp, ts pco
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().PutString("status", enabledStatusAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("status", enabledStatusAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -459,7 +531,7 @@ func (m *metricBigipNodePacketCount) init() {
 	m.data.SetUnit("{packets}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -470,8 +542,8 @@ func (m *metricBigipNodePacketCount) recordDataPoint(start pcommon.Timestamp, ts
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().PutString("direction", directionAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("direction", directionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -512,7 +584,7 @@ func (m *metricBigipNodeRequestCount) init() {
 	m.data.SetUnit("{requests}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricBigipNodeRequestCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -522,7 +594,7 @@ func (m *metricBigipNodeRequestCount) recordDataPoint(start pcommon.Timestamp, t
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -563,7 +635,7 @@ func (m *metricBigipNodeSessionCount) init() {
 	m.data.SetUnit("{sessions}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricBigipNodeSessionCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -573,7 +645,7 @@ func (m *metricBigipNodeSessionCount) recordDataPoint(start pcommon.Timestamp, t
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -623,8 +695,8 @@ func (m *metricBigipPoolAvailability) recordDataPoint(start pcommon.Timestamp, t
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().PutString("status", availabilityStatusAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("status", availabilityStatusAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -665,7 +737,7 @@ func (m *metricBigipPoolConnectionCount) init() {
 	m.data.SetUnit("{connections}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricBigipPoolConnectionCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -675,7 +747,7 @@ func (m *metricBigipPoolConnectionCount) recordDataPoint(start pcommon.Timestamp
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -716,7 +788,7 @@ func (m *metricBigipPoolDataTransmitted) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -727,8 +799,8 @@ func (m *metricBigipPoolDataTransmitted) recordDataPoint(start pcommon.Timestamp
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().PutString("direction", directionAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("direction", directionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -778,8 +850,8 @@ func (m *metricBigipPoolEnabled) recordDataPoint(start pcommon.Timestamp, ts pco
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().PutString("status", enabledStatusAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("status", enabledStatusAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -820,7 +892,7 @@ func (m *metricBigipPoolMemberCount) init() {
 	m.data.SetUnit("{members}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -831,8 +903,8 @@ func (m *metricBigipPoolMemberCount) recordDataPoint(start pcommon.Timestamp, ts
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().PutString("status", activeStatusAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("status", activeStatusAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -873,7 +945,7 @@ func (m *metricBigipPoolPacketCount) init() {
 	m.data.SetUnit("{packets}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -884,8 +956,8 @@ func (m *metricBigipPoolPacketCount) recordDataPoint(start pcommon.Timestamp, ts
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().PutString("direction", directionAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("direction", directionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -926,7 +998,7 @@ func (m *metricBigipPoolRequestCount) init() {
 	m.data.SetUnit("{requests}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricBigipPoolRequestCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -936,7 +1008,7 @@ func (m *metricBigipPoolRequestCount) recordDataPoint(start pcommon.Timestamp, t
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -986,8 +1058,8 @@ func (m *metricBigipPoolMemberAvailability) recordDataPoint(start pcommon.Timest
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().PutString("status", availabilityStatusAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("status", availabilityStatusAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1028,7 +1100,7 @@ func (m *metricBigipPoolMemberConnectionCount) init() {
 	m.data.SetUnit("{connections}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricBigipPoolMemberConnectionCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1038,7 +1110,7 @@ func (m *metricBigipPoolMemberConnectionCount) recordDataPoint(start pcommon.Tim
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1079,7 +1151,7 @@ func (m *metricBigipPoolMemberDataTransmitted) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -1090,8 +1162,8 @@ func (m *metricBigipPoolMemberDataTransmitted) recordDataPoint(start pcommon.Tim
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().PutString("direction", directionAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("direction", directionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1141,8 +1213,8 @@ func (m *metricBigipPoolMemberEnabled) recordDataPoint(start pcommon.Timestamp, 
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().PutString("status", enabledStatusAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("status", enabledStatusAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1183,7 +1255,7 @@ func (m *metricBigipPoolMemberPacketCount) init() {
 	m.data.SetUnit("{packets}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -1194,8 +1266,8 @@ func (m *metricBigipPoolMemberPacketCount) recordDataPoint(start pcommon.Timesta
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().PutString("direction", directionAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("direction", directionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1236,7 +1308,7 @@ func (m *metricBigipPoolMemberRequestCount) init() {
 	m.data.SetUnit("{requests}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricBigipPoolMemberRequestCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1246,7 +1318,7 @@ func (m *metricBigipPoolMemberRequestCount) recordDataPoint(start pcommon.Timest
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1287,7 +1359,7 @@ func (m *metricBigipPoolMemberSessionCount) init() {
 	m.data.SetUnit("{sessions}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricBigipPoolMemberSessionCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1297,7 +1369,7 @@ func (m *metricBigipPoolMemberSessionCount) recordDataPoint(start pcommon.Timest
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1347,8 +1419,8 @@ func (m *metricBigipVirtualServerAvailability) recordDataPoint(start pcommon.Tim
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().PutString("status", availabilityStatusAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("status", availabilityStatusAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1389,7 +1461,7 @@ func (m *metricBigipVirtualServerConnectionCount) init() {
 	m.data.SetUnit("{connections}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricBigipVirtualServerConnectionCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1399,7 +1471,7 @@ func (m *metricBigipVirtualServerConnectionCount) recordDataPoint(start pcommon.
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1440,7 +1512,7 @@ func (m *metricBigipVirtualServerDataTransmitted) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -1451,8 +1523,8 @@ func (m *metricBigipVirtualServerDataTransmitted) recordDataPoint(start pcommon.
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().PutString("direction", directionAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("direction", directionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1502,8 +1574,8 @@ func (m *metricBigipVirtualServerEnabled) recordDataPoint(start pcommon.Timestam
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().PutString("status", enabledStatusAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("status", enabledStatusAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1544,7 +1616,7 @@ func (m *metricBigipVirtualServerPacketCount) init() {
 	m.data.SetUnit("{packets}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -1555,8 +1627,8 @@ func (m *metricBigipVirtualServerPacketCount) recordDataPoint(start pcommon.Time
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().PutString("direction", directionAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("direction", directionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1597,7 +1669,7 @@ func (m *metricBigipVirtualServerRequestCount) init() {
 	m.data.SetUnit("{requests}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricBigipVirtualServerRequestCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1607,7 +1679,7 @@ func (m *metricBigipVirtualServerRequestCount) recordDataPoint(start pcommon.Tim
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1643,6 +1715,7 @@ type MetricsBuilder struct {
 	resourceCapacity                        int                 // maximum observed number of resource attributes.
 	metricsBuffer                           pmetric.Metrics     // accumulates metrics data before emitting.
 	buildInfo                               component.BuildInfo // contains version information
+	resourceAttributesSettings              ResourceAttributesSettings
 	metricBigipNodeAvailability             metricBigipNodeAvailability
 	metricBigipNodeConnectionCount          metricBigipNodeConnectionCount
 	metricBigipNodeDataTransmitted          metricBigipNodeDataTransmitted
@@ -1682,38 +1755,46 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, options ...metricBuilderOption) *MetricsBuilder {
+// WithResourceAttributesSettings sets ResourceAttributeSettings on the metrics builder.
+func WithResourceAttributesSettings(ras ResourceAttributesSettings) metricBuilderOption {
+	return func(mb *MetricsBuilder) {
+		mb.resourceAttributesSettings = ras
+	}
+}
+
+func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                               pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                           pmetric.NewMetrics(),
-		buildInfo:                               buildInfo,
-		metricBigipNodeAvailability:             newMetricBigipNodeAvailability(settings.BigipNodeAvailability),
-		metricBigipNodeConnectionCount:          newMetricBigipNodeConnectionCount(settings.BigipNodeConnectionCount),
-		metricBigipNodeDataTransmitted:          newMetricBigipNodeDataTransmitted(settings.BigipNodeDataTransmitted),
-		metricBigipNodeEnabled:                  newMetricBigipNodeEnabled(settings.BigipNodeEnabled),
-		metricBigipNodePacketCount:              newMetricBigipNodePacketCount(settings.BigipNodePacketCount),
-		metricBigipNodeRequestCount:             newMetricBigipNodeRequestCount(settings.BigipNodeRequestCount),
-		metricBigipNodeSessionCount:             newMetricBigipNodeSessionCount(settings.BigipNodeSessionCount),
-		metricBigipPoolAvailability:             newMetricBigipPoolAvailability(settings.BigipPoolAvailability),
-		metricBigipPoolConnectionCount:          newMetricBigipPoolConnectionCount(settings.BigipPoolConnectionCount),
-		metricBigipPoolDataTransmitted:          newMetricBigipPoolDataTransmitted(settings.BigipPoolDataTransmitted),
-		metricBigipPoolEnabled:                  newMetricBigipPoolEnabled(settings.BigipPoolEnabled),
-		metricBigipPoolMemberCount:              newMetricBigipPoolMemberCount(settings.BigipPoolMemberCount),
-		metricBigipPoolPacketCount:              newMetricBigipPoolPacketCount(settings.BigipPoolPacketCount),
-		metricBigipPoolRequestCount:             newMetricBigipPoolRequestCount(settings.BigipPoolRequestCount),
-		metricBigipPoolMemberAvailability:       newMetricBigipPoolMemberAvailability(settings.BigipPoolMemberAvailability),
-		metricBigipPoolMemberConnectionCount:    newMetricBigipPoolMemberConnectionCount(settings.BigipPoolMemberConnectionCount),
-		metricBigipPoolMemberDataTransmitted:    newMetricBigipPoolMemberDataTransmitted(settings.BigipPoolMemberDataTransmitted),
-		metricBigipPoolMemberEnabled:            newMetricBigipPoolMemberEnabled(settings.BigipPoolMemberEnabled),
-		metricBigipPoolMemberPacketCount:        newMetricBigipPoolMemberPacketCount(settings.BigipPoolMemberPacketCount),
-		metricBigipPoolMemberRequestCount:       newMetricBigipPoolMemberRequestCount(settings.BigipPoolMemberRequestCount),
-		metricBigipPoolMemberSessionCount:       newMetricBigipPoolMemberSessionCount(settings.BigipPoolMemberSessionCount),
-		metricBigipVirtualServerAvailability:    newMetricBigipVirtualServerAvailability(settings.BigipVirtualServerAvailability),
-		metricBigipVirtualServerConnectionCount: newMetricBigipVirtualServerConnectionCount(settings.BigipVirtualServerConnectionCount),
-		metricBigipVirtualServerDataTransmitted: newMetricBigipVirtualServerDataTransmitted(settings.BigipVirtualServerDataTransmitted),
-		metricBigipVirtualServerEnabled:         newMetricBigipVirtualServerEnabled(settings.BigipVirtualServerEnabled),
-		metricBigipVirtualServerPacketCount:     newMetricBigipVirtualServerPacketCount(settings.BigipVirtualServerPacketCount),
-		metricBigipVirtualServerRequestCount:    newMetricBigipVirtualServerRequestCount(settings.BigipVirtualServerRequestCount),
+		buildInfo:                               settings.BuildInfo,
+		resourceAttributesSettings:              DefaultResourceAttributesSettings(),
+		metricBigipNodeAvailability:             newMetricBigipNodeAvailability(ms.BigipNodeAvailability),
+		metricBigipNodeConnectionCount:          newMetricBigipNodeConnectionCount(ms.BigipNodeConnectionCount),
+		metricBigipNodeDataTransmitted:          newMetricBigipNodeDataTransmitted(ms.BigipNodeDataTransmitted),
+		metricBigipNodeEnabled:                  newMetricBigipNodeEnabled(ms.BigipNodeEnabled),
+		metricBigipNodePacketCount:              newMetricBigipNodePacketCount(ms.BigipNodePacketCount),
+		metricBigipNodeRequestCount:             newMetricBigipNodeRequestCount(ms.BigipNodeRequestCount),
+		metricBigipNodeSessionCount:             newMetricBigipNodeSessionCount(ms.BigipNodeSessionCount),
+		metricBigipPoolAvailability:             newMetricBigipPoolAvailability(ms.BigipPoolAvailability),
+		metricBigipPoolConnectionCount:          newMetricBigipPoolConnectionCount(ms.BigipPoolConnectionCount),
+		metricBigipPoolDataTransmitted:          newMetricBigipPoolDataTransmitted(ms.BigipPoolDataTransmitted),
+		metricBigipPoolEnabled:                  newMetricBigipPoolEnabled(ms.BigipPoolEnabled),
+		metricBigipPoolMemberCount:              newMetricBigipPoolMemberCount(ms.BigipPoolMemberCount),
+		metricBigipPoolPacketCount:              newMetricBigipPoolPacketCount(ms.BigipPoolPacketCount),
+		metricBigipPoolRequestCount:             newMetricBigipPoolRequestCount(ms.BigipPoolRequestCount),
+		metricBigipPoolMemberAvailability:       newMetricBigipPoolMemberAvailability(ms.BigipPoolMemberAvailability),
+		metricBigipPoolMemberConnectionCount:    newMetricBigipPoolMemberConnectionCount(ms.BigipPoolMemberConnectionCount),
+		metricBigipPoolMemberDataTransmitted:    newMetricBigipPoolMemberDataTransmitted(ms.BigipPoolMemberDataTransmitted),
+		metricBigipPoolMemberEnabled:            newMetricBigipPoolMemberEnabled(ms.BigipPoolMemberEnabled),
+		metricBigipPoolMemberPacketCount:        newMetricBigipPoolMemberPacketCount(ms.BigipPoolMemberPacketCount),
+		metricBigipPoolMemberRequestCount:       newMetricBigipPoolMemberRequestCount(ms.BigipPoolMemberRequestCount),
+		metricBigipPoolMemberSessionCount:       newMetricBigipPoolMemberSessionCount(ms.BigipPoolMemberSessionCount),
+		metricBigipVirtualServerAvailability:    newMetricBigipVirtualServerAvailability(ms.BigipVirtualServerAvailability),
+		metricBigipVirtualServerConnectionCount: newMetricBigipVirtualServerConnectionCount(ms.BigipVirtualServerConnectionCount),
+		metricBigipVirtualServerDataTransmitted: newMetricBigipVirtualServerDataTransmitted(ms.BigipVirtualServerDataTransmitted),
+		metricBigipVirtualServerEnabled:         newMetricBigipVirtualServerEnabled(ms.BigipVirtualServerEnabled),
+		metricBigipVirtualServerPacketCount:     newMetricBigipVirtualServerPacketCount(ms.BigipVirtualServerPacketCount),
+		metricBigipVirtualServerRequestCount:    newMetricBigipVirtualServerRequestCount(ms.BigipVirtualServerRequestCount),
 	}
 	for _, op := range options {
 		op(mb)
@@ -1732,68 +1813,82 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(pmetric.ResourceMetrics)
+type ResourceMetricsOption func(ResourceAttributesSettings, pmetric.ResourceMetrics)
 
 // WithBigipNodeIPAddress sets provided value as "bigip.node.ip_address" attribute for current resource.
 func WithBigipNodeIPAddress(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutString("bigip.node.ip_address", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.BigipNodeIPAddress.Enabled {
+			rm.Resource().Attributes().PutStr("bigip.node.ip_address", val)
+		}
 	}
 }
 
 // WithBigipNodeName sets provided value as "bigip.node.name" attribute for current resource.
 func WithBigipNodeName(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutString("bigip.node.name", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.BigipNodeName.Enabled {
+			rm.Resource().Attributes().PutStr("bigip.node.name", val)
+		}
 	}
 }
 
 // WithBigipPoolName sets provided value as "bigip.pool.name" attribute for current resource.
 func WithBigipPoolName(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutString("bigip.pool.name", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.BigipPoolName.Enabled {
+			rm.Resource().Attributes().PutStr("bigip.pool.name", val)
+		}
 	}
 }
 
 // WithBigipPoolMemberIPAddress sets provided value as "bigip.pool_member.ip_address" attribute for current resource.
 func WithBigipPoolMemberIPAddress(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutString("bigip.pool_member.ip_address", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.BigipPoolMemberIPAddress.Enabled {
+			rm.Resource().Attributes().PutStr("bigip.pool_member.ip_address", val)
+		}
 	}
 }
 
 // WithBigipPoolMemberName sets provided value as "bigip.pool_member.name" attribute for current resource.
 func WithBigipPoolMemberName(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutString("bigip.pool_member.name", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.BigipPoolMemberName.Enabled {
+			rm.Resource().Attributes().PutStr("bigip.pool_member.name", val)
+		}
 	}
 }
 
 // WithBigipVirtualServerDestination sets provided value as "bigip.virtual_server.destination" attribute for current resource.
 func WithBigipVirtualServerDestination(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutString("bigip.virtual_server.destination", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.BigipVirtualServerDestination.Enabled {
+			rm.Resource().Attributes().PutStr("bigip.virtual_server.destination", val)
+		}
 	}
 }
 
 // WithBigipVirtualServerName sets provided value as "bigip.virtual_server.name" attribute for current resource.
 func WithBigipVirtualServerName(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutString("bigip.virtual_server.name", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.BigipVirtualServerName.Enabled {
+			rm.Resource().Attributes().PutStr("bigip.virtual_server.name", val)
+		}
 	}
 }
 
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
-			switch metrics.At(i).DataType() {
-			case pmetric.MetricDataTypeGauge:
+			switch metrics.At(i).Type() {
+			case pmetric.MetricTypeGauge:
 				dps = metrics.At(i).Gauge().DataPoints()
-			case pmetric.MetricDataTypeSum:
+			case pmetric.MetricTypeSum:
 				dps = metrics.At(i).Sum().DataPoints()
 			}
 			for j := 0; j < dps.Len(); j++ {
@@ -1842,8 +1937,9 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricBigipVirtualServerEnabled.emit(ils.Metrics())
 	mb.metricBigipVirtualServerPacketCount.emit(ils.Metrics())
 	mb.metricBigipVirtualServerRequestCount.emit(ils.Metrics())
+
 	for _, op := range rmo {
-		op(rm)
+		op(mb.resourceAttributesSettings, rm)
 	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
@@ -1856,8 +1952,8 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 // produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
 func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 	mb.EmitForResource(rmo...)
-	metrics := pmetric.NewMetrics()
-	mb.metricsBuffer.MoveTo(metrics)
+	metrics := mb.metricsBuffer
+	mb.metricsBuffer = pmetric.NewMetrics()
 	return metrics
 }
 

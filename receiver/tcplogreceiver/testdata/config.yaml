@@ -1,18 +1,2 @@
-receivers:
-  tcplog:
-    listen_address: "0.0.0.0:29018"
-    converter:
-      worker_count: 1
-
-processors:
-  nop:
-
-exporters:
-  nop:
-
-service:
-  pipelines:
-    logs:
-      receivers: [tcplog]
-      processors: [ nop ]
-      exporters: [ nop ]
+tcplog:
+  listen_address: "127.0.0.1:29018"

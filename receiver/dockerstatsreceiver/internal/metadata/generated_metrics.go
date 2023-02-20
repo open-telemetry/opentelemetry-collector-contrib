@@ -6,14 +6,30 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 )
 
 // MetricSettings provides common settings for a particular metric.
 type MetricSettings struct {
 	Enabled bool `mapstructure:"enabled"`
+
+	enabledSetByUser bool
+}
+
+func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
+	if err != nil {
+		return err
+	}
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
 }
 
 // MetricsSettings provides settings for dockerstatsreceiver metrics.
@@ -86,40 +102,40 @@ type MetricsSettings struct {
 func DefaultMetricsSettings() MetricsSettings {
 	return MetricsSettings{
 		ContainerBlockioIoMergedRecursive: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerBlockioIoQueuedRecursive: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerBlockioIoServiceBytesRecursive: MetricSettings{
 			Enabled: true,
 		},
 		ContainerBlockioIoServiceTimeRecursive: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerBlockioIoServicedRecursive: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerBlockioIoTimeRecursive: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerBlockioIoWaitTimeRecursive: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerBlockioSectorsRecursive: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerCPUPercent: MetricSettings{
 			Enabled: true,
 		},
 		ContainerCPUThrottlingDataPeriods: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerCPUThrottlingDataThrottledPeriods: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerCPUThrottlingDataThrottledTime: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerCPUUsageKernelmode: MetricSettings{
 			Enabled: true,
@@ -128,7 +144,7 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: false,
 		},
 		ContainerCPUUsageSystem: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerCPUUsageTotal: MetricSettings{
 			Enabled: true,
@@ -137,118 +153,118 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		ContainerMemoryActiveAnon: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryActiveFile: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryCache: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryDirty: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryHierarchicalMemoryLimit: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryHierarchicalMemswLimit: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryInactiveAnon: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryInactiveFile: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryMappedFile: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryPercent: MetricSettings{
 			Enabled: true,
 		},
 		ContainerMemoryPgfault: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryPgmajfault: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryPgpgin: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryPgpgout: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryRss: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryRssHuge: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemorySwap: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryTotalActiveAnon: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryTotalActiveFile: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryTotalCache: MetricSettings{
 			Enabled: true,
 		},
 		ContainerMemoryTotalDirty: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryTotalInactiveAnon: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryTotalInactiveFile: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryTotalMappedFile: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryTotalPgfault: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryTotalPgmajfault: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryTotalPgpgin: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryTotalPgpgout: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryTotalRss: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryTotalRssHuge: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryTotalSwap: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryTotalUnevictable: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryTotalWriteback: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryUnevictable: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryUsageLimit: MetricSettings{
 			Enabled: true,
 		},
 		ContainerMemoryUsageMax: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryUsageTotal: MetricSettings{
 			Enabled: true,
 		},
 		ContainerMemoryWriteback: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerNetworkIoUsageRxBytes: MetricSettings{
 			Enabled: true,
@@ -257,10 +273,10 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		ContainerNetworkIoUsageRxErrors: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerNetworkIoUsageRxPackets: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerNetworkIoUsageTxBytes: MetricSettings{
 			Enabled: true,
@@ -269,9 +285,57 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		ContainerNetworkIoUsageTxErrors: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerNetworkIoUsageTxPackets: MetricSettings{
+			Enabled: false,
+		},
+	}
+}
+
+// ResourceAttributeSettings provides common settings for a particular metric.
+type ResourceAttributeSettings struct {
+	Enabled bool `mapstructure:"enabled"`
+
+	enabledProvidedByUser bool
+}
+
+func (ras *ResourceAttributeSettings) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(ras, confmap.WithErrorUnused())
+	if err != nil {
+		return err
+	}
+	ras.enabledProvidedByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ResourceAttributesSettings provides settings for dockerstatsreceiver metrics.
+type ResourceAttributesSettings struct {
+	ContainerHostname  ResourceAttributeSettings `mapstructure:"container.hostname"`
+	ContainerID        ResourceAttributeSettings `mapstructure:"container.id"`
+	ContainerImageName ResourceAttributeSettings `mapstructure:"container.image.name"`
+	ContainerName      ResourceAttributeSettings `mapstructure:"container.name"`
+	ContainerRuntime   ResourceAttributeSettings `mapstructure:"container.runtime"`
+}
+
+func DefaultResourceAttributesSettings() ResourceAttributesSettings {
+	return ResourceAttributesSettings{
+		ContainerHostname: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		ContainerID: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		ContainerImageName: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		ContainerName: ResourceAttributeSettings{
+			Enabled: true,
+		},
+		ContainerRuntime: ResourceAttributeSettings{
 			Enabled: true,
 		},
 	}
@@ -290,7 +354,7 @@ func (m *metricContainerBlockioIoMergedRecursive) init() {
 	m.data.SetUnit("{operations}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -301,10 +365,10 @@ func (m *metricContainerBlockioIoMergedRecursive) recordDataPoint(start pcommon.
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().PutString("device_major", deviceMajorAttributeValue)
-	dp.Attributes().PutString("device_minor", deviceMinorAttributeValue)
-	dp.Attributes().PutString("operation", operationAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("device_major", deviceMajorAttributeValue)
+	dp.Attributes().PutStr("device_minor", deviceMinorAttributeValue)
+	dp.Attributes().PutStr("operation", operationAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -345,7 +409,7 @@ func (m *metricContainerBlockioIoQueuedRecursive) init() {
 	m.data.SetUnit("{operations}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -356,10 +420,10 @@ func (m *metricContainerBlockioIoQueuedRecursive) recordDataPoint(start pcommon.
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().PutString("device_major", deviceMajorAttributeValue)
-	dp.Attributes().PutString("device_minor", deviceMinorAttributeValue)
-	dp.Attributes().PutString("operation", operationAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("device_major", deviceMajorAttributeValue)
+	dp.Attributes().PutStr("device_minor", deviceMinorAttributeValue)
+	dp.Attributes().PutStr("operation", operationAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -400,7 +464,7 @@ func (m *metricContainerBlockioIoServiceBytesRecursive) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -411,10 +475,10 @@ func (m *metricContainerBlockioIoServiceBytesRecursive) recordDataPoint(start pc
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().PutString("device_major", deviceMajorAttributeValue)
-	dp.Attributes().PutString("device_minor", deviceMinorAttributeValue)
-	dp.Attributes().PutString("operation", operationAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("device_major", deviceMajorAttributeValue)
+	dp.Attributes().PutStr("device_minor", deviceMinorAttributeValue)
+	dp.Attributes().PutStr("operation", operationAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -455,7 +519,7 @@ func (m *metricContainerBlockioIoServiceTimeRecursive) init() {
 	m.data.SetUnit("ns")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -466,10 +530,10 @@ func (m *metricContainerBlockioIoServiceTimeRecursive) recordDataPoint(start pco
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().PutString("device_major", deviceMajorAttributeValue)
-	dp.Attributes().PutString("device_minor", deviceMinorAttributeValue)
-	dp.Attributes().PutString("operation", operationAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("device_major", deviceMajorAttributeValue)
+	dp.Attributes().PutStr("device_minor", deviceMinorAttributeValue)
+	dp.Attributes().PutStr("operation", operationAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -510,7 +574,7 @@ func (m *metricContainerBlockioIoServicedRecursive) init() {
 	m.data.SetUnit("{operations}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -521,10 +585,10 @@ func (m *metricContainerBlockioIoServicedRecursive) recordDataPoint(start pcommo
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().PutString("device_major", deviceMajorAttributeValue)
-	dp.Attributes().PutString("device_minor", deviceMinorAttributeValue)
-	dp.Attributes().PutString("operation", operationAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("device_major", deviceMajorAttributeValue)
+	dp.Attributes().PutStr("device_minor", deviceMinorAttributeValue)
+	dp.Attributes().PutStr("operation", operationAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -565,7 +629,7 @@ func (m *metricContainerBlockioIoTimeRecursive) init() {
 	m.data.SetUnit("ms")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -576,10 +640,10 @@ func (m *metricContainerBlockioIoTimeRecursive) recordDataPoint(start pcommon.Ti
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().PutString("device_major", deviceMajorAttributeValue)
-	dp.Attributes().PutString("device_minor", deviceMinorAttributeValue)
-	dp.Attributes().PutString("operation", operationAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("device_major", deviceMajorAttributeValue)
+	dp.Attributes().PutStr("device_minor", deviceMinorAttributeValue)
+	dp.Attributes().PutStr("operation", operationAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -620,7 +684,7 @@ func (m *metricContainerBlockioIoWaitTimeRecursive) init() {
 	m.data.SetUnit("ns")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -631,10 +695,10 @@ func (m *metricContainerBlockioIoWaitTimeRecursive) recordDataPoint(start pcommo
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().PutString("device_major", deviceMajorAttributeValue)
-	dp.Attributes().PutString("device_minor", deviceMinorAttributeValue)
-	dp.Attributes().PutString("operation", operationAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("device_major", deviceMajorAttributeValue)
+	dp.Attributes().PutStr("device_minor", deviceMinorAttributeValue)
+	dp.Attributes().PutStr("operation", operationAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -675,7 +739,7 @@ func (m *metricContainerBlockioSectorsRecursive) init() {
 	m.data.SetUnit("{sectors}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -686,10 +750,10 @@ func (m *metricContainerBlockioSectorsRecursive) recordDataPoint(start pcommon.T
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().PutString("device_major", deviceMajorAttributeValue)
-	dp.Attributes().PutString("device_minor", deviceMinorAttributeValue)
-	dp.Attributes().PutString("operation", operationAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("device_major", deviceMajorAttributeValue)
+	dp.Attributes().PutStr("device_minor", deviceMinorAttributeValue)
+	dp.Attributes().PutStr("operation", operationAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -738,7 +802,7 @@ func (m *metricContainerCPUPercent) recordDataPoint(start pcommon.Timestamp, ts 
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -779,7 +843,7 @@ func (m *metricContainerCPUThrottlingDataPeriods) init() {
 	m.data.SetUnit("{periods}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricContainerCPUThrottlingDataPeriods) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -789,7 +853,7 @@ func (m *metricContainerCPUThrottlingDataPeriods) recordDataPoint(start pcommon.
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -830,7 +894,7 @@ func (m *metricContainerCPUThrottlingDataThrottledPeriods) init() {
 	m.data.SetUnit("{periods}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricContainerCPUThrottlingDataThrottledPeriods) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -840,7 +904,7 @@ func (m *metricContainerCPUThrottlingDataThrottledPeriods) recordDataPoint(start
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -881,7 +945,7 @@ func (m *metricContainerCPUThrottlingDataThrottledTime) init() {
 	m.data.SetUnit("ns")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricContainerCPUThrottlingDataThrottledTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -891,7 +955,7 @@ func (m *metricContainerCPUThrottlingDataThrottledTime) recordDataPoint(start pc
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -932,7 +996,7 @@ func (m *metricContainerCPUUsageKernelmode) init() {
 	m.data.SetUnit("ns")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricContainerCPUUsageKernelmode) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -942,7 +1006,7 @@ func (m *metricContainerCPUUsageKernelmode) recordDataPoint(start pcommon.Timest
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -983,7 +1047,7 @@ func (m *metricContainerCPUUsagePercpu) init() {
 	m.data.SetUnit("ns")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -994,8 +1058,8 @@ func (m *metricContainerCPUUsagePercpu) recordDataPoint(start pcommon.Timestamp,
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().PutString("core", coreAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("core", coreAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1032,11 +1096,11 @@ type metricContainerCPUUsageSystem struct {
 // init fills container.cpu.usage.system metric with initial data.
 func (m *metricContainerCPUUsageSystem) init() {
 	m.data.SetName("container.cpu.usage.system")
-	m.data.SetDescription("System CPU usage.")
+	m.data.SetDescription("System CPU usage, as reported by docker.")
 	m.data.SetUnit("ns")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricContainerCPUUsageSystem) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1046,7 +1110,7 @@ func (m *metricContainerCPUUsageSystem) recordDataPoint(start pcommon.Timestamp,
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1087,7 +1151,7 @@ func (m *metricContainerCPUUsageTotal) init() {
 	m.data.SetUnit("ns")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricContainerCPUUsageTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1097,7 +1161,7 @@ func (m *metricContainerCPUUsageTotal) recordDataPoint(start pcommon.Timestamp, 
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1138,7 +1202,7 @@ func (m *metricContainerCPUUsageUsermode) init() {
 	m.data.SetUnit("ns")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricContainerCPUUsageUsermode) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1148,7 +1212,7 @@ func (m *metricContainerCPUUsageUsermode) recordDataPoint(start pcommon.Timestam
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1189,7 +1253,7 @@ func (m *metricContainerMemoryActiveAnon) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricContainerMemoryActiveAnon) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1199,7 +1263,7 @@ func (m *metricContainerMemoryActiveAnon) recordDataPoint(start pcommon.Timestam
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1240,7 +1304,7 @@ func (m *metricContainerMemoryActiveFile) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricContainerMemoryActiveFile) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1250,7 +1314,7 @@ func (m *metricContainerMemoryActiveFile) recordDataPoint(start pcommon.Timestam
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1291,7 +1355,7 @@ func (m *metricContainerMemoryCache) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricContainerMemoryCache) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1301,7 +1365,7 @@ func (m *metricContainerMemoryCache) recordDataPoint(start pcommon.Timestamp, ts
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1342,7 +1406,7 @@ func (m *metricContainerMemoryDirty) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricContainerMemoryDirty) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1352,7 +1416,7 @@ func (m *metricContainerMemoryDirty) recordDataPoint(start pcommon.Timestamp, ts
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1393,7 +1457,7 @@ func (m *metricContainerMemoryHierarchicalMemoryLimit) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricContainerMemoryHierarchicalMemoryLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1403,7 +1467,7 @@ func (m *metricContainerMemoryHierarchicalMemoryLimit) recordDataPoint(start pco
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1444,7 +1508,7 @@ func (m *metricContainerMemoryHierarchicalMemswLimit) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricContainerMemoryHierarchicalMemswLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1454,7 +1518,7 @@ func (m *metricContainerMemoryHierarchicalMemswLimit) recordDataPoint(start pcom
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1495,7 +1559,7 @@ func (m *metricContainerMemoryInactiveAnon) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricContainerMemoryInactiveAnon) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1505,7 +1569,7 @@ func (m *metricContainerMemoryInactiveAnon) recordDataPoint(start pcommon.Timest
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1546,7 +1610,7 @@ func (m *metricContainerMemoryInactiveFile) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricContainerMemoryInactiveFile) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1556,7 +1620,7 @@ func (m *metricContainerMemoryInactiveFile) recordDataPoint(start pcommon.Timest
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1597,7 +1661,7 @@ func (m *metricContainerMemoryMappedFile) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricContainerMemoryMappedFile) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1607,7 +1671,7 @@ func (m *metricContainerMemoryMappedFile) recordDataPoint(start pcommon.Timestam
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1656,7 +1720,7 @@ func (m *metricContainerMemoryPercent) recordDataPoint(start pcommon.Timestamp, 
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1697,7 +1761,7 @@ func (m *metricContainerMemoryPgfault) init() {
 	m.data.SetUnit("{faults}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricContainerMemoryPgfault) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1707,7 +1771,7 @@ func (m *metricContainerMemoryPgfault) recordDataPoint(start pcommon.Timestamp, 
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1748,7 +1812,7 @@ func (m *metricContainerMemoryPgmajfault) init() {
 	m.data.SetUnit("{faults}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricContainerMemoryPgmajfault) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1758,7 +1822,7 @@ func (m *metricContainerMemoryPgmajfault) recordDataPoint(start pcommon.Timestam
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1799,7 +1863,7 @@ func (m *metricContainerMemoryPgpgin) init() {
 	m.data.SetUnit("{operations}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricContainerMemoryPgpgin) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1809,7 +1873,7 @@ func (m *metricContainerMemoryPgpgin) recordDataPoint(start pcommon.Timestamp, t
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1850,7 +1914,7 @@ func (m *metricContainerMemoryPgpgout) init() {
 	m.data.SetUnit("{operations}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricContainerMemoryPgpgout) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1860,7 +1924,7 @@ func (m *metricContainerMemoryPgpgout) recordDataPoint(start pcommon.Timestamp, 
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1901,7 +1965,7 @@ func (m *metricContainerMemoryRss) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricContainerMemoryRss) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1911,7 +1975,7 @@ func (m *metricContainerMemoryRss) recordDataPoint(start pcommon.Timestamp, ts p
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1952,7 +2016,7 @@ func (m *metricContainerMemoryRssHuge) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricContainerMemoryRssHuge) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1962,7 +2026,7 @@ func (m *metricContainerMemoryRssHuge) recordDataPoint(start pcommon.Timestamp, 
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2003,7 +2067,7 @@ func (m *metricContainerMemorySwap) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricContainerMemorySwap) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -2013,7 +2077,7 @@ func (m *metricContainerMemorySwap) recordDataPoint(start pcommon.Timestamp, ts 
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2054,7 +2118,7 @@ func (m *metricContainerMemoryTotalActiveAnon) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricContainerMemoryTotalActiveAnon) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -2064,7 +2128,7 @@ func (m *metricContainerMemoryTotalActiveAnon) recordDataPoint(start pcommon.Tim
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2105,7 +2169,7 @@ func (m *metricContainerMemoryTotalActiveFile) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricContainerMemoryTotalActiveFile) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -2115,7 +2179,7 @@ func (m *metricContainerMemoryTotalActiveFile) recordDataPoint(start pcommon.Tim
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2156,7 +2220,7 @@ func (m *metricContainerMemoryTotalCache) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricContainerMemoryTotalCache) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -2166,7 +2230,7 @@ func (m *metricContainerMemoryTotalCache) recordDataPoint(start pcommon.Timestam
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2207,7 +2271,7 @@ func (m *metricContainerMemoryTotalDirty) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricContainerMemoryTotalDirty) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -2217,7 +2281,7 @@ func (m *metricContainerMemoryTotalDirty) recordDataPoint(start pcommon.Timestam
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2258,7 +2322,7 @@ func (m *metricContainerMemoryTotalInactiveAnon) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricContainerMemoryTotalInactiveAnon) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -2268,7 +2332,7 @@ func (m *metricContainerMemoryTotalInactiveAnon) recordDataPoint(start pcommon.T
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2309,7 +2373,7 @@ func (m *metricContainerMemoryTotalInactiveFile) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricContainerMemoryTotalInactiveFile) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -2319,7 +2383,7 @@ func (m *metricContainerMemoryTotalInactiveFile) recordDataPoint(start pcommon.T
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2360,7 +2424,7 @@ func (m *metricContainerMemoryTotalMappedFile) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricContainerMemoryTotalMappedFile) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -2370,7 +2434,7 @@ func (m *metricContainerMemoryTotalMappedFile) recordDataPoint(start pcommon.Tim
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2411,7 +2475,7 @@ func (m *metricContainerMemoryTotalPgfault) init() {
 	m.data.SetUnit("{faults}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricContainerMemoryTotalPgfault) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -2421,7 +2485,7 @@ func (m *metricContainerMemoryTotalPgfault) recordDataPoint(start pcommon.Timest
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2462,7 +2526,7 @@ func (m *metricContainerMemoryTotalPgmajfault) init() {
 	m.data.SetUnit("{faults}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricContainerMemoryTotalPgmajfault) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -2472,7 +2536,7 @@ func (m *metricContainerMemoryTotalPgmajfault) recordDataPoint(start pcommon.Tim
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2513,7 +2577,7 @@ func (m *metricContainerMemoryTotalPgpgin) init() {
 	m.data.SetUnit("{operations}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricContainerMemoryTotalPgpgin) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -2523,7 +2587,7 @@ func (m *metricContainerMemoryTotalPgpgin) recordDataPoint(start pcommon.Timesta
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2564,7 +2628,7 @@ func (m *metricContainerMemoryTotalPgpgout) init() {
 	m.data.SetUnit("{operations}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricContainerMemoryTotalPgpgout) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -2574,7 +2638,7 @@ func (m *metricContainerMemoryTotalPgpgout) recordDataPoint(start pcommon.Timest
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2615,7 +2679,7 @@ func (m *metricContainerMemoryTotalRss) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricContainerMemoryTotalRss) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -2625,7 +2689,7 @@ func (m *metricContainerMemoryTotalRss) recordDataPoint(start pcommon.Timestamp,
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2666,7 +2730,7 @@ func (m *metricContainerMemoryTotalRssHuge) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricContainerMemoryTotalRssHuge) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -2676,7 +2740,7 @@ func (m *metricContainerMemoryTotalRssHuge) recordDataPoint(start pcommon.Timest
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2717,7 +2781,7 @@ func (m *metricContainerMemoryTotalSwap) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricContainerMemoryTotalSwap) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -2727,7 +2791,7 @@ func (m *metricContainerMemoryTotalSwap) recordDataPoint(start pcommon.Timestamp
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2768,7 +2832,7 @@ func (m *metricContainerMemoryTotalUnevictable) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricContainerMemoryTotalUnevictable) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -2778,7 +2842,7 @@ func (m *metricContainerMemoryTotalUnevictable) recordDataPoint(start pcommon.Ti
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2819,7 +2883,7 @@ func (m *metricContainerMemoryTotalWriteback) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricContainerMemoryTotalWriteback) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -2829,7 +2893,7 @@ func (m *metricContainerMemoryTotalWriteback) recordDataPoint(start pcommon.Time
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2870,7 +2934,7 @@ func (m *metricContainerMemoryUnevictable) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricContainerMemoryUnevictable) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -2880,7 +2944,7 @@ func (m *metricContainerMemoryUnevictable) recordDataPoint(start pcommon.Timesta
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2921,7 +2985,7 @@ func (m *metricContainerMemoryUsageLimit) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricContainerMemoryUsageLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -2931,7 +2995,7 @@ func (m *metricContainerMemoryUsageLimit) recordDataPoint(start pcommon.Timestam
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2972,7 +3036,7 @@ func (m *metricContainerMemoryUsageMax) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricContainerMemoryUsageMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -2982,7 +3046,7 @@ func (m *metricContainerMemoryUsageMax) recordDataPoint(start pcommon.Timestamp,
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3023,7 +3087,7 @@ func (m *metricContainerMemoryUsageTotal) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricContainerMemoryUsageTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -3033,7 +3097,7 @@ func (m *metricContainerMemoryUsageTotal) recordDataPoint(start pcommon.Timestam
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3074,7 +3138,7 @@ func (m *metricContainerMemoryWriteback) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricContainerMemoryWriteback) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -3084,7 +3148,7 @@ func (m *metricContainerMemoryWriteback) recordDataPoint(start pcommon.Timestamp
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3125,7 +3189,7 @@ func (m *metricContainerNetworkIoUsageRxBytes) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -3136,8 +3200,8 @@ func (m *metricContainerNetworkIoUsageRxBytes) recordDataPoint(start pcommon.Tim
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().PutString("interface", interfaceAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("interface", interfaceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3178,7 +3242,7 @@ func (m *metricContainerNetworkIoUsageRxDropped) init() {
 	m.data.SetUnit("{packets}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -3189,8 +3253,8 @@ func (m *metricContainerNetworkIoUsageRxDropped) recordDataPoint(start pcommon.T
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().PutString("interface", interfaceAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("interface", interfaceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3231,7 +3295,7 @@ func (m *metricContainerNetworkIoUsageRxErrors) init() {
 	m.data.SetUnit("{errors}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -3242,8 +3306,8 @@ func (m *metricContainerNetworkIoUsageRxErrors) recordDataPoint(start pcommon.Ti
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().PutString("interface", interfaceAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("interface", interfaceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3284,7 +3348,7 @@ func (m *metricContainerNetworkIoUsageRxPackets) init() {
 	m.data.SetUnit("{packets}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -3295,8 +3359,8 @@ func (m *metricContainerNetworkIoUsageRxPackets) recordDataPoint(start pcommon.T
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().PutString("interface", interfaceAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("interface", interfaceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3337,7 +3401,7 @@ func (m *metricContainerNetworkIoUsageTxBytes) init() {
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -3348,8 +3412,8 @@ func (m *metricContainerNetworkIoUsageTxBytes) recordDataPoint(start pcommon.Tim
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().PutString("interface", interfaceAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("interface", interfaceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3390,7 +3454,7 @@ func (m *metricContainerNetworkIoUsageTxDropped) init() {
 	m.data.SetUnit("{packets}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -3401,8 +3465,8 @@ func (m *metricContainerNetworkIoUsageTxDropped) recordDataPoint(start pcommon.T
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().PutString("interface", interfaceAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("interface", interfaceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3443,7 +3507,7 @@ func (m *metricContainerNetworkIoUsageTxErrors) init() {
 	m.data.SetUnit("{errors}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -3454,8 +3518,8 @@ func (m *metricContainerNetworkIoUsageTxErrors) recordDataPoint(start pcommon.Ti
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().PutString("interface", interfaceAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("interface", interfaceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3496,7 +3560,7 @@ func (m *metricContainerNetworkIoUsageTxPackets) init() {
 	m.data.SetUnit("{packets}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -3507,8 +3571,8 @@ func (m *metricContainerNetworkIoUsageTxPackets) recordDataPoint(start pcommon.T
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().PutString("interface", interfaceAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("interface", interfaceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3544,6 +3608,7 @@ type MetricsBuilder struct {
 	resourceCapacity                                 int                 // maximum observed number of resource attributes.
 	metricsBuffer                                    pmetric.Metrics     // accumulates metrics data before emitting.
 	buildInfo                                        component.BuildInfo // contains version information
+	resourceAttributesSettings                       ResourceAttributesSettings
 	metricContainerBlockioIoMergedRecursive          metricContainerBlockioIoMergedRecursive
 	metricContainerBlockioIoQueuedRecursive          metricContainerBlockioIoQueuedRecursive
 	metricContainerBlockioIoServiceBytesRecursive    metricContainerBlockioIoServiceBytesRecursive
@@ -3619,74 +3684,82 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, options ...metricBuilderOption) *MetricsBuilder {
+// WithResourceAttributesSettings sets ResourceAttributeSettings on the metrics builder.
+func WithResourceAttributesSettings(ras ResourceAttributesSettings) metricBuilderOption {
+	return func(mb *MetricsBuilder) {
+		mb.resourceAttributesSettings = ras
+	}
+}
+
+func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		startTime:                               pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                           pmetric.NewMetrics(),
-		buildInfo:                               buildInfo,
-		metricContainerBlockioIoMergedRecursive: newMetricContainerBlockioIoMergedRecursive(settings.ContainerBlockioIoMergedRecursive),
-		metricContainerBlockioIoQueuedRecursive: newMetricContainerBlockioIoQueuedRecursive(settings.ContainerBlockioIoQueuedRecursive),
-		metricContainerBlockioIoServiceBytesRecursive:    newMetricContainerBlockioIoServiceBytesRecursive(settings.ContainerBlockioIoServiceBytesRecursive),
-		metricContainerBlockioIoServiceTimeRecursive:     newMetricContainerBlockioIoServiceTimeRecursive(settings.ContainerBlockioIoServiceTimeRecursive),
-		metricContainerBlockioIoServicedRecursive:        newMetricContainerBlockioIoServicedRecursive(settings.ContainerBlockioIoServicedRecursive),
-		metricContainerBlockioIoTimeRecursive:            newMetricContainerBlockioIoTimeRecursive(settings.ContainerBlockioIoTimeRecursive),
-		metricContainerBlockioIoWaitTimeRecursive:        newMetricContainerBlockioIoWaitTimeRecursive(settings.ContainerBlockioIoWaitTimeRecursive),
-		metricContainerBlockioSectorsRecursive:           newMetricContainerBlockioSectorsRecursive(settings.ContainerBlockioSectorsRecursive),
-		metricContainerCPUPercent:                        newMetricContainerCPUPercent(settings.ContainerCPUPercent),
-		metricContainerCPUThrottlingDataPeriods:          newMetricContainerCPUThrottlingDataPeriods(settings.ContainerCPUThrottlingDataPeriods),
-		metricContainerCPUThrottlingDataThrottledPeriods: newMetricContainerCPUThrottlingDataThrottledPeriods(settings.ContainerCPUThrottlingDataThrottledPeriods),
-		metricContainerCPUThrottlingDataThrottledTime:    newMetricContainerCPUThrottlingDataThrottledTime(settings.ContainerCPUThrottlingDataThrottledTime),
-		metricContainerCPUUsageKernelmode:                newMetricContainerCPUUsageKernelmode(settings.ContainerCPUUsageKernelmode),
-		metricContainerCPUUsagePercpu:                    newMetricContainerCPUUsagePercpu(settings.ContainerCPUUsagePercpu),
-		metricContainerCPUUsageSystem:                    newMetricContainerCPUUsageSystem(settings.ContainerCPUUsageSystem),
-		metricContainerCPUUsageTotal:                     newMetricContainerCPUUsageTotal(settings.ContainerCPUUsageTotal),
-		metricContainerCPUUsageUsermode:                  newMetricContainerCPUUsageUsermode(settings.ContainerCPUUsageUsermode),
-		metricContainerMemoryActiveAnon:                  newMetricContainerMemoryActiveAnon(settings.ContainerMemoryActiveAnon),
-		metricContainerMemoryActiveFile:                  newMetricContainerMemoryActiveFile(settings.ContainerMemoryActiveFile),
-		metricContainerMemoryCache:                       newMetricContainerMemoryCache(settings.ContainerMemoryCache),
-		metricContainerMemoryDirty:                       newMetricContainerMemoryDirty(settings.ContainerMemoryDirty),
-		metricContainerMemoryHierarchicalMemoryLimit:     newMetricContainerMemoryHierarchicalMemoryLimit(settings.ContainerMemoryHierarchicalMemoryLimit),
-		metricContainerMemoryHierarchicalMemswLimit:      newMetricContainerMemoryHierarchicalMemswLimit(settings.ContainerMemoryHierarchicalMemswLimit),
-		metricContainerMemoryInactiveAnon:                newMetricContainerMemoryInactiveAnon(settings.ContainerMemoryInactiveAnon),
-		metricContainerMemoryInactiveFile:                newMetricContainerMemoryInactiveFile(settings.ContainerMemoryInactiveFile),
-		metricContainerMemoryMappedFile:                  newMetricContainerMemoryMappedFile(settings.ContainerMemoryMappedFile),
-		metricContainerMemoryPercent:                     newMetricContainerMemoryPercent(settings.ContainerMemoryPercent),
-		metricContainerMemoryPgfault:                     newMetricContainerMemoryPgfault(settings.ContainerMemoryPgfault),
-		metricContainerMemoryPgmajfault:                  newMetricContainerMemoryPgmajfault(settings.ContainerMemoryPgmajfault),
-		metricContainerMemoryPgpgin:                      newMetricContainerMemoryPgpgin(settings.ContainerMemoryPgpgin),
-		metricContainerMemoryPgpgout:                     newMetricContainerMemoryPgpgout(settings.ContainerMemoryPgpgout),
-		metricContainerMemoryRss:                         newMetricContainerMemoryRss(settings.ContainerMemoryRss),
-		metricContainerMemoryRssHuge:                     newMetricContainerMemoryRssHuge(settings.ContainerMemoryRssHuge),
-		metricContainerMemorySwap:                        newMetricContainerMemorySwap(settings.ContainerMemorySwap),
-		metricContainerMemoryTotalActiveAnon:             newMetricContainerMemoryTotalActiveAnon(settings.ContainerMemoryTotalActiveAnon),
-		metricContainerMemoryTotalActiveFile:             newMetricContainerMemoryTotalActiveFile(settings.ContainerMemoryTotalActiveFile),
-		metricContainerMemoryTotalCache:                  newMetricContainerMemoryTotalCache(settings.ContainerMemoryTotalCache),
-		metricContainerMemoryTotalDirty:                  newMetricContainerMemoryTotalDirty(settings.ContainerMemoryTotalDirty),
-		metricContainerMemoryTotalInactiveAnon:           newMetricContainerMemoryTotalInactiveAnon(settings.ContainerMemoryTotalInactiveAnon),
-		metricContainerMemoryTotalInactiveFile:           newMetricContainerMemoryTotalInactiveFile(settings.ContainerMemoryTotalInactiveFile),
-		metricContainerMemoryTotalMappedFile:             newMetricContainerMemoryTotalMappedFile(settings.ContainerMemoryTotalMappedFile),
-		metricContainerMemoryTotalPgfault:                newMetricContainerMemoryTotalPgfault(settings.ContainerMemoryTotalPgfault),
-		metricContainerMemoryTotalPgmajfault:             newMetricContainerMemoryTotalPgmajfault(settings.ContainerMemoryTotalPgmajfault),
-		metricContainerMemoryTotalPgpgin:                 newMetricContainerMemoryTotalPgpgin(settings.ContainerMemoryTotalPgpgin),
-		metricContainerMemoryTotalPgpgout:                newMetricContainerMemoryTotalPgpgout(settings.ContainerMemoryTotalPgpgout),
-		metricContainerMemoryTotalRss:                    newMetricContainerMemoryTotalRss(settings.ContainerMemoryTotalRss),
-		metricContainerMemoryTotalRssHuge:                newMetricContainerMemoryTotalRssHuge(settings.ContainerMemoryTotalRssHuge),
-		metricContainerMemoryTotalSwap:                   newMetricContainerMemoryTotalSwap(settings.ContainerMemoryTotalSwap),
-		metricContainerMemoryTotalUnevictable:            newMetricContainerMemoryTotalUnevictable(settings.ContainerMemoryTotalUnevictable),
-		metricContainerMemoryTotalWriteback:              newMetricContainerMemoryTotalWriteback(settings.ContainerMemoryTotalWriteback),
-		metricContainerMemoryUnevictable:                 newMetricContainerMemoryUnevictable(settings.ContainerMemoryUnevictable),
-		metricContainerMemoryUsageLimit:                  newMetricContainerMemoryUsageLimit(settings.ContainerMemoryUsageLimit),
-		metricContainerMemoryUsageMax:                    newMetricContainerMemoryUsageMax(settings.ContainerMemoryUsageMax),
-		metricContainerMemoryUsageTotal:                  newMetricContainerMemoryUsageTotal(settings.ContainerMemoryUsageTotal),
-		metricContainerMemoryWriteback:                   newMetricContainerMemoryWriteback(settings.ContainerMemoryWriteback),
-		metricContainerNetworkIoUsageRxBytes:             newMetricContainerNetworkIoUsageRxBytes(settings.ContainerNetworkIoUsageRxBytes),
-		metricContainerNetworkIoUsageRxDropped:           newMetricContainerNetworkIoUsageRxDropped(settings.ContainerNetworkIoUsageRxDropped),
-		metricContainerNetworkIoUsageRxErrors:            newMetricContainerNetworkIoUsageRxErrors(settings.ContainerNetworkIoUsageRxErrors),
-		metricContainerNetworkIoUsageRxPackets:           newMetricContainerNetworkIoUsageRxPackets(settings.ContainerNetworkIoUsageRxPackets),
-		metricContainerNetworkIoUsageTxBytes:             newMetricContainerNetworkIoUsageTxBytes(settings.ContainerNetworkIoUsageTxBytes),
-		metricContainerNetworkIoUsageTxDropped:           newMetricContainerNetworkIoUsageTxDropped(settings.ContainerNetworkIoUsageTxDropped),
-		metricContainerNetworkIoUsageTxErrors:            newMetricContainerNetworkIoUsageTxErrors(settings.ContainerNetworkIoUsageTxErrors),
-		metricContainerNetworkIoUsageTxPackets:           newMetricContainerNetworkIoUsageTxPackets(settings.ContainerNetworkIoUsageTxPackets),
+		startTime:                                        pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                                    pmetric.NewMetrics(),
+		buildInfo:                                        settings.BuildInfo,
+		resourceAttributesSettings:                       DefaultResourceAttributesSettings(),
+		metricContainerBlockioIoMergedRecursive:          newMetricContainerBlockioIoMergedRecursive(ms.ContainerBlockioIoMergedRecursive),
+		metricContainerBlockioIoQueuedRecursive:          newMetricContainerBlockioIoQueuedRecursive(ms.ContainerBlockioIoQueuedRecursive),
+		metricContainerBlockioIoServiceBytesRecursive:    newMetricContainerBlockioIoServiceBytesRecursive(ms.ContainerBlockioIoServiceBytesRecursive),
+		metricContainerBlockioIoServiceTimeRecursive:     newMetricContainerBlockioIoServiceTimeRecursive(ms.ContainerBlockioIoServiceTimeRecursive),
+		metricContainerBlockioIoServicedRecursive:        newMetricContainerBlockioIoServicedRecursive(ms.ContainerBlockioIoServicedRecursive),
+		metricContainerBlockioIoTimeRecursive:            newMetricContainerBlockioIoTimeRecursive(ms.ContainerBlockioIoTimeRecursive),
+		metricContainerBlockioIoWaitTimeRecursive:        newMetricContainerBlockioIoWaitTimeRecursive(ms.ContainerBlockioIoWaitTimeRecursive),
+		metricContainerBlockioSectorsRecursive:           newMetricContainerBlockioSectorsRecursive(ms.ContainerBlockioSectorsRecursive),
+		metricContainerCPUPercent:                        newMetricContainerCPUPercent(ms.ContainerCPUPercent),
+		metricContainerCPUThrottlingDataPeriods:          newMetricContainerCPUThrottlingDataPeriods(ms.ContainerCPUThrottlingDataPeriods),
+		metricContainerCPUThrottlingDataThrottledPeriods: newMetricContainerCPUThrottlingDataThrottledPeriods(ms.ContainerCPUThrottlingDataThrottledPeriods),
+		metricContainerCPUThrottlingDataThrottledTime:    newMetricContainerCPUThrottlingDataThrottledTime(ms.ContainerCPUThrottlingDataThrottledTime),
+		metricContainerCPUUsageKernelmode:                newMetricContainerCPUUsageKernelmode(ms.ContainerCPUUsageKernelmode),
+		metricContainerCPUUsagePercpu:                    newMetricContainerCPUUsagePercpu(ms.ContainerCPUUsagePercpu),
+		metricContainerCPUUsageSystem:                    newMetricContainerCPUUsageSystem(ms.ContainerCPUUsageSystem),
+		metricContainerCPUUsageTotal:                     newMetricContainerCPUUsageTotal(ms.ContainerCPUUsageTotal),
+		metricContainerCPUUsageUsermode:                  newMetricContainerCPUUsageUsermode(ms.ContainerCPUUsageUsermode),
+		metricContainerMemoryActiveAnon:                  newMetricContainerMemoryActiveAnon(ms.ContainerMemoryActiveAnon),
+		metricContainerMemoryActiveFile:                  newMetricContainerMemoryActiveFile(ms.ContainerMemoryActiveFile),
+		metricContainerMemoryCache:                       newMetricContainerMemoryCache(ms.ContainerMemoryCache),
+		metricContainerMemoryDirty:                       newMetricContainerMemoryDirty(ms.ContainerMemoryDirty),
+		metricContainerMemoryHierarchicalMemoryLimit:     newMetricContainerMemoryHierarchicalMemoryLimit(ms.ContainerMemoryHierarchicalMemoryLimit),
+		metricContainerMemoryHierarchicalMemswLimit:      newMetricContainerMemoryHierarchicalMemswLimit(ms.ContainerMemoryHierarchicalMemswLimit),
+		metricContainerMemoryInactiveAnon:                newMetricContainerMemoryInactiveAnon(ms.ContainerMemoryInactiveAnon),
+		metricContainerMemoryInactiveFile:                newMetricContainerMemoryInactiveFile(ms.ContainerMemoryInactiveFile),
+		metricContainerMemoryMappedFile:                  newMetricContainerMemoryMappedFile(ms.ContainerMemoryMappedFile),
+		metricContainerMemoryPercent:                     newMetricContainerMemoryPercent(ms.ContainerMemoryPercent),
+		metricContainerMemoryPgfault:                     newMetricContainerMemoryPgfault(ms.ContainerMemoryPgfault),
+		metricContainerMemoryPgmajfault:                  newMetricContainerMemoryPgmajfault(ms.ContainerMemoryPgmajfault),
+		metricContainerMemoryPgpgin:                      newMetricContainerMemoryPgpgin(ms.ContainerMemoryPgpgin),
+		metricContainerMemoryPgpgout:                     newMetricContainerMemoryPgpgout(ms.ContainerMemoryPgpgout),
+		metricContainerMemoryRss:                         newMetricContainerMemoryRss(ms.ContainerMemoryRss),
+		metricContainerMemoryRssHuge:                     newMetricContainerMemoryRssHuge(ms.ContainerMemoryRssHuge),
+		metricContainerMemorySwap:                        newMetricContainerMemorySwap(ms.ContainerMemorySwap),
+		metricContainerMemoryTotalActiveAnon:             newMetricContainerMemoryTotalActiveAnon(ms.ContainerMemoryTotalActiveAnon),
+		metricContainerMemoryTotalActiveFile:             newMetricContainerMemoryTotalActiveFile(ms.ContainerMemoryTotalActiveFile),
+		metricContainerMemoryTotalCache:                  newMetricContainerMemoryTotalCache(ms.ContainerMemoryTotalCache),
+		metricContainerMemoryTotalDirty:                  newMetricContainerMemoryTotalDirty(ms.ContainerMemoryTotalDirty),
+		metricContainerMemoryTotalInactiveAnon:           newMetricContainerMemoryTotalInactiveAnon(ms.ContainerMemoryTotalInactiveAnon),
+		metricContainerMemoryTotalInactiveFile:           newMetricContainerMemoryTotalInactiveFile(ms.ContainerMemoryTotalInactiveFile),
+		metricContainerMemoryTotalMappedFile:             newMetricContainerMemoryTotalMappedFile(ms.ContainerMemoryTotalMappedFile),
+		metricContainerMemoryTotalPgfault:                newMetricContainerMemoryTotalPgfault(ms.ContainerMemoryTotalPgfault),
+		metricContainerMemoryTotalPgmajfault:             newMetricContainerMemoryTotalPgmajfault(ms.ContainerMemoryTotalPgmajfault),
+		metricContainerMemoryTotalPgpgin:                 newMetricContainerMemoryTotalPgpgin(ms.ContainerMemoryTotalPgpgin),
+		metricContainerMemoryTotalPgpgout:                newMetricContainerMemoryTotalPgpgout(ms.ContainerMemoryTotalPgpgout),
+		metricContainerMemoryTotalRss:                    newMetricContainerMemoryTotalRss(ms.ContainerMemoryTotalRss),
+		metricContainerMemoryTotalRssHuge:                newMetricContainerMemoryTotalRssHuge(ms.ContainerMemoryTotalRssHuge),
+		metricContainerMemoryTotalSwap:                   newMetricContainerMemoryTotalSwap(ms.ContainerMemoryTotalSwap),
+		metricContainerMemoryTotalUnevictable:            newMetricContainerMemoryTotalUnevictable(ms.ContainerMemoryTotalUnevictable),
+		metricContainerMemoryTotalWriteback:              newMetricContainerMemoryTotalWriteback(ms.ContainerMemoryTotalWriteback),
+		metricContainerMemoryUnevictable:                 newMetricContainerMemoryUnevictable(ms.ContainerMemoryUnevictable),
+		metricContainerMemoryUsageLimit:                  newMetricContainerMemoryUsageLimit(ms.ContainerMemoryUsageLimit),
+		metricContainerMemoryUsageMax:                    newMetricContainerMemoryUsageMax(ms.ContainerMemoryUsageMax),
+		metricContainerMemoryUsageTotal:                  newMetricContainerMemoryUsageTotal(ms.ContainerMemoryUsageTotal),
+		metricContainerMemoryWriteback:                   newMetricContainerMemoryWriteback(ms.ContainerMemoryWriteback),
+		metricContainerNetworkIoUsageRxBytes:             newMetricContainerNetworkIoUsageRxBytes(ms.ContainerNetworkIoUsageRxBytes),
+		metricContainerNetworkIoUsageRxDropped:           newMetricContainerNetworkIoUsageRxDropped(ms.ContainerNetworkIoUsageRxDropped),
+		metricContainerNetworkIoUsageRxErrors:            newMetricContainerNetworkIoUsageRxErrors(ms.ContainerNetworkIoUsageRxErrors),
+		metricContainerNetworkIoUsageRxPackets:           newMetricContainerNetworkIoUsageRxPackets(ms.ContainerNetworkIoUsageRxPackets),
+		metricContainerNetworkIoUsageTxBytes:             newMetricContainerNetworkIoUsageTxBytes(ms.ContainerNetworkIoUsageTxBytes),
+		metricContainerNetworkIoUsageTxDropped:           newMetricContainerNetworkIoUsageTxDropped(ms.ContainerNetworkIoUsageTxDropped),
+		metricContainerNetworkIoUsageTxErrors:            newMetricContainerNetworkIoUsageTxErrors(ms.ContainerNetworkIoUsageTxErrors),
+		metricContainerNetworkIoUsageTxPackets:           newMetricContainerNetworkIoUsageTxPackets(ms.ContainerNetworkIoUsageTxPackets),
 	}
 	for _, op := range options {
 		op(mb)
@@ -3705,54 +3778,64 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(pmetric.ResourceMetrics)
+type ResourceMetricsOption func(ResourceAttributesSettings, pmetric.ResourceMetrics)
 
 // WithContainerHostname sets provided value as "container.hostname" attribute for current resource.
 func WithContainerHostname(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutString("container.hostname", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.ContainerHostname.Enabled {
+			rm.Resource().Attributes().PutStr("container.hostname", val)
+		}
 	}
 }
 
 // WithContainerID sets provided value as "container.id" attribute for current resource.
 func WithContainerID(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutString("container.id", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.ContainerID.Enabled {
+			rm.Resource().Attributes().PutStr("container.id", val)
+		}
 	}
 }
 
 // WithContainerImageName sets provided value as "container.image.name" attribute for current resource.
 func WithContainerImageName(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutString("container.image.name", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.ContainerImageName.Enabled {
+			rm.Resource().Attributes().PutStr("container.image.name", val)
+		}
 	}
 }
 
 // WithContainerName sets provided value as "container.name" attribute for current resource.
 func WithContainerName(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutString("container.name", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.ContainerName.Enabled {
+			rm.Resource().Attributes().PutStr("container.name", val)
+		}
 	}
 }
 
 // WithContainerRuntime sets provided value as "container.runtime" attribute for current resource.
 func WithContainerRuntime(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutString("container.runtime", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.ContainerRuntime.Enabled {
+			rm.Resource().Attributes().PutStr("container.runtime", val)
+		}
 	}
 }
 
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
-			switch metrics.At(i).DataType() {
-			case pmetric.MetricDataTypeGauge:
+			switch metrics.At(i).Type() {
+			case pmetric.MetricTypeGauge:
 				dps = metrics.At(i).Gauge().DataPoints()
-			case pmetric.MetricDataTypeSum:
+			case pmetric.MetricTypeSum:
 				dps = metrics.At(i).Sum().DataPoints()
 			}
 			for j := 0; j < dps.Len(); j++ {
@@ -3838,8 +3921,9 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricContainerNetworkIoUsageTxDropped.emit(ils.Metrics())
 	mb.metricContainerNetworkIoUsageTxErrors.emit(ils.Metrics())
 	mb.metricContainerNetworkIoUsageTxPackets.emit(ils.Metrics())
+
 	for _, op := range rmo {
-		op(rm)
+		op(mb.resourceAttributesSettings, rm)
 	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
@@ -3852,8 +3936,8 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 // produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
 func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 	mb.EmitForResource(rmo...)
-	metrics := pmetric.NewMetrics()
-	mb.metricsBuffer.MoveTo(metrics)
+	metrics := mb.metricsBuffer
+	mb.metricsBuffer = pmetric.NewMetrics()
 	return metrics
 }
 

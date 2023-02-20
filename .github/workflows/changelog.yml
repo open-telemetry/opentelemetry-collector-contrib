@@ -1,5 +1,5 @@
 # This action requires that any PR targeting the main branch should add a
-# yaml file to the ./unreleased/ directory. If a CHANGELOG entry is not required,
+# yaml file to the ./.chloggen/ directory. If a CHANGELOG entry is not required,
 # or if performing maintance on the Changelog, add either \"[chore]\" to the title of
 # the pull request or add the \"Skip Changelog\" label to disable this action.
 
@@ -14,7 +14,7 @@ on:
 env:
   # See: https://github.com/actions/cache/issues/810#issuecomment-1222550359
   # Cache downloads for this workflow consistently run in under 1 minute
-  SEGMENT_DOWNLOAD_TIMEOUT_MIN: 5
+  SEGMENT_DOWNLOAD_TIMEOUT_MINS: 5
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref }}
@@ -48,7 +48,7 @@ jobs:
           if [[ $(git diff --name-only $(git merge-base origin/main ${{ github.event.pull_request.head.sha }}) ${{ github.event.pull_request.head.sha }} ./CHANGELOG.md) ]]
           then
             echo "The CHANGELOG should not be directly modified."
-            echo "Please add a .yaml file to the ./unreleased/ directory."
+            echo "Please add a .yaml file to the ./.chloggen/ directory."
             echo "See CONTRIBUTING.md for more details."
             echo "Alternately, add either \"[chore]\" to the title of the pull request or add the \"Skip Changelog\" label if this job should be skipped."
             false
@@ -56,26 +56,26 @@ jobs:
             echo "The CHANGELOG was not modified."
           fi
 
-      - name: Ensure ./unreleased/*.yaml addition(s)
+      - name: Ensure ./.chloggen/*.yaml addition(s)
         run: |
-          if [[ 1 -gt $(git diff --diff-filter=A --name-only $(git merge-base origin/main ${{ github.event.pull_request.head.sha }}) ${{ github.event.pull_request.head.sha }} ./unreleased | grep -c \\.yaml) ]]
+          if [[ 1 -gt $(git diff --diff-filter=A --name-only $(git merge-base origin/main ${{ github.event.pull_request.head.sha }}) ${{ github.event.pull_request.head.sha }} ./.chloggen | grep -c \\.yaml) ]]
           then
-            echo "No changelog entry was added to the ./unreleased/ directory."
-            echo "Please add a .yaml file to the ./unreleased/ directory."
+            echo "No changelog entry was added to the ./.chloggen/ directory."
+            echo "Please add a .yaml file to the ./.chloggen/ directory."
             echo "See CONTRIBUTING.md for more details."
             echo "Alternately, add either \"[chore]\" to the title of the pull request or add the \"Skip Changelog\" label if this job should be skipped."
             false
           else
-            echo "A changelog entry was added to the ./unreleased/ directory."
+            echo "A changelog entry was added to the ./.chloggen/ directory."
           fi
 
-      - name: Validate ./unreleased/*.yaml changes
+      - name: Validate ./.chloggen/*.yaml changes
         run: |
           make chlog-validate \
-            || { echo "New ./unreleased/*.yaml file failed validation."; exit 1; }
+            || { echo "New ./.chloggen/*.yaml file failed validation."; exit 1; }
 
       # In order to validate any links in the yaml file, render the config to markdown
-      - name: Render unreleased changelog entries
+      - name: Render .chloggen changelog entries
         run: make chlog-preview > changelog_preview.md
       - name: Install markdown-link-check
         run: npm install -g markdown-link-check

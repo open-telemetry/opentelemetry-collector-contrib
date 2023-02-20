@@ -19,9 +19,9 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver/internal/metadata"
@@ -29,24 +29,23 @@ import (
 
 const (
 	typeStr   = "zookeeper"
-	stability = component.StabilityLevelInDevelopment
+	stability = component.StabilityLevelDevelopment
 
 	defaultCollectionInterval = 10 * time.Second
 	defaultTimeout            = 10 * time.Second
 )
 
-func NewFactory() component.ReceiverFactory {
-	return component.NewReceiverFactory(
+func NewFactory() receiver.Factory {
+	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver, stability),
+		receiver.WithMetrics(createMetricsReceiver, stability),
 	)
 }
 
-func createDefaultConfig() config.Receiver {
+func createDefaultConfig() component.Config {
 	return &Config{
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
 			CollectionInterval: defaultCollectionInterval,
 		},
 		TCPAddr: confignet.TCPAddr{
@@ -60,10 +59,10 @@ func createDefaultConfig() config.Receiver {
 // CreateMetricsReceiver creates zookeeper (metrics) receiver.
 func createMetricsReceiver(
 	_ context.Context,
-	params component.ReceiverCreateSettings,
-	config config.Receiver,
+	params receiver.CreateSettings,
+	config component.Config,
 	consumer consumer.Metrics,
-) (component.MetricsReceiver, error) {
+) (receiver.Metrics, error) {
 	rConfig := config.(*Config)
 	zms, err := newZookeeperMetricsScraper(params, rConfig)
 	if err != nil {

@@ -20,8 +20,8 @@ import (
 
 	"github.com/Shopify/sarama"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -62,8 +62,26 @@ func WithTracesMarshalers(tracesMarshalers ...TracesMarshaler) FactoryOption {
 	}
 }
 
+// WithMetricsMarshalers adds additional metric marshalers to the exporter factory.
+func WithMetricsMarshalers(metricMarshalers ...MetricsMarshaler) FactoryOption {
+	return func(factory *kafkaExporterFactory) {
+		for _, marshaler := range metricMarshalers {
+			factory.metricsMarshalers[marshaler.Encoding()] = marshaler
+		}
+	}
+}
+
+// WithLogMarshalers adds additional log marshalers to the exporter factory.
+func WithLogsMarshalers(logsMarshalers ...LogsMarshaler) FactoryOption {
+	return func(factory *kafkaExporterFactory) {
+		for _, marshaler := range logsMarshalers {
+			factory.logsMarshalers[marshaler.Encoding()] = marshaler
+		}
+	}
+}
+
 // NewFactory creates Kafka exporter factory.
-func NewFactory(options ...FactoryOption) component.ExporterFactory {
+func NewFactory(options ...FactoryOption) exporter.Factory {
 	f := &kafkaExporterFactory{
 		tracesMarshalers:  tracesMarshalers(),
 		metricsMarshalers: metricsMarshalers(),
@@ -72,22 +90,21 @@ func NewFactory(options ...FactoryOption) component.ExporterFactory {
 	for _, o := range options {
 		o(f)
 	}
-	return component.NewExporterFactory(
+	return exporter.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporter(f.createTracesExporter, stability),
-		component.WithMetricsExporter(f.createMetricsExporter, stability),
-		component.WithLogsExporter(f.createLogsExporter, stability),
+		exporter.WithTraces(f.createTracesExporter, stability),
+		exporter.WithMetrics(f.createMetricsExporter, stability),
+		exporter.WithLogs(f.createLogsExporter, stability),
 	)
 }
 
-func createDefaultConfig() config.Exporter {
+func createDefaultConfig() component.Config {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-		TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),
-		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
-		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
-		Brokers:          []string{defaultBroker},
+		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
+		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
+		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
+		Brokers:         []string{defaultBroker},
 		// using an empty topic to track when it has not been set by user, default is based on traces or metrics.
 		Topic:    "",
 		Encoding: defaultEncoding,
@@ -115,9 +132,9 @@ type kafkaExporterFactory struct {
 
 func (f *kafkaExporterFactory) createTracesExporter(
 	ctx context.Context,
-	set component.ExporterCreateSettings,
-	cfg config.Exporter,
-) (component.TracesExporter, error) {
+	set exporter.CreateSettings,
+	cfg component.Config,
+) (exporter.Traces, error) {
 	oCfg := *(cfg.(*Config)) // Clone the config
 	if oCfg.Topic == "" {
 		oCfg.Topic = defaultTracesTopic
@@ -145,9 +162,9 @@ func (f *kafkaExporterFactory) createTracesExporter(
 
 func (f *kafkaExporterFactory) createMetricsExporter(
 	ctx context.Context,
-	set component.ExporterCreateSettings,
-	cfg config.Exporter,
-) (component.MetricsExporter, error) {
+	set exporter.CreateSettings,
+	cfg component.Config,
+) (exporter.Metrics, error) {
 	oCfg := *(cfg.(*Config)) // Clone the config
 	if oCfg.Topic == "" {
 		oCfg.Topic = defaultMetricsTopic
@@ -175,9 +192,9 @@ func (f *kafkaExporterFactory) createMetricsExporter(
 
 func (f *kafkaExporterFactory) createLogsExporter(
 	ctx context.Context,
-	set component.ExporterCreateSettings,
-	cfg config.Exporter,
-) (component.LogsExporter, error) {
+	set exporter.CreateSettings,
+	cfg component.Config,
+) (exporter.Logs, error) {
 	oCfg := *(cfg.(*Config)) // Clone the config
 	if oCfg.Topic == "" {
 		oCfg.Topic = defaultLogsTopic

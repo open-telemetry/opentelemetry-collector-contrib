@@ -40,7 +40,7 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1651783494930451000",
+                              "startTimeUnixNano": "0",
                               "timeUnixNano": "1651783494931319000"
                            },
                            {
@@ -53,7 +53,7 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1651783494930451000",
+                              "startTimeUnixNano": "0",
                               "timeUnixNano": "1651783494931319000"
                            },
                            {
@@ -66,7 +66,7 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1651783494930451000",
+                              "startTimeUnixNano": "0",
                               "timeUnixNano": "1651783494931319000"
                            }
                         ]
@@ -78,11 +78,11 @@
                      "description": "Current number of connections to the virtual server.",
                      "name": "bigip.virtual_server.connection.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
-                              "startTimeUnixNano": "1651783494930451000",
+                              "startTimeUnixNano": "0",
                               "timeUnixNano": "1651783494931319000"
                            }
                         ]
@@ -93,7 +93,7 @@
                      "description": "Amount of data transmitted to and from the virtual server.",
                      "name": "bigip.virtual_server.data.transmitted",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -105,7 +105,7 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1651783494930451000",
+                              "startTimeUnixNano": "0",
                               "timeUnixNano": "1651783494931319000"
                            },
                            {
@@ -118,7 +118,7 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1651783494930451000",
+                              "startTimeUnixNano": "0",
                               "timeUnixNano": "1651783494931319000"
                            }
                         ],
@@ -140,7 +140,7 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1651783494930451000",
+                              "startTimeUnixNano": "0",
                               "timeUnixNano": "1651783494931319000"
                            },
                            {
@@ -153,7 +153,7 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1651783494930451000",
+                              "startTimeUnixNano": "0",
                               "timeUnixNano": "1651783494931319000"
                            }
                         ]
@@ -165,7 +165,7 @@
                      "description": "Number of packets transmitted to and from the virtual server.",
                      "name": "bigip.virtual_server.packet.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -177,7 +177,7 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1651783494930451000",
+                              "startTimeUnixNano": "0",
                               "timeUnixNano": "1651783494931319000"
                            },
                            {
@@ -190,7 +190,7 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1651783494930451000",
+                              "startTimeUnixNano": "0",
                               "timeUnixNano": "1651783494931319000"
                            }
                         ],
@@ -202,11 +202,11 @@
                      "description": "Number of requests to the virtual server.",
                      "name": "bigip.virtual_server.request.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
-                              "startTimeUnixNano": "1651783494930451000",
+                              "startTimeUnixNano": "0",
                               "timeUnixNano": "1651783494931319000"
                            }
                         ],
@@ -262,7 +262,7 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1651783494930451000",
+                              "startTimeUnixNano": "0",
                               "timeUnixNano": "1651783494931319000"
                            },
                            {
@@ -275,7 +275,7 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1651783494930451000",
+                              "startTimeUnixNano": "0",
                               "timeUnixNano": "1651783494931319000"
                            },
                            {
@@ -288,7 +288,7 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1651783494930451000",
+                              "startTimeUnixNano": "0",
                               "timeUnixNano": "1651783494931319000"
                            }
                         ]
@@ -300,11 +300,11 @@
                      "description": "Current number of connections to the virtual server.",
                      "name": "bigip.virtual_server.connection.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
-                              "startTimeUnixNano": "1651783494930451000",
+                              "startTimeUnixNano": "0",
                               "timeUnixNano": "1651783494931319000"
                            }
                         ]
@@ -315,7 +315,7 @@
                      "description": "Amount of data transmitted to and from the virtual server.",
                      "name": "bigip.virtual_server.data.transmitted",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -327,7 +327,7 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1651783494930451000",
+                              "startTimeUnixNano": "0",
                               "timeUnixNano": "1651783494931319000"
                            },
                            {
@@ -340,7 +340,7 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1651783494930451000",
+                              "startTimeUnixNano": "0",
                               "timeUnixNano": "1651783494931319000"
                            }
                         ],
@@ -362,7 +362,7 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1651783494930451000",
+                              "startTimeUnixNano": "0",
                               "timeUnixNano": "1651783494931319000"
                            },
                            {
@@ -375,7 +375,7 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1651783494930451000",
+                              "startTimeUnixNano": "0",
                               "timeUnixNano": "1651783494931319000"
                            }
                         ]
@@ -387,7 +387,7 @@
                      "description": "Number of packets transmitted to and from the virtual server.",
                      "name": "bigip.virtual_server.packet.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -399,7 +399,7 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1651783494930451000",
+                              "startTimeUnixNano": "0",
                               "timeUnixNano": "1651783494931319000"
                            },
                            {
@@ -412,7 +412,7 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1651783494930451000",
+                              "startTimeUnixNano": "0",
                               "timeUnixNano": "1651783494931319000"
                            }
                         ],
@@ -424,11 +424,11 @@
                      "description": "Number of requests to the virtual server.",
                      "name": "bigip.virtual_server.request.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
-                              "startTimeUnixNano": "1651783494930451000",
+                              "startTimeUnixNano": "0",
                               "timeUnixNano": "1651783494931319000"
                            }
                         ],
@@ -484,7 +484,7 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1651783494930451000",
+                              "startTimeUnixNano": "0",
                               "timeUnixNano": "1651783494931319000"
                            },
                            {
@@ -497,7 +497,7 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1651783494930451000",
+                              "startTimeUnixNano": "0",
                               "timeUnixNano": "1651783494931319000"
                            },
                            {
@@ -510,7 +510,7 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1651783494930451000",
+                              "startTimeUnixNano": "0",
                               "timeUnixNano": "1651783494931319000"
                            }
                         ]
@@ -522,11 +522,11 @@
                      "description": "Current number of connections to the virtual server.",
                      "name": "bigip.virtual_server.connection.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
-                              "startTimeUnixNano": "1651783494930451000",
+                              "startTimeUnixNano": "0",
                               "timeUnixNano": "1651783494931319000"
                            }
                         ]
@@ -537,7 +537,7 @@
                      "description": "Amount of data transmitted to and from the virtual server.",
                      "name": "bigip.virtual_server.data.transmitted",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -549,7 +549,7 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1651783494930451000",
+                              "startTimeUnixNano": "0",
                               "timeUnixNano": "1651783494931319000"
                            },
                            {
@@ -562,7 +562,7 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1651783494930451000",
+                              "startTimeUnixNano": "0",
                               "timeUnixNano": "1651783494931319000"
                            }
                         ],
@@ -584,7 +584,7 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1651783494930451000",
+                              "startTimeUnixNano": "0",
                               "timeUnixNano": "1651783494931319000"
                            },
                            {
@@ -597,7 +597,7 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1651783494930451000",
+                              "startTimeUnixNano": "0",
                               "timeUnixNano": "1651783494931319000"
                            }
                         ]
@@ -609,7 +609,7 @@
                      "description": "Number of packets transmitted to and from the virtual server.",
                      "name": "bigip.virtual_server.packet.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -621,7 +621,7 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1651783494930451000",
+                              "startTimeUnixNano": "0",
                               "timeUnixNano": "1651783494931319000"
                            },
                            {
@@ -634,7 +634,7 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1651783494930451000",
+                              "startTimeUnixNano": "0",
                               "timeUnixNano": "1651783494931319000"
                            }
                         ],
@@ -646,11 +646,11 @@
                      "description": "Number of requests to the virtual server.",
                      "name": "bigip.virtual_server.request.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
-                              "startTimeUnixNano": "1651783494930451000",
+                              "startTimeUnixNano": "0",
                               "timeUnixNano": "1651783494931319000"
                            }
                         ],
@@ -706,7 +706,7 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1651783494930451000",
+                              "startTimeUnixNano": "0",
                               "timeUnixNano": "1651783494931319000"
                            },
                            {
@@ -719,7 +719,7 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1651783494930451000",
+                              "startTimeUnixNano": "0",
                               "timeUnixNano": "1651783494931319000"
                            },
                            {
@@ -732,7 +732,7 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1651783494930451000",
+                              "startTimeUnixNano": "0",
                               "timeUnixNano": "1651783494931319000"
                            }
                         ]
@@ -744,11 +744,11 @@
                      "description": "Current number of connections to the virtual server.",
                      "name": "bigip.virtual_server.connection.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
-                              "startTimeUnixNano": "1651783494930451000",
+                              "startTimeUnixNano": "0",
                               "timeUnixNano": "1651783494931319000"
                            }
                         ]
@@ -759,7 +759,7 @@
                      "description": "Amount of data transmitted to and from the virtual server.",
                      "name": "bigip.virtual_server.data.transmitted",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -771,7 +771,7 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1651783494930451000",
+                              "startTimeUnixNano": "0",
                               "timeUnixNano": "1651783494931319000"
                            },
                            {
@@ -784,7 +784,7 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1651783494930451000",
+                              "startTimeUnixNano": "0",
                               "timeUnixNano": "1651783494931319000"
                            }
                         ],
@@ -806,7 +806,7 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1651783494930451000",
+                              "startTimeUnixNano": "0",
                               "timeUnixNano": "1651783494931319000"
                            },
                            {
@@ -819,7 +819,7 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1651783494930451000",
+                              "startTimeUnixNano": "0",
                               "timeUnixNano": "1651783494931319000"
                            }
                         ]
@@ -831,7 +831,7 @@
                      "description": "Number of packets transmitted to and from the virtual server.",
                      "name": "bigip.virtual_server.packet.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -843,7 +843,7 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1651783494930451000",
+                              "startTimeUnixNano": "0",
                               "timeUnixNano": "1651783494931319000"
                            },
                            {
@@ -856,7 +856,7 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1651783494930451000",
+                              "startTimeUnixNano": "0",
                               "timeUnixNano": "1651783494931319000"
                            }
                         ],
@@ -868,11 +868,11 @@
                      "description": "Number of requests to the virtual server.",
                      "name": "bigip.virtual_server.request.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
-                              "startTimeUnixNano": "1651783494930451000",
+                              "startTimeUnixNano": "0",
                               "timeUnixNano": "1651783494931319000"
                            }
                         ],

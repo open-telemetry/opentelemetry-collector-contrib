@@ -2,7 +2,7 @@
 
 | Status                   |                       |
 | ------------------------ |-----------------------|
-| Stability                | [unmaintained]        |
+| Stability                | [beta]                |
 | Supported pipeline types | traces, logs, metrics |
 | Distributions            | [contrib]             |
 
@@ -19,8 +19,13 @@ The following configuration options are supported:
   - header `User-Agent` is `OpenTelemetry -> Influx` by default
   - if `token` (below) is set, then header `Authorization` will overridden with the given token
 * `org` (required) Name of InfluxDB organization that owns the destination bucket
-* `bucket` (required) InfluxDB bucket name to where signals will
+* `bucket` (required) name of InfluxDB bucket to which signals will be written
 * `token` (optional) The authentication token for InfluxDB
+* `v1_compatibility` (optional) Options for exporting to InfluxDB v1.x
+  * `enabled` (optional) Use InfluxDB v1.x API if enabled
+  * `db` (required if enabled) Name of the InfluxDB database to which signals will be written
+  * `username` (optional) Basic auth username for authenticating with InfluxDB v1.x
+  * `password` (optional) Basic auth password for authenticating with InfluxDB v1.x
 * `metrics_schema` (default = telegraf-prometheus-v1) The chosen metrics schema to write; must be one of:
   * `telegraf-prometheus-v1`
   * `telegraf-prometheus-v2`
@@ -121,5 +126,5 @@ logs fluent.tag="fluent.debug",instance=1720i,queue_size=0i,stage_size=0i 161376
 logs fluent.tag="fluent.info",worker=0i 1613769568896515100
 ```
 
-[unmaintained]:https://github.com/open-telemetry/opentelemetry-collector#unmaintained
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

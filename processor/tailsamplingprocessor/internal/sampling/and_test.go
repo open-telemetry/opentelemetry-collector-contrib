@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,9 +26,7 @@ import (
 func TestAndEvaluatorNotSampled(t *testing.T) {
 	n1 := NewStringAttributeFilter(zap.NewNop(), "name", []string{"value"}, false, 0, false)
 	n2, err := NewStatusCodeFilter(zap.NewNop(), []string{"ERROR"})
-	if err != nil {
-		t.FailNow()
-	}
+	require.NoError(t, err)
 
 	and := NewAnd(zap.NewNop(), []PolicyEvaluator{n1, n2})
 
@@ -42,7 +40,7 @@ func TestAndEvaluatorNotSampled(t *testing.T) {
 	span.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
 
 	trace := &TraceData{
-		ReceivedBatches: []ptrace.Traces{traces},
+		ReceivedBatches: traces,
 	}
 	decision, err := and.Evaluate(traceID, trace)
 	require.NoError(t, err, "Failed to evaluate and policy: %v", err)
@@ -53,9 +51,7 @@ func TestAndEvaluatorNotSampled(t *testing.T) {
 func TestAndEvaluatorSampled(t *testing.T) {
 	n1 := NewStringAttributeFilter(zap.NewNop(), "attribute_name", []string{"attribute_value"}, false, 0, false)
 	n2, err := NewStatusCodeFilter(zap.NewNop(), []string{"ERROR"})
-	if err != nil {
-		t.FailNow()
-	}
+	require.NoError(t, err)
 
 	and := NewAnd(zap.NewNop(), []PolicyEvaluator{n1, n2})
 
@@ -64,13 +60,13 @@ func TestAndEvaluatorSampled(t *testing.T) {
 	ils := rs.ScopeSpans().AppendEmpty()
 
 	span := ils.Spans().AppendEmpty()
-	span.Attributes().PutString("attribute_name", "attribute_value")
+	span.Attributes().PutStr("attribute_name", "attribute_value")
 	span.Status().SetCode(ptrace.StatusCodeError)
 	span.SetTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 	span.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
 
 	trace := &TraceData{
-		ReceivedBatches: []ptrace.Traces{traces},
+		ReceivedBatches: traces,
 	}
 	decision, err := and.Evaluate(traceID, trace)
 	require.NoError(t, err, "Failed to evaluate and policy: %v", err)
@@ -81,9 +77,7 @@ func TestAndEvaluatorSampled(t *testing.T) {
 func TestAndEvaluatorStringInvertSampled(t *testing.T) {
 	n1 := NewStringAttributeFilter(zap.NewNop(), "attribute_name", []string{"no_match"}, false, 0, true)
 	n2, err := NewStatusCodeFilter(zap.NewNop(), []string{"ERROR"})
-	if err != nil {
-		t.FailNow()
-	}
+	require.NoError(t, err)
 
 	and := NewAnd(zap.NewNop(), []PolicyEvaluator{n1, n2})
 
@@ -92,13 +86,13 @@ func TestAndEvaluatorStringInvertSampled(t *testing.T) {
 	ils := rs.ScopeSpans().AppendEmpty()
 
 	span := ils.Spans().AppendEmpty()
-	span.Attributes().PutString("attribute_name", "attribute_value")
+	span.Attributes().PutStr("attribute_name", "attribute_value")
 	span.Status().SetCode(ptrace.StatusCodeError)
 	span.SetTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 	span.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
 
 	trace := &TraceData{
-		ReceivedBatches: []ptrace.Traces{traces},
+		ReceivedBatches: traces,
 	}
 	decision, err := and.Evaluate(traceID, trace)
 	require.NoError(t, err, "Failed to evaluate and policy: %v", err)
@@ -109,9 +103,7 @@ func TestAndEvaluatorStringInvertSampled(t *testing.T) {
 func TestAndEvaluatorStringInvertNotSampled(t *testing.T) {
 	n1 := NewStringAttributeFilter(zap.NewNop(), "attribute_name", []string{"attribute_value"}, false, 0, true)
 	n2, err := NewStatusCodeFilter(zap.NewNop(), []string{"ERROR"})
-	if err != nil {
-		t.FailNow()
-	}
+	require.NoError(t, err)
 
 	and := NewAnd(zap.NewNop(), []PolicyEvaluator{n1, n2})
 
@@ -120,13 +112,13 @@ func TestAndEvaluatorStringInvertNotSampled(t *testing.T) {
 	ils := rs.ScopeSpans().AppendEmpty()
 
 	span := ils.Spans().AppendEmpty()
-	span.Attributes().PutString("attribute_name", "attribute_value")
+	span.Attributes().PutStr("attribute_name", "attribute_value")
 	span.Status().SetCode(ptrace.StatusCodeError)
 	span.SetTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 	span.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
 
 	trace := &TraceData{
-		ReceivedBatches: []ptrace.Traces{traces},
+		ReceivedBatches: traces,
 	}
 	decision, err := and.Evaluate(traceID, trace)
 	require.NoError(t, err, "Failed to evaluate and policy: %v", err)

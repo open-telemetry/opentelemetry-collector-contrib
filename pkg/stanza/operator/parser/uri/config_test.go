@@ -19,7 +19,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper/operatortest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/operatortest"
 )
 
 func TestParserGoldenConfig(t *testing.T) {
@@ -43,7 +43,7 @@ func TestParserGoldenConfig(t *testing.T) {
 				Name: "parse_to_simple",
 				Expect: func() *Config {
 					cfg := NewConfig()
-					cfg.ParseTo = entry.NewBodyField("log")
+					cfg.ParseTo = entry.RootableField{Field: entry.NewBodyField("log")}
 					return cfg
 				}(),
 			},
@@ -76,7 +76,7 @@ func TestParserGoldenConfig(t *testing.T) {
 					parseField := entry.NewBodyField("severity_field")
 					severityField := helper.NewSeverityConfig()
 					severityField.ParseFrom = &parseField
-					mapping := map[interface{}]interface{}{
+					mapping := map[string]interface{}{
 						"critical": "5xx",
 						"error":    "4xx",
 						"info":     "3xx",
@@ -85,6 +85,30 @@ func TestParserGoldenConfig(t *testing.T) {
 					severityField.Mapping = mapping
 					cfg.SeverityConfig = &severityField
 					return cfg
+				}(),
+			},
+			{
+				Name: "parse_to_attributes",
+				Expect: func() *Config {
+					p := NewConfig()
+					p.ParseTo = entry.RootableField{Field: entry.NewAttributeField()}
+					return p
+				}(),
+			},
+			{
+				Name: "parse_to_body",
+				Expect: func() *Config {
+					p := NewConfig()
+					p.ParseTo = entry.RootableField{Field: entry.NewBodyField()}
+					return p
+				}(),
+			},
+			{
+				Name: "parse_to_resource",
+				Expect: func() *Config {
+					p := NewConfig()
+					p.ParseTo = entry.RootableField{Field: entry.NewResourceField()}
+					return p
 				}(),
 			},
 		},

@@ -28,6 +28,7 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/ptracetest"
 )
 
 type perSpanProperties struct {
@@ -56,14 +57,14 @@ type eventProps struct {
 func TestTranslation(t *testing.T) {
 	var defaultServerSpanAttrs = func(seg *awsxray.Segment) pcommon.Map {
 		m := pcommon.NewMap()
-		m.FromRaw(map[string]interface{}{
+		assert.NoError(t, m.FromRaw(map[string]interface{}{
 			conventions.AttributeHTTPMethod:       *seg.HTTP.Request.Method,
 			conventions.AttributeHTTPClientIP:     *seg.HTTP.Request.ClientIP,
 			conventions.AttributeHTTPUserAgent:    *seg.HTTP.Request.UserAgent,
 			awsxray.AWSXRayXForwardedForAttribute: *seg.HTTP.Request.XForwardedFor,
 			conventions.AttributeHTTPStatusCode:   *seg.HTTP.Response.Status,
 			conventions.AttributeHTTPURL:          *seg.HTTP.Request.URL,
-		})
+		}))
 		return m
 	}
 
@@ -117,7 +118,7 @@ func TestTranslation(t *testing.T) {
 					testCase+": one segment should translate to 1 ResourceSpans")
 
 				actualRs := actualTraces.ResourceSpans().At(0)
-				compare2ResourceSpans(t, testCase, expectedRs, actualRs)
+				assert.NoError(t, ptracetest.CompareResourceSpans(expectedRs, actualRs))
 			},
 		},
 		{
@@ -133,7 +134,7 @@ func TestTranslation(t *testing.T) {
 			},
 			propsPerSpan: func(testCase string, t *testing.T, seg *awsxray.Segment) []perSpanProperties {
 				rootSpanAttrs := pcommon.NewMap()
-				rootSpanAttrs.PutString(conventions.AttributeEnduserID, *seg.User)
+				rootSpanAttrs.PutStr(conventions.AttributeEnduserID, *seg.User)
 				rootSpanEvts := initExceptionEvents(seg)
 				assert.Len(t, rootSpanEvts, 1, testCase+": rootSpanEvts has incorrect size")
 				rootSpan := perSpanProperties{
@@ -153,15 +154,17 @@ func TestTranslation(t *testing.T) {
 				// this is the subsegment with ID that starts with 7df6
 				subseg7df6 := seg.Subsegments[0]
 				childSpan7df6Attrs := pcommon.NewMap()
+				childKeys := childSpan7df6Attrs.PutEmptySlice(awsxray.AWSXraySegmentAnnotationsAttribute)
 				for k, v := range subseg7df6.Annotations {
-					childSpan7df6Attrs.PutString(k, v.(string))
+					childSpan7df6Attrs.PutStr(k, v.(string))
+					childKeys.AppendEmpty().SetStr(k)
 				}
 				for k, v := range subseg7df6.Metadata {
 					m, err := json.Marshal(v)
 					assert.NoError(t, err, "metadata marshaling failed")
-					childSpan7df6Attrs.PutString(awsxray.AWSXraySegmentMetadataAttributePrefix+k, string(m))
+					childSpan7df6Attrs.PutStr(awsxray.AWSXraySegmentMetadataAttributePrefix+k, string(m))
 				}
-				assert.Equal(t, 2, childSpan7df6Attrs.Len(), testCase+": childSpan7df6Attrs has incorrect size")
+				assert.Equal(t, 3, childSpan7df6Attrs.Len(), testCase+": childSpan7df6Attrs has incorrect size")
 				childSpan7df6Evts := initExceptionEvents(&subseg7df6)
 				assert.Len(t, childSpan7df6Evts, 1, testCase+": childSpan7df6Evts has incorrect size")
 				childSpan7df6 := perSpanProperties{
@@ -181,7 +184,7 @@ func TestTranslation(t *testing.T) {
 
 				subseg7318 := seg.Subsegments[0].Subsegments[0]
 				childSpan7318Attrs := pcommon.NewMap()
-				childSpan7318Attrs.FromRaw(map[string]interface{}{
+				assert.NoError(t, childSpan7318Attrs.FromRaw(map[string]interface{}{
 					awsxray.AWSServiceAttribute:                    *subseg7318.Name,
 					conventions.AttributeHTTPResponseContentLength: int64(subseg7318.HTTP.Response.ContentLength.(float64)),
 					conventions.AttributeHTTPStatusCode:            *subseg7318.HTTP.Response.Status,
@@ -190,7 +193,7 @@ func TestTranslation(t *testing.T) {
 					awsxray.AWSRequestIDAttribute:                  *subseg7318.AWS.RequestID,
 					awsxray.AWSTableNameAttribute:                  *subseg7318.AWS.TableName,
 					awsxray.AWSXrayRetriesAttribute:                *subseg7318.AWS.Retries,
-				})
+				}))
 
 				childSpan7318 := perSpanProperties{
 					traceID:      *seg.TraceID,
@@ -244,7 +247,7 @@ func TestTranslation(t *testing.T) {
 				for k, v := range subseg417b.Metadata {
 					m, err := json.Marshal(v)
 					assert.NoError(t, err, "metadata marshaling failed")
-					childSpan417bAttrs.PutString(awsxray.AWSXraySegmentMetadataAttributePrefix+k, string(m))
+					childSpan417bAttrs.PutStr(awsxray.AWSXraySegmentMetadataAttributePrefix+k, string(m))
 				}
 				childSpan417b := perSpanProperties{
 					traceID:      *seg.TraceID,
@@ -266,7 +269,7 @@ func TestTranslation(t *testing.T) {
 				for k, v := range subseg0cab.Metadata {
 					m, err := json.Marshal(v)
 					assert.NoError(t, err, "metadata marshaling failed")
-					childSpan0cabAttrs.PutString(awsxray.AWSXraySegmentMetadataAttributePrefix+k, string(m))
+					childSpan0cabAttrs.PutStr(awsxray.AWSXraySegmentMetadataAttributePrefix+k, string(m))
 				}
 				childSpan0cab := perSpanProperties{
 					traceID:      *seg.TraceID,
@@ -288,7 +291,7 @@ func TestTranslation(t *testing.T) {
 				for k, v := range subsegF8db.Metadata {
 					m, err := json.Marshal(v)
 					assert.NoError(t, err, "metadata marshaling failed")
-					childSpanF8dbAttrs.PutString(awsxray.AWSXraySegmentMetadataAttributePrefix+k, string(m))
+					childSpanF8dbAttrs.PutStr(awsxray.AWSXraySegmentMetadataAttributePrefix+k, string(m))
 				}
 				childSpanF8db := perSpanProperties{
 					traceID:      *seg.TraceID,
@@ -310,7 +313,7 @@ func TestTranslation(t *testing.T) {
 				for k, v := range subsegE2de.Metadata {
 					m, err := json.Marshal(v)
 					assert.NoError(t, err, "metadata marshaling failed")
-					childSpanE2deAttrs.PutString(awsxray.AWSXraySegmentMetadataAttributePrefix+k, string(m))
+					childSpanE2deAttrs.PutStr(awsxray.AWSXraySegmentMetadataAttributePrefix+k, string(m))
 				}
 				childSpanE2de := perSpanProperties{
 					traceID:      *seg.TraceID,
@@ -377,7 +380,7 @@ func TestTranslation(t *testing.T) {
 
 				subseg7163 := seg.Subsegments[0].Subsegments[1]
 				childSpan7163Attrs := pcommon.NewMap()
-				childSpan7163Attrs.FromRaw(map[string]interface{}{
+				assert.NoError(t, childSpan7163Attrs.FromRaw(map[string]interface{}{
 					awsxray.AWSServiceAttribute:                    *subseg7163.Name,
 					conventions.AttributeHTTPStatusCode:            *subseg7163.HTTP.Response.Status,
 					conventions.AttributeHTTPResponseContentLength: int64(subseg7163.HTTP.Response.ContentLength.(float64)),
@@ -386,7 +389,7 @@ func TestTranslation(t *testing.T) {
 					awsxray.AWSRequestIDAttribute:                  *subseg7163.AWS.RequestID,
 					awsxray.AWSTableNameAttribute:                  *subseg7163.AWS.TableName,
 					awsxray.AWSXrayRetriesAttribute:                *subseg7163.AWS.Retries,
-				})
+				}))
 
 				childSpan7163Evts := initExceptionEvents(&subseg7163)
 				assert.Len(t, childSpan7163Evts, 1, testCase+": childSpan7163Evts has incorrect size")
@@ -517,7 +520,7 @@ func TestTranslation(t *testing.T) {
 					"one segment should translate to 1 ResourceSpans")
 
 				actualRs := actualTraces.ResourceSpans().At(0)
-				compare2ResourceSpans(t, testCase, expectedRs, actualRs)
+				assert.NoError(t, ptracetest.CompareResourceSpans(expectedRs, actualRs))
 			},
 		},
 		{
@@ -552,7 +555,7 @@ func TestTranslation(t *testing.T) {
 					testCase+": one segment should translate to 1 ResourceSpans")
 
 				actualRs := actualTraces.ResourceSpans().At(0)
-				compare2ResourceSpans(t, testCase, expectedRs, actualRs)
+				assert.NoError(t, ptracetest.CompareResourceSpans(expectedRs, actualRs))
 			},
 		},
 		{
@@ -578,7 +581,7 @@ func TestTranslation(t *testing.T) {
 			},
 			propsPerSpan: func(_ string, _ *testing.T, seg *awsxray.Segment) []perSpanProperties {
 				attrs := defaultServerSpanAttrs(seg)
-				attrs.PutString(awsxray.AWSAccountAttribute, *seg.AWS.AccountID)
+				attrs.PutStr(awsxray.AWSAccountAttribute, *seg.AWS.AccountID)
 				res := perSpanProperties{
 					traceID:      *seg.TraceID,
 					spanID:       *seg.ID,
@@ -601,7 +604,7 @@ func TestTranslation(t *testing.T) {
 					testCase+": one segment should translate to 1 ResourceSpans")
 
 				actualRs := actualTraces.ResourceSpans().At(0)
-				compare2ResourceSpans(t, testCase, expectedRs, actualRs)
+				assert.NoError(t, ptracetest.CompareResourceSpans(expectedRs, actualRs))
 			},
 		},
 		{
@@ -636,7 +639,7 @@ func TestTranslation(t *testing.T) {
 					testCase+": one segment should translate to 1 ResourceSpans")
 
 				actualRs := actualTraces.ResourceSpans().At(0)
-				compare2ResourceSpans(t, testCase, expectedRs, actualRs)
+				assert.NoError(t, ptracetest.CompareResourceSpans(expectedRs, actualRs))
 			},
 		},
 		{
@@ -667,13 +670,13 @@ func TestTranslation(t *testing.T) {
 			},
 			propsPerSpan: func(_ string, _ *testing.T, seg *awsxray.Segment) []perSpanProperties {
 				attrs := pcommon.NewMap()
-				attrs.FromRaw(map[string]interface{}{
+				assert.NoError(t, attrs.FromRaw(map[string]interface{}{
 					conventions.AttributeHTTPMethod:                *seg.HTTP.Request.Method,
 					conventions.AttributeHTTPStatusCode:            *seg.HTTP.Response.Status,
 					conventions.AttributeHTTPURL:                   *seg.HTTP.Request.URL,
 					conventions.AttributeHTTPResponseContentLength: int64(seg.HTTP.Response.ContentLength.(float64)),
 					awsxray.AWSXRayTracedAttribute:                 true,
-				})
+				}))
 				res := perSpanProperties{
 					traceID:      *seg.TraceID,
 					spanID:       *seg.ID,
@@ -697,7 +700,7 @@ func TestTranslation(t *testing.T) {
 					testCase+": one segment should translate to 1 ResourceSpans")
 
 				actualRs := actualTraces.ResourceSpans().At(0)
-				compare2ResourceSpans(t, testCase, expectedRs, actualRs)
+				assert.NoError(t, ptracetest.CompareResourceSpans(expectedRs, actualRs))
 			},
 		},
 		{
@@ -710,13 +713,13 @@ func TestTranslation(t *testing.T) {
 			},
 			propsPerSpan: func(_ string, _ *testing.T, seg *awsxray.Segment) []perSpanProperties {
 				attrs := pcommon.NewMap()
-				attrs.FromRaw(map[string]interface{}{
+				assert.NoError(t, attrs.FromRaw(map[string]interface{}{
 					conventions.AttributeHTTPMethod:                *seg.HTTP.Request.Method,
 					conventions.AttributeHTTPStatusCode:            *seg.HTTP.Response.Status,
 					conventions.AttributeHTTPURL:                   *seg.HTTP.Request.URL,
 					conventions.AttributeHTTPResponseContentLength: seg.HTTP.Response.ContentLength.(string),
 					awsxray.AWSXRayTracedAttribute:                 true,
-				})
+				}))
 
 				res := perSpanProperties{
 					traceID:      *seg.TraceID,
@@ -741,7 +744,7 @@ func TestTranslation(t *testing.T) {
 					testCase+": one segment should translate to 1 ResourceSpans")
 
 				actualRs := actualTraces.ResourceSpans().At(0)
-				compare2ResourceSpans(t, testCase, expectedRs, actualRs)
+				assert.NoError(t, ptracetest.CompareResourceSpans(expectedRs, actualRs))
 			},
 		},
 		{
@@ -754,14 +757,14 @@ func TestTranslation(t *testing.T) {
 			},
 			propsPerSpan: func(_ string, _ *testing.T, seg *awsxray.Segment) []perSpanProperties {
 				attrs := pcommon.NewMap()
-				attrs.FromRaw(map[string]interface{}{
+				assert.NoError(t, attrs.FromRaw(map[string]interface{}{
 					conventions.AttributeDBConnectionString: "jdbc:postgresql://aawijb5u25wdoy.cpamxznpdoq8.us-west-2." +
 						"rds.amazonaws.com:5432",
 					conventions.AttributeDBName:      "ebdb",
 					conventions.AttributeDBSystem:    *seg.SQL.DatabaseType,
 					conventions.AttributeDBStatement: *seg.SQL.SanitizedQuery,
 					conventions.AttributeDBUser:      *seg.SQL.User,
-				})
+				}))
 				res := perSpanProperties{
 					traceID:      *seg.TraceID,
 					spanID:       *seg.ID,
@@ -785,7 +788,7 @@ func TestTranslation(t *testing.T) {
 					testCase+": one segment should translate to 1 ResourceSpans")
 
 				actualRs := actualTraces.ResourceSpans().At(0)
-				compare2ResourceSpans(t, testCase, expectedRs, actualRs)
+				assert.NoError(t, ptracetest.CompareResourceSpans(expectedRs, actualRs))
 			},
 		},
 		{
@@ -862,7 +865,7 @@ func TestTranslation(t *testing.T) {
 				// the correctness of the actual segment
 				// has been verified in the tracesegment_test.go
 				assert.NoError(t, err, "failed to unmarhal raw segment")
-				expectedRs = initResourceSpans(
+				expectedRs = initResourceSpans(t,
 					&actualSeg,
 					tc.expectedResourceAttrs(&actualSeg),
 					tc.propsPerSpan(tc.testCase, t, &actualSeg),
@@ -885,13 +888,13 @@ func initExceptionEvents(expectedSeg *awsxray.Segment) []eventProps {
 	res := make([]eventProps, 0, len(expectedSeg.Cause.Exceptions))
 	for _, excp := range expectedSeg.Cause.Exceptions {
 		attrs := pcommon.NewMap()
-		attrs.PutString(awsxray.AWSXrayExceptionIDAttribute, *excp.ID)
+		attrs.PutStr(awsxray.AWSXrayExceptionIDAttribute, *excp.ID)
 		if excp.Message != nil {
-			attrs.PutString(conventions.AttributeExceptionMessage, *excp.Message)
+			attrs.PutStr(conventions.AttributeExceptionMessage, *excp.Message)
 		}
 
 		if excp.Type != nil {
-			attrs.PutString(conventions.AttributeExceptionType, *excp.Type)
+			attrs.PutStr(conventions.AttributeExceptionType, *excp.Type)
 		}
 
 		if excp.Remote != nil {
@@ -907,11 +910,11 @@ func initExceptionEvents(expectedSeg *awsxray.Segment) []eventProps {
 		}
 
 		if excp.Cause != nil {
-			attrs.PutString(awsxray.AWSXrayExceptionCauseAttribute, *excp.Cause)
+			attrs.PutStr(awsxray.AWSXrayExceptionCauseAttribute, *excp.Cause)
 		}
 
 		if len(excp.Stack) > 0 {
-			attrs.PutString(conventions.AttributeExceptionStacktrace, convertStackFramesToStackTraceStr(excp))
+			attrs.PutStr(conventions.AttributeExceptionStacktrace, convertStackFramesToStackTraceStr(excp))
 		}
 		res = append(res, eventProps{
 			name:  ExceptionEventName,
@@ -921,7 +924,7 @@ func initExceptionEvents(expectedSeg *awsxray.Segment) []eventProps {
 	return res
 }
 
-func initResourceSpans(expectedSeg *awsxray.Segment,
+func initResourceSpans(t *testing.T, expectedSeg *awsxray.Segment,
 	resourceAttrs map[string]interface{},
 	propsPerSpan []perSpanProperties,
 ) ptrace.ResourceSpans {
@@ -932,7 +935,7 @@ func initResourceSpans(expectedSeg *awsxray.Segment,
 	rs := ptrace.NewResourceSpans()
 
 	if len(resourceAttrs) > 0 {
-		rs.Resource().Attributes().FromRaw(resourceAttrs)
+		assert.NoError(t, rs.Resource().Attributes().FromRaw(resourceAttrs))
 	} else {
 		rs.Resource().Attributes().Clear()
 		rs.Resource().Attributes().EnsureCapacity(initAttrCapacity)
@@ -981,77 +984,6 @@ func initResourceSpans(expectedSeg *awsxray.Segment,
 		}
 	}
 	return rs
-}
-
-// note that this function causes side effects on the expected (
-// abbrev. as exp) and actual ResourceSpans (abbrev. as act):
-// 1. clears the resource attributes on both exp and act, after verifying
-// .  both sets are the same.
-//  2. clears the span attributes of all the
-//     spans on both exp and act, after going through all the spans
-//
-// .  on both exp and act and verify that all the attributes match.
-//  3. similarly, for all the events and their attributes within a span,
-//     this function performs the same equality verification, then clears
-//     up all the attribute.
-//
-// The reason for doing so is just to be able to use deep equal via assert.Equal()
-func compare2ResourceSpans(t *testing.T, testCase string, exp, act ptrace.ResourceSpans) {
-	assert.Equal(t, exp.ScopeSpans().Len(),
-		act.ScopeSpans().Len(),
-		testCase+": ScopeSpans.Len() differ")
-
-	assert.Equal(t,
-		exp.Resource().Attributes().Sort(),
-		act.Resource().Attributes().Sort(),
-		testCase+": Resource.Attributes() differ")
-
-	actSpans := act.ScopeSpans().At(0).Spans()
-	expSpans := exp.ScopeSpans().At(0).Spans()
-	assert.Equal(t,
-		expSpans.Len(),
-		actSpans.Len(),
-		testCase+": span.Len() differ",
-	)
-
-	for i := 0; i < expSpans.Len(); i++ {
-		expS := expSpans.At(i)
-		actS := actSpans.At(i)
-
-		assert.Equal(t,
-			expS.Attributes().Sort(),
-			actS.Attributes().Sort(),
-			fmt.Sprintf("%s: span[%s].Attributes() differ", testCase, expS.SpanID().HexString()),
-		)
-		expS.Attributes().Clear()
-		actS.Attributes().Clear()
-
-		expEvts := expS.Events()
-		actEvts := actS.Events()
-		assert.Equal(t,
-			expEvts.Len(),
-			actEvts.Len(),
-			fmt.Sprintf("%s: span[%s].Events().Len() differ",
-				testCase, expS.SpanID().HexString()),
-		)
-
-		for j := 0; j < expEvts.Len(); j++ {
-			expEvt := expEvts.At(j)
-			actEvt := actEvts.At(j)
-
-			assert.Equal(t,
-				expEvt.Attributes().Sort(),
-				actEvt.Attributes().Sort(),
-				fmt.Sprintf("%s: span[%s], event[%d].Attributes() differ",
-					testCase, expS.SpanID().HexString(), j),
-			)
-			expEvt.Attributes().Clear()
-			actEvt.Attributes().Clear()
-		}
-	}
-
-	assert.Equal(t, exp, act,
-		testCase+": actual ResourceSpans differ from the expected")
 }
 
 func TestDecodeXRayTraceID(t *testing.T) {

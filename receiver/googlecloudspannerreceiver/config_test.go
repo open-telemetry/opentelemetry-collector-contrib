@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,10 +21,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
-	"go.opentelemetry.io/collector/service/servicetest"
 )
 
 const (
@@ -32,51 +31,57 @@ const (
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.Nil(t, err)
-
-	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
 
-	assert.Equal(t, len(cfg.Receivers), 1)
+	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
+	require.NoError(t, err)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-	receiver := cfg.Receivers[config.NewComponentID(typeStr)].(*Config)
-
-	assert.Equal(t, 120*time.Second, receiver.CollectionInterval)
-	assert.Equal(t, 10, receiver.TopMetricsQueryMaxRows)
-	assert.True(t, receiver.BackfillEnabled)
-
-	assert.Equal(t, 2, len(receiver.Projects))
-
-	assert.Equal(t, "spanner project 1", receiver.Projects[0].ID)
-	assert.Equal(t, "path to spanner project 1 service account json key", receiver.Projects[0].ServiceAccountKey)
-	assert.Equal(t, 2, len(receiver.Projects[0].Instances))
-
-	assert.Equal(t, "id1", receiver.Projects[0].Instances[0].ID)
-	assert.Equal(t, 2, len(receiver.Projects[0].Instances[0].Databases))
-	assert.Equal(t, "db11", receiver.Projects[0].Instances[0].Databases[0])
-	assert.Equal(t, "db12", receiver.Projects[0].Instances[0].Databases[1])
-	assert.Equal(t, "id2", receiver.Projects[0].Instances[1].ID)
-	assert.Equal(t, 2, len(receiver.Projects[0].Instances[1].Databases))
-	assert.Equal(t, "db21", receiver.Projects[0].Instances[1].Databases[0])
-	assert.Equal(t, "db22", receiver.Projects[0].Instances[1].Databases[1])
-
-	assert.Equal(t, "spanner project 2", receiver.Projects[1].ID)
-	assert.Equal(t, "path to spanner project 2 service account json key", receiver.Projects[1].ServiceAccountKey)
-	assert.Equal(t, len(receiver.Projects[1].Instances), 2)
-
-	assert.Equal(t, "id3", receiver.Projects[1].Instances[0].ID)
-	assert.Equal(t, 2, len(receiver.Projects[1].Instances[0].Databases))
-	assert.Equal(t, "db31", receiver.Projects[1].Instances[0].Databases[0])
-	assert.Equal(t, "db32", receiver.Projects[1].Instances[0].Databases[1])
-	assert.Equal(t, "id4", receiver.Projects[1].Instances[1].ID)
-	assert.Equal(t, 2, len(receiver.Projects[1].Instances[1].Databases))
-	assert.Equal(t, "db41", receiver.Projects[1].Instances[1].Databases[0])
-	assert.Equal(t, "db42", receiver.Projects[1].Instances[1].Databases[1])
+	assert.Equal(t,
+		&Config{
+			ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+				CollectionInterval: 120 * time.Second,
+			},
+			TopMetricsQueryMaxRows:            10,
+			BackfillEnabled:                   true,
+			CardinalityTotalLimit:             200000,
+			HideTopnLockstatsRowrangestartkey: true,
+			Projects: []Project{
+				{
+					ID:                "spanner project 1",
+					ServiceAccountKey: "path to spanner project 1 service account json key",
+					Instances: []Instance{
+						{
+							ID:        "id1",
+							Databases: []string{"db11", "db12"},
+						},
+						{
+							ID:        "id2",
+							Databases: []string{"db21", "db22"},
+						},
+					},
+				},
+				{
+					ID:                "spanner project 2",
+					ServiceAccountKey: "path to spanner project 2 service account json key",
+					Instances: []Instance{
+						{
+							ID:        "id3",
+							Databases: []string{"db31", "db32"},
+						},
+						{
+							ID:        "id4",
+							Databases: []string{"db41", "db42"},
+						},
+					},
+				},
+			},
+		},
+		cfg,
+	)
 }
 
 func TestValidateInstance(t *testing.T) {
@@ -180,7 +185,6 @@ func TestValidateConfig(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			cfg := &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-					ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
 					CollectionInterval: testCase.collectionInterval,
 				},
 				TopMetricsQueryMaxRows: testCase.topMetricsQueryMaxRows,
@@ -188,7 +192,7 @@ func TestValidateConfig(t *testing.T) {
 				Projects:               testCase.projects,
 			}
 
-			err := cfg.Validate()
+			err := component.ValidateConfig(cfg)
 
 			if testCase.requireError {
 				require.Error(t, err)

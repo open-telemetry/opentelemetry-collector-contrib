@@ -68,11 +68,6 @@ func (c *Config) UnmarshalJSON(bytes []byte) error {
 	return nil
 }
 
-// MarshalJSON will marshal a config to JSON.
-func (c Config) MarshalJSON() ([]byte, error) {
-	return json.Marshal(c.Builder)
-}
-
 // UnmarshalYAML will unmarshal a config from YAML.
 func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	rawConfig := map[string]interface{}{}
@@ -105,11 +100,6 @@ func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	return nil
 }
 
-// MarshalYAML will marshal a config to YAML.
-func (c Config) MarshalYAML() (interface{}, error) {
-	return c.Builder, nil
-}
-
 func (c *Config) Unmarshal(component *confmap.Conf) error {
 	if !component.IsSet("type") {
 		return fmt.Errorf("missing required field 'type'")
@@ -128,7 +118,7 @@ func (c *Config) Unmarshal(component *confmap.Conf) error {
 	}
 
 	builder := builderFunc()
-	if err := component.UnmarshalExact(builder); err != nil {
+	if err := component.Unmarshal(builder, confmap.WithErrorUnused()); err != nil {
 		return fmt.Errorf("unmarshal to %s: %w", typeString, err)
 	}
 

@@ -17,8 +17,8 @@ package azuremonitorexporter // import "github.com/open-telemetry/opentelemetry-
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -40,20 +40,23 @@ type traceVisitor struct {
 // Called for each tuple of Resource, InstrumentationScope, and Span
 func (v *traceVisitor) visit(
 	resource pcommon.Resource,
-	scope pcommon.InstrumentationScope, span ptrace.Span) (ok bool) {
+	scope pcommon.InstrumentationScope,
+	span ptrace.Span) (ok bool) {
 
-	envelope, err := spanToEnvelope(resource, scope, span, v.exporter.logger)
+	envelopes, err := spanToEnvelopes(resource, scope, span, v.exporter.config.SpanEventsEnabled, v.exporter.logger)
 	if err != nil {
 		// record the error and short-circuit
 		v.err = consumererror.NewPermanent(err)
 		return false
 	}
 
-	// apply the instrumentation key to the envelope
-	envelope.IKey = v.exporter.config.InstrumentationKey
+	for _, envelope := range envelopes {
+		envelope.IKey = string(v.exporter.config.InstrumentationKey)
 
-	// This is a fire and forget operation
-	v.exporter.transportChannel.Send(envelope)
+		// This is a fire and forget operation
+		v.exporter.transportChannel.Send(envelope)
+	}
+
 	v.processed++
 
 	return true
@@ -71,7 +74,7 @@ func (exporter *traceExporter) onTraceData(context context.Context, traceData pt
 }
 
 // Returns a new instance of the trace exporter
-func newTracesExporter(config *Config, transportChannel transportChannel, set component.ExporterCreateSettings) (component.TracesExporter, error) {
+func newTracesExporter(config *Config, transportChannel transportChannel, set exporter.CreateSettings) (exporter.Traces, error) {
 	exporter := &traceExporter{
 		config:           config,
 		transportChannel: transportChannel,

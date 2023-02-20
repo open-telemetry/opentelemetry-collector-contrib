@@ -12,7 +12,7 @@
                      "description": "Number of active clients connected to a ZooKeeper server.",
                      "name": "zookeeper.connection.active",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "1",
@@ -27,7 +27,7 @@
                      "description": "Number of ephemeral nodes that a ZooKeeper server has in its data tree.",
                      "name": "zookeeper.data_tree.ephemeral_node.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -42,7 +42,7 @@
                      "description": "Size of data in bytes that a ZooKeeper server has in its data tree.",
                      "name": "zookeeper.data_tree.size",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "27",
@@ -71,7 +71,7 @@
                      "description": "Number of file descriptors that a ZooKeeper server has open.",
                      "name": "zookeeper.file_descriptor.open",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "26",
@@ -86,7 +86,7 @@
                      "description": "Number of times fsync duration has exceeded warning threshold.",
                      "name": "zookeeper.fsync.exceeded_threshold.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -144,7 +144,7 @@
                      "description": "The number of ZooKeeper packets received or sent by a server.",
                      "name": "zookeeper.packet.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "1",
@@ -181,7 +181,7 @@
                      "description": "Number of currently executing requests.",
                      "name": "zookeeper.request.active",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -196,7 +196,7 @@
                      "description": "Number of watches placed on Z-Nodes on a ZooKeeper server.",
                      "name": "zookeeper.watch.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -211,7 +211,7 @@
                      "description": "Number of z-nodes that a ZooKeeper server has in its data tree.",
                      "name": "zookeeper.znode.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "4",

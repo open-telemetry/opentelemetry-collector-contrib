@@ -6,13 +6,29 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 )
 
 // MetricSettings provides common settings for a particular metric.
 type MetricSettings struct {
 	Enabled bool `mapstructure:"enabled"`
+
+	enabledSetByUser bool
+}
+
+func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
+	if err != nil {
+		return err
+	}
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
 }
 
 // MetricsSettings provides settings for sqlserverreceiver metrics.
@@ -104,6 +120,38 @@ func DefaultMetricsSettings() MetricsSettings {
 	}
 }
 
+// ResourceAttributeSettings provides common settings for a particular metric.
+type ResourceAttributeSettings struct {
+	Enabled bool `mapstructure:"enabled"`
+
+	enabledProvidedByUser bool
+}
+
+func (ras *ResourceAttributeSettings) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(ras, confmap.WithErrorUnused())
+	if err != nil {
+		return err
+	}
+	ras.enabledProvidedByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// ResourceAttributesSettings provides settings for sqlserverreceiver metrics.
+type ResourceAttributesSettings struct {
+	SqlserverDatabaseName ResourceAttributeSettings `mapstructure:"sqlserver.database.name"`
+}
+
+func DefaultResourceAttributesSettings() ResourceAttributesSettings {
+	return ResourceAttributesSettings{
+		SqlserverDatabaseName: ResourceAttributeSettings{
+			Enabled: true,
+		},
+	}
+}
+
 // AttributePageOperations specifies the a value page.operations attribute.
 type AttributePageOperations int
 
@@ -151,7 +199,7 @@ func (m *metricSqlserverBatchRequestRate) recordDataPoint(start pcommon.Timestam
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -200,7 +248,7 @@ func (m *metricSqlserverBatchSQLCompilationRate) recordDataPoint(start pcommon.T
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -249,7 +297,7 @@ func (m *metricSqlserverBatchSQLRecompilationRate) recordDataPoint(start pcommon
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -298,7 +346,7 @@ func (m *metricSqlserverLockWaitRate) recordDataPoint(start pcommon.Timestamp, t
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -347,7 +395,7 @@ func (m *metricSqlserverLockWaitTimeAvg) recordDataPoint(start pcommon.Timestamp
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -396,7 +444,7 @@ func (m *metricSqlserverPageBufferCacheHitRatio) recordDataPoint(start pcommon.T
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -445,7 +493,7 @@ func (m *metricSqlserverPageCheckpointFlushRate) recordDataPoint(start pcommon.T
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -494,7 +542,7 @@ func (m *metricSqlserverPageLazyWriteRate) recordDataPoint(start pcommon.Timesta
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -543,7 +591,7 @@ func (m *metricSqlserverPageLifeExpectancy) recordDataPoint(start pcommon.Timest
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -593,8 +641,8 @@ func (m *metricSqlserverPageOperationRate) recordDataPoint(start pcommon.Timesta
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
-	dp.Attributes().PutString("type", pageOperationsAttributeValue)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("type", pageOperationsAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -643,7 +691,7 @@ func (m *metricSqlserverPageSplitRate) recordDataPoint(start pcommon.Timestamp, 
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -692,7 +740,7 @@ func (m *metricSqlserverTransactionRate) recordDataPoint(start pcommon.Timestamp
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -741,7 +789,7 @@ func (m *metricSqlserverTransactionWriteRate) recordDataPoint(start pcommon.Time
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -790,7 +838,7 @@ func (m *metricSqlserverTransactionLogFlushDataRate) recordDataPoint(start pcomm
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -839,7 +887,7 @@ func (m *metricSqlserverTransactionLogFlushRate) recordDataPoint(start pcommon.T
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -888,7 +936,7 @@ func (m *metricSqlserverTransactionLogFlushWaitRate) recordDataPoint(start pcomm
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetDoubleValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -929,7 +977,7 @@ func (m *metricSqlserverTransactionLogGrowthCount) init() {
 	m.data.SetUnit("{growths}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricSqlserverTransactionLogGrowthCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -939,7 +987,7 @@ func (m *metricSqlserverTransactionLogGrowthCount) recordDataPoint(start pcommon
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -980,7 +1028,7 @@ func (m *metricSqlserverTransactionLogShrinkCount) init() {
 	m.data.SetUnit("{shrinks}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricSqlserverTransactionLogShrinkCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -990,7 +1038,7 @@ func (m *metricSqlserverTransactionLogShrinkCount) recordDataPoint(start pcommon
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1039,7 +1087,7 @@ func (m *metricSqlserverTransactionLogUsage) recordDataPoint(start pcommon.Times
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1088,7 +1136,7 @@ func (m *metricSqlserverUserConnectionCount) recordDataPoint(start pcommon.Times
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1124,6 +1172,7 @@ type MetricsBuilder struct {
 	resourceCapacity                           int                 // maximum observed number of resource attributes.
 	metricsBuffer                              pmetric.Metrics     // accumulates metrics data before emitting.
 	buildInfo                                  component.BuildInfo // contains version information
+	resourceAttributesSettings                 ResourceAttributesSettings
 	metricSqlserverBatchRequestRate            metricSqlserverBatchRequestRate
 	metricSqlserverBatchSQLCompilationRate     metricSqlserverBatchSQLCompilationRate
 	metricSqlserverBatchSQLRecompilationRate   metricSqlserverBatchSQLRecompilationRate
@@ -1156,31 +1205,39 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, options ...metricBuilderOption) *MetricsBuilder {
+// WithResourceAttributesSettings sets ResourceAttributeSettings on the metrics builder.
+func WithResourceAttributesSettings(ras ResourceAttributesSettings) metricBuilderOption {
+	return func(mb *MetricsBuilder) {
+		mb.resourceAttributesSettings = ras
+	}
+}
+
+func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                                  pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                              pmetric.NewMetrics(),
-		buildInfo:                                  buildInfo,
-		metricSqlserverBatchRequestRate:            newMetricSqlserverBatchRequestRate(settings.SqlserverBatchRequestRate),
-		metricSqlserverBatchSQLCompilationRate:     newMetricSqlserverBatchSQLCompilationRate(settings.SqlserverBatchSQLCompilationRate),
-		metricSqlserverBatchSQLRecompilationRate:   newMetricSqlserverBatchSQLRecompilationRate(settings.SqlserverBatchSQLRecompilationRate),
-		metricSqlserverLockWaitRate:                newMetricSqlserverLockWaitRate(settings.SqlserverLockWaitRate),
-		metricSqlserverLockWaitTimeAvg:             newMetricSqlserverLockWaitTimeAvg(settings.SqlserverLockWaitTimeAvg),
-		metricSqlserverPageBufferCacheHitRatio:     newMetricSqlserverPageBufferCacheHitRatio(settings.SqlserverPageBufferCacheHitRatio),
-		metricSqlserverPageCheckpointFlushRate:     newMetricSqlserverPageCheckpointFlushRate(settings.SqlserverPageCheckpointFlushRate),
-		metricSqlserverPageLazyWriteRate:           newMetricSqlserverPageLazyWriteRate(settings.SqlserverPageLazyWriteRate),
-		metricSqlserverPageLifeExpectancy:          newMetricSqlserverPageLifeExpectancy(settings.SqlserverPageLifeExpectancy),
-		metricSqlserverPageOperationRate:           newMetricSqlserverPageOperationRate(settings.SqlserverPageOperationRate),
-		metricSqlserverPageSplitRate:               newMetricSqlserverPageSplitRate(settings.SqlserverPageSplitRate),
-		metricSqlserverTransactionRate:             newMetricSqlserverTransactionRate(settings.SqlserverTransactionRate),
-		metricSqlserverTransactionWriteRate:        newMetricSqlserverTransactionWriteRate(settings.SqlserverTransactionWriteRate),
-		metricSqlserverTransactionLogFlushDataRate: newMetricSqlserverTransactionLogFlushDataRate(settings.SqlserverTransactionLogFlushDataRate),
-		metricSqlserverTransactionLogFlushRate:     newMetricSqlserverTransactionLogFlushRate(settings.SqlserverTransactionLogFlushRate),
-		metricSqlserverTransactionLogFlushWaitRate: newMetricSqlserverTransactionLogFlushWaitRate(settings.SqlserverTransactionLogFlushWaitRate),
-		metricSqlserverTransactionLogGrowthCount:   newMetricSqlserverTransactionLogGrowthCount(settings.SqlserverTransactionLogGrowthCount),
-		metricSqlserverTransactionLogShrinkCount:   newMetricSqlserverTransactionLogShrinkCount(settings.SqlserverTransactionLogShrinkCount),
-		metricSqlserverTransactionLogUsage:         newMetricSqlserverTransactionLogUsage(settings.SqlserverTransactionLogUsage),
-		metricSqlserverUserConnectionCount:         newMetricSqlserverUserConnectionCount(settings.SqlserverUserConnectionCount),
+		buildInfo:                                  settings.BuildInfo,
+		resourceAttributesSettings:                 DefaultResourceAttributesSettings(),
+		metricSqlserverBatchRequestRate:            newMetricSqlserverBatchRequestRate(ms.SqlserverBatchRequestRate),
+		metricSqlserverBatchSQLCompilationRate:     newMetricSqlserverBatchSQLCompilationRate(ms.SqlserverBatchSQLCompilationRate),
+		metricSqlserverBatchSQLRecompilationRate:   newMetricSqlserverBatchSQLRecompilationRate(ms.SqlserverBatchSQLRecompilationRate),
+		metricSqlserverLockWaitRate:                newMetricSqlserverLockWaitRate(ms.SqlserverLockWaitRate),
+		metricSqlserverLockWaitTimeAvg:             newMetricSqlserverLockWaitTimeAvg(ms.SqlserverLockWaitTimeAvg),
+		metricSqlserverPageBufferCacheHitRatio:     newMetricSqlserverPageBufferCacheHitRatio(ms.SqlserverPageBufferCacheHitRatio),
+		metricSqlserverPageCheckpointFlushRate:     newMetricSqlserverPageCheckpointFlushRate(ms.SqlserverPageCheckpointFlushRate),
+		metricSqlserverPageLazyWriteRate:           newMetricSqlserverPageLazyWriteRate(ms.SqlserverPageLazyWriteRate),
+		metricSqlserverPageLifeExpectancy:          newMetricSqlserverPageLifeExpectancy(ms.SqlserverPageLifeExpectancy),
+		metricSqlserverPageOperationRate:           newMetricSqlserverPageOperationRate(ms.SqlserverPageOperationRate),
+		metricSqlserverPageSplitRate:               newMetricSqlserverPageSplitRate(ms.SqlserverPageSplitRate),
+		metricSqlserverTransactionRate:             newMetricSqlserverTransactionRate(ms.SqlserverTransactionRate),
+		metricSqlserverTransactionWriteRate:        newMetricSqlserverTransactionWriteRate(ms.SqlserverTransactionWriteRate),
+		metricSqlserverTransactionLogFlushDataRate: newMetricSqlserverTransactionLogFlushDataRate(ms.SqlserverTransactionLogFlushDataRate),
+		metricSqlserverTransactionLogFlushRate:     newMetricSqlserverTransactionLogFlushRate(ms.SqlserverTransactionLogFlushRate),
+		metricSqlserverTransactionLogFlushWaitRate: newMetricSqlserverTransactionLogFlushWaitRate(ms.SqlserverTransactionLogFlushWaitRate),
+		metricSqlserverTransactionLogGrowthCount:   newMetricSqlserverTransactionLogGrowthCount(ms.SqlserverTransactionLogGrowthCount),
+		metricSqlserverTransactionLogShrinkCount:   newMetricSqlserverTransactionLogShrinkCount(ms.SqlserverTransactionLogShrinkCount),
+		metricSqlserverTransactionLogUsage:         newMetricSqlserverTransactionLogUsage(ms.SqlserverTransactionLogUsage),
+		metricSqlserverUserConnectionCount:         newMetricSqlserverUserConnectionCount(ms.SqlserverUserConnectionCount),
 	}
 	for _, op := range options {
 		op(mb)
@@ -1199,26 +1256,28 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(pmetric.ResourceMetrics)
+type ResourceMetricsOption func(ResourceAttributesSettings, pmetric.ResourceMetrics)
 
 // WithSqlserverDatabaseName sets provided value as "sqlserver.database.name" attribute for current resource.
 func WithSqlserverDatabaseName(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutString("sqlserver.database.name", val)
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+		if ras.SqlserverDatabaseName.Enabled {
+			rm.Resource().Attributes().PutStr("sqlserver.database.name", val)
+		}
 	}
 }
 
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
+	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
-			switch metrics.At(i).DataType() {
-			case pmetric.MetricDataTypeGauge:
+			switch metrics.At(i).Type() {
+			case pmetric.MetricTypeGauge:
 				dps = metrics.At(i).Gauge().DataPoints()
-			case pmetric.MetricDataTypeSum:
+			case pmetric.MetricTypeSum:
 				dps = metrics.At(i).Sum().DataPoints()
 			}
 			for j := 0; j < dps.Len(); j++ {
@@ -1260,8 +1319,9 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricSqlserverTransactionLogShrinkCount.emit(ils.Metrics())
 	mb.metricSqlserverTransactionLogUsage.emit(ils.Metrics())
 	mb.metricSqlserverUserConnectionCount.emit(ils.Metrics())
+
 	for _, op := range rmo {
-		op(rm)
+		op(mb.resourceAttributesSettings, rm)
 	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
@@ -1274,8 +1334,8 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 // produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
 func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 	mb.EmitForResource(rmo...)
-	metrics := pmetric.NewMetrics()
-	mb.metricsBuffer.MoveTo(metrics)
+	metrics := mb.metricsBuffer
+	mb.metricsBuffer = pmetric.NewMetrics()
 	return metrics
 }
 

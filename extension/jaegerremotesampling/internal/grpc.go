@@ -26,7 +26,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.uber.org/zap"
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/reflection"
@@ -69,11 +68,10 @@ type SamplingGRPCServer struct {
 }
 
 func (s *SamplingGRPCServer) Start(_ context.Context, host component.Host) error {
-	opts, err := s.settings.ToServerOption(host, s.telemetry)
+	server, err := s.settings.ToServer(host, s.telemetry)
 	if err != nil {
 		return err
 	}
-	server := grpc.NewServer(opts...)
 	reflection.Register(server)
 	s.grpcServer = server
 

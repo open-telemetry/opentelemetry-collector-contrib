@@ -69,7 +69,7 @@
                                         "asInt": "0"
                                     }
                                 ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "aggregationTemporality": 2,
                                 "isMonotonic": true
                             }
                         },
@@ -194,7 +194,7 @@
                                         "asInt": "0"
                                     }
                                 ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "aggregationTemporality": 2,
                                 "isMonotonic": true
                             }
                         }
@@ -271,7 +271,7 @@
                                         "asInt": "0"
                                     }
                                 ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "aggregationTemporality": 2,
                                 "isMonotonic": true
                             }
                         },
@@ -396,7 +396,7 @@
                                         "asInt": "0"
                                     }
                                 ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "aggregationTemporality": 2,
                                 "isMonotonic": true
                             }
                         }
@@ -502,7 +502,7 @@
                                         "asInt": "0"
                                     }
                                 ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                                "aggregationTemporality": 2
                             }
                         },
                         {
@@ -531,7 +531,7 @@
                                         "asInt": "0"
                                     }
                                 ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                                "aggregationTemporality": 2
                             }
                         },
                         {
@@ -546,7 +546,7 @@
                                         "asInt": "89169108"
                                     }
                                 ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                                "aggregationTemporality": 2
                             }
                         }
                     ]
@@ -622,7 +622,7 @@
                                         "asInt": "0"
                                     }
                                 ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "aggregationTemporality": 2,
                                 "isMonotonic": true
                             }
                         },
@@ -747,7 +747,7 @@
                                         "asInt": "0"
                                     }
                                 ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "aggregationTemporality": 2,
                                 "isMonotonic": true
                             }
                         }
@@ -824,7 +824,7 @@
                                         "asInt": "0"
                                     }
                                 ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "aggregationTemporality": 2,
                                 "isMonotonic": true
                             }
                         },
@@ -949,7 +949,7 @@
                                         "asInt": "0"
                                     }
                                 ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "aggregationTemporality": 2,
                                 "isMonotonic": true
                             }
                         }
@@ -1055,7 +1055,7 @@
                                         "asInt": "0"
                                     }
                                 ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                                "aggregationTemporality": 2
                             }
                         },
                         {
@@ -1084,7 +1084,7 @@
                                         "asInt": "234"
                                     }
                                 ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                                "aggregationTemporality": 2
                             }
                         },
                         {
@@ -1099,7 +1099,7 @@
                                         "asInt": "143728936"
                                     }
                                 ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                                "aggregationTemporality": 2
                             }
                         }
                     ]
@@ -1175,7 +1175,7 @@
                                         "asInt": "5877910030884"
                                     }
                                 ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "aggregationTemporality": 2,
                                 "isMonotonic": true
                             }
                         },
@@ -1300,7 +1300,7 @@
                                         "asInt": "12313320048"
                                     }
                                 ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "aggregationTemporality": 2,
                                 "isMonotonic": true
                             }
                         }
@@ -1377,7 +1377,7 @@
                                         "asInt": "5877910030884"
                                     }
                                 ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "aggregationTemporality": 2,
                                 "isMonotonic": true
                             }
                         },
@@ -1502,7 +1502,7 @@
                                         "asInt": "12313320048"
                                     }
                                 ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "aggregationTemporality": 2,
                                 "isMonotonic": true
                             }
                         }
@@ -1608,7 +1608,7 @@
                                         "asInt": "237014124"
                                     }
                                 ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                                "aggregationTemporality": 2
                             }
                         },
                         {
@@ -1637,7 +1637,7 @@
                                         "asInt": "1716556"
                                     }
                                 ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                                "aggregationTemporality": 2
                             }
                         },
                         {
@@ -1652,7 +1652,7 @@
                                         "asInt": "19636300"
                                     }
                                 ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                                "aggregationTemporality": 2
                             }
                         }
                     ]

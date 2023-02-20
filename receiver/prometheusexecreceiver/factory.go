@@ -20,8 +20,8 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver/subprocessmanager"
@@ -40,11 +40,11 @@ const (
 var once sync.Once
 
 // NewFactory creates a factory for the prometheusexec receiver
-func NewFactory() component.ReceiverFactory {
-	return component.NewReceiverFactory(
+func NewFactory() receiver.Factory {
+	return receiver.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver, stability))
+		receiver.WithMetrics(createMetricsReceiver, stability))
 }
 
 func logDeprecation(logger *zap.Logger) {
@@ -54,11 +54,10 @@ func logDeprecation(logger *zap.Logger) {
 }
 
 // createDefaultConfig returns a default config
-func createDefaultConfig() config.Receiver {
+func createDefaultConfig() component.Config {
 	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-		ScrapeInterval:   defaultCollectionInterval,
-		ScrapeTimeout:    defaultTimeoutInterval,
+		ScrapeInterval: defaultCollectionInterval,
+		ScrapeTimeout:  defaultTimeoutInterval,
 		SubprocessConfig: subprocessmanager.SubprocessConfig{
 			Env: []subprocessmanager.EnvConfig{},
 		},
@@ -68,11 +67,11 @@ func createDefaultConfig() config.Receiver {
 // createMetricsReceiver creates a metrics receiver based on provided Config.
 func createMetricsReceiver(
 	ctx context.Context,
-	params component.ReceiverCreateSettings,
-	cfg config.Receiver,
+	params receiver.CreateSettings,
+	cfg component.Config,
 	nextConsumer consumer.Metrics,
-) (component.MetricsReceiver, error) {
+) (receiver.Metrics, error) {
 	logDeprecation(params.Logger)
 	rCfg := cfg.(*Config)
-	return newPromExecReceiver(params, rCfg, nextConsumer)
+	return newPromExecReceiver(params, rCfg, nextConsumer), nil
 }

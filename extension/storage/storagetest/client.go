@@ -24,7 +24,6 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 )
 
@@ -37,7 +36,7 @@ type TestClient struct {
 	cacheMux sync.Mutex
 
 	kind component.Kind
-	id   config.ComponentID
+	id   component.ID
 	name string
 
 	storageFile string
@@ -47,7 +46,7 @@ type TestClient struct {
 
 // NewInMemoryClient creates a storage.Client that functions as a map[string][]byte
 // This is useful for tests that do not involve collector restart behavior.
-func NewInMemoryClient(kind component.Kind, id config.ComponentID, name string) *TestClient {
+func NewInMemoryClient(kind component.Kind, id component.ID, name string) *TestClient {
 	return &TestClient{
 		cache: make(map[string][]byte),
 		kind:  kind,
@@ -59,7 +58,7 @@ func NewInMemoryClient(kind component.Kind, id config.ComponentID, name string) 
 // NewFileBackedClient creates a storage.Client that will load previous
 // storage contents upon creation and save storage contents when closed.
 // It also has metadata which may be used to validate test expectations.
-func NewFileBackedClient(kind component.Kind, id config.ComponentID, name string, storageDir string) *TestClient {
+func NewFileBackedClient(kind component.Kind, id component.ID, name string, storageDir string) *TestClient {
 	client := NewInMemoryClient(kind, id, name)
 
 	client.storageFile = filepath.Join(storageDir, fmt.Sprintf("%d_%s_%s_%s", kind, id.Type(), id.Name(), name))
@@ -156,16 +155,18 @@ func (p *TestClient) Close(_ context.Context) error {
 
 const clientCreatorID = "client_creator_id"
 
-func setCreatorID(ctx context.Context, client storage.Client, creatorID config.ComponentID) error {
+func setCreatorID(ctx context.Context, client storage.Client, creatorID component.ID) error {
 	return client.Set(ctx, clientCreatorID, []byte(creatorID.String()))
 }
 
-// CreatorID is the config.ComponentID of the extension that created the component
-func CreatorID(ctx context.Context, client storage.Client) (config.ComponentID, error) {
+// CreatorID is the component.ID of the extension that created the component
+func CreatorID(ctx context.Context, client storage.Client) (component.ID, error) {
 	idBytes, err := client.Get(ctx, clientCreatorID)
 	if err != nil || idBytes == nil {
-		return config.ComponentID{}, err
+		return component.ID{}, err
 	}
 
-	return config.NewComponentIDFromString(string(idBytes))
+	id := component.ID{}
+	err = id.UnmarshalText(idBytes)
+	return id, err
 }

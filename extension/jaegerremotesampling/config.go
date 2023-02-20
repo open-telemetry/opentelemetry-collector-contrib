@@ -18,7 +18,7 @@ import (
 	"errors"
 	"time"
 
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 )
@@ -32,7 +32,6 @@ var (
 // Config has the configuration for the extension enabling the health check
 // extension, used to report the health status of the service.
 type Config struct {
-	config.ExtensionSettings       `mapstructure:",squash"`
 	*confighttp.HTTPServerSettings `mapstructure:"http"`
 	*configgrpc.GRPCServerSettings `mapstructure:"grpc"`
 
@@ -51,7 +50,7 @@ type Source struct {
 	ReloadInterval time.Duration `mapstructure:"reload_interval"`
 }
 
-var _ config.Extension = (*Config)(nil)
+var _ component.Config = (*Config)(nil)
 
 // Validate checks if the extension configuration is valid
 func (cfg *Config) Validate() error {

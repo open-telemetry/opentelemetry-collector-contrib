@@ -1,15 +1,25 @@
 name: iisreceiver
 
+resource_attributes:
+  iis.site:
+    description: The site of the web server.
+    enabled: true
+    type: string
+  iis.application_pool:
+    description: The application pool, which is associated with worker processes of one or more applications.
+    enabled: true
+    type: string
+
 attributes:
   direction:
-    value: direction
     description: The direction data is moving.
+    type: string
     enum:
       - sent
       - received
   request:
-    value: request
     description: The type of request sent by a client.
+    type: string
     enum:
       - delete
       - get

@@ -26,61 +26,41 @@ import (
 	"github.com/prometheus/prometheus/discovery"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver/subprocessmanager"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 )
 
-// loadConfigAssertNoError loads the test config and asserts there are no errors, and returns the receiver wanted
-func loadConfigAssertNoError(t *testing.T, receiverConfigID config.ComponentID) config.Receiver {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
-
-	factory := NewFactory()
-	factories.Receivers[factory.Type()] = factory
-
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-	assert.NoError(t, err)
-	assert.NotNil(t, cfg)
-
-	return cfg.Receivers[receiverConfigID]
-}
-
-// TestExecKeyMissing loads config and asserts there is an error with that config
-func TestExecKeyMissing(t *testing.T) {
-	receiverConfig := loadConfigAssertNoError(t, config.NewComponentID(typeStr))
-
-	assertErrorWhenExecKeyMissing(t, receiverConfig)
-}
-
-// assertErrorWhenExecKeyMissing makes sure the config passed throws an error, since it's missing the exec key
-func assertErrorWhenExecKeyMissing(t *testing.T, errorReceiverConfig config.Receiver) {
-	_, err := newPromExecReceiver(componenttest.NewNopReceiverCreateSettings(), errorReceiverConfig.(*Config), nil)
-	assert.Error(t, err, "newPromExecReceiver() didn't return an error")
-}
-
 // TestEndToEnd loads the test config and completes an e2e test where Prometheus metrics are scrapped twice from `test_prometheus_exporter.go`
 func TestEndToEnd(t *testing.T) {
 	t.Skip("Flaky test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/5859")
-	receiverConfig := loadConfigAssertNoError(t, config.NewComponentIDWithName(typeStr, "end_to_end_test/2"))
+
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(component.NewIDWithName(typeStr, "end_to_end_test/2").String())
+	require.NoError(t, err)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	// e2e test with port undefined by user
-	endToEndScrapeTest(t, receiverConfig, "end-to-end port not defined")
+	endToEndScrapeTest(t, cfg, "end-to-end port not defined")
 }
 
 // endToEndScrapeTest creates a receiver that invokes `go run test_prometheus_exporter.go` and waits until it has scraped the /metrics endpoint twice - the application will crash between each scrape
-func endToEndScrapeTest(t *testing.T, receiverConfig config.Receiver, testName string) { //nolint
+func endToEndScrapeTest(t *testing.T, receiverConfig component.Config, testName string) { //nolint
 	sink := new(consumertest.MetricsSink)
-	wrapper, err := newPromExecReceiver(componenttest.NewNopReceiverCreateSettings(), receiverConfig.(*Config), sink)
-	assert.NoError(t, err, "newPromExecReceiver() returned an error")
+	wrapper := newPromExecReceiver(receivertest.NewNopCreateSettings(), receiverConfig.(*Config), sink)
 
 	ctx := context.Background()
-	err = wrapper.Start(ctx, componenttest.NewNopHost())
+	err := wrapper.Start(ctx, componenttest.NewNopHost())
 	assert.NoError(t, err, "Start() returned an error")
 	defer func() { assert.NoError(t, wrapper.Shutdown(ctx)) }()
 
@@ -117,8 +97,8 @@ func assertTwoUniqueValuesScraped(t *testing.T, metricsSlice []pmetric.Metrics) 
 			}
 		}
 		require.True(t, ok, "timestamp_now metric not found")
-		assert.Equal(t, pmetric.MetricDataTypeGauge, tempM.DataType())
-		tempV := tempM.Gauge().DataPoints().At(0).DoubleVal()
+		assert.Equal(t, pmetric.MetricTypeGauge, tempM.Type())
+		tempV := tempM.Gauge().DataPoints().At(0).DoubleValue()
 		if i != 0 && tempV != value {
 			return
 		}
@@ -134,6 +114,7 @@ func TestConfigBuilderFunctions(t *testing.T) {
 	configTests := []struct {
 		name                 string
 		customName           string
+		id                   component.ID
 		cfg                  *Config
 		wantReceiverConfig   *prometheusreceiver.Config
 		wantSubprocessConfig *subprocessmanager.SubprocessConfig
@@ -141,18 +122,17 @@ func TestConfigBuilderFunctions(t *testing.T) {
 	}{
 		{
 			name: "no command",
+			id:   component.NewID(typeStr),
 			cfg: &Config{
-				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-				ScrapeInterval:   60 * time.Second,
-				ScrapeTimeout:    10 * time.Second,
-				Port:             9104,
+				ScrapeInterval: 60 * time.Second,
+				ScrapeTimeout:  10 * time.Second,
+				Port:           9104,
 				SubprocessConfig: subprocessmanager.SubprocessConfig{
 					Command: "",
 					Env:     []subprocessmanager.EnvConfig{},
 				},
 			},
 			wantReceiverConfig: &prometheusreceiver.Config{
-				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 				PrometheusConfig: &promconfig.Config{
 					ScrapeConfigs: []*promconfig.ScrapeConfig{
 						{
@@ -183,11 +163,11 @@ func TestConfigBuilderFunctions(t *testing.T) {
 		},
 		{
 			name: "normal config",
+			id:   component.NewIDWithName(typeStr, "mysqld"),
 			cfg: &Config{
-				ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "mysqld")),
-				ScrapeInterval:   90 * time.Second,
-				ScrapeTimeout:    10 * time.Second,
-				Port:             9104,
+				ScrapeInterval: 90 * time.Second,
+				ScrapeTimeout:  10 * time.Second,
+				Port:           9104,
 				SubprocessConfig: subprocessmanager.SubprocessConfig{
 					Command: "mysqld_exporter",
 					Env: []subprocessmanager.EnvConfig{
@@ -199,7 +179,6 @@ func TestConfigBuilderFunctions(t *testing.T) {
 				},
 			},
 			wantReceiverConfig: &prometheusreceiver.Config{
-				ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "mysqld")),
 				PrometheusConfig: &promconfig.Config{
 					ScrapeConfigs: []*promconfig.ScrapeConfig{
 						{
@@ -236,10 +215,10 @@ func TestConfigBuilderFunctions(t *testing.T) {
 		},
 		{
 			name: "lots of defaults",
+			id:   component.NewIDWithName(typeStr, "postgres/test"),
 			cfg: &Config{
-				ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "postgres/test")),
-				ScrapeInterval:   60 * time.Second,
-				ScrapeTimeout:    10 * time.Second,
+				ScrapeInterval: 60 * time.Second,
+				ScrapeTimeout:  10 * time.Second,
 				SubprocessConfig: subprocessmanager.SubprocessConfig{
 					Command: "postgres_exporter",
 					Env: []subprocessmanager.EnvConfig{
@@ -251,7 +230,6 @@ func TestConfigBuilderFunctions(t *testing.T) {
 				},
 			},
 			wantReceiverConfig: &prometheusreceiver.Config{
-				ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "postgres/test")),
 				PrometheusConfig: &promconfig.Config{
 					ScrapeConfigs: []*promconfig.ScrapeConfig{
 						{
@@ -290,7 +268,7 @@ func TestConfigBuilderFunctions(t *testing.T) {
 
 	for _, test := range configTests {
 		t.Run(test.name, func(t *testing.T) {
-			got := getPromReceiverConfig(test.cfg)
+			got := getPromReceiverConfig(test.id, test.cfg)
 			assert.Equal(t, test.wantReceiverConfig, got)
 		})
 	}

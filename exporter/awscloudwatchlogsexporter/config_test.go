@@ -18,86 +18,130 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
+	t.Parallel()
 
-	factory := NewFactory()
-	factories.Exporters[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
-
-	assert.Equal(t, len(cfg.Exporters), 2)
 
 	defaultRetrySettings := exporterhelper.NewDefaultRetrySettings()
 
-	e1 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "e1-defaults")].(*Config)
-
-	assert.Equal(t,
-		&Config{
-			ExporterSettings:   config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "e1-defaults")),
-			RetrySettings:      defaultRetrySettings,
-			LogGroupName:       "test-1",
-			LogStreamName:      "testing",
-			Endpoint:           "",
-			AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
-			QueueSettings: QueueSettings{
-				QueueSize: exporterhelper.NewDefaultQueueSettings().QueueSize,
+	tests := []struct {
+		id           component.ID
+		expected     component.Config
+		errorMessage string
+	}{
+		{
+			id: component.NewIDWithName(typeStr, "e1-defaults"),
+			expected: &Config{
+				RetrySettings:      defaultRetrySettings,
+				LogGroupName:       "test-1",
+				LogStreamName:      "testing",
+				Endpoint:           "",
+				AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
+				QueueSettings: QueueSettings{
+					QueueSize: exporterhelper.NewDefaultQueueSettings().QueueSize,
+				},
 			},
 		},
-		e1,
-	)
-
-	e2 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "e2-no-retries-short-queue")].(*Config)
-
-	assert.Equal(t,
-		&Config{
-			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "e2-no-retries-short-queue")),
-			RetrySettings: exporterhelper.RetrySettings{
-				Enabled:         false,
-				InitialInterval: defaultRetrySettings.InitialInterval,
-				MaxInterval:     defaultRetrySettings.MaxInterval,
-				MaxElapsedTime:  defaultRetrySettings.MaxElapsedTime,
-			},
-			AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
-			LogGroupName:       "test-2",
-			LogStreamName:      "testing",
-			QueueSettings: QueueSettings{
-				QueueSize: 2,
+		{
+			id: component.NewIDWithName(typeStr, "e2-no-retries-short-queue"),
+			expected: &Config{
+				RetrySettings: exporterhelper.RetrySettings{
+					Enabled:             false,
+					InitialInterval:     defaultRetrySettings.InitialInterval,
+					MaxInterval:         defaultRetrySettings.MaxInterval,
+					MaxElapsedTime:      defaultRetrySettings.MaxElapsedTime,
+					RandomizationFactor: backoff.DefaultRandomizationFactor,
+					Multiplier:          backoff.DefaultMultiplier,
+				},
+				AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
+				LogGroupName:       "test-2",
+				LogStreamName:      "testing",
+				QueueSettings: QueueSettings{
+					QueueSize: 2,
+				},
 			},
 		},
-		e2,
-	)
+		{
+			id:           component.NewIDWithName(typeStr, "invalid_queue_size"),
+			errorMessage: "'sending_queue.queue_size' must be 1 or greater",
+		},
+		{
+			id:           component.NewIDWithName(typeStr, "invalid_required_field_stream"),
+			errorMessage: "'log_stream_name' must be set",
+		},
+		{
+			id:           component.NewIDWithName(typeStr, "invalid_required_field_group"),
+			errorMessage: "'log_group_name' must be set",
+		},
+		{
+			id:           component.NewIDWithName(typeStr, "invalid_queue_setting"),
+			errorMessage: `'sending_queue' has invalid keys: enabled, num_consumers`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			err = component.UnmarshalConfig(sub, cfg)
+
+			if tt.expected == nil {
+				err = multierr.Append(err, component.ValidateConfig(cfg))
+				assert.ErrorContains(t, err, tt.errorMessage)
+				return
+			}
+			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.Equal(t, tt.expected, cfg)
+		})
+	}
 }
 
-func TestFailedLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
+func TestRetentionValidateCorrect(t *testing.T) {
+	defaultRetrySettings := exporterhelper.NewDefaultRetrySettings()
+	cfg := &Config{
+		RetrySettings:      defaultRetrySettings,
+		LogGroupName:       "test-1",
+		LogStreamName:      "testing",
+		Endpoint:           "",
+		LogRetention:       365,
+		AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
+		QueueSettings: QueueSettings{
+			QueueSize: exporterhelper.NewDefaultQueueSettings().QueueSize,
+		},
+	}
+	assert.NoError(t, component.ValidateConfig(cfg))
 
-	factory := NewFactory()
-	factories.Exporters[typeStr] = factory
+}
 
-	_, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "missing_required_field_1_config.yaml"), factories)
-	assert.EqualError(t, err, "exporter \"awscloudwatchlogs\" has invalid configuration: 'log_stream_name' must be set")
+func TestRetentionValidateWrong(t *testing.T) {
+	defaultRetrySettings := exporterhelper.NewDefaultRetrySettings()
+	wrongcfg := &Config{
+		RetrySettings:      defaultRetrySettings,
+		LogGroupName:       "test-1",
+		LogStreamName:      "testing",
+		Endpoint:           "",
+		LogRetention:       366,
+		AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
+		QueueSettings: QueueSettings{
+			QueueSize: exporterhelper.NewDefaultQueueSettings().QueueSize,
+		},
+	}
+	assert.Error(t, wrongcfg.Validate())
 
-	_, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "missing_required_field_2_config.yaml"), factories)
-	assert.EqualError(t, err, "exporter \"awscloudwatchlogs\" has invalid configuration: 'log_group_name' must be set")
-
-	_, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "invalid_queue_size.yaml"), factories)
-	assert.EqualError(t, err, "exporter \"awscloudwatchlogs\" has invalid configuration: 'sending_queue.queue_size' must be 1 or greater")
-
-	_, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "invalid_queue_setting.yaml"), factories)
-	assert.EqualError(t, err, "error reading exporters configuration for \"awscloudwatchlogs\": 1 error(s) decoding:\n\n* 'sending_queue' has invalid keys: enabled, num_consumers")
 }

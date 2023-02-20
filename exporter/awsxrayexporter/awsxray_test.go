@@ -24,8 +24,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -85,17 +85,17 @@ func BenchmarkForTracesExporter(b *testing.B) {
 	}
 }
 
-func initializeTracesExporter(t testing.TB) component.TracesExporter {
+func initializeTracesExporter(t testing.TB) exporter.Traces {
 	exporterConfig := generateConfig(t)
 	mconn := new(awsutil.Conn)
-	traceExporter, err := newTracesExporter(exporterConfig, componenttest.NewNopExporterCreateSettings(), mconn)
+	traceExporter, err := newTracesExporter(exporterConfig, exportertest.NewNopCreateSettings(), mconn)
 	if err != nil {
 		panic(err)
 	}
 	return traceExporter
 }
 
-func generateConfig(t testing.TB) config.Exporter {
+func generateConfig(t testing.TB) component.Config {
 	t.Setenv("AWS_ACCESS_KEY_ID", "AKIASSWVJUY4PZXXXXXX")
 	t.Setenv("AWS_SECRET_ACCESS_KEY", "XYrudg2H87u+ADAAq19Wqx3D41a09RsTXXXXXXXX")
 	t.Setenv("AWS_DEFAULT_REGION", "us-east-1")
@@ -153,14 +153,14 @@ func constructW3CFormatTraceSpanData(ispans ptrace.ScopeSpans) {
 func constructResource() pcommon.Resource {
 	resource := pcommon.NewResource()
 	attrs := resource.Attributes()
-	attrs.PutString(conventions.AttributeServiceName, "signup_aggregator")
-	attrs.PutString(conventions.AttributeContainerName, "signup_aggregator")
-	attrs.PutString(conventions.AttributeContainerImageName, "otel/signupaggregator")
-	attrs.PutString(conventions.AttributeContainerImageTag, "v1")
-	attrs.PutString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-	attrs.PutString(conventions.AttributeCloudAccountID, "999999998")
-	attrs.PutString(conventions.AttributeCloudRegion, "us-west-2")
-	attrs.PutString(conventions.AttributeCloudAvailabilityZone, "us-west-1b")
+	attrs.PutStr(conventions.AttributeServiceName, "signup_aggregator")
+	attrs.PutStr(conventions.AttributeContainerName, "signup_aggregator")
+	attrs.PutStr(conventions.AttributeContainerImageName, "otel/signupaggregator")
+	attrs.PutStr(conventions.AttributeContainerImageTag, "v1")
+	attrs.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
+	attrs.PutStr(conventions.AttributeCloudAccountID, "999999998")
+	attrs.PutStr(conventions.AttributeCloudRegion, "us-west-2")
+	attrs.PutStr(conventions.AttributeCloudAvailabilityZone, "us-west-1b")
 	return resource
 }
 
@@ -182,7 +182,7 @@ func constructHTTPClientSpan(traceID pcommon.TraceID) ptrace.Span {
 	span.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
 	span.SetEndTimestamp(pcommon.NewTimestampFromTime(endTime))
 
-	status := ptrace.NewSpanStatus()
+	status := ptrace.NewStatus()
 	status.SetCode(0)
 	status.SetMessage("OK")
 	status.CopyTo(span.Status())
@@ -210,7 +210,7 @@ func constructHTTPServerSpan(traceID pcommon.TraceID) ptrace.Span {
 	span.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
 	span.SetEndTimestamp(pcommon.NewTimestampFromTime(endTime))
 
-	status := ptrace.NewSpanStatus()
+	status := ptrace.NewStatus()
 	status.SetCode(0)
 	status.SetMessage("OK")
 	status.CopyTo(span.Status())
@@ -227,7 +227,7 @@ func constructSpanAttributes(attributes map[string]interface{}) pcommon.Map {
 		} else if cast, ok := value.(int64); ok {
 			attrs.PutInt(key, cast)
 		} else {
-			attrs.PutString(key, fmt.Sprintf("%v", value))
+			attrs.PutStr(key, fmt.Sprintf("%v", value))
 		}
 	}
 	return attrs

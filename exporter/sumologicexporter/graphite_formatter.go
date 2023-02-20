@@ -81,13 +81,13 @@ func (gf *graphiteFormatter) numberRecord(fs fields, name string, dataPoint pmet
 	case pmetric.NumberDataPointValueTypeDouble:
 		return fmt.Sprintf("%s %g %d",
 			gf.format(fs, name),
-			dataPoint.DoubleVal(),
+			dataPoint.DoubleValue(),
 			dataPoint.Timestamp()/pcommon.Timestamp(time.Second),
 		)
 	case pmetric.NumberDataPointValueTypeInt:
 		return fmt.Sprintf("%s %d %d",
 			gf.format(fs, name),
-			dataPoint.IntVal(),
+			dataPoint.IntValue(),
 			dataPoint.Timestamp()/pcommon.Timestamp(time.Second),
 		)
 	}
@@ -100,22 +100,22 @@ func (gf *graphiteFormatter) metric2String(record metricPair) string {
 	fs := newFields(record.attributes)
 	name := record.metric.Name()
 
-	switch record.metric.DataType() {
-	case pmetric.MetricDataTypeGauge:
+	switch record.metric.Type() {
+	case pmetric.MetricTypeGauge:
 		dps := record.metric.Gauge().DataPoints()
 		nextLines = make([]string, 0, dps.Len())
 		for i := 0; i < dps.Len(); i++ {
 			nextLines = append(nextLines, gf.numberRecord(fs, name, dps.At(i)))
 		}
-	case pmetric.MetricDataTypeSum:
+	case pmetric.MetricTypeSum:
 		dps := record.metric.Sum().DataPoints()
 		nextLines = make([]string, 0, dps.Len())
 		for i := 0; i < dps.Len(); i++ {
 			nextLines = append(nextLines, gf.numberRecord(fs, name, dps.At(i)))
 		}
 	// Skip complex metrics
-	case pmetric.MetricDataTypeHistogram:
-	case pmetric.MetricDataTypeSummary:
+	case pmetric.MetricTypeHistogram:
+	case pmetric.MetricTypeSummary:
 	}
 
 	return strings.Join(nextLines, "\n")

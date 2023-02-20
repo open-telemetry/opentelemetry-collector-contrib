@@ -17,16 +17,12 @@ package k8sattributesprocessor // import "github.com/open-telemetry/opentelemetr
 import (
 	"fmt"
 
-	"go.opentelemetry.io/collector/config"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
 )
 
 // Config defines configuration for k8s attributes processor.
 type Config struct {
-	config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-
 	k8sconfig.APIConfig `mapstructure:",squash"`
 
 	// Passthrough mode only annotates resources with the pod IP and

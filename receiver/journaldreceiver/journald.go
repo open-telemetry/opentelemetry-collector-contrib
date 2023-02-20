@@ -19,7 +19,7 @@ package journaldreceiver // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -32,7 +32,7 @@ const (
 )
 
 // NewFactory creates a factory for journald receiver
-func NewFactory() component.ReceiverFactory {
+func NewFactory() receiver.Factory {
 	return adapter.NewFactory(ReceiverType{}, stability)
 }
 
@@ -41,23 +41,22 @@ func NewFactory() component.ReceiverFactory {
 type ReceiverType struct{}
 
 // Type is the receiver type
-func (f ReceiverType) Type() config.Type {
+func (f ReceiverType) Type() component.Type {
 	return typeStr
 }
 
 // CreateDefaultConfig creates a config with type and version
-func (f ReceiverType) CreateDefaultConfig() config.Receiver {
+func (f ReceiverType) CreateDefaultConfig() component.Config {
 	return &JournaldConfig{
 		BaseConfig: adapter.BaseConfig{
-			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			Operators:        adapter.OperatorConfigs{},
+			Operators: []operator.Config{},
 		},
 		InputConfig: *journald.NewConfig(),
 	}
 }
 
 // BaseConfig gets the base config from config, for now
-func (f ReceiverType) BaseConfig(cfg config.Receiver) adapter.BaseConfig {
+func (f ReceiverType) BaseConfig(cfg component.Config) adapter.BaseConfig {
 	return cfg.(*JournaldConfig).BaseConfig
 }
 
@@ -68,6 +67,6 @@ type JournaldConfig struct {
 }
 
 // InputConfig unmarshals the input operator
-func (f ReceiverType) InputConfig(cfg config.Receiver) operator.Config {
+func (f ReceiverType) InputConfig(cfg component.Config) operator.Config {
 	return operator.NewConfig(&cfg.(*JournaldConfig).InputConfig)
 }

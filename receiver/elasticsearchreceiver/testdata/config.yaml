@@ -5,6 +5,7 @@ elasticsearch:
       enabled: false
   nodes: [ "_local" ]
   skip_cluster_metrics: true
+  indices: [ ".geoip_databases" ]
   endpoint: http://example.com:9200
   username: otel
   password: password

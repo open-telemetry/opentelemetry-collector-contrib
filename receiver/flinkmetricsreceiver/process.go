@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -76,7 +76,7 @@ func (s *flinkmetricsScraper) processJobmanagerMetrics(now pcommon.Timestamp, jo
 	}
 	s.mb.EmitForResource(
 		metadata.WithHostName(jobmanagerMetrics.Host),
-		metadata.WithFlinkResourceType("jobmanager"),
+		metadata.WithFlinkResourceTypeJobmanager,
 	)
 }
 
@@ -135,7 +135,7 @@ func (s *flinkmetricsScraper) processTaskmanagerMetrics(now pcommon.Timestamp, t
 		s.mb.EmitForResource(
 			metadata.WithHostName(taskmanagerMetrics.Host),
 			metadata.WithFlinkTaskmanagerID(taskmanagerMetrics.TaskmanagerID),
-			metadata.WithFlinkResourceType("taskmanager"),
+			metadata.WithFlinkResourceTypeTaskmanager,
 		)
 	}
 }

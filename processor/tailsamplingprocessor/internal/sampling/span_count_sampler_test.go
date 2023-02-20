@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -96,13 +96,12 @@ func TestEvaluate_NumberSpans(t *testing.T) {
 }
 
 func newTraceWithMultipleSpans(numberSpans []int32) *TraceData {
-	var traceBatches []ptrace.Traces
 	var totalNumberSpans = int32(0)
 
-	// For each trace, going to create the number of spans defined in the array
+	// For each resource, going to create the number of spans defined in the array
+	traces := ptrace.NewTraces()
 	for i := range numberSpans {
 		// Creates trace
-		traces := ptrace.NewTraces()
 		rs := traces.ResourceSpans().AppendEmpty()
 		ils := rs.ScopeSpans().AppendEmpty()
 
@@ -111,12 +110,11 @@ func newTraceWithMultipleSpans(numberSpans []int32) *TraceData {
 			span.SetTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 			span.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
 		}
-		traceBatches = append(traceBatches, traces)
 		totalNumberSpans += numberSpans[i]
 	}
 
 	return &TraceData{
-		ReceivedBatches: traceBatches,
+		ReceivedBatches: traces,
 		SpanCount:       atomic.NewInt64(int64(totalNumberSpans)),
 	}
 }

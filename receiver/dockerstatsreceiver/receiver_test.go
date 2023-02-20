@@ -21,7 +21,6 @@ package dockerstatsreceiver
 
 import (
 	"context"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -32,13 +31,84 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver/internal/metadata"
 )
 
 var mockFolder = filepath.Join("testdata", "mock")
+
+var (
+	metricEnabled     = metadata.MetricSettings{Enabled: true}
+	allMetricsEnabled = metadata.MetricsSettings{
+		ContainerBlockioIoMergedRecursive:          metricEnabled,
+		ContainerBlockioIoQueuedRecursive:          metricEnabled,
+		ContainerBlockioIoServiceBytesRecursive:    metricEnabled,
+		ContainerBlockioIoServiceTimeRecursive:     metricEnabled,
+		ContainerBlockioIoServicedRecursive:        metricEnabled,
+		ContainerBlockioIoTimeRecursive:            metricEnabled,
+		ContainerBlockioIoWaitTimeRecursive:        metricEnabled,
+		ContainerBlockioSectorsRecursive:           metricEnabled,
+		ContainerCPUPercent:                        metricEnabled,
+		ContainerCPUThrottlingDataPeriods:          metricEnabled,
+		ContainerCPUThrottlingDataThrottledPeriods: metricEnabled,
+		ContainerCPUThrottlingDataThrottledTime:    metricEnabled,
+		ContainerCPUUsageKernelmode:                metricEnabled,
+		ContainerCPUUsagePercpu:                    metricEnabled,
+		ContainerCPUUsageSystem:                    metricEnabled,
+		ContainerCPUUsageTotal:                     metricEnabled,
+		ContainerCPUUsageUsermode:                  metricEnabled,
+		ContainerMemoryActiveAnon:                  metricEnabled,
+		ContainerMemoryActiveFile:                  metricEnabled,
+		ContainerMemoryCache:                       metricEnabled,
+		ContainerMemoryDirty:                       metricEnabled,
+		ContainerMemoryHierarchicalMemoryLimit:     metricEnabled,
+		ContainerMemoryHierarchicalMemswLimit:      metricEnabled,
+		ContainerMemoryInactiveAnon:                metricEnabled,
+		ContainerMemoryInactiveFile:                metricEnabled,
+		ContainerMemoryMappedFile:                  metricEnabled,
+		ContainerMemoryPercent:                     metricEnabled,
+		ContainerMemoryPgfault:                     metricEnabled,
+		ContainerMemoryPgmajfault:                  metricEnabled,
+		ContainerMemoryPgpgin:                      metricEnabled,
+		ContainerMemoryPgpgout:                     metricEnabled,
+		ContainerMemoryRss:                         metricEnabled,
+		ContainerMemoryRssHuge:                     metricEnabled,
+		ContainerMemorySwap:                        metricEnabled,
+		ContainerMemoryTotalActiveAnon:             metricEnabled,
+		ContainerMemoryTotalActiveFile:             metricEnabled,
+		ContainerMemoryTotalCache:                  metricEnabled,
+		ContainerMemoryTotalDirty:                  metricEnabled,
+		ContainerMemoryTotalInactiveAnon:           metricEnabled,
+		ContainerMemoryTotalInactiveFile:           metricEnabled,
+		ContainerMemoryTotalMappedFile:             metricEnabled,
+		ContainerMemoryTotalPgfault:                metricEnabled,
+		ContainerMemoryTotalPgmajfault:             metricEnabled,
+		ContainerMemoryTotalPgpgin:                 metricEnabled,
+		ContainerMemoryTotalPgpgout:                metricEnabled,
+		ContainerMemoryTotalRss:                    metricEnabled,
+		ContainerMemoryTotalRssHuge:                metricEnabled,
+		ContainerMemoryTotalSwap:                   metricEnabled,
+		ContainerMemoryTotalUnevictable:            metricEnabled,
+		ContainerMemoryTotalWriteback:              metricEnabled,
+		ContainerMemoryUnevictable:                 metricEnabled,
+		ContainerMemoryUsageLimit:                  metricEnabled,
+		ContainerMemoryUsageMax:                    metricEnabled,
+		ContainerMemoryUsageTotal:                  metricEnabled,
+		ContainerMemoryWriteback:                   metricEnabled,
+		ContainerNetworkIoUsageRxBytes:             metricEnabled,
+		ContainerNetworkIoUsageRxDropped:           metricEnabled,
+		ContainerNetworkIoUsageRxErrors:            metricEnabled,
+		ContainerNetworkIoUsageRxPackets:           metricEnabled,
+		ContainerNetworkIoUsageTxBytes:             metricEnabled,
+		ContainerNetworkIoUsageTxDropped:           metricEnabled,
+		ContainerNetworkIoUsageTxErrors:            metricEnabled,
+		ContainerNetworkIoUsageTxPackets:           metricEnabled,
+	}
+)
 
 func TestNewReceiver(t *testing.T) {
 	cfg := &Config{
@@ -48,7 +118,7 @@ func TestNewReceiver(t *testing.T) {
 		Endpoint:         "unix:///run/some.sock",
 		DockerAPIVersion: defaultDockerAPIVersion,
 	}
-	mr := newReceiver(componenttest.NewNopReceiverCreateSettings(), cfg)
+	mr := newReceiver(receivertest.NewNopCreateSettings(), cfg)
 	assert.NotNil(t, mr)
 }
 
@@ -61,7 +131,7 @@ func TestErrorsInStart(t *testing.T) {
 		Endpoint:         unreachable,
 		DockerAPIVersion: defaultDockerAPIVersion,
 	}
-	recv := newReceiver(componenttest.NewNopReceiverCreateSettings(), cfg)
+	recv := newReceiver(receivertest.NewNopCreateSettings(), cfg)
 	assert.NotNil(t, recv)
 
 	cfg.Endpoint = "..not/a/valid/endpoint"
@@ -122,9 +192,9 @@ func TestScrapeV2(t *testing.T) {
 			cfg.Endpoint = tc.mockDockerEngine.URL
 			cfg.EnvVarsToMetricLabels = map[string]string{"ENV_VAR": "env-var-metric-label"}
 			cfg.ContainerLabelsToMetricLabels = map[string]string{"container.label": "container-metric-label"}
-			cfg.ProvidePerCoreCPUMetrics = true
+			cfg.MetricsConfig = allMetricsEnabled
 
-			receiver := newReceiver(componenttest.NewNopReceiverCreateSettings(), cfg)
+			receiver := newReceiver(receivertest.NewNopCreateSettings(), cfg)
 			err := receiver.start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, err)
 
@@ -134,7 +204,8 @@ func TestScrapeV2(t *testing.T) {
 			expectedMetrics, err := golden.ReadMetrics(tc.expectedMetricsFile)
 
 			assert.NoError(t, err)
-			assert.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
+			assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
+				pmetrictest.IgnoreResourceMetricsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 		})
 	}
 }
@@ -143,13 +214,7 @@ func dockerMockServer(urlToFile *map[string]string) (*httptest.Server, error) {
 	urlToFileContents := make(map[string][]byte, len(*urlToFile))
 	for urlPath, filePath := range *urlToFile {
 		err := func() error {
-			f, err := os.Open(filePath)
-			if err != nil {
-				return err
-			}
-			defer f.Close()
-
-			fileContents, err := io.ReadAll(f)
+			fileContents, err := os.ReadFile(filepath.Clean(filePath))
 			if err != nil {
 				return err
 			}

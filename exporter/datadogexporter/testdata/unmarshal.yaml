@@ -1,59 +1,53 @@
-receivers:
-  nop:
+datadog/nositeandnoendpoints:
 
-processors:
-  nop:
+datadog/nositeandmetricsendpoint:
+  metrics:
+    endpoint: "metricsendpoint:1234"
 
-exporters:
-  datadog/nositeandnoendpoints:
+datadog/nositeandtracesendpoint:
+  traces:
+    endpoint: "tracesendpoint:1234"
 
-  datadog/nositeandmetricsendpoint:
-    metrics:
-      endpoint: "metricsendpoint:1234"
+datadog/nositeandlogsendpoint:
+  logs:
+    endpoint: "logsendpoint:1234"
 
-  datadog/nositeandtracesendpoint:
-    traces:
-      endpoint: "tracesendpoint:1234"
+datadog/nositeandallendpoints:
+  metrics:
+    endpoint: "metricsendpoint:1234"
+  traces:
+    endpoint: "tracesendpoint:1234"
+  logs:
+    endpoint: "logsendpoint:1234"
 
-  datadog/nositeandbothendpoints:
-    metrics:
-      endpoint: "metricsendpoint:1234"
-    traces:
-      endpoint: "tracesendpoint:1234"
+datadog/siteandnoendpoints:
+  api:
+    site: datadoghq.eu
 
-  datadog/siteandnoendpoints:
-    api:
-      site: datadoghq.eu
+datadog/siteandmetricsendpoint:
+  api:
+    site: datadoghq.eu
+  metrics:
+    endpoint: "metricsendpoint:1234"
 
-  datadog/siteandmetricsendpoint:
-    api:
-      site: datadoghq.eu
-    metrics:
-      endpoint: "metricsendpoint:1234"
+datadog/siteandtracesendpoint:
+  api:
+    site: datadoghq.eu
+  traces:
+    endpoint: "tracesendpoint:1234"
 
-  datadog/siteandtracesendpoint:
-    api:
-      site: datadoghq.eu
-    traces:
-      endpoint: "tracesendpoint:1234"
+datadog/siteandlogsendpoint:
+  api:
+    site: datadoghq.eu
+  logs:
+    endpoint: "logsendpoint:1234"
 
-  datadog/siteandbothendpoints:
-    api:
-      site: datadoghq.eu
-    metrics:
-      endpoint: "metricsendpoint:1234"
-    traces:
-      endpoint: "tracesendpoint:1234"
-
-
-service:
-  pipelines:
-    metrics:
-      receivers: [nop]
-      processors: [nop]
-      exporters: [datadog/nositeandnoendpoints]
-
-    traces:
-      receivers: [nop]
-      processors: [nop]
-      exporters: [datadog/nositeandnoendpoints]
+datadog/siteandallendpoints:
+  api:
+    site: datadoghq.eu
+  metrics:
+    endpoint: "metricsendpoint:1234"
+  traces:
+    endpoint: "tracesendpoint:1234"
+  logs:
+    endpoint: "logsendpoint:1234"

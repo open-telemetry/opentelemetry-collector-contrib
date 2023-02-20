@@ -21,8 +21,8 @@ import (
 	"time"
 
 	"go.mongodb.org/atlas/mongodbatlas"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	rcvr "go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 
@@ -45,13 +45,15 @@ type timeconstraints struct {
 	resolution string
 }
 
-func newMongoDBAtlasReceiver(settings component.ReceiverCreateSettings, cfg *Config) (*receiver, error) {
-	client, err := internal.NewMongoDBAtlasClient(cfg.PublicKey, cfg.PrivateKey, cfg.RetrySettings, settings.Logger)
-	if err != nil {
-		return nil, err
+func newMongoDBAtlasReceiver(settings rcvr.CreateSettings, cfg *Config) *receiver {
+	client := internal.NewMongoDBAtlasClient(cfg.PublicKey, cfg.PrivateKey, cfg.RetrySettings, settings.Logger)
+	return &receiver{
+		log:         settings.Logger,
+		cfg:         cfg,
+		client:      client,
+		mb:          metadata.NewMetricsBuilder(cfg.Metrics, settings),
+		stopperChan: make(chan struct{}),
 	}
-	recv := &receiver{log: settings.Logger, cfg: cfg, client: client, mb: metadata.NewMetricsBuilder(cfg.Metrics, settings.BuildInfo), stopperChan: make(chan struct{})}
-	return recv, nil
 }
 
 func newMongoDBAtlasScraper(recv *receiver) (scraperhelper.Scraper, error) {

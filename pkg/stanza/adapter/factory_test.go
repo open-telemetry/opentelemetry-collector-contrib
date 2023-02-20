@@ -17,49 +17,40 @@ package adapter
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/json"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/regex"
 )
 
 func TestCreateReceiver(t *testing.T) {
 	t.Run("Success", func(t *testing.T) {
-		factory := NewFactory(TestReceiverType{}, component.StabilityLevelInDevelopment)
+		factory := NewFactory(TestReceiverType{}, component.StabilityLevelDevelopment)
 		cfg := factory.CreateDefaultConfig().(*TestConfig)
-		cfg.Operators = []map[string]interface{}{
+		cfg.Operators = []operator.Config{
 			{
-				"type": "json_parser",
+				Builder: json.NewConfig(),
 			},
 		}
-		receiver, err := factory.CreateLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, consumertest.NewNop())
-		require.NoError(t, err, "receiver creation failed")
-		require.NotNil(t, receiver, "receiver creation failed")
-	})
-
-	t.Run("Success with ConverterConfig", func(t *testing.T) {
-		factory := NewFactory(TestReceiverType{}, component.StabilityLevelInDevelopment)
-		cfg := factory.CreateDefaultConfig().(*TestConfig)
-		cfg.Converter = ConverterConfig{
-			MaxFlushCount: 1,
-			FlushInterval: 3 * time.Second,
-		}
-		receiver, err := factory.CreateLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, consumertest.NewNop())
+		receiver, err := factory.CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, consumertest.NewNop())
 		require.NoError(t, err, "receiver creation failed")
 		require.NotNil(t, receiver, "receiver creation failed")
 	})
 
 	t.Run("DecodeOperatorConfigsFailureMissingFields", func(t *testing.T) {
-		factory := NewFactory(TestReceiverType{}, component.StabilityLevelInDevelopment)
+		factory := NewFactory(TestReceiverType{}, component.StabilityLevelDevelopment)
 		badCfg := factory.CreateDefaultConfig().(*TestConfig)
-		badCfg.Operators = []map[string]interface{}{
+		badCfg.Operators = []operator.Config{
 			{
-				"badparam": "badvalue",
+				Builder: regex.NewConfig(),
 			},
 		}
-		receiver, err := factory.CreateLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), badCfg, consumertest.NewNop())
+		receiver, err := factory.CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), badCfg, consumertest.NewNop())
 		require.Error(t, err, "receiver creation should fail if parser configs aren't valid")
 		require.Nil(t, receiver, "receiver creation should fail if parser configs aren't valid")
 	})

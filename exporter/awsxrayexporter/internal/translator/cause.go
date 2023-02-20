@@ -16,6 +16,7 @@ package translator // import "github.com/open-telemetry/opentelemetry-collector-
 
 import (
 	"bufio"
+	"encoding/hex"
 	"net/textproto"
 	"regexp"
 	"strconv"
@@ -57,7 +58,7 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 	case hasExceptions:
 		language := ""
 		if val, ok := resource.Attributes().Get(conventions.AttributeTelemetrySDKLanguage); ok {
-			language = val.StringVal()
+			language = val.Str()
 		}
 
 		var exceptions []awsxray.Exception
@@ -69,15 +70,15 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 				stacktrace := ""
 
 				if val, ok := event.Attributes().Get(conventions.AttributeExceptionType); ok {
-					exceptionType = val.StringVal()
+					exceptionType = val.Str()
 				}
 
 				if val, ok := event.Attributes().Get(conventions.AttributeExceptionMessage); ok {
-					message = val.StringVal()
+					message = val.Str()
 				}
 
 				if val, ok := event.Attributes().Get(conventions.AttributeExceptionStacktrace); ok {
-					stacktrace = val.StringVal()
+					stacktrace = val.Str()
 				}
 
 				parsed := parseException(exceptionType, message, stacktrace, language)
@@ -100,7 +101,7 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 			switch key {
 			case "http.status_text":
 				if message == "" {
-					message = value.StringVal()
+					message = value.Str()
 				}
 			default:
 				filtered[key] = value
@@ -108,15 +109,13 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 		}
 
 		if message != "" {
-			id := newSegmentID()
-			hexID := id.HexString()
-
+			segmentID := newSegmentID()
 			cause = &awsxray.CauseData{
 				Type: awsxray.CauseTypeObject,
 				CauseObject: awsxray.CauseObject{
 					Exceptions: []awsxray.Exception{
 						{
-							ID:      aws.String(hexID),
+							ID:      aws.String(hex.EncodeToString(segmentID[:])),
 							Type:    aws.String(errorKind),
 							Message: aws.String(message),
 						},
@@ -134,7 +133,7 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 		isThrottle = false
 		isFault = false
 	case ok:
-		code := val.IntVal()
+		code := val.Int()
 		// We only differentiate between faults (server errors) and errors (client errors) for HTTP spans.
 		if code >= 400 && code <= 499 {
 			isError = true
@@ -158,8 +157,9 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 
 func parseException(exceptionType string, message string, stacktrace string, language string) []awsxray.Exception {
 	exceptions := make([]awsxray.Exception, 0, 1)
+	segmentID := newSegmentID()
 	exceptions = append(exceptions, awsxray.Exception{
-		ID:      aws.String(newSegmentID().HexString()),
+		ID:      aws.String(hex.EncodeToString(segmentID[:])),
 		Type:    aws.String(exceptionType),
 		Message: aws.String(message),
 	})
@@ -256,8 +256,9 @@ func fillJavaStacktrace(stacktrace string, exceptions []awsxray.Exception) []aws
 					causeMessage += line
 				}
 			}
+			segmentID := newSegmentID()
 			exceptions = append(exceptions, awsxray.Exception{
-				ID:      aws.String(newSegmentID().HexString()),
+				ID:      aws.String(hex.EncodeToString(segmentID[:])),
 				Type:    aws.String(causeType),
 				Message: aws.String(causeMessage),
 				Stack:   nil,
@@ -351,8 +352,9 @@ func fillPythonStacktrace(stacktrace string, exceptions []awsxray.Exception) []a
 
 			causeType := message[0:colonIdx]
 			causeMessage := message[colonIdx+2:]
+			segmentID := newSegmentID()
 			exceptions = append(exceptions, awsxray.Exception{
-				ID:      aws.String(newSegmentID().HexString()),
+				ID:      aws.String(hex.EncodeToString(segmentID[:])),
 				Type:    aws.String(causeType),
 				Message: aws.String(causeMessage),
 			})
@@ -456,12 +458,13 @@ func fillDotnetStacktrace(stacktrace string, exceptions []awsxray.Exception) []a
 
 	exception.Stack = nil
 	for {
-		if strings.HasPrefix(line, "\tat ") {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "at ") {
 			index := strings.Index(line, " in ")
 			if index >= 0 {
 				parts := strings.Split(line, " in ")
 
-				label := parts[0][len("\tat "):]
+				label := parts[0][len("at "):]
 				path := parts[1]
 				lineNumber := 0
 
@@ -486,7 +489,7 @@ func fillDotnetStacktrace(stacktrace string, exceptions []awsxray.Exception) []a
 			} else {
 				idx := strings.LastIndexByte(line, ')')
 				if idx >= 0 {
-					label := line[len("\tat ") : idx+1]
+					label := line[len("at ") : idx+1]
 					path := ""
 					lineNumber := 0
 

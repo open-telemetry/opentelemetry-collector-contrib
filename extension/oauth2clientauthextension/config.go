@@ -19,7 +19,8 @@ import (
 	"net/url"
 	"time"
 
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 )
 
@@ -31,7 +32,6 @@ var (
 
 // Config stores the configuration for OAuth2 Client Credentials (2-legged OAuth2 flow) setup.
 type Config struct {
-	config.ExtensionSettings `mapstructure:",squash"`
 
 	// ClientID is the application's ID.
 	// See https://datatracker.ietf.org/doc/html/rfc6749#section-2.2
@@ -39,7 +39,7 @@ type Config struct {
 
 	// ClientSecret is the application's secret.
 	// See https://datatracker.ietf.org/doc/html/rfc6749#section-2.3.1
-	ClientSecret string `mapstructure:"client_secret"`
+	ClientSecret configopaque.String `mapstructure:"client_secret"`
 
 	// EndpointParams specifies additional parameters for requests to the token endpoint.
 	EndpointParams url.Values `mapstructure:"endpoint_params"`
@@ -61,7 +61,7 @@ type Config struct {
 	Timeout time.Duration `mapstructure:"timeout,omitempty"`
 }
 
-var _ config.Extension = (*Config)(nil)
+var _ component.Config = (*Config)(nil)
 
 // Validate checks if the extension configuration is valid
 func (cfg *Config) Validate() error {

@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,9 +27,10 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver/internal/metadata"
 	dm "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver/internal/model"
 )
@@ -60,7 +61,7 @@ func TestScrape(t *testing.T) {
 		&Config{
 			Metrics: metadata.DefaultMetricsSettings(),
 		},
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 	)
 	scraper.client = mockClient
 
@@ -70,7 +71,7 @@ func TestScrape(t *testing.T) {
 	expectedMetrics, err := golden.ReadMetrics(filepath.Join("testdata", "metrics", "expected_metrics.json"))
 	require.NoError(t, err)
 
-	err = scrapertest.CompareMetrics(metrics, expectedMetrics)
+	err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp())
 	require.NoError(t, err)
 }
 
@@ -81,7 +82,7 @@ func TestScrapeTransportNodeErrors(t *testing.T) {
 		&Config{
 			Metrics: metadata.DefaultMetricsSettings(),
 		},
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 	)
 	scraper.client = mockClient
 
@@ -99,7 +100,7 @@ func TestScrapeClusterNodeErrors(t *testing.T) {
 		&Config{
 			Metrics: metadata.DefaultMetricsSettings(),
 		},
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 	)
 	scraper.client = mockClient
 
@@ -117,7 +118,7 @@ func TestStartClientAlreadySet(t *testing.T) {
 				Endpoint: mockClient.URL,
 			},
 		},
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 	)
 	_ = scraper.start(context.Background(), componenttest.NewNopHost())
 	require.NotNil(t, scraper.client)
@@ -131,7 +132,7 @@ func TestStartBadUrl(t *testing.T) {
 				Endpoint: "\x00",
 			},
 		},
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 	)
 
 	_ = scraper.start(context.Background(), componenttest.NewNopHost())
@@ -146,7 +147,7 @@ func TestScraperRecordNoStat(t *testing.T) {
 			},
 			Metrics: metadata.DefaultMetricsSettings(),
 		},
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 	)
 	scraper.host = componenttest.NewNopHost()
 	scraper.recordNode(pcommon.NewTimestampFromTime(time.Now()), &nodeInfo{stats: nil})

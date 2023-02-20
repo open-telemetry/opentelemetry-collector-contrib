@@ -45,9 +45,9 @@ func NewConfigWithID(operatorID string) *Config {
 
 // Config is the configuration of a copy operator
 type Config struct {
-	helper.TransformerConfig `mapstructure:",squash" yaml:",inline"`
-	From                     entry.Field `mapstructure:"from" json:"from" yaml:"from"`
-	To                       entry.Field `mapstructure:"to" json:"to" yaml:"to"`
+	helper.TransformerConfig `mapstructure:",squash"`
+	From                     entry.Field `mapstructure:"from"`
+	To                       entry.Field `mapstructure:"to"`
 }
 
 // Build will build a copy operator from the supplied configuration

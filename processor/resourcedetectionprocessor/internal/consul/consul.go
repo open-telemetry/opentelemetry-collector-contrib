@@ -19,8 +19,8 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/consul/api"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/processor"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
@@ -42,7 +42,7 @@ type Detector struct {
 }
 
 // NewDetector creates a new system metadata detector
-func NewDetector(p component.ProcessorCreateSettings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(p processor.CreateSettings, dcfg internal.DetectorConfig) (internal.Detector, error) {
 	userCfg := dcfg.(Config)
 	cfg := api.DefaultConfig()
 
@@ -56,7 +56,7 @@ func NewDetector(p component.ProcessorCreateSettings, dcfg internal.DetectorConf
 		cfg.Namespace = userCfg.Namespace
 	}
 	if userCfg.Token != "" {
-		cfg.Token = userCfg.Token
+		cfg.Token = string(userCfg.Token)
 	}
 	if userCfg.TokenFile != "" {
 		cfg.Token = userCfg.TokenFile
@@ -82,12 +82,12 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	}
 
 	for key, element := range metadata.HostMetadata {
-		attrs.PutString(key, element)
+		attrs.PutStr(key, element)
 	}
 
-	attrs.PutString(conventions.AttributeHostName, metadata.Hostname)
-	attrs.PutString(conventions.AttributeCloudRegion, metadata.Datacenter)
-	attrs.PutString(conventions.AttributeHostID, metadata.NodeID)
+	attrs.PutStr(conventions.AttributeHostName, metadata.Hostname)
+	attrs.PutStr(conventions.AttributeCloudRegion, metadata.Datacenter)
+	attrs.PutStr(conventions.AttributeHostID, metadata.NodeID)
 
 	return res, conventions.SchemaURL, nil
 }

@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,12 +17,10 @@ package awsfirehosereceiver // import "github.com/open-telemetry/opentelemetry-c
 import (
 	"errors"
 
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 )
 
 type Config struct {
-	config.ReceiverSettings `mapstructure:",squash"`
 	// HTTPServerSettings is used to set up the Firehose delivery
 	// endpoint. The Firehose delivery stream expects an HTTPS
 	// endpoint, so TLSSettings must be used to enable that.

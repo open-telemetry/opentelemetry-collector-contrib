@@ -22,10 +22,10 @@ import (
 // Applicable to sum and gauge metrics only.
 func toggleScalarDataTypeOp(metric pmetric.Metric, f internalFilter) {
 	var dps pmetric.NumberDataPointSlice
-	switch metric.DataType() {
-	case pmetric.MetricDataTypeGauge:
+	switch metric.Type() {
+	case pmetric.MetricTypeGauge:
 		dps = metric.Gauge().DataPoints()
-	case pmetric.MetricDataTypeSum:
+	case pmetric.MetricTypeSum:
 		dps = metric.Sum().DataPoints()
 	default:
 		return
@@ -39,9 +39,9 @@ func toggleScalarDataTypeOp(metric pmetric.Metric, f internalFilter) {
 
 		switch dp.ValueType() {
 		case pmetric.NumberDataPointValueTypeInt:
-			dp.SetDoubleVal(float64(dp.IntVal()))
+			dp.SetDoubleValue(float64(dp.IntValue()))
 		case pmetric.NumberDataPointValueTypeDouble:
-			dp.SetIntVal(int64(dp.DoubleVal()))
+			dp.SetIntValue(int64(dp.DoubleValue()))
 		}
 	}
 }

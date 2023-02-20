@@ -20,25 +20,21 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
-
-	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yml"), factories)
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yml"))
 	require.NoError(t, err)
-	require.Equal(t, 1, len(cfg.Receivers))
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
 
-	r := cfg.Receivers[config.NewComponentID(typeStr)].(*Config)
+	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
+	require.NoError(t, err)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	assert.Equal(t, &Config{
-		ReceiverSettings:      config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		Topic:                 "otel-pulsar",
 		Endpoint:              "pulsar://localhost:6500",
 		ConsumerName:          "otel-collector",
@@ -46,5 +42,7 @@ func TestLoadConfig(t *testing.T) {
 		Encoding:              defaultEncoding,
 		TLSTrustCertsFilePath: "ca.pem",
 		Authentication:        Authentication{TLS: &TLS{CertFile: "cert.pem", KeyFile: "key.pem"}},
-	}, r)
+	},
+		cfg,
+	)
 }

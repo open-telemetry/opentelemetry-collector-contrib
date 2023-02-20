@@ -241,17 +241,16 @@ func BenchmarkStringTagFilterEvaluateRegex(b *testing.B) {
 }
 
 func newTraceStringAttrs(nodeAttrs map[string]interface{}, spanAttrKey string, spanAttrValue string) *TraceData {
-	var traceBatches []ptrace.Traces
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
+	//nolint:errcheck
 	rs.Resource().Attributes().FromRaw(nodeAttrs)
 	ils := rs.ScopeSpans().AppendEmpty()
 	span := ils.Spans().AppendEmpty()
 	span.SetTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 	span.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
-	span.Attributes().PutString(spanAttrKey, spanAttrValue)
-	traceBatches = append(traceBatches, traces)
+	span.Attributes().PutStr(spanAttrKey, spanAttrValue)
 	return &TraceData{
-		ReceivedBatches: traceBatches,
+		ReceivedBatches: traces,
 	}
 }

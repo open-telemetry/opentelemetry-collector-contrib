@@ -11,8 +11,6 @@
 
 The cumulative to delta processor (`cumulativetodeltaprocessor`) converts monotonic, cumulative sum and histogram metrics to monotonic, delta metrics. Non-monotonic sums and exponential histograms are excluded.
 
-Histogram conversion is currently behind a [feature gate](#feature-gate-configurations) and will only be converted if the feature flag is set.
-
 ## Configuration
 
 Configuration is specified through a list of metrics. The processor uses metric names to identify a set of cumulative metrics and converts them from cumulative to delta.
@@ -21,7 +19,7 @@ The following settings can be optionally configured:
 
 - `include`: List of metrics names or patterns to convert to delta.
 - `exclude`: List of metrics names or patterns to not convert to delta.  **If a metric name matches both include and exclude, exclude takes precedence.**
-- `max_stale`: The total time a state entry will live past the time it was last seen. Set to 0 to retain state indefinitely. Default: 0
+- `max_staleness`: The total time a state entry will live past the time it was last seen. Set to 0 to retain state indefinitely. Default: 0
 
 If neither include nor exclude are supplied, no filtering is applied.
 
@@ -76,14 +74,6 @@ processors:
         # If include/exclude are not specified
         # convert all cumulative sum or histogram metrics to delta
 ```
-
-## Feature gate configurations
-
-The **processor.cumulativetodeltaprocessor.EnableHistogramSupport** feature flag controls whether cumulative histograms delta conversion is supported or not. It is disabled by default, meaning histograms will not be modified by the processor.  If enabled, which histograms are converted is still subjected to the processor's include/exclude filtering.
-
-Pass `--feature-gates processor.cumulativetodeltaprocessor.EnableHistogramSupport` to enable this feature.
-
-This feature flag will be removed, and histograms will be enabled by default in release v0.60.0, September 2022.
 
 ## Warnings
 

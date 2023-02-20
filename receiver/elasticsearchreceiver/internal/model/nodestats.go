@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -169,19 +169,48 @@ type NodeStatsNodesInfoIndices struct {
 	IndexingOperations IndexingOperations  `json:"indexing"`
 	GetOperation       GetOperation        `json:"get"`
 	SearchOperations   SearchOperations    `json:"search"`
-	MergeOperations    BasicIndexOperation `json:"merges"`
+	MergeOperations    MergeOperations     `json:"merges"`
 	RefreshOperations  BasicIndexOperation `json:"refresh"`
 	FlushOperations    BasicIndexOperation `json:"flush"`
 	WarmerOperations   BasicIndexOperation `json:"warmer"`
 	QueryCache         BasicCacheInfo      `json:"query_cache"`
 	FieldDataCache     BasicCacheInfo      `json:"fielddata"`
 	TranslogStats      TranslogStats       `json:"translog"`
+	RequestCacheStats  RequestCacheStats   `json:"request_cache"`
+	SegmentsStats      SegmentsStats       `json:"segments"`
+	SharedStats        SharedStats         `json:"shard_stats"`
+	Mappings           MappingsStats       `json:"mappings"`
+}
+
+type SegmentsStats struct {
+	Count                    int64 `json:"count"`
+	DocumentValuesMemoryInBy int64 `json:"doc_values_memory_in_bytes"`
+	IndexWriterMemoryInBy    int64 `json:"index_writer_memory_in_bytes"`
+	MemoryInBy               int64 `json:"memory_in_bytes"`
+	TermsMemoryInBy          int64 `json:"terms_memory_in_bytes"`
+	FixedBitSetMemoryInBy    int64 `json:"fixed_bit_set_memory_in_bytes"`
+}
+
+type SharedStats struct {
+	TotalCount int64 `json:"total_count"`
+}
+
+type MappingsStats struct {
+	TotalCount                 int64 `json:"total_count"`
+	TotalEstimatedOverheadInBy int64 `json:"total_estimated_overhead_in_bytes"`
 }
 
 type TranslogStats struct {
 	Operations                int64 `json:"operations"`
 	SizeInBy                  int64 `json:"size_in_bytes"`
 	UncommittedOperationsInBy int64 `json:"uncommitted_size_in_bytes"`
+}
+
+type RequestCacheStats struct {
+	MemorySizeInBy int64 `json:"memory_size_in_bytes"`
+	Evictions      int64 `json:"evictions"`
+	HitCount       int64 `json:"hit_count"`
+	MissCount      int64 `json:"miss_count"`
 }
 
 type StoreInfo struct {
@@ -195,6 +224,12 @@ type BasicIndexOperation struct {
 	TotalTimeInMs int64 `json:"total_time_in_millis"`
 }
 
+type MergeOperations struct {
+	BasicIndexOperation
+	TotalSizeInBytes int64 `json:"total_size_in_bytes"`
+	TotalDocs        int64 `json:"total_docs"`
+}
+
 type IndexingOperations struct {
 	IndexTotal     int64 `json:"index_total"`
 	IndexTimeInMs  int64 `json:"index_time_in_millis"`
@@ -203,11 +238,16 @@ type IndexingOperations struct {
 }
 
 type GetOperation struct {
-	Total         int64 `json:"total"`
-	TotalTimeInMs int64 `json:"time_in_millis"`
+	Total           int64 `json:"total"`
+	TotalTimeInMs   int64 `json:"time_in_millis"`
+	Exists          int64 `json:"exists_total"`
+	ExistsTimeInMs  int64 `json:"exists_time_in_millis"`
+	Missing         int64 `json:"missing_total"`
+	MissingTimeInMs int64 `json:"missing_time_in_millis"`
 }
 
 type SearchOperations struct {
+	QueryCurrent    int64 `json:"query_current"`
 	QueryTotal      int64 `json:"query_total"`
 	QueryTimeInMs   int64 `json:"query_time_in_millis"`
 	FetchTotal      int64 `json:"fetch_total"`
@@ -247,6 +287,7 @@ type JVMMemoryInfo struct {
 	NonHeapUsedInBy     int64          `json:"non_heap_used_in_bytes"`
 	MaxHeapInBy         int64          `json:"heap_max_in_bytes"`
 	HeapCommittedInBy   int64          `json:"heap_committed_in_bytes"`
+	HeapUsedPercent     int64          `json:"heap_used_percent"`
 	NonHeapComittedInBy int64          `json:"non_heap_committed_in_bytes"`
 	MemoryPools         JVMMemoryPools `json:"pools"`
 }
@@ -294,7 +335,20 @@ type ThreadPoolStats struct {
 }
 
 type ProcessStats struct {
-	OpenFileDescriptorsCount int64 `json:"open_file_descriptors"`
+	OpenFileDescriptorsCount int64              `json:"open_file_descriptors"`
+	MaxFileDescriptorsCount  int64              `json:"max_file_descriptors_count"`
+	CPU                      ProcessCPUStats    `json:"cpu"`
+	Memory                   ProcessMemoryStats `json:"mem"`
+}
+
+type ProcessCPUStats struct {
+	Percent   int64 `json:"percent"`
+	TotalInMs int64 `json:"total_in_millis"`
+}
+
+type ProcessMemoryStats struct {
+	TotalVirtual     int64 `json:"total_virtual"`
+	TotalVirtualInBy int64 `json:"total_virtual_in_bytes"`
 }
 
 type TransportStats struct {

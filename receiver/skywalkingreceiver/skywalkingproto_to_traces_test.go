@@ -28,7 +28,7 @@ func TestSetInternalSpanStatus(t *testing.T) {
 	tests := []struct {
 		name   string
 		swSpan *agentV3.SpanObject
-		dest   ptrace.SpanStatus
+		dest   ptrace.Status
 		code   ptrace.StatusCode
 	}{
 		{

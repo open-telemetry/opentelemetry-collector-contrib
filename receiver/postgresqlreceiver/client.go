@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -288,15 +288,15 @@ type tableIOStats struct {
 }
 
 func (c *postgreSQLClient) getBlocksReadByTable(ctx context.Context, db string) (map[tableIdentifier]tableIOStats, error) {
-	query := `SELECT schemaname || '.' || relname AS table, 
-	coalesce(heap_blks_read, 0) AS heap_read, 
-	coalesce(heap_blks_hit, 0) AS heap_hit, 
-	coalesce(idx_blks_read, 0) AS idx_read, 
-	coalesce(idx_blks_hit, 0) AS idx_hit, 
-	coalesce(toast_blks_read, 0) AS toast_read, 
-	coalesce(toast_blks_hit, 0) AS toast_hit, 
-	coalesce(tidx_blks_read, 0) AS tidx_read, 
-	coalesce(tidx_blks_hit, 0) AS tidx_hit 
+	query := `SELECT schemaname || '.' || relname AS table,
+	coalesce(heap_blks_read, 0) AS heap_read,
+	coalesce(heap_blks_hit, 0) AS heap_hit,
+	coalesce(idx_blks_read, 0) AS idx_read,
+	coalesce(idx_blks_hit, 0) AS idx_hit,
+	coalesce(toast_blks_read, 0) AS toast_read,
+	coalesce(toast_blks_hit, 0) AS toast_hit,
+	coalesce(tidx_blks_read, 0) AS tidx_read,
+	coalesce(tidx_blks_hit, 0) AS tidx_hit
 	FROM pg_statio_user_tables;`
 
 	tios := map[tableIdentifier]tableIOStats{}
@@ -376,8 +376,8 @@ func (c *postgreSQLClient) getIndexStats(ctx context.Context, database string) (
 type bgStat struct {
 	checkpointsReq       int64
 	checkpointsScheduled int64
-	checkpointWriteTime  int64
-	checkpointSyncTime   int64
+	checkpointWriteTime  float64
+	checkpointSyncTime   float64
 	bgWrites             int64
 	backendWrites        int64
 	bufferBackendWrites  int64
@@ -388,7 +388,7 @@ type bgStat struct {
 }
 
 func (c *postgreSQLClient) getBGWriterStats(ctx context.Context) (*bgStat, error) {
-	query := `SELECT 
+	query := `SELECT
 	checkpoints_req AS checkpoint_req,
 	checkpoints_timed AS checkpoint_scheduled,
 	checkpoint_write_time AS checkpoint_duration_write,
@@ -404,7 +404,7 @@ func (c *postgreSQLClient) getBGWriterStats(ctx context.Context) (*bgStat, error
 	row := c.client.QueryRowContext(ctx, query)
 	var (
 		checkpointsReq, checkpointsScheduled               int64
-		checkpointSyncTime, checkpointWriteTime            int64
+		checkpointSyncTime, checkpointWriteTime            float64
 		bgWrites, bufferCheckpoints, bufferAllocated       int64
 		bufferBackendWrites, bufferFsyncWrites, maxWritten int64
 	)
@@ -455,12 +455,12 @@ type replicationStats struct {
 }
 
 func (c *postgreSQLClient) getReplicationStats(ctx context.Context) ([]replicationStats, error) {
-	query := `SELECT 
+	query := `SELECT
 	client_addr,
-	coalesce(pg_wal_lsn_diff(pg_current_wal_lsn(), replay_lsn), 0) AS replication_bytes_pending,
-	write_lag,
-	flush_lag,
-	replay_lag
+	coalesce(pg_wal_lsn_diff(pg_current_wal_lsn(), replay_lsn), -1) AS replication_bytes_pending,
+	extract('epoch' from coalesce(write_lag, '-1 seconds')),
+	extract('epoch' from coalesce(flush_lag, '-1 seconds')),
+	extract('epoch' from coalesce(replay_lag, '-1 seconds'))
 	FROM pg_stat_replication;
 	`
 	rows, err := c.client.QueryContext(ctx, query)
