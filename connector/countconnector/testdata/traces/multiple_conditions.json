@@ -15,14 +15,28 @@
             {
                "metrics": [
                   {
-                     "description": "The number of spans observed.",
-                     "name": "trace.span.count",
+                     "description": "Span count if ...",
+                     "name": "span.count.if",
                      "sum": {
                         "aggregationTemporality": 1,
                         "dataPoints": [
                            {
-                              "asInt": "2",
-                              "timeUnixNano": "1675456932175619000"
+                              "asInt": "1",
+                              "timeUnixNano": "1676490033223790000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     }
+                  },
+                  {
+                     "description": "Span event count if ...",
+                     "name": "spanevent.count.if",
+                     "sum": {
+                        "aggregationTemporality": 1,
+                        "dataPoints": [
+                           {
+                              "asInt": "1",
+                              "timeUnixNano": "1676490033223791000"
                            }
                         ],
                         "isMonotonic": true
@@ -50,14 +64,28 @@
             {
                "metrics": [
                   {
-                     "description": "The number of spans observed.",
-                     "name": "trace.span.count",
+                     "description": "Span count if ...",
+                     "name": "span.count.if",
                      "sum": {
                         "aggregationTemporality": 1,
                         "dataPoints": [
                            {
                               "asInt": "1",
-                              "timeUnixNano": "1675456932175619000"
+                              "timeUnixNano": "1676490033223796000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     }
+                  },
+                  {
+                     "description": "Span event count if ...",
+                     "name": "spanevent.count.if",
+                     "sum": {
+                        "aggregationTemporality": 1,
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "timeUnixNano": "1676490033223796000"
                            }
                         ],
                         "isMonotonic": true
