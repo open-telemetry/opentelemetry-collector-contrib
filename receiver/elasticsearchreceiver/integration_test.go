@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -29,9 +29,11 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
 var (
@@ -56,7 +58,10 @@ var (
 )
 
 func TestElasticsearchIntegration(t *testing.T) {
-	//Starts an elasticsearch docker container
+	// Let this test check if it works with the features disabled and the unit test will test the feature enabled.
+	require.NoError(t, featuregate.GlobalRegistry().Set(emitNodeVersionAttr.ID(), false))
+
+	// Starts an elasticsearch docker container
 	t.Run("Running elasticsearch 7.9", func(t *testing.T) {
 		t.Parallel()
 		container := getContainer(t, containerRequest7_9_3)
@@ -71,7 +76,7 @@ func TestElasticsearchIntegration(t *testing.T) {
 		cfg.Endpoint = fmt.Sprintf("http://%s:9200", hostname)
 
 		consumer := new(consumertest.MetricsSink)
-		settings := componenttest.NewNopReceiverCreateSettings()
+		settings := receivertest.NewNopCreateSettings()
 		rcvr, err := f.CreateMetricsReceiver(context.Background(), settings, cfg, consumer)
 		require.NoError(t, err, "failed creating metrics receiver")
 
@@ -81,13 +86,16 @@ func TestElasticsearchIntegration(t *testing.T) {
 		}, 2*time.Minute, 1*time.Second, "failed to receive more than 0 metrics")
 		require.NoError(t, rcvr.Shutdown(context.Background()))
 
-		actualMtrics := consumer.AllMetrics()[0]
+		actualMetrics := consumer.AllMetrics()[0]
 
 		expectedFile := filepath.Join("testdata", "integration", "expected.7_9_3.json")
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		scrapertest.CompareMetrics(expectedMetrics, actualMtrics, scrapertest.IgnoreMetricValues(), scrapertest.IgnoreResourceAttributeValue("elasticsearch.node.name"))
+		pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, //nolint:errcheck
+			pmetrictest.IgnoreResourceMetricsOrder(),
+			pmetrictest.IgnoreMetricValues(),
+			pmetrictest.IgnoreResourceAttributeValue("elasticsearch.node.name"))
 	})
 	t.Run("Running elasticsearch 7.16.3", func(t *testing.T) {
 		t.Parallel()
@@ -103,7 +111,7 @@ func TestElasticsearchIntegration(t *testing.T) {
 		cfg.Endpoint = fmt.Sprintf("http://%s:9300", hostname)
 
 		consumer := new(consumertest.MetricsSink)
-		settings := componenttest.NewNopReceiverCreateSettings()
+		settings := receivertest.NewNopCreateSettings()
 		rcvr, err := f.CreateMetricsReceiver(context.Background(), settings, cfg, consumer)
 		require.NoError(t, err, "failed creating metrics receiver")
 
@@ -113,13 +121,16 @@ func TestElasticsearchIntegration(t *testing.T) {
 		}, 2*time.Minute, 1*time.Second, "failed to receive more than 0 metrics")
 		require.NoError(t, rcvr.Shutdown(context.Background()))
 
-		actualMtrics := consumer.AllMetrics()[0]
+		actualMetrics := consumer.AllMetrics()[0]
 
 		expectedFile := filepath.Join("testdata", "integration", "expected.7_16_3.json")
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		scrapertest.CompareMetrics(expectedMetrics, actualMtrics, scrapertest.IgnoreMetricValues(), scrapertest.IgnoreResourceAttributeValue("elasticsearch.node.name"))
+		pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, //nolint:errcheck
+			pmetrictest.IgnoreResourceMetricsOrder(),
+			pmetrictest.IgnoreMetricValues(),
+			pmetrictest.IgnoreResourceAttributeValue("elasticsearch.node.name"))
 	})
 }
 

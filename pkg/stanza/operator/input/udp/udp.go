@@ -61,16 +61,16 @@ func NewConfigWithID(operatorID string) *Config {
 
 // Config is the configuration of a udp input operator.
 type Config struct {
-	helper.InputConfig `mapstructure:",squash" yaml:",inline"`
-	BaseConfig         `mapstructure:",squash" yaml:",inline"`
+	helper.InputConfig `mapstructure:",squash"`
+	BaseConfig         `mapstructure:",squash"`
 }
 
 // BaseConfig is the details configuration of a udp input operator.
 type BaseConfig struct {
-	ListenAddress string                 `mapstructure:"listen_address,omitempty"        json:"listen_address,omitempty"       yaml:"listen_address,omitempty"`
-	AddAttributes bool                   `mapstructure:"add_attributes,omitempty"        json:"add_attributes,omitempty"       yaml:"add_attributes,omitempty"`
-	Encoding      helper.EncodingConfig  `mapstructure:",squash,omitempty"               json:",inline,omitempty"              yaml:",inline,omitempty"`
-	Multiline     helper.MultilineConfig `mapstructure:"multiline,omitempty"             json:"multiline,omitempty"            yaml:"multiline,omitempty"`
+	ListenAddress string                 `mapstructure:"listen_address,omitempty"`
+	AddAttributes bool                   `mapstructure:"add_attributes,omitempty"`
+	Encoding      helper.EncodingConfig  `mapstructure:",squash,omitempty"`
+	Multiline     helper.MultilineConfig `mapstructure:"multiline,omitempty"`
 }
 
 // Build will build a udp input operator.
@@ -228,6 +228,9 @@ func (u *Input) readMessage() ([]byte, net.Addr, error) {
 
 // Stop will stop listening for udp messages.
 func (u *Input) Stop() error {
+	if u.cancel == nil {
+		return nil
+	}
 	u.cancel()
 	if u.connection != nil {
 		if err := u.connection.Close(); err != nil {

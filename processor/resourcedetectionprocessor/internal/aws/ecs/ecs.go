@@ -21,8 +21,8 @@ import (
 	"fmt"
 	"strings"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/processor"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
@@ -41,7 +41,7 @@ type Detector struct {
 	provider ecsutil.MetadataProvider
 }
 
-func NewDetector(params component.ProcessorCreateSettings, _ internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(params processor.CreateSettings, _ internal.DetectorConfig) (internal.Detector, error) {
 	provider, err := ecsutil.NewDetectedTaskMetadataProvider(params.TelemetrySettings)
 	if err != nil {
 		// Allow metadata provider to be created in incompatible environments and just have a noop Detect()
@@ -71,36 +71,36 @@ func (d *Detector) Detect(context.Context) (resource pcommon.Resource, schemaURL
 	}
 
 	attr := res.Attributes()
-	attr.PutString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-	attr.PutString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSECS)
-	attr.PutString(conventions.AttributeAWSECSTaskARN, tmdeResp.TaskARN)
-	attr.PutString(conventions.AttributeAWSECSTaskFamily, tmdeResp.Family)
-	attr.PutString(conventions.AttributeAWSECSTaskRevision, tmdeResp.Revision)
+	attr.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
+	attr.PutStr(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSECS)
+	attr.PutStr(conventions.AttributeAWSECSTaskARN, tmdeResp.TaskARN)
+	attr.PutStr(conventions.AttributeAWSECSTaskFamily, tmdeResp.Family)
+	attr.PutStr(conventions.AttributeAWSECSTaskRevision, tmdeResp.Revision)
 
 	region, account := parseRegionAndAccount(tmdeResp.TaskARN)
 	if account != "" {
-		attr.PutString(conventions.AttributeCloudAccountID, account)
+		attr.PutStr(conventions.AttributeCloudAccountID, account)
 	}
 
 	if region != "" {
-		attr.PutString(conventions.AttributeCloudRegion, region)
+		attr.PutStr(conventions.AttributeCloudRegion, region)
 	}
 
 	// TMDE returns the cluster short name or ARN, so we need to construct the ARN if necessary
-	attr.PutString(conventions.AttributeAWSECSClusterARN, constructClusterArn(tmdeResp.Cluster, region, account))
+	attr.PutStr(conventions.AttributeAWSECSClusterARN, constructClusterArn(tmdeResp.Cluster, region, account))
 
 	// The Availability Zone is not available in all Fargate runtimes
 	if tmdeResp.AvailabilityZone != "" {
-		attr.PutString(conventions.AttributeCloudAvailabilityZone, tmdeResp.AvailabilityZone)
+		attr.PutStr(conventions.AttributeCloudAvailabilityZone, tmdeResp.AvailabilityZone)
 	}
 
 	// The launch type and log data attributes are only available in TMDE v4
 	switch lt := strings.ToLower(tmdeResp.LaunchType); lt {
 	case "ec2":
-		attr.PutString(conventions.AttributeAWSECSLaunchtype, "ec2")
+		attr.PutStr(conventions.AttributeAWSECSLaunchtype, "ec2")
 
 	case "fargate":
-		attr.PutString(conventions.AttributeAWSECSLaunchtype, "fargate")
+		attr.PutStr(conventions.AttributeAWSECSLaunchtype, "fargate")
 	}
 
 	selfMetaData, err := d.provider.FetchContainerMetadata()
@@ -159,10 +159,10 @@ func addValidLogData(containers []ecsutil.ContainerMetadata, self *ecsutil.Conta
 				logStreamArns = dest.PutEmptySlice(conventions.AttributeAWSLogStreamARNs)
 				initialized = true
 			}
-			logGroupNames.AppendEmpty().SetStringVal(logData.LogGroup)
-			logGroupArns.AppendEmpty().SetStringVal(constructLogGroupArn(logData.Region, account, logData.LogGroup))
-			logStreamNames.AppendEmpty().SetStringVal(logData.Stream)
-			logStreamArns.AppendEmpty().SetStringVal(constructLogStreamArn(logData.Region, account, logData.LogGroup, logData.Stream))
+			logGroupNames.AppendEmpty().SetStr(logData.LogGroup)
+			logGroupArns.AppendEmpty().SetStr(constructLogGroupArn(logData.Region, account, logData.LogGroup))
+			logStreamNames.AppendEmpty().SetStr(logData.Stream)
+			logStreamArns.AppendEmpty().SetStr(constructLogStreamArn(logData.Region, account, logData.LogGroup, logData.Stream))
 		}
 	}
 }

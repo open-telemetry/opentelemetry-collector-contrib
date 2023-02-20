@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck,gocritic
 package extractors
 
 import (
@@ -29,7 +28,7 @@ import (
 
 func TestFSStats(t *testing.T) {
 	result := testutils.LoadContainerInfo(t, "./testdata/CurInfoContainer.json")
-	//container type
+	// container type
 	containerType := TypeContainer
 	extractor := NewFileSystemMetricExtractor(nil)
 
@@ -51,7 +50,7 @@ func TestFSStats(t *testing.T) {
 	}
 	AssertContainsTaggedField(t, cMetrics[0], expectedFields, expectedTags)
 
-	//pod type
+	// pod type
 	containerType = TypePod
 	extractor = NewFileSystemMetricExtractor(nil)
 
@@ -61,7 +60,7 @@ func TestFSStats(t *testing.T) {
 
 	assert.Equal(t, len(cMetrics), 0)
 
-	//node type for eks
+	// node type for eks
 
 	result2 := testutils.LoadContainerInfo(t, "./testdata/CurInfoNode.json")
 	containerType = TypeNode
@@ -133,7 +132,7 @@ func TestFSStatsWithAllowList(t *testing.T) {
 
 	var b bytes.Buffer
 	enc := json.NewEncoder(&b)
-	enc.Encode(result)
+	assert.NoError(t, enc.Encode(result))
 	containerType := TypeContainer
 	extractor := NewFileSystemMetricExtractor(nil)
 

@@ -30,6 +30,7 @@ func TestUserAgent(t *testing.T) {
 	logger := zap.NewNop()
 
 	buildInfo := component.BuildInfo{
+		Command: "test-collector-contrib",
 		Version: "1.0",
 	}
 
@@ -43,5 +44,5 @@ func TestUserAgent(t *testing.T) {
 	}, nil, nil)
 
 	x.Handlers.Build.Run(req)
-	assert.Contains(t, req.HTTPRequest.UserAgent(), "opentelemetry-collector-contrib/1.0")
+	assert.Contains(t, req.HTTPRequest.UserAgent(), "test-collector-contrib/1.0")
 }

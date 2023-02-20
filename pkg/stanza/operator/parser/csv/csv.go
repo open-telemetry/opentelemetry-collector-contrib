@@ -48,13 +48,13 @@ func NewConfigWithID(operatorID string) *Config {
 
 // Config is the configuration of a csv parser operator.
 type Config struct {
-	helper.ParserConfig `mapstructure:",squash" yaml:",inline"`
+	helper.ParserConfig `mapstructure:",squash"`
 
-	Header          string `mapstructure:"header" json:"header" yaml:"header"`
-	HeaderAttribute string `mapstructure:"header_attribute" json:"header_attribute" yaml:"header_attribute"`
-	FieldDelimiter  string `mapstructure:"delimiter" json:"delimiter,omitempty" yaml:"delimiter,omitempty"`
-	LazyQuotes      bool   `mapstructure:"lazy_quotes" json:"lazy_quotes,omitempty" yaml:"lazy_quotes,omitempty"`
-	IgnoreQuotes    bool   `mapstructure:"ignore_quotes" json:"ignore_quotes,omitempty" yaml:"ignore_quotes,omitempty"`
+	Header          string `mapstructure:"header"`
+	HeaderAttribute string `mapstructure:"header_attribute"`
+	FieldDelimiter  string `mapstructure:"delimiter"`
+	LazyQuotes      bool   `mapstructure:"lazy_quotes"`
+	IgnoreQuotes    bool   `mapstructure:"ignore_quotes"`
 }
 
 // Build will build a csv parser operator.

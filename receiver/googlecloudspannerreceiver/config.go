@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -29,10 +29,11 @@ const (
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 
-	TopMetricsQueryMaxRows int       `mapstructure:"top_metrics_query_max_rows"`
-	BackfillEnabled        bool      `mapstructure:"backfill_enabled"`
-	CardinalityTotalLimit  int       `mapstructure:"cardinality_total_limit"`
-	Projects               []Project `mapstructure:"projects"`
+	TopMetricsQueryMaxRows            int       `mapstructure:"top_metrics_query_max_rows"`
+	BackfillEnabled                   bool      `mapstructure:"backfill_enabled"`
+	CardinalityTotalLimit             int       `mapstructure:"cardinality_total_limit"`
+	Projects                          []Project `mapstructure:"projects"`
+	HideTopnLockstatsRowrangestartkey bool      `mapstructure:"hide_topn_lockstats_rowrangestartkey"`
 }
 
 type Project struct {
@@ -48,27 +49,23 @@ type Instance struct {
 
 func (config *Config) Validate() error {
 	if config.CollectionInterval.Seconds() < minCollectionIntervalSeconds {
-		return fmt.Errorf("%v %q must be not lower than %v seconds, current value is %v seconds", config.ID(),
-			"collection_interval", minCollectionIntervalSeconds, config.CollectionInterval.Seconds())
+		return fmt.Errorf("\"collection_interval\" must be not lower than %v seconds, current value is %v seconds", minCollectionIntervalSeconds, config.CollectionInterval.Seconds())
 	}
 
 	if config.TopMetricsQueryMaxRows <= 0 {
-		return fmt.Errorf("%v %q must be positive: %v", config.ID(), "top_metrics_query_max_rows",
-			config.TopMetricsQueryMaxRows)
+		return fmt.Errorf("\"top_metrics_query_max_rows\" must be positive: %v", config.TopMetricsQueryMaxRows)
 	}
 
 	if config.TopMetricsQueryMaxRows > maxTopMetricsQueryMaxRows {
-		return fmt.Errorf("%v %q must be not greater than %v, current value is %v", config.ID(),
-			"top_metrics_query_max_rows", maxTopMetricsQueryMaxRows, config.TopMetricsQueryMaxRows)
+		return fmt.Errorf("\"top_metrics_query_max_rows\" must be not greater than %v, current value is %v", maxTopMetricsQueryMaxRows, config.TopMetricsQueryMaxRows)
 	}
 
 	if config.CardinalityTotalLimit < 0 {
-		return fmt.Errorf("%v %q must be not negative, current value is %v",
-			config.ID(), "cardinality_total_limit", config.CardinalityTotalLimit)
+		return fmt.Errorf("\"cardinality_total_limit\" must be not negative, current value is %v", config.CardinalityTotalLimit)
 	}
 
 	if len(config.Projects) == 0 {
-		return fmt.Errorf("%v missing required field %q or its value is empty", config.ID(), "projects")
+		return errors.New("missing required field \"projects\" or its value is empty")
 	}
 
 	for _, project := range config.Projects {
@@ -86,7 +83,7 @@ func (project Project) Validate() error {
 	}
 
 	if len(project.Instances) == 0 {
-		return fmt.Errorf("field %q is required and cannot be empty for project configuration", "instances")
+		return errors.New("field \"instances\" is required and cannot be empty for project configuration")
 	}
 
 	for _, instance := range project.Instances {
@@ -100,16 +97,16 @@ func (project Project) Validate() error {
 
 func (instance Instance) Validate() error {
 	if instance.ID == "" {
-		return fmt.Errorf("field %q is required and cannot be empty for instance configuration", "instance_id")
+		return errors.New("field \"instance_id\" is required and cannot be empty for instance configuration")
 	}
 
 	if len(instance.Databases) == 0 {
-		return fmt.Errorf("field %q is required and cannot be empty for instance configuration", "databases")
+		return errors.New("field \"databases\" is required and cannot be empty for instance configuration")
 	}
 
 	for _, database := range instance.Databases {
 		if database == "" {
-			return fmt.Errorf("field %q contains empty database names", "databases")
+			return errors.New("field \"databases\" contains empty database names")
 		}
 	}
 

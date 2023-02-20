@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -38,9 +38,12 @@ var (
 
 // elasticsearchClient defines the interface to retrieve metrics from an Elasticsearch cluster.
 type elasticsearchClient interface {
+	Nodes(ctx context.Context, nodes []string) (*model.Nodes, error)
 	NodeStats(ctx context.Context, nodes []string) (*model.NodeStats, error)
 	ClusterHealth(ctx context.Context) (*model.ClusterHealth, error)
-	Version(ctx context.Context) (*model.VersionResponse, error)
+	IndexStats(ctx context.Context, indices []string) (*model.IndexStats, error)
+	ClusterMetadata(ctx context.Context) (*model.ClusterMetadataResponse, error)
+	ClusterStats(ctx context.Context, nodes []string) (*model.ClusterStats, error)
 }
 
 // defaultElasticsearchClient is the main implementation of elasticsearchClient.
@@ -85,8 +88,36 @@ func newElasticsearchClient(settings component.TelemetrySettings, c Config, h co
 // https://www.elastic.co/guide/en/elasticsearch/reference/7.9/cluster-nodes-stats.html#cluster-nodes-stats-api-path-params
 const nodeStatsMetrics = "breaker,indices,process,jvm,thread_pool,transport,http,fs,indexing_pressure,ingest,indices,adaptive_selection,discovery,script,os"
 
+// nodesMetrics is a comma separated list of metrics that will be gathered from Nodes.
+// The available metrics are documented here for Elasticsearch 7.9:
+// https://www.elastic.co/guide/en/elasticsearch/reference/7.9/cluster-nodes-info.html
+// Note: This constant should remain empty as the receiver will only retrieve metadata from the /_nodes endpoint, not metrics.
+const nodesMetrics = ""
+
 // nodeStatsIndexMetrics is a comma separated list of index metrics that will be gathered from NodeStats.
 const nodeStatsIndexMetrics = "store,docs,indexing,get,search,merge,refresh,flush,warmer,query_cache,fielddata,translog"
+
+const indexStatsMetrics = "_all"
+
+func (c defaultElasticsearchClient) Nodes(ctx context.Context, nodeIds []string) (*model.Nodes, error) {
+	var nodeSpec string
+	if len(nodeIds) > 0 {
+		nodeSpec = strings.Join(nodeIds, ",")
+	} else {
+		nodeSpec = "_all"
+	}
+
+	nodesPath := fmt.Sprintf("_nodes/%s/%s", nodeSpec, nodesMetrics)
+
+	body, err := c.doRequest(ctx, nodesPath)
+	if err != nil {
+		return nil, err
+	}
+
+	nodes := model.Nodes{}
+	err = json.Unmarshal(body, &nodes)
+	return &nodes, err
+}
 
 func (c defaultElasticsearchClient) NodeStats(ctx context.Context, nodes []string) (*model.NodeStats, error) {
 	var nodeSpec string
@@ -119,15 +150,57 @@ func (c defaultElasticsearchClient) ClusterHealth(ctx context.Context) (*model.C
 	return &clusterHealth, err
 }
 
-func (c defaultElasticsearchClient) Version(ctx context.Context) (*model.VersionResponse, error) {
+func (c defaultElasticsearchClient) IndexStats(ctx context.Context, indices []string) (*model.IndexStats, error) {
+	var indexSpec string
+	if len(indices) > 0 {
+		indexSpec = strings.Join(indices, ",")
+	} else {
+		indexSpec = "_all"
+	}
+
+	indexStatsPath := fmt.Sprintf("%s/_stats/%s", indexSpec, indexStatsMetrics)
+
+	body, err := c.doRequest(ctx, indexStatsPath)
+	if err != nil {
+		return nil, err
+	}
+
+	indexStats := model.IndexStats{}
+	err = json.Unmarshal(body, &indexStats)
+
+	return &indexStats, err
+}
+
+func (c defaultElasticsearchClient) ClusterMetadata(ctx context.Context) (*model.ClusterMetadataResponse, error) {
 	body, err := c.doRequest(ctx, "")
 	if err != nil {
 		return nil, err
 	}
 
-	versionResponse := model.VersionResponse{}
+	versionResponse := model.ClusterMetadataResponse{}
 	err = json.Unmarshal(body, &versionResponse)
 	return &versionResponse, err
+}
+
+func (c defaultElasticsearchClient) ClusterStats(ctx context.Context, nodes []string) (*model.ClusterStats, error) {
+	var nodesSpec string
+	if len(nodes) > 0 {
+		nodesSpec = strings.Join(nodes, ",")
+	} else {
+		nodesSpec = "_all"
+	}
+
+	clusterStatsPath := fmt.Sprintf("_cluster/stats/%s", nodesSpec)
+
+	body, err := c.doRequest(ctx, clusterStatsPath)
+	if err != nil {
+		return nil, err
+	}
+
+	clusterStats := model.ClusterStats{}
+	err = json.Unmarshal(body, &clusterStats)
+
+	return &clusterStats, err
 }
 
 func (c defaultElasticsearchClient) doRequest(ctx context.Context, path string) ([]byte, error) {

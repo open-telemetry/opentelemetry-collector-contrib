@@ -32,6 +32,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
 func TestPostgresIntegration(t *testing.T) {
@@ -71,14 +72,14 @@ func TestPostgresIntegration(t *testing.T) {
 					ValueColumn:      "count",
 					AttributeColumns: []string{genreKey},
 					ValueType:        MetricValueTypeInt,
-					DataType:         MetricDataTypeGauge,
+					DataType:         MetricTypeGauge,
 				},
 				{
 					MetricName:       "genre.imdb",
 					ValueColumn:      "avg",
 					AttributeColumns: []string{genreKey},
 					ValueType:        MetricValueTypeDouble,
-					DataType:         MetricDataTypeGauge,
+					DataType:         MetricTypeGauge,
 				},
 			},
 		},
@@ -90,43 +91,43 @@ func TestPostgresIntegration(t *testing.T) {
 					MetricName:  "a",
 					ValueColumn: "a",
 					ValueType:   MetricValueTypeInt,
-					DataType:    MetricDataTypeGauge,
+					DataType:    MetricTypeGauge,
 				},
 				{
 					MetricName:  "b",
 					ValueColumn: "b",
 					ValueType:   MetricValueTypeInt,
-					DataType:    MetricDataTypeGauge,
+					DataType:    MetricTypeGauge,
 				},
 				{
 					MetricName:  "c",
 					ValueColumn: "c",
 					ValueType:   MetricValueTypeInt,
-					DataType:    MetricDataTypeGauge,
+					DataType:    MetricTypeGauge,
 				},
 				{
 					MetricName:  "d",
 					ValueColumn: "d",
 					ValueType:   MetricValueTypeDouble,
-					DataType:    MetricDataTypeGauge,
+					DataType:    MetricTypeGauge,
 				},
 				{
 					MetricName:  "e",
 					ValueColumn: "e",
 					ValueType:   MetricValueTypeDouble,
-					DataType:    MetricDataTypeGauge,
+					DataType:    MetricTypeGauge,
 				},
 				{
 					MetricName:  "f",
 					ValueColumn: "f",
 					ValueType:   MetricValueTypeDouble,
-					DataType:    MetricDataTypeGauge,
+					DataType:    MetricTypeGauge,
 				},
 				{
 					MetricName:  "g",
 					ValueColumn: "g",
 					ValueType:   MetricValueTypeDouble,
-					DataType:    MetricDataTypeGauge,
+					DataType:    MetricTypeGauge,
 				},
 			},
 		},
@@ -134,7 +135,7 @@ func TestPostgresIntegration(t *testing.T) {
 	consumer := &consumertest.MetricsSink{}
 	receiver, err := factory.CreateMetricsReceiver(
 		ctx,
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 		config,
 		consumer,
 	)
@@ -156,15 +157,9 @@ func TestPostgresIntegration(t *testing.T) {
 	testPGTypeMetrics(t, rms.At(1))
 }
 
-// workaround to avoid "unused" lint errors which test is skipped
-var skip = func(t *testing.T, why string) {
-	t.Skip(why)
-}
-
 // This test ensures the collector can connect to an Oracle DB, and properly get metrics. It's not intended to
 // test the receiver itself.
 func TestOracleDBIntegration(t *testing.T) {
-	skip(t, "Flaky test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/12332")
 	externalPort := "51521"
 	internalPort := "1521"
 
@@ -205,14 +200,14 @@ func TestOracleDBIntegration(t *testing.T) {
 					ValueColumn:      "COUNT",
 					AttributeColumns: []string{genreKey},
 					ValueType:        MetricValueTypeInt,
-					DataType:         MetricDataTypeGauge,
+					DataType:         MetricTypeGauge,
 				},
 				{
 					MetricName:       "genre.imdb",
 					ValueColumn:      "AVG",
 					AttributeColumns: []string{genreKey},
 					ValueType:        MetricValueTypeDouble,
-					DataType:         MetricDataTypeGauge,
+					DataType:         MetricTypeGauge,
 				},
 			},
 		},
@@ -220,7 +215,7 @@ func TestOracleDBIntegration(t *testing.T) {
 	consumer := &consumertest.MetricsSink{}
 	receiver, err := factory.CreateMetricsReceiver(
 		ctx,
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 		config,
 		consumer,
 	)
@@ -261,9 +256,9 @@ func testMovieMetrics(t *testing.T, rm pmetric.ResourceMetrics, genreAttrKey str
 		genreStr := genre.AsString()
 		switch genreStr {
 		case "SciFi":
-			assert.EqualValues(t, 3, pt.IntVal())
+			assert.EqualValues(t, 3, pt.IntValue())
 		case "Action":
-			assert.EqualValues(t, 2, pt.IntVal())
+			assert.EqualValues(t, 2, pt.IntValue())
 		default:
 			assert.Failf(t, "unexpected genre: %s", genreStr)
 		}
@@ -275,9 +270,9 @@ func testMovieMetrics(t *testing.T, rm pmetric.ResourceMetrics, genreAttrKey str
 		genreStr := genre.AsString()
 		switch genreStr {
 		case "SciFi":
-			assert.InDelta(t, 8.2, pt.DoubleVal(), 0.1)
+			assert.InDelta(t, 8.2, pt.DoubleValue(), 0.1)
 		case "Action":
-			assert.InDelta(t, 7.65, pt.DoubleVal(), 0.1)
+			assert.InDelta(t, 7.65, pt.DoubleValue(), 0.1)
 		default:
 			assert.Failf(t, "unexpected genre: %s", genreStr)
 		}
@@ -310,10 +305,10 @@ func testPGTypeMetrics(t *testing.T, rm pmetric.ResourceMetrics) {
 	}
 }
 
-func assertIntGaugeEquals(t *testing.T, expected int, metric pmetric.Metric) bool {
-	return assert.EqualValues(t, expected, metric.Gauge().DataPoints().At(0).IntVal())
+func assertIntGaugeEquals(t *testing.T, expected int, metric pmetric.Metric) {
+	assert.EqualValues(t, expected, metric.Gauge().DataPoints().At(0).IntValue())
 }
 
-func assertDoubleGaugeEquals(t *testing.T, expected float64, metric pmetric.Metric) bool {
-	return assert.InDelta(t, expected, metric.Gauge().DataPoints().At(0).DoubleVal(), 0.1)
+func assertDoubleGaugeEquals(t *testing.T, expected float64, metric pmetric.Metric) {
+	assert.InDelta(t, expected, metric.Gauge().DataPoints().At(0).DoubleValue(), 0.1)
 }

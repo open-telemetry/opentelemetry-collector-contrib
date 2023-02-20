@@ -1,20 +1,6 @@
-receivers:
-  mongodb:
-    hosts:
-      - endpoint: localhost:27017
-    username: otel
-    password: $MONGO_PASSWORD
-    collection_interval: 60s
-
-processors:
-  nop:
-
-exporters:
-  nop:
-
-service:
-  pipelines:
-    metrics:
-      receivers: [mongodb]
-      processors: [nop]
-      exporters: [nop]
+mongodb:
+  hosts:
+    - endpoint: localhost:27017
+  username: otel
+  password: ${env:MONGO_PASSWORD}
+  collection_interval: 60s

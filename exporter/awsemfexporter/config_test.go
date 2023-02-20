@@ -20,9 +20,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
@@ -30,74 +29,110 @@ import (
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.Nil(t, err)
+	t.Parallel()
 
-	factory := NewFactory()
-	factories.Exporters[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
 
-	assert.Equal(t, 3, len(cfg.Exporters))
-
-	r0 := cfg.Exporters[config.NewComponentID(typeStr)]
-	assert.Equal(t, factory.CreateDefaultConfig(), r0)
-
-	r1 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "1")].(*Config)
-	assert.NoError(t, r1.Validate())
-	assert.Equal(t,
-		&Config{
-			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "1")),
-			AWSSessionSettings: awsutil.AWSSessionSettings{
-				NumberOfWorkers:       8,
-				Endpoint:              "",
-				RequestTimeoutSeconds: 30,
-				MaxRetries:            2,
-				NoVerifySSL:           false,
-				ProxyAddress:          "",
-				Region:                "us-west-2",
-				RoleARN:               "arn:aws:iam::123456789:role/monitoring-EKS-NodeInstanceRole",
+	tests := []struct {
+		id       component.ID
+		expected component.Config
+	}{
+		{
+			id:       component.NewIDWithName(typeStr, ""),
+			expected: createDefaultConfig(),
+		},
+		{
+			id: component.NewIDWithName(typeStr, "1"),
+			expected: &Config{
+				AWSSessionSettings: awsutil.AWSSessionSettings{
+					NumberOfWorkers:       8,
+					Endpoint:              "",
+					RequestTimeoutSeconds: 30,
+					MaxRetries:            2,
+					NoVerifySSL:           false,
+					ProxyAddress:          "",
+					Region:                "us-west-2",
+					RoleARN:               "arn:aws:iam::123456789:role/monitoring-EKS-NodeInstanceRole",
+				},
+				LogGroupName:          "",
+				LogStreamName:         "",
+				DimensionRollupOption: "ZeroAndSingleDimensionRollup",
+				OutputDestination:     "cloudwatch",
+				logger:                zap.NewNop(),
 			},
-			LogGroupName:          "",
-			LogStreamName:         "",
-			DimensionRollupOption: "ZeroAndSingleDimensionRollup",
-			OutputDestination:     "cloudwatch",
-		}, r1)
-
-	r2 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "resource_attr_to_label")].(*Config)
-	assert.NoError(t, r2.Validate())
-	assert.Equal(t, r2,
-		&Config{
-			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "resource_attr_to_label")),
-			AWSSessionSettings: awsutil.AWSSessionSettings{
-				NumberOfWorkers:       8,
-				Endpoint:              "",
-				RequestTimeoutSeconds: 30,
-				MaxRetries:            2,
-				NoVerifySSL:           false,
-				ProxyAddress:          "",
-				Region:                "",
-				RoleARN:               "",
+		},
+		{
+			id: component.NewIDWithName(typeStr, "resource_attr_to_label"),
+			expected: &Config{
+				AWSSessionSettings: awsutil.AWSSessionSettings{
+					NumberOfWorkers:       8,
+					Endpoint:              "",
+					RequestTimeoutSeconds: 30,
+					MaxRetries:            2,
+					NoVerifySSL:           false,
+					ProxyAddress:          "",
+					Region:                "",
+					RoleARN:               "",
+				},
+				LogGroupName:                "",
+				LogStreamName:               "",
+				DimensionRollupOption:       "ZeroAndSingleDimensionRollup",
+				OutputDestination:           "cloudwatch",
+				ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
+				logger:                      zap.NewNop(),
 			},
-			LogGroupName:                "",
-			LogStreamName:               "",
-			DimensionRollupOption:       "ZeroAndSingleDimensionRollup",
-			OutputDestination:           "cloudwatch",
-			ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
+		},
+		{
+			id: component.NewIDWithName(typeStr, "metric_descriptors"),
+			expected: &Config{
+				AWSSessionSettings: awsutil.AWSSessionSettings{
+					NumberOfWorkers:       8,
+					Endpoint:              "",
+					RequestTimeoutSeconds: 30,
+					MaxRetries:            2,
+					NoVerifySSL:           false,
+					ProxyAddress:          "",
+					Region:                "",
+					RoleARN:               "",
+				},
+				LogGroupName:          "",
+				LogStreamName:         "",
+				DimensionRollupOption: "ZeroAndSingleDimensionRollup",
+				OutputDestination:     "cloudwatch",
+				MetricDescriptors: []MetricDescriptor{{
+					MetricName: "memcached_current_items",
+					Unit:       "Count",
+					Overwrite:  true,
+				}},
+				logger: zap.NewNop(),
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.Equal(t, tt.expected, cfg)
 		})
+	}
 }
 
 func TestConfigValidate(t *testing.T) {
 	incorrectDescriptor := []MetricDescriptor{
-		{metricName: ""},
-		{unit: "Count", metricName: "apiserver_total", overwrite: true},
-		{unit: "INVALID", metricName: "404"},
-		{unit: "Megabytes", metricName: "memory_usage"},
+		{MetricName: ""},
+		{Unit: "Count", MetricName: "apiserver_total", Overwrite: true},
+		{Unit: "INVALID", MetricName: "404"},
+		{Unit: "Megabytes", MetricName: "memory_usage"},
 	}
 	cfg := &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "1")),
 		AWSSessionSettings: awsutil.AWSSessionSettings{
 			RequestTimeoutSeconds: 30,
 			MaxRetries:            1,
@@ -107,11 +142,41 @@ func TestConfigValidate(t *testing.T) {
 		MetricDescriptors:           incorrectDescriptor,
 		logger:                      zap.NewNop(),
 	}
-	assert.NoError(t, cfg.Validate())
+	assert.NoError(t, component.ValidateConfig(cfg))
 
 	assert.Equal(t, 2, len(cfg.MetricDescriptors))
 	assert.Equal(t, []MetricDescriptor{
-		{unit: "Count", metricName: "apiserver_total", overwrite: true},
-		{unit: "Megabytes", metricName: "memory_usage"},
+		{Unit: "Count", MetricName: "apiserver_total", Overwrite: true},
+		{Unit: "Megabytes", MetricName: "memory_usage"},
 	}, cfg.MetricDescriptors)
+}
+
+func TestRetentionValidateCorrect(t *testing.T) {
+	cfg := &Config{
+		AWSSessionSettings: awsutil.AWSSessionSettings{
+			RequestTimeoutSeconds: 30,
+			MaxRetries:            1,
+		},
+		DimensionRollupOption:       "ZeroAndSingleDimensionRollup",
+		LogRetention:                365,
+		ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
+		logger:                      zap.NewNop(),
+	}
+	assert.NoError(t, component.ValidateConfig(cfg))
+
+}
+
+func TestRetentionValidateWrong(t *testing.T) {
+	wrongcfg := &Config{
+		AWSSessionSettings: awsutil.AWSSessionSettings{
+			RequestTimeoutSeconds: 30,
+			MaxRetries:            1,
+		},
+		DimensionRollupOption:       "ZeroAndSingleDimensionRollup",
+		LogRetention:                366,
+		ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
+		logger:                      zap.NewNop(),
+	}
+	assert.Error(t, wrongcfg.Validate())
+
 }

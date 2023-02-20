@@ -20,58 +20,96 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.Nil(t, err)
+	t.Parallel()
 
-	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
 
-	assert.Equal(t, len(cfg.Receivers), 3)
-
-	r0 := cfg.Receivers[config.NewComponentID(typeStr)]
-	assert.Equal(t, r0, factory.CreateDefaultConfig())
-
-	r1 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "allsettings")].(*Config)
-	assert.Equal(t, r1,
-		&Config{
-			ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "allsettings")),
-			HTTPServerSettings: confighttp.HTTPServerSettings{
-				Endpoint: "localhost:9943",
-			},
-			AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
-				AccessTokenPassthrough: true,
-			},
-		})
-
-	r2 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "tls")].(*Config)
-	assert.Equal(t, r2,
-		&Config{
-			ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "tls")),
-			HTTPServerSettings: confighttp.HTTPServerSettings{
-				Endpoint: ":9943",
-				TLSSetting: &configtls.TLSServerSetting{
-					TLSSetting: configtls.TLSSetting{
-						CertFile: "/test.crt",
-						KeyFile:  "/test.key",
-					},
+	tests := []struct {
+		id       component.ID
+		expected component.Config
+	}{
+		{
+			id:       component.NewIDWithName(typeStr, ""),
+			expected: createDefaultConfig(),
+		},
+		{
+			id: component.NewIDWithName(typeStr, "allsettings"),
+			expected: &Config{
+				HTTPServerSettings: confighttp.HTTPServerSettings{
+					Endpoint: "localhost:9943",
+				},
+				AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
+					AccessTokenPassthrough: true,
 				},
 			},
-			AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
-				AccessTokenPassthrough: false,
+		},
+		{
+			id: component.NewIDWithName(typeStr, "tls"),
+			expected: &Config{
+				HTTPServerSettings: confighttp.HTTPServerSettings{
+					Endpoint: ":9943",
+					TLSSetting: &configtls.TLSServerSetting{
+						TLSSetting: configtls.TLSSetting{
+							CertFile: "/test.crt",
+							KeyFile:  "/test.key",
+						},
+					},
+				},
+				AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
+					AccessTokenPassthrough: false,
+				},
 			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.Equal(t, tt.expected, cfg)
 		})
+	}
+}
+
+func TestCreateInvalidHTTPEndpoint(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Endpoint = ""
+
+	err := cfg.Validate()
+	assert.EqualError(t, err, "empty endpoint")
+}
+
+func TestCreateNoPortEndpoint(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Endpoint = "localhost:"
+
+	err := cfg.Validate()
+	assert.EqualError(t, err, `endpoint port is not a number: strconv.ParseInt: parsing "": invalid syntax`)
+}
+
+func TestCreateLargePortEndpoint(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Endpoint = "localhost:65536"
+
+	err := cfg.Validate()
+	assert.EqualError(t, err, "port number must be between 1 and 65535")
 }

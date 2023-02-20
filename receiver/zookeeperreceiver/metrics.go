@@ -54,16 +54,12 @@ type metricCreator struct {
 	computedMetricStore map[string]int64
 	mb                  *metadata.MetricsBuilder
 	// Temporary feature gates while transitioning to metrics without a direction attribute
-	emitMetricsWithDirectionAttribute    bool
-	emitMetricsWithoutDirectionAttribute bool
 }
 
-func newMetricCreator(mb *metadata.MetricsBuilder, emitMetricsWithDirectionAttribute, emitMetricsWithoutDirectionAttribute bool) *metricCreator {
+func newMetricCreator(mb *metadata.MetricsBuilder) *metricCreator {
 	return &metricCreator{
-		computedMetricStore:                  make(map[string]int64),
-		mb:                                   mb,
-		emitMetricsWithDirectionAttribute:    emitMetricsWithDirectionAttribute,
-		emitMetricsWithoutDirectionAttribute: emitMetricsWithoutDirectionAttribute,
+		computedMetricStore: make(map[string]int64),
+		mb:                  mb,
 	}
 }
 
@@ -106,21 +102,11 @@ func (m *metricCreator) recordDataPointsFunc(metric string) func(ts pcommon.Time
 		return m.mb.RecordZookeeperFsyncExceededThresholdCountDataPoint
 	case packetsReceivedMetricKey:
 		return func(ts pcommon.Timestamp, val int64) {
-			if m.emitMetricsWithDirectionAttribute {
-				m.mb.RecordZookeeperPacketCountDataPoint(ts, val, metadata.AttributeDirectionReceived)
-			}
-			if m.emitMetricsWithoutDirectionAttribute {
-				m.mb.RecordZookeeperPacketReceivedCountDataPoint(ts, val)
-			}
+			m.mb.RecordZookeeperPacketCountDataPoint(ts, val, metadata.AttributeDirectionReceived)
 		}
 	case packetsSentMetricKey:
 		return func(ts pcommon.Timestamp, val int64) {
-			if m.emitMetricsWithDirectionAttribute {
-				m.mb.RecordZookeeperPacketCountDataPoint(ts, val, metadata.AttributeDirectionSent)
-			}
-			if m.emitMetricsWithoutDirectionAttribute {
-				m.mb.RecordZookeeperPacketSentCountDataPoint(ts, val)
-			}
+			m.mb.RecordZookeeperPacketCountDataPoint(ts, val, metadata.AttributeDirectionSent)
 		}
 	}
 

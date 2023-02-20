@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,72 +19,45 @@ import (
 	"fmt"
 	"net/http"
 
-	asap "bitbucket.org/atlassian/go-asap/v2"
+	"bitbucket.org/atlassian/go-asap/v2"
 	"github.com/SermoDigital/jose/crypto"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configauth"
+	"go.opentelemetry.io/collector/extension/auth"
 	"google.golang.org/grpc/credentials"
 )
 
-// ASAPClientAuthenticator implements ClientAuthenticator
-type ASAPClientAuthenticator struct {
-	provisioner asap.Provisioner
-	privateKey  interface{}
-}
-
-var _ configauth.ClientAuthenticator = (*ASAPClientAuthenticator)(nil)
-
-func (a ASAPClientAuthenticator) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
-	return asap.NewTransportDecorator(a.provisioner, a.privateKey)(base), nil
-}
-
-func (a ASAPClientAuthenticator) PerRPCCredentials() (credentials.PerRPCCredentials, error) {
-	return &PerRPCAuth{
-		authenticator: a,
-	}, nil
-}
-
-// Start does nothing and returns nil
-func (a ASAPClientAuthenticator) Start(_ context.Context, _ component.Host) error {
-	return nil
-}
-
-// Shutdown does nothing and returns nil
-func (a ASAPClientAuthenticator) Shutdown(_ context.Context) error {
-	return nil
-}
-
-func createASAPClientAuthenticator(cfg *Config) (ASAPClientAuthenticator, error) {
-	var a ASAPClientAuthenticator
+func createASAPClientAuthenticator(cfg *Config) (auth.Client, error) {
 	pk, err := asap.NewPrivateKey([]byte(cfg.PrivateKey))
 	if err != nil {
-		return a, err
+		return nil, err
 	}
 
 	// Caching provisioner will only issue a new token after the current token's expiry (determined by TTL).
 	p := asap.NewCachingProvisioner(asap.NewProvisioner(
 		cfg.KeyID, cfg.TTL, cfg.Issuer, cfg.Audience, crypto.SigningMethodRS256))
 
-	return ASAPClientAuthenticator{
-		provisioner: p,
-		privateKey:  pk,
-	}, nil
+	return auth.NewClient(
+		auth.WithClientRoundTripper(func(base http.RoundTripper) (http.RoundTripper, error) {
+			return asap.NewTransportDecorator(p, pk)(base), nil
+		}),
+		auth.WithClientPerRPCCredentials(func() (credentials.PerRPCCredentials, error) {
+			return &perRPCAuth{provisioner: p, privateKey: pk}, nil
+		}),
+	), nil
 }
 
-var _ credentials.PerRPCCredentials = (*PerRPCAuth)(nil)
-
-// PerRPCAuth is a gRPC credentials.PerRPCCredentials implementation that returns an 'authorization' header.
-type PerRPCAuth struct {
-	authenticator ASAPClientAuthenticator
+// perRPCAuth is a gRPC credentials.PerRPCCredentials implementation that returns an 'authorization' header.
+type perRPCAuth struct {
+	provisioner asap.Provisioner
+	privateKey  interface{}
 }
 
 // GetRequestMetadata returns the request metadata to be used with the RPC.
-func (c *PerRPCAuth) GetRequestMetadata(context.Context, ...string) (map[string]string, error) {
-	token, err := c.authenticator.provisioner.Provision()
+func (c *perRPCAuth) GetRequestMetadata(context.Context, ...string) (map[string]string, error) {
+	token, err := c.provisioner.Provision()
 	if err != nil {
 		return nil, err
 	}
-	headerValue, err := token.Serialize(c.authenticator.privateKey)
+	headerValue, err := token.Serialize(c.privateKey)
 	if err != nil {
 		return nil, err
 	}
@@ -95,6 +68,6 @@ func (c *PerRPCAuth) GetRequestMetadata(context.Context, ...string) (map[string]
 }
 
 // RequireTransportSecurity always returns true for this implementation.
-func (*PerRPCAuth) RequireTransportSecurity() bool {
+func (*perRPCAuth) RequireTransportSecurity() bool {
 	return true
 }

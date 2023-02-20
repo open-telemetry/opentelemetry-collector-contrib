@@ -166,24 +166,9 @@ func convertFromLogs(workerItem fromConverterWorkerItem) []*entry.Entry {
 		entry := entry.Entry{}
 
 		entry.ScopeName = workerItem.Scope.Scope().Name()
-		entry.Resource = valueToMap(workerItem.Resource.Attributes())
+		entry.Resource = workerItem.Resource.Attributes().AsRaw()
 		convertFrom(record, &entry)
 		result = append(result, &entry)
-	}
-	return result
-}
-
-// ConvertFrom converts plog.Logs into a slice of entry.Entry
-// To be used in a stateless setting like tests where ease of use is more
-// important than performance or throughput.
-func ConvertFrom(pLogs plog.Logs) []*entry.Entry {
-	result := make([]*entry.Entry, 0, pLogs.LogRecordCount())
-	for i := 0; i < pLogs.ResourceLogs().Len(); i++ {
-		rls := pLogs.ResourceLogs().At(i)
-		for j := 0; j < rls.ScopeLogs().Len(); j++ {
-			scope := rls.ScopeLogs().At(j)
-			result = append(result, convertFromLogs(fromConverterWorkerItem{Resource: rls.Resource(), Scope: scope, LogRecordSlice: scope.LogRecords()})...)
-		}
 	}
 	return result
 }
@@ -204,8 +189,8 @@ func convertFrom(src plog.LogRecord, ent *entry.Entry) {
 	ent.Severity = fromPdataSevMap[src.SeverityNumber()]
 	ent.SeverityText = src.SeverityText()
 
-	ent.Attributes = valueToMap(src.Attributes())
-	ent.Body = valueToInterface(src.Body())
+	ent.Attributes = src.Attributes().AsRaw()
+	ent.Body = src.Body().AsRaw()
 
 	if !src.TraceID().IsEmpty() {
 		buffer := src.TraceID()
@@ -222,66 +207,30 @@ func convertFrom(src plog.LogRecord, ent *entry.Entry) {
 	}
 }
 
-func valueToMap(value pcommon.Map) map[string]interface{} {
-	rawMap := map[string]interface{}{}
-	value.Range(func(k string, v pcommon.Value) bool {
-		rawMap[k] = valueToInterface(v)
-		return true
-	})
-	return rawMap
-}
-
-func valueToInterface(value pcommon.Value) interface{} {
-	switch value.Type() {
-	case pcommon.ValueTypeEmpty:
-		return nil
-	case pcommon.ValueTypeString:
-		return value.StringVal()
-	case pcommon.ValueTypeBool:
-		return value.BoolVal()
-	case pcommon.ValueTypeDouble:
-		return value.DoubleVal()
-	case pcommon.ValueTypeInt:
-		return value.IntVal()
-	case pcommon.ValueTypeBytes:
-		return value.BytesVal().AsRaw()
-	case pcommon.ValueTypeMap:
-		return value.MapVal().AsRaw()
-	case pcommon.ValueTypeSlice:
-		arr := make([]interface{}, 0, value.SliceVal().Len())
-		for i := 0; i < value.SliceVal().Len(); i++ {
-			arr = append(arr, valueToInterface(value.SliceVal().At(i)))
-		}
-		return arr
-	default:
-		return value.AsString()
-	}
-}
-
 var fromPdataSevMap = map[plog.SeverityNumber]entry.Severity{
-	plog.SeverityNumberUndefined: entry.Default,
-	plog.SeverityNumberTrace:     entry.Trace,
-	plog.SeverityNumberTrace2:    entry.Trace2,
-	plog.SeverityNumberTrace3:    entry.Trace3,
-	plog.SeverityNumberTrace4:    entry.Trace4,
-	plog.SeverityNumberDebug:     entry.Debug,
-	plog.SeverityNumberDebug2:    entry.Debug2,
-	plog.SeverityNumberDebug3:    entry.Debug3,
-	plog.SeverityNumberDebug4:    entry.Debug4,
-	plog.SeverityNumberInfo:      entry.Info,
-	plog.SeverityNumberInfo2:     entry.Info2,
-	plog.SeverityNumberInfo3:     entry.Info3,
-	plog.SeverityNumberInfo4:     entry.Info4,
-	plog.SeverityNumberWarn:      entry.Warn,
-	plog.SeverityNumberWarn2:     entry.Warn2,
-	plog.SeverityNumberWarn3:     entry.Warn3,
-	plog.SeverityNumberWarn4:     entry.Warn4,
-	plog.SeverityNumberError:     entry.Error,
-	plog.SeverityNumberError2:    entry.Error2,
-	plog.SeverityNumberError3:    entry.Error3,
-	plog.SeverityNumberError4:    entry.Error4,
-	plog.SeverityNumberFatal:     entry.Fatal,
-	plog.SeverityNumberFatal2:    entry.Fatal2,
-	plog.SeverityNumberFatal3:    entry.Fatal3,
-	plog.SeverityNumberFatal4:    entry.Fatal4,
+	plog.SeverityNumberUnspecified: entry.Default,
+	plog.SeverityNumberTrace:       entry.Trace,
+	plog.SeverityNumberTrace2:      entry.Trace2,
+	plog.SeverityNumberTrace3:      entry.Trace3,
+	plog.SeverityNumberTrace4:      entry.Trace4,
+	plog.SeverityNumberDebug:       entry.Debug,
+	plog.SeverityNumberDebug2:      entry.Debug2,
+	plog.SeverityNumberDebug3:      entry.Debug3,
+	plog.SeverityNumberDebug4:      entry.Debug4,
+	plog.SeverityNumberInfo:        entry.Info,
+	plog.SeverityNumberInfo2:       entry.Info2,
+	plog.SeverityNumberInfo3:       entry.Info3,
+	plog.SeverityNumberInfo4:       entry.Info4,
+	plog.SeverityNumberWarn:        entry.Warn,
+	plog.SeverityNumberWarn2:       entry.Warn2,
+	plog.SeverityNumberWarn3:       entry.Warn3,
+	plog.SeverityNumberWarn4:       entry.Warn4,
+	plog.SeverityNumberError:       entry.Error,
+	plog.SeverityNumberError2:      entry.Error2,
+	plog.SeverityNumberError3:      entry.Error3,
+	plog.SeverityNumberError4:      entry.Error4,
+	plog.SeverityNumberFatal:       entry.Fatal,
+	plog.SeverityNumberFatal2:      entry.Fatal2,
+	plog.SeverityNumberFatal3:      entry.Fatal3,
+	plog.SeverityNumberFatal4:      entry.Fatal4,
 }

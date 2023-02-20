@@ -5,12 +5,18 @@ set -e
 USER='otelu'
 ROOT_PASS='otelp'
 
-echo "creating user: ${USER} . . ."
-rabbitmqctl add_user ${USER} ${ROOT_PASS} > /dev/null
+# Test if rabbitmqctl is working at all
+rabbitmqctl list_users > /dev/null
 
-echo "Configuring ${USER} permissions. . ."
-rabbitmqctl set_user_tags ${USER} administrator > /dev/null
-rabbitmqctl set_permissions -p /  ${USER} ".*" ".*" ".*" > /dev/null
+# Don't recreate user if already exists
+if ! rabbitmqctl list_users | grep otelu > /dev/null; then
+    echo "creating user: ${USER} . . ."
+    rabbitmqctl add_user ${USER} ${ROOT_PASS} > /dev/null
+
+    echo "Configuring ${USER} permissions. . ."
+    rabbitmqctl set_user_tags ${USER} administrator > /dev/null
+    rabbitmqctl set_permissions -p /  ${USER} ".*" ".*" ".*" > /dev/null
+fi
 
 echo "create exchange and queue. . ."
 rabbitmqadmin -u ${USER} -p ${ROOT_PASS} declare exchange --vhost=/ name=some_exchange type=direct > /dev/null

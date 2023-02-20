@@ -32,7 +32,7 @@ receivers:
   riak:
     endpoint: http://localhost:8098
     username: otelu
-    password: $RIAK_PASSWORD
+    password: ${env:RIAK_PASSWORD}
     collection_interval: 60s
 ```
 

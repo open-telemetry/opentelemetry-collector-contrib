@@ -25,12 +25,13 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/processor"
 	"go.uber.org/zap"
 )
 
 const attrValuesSeparator = ","
 
-var _ component.TracesProcessor = (*redaction)(nil)
+var _ processor.Traces = (*redaction)(nil)
 
 type redaction struct {
 	// Attribute keys allowed in a span
@@ -118,14 +119,14 @@ func (s *redaction) processAttrs(_ context.Context, attributes pcommon.Map) {
 		}
 
 		// Mask any blocked values for the other attributes
-		strVal := value.StringVal()
+		strVal := value.Str()
 		for _, compiledRE := range s.blockRegexList {
 			match := compiledRE.MatchString(strVal)
 			if match {
 				toBlock = append(toBlock, k)
 
 				maskedValue := compiledRE.ReplaceAllString(strVal, "****")
-				value.SetStringVal(maskedValue)
+				value.SetStr(maskedValue)
 			}
 		}
 		return true
@@ -160,15 +161,15 @@ func (s *redaction) addMetaAttrs(redactedAttrs []string, attributes pcommon.Map,
 
 	// Record summary as span attributes
 	if s.config.Summary == debug {
-		if existingVal, found := attributes.Get(valuesAttr); found && existingVal.StringVal() != "" {
-			redactedAttrs = append(redactedAttrs, strings.Split(existingVal.StringVal(), attrValuesSeparator)...)
+		if existingVal, found := attributes.Get(valuesAttr); found && existingVal.Str() != "" {
+			redactedAttrs = append(redactedAttrs, strings.Split(existingVal.Str(), attrValuesSeparator)...)
 		}
 		sort.Strings(redactedAttrs)
-		attributes.PutString(valuesAttr, strings.Join(redactedAttrs, attrValuesSeparator))
+		attributes.PutStr(valuesAttr, strings.Join(redactedAttrs, attrValuesSeparator))
 	}
 	if s.config.Summary == info || s.config.Summary == debug {
 		if existingVal, found := attributes.Get(countAttr); found {
-			redactedCount += existingVal.IntVal()
+			redactedCount += existingVal.Int()
 		}
 		attributes.PutInt(countAttr, redactedCount)
 	}

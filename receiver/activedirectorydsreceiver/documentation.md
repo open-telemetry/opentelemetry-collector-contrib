@@ -2,48 +2,206 @@
 
 # activedirectorydsreceiver
 
-## Metrics
+## Default Metrics
 
-These are the metrics available for this scraper.
-
-| Name | Description | Unit | Type | Attributes |
-| ---- | ----------- | ---- | ---- | ---------- |
-| **active_directory.ds.bind.rate** | The number of binds per second serviced by this domain controller. | {binds}/s | Sum(Double) | <ul> <li>bind_type</li> </ul> |
-| **active_directory.ds.ldap.bind.last_successful.time** | The amount of time taken for the last successful LDAP bind. | ms | Gauge(Int) | <ul> </ul> |
-| **active_directory.ds.ldap.bind.rate** | The number of successful LDAP binds per second. | {binds}/s | Sum(Double) | <ul> </ul> |
-| **active_directory.ds.ldap.client.session.count** | The number of connected LDAP client sessions. | {sessions} | Sum(Int) | <ul> </ul> |
-| **active_directory.ds.ldap.search.rate** | The number of LDAP searches per second. | {searches}/s | Sum(Double) | <ul> </ul> |
-| **active_directory.ds.name_cache.hit_rate** | The percentage of directory object name component lookups that are satisfied by the Directory System Agent's name cache. | % | Gauge(Double) | <ul> </ul> |
-| **active_directory.ds.notification.queued** | The number of pending update notifications that have been queued to push to clients. | {notifications} | Sum(Int) | <ul> </ul> |
-| **active_directory.ds.operation.rate** | The number of operations performed per second. | {operations}/s | Sum(Double) | <ul> <li>operation_type</li> </ul> |
-| **active_directory.ds.replication.network.io** | The amount of network data transmitted by the Directory Replication Agent. | By | Sum(Int) | <ul> <li>direction</li> <li>network_data_type</li> </ul> |
-| **active_directory.ds.replication.object.rate** | The number of objects transmitted by the Directory Replication Agent per second. | {objects}/s | Sum(Double) | <ul> <li>direction</li> </ul> |
-| **active_directory.ds.replication.operation.pending** | The number of pending replication operations for the Directory Replication Agent. | {operations} | Sum(Int) | <ul> </ul> |
-| **active_directory.ds.replication.property.rate** | The number of properties transmitted by the Directory Replication Agent per second. | {properties}/s | Sum(Double) | <ul> <li>direction</li> </ul> |
-| **active_directory.ds.replication.sync.object.pending** | The number of objects remaining until the full sync completes for the Directory Replication Agent. | {objects} | Sum(Int) | <ul> </ul> |
-| **active_directory.ds.replication.sync.request.count** | The number of sync requests made by the Directory Replication Agent. | {requests} | Sum(Int) | <ul> <li>sync_result</li> </ul> |
-| **active_directory.ds.replication.value.rate** | The number of values transmitted by the Directory Replication Agent per second. | {values}/s | Sum(Double) | <ul> <li>direction</li> <li>value_type</li> </ul> |
-| **active_directory.ds.security_descriptor_propagations_event.queued** | The number of security descriptor propagation events that are queued for processing. | {events} | Sum(Int) | <ul> </ul> |
-| **active_directory.ds.suboperation.rate** | The rate of sub-operations performed. | {suboperations}/s | Sum(Double) | <ul> <li>suboperation_type</li> </ul> |
-| **active_directory.ds.thread.count** | The number of threads in use by the directory service. | {threads} | Sum(Int) | <ul> </ul> |
-
-**Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
-Any metric can be enabled or disabled with the following scraper configuration:
+The following metrics are emitted by default. Each of them can be disabled by applying the following configuration:
 
 ```yaml
 metrics:
   <metric_name>:
-    enabled: <true|false>
+    enabled: false
 ```
 
-## Metric attributes
+### active_directory.ds.bind.rate
+
+The number of binds per second serviced by this domain controller.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {binds}/s | Sum | Double | Cumulative | false |
+
+#### Attributes
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| bind_type (type) | The type of bind to the domain server. | server, client |
-| direction | The direction of data flow. | sent, received |
-| network_data_type (type) | The type of network data sent. | compressed, uncompressed |
-| operation_type (type) | The type of operation. | read, write, search |
-| suboperation_type (type) | The type of suboperation. | security_descriptor_propagations_event, search |
-| sync_result (result) | The result status of the sync request. | success, schema_mismatch, other |
-| value_type (type) | The type of value sent. | distingushed_names, other |
+| type | The type of bind to the domain server. | Str: ``server``, ``client`` |
+
+### active_directory.ds.ldap.bind.last_successful.time
+
+The amount of time taken for the last successful LDAP bind.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| ms | Gauge | Int |
+
+### active_directory.ds.ldap.bind.rate
+
+The number of successful LDAP binds per second.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {binds}/s | Sum | Double | Cumulative | false |
+
+### active_directory.ds.ldap.client.session.count
+
+The number of connected LDAP client sessions.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {sessions} | Sum | Int | Cumulative | false |
+
+### active_directory.ds.ldap.search.rate
+
+The number of LDAP searches per second.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {searches}/s | Sum | Double | Cumulative | false |
+
+### active_directory.ds.name_cache.hit_rate
+
+The percentage of directory object name component lookups that are satisfied by the Directory System Agent's name cache.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| % | Gauge | Double |
+
+### active_directory.ds.notification.queued
+
+The number of pending update notifications that have been queued to push to clients.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {notifications} | Sum | Int | Cumulative | false |
+
+### active_directory.ds.operation.rate
+
+The number of operations performed per second.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {operations}/s | Sum | Double | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| type | The type of operation. | Str: ``read``, ``write``, ``search`` |
+
+### active_directory.ds.replication.network.io
+
+The amount of network data transmitted by the Directory Replication Agent.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| direction | The direction of data flow. | Str: ``sent``, ``received`` |
+| type | The type of network data sent. | Str: ``compressed``, ``uncompressed`` |
+
+### active_directory.ds.replication.object.rate
+
+The number of objects transmitted by the Directory Replication Agent per second.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {objects}/s | Sum | Double | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| direction | The direction of data flow. | Str: ``sent``, ``received`` |
+
+### active_directory.ds.replication.operation.pending
+
+The number of pending replication operations for the Directory Replication Agent.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {operations} | Sum | Int | Cumulative | false |
+
+### active_directory.ds.replication.property.rate
+
+The number of properties transmitted by the Directory Replication Agent per second.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {properties}/s | Sum | Double | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| direction | The direction of data flow. | Str: ``sent``, ``received`` |
+
+### active_directory.ds.replication.sync.object.pending
+
+The number of objects remaining until the full sync completes for the Directory Replication Agent.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {objects} | Sum | Int | Cumulative | false |
+
+### active_directory.ds.replication.sync.request.count
+
+The number of sync requests made by the Directory Replication Agent.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {requests} | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| result | The result status of the sync request. | Str: ``success``, ``schema_mismatch``, ``other`` |
+
+### active_directory.ds.replication.value.rate
+
+The number of values transmitted by the Directory Replication Agent per second.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {values}/s | Sum | Double | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| direction | The direction of data flow. | Str: ``sent``, ``received`` |
+| type | The type of value sent. | Str: ``distingushed_names``, ``other`` |
+
+### active_directory.ds.security_descriptor_propagations_event.queued
+
+The number of security descriptor propagation events that are queued for processing.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {events} | Sum | Int | Cumulative | false |
+
+### active_directory.ds.suboperation.rate
+
+The rate of sub-operations performed.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {suboperations}/s | Sum | Double | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| type | The type of suboperation. | Str: ``security_descriptor_propagations_event``, ``search`` |
+
+### active_directory.ds.thread.count
+
+The number of threads in use by the directory service.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {threads} | Sum | Int | Cumulative | false |

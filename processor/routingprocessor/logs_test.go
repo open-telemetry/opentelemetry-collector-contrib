@@ -21,8 +21,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
@@ -40,7 +38,7 @@ func TestLogProcessorCapabilities(t *testing.T) {
 	}
 
 	// test
-	p := newLogProcessor(zap.NewNop(), config)
+	p := newLogProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, config)
 	require.NotNil(t, p)
 
 	// verify
@@ -51,19 +49,14 @@ func TestLogs_RoutingWorks_Context(t *testing.T) {
 	defaultExp := &mockLogsExporter{}
 	lExp := &mockLogsExporter{}
 
-	host := &mockHost{
-		Host: componenttest.NewNopHost(),
-		GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
-			return map[config.DataType]map[config.ComponentID]component.Exporter{
-				config.LogsDataType: {
-					config.NewComponentID("otlp"):              defaultExp,
-					config.NewComponentIDWithName("otlp", "2"): lExp,
-				},
-			}
+	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
+		component.DataTypeLogs: {
+			component.NewID("otlp"):              defaultExp,
+			component.NewIDWithName("otlp", "2"): lExp,
 		},
-	}
+	})
 
-	exp := newLogProcessor(zap.NewNop(), &Config{
+	exp := newLogProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
 		FromAttribute:    "X-Tenant",
 		AttributeSource:  contextAttributeSource,
 		DefaultExporters: []string{"otlp"},
@@ -78,7 +71,7 @@ func TestLogs_RoutingWorks_Context(t *testing.T) {
 
 	l := plog.NewLogs()
 	rl := l.ResourceLogs().AppendEmpty()
-	rl.Resource().Attributes().PutString("X-Tenant", "acme")
+	rl.Resource().Attributes().PutStr("X-Tenant", "acme")
 
 	t.Run("non default route is properly used", func(t *testing.T) {
 		assert.NoError(t, exp.ConsumeLogs(
@@ -115,19 +108,14 @@ func TestLogs_RoutingWorks_ResourceAttribute(t *testing.T) {
 	defaultExp := &mockLogsExporter{}
 	lExp := &mockLogsExporter{}
 
-	host := &mockHost{
-		Host: componenttest.NewNopHost(),
-		GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
-			return map[config.DataType]map[config.ComponentID]component.Exporter{
-				config.LogsDataType: {
-					config.NewComponentID("otlp"):              defaultExp,
-					config.NewComponentIDWithName("otlp", "2"): lExp,
-				},
-			}
+	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
+		component.DataTypeLogs: {
+			component.NewID("otlp"):              defaultExp,
+			component.NewIDWithName("otlp", "2"): lExp,
 		},
-	}
+	})
 
-	exp := newLogProcessor(zap.NewNop(), &Config{
+	exp := newLogProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
 		FromAttribute:    "X-Tenant",
 		AttributeSource:  resourceAttributeSource,
 		DefaultExporters: []string{"otlp"},
@@ -143,7 +131,7 @@ func TestLogs_RoutingWorks_ResourceAttribute(t *testing.T) {
 	t.Run("non default route is properly used", func(t *testing.T) {
 		l := plog.NewLogs()
 		rl := l.ResourceLogs().AppendEmpty()
-		rl.Resource().Attributes().PutString("X-Tenant", "acme")
+		rl.Resource().Attributes().PutStr("X-Tenant", "acme")
 
 		assert.NoError(t, exp.ConsumeLogs(context.Background(), l))
 		assert.Len(t, defaultExp.AllLogs(), 0,
@@ -157,7 +145,7 @@ func TestLogs_RoutingWorks_ResourceAttribute(t *testing.T) {
 	t.Run("default route is taken when no matching route can be found", func(t *testing.T) {
 		l := plog.NewLogs()
 		rl := l.ResourceLogs().AppendEmpty()
-		rl.Resource().Attributes().PutString("X-Tenant", "some-custom-value")
+		rl.Resource().Attributes().PutStr("X-Tenant", "some-custom-value")
 
 		assert.NoError(t, exp.ConsumeLogs(context.Background(), l))
 		assert.Len(t, defaultExp.AllLogs(), 1,
@@ -173,19 +161,14 @@ func TestLogs_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing.T)
 	defaultExp := &mockLogsExporter{}
 	lExp := &mockLogsExporter{}
 
-	host := &mockHost{
-		Host: componenttest.NewNopHost(),
-		GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
-			return map[config.DataType]map[config.ComponentID]component.Exporter{
-				config.LogsDataType: {
-					config.NewComponentID("otlp"):              defaultExp,
-					config.NewComponentIDWithName("otlp", "2"): lExp,
-				},
-			}
+	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
+		component.DataTypeLogs: {
+			component.NewID("otlp"):              defaultExp,
+			component.NewIDWithName("otlp", "2"): lExp,
 		},
-	}
+	})
 
-	exp := newLogProcessor(zap.NewNop(), &Config{
+	exp := newLogProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
 		AttributeSource:              resourceAttributeSource,
 		FromAttribute:                "X-Tenant",
 		DropRoutingResourceAttribute: true,
@@ -201,8 +184,8 @@ func TestLogs_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing.T)
 
 	l := plog.NewLogs()
 	rm := l.ResourceLogs().AppendEmpty()
-	rm.Resource().Attributes().PutString("X-Tenant", "acme")
-	rm.Resource().Attributes().PutString("attr", "acme")
+	rm.Resource().Attributes().PutStr("X-Tenant", "acme")
+	rm.Resource().Attributes().PutStr("attr", "acme")
 
 	assert.NoError(t, exp.ConsumeLogs(context.Background(), l))
 	logs := lExp.AllLogs()
@@ -213,26 +196,21 @@ func TestLogs_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing.T)
 	assert.False(t, ok, "routing attribute should have been dropped")
 	v, ok := attrs.Get("attr")
 	assert.True(t, ok, "non routing attributes shouldn't be dropped")
-	assert.Equal(t, "acme", v.StringVal())
+	assert.Equal(t, "acme", v.Str())
 }
 
 func TestLogs_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 	defaultExp := &mockLogsExporter{}
 	lExp := &mockLogsExporter{}
 
-	host := &mockHost{
-		Host: componenttest.NewNopHost(),
-		GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
-			return map[config.DataType]map[config.ComponentID]component.Exporter{
-				config.LogsDataType: {
-					config.NewComponentID("otlp"):              defaultExp,
-					config.NewComponentIDWithName("otlp", "2"): lExp,
-				},
-			}
+	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
+		component.DataTypeLogs: {
+			component.NewID("otlp"):              defaultExp,
+			component.NewIDWithName("otlp", "2"): lExp,
 		},
-	}
+	})
 
-	exp := newLogProcessor(zap.NewNop(), &Config{
+	exp := newLogProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
 		FromAttribute:    "X-Tenant",
 		AttributeSource:  resourceAttributeSource,
 		DefaultExporters: []string{"otlp"},
@@ -247,15 +225,15 @@ func TestLogs_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 	l := plog.NewLogs()
 
 	rl := l.ResourceLogs().AppendEmpty()
-	rl.Resource().Attributes().PutString("X-Tenant", "acme")
+	rl.Resource().Attributes().PutStr("X-Tenant", "acme")
 	rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
 	rl = l.ResourceLogs().AppendEmpty()
-	rl.Resource().Attributes().PutString("X-Tenant", "acme")
+	rl.Resource().Attributes().PutStr("X-Tenant", "acme")
 	rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
 	rl = l.ResourceLogs().AppendEmpty()
-	rl.Resource().Attributes().PutString("X-Tenant", "something-else")
+	rl.Resource().Attributes().PutStr("X-Tenant", "something-else")
 	rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
 	ctx := context.Background()
@@ -271,6 +249,126 @@ func TestLogs_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 	assert.Len(t, lExp.AllLogs(), 1,
 		"one log should be routed to non default exporter",
 	)
+}
+
+func TestLogsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
+	defaultExp := &mockLogsExporter{}
+	firstExp := &mockLogsExporter{}
+	secondExp := &mockLogsExporter{}
+
+	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
+		component.DataTypeLogs: {
+			component.NewID("otlp"):              defaultExp,
+			component.NewIDWithName("otlp", "1"): firstExp,
+			component.NewIDWithName("otlp", "2"): secondExp,
+		},
+	})
+
+	exp := newLogProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
+		DefaultExporters: []string{"otlp"},
+		Table: []RoutingTableItem{
+			{
+				Statement: `route() where IsMatch(resource.attributes["X-Tenant"], ".*acme") == true`,
+				Exporters: []string{"otlp/1"},
+			},
+			{
+				Statement: `route() where IsMatch(resource.attributes["X-Tenant"], "_acme") == true`,
+				Exporters: []string{"otlp/2"},
+			},
+		},
+	})
+
+	require.NoError(t, exp.Start(context.Background(), host))
+
+	t.Run("logs matched by no expressions", func(t *testing.T) {
+		defaultExp.Reset()
+		firstExp.Reset()
+		secondExp.Reset()
+
+		l := plog.NewLogs()
+		rl := l.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutStr("X-Tenant", "something-else")
+		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+
+		require.NoError(t, exp.ConsumeLogs(context.Background(), l))
+
+		assert.Len(t, defaultExp.AllLogs(), 1)
+		assert.Len(t, firstExp.AllLogs(), 0)
+		assert.Len(t, secondExp.AllLogs(), 0)
+	})
+
+	t.Run("logs matched one of two expressions", func(t *testing.T) {
+		defaultExp.Reset()
+		firstExp.Reset()
+		secondExp.Reset()
+
+		l := plog.NewLogs()
+
+		rl := l.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutStr("X-Tenant", "xacme")
+		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+
+		require.NoError(t, exp.ConsumeLogs(context.Background(), l))
+
+		assert.Len(t, defaultExp.AllLogs(), 0)
+		assert.Len(t, firstExp.AllLogs(), 1)
+		assert.Len(t, secondExp.AllLogs(), 0)
+	})
+
+	t.Run("logs matched by all expressions", func(t *testing.T) {
+		defaultExp.Reset()
+		firstExp.Reset()
+		secondExp.Reset()
+
+		l := plog.NewLogs()
+
+		rl := l.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutStr("X-Tenant", "x_acme")
+		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+
+		rl = l.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutStr("X-Tenant", "_acme")
+		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+
+		require.NoError(t, exp.ConsumeLogs(context.Background(), l))
+
+		assert.Len(t, defaultExp.AllLogs(), 0)
+		assert.Len(t, firstExp.AllLogs(), 1)
+		assert.Len(t, secondExp.AllLogs(), 1)
+
+		assert.Equal(t, firstExp.AllLogs()[0].LogRecordCount(), 2)
+		assert.Equal(t, secondExp.AllLogs()[0].LogRecordCount(), 2)
+		assert.Equal(t, firstExp.AllLogs(), secondExp.AllLogs())
+	})
+
+	t.Run("one log matched by all expressions, other matched none", func(t *testing.T) {
+		defaultExp.Reset()
+		firstExp.Reset()
+		secondExp.Reset()
+
+		l := plog.NewLogs()
+
+		rl := l.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutStr("X-Tenant", "_acme")
+		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+
+		rl = l.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutStr("X-Tenant", "something-else")
+		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+
+		require.NoError(t, exp.ConsumeLogs(context.Background(), l))
+
+		assert.Len(t, defaultExp.AllLogs(), 1)
+		assert.Len(t, firstExp.AllLogs(), 1)
+		assert.Len(t, secondExp.AllLogs(), 1)
+
+		assert.Equal(t, firstExp.AllLogs(), secondExp.AllLogs())
+
+		rspan := defaultExp.AllLogs()[0].ResourceLogs().At(0)
+		attr, ok := rspan.Resource().Attributes().Get("X-Tenant")
+		assert.True(t, ok, "routing attribute must exists")
+		assert.Equal(t, attr.AsString(), "something-else")
+	})
 }
 
 type mockLogsExporter struct {

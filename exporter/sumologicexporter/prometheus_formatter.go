@@ -56,7 +56,7 @@ func (f *prometheusFormatter) tags2String(attr pcommon.Map, labels pcommon.Map) 
 	mergedAttributes := pcommon.NewMap()
 	attr.CopyTo(mergedAttributes)
 	labels.Range(func(k string, v pcommon.Value) bool {
-		mergedAttributes.PutString(k, v.StringVal())
+		mergedAttributes.PutStr(k, v.Str())
 		return true
 	})
 	length := mergedAttributes.Len()
@@ -154,7 +154,7 @@ func (f *prometheusFormatter) numberDataPointValueLine(name string, dp pmetric.N
 	case pmetric.NumberDataPointValueTypeDouble:
 		return f.doubleValueLine(
 			name,
-			dp.DoubleVal(),
+			dp.DoubleValue(),
 			dp,
 			attributes,
 		)
@@ -162,7 +162,7 @@ func (f *prometheusFormatter) numberDataPointValueLine(name string, dp pmetric.N
 		return f.intLine(
 			name,
 			f.tags2String(attributes, dp.Attributes()),
-			dp.IntVal(),
+			dp.IntValue(),
 			dp.Timestamp(),
 		)
 	}
@@ -290,7 +290,7 @@ func (f *prometheusFormatter) histogram2Strings(record metricPair) []string {
 		cumulative += dp.BucketCounts().At(explicitBounds.Len())
 		newAttr := pcommon.NewMap()
 		record.attributes.CopyTo(newAttr)
-		newAttr.PutString(prometheusLeTag, prometheusInfValue)
+		newAttr.PutStr(prometheusLeTag, prometheusInfValue)
 		line := f.uintValueLine(
 			record.metric.Name(),
 			cumulative,
@@ -323,14 +323,14 @@ func (f *prometheusFormatter) histogram2Strings(record metricPair) []string {
 func (f *prometheusFormatter) metric2String(record metricPair) string {
 	var lines []string
 
-	switch record.metric.DataType() {
-	case pmetric.MetricDataTypeGauge:
+	switch record.metric.Type() {
+	case pmetric.MetricTypeGauge:
 		lines = f.gauge2Strings(record)
-	case pmetric.MetricDataTypeSum:
+	case pmetric.MetricTypeSum:
 		lines = f.sum2Strings(record)
-	case pmetric.MetricDataTypeSummary:
+	case pmetric.MetricTypeSummary:
 		lines = f.summary2Strings(record)
-	case pmetric.MetricDataTypeHistogram:
+	case pmetric.MetricTypeHistogram:
 		lines = f.histogram2Strings(record)
 	}
 	return strings.Join(lines, "\n")

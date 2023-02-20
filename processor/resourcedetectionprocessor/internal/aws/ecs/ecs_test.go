@@ -19,12 +19,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/processor/processortest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil/endpoints"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
 
 type mockMetaDataProvider struct {
@@ -60,14 +59,14 @@ func (md *mockMetaDataProvider) FetchContainerMetadata() (*ecsutil.ContainerMeta
 
 func Test_ecsNewDetector(t *testing.T) {
 	t.Setenv(endpoints.TaskMetadataEndpointV4EnvVar, "endpoint")
-	d, err := NewDetector(componenttest.NewNopProcessorCreateSettings(), nil)
+	d, err := NewDetector(processortest.NewNopCreateSettings(), nil)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, d)
 }
 
 func Test_detectorReturnsIfNoEnvVars(t *testing.T) {
-	d, _ := NewDetector(componenttest.NewNopProcessorCreateSettings(), nil)
+	d, _ := NewDetector(processortest.NewNopCreateSettings(), nil)
 	res, _, err := d.Detect(context.TODO())
 
 	assert.Nil(t, err)
@@ -101,27 +100,27 @@ func Test_ecsDetectV4(t *testing.T) {
 
 	want := pcommon.NewResource()
 	attr := want.Attributes()
-	attr.PutString("cloud.provider", "aws")
-	attr.PutString("cloud.platform", "aws_ecs")
-	attr.PutString("aws.ecs.cluster.arn", "arn:aws:ecs:us-west-2:123456789123:cluster/my-cluster")
-	attr.PutString("aws.ecs.task.arn", "arn:aws:ecs:us-west-2:123456789123:task/123")
-	attr.PutString("aws.ecs.task.family", "family")
-	attr.PutString("aws.ecs.task.revision", "26")
-	attr.PutString("cloud.region", "us-west-2")
-	attr.PutString("cloud.availability_zone", "us-west-2a")
-	attr.PutString("cloud.account.id", "123456789123")
-	attr.PutString("aws.ecs.launchtype", "ec2")
-	attr.PutEmptySlice("aws.log.group.names").AppendEmpty().SetStringVal("group")
-	attr.PutEmptySlice("aws.log.group.arns").AppendEmpty().SetStringVal("arn:aws:logs:us-east-1:123456789123:log-group:group")
-	attr.PutEmptySlice("aws.log.stream.names").AppendEmpty().SetStringVal("stream")
-	attr.PutEmptySlice("aws.log.stream.arns").AppendEmpty().SetStringVal("arn:aws:logs:us-east-1:123456789123:log-group:group:log-stream:stream")
+	attr.PutStr("cloud.provider", "aws")
+	attr.PutStr("cloud.platform", "aws_ecs")
+	attr.PutStr("aws.ecs.cluster.arn", "arn:aws:ecs:us-west-2:123456789123:cluster/my-cluster")
+	attr.PutStr("aws.ecs.task.arn", "arn:aws:ecs:us-west-2:123456789123:task/123")
+	attr.PutStr("aws.ecs.task.family", "family")
+	attr.PutStr("aws.ecs.task.revision", "26")
+	attr.PutStr("cloud.region", "us-west-2")
+	attr.PutStr("cloud.availability_zone", "us-west-2a")
+	attr.PutStr("cloud.account.id", "123456789123")
+	attr.PutStr("aws.ecs.launchtype", "ec2")
+	attr.PutEmptySlice("aws.log.group.names").AppendEmpty().SetStr("group")
+	attr.PutEmptySlice("aws.log.group.arns").AppendEmpty().SetStr("arn:aws:logs:us-east-1:123456789123:log-group:group")
+	attr.PutEmptySlice("aws.log.stream.names").AppendEmpty().SetStr("stream")
+	attr.PutEmptySlice("aws.log.stream.arns").AppendEmpty().SetStr("arn:aws:logs:us-east-1:123456789123:log-group:group:log-stream:stream")
 
 	d := Detector{provider: &mockMetaDataProvider{isV4: true}}
 	got, _, err := d.Detect(context.TODO())
 
 	assert.Nil(t, err)
 	assert.NotNil(t, got)
-	assert.Equal(t, internal.AttributesToMap(want.Attributes()), internal.AttributesToMap(got.Attributes()))
+	assert.Equal(t, want.Attributes().AsRaw(), got.Attributes().AsRaw())
 }
 
 func Test_ecsDetectV3(t *testing.T) {
@@ -129,22 +128,22 @@ func Test_ecsDetectV3(t *testing.T) {
 
 	want := pcommon.NewResource()
 	attr := want.Attributes()
-	attr.PutString("cloud.provider", "aws")
-	attr.PutString("cloud.platform", "aws_ecs")
-	attr.PutString("aws.ecs.cluster.arn", "arn:aws:ecs:us-west-2:123456789123:cluster/my-cluster")
-	attr.PutString("aws.ecs.task.arn", "arn:aws:ecs:us-west-2:123456789123:task/123")
-	attr.PutString("aws.ecs.task.family", "family")
-	attr.PutString("aws.ecs.task.revision", "26")
-	attr.PutString("cloud.region", "us-west-2")
-	attr.PutString("cloud.availability_zone", "us-west-2a")
-	attr.PutString("cloud.account.id", "123456789123")
+	attr.PutStr("cloud.provider", "aws")
+	attr.PutStr("cloud.platform", "aws_ecs")
+	attr.PutStr("aws.ecs.cluster.arn", "arn:aws:ecs:us-west-2:123456789123:cluster/my-cluster")
+	attr.PutStr("aws.ecs.task.arn", "arn:aws:ecs:us-west-2:123456789123:task/123")
+	attr.PutStr("aws.ecs.task.family", "family")
+	attr.PutStr("aws.ecs.task.revision", "26")
+	attr.PutStr("cloud.region", "us-west-2")
+	attr.PutStr("cloud.availability_zone", "us-west-2a")
+	attr.PutStr("cloud.account.id", "123456789123")
 
 	d := Detector{provider: &mockMetaDataProvider{isV4: false}}
 	got, _, err := d.Detect(context.TODO())
 
 	assert.Nil(t, err)
 	assert.NotNil(t, got)
-	assert.Equal(t, internal.AttributesToMap(want.Attributes()), internal.AttributesToMap(got.Attributes()))
+	assert.Equal(t, want.Attributes().AsRaw(), got.Attributes().AsRaw())
 }
 
 func createTestContainer(isV4 bool) ecsutil.ContainerMetadata {

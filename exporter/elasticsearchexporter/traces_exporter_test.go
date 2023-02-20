@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package elasticsearchexporter
 
 import (
@@ -21,6 +20,7 @@ import (
 	"errors"
 	"net/http"
 	"os"
+	"runtime"
 	"sync"
 	"testing"
 	"time"
@@ -133,6 +133,9 @@ func TestTracesExporter_New(t *testing.T) {
 }
 
 func TestExporter_PushTraceRecord(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping test on Windows, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/14759")
+	}
 	t.Run("publish with success", func(t *testing.T) {
 		rec := newBulkRecorder()
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
@@ -313,7 +316,9 @@ func newTestTracesExporter(t *testing.T, url string, fns ...func(*Config)) *elas
 	exporter, err := newTracesExporter(zaptest.NewLogger(t), withTestTracesExporterConfig(fns...)(url))
 	require.NoError(t, err)
 
-	t.Cleanup(func() { exporter.Shutdown(context.TODO()) })
+	t.Cleanup(func() {
+		require.NoError(t, exporter.Shutdown(context.TODO()))
+	})
 	return exporter
 }
 

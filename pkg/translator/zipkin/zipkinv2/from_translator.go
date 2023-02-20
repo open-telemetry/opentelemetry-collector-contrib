@@ -29,6 +29,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/internal/zipkin"
 )
 
@@ -122,7 +123,7 @@ func spanToZipkinSpan(
 	}
 	zs.ID = convertSpanID(span.SpanID())
 
-	traceState := span.TraceStateStruct().AsRaw()
+	traceState := span.TraceState().AsRaw()
 	if traceState != "" {
 		tags[tracetranslator.TagW3CTraceState] = traceState
 	}
@@ -172,7 +173,7 @@ func spanToZipkinSpan(
 	return zs, nil
 }
 
-func populateStatus(status ptrace.SpanStatus, zs *zipkinmodel.SpanModel, tags map[string]string) {
+func populateStatus(status ptrace.Status, zs *zipkinmodel.SpanModel, tags map[string]string) {
 	if status.Code() == ptrace.StatusCodeError {
 		tags[tracetranslator.TagError] = "true"
 	} else {
@@ -189,7 +190,7 @@ func populateStatus(status ptrace.SpanStatus, zs *zipkinmodel.SpanModel, tags ma
 		return
 	}
 
-	tags[conventions.OtelStatusCode] = status.Code().String()
+	tags[conventions.OtelStatusCode] = traceutil.StatusCodeStr(status.Code())
 	if status.Message() != "" {
 		tags[conventions.OtelStatusDescription] = status.Message()
 		zs.Err = fmt.Errorf("%s", status.Message())
@@ -243,8 +244,8 @@ func spanLinksToZipkinTags(links ptrace.SpanLinkSlice, zTags map[string]string) 
 		if err != nil {
 			return err
 		}
-		zTags[key] = fmt.Sprintf(spanLinkDataFormat, link.TraceID().HexString(),
-			link.SpanID().HexString(), link.TraceStateStruct().AsRaw(), jsonStr, link.DroppedAttributesCount())
+		zTags[key] = fmt.Sprintf(spanLinkDataFormat, traceutil.TraceIDToHexOrEmptyString(link.TraceID()),
+			traceutil.SpanIDToHexOrEmptyString(link.SpanID()), link.TraceState().AsRaw(), jsonStr, link.DroppedAttributesCount())
 	}
 	return nil
 }

@@ -31,8 +31,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs/handler"
 )
 
-var collectorDistribution = "opentelemetry-collector-contrib"
-
 const (
 	// this is the retry count, the total attempts will be at most retry count + 1.
 	defaultRetryCount          = 1
@@ -42,23 +40,25 @@ const (
 // Possible exceptions are combination of common errors (https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/CommonErrors.html)
 // and API specific erros (e.g. https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutLogEvents.html#API_PutLogEvents_Errors)
 type Client struct {
-	svc    cloudwatchlogsiface.CloudWatchLogsAPI
-	logger *zap.Logger
+	svc          cloudwatchlogsiface.CloudWatchLogsAPI
+	logRetention int64
+	logger       *zap.Logger
 }
 
 // Create a log client based on the actual cloudwatch logs client.
-func newCloudWatchLogClient(svc cloudwatchlogsiface.CloudWatchLogsAPI, logger *zap.Logger) *Client {
+func newCloudWatchLogClient(svc cloudwatchlogsiface.CloudWatchLogsAPI, logRetention int64, logger *zap.Logger) *Client {
 	logClient := &Client{svc: svc,
-		logger: logger}
+		logRetention: logRetention,
+		logger:       logger}
 	return logClient
 }
 
 // NewClient create Client
-func NewClient(logger *zap.Logger, awsConfig *aws.Config, buildInfo component.BuildInfo, logGroupName string, sess *session.Session) *Client {
+func NewClient(logger *zap.Logger, awsConfig *aws.Config, buildInfo component.BuildInfo, logGroupName string, logRetention int64, sess *session.Session) *Client {
 	client := cloudwatchlogs.New(sess, awsConfig)
 	client.Handlers.Build.PushBackNamed(handler.RequestStructuredLogHandler)
 	client.Handlers.Build.PushFrontNamed(newCollectorUserAgentHandler(buildInfo, logGroupName))
-	return newCloudWatchLogClient(client, logger)
+	return newCloudWatchLogClient(client, logRetention, logger)
 }
 
 // PutLogEvents mainly handles different possible error could be returned from server side, and retries them
@@ -158,6 +158,17 @@ func (client *Client) CreateStream(logGroup, streamName *string) (token string, 
 				LogGroupName: logGroup,
 			})
 			if err == nil {
+				// For newly created log groups, set the log retention polic if specified or non-zero.  Otheriwse, set to Never Expire
+				if client.logRetention != 0 {
+					_, err = client.svc.PutRetentionPolicy(&cloudwatchlogs.PutRetentionPolicyInput{LogGroupName: logGroup, RetentionInDays: &client.logRetention})
+					if err != nil {
+						var awsErr awserr.Error
+						if errors.As(err, &awsErr) {
+							client.logger.Debug("CreateLogStream / CreateLogGroup has errors related to log retention policy.", zap.String("LogGroupName", *logGroup), zap.String("LogStreamName", *streamName), zap.Error(e))
+							return token, err
+						}
+					}
+				}
 				_, err = client.svc.CreateLogStream(&cloudwatchlogs.CreateLogStreamInput{
 					LogGroupName:  logGroup,
 					LogStreamName: streamName,
@@ -180,9 +191,9 @@ func (client *Client) CreateStream(logGroup, streamName *string) (token string, 
 }
 
 func newCollectorUserAgentHandler(buildInfo component.BuildInfo, logGroupName string) request.NamedHandler {
-	fn := request.MakeAddToUserAgentHandler(collectorDistribution, buildInfo.Version)
+	fn := request.MakeAddToUserAgentHandler(buildInfo.Command, buildInfo.Version)
 	if matchContainerInsightsPattern(logGroupName) {
-		fn = request.MakeAddToUserAgentHandler(collectorDistribution, buildInfo.Version, "ContainerInsights")
+		fn = request.MakeAddToUserAgentHandler(buildInfo.Command, buildInfo.Version, "ContainerInsights")
 	}
 	return request.NamedHandler{
 		Name: "otel.collector.UserAgentHandler",

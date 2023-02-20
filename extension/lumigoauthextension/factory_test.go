@@ -18,15 +18,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/component/componenttest"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
-	expected := &Config{
-		ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
-	}
+	expected := &Config{}
 	actual := createDefaultConfig()
 	assert.Equal(t, expected, createDefaultConfig())
-	assert.NoError(t, configtest.CheckConfigStruct(actual))
+	assert.NoError(t, componenttest.CheckConfigStruct(actual))
 }

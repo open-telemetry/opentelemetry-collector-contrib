@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
@@ -74,7 +75,7 @@ func TestScrape(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper := newProcessesScraper(context.Background(), componenttest.NewNopReceiverCreateSettings(), &Config{
+			scraper := newProcessesScraper(context.Background(), receivertest.NewNopCreateSettings(), &Config{
 				Metrics: metadata.DefaultMetricsSettings(),
 			})
 			err := scraper.start(context.Background(), componenttest.NewNopHost())
@@ -141,7 +142,7 @@ func validateRealData(t *testing.T, metrics pmetric.MetricSlice) {
 			points := countMetric.Sum().DataPoints()
 			for i := 0; i < points.Len(); i++ {
 				v, ok := points.At(i).Attributes().Get("status")
-				if ok && v.StringVal() == statusVal {
+				if ok && v.Str() == statusVal {
 					return
 				}
 			}
@@ -210,7 +211,7 @@ func validateFakeData(t *testing.T, metrics pmetric.MetricSlice) {
 			point := points.At(i)
 			val, ok := point.Attributes().Get("status")
 			assert.Truef(t, ok, "Missing status attribute in data point %d", i)
-			attrs[val.StringVal()] = point.IntVal()
+			attrs[val.Str()] = point.IntValue()
 		}
 
 		assert.Equal(t, attrs, map[string]int64{

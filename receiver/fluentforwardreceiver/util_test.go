@@ -39,8 +39,8 @@ func Logs(recs ...Log) plog.Logs {
 		l := logSlice.AppendEmpty()
 		recs[i].Body.CopyTo(l.Body())
 		l.SetTimestamp(pcommon.Timestamp(recs[i].Timestamp))
+		//nolint:errcheck
 		l.Attributes().FromRaw(recs[i].Attributes)
-		l.Attributes().Sort()
 	}
 
 	return out

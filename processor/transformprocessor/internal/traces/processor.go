@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,50 +18,41 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/tqltraces"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
 type Processor struct {
-	queries []tql.Query
-	logger  *zap.Logger
+	contexts []consumer.Traces
 }
 
-func NewProcessor(statements []string, functions map[string]interface{}, settings component.ProcessorCreateSettings) (*Processor, error) {
-	tqlp := tql.NewParser(
-		functions,
-		tqltraces.ParsePath,
-		tqltraces.ParseEnum,
-		common.NewTQLLogger(settings.Logger),
-	)
-	queries, err := tqlp.ParseQueries(statements)
+func NewProcessor(contextStatements []common.ContextStatements, settings component.TelemetrySettings) (*Processor, error) {
+	pc, err := common.NewTraceParserCollection(settings, common.WithSpanParser(SpanFunctions()), common.WithSpanEventParser(SpanEventFunctions()))
 	if err != nil {
 		return nil, err
 	}
+
+	contexts := make([]consumer.Traces, len(contextStatements))
+	for i, cs := range contextStatements {
+		context, err := pc.ParseContextStatements(cs)
+		if err != nil {
+			return nil, err
+		}
+		contexts[i] = context
+	}
+
 	return &Processor{
-		queries: queries,
-		logger:  settings.Logger,
+		contexts: contexts,
 	}, nil
 }
 
-func (p *Processor) ProcessTraces(_ context.Context, td ptrace.Traces) (ptrace.Traces, error) {
-	for i := 0; i < td.ResourceSpans().Len(); i++ {
-		rspans := td.ResourceSpans().At(i)
-		for j := 0; j < rspans.ScopeSpans().Len(); j++ {
-			sspan := rspans.ScopeSpans().At(j)
-			spans := sspan.Spans()
-			for k := 0; k < spans.Len(); k++ {
-				ctx := tqltraces.NewTransformContext(spans.At(k), sspan.Scope(), rspans.Resource())
-				for _, statement := range p.queries {
-					if statement.Condition(ctx) {
-						statement.Function(ctx)
-					}
-				}
-			}
+func (p *Processor) ProcessTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
+	for _, c := range p.contexts {
+		err := c.ConsumeTraces(ctx, td)
+		if err != nil {
+			return td, err
 		}
 	}
 	return td, nil

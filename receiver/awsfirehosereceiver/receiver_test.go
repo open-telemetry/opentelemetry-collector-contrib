@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -30,8 +30,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
 const (
@@ -69,8 +69,7 @@ func TestStart(t *testing.T) {
 	for name, testCase := range testCases {
 		t.Run(name, func(t *testing.T) {
 			cfg := &Config{
-				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-				RecordType:       defaultRecordType,
+				RecordType: defaultRecordType,
 			}
 			ctx := context.TODO()
 			r := testFirehoseReceiver(cfg, nil)
@@ -88,8 +87,7 @@ func TestStart(t *testing.T) {
 			require.NoError(t, listener.Close())
 		})
 		cfg := &Config{
-			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			RecordType:       defaultRecordType,
+			RecordType: defaultRecordType,
 			HTTPServerSettings: confighttp.HTTPServerSettings{
 				Endpoint: listener.Addr().String(),
 			},
@@ -108,9 +106,8 @@ func TestFirehoseRequest(t *testing.T) {
 	defaultConsumer := newNopFirehoseConsumer(http.StatusOK, nil)
 	firehoseConsumerErr := errors.New("firehose consumer error")
 	cfg := &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-		RecordType:       defaultRecordType,
-		AccessKey:        testFirehoseAccessKey,
+		RecordType: defaultRecordType,
+		AccessKey:  testFirehoseAccessKey,
 	}
 	var noRecords []firehoseRecord
 	testCases := map[string]struct {
@@ -241,10 +238,9 @@ func TestFirehoseRequest(t *testing.T) {
 // testFirehoseReceiver is a convenience function for creating a test firehoseReceiver
 func testFirehoseReceiver(config *Config, consumer firehoseConsumer) *firehoseReceiver {
 	return &firehoseReceiver{
-		instanceID: config.ID(),
-		settings:   componenttest.NewNopReceiverCreateSettings(),
-		config:     config,
-		consumer:   consumer,
+		settings: receivertest.NewNopCreateSettings(),
+		config:   config,
+		consumer: consumer,
 	}
 }
 

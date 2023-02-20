@@ -68,6 +68,9 @@ func (kp *kubernetesprocessor) Start(_ context.Context, _ component.Host) error 
 }
 
 func (kp *kubernetesprocessor) Shutdown(context.Context) error {
+	if kp.kc == nil {
+		return nil
+	}
 	if !kp.passthroughMode {
 		kp.kc.Stop()
 	}
@@ -112,7 +115,7 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 	for i := range podIdentifierValue {
 		if podIdentifierValue[i].Source.From == kube.ConnectionSource && podIdentifierValue[i].Value != "" {
 			if _, found := resource.Attributes().Get(kube.K8sIPLabelName); !found {
-				resource.Attributes().PutString(kube.K8sIPLabelName, podIdentifierValue[i].Value)
+				resource.Attributes().PutStr(kube.K8sIPLabelName, podIdentifierValue[i].Value)
 			}
 			break
 		}
@@ -127,7 +130,7 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 
 			for key, val := range pod.Attributes {
 				if _, found := resource.Attributes().Get(key); !found {
-					resource.Attributes().PutString(key, val)
+					resource.Attributes().PutStr(key, val)
 				}
 			}
 			kp.addContainerAttributes(resource.Attributes(), pod)
@@ -139,7 +142,7 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 		attrsToAdd := kp.getAttributesForPodsNamespace(namespace)
 		for key, val := range attrsToAdd {
 			if _, found := resource.Attributes().Get(key); !found {
-				resource.Attributes().PutString(key, val)
+				resource.Attributes().PutStr(key, val)
 			}
 		}
 	}
@@ -158,12 +161,12 @@ func (kp *kubernetesprocessor) addContainerAttributes(attrs pcommon.Map, pod *ku
 
 	if containerSpec.ImageName != "" {
 		if _, found := attrs.Get(conventions.AttributeContainerImageName); !found {
-			attrs.PutString(conventions.AttributeContainerImageName, containerSpec.ImageName)
+			attrs.PutStr(conventions.AttributeContainerImageName, containerSpec.ImageName)
 		}
 	}
 	if containerSpec.ImageTag != "" {
 		if _, found := attrs.Get(conventions.AttributeContainerImageTag); !found {
-			attrs.PutString(conventions.AttributeContainerImageTag, containerSpec.ImageTag)
+			attrs.PutStr(conventions.AttributeContainerImageTag, containerSpec.ImageTag)
 		}
 	}
 
@@ -173,7 +176,7 @@ func (kp *kubernetesprocessor) addContainerAttributes(attrs pcommon.Map, pod *ku
 		if err == nil {
 			if containerStatus, ok := containerSpec.Statuses[runID]; ok && containerStatus.ContainerID != "" {
 				if _, found := attrs.Get(conventions.AttributeContainerID); !found {
-					attrs.PutString(conventions.AttributeContainerID, containerStatus.ContainerID)
+					attrs.PutStr(conventions.AttributeContainerID, containerStatus.ContainerID)
 				}
 			}
 		} else {
@@ -194,9 +197,9 @@ func (kp *kubernetesprocessor) getAttributesForPodsNamespace(namespace string) m
 func intFromAttribute(val pcommon.Value) (int, error) {
 	switch val.Type() {
 	case pcommon.ValueTypeInt:
-		return int(val.IntVal()), nil
-	case pcommon.ValueTypeString:
-		i, err := strconv.Atoi(val.StringVal())
+		return int(val.Int()), nil
+	case pcommon.ValueTypeStr:
+		i, err := strconv.Atoi(val.Str())
 		if err != nil {
 			return 0, err
 		}

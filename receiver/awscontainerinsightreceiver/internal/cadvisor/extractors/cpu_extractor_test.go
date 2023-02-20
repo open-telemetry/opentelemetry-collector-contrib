@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package extractors
 
 import (
@@ -28,7 +27,7 @@ func TestCPUStats(t *testing.T) {
 	result := testutils.LoadContainerInfo(t, "./testdata/PreInfoContainer.json")
 	result2 := testutils.LoadContainerInfo(t, "./testdata/CurInfoContainer.json")
 
-	//test container type
+	// test container type
 	containerType := TypeContainer
 	extractor := NewCPUMetricExtractor(nil)
 
@@ -46,7 +45,7 @@ func TestCPUStats(t *testing.T) {
 	AssertContainsTaggedFloat(t, cMetrics[0], "container_cpu_usage_system", 10, 0)
 	AssertContainsTaggedFloat(t, cMetrics[0], "container_cpu_utilization", 0.5, 0)
 
-	//test node type
+	// test node type
 	containerType = TypeNode
 	extractor = NewCPUMetricExtractor(nil)
 
@@ -64,7 +63,7 @@ func TestCPUStats(t *testing.T) {
 	AssertContainsTaggedFloat(t, cMetrics[0], "node_cpu_utilization", 0.5, 0)
 	AssertContainsTaggedInt(t, cMetrics[0], "node_cpu_limit", 2000)
 
-	//test instance type
+	// test instance type
 	containerType = TypeInstance
 	extractor = NewCPUMetricExtractor(nil)
 

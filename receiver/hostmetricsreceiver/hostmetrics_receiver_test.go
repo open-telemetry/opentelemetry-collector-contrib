@@ -26,10 +26,11 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 
@@ -68,8 +69,8 @@ var standardMetrics = []string{
 
 var resourceMetrics = []string{
 	"process.cpu.time",
-	"process.memory.physical_usage",
-	"process.memory.virtual_usage",
+	"process.memory.usage",
+	"process.memory.virtual",
 	"process.disk.io",
 }
 
@@ -93,6 +94,22 @@ var factories = map[string]internal.ScraperFactory{
 	processscraper.TypeStr:    &processscraper.Factory{},
 }
 
+type testEnv struct {
+	env map[string]string
+}
+
+var _ environment = (*testEnv)(nil)
+
+func (e *testEnv) Lookup(k string) (string, bool) {
+	v, ok := e.env[k]
+	return v, ok
+}
+
+func (e *testEnv) Set(k, v string) error {
+	e.env[k] = v
+	return nil
+}
+
 func TestGatherMetrics_EndToEnd(t *testing.T) {
 	scraperFactories = factories
 
@@ -100,7 +117,6 @@ func TestGatherMetrics_EndToEnd(t *testing.T) {
 
 	cfg := &Config{
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
 			CollectionInterval: 100 * time.Millisecond,
 		},
 		Scrapers: map[string]internal.Config{
@@ -176,8 +192,10 @@ func assertIncludesExpectedMetrics(t *testing.T, got pmetric.Metrics) {
 		return
 	}
 
-	assert.Equal(t, len(resourceMetrics), len(returnedResourceMetrics))
-	for _, expected := range resourceMetrics {
+	var expectedResourceMetrics []string
+	expectedResourceMetrics = append(expectedResourceMetrics, resourceMetrics...)
+	assert.Equal(t, len(expectedResourceMetrics), len(returnedResourceMetrics))
+	for _, expected := range expectedResourceMetrics {
 		assert.Contains(t, returnedResourceMetrics, expected)
 	}
 }
@@ -206,16 +224,18 @@ const mockTypeStr = "mock"
 
 type mockConfig struct{}
 
+func (m *mockConfig) SetRootPath(_ string) {}
+
 type mockFactory struct{ mock.Mock }
 type mockScraper struct{ mock.Mock }
 
 func (m *mockFactory) CreateDefaultConfig() internal.Config { return &mockConfig{} }
-func (m *mockFactory) CreateMetricsScraper(context.Context, component.ReceiverCreateSettings, internal.Config) (scraperhelper.Scraper, error) {
+func (m *mockFactory) CreateMetricsScraper(context.Context, receiver.CreateSettings, internal.Config) (scraperhelper.Scraper, error) {
 	args := m.MethodCalled("CreateMetricsScraper")
 	return args.Get(0).(scraperhelper.Scraper), args.Error(1)
 }
 
-func (m *mockScraper) ID() config.ComponentID                      { return config.NewComponentID("") }
+func (m *mockScraper) ID() component.ID                            { return component.NewID("") }
 func (m *mockScraper) Start(context.Context, component.Host) error { return nil }
 func (m *mockScraper) Shutdown(context.Context) error              { return nil }
 func (m *mockScraper) Scrape(context.Context) (pmetric.Metrics, error) {
@@ -268,11 +288,11 @@ func benchmarkScrapeMetrics(b *testing.B, cfg *Config) {
 	sink := &notifyingSink{ch: make(chan int, 10)}
 	tickerCh := make(chan time.Time)
 
-	options, err := createAddScraperOptions(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, scraperFactories)
+	options, err := createAddScraperOptions(context.Background(), receivertest.NewNopCreateSettings(), cfg, scraperFactories)
 	require.NoError(b, err)
 	options = append(options, scraperhelper.WithTickerChannel(tickerCh))
 
-	receiver, err := scraperhelper.NewScraperControllerReceiver(&cfg.ScraperControllerSettings, componenttest.NewNopReceiverCreateSettings(), sink, options...)
+	receiver, err := scraperhelper.NewScraperControllerReceiver(&cfg.ScraperControllerSettings, receivertest.NewNopCreateSettings(), sink, options...)
 	require.NoError(b, err)
 
 	require.NoError(b, receiver.Start(context.Background(), componenttest.NewNopHost()))

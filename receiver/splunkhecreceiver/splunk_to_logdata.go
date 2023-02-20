@@ -32,9 +32,32 @@ var (
 // splunkHecToLogData transforms splunk events into logs
 func splunkHecToLogData(logger *zap.Logger, events []*splunk.Event, resourceCustomizer func(pcommon.Resource), config *Config) (plog.Logs, error) {
 	ld := plog.NewLogs()
-	rl := ld.ResourceLogs().AppendEmpty()
-	sl := rl.ScopeLogs().AppendEmpty()
+	scopeLogsMap := make(map[[4]string]plog.ScopeLogs)
 	for _, event := range events {
+		key := [4]string{event.Host, event.Source, event.SourceType, event.Index}
+		var sl plog.ScopeLogs
+		var found bool
+		if sl, found = scopeLogsMap[key]; !found {
+			rl := ld.ResourceLogs().AppendEmpty()
+			sl = rl.ScopeLogs().AppendEmpty()
+			scopeLogsMap[key] = sl
+			if event.Host != "" {
+				rl.Resource().Attributes().PutStr(config.HecToOtelAttrs.Host, event.Host)
+			}
+			if event.Source != "" {
+				rl.Resource().Attributes().PutStr(config.HecToOtelAttrs.Source, event.Source)
+			}
+			if event.SourceType != "" {
+				rl.Resource().Attributes().PutStr(config.HecToOtelAttrs.SourceType, event.SourceType)
+			}
+			if event.Index != "" {
+				rl.Resource().Attributes().PutStr(config.HecToOtelAttrs.Index, event.Index)
+			}
+			if resourceCustomizer != nil {
+				resourceCustomizer(rl.Resource())
+			}
+		}
+
 		// The SourceType field is the most logical "name" of the event.
 		logRecord := sl.LogRecords().AppendEmpty()
 		if err := convertToValue(logger, event.Event, logRecord.Body()); err != nil {
@@ -60,22 +83,6 @@ func splunkHecToLogData(logger *zap.Logger, events []*splunk.Event, resourceCust
 				return ld, err
 			}
 		}
-
-		if event.Host != "" {
-			logRecord.Attributes().PutString(config.HecToOtelAttrs.Host, event.Host)
-		}
-		if event.Source != "" {
-			logRecord.Attributes().PutString(config.HecToOtelAttrs.Source, event.Source)
-		}
-		if event.SourceType != "" {
-			logRecord.Attributes().PutString(config.HecToOtelAttrs.SourceType, event.SourceType)
-		}
-		if event.Index != "" {
-			logRecord.Attributes().PutString(config.HecToOtelAttrs.Index, event.Index)
-		}
-		if resourceCustomizer != nil {
-			resourceCustomizer(rl.Resource())
-		}
 	}
 
 	return ld, nil
@@ -85,13 +92,13 @@ func convertToValue(logger *zap.Logger, src interface{}, dest pcommon.Value) err
 	switch value := src.(type) {
 	case nil:
 	case string:
-		dest.SetStringVal(value)
+		dest.SetStr(value)
 	case int64:
-		dest.SetIntVal(value)
+		dest.SetInt(value)
 	case float64:
-		dest.SetDoubleVal(value)
+		dest.SetDouble(value)
 	case bool:
-		dest.SetBoolVal(value)
+		dest.SetBool(value)
 	case map[string]interface{}:
 		return convertToAttributeMap(logger, value, dest)
 	case []interface{}:
@@ -105,7 +112,7 @@ func convertToValue(logger *zap.Logger, src interface{}, dest pcommon.Value) err
 }
 
 func convertToSliceVal(logger *zap.Logger, value []interface{}, dest pcommon.Value) error {
-	arr := dest.SetEmptySliceVal()
+	arr := dest.SetEmptySlice()
 	for _, elt := range value {
 		err := convertToValue(logger, elt, arr.AppendEmpty())
 		if err != nil {
@@ -116,7 +123,7 @@ func convertToSliceVal(logger *zap.Logger, value []interface{}, dest pcommon.Val
 }
 
 func convertToAttributeMap(logger *zap.Logger, value map[string]interface{}, dest pcommon.Value) error {
-	attrMap := dest.SetEmptyMapVal()
+	attrMap := dest.SetEmptyMap()
 	keys := make([]string, 0, len(value))
 	for k := range value {
 		keys = append(keys, k)

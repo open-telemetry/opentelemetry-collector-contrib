@@ -17,42 +17,9 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
-	"go.opentelemetry.io/collector/service/featuregate"
 )
-
-const (
-	EmitMetricsWithDirectionAttributeFeatureGateID    = "receiver.hostmetricsreceiver.emitMetricsWithDirectionAttribute"
-	EmitMetricsWithoutDirectionAttributeFeatureGateID = "receiver.hostmetricsreceiver.emitMetricsWithoutDirectionAttribute"
-)
-
-var (
-	emitMetricsWithDirectionAttributeFeatureGate = featuregate.Gate{
-		ID:      EmitMetricsWithDirectionAttributeFeatureGateID,
-		Enabled: true,
-		Description: "Some process host metrics reported are transitioning from being reported with a direction " +
-			"attribute to being reported with the direction included in the metric name to adhere to the " +
-			"OpenTelemetry specification. This feature gate controls emitting the old metrics with the direction " +
-			"attribute. For more details, see: " +
-			"https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/hostmetricsreceiver/README.md#feature-gate-configurations",
-	}
-
-	emitMetricsWithoutDirectionAttributeFeatureGate = featuregate.Gate{
-		ID:      EmitMetricsWithoutDirectionAttributeFeatureGateID,
-		Enabled: false,
-		Description: "Some process host metrics reported are transitioning from being reported with a direction " +
-			"attribute to being reported with the direction included in the metric name to adhere to the " +
-			"OpenTelemetry specification. This feature gate controls emitting the new metrics without the direction " +
-			"attribute. For more details, see: " +
-			"https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/hostmetricsreceiver/README.md#feature-gate-configurations",
-	}
-)
-
-func init() {
-	featuregate.GetRegistry().MustRegister(emitMetricsWithDirectionAttributeFeatureGate)
-	featuregate.GetRegistry().MustRegister(emitMetricsWithoutDirectionAttributeFeatureGate)
-}
 
 // ScraperFactory can create a MetricScraper.
 type ScraperFactory interface {
@@ -61,9 +28,18 @@ type ScraperFactory interface {
 
 	// CreateMetricsScraper creates a scraper based on this config.
 	// If the config is not valid, error will be returned instead.
-	CreateMetricsScraper(ctx context.Context, settings component.ReceiverCreateSettings, cfg Config) (scraperhelper.Scraper, error)
+	CreateMetricsScraper(ctx context.Context, settings receiver.CreateSettings, cfg Config) (scraperhelper.Scraper, error)
 }
 
 // Config is the configuration of a scraper.
 type Config interface {
+	SetRootPath(rootPath string)
+}
+
+type ScraperConfig struct {
+	RootPath string `mapstructure:"-"`
+}
+
+func (p *ScraperConfig) SetRootPath(rootPath string) {
+	p.RootPath = rootPath
 }

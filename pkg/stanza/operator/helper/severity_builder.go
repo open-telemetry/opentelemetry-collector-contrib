@@ -29,34 +29,7 @@ func getBuiltinMapping(name string) severityMap {
 	switch name {
 	case "none":
 		return map[string]entry.Severity{}
-	case "aliases":
-		return map[string]entry.Severity{
-			"trace":  entry.Trace,
-			"trace2": entry.Trace2,
-			"trace3": entry.Trace3,
-			"trace4": entry.Trace4,
-			"debug":  entry.Debug,
-			"debug2": entry.Debug2,
-			"debug3": entry.Debug3,
-			"debug4": entry.Debug4,
-			"info":   entry.Info,
-			"info2":  entry.Info2,
-			"info3":  entry.Info3,
-			"info4":  entry.Info4,
-			"warn":   entry.Warn,
-			"warn2":  entry.Warn2,
-			"warn3":  entry.Warn3,
-			"warn4":  entry.Warn4,
-			"error":  entry.Error,
-			"error2": entry.Error2,
-			"error3": entry.Error3,
-			"error4": entry.Error4,
-			"fatal":  entry.Fatal,
-			"fatal2": entry.Fatal2,
-			"fatal3": entry.Fatal3,
-			"fatal4": entry.Fatal4,
-		}
-	case "otel":
+	case "otel", "aliases":
 		return map[string]entry.Severity{
 			"trace":  entry.Trace,
 			"1":      entry.Trace,
@@ -149,9 +122,9 @@ func NewSeverityConfig() SeverityConfig {
 
 // SeverityConfig allows users to specify how to parse a severity from a field.
 type SeverityConfig struct {
-	ParseFrom *entry.Field                `mapstructure:"parse_from,omitempty"  json:"parse_from,omitempty"  yaml:"parse_from,omitempty"`
-	Preset    string                      `mapstructure:"preset,omitempty"      json:"preset,omitempty"      yaml:"preset,omitempty"`
-	Mapping   map[interface{}]interface{} `mapstructure:"mapping,omitempty"     json:"mapping,omitempty"     yaml:"mapping,omitempty"`
+	ParseFrom *entry.Field           `mapstructure:"parse_from,omitempty"`
+	Preset    string                 `mapstructure:"preset,omitempty"`
+	Mapping   map[string]interface{} `mapstructure:"mapping,omitempty"`
 }
 
 // Build builds a SeverityParser from a SeverityConfig
@@ -200,7 +173,7 @@ func validateSeverity(severity interface{}) (entry.Severity, error) {
 }
 
 func isRange(value interface{}) (int, int, bool) {
-	rawMap, ok := value.(map[interface{}]interface{})
+	rawMap, ok := value.(map[string]interface{})
 	if !ok {
 		return 0, 0, false
 	}

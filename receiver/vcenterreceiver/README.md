@@ -36,7 +36,7 @@ receivers:
   vcenter:
     endpoint: http://localhost:15672
     username: otelu
-    password: $VCENTER_PASSWORD
+    password: ${env:VCENTER_PASSWORD}
     collection_interval: 5m
     metrics: []
 ```
@@ -46,51 +46,6 @@ The full list of settings exposed for this receiver are documented [here](./conf
 ## Metrics
 
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml) with further documentation in [documentation.md](./documentation.md)
-
-### Feature gate configurations
-
-#### Transition from metrics with "direction" attribute
-
-There is a proposal to change some memcached metrics from being reported with a `direction` attribute to being
-reported with the direction included in the metric name.
-
-- `vcenter.host.disk.throughput` will become:
-  - `vcenter.host.disk.throughput.read`
-  - `vcenter.host.disk.throughput.write`
-- `vcenter.host.disk.latency.avg` will become:
-  - `vcenter.host.disk.latency.avg.read`
-  - `vcenter.host.disk.latency.avg.write`
-- `vcenter.host.network.throughput` will become:
-  - `vcenter.host.network.throughputt.receive`
-  - `vcenter.host.network.throughput.transmit`
-- `vcenter.host.network.packet.errors` will become:
-  - `vcenter.host.network.packet.errors.receive`
-  - `vcenter.host.network.packet.errors.transmit`
-- `vcenter.host.network.packet.count` will become:
-  - `vcenter.host.network.packet.count.receive`
-  - `vcenter.host.network.packet.count.transmit`
-- `vcenter.vm.disk.latency.avg.read` will become:
-  - `vcenter.vm.disk.latency.avg.read`
-  - `vcenter.vm.disk.latency.avg.write`
-- `vcenter.vm.network.throughput` will become:
-  - `vcenter.vm.network.throughput.receive`
-  - `vcenter.vm.network.throughput.transmit`
-- `vcenter.vm.network.packet.count` will become:
-  - `vcenter.vm.network.packet.count.receive`
-  - `vcenter.vm.network.packet.count.transmit`
-
-The following feature gates control the transition process:
-
-- **receiver.vcenterreceiver.emitMetricsWithoutDirectionAttribute**: controls if the new metrics without
-  `direction` attribute are emitted by the receiver.
-- **receiver.vcenterreceiver.emitMetricsWithDirectionAttribute**: controls if the deprecated metrics with 
-  `direction`
-  attribute are emitted by the receiver.
-
-##### Transition schedule:
-
-The final decision on the transition is not finalized yet. The transition is on hold until
-https://github.com/open-telemetry/opentelemetry-specification/issues/2726 is resolved.
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

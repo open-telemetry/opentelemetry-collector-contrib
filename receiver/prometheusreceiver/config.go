@@ -18,7 +18,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -32,7 +31,7 @@ import (
 	promHTTP "github.com/prometheus/prometheus/discovery/http"
 	"github.com/prometheus/prometheus/discovery/kubernetes"
 	"github.com/prometheus/prometheus/discovery/targetgroup"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	"gopkg.in/yaml.v2"
 )
@@ -48,10 +47,9 @@ const (
 
 // Config defines configuration for Prometheus receiver.
 type Config struct {
-	config.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-	PrometheusConfig        *promconfig.Config       `mapstructure:"-"`
-	BufferPeriod            time.Duration            `mapstructure:"buffer_period"`
-	BufferCount             int                      `mapstructure:"buffer_count"`
+	PrometheusConfig *promconfig.Config `mapstructure:"-"`
+	BufferPeriod     time.Duration      `mapstructure:"buffer_period"`
+	BufferCount      int                `mapstructure:"buffer_count"`
 	// UseStartTimeMetric enables retrieving the start time of all counter metrics
 	// from the process_start_time_seconds metric. This is only correct if all counters on that endpoint
 	// started after the process start time, and the process is the only actor exporting the metric after
@@ -80,7 +78,7 @@ type targetAllocator struct {
 	HTTPSDConfig      *promHTTP.SDConfig `mapstructure:"-"`
 }
 
-var _ config.Receiver = (*Config)(nil)
+var _ component.Config = (*Config)(nil)
 var _ confmap.Unmarshaler = (*Config)(nil)
 
 func checkFile(fn string) error {
@@ -111,13 +109,7 @@ func checkTLSConfig(tlsConfig commonconfig.TLSConfig) error {
 // Method to exercise the prometheus file discovery behavior to ensure there are no errors
 // - reference https://github.com/prometheus/prometheus/blob/c0c22ed04200a8d24d1d5719f605c85710f0d008/discovery/file/file.go#L372
 func checkSDFile(filename string) error {
-	fd, err := os.Open(filename)
-	if err != nil {
-		return err
-	}
-	defer fd.Close()
-
-	content, err := io.ReadAll(fd)
+	content, err := os.ReadFile(filepath.Clean(filename))
 	if err != nil {
 		return err
 	}
@@ -165,8 +157,8 @@ func (cfg *Config) Validate() error {
 }
 
 func (cfg *Config) validatePromConfig(promConfig *promconfig.Config) error {
-	if len(promConfig.ScrapeConfigs) == 0 {
-		return errors.New("no Prometheus scrape_configs")
+	if len(promConfig.ScrapeConfigs) == 0 && cfg.TargetAllocator == nil {
+		return errors.New("no Prometheus scrape_configs or target_allocator set")
 	}
 
 	// Reject features that Prometheus supports but that the receiver doesn't support:
@@ -268,7 +260,7 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 	// We need custom unmarshaling because prometheus "config" subkey defines its own
 	// YAML unmarshaling routines so we need to do it explicitly.
 
-	err := componentParser.UnmarshalExact(cfg)
+	err := componentParser.Unmarshal(cfg, confmap.WithErrorUnused())
 	if err != nil {
 		return fmt.Errorf("prometheus receiver failed to parse config: %w", err)
 	}

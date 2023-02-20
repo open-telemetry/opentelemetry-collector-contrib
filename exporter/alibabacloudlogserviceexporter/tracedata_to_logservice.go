@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
 const (
@@ -90,16 +91,16 @@ func spanToLogServiceData(span ptrace.Span, resourceContents, instrumentationLib
 
 	contentsBuffer = append(contentsBuffer, sls.LogContent{
 		Key:   proto.String(traceIDField),
-		Value: proto.String(span.TraceID().HexString()),
+		Value: proto.String(traceutil.TraceIDToHexOrEmptyString(span.TraceID())),
 	})
 	contentsBuffer = append(contentsBuffer, sls.LogContent{
 		Key:   proto.String(spanIDField),
-		Value: proto.String(span.SpanID().HexString()),
+		Value: proto.String(traceutil.SpanIDToHexOrEmptyString(span.SpanID())),
 	})
 	// if ParentSpanID is not valid, the return "", it is compatible for log service
 	contentsBuffer = append(contentsBuffer, sls.LogContent{
 		Key:   proto.String(parentSpanIDField),
-		Value: proto.String(span.ParentSpanID().HexString()),
+		Value: proto.String(traceutil.SpanIDToHexOrEmptyString(span.ParentSpanID())),
 	})
 
 	contentsBuffer = append(contentsBuffer, sls.LogContent{
@@ -121,7 +122,7 @@ func spanToLogServiceData(span ptrace.Span, resourceContents, instrumentationLib
 	})
 	contentsBuffer = append(contentsBuffer, sls.LogContent{
 		Key:   proto.String(traceStateField),
-		Value: proto.String(span.TraceStateStruct().AsRaw()),
+		Value: proto.String(span.TraceState().AsRaw()),
 	})
 	contentsBuffer = append(contentsBuffer, sls.LogContent{
 		Key:   proto.String(startTimeField),
@@ -206,8 +207,8 @@ func spanLinksToString(spanLinkSlice ptrace.SpanLinkSlice) string {
 	for i := 0; i < spanLinkSlice.Len(); i++ {
 		spanLink := spanLinkSlice.At(i)
 		link := map[string]interface{}{}
-		link[spanIDField] = spanLink.SpanID().HexString()
-		link[traceIDField] = spanLink.TraceID().HexString()
+		link[spanIDField] = traceutil.SpanIDToHexOrEmptyString(spanLink.SpanID())
+		link[traceIDField] = traceutil.TraceIDToHexOrEmptyString(spanLink.TraceID())
 		link[attributeField] = spanLink.Attributes().AsRaw()
 		linkArray = append(linkArray, link)
 	}

@@ -36,14 +36,14 @@ func getNameToMetricMap(rm pmetric.ResourceMetrics) map[string]pmetric.Metric {
 
 // getMetricValue returns the value of the first data point from the given metric.
 func getMetricValue(metric pmetric.Metric) float64 {
-	if metric.DataType() == pmetric.MetricDataTypeGauge {
+	if metric.Type() == pmetric.MetricTypeGauge {
 		dataPoints := metric.Gauge().DataPoints()
 		if dataPoints.Len() > 0 {
 			switch dataPoints.At(0).ValueType() {
 			case pmetric.NumberDataPointValueTypeDouble:
-				return dataPoints.At(0).DoubleVal()
+				return dataPoints.At(0).DoubleValue()
 			case pmetric.NumberDataPointValueTypeInt:
-				return float64(dataPoints.At(0).IntVal())
+				return float64(dataPoints.At(0).IntValue())
 			}
 		}
 		return 0
@@ -53,7 +53,7 @@ func getMetricValue(metric pmetric.Metric) float64 {
 
 // generateMetrics creates a new metric based on the given rule and add it to the Resource Metric.
 // The value for newly calculated metrics is always a floting point number and the dataType is set
-// as MetricDataTypeDoubleGauge.
+// as MetricTypeDoubleGauge.
 func generateMetrics(rm pmetric.ResourceMetrics, operand2 float64, rule internalRule, logger *zap.Logger) {
 	ilms := rm.ScopeMetrics()
 	for i := 0; i < ilms.Len(); i++ {
@@ -77,15 +77,15 @@ func addDoubleGaugeDataPoints(from pmetric.Metric, to pmetric.Metric, operand2 f
 		var operand1 float64
 		switch fromDataPoint.ValueType() {
 		case pmetric.NumberDataPointValueTypeDouble:
-			operand1 = fromDataPoint.DoubleVal()
+			operand1 = fromDataPoint.DoubleValue()
 		case pmetric.NumberDataPointValueTypeInt:
-			operand1 = float64(fromDataPoint.IntVal())
+			operand1 = float64(fromDataPoint.IntValue())
 		}
 
 		neweDoubleDataPoint := to.Gauge().DataPoints().AppendEmpty()
 		fromDataPoint.CopyTo(neweDoubleDataPoint)
 		value := calculateValue(operand1, operand2, operation, logger, to.Name())
-		neweDoubleDataPoint.SetDoubleVal(value)
+		neweDoubleDataPoint.SetDoubleValue(value)
 	}
 }
 

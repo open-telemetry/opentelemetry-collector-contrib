@@ -21,7 +21,7 @@ import (
 
 	"github.com/microsoft/ApplicationInsights-Go/appinsights"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/exporter"
 	"go.uber.org/zap"
 )
 
@@ -38,13 +38,14 @@ var (
 )
 
 // NewFactory returns a factory for Azure Monitor exporter.
-func NewFactory() component.ExporterFactory {
+func NewFactory() exporter.Factory {
 	f := &factory{}
-	return component.NewExporterFactory(
+	return exporter.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporter(f.createTracesExporter, stability),
-		component.WithLogsExporter(f.createLogsExporter, stability))
+		exporter.WithTraces(f.createTracesExporter, stability),
+		exporter.WithLogs(f.createLogsExporter, stability),
+		exporter.WithMetrics(f.createMetricsExporter, stability))
 }
 
 // Implements the interface from go.opentelemetry.io/collector/exporter/factory.go
@@ -52,20 +53,20 @@ type factory struct {
 	tChannel transportChannel
 }
 
-func createDefaultConfig() config.Exporter {
+func createDefaultConfig() component.Config {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-		Endpoint:         defaultEndpoint,
-		MaxBatchSize:     1024,
-		MaxBatchInterval: 10 * time.Second,
+		Endpoint:          defaultEndpoint,
+		MaxBatchSize:      1024,
+		MaxBatchInterval:  10 * time.Second,
+		SpanEventsEnabled: false,
 	}
 }
 
 func (f *factory) createTracesExporter(
 	ctx context.Context,
-	set component.ExporterCreateSettings,
-	cfg config.Exporter,
-) (component.TracesExporter, error) {
+	set exporter.CreateSettings,
+	cfg component.Config,
+) (exporter.Traces, error) {
 	exporterConfig, ok := cfg.(*Config)
 
 	if !ok {
@@ -78,9 +79,9 @@ func (f *factory) createTracesExporter(
 
 func (f *factory) createLogsExporter(
 	ctx context.Context,
-	set component.ExporterCreateSettings,
-	cfg config.Exporter,
-) (component.LogsExporter, error) {
+	set exporter.CreateSettings,
+	cfg component.Config,
+) (exporter.Logs, error) {
 	exporterConfig, ok := cfg.(*Config)
 
 	if !ok {
@@ -91,6 +92,21 @@ func (f *factory) createLogsExporter(
 	return newLogsExporter(exporterConfig, tc, set)
 }
 
+func (f *factory) createMetricsExporter(
+	ctx context.Context,
+	set exporter.CreateSettings,
+	cfg component.Config,
+) (exporter.Metrics, error) {
+	exporterConfig, ok := cfg.(*Config)
+
+	if !ok {
+		return nil, errUnexpectedConfigurationType
+	}
+
+	tc := f.getTransportChannel(exporterConfig, set.Logger)
+	return newMetricsExporter(exporterConfig, tc, set)
+}
+
 // Configures the transport channel.
 // This method is not thread-safe
 func (f *factory) getTransportChannel(exporterConfig *Config, logger *zap.Logger) transportChannel {
@@ -98,7 +114,7 @@ func (f *factory) getTransportChannel(exporterConfig *Config, logger *zap.Logger
 	// The default transport channel uses the default send mechanism from the AppInsights telemetry client.
 	// This default channel handles batching, appropriate retries, and is backed by memory.
 	if f.tChannel == nil {
-		telemetryConfiguration := appinsights.NewTelemetryConfiguration(exporterConfig.InstrumentationKey)
+		telemetryConfiguration := appinsights.NewTelemetryConfiguration(string(exporterConfig.InstrumentationKey))
 		telemetryConfiguration.EndpointUrl = exporterConfig.Endpoint
 		telemetryConfiguration.MaxBatchSize = exporterConfig.MaxBatchSize
 		telemetryConfiguration.MaxBatchInterval = exporterConfig.MaxBatchInterval

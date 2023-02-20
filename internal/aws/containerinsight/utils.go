@@ -180,7 +180,7 @@ func ConvertToOTLPMetrics(fields map[string]interface{}, tags map[string]string,
 			// convert from nanosecond to millisecond (as emf log use millisecond timestamp)
 			tagValue = strconv.FormatUint(timeNs/uint64(time.Millisecond), 10)
 		}
-		resource.Attributes().PutString(tagKey, tagValue)
+		resource.Attributes().PutStr(tagKey, tagValue)
 	}
 
 	ilms := rm.ScopeMetrics()
@@ -222,7 +222,7 @@ func intGauge(ilm pmetric.ScopeMetrics, metricName string, unit string, value in
 	dataPoints := intGauge.DataPoints()
 	dataPoint := dataPoints.AppendEmpty()
 
-	dataPoint.SetIntVal(value)
+	dataPoint.SetIntValue(value)
 	dataPoint.SetTimestamp(ts)
 }
 
@@ -233,7 +233,7 @@ func doubleGauge(ilm pmetric.ScopeMetrics, metricName string, unit string, value
 	dataPoints := doubleGauge.DataPoints()
 	dataPoint := dataPoints.AppendEmpty()
 
-	dataPoint.SetDoubleVal(value)
+	dataPoint.SetDoubleValue(value)
 	dataPoint.SetTimestamp(ts)
 }
 

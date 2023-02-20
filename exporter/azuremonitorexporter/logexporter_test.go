@@ -28,6 +28,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
 const (
@@ -36,7 +38,20 @@ const (
 )
 
 var (
-	testLogs = []byte(`{"resourceLogs":[{"resource":{"attributes":[{"key":"service.name","value":{"stringValue":"dotnet"}}]},"scopeLogs":[{"scope":{},"logRecords":[{"timeUnixNano":"1643240673066096200","severityText":"Information","body":{"stringValue":"Message Body"},"flags":1,"traceId":"7b20d1349ef9b6d6f9d4d1d4a3ac2e82","spanId":"0c2ad924e1771630"},{"timeUnixNano":"0","observedTimeUnixNano":"1643240673066096200","severityText":"Information","body":{"stringValue":"Message Body"},"flags":1,"traceId":"7b20d1349ef9b6d6f9d4d1d4a3ac2e82","spanId":"0c2ad924e1771630"},{"timeUnixNano":"0","observedTimeUnixNano":"0","severityText":"Information","body":{"stringValue":"Message Body"},"flags":1,"traceId":"7b20d1349ef9b6d6f9d4d1d4a3ac2e82","spanId":"0c2ad924e1771630"}]}]}]}`)
+	testLogs         = []byte(`{"resourceLogs":[{"resource":{"attributes":[{"key":"service.name","value":{"stringValue":"dotnet"}}]},"scopeLogs":[{"scope":{},"logRecords":[{"timeUnixNano":"1643240673066096200","severityText":"Information","body":{"stringValue":"Message Body"},"flags":1,"traceId":"7b20d1349ef9b6d6f9d4d1d4a3ac2e82","spanId":"0c2ad924e1771630"},{"timeUnixNano":"0","observedTimeUnixNano":"1643240673066096200","severityText":"Information","body":{"stringValue":"Message Body"},"flags":1,"traceId":"7b20d1349ef9b6d6f9d4d1d4a3ac2e82","spanId":"0c2ad924e1771630"},{"timeUnixNano":"0","observedTimeUnixNano":"0","severityText":"Information","body":{"stringValue":"Message Body"},"flags":1,"traceId":"7b20d1349ef9b6d6f9d4d1d4a3ac2e82","spanId":"0c2ad924e1771630"}]}]}]}`)
+	severityLevelMap = map[plog.SeverityNumber]contracts.SeverityLevel{
+		plog.SeverityNumberTrace:       contracts.Verbose,
+		plog.SeverityNumberDebug4:      contracts.Verbose,
+		plog.SeverityNumberInfo:        contracts.Information,
+		plog.SeverityNumberInfo4:       contracts.Information,
+		plog.SeverityNumberWarn:        contracts.Warning,
+		plog.SeverityNumberWarn4:       contracts.Warning,
+		plog.SeverityNumberError:       contracts.Error,
+		plog.SeverityNumberError4:      contracts.Error,
+		plog.SeverityNumberFatal:       contracts.Critical,
+		plog.SeverityNumberFatal4:      contracts.Critical,
+		plog.SeverityNumberUnspecified: contracts.Information,
+	}
 )
 
 // Tests proper wrapping of a log record to an envelope
@@ -80,23 +95,23 @@ func TestLogRecordToEnvelope(t *testing.T) {
 			require.NotNil(t, envelopeData.BaseData)
 
 			messageData := envelopeData.BaseData.(*contracts.MessageData)
-			assert.Equal(t, messageData.Message, logRecord.Body().StringVal())
+			assert.Equal(t, messageData.Message, logRecord.Body().Str())
 			assert.Equal(t, messageData.SeverityLevel, contracts.Information)
 
-			hexTraceID := logRecord.TraceID().HexString()
+			hexTraceID := traceutil.TraceIDToHexOrEmptyString(logRecord.TraceID())
 			assert.Equal(t, envelope.Tags[contracts.OperationId], hexTraceID)
 
-			hexSpanID := logRecord.SpanID().HexString()
+			hexSpanID := traceutil.SpanIDToHexOrEmptyString(logRecord.SpanID())
 			assert.Equal(t, envelope.Tags[contracts.OperationParentId], hexSpanID)
 		})
 	}
 }
 
-// Test conversion from logRecord.SeverityText() to contracts.SeverityLevel()
+// Test conversion from logRecord.SeverityNumber() to contracts.SeverityLevel()
 func TestToAiSeverityLevel(t *testing.T) {
 	logPacker := getLogPacker()
-	for severityText, expectedSeverityLevel := range severityLevelMap {
-		severityLevel := logPacker.toAiSeverityLevel(severityText)
+	for sn, expectedSeverityLevel := range severityLevelMap {
+		severityLevel := logPacker.toAiSeverityLevel(sn)
 		assert.Equal(t, severityLevel, expectedSeverityLevel)
 	}
 }
@@ -126,7 +141,7 @@ func getLogPacker() *logPacker {
 }
 
 func getTestLogs(tb testing.TB) plog.Logs {
-	logsMarshaler := plog.NewJSONUnmarshaler()
+	logsMarshaler := &plog.JSONUnmarshaler{}
 	logs, err := logsMarshaler.UnmarshalLogs(testLogs)
 	assert.NoError(tb, err, "Can't unmarshal testing logs data -> %s", err)
 	return logs

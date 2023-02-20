@@ -54,20 +54,6 @@ func TestInitExporter(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestInitExporterInvalidConfig(t *testing.T) {
-	_, err := initExporter(&Config{
-		LogFormat:    "json",
-		MetricFormat: "test_format",
-		HTTPClientSettings: confighttp.HTTPClientSettings{
-			Timeout:  defaultTimeout,
-			Endpoint: "test_endpoint",
-		},
-		CompressEncoding: "gzip",
-	}, componenttest.NewNopTelemetrySettings())
-
-	assert.EqualError(t, err, "unexpected metric format: test_format")
-}
-
 func TestAllSuccess(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){
 		func(w http.ResponseWriter, req *http.Request) {
@@ -99,9 +85,9 @@ func TestResourceMerge(t *testing.T) {
 	test.exp.filter = f
 
 	logs := LogRecordsToLogs(exampleLog())
-	logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutString("key1", "original_value")
-	logs.ResourceLogs().At(0).Resource().Attributes().PutString("key1", "overwrite_value")
-	logs.ResourceLogs().At(0).Resource().Attributes().PutString("key2", "additional_value")
+	logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("key1", "original_value")
+	logs.ResourceLogs().At(0).Resource().Attributes().PutStr("key1", "overwrite_value")
+	logs.ResourceLogs().At(0).Resource().Attributes().PutStr("key2", "additional_value")
 
 	err = test.exp.pushLogsData(context.Background(), logs)
 	assert.NoError(t, err)
@@ -392,8 +378,8 @@ gauge_metric_name{foo="bar",key2="value2",remote_name="156955",url="http://anoth
 		exampleIntGaugeMetric(),
 	}
 
-	records[0].attributes.PutString("key1", "value1")
-	records[1].attributes.PutString("key2", "value2")
+	records[0].attributes.PutStr("key1", "value1")
+	records[1].attributes.PutStr("key2", "value2")
 
 	metrics := metricPairToMetrics(records)
 	expected := metricPairToMetrics(records[:1])

@@ -115,8 +115,8 @@ func (f *FileLogK8sWriter) convertLogToTextLine(lr plog.LogRecord) []byte {
 	sb.WriteString(lr.SeverityText())
 	sb.WriteString(" ")
 
-	if lr.Body().Type() == pcommon.ValueTypeString {
-		sb.WriteString(lr.Body().StringVal())
+	if lr.Body().Type() == pcommon.ValueTypeStr {
+		sb.WriteString(lr.Body().Str())
 	}
 
 	lr.Attributes().Range(func(k string, v pcommon.Value) bool {
@@ -124,14 +124,14 @@ func (f *FileLogK8sWriter) convertLogToTextLine(lr plog.LogRecord) []byte {
 		sb.WriteString(k)
 		sb.WriteString("=")
 		switch v.Type() {
-		case pcommon.ValueTypeString:
-			sb.WriteString(v.StringVal())
+		case pcommon.ValueTypeStr:
+			sb.WriteString(v.Str())
 		case pcommon.ValueTypeInt:
-			sb.WriteString(strconv.FormatInt(v.IntVal(), 10))
+			sb.WriteString(strconv.FormatInt(v.Int(), 10))
 		case pcommon.ValueTypeDouble:
-			sb.WriteString(strconv.FormatFloat(v.DoubleVal(), 'f', -1, 64))
+			sb.WriteString(strconv.FormatFloat(v.Double(), 'f', -1, 64))
 		case pcommon.ValueTypeBool:
-			sb.WriteString(strconv.FormatBool(v.BoolVal()))
+			sb.WriteString(strconv.FormatBool(v.Bool()))
 		default:
 			panic("missing case")
 		}

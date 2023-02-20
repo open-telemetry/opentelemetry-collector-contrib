@@ -41,12 +41,12 @@ const (
 	fieldPrometheusMetricType = "prom_metric_type"
 )
 
-var fieldPrometheusTypes = map[pmetric.MetricDataType]string{
-	pmetric.MetricDataTypeNone:      "",
-	pmetric.MetricDataTypeGauge:     "gauge",
-	pmetric.MetricDataTypeSum:       "counter",
-	pmetric.MetricDataTypeHistogram: "histogram",
-	pmetric.MetricDataTypeSummary:   "summary",
+var fieldPrometheusTypes = map[pmetric.MetricType]string{
+	pmetric.MetricTypeEmpty:     "",
+	pmetric.MetricTypeGauge:     "gauge",
+	pmetric.MetricTypeSum:       "counter",
+	pmetric.MetricTypeHistogram: "histogram",
+	pmetric.MetricTypeSummary:   "summary",
 }
 
 type cWMetrics struct {
@@ -69,19 +69,18 @@ type cWMetricStats struct {
 }
 
 type groupedMetricMetadata struct {
-	namespace   string
-	timestampMs int64
-	logGroup    string
-	logStream   string
+	namespace      string
+	timestampMs    int64
+	logGroup       string
+	logStream      string
+	metricDataType pmetric.MetricType
 }
 
 // cWMetricMetadata represents the metadata associated with a given CloudWatch metric
 type cWMetricMetadata struct {
 	groupedMetricMetadata
 	instrumentationLibraryName string
-
-	receiver       string
-	metricDataType pmetric.MetricDataType
+	receiver                   string
 }
 
 type metricTranslator struct {
@@ -91,7 +90,7 @@ type metricTranslator struct {
 func newMetricTranslator(config Config) metricTranslator {
 	mt := map[string]MetricDescriptor{}
 	for _, descriptor := range config.MetricDescriptors {
-		mt[descriptor.metricName] = descriptor
+		mt[descriptor.MetricName] = descriptor
 	}
 	return metricTranslator{
 		metricDescriptor: mt,
@@ -108,7 +107,7 @@ func (mt metricTranslator) translateOTelToGroupedMetric(rm pmetric.ResourceMetri
 	ilms := rm.ScopeMetrics()
 	var metricReceiver string
 	if receiver, ok := rm.Resource().Attributes().Get(attributeReceiver); ok {
-		metricReceiver = receiver.StringVal()
+		metricReceiver = receiver.Str()
 	}
 	for j := 0; j < ilms.Len(); j++ {
 		ilm := ilms.At(j)
@@ -123,14 +122,14 @@ func (mt metricTranslator) translateOTelToGroupedMetric(rm pmetric.ResourceMetri
 			metric := metrics.At(k)
 			metadata := cWMetricMetadata{
 				groupedMetricMetadata: groupedMetricMetadata{
-					namespace:   cWNamespace,
-					timestampMs: timestamp,
-					logGroup:    logGroup,
-					logStream:   logStream,
+					namespace:      cWNamespace,
+					timestampMs:    timestamp,
+					logGroup:       logGroup,
+					logStream:      logStream,
+					metricDataType: metric.Type(),
 				},
 				instrumentationLibraryName: instrumentationLibName,
 				receiver:                   metricReceiver,
-				metricDataType:             metric.DataType(),
 			}
 			err := addToGroupedMetric(metric, groupedMetrics, metadata, patternReplaceSucceeded, config.logger, mt.metricDescriptor, config)
 			if err != nil {

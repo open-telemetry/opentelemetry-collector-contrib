@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package extractors // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor/extractors"
 
 import (
@@ -47,9 +46,9 @@ type MetricExtractor interface {
 type CAdvisorMetric struct {
 	// source of the metric for debugging merge conflict
 	cgroupPath string
-	//key/value pairs that are typed and contain the metric (numerical) data
+	// key/value pairs that are typed and contain the metric (numerical) data
 	fields map[string]interface{}
-	//key/value string pairs that are used to identify the metrics
+	// key/value string pairs that are used to identify the metrics
 	tags map[string]string
 
 	logger *zap.Logger
@@ -140,8 +139,8 @@ func newFloat64RateCalculator() awsmetrics.MetricCalculator {
 
 func assignRateValueToField(rateCalculator *awsmetrics.MetricCalculator, fields map[string]interface{}, metricName string,
 	cinfoName string, curVal interface{}, curTime time.Time, multiplier float64) {
-	key := cinfoName + metricName
-	if val, ok := rateCalculator.Calculate(key, nil, curVal, curTime); ok {
+	mKey := awsmetrics.NewKey(cinfoName+metricName, nil)
+	if val, ok := rateCalculator.Calculate(mKey, curVal, curTime); ok {
 		fields[metricName] = val.(float64) * multiplier
 	}
 }

@@ -191,29 +191,5 @@ with detailed sample configurations [here](./testdata/config.yaml).
 
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml) with further documentation in [documentation.md](./documentation.md)
 
-### Feature gate configurations
-
-#### Transition from metrics with "direction" attribute
-
-There is a proposal to change some host metrics from being reported with a `direction` attribute to being
-reported with the direction included in the metric name.
-
-- `k8s.node.network.io` will become:
-  - `k8s.node.network.io.transmit`
-  - `k8s.node.network.io.receive`
-- `k8s.node.network.errors` will become:
-  - `k8s.node.network.errors.transmit`
-  - `k8s.node.network.errors.receive`
-
-The following feature gates control the transition process:
-
-- **receiver.kubeletstatsreceiver.emitMetricsWithoutDirectionAttribute**: controls if the new metrics without `direction` attribute are emitted by the receiver.
-- **receiver.kubeletstatsreceiver.emitMetricsWithDirectionAttribute**: controls if the deprecated metrics with `direction` attribute are emitted by the receiver.
-
-##### Transition schedule:
-
-The final decision on the transition is not finalized yet. The transition is on hold until
-https://github.com/open-telemetry/opentelemetry-specification/issues/2726 is resolved.
-
 [beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

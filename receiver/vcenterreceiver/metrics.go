@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -54,8 +54,13 @@ func (v *vcenterMetricScraper) recordVMUsages(
 ) {
 	memUsage := vm.Summary.QuickStats.GuestMemoryUsage
 	balloonedMem := vm.Summary.QuickStats.BalloonedMemory
+	swappedMem := vm.Summary.QuickStats.SwappedMemory
+	swappedSSDMem := vm.Summary.QuickStats.SsdSwappedMemory
+
 	v.mb.RecordVcenterVMMemoryUsageDataPoint(now, int64(memUsage))
 	v.mb.RecordVcenterVMMemoryBalloonedDataPoint(now, int64(balloonedMem))
+	v.mb.RecordVcenterVMMemorySwappedDataPoint(now, int64(swappedMem))
+	v.mb.RecordVcenterVMMemorySwappedSsdDataPoint(now, swappedSSDMem)
 
 	diskUsed := vm.Summary.Storage.Committed
 	diskFree := vm.Summary.Storage.Uncommitted
@@ -188,65 +193,25 @@ func (v *vcenterMetricScraper) processVMPerformanceMetrics(info *perfSampleResul
 				switch val.Name {
 				// Performance monitoring level 1 metrics
 				case "net.bytesTx.average":
-					if v.emitMetricsWithDirectionAttribute {
-						v.mb.RecordVcenterVMNetworkThroughputDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeThroughputDirectionTransmitted)
-					}
-					if v.emitMetricsWithoutDirectionAttribute {
-						v.mb.RecordVcenterVMNetworkThroughputTransmitDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue)
-					}
+					v.mb.RecordVcenterVMNetworkThroughputDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeThroughputDirectionTransmitted)
 				case "net.bytesRx.average":
-					if v.emitMetricsWithDirectionAttribute {
-						v.mb.RecordVcenterVMNetworkThroughputDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeThroughputDirectionReceived)
-					}
-					if v.emitMetricsWithoutDirectionAttribute {
-						v.mb.RecordVcenterVMNetworkThroughputReceiveDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue)
-					}
+					v.mb.RecordVcenterVMNetworkThroughputDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeThroughputDirectionReceived)
 				case "net.usage.average":
 					v.mb.RecordVcenterVMNetworkUsageDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue)
 				case "net.packetsTx.summation":
-					if v.emitMetricsWithDirectionAttribute {
-						v.mb.RecordVcenterVMNetworkPacketCountDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeThroughputDirectionTransmitted)
-					}
-					if v.emitMetricsWithoutDirectionAttribute {
-						v.mb.RecordVcenterVMNetworkPacketCountTransmitDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue)
-					}
+					v.mb.RecordVcenterVMNetworkPacketCountDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeThroughputDirectionTransmitted)
 				case "net.packetsRx.summation":
-					if v.emitMetricsWithDirectionAttribute {
-						v.mb.RecordVcenterVMNetworkPacketCountDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeThroughputDirectionReceived)
-					}
-					if v.emitMetricsWithoutDirectionAttribute {
-						v.mb.RecordVcenterVMNetworkPacketCountReceiveDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue)
-					}
+					v.mb.RecordVcenterVMNetworkPacketCountDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeThroughputDirectionReceived)
 
 				// Performance monitoring level 2 metrics required
 				case "disk.totalReadLatency.average":
-					if v.emitMetricsWithDirectionAttribute {
-						v.mb.RecordVcenterVMDiskLatencyAvgDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeDiskDirectionRead, metadata.AttributeDiskTypePhysical)
-					}
-					if v.emitMetricsWithoutDirectionAttribute {
-						v.mb.RecordVcenterVMDiskLatencyAvgReadDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeDiskTypePhysical)
-					}
+					v.mb.RecordVcenterVMDiskLatencyAvgDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeDiskDirectionRead, metadata.AttributeDiskTypePhysical)
 				case "virtualDisk.totalReadLatency.average":
-					if v.emitMetricsWithDirectionAttribute {
-						v.mb.RecordVcenterVMDiskLatencyAvgDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeDiskDirectionRead, metadata.AttributeDiskTypeVirtual)
-					}
-					if v.emitMetricsWithoutDirectionAttribute {
-						v.mb.RecordVcenterVMDiskLatencyAvgReadDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeDiskTypeVirtual)
-					}
+					v.mb.RecordVcenterVMDiskLatencyAvgDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeDiskDirectionRead, metadata.AttributeDiskTypeVirtual)
 				case "disk.totalWriteLatency.average":
-					if v.emitMetricsWithDirectionAttribute {
-						v.mb.RecordVcenterVMDiskLatencyAvgDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeDiskDirectionWrite, metadata.AttributeDiskTypePhysical)
-					}
-					if v.emitMetricsWithoutDirectionAttribute {
-						v.mb.RecordVcenterVMDiskLatencyAvgWriteDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeDiskTypePhysical)
-					}
+					v.mb.RecordVcenterVMDiskLatencyAvgDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeDiskDirectionWrite, metadata.AttributeDiskTypePhysical)
 				case "virtualDisk.totalWriteLatency.average":
-					if v.emitMetricsWithDirectionAttribute {
-						v.mb.RecordVcenterVMDiskLatencyAvgDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeDiskDirectionWrite, metadata.AttributeDiskTypeVirtual)
-					}
-					if v.emitMetricsWithoutDirectionAttribute {
-						v.mb.RecordVcenterVMDiskLatencyAvgWriteDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeDiskTypeVirtual)
-					}
+					v.mb.RecordVcenterVMDiskLatencyAvgDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeDiskDirectionWrite, metadata.AttributeDiskTypeVirtual)
 				case "disk.maxTotalLatency.latest":
 					v.mb.RecordVcenterVMDiskLatencyMaxDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue)
 				}
@@ -265,82 +230,31 @@ func (v *vcenterMetricScraper) processHostPerformance(metrics []performance.Enti
 				case "net.usage.average":
 					v.mb.RecordVcenterHostNetworkUsageDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue)
 				case "net.bytesTx.average":
-					if v.emitMetricsWithDirectionAttribute {
-						v.mb.RecordVcenterHostNetworkThroughputDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeThroughputDirectionTransmitted)
-					}
-
-					if v.emitMetricsWithoutDirectionAttribute {
-						v.mb.RecordVcenterHostNetworkThroughputTransmitDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue)
-					}
+					v.mb.RecordVcenterHostNetworkThroughputDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeThroughputDirectionTransmitted)
 				case "net.bytesRx.average":
-					if v.emitMetricsWithDirectionAttribute {
-						v.mb.RecordVcenterHostNetworkThroughputDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeThroughputDirectionReceived)
-					}
-					if v.emitMetricsWithoutDirectionAttribute {
-						v.mb.RecordVcenterHostNetworkThroughputReceiveDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue)
-					}
+					v.mb.RecordVcenterHostNetworkThroughputDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeThroughputDirectionReceived)
 				case "net.packetsTx.summation":
-					if v.emitMetricsWithDirectionAttribute {
-						v.mb.RecordVcenterHostNetworkPacketCountDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeThroughputDirectionTransmitted)
-					}
-					if v.emitMetricsWithoutDirectionAttribute {
-						v.mb.RecordVcenterHostNetworkPacketCountTransmitDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue)
-					}
+					v.mb.RecordVcenterHostNetworkPacketCountDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeThroughputDirectionTransmitted)
 				case "net.packetsRx.summation":
-					if v.emitMetricsWithDirectionAttribute {
-						v.mb.RecordVcenterHostNetworkPacketCountDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeThroughputDirectionReceived)
-					}
-					if v.emitMetricsWithoutDirectionAttribute {
-						v.mb.RecordVcenterHostNetworkPacketCountReceiveDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue)
-					}
+					v.mb.RecordVcenterHostNetworkPacketCountDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeThroughputDirectionReceived)
 
 				// Following requires performance level 2
 				case "net.errorsRx.summation":
-					if v.emitMetricsWithDirectionAttribute {
-						v.mb.RecordVcenterHostNetworkPacketErrorsDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeThroughputDirectionReceived)
-					}
-					if v.emitMetricsWithoutDirectionAttribute {
-						v.mb.RecordVcenterHostNetworkPacketErrorsReceiveDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue)
-					}
+					v.mb.RecordVcenterHostNetworkPacketErrorsDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeThroughputDirectionReceived)
 				case "net.errorsTx.summation":
-					if v.emitMetricsWithDirectionAttribute {
-						v.mb.RecordVcenterHostNetworkPacketErrorsDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeThroughputDirectionTransmitted)
-					}
-					if v.emitMetricsWithoutDirectionAttribute {
-						v.mb.RecordVcenterHostNetworkPacketErrorsTransmitDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue)
-					}
+					v.mb.RecordVcenterHostNetworkPacketErrorsDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeThroughputDirectionTransmitted)
 				case "disk.totalWriteLatency.average":
-					if v.emitMetricsWithDirectionAttribute {
-						v.mb.RecordVcenterHostDiskLatencyAvgDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeDiskDirectionWrite)
-					}
-					if v.emitMetricsWithoutDirectionAttribute {
-						v.mb.RecordVcenterHostDiskLatencyAvgWriteDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue)
-					}
+					v.mb.RecordVcenterHostDiskLatencyAvgDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeDiskDirectionWrite)
 				case "disk.totalReadLatency.average":
-					if v.emitMetricsWithDirectionAttribute {
-						v.mb.RecordVcenterHostDiskLatencyAvgDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeDiskDirectionRead)
-					}
-					if v.emitMetricsWithoutDirectionAttribute {
-						v.mb.RecordVcenterHostDiskLatencyAvgReadDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue)
-					}
+					v.mb.RecordVcenterHostDiskLatencyAvgDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeDiskDirectionRead)
 				case "disk.maxTotalLatency.latest":
 					v.mb.RecordVcenterHostDiskLatencyMaxDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue)
 
 				// Following requires performance level 4
 				case "disk.read.average":
-					if v.emitMetricsWithDirectionAttribute {
-						v.mb.RecordVcenterHostDiskThroughputDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeDiskDirectionRead)
-					}
-					if v.emitMetricsWithoutDirectionAttribute {
-						v.mb.RecordVcenterHostDiskThroughputReadDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue)
-					}
+					v.mb.RecordVcenterHostDiskThroughputDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeDiskDirectionRead)
 				case "disk.write.average":
-					if v.emitMetricsWithDirectionAttribute {
-						v.mb.RecordVcenterHostDiskThroughputDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeDiskDirectionWrite)
-					}
-					if v.emitMetricsWithoutDirectionAttribute {
-						v.mb.RecordVcenterHostDiskThroughputWriteDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue)
-					}
+					v.mb.RecordVcenterHostDiskThroughputDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeDiskDirectionWrite)
 				}
 			}
 		}

@@ -129,7 +129,7 @@ func ocSpanToInternal(src *octrace.Span, dest ptrace.Span) {
 
 	dest.SetTraceID(traceIDToInternal(src.TraceId))
 	dest.SetSpanID(spanIDToInternal(src.SpanId))
-	dest.TraceStateStruct().FromRaw(ocTraceStateToInternal(src.Tracestate))
+	dest.TraceState().FromRaw(ocTraceStateToInternal(src.Tracestate))
 	dest.SetParentSpanID(spanIDToInternal(src.ParentSpanId))
 
 	dest.SetName(src.Name.GetValue())
@@ -161,7 +161,7 @@ func spanIDToInternal(spanID []byte) pcommon.SpanID {
 	return pcommon.SpanID(sid)
 }
 
-func ocStatusToInternal(ocStatus *octrace.Status, ocAttrs *octrace.Span_Attributes, dest ptrace.SpanStatus) {
+func ocStatusToInternal(ocStatus *octrace.Status, ocAttrs *octrace.Span_Attributes, dest ptrace.Status) {
 	if ocStatus == nil {
 		return
 	}
@@ -219,12 +219,11 @@ func initAttributeMapFromOC(ocAttrs *octrace.Span_Attributes, dest pcommon.Map) 
 		return
 	}
 
-	dest.Clear()
 	dest.EnsureCapacity(len(ocAttrs.AttributeMap))
 	for key, ocAttr := range ocAttrs.AttributeMap {
 		switch attribValue := ocAttr.Value.(type) {
 		case *octrace.AttributeValue_StringValue:
-			dest.PutString(key, attribValue.StringValue.GetValue())
+			dest.PutStr(key, attribValue.StringValue.GetValue())
 		case *octrace.AttributeValue_IntValue:
 			dest.PutInt(key, attribValue.IntValue)
 		case *octrace.AttributeValue_BoolValue:
@@ -232,7 +231,7 @@ func initAttributeMapFromOC(ocAttrs *octrace.Span_Attributes, dest pcommon.Map) 
 		case *octrace.AttributeValue_DoubleValue:
 			dest.PutDouble(key, attribValue.DoubleValue)
 		default:
-			dest.PutString(key, "<Unknown OpenCensus attribute value type>")
+			dest.PutStr(key, "<Unknown OpenCensus attribute value type>")
 		}
 	}
 }
@@ -342,7 +341,7 @@ func ocLinksToInternal(ocLinks *octrace.Span_Links, dest ptrace.Span) {
 		link := links.AppendEmpty()
 		link.SetTraceID(traceIDToInternal(ocLink.TraceId))
 		link.SetSpanID(spanIDToInternal(ocLink.SpanId))
-		link.TraceStateStruct().FromRaw(ocTraceStateToInternal(ocLink.Tracestate))
+		link.TraceState().FromRaw(ocTraceStateToInternal(ocLink.Tracestate))
 		initAttributeMapFromOC(ocLink.Attributes, link.Attributes())
 		link.SetDroppedAttributesCount(ocAttrsToDroppedAttributes(ocLink.Attributes))
 	}
@@ -353,7 +352,7 @@ func ocMessageEventToInternalAttrs(msgEvent *octrace.Span_TimeEvent_MessageEvent
 		return
 	}
 
-	dest.PutString("message.type", msgEvent.Type.String())
+	dest.PutStr("message.type", msgEvent.Type.String())
 	dest.PutInt(conventions.AttributeMessagingMessageID, int64(msgEvent.Id))
 	dest.PutInt(conventions.AttributeMessagingMessagePayloadSizeBytes, int64(msgEvent.UncompressedSize))
 	dest.PutInt(conventions.AttributeMessagingMessagePayloadCompressedSizeBytes, int64(msgEvent.CompressedSize))

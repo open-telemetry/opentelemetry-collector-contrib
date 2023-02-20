@@ -19,135 +19,134 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/prometheus/common/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
-	"go.opentelemetry.io/collector/service/servicetest"
 )
 
 func TestLoadConfig(t *testing.T) {
-	tenantExample := "example"
-	factories, err := componenttest.NopFactories()
-	assert.Nil(t, err)
+	t.Parallel()
 
-	factory := NewFactory()
-	factories.Exporters[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config_legacy.yaml"), factories)
-
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_legacy.yaml"))
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
 
-	assert.Equal(t, 3, len(cfg.Exporters))
-
-	actualCfg := cfg.Exporters[config.NewComponentIDWithName(typeStr, "allsettings")].(*Config)
-	expectedCfg := Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "allsettings")),
-		HTTPClientSettings: confighttp.HTTPClientSettings{
-			Headers: map[string]string{
-				"X-Custom-Header": "loki_rocks",
-			},
-			Endpoint: "https://loki:3100/loki/api/v1/push",
-			TLSSetting: configtls.TLSClientSetting{
-				TLSSetting: configtls.TLSSetting{
-					CAFile:   "/var/lib/mycert.pem",
-					CertFile: "certfile",
-					KeyFile:  "keyfile",
+	tests := []struct {
+		id       component.ID
+		expected component.Config
+	}{
+		{
+			id: component.NewIDWithName(typeStr, "allsettings"),
+			expected: &Config{
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Headers: map[string]configopaque.String{
+						"X-Custom-Header": "loki_rocks",
+					},
+					Endpoint: "https://loki:3100/loki/api/v1/push",
+					TLSSetting: configtls.TLSClientSetting{
+						TLSSetting: configtls.TLSSetting{
+							CAFile:   "/var/lib/mycert.pem",
+							CertFile: "certfile",
+							KeyFile:  "keyfile",
+						},
+						Insecure: true,
+					},
+					ReadBufferSize:  123,
+					WriteBufferSize: 345,
+					Timeout:         time.Second * 10,
 				},
-				Insecure: true,
+				RetrySettings: exporterhelper.RetrySettings{
+					Enabled:             true,
+					InitialInterval:     10 * time.Second,
+					MaxInterval:         1 * time.Minute,
+					MaxElapsedTime:      10 * time.Minute,
+					RandomizationFactor: backoff.DefaultRandomizationFactor,
+					Multiplier:          backoff.DefaultMultiplier,
+				},
+				QueueSettings: exporterhelper.QueueSettings{
+					Enabled:      true,
+					NumConsumers: 2,
+					QueueSize:    10,
+				},
+				TenantID: stringp("example"),
+				Labels: &LabelsConfig{
+					Attributes: map[string]string{
+						conventions.AttributeContainerName:  "container_name",
+						conventions.AttributeK8SClusterName: "k8s_cluster_name",
+						"severity":                          "severity",
+					},
+					ResourceAttributes: map[string]string{
+						"resource.name": "resource_name",
+						"severity":      "severity",
+					},
+					RecordAttributes: map[string]string{
+						"traceID": "traceid",
+					},
+				},
 			},
-			ReadBufferSize:  123,
-			WriteBufferSize: 345,
-			Timeout:         time.Second * 10,
 		},
-		RetrySettings: exporterhelper.RetrySettings{
-			Enabled:         true,
-			InitialInterval: 10 * time.Second,
-			MaxInterval:     1 * time.Minute,
-			MaxElapsedTime:  10 * time.Minute,
-		},
-		QueueSettings: exporterhelper.QueueSettings{
-			Enabled:      true,
-			NumConsumers: 2,
-			QueueSize:    10,
-		},
-		TenantID: &tenantExample,
-		Labels: &LabelsConfig{
-			Attributes: map[string]string{
-				conventions.AttributeContainerName:  "container_name",
-				conventions.AttributeK8SClusterName: "k8s_cluster_name",
-				"severity":                          "severity",
-			},
-			ResourceAttributes: map[string]string{
-				"resource.name": "resource_name",
-				"severity":      "severity",
-			},
-			RecordAttributes: map[string]string{
-				"traceID": "traceid",
+		{
+			id: component.NewIDWithName(typeStr, "json"),
+			expected: &Config{
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Headers:  map[string]configopaque.String{},
+					Endpoint: "https://loki:3100/loki/api/v1/push",
+					TLSSetting: configtls.TLSClientSetting{
+						TLSSetting: configtls.TLSSetting{
+							CAFile:   "",
+							CertFile: "",
+							KeyFile:  "",
+						},
+						Insecure: false,
+					},
+					ReadBufferSize:  0,
+					WriteBufferSize: 524288,
+					Timeout:         time.Second * 30,
+				},
+				RetrySettings: exporterhelper.RetrySettings{
+					Enabled:             true,
+					InitialInterval:     5 * time.Second,
+					MaxInterval:         30 * time.Second,
+					MaxElapsedTime:      5 * time.Minute,
+					RandomizationFactor: backoff.DefaultRandomizationFactor,
+					Multiplier:          backoff.DefaultMultiplier,
+				},
+				QueueSettings: exporterhelper.QueueSettings{
+					Enabled:      true,
+					NumConsumers: 10,
+					QueueSize:    5000,
+				},
+				TenantID: stringp("example"),
+				Labels: &LabelsConfig{
+					RecordAttributes: map[string]string{
+						"traceID": "traceid",
+					},
+				},
+				Format: stringp("json"),
 			},
 		},
 	}
-	require.Equal(t, &expectedCfg, actualCfg)
-}
 
-func TestJSONLoadConfig(t *testing.T) {
-	tenantExample := "example"
-	formatJSON := "json"
-	factories, err := componenttest.NopFactories()
-	assert.Nil(t, err)
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
 
-	factory := NewFactory()
-	factories.Exporters[config.Type(typeStr)] = factory
-	cfg, err := servicetest.LoadConfig(filepath.Join("testdata", "config_legacy.yaml"), factories)
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-	require.NoError(t, err)
-	require.NotNil(t, cfg)
-
-	assert.Equal(t, 3, len(cfg.Exporters))
-
-	actualCfg := cfg.Exporters[config.NewComponentIDWithName(typeStr, "json")].(*Config)
-	expectedCfg := Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "json")),
-		HTTPClientSettings: confighttp.HTTPClientSettings{
-			Headers:  map[string]string{},
-			Endpoint: "https://loki:3100/loki/api/v1/push",
-			TLSSetting: configtls.TLSClientSetting{
-				TLSSetting: configtls.TLSSetting{
-					CAFile:   "",
-					CertFile: "",
-					KeyFile:  "",
-				},
-				Insecure: false,
-			},
-			ReadBufferSize:  0,
-			WriteBufferSize: 524288,
-			Timeout:         time.Second * 30,
-		},
-		RetrySettings: exporterhelper.RetrySettings{
-			Enabled:         true,
-			InitialInterval: 5 * time.Second,
-			MaxInterval:     30 * time.Second,
-			MaxElapsedTime:  5 * time.Minute,
-		},
-		QueueSettings: exporterhelper.QueueSettings{
-			Enabled:      true,
-			NumConsumers: 10,
-			QueueSize:    5000,
-		},
-		TenantID: &tenantExample,
-		Labels: &LabelsConfig{
-			RecordAttributes: map[string]string{
-				"traceID": "traceid",
-			},
-		},
-		Format: &formatJSON,
+			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.Equal(t, tt.expected, cfg)
+		})
 	}
-	require.Equal(t, &expectedCfg, actualCfg)
 }
 
 func TestConfig_validate(t *testing.T) {
@@ -308,7 +307,6 @@ func TestConfig_validate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig().(*Config)
-			cfg.ExporterSettings = config.NewExporterSettings(config.NewComponentID(typeStr))
 			cfg.Endpoint = tt.fields.Endpoint
 			cfg.Labels = tt.fields.Labels
 
@@ -320,7 +318,7 @@ func TestConfig_validate(t *testing.T) {
 				cfg.Tenant = tt.fields.Tenant
 			}
 
-			err := cfg.Validate()
+			err := component.ValidateConfig(cfg)
 			if (err != nil) != tt.shouldError {
 				t.Errorf("validate() error = %v, shouldError %v", err, tt.shouldError)
 				return

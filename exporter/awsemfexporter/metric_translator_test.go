@@ -15,9 +15,10 @@
 package awsemfexporter
 
 import (
+	"fmt"
 	"os"
+	"reflect"
 	"sort"
-	"strings"
 	"testing"
 	"time"
 
@@ -296,17 +297,46 @@ func stringSlicesEqual(expected, actual []string) bool {
 	return true
 }
 
-// hashDimensions hashes dimensions for equality checking.
-func hashDimensions(dims [][]string) []string {
+func min(i, j int) int {
+	if i < j {
+		return i
+	}
+	return j
+}
+
+type dimensionality [][]string
+
+func (d dimensionality) Len() int {
+	return len(d)
+}
+
+func (d dimensionality) Swap(i, j int) {
+	d[i], d[j] = d[j], d[i]
+}
+
+func (d dimensionality) Less(i, j int) bool {
+	dim1 := d[i]
+	dim2 := d[j]
+
+	for k := 0; k < min(len(dim1), len(dim2)); k++ {
+		if dim1[k] != dim2[k] {
+			return dim1[k] < dim2[k]
+		}
+	}
+
+	return len(dim1) < len(dim2)
+}
+
+// normalizes a dimensionality lexicographically so that it can be compared
+func normalizeDimensionality(dims [][]string) [][]string {
 	// Convert to string for easier sorting
-	stringified := make([]string, len(dims))
+	sortedDimensions := make([][]string, len(dims))
 	for i, v := range dims {
 		sort.Strings(v)
-		stringified[i] = strings.Join(v, ",")
+		sortedDimensions[i] = v
 	}
-	// Sort across dimension sets for equality checking
-	sort.Strings(stringified)
-	return stringified
+	sort.Sort(dimensionality(sortedDimensions))
+	return sortedDimensions
 }
 
 // hashMetricSlice hashes a metrics slice for equality checking.
@@ -325,9 +355,9 @@ func hashMetricSlice(metricSlice []map[string]string) []string {
 // (i.e. has same sets of dimensions), regardless of order.
 func assertDimsEqual(t *testing.T, expected, actual [][]string) {
 	assert.Equal(t, len(expected), len(actual))
-	expectedHashedDimensions := hashDimensions(expected)
-	actualHashedDimensions := hashDimensions(actual)
-	assert.Equal(t, expectedHashedDimensions, actualHashedDimensions)
+	expectedDimensions := normalizeDimensionality(expected)
+	actualDimensions := normalizeDimensionality(actual)
+	assert.Equal(t, expectedDimensions, actualDimensions)
 }
 
 // cWMeasurementEqual returns true if CW Measurements are equal.
@@ -351,9 +381,9 @@ func cWMeasurementEqual(expected, actual cWMeasurement) bool {
 	if len(expected.Dimensions) != len(actual.Dimensions) {
 		return false
 	}
-	expectedHashedDimensions := hashDimensions(expected.Dimensions)
-	actualHashedDimensions := hashDimensions(actual.Dimensions)
-	return stringSlicesEqual(expectedHashedDimensions, actualHashedDimensions)
+	expectedDimensions := normalizeDimensionality(expected.Dimensions)
+	actualDimensions := normalizeDimensionality(actual.Dimensions)
+	return reflect.DeepEqual(expectedDimensions, actualDimensions)
 }
 
 // assertCWMeasurementEqual asserts whether CW Measurements are equal.
@@ -416,7 +446,7 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 	noNamespaceMetric.Resource().Attributes().Remove(conventions.AttributeServiceNamespace)
 	noNamespaceMetric.Resource().Attributes().Remove(conventions.AttributeServiceName)
 
-	counterMetrics := map[string]*metricInfo{
+	counterSumMetrics := map[string]*metricInfo{
 		"spanCounter": {
 			value: float64(1),
 			unit:  "Count",
@@ -425,6 +455,8 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 			value: 0.1,
 			unit:  "Count",
 		},
+	}
+	counterGaugeMetrics := map[string]*metricInfo{
 		"spanGaugeCounter": {
 			value: float64(1),
 			unit:  "Count",
@@ -499,17 +531,25 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 			err := translator.translateOTelToGroupedMetric(tc.metric, groupedMetrics, config)
 			assert.Nil(t, err)
 			assert.NotNil(t, groupedMetrics)
-			assert.Equal(t, 2, len(groupedMetrics))
+			assert.Equal(t, 3, len(groupedMetrics))
 
 			for _, v := range groupedMetrics {
 				assert.Equal(t, tc.expectedNamespace, v.metadata.namespace)
-				if len(v.metrics) == 4 {
+				switch {
+				case v.metadata.metricDataType == pmetric.MetricTypeSum:
+					assert.Equal(t, 2, len(v.metrics))
 					assert.Equal(t, tc.counterLabels, v.labels)
-					assert.Equal(t, counterMetrics, v.metrics)
-				} else {
+					assert.Equal(t, counterSumMetrics, v.metrics)
+				case v.metadata.metricDataType == pmetric.MetricTypeGauge:
+					assert.Equal(t, 2, len(v.metrics))
+					assert.Equal(t, tc.counterLabels, v.labels)
+					assert.Equal(t, counterGaugeMetrics, v.metrics)
+				case v.metadata.metricDataType == pmetric.MetricTypeHistogram:
 					assert.Equal(t, 1, len(v.metrics))
 					assert.Equal(t, tc.timerLabels, v.labels)
 					assert.Equal(t, timerMetrics, v.metrics)
+				default:
+					assert.Fail(t, fmt.Sprintf("Unhandled metric type %s not expected", v.metadata.metricDataType))
 				}
 			}
 		})
@@ -843,11 +883,11 @@ func TestTranslateGroupedMetricToCWMetric(t *testing.T) {
 				},
 				metadata: cWMetricMetadata{
 					groupedMetricMetadata: groupedMetricMetadata{
-						namespace:   namespace,
-						timestampMs: timestamp,
+						namespace:      namespace,
+						timestampMs:    timestamp,
+						metricDataType: pmetric.MetricTypeGauge,
 					},
-					receiver:       prometheusReceiver,
-					metricDataType: pmetric.MetricDataTypeGauge,
+					receiver: prometheusReceiver,
 				},
 			},
 			nil,
@@ -2473,6 +2513,7 @@ func generateTestMetrics(tm testMetric) pmetric.Metrics {
 	now := time.Now()
 
 	rm := md.ResourceMetrics().AppendEmpty()
+	//nolint:errcheck
 	rm.Resource().Attributes().FromRaw(tm.resourceAttributeMap)
 	ms := rm.ScopeMetrics().AppendEmpty().Metrics()
 
@@ -2483,7 +2524,8 @@ func generateTestMetrics(tm testMetric) pmetric.Metrics {
 		for _, value := range tm.metricValues[i] {
 			dp := g.DataPoints().AppendEmpty()
 			dp.SetTimestamp(pcommon.NewTimestampFromTime(now.Add(10 * time.Second)))
-			dp.SetDoubleVal(value)
+			dp.SetDoubleValue(value)
+			//nolint:errcheck
 			dp.Attributes().FromRaw(tm.attributeMap)
 		}
 	}

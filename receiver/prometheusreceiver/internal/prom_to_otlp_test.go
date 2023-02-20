@@ -35,34 +35,34 @@ func makeK8sResource(jobInstance *jobInstanceDefinition, def *k8sResourceDefinit
 	resource := makeResourceWithJobInstanceScheme(jobInstance, true)
 	attrs := resource.Attributes()
 	if def.podName != "" {
-		attrs.PutString(conventions.AttributeK8SPodName, def.podName)
+		attrs.PutStr(conventions.AttributeK8SPodName, def.podName)
 	}
 	if def.podUID != "" {
-		attrs.PutString(conventions.AttributeK8SPodUID, def.podUID)
+		attrs.PutStr(conventions.AttributeK8SPodUID, def.podUID)
 	}
 	if def.container != "" {
-		attrs.PutString(conventions.AttributeK8SContainerName, def.container)
+		attrs.PutStr(conventions.AttributeK8SContainerName, def.container)
 	}
 	if def.node != "" {
-		attrs.PutString(conventions.AttributeK8SNodeName, def.node)
+		attrs.PutStr(conventions.AttributeK8SNodeName, def.node)
 	}
 	if def.rs != "" {
-		attrs.PutString(conventions.AttributeK8SReplicaSetName, def.rs)
+		attrs.PutStr(conventions.AttributeK8SReplicaSetName, def.rs)
 	}
 	if def.ds != "" {
-		attrs.PutString(conventions.AttributeK8SDaemonSetName, def.ds)
+		attrs.PutStr(conventions.AttributeK8SDaemonSetName, def.ds)
 	}
 	if def.ss != "" {
-		attrs.PutString(conventions.AttributeK8SStatefulSetName, def.ss)
+		attrs.PutStr(conventions.AttributeK8SStatefulSetName, def.ss)
 	}
 	if def.job != "" {
-		attrs.PutString(conventions.AttributeK8SJobName, def.job)
+		attrs.PutStr(conventions.AttributeK8SJobName, def.job)
 	}
 	if def.cronjob != "" {
-		attrs.PutString(conventions.AttributeK8SCronJobName, def.cronjob)
+		attrs.PutStr(conventions.AttributeK8SCronJobName, def.cronjob)
 	}
 	if def.ns != "" {
-		attrs.PutString(conventions.AttributeK8SNamespaceName, def.ns)
+		attrs.PutStr(conventions.AttributeK8SNamespaceName, def.ns)
 	}
 	return resource
 }
@@ -72,13 +72,13 @@ func makeResourceWithJobInstanceScheme(def *jobInstanceDefinition, hasHost bool)
 	attrs := resource.Attributes()
 	// Using hardcoded values to assert on outward expectations so that
 	// when variables change, these tests will fail and we'll have reports.
-	attrs.PutString("service.name", def.job)
+	attrs.PutStr("service.name", def.job)
 	if hasHost {
-		attrs.PutString("net.host.name", def.host)
+		attrs.PutStr("net.host.name", def.host)
 	}
-	attrs.PutString("service.instance.id", def.instance)
-	attrs.PutString("net.host.port", def.port)
-	attrs.PutString("http.scheme", def.scheme)
+	attrs.PutStr("service.instance.id", def.instance)
+	attrs.PutStr("net.host.port", def.port)
+	attrs.PutStr("http.scheme", def.scheme)
 	return resource
 }
 
@@ -283,9 +283,7 @@ func TestCreateNodeAndResourcePromToOTLP(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			got := CreateResource(tt.job, tt.instance, tt.sdLabels)
-			got.Attributes().Sort()
-			tt.want.Attributes().Sort()
-			require.Equal(t, tt.want, got)
+			require.Equal(t, tt.want.Attributes().AsRaw(), got.Attributes().AsRaw())
 		})
 	}
 }

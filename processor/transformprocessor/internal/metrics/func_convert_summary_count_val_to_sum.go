@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,36 +15,32 @@
 package metrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics"
 
 import (
+	"context"
 	"fmt"
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/tqlmetrics"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 )
 
-func convertSummaryCountValToSum(stringAggTemp string, monotonic bool) (tql.ExprFunc, error) {
-	var aggTemp pmetric.MetricAggregationTemporality
+func convertSummaryCountValToSum(stringAggTemp string, monotonic bool) (ottl.ExprFunc[ottldatapoint.TransformContext], error) {
+	var aggTemp pmetric.AggregationTemporality
 	switch stringAggTemp {
 	case "delta":
-		aggTemp = pmetric.MetricAggregationTemporalityDelta
+		aggTemp = pmetric.AggregationTemporalityDelta
 	case "cumulative":
-		aggTemp = pmetric.MetricAggregationTemporalityCumulative
+		aggTemp = pmetric.AggregationTemporalityCumulative
 	default:
 		return nil, fmt.Errorf("unknown aggregation temporality: %s", stringAggTemp)
 	}
-	return func(ctx tql.TransformContext) interface{} {
-		mtc, ok := ctx.(tqlmetrics.TransformContext)
-		if !ok {
-			return nil
+	return func(_ context.Context, tCtx ottldatapoint.TransformContext) (interface{}, error) {
+		metric := tCtx.GetMetric()
+		if metric.Type() != pmetric.MetricTypeSummary {
+			return nil, nil
 		}
 
-		metric := mtc.GetMetric()
-		if metric.DataType() != pmetric.MetricDataTypeSummary {
-			return nil
-		}
-
-		sumMetric := mtc.GetMetrics().AppendEmpty()
+		sumMetric := tCtx.GetMetrics().AppendEmpty()
 		sumMetric.SetDescription(metric.Description())
 		sumMetric.SetName(metric.Name() + "_count")
 		sumMetric.SetUnit(metric.Unit())
@@ -57,10 +53,10 @@ func convertSummaryCountValToSum(stringAggTemp string, monotonic bool) (tql.Expr
 			dp := dps.At(i)
 			sumDp := sumDps.AppendEmpty()
 			dp.Attributes().CopyTo(sumDp.Attributes())
-			sumDp.SetIntVal(int64(dp.Count()))
+			sumDp.SetIntValue(int64(dp.Count()))
 			sumDp.SetStartTimestamp(dp.StartTimestamp())
 			sumDp.SetTimestamp(dp.Timestamp())
 		}
-		return nil
+		return nil, nil
 	}, nil
 }

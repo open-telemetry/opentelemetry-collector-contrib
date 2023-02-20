@@ -18,13 +18,10 @@ The purpose of this receiver is to allow users to monitor metrics from standalon
 
 This receiver supports MongoDB versions:
 
-- 2.6
-- 3.0+
 - 4.0+
 - 5.0
 
 Mongodb recommends to set up a least privilege user (LPU) with a [`clusterMonitor` role](https://www.mongodb.com/docs/v5.0/reference/built-in-roles/#mongodb-authrole-clusterMonitor) in order to collect metrics. Please refer to [lpu.sh](./testdata/integration/scripts/lpu.sh) for an example of how to configure these permissions.
-
 
 ## Configuration
 
@@ -49,7 +46,7 @@ receivers:
     hosts:
       - endpoint: localhost:27017
     username: otel
-    password: $MONGODB_PASSWORD
+    password: ${env:MONGODB_PASSWORD}
     collection_interval: 60s
     tls:
       insecure: true
@@ -61,6 +58,7 @@ The full list of settings exposed for this receiver are documented [here](./conf
 ## Metrics
 
 The following metric are available with versions:
+
 - `mongodb.extent.count` < 4.4 with mmapv1 storage engine
 - `mongodb.session.count` >= 3.0 with wiredTiger storage engine
 - `mongodb.cache.operations` >= 3.0 with wiredTiger storage engine

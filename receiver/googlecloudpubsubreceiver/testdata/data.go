@@ -31,7 +31,8 @@ func CreateTraceExport() []byte {
 	spans := libs.AppendEmpty().Spans()
 	span := spans.AppendEmpty()
 	span.SetName("test")
-	data, _ := ptrace.NewProtoMarshaler().MarshalTraces(out)
+	marshaler := ptrace.ProtoMarshaler{}
+	data, _ := marshaler.MarshalTraces(out)
 	return data
 }
 
@@ -43,7 +44,8 @@ func CreateMetricExport() []byte {
 	metrics := libs.AppendEmpty().Metrics()
 	metric := metrics.AppendEmpty()
 	metric.SetName("test")
-	data, _ := pmetric.NewProtoMarshaler().MarshalMetrics(out)
+	marshaler := pmetric.ProtoMarshaler{}
+	data, _ := marshaler.MarshalMetrics(out)
 	return data
 }
 
@@ -54,7 +56,8 @@ func CreateLogExport() []byte {
 	libs := resource.ScopeLogs()
 	logs := libs.AppendEmpty()
 	logs.LogRecords().AppendEmpty()
-	data, _ := plog.NewProtoMarshaler().MarshalLogs(out)
+	marshaler := plog.ProtoMarshaler{}
+	data, _ := marshaler.MarshalLogs(out)
 	return data
 }
 

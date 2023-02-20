@@ -14,11 +14,8 @@
 
 package sentryexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter"
 
-import "go.opentelemetry.io/collector/config"
-
 // Config defines the configuration for the Sentry Exporter.
 type Config struct {
-	config.ExporterSettings `mapstructure:",squash"`
 	// DSN to report transaction to Sentry. If the DSN is not set, no trace will be sent to Sentry.
 	DSN string `mapstructure:"dsn"`
 	// InsecureSkipVerify controls whether the client verifies the Sentry server certificate chain

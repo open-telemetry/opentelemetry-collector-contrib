@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,15 +22,15 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
 func TestCreateMetricsReceiver(t *testing.T) {
 	t.Run("Nil config gives error", func(t *testing.T) {
 		recv, err := createMetricsReceiver(
 			context.Background(),
-			componenttest.NewNopReceiverCreateSettings(),
+			receivertest.NewNopCreateSettings(),
 			nil,
 			&consumertest.MetricsSink{},
 		)
@@ -43,7 +43,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 	t.Run("Metrics receiver is created with default config", func(t *testing.T) {
 		recv, err := createMetricsReceiver(
 			context.Background(),
-			componenttest.NewNopReceiverCreateSettings(),
+			receivertest.NewNopCreateSettings(),
 			createDefaultConfig(),
 			&consumertest.MetricsSink{},
 		)

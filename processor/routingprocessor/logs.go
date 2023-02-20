@@ -18,55 +18,70 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/processor"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor/internal/common"
 )
 
-var _ component.LogsProcessor = (*logProcessor)(nil)
+var _ processor.Logs = (*logProcessor)(nil)
 
 type logProcessor struct {
 	logger *zap.Logger
 	config *Config
 
 	extractor extractor
-	router    router[component.LogsExporter]
+	router    router[exporter.Logs, ottllog.TransformContext]
 }
 
-func newLogProcessor(logger *zap.Logger, cfg config.Processor) *logProcessor {
-	oCfg := cfg.(*Config)
+func newLogProcessor(settings component.TelemetrySettings, config component.Config) *logProcessor {
+	cfg := rewriteRoutingEntriesToOTTL(config.(*Config))
 
 	return &logProcessor{
-		logger: logger,
-		config: oCfg,
-
-		extractor: newExtractor(oCfg.FromAttribute, logger),
-		router:    newRouter[component.LogsExporter](*oCfg, logger),
+		logger: settings.Logger,
+		config: cfg,
+		router: newRouter[exporter.Logs, ottllog.TransformContext](
+			cfg.Table,
+			cfg.DefaultExporters,
+			settings,
+			ottllog.NewParser(common.Functions[ottllog.TransformContext](), settings),
+		),
+		extractor: newExtractor(cfg.FromAttribute, settings.Logger),
 	}
 }
 
 func (p *logProcessor) Start(_ context.Context, host component.Host) error {
-	err := p.router.registerExporters(host.GetExporters()[config.LogsDataType])
+	err := p.router.registerExporters(host.GetExporters()[component.DataTypeLogs])
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (p *logProcessor) ConsumeLogs(ctx context.Context, tl plog.Logs) error {
-	var errs error
-	switch p.config.AttributeSource {
-	case resourceAttributeSource:
-		errs = multierr.Append(errs, p.route(ctx, tl))
-	case contextAttributeSource:
-		fallthrough
-	default:
-		errs = multierr.Append(errs, p.routeForContext(ctx, tl))
+func (p *logProcessor) ConsumeLogs(ctx context.Context, l plog.Logs) error {
+	if p.config.FromAttribute == "" {
+		err := p.route(ctx, l)
+		if err != nil {
+			return err
+		}
+		return nil
 	}
-	// TODO: determine the proper action when errors happen
-	return errs
+	err := p.routeForContext(ctx, l)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type logsGroup struct {
+	exporters []exporter.Logs
+	logs      plog.Logs
 }
 
 func (p *logProcessor) route(ctx context.Context, l plog.Logs) error {
@@ -74,60 +89,61 @@ func (p *logProcessor) route(ctx context.Context, l plog.Logs) error {
 	// the same set of exporters.
 	// This way we're not ending up with all the logs split up which would cause
 	// higher CPU usage.
-	groups := map[string]struct {
-		exporters []component.LogsExporter
-		resLogs   plog.ResourceLogsSlice
-	}{}
+	groups := map[string]logsGroup{}
 	var errs error
 
-	resLogsSlice := l.ResourceLogs()
-	for i := 0; i < resLogsSlice.Len(); i++ {
-		resLogs := resLogsSlice.At(i)
+	for i := 0; i < l.ResourceLogs().Len(); i++ {
+		rlogs := l.ResourceLogs().At(i)
+		ltx := ottllog.NewTransformContext(
+			plog.LogRecord{},
+			pcommon.InstrumentationScope{},
+			rlogs.Resource(),
+		)
 
-		attrValue := p.extractor.extractAttrFromResource(resLogs.Resource())
-		exp := p.router.defaultExporters
-		// If we have an exporter list defined for that attribute value then use it.
-		if e, ok := p.router.exporters[attrValue]; ok {
-			exp = e
-			if p.config.DropRoutingResourceAttribute {
-				resLogs.Resource().Attributes().Remove(p.config.FromAttribute)
+		matchCount := len(p.router.routes)
+		for key, route := range p.router.routes {
+			_, isMatch, err := route.statement.Execute(ctx, ltx)
+			if err != nil {
+				return err
 			}
+			if !isMatch {
+				matchCount--
+				continue
+			}
+			p.group(key, groups, route.exporters, rlogs)
 		}
 
-		if rEntry, ok := groups[attrValue]; ok {
-			resLogs.MoveTo(rEntry.resLogs.AppendEmpty())
-		} else {
-			newResLogs := plog.NewResourceLogsSlice()
-			resLogs.MoveTo(newResLogs.AppendEmpty())
-
-			groups[attrValue] = struct {
-				exporters []component.LogsExporter
-				resLogs   plog.ResourceLogsSlice
-			}{
-				exporters: exp,
-				resLogs:   newResLogs,
-			}
+		if matchCount == 0 {
+			// no route conditions are matched, add resource logs to default exporters group
+			p.group("", groups, p.router.defaultExporters, rlogs)
 		}
 	}
-
 	for _, g := range groups {
-		l := plog.NewLogs()
-		l.ResourceLogs().EnsureCapacity(g.resLogs.Len())
-		g.resLogs.MoveAndAppendTo(l.ResourceLogs())
-
 		for _, e := range g.exporters {
-			errs = multierr.Append(errs, e.ConsumeLogs(ctx, l))
+			errs = multierr.Append(errs, e.ConsumeLogs(ctx, g.logs))
 		}
 	}
 	return errs
 }
 
+func (p *logProcessor) group(
+	key string,
+	groups map[string]logsGroup,
+	exporters []exporter.Logs,
+	spans plog.ResourceLogs,
+) {
+	group, ok := groups[key]
+	if !ok {
+		group.logs = plog.NewLogs()
+		group.exporters = exporters
+	}
+	spans.CopyTo(group.logs.ResourceLogs().AppendEmpty())
+	groups[key] = group
+}
+
 func (p *logProcessor) routeForContext(ctx context.Context, l plog.Logs) error {
 	value := p.extractor.extractFromContext(ctx)
-	exporters, ok := p.router.exporters[value]
-	if !ok {
-		exporters = p.router.defaultExporters
-	}
+	exporters := p.router.getExporters(value)
 
 	var errs error
 	for _, e := range exporters {

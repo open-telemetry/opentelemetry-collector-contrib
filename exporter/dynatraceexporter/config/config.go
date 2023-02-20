@@ -20,8 +20,8 @@ import (
 	"strings"
 
 	"github.com/dynatrace-oss/dynatrace-metric-utils-go/metric/apiconstants"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
@@ -29,7 +29,6 @@ import (
 
 // Config defines configuration for the Dynatrace exporter.
 type Config struct {
-	config.ExporterSettings       `mapstructure:",squash"`
 	confighttp.HTTPClientSettings `mapstructure:",squash"`
 
 	exporterhelper.QueueSettings `mapstructure:"sending_queue"`
@@ -56,7 +55,7 @@ func (c *Config) Validate() error {
 	}
 
 	if c.HTTPClientSettings.Headers == nil {
-		c.HTTPClientSettings.Headers = make(map[string]string)
+		c.HTTPClientSettings.Headers = make(map[string]configopaque.String)
 	}
 	c.APIToken = strings.TrimSpace(c.APIToken)
 
@@ -67,7 +66,7 @@ func (c *Config) Validate() error {
 			return errors.New("api_token is required if Endpoint is provided")
 		}
 
-		c.HTTPClientSettings.Headers["Authorization"] = fmt.Sprintf("Api-Token %s", c.APIToken)
+		c.HTTPClientSettings.Headers["Authorization"] = configopaque.String(fmt.Sprintf("Api-Token %s", c.APIToken))
 	}
 
 	if !(strings.HasPrefix(c.Endpoint, "http://") || strings.HasPrefix(c.Endpoint, "https://")) {

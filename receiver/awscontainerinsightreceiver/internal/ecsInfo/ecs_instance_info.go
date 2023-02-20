@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package ecsinfo // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/ecsInfo"
 
 import (
@@ -63,7 +62,7 @@ func newECSInstanceInfo(ctx context.Context, ecsAgentEndpointProvider hostIPProv
 	}
 
 	shouldRefresh := func() bool {
-		//stop the refresh once we get instance ID and cluster name successfully
+		// stop the refresh once we get instance ID and cluster name successfully
 		return cii.GetClusterName() == "" || cii.GetContainerInstanceID() == ""
 	}
 
@@ -98,7 +97,7 @@ func (cii *containerInstanceInfo) refresh(ctx context.Context) {
 	cii.containerInstanceID = instanceID
 	defer cii.Unlock()
 
-	//notify cgroups that the clustername and instanceID is ready
+	// notify cgroups that the clustername and instanceID is ready
 	if cii.clusterName != "" && cii.containerInstanceID != "" && !isClosed(cii.readyC) {
 		close(cii.readyC)
 	}

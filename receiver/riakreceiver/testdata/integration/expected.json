@@ -11,7 +11,7 @@
                      "description": "The amount of memory allocated to the node.",
                      "name": "riak.memory.limit",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "3330531328",
@@ -26,7 +26,7 @@
                      "description": "The number of operations performed by the node.",
                      "name": "riak.node.operation.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -98,7 +98,7 @@
                      "description": "The number of read repairs performed by the node.",
                      "name": "riak.node.read_repair.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -114,7 +114,7 @@
                      "description": "The number of index operations performed by vnodes on the node.",
                      "name": "riak.vnode.index.operation.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",
@@ -163,7 +163,7 @@
                      "description": "The number of operations performed by vnodes on the node.",
                      "name": "riak.vnode.operation.count",
                      "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "aggregationTemporality": 2,
                         "dataPoints": [
                            {
                               "asInt": "0",

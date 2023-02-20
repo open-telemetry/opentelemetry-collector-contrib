@@ -1,4 +1,4 @@
-// Copyright  The OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
 )
@@ -36,7 +37,7 @@ func TestBrokerShutdown(t *testing.T) {
 		On("Closed").Return(false)
 	scraper := brokerScraper{
 		client:   client,
-		settings: componenttest.NewNopReceiverCreateSettings(),
+		settings: receivertest.NewNopCreateSettings(),
 		config:   Config{},
 	}
 	_ = scraper.shutdown(context.Background())
@@ -50,7 +51,7 @@ func TestBrokerShutdown_closed(t *testing.T) {
 		On("Closed").Return(true)
 	scraper := brokerScraper{
 		client:   client,
-		settings: componenttest.NewNopReceiverCreateSettings(),
+		settings: receivertest.NewNopCreateSettings(),
 		config:   Config{},
 	}
 	_ = scraper.shutdown(context.Background())
@@ -65,7 +66,7 @@ func TestBrokerScraper_Name(t *testing.T) {
 func TestBrokerScraper_createBrokerScraper(t *testing.T) {
 	sc := sarama.NewConfig()
 	newSaramaClient = mockNewSaramaClient
-	bs, err := createBrokerScraper(context.Background(), Config{}, sc, componenttest.NewNopReceiverCreateSettings())
+	bs, err := createBrokerScraper(context.Background(), Config{}, sc, receivertest.NewNopCreateSettings())
 	assert.NoError(t, err)
 	assert.NotNil(t, bs)
 }
@@ -73,7 +74,7 @@ func TestBrokerScraper_createBrokerScraper(t *testing.T) {
 func TestBrokerScraperStart(t *testing.T) {
 	newSaramaClient = mockNewSaramaClient
 	sc := sarama.NewConfig()
-	bs, err := createBrokerScraper(context.Background(), Config{}, sc, componenttest.NewNopReceiverCreateSettings())
+	bs, err := createBrokerScraper(context.Background(), Config{}, sc, receivertest.NewNopCreateSettings())
 	assert.NoError(t, err)
 	assert.NotNil(t, bs)
 	assert.NoError(t, bs.Start(context.Background(), nil))
@@ -84,7 +85,7 @@ func TestBrokerScraper_scrape_handles_client_error(t *testing.T) {
 		return nil, fmt.Errorf("new client failed")
 	}
 	sc := sarama.NewConfig()
-	bs, err := createBrokerScraper(context.Background(), Config{}, sc, componenttest.NewNopReceiverCreateSettings())
+	bs, err := createBrokerScraper(context.Background(), Config{}, sc, receivertest.NewNopCreateSettings())
 	assert.NoError(t, err)
 	assert.NotNil(t, bs)
 	_, err = bs.Scrape(context.Background())
@@ -96,7 +97,7 @@ func TestBrokerScraper_shutdown_handles_nil_client(t *testing.T) {
 		return nil, fmt.Errorf("new client failed")
 	}
 	sc := sarama.NewConfig()
-	bs, err := createBrokerScraper(context.Background(), Config{}, sc, componenttest.NewNopReceiverCreateSettings())
+	bs, err := createBrokerScraper(context.Background(), Config{}, sc, receivertest.NewNopCreateSettings())
 	assert.NoError(t, err)
 	assert.NotNil(t, bs)
 	err = bs.Shutdown(context.Background())
@@ -108,7 +109,7 @@ func TestBrokerScraper_scrape(t *testing.T) {
 	client.Mock.On("Brokers").Return(testBrokers)
 	bs := brokerScraper{
 		client:   client,
-		settings: componenttest.NewNopReceiverCreateSettings(),
+		settings: receivertest.NewNopCreateSettings(),
 		config:   Config{Metrics: metadata.DefaultMetricsSettings()},
 	}
 	require.NoError(t, bs.start(context.Background(), componenttest.NewNopHost()))
@@ -116,14 +117,14 @@ func TestBrokerScraper_scrape(t *testing.T) {
 	assert.NoError(t, err)
 	expectedDp := int64(len(testBrokers))
 	receivedMetrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
-	receivedDp := receivedMetrics.Gauge().DataPoints().At(0).IntVal()
+	receivedDp := receivedMetrics.Gauge().DataPoints().At(0).IntValue()
 	assert.Equal(t, expectedDp, receivedDp)
 }
 
 func TestBrokersScraper_createBrokerScraper(t *testing.T) {
 	sc := sarama.NewConfig()
 	newSaramaClient = mockNewSaramaClient
-	bs, err := createBrokerScraper(context.Background(), Config{}, sc, componenttest.NewNopReceiverCreateSettings())
+	bs, err := createBrokerScraper(context.Background(), Config{}, sc, receivertest.NewNopCreateSettings())
 	assert.NoError(t, err)
 	assert.NotNil(t, bs)
 }

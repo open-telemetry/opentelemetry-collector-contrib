@@ -144,7 +144,7 @@ func ocMetricToMetrics(ocMetric *ocmetrics.Metric, metric pmetric.Metric) {
 	}
 
 	dataType, valType := descriptorTypeToMetrics(ocDescriptor.Type, metric)
-	if dataType == pmetric.MetricDataTypeNone {
+	if dataType == pmetric.MetricTypeEmpty {
 		pmetric.NewMetric().CopyTo(metric)
 		return
 	}
@@ -156,46 +156,46 @@ func ocMetricToMetrics(ocMetric *ocmetrics.Metric, metric pmetric.Metric) {
 	setDataPoints(ocMetric, metric, valType)
 }
 
-func descriptorTypeToMetrics(t ocmetrics.MetricDescriptor_Type, metric pmetric.Metric) (pmetric.MetricDataType, pmetric.NumberDataPointValueType) {
+func descriptorTypeToMetrics(t ocmetrics.MetricDescriptor_Type, metric pmetric.Metric) (pmetric.MetricType, pmetric.NumberDataPointValueType) {
 	switch t {
 	case ocmetrics.MetricDescriptor_GAUGE_INT64:
 		metric.SetEmptyGauge()
-		return pmetric.MetricDataTypeGauge, pmetric.NumberDataPointValueTypeInt
+		return pmetric.MetricTypeGauge, pmetric.NumberDataPointValueTypeInt
 	case ocmetrics.MetricDescriptor_GAUGE_DOUBLE:
 		metric.SetEmptyGauge()
-		return pmetric.MetricDataTypeGauge, pmetric.NumberDataPointValueTypeDouble
+		return pmetric.MetricTypeGauge, pmetric.NumberDataPointValueTypeDouble
 	case ocmetrics.MetricDescriptor_CUMULATIVE_INT64:
 		sum := metric.SetEmptySum()
 		sum.SetIsMonotonic(true)
-		sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-		return pmetric.MetricDataTypeSum, pmetric.NumberDataPointValueTypeInt
+		sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+		return pmetric.MetricTypeSum, pmetric.NumberDataPointValueTypeInt
 	case ocmetrics.MetricDescriptor_CUMULATIVE_DOUBLE:
 		sum := metric.SetEmptySum()
 		sum.SetIsMonotonic(true)
-		sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-		return pmetric.MetricDataTypeSum, pmetric.NumberDataPointValueTypeDouble
+		sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+		return pmetric.MetricTypeSum, pmetric.NumberDataPointValueTypeDouble
 	case ocmetrics.MetricDescriptor_CUMULATIVE_DISTRIBUTION:
 		histo := metric.SetEmptyHistogram()
-		histo.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-		return pmetric.MetricDataTypeHistogram, pmetric.NumberDataPointValueTypeNone
+		histo.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+		return pmetric.MetricTypeHistogram, pmetric.NumberDataPointValueTypeEmpty
 	case ocmetrics.MetricDescriptor_SUMMARY:
 		metric.SetEmptySummary()
 		// no temporality specified for summary metric
-		return pmetric.MetricDataTypeSummary, pmetric.NumberDataPointValueTypeNone
+		return pmetric.MetricTypeSummary, pmetric.NumberDataPointValueTypeEmpty
 	}
-	return pmetric.MetricDataTypeNone, pmetric.NumberDataPointValueTypeNone
+	return pmetric.MetricTypeEmpty, pmetric.NumberDataPointValueTypeEmpty
 }
 
 // setDataPoints converts OC timeseries to internal datapoints based on metric type
 func setDataPoints(ocMetric *ocmetrics.Metric, metric pmetric.Metric, valType pmetric.NumberDataPointValueType) {
-	switch metric.DataType() {
-	case pmetric.MetricDataTypeGauge:
+	switch metric.Type() {
+	case pmetric.MetricTypeGauge:
 		fillNumberDataPoint(ocMetric, metric.Gauge().DataPoints(), valType)
-	case pmetric.MetricDataTypeSum:
+	case pmetric.MetricTypeSum:
 		fillNumberDataPoint(ocMetric, metric.Sum().DataPoints(), valType)
-	case pmetric.MetricDataTypeHistogram:
+	case pmetric.MetricTypeHistogram:
 		fillDoubleHistogramDataPoint(ocMetric, metric.Histogram().DataPoints())
-	case pmetric.MetricDataTypeSummary:
+	case pmetric.MetricTypeSummary:
 		fillDoubleSummaryDataPoint(ocMetric, metric.Summary().DataPoints())
 	}
 }
@@ -212,13 +212,12 @@ func fillAttributesMap(ocLabelsKeys []*ocmetrics.LabelKey, ocLabelValues []*ocme
 		lablesCount = len(ocLabelValues)
 	}
 
-	attributesMap.Clear()
 	attributesMap.EnsureCapacity(lablesCount)
 	for i := 0; i < lablesCount; i++ {
 		if !ocLabelValues[i].GetHasValue() {
 			continue
 		}
-		attributesMap.PutString(ocLabelsKeys[i].Key, ocLabelValues[i].Value)
+		attributesMap.PutStr(ocLabelsKeys[i].Key, ocLabelValues[i].Value)
 	}
 }
 
@@ -243,9 +242,9 @@ func fillNumberDataPoint(ocMetric *ocmetrics.Metric, dps pmetric.NumberDataPoint
 			fillAttributesMap(ocLabelsKeys, timeseries.LabelValues, dp.Attributes())
 			switch valType {
 			case pmetric.NumberDataPointValueTypeInt:
-				dp.SetIntVal(point.GetInt64Value())
+				dp.SetIntValue(point.GetInt64Value())
 			case pmetric.NumberDataPointValueTypeDouble:
-				dp.SetDoubleVal(point.GetDoubleValue())
+				dp.SetDoubleValue(point.GetDoubleValue())
 			}
 		}
 	}
@@ -326,7 +325,7 @@ func ocSummaryPercentilesToMetrics(ocPercentiles []*ocmetrics.SummaryValue_Snaps
 		return
 	}
 
-	quantiles := pmetric.NewValueAtQuantileSlice()
+	quantiles := pmetric.NewSummaryDataPointValueAtQuantileSlice()
 	quantiles.EnsureCapacity(len(ocPercentiles))
 
 	for _, percentile := range ocPercentiles {
@@ -343,12 +342,11 @@ func exemplarToMetrics(ocExemplar *ocmetrics.DistributionValue_Exemplar, exempla
 		exemplar.SetTimestamp(pcommon.NewTimestampFromTime(ocExemplar.GetTimestamp().AsTime()))
 	}
 	ocAttachments := ocExemplar.GetAttachments()
-	exemplar.SetDoubleVal(ocExemplar.GetValue())
+	exemplar.SetDoubleValue(ocExemplar.GetValue())
 	filteredAttributes := exemplar.FilteredAttributes()
-	filteredAttributes.Clear()
 	filteredAttributes.EnsureCapacity(len(ocAttachments))
 	for k, v := range ocAttachments {
-		filteredAttributes.PutString(k, v)
+		filteredAttributes.PutStr(k, v)
 	}
 }
 

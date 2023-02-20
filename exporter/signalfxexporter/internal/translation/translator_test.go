@@ -3026,19 +3026,19 @@ func baseMD() pmetric.Metric {
 }
 
 func dblTS(lbl0 string, lbl1 string, secondsDelta int64, v float64, valueDelta float64, out pmetric.NumberDataPoint) {
-	out.Attributes().PutString("cpu", lbl0)
-	out.Attributes().PutString("state", lbl1)
+	out.Attributes().PutStr("cpu", lbl0)
+	out.Attributes().PutStr("state", lbl1)
 	const startTime = 1600000000
 	out.SetTimestamp(pcommon.Timestamp(time.Duration(startTime+secondsDelta) * time.Second))
-	out.SetDoubleVal(v + valueDelta)
+	out.SetDoubleValue(v + valueDelta)
 }
 
 func intTS(lbl0 string, lbl1 string, secondsDelta int64, v int64, valueDelta int64, out pmetric.NumberDataPoint) {
-	out.Attributes().PutString("cpu", lbl0)
-	out.Attributes().PutString("state", lbl1)
+	out.Attributes().PutStr("cpu", lbl0)
+	out.Attributes().PutStr("state", lbl1)
 	const startTime = 1600000000
 	out.SetTimestamp(pcommon.Timestamp(time.Duration(startTime+secondsDelta) * time.Second))
-	out.SetIntVal(v + valueDelta)
+	out.SetIntValue(v + valueDelta)
 }
 
 func wrapMetric(m pmetric.Metric) pmetric.Metrics {

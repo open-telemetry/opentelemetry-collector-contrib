@@ -17,6 +17,7 @@
 // +build !windows
 
 package dbstorage // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/dbstorage"
+
 import (
 	"errors"
 	"testing"
@@ -24,7 +25,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestConfig_Validate(t *testing.T) {
+func TestConfigValidate(t *testing.T) {
 	tests := []struct {
 		name      string
 		config    Config
@@ -33,12 +34,12 @@ func TestConfig_Validate(t *testing.T) {
 		{
 			"Missing driver name",
 			Config{DataSource: "foo"},
-			errors.New("missing driver name for /blah"),
+			errors.New("missing driver name"),
 		},
 		{
 			"Missing datasource",
 			Config{DriverName: "foo"},
-			errors.New("missing datasource for /blah"),
+			errors.New("missing datasource"),
 		},
 		{
 			"valid",
@@ -48,7 +49,6 @@ func TestConfig_Validate(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		test.config.SetIDName("blah")
 		err := test.config.Validate()
 		if test.errWanted == nil {
 			assert.NoError(t, err)

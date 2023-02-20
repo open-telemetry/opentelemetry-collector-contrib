@@ -15,14 +15,13 @@
 package testbed // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 
 import (
-	"io"
 	"log"
 	"os"
 	"path/filepath"
 	"strconv"
 	"time"
 
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -91,7 +90,7 @@ func (dp *perfTestDataProvider) GenerateTraces() (ptrace.Traces, bool) {
 		attrs.PutInt("load_generator.trace_seq_num", int64(traceID))
 		// Additional attributes.
 		for k, v := range dp.options.Attributes {
-			attrs.PutString(k, v)
+			attrs.PutStr(k, v)
 		}
 		span.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
 		span.SetEndTimestamp(pcommon.NewTimestampFromTime(endTime))
@@ -109,7 +108,7 @@ func (dp *perfTestDataProvider) GenerateMetrics() (pmetric.Metrics, bool) {
 		attrs := rm.Resource().Attributes()
 		attrs.EnsureCapacity(len(dp.options.Attributes))
 		for k, v := range dp.options.Attributes {
-			attrs.PutString(k, v)
+			attrs.PutStr(k, v)
 		}
 	}
 	metrics := rm.ScopeMetrics().AppendEmpty().Metrics()
@@ -127,9 +126,9 @@ func (dp *perfTestDataProvider) GenerateMetrics() (pmetric.Metrics, bool) {
 			dataPoint := dps.AppendEmpty()
 			dataPoint.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 			value := dp.dataItemsGenerated.Inc()
-			dataPoint.SetIntVal(int64(value))
-			dataPoint.Attributes().PutString("item_index", "item_"+strconv.Itoa(j))
-			dataPoint.Attributes().PutString("batch_index", "batch_"+strconv.Itoa(int(batchIndex)))
+			dataPoint.SetIntValue(int64(value))
+			dataPoint.Attributes().PutStr("item_index", "item_"+strconv.Itoa(j))
+			dataPoint.Attributes().PutStr("batch_index", "batch_"+strconv.Itoa(int(batchIndex)))
 		}
 	}
 	return md, false
@@ -142,7 +141,7 @@ func (dp *perfTestDataProvider) GenerateLogs() (plog.Logs, bool) {
 		attrs := rl.Resource().Attributes()
 		attrs.EnsureCapacity(len(dp.options.Attributes))
 		for k, v := range dp.options.Attributes {
-			attrs.PutString(k, v)
+			attrs.PutStr(k, v)
 		}
 	}
 	logRecords := rl.ScopeLogs().AppendEmpty().LogRecords()
@@ -157,14 +156,14 @@ func (dp *perfTestDataProvider) GenerateLogs() (plog.Logs, bool) {
 		record := logRecords.AppendEmpty()
 		record.SetSeverityNumber(plog.SeverityNumberInfo3)
 		record.SetSeverityText("INFO3")
-		record.Body().SetStringVal("Load Generator Counter #" + strconv.Itoa(i))
+		record.Body().SetStr("Load Generator Counter #" + strconv.Itoa(i))
 		record.SetFlags(plog.DefaultLogRecordFlags.WithIsSampled(true))
 		record.SetTimestamp(now)
 
 		attrs := record.Attributes()
-		attrs.PutString("batch_index", "batch_"+strconv.Itoa(int(batchIndex)))
-		attrs.PutString("item_index", "item_"+strconv.Itoa(int(itemIndex)))
-		attrs.PutString("a", "test")
+		attrs.PutStr("batch_index", "batch_"+strconv.Itoa(int(batchIndex)))
+		attrs.PutStr("item_index", "item_"+strconv.Itoa(int(itemIndex)))
+		attrs.PutStr("a", "test")
 		attrs.PutDouble("b", 5.0)
 		attrs.PutInt("c", 3)
 		attrs.PutBool("d", true)
@@ -255,13 +254,8 @@ type FileDataProvider struct {
 
 // NewFileDataProvider creates an instance of FileDataProvider which generates test data
 // loaded from a file.
-func NewFileDataProvider(filePath string, dataType config.DataType) (*FileDataProvider, error) {
-	file, err := os.OpenFile(filepath.Clean(filePath), os.O_RDONLY, 0)
-	if err != nil {
-		return nil, err
-	}
-	var buf []byte
-	buf, err = io.ReadAll(file)
+func NewFileDataProvider(filePath string, dataType component.DataType) (*FileDataProvider, error) {
+	buf, err := os.ReadFile(filepath.Clean(filePath))
 	if err != nil {
 		return nil, err
 	}
@@ -269,18 +263,21 @@ func NewFileDataProvider(filePath string, dataType config.DataType) (*FileDataPr
 	dp := &FileDataProvider{}
 	// Load the message from the file and count the data points.
 	switch dataType {
-	case config.TracesDataType:
-		if dp.traces, err = ptrace.NewJSONUnmarshaler().UnmarshalTraces(buf); err != nil {
+	case component.DataTypeTraces:
+		unmarshaler := &ptrace.JSONUnmarshaler{}
+		if dp.traces, err = unmarshaler.UnmarshalTraces(buf); err != nil {
 			return nil, err
 		}
 		dp.ItemsPerBatch = dp.traces.SpanCount()
-	case config.MetricsDataType:
-		if dp.metrics, err = pmetric.NewJSONUnmarshaler().UnmarshalMetrics(buf); err != nil {
+	case component.DataTypeMetrics:
+		unmarshaler := &pmetric.JSONUnmarshaler{}
+		if dp.metrics, err = unmarshaler.UnmarshalMetrics(buf); err != nil {
 			return nil, err
 		}
 		dp.ItemsPerBatch = dp.metrics.DataPointCount()
-	case config.LogsDataType:
-		if dp.logs, err = plog.NewJSONUnmarshaler().UnmarshalLogs(buf); err != nil {
+	case component.DataTypeLogs:
+		unmarshaler := &plog.JSONUnmarshaler{}
+		if dp.logs, err = unmarshaler.UnmarshalLogs(buf); err != nil {
 			return nil, err
 		}
 		dp.ItemsPerBatch = dp.logs.LogRecordCount()
