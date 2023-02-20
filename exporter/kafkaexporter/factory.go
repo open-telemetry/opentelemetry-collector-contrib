@@ -48,6 +48,7 @@ const (
 	defaultCompression = "none"
 	// default from sarama.NewConfig()
 	defaultFluxMaxMessages = 0
+	defaultSendType        = Sync
 )
 
 // FactoryOption applies changes to kafkaExporterFactory.
@@ -142,6 +143,9 @@ func (f *kafkaExporterFactory) createTracesExporter(
 	if oCfg.Encoding == "otlp_json" {
 		set.Logger.Info("otlp_json is considered experimental and should not be used in a production environment")
 	}
+	if oCfg.sendType == "" {
+		oCfg.sendType = defaultSendType
+	}
 	exp, err := newTracesExporter(oCfg, set, f.tracesMarshalers)
 	if err != nil {
 		return nil, err
@@ -172,6 +176,9 @@ func (f *kafkaExporterFactory) createMetricsExporter(
 	if oCfg.Encoding == "otlp_json" {
 		set.Logger.Info("otlp_json is considered experimental and should not be used in a production environment")
 	}
+	if oCfg.sendType == "" {
+		oCfg.sendType = defaultSendType
+	}
 	exp, err := newMetricsExporter(oCfg, set, f.metricsMarshalers)
 	if err != nil {
 		return nil, err
@@ -201,6 +208,9 @@ func (f *kafkaExporterFactory) createLogsExporter(
 	}
 	if oCfg.Encoding == "otlp_json" {
 		set.Logger.Info("otlp_json is considered experimental and should not be used in a production environment")
+	}
+	if oCfg.sendType == "" {
+		oCfg.sendType = defaultSendType
 	}
 	exp, err := newLogsExporter(oCfg, set, f.logsMarshalers)
 	if err != nil {

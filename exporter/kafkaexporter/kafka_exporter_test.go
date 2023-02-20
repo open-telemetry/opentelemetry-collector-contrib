@@ -137,9 +137,10 @@ func TestNewExporter_err_compression(t *testing.T) {
 
 func TestTracesPusher(t *testing.T) {
 	c := sarama.NewConfig()
-	producer := mocks.NewSyncProducer(t, c)
-	producer.ExpectSendMessageAndSucceed()
+	syncProducer := mocks.NewSyncProducer(t, c)
+	syncProducer.ExpectSendMessageAndSucceed()
 
+	producer := &SyncKafkaProducer{nil, syncProducer, nil}
 	p := kafkaTracesProducer{
 		producer:  producer,
 		marshaler: newPdataTracesMarshaler(&ptrace.ProtoMarshaler{}, defaultEncoding),
@@ -153,9 +154,10 @@ func TestTracesPusher(t *testing.T) {
 
 func TestTracesPusher_err(t *testing.T) {
 	c := sarama.NewConfig()
-	producer := mocks.NewSyncProducer(t, c)
+	syncProducer := mocks.NewSyncProducer(t, c)
 	expErr := fmt.Errorf("failed to send")
-	producer.ExpectSendMessageAndFail(expErr)
+	syncProducer.ExpectSendMessageAndFail(expErr)
+	producer := &SyncKafkaProducer{nil, syncProducer, nil}
 
 	p := kafkaTracesProducer{
 		producer:  producer,
@@ -184,8 +186,9 @@ func TestTracesPusher_marshal_error(t *testing.T) {
 
 func TestMetricsDataPusher(t *testing.T) {
 	c := sarama.NewConfig()
-	producer := mocks.NewSyncProducer(t, c)
-	producer.ExpectSendMessageAndSucceed()
+	syncProducer := mocks.NewSyncProducer(t, c)
+	syncProducer.ExpectSendMessageAndSucceed()
+	producer := &SyncKafkaProducer{nil, syncProducer, nil}
 
 	p := kafkaMetricsProducer{
 		producer:  producer,
@@ -200,9 +203,10 @@ func TestMetricsDataPusher(t *testing.T) {
 
 func TestMetricsDataPusher_err(t *testing.T) {
 	c := sarama.NewConfig()
-	producer := mocks.NewSyncProducer(t, c)
+	syncProducer := mocks.NewSyncProducer(t, c)
 	expErr := fmt.Errorf("failed to send")
-	producer.ExpectSendMessageAndFail(expErr)
+	syncProducer.ExpectSendMessageAndFail(expErr)
+	producer := &SyncKafkaProducer{nil, syncProducer, nil}
 
 	p := kafkaMetricsProducer{
 		producer:  producer,
@@ -231,8 +235,9 @@ func TestMetricsDataPusher_marshal_error(t *testing.T) {
 
 func TestLogsDataPusher(t *testing.T) {
 	c := sarama.NewConfig()
-	producer := mocks.NewSyncProducer(t, c)
-	producer.ExpectSendMessageAndSucceed()
+	syncProducer := mocks.NewSyncProducer(t, c)
+	syncProducer.ExpectSendMessageAndSucceed()
+	producer := &SyncKafkaProducer{nil, syncProducer, nil}
 
 	p := kafkaLogsProducer{
 		producer:  producer,
@@ -247,9 +252,10 @@ func TestLogsDataPusher(t *testing.T) {
 
 func TestLogsDataPusher_err(t *testing.T) {
 	c := sarama.NewConfig()
-	producer := mocks.NewSyncProducer(t, c)
+	syncProducer := mocks.NewSyncProducer(t, c)
 	expErr := fmt.Errorf("failed to send")
-	producer.ExpectSendMessageAndFail(expErr)
+	syncProducer.ExpectSendMessageAndFail(expErr)
+	producer := &SyncKafkaProducer{nil, syncProducer, nil}
 
 	p := kafkaLogsProducer{
 		producer:  producer,
