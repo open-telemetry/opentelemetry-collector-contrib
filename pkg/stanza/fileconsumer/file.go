@@ -33,6 +33,7 @@ type EmitFunc func(ctx context.Context, attrs *FileAttributes, token []byte)
 type Manager struct {
 	*zap.SugaredLogger
 	wg     sync.WaitGroup
+	_wg    sync.WaitGroup
 	cancel context.CancelFunc
 
 	readerFactory readerFactory
@@ -41,14 +42,21 @@ type Manager struct {
 	persister     operator.Persister
 
 	pollInterval    time.Duration
+	maxBatches      int
 	maxBatchFiles   int
 	deleteAfterRead bool
 
-	knownFiles     []*Reader
-	seenPaths      map[string]struct{}
-	currentFiles   []*os.File
-	currentFps     []*Fingerprint
-	currentReaders []*Reader
+	knownFiles      []*Reader
+	knownFilesLock  sync.RWMutex
+	seenPaths       map[string]struct{}
+	currentFiles    []*os.File
+	currentFps      []*Fingerprint
+	currentReaders  []*Reader
+	readerChan      chan ReaderWrapper
+	readerCloseChan chan *Reader
+	queueHash       map[string]bool
+	queueHashMtx    sync.RWMutex
+	readerLock      sync.Mutex
 }
 
 func (m *Manager) Start(persister operator.Persister) error {
@@ -66,6 +74,12 @@ func (m *Manager) Start(persister operator.Persister) error {
 			"include", m.finder.Include,
 			"exclude", m.finder.Exclude)
 	}
+
+	for i := 0; i < m.maxBatchFiles; i++ {
+		m._wg.Add(1)
+		go m.worker(ctx)
+	}
+	go m.handleLostFiles(ctx)
 
 	// Start polling goroutine
 	m.startPoller(ctx)
@@ -103,7 +117,6 @@ func (m *Manager) startPoller(ctx context.Context) {
 			}
 
 			m.poll(ctx)
-			m.clearCurrentFiles()
 		}
 	}()
 }
@@ -116,219 +129,148 @@ func (m *Manager) poll(ctx context.Context) {
 		m.knownFiles[i].generation++
 	}
 
+	// Used to keep track of the number of batches processed in this poll cycle
+	// batchesProcessed := 0
+
 	// Get the list of paths on disk
 	matches := m.finder.FindFiles()
+	// for len(matches) > m.maxBatchFiles {
+	// 	m.consume(ctx, matches[:m.maxBatchFiles])
+
+	// 	// If a maxBatches is set, check if we have hit the limit
+	// 	if m.maxBatches != 0 {
+	// 		batchesProcessed++
+	// 		if batchesProcessed >= m.maxBatches {
+	// 			return
+	// 		}
+	// 	}
+
+	// 	matches = matches[m.maxBatchFiles:]
+	// }
 	m.consume(ctx, matches)
+	m.clearCurrentFiles()
+}
+
+func (m *Manager) clearCurrentFiles() {
+	m.currentFiles = make([]*os.File, 0)
+	m.currentFps = make([]*Fingerprint, 0)
+}
+
+func (m *Manager) worker(ctx context.Context) {
+	defer m._wg.Done()
+	for {
+		chanData, ok := <-m.readerChan
+
+		if !ok {
+			break
+		}
+		r, path := chanData.reader, chanData.path
+		r.ReadToEnd(ctx)
+		if m.deleteAfterRead {
+			r.Close()
+			if err := os.Remove(r.file.Name()); err != nil {
+				m.Errorf("could not delete %s", r.file.Name())
+			}
+		} else {
+			m.readerCloseChan <- r
+		}
+		m.queueHashMtx.Lock()
+		delete(m.queueHash, path)
+		m.queueHashMtx.Unlock()
+	}
 }
 
 func (m *Manager) consume(ctx context.Context, paths []string) {
-	pathChan := make(chan string, m.maxBatchFiles)
-	closeChan := make(chan int)
-	pathsConsumedChan := make(chan int)
-	readerChan := make(chan *Reader)
-	readers := make([]*Reader, 0, len(paths))
+	for _, path := range paths {
+		m.queueHashMtx.Lock()
+		if _, ok := m.queueHash[path]; ok {
+			m.queueHashMtx.Unlock()
+			continue
+		}
+		reader := m.makeReader(path)
+		if reader == nil {
+			fmt.Println("Couldn't create reader for ", path)
+			m.queueHashMtx.Unlock()
+			continue
+		}
+		m.queueHash[path] = true
+		m.queueHashMtx.Unlock()
+		m.readerChan <- ReaderWrapper{reader: reader, path: path}
+	}
+	if m.deleteAfterRead {
+		return
+	}
+}
+
+func (m *Manager) handleLostFiles(ctx context.Context) {
 	var wg sync.WaitGroup
-	for i := 0; i < m.maxBatchFiles; i++ {
-		wg.Add(1)
-		go m.consumeAsync(ctx, pathsConsumedChan, pathChan, closeChan, wg)
-	}
-	for i := 0; i < len(paths); i++ {
-		pathChan <- paths[i]
-	}
+	wg.Add(1)
+	// ticker := time.NewTicker(10 * time.Millisecond)
+	go func() {
+		defer wg.Done()
+		// readers := make([]*Reader, 0)
+		if !m.deleteAfterRead {
 
-	totalPathsConsumed := 0
-	for i := range pathsConsumedChan {
-		if totalPathsConsumed == len(paths) {
-			closeChan <- 1
-			break;
-		}
-		totalPathsConsumed += i
-	}
+			for {
+				select {
+				case reader := <-m.readerCloseChan:
+					m.roller.readLostFiles(ctx, []*Reader{reader})
+					m.roller.roll(ctx, []*Reader{reader})
+					m.saveCurrent([]*Reader{reader})
+					m.syncLastPollFiles(ctx)
+					m.readerFactory.fromBeginning = true
+					// case reader := <-m.readerCloseChan:
+					// 	readers = append(readers, reader)
+					// 	if len(readers)%m.maxBatchFiles == 0 {
+					// 		m.roller.readLostFiles(ctx, readers)
+					// 		m.roller.roll(ctx, readers)
+					// 		m.saveCurrent(readers)
+					// 		m.syncLastPollFiles(ctx)
+					// 		readers = make([]*Reader, 0)
+					// 	}
+					// case <-ticker.C:
+					// 	if len(readers) > 0 {
+					// 		m.roller.readLostFiles(ctx, readers)
+					// 		m.roller.roll(ctx, readers)
+					// 		m.saveCurrent(readers)
+					// 		m.syncLastPollFiles(ctx)
+					// 		readers = make([]*Reader, 0)
+					// 	}
+					// }
 
-	for r := range readerChan {
-		readers = append(readers, r)
-		if !m.deleteAfterRead && (len(readers) % m.maxBatchFiles == 0) {
-			m.roller.readLostFiles(ctx, readers)
-			m.roller.roll(ctx, readers)
-			m.saveCurrent(readers)
-			m.syncLastPollFiles(ctx)
-			readers = make([]*Readers, 0)
-		}
-	}
-	if  !m.deleteAfterRead && (len(readers) > 0) {
-		m.roller.readLostFiles(ctx, readers)
-		m.roller.roll(ctx, readers)
-		m.saveCurrent(readers)
-		m.syncLastPollFiles(ctx)
-	}
-	wg.Wait()
-	close(readerChan)
-	close(pathsConsumedChan)
-	close(closeChan)
-	close(pathChan)
-}
-
-func (m *Manager) consumeAsync(ctx context.Context, pathsConsumedChan chan int, pathChan chan string, closeChan chan int, readerChan chan *Reader, wg sync.WaitGroup) {
-	defer wg.Done()
-	for {
-		select {
-		case path := <-pathChan:
-			pathsConsumedChan <- 1
-			r := m.makeReader(path)
-			r.ReadToEnd(ctx)
-			if m.deleteAfterRead {
-				r.Close()
-				if err := os.Remove(r.file.Name()); err != nil {
-					m.Errorf("could not delete %s", r.file.Name())
 				}
-			} else {
-				readerChan <- r
+				// if len(readers) > 0 {
+				// 	m.roller.readLostFiles(ctx, readers)
+				// 	m.roller.roll(ctx, readers)
+				// 	m.saveCurrent(readers)
+				// 	m.syncLastPollFiles(ctx)
 			}
-
-		case <-closeChan:
-			break
 		}
-	}
-	return
+	}()
 }
-
-// func (m *Manager) consume(ctx context.Context, paths []string) {
-// 	m.Debug("Consuming files")
-// 	readers := m.makeReaders(paths)
-
-// 	// take care of files which disappeared from the pattern since the last poll cycle
-// 	// this can mean either files which were removed, or rotated into a name not matching the pattern
-// 	// we do this before reading existing files to ensure we emit older log lines before newer ones
-// 	m.roller.readLostFiles(ctx, readers)
-
-// 	var wg sync.WaitGroup
-// 	for _, reader := range readers {
-// 		wg.Add(1)
-// 		go func(r *Reader) {
-// 			defer wg.Done()
-// 			r.ReadToEnd(ctx)
-// 			if m.deleteAfterRead {
-// 				r.Close()
-// 				if err := os.Remove(r.file.Name()); err != nil {
-// 					m.Errorf("could not delete %s", r.file.Name())
-// 				}
-// 			}
-// 		}(reader)
-// 	}
-// 	wg.Wait()
-
-// 	if m.deleteAfterRead {
-// 		// no need to track files since they were deleted
-// 		return
-// 	}
-
-// 	// Any new files that appear should be consumed entirely
-// 	m.readerFactory.fromBeginning = true
-
-// 	m.roller.roll(ctx, readers)
-// 	m.saveCurrent(readers)
-// 	m.syncLastPollFiles(ctx)
-// }
 
 // makeReaders takes a list of paths, then creates readers from each of those paths,
 // discarding any that have a duplicate fingerprint to other files that have already
 // been read this polling interval
-// func (m *Manager) makeReaders(filesPaths []string) []*Reader {
-// 	// Open the files first to minimize the time between listing and opening
-// 	files := make([]*os.File, 0, len(filesPaths))
-// 	for _, path := range filesPaths {
-// 		if _, ok := m.seenPaths[path]; !ok {
-// 			if m.readerFactory.fromBeginning {
-// 				m.Infow("Started watching file", "path", path)
-// 			} else {
-// 				m.Infow("Started watching file from end. To read preexisting logs, configure the argument 'start_at' to 'beginning'", "path", path)
-// 			}
-// 			m.seenPaths[path] = struct{}{}
-// 		}
-// 		file, err := os.Open(path) // #nosec - operator must read in files defined by user
-// 		if err != nil {
-// 			m.Debugf("Failed to open file", zap.Error(err))
-// 			continue
-// 		}
-// 		files = append(files, file)
-// 	}
-
-// 	// Get fingerprints for each file
-// 	fps := make([]*Fingerprint, 0, len(files))
-// 	for _, file := range files {
-// 		fp, err := m.readerFactory.newFingerprint(file)
-// 		if err != nil {
-// 			m.Errorw("Failed creating fingerprint", zap.Error(err))
-// 			continue
-// 		}
-// 		fps = append(fps, fp)
-// 	}
-
-// 	// Exclude any empty fingerprints or duplicate fingerprints to avoid doubling up on copy-truncate files
-// OUTER:
-// 	for i := 0; i < len(fps); i++ {
-// 		fp := fps[i]
-// 		if len(fp.FirstBytes) == 0 {
-// 			if err := files[i].Close(); err != nil {
-// 				m.Errorf("problem closing file", "file", files[i].Name())
-// 			}
-// 			// Empty file, don't read it until we can compare its fingerprint
-// 			fps = append(fps[:i], fps[i+1:]...)
-// 			files = append(files[:i], files[i+1:]...)
-// 			i--
-// 			continue
-// 		}
-// 		for j := i + 1; j < len(fps); j++ {
-// 			fp2 := fps[j]
-// 			if fp.StartsWith(fp2) || fp2.StartsWith(fp) {
-// 				// Exclude
-// 				if err := files[i].Close(); err != nil {
-// 					m.Errorf("problem closing file", "file", files[i].Name())
-// 				}
-// 				fps = append(fps[:i], fps[i+1:]...)
-// 				files = append(files[:i], files[i+1:]...)
-// 				i--
-// 				continue OUTER
-// 			}
-// 		}
-// 	}
-
-// 	readers := make([]*Reader, 0, len(fps))
-// 	for i := 0; i < len(fps); i++ {
-// 		reader, err := m.newReader(files[i], fps[i])
-// 		if err != nil {
-// 			m.Errorw("Failed to create reader", zap.Error(err))
-// 			continue
-// 		}
-// 		readers = append(readers, reader)
-// 	}
-
-// 	return readers
-// }
-
 func (m *Manager) makeReaders(filePaths []string) []*Reader {
-	readers := make([]*Readers, 0)
+	readers := make([]*Reader, 0)
 	for i := 0; i < len(filePaths); i++ {
-		reader := m.makeReader(path)
+		reader := m.makeReader(filePaths[i])
 		if reader == nil {
-			m.Errorw("Failed to create reader for path ", path)
+			m.Errorw("Failed to create reader for path ")
 			continue
 		}
 		readers = append(readers, reader)
 	}
-
 	return readers
 }
 
-// makeReader takes a path and it return reader for that path
-// discarding any that have a duplicate fingerprint to other files that have already
-// been read this polling interval
 func (m *Manager) makeReader(filePath string) *Reader {
 	if _, ok := m.seenPaths[filePath]; !ok {
 		if m.readerFactory.fromBeginning {
 			m.Infow("Started watching file", "path", filePath)
 		} else {
-			m.Infow("Startedd watching file from end. To read preexisting logs, configure the argument 'start_at' to 'beginning'", "path", path)
+			m.Infow("Startedd watching file from end. To read preexisting logs, configure the argument 'start_at' to 'beginning'", "path", filePath)
 		}
 		m.seenPaths[filePath] = struct{}{}
 	}
@@ -375,16 +317,13 @@ func (m *Manager) makeReader(filePath string) *Reader {
 	return reader
 }
 
-func (m *Manager) clearCurrentFiles() {
-	m.currentFiles = make([]*os.File, 0)
-	m.currentFps = make([]*Fingerprint, 0)
-}
-
 // saveCurrent adds the readers from this polling interval to this list of
 // known files, then increments the generation of all tracked old readers
 // before clearing out readers that have existed for 3 generations.
 func (m *Manager) saveCurrent(readers []*Reader) {
 	// Add readers from the current, completed poll interval to the list of known files
+	m.knownFilesLock.Lock()
+	defer m.knownFilesLock.Unlock()
 	m.knownFiles = append(m.knownFiles, readers...)
 
 	// Clear out old readers. They are sorted such that they are oldest first,
@@ -392,7 +331,7 @@ func (m *Manager) saveCurrent(readers []*Reader) {
 	// max, and keep every reader after that
 	for i := 0; i < len(m.knownFiles); i++ {
 		reader := m.knownFiles[i]
-		if reader.generation <= 3 {
+		if reader.generation <= 10 {
 			m.knownFiles = m.knownFiles[i:]
 			break
 		}
@@ -411,6 +350,8 @@ func (m *Manager) newReader(file *os.File, fp *Fingerprint) (*Reader, error) {
 
 func (m *Manager) findFingerprintMatch(fp *Fingerprint) (*Reader, bool) {
 	// Iterate backwards to match newest first
+	m.knownFilesLock.RLock()
+	defer m.knownFilesLock.RUnlock()
 	for i := len(m.knownFiles) - 1; i >= 0; i-- {
 		oldReader := m.knownFiles[i]
 		if fp.StartsWith(oldReader.Fingerprint) {

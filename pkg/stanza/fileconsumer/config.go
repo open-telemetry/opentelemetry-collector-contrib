@@ -69,6 +69,10 @@ type Config struct {
 	DeleteAfterRead         bool                  `mapstructure:"delete_after_read,omitempty"`
 	Splitter                helper.SplitterConfig `mapstructure:",squash,omitempty"`
 }
+type ReaderWrapper struct {
+	reader *Reader
+	path   string
+}
 
 // Build will build a file input operator from the supplied configuration
 func (c Config) Build(logger *zap.SugaredLogger, emit EmitFunc) (*Manager, error) {
@@ -142,6 +146,9 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit EmitFunc, factory s
 		deleteAfterRead: c.DeleteAfterRead,
 		knownFiles:      make([]*Reader, 0, 10),
 		seenPaths:       make(map[string]struct{}, 100),
+		queueHash:       make(map[string]bool),
+		readerChan:      make(chan ReaderWrapper, c.MaxConcurrentFiles/2),
+		readerCloseChan: make(chan *Reader, c.MaxConcurrentFiles),
 	}, nil
 }
 

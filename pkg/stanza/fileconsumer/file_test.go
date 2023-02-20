@@ -397,10 +397,9 @@ func TestReadNewLogs(t *testing.T) {
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
 	operator, emitCalls := buildTestManager(t, cfg)
-	operator.persister = testutil.NewMockPersister("test")
 
-	// Poll once so we know this isn't a new file
-	operator.poll(context.Background())
+	// Start the poller
+	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
 	defer func() {
 		require.NoError(t, operator.Stop())
 	}()
@@ -408,9 +407,6 @@ func TestReadNewLogs(t *testing.T) {
 	// Create a new file
 	temp := openTemp(t, tempDir)
 	writeString(t, temp, "testlog\n")
-
-	// Poll a second time after the file has been created
-	operator.poll(context.Background())
 
 	// Expect the message to come through
 	waitForToken(t, emitCalls, []byte("testlog"))
@@ -425,19 +421,21 @@ func TestReadExistingAndNewLogs(t *testing.T) {
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
 	operator, emitCalls := buildTestManager(t, cfg)
-	operator.persister = testutil.NewMockPersister("test")
+	// Start the poller
+	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
 
 	// Start with a file with an entry in it, and expect that entry
 	// to come through when we poll for the first time
 	temp := openTemp(t, tempDir)
 	writeString(t, temp, "testlog1\n")
-	operator.poll(context.Background())
 	waitForToken(t, emitCalls, []byte("testlog1"))
 
 	// Write a second entry, and expect that entry to come through
 	// as well
 	writeString(t, temp, "testlog2\n")
-	operator.poll(context.Background())
 	waitForToken(t, emitCalls, []byte("testlog2"))
 }
 
@@ -449,18 +447,22 @@ func TestStartAtEnd(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	operator, emitCalls := buildTestManager(t, cfg)
-	operator.persister = testutil.NewMockPersister("test")
 
 	temp := openTemp(t, tempDir)
 	writeString(t, temp, "testlog1\n")
 
 	// Expect no entries on the first poll
-	operator.poll(context.Background())
+	err := operator.Start(testutil.NewMockPersister("test"))
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
+
 	expectNoTokens(t, emitCalls)
+	time.Sleep(2 * time.Second)
 
 	// Expect any new entries after the first poll
 	writeString(t, temp, "testlog2\n")
-	operator.poll(context.Background())
 	waitForToken(t, emitCalls, []byte("testlog2"))
 }
 
@@ -477,13 +479,13 @@ func TestStartAtEndNewFile(t *testing.T) {
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
 	operator, emitCalls := buildTestManager(t, cfg)
-	operator.persister = testutil.NewMockPersister("test")
-
-	operator.poll(context.Background())
+	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
 	temp := openTemp(t, tempDir)
 	writeString(t, temp, "testlog1\ntestlog2\n")
 
-	operator.poll(context.Background())
 	waitForToken(t, emitCalls, []byte("testlog1"))
 	waitForToken(t, emitCalls, []byte("testlog2"))
 }
@@ -599,11 +601,13 @@ func TestSplitWrite(t *testing.T) {
 	temp := openTemp(t, tempDir)
 	writeString(t, temp, "testlog1")
 
-	operator.poll(context.Background())
+	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
 
 	writeString(t, temp, "testlog2\n")
 
-	operator.poll(context.Background())
 	waitForToken(t, emitCalls, []byte("testlog1testlog2"))
 }
 
@@ -614,7 +618,6 @@ func TestIgnoreEmptyFiles(t *testing.T) {
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
 	operator, emitCalls := buildTestManager(t, cfg)
-	operator.persister = testutil.NewMockPersister("test")
 
 	temp := openTemp(t, tempDir)
 	temp2 := openTemp(t, tempDir)
@@ -623,13 +626,17 @@ func TestIgnoreEmptyFiles(t *testing.T) {
 
 	writeString(t, temp, "testlog1\n")
 	writeString(t, temp3, "testlog2\n")
-	operator.poll(context.Background())
+
+	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
 
 	waitForTokens(t, emitCalls, [][]byte{[]byte("testlog1"), []byte("testlog2")})
 
+	time.Sleep(1 * time.Second)
 	writeString(t, temp2, "testlog3\n")
 	writeString(t, temp4, "testlog4\n")
-	operator.poll(context.Background())
 
 	waitForTokens(t, emitCalls, [][]byte{[]byte("testlog3"), []byte("testlog4")})
 }
@@ -796,6 +803,7 @@ func TestRestartOffsets(t *testing.T) {
 			require.NoError(t, operatorOne.Start(persister))
 			if tc.startAt == "beginning" {
 				waitForToken(t, emitCallsOne, before1stRun)
+
 			} else {
 				expectNoTokensUntil(t, emitCallsOne, 500*time.Millisecond)
 			}
@@ -855,9 +863,6 @@ func TestFileBatching(t *testing.T) {
 	files := 100
 	linesPerFile := 10
 	maxConcurrentFiles := 20
-	maxBatchFiles := maxConcurrentFiles / 2
-
-	expectedBatches := files / maxBatchFiles // assumes no remainder
 
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
@@ -865,7 +870,6 @@ func TestFileBatching(t *testing.T) {
 	cfg.MaxConcurrentFiles = maxConcurrentFiles
 	emitCalls := make(chan *emitParams, files*linesPerFile)
 	operator := buildTestManagerWithEmit(t, cfg, emitCalls)
-	operator.persister = testutil.NewMockPersister("test")
 
 	core, observedLogs := observer.New(zap.DebugLevel)
 	operator.SugaredLogger = zap.New(core).Sugar()
@@ -874,7 +878,10 @@ func TestFileBatching(t *testing.T) {
 	for i := 0; i < files; i++ {
 		temps = append(temps, openTemp(t, tempDir))
 	}
-
+	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
 	// Write logs to each file
 	expectedTokens := make([][]byte, 0, files*linesPerFile)
 	for i, temp := range temps {
@@ -892,21 +899,15 @@ func TestFileBatching(t *testing.T) {
 	actualTokens = append(actualTokens, waitForNTokens(t, emitCalls, len(expectedTokens))...)
 	require.ElementsMatch(t, expectedTokens, actualTokens)
 
-	// During the first poll, we expect one log per batch and one log per file
-	require.Equal(t, files+expectedBatches, observedLogs.Len())
+	// During the first poll, we expect one log per file
+	require.Equal(t, files, observedLogs.Len())
 	logNum := 0
-	for b := 0; b < expectedBatches; b++ {
-		log := observedLogs.All()[logNum]
-		require.Equal(t, "Consuming files", log.Message)
-		require.Equal(t, zapcore.DebugLevel, log.Level)
-		logNum++
 
-		for f := 0; f < maxBatchFiles; f++ {
-			log = observedLogs.All()[logNum]
-			require.Equal(t, "Started watching file", log.Message)
-			require.Equal(t, zapcore.InfoLevel, log.Level)
-			logNum++
-		}
+	for f := 0; f < files; f++ {
+		log := observedLogs.All()[logNum]
+		require.Equal(t, "Started watching file", log.Message)
+		require.Equal(t, zapcore.InfoLevel, log.Level)
+		logNum++
 	}
 
 	// Write more logs to each file so we can validate that all files are still known
@@ -926,8 +927,8 @@ func TestFileBatching(t *testing.T) {
 	actualTokens = append(actualTokens, waitForNTokens(t, emitCalls, len(expectedTokens))...)
 	require.ElementsMatch(t, expectedTokens, actualTokens)
 
-	// During the second poll, we only expect one log per batch
-	require.Equal(t, files+expectedBatches*2, observedLogs.Len())
+	// During the second poll, we only expect one log per poll
+	require.Equal(t, files, observedLogs.Len())
 	for b := logNum; b < observedLogs.Len(); b++ {
 		log := observedLogs.All()[logNum]
 		require.Equal(t, "Consuming files", log.Message)
@@ -1221,8 +1222,11 @@ func TestDeleteAfterRead(t *testing.T) {
 	cfg.DeleteAfterRead = true
 	emitCalls := make(chan *emitParams, totalLines)
 	operator := buildTestManagerWithEmit(t, cfg, emitCalls)
-
-	operator.poll(context.Background())
+	err := operator.Start(testutil.NewMockPersister("test"))
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
 	actualTokens = append(actualTokens, waitForNTokens(t, emitCalls, totalLines)...)
 
 	require.ElementsMatch(t, expectedTokens, actualTokens)
