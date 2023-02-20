@@ -49,8 +49,8 @@ type Config struct {
 	// Authentication defines used authentication mechanism.
 	Authentication Authentication `mapstructure:"auth"`
 
-	// sendType Kafka send type by async or sync
-	sendType string `mapstructure:sendType`
+	// SendType Kafka send type by async or sync
+	SendType string `mapstructure:"send_type"`
 }
 
 // Metadata defines configuration for retrieving metadata from the broker.

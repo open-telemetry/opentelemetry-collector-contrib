@@ -31,8 +31,8 @@ var errUnrecognizedEncoding = fmt.Errorf("unrecognized encoding")
 var kafkaAddressError = errors.New("kafka address is error")
 
 const (
-	Sync  = "Sync"
-	Async = "Async"
+	Sync  = "sync"
+	Async = "async"
 )
 
 type KafkaProducer interface {
@@ -50,17 +50,17 @@ type KafkaConfig struct {
 
 func NewProducer(config Config, logger *zap.Logger) (KafkaProducer, error) {
 	var producer KafkaProducer
-	if config.sendType == "" {
-		config.sendType = Sync
+	if config.SendType == "" {
+		config.SendType = Sync
 	}
-	switch config.sendType {
+	switch config.SendType {
 	case Sync:
 		producer = &SyncKafkaProducer{}
 	case Async:
 		producer = &AsyncKafkaProducer{}
 	default:
-		fmt.Println("kafka sendType error please choose sync or async")
-		return nil, errors.New("kafka sendType error please choose sync or async")
+		fmt.Println("kafka SendType error please choose sync or async")
+		return nil, errors.New("kafka SendType error please choose sync or async")
 	}
 	err := producer.NewKafkaProducer(config, logger)
 	if err != nil {

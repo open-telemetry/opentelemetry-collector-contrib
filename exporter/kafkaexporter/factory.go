@@ -108,6 +108,7 @@ func createDefaultConfig() component.Config {
 		Brokers:         []string{defaultBroker},
 		// using an empty topic to track when it has not been set by user, default is based on traces or metrics.
 		Topic:    "",
+		SendType: defaultSendType,
 		Encoding: defaultEncoding,
 		Metadata: Metadata{
 			Full: defaultMetadataFull,
@@ -143,8 +144,8 @@ func (f *kafkaExporterFactory) createTracesExporter(
 	if oCfg.Encoding == "otlp_json" {
 		set.Logger.Info("otlp_json is considered experimental and should not be used in a production environment")
 	}
-	if oCfg.sendType == "" {
-		oCfg.sendType = defaultSendType
+	if oCfg.SendType == "" {
+		oCfg.SendType = defaultSendType
 	}
 	exp, err := newTracesExporter(oCfg, set, f.tracesMarshalers)
 	if err != nil {
@@ -176,8 +177,8 @@ func (f *kafkaExporterFactory) createMetricsExporter(
 	if oCfg.Encoding == "otlp_json" {
 		set.Logger.Info("otlp_json is considered experimental and should not be used in a production environment")
 	}
-	if oCfg.sendType == "" {
-		oCfg.sendType = defaultSendType
+	if oCfg.SendType == "" {
+		oCfg.SendType = defaultSendType
 	}
 	exp, err := newMetricsExporter(oCfg, set, f.metricsMarshalers)
 	if err != nil {
@@ -209,8 +210,8 @@ func (f *kafkaExporterFactory) createLogsExporter(
 	if oCfg.Encoding == "otlp_json" {
 		set.Logger.Info("otlp_json is considered experimental and should not be used in a production environment")
 	}
-	if oCfg.sendType == "" {
-		oCfg.sendType = defaultSendType
+	if oCfg.SendType == "" {
+		oCfg.SendType = defaultSendType
 	}
 	exp, err := newLogsExporter(oCfg, set, f.logsMarshalers)
 	if err != nil {

@@ -2,73 +2,26 @@ receivers:
   otlp:
     protocols:
       grpc:
-      http:
-        cors:
-          allowed_origins:
-            - "*"
-          allowed_headers:
-            - "*"
-          max_age: 7200
-
-  jaeger:
-    protocols:
-      grpc:
-      thrift_binary:
-      thrift_compact:
-      thrift_http:
-
-  zipkin:
-
-
 
 exporters:
+  prometheus:
+    endpoint: "0.0.0.0:8889"
+    const_labels:
+      label1: value1
+
   logging:
-    loglevel: debug
 
-  file:
-    path: /Users/hai/GolandProjects/opentelemetry-collector-contrib/examples/demo/trace.json
-  kafka/traces:
-    topic: skywalking-otlpspans
-    brokers:
-      - 9.134.107.155:9092
-    producer:
-      #1mb
-      max_message_bytes: 10000000
-    protocol_version: 2.0.0
-    metadata:
-      retry:
-        max: 0
-    timeout: 5s
-    retry_on_failure:
-      enabled: false
-    sending_queue:
-      enabled: true
-      num_consumers: 10
-      queue_size: 50000
+  zipkin:
+    endpoint: "http://zipkin-all-in-one:9411/api/v2/spans"
+    format: proto
 
-  kafka/logs:
-    topic: otel_logs
-    brokers:
-      - 9.134.107.155:9092
-    producer:
-      #1mb
-      max_message_bytes: 10000000
-    protocol_version: 2.0.0
-    metadata:
-      retry:
-        max: 0
-    timeout: 5s
-    retry_on_failure:
-      enabled: false
-    sending_queue:
-      enabled: true
-      num_consumers: 10
-      queue_size: 50000
+  jaeger:
+    endpoint: jaeger-all-in-one:14250
+    tls:
+      insecure: true
 
 processors:
   batch:
-    send_batch_size: 128
-    timeout: 100ms
 
 extensions:
   health_check:
@@ -78,16 +31,13 @@ extensions:
     endpoint: :55679
 
 service:
-  extensions: [ pprof, zpages, health_check ]
+  extensions: [pprof, zpages, health_check]
   pipelines:
     traces:
-      receivers: [ otlp ]
-      processors: [ batch ]
-      exporters: [logging,kafka/traces ]
-    logs:
-      receivers: [ otlp ]
-      processors: [ batch ]
-      exporters: [ logging ]
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [logging, zipkin, jaeger]
     metrics:
-      receivers: [ otlp ]
-      exporters: [ file ]
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [logging, prometheus]

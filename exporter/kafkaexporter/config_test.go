@@ -59,6 +59,7 @@ func TestLoadConfig(t *testing.T) {
 					QueueSize:    10,
 				},
 				Topic:    "spans",
+				SendType: defaultSendType,
 				Encoding: "otlp_proto",
 				Brokers:  []string{"foo:123", "bar:456"},
 				Authentication: Authentication{
