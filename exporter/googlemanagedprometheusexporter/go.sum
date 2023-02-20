@@ -52,8 +52,8 @@ github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector v0.35.1 h1:36qXJYfZs8f/bSamKmk+XcebcNPyRyL4FFGtEYgmRGM=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector v0.35.1/go.mod h1:ekD9ntzDFtO5WPOSen2s8iGnJpqxbZu0cA7Jkh6bgmY=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector/googlemanagedprometheus v0.34.2 h1:0WbyP5GfXxWvhoQVL7U4YouxQRrIRp6MEwcxxCIEGR0=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector/googlemanagedprometheus v0.34.2/go.mod h1:NW+a69oLVqYvWZ98nlUPI/TqsOA/YRdOokzQVGNOxc4=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector/googlemanagedprometheus v0.35.2 h1:OTne6f43ZXWS1i45l1/zHeAirIRbsb8whJpYcC/zHeU=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector/googlemanagedprometheus v0.35.2/go.mod h1:PNxl7KZT+VRkGuh4cXfgn0bYM9FZ7664qdQ1QdAvCdA=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.11.1 h1:O7dTg9ukLjzIOOLpC8RBaD1EqWD3jqicwhpju6C8meg=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.11.1/go.mod h1:EbS3BDOG4ESDJWUB2jE3On/u00ayOUSFeUzd4759bfU=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/cloudmock v0.35.1 h1:s503Jzh+SCMN557CUTsenBo8vNxmGZK7zWdNlePQ9TU=
@@ -323,6 +323,9 @@ github.com/mwitkow/go-conntrack v0.0.0-20161129095857-cc309e4a2223/go.mod h1:qRW
 github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f/go.mod h1:qRWi+5nqEBWmkhHvq77mSJWrCKwh8bxhgT7d/eI7P4U=
 github.com/npillmayer/nestext v0.1.3/go.mod h1:h2lrijH8jpicr25dFY+oAJLyzlya6jhnuG+zWp9L0Uk=
 github.com/oklog/run v1.0.0/go.mod h1:dlhp/R75TPv97u0XWUtDeV/lRKWPKSdTuV0TZvrmrQA=
+github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.68.0 h1:N+jnx9hHWJEag8GYLPJ5GY2B1A6ef++uDPgvFX0PjpE=
+github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.68.0 h1:lu48qnhe26Xgw7hOfBi4mpRNYmcfGl3pYhW0XrAKcsk=
+github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.68.0/go.mod h1:tB+Z8MllASAwp3HAO48y4V1DrnHPgj3XiTIkkVd0UqM=
 github.com/pascaldekloe/goe v0.0.0-20180627143212-57f6aae5913c/go.mod h1:lzWF7FIEvWOWxwDKqyGYQf6ZUaNfKdP144TG7ZOy1lc=
 github.com/pascaldekloe/goe v0.1.0/go.mod h1:lzWF7FIEvWOWxwDKqyGYQf6ZUaNfKdP144TG7ZOy1lc=
 github.com/pelletier/go-toml v1.7.0 h1:7utD74fnzVc/cpcyy8sjrlFr5vYpypUixARcHIMIGuI=
